@@ -1,0 +1,53 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -n '^$routes->\\\\\\(group\\\\|resource\\\\\\)' -A3 d:/xampp/htdocs/Next/app/Config/Routes.php)",
+      "Bash(/d/xampp/mysql/bin/mysql --version)",
+      "Bash(\"/d/xampp/mysql/bin/mysql.exe\" -uroot -h localhost -P 3306 next -e \"SELECT \\(SELECT COUNT\\(*\\) FROM sales\\) AS sales_cnt, \\(SELECT COUNT\\(*\\) FROM sale_items\\) AS sale_items_cnt;\")",
+      "Bash(grep -n 'recordsTotal\\\\|recordsFiltered\\\\|\"draw\"\\\\|'\\\\''draw'\\\\''\\\\|json_encode\\\\|return $this->response' d:/xampp/htdocs/Next/app/Controllers/Reports.php)",
+      "Bash(awk -F: '$1>=6309 && $1<=6770')",
+      "Bash(grep -n '^$routes' d:/xampp/htdocs/Next/app/Config/Routes.php)",
+      "Bash(\"/d/xampp/mysql/bin/mysql.exe\" -u root -h 127.0.0.1 next -e \"DESCRIBE returnss;\")",
+      "Bash(\"/d/xampp/mysql/bin/mysql.exe\" -u root -h 127.0.0.1 next -e \"DESCRIBE tax_summary;\")",
+      "Bash(\"/d/xampp/mysql/bin/mysql.exe\" -u root -h 127.0.0.1 next -e \"SHOW COLUMNS FROM customers LIKE 'name';\")",
+      "Bash(\"/d/xampp/php/php.exe\" -l \"/d/xampp/htdocs/Next/app/Controllers/Reports.php\")",
+      "Bash(\"/d/xampp/php/php.exe\" -l \"/d/xampp/htdocs/Next/app/Views/salestotalreportss.php\")",
+      "Bash(curl -s -m 5 -o /dev/null -w \"Apache status: %{http_code}\\\\n\" http://localhost/Next/public/)",
+      "Bash(curl -s -m 5 -o /dev/null -w \"Apache status alt: %{http_code}\\\\n\" http://localhost/)",
+      "Bash(tasklist)",
+      "Bash(curl -s -m 5 -D - -o /dev/null http://localhost/Next/public/)",
+      "Bash(curl -s -m 5 -D - -o /dev/null http://localhost/)",
+      "Bash(\"/d/xampp/mysql/bin/mysql.exe\" -u root -h 127.0.0.1 next -e \"SELECT id, role FROM users LIMIT 3;\")",
+      "Bash(/d/xampp/php/php.exe -r ' *)",
+      "Bash(grep -n '\\\\$_POST = \\\\[' /d/xampp/htdocs/Next/app/Commands/TestSalesReport.php)",
+      "Bash(\"/d/xampp/php/php.exe\" spark *)",
+      "Read(//tmp/**)",
+      "Bash(\"/d/xampp/mysql/bin/mysql.exe\" -u root -h 127.0.0.1 next -e \"SELECT COUNT\\(*\\) FROM tax_summary;\")",
+      "Bash(\"/d/xampp/mysql/bin/mysql.exe\" -u root -h 127.0.0.1 next -e \"SHOW INDEX FROM sales;\")",
+      "Bash(\"/d/xampp/mysql/bin/mysql.exe\" -u root -h 127.0.0.1 next -e \"SHOW INDEX FROM tax_summary;\")",
+      "Bash(\"/d/xampp/mysql/bin/mysql.exe\" -u root -h 127.0.0.1 next -e \"SHOW INDEX FROM returnss;\")",
+      "Bash(\"/d/xampp/mysql/bin/mysql.exe\" -u root -h 127.0.0.1 next -e \"SHOW INDEX FROM registers;\")",
+      "Bash(\"/d/xampp/mysql/bin/mysql.exe\" -u root -h 127.0.0.1 next -e \"DESCRIBE stores;\")",
+      "Bash(\"/d/xampp/mysql/bin/mysql.exe\" -u root -h 127.0.0.1 next -e \"SELECT * FROM stores;\")",
+      "Bash(\"/d/xampp/php/php.exe\" -l \"/d/xampp/htdocs/Next/app/Controllers/Report.php\")",
+      "Bash(/d/xampp/mysql/bin/mysql.exe -u root -h 127.0.0.1 next -e ' *)",
+      "Bash(time /d/xampp/mysql/bin/mysql.exe -u root -h 127.0.0.1 next -e ' *)",
+      "Bash(grep -n '$baseBuilderFn\\(\\)->limit\\($batch, $offset\\)->get\\(\\)->getResultArray\\(\\);' /d/xampp/htdocs/Next/app/Controllers/Reports.php)",
+      "Bash(sed -i 's/\\\\$rows = \\\\$baseBuilderFn\\(\\)->limit\\(\\\\$batch, \\\\$offset\\)->get\\(\\)->getResultArray\\(\\);/\\\\$rows = \\\\$fetchBatch\\(\\\\$batch, \\\\$offset\\);/g' /d/xampp/htdocs/Next/app/Controllers/Reports.php)",
+      "Bash(grep -n '\\\\$fetchBatch\\(\\\\$batch' /d/xampp/htdocs/Next/app/Controllers/Reports.php)",
+      "Bash(time \"/d/xampp/php/php.exe\" spark test:salesreport export full)",
+      "Bash(\"/d/xampp/mysql/bin/mysql.exe\" -u root -h 127.0.0.1 next -e \"SELECT COUNT\\(*\\) FROM sales WHERE status != 3;\")",
+      "Bash(\"/d/xampp/mysql/bin/mysql.exe\" -u root -h 127.0.0.1 next -e \"SELECT * FROM payment_mode;\")",
+      "Bash(python3 -c ' *)",
+      "Bash(php -r ' *)",
+      "Bash(cd /tmp)",
+      "Bash(ls /tmp/script_*.js)",
+      "Bash(mkdir -p /c/Users/Vinoth/AppData/Local/Temp/claude/d--xampp-htdocs-Next/d7eaab77-5a1c-4078-b1a2-fc5724a8a899/scratchpad)",
+      "Read(//c/Users/Vinoth/AppData/Local/Temp/claude/d--xampp-htdocs-Next/d7eaab77-5a1c-4078-b1a2-fc5724a8a899/scratchpad/**)",
+      "Bash(SCRATCH=\"/c/Users/Vinoth/AppData/Local/Temp/claude/d--xampp-htdocs-Next/d7eaab77-5a1c-4078-b1a2-fc5724a8a899/scratchpad\" *)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\Vinoth\\AppData\\Local\\Temp\\claude\\d--xampp-htdocs-Next\\d7eaab77-5a1c-4078-b1a2-fc5724a8a899\\scratchpad"
+    ]
+  }
+}

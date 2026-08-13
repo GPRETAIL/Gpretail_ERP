@@ -1,0 +1,20 @@
+<?php
+
+namespace App\Controllers;
+
+use App\Controllers\BaseController;
+
+class Sync extends BaseController
+{
+    protected $db;
+
+    public function __construct()
+    {
+        $this->db = \Config\Database::connect();
+    }
+
+    public function index()
+    {
+        return $this->render('sync');
+    }
+}

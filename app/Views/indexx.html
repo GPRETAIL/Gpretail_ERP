@@ -1,0 +1,42 @@
+
+
+<link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+
+
+<script src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
+</script></div>
+<button class="btn btn-primary basic">Basic</button>
+<button class="btn btn-danger custom">custom</button>
+<button class="btn btn-warning callback">With Callback</button>
+</div>
+<script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
+<script src="http://netdna.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+<script src="build/bootstrap-waitingfor.js"></script>
+
+<script>
+$( ".basic" ).click(function() {
+  waitingDialog.show('Loading dddd..');
+setTimeout(function () {
+  waitingDialog.hide();
+}, 3000);
+});
+$( ".custom" ).click(function() {
+  waitingDialog.show('Loading Something...',{
+	  headerText: 'jQueryScript',
+				dialogSize: 'sm',
+				progressType: 'danger'
+	  });
+setTimeout(function () {
+  waitingDialog.hide();
+}, 3000);
+});
+$( ".callback" ).click(function() {
+  waitingDialog.show('Loading Something...',{
+				progressType: 'success',
+				onHide: function () {alert('Callback!');}
+	  });
+setTimeout(function () {
+  waitingDialog.hide();
+}, 3000);
+});
+</script>
