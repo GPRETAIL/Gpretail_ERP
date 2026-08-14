@@ -17,6 +17,7 @@ use Config\Database;
 use App\Models\SettingModel;
 use App\Models\PurchaseReportModel;
 use App\Services\SalesReportService;
+use App\Services\StockReportService;
 
 class Reports extends BaseController
 {
@@ -8514,137 +8515,9 @@ class Reports extends BaseController
      * makes "All stores" a real cross-store aggregate (no store filter
      * applied at all) instead of defaulting to the session's store.
      */
-    private function stockReportFilters(): array
-    {
-        $request = service('request');
-        $start = trim((string) $request->getPost('start'));
-        $end   = trim((string) $request->getPost('endd'));
-
-        return [
-            'start' => $start !== '' ? date('Y-m-d', strtotime($start)) : date('Y-m-d'),
-            'end'   => $end !== '' ? date('Y-m-d', strtotime($end)) : date('Y-m-d'),
-            // '' means "All stores" - a real cross-store aggregate (no
-            // store filter applied), not a fallback to the session store.
-            'store' => trim((string) $request->getPost('storesSelect')),
-        ];
-    }
-
-    /**
-     * Client column index -> DB column, for the columns backed directly by
-     * `products` (orderable/searchable via SQL). The ledger columns
-     * (Initial/Opening/Purchase/Sales/Cancel/Return/Closing/Value) are
-     * computed after pagination (see attachStockLedger()), so they're
-     * intentionally absent here - same convention as Sales Report's
-     * Tax/Returns columns.
-     */
-    private function stockColumnMap(): array
-    {
-        return [0 => 'pr.id', 1 => 'pr.code', 2 => 'pr.name'];
-    }
-
-    private function buildStockBaseQuery(string $search, array $colFilters = [])
-    {
-        $db = db_connect();
-        $columns = $this->stockColumnMap();
-
-        $builder = $db->table('products pr')->select('pr.id, pr.code, pr.name, pr.price');
-
-        if ($search !== '') {
-            $builder->groupStart()
-                ->like('pr.name', $search)
-                ->orLike('pr.code', $search)
-                ->orWhere('pr.id', $search)
-                ->groupEnd();
-        }
-        foreach ($colFilters as $i => $val) {
-            if (isset($columns[$i])) {
-                $builder->like($columns[$i], $val);
-            }
-        }
-
-        return $builder;
-    }
-
-    /**
-     * SUM($sumCol) grouped by $idCol, scoped to $ids and (optionally) a
-     * store, returned as [product_id => total]. $whereTriples is a list of
-     * [column, operator, value] applied as additional WHERE clauses (e.g.
-     * the tyoftrans/cancel_status/date-range conditions each ledger metric
-     * needs) - always via the query builder's parameter binding, never
-     * string-interpolated.
-     */
-    private function groupedLedgerSum(string $table, string $idCol, string $sumCol, array $ids, string $storeCol, string $store, array $whereTriples = []): array
-    {
-        if (empty($ids)) {
-            return [];
-        }
-        $db = db_connect();
-        $builder = $db->table($table)
-            ->select("$idCol as pid, SUM($sumCol) as total")
-            ->whereIn($idCol, $ids)
-            ->groupBy($idCol);
-
-        if ($store !== '') {
-            $builder->where($storeCol, $store);
-        }
-        foreach ($whereTriples as [$col, $op, $val]) {
-            $builder->where("$col $op", $val);
-        }
-
-        $out = [];
-        foreach ($builder->get()->getResultArray() as $r) {
-            $out[(int) $r['pid']] = (float) $r['total'];
-        }
-        return $out;
-    }
-
-    /**
-     * Attaches the full stock ledger (Initial/Opening/Purchase/Sales/
-     * Cancel/Return/Closing/Value) to each row in $rows, for the given
-     * date-range/store filters. Exactly 10 grouped queries total,
-     * regardless of how many rows are in $rows (bounded by page size).
-     */
-    private function attachStockLedger(array $rows, array $f): array
-    {
-        if (empty($rows)) {
-            return $rows;
-        }
-        $ids = array_map('intval', array_column($rows, 'id'));
-        $store = $f['store'];
-        $start = $f['start'];
-        $end   = $f['end'];
-
-        $initial          = $this->groupedLedgerSum('stock_transfer', 'pro_id', 'qty', $ids, 'store_id', $store, [['tyoftrans', '=', 5]]);
-        $initialStocksT0  = $this->groupedLedgerSum('stocks', 'product_id', 'quantity', $ids, 'store_id', $store, [['type', '=', 0]]);
-        $purchaseBetween  = $this->groupedLedgerSum('stock_transfer', 'pro_id', 'qty', $ids, 'store_id', $store, [['tyoftrans', '=', 1], ['date', '>=', $start], ['date', '<=', $end]]);
-        $salesBetween     = $this->groupedLedgerSum('sale_items', 'product_id', 'qt', $ids, 'store_irrdd', $store, [['date', '>=', $start], ['date', '<=', $end]]);
-        $cancelBetween    = $this->groupedLedgerSum('sale_items', 'product_id', 'qt', $ids, 'store_irrdd', $store, [['cancel_status', '=', 1], ['date', '>=', $start], ['date', '<=', $end]]);
-        $returnBetween    = $this->groupedLedgerSum('retunn_items', 'prodd_ids', 'sl_newqt', $ids, 'store_idsi', $store, [['to_datte', '>=', $start], ['to_datte', '<=', $end]]);
-        $salesTillEnd     = $this->groupedLedgerSum('sale_items', 'product_id', 'qt', $ids, 'store_irrdd', $store, [['date', '<=', $end]]);
-        $purchaseTillEnd  = $this->groupedLedgerSum('stock_transfer', 'pro_id', 'qty', $ids, 'store_id', $store, [['tyoftrans', '=', 1], ['date', '<=', $end]]);
-        $cancelTillEnd    = $this->groupedLedgerSum('sale_items', 'product_id', 'qt', $ids, 'store_irrdd', $store, [['cancel_status', '=', 1], ['date', '<=', $end]]);
-        $returnTillEnd    = $this->groupedLedgerSum('retunn_items', 'prodd_ids', 'sl_newqt', $ids, 'store_idsi', $store, [['to_datte', '<=', $end]]);
-
-        foreach ($rows as &$row) {
-            $id = (int) $row['id'];
-            $initialQty = $initial[$id] ?? 0;
-
-            $row['initial']  = $initialQty;
-            $row['opening']  = $initialQty + ($initialStocksT0[$id] ?? 0);
-            $row['purchase'] = $purchaseBetween[$id] ?? 0;
-            $row['sales']    = $salesBetween[$id] ?? 0;
-            $row['cancel']   = $cancelBetween[$id] ?? 0;
-            $row['return']   = $returnBetween[$id] ?? 0;
-            $row['closing']  = $initialQty - ($salesTillEnd[$id] ?? 0) + ($purchaseTillEnd[$id] ?? 0) + ($cancelTillEnd[$id] ?? 0) + ($returnTillEnd[$id] ?? 0);
-            $row['value']    = $row['closing'] * (float) $row['price'];
-        }
-        unset($row);
-
-        return $rows;
-    }
-
     public function getClosingStockReport()
     {
+        $svc = new StockReportService();
         $request = service('request');
         $draw   = intval($request->getPost('draw'));
         $start  = intval($request->getPost('start'));
@@ -8653,23 +8526,23 @@ class Reports extends BaseController
         $orderDir = $request->getPost('order')[0]['dir'] ?? 'asc';
         $search = trim((string) ($request->getPost('search')['value'] ?? ''));
 
-        $f = $this->stockReportFilters();
-        $columns = $this->stockColumnMap();
+        $f = $svc->filters();
+        $columns = $svc->columnMap();
         $orderBy = $columns[$orderCol] ?? 'pr.name';
 
         $colFilters = $this->columnSearchValues(array_keys($columns));
 
         $db = db_connect();
         $recordsTotal = $db->table('products')->countAllResults();
-        $recordsFiltered = $this->buildStockBaseQuery($search, $colFilters)->countAllResults(false);
+        $recordsFiltered = $svc->buildBaseQuery($search, $colFilters)->countAllResults(false);
 
-        $rows = $this->buildStockBaseQuery($search, $colFilters)
+        $rows = $svc->buildBaseQuery($search, $colFilters)
             ->orderBy($orderBy, $orderDir)
             ->limit($length, $start)
             ->get()
             ->getResultArray();
 
-        $rows = $this->attachStockLedger($rows, $f);
+        $rows = $svc->attachLedger($rows, $f);
 
         $decimals = (int) ($this->setting->decimals ?? 2);
         $data = [];
@@ -8700,10 +8573,11 @@ class Reports extends BaseController
 
     public function exportClosingStockReport()
     {
+        $svc = new StockReportService();
         $request = service('request');
         $format = $request->getVar('format') === 'xlsx' ? 'xlsx' : 'csv';
         $search = trim((string) $request->getVar('search'));
-        $f = $this->stockReportFilters();
+        $f = $svc->filters();
         $decimals = (int) ($this->setting->decimals ?? 2);
 
         $headers = ['ID', 'Code', 'Product Name', 'Initial', 'Opening', 'Purchase', 'Sales', 'Cancel', 'Return', 'Closing', 'Price', 'Value'];
@@ -8723,9 +8597,9 @@ class Reports extends BaseController
                 number_format((float) $r['value'], $decimals, '.', ''),
             ];
         };
-        $fetchBatch = function (int $batch, int $offset) use ($search, $f) {
-            $rows = $this->buildStockBaseQuery($search)->orderBy('pr.name', 'asc')->limit($batch, $offset)->get()->getResultArray();
-            return $this->attachStockLedger($rows, $f);
+        $fetchBatch = function (int $batch, int $offset) use ($svc, $search, $f) {
+            $rows = $svc->buildBaseQuery($search)->orderBy('pr.name', 'asc')->limit($batch, $offset)->get()->getResultArray();
+            return $svc->attachLedger($rows, $f);
         };
 
         $filename = 'Closing-Stock-Report-' . $f['start'] . '_to_' . $f['end'];
