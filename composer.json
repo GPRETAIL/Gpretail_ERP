@@ -10,7 +10,7 @@
         "slack": "https://codeigniterchat.slack.com"
     },
     "require": {
-        "php": "^8.1",
+        "php": "^8.2",
         "codeigniter4/framework": "^4.7",
         "phpoffice/phpspreadsheet": "^5.9",
         "tecnickcom/tcpdf": "^6.10"
