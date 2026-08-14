@@ -6015,11 +6015,10 @@ For ' . ucwords($this->setting->companyname) . '</td>
                 throw new \Exception('Invalid file upload');
             }
 
-            require_once(APPPATH . 'ThirdParty/PHPExcel/IOFactory.php');
             $filePath = WRITEPATH . 'uploads/' . $file->getName();
             $file->move(WRITEPATH . 'uploads');
 
-            $objPHPExcel = \PHPExcel_IOFactory::load($filePath);
+            $objPHPExcel = \PhpOffice\PhpSpreadsheet\IOFactory::load($filePath);
         } catch (\Exception $e) {
             return $this->response->setJSON([
                 'success' => false,
