@@ -61,4 +61,16 @@ class Format extends BaseConfig
         'application/xml'  => 0,
         'text/xml'         => 0,
     ];
+
+    /**
+     * --------------------------------------------------------------------------
+     * JSON encode depth
+     * --------------------------------------------------------------------------
+     *
+     * Maximum depth for json_encode() when formatting a JSON response - added
+     * because CodeIgniter\Format\JSONFormatter (4.7+) now passes this value
+     * explicitly instead of relying on json_encode()'s own default. 512 is
+     * that same PHP default, so this preserves prior behavior exactly.
+     */
+    public int $jsonEncodeDepth = 512;
 }
