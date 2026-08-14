@@ -11,6 +11,7 @@ use CodeIgniter\Controller;
 use CodeIgniter\Files\File;
 // use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use App\Services\ProductService;
 
 class Products extends BaseController
 {
@@ -459,50 +460,6 @@ class Products extends BaseController
     }
 
     /**
-     * Column index -> SQL field map shared by the grid endpoint, export,
-     * and per-column filtering below. store_stock comes from an aggregated
-     * LEFT JOIN subquery (same SUM(quantity) GROUP BY product_id already
-     * used for this figure elsewhere in the app, e.g. Brand::fetch_all_records()),
-     * wrapped in COALESCE so filtering/ordering works the same whether or
-     * not a product has any stock rows at all.
-     */
-    private function productColumnMap(): array
-    {
-        return [
-            0 => 'pr.id', 1 => 'pr.code', 2 => 'pr.hsn', 3 => 'pr.name', 4 => 'pr.tax',
-            5 => 'pr.cost', 6 => 'pr.price', 7 => 'pr.rrate', 8 => 'pr.discount_per',
-            9 => 'bbr.name', 10 => 'ssr.name', 11 => 'COALESCE(st.store_stock, 0)',
-        ];
-    }
-
-    private function buildProductQuery(string $search, array $colFilters)
-    {
-        $db = db_connect();
-        $columns = $this->productColumnMap();
-
-        $builder = $db->table('products pr')
-            ->select("pr.id, pr.code, pr.hsn, pr.name, pr.tax, pr.cost, pr.price, pr.rrate, pr.discount_per, bbr.name AS bname, ssr.name AS sname, COALESCE(st.store_stock, 0) AS store_stock")
-            ->join('brand bbr', 'bbr.id = pr.brandd', 'left')
-            ->join('suppliers ssr', 'ssr.id = pr.supplier', 'left')
-            ->join('(SELECT product_id, SUM(quantity) AS store_stock FROM stocks GROUP BY product_id) st', 'st.product_id = pr.id', 'left');
-
-        if ($search !== '') {
-            $builder->groupStart()
-                ->like('pr.name', $search)
-                ->orLike('pr.code', $search)
-                ->orLike('pr.hsn', $search)
-                ->groupEnd();
-        }
-        foreach ($colFilters as $i => $val) {
-            if (isset($columns[$i])) {
-                $builder->like($columns[$i], $val);
-            }
-        }
-
-        return $builder;
-    }
-
-    /**
      * Server-side-paginated data grid for the Products page, replacing the
      * old ag-Grid setup that fetched every product in one request
      * (brand/fetch_all_records) and paginated/filtered entirely client-side.
@@ -510,6 +467,7 @@ class Products extends BaseController
      */
     public function datatableList()
     {
+        $svc = new ProductService();
         $request = service('request');
         $draw   = intval($request->getPost('draw'));
         $start  = intval($request->getPost('start'));
@@ -518,7 +476,7 @@ class Products extends BaseController
         $orderDir = $request->getPost('order')[0]['dir'] ?? 'asc';
         $search = trim((string) ($request->getPost('search')['value'] ?? ''));
 
-        $columns = $this->productColumnMap();
+        $columns = $svc->columnMap();
         $orderBy = $columns[$orderCol] ?? 'pr.name';
 
         $colFilters = [];
@@ -532,9 +490,9 @@ class Products extends BaseController
 
         $db = db_connect();
         $recordsTotal = $db->table('products')->countAllResults();
-        $recordsFiltered = $this->buildProductQuery($search, $colFilters)->countAllResults(false);
+        $recordsFiltered = $svc->buildQuery($search, $colFilters)->countAllResults(false);
 
-        $rows = $this->buildProductQuery($search, $colFilters)
+        $rows = $svc->buildQuery($search, $colFilters)
             ->orderBy($orderBy, $orderDir)
             ->limit($length, $start)
             ->get()
@@ -574,6 +532,7 @@ class Products extends BaseController
      */
     public function exportProducts()
     {
+        $svc = new ProductService();
         $request = service('request');
         $format = $request->getVar('format') === 'xlsx' ? 'xlsx' : 'csv';
         $search = trim((string) $request->getVar('search'));
@@ -586,7 +545,7 @@ class Products extends BaseController
                 $r['bname'] ?? '', $r['sname'] ?? '', $r['store_stock'],
             ];
         };
-        $baseBuilderFn = fn() => $this->buildProductQuery($search, [])->orderBy('pr.name', 'asc');
+        $baseBuilderFn = fn() => $svc->buildQuery($search, [])->orderBy('pr.name', 'asc');
 
         set_time_limit(0);
         $filename = 'Products-' . date('Y-m-d');

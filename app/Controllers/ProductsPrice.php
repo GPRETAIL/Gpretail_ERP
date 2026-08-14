@@ -6,6 +6,7 @@ use App\Controllers\BaseController;
 use App\Models\ProductModel;
 use App\Models\CategoryModel;
 use App\Models\SupplierModel;
+use App\Services\ProductPriceService;
 use Config\Services;
 
 class ProductsPrice extends BaseController
@@ -56,48 +57,6 @@ class ProductsPrice extends BaseController
         ]);
     }
 
-    private function buildPriceQuery(string $search, string $supplier, array $colFilters)
-    {
-        $db = db_connect();
-        $columns = $this->priceColumnMap();
-
-        $builder = $db->table('products pr')
-            ->select("pr.id, pr.code, pr.name, pr.price, pr.attime")
-            ->join('suppliers ssr', 'ssr.id = pr.supplier', 'left');
-
-        if ($supplier !== '' && $supplier !== '99') {
-            $builder->where('pr.supplier', $supplier);
-        }
-        if ($search !== '') {
-            $builder->groupStart()
-                ->like('pr.name', $search)
-                ->orLike('pr.code', $search)
-                ->orWhere('pr.id', $search)
-                ->groupEnd();
-        }
-        foreach ($colFilters as $i => $val) {
-            if (isset($columns[$i])) {
-                $builder->like($columns[$i], $val);
-            }
-        }
-
-        return $builder;
-    }
-
-    /**
-     * Maps DataTables client-side column indexes to sortable/filterable DB
-     * columns. Client layout is: 0=select-checkbox, 1=id, 2=code, 3=name,
-     * 4=price, 5=update-price (client-only, not orderable/searchable),
-     * 6=attime, 7=actions (client-only) - indexes 0, 5 and 7 are
-     * intentionally absent since those columns aren't backed by a DB field.
-     */
-    private function priceColumnMap(): array
-    {
-        return [
-            1 => 'pr.id', 2 => 'pr.code', 3 => 'pr.name', 4 => 'pr.price', 6 => 'pr.attime',
-        ];
-    }
-
     /**
      * Server-side-paginated grid for the bulk price-update tool, replacing
      * the old approach of rendering every product on the page in one big
@@ -107,6 +66,7 @@ class ProductsPrice extends BaseController
      */
     public function datatableList()
     {
+        $svc = new ProductPriceService();
         $request = service('request');
         $draw   = intval($request->getPost('draw'));
         $start  = intval($request->getPost('start'));
@@ -116,7 +76,7 @@ class ProductsPrice extends BaseController
         $search = trim((string) ($request->getPost('search')['value'] ?? ''));
         $supplier = trim((string) $request->getPost('supplier'));
 
-        $columns = $this->priceColumnMap();
+        $columns = $svc->columnMap();
         $orderBy = $columns[$orderCol] ?? 'pr.name';
 
         $colFilters = [];
@@ -130,9 +90,9 @@ class ProductsPrice extends BaseController
 
         $db = db_connect();
         $recordsTotal = $db->table('products')->countAllResults();
-        $recordsFiltered = $this->buildPriceQuery($search, $supplier, $colFilters)->countAllResults(false);
+        $recordsFiltered = $svc->buildQuery($search, $supplier, $colFilters)->countAllResults(false);
 
-        $rows = $this->buildPriceQuery($search, $supplier, $colFilters)
+        $rows = $svc->buildQuery($search, $supplier, $colFilters)
             ->orderBy($orderBy, $orderDir)
             ->limit($length, $start)
             ->get()
