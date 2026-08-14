@@ -1,5 +1,10 @@
 // loading screen
-$(window).load(function () {
+// $(window).load(fn) was jQuery's event-binding shorthand for window's
+// 'load' event - removed entirely in jQuery 3.0 (silently becomes "not a
+// function" otherwise). This is the app's GLOBAL loading spinner fade-out,
+// relied on by every page site-wide, so this one broke everywhere at once
+// under the jQuery 3.7.1 upgrade until fixed to the still-supported form.
+$(window).on('load', function () {
   $("#loadingimg").fadeOut("slow");
 });
 

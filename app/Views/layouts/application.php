@@ -31,8 +31,16 @@ if (segment(1) == '' || segment(1) == 'quotation') {
     <link href="<?php echo base_url('public/'); ?>assets/pos.ico" rel="shortcut icon">
 
     <!-- <script type="text/javascript" src="<?= base_url('public/') ?>assets/js/loading.js"></script> -->
-    <script type="text/javascript" src="<?= base_url('public/') ?>assets/js/jquery-2.2.2.min.js"></script>
-    <!-- <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script> -->
+    <!-- jQuery 2.2.2 (2016) upgraded to 3.7.1 - a prior attempt at this
+         exact swap was left commented out here already; completed it. -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <!-- jQuery's own official compatibility shim for the 1.x/2.x -> 3.x
+         transition: patches most removed/changed APIs back to working at
+         runtime and console-warns (does not crash) on anything it can't
+         auto-fix. Safety net for the ~80 pages across this app that
+         weren't individually re-tested against jQuery 3.x as part of
+         this upgrade - remove once those have all been verified clean. -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery-migrate/3.5.2/jquery-migrate.min.js"></script>
     <!-- normalize & reset style -->
 
     <link rel="stylesheet" href="<?= base_url('public/') ?>assets/css/reset.min.css" type='text/css'>
@@ -77,7 +85,17 @@ if (segment(1) == '' || segment(1) == 'quotation') {
     <!-- bootstrap-horizon -->
 
     <!-- datatable style -->
-    <link href="<?php echo base_url('public/assets/datatables/css/dataTables.bootstrap.css'); ?>" rel="stylesheet">
+    <!-- Was a local copy of DataTables 1.10.7 (~2015) - upgraded to the
+         latest 1.13.x release via CDN, same major-version API surface as
+         before (no init-code changes required for existing plugin-init
+         calls elsewhere in the app), just ~9 years of bugfixes/security
+         patches. Deliberately NOT jumping to DataTables 2.x here - the
+         four pages rebuilt this session already load 2.x themselves and
+         reclaim it after this file's own DataTables loads (see their
+         loadScriptOnce() reclaim code), but ~80 other legacy pages still
+         initialize DataTables using THIS shared copy directly, and 1.x -> 2.x
+         has real breaking API changes untested against those pages. -->
+    <link href="https://cdn.datatables.net/1.13.11/css/dataTables.bootstrap.css" rel="stylesheet">
     <!-- font awesome -->
 
     <!-- include summernote css-->
@@ -1226,8 +1244,8 @@ if (segment(1) == '' || segment(1) == 'quotation') {
     <!-- select2 plugin script -->
     <script type="text/javascript" src="<?= base_url('public/') ?>assets/js/select2.min.js"></script>
     <!-- dalatable scripts -->
-    <script src="<?php echo base_url('public/assets/datatables/js/jquery.dataTables.min.js'); ?>"></script>
-    <script src="<?php echo base_url('public/assets/datatables/js/dataTables.bootstrap.js'); ?>"></script>
+    <script src="https://cdn.datatables.net/1.13.11/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.11/js/dataTables.bootstrap.js"></script>
     <!-- summernote js -->
     <script src="<?= base_url('public/') ?>assets/js/summernote.js"></script>
     <!-- chart.js script -->
