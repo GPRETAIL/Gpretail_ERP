@@ -177,6 +177,25 @@ class DashboardController extends Controller
             ];
         }
 
+        // Sales Person of the Day
+        $salesPersonQuery = DB::table('pos_sale_items')
+            ->leftJoin('employees', 'pos_sale_items.sales_man_id', '=', 'employees.id')
+            ->select(
+                DB::raw('COALESCE(pos_sale_items.sales_man_name, employees.name, "Store Admin") as name'),
+                DB::raw('SUM(pos_sale_items.quantity) as saleQty'),
+                DB::raw('SUM(pos_sale_items.subtotal) as value')
+            )
+            ->groupBy('name')
+            ->orderByDesc('saleQty')
+            ->limit(10)
+            ->get();
+
+        $salesPersonRows = $salesPersonQuery->map(fn ($r) => [
+            'name'    => $r->name,
+            'saleQty' => (float) $r->saleQty,
+            'value'   => (float) $r->value,
+        ])->all();
+
         return response()->json([
             'success' => true,
             'data'    => [
@@ -214,8 +233,16 @@ class DashboardController extends Controller
                     ],
                 ],
                 'tables' => [
+                    'fastMovingSection' => [
+                        'title' => 'Fast Moving Products',
+                        'rows'  => $topSellingRows,
+                    ],
+                    'salesPersonOfTheDay' => [
+                        'title' => 'Sales Person of the Day',
+                        'rows'  => $salesPersonRows,
+                    ],
                     'topSellingItems' => [
-                        'title' => 'Top Selling Items',
+                        'title' => 'Fast Moving Products',
                         'rows'  => $topSellingRows,
                     ],
                     'topCustomers' => [
