@@ -126,12 +126,14 @@ $registerAppRoutes = function () {
     Route::post('configurations', [ConfigurationController::class, 'store']);
 
     // Attributes (divisions, fits, sleeves, colors, types, etc.)
+    Route::get('attributes/{type}/{id}', [ProductAttributeController::class, 'showByType']);
     Route::get('attributes/{type}', [ProductAttributeController::class, 'indexByType']);
     Route::post('attributes/{type}', [ProductAttributeController::class, 'storeByType']);
     Route::put('attributes/{type}/{id}', [ProductAttributeController::class, 'updateByType']);
     Route::delete('attributes/{type}/{id}', [ProductAttributeController::class, 'destroyByType']);
 
     // Sizes & Size Groups
+    Route::get('size-groups/{id}', [SizeController::class, 'groupsShow']);
     Route::get('size-groups', [SizeController::class, 'groupsIndex']);
     Route::post('size-groups', [SizeController::class, 'groupsStore']);
     Route::put('size-groups/{id}', [SizeController::class, 'groupsUpdate']);

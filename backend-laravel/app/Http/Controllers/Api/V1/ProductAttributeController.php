@@ -141,9 +141,30 @@ class ProductAttributeController extends Controller
         ], 201);
     }
 
+    public function showByType(Request $request, $type, $id)
+    {
+        $attributeValue = AttributeValue::where('id', $id)->orWhere('value', $id)->first();
+
+        if (!$attributeValue) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Attribute value not found',
+            ], 404);
+        }
+
+        $arr = $attributeValue->toArray();
+        $arr['attribute_value'] = $attributeValue->value;
+        $arr['attributeValue'] = $attributeValue->value;
+
+        return response()->json([
+            'success' => true,
+            'data'    => $arr,
+        ]);
+    }
+
     public function updateByType(Request $request, $type, $id)
     {
-        $attributeValue = AttributeValue::find($id);
+        $attributeValue = AttributeValue::where('id', $id)->orWhere('value', $id)->first();
 
         if (!$attributeValue) {
             return response()->json([

@@ -9,12 +9,7 @@ class Size extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'size_group_id',
-        'name',
-        'code',
-        'sort_order',
-    ];
+    protected $guarded = [];
 
     public function sizeGroup()
     {
