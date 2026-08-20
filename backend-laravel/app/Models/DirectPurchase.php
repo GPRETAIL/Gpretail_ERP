@@ -49,6 +49,7 @@ class DirectPurchase extends Model
         'payment_status',
         'status',
         'invoice_workflow_status',
+        'stock_applied',
         'created_by',
     ];
 
@@ -76,6 +77,7 @@ class DirectPurchase extends Model
             'discount_amount'         => 'decimal:2',
             'total_amount'            => 'decimal:2',
             'paid_amount'             => 'decimal:2',
+            'stock_applied'           => 'boolean',
         ];
     }
 
@@ -102,6 +104,11 @@ class DirectPurchase extends Model
     public function items()
     {
         return $this->hasMany(DirectPurchaseItem::class);
+    }
+
+    public function barcodes()
+    {
+        return $this->hasMany(Barcode::class, 'direct_purchase_id');
     }
 
     public function creator()

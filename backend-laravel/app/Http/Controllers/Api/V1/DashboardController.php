@@ -107,35 +107,68 @@ class DashboardController extends Controller
             ];
         }
 
-        // Settlement Details (Payment Methods: Cash, Card, UPI across Stores)
+        // Settlement Details (Payment Methods: Cash, Card, UPI, Credit, Return, Discount across Store Locations)
         $settlementColumns = [];
         $settlementColumnTotals = [];
 
         foreach ($stores as $st) {
             $colKey = 'store_' . $st->id;
+            $locationLabel = !empty($st->city) ? $st->city : $st->name;
             $settlementColumns[] = [
                 'key'   => $colKey,
-                'label' => $st->name,
+                'label' => $locationLabel,
             ];
-            $settlementColumnTotals[$colKey] = (float) (PosSale::where('store_id', $st->id)->sum('grand_total') ?? 0);
+            $settlementColumnTotals[$colKey] = 0;
         }
 
-        $methods = [
-            ['key' => 'cash', 'label' => 'Cash', 'color' => 'emerald', 'mode' => 'CASH'],
-            ['key' => 'card', 'label' => 'Card', 'color' => 'blue',    'mode' => 'CARD'],
-            ['key' => 'upi',  'label' => 'UPI',  'color' => 'violet',  'mode' => 'UPI'],
+        $methodDefinitions = [
+            ['key' => 'cash',     'label' => 'Cash',     'color' => 'emerald', 'type' => 'mode',     'mode' => 'CASH'],
+            ['key' => 'card',     'label' => 'Card',     'color' => 'blue',    'type' => 'mode',     'mode' => 'CARD'],
+            ['key' => 'upi',      'label' => 'UPI',      'color' => 'violet',  'type' => 'mode',     'mode' => 'UPI'],
+            ['key' => 'credit',   'label' => 'Credit',   'color' => 'amber',   'type' => 'credit',   'mode' => 'CREDIT'],
+            ['key' => 'return',   'label' => 'Return',   'color' => 'rose',    'type' => 'return',   'mode' => 'RETURN'],
+            ['key' => 'discount', 'label' => 'Discount', 'color' => 'slate',   'type' => 'discount', 'mode' => 'DISCOUNT'],
         ];
 
         $settlementRows = [];
-        foreach ($methods as $m) {
+        $grandSettlementTotal = 0;
+
+        foreach ($methodDefinitions as $m) {
             $rowValues = [];
             $rowTotal = 0;
+
             foreach ($stores as $st) {
                 $colKey = 'store_' . $st->id;
-                $val = (float) (PosSale::where('store_id', $st->id)->where('payment_mode', $m['mode'])->sum('grand_total') ?? 0);
+                $val = 0;
+
+                if ($m['type'] === 'mode') {
+                    $val = (float) (PosSale::where('store_id', $st->id)
+                        ->where('payment_mode', $m['mode'])
+                        ->where('is_credit', false)
+                        ->sum('grand_total') ?? 0);
+                } elseif ($m['type'] === 'credit') {
+                    $val = (float) (PosSale::where('store_id', $st->id)
+                        ->where(function ($q) {
+                            $q->where('payment_mode', 'CREDIT')
+                              ->orWhere('is_credit', true);
+                        })
+                        ->sum('grand_total') ?? 0);
+                } elseif ($m['type'] === 'return') {
+                    $returnSum = (float) (DB::table('pos_returns')
+                        ->where('store_id', $st->id)
+                        ->sum('refund_amount') ?? 0);
+                    $val = -abs($returnSum);
+                } elseif ($m['type'] === 'discount') {
+                    $discSum = (float) (PosSale::where('store_id', $st->id)
+                        ->sum('discount_amount') ?? 0);
+                    $val = -abs($discSum);
+                }
+
                 $rowValues[$colKey] = $val;
                 $rowTotal += $val;
+                $settlementColumnTotals[$colKey] += $val;
             }
+
             $settlementRows[] = [
                 'key'    => $m['key'],
                 'label'  => $m['label'],
@@ -143,6 +176,7 @@ class DashboardController extends Controller
                 'values' => $rowValues,
                 'total'  => $rowTotal,
             ];
+            $grandSettlementTotal += $rowTotal;
         }
 
         // Hourly Sales Points (10 AM to 10 PM)
@@ -263,7 +297,7 @@ class DashboardController extends Controller
                         'columns'      => $settlementColumns,
                         'rows'         => $settlementRows,
                         'columnTotals' => $settlementColumnTotals,
-                        'grandTotal'   => $totalSales,
+                        'grandTotal'   => $grandSettlementTotal > 0 ? $grandSettlementTotal : $totalSales,
                     ],
                 ],
                 // Legacy overview keys for backwards compatibility

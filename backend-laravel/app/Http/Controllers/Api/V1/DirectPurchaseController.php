@@ -31,7 +31,7 @@ class DirectPurchaseController extends Controller
             'items.product',
             'items.brand',
             'items.color'
-        ]);
+        ])->withCount('barcodes');
 
         $storeId = $request->header('X-Company-Scope-Id');
         if ($storeId && $storeId !== 'all') {
@@ -92,7 +92,7 @@ class DirectPurchaseController extends Controller
             'items.product',
             'items.brand',
             'items.color'
-        ])->find($id);
+        ])->withCount('barcodes')->find($id);
 
         if (!$purchase) {
             return response()->json([
@@ -202,19 +202,15 @@ class DirectPurchaseController extends Controller
                     'jump_details'       => $itemData['jump_details'] ?? null,
                 ]);
 
-                // A purchase adds stock - this was previously never happening
-                // at all (see the old response message this replaced: "saved
-                // without stock update"), so every direct purchase recorded
-                // to date has had zero effect on inventory.
-                $this->stockService->adjust(
-                    storeId: $purchase->store_id,
-                    productId: (int) $itemData['product_id'],
-                    variantId: null,
-                    delta: (float) $itemData['qty'],
-                    referenceType: 'DIRECT_PURCHASE',
-                    referenceId: $purchase->id,
-                    costPrice: (float) $itemData['cost'],
-                    userId: $request->user()?->id,
+                // Stock is deliberately NOT applied here - a purchase starts
+                // as pure paperwork (LR/invoice/items). It only becomes real,
+                // sellable inventory once the purchase reaches "Completed"
+                // (see update()) - goods that haven't been barcoded/verified
+                // yet shouldn't show up as available stock anywhere.
+                $this->propagatePricingToProduct(
+                    (int) $itemData['product_id'],
+                    (float) $itemData['cost'],
+                    (float) $itemData['price'],
                 );
             }
 
@@ -240,81 +236,180 @@ class DirectPurchaseController extends Controller
         }
 
         $data = $this->normalizeInput($request);
+        $raw  = $request->all();
 
-        DB::transaction(function () use ($purchase, $data) {
-            $purchase->update([
-                'company_id'              => $data['company_id'] ?: $purchase->company_id,
-                'company_name'            => $data['company_name'],
-                'supplier_id'             => $data['supplier_id'],
-                'supplier_name'           => $data['supplier_name'],
-                'purchase_type'           => $data['purchase_type'],
-                'po_no'                   => $data['po_no'],
-                'transport_id'            => $data['transport_id'],
-                'transport_name'          => $data['transport_name'],
-                'lr_no'                   => $data['lr_no'],
-                'lr_date'                 => $data['lr_date'],
-                'bundles'                 => $data['bundles'],
-                'retail_location'         => $data['retail_location'],
-                'invoice_no'              => $data['invoice_no'] ?: $purchase->invoice_no,
-                'invoice_date'            => $data['invoice_date'] ?: $purchase->invoice_date,
-                'purchase_date'           => $data['invoice_date'] ?: $purchase->purchase_date,
-                'igst'                    => $data['igst'],
-                'i_discount'              => $data['i_discount'],
-                'tax_type_id'             => $data['tax_type_id'],
-                'tax_type_name'           => $data['tax_type_name'],
-                'tax_value'               => $data['tax_value'],
-                'tax_discount'            => $data['tax_discount'],
-                'tax_lines'               => $data['tax_lines'],
-                'bill_value'              => $data['bill_value'],
-                'other_charges'           => $data['other_charges'],
-                'bill_tax'                => $data['bill_tax'],
-                'pur_discount_perc'       => $data['pur_discount_perc'],
-                'pur_discount'            => $data['pur_discount'],
-                'total'                   => $data['total'],
-                'total_qty'               => $data['total_qty'],
-                'subtotal'                => $data['bill_value'],
-                'tax_amount'              => $data['tax_amount'],
-                'discount_amount'         => $data['pur_discount'],
-                'total_amount'            => $data['total'],
-                'invoice_workflow_status' => $data['invoice_workflow_status'],
-            ]);
+        // A partial PATCH (e.g. the Warehouse Dashboard's Complete action or
+        // Barcode Generation's Save, both of which send only
+        // {invoiceWorkflowStatus: ...}) must not blank out every other field
+        // - normalizeInput() fills unsent fields with defaults (null/0/[])
+        // for store()'s benefit, which previously got written here verbatim
+        // on every update() call regardless of whether the caller sent them.
+        $hasAny = fn (array $keys) => collect($keys)->contains(fn ($k) => array_key_exists($k, $raw));
 
-            // Recreate items
-            $purchase->items()->delete();
+        $updates = [];
+        $fieldKeys = [
+            'company_name'      => ['companyName', 'company_name'],
+            'supplier_id'       => ['supplierId', 'supplier_id'],
+            'supplier_name'     => ['supplierName', 'supplier_name'],
+            'purchase_type'     => ['purchaseType', 'purchase_type'],
+            'po_no'             => ['poNo', 'po_no'],
+            'transport_id'      => ['transportId', 'transport_id'],
+            'transport_name'    => ['transportName', 'transport_name'],
+            'lr_no'             => ['lrNo', 'lr_no'],
+            'lr_date'           => ['lrDate', 'lr_date'],
+            'bundles'           => ['bundles'],
+            'retail_location'   => ['retailLocation', 'retail_location'],
+            'igst'              => ['igst'],
+            'i_discount'        => ['iDiscount', 'i_discount'],
+            'tax_type_id'       => ['taxTypeId', 'tax_type_id'],
+            'tax_type_name'     => ['taxTypeName', 'tax_type_name'],
+            'tax_value'         => ['taxValue', 'tax_value'],
+            'tax_discount'      => ['taxDiscount', 'tax_discount'],
+            'tax_lines'         => ['taxLines', 'tax_lines'],
+            'bill_value'        => ['billValue', 'bill_value'],
+            'other_charges'     => ['otherCharges', 'other_charges'],
+            'bill_tax'          => ['billTax', 'bill_tax'],
+            'pur_discount_perc' => ['purDiscountPerc', 'pur_discount_perc'],
+            'pur_discount'      => ['purDiscount', 'pur_discount'],
+            'total'             => ['total'],
+            'invoice_workflow_status' => ['invoiceWorkflowStatus', 'invoice_workflow_status'],
+        ];
+        foreach ($fieldKeys as $column => $keys) {
+            if ($hasAny($keys)) {
+                $updates[$column] = $data[$column];
+            }
+        }
+        if ($hasAny(['companyId', 'company_id'])) {
+            $updates['company_id'] = $data['company_id'] ?: $purchase->company_id;
+        }
+        if ($hasAny(['invoiceNo', 'invoice_no'])) {
+            $updates['invoice_no'] = $data['invoice_no'] ?: $purchase->invoice_no;
+        }
+        if ($hasAny(['invoiceDate', 'invoice_date'])) {
+            $updates['invoice_date']  = $data['invoice_date'] ?: $purchase->invoice_date;
+            $updates['purchase_date'] = $data['invoice_date'] ?: $purchase->purchase_date;
+        }
+        // These financial totals mirror the header inputs above (bill_value/
+        // pur_discount/total), not something computed independently - update
+        // them together whenever any of those were actually sent.
+        if ($hasAny(['billValue', 'bill_value', 'purDiscount', 'pur_discount', 'total', 'taxAmount', 'tax_amount'])) {
+            $updates['subtotal']        = $data['bill_value'];
+            $updates['tax_amount']      = $data['tax_amount'];
+            $updates['discount_amount'] = $data['pur_discount'];
+            $updates['total_amount']    = $data['total'];
+        }
 
-            foreach ($data['items'] as $index => $itemData) {
-                DirectPurchaseItem::create([
-                    'direct_purchase_id' => $purchase->id,
-                    's_no'               => $itemData['s_no'] ?: ($index + 1),
-                    'product_id'         => $itemData['product_id'],
-                    'product_name'       => $itemData['product_name'],
-                    'brand_id'           => $itemData['brand_id'],
-                    'brand_name'         => $itemData['brand_name'],
-                    'size'               => $itemData['size'],
-                    'color_id'           => $itemData['color_id'],
-                    'color_name'         => $itemData['color_name'],
-                    'design_no'          => $itemData['design_no'],
-                    'hsn_code'           => $itemData['hsn_code'],
-                    'quantity'           => $itemData['qty'],
-                    'qty'                => $itemData['qty'],
-                    'cost_price'         => $itemData['cost'],
-                    'cost'               => $itemData['cost'],
-                    'tax_amount'         => $itemData['tax_amount'] ?? 0,
-                    'discount'           => $itemData['discount'] ?? 0,
-                    'margin_perc'        => $itemData['margin_perc'] ?? 0,
-                    'price'              => $itemData['price'] ?? 0,
-                    'amount'             => $itemData['amount'] ?? 0,
-                    'total_price'        => $itemData['amount'] ?? 0,
-                    'jump_change_price'  => $itemData['jump_change_price'] ?? false,
-                    'jump_details'       => $itemData['jump_details'] ?? null,
-                ]);
+        $itemsProvided = $request->has('items');
+        if ($itemsProvided) {
+            $updates['total_qty'] = $data['total_qty'];
+        }
+
+        $willComplete = false;
+        $hadBarcodes = false;
+
+        DB::transaction(function () use ($purchase, $data, $updates, $itemsProvided, &$willComplete, &$hadBarcodes, $request) {
+            if ($itemsProvided) {
+                // Reverse whatever stock this purchase's OLD items already
+                // contributed (only real if stock_applied - i.e. this is a
+                // post-completion edit), before replacing the items.
+                if ($purchase->stock_applied) {
+                    foreach ($purchase->items as $oldItem) {
+                        $this->stockService->adjust(
+                            storeId: $purchase->store_id,
+                            productId: (int) $oldItem->product_id,
+                            variantId: null,
+                            delta: -(float) $oldItem->qty,
+                            referenceType: 'DIRECT_PURCHASE',
+                            referenceId: $purchase->id,
+                            costPrice: (float) $oldItem->cost,
+                        );
+                    }
+                }
+
+                $purchase->items()->delete();
+
+                foreach ($data['items'] as $index => $itemData) {
+                    DirectPurchaseItem::create([
+                        'direct_purchase_id' => $purchase->id,
+                        's_no'               => $itemData['s_no'] ?: ($index + 1),
+                        'product_id'         => $itemData['product_id'],
+                        'product_name'       => $itemData['product_name'],
+                        'brand_id'           => $itemData['brand_id'],
+                        'brand_name'         => $itemData['brand_name'],
+                        'size'               => $itemData['size'],
+                        'color_id'           => $itemData['color_id'],
+                        'color_name'         => $itemData['color_name'],
+                        'design_no'          => $itemData['design_no'],
+                        'hsn_code'           => $itemData['hsn_code'],
+                        'quantity'           => $itemData['qty'],
+                        'qty'                => $itemData['qty'],
+                        'cost_price'         => $itemData['cost'],
+                        'cost'               => $itemData['cost'],
+                        'tax_amount'         => $itemData['tax_amount'] ?? 0,
+                        'discount'           => $itemData['discount'] ?? 0,
+                        'margin_perc'        => $itemData['margin_perc'] ?? 0,
+                        'price'              => $itemData['price'] ?? 0,
+                        'amount'             => $itemData['amount'] ?? 0,
+                        'total_price'        => $itemData['amount'] ?? 0,
+                        'jump_change_price'  => $itemData['jump_change_price'] ?? false,
+                        'jump_details'       => $itemData['jump_details'] ?? null,
+                    ]);
+
+                    $this->propagatePricingToProduct(
+                        (int) $itemData['product_id'],
+                        (float) $itemData['cost'],
+                        (float) $itemData['price'],
+                    );
+
+                    if ($purchase->stock_applied) {
+                        $this->stockService->adjust(
+                            storeId: $purchase->store_id,
+                            productId: (int) $itemData['product_id'],
+                            variantId: null,
+                            delta: (float) $itemData['qty'],
+                            referenceType: 'DIRECT_PURCHASE',
+                            referenceId: $purchase->id,
+                            costPrice: (float) $itemData['cost'],
+                            userId: $request->user()?->id,
+                        );
+                    }
+                }
+            }
+
+            $purchase->update($updates);
+
+            // Transition into "Completed": workflow status says complete,
+            // real barcodes exist, and stock hasn't been applied yet. Covers
+            // the Dashboard's Complete action, which sends only the status
+            // field - $purchase->items (untouched above) is exactly right.
+            $hadBarcodes = $purchase->barcodes()->exists();
+            $willComplete = !$purchase->stock_applied
+                && ($updates['invoice_workflow_status'] ?? $purchase->invoice_workflow_status) === 'invoice_completed'
+                && $hadBarcodes;
+
+            if ($willComplete) {
+                // Query fresh rather than $purchase->items - if items were
+                // just replaced above, the relation would otherwise still be
+                // holding whichever set (old or none) it first lazy-loaded.
+                foreach ($purchase->items()->get() as $item) {
+                    $this->stockService->adjust(
+                        storeId: $purchase->store_id,
+                        productId: (int) $item->product_id,
+                        variantId: null,
+                        delta: (float) $item->qty,
+                        referenceType: 'DIRECT_PURCHASE',
+                        referenceId: $purchase->id,
+                        costPrice: (float) $item->cost,
+                    );
+                }
+                $purchase->update(['stock_applied' => true]);
             }
         });
 
         return response()->json([
             'success' => true,
             'message' => 'Direct purchase updated successfully',
-            'data'    => $purchase->fresh(['company', 'supplier', 'transport', 'items.product', 'items.brand', 'items.color']),
+            'data'    => $purchase->fresh(['company', 'supplier', 'transport', 'items.product', 'items.brand', 'items.color'])->loadCount('barcodes'),
         ]);
     }
 
@@ -331,16 +426,21 @@ class DirectPurchaseController extends Controller
 
         try {
             DB::transaction(function () use ($purchase) {
-                foreach ($purchase->items as $item) {
-                    $this->stockService->adjust(
-                        storeId: $purchase->store_id,
-                        productId: (int) $item->product_id,
-                        variantId: $item->variant_id ? (int) $item->variant_id : null,
-                        delta: -(float) $item->qty,
-                        referenceType: 'DIRECT_PURCHASE',
-                        referenceId: $purchase->id,
-                        costPrice: (float) $item->cost,
-                    );
+                // Only reverse stock if it was actually applied (i.e. this
+                // purchase reached "Completed") - otherwise nothing was ever
+                // added to inventory for it.
+                if ($purchase->stock_applied) {
+                    foreach ($purchase->items as $item) {
+                        $this->stockService->adjust(
+                            storeId: $purchase->store_id,
+                            productId: (int) $item->product_id,
+                            variantId: $item->variant_id ? (int) $item->variant_id : null,
+                            delta: -(float) $item->qty,
+                            referenceType: 'DIRECT_PURCHASE',
+                            referenceId: $purchase->id,
+                            costPrice: (float) $item->cost,
+                        );
+                    }
                 }
 
                 $purchase->items()->delete();
@@ -357,6 +457,36 @@ class DirectPurchaseController extends Controller
             'success' => true,
             'message' => 'Direct purchase deleted successfully',
         ]);
+    }
+
+    /**
+     * A purchase line's cost/price previously only ever landed on
+     * direct_purchase_items - a brand-new product (created via the Quick
+     * Attribute "+" modal, which only sends code/name) kept
+     * products.selling_price at its column default of 0 forever, which is
+     * exactly what the POS picker reads. cost_price always reflects the
+     * latest purchase; selling_price is only set from a purchase when it's
+     * still unset, so a deliberately-chosen merchandising price is never
+     * silently overwritten by a later purchase's price.
+     */
+    private function propagatePricingToProduct(int $productId, float $cost, float $price): void
+    {
+        $product = Product::find($productId);
+        if (!$product) {
+            return;
+        }
+
+        $updates = [];
+        if ($cost > 0) {
+            $updates['cost_price'] = $cost;
+        }
+        if ($price > 0 && (float) $product->selling_price <= 0) {
+            $updates['selling_price'] = $price;
+        }
+
+        if (!empty($updates)) {
+            $product->update($updates);
+        }
     }
 
     public function bulk(Request $request)

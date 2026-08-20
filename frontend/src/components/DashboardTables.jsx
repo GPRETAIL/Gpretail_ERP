@@ -22,10 +22,13 @@ const amountClass = (value) => (Number(value || 0) < 0 ? "text-rose-600 dark:tex
 const methodDotClass = {
   emerald: "bg-emerald-500",
   blue: "bg-blue-500",
-  violet: "bg-violet-500",
-  orange: "bg-orange-500",
-  rose: "bg-rose-500",
-  slate: "bg-slate-400",
+  violet: "bg-purple-500",
+  purple: "bg-purple-500",
+  amber: "bg-amber-500",
+  orange: "bg-amber-500",
+  rose: "bg-red-500",
+  red: "bg-red-500",
+  slate: "bg-slate-500",
 };
 
 export const DailySalesSummaryTable = ({ table, loading }) => {
@@ -98,39 +101,36 @@ const SettlementDetailsTable = ({ table, loading }) => {
   const rows = table?.rows || [];
   const columnTotals = table?.columnTotals || {};
   const grandTotal = table?.grandTotal || 0;
-  const needsHorizontalScroll = columns.length > 4;
 
   return (
-    <div className={`${tableCardClass} min-w-0`}>
+    <div className={`${tableCardClass} min-w-0 flex flex-col`}>
       <div className="mb-3">
         <h2 className="text-sm font-semibold text-slate-900 dark:text-gray-100">{table?.title || "Settlement Details"}</h2>
       </div>
       {loading ? (
         <div className="h-[320px] flex items-center justify-center text-sm text-slate-500 dark:text-gray-400">Loading table...</div>
       ) : (
-        <div
-          className={`dashboard-card-scroll max-h-[320px] overflow-y-auto ${needsHorizontalScroll ? "overflow-x-auto" : ""}`}
-        >
-          <table className={`text-sm ${needsHorizontalScroll ? "w-max min-w-full" : "min-w-full"}`}>
+        <div className="dashboard-card-scroll max-h-[320px] overflow-x-auto overflow-y-auto w-full">
+          <table className="w-full min-w-max text-sm">
             <thead>
               <tr className="sticky top-0 z-10 border-b border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-left text-xs text-slate-500 dark:text-gray-400">
-                <th className="pb-2 pr-3 font-medium">Method</th>
+                <th className="pb-2 pr-3 font-medium min-w-[130px]">Method</th>
                 {columns.map((column) => (
-                  <th key={column.key} className="pb-2 pr-3 text-right font-medium">
+                  <th key={column.key} className="pb-2 px-3 text-right font-medium min-w-[110px]">
                     {column.label}
                   </th>
                 ))}
-                <th className="pb-2 text-right font-medium">Total</th>
+                <th className="pb-2 pl-3 text-right font-medium min-w-[110px]">Total</th>
               </tr>
             </thead>
             <tbody>
               {rows.length && columns.length ? (
                 rows.map((row) => (
-                  <tr key={row.key} className="border-b border-slate-100 dark:border-gray-700">
+                  <tr key={row.key} className="border-b border-slate-100 dark:border-gray-700 hover:bg-slate-50/50 dark:hover:bg-gray-750/50">
                     <td className="py-2 pr-3 text-slate-800 dark:text-gray-200">
                       <span className="inline-flex items-center gap-2">
                         <span
-                          className={`h-2.5 w-2.5 rounded-full ${methodDotClass[row.color] || "bg-slate-400"}`}
+                          className={`h-2.5 w-2.5 rounded-full shrink-0 ${methodDotClass[row.color] || "bg-slate-400"}`}
                         />
                         {row.label}
                       </span>
@@ -138,12 +138,12 @@ const SettlementDetailsTable = ({ table, loading }) => {
                     {columns.map((column) => (
                       <td
                         key={`${row.key}-${column.key}`}
-                        className={`py-2 pr-3 text-right ${amountClass(row.values?.[column.key])}`}
+                        className={`py-2 px-3 text-right ${amountClass(row.values?.[column.key])}`}
                       >
                         {formatCurrency(row.values?.[column.key])}
                       </td>
                     ))}
-                    <td className={`py-2 text-right font-medium ${amountClass(row.total)}`}>
+                    <td className={`py-2 pl-3 text-right font-medium ${amountClass(row.total)}`}>
                       {formatCurrency(row.total)}
                     </td>
                   </tr>
@@ -158,24 +158,22 @@ const SettlementDetailsTable = ({ table, loading }) => {
             </tbody>
             {rows.length && columns.length ? (
               <tfoot>
-                {/* sticky bottom-0: same reasoning as Daily Sales Summary's total row -- this must
-                    never require scrolling past the method rows to see. */}
                 <tr className="sticky bottom-0 z-10 border-t-2 border-indigo-500 bg-white dark:bg-gray-800 text-sm font-semibold text-slate-900 dark:text-gray-100">
                   <td className="pt-3 pb-1 pr-3">
                     <span className="inline-flex items-center gap-2">
-                      <span className="h-2.5 w-2.5 rounded-full bg-indigo-500" />
+                      <span className="h-2.5 w-2.5 rounded-full bg-blue-600 shrink-0" />
                       Total
                     </span>
                   </td>
                   {columns.map((column) => (
                     <td
                       key={`total-${column.key}`}
-                      className={`pt-3 pb-1 pr-3 text-right ${amountClass(columnTotals[column.key])}`}
+                      className={`pt-3 pb-1 px-3 text-right ${amountClass(columnTotals[column.key])}`}
                     >
                       {formatCurrency(columnTotals[column.key])}
                     </td>
                   ))}
-                  <td className={`pt-3 pb-1 text-right ${amountClass(grandTotal)}`}>{formatCurrency(grandTotal)}</td>
+                  <td className={`pt-3 pb-1 pl-3 text-right ${amountClass(grandTotal)}`}>{formatCurrency(grandTotal)}</td>
                 </tr>
               </tfoot>
             ) : null}

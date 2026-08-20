@@ -219,9 +219,11 @@ const resolveAttachmentUrl = (attachment) => {
 };
 
 const hasGeneratedDirectPurchaseBarcode = (entry) => {
-  const items = Array.isArray(entry?.items) ? entry.items : [];
-  return items.length > 0
-    && items.every((item) => item?.barcode_id || item?.barcodeId || item?.barcodeRef?.barcode);
+  // barcodes_count is a real backend-computed count (barcodes.direct_purchase_id) -
+  // the previous check (item.barcode_id/barcodeId/barcodeRef.barcode) read fields
+  // that don't exist anywhere in the data model, so it was always false and the
+  // dashboard status could never progress past "Product Added".
+  return Number(entry?.barcodes_count ?? entry?.barcodesCount ?? 0) > 0;
 };
 
 const getSnapshotLabel = (...values) => {
