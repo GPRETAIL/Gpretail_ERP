@@ -341,4 +341,4 @@ $registerAppRoutes = function () {
 $registerAppRoutes();
 
 // Register on /api/v1/...
-Route::prefix('v1')->group($registerAppRoutes);
+Route::prefix('v1')->name('v1.')->group($registerAppRoutes);
