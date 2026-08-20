@@ -104,7 +104,7 @@ jobs:
           name: frontend-dist
           path: frontend-dist/
 
-      - name: Prepare Combined Deployment Package
+      - name: Prepare & Package Deployment Archive
         run: |
           mkdir -p backend-laravel/public/
           cp -r frontend-dist/* backend-laravel/public/
@@ -115,8 +115,16 @@ jobs:
           mkdir -p backend-laravel/storage/logs
           mkdir -p backend-laravel/bootstrap/cache
           chmod -R 777 backend-laravel/storage backend-laravel/bootstrap/cache
+          
+          cd backend-laravel
+          zip -r ../deploy.zip . -x "*.git*" "node_modules/*" "tests/*"
+          cd ..
+          
+          mkdir -p ftp_upload
+          cp deploy.zip ftp_upload/
+          cp backend-laravel/unzip.php ftp_upload/
 
-      - name: 🚀 Sync via FTP to Hostinger
+      - name: 🚀 Fast Upload via FTP to Hostinger
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: 157.173.216.156
@@ -124,13 +132,16 @@ jobs:
           password: ${{ secrets.HOSTINGER_FTP_PASSWORD || 'Saran@1300!' }}
           port: 21
           server-dir: ./
-          local-dir: ./backend-laravel/
+          local-dir: ./ftp_upload/
           dangerous-clean-slate: false
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/node_modules/**
-            **/tests/**
+
+      - name: ⚡ Trigger Remote Unzip & Run Migrations
+        run: |
+          echo "Triggering instant remote extraction on Hostinger..."
+          curl -s "https://dev.gpsoftware.in/unzip.php?token=NextErpDeploySecret2026"
+          sleep 2
+          echo "Running database migrations..."
+          curl -s "https://dev.gpsoftware.in/run-migrations"
 
       - name: Deploy via SSH to Hostinger
         if: env.HOSTINGER_SSH_HOST != ''

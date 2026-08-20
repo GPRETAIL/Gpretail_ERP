@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\V1\SizeController;
 use App\Http\Controllers\Api\V1\HrConfigurationController;
 use App\Http\Controllers\Api\V1\EmployeeController;
 use App\Http\Controllers\Api\V1\CustomerController;
+use App\Http\Controllers\Api\V1\LoyaltyController;
 use App\Http\Controllers\Api\V1\PosSaleController;
 use App\Http\Controllers\Api\V1\PosReturnController;
 use App\Http\Controllers\Api\V1\SalesApprovalController;
@@ -210,6 +211,13 @@ $registerAppRoutes = function () {
 
     // Customer & Supplier Dashboard Summaries
     Route::get('customers/dashboard-summary', [CustomerController::class, 'dashboardSummary']);
+    Route::post('customers/bulk', [CustomerController::class, 'bulk']);
+    Route::get('customers/{id}/profile', [CustomerController::class, 'profile']);
+
+    // Loyalty (CRM)
+    Route::get('loyalty/balances', [LoyaltyController::class, 'balances']);
+    Route::get('loyalty/transactions', [LoyaltyController::class, 'transactions']);
+
     Route::get('supplier-payments/dashboard-summary', [SupplierPaymentController::class, 'dashboardSummary']);
     Route::get('supplier-payments/pending', [SupplierPaymentController::class, 'pending']);
     Route::get('supplier-payments/pending/{type}/{id}/details', [SupplierPaymentController::class, 'pendingDetails']);
@@ -218,6 +226,7 @@ $registerAppRoutes = function () {
     Route::post('supplier-payments', [SupplierPaymentController::class, 'store']);
 
     // Customer Orders
+    Route::post('customer-orders/bulk', [CustomerOrderController::class, 'bulk']);
     Route::get('customer-orders/next-order-no', [CustomerOrderController::class, 'nextOrderNo']);
     Route::post('customer-orders/customer-quick-create', [CustomerOrderController::class, 'customerQuickCreate']);
     Route::get('customer-orders/customer-search', [CustomerOrderController::class, 'customerSearch']);
