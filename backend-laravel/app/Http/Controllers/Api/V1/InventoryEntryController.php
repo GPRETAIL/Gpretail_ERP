@@ -7,14 +7,17 @@ use App\Http\Controllers\Controller;
 use App\Models\InventoryEntry;
 use App\Models\InventoryEntryItem;
 use App\Services\StockService;
+use App\Services\VariantResolverService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class InventoryEntryController extends Controller
 {
-    public function __construct(private readonly StockService $stockService)
-    {
+    public function __construct(
+        private readonly StockService $stockService,
+        private readonly VariantResolverService $variantResolver,
+    ) {
     }
 
     public function index(Request $request)
@@ -98,11 +101,12 @@ class InventoryEntryController extends Controller
                 $qty = (float) ($item['quantity'] ?? 1);
                 $price = (float) ($item['unit_price'] ?? $item['price'] ?? 0);
                 $total = $qty * $price;
+                $variantId = $this->variantResolver->resolveFromItemArray($item, (int) $item['product_id']);
 
                 InventoryEntryItem::create([
                     'inventory_entry_id' => $inventoryEntry->id,
                     'product_id'         => $item['product_id'],
-                    'variant_id'         => $item['variant_id'] ?? null,
+                    'variant_id'         => $variantId,
                     'quantity'           => $qty,
                     'unit_price'         => $price,
                     'total_price'        => $total,
@@ -111,7 +115,7 @@ class InventoryEntryController extends Controller
                 $this->stockService->adjust(
                     storeId: (int) $storeId,
                     productId: (int) $item['product_id'],
-                    variantId: isset($item['variant_id']) ? (int) $item['variant_id'] : null,
+                    variantId: $variantId,
                     delta: $qty,
                     referenceType: 'INVENTORY_ENTRY',
                     referenceId: $inventoryEntry->id,

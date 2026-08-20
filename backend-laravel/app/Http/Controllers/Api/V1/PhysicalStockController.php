@@ -6,14 +6,17 @@ use App\Http\Controllers\Controller;
 use App\Models\PhysicalStock;
 use App\Models\PhysicalStockItem;
 use App\Services\StockService;
+use App\Services\VariantResolverService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class PhysicalStockController extends Controller
 {
-    public function __construct(private readonly StockService $stockService)
-    {
+    public function __construct(
+        private readonly StockService $stockService,
+        private readonly VariantResolverService $variantResolver,
+    ) {
     }
 
     public function index(Request $request)
@@ -80,11 +83,12 @@ class PhysicalStockController extends Controller
                 $sysQty = (float) ($item['system_qty'] ?? 0);
                 $countedQty = (float) ($item['counted_qty'] ?? 0);
                 $diff = $countedQty - $sysQty;
+                $variantId = $this->variantResolver->resolveFromItemArray($item, (int) $item['product_id']);
 
                 PhysicalStockItem::create([
                     'physical_stock_id' => $physicalStock->id,
                     'product_id'        => $item['product_id'],
-                    'variant_id'        => $item['variant_id'] ?? null,
+                    'variant_id'        => $variantId,
                     'system_qty'        => $sysQty,
                     'counted_qty'       => $countedQty,
                     'difference_qty'    => $diff,
@@ -97,7 +101,7 @@ class PhysicalStockController extends Controller
                     $this->stockService->setAbsolute(
                         storeId: (int) $storeId,
                         productId: (int) $item['product_id'],
-                        variantId: isset($item['variant_id']) ? (int) $item['variant_id'] : null,
+                        variantId: $variantId,
                         targetQuantity: $countedQty,
                         referenceType: 'PHYSICAL_STOCK',
                         referenceId: $physicalStock->id,

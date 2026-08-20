@@ -9,6 +9,7 @@ use App\Models\DirectPurchaseItem;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Store;
+use App\Services\VariantResolverService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +17,10 @@ use Illuminate\Support\Facades\Validator;
 
 class BarcodeController extends Controller
 {
+    public function __construct(private readonly VariantResolverService $variantResolver)
+    {
+    }
+
     /* ─────────────────────────────────────────────────────────────
      * GET /api/barcodes
      * Supports ?direct_purchase_id=X  or  ?transport_entry_id=X
@@ -114,8 +119,10 @@ class BarcodeController extends Controller
         $created = [];
         $skipped = [];
 
+        $productCache = [];
+
         DB::transaction(function () use (
-            $request, $directPurchaseId, $inventoryEntryId, $codeType, $prefix, &$created, &$skipped
+            $request, $directPurchaseId, $inventoryEntryId, $codeType, $prefix, &$created, &$skipped, &$productCache
         ) {
 
             foreach ($request->input('items', []) as $item) {
@@ -133,6 +140,9 @@ class BarcodeController extends Controller
                 $productName          = $item['productName'] ?? null;
                 $size                 = $item['size'] ?? null;
                 $designNo             = $item['designNo'] ?? null;
+                $colorId              = $item['colorId'] ?? $item['color_id'] ?? null;
+                $colorName            = $item['colorName'] ?? $item['color_name'] ?? null;
+                $brandId              = $item['brandId'] ?? $item['brand_id'] ?? null;
 
                 // Check if barcodes already exist for this source item
                 $existingQuery = Barcode::query();
@@ -158,6 +168,40 @@ class BarcodeController extends Controller
                     continue;
                 }
 
+                $variantId = null;
+                $sellingMode = null;
+                if ($productId) {
+                    if (!array_key_exists($productId, $productCache)) {
+                        $productCache[$productId] = Product::find($productId);
+                    }
+                    $product = $productCache[$productId];
+                    $sellingMode = $product ? strtoupper((string) $product->selling_mode) : null;
+
+                    $variant = $this->variantResolver->resolve(
+                        productId: (int) $productId,
+                        brandId: $brandId ? (int) $brandId : null,
+                        sizeName: $size,
+                        colorId: $colorId ? (int) $colorId : null,
+                        designNo: $designNo,
+                    );
+                    $variantId = $variant->id;
+                }
+
+                // PACK/CUT: the barcode is a shelf label for the variant, not
+                // the unit - reuse whatever's already active for it instead
+                // of reissuing a new label (and a new stock_batches row still
+                // gets created by StockService for sell-through tracking,
+                // independent of whether a new barcode was printed here).
+                if ($variantId && in_array($sellingMode, ['PACK', 'CUT'], true)) {
+                    $reusable = Barcode::where('variant_id', $variantId)->where('is_active', true)->first();
+                    if ($reusable) {
+                        $reusable->sourceItemId = $sourceItemId;
+                        $skipped[] = $reusable;
+                        continue;
+                    }
+                    $qty = 1;
+                }
+
                 // Generate $qty unique barcode strings
                 $newRows = [];
                 for ($i = 0; $i < $qty; $i++) {
@@ -166,6 +210,7 @@ class BarcodeController extends Controller
 
                     $row = Barcode::create([
                         'product_id'              => $productId,
+                        'variant_id'              => $variantId,
                         'direct_purchase_id'      => $directPurchaseId,
                         'direct_purchase_item_id' => $dpItemId,
                         'inventory_entry_id'      => $invEntryId,
@@ -181,6 +226,7 @@ class BarcodeController extends Controller
                         'product_name'            => $productName,
                         'size'                    => $size,
                         'design_no'               => $designNo,
+                        'color_name'              => $colorName,
                         'is_active'               => true,
                     ]);
 

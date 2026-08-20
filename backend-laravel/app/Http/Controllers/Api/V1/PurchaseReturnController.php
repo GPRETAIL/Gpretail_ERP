@@ -10,14 +10,17 @@ use App\Models\PurchaseReturnItem;
 use App\Models\Stock;
 use App\Models\Supplier;
 use App\Services\StockService;
+use App\Services\VariantResolverService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class PurchaseReturnController extends Controller
 {
-    public function __construct(private readonly StockService $stockService)
-    {
+    public function __construct(
+        private readonly StockService $stockService,
+        private readonly VariantResolverService $variantResolver,
+    ) {
     }
 
     public function index(Request $request)
@@ -106,11 +109,12 @@ class PurchaseReturnController extends Controller
                     $qty = (float) ($item['quantity'] ?? 1);
                     $rate = (float) ($item['rate'] ?? $item['cost_price'] ?? 0);
                     $total = $qty * $rate;
+                    $variantId = $this->variantResolver->resolveFromItemArray($item, (int) $item['product_id']);
 
                     PurchaseReturnItem::create([
                         'purchase_return_id' => $purchaseReturn->id,
                         'product_id'         => $item['product_id'],
-                        'variant_id'         => $item['variant_id'] ?? null,
+                        'variant_id'         => $variantId,
                         'quantity'           => $qty,
                         'rate'               => $rate,
                         'tax_amount'         => $item['tax_amount'] ?? 0,
@@ -126,7 +130,7 @@ class PurchaseReturnController extends Controller
                     $this->stockService->adjust(
                         storeId: (int) $storeId,
                         productId: (int) $item['product_id'],
-                        variantId: isset($item['variant_id']) ? (int) $item['variant_id'] : null,
+                        variantId: $variantId,
                         delta: -$qty,
                         referenceType: 'PURCHASE_RETURN',
                         referenceId: $purchaseReturn->id,

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\Barcode;
 use App\Models\PosReturn;
 use App\Models\PosReturnItem;
 use App\Models\PosSale;
@@ -127,10 +128,13 @@ class PosReturnController extends Controller
                 $taxRate = (float) ($item['tax'] ?? 0);
                 $subtotal = $qty * $price;
 
+                $barcodeId = isset($item['barcodeId']) ? (int) $item['barcodeId'] : null;
+
                 PosReturnItem::create([
                     'pos_return_id' => $posReturn->id,
                     'product_id'    => $item['productId'],
                     'variant_id'    => $item['variantId'] ?? null,
+                    'barcode_id'    => $barcodeId,
                     'quantity'      => $qty,
                     'refund_price'  => $price,
                     'subtotal'      => $subtotal,
@@ -152,6 +156,13 @@ class PosReturnController extends Controller
                     costPrice: $price,
                     userId: $request->user()?->id,
                 );
+
+                // The unit's physical label is back on the shelf and
+                // sellable again - reactivate it (no-op for PACK/CUT, whose
+                // shared barcode was never deactivated on sale).
+                if ($barcodeId) {
+                    Barcode::where('id', $barcodeId)->update(['is_active' => true]);
+                }
             }
 
             return $posReturn;
@@ -226,6 +237,8 @@ class PosReturnController extends Controller
 
             return [
                 'productId'   => $item->product_id,
+                'variantId'   => $item->variant_id,
+                'barcodeId'   => $item->barcode_id,
                 'barcode'     => $item->product?->barcode,
                 'productName' => $item->product?->name,
                 'qty'         => $remaining,
@@ -256,6 +269,36 @@ class PosReturnController extends Controller
     public function sourceByBarcode(Request $request)
     {
         $barcode = $request->input('barcode');
+
+        // Not filtered by is_active - a standalone return is precisely the
+        // case where a PIECE unit's barcode was deactivated when it sold;
+        // scanning it here to return it is expected to find it regardless.
+        $barcodeRow = Barcode::where('barcode', $barcode)->with(['product.tax', 'variant'])->first();
+
+        if ($barcodeRow && $barcodeRow->product) {
+            $product = $barcodeRow->product;
+
+            return response()->json([
+                'success' => true,
+                'data'    => [
+                    'standalone' => true,
+                    'items'      => [[
+                        'productId'   => $product->id,
+                        'variantId'   => $barcodeRow->variant_id,
+                        'barcodeId'   => $barcodeRow->id,
+                        'barcode'     => $barcodeRow->barcode,
+                        'productName' => $product->name,
+                        'qty'         => 1,
+                        'maxQty'      => null,
+                        'price'       => (float) $barcodeRow->selling_price,
+                        'tax'         => $product->tax ? (float) $product->tax->rate : 0,
+                        'cost'        => (float) $product->cost_price,
+                        'discount'    => 0,
+                    ]],
+                ],
+            ]);
+        }
+
         $product = Product::with('tax')
             ->where('barcode', $barcode)
             ->orWhere('code', $barcode)
@@ -275,6 +318,8 @@ class PosReturnController extends Controller
                 'standalone' => true,
                 'items'      => [[
                     'productId'   => $product->id,
+                    'variantId'   => null,
+                    'barcodeId'   => null,
                     'barcode'     => $product->barcode,
                     'productName' => $product->name,
                     'qty'         => 1,

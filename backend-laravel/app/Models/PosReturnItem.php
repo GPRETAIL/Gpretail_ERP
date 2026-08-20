@@ -13,6 +13,7 @@ class PosReturnItem extends Model
         'pos_return_id',
         'product_id',
         'variant_id',
+        'barcode_id',
         'quantity',
         'refund_price',
         'subtotal',
@@ -48,5 +49,10 @@ class PosReturnItem extends Model
     public function variant()
     {
         return $this->belongsTo(ProductVariant::class, 'variant_id');
+    }
+
+    public function barcode()
+    {
+        return $this->belongsTo(Barcode::class, 'barcode_id');
     }
 }

@@ -7,14 +7,17 @@ use App\Http\Controllers\Controller;
 use App\Models\StockOutward;
 use App\Models\StockOutwardItem;
 use App\Services\StockService;
+use App\Services\VariantResolverService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class StockOutwardController extends Controller
 {
-    public function __construct(private readonly StockService $stockService)
-    {
+    public function __construct(
+        private readonly StockService $stockService,
+        private readonly VariantResolverService $variantResolver,
+    ) {
     }
 
     public function index(Request $request)
@@ -94,12 +97,12 @@ class StockOutwardController extends Controller
                 foreach ($request->input('items', []) as $item) {
                     $qty = (float) ($item['quantity'] ?? 1);
                     $price = (float) ($item['unit_price'] ?? 0);
-                    $variantId = isset($item['variant_id']) ? (int) $item['variant_id'] : null;
+                    $variantId = $this->variantResolver->resolveFromItemArray($item, (int) $item['product_id']);
 
                     StockOutwardItem::create([
                         'stock_outward_id' => $stockOutward->id,
                         'product_id'       => $item['product_id'],
-                        'variant_id'       => $item['variant_id'] ?? null,
+                        'variant_id'       => $variantId,
                         'quantity'         => $qty,
                         'unit_price'       => $price,
                     ]);

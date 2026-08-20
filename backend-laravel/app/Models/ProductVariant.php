@@ -14,11 +14,12 @@ class ProductVariant extends Model
         'sku',
         'barcode',
         'size_id',
-        'color',
+        'brand_id',
+        'color_id',
+        'design_no',
         'cost_price',
         'selling_price',
         'mrp',
-        'is_active',
     ];
 
     protected function casts(): array
@@ -27,12 +28,31 @@ class ProductVariant extends Model
             'cost_price' => 'decimal:2',
             'selling_price' => 'decimal:2',
             'mrp' => 'decimal:2',
-            'is_active' => 'boolean',
         ];
     }
 
     public function product()
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function size()
+    {
+        return $this->belongsTo(Size::class);
+    }
+
+    public function barcodes()
+    {
+        return $this->hasMany(Barcode::class, 'variant_id');
+    }
+
+    public function stock()
+    {
+        return $this->hasMany(Stock::class, 'variant_id');
+    }
+
+    public function batches()
+    {
+        return $this->hasMany(StockBatch::class, 'variant_id');
     }
 }

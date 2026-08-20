@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Exceptions\InsufficientStockException;
 use App\Exceptions\PosReturnCreditUnavailableException;
 use App\Http\Controllers\Controller;
+use App\Models\Barcode;
 use App\Models\PosSale;
 use App\Models\PosSaleItem;
 use App\Models\PosPayment;
@@ -49,6 +50,50 @@ class PosSaleController extends Controller
             return response()->json(['success' => true, 'data' => []]);
         }
 
+        $storeId = $request->header('X-Company-Scope-Id', 1);
+
+        // Per-unit/per-variant barcode first - this is what Direct Purchase
+        // + Barcode Generation actually produce (PIECE: one row per unit,
+        // PACK/CUT: one shared row per variant). Falls back to the older
+        // single barcode-per-product match below for anything that never
+        // went through that flow (e.g. bulk-imported products).
+        $barcodeRow = Barcode::where('barcode', $barcode)
+            ->where('is_active', true)
+            ->with(['product.category', 'product.brand', 'product.tax', 'variant'])
+            ->first();
+
+        if ($barcodeRow && $barcodeRow->product) {
+            $product = $barcodeRow->product;
+            $sellingMode = strtoupper((string) ($product->selling_mode ?: 'PIECE'));
+            $variantId = $barcodeRow->variant_id;
+
+            $stockQty = $variantId
+                ? (float) (Stock::where('store_id', $storeId)->where('variant_id', $variantId)->value('quantity') ?? 0)
+                : (float) (Stock::where('store_id', $storeId)->where('product_id', $product->id)->whereNull('variant_id')->value('quantity') ?? 0);
+
+            return response()->json([
+                'success' => true,
+                'data'    => [
+                    'id'                     => $product->id,
+                    'name'                   => $product->name,
+                    'code'                   => $product->code,
+                    'barcode'                => $barcodeRow->barcode,
+                    'barcodeId'              => $barcodeRow->id,
+                    'variantId'              => $variantId,
+                    'sellingMode'            => $sellingMode,
+                    'requiresQuantityPrompt' => in_array($sellingMode, ['PACK', 'CUT'], true),
+                    'sku'                    => $product->sku,
+                    'selling_price'          => (float) $barcodeRow->selling_price,
+                    'mrp'                    => (float) $barcodeRow->mrp,
+                    'discount_perc'          => (float) $barcodeRow->discount_perc,
+                    'final_price'            => (float) $barcodeRow->final_price,
+                    'tax_rate'               => $product->tax ? (float) $product->tax->rate : 0.00,
+                    'stock_qty'              => $stockQty,
+                    'product'                => $product,
+                ],
+            ]);
+        }
+
         $product = Product::with(['category', 'brand', 'tax', 'stocks'])
             ->where('barcode', $barcode)
             ->orWhere('code', $barcode)
@@ -62,16 +107,20 @@ class PosSaleController extends Controller
         return response()->json([
             'success' => true,
             'data'    => [
-                'id'            => $product->id,
-                'name'          => $product->name,
-                'code'          => $product->code,
-                'barcode'       => $product->barcode,
-                'sku'           => $product->sku,
-                'selling_price' => (float) $product->selling_price,
-                'mrp'           => (float) $product->mrp,
-                'tax_rate'      => $product->tax ? (float) $product->tax->rate : 0.00,
-                'stock_qty'     => (float) ($product->stocks->sum('quantity') ?? 0),
-                'product'       => $product,
+                'id'                     => $product->id,
+                'name'                   => $product->name,
+                'code'                   => $product->code,
+                'barcode'                => $product->barcode,
+                'barcodeId'              => null,
+                'variantId'              => null,
+                'sellingMode'            => strtoupper((string) ($product->selling_mode ?: 'PIECE')),
+                'requiresQuantityPrompt' => false,
+                'sku'                    => $product->sku,
+                'selling_price'          => (float) $product->selling_price,
+                'mrp'                    => (float) $product->mrp,
+                'tax_rate'               => $product->tax ? (float) $product->tax->rate : 0.00,
+                'stock_qty'              => (float) ($product->stocks->sum('quantity') ?? 0),
+                'product'                => $product,
             ],
         ]);
     }
@@ -95,9 +144,14 @@ class PosSaleController extends Controller
             ->get();
 
         $data = $stocks->map(function ($s) {
+            $sellingMode = strtoupper((string) ($s->product?->selling_mode ?: 'PIECE'));
+
             return [
-                'id'          => $s->product_id,
-                'productId'   => $s->product_id,
+                'id'                     => $s->product_id,
+                'productId'              => $s->product_id,
+                'variantId'              => $s->variant_id,
+                'sellingMode'            => $sellingMode,
+                'requiresQuantityPrompt' => in_array($sellingMode, ['PACK', 'CUT'], true),
                 'barcode'     => $s->product?->barcode,
                 'code'        => $s->product?->code,
                 'productName' => $s->product?->name,
@@ -303,11 +357,13 @@ class PosSaleController extends Controller
                     $taxRate = (float) ($item['tax'] ?? 0);
                     $lineSub = ($qty * $price) - $disc;
                     $lineTax = ($lineSub * $taxRate) / 100;
+                    $barcodeId = isset($item['barcodeId']) ? (int) $item['barcodeId'] : null;
 
                     PosSaleItem::create([
                         'pos_sale_id'    => $sale->id,
                         'product_id'     => $item['productId'],
                         'variant_id'     => $item['variantId'] ?? null,
+                        'barcode_id'     => $barcodeId,
                         'quantity'       => $qty,
                         'unit_mrp'       => $item['mrp'] ?? $price,
                         'selling_price'  => $price,
@@ -335,6 +391,19 @@ class PosSaleController extends Controller
                         costPrice: $price,
                         userId: $user->id ?? null,
                     );
+
+                    // PIECE barcodes are one physical unit each - selling it
+                    // takes that specific label out of circulation so it
+                    // can't be scanned again. PACK/CUT's shared barcode
+                    // stays active (more stock of the same variant may still
+                    // be on the shelf under the same label).
+                    if ($barcodeId) {
+                        $scannedBarcode = Barcode::with('product')->find($barcodeId);
+                        $mode = strtoupper((string) ($scannedBarcode?->product?->selling_mode ?: 'PIECE'));
+                        if ($mode === 'PIECE') {
+                            $scannedBarcode->update(['is_active' => false]);
+                        }
+                    }
                 }
 
                 foreach ([
@@ -451,6 +520,13 @@ class PosSaleController extends Controller
                     referenceId: $sale->id,
                     costPrice: (float) $item->selling_price,
                 );
+
+                // Undo whatever the sale did to the scanned barcode - a
+                // no-op for PACK/CUT (their shared barcode was never
+                // deactivated), reactivates the specific unit for PIECE.
+                if ($item->barcode_id) {
+                    Barcode::where('id', $item->barcode_id)->update(['is_active' => true]);
+                }
             }
 
             if ($sale->applied_pos_return_id) {
@@ -525,35 +601,308 @@ class PosSaleController extends Controller
 
     public function summaryReport(Request $request)
     {
-        $storeId = $request->header('X-Company-Scope-Id', 1);
-        $today = now()->toDateString();
+        $storeId = $request->input('company_id') ?: $request->header('X-Company-Scope-Id', 1);
+        $mode = $request->input('mode');
 
-        $totalSales = PosSale::where('store_id', $storeId)->whereDate('sale_date', $today)->sum('grand_total');
-        $totalBills = PosSale::where('store_id', $storeId)->whereDate('sale_date', $today)->count();
+        // Fallback for simple dashboard summary if mode is omitted
+        if (!$mode) {
+            $today = now()->toDateString();
+            $totalSales = PosSale::where('store_id', $storeId)->whereDate('sale_date', $today)->sum('grand_total');
+            $totalBills = PosSale::where('store_id', $storeId)->whereDate('sale_date', $today)->count();
 
-        // Real per-tender breakdown from pos_payments - a split sale (part
-        // cash, part card) now has a row per tender, so summing by the
-        // sale's single payment_mode/paid_amount would double count.
-        $tenderTotals = PosPayment::whereHas('posSale', function ($q) use ($storeId, $today) {
-                $q->where('store_id', $storeId)->whereDate('sale_date', $today);
-            })
-            ->selectRaw('payment_mode, SUM(amount) as total')
-            ->groupBy('payment_mode')
-            ->pluck('total', 'payment_mode');
+            $tenderTotals = PosPayment::whereHas('posSale', function ($q) use ($storeId, $today) {
+                    $q->where('store_id', $storeId)->whereDate('sale_date', $today);
+                })
+                ->selectRaw('payment_mode, SUM(amount) as total')
+                ->groupBy('payment_mode')
+                ->pluck('total', 'payment_mode');
 
-        $cashSales = (float) ($tenderTotals['CASH'] ?? 0);
-        $cardSales = (float) ($tenderTotals['CARD'] ?? 0);
-        $upiSales = (float) ($tenderTotals['UPI'] ?? 0);
+            $cashSales = (float) ($tenderTotals['CASH'] ?? 0);
+            $cardSales = (float) ($tenderTotals['CARD'] ?? 0);
+            $upiSales = (float) ($tenderTotals['UPI'] ?? 0);
+
+            return response()->json([
+                'success' => true,
+                'data'    => [
+                    'date'        => $today,
+                    'total_sales' => (float) $totalSales,
+                    'total_bills' => (int) $totalBills,
+                    'cash_sales'  => (float) $cashSales,
+                    'card_sales'  => (float) $cardSales,
+                    'upi_sales'   => (float) $upiSales,
+                ],
+            ]);
+        }
+
+        // Full Multi-Mode Aggregate Summary
+        $from = $request->input('from') ?: now()->subDays(30)->toDateString();
+        $to = $request->input('to') ?: now()->toDateString();
+
+        $query = PosSale::with(['customer', 'store', 'items.product', 'payments'])
+            ->whereDate('sale_date', '>=', $from)
+            ->whereDate('sale_date', '<=', $to);
+
+        if ($request->filled('company_id')) {
+            $query->where('store_id', $request->input('company_id'));
+        }
+
+        $sales = $query->orderBy('sale_date')->orderBy('id')->get();
+
+        $rows = [];
+
+        switch ($mode) {
+            case 'location_summary':
+                $grouped = $sales->groupBy(fn($s) => $s->store?->name ?: ('Location ' . ($s->store_id ?: 1)));
+                $sNo = 1;
+                $totQty = 0; $totDisc = 0; $totTaxable = 0; $totTax = 0; $totRound = 0; $totNet = 0;
+                foreach ($grouped as $locName => $groupSales) {
+                    $qty = $groupSales->sum(fn($s) => $s->items->sum('quantity'));
+                    $disc = $groupSales->sum('total_discount');
+                    $tax = $groupSales->sum('total_tax');
+                    $round = $groupSales->sum('round_off');
+                    $net = $groupSales->sum('grand_total');
+                    $taxable = max(0, $net - $tax);
+
+                    $totQty += $qty; $totDisc += $disc; $totTaxable += $taxable; $totTax += $tax; $totRound += $round; $totNet += $net;
+
+                    $rows[] = [
+                        'id'             => 'loc_' . $sNo,
+                        's_no'           => $sNo++,
+                        'location_name'  => $locName,
+                        'sale_qty'       => (float) $qty,
+                        'discount'       => (float) $disc,
+                        'addnl_discount' => 0.0,
+                        'taxable_amount' => (float) round($taxable, 2),
+                        'sale_tax'       => (float) round($tax, 2),
+                        'rounding'       => (float) round($round, 2),
+                        'net_amount'     => (float) round($net, 2),
+                    ];
+                }
+                if (count($rows) > 0) {
+                    $rows[] = [
+                        'id'             => '__total__',
+                        's_no'           => 'Total',
+                        'location_name'  => 'Total',
+                        'sale_qty'       => (float) $totQty,
+                        'discount'       => (float) round($totDisc, 2),
+                        'addnl_discount' => 0.0,
+                        'taxable_amount' => (float) round($totTaxable, 2),
+                        'sale_tax'       => (float) round($totTax, 2),
+                        'rounding'       => (float) round($totRound, 2),
+                        'net_amount'     => (float) round($totNet, 2),
+                    ];
+                }
+                break;
+
+            case 'company_summary':
+                $grouped = $sales->groupBy(fn($s) => $s->store?->name ?: 'Main Store');
+                $sNo = 1;
+                $totQty = 0; $totDisc = 0; $totTaxable = 0; $totTax = 0; $totRound = 0; $totNet = 0;
+                foreach ($grouped as $compName => $groupSales) {
+                    $qty = $groupSales->sum(fn($s) => $s->items->sum('quantity'));
+                    $disc = $groupSales->sum('total_discount');
+                    $tax = $groupSales->sum('total_tax');
+                    $round = $groupSales->sum('round_off');
+                    $net = $groupSales->sum('grand_total');
+                    $taxable = max(0, $net - $tax);
+
+                    $totQty += $qty; $totDisc += $disc; $totTaxable += $taxable; $totTax += $tax; $totRound += $round; $totNet += $net;
+
+                    $rows[] = [
+                        'id'             => 'comp_' . $sNo,
+                        's_no'           => $sNo++,
+                        'company'        => $compName,
+                        'sale_qty'       => (float) $qty,
+                        'discount'       => (float) $disc,
+                        'addnl_discount' => 0.0,
+                        'taxable_amount' => (float) round($taxable, 2),
+                        'sale_tax'       => (float) round($tax, 2),
+                        'rounding'       => (float) round($round, 2),
+                        'net_amount'     => (float) round($net, 2),
+                    ];
+                }
+                if (count($rows) > 0) {
+                    $rows[] = [
+                        'id'             => '__total__',
+                        's_no'           => 'Total',
+                        'company'        => 'Total',
+                        'sale_qty'       => (float) $totQty,
+                        'discount'       => (float) round($totDisc, 2),
+                        'addnl_discount' => 0.0,
+                        'taxable_amount' => (float) round($totTaxable, 2),
+                        'sale_tax'       => (float) round($totTax, 2),
+                        'rounding'       => (float) round($totRound, 2),
+                        'net_amount'     => (float) round($totNet, 2),
+                    ];
+                }
+                break;
+
+            case 'date_summary':
+                $grouped = $sales->groupBy(fn($s) => substr($s->sale_date ?? $s->created_at, 0, 10));
+                $sNo = 1;
+                $totQty = 0; $totDisc = 0; $totTaxable = 0; $totTax = 0; $totRound = 0; $totNet = 0;
+                foreach ($grouped as $dateStr => $groupSales) {
+                    $qty = $groupSales->sum(fn($s) => $s->items->sum('quantity'));
+                    $disc = $groupSales->sum('total_discount');
+                    $tax = $groupSales->sum('total_tax');
+                    $round = $groupSales->sum('round_off');
+                    $net = $groupSales->sum('grand_total');
+                    $taxable = max(0, $net - $tax);
+
+                    $totQty += $qty; $totDisc += $disc; $totTaxable += $taxable; $totTax += $tax; $totRound += $round; $totNet += $net;
+
+                    $rows[] = [
+                        'id'             => 'date_' . $sNo,
+                        's_no'           => $sNo++,
+                        'sale_date'      => $dateStr,
+                        'sale_qty'       => (float) $qty,
+                        'discount'       => (float) $disc,
+                        'addnl_discount' => 0.0,
+                        'taxable_amount' => (float) round($taxable, 2),
+                        'sale_tax'       => (float) round($tax, 2),
+                        'rounding'       => (float) round($round, 2),
+                        'net_amount'     => (float) round($net, 2),
+                    ];
+                }
+                if (count($rows) > 0) {
+                    $rows[] = [
+                        'id'             => '__total__',
+                        's_no'           => 'Total',
+                        'sale_date'      => 'Total',
+                        'sale_qty'       => (float) $totQty,
+                        'discount'       => (float) round($totDisc, 2),
+                        'addnl_discount' => 0.0,
+                        'taxable_amount' => (float) round($totTaxable, 2),
+                        'sale_tax'       => (float) round($totTax, 2),
+                        'rounding'       => (float) round($totRound, 2),
+                        'net_amount'     => (float) round($totNet, 2),
+                    ];
+                }
+                break;
+
+            case 'bill_summary':
+            case 'gst_bill_summary':
+            case 'bill_tax_summary':
+                $sNo = 1;
+                $totQty = 0; $totDisc = 0; $totTaxable = 0; $totTax = 0; $totRound = 0; $totNet = 0;
+                foreach ($sales as $sale) {
+                    $qty = $sale->items->sum('quantity');
+                    $disc = (float) $sale->total_discount;
+                    $tax = (float) $sale->total_tax;
+                    $round = (float) $sale->round_off;
+                    $net = (float) $sale->grand_total;
+                    $taxable = max(0, $net - $tax);
+                    $gstId = $sale->customer?->gst_number ?: $sale->customer?->gstin ?: null;
+
+                    if ($mode === 'gst_bill_summary' && !$gstId) {
+                        continue;
+                    }
+
+                    $pmt = $sale->payments->pluck('payment_mode')->unique()->implode(', ') ?: ($sale->payment_mode ?: 'CASH');
+
+                    $totQty += $qty; $totDisc += $disc; $totTaxable += $taxable; $totTax += $tax; $totRound += $round; $totNet += $net;
+
+                    $rows[] = [
+                        'id'             => 'bill_' . $sale->id,
+                        's_no'           => $sNo++,
+                        'bill_no'        => $sale->invoice_no ?: $sale->id,
+                        'sale_at'        => $sale->sale_date ?? $sale->created_at,
+                        'customer_name'  => $sale->customer?->name ?: ($sale->customer_name ?: 'Walk-in Customer'),
+                        'gst_id'         => $gstId,
+                        'sale_qty'       => (float) $qty,
+                        'discount'       => (float) $disc,
+                        'addnl_discount' => 0.0,
+                        'taxable_amount' => (float) round($taxable, 2),
+                        'sale_tax'       => (float) round($tax, 2),
+                        'rounding'       => (float) round($round, 2),
+                        'net_amount'     => (float) round($net, 2),
+                        'payment'        => $pmt,
+                    ];
+                }
+                break;
+
+            case 'discount_bills':
+                $sNo = 1;
+                foreach ($sales as $sale) {
+                    $disc = (float) $sale->total_discount;
+                    if ($disc <= 0) continue;
+                    $net = (float) $sale->grand_total;
+
+                    $rows[] = [
+                        'id'             => 'disc_' . $sale->id,
+                        's_no'           => $sNo++,
+                        'bill_no'        => $sale->invoice_no ?: $sale->id,
+                        'sale_at'        => $sale->sale_date ?? $sale->created_at,
+                        'customer_name'  => $sale->customer?->name ?: ($sale->customer_name ?: 'Walk-in Customer'),
+                        'total_discount' => (float) $disc,
+                        'addnl_discount' => 0.0,
+                        'net_amount'     => (float) round($net, 2),
+                    ];
+                }
+                break;
+
+            case 'bill_detail':
+                $billNo = $request->input('billNo');
+                $targetSale = $sales->first(function ($s) use ($billNo) {
+                    $inv = str_replace('SB/', '', $billNo);
+                    return $s->invoice_no == $billNo || $s->invoice_no == $inv || $s->id == $inv;
+                });
+                if ($targetSale) {
+                    foreach ($targetSale->items as $idx => $item) {
+                        $rows[] = [
+                            'id'           => 'item_' . ($item->id ?? $idx),
+                            'bill_no'      => $targetSale->invoice_no ?: $targetSale->id,
+                            'sale_at'      => $targetSale->sale_date ?? $targetSale->created_at,
+                            'barcode'      => $item->barcode ?: ($item->product?->barcode ?: '-'),
+                            'product_name' => $item->product?->name ?: ($item->product_name ?: '-'),
+                            'qty'          => (float) ($item->quantity ?? 1),
+                            'price'        => (float) ($item->unit_price ?? 0),
+                            'tax_perc'     => (float) ($item->tax_rate ?? 0),
+                            'discount'     => (float) ($item->discount_amount ?? 0),
+                            'total'        => (float) ($item->total_amount ?? 0),
+                            'bill_status'  => $targetSale->status ?: 'completed',
+                        ];
+                    }
+                }
+                break;
+
+            case 'day_metrics':
+                $day = $request->input('day') ?: $from;
+                $daySales = $sales->filter(fn($s) => substr($s->sale_date ?? $s->created_at, 0, 10) === $day);
+                $billsCount = $daySales->count();
+                $qtySum = $daySales->sum(fn($s) => $s->items->sum('quantity'));
+                $grossSum = $daySales->sum('sub_total');
+                $discSum = $daySales->sum('total_discount');
+                $taxSum = $daySales->sum('total_tax');
+                $netSum = $daySales->sum('grand_total');
+
+                $cashColl = $daySales->sum(fn($s) => $s->payments->where('payment_mode', 'CASH')->sum('amount'));
+                $cardColl = $daySales->sum(fn($s) => $s->payments->where('payment_mode', 'CARD')->sum('amount'));
+                $upiColl = $daySales->sum(fn($s) => $s->payments->where('payment_mode', 'UPI')->sum('amount'));
+
+                $rows = [
+                    ['detail' => 'Total Bills Count', 'value' => $billsCount],
+                    ['detail' => 'Total Quantity Sold', 'value' => (float) $qtySum],
+                    ['detail' => 'Gross Value (INR)', 'value' => (float) round($grossSum, 2)],
+                    ['detail' => 'Total Discount (INR)', 'value' => (float) round($discSum, 2)],
+                    ['detail' => 'Total Tax Amount (INR)', 'value' => (float) round($taxSum, 2)],
+                    ['detail' => 'Net Sales Total (INR)', 'value' => (float) round($netSum, 2)],
+                    ['detail' => 'Cash Collections (INR)', 'value' => (float) round($cashColl, 2)],
+                    ['detail' => 'Card Collections (INR)', 'value' => (float) round($cardColl, 2)],
+                    ['detail' => 'UPI Collections (INR)', 'value' => (float) round($upiColl, 2)],
+                    ['detail' => 'Average Bill Value (INR)', 'value' => (float) round($billsCount > 0 ? ($netSum / $billsCount) : 0, 2)],
+                ];
+                break;
+        }
 
         return response()->json([
             'success' => true,
             'data'    => [
-                'date'        => $today,
-                'total_sales' => (float) $totalSales,
-                'total_bills' => (int) $totalBills,
-                'cash_sales'  => (float) $cashSales,
-                'card_sales'  => (float) $cardSales,
-                'upi_sales'   => (float) $upiSales,
+                'mode'  => $mode,
+                'from'  => $from,
+                'to'    => $to,
+                'total' => count($rows),
+                'rows'  => $rows,
             ],
         ]);
     }

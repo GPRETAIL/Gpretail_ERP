@@ -1855,6 +1855,179 @@ const REPORT_DATA_SOURCES = {
     fetchRows: buildEmployeeRows,
     emptyText: "No employee rows found.",
   },
+  day_summary_without_offset: {
+    columns: daySummaryColumns,
+    fetchRows: buildDaySummaryRows,
+    emptyText: "No day summary rows found.",
+  },
+  estimate_bill_report: {
+    columns: salesReportColumns,
+    fetchRows: () => getAllRows("/customer-orders"),
+    emptyText: "No estimate bills found.",
+  },
+  alteration_report: {
+    columns: deliveryReportColumns,
+    fetchRows: () => getAllRows("/customer-orders"),
+    emptyText: "No alteration rows found.",
+  },
+  promotion_details_report: {
+    columns: cashierWiseDiscountColumns,
+    fetchRows: buildCashierWiseDiscountRows,
+    emptyText: "No promotion details found.",
+  },
+  sales_snapshot_text: {
+    columns: daySummaryColumns,
+    fetchRows: buildDaySummaryRows,
+    emptyText: "No snapshot rows found.",
+  },
+  settlement_detail_report: {
+    columns: settlementOpeningClosingColumns,
+    fetchRows: buildCashOpeningClosingRows,
+    emptyText: "No settlement detail rows found.",
+  },
+  customer_advance_collection_report: {
+    columns: myCustomerSalesColumns,
+    fetchRows: buildMyCustomerSalesRows,
+    emptyText: "No customer advance rows found.",
+  },
+  settlement_reconciliation: {
+    columns: daySummaryColumns,
+    fetchRows: buildDayEndSettlementSummaryRows,
+    emptyText: "No reconciliation rows found.",
+  },
+  sales_tax_report_row_wise: {
+    columns: taxSummaryColumns,
+    fetchRows: buildSalesTaxSummaryRows,
+    emptyText: "No tax rows found.",
+  },
+  sales_tax_splitup_collection_report: {
+    columns: taxSummaryColumns,
+    fetchRows: buildSalesTaxSummaryRows,
+    emptyText: "No tax splitup rows found.",
+  },
+  credit_customer_outstanding_report: {
+    columns: unsettledBillColumns,
+    fetchRows: async () => {
+      const rows = await getAllRows("/settlements/unpaid-bills", { status: "credit" });
+      return rows.filter((r) => r?.sale_type === "pos_sale");
+    },
+    emptyText: "No credit outstanding rows found.",
+  },
+  customer_gift_voucher_credit_note_report: {
+    columns: myCustomerSalesColumns,
+    fetchRows: buildMyCustomerSalesRows,
+    emptyText: "No gift voucher rows found.",
+  },
+  settlement_coupon_issue_report: {
+    columns: myCustomerSalesColumns,
+    fetchRows: buildMyCustomerSalesRows,
+    emptyText: "No coupon issue rows found.",
+  },
+  coupon_consumption_report: {
+    columns: myCustomerSalesColumns,
+    fetchRows: buildMyCustomerSalesRows,
+    emptyText: "No coupon consumption rows found.",
+  },
+  gift_voucher_credit_note_consumption_report: {
+    columns: myCustomerSalesColumns,
+    fetchRows: buildMyCustomerSalesRows,
+    emptyText: "No gift voucher consumption rows found.",
+  },
+  loyalty_reward_consumption_report: {
+    columns: myCustomerSalesColumns,
+    fetchRows: buildMyCustomerSalesRows,
+    emptyText: "No loyalty reward rows found.",
+  },
+  gift_issue_report: {
+    columns: myCustomerSalesColumns,
+    fetchRows: buildMyCustomerSalesRows,
+    emptyText: "No gift issue rows found.",
+  },
+  birthday_wishes: {
+    columns: customerColumns,
+    fetchRows: () => buildCustomerRows(false),
+    emptyText: "No birthday records found.",
+  },
+  anniversary_wishes: {
+    columns: customerColumns,
+    fetchRows: () => buildCustomerRows(false),
+    emptyText: "No anniversary records found.",
+  },
+  customer_feedback_report: {
+    columns: customerColumns,
+    fetchRows: () => buildCustomerRows(false),
+    emptyText: "No feedback records found.",
+  },
+  scheduled_message_log: {
+    columns: customerColumns,
+    fetchRows: () => buildCustomerRows(false),
+    emptyText: "No scheduled messages found.",
+  },
+  scheme_details_report: {
+    columns: cashierWiseDiscountColumns,
+    fetchRows: buildCashierWiseDiscountRows,
+    emptyText: "No scheme records found.",
+  },
+  stock_report_with_shelf_period: {
+    columns: stockColumns,
+    fetchRows: buildStockRows,
+    emptyText: "No stock records found.",
+  },
+  stock_aging_detail_report: {
+    columns: stockColumns,
+    fetchRows: buildStockRows,
+    emptyText: "No stock aging records found.",
+  },
+  stock_marker_report: {
+    columns: stockColumns,
+    fetchRows: buildStockRows,
+    emptyText: "No stock marker records found.",
+  },
+  price_changer_report: {
+    columns: stockColumns,
+    fetchRows: buildStockRows,
+    emptyText: "No price changer records found.",
+  },
+  stock_split_report: {
+    columns: stockColumns,
+    fetchRows: buildStockRows,
+    emptyText: "No stock split records found.",
+  },
+  incentive_report_section: {
+    columns: employeeColumns,
+    fetchRows: buildEmployeeRows,
+    emptyText: "No incentive records found.",
+  },
+  incentive_report_employees: {
+    columns: employeeColumns,
+    fetchRows: buildEmployeeRows,
+    emptyText: "No incentive records found.",
+  },
+  employee_advance_pending_report: {
+    columns: employeeColumns,
+    fetchRows: buildEmployeeRows,
+    emptyText: "No advance pending records found.",
+  },
+  b2b_sales_report: {
+    columns: saleItemColumns,
+    fetchRows: buildPosSaleItemRows,
+    emptyText: "No B2B sales rows found.",
+  },
+  b2b_sales_tax_report_column_wise: {
+    columns: saleItemColumns,
+    fetchRows: buildPosSaleItemRows,
+    emptyText: "No B2B sales tax detail rows found.",
+  },
+  b2b_sales_tax_report_row_wise: {
+    columns: taxSummaryColumns,
+    fetchRows: buildSalesTaxSummaryRows,
+    emptyText: "No B2B sales tax summary rows found.",
+  },
+  b2b_sales_hsn_report: {
+    columns: salesHsnColumns,
+    fetchRows: buildSalesHsnRows,
+    emptyText: "No B2B sales HSN rows found.",
+  },
 };
 
 const REPORT_GROUPS = [

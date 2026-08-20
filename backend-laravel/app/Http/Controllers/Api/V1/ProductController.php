@@ -297,6 +297,7 @@ class ProductController extends Controller
             'type'                      => $request->input('type'),
             'section'                   => $request->input('section'),
             'selling_mode'              => $request->input('selling_mode') ?: $request->input('sellingMode'),
+            'pack_size'                 => $request->filled('pack_size') ? $request->input('pack_size') : $request->input('packSize'),
             'barcode_mode'              => $request->input('barcode_mode') ?: $request->input('barcodeMode'),
             'barcode_source'            => $request->input('barcode_source') ?: $request->input('barcodeSource'),
             'discount_mode'             => $request->input('discount_mode') ?: $request->input('discountMode'),

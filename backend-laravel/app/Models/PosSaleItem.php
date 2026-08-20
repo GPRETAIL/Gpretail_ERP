@@ -13,6 +13,7 @@ class PosSaleItem extends Model
         'pos_sale_id',
         'product_id',
         'variant_id',
+        'barcode_id',
         'quantity',
         'unit_mrp',
         'selling_price',
@@ -49,5 +50,15 @@ class PosSaleItem extends Model
     public function product()
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function variant()
+    {
+        return $this->belongsTo(ProductVariant::class, 'variant_id');
+    }
+
+    public function barcode()
+    {
+        return $this->belongsTo(Barcode::class, 'barcode_id');
     }
 }

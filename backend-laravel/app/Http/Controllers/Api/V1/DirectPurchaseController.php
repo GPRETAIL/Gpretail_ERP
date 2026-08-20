@@ -9,16 +9,38 @@ use App\Models\DirectPurchaseItem;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\Store;
+use App\Models\StockBatch;
 use App\Models\Transport;
 use App\Services\StockService;
+use App\Services\VariantResolverService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class DirectPurchaseController extends Controller
 {
-    public function __construct(private readonly StockService $stockService)
+    public function __construct(
+        private readonly StockService $stockService,
+        private readonly VariantResolverService $variantResolver,
+    ) {
+    }
+
+    /** Brand + Size + Colour + Design → the real ProductVariant this line belongs to. */
+    private function resolveVariantId(array $itemData): ?int
     {
+        if (!$itemData['product_id']) {
+            return null;
+        }
+
+        $variant = $this->variantResolver->resolve(
+            productId: (int) $itemData['product_id'],
+            brandId: $itemData['brand_id'] ? (int) $itemData['brand_id'] : null,
+            sizeName: $itemData['size'] ?? null,
+            colorId: $itemData['color_id'] ? (int) $itemData['color_id'] : null,
+            designNo: $itemData['design_no'] ?? null,
+        );
+
+        return $variant->id;
     }
 
     public function index(Request $request)
@@ -101,10 +123,48 @@ class DirectPurchaseController extends Controller
             ], 404);
         }
 
+        $this->attachSellThrough($purchase);
+
         return response()->json([
             'success' => true,
             'data'    => $purchase,
         ]);
+    }
+
+    /**
+     * Answers "how much of this invoice has sold vs. remains" per line -
+     * the batch(es) this purchase's variant(s) created via StockService,
+     * summed. Only meaningful once the purchase has reached Completed and
+     * actually applied stock; before that no batch exists yet.
+     */
+    private function attachSellThrough(DirectPurchase $purchase): void
+    {
+        $variantIds = $purchase->items->pluck('variant_id')->filter()->unique()->values();
+        if ($variantIds->isEmpty()) {
+            return;
+        }
+
+        $batches = StockBatch::where('reference_type', 'DIRECT_PURCHASE')
+            ->where('reference_id', $purchase->id)
+            ->whereIn('variant_id', $variantIds)
+            ->get()
+            ->groupBy('variant_id');
+
+        $purchase->items->each(function ($item) use ($batches) {
+            $group = $item->variant_id ? $batches->get((int) $item->variant_id) : null;
+            if (!$group || $group->isEmpty()) {
+                $item->sell_through = null;
+                return;
+            }
+
+            $received = (float) $group->sum('received_qty');
+            $remaining = (float) $group->sum('remaining_qty');
+            $item->sell_through = [
+                'received_qty' => $received,
+                'remaining_qty' => $remaining,
+                'sold_qty' => $received - $remaining,
+            ];
+        });
     }
 
     public function store(Request $request)
@@ -188,6 +248,7 @@ class DirectPurchaseController extends Controller
                     'color_name'         => $itemData['color_name'],
                     'design_no'          => $itemData['design_no'],
                     'hsn_code'           => $itemData['hsn_code'],
+                    'variant_id'         => $this->resolveVariantId($itemData),
                     'quantity'           => $itemData['qty'],
                     'qty'                => $itemData['qty'],
                     'cost_price'         => $itemData['cost'],
@@ -317,7 +378,7 @@ class DirectPurchaseController extends Controller
                         $this->stockService->adjust(
                             storeId: $purchase->store_id,
                             productId: (int) $oldItem->product_id,
-                            variantId: null,
+                            variantId: $oldItem->variant_id ? (int) $oldItem->variant_id : null,
                             delta: -(float) $oldItem->qty,
                             referenceType: 'DIRECT_PURCHASE',
                             referenceId: $purchase->id,
@@ -329,6 +390,8 @@ class DirectPurchaseController extends Controller
                 $purchase->items()->delete();
 
                 foreach ($data['items'] as $index => $itemData) {
+                    $variantId = $this->resolveVariantId($itemData);
+
                     DirectPurchaseItem::create([
                         'direct_purchase_id' => $purchase->id,
                         's_no'               => $itemData['s_no'] ?: ($index + 1),
@@ -341,6 +404,7 @@ class DirectPurchaseController extends Controller
                         'color_name'         => $itemData['color_name'],
                         'design_no'          => $itemData['design_no'],
                         'hsn_code'           => $itemData['hsn_code'],
+                        'variant_id'         => $variantId,
                         'quantity'           => $itemData['qty'],
                         'qty'                => $itemData['qty'],
                         'cost_price'         => $itemData['cost'],
@@ -365,7 +429,7 @@ class DirectPurchaseController extends Controller
                         $this->stockService->adjust(
                             storeId: $purchase->store_id,
                             productId: (int) $itemData['product_id'],
-                            variantId: null,
+                            variantId: $variantId,
                             delta: (float) $itemData['qty'],
                             referenceType: 'DIRECT_PURCHASE',
                             referenceId: $purchase->id,
@@ -395,7 +459,7 @@ class DirectPurchaseController extends Controller
                     $this->stockService->adjust(
                         storeId: $purchase->store_id,
                         productId: (int) $item->product_id,
-                        variantId: null,
+                        variantId: $item->variant_id ? (int) $item->variant_id : null,
                         delta: (float) $item->qty,
                         referenceType: 'DIRECT_PURCHASE',
                         referenceId: $purchase->id,
