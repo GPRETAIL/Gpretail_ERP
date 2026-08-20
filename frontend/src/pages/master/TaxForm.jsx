@@ -18,6 +18,7 @@ import { toast } from "react-toastify";
 import TaxRangeTable from "../../components/RangedTaxTable";
 import api from "../../api/axios";
 import { handleEnterKeyNavigation } from "../../utils/enterToNextField";
+import { normalizeFormSignature } from "../../utils/formSignature";
 
 const TaxForm = () => {
   const [rangedTaxItems, setRangedTaxItems] = useState([
@@ -154,7 +155,7 @@ const TaxForm = () => {
     setErrors({});
 
     if (isEdit && initialFormRef.current.id === taxCode
-        && JSON.stringify({ formData, rangedTaxItems, storeId }) === initialFormRef.current.sig) {
+        && normalizeFormSignature({ formData, rangedTaxItems, storeId }) === initialFormRef.current.sig) {
       toast.info("No changes detected.");
       return;
     }
@@ -187,29 +188,35 @@ const TaxForm = () => {
           name: payload.name,
           taxCharges: payload.taxCharges,
           taxPercentage: payload.taxPercentage,
-          isSalesTax: payload.isSalesTax,
-          isPurchaseTax: payload.isPurchaseTax,
-          isDisabled: payload.isDisabled,
-          companyId: payload.companyId,
-          extraFields: payload.extraFields,
+          is_sales_tax: payload.isSalesTax,
+          is_purchase_tax: payload.isPurchaseTax,
+          is_disabled: payload.isDisabled,
+          extra_fields: payload.extraFields,
+          company_id: payload.companyId,
         });
-        toast.success("Tax updated successfully!");
-        navigate("/masters/tax");
+        initialFormRef.current = {
+          id: taxCode,
+          sig: normalizeFormSignature({ formData, rangedTaxItems, storeId }),
+        };
+        toast.success("Tax record updated successfully!");
       } else {
         await api.post("/taxes", {
-          taxCode: payload.taxCode,
+          tax_code: payload.taxCode,
           name: payload.name,
-          taxCharges: payload.taxCharges,
+          tax_type: payload.taxCharges,
           taxPercentage: payload.taxPercentage,
-          isSalesTax: payload.isSalesTax,
-          isPurchaseTax: payload.isPurchaseTax,
-          isDisabled: payload.isDisabled,
-          companyId: payload.companyId,
-          extraFields: payload.extraFields,
+          is_sales_tax: payload.isSalesTax,
+          is_purchase_tax: payload.isPurchaseTax,
+          is_disabled: payload.isDisabled,
+          extra_fields: payload.extraFields,
+          company_id: payload.companyId,
         });
-        toast.success("Tax saved successfully!");
-        navigate("/masters/tax");
+        toast.success("Tax record saved successfully!");
+        setFormData(initialFormData);
+        setStoreId("");
+        initialFormRef.current = { id: null, sig: null };
       }
+      navigate(-1);
     } catch (err) {
       toast.error(err.response?.data?.message || "Save failed");
     } finally {
@@ -231,8 +238,9 @@ const TaxForm = () => {
     navigate(`/masters/tax/new`);
   };
 
+  // Load existing tax for edit mode
   useEffect(() => {
-    if (isAdd) return;
+    if (!isEdit || !taxCode) return;
     const load = async () => {
       try {
         const res = await api.get(`/taxes/${taxCode}`, {
@@ -262,7 +270,7 @@ const TaxForm = () => {
         if (isEdit) {
           initialFormRef.current = {
             id: taxCode,
-            sig: JSON.stringify({ formData: loadedFormData, rangedTaxItems: loadedRanged, storeId: loadedStoreId }),
+            sig: normalizeFormSignature({ formData: loadedFormData, rangedTaxItems: loadedRanged, storeId: loadedStoreId }),
           };
         }
       } catch (err) {

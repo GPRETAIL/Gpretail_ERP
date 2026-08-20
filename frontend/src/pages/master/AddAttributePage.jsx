@@ -8,6 +8,7 @@ import {
   TextInput,
 } from "../../components/CustomInputs";
 import api from "../../api/axios";
+import { normalizeFormSignature } from "../../utils/formSignature";
 import UploadImportButton from "../../components/UploadImportButton";
 import { ATTR_IMPORT_CONFIGS, GENERIC_ATTR_CONFIG, GENERIC_ATTR_TRANSFORM } from "../../utils/attrImportConfigs";
 
@@ -139,7 +140,7 @@ const AddAttributePage = () => {
             isVariant: !!(record?.is_variant ?? record?.isVariant),
           };
           setFormData(loadedForm);
-          initialFormRef.current = JSON.stringify({ f: loadedForm, s: [] });
+          initialFormRef.current = normalizeFormSignature({ f: loadedForm, s: [] });
         } else if (initialType === "SIZEGROUP") {
           const res = await api.get(`/size-groups/${editingId}`);
           const record = res.data?.data || res.data;
@@ -154,13 +155,13 @@ const AddAttributePage = () => {
           const loadedSizes = record?.sizes || [];
           setFormData(loadedForm);
           setSizeList(loadedSizes);
-          initialFormRef.current = JSON.stringify({ f: loadedForm, s: loadedSizes });
+          initialFormRef.current = normalizeFormSignature({ f: loadedForm, s: loadedSizes });
         } else {
           const res = await api.get(`/attributes/${initialType.toLowerCase()}/${editingId}`);
           const record = res.data?.data || res.data;
           const loadedForm = mapAttributeToForm(record, initialType);
           setFormData(loadedForm);
-          initialFormRef.current = JSON.stringify({ f: loadedForm, s: [] });
+          initialFormRef.current = normalizeFormSignature({ f: loadedForm, s: [] });
         }
       } catch (err) {
         toast.error(err.response?.data?.message || "Failed to load record for edit");
@@ -235,12 +236,12 @@ const AddAttributePage = () => {
       toast.warning("Name is required");
       return;
     }
-    if (savingRef.current) return; // a save is already in flight — ignore repeated clicks
     if (editingId && initialFormRef.current
-        && JSON.stringify({ f: formData, s: sizeList }) === initialFormRef.current) {
+        && normalizeFormSignature({ f: formData, s: sizeList }) === initialFormRef.current) {
       toast.info("No changes detected.");
       return;
     }
+    if (savingRef.current) return; // a save is already in flight — ignore repeated clicks
 
     const fd  = formData;
     const str = (v) => (v || "").trim() || undefined;

@@ -8,6 +8,7 @@ import {
   TextInput,
 } from "../../components/CustomInputs";
 import api from "../../api/axios";
+import { normalizeFormSignature } from "../../utils/formSignature";
 import UploadImportButton from "../../components/UploadImportButton";
 
 // Generic import config — works for all configuration types.
@@ -352,7 +353,7 @@ const ConfigurationForm = () => {
             ...(rec.extra_data || {}),
           };
           // Baseline for the "No changes detected" guard on save.
-          initialFormRef.current = JSON.stringify(next);
+          initialFormRef.current = normalizeFormSignature(next);
           return next;
         });
       })
@@ -370,6 +371,10 @@ const ConfigurationForm = () => {
   const handleSave = async () => {
     if (!typeKey) { toast.warning("No type selected"); return; }
     if (!formData.name.trim()) { toast.warning("Name is required"); return; }
+    if (isEdit && initialFormRef.current && normalizeFormSignature(formData) === initialFormRef.current) {
+      toast.info("No changes detected.");
+      return;
+    }
     if (savingRef.current) return; // a save is already in flight — ignore repeated clicks
 
     const payload = {
@@ -384,16 +389,14 @@ const ConfigurationForm = () => {
     try {
       const apiType = typeKey.toLowerCase();
       if (isEdit) {
-        if (initialFormRef.current && JSON.stringify(formData) === initialFormRef.current) {
-          toast.info("No changes detected.");
-          return;
-        }
         await api.put(`/configurations/${apiType}/${recordId}`, payload);
+        initialFormRef.current = normalizeFormSignature(formData);
         toast.success("Updated successfully!");
       } else {
         await api.post(`/configurations/${apiType}`, payload);
         toast.success("Saved successfully!");
         setFormData(prev => ({ ...prev, code: "", name: "", sort_order: "0" }));
+        initialFormRef.current = null;
       }
       navigate(-1);
     } catch (err) {

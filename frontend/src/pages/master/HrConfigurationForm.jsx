@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import { CheckboxInput, SelectInput, TextInput } from "../../components/CustomInputs";
 import api from "../../api/axios";
+import { normalizeFormSignature } from "../../utils/formSignature";
 
 const STATIC_DESIGNATION_ROLES = [
   "Operational Manager",
@@ -223,15 +224,15 @@ const HrConfigurationForm = () => {
 
     let designationRolePayload = {};
     if (showDesignationRole) {
-      if (String(formData.roleChoice).startsWith("db:")) {
+      if (formData.roleChoice.startsWith("db:")) {
         designationRolePayload = {
-          roleId: String(formData.roleChoice).replace("db:", ""),
+          roleId: parseInt(formData.roleChoice.replace("db:", ""), 10),
           roleName: null,
         };
-      } else if (String(formData.roleChoice).startsWith("static:")) {
+      } else if (formData.roleChoice.startsWith("static:")) {
         designationRolePayload = {
           roleId: null,
-          roleName: String(formData.roleChoice).replace("static:", ""),
+          roleName: formData.roleChoice.replace("static:", ""),
         };
       }
     }
@@ -253,16 +254,18 @@ const HrConfigurationForm = () => {
       ...designationRolePayload,
     };
 
-    if (isEdit && initialFormRef.current && JSON.stringify(formData) === initialFormRef.current) {
+    if (isEdit && initialFormRef.current && normalizeFormSignature(formData) === initialFormRef.current) {
       toast.info("No changes detected.");
       return;
     }
+
     if (savingRef.current) return;
     savingRef.current = true;
     setSaving(true);
     try {
       if (isEdit) {
         await api.put(`${baseEndpoint}/${recordId}`, payload);
+        initialFormRef.current = normalizeFormSignature(formData);
         toast.success(`${typeLabel} updated successfully`);
       } else {
         await api.post(baseEndpoint, payload);

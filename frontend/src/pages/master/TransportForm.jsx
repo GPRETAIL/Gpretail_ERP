@@ -3,6 +3,7 @@ import { ArrowLeft, PlusCircle, Save, Search, Trash2 } from "lucide-react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import api from "../../api/axios";
+import { normalizeFormSignature } from "../../utils/formSignature";
 import { handleEnterKeyNavigation } from "../../utils/enterToNextField";
 
 /* ─── tiny inline helpers ─────────────────────────────────────────────────── */
@@ -173,7 +174,7 @@ const TransportForm = () => {
         if (isEdit) {
           initialFormRef.current = {
             id,
-            sig: JSON.stringify({ form: loadedForm, rates: loadedRates }),
+            sig: normalizeFormSignature({ form: loadedForm, rates: loadedRates }),
           };
         }
       } catch {
@@ -218,7 +219,7 @@ const TransportForm = () => {
     if (!form.businessMode) { toast.warn("Business Mode is required"); return; }
     if (!form.name.trim()) { toast.warn("Name is required"); return; }
     if (isEdit && initialFormRef.current.id === id
-        && JSON.stringify({ form, rates }) === initialFormRef.current.sig) {
+        && normalizeFormSignature({ form, rates }) === initialFormRef.current.sig) {
       toast.info("No changes detected.");
       return;
     }
@@ -232,6 +233,10 @@ const TransportForm = () => {
         toast.success("Transport created");
       } else {
         await api.put(`/transports/${id}`, payload);
+        initialFormRef.current = {
+          id,
+          sig: normalizeFormSignature({ form, rates }),
+        };
         toast.success("Transport updated");
       }
       navigate("/masters/transport");

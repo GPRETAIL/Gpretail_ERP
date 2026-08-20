@@ -9,6 +9,7 @@ import ExportBottomSheet from "../../components/ExportBottomSheet";
 import UploadImportButton from "../../components/UploadImportButton";
 import { handleEnterKeyNavigation } from "../../utils/enterToNextField";
 import useStoreNameMap from "../../hooks/useStoreNameMap";
+import { normalizeFormSignature } from "../../utils/formSignature";
 
 const SUPPLIER_IMPORT_CONFIG = {
   aliases: {
@@ -337,13 +338,6 @@ const Supplier = () => {
     advanceProductName: "", advanceBrandName: "",
     advanceRemarks: "", advanceAttachmentType: "",
   });
-  // Snapshot each loaded record (edit mode) so an unchanged save reports "No changes detected".
-  // Declared AFTER formData so the dependency array doesn't read it in its TDZ.
-  useEffect(() => {
-    if (currentId != null && initialFormRef.current.id !== currentId) {
-      initialFormRef.current = { id: currentId, sig: JSON.stringify(formData) };
-    }
-  }, [currentId, formData]);
 
   // ─── Dropdown data from API ──────────────────────────────────────────────
   const [opts, setOpts] = useState({
@@ -408,6 +402,7 @@ const Supplier = () => {
   const handleNew = () => {
     setCurrentId(null);
     setFormData(blankForm);
+    initialFormRef.current = { id: null, sig: null };
     setActiveTab("Primary");
     setShowSearchPage(false);
     requestAnimationFrame(scrollMainContentTop);
@@ -419,7 +414,7 @@ const Supplier = () => {
       return;
     }
     if (currentId && initialFormRef.current.id === currentId
-        && JSON.stringify(formData) === initialFormRef.current.sig) {
+        && normalizeFormSignature(formData) === initialFormRef.current.sig) {
       toast.info("No changes detected.");
       return;
     }
@@ -429,10 +424,13 @@ const Supplier = () => {
     try {
       if (currentId) {
         await api.put(`/suppliers/${currentId}`, formData);
+        initialFormRef.current = { id: currentId, sig: normalizeFormSignature(formData) };
         toast.success("Supplier updated successfully");
       } else {
         const res = await api.post("/suppliers", formData);
-        setCurrentId(res.data.data.id);
+        const newId = res.data.data.id;
+        setCurrentId(newId);
+        initialFormRef.current = { id: newId, sig: normalizeFormSignature(formData) };
         toast.success("Supplier saved successfully");
       }
     } catch (err) {
@@ -491,7 +489,7 @@ const Supplier = () => {
 
   const loadSupplierForEdit = (row) => {
     setCurrentId(row.id);
-    setFormData({
+    const loadedData = {
       ...blankForm,
       codeType: row.code_type || "Supplier",
       code: row.code || "",
@@ -542,7 +540,9 @@ const Supplier = () => {
       interstateSale: !!row.interstate_sale,
       internalTransfer: !!row.internal_transfer,
       active: row.is_active !== false,
-    });
+    };
+    setFormData(loadedData);
+    initialFormRef.current = { id: row.id, sig: normalizeFormSignature(loadedData) };
     setActiveTab("Primary");
     setShowSearchPage(false);
     requestAnimationFrame(scrollMainContentTop);

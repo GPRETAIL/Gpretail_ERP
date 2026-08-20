@@ -9,6 +9,7 @@ import ConfirmDialog from "../../components/ConfirmDialog";
 import ExportBottomSheet from "../../components/ExportBottomSheet";
 import { handleEnterKeyNavigation } from "../../utils/enterToNextField";
 import useStoreNameMap from "../../hooks/useStoreNameMap";
+import { normalizeFormSignature } from "../../utils/formSignature";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
@@ -218,7 +219,7 @@ const INIT = {
 // Full editable-state signature (all form fields + a proxy for a newly picked
 // image file) so an unchanged edit save reports "No changes detected".
 const buildItemSig = (form, imageFile) =>
-  JSON.stringify({
+  normalizeFormSignature({
     form,
     image: imageFile ? `${imageFile.name}:${imageFile.size}` : null,
   });
@@ -249,20 +250,21 @@ export default function Item() {
   const [fits, setFits]           = useState([]);
   const [sleeves, setSleeves]     = useState([]);
 
-  // Search UI
-  const [showSearch, setShowSearch]           = useState(true);
-  const [searchResults, setSearchResults]     = useState([]);
-  const [searchLoading, setSearchLoading]     = useState(true);
-  const [selectedRows, setSelectedRows]       = useState([]);
+  // Search/Table state
+  const [showSearch, setShowSearch]         = useState(true);
+  const [searchResults, setSearchResults]   = useState([]);
+  const [searchLoading, setSearchLoading]   = useState(true);
+  const [selectedRows, setSelectedRows]     = useState([]);
+  const [page, setPage]                     = useState(1);
+  const [limit, setLimit]                   = useState(20);
+  const [pagination, setPagination]         = useState({ total: 0, totalPages: 1 });
+  const [tableSearch, setTableSearch]       = useState("");
+  const [tableSearchField, setTableSearchField] = useState("all");
+  const [forceFetchAll, setForceFetchAll]   = useState(false);
+
+  // Confirm dialog state
   const [confirm, setConfirm] = useState({ open: false, id: null, name: "" });
   const [bulkConfirm, setBulkConfirm] = useState({ open: false, keys: [] });
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(20);
-  const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
-  const [tableSearch, setTableSearch] = useState("");
-  const [tableSearchField, setTableSearchField] = useState("all");
-  const [forceFetchAll, setForceFetchAll] = useState(false);
-
   // ─── Load all dropdown data on mount ─────────────────────────────────────
   useEffect(() => {
     const load = (url, setter, transform) =>
@@ -300,6 +302,7 @@ export default function Item() {
     setImageFile(null);
     setImagePreview(null);
     setEditingId(null);
+    initialFormRef.current = { id: null, sig: null };
     setShowSearch(false);
   };
 

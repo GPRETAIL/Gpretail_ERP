@@ -87,6 +87,8 @@ const SelectInput = ({ label, required = false, options, value, onChange }) => (
 );
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { normalizeFormSignature } from "../../utils/formSignature";
+
 const brandTypeOptions = [
   { label: "Premium", value: "Premium" },
   { label: "Standard", value: "Standard" },
@@ -99,7 +101,7 @@ const discountOptions = [
 // Full editable-state signature (main fields + the product-margin sub-table)
 // so an unchanged edit save reports "No changes detected".
 const buildBrandSig = (v) =>
-  JSON.stringify({
+  normalizeFormSignature({
     code: v.code,
     name: v.name,
     printingName: v.printingName,
@@ -271,6 +273,7 @@ const Brand = () => {
     setStoreId("");
     setProductList([]);
     setCurrentId(null);
+    initialFormRef.current = { id: null, sig: null };
     setShowSearchPage(false);
   };
 

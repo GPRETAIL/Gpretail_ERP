@@ -9,6 +9,7 @@ import ExportBottomSheet from "../../components/ExportBottomSheet";
 import UploadImportButton from "../../components/UploadImportButton";
 import { handleEnterKeyNavigation } from "../../utils/enterToNextField";
 import useStoreNameMap from "../../hooks/useStoreNameMap";
+import { normalizeFormSignature } from "../../utils/formSignature";
 
 const FORM_LABEL_CLASS = "text-xs font-medium text-gray-700 dark:text-gray-300 leading-normal";
 const FORM_CONTROL_CLASS = "h-8 rounded-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-2 py-1 text-xs leading-normal placeholder:text-xs placeholder-gray-400 dark:placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100 dark:disabled:bg-gray-800";
@@ -283,13 +284,6 @@ const Employee = () => {
   const savingRef = useRef(false); // synchronous double-submit guard
   const storeMap = useStoreNameMap();
   const [formData, setFormData] = useState(blankForm());
-  // Snapshot each loaded record (edit mode) so an unchanged save reports "No changes detected".
-  // Declared AFTER formData so the dependency array doesn't read it in its TDZ.
-  useEffect(() => {
-    if (currentId != null && initialFormRef.current.id !== currentId) {
-      initialFormRef.current = { id: currentId, sig: JSON.stringify(formData) };
-    }
-  }, [currentId, formData]);
   const [rightTab, setRightTab] = useState("PF and ESI");
   const [searchResults, setSearchResults] = useState([]);
   const [selectedRows, setSelectedRows] = useState([]);
@@ -360,14 +354,24 @@ const Employee = () => {
     setFormData(blankForm());
     setFamilyList([]); setEducationList([]); setExperienceList([]);
     setAdditionalInfoList([]); setTrainingList([]); setClassificationList([]);
+    initialFormRef.current = { id: null, sig: null };
     setShowSearchPage(false);
     setRightTab("PF and ESI");
   };
 
   const handleSave = async () => {
     if (!formData.name.trim()) { toast.error("Name is required"); return; }
+    const currentPayload = {
+      formData,
+      families: familyList,
+      educations: educationList,
+      experiences: experienceList,
+      additionalInfos: additionalInfoList,
+      trainings: trainingList,
+      classifications: classificationList,
+    };
     if (currentId && initialFormRef.current.id === currentId
-        && JSON.stringify(formData) === initialFormRef.current.sig) {
+        && normalizeFormSignature(currentPayload) === initialFormRef.current.sig) {
       toast.info("No changes detected.");
       return;
     }
@@ -386,9 +390,13 @@ const Employee = () => {
       };
       if (currentId) {
         await api.put(`/employees/${currentId}`, payload);
+        initialFormRef.current = { id: currentId, sig: normalizeFormSignature(currentPayload) };
         toast.success("Employee updated successfully");
       } else {
-        await api.post("/employees", payload);
+        const res = await api.post("/employees", payload);
+        const newId = res.data.data.id;
+        setCurrentId(newId);
+        initialFormRef.current = { id: newId, sig: normalizeFormSignature(currentPayload) };
         toast.success("Employee saved successfully");
       }
       // Clear form after successful save
@@ -396,6 +404,7 @@ const Employee = () => {
       setFormData(blankForm());
       setFamilyList([]); setEducationList([]); setExperienceList([]);
       setAdditionalInfoList([]); setTrainingList([]); setClassificationList([]);
+      initialFormRef.current = { id: null, sig: null };
       setRightTab("PF and ESI");
     } catch (err) {
       toast.error(err?.response?.data?.message || "Failed to save employee");
@@ -471,12 +480,28 @@ const Employee = () => {
       }
       setFormData(fd);
       setCurrentId(emp.id);
-      setFamilyList(emp.families || []);
-      setEducationList(emp.educations || []);
-      setExperienceList(emp.experiences || []);
-      setAdditionalInfoList(emp.additionalInfos || []);
-      setTrainingList(emp.trainings || []);
-      setClassificationList(emp.classifications || []);
+      const fam = emp.families || [];
+      const edu = emp.educations || [];
+      const exp = emp.experiences || [];
+      const add = emp.additionalInfos || [];
+      const tra = emp.trainings || [];
+      const cla = emp.classifications || [];
+      setFamilyList(fam);
+      setEducationList(edu);
+      setExperienceList(exp);
+      setAdditionalInfoList(add);
+      setTrainingList(tra);
+      setClassificationList(cla);
+      const sigData = {
+        formData: fd,
+        families: fam,
+        educations: edu,
+        experiences: exp,
+        additionalInfos: add,
+        trainings: tra,
+        classifications: cla,
+      };
+      initialFormRef.current = { id: emp.id, sig: normalizeFormSignature(sigData) };
       setShowSearchPage(false);
     } catch {
       toast.error("Failed to load employee");

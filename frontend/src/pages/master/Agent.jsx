@@ -9,7 +9,7 @@ import ExportBottomSheet from "../../components/ExportBottomSheet";
 import SearchableSelect from "../../components/SearchableSelect";
 import UploadImportButton from "../../components/UploadImportButton";
 import { handleEnterKeyNavigation } from "../../utils/enterToNextField";
-import useStoreNameMap from "../../hooks/useStoreNameMap";
+import { normalizeFormSignature } from "../../utils/formSignature";
 
 const AGENT_IMPORT_CONFIG = {
   aliases: {
@@ -107,14 +107,7 @@ const Agent = () => {
 
   const [formData, setFormData] = useState(blank());
   const [currentId, setCurrentId] = useState(null);
-  const storeMap = useStoreNameMap();
   const initialFormRef = useRef({ id: null, sig: null });
-  // Snapshot each loaded record (edit mode) so an unchanged save reports "No changes detected".
-  useEffect(() => {
-    if (currentId != null && initialFormRef.current.id !== currentId) {
-      initialFormRef.current = { id: currentId, sig: JSON.stringify(formData) };
-    }
-  }, [currentId, formData]);
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false); // synchronous double-submit guard
 
@@ -173,7 +166,7 @@ const Agent = () => {
       .then((res) => {
         const d = res.data.data;
         setCurrentId(d.id);
-        setFormData({
+        const loadedData = {
           agentTypeId:     d.agent_type_id    != null ? String(d.agent_type_id)  : "",
           name:            d.name             || "",
           contactPerson:   d.contact_person   || "",
@@ -193,7 +186,9 @@ const Agent = () => {
           stateId:         d.state_id         != null ? String(d.state_id)       : "",
           pincode:         d.pincode          || "",
           active:          d.is_active !== false,
-        });
+        };
+        setFormData(loadedData);
+        initialFormRef.current = { id: d.id, sig: normalizeFormSignature(loadedData) };
       })
       .catch(() => toast.error("Failed to load agent record"));
   }, [editId]);
@@ -207,13 +202,14 @@ const Agent = () => {
   const handleNew = () => {
     setFormData(blank());
     setCurrentId(null);
+    initialFormRef.current = { id: null, sig: null };
     setShowSearch(false);
   };
 
   const handleSave = async () => {
     if (!formData.name.trim()) { toast.warning("Name is required"); return; }
     if (currentId && initialFormRef.current.id === currentId
-        && JSON.stringify(formData) === initialFormRef.current.sig) {
+        && normalizeFormSignature(formData) === initialFormRef.current.sig) {
       toast.info("No changes detected.");
       return;
     }
@@ -223,10 +219,13 @@ const Agent = () => {
     try {
       if (currentId) {
         await api.put(`/agents/${currentId}`, formData);
+        initialFormRef.current = { id: currentId, sig: normalizeFormSignature(formData) };
         toast.success("Agent updated successfully");
       } else {
         const res = await api.post("/agents", formData);
-        setCurrentId(res.data.data.id);
+        const newId = res.data.data.id;
+        setCurrentId(newId);
+        initialFormRef.current = { id: newId, sig: normalizeFormSignature(formData) };
         toast.success("Agent saved successfully");
       }
     } catch (err) {
@@ -283,7 +282,7 @@ const Agent = () => {
 
   const handleEditFromSearch = (row) => {
     setCurrentId(row.id);
-    setFormData({
+    const loadedData = {
       agentTypeId:     row.agent_type_id    != null ? String(row.agent_type_id)  : "",
       name:            row.name             || "",
       contactPerson:   row.contact_person   || "",
@@ -303,7 +302,9 @@ const Agent = () => {
       stateId:         row.state_id         != null ? String(row.state_id)       : "",
       pincode:         row.pincode          || "",
       active:          row.is_active !== false,
-    });
+    };
+    setFormData(loadedData);
+    initialFormRef.current = { id: row.id, sig: normalizeFormSignature(loadedData) };
     setShowSearch(false);
   };
 
