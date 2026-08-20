@@ -54,7 +54,9 @@ if ($res === true) {
         
         \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
         $migrationOutput = \Illuminate\Support\Facades\Artisan::output();
-        
+
+        \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
+
         \Illuminate\Support\Facades\Artisan::call('config:cache');
         \Illuminate\Support\Facades\Artisan::call('route:cache');
         \Illuminate\Support\Facades\Artisan::call('view:cache');

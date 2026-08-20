@@ -23,6 +23,9 @@ try {
     \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
     $migrateOutput = \Illuminate\Support\Facades\Artisan::output();
 
+    \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
+    $seedOutput = \Illuminate\Support\Facades\Artisan::output();
+
     \Illuminate\Support\Facades\Artisan::call('config:cache');
     \Illuminate\Support\Facades\Artisan::call('route:cache');
     \Illuminate\Support\Facades\Artisan::call('view:cache');
