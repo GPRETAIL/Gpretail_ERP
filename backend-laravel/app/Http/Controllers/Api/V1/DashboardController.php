@@ -156,7 +156,7 @@ class DashboardController extends Controller
                 } elseif ($m['type'] === 'return') {
                     $returnSum = (float) (DB::table('pos_returns')
                         ->where('store_id', $st->id)
-                        ->sum('refund_amount') ?? 0);
+                        ->sum('total_refund') ?? 0);
                     $val = -abs($returnSum);
                 } elseif ($m['type'] === 'discount') {
                     $discSum = (float) (PosSale::where('store_id', $st->id)
