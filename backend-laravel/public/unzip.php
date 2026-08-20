@@ -64,10 +64,13 @@ if ($res === true) {
         $kernel = $app->make(\Illuminate\Contracts\Console\Kernel::class);
         $kernel->bootstrap();
         
+        \Illuminate\Support\Facades\Artisan::call('optimize:clear');
         \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
         $migrationOutput = \Illuminate\Support\Facades\Artisan::output();
 
-        \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
+        try {
+            \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
+        } catch (\Throwable $seedErr) {}
 
         \Illuminate\Support\Facades\Artisan::call('config:cache');
         \Illuminate\Support\Facades\Artisan::call('route:cache');
