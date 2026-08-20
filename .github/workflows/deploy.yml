@@ -97,6 +97,7 @@ jobs:
         run: |
           mkdir -p backend-laravel/public/
           cp -r frontend-dist/* backend-laravel/public/
+          cp backend-laravel/.env.production.example backend-laravel/.env
 
       - name: 🚀 Sync via FTP to Hostinger
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
@@ -113,7 +114,6 @@ jobs:
             **/.git*/**
             **/node_modules/**
             **/tests/**
-            **/.env
 
       - name: Deploy via SSH to Hostinger
         if: env.HOSTINGER_SSH_HOST != ''
