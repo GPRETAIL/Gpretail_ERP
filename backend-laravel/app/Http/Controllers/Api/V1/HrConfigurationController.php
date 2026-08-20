@@ -70,6 +70,42 @@ class HrConfigurationController extends Controller
         ], 201);
     }
 
+    public function designationsShow($id)
+    {
+        $designation = HrDesignation::with('department')->findOrFail($id);
+        return response()->json(['success' => true, 'data' => $designation]);
+    }
+
+    public function designationsUpdate(Request $request, $id)
+    {
+        $designation = HrDesignation::findOrFail($id);
+        $data = $request->all();
+
+        $designation->update([
+            'department_id' => $data['department_id'] ?? $designation->department_id,
+            'name'          => $data['name'] ?? $designation->name,
+            'code'          => $data['code'] ?? $designation->code,
+            'is_active'     => $request->has('is_active') ? $request->boolean('is_active') : $designation->is_active,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Designation updated successfully',
+            'data'    => $designation->load('department'),
+        ]);
+    }
+
+    public function designationsDestroy($id)
+    {
+        $designation = HrDesignation::findOrFail($id);
+        $designation->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Designation deleted successfully',
+        ]);
+    }
+
     // Departments / Sections
     public function departmentsIndex(Request $request)
     {
@@ -87,6 +123,12 @@ class HrConfigurationController extends Controller
             'data'    => $items,
             'total'   => $items->count(),
         ]);
+    }
+
+    public function departmentsShow($id)
+    {
+        $dept = HrDepartment::with('designations')->findOrFail($id);
+        return response()->json(['success' => true, 'data' => $dept]);
     }
 
     public function departmentsStore(Request $request)
@@ -120,12 +162,54 @@ class HrConfigurationController extends Controller
         ], 201);
     }
 
+    public function departmentsUpdate(Request $request, $id)
+    {
+        $dept = HrDepartment::findOrFail($id);
+        $data = $request->all();
+
+        $dept->update([
+            'name'        => $data['name'] ?? $dept->name,
+            'code'        => $data['code'] ?? $dept->code,
+            'description' => $data['description'] ?? $dept->description,
+            'is_active'   => $request->has('is_active') ? $request->boolean('is_active') : $dept->is_active,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Department updated successfully',
+            'data'    => $dept,
+        ]);
+    }
+
+    public function departmentsDestroy($id)
+    {
+        $dept = HrDepartment::findOrFail($id);
+        $dept->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Department deleted successfully',
+        ]);
+    }
+
     // Generic /hr-{type} fallback
-    public function handleType(Request $request, $type)
+    public function handleType(Request $request, $type, $id = null)
     {
         if (str_contains($type, 'designation')) {
+            if ($id) {
+                if ($request->isMethod('delete')) return $this->designationsDestroy($id);
+                if ($request->isMethod('put') || $request->isMethod('patch')) return $this->designationsUpdate($request, $id);
+                return $this->designationsShow($id);
+            }
             return $request->isMethod('post') ? $this->designationsStore($request) : $this->designationsIndex($request);
         }
+
+        if ($id) {
+            if ($request->isMethod('delete')) return $this->departmentsDestroy($id);
+            if ($request->isMethod('put') || $request->isMethod('patch')) return $this->departmentsUpdate($request, $id);
+            return $this->departmentsShow($id);
+        }
+
         return $request->isMethod('post') ? $this->departmentsStore($request) : $this->departmentsIndex($request);
     }
 }

@@ -222,12 +222,31 @@ class ProductController extends Controller
 
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
+        $data = $request->all();
+        if (empty($data['code'])) {
+            $data['code'] = !empty($data['sku']) ? $data['sku'] : ('PRD_' . strtoupper(substr(uniqid(), -6)));
+        }
+        if (empty($data['barcode'])) {
+            $data['barcode'] = $data['code'];
+        }
+
+        // Validate tax_id existence only if non-empty
+        if (!empty($data['tax_id']) && !DB::table('taxes')->where('id', $data['tax_id'])->exists()) {
+            $data['tax_id'] = null;
+        }
+        if (!empty($data['category_id']) && !DB::table('categories')->where('id', $data['category_id'])->exists()) {
+            $data['category_id'] = null;
+        }
+        if (!empty($data['brand_id']) && !DB::table('brands')->where('id', $data['brand_id'])->exists()) {
+            $data['brand_id'] = null;
+        }
+
+        $validator = Validator::make($data, [
             'name'          => 'required|string|max:255',
             'code'          => 'required|string|max:50|unique:products,code',
-            'category_id'   => 'nullable|exists:categories,id',
-            'brand_id'      => 'nullable|exists:brands,id',
-            'tax_id'        => 'nullable|exists:taxes,id',
+            'category_id'   => 'nullable',
+            'brand_id'      => 'nullable',
+            'tax_id'        => 'nullable',
             'cost_price'    => 'nullable|numeric|min:0',
             'selling_price' => 'nullable|numeric|min:0',
             'mrp'           => 'nullable|numeric|min:0',
@@ -235,11 +254,6 @@ class ProductController extends Controller
 
         if ($validator->fails()) {
             return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
-        }
-
-        $data = $request->all();
-        if (empty($data['barcode'])) {
-            $data['barcode'] = $data['code'];
         }
 
         $product = Product::create($data);

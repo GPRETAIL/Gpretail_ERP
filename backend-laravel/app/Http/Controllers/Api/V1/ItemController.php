@@ -61,4 +61,74 @@ class ItemController extends Controller
             'totalPages' => $items->lastPage(),
         ]);
     }
+
+    public function show($id)
+    {
+        $item = Product::with(['category', 'brand', 'tax', 'stocks', 'variants'])->findOrFail($id);
+        return response()->json(['success' => true, 'data' => $item]);
+    }
+
+    public function store(Request $request)
+    {
+        $data = $request->all();
+        if (empty($data['code'])) {
+            $data['code'] = !empty($data['item_code']) ? $data['item_code'] : (!empty($data['sku']) ? $data['sku'] : ('ITM_' . strtoupper(substr(uniqid(), -6))));
+        }
+        if (empty($data['barcode'])) {
+            $data['barcode'] = $data['code'];
+        }
+
+        if (!empty($data['tax_id']) && !DB::table('taxes')->where('id', $data['tax_id'])->exists()) {
+            $data['tax_id'] = null;
+        }
+        if (!empty($data['category_id']) && !DB::table('categories')->where('id', $data['category_id'])->exists()) {
+            $data['category_id'] = null;
+        }
+        if (!empty($data['brand_id']) && !DB::table('brands')->where('id', $data['brand_id'])->exists()) {
+            $data['brand_id'] = null;
+        }
+
+        $item = Product::create($data);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Item created successfully',
+            'data'    => $item,
+        ], 201);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $item = Product::findOrFail($id);
+        $data = $request->all();
+
+        if (!empty($data['tax_id']) && !DB::table('taxes')->where('id', $data['tax_id'])->exists()) {
+            unset($data['tax_id']);
+        }
+        if (!empty($data['category_id']) && !DB::table('categories')->where('id', $data['category_id'])->exists()) {
+            unset($data['category_id']);
+        }
+        if (!empty($data['brand_id']) && !DB::table('brands')->where('id', $data['brand_id'])->exists()) {
+            unset($data['brand_id']);
+        }
+
+        $item->update($data);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Item updated successfully',
+            'data'    => $item,
+        ]);
+    }
+
+    public function destroy($id)
+    {
+        $item = Product::findOrFail($id);
+        $item->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Item deleted successfully',
+        ]);
+    }
 }

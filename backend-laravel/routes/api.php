@@ -139,11 +139,25 @@ $registerAppRoutes = function () {
     Route::apiResource('sizes', SizeController::class);
 
     // HR Designations, Departments & Sections
+    Route::get('hr-designations/{id}', [HrConfigurationController::class, 'designationsShow']);
+    Route::put('hr-designations/{id}', [HrConfigurationController::class, 'designationsUpdate']);
+    Route::delete('hr-designations/{id}', [HrConfigurationController::class, 'designationsDestroy']);
     Route::get('hr-designations', [HrConfigurationController::class, 'designationsIndex']);
     Route::post('hr-designations', [HrConfigurationController::class, 'designationsStore']);
+
+    Route::get('hr-departments/{id}', [HrConfigurationController::class, 'departmentsShow']);
+    Route::put('hr-departments/{id}', [HrConfigurationController::class, 'departmentsUpdate']);
+    Route::delete('hr-departments/{id}', [HrConfigurationController::class, 'departmentsDestroy']);
+    Route::get('hr-departments', [HrConfigurationController::class, 'departmentsIndex']);
+    Route::post('hr-departments', [HrConfigurationController::class, 'departmentsStore']);
+
+    Route::get('hr-sections/{id}', [HrConfigurationController::class, 'departmentsShow']);
+    Route::put('hr-sections/{id}', [HrConfigurationController::class, 'departmentsUpdate']);
+    Route::delete('hr-sections/{id}', [HrConfigurationController::class, 'departmentsDestroy']);
     Route::get('hr-sections', [HrConfigurationController::class, 'departmentsIndex']);
     Route::post('hr-sections', [HrConfigurationController::class, 'departmentsStore']);
-    Route::match(['get', 'post'], 'hr-{type}', [HrConfigurationController::class, 'handleType']);
+
+    Route::match(['get', 'post', 'put', 'delete'], 'hr-{type}/{id?}', [HrConfigurationController::class, 'handleType']);
 
     // Items (Warehouse Dashboard Summary)
     Route::get('items/dashboard-summary', [ItemController::class, 'dashboardSummary']);
