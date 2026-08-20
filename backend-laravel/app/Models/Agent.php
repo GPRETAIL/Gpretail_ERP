@@ -9,19 +9,14 @@ class Agent extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'name',
-        'code',
-        'email',
-        'phone',
-        'commission_rate',
-        'is_active',
-    ];
+    protected $guarded = [];
 
     protected function casts(): array
     {
         return [
             'commission_rate' => 'decimal:2',
+            'commission_amt'  => 'decimal:2',
+            'commission_pct'  => 'decimal:2',
             'is_active'       => 'boolean',
         ];
     }
