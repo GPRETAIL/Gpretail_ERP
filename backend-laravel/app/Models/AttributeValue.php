@@ -9,17 +9,14 @@ class AttributeValue extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'attribute_type_id',
-        'name',
-        'value',
-        'is_active',
-    ];
+    protected $guarded = [];
 
     protected function casts(): array
     {
         return [
-            'is_active' => 'boolean',
+            'is_active'   => 'boolean',
+            'sort_order'  => 'integer',
+            'extra_data'  => 'array',
         ];
     }
 

@@ -119,6 +119,11 @@ class ProductAttributeController extends Controller
 
         $name = $request->input('name') ?? $request->input('value') ?? $request->input('attribute_value');
         $value = $request->input('value') ?? $name;
+        $code = $request->input('code') ?: $request->input('short_code') ?: null;
+        $sortOrder = $request->has('sort_order') ? $request->integer('sort_order') : ($request->has('display_order') ? $request->integer('display_order') : 0);
+        $extraData = $request->input('extra_data') ?: null;
+        $companyId = $request->input('company_id') ?: null;
+        $createdBy = $request->input('created_by') ?: ($request->user()?->name ?? null);
 
         if (!$name) {
             return response()->json([
@@ -131,7 +136,12 @@ class ProductAttributeController extends Controller
             'attribute_type_id' => $attributeType->id,
             'name'              => $name,
             'value'             => $value,
-            'is_active'         => $request->boolean('is_active', true),
+            'code'              => $code,
+            'sort_order'        => $sortOrder,
+            'extra_data'        => $extraData,
+            'company_id'        => $companyId,
+            'created_by'        => $createdBy,
+            'is_active'         => $request->has('is_active') ? $request->boolean('is_active') : true,
         ]);
 
         return response()->json([
@@ -175,11 +185,19 @@ class ProductAttributeController extends Controller
 
         $name = $request->input('name') ?? $request->input('value') ?? $attributeValue->name;
         $value = $request->input('value') ?? $name;
+        $code = $request->has('code') ? $request->input('code') : $attributeValue->code;
+        $sortOrder = $request->has('sort_order') ? $request->integer('sort_order') : ($request->has('display_order') ? $request->integer('display_order') : $attributeValue->sort_order);
+        $extraData = $request->has('extra_data') ? $request->input('extra_data') : $attributeValue->extra_data;
+        $updatedBy = $request->input('updated_by') ?: ($request->user()?->name ?? null);
 
         $attributeValue->update([
-            'name'      => $name,
-            'value'     => $value,
-            'is_active' => $request->has('is_active') ? $request->boolean('is_active') : $attributeValue->is_active,
+            'name'       => $name,
+            'value'      => $value,
+            'code'       => $code,
+            'sort_order' => $sortOrder,
+            'extra_data' => $extraData,
+            'updated_by' => $updatedBy,
+            'is_active'  => $request->has('is_active') ? $request->boolean('is_active') : $attributeValue->is_active,
         ]);
 
         return response()->json([
