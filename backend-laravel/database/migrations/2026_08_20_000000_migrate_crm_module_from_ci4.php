@@ -105,13 +105,13 @@ return new class extends Migration
 
         Schema::table('stores', function (Blueprint $table) {
             if (!Schema::hasColumn('stores', 'loyalty_point_value')) {
-                $table->decimal('loyalty_point_value', 10, 2)->default(100)->after('internal_vendor_margin');
+                $table->decimal('loyalty_point_value', 10, 2)->default(100);
             }
             if (!Schema::hasColumn('stores', 'loyalty_redeem_min_points')) {
-                $table->unsignedInteger('loyalty_redeem_min_points')->default(100)->after('loyalty_point_value');
+                $table->unsignedInteger('loyalty_redeem_min_points')->default(100);
             }
             if (!Schema::hasColumn('stores', 'loyalty_redeem_window_months')) {
-                $table->unsignedInteger('loyalty_redeem_window_months')->default(12)->after('loyalty_redeem_min_points');
+                $table->unsignedInteger('loyalty_redeem_window_months')->default(12);
             }
         });
     }
