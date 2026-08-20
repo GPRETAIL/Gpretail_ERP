@@ -123,6 +123,7 @@ jobs:
           mkdir -p ftp_upload
           cp deploy.zip ftp_upload/
           cp backend-laravel/unzip.php ftp_upload/
+          cp backend-laravel/migrate.php ftp_upload/
 
       - name: 🚀 Fast Upload via FTP to Hostinger
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
@@ -141,7 +142,7 @@ jobs:
           curl -s "https://dev.gpsoftware.in/unzip.php?token=NextErpDeploySecret2026"
           sleep 2
           echo "Running database migrations..."
-          curl -s "https://dev.gpsoftware.in/run-migrations"
+          curl -s "https://dev.gpsoftware.in/migrate.php?token=NextErpDeploySecret2026"
 
       - name: Deploy via SSH to Hostinger
         if: env.HOSTINGER_SSH_HOST != ''
