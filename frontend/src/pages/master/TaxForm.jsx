@@ -240,14 +240,17 @@ const TaxForm = () => {
         });
         const t = res.data.data;
         const loadedFormData = {
-          taxCode: t.tax_code,
-          name: t.name,
-          taxCharges: t.tax_type,
-          isSalesTax: t.is_sales_tax,
-          isPurchaseTax: t.is_purchase_tax,
-          isDisabled: t.is_disabled,
-          taxPercentage: t.tax_percentage,
-          extraFields: t.extra_fields || {},
+          taxCode: t.tax_code ?? t.code ?? "",
+          name: t.name ?? "",
+          taxCharges: t.tax_type ?? t.type ?? "GST",
+          isSalesTax: t.is_sales_tax ?? true,
+          isPurchaseTax: t.is_purchase_tax ?? true,
+          isDisabled: t.is_disabled ?? (t.is_active === false),
+          taxPercentage: t.tax_percentage ?? t.rate ?? 0,
+          extraFields: t.extra_fields || {
+            cgst: t.cgst_rate ?? ((t.rate ?? 0) / 2),
+            sgst: t.sgst_rate ?? ((t.rate ?? 0) / 2),
+          },
         };
         const loadedRanged = t.extra_fields?.rangedtable || rangedTaxItems;
         const loadedStoreId = t.company_id != null ? String(t.company_id) : "";
