@@ -2083,36 +2083,79 @@ const DirectPurchase = () => {
         setTaxDraft(createEmptyTaxLine());
         setTaxLines(entryTaxLines);
 
-        const unresolvedItems = Array.isArray(entry.items)
-          ? entry.items
-              .filter((item) =>
-                item
-                && (
-                  (item.product_id && isUnknownLookupLabel(getMeaningfulLabel(item.product?.name, item.product_name)))
-                  || (item.brand_id && isUnknownLookupLabel(getMeaningfulLabel(item.brand?.name, item.brand_name)))
-                ))
-              .map((item) => ({
-                itemId: item.id,
-                productId: item.product_id ?? item.productId ?? null,
-                productName: getMeaningfulLabel(item.product?.name, item.product_name),
-                brandId: item.brand_id ?? item.brandId ?? null,
-                brandName: getMeaningfulLabel(item.brand?.name, item.brand_name),
-              }))
-          : [];
-        if (
-          unresolvedItems.length > 0
-          || isUnknownLookupLabel(getMeaningfulLabel(entry.company?.name, entry.company_name))
-          || isUnknownLookupLabel(getMeaningfulLabel(entry.supplier?.name, entry.supplier_name))
-        ) {
-          console.warn("Direct purchase loaded with unresolved lookup refs", {
-            directPurchaseId: entry.id,
-            companyId: entry.company_id ?? entry.companyId ?? null,
-            companyName: getMeaningfulLabel(entry.company?.name, entry.company_name),
-            supplierId: entry.supplier_id ?? entry.supplierId ?? null,
-            supplierName: getMeaningfulLabel(entry.supplier?.name, entry.supplier_name),
-            unresolvedItems,
-            rawEntry: entry,
+        // Merge master entities from entry into dropdown options
+        if (entry.company_id || entry.company) {
+          const compObj = entry.company || { id: entry.company_id, name: entry.company_name || `Company #${entry.company_id}` };
+          setCompanies((prev) => {
+            const exists = (prev || []).some((c) => String(c.id) === String(compObj.id));
+            return exists ? prev : [compObj, ...(prev || [])];
           });
+        }
+
+        if (entry.supplier_id || entry.supplier) {
+          const supObj = entry.supplier || { id: entry.supplier_id, name: entry.supplier_name || `Supplier #${entry.supplier_id}` };
+          setSuppliers((prev) => {
+            const exists = (prev || []).some((s) => String(s.id) === String(supObj.id));
+            return exists ? prev : [supObj, ...(prev || [])];
+          });
+        }
+
+        if (entry.transport_id || entry.transport) {
+          const trObj = entry.transport || { id: entry.transport_id, name: entry.transport_name || `Transport #${entry.transport_id}` };
+          setTransports((prev) => {
+            const exists = (prev || []).some((t) => String(t.id) === String(trObj.id));
+            return exists ? prev : [trObj, ...(prev || [])];
+          });
+        }
+
+        if (Array.isArray(entry.items) && entry.items.length) {
+          const extraProducts = [];
+          const extraBrands = [];
+          const extraColors = [];
+
+          entry.items.forEach((item) => {
+            const prodId = item.product_id ?? item.productId;
+            const prodName = item.product?.name || item.product_name;
+            if (prodId) {
+              extraProducts.push(item.product || { id: prodId, name: prodName || `Product #${prodId}`, hsn_code: item.hsn_code });
+            }
+
+            const bId = item.brand_id ?? item.brandId;
+            const bName = item.brand?.name || item.brand_name;
+            if (bId) {
+              extraBrands.push(item.brand || { id: bId, name: bName || `Brand #${bId}` });
+            }
+
+            const cId = item.color_id ?? item.colorId;
+            const cName = item.color?.name || item.color_name;
+            if (cId) {
+              extraColors.push(item.color || { id: cId, name: cName || `Color #${cId}` });
+            }
+          });
+
+          if (extraProducts.length) {
+            setProducts((prev) => {
+              const existingIds = new Set((prev || []).map((p) => String(p.id)));
+              const toAdd = extraProducts.filter((p) => !existingIds.has(String(p.id)));
+              return toAdd.length ? [...(prev || []), ...toAdd] : prev;
+            });
+          }
+
+          if (extraBrands.length) {
+            setBrands((prev) => {
+              const existingIds = new Set((prev || []).map((b) => String(b.id)));
+              const toAdd = extraBrands.filter((b) => !existingIds.has(String(b.id)));
+              return toAdd.length ? [...(prev || []), ...toAdd] : prev;
+            });
+          }
+
+          if (extraColors.length) {
+            setColors((prev) => {
+              const existingIds = new Set((prev || []).map((c) => String(c.id)));
+              const toAdd = extraColors.filter((c) => !existingIds.has(String(c.id)));
+              return toAdd.length ? [...(prev || []), ...toAdd] : prev;
+            });
+          }
         }
 
         const mappedItems = Array.isArray(entry.items)
@@ -2120,16 +2163,16 @@ const DirectPurchase = () => {
               id: item.id || Date.now() + index,
               sNo: Number(item.s_no || index + 1),
               productId: item.product_id ? String(item.product_id) : "",
-              productName: getMeaningfulLabel(item.product?.name, item.product_name),
+              productName: getMeaningfulLabel(item.product?.name, item.product_name) || `Product #${item.product_id}`,
               brandId: item.brand_id ? String(item.brand_id) : "",
-              brandName: getMeaningfulLabel(item.brand?.name, item.brand_name),
+              brandName: getMeaningfulLabel(item.brand?.name, item.brand_name) || (item.brand_id ? `Brand #${item.brand_id}` : "-"),
               size: item.size || "",
               colorId: item.color_id ? String(item.color_id) : "",
               colorName: getMeaningfulLabel(
                 item.color?.name,
                 item.color_name,
                 colors.find((row) => String(row.id) === String(item.color_id))?.name
-              ),
+              ) || (item.color_id ? `Color #${item.color_id}` : "-"),
               designNo: item.design_no || "",
               hsnCode: item.hsn_code || "",
               qty: parseInt(item.qty, 10) || 0,
