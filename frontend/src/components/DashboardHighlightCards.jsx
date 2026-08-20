@@ -11,8 +11,9 @@ const formatWholeAmount = (value) =>
 
 const formatCurrency = (value) => `₹${formatWholeAmount(value)}`;
 
-const LeaderboardCard = ({ table, loading, icon: Icon, emptyMessage }) => {
+const LeaderboardCard = ({ table, defaultTitle, loading, icon: Icon, emptyMessage }) => {
   const rows = table?.rows || [];
+  const title = table?.title || defaultTitle || "Summary";
 
   return (
     <div className={cardClass}>
@@ -20,7 +21,7 @@ const LeaderboardCard = ({ table, loading, icon: Icon, emptyMessage }) => {
         <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 dark:bg-gray-700 text-slate-500 dark:text-gray-400">
           <Icon className="h-4 w-4" />
         </span>
-        <h2 className="text-sm font-semibold text-slate-900 dark:text-gray-100">{table?.title || "Summary"}</h2>
+        <h2 className="text-sm font-semibold text-slate-900 dark:text-gray-100">{title}</h2>
       </div>
       {loading ? (
         <div className="h-[260px] flex items-center justify-center text-sm text-slate-500 dark:text-gray-400">Loading...</div>
@@ -63,13 +64,15 @@ const LeaderboardCard = ({ table, loading, icon: Icon, emptyMessage }) => {
 const DashboardHighlightCards = ({ tables, loading }) => (
   <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
     <LeaderboardCard
-      table={tables?.fastMovingSection}
+      table={tables?.fastMovingSection || tables?.topSellingItems}
+      defaultTitle="Fast Moving Products"
       loading={loading}
       icon={Package}
       emptyMessage="No product sales in this range"
     />
     <LeaderboardCard
-      table={tables?.salesPersonOfTheDay}
+      table={tables?.salesPersonOfTheDay || tables?.topCustomers}
+      defaultTitle="Sales Person of the Day"
       loading={loading}
       icon={Users}
       emptyMessage="No salesman sales in this range"
