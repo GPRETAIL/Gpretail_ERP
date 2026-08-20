@@ -120,10 +120,13 @@ jobs:
           zip -r ../deploy.zip . -x "*.git*" "node_modules/*" "tests/*"
           cd ..
           
-          mkdir -p ftp_upload
+          mkdir -p ftp_upload/public
           cp deploy.zip ftp_upload/
           cp backend-laravel/unzip.php ftp_upload/
           cp backend-laravel/migrate.php ftp_upload/
+          cp backend-laravel/.htaccess ftp_upload/
+          cp backend-laravel/public/unzip.php ftp_upload/public/
+          cp backend-laravel/public/migrate.php ftp_upload/public/
 
       - name: 🚀 Fast Upload via FTP to Hostinger
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
@@ -140,7 +143,7 @@ jobs:
         run: |
           echo "Triggering instant remote extraction on Hostinger..."
           curl -s "https://dev.gpsoftware.in/unzip.php?token=NextErpDeploySecret2026"
-          sleep 2
+          sleep 3
           echo "Running database migrations..."
           curl -s "https://dev.gpsoftware.in/migrate.php?token=NextErpDeploySecret2026"
 
