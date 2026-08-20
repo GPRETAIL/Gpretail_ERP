@@ -1,0 +1,123 @@
+name: CI/CD Pipeline & Hostinger Deploy
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  # ─── 1. FRONTEND TEST & BUILD ───────────────────────────────────────────────
+  frontend:
+    name: Frontend Test & Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Frontend Dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run Frontend Tests
+        working-directory: frontend
+        run: npm test
+
+      - name: Build Frontend Bundle
+        working-directory: frontend
+        run: npm run build
+
+      - name: Upload Frontend Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+          retention-days: 1
+
+  # ─── 2. BACKEND TEST & VALIDATE ─────────────────────────────────────────────
+  backend:
+    name: Backend Test & Validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_sqlite, pdo_mysql, bcmath, curl
+          coverage: none
+
+      - name: Validate Composer Configuration
+        working-directory: backend-laravel
+        run: composer validate --strict
+
+      - name: Install Composer Dependencies
+        working-directory: backend-laravel
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Setup Test Environment
+        working-directory: backend-laravel
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Run Backend Tests
+        working-directory: backend-laravel
+        run: php artisan test --without-tty
+
+  # ─── 3. DEPLOY TO HOSTINGER (MAIN BRANCH ONLY) ──────────────────────────────
+  deploy:
+    name: Deploy to Hostinger
+    needs: [frontend, backend]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Download Frontend Build
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend-dist/
+
+      - name: Prepare Combined Deployment Package
+        run: |
+          mkdir -p backend-laravel/public/
+          cp -r frontend-dist/* backend-laravel/public/
+
+      - name: Deploy via SSH to Hostinger
+        if: env.HOSTINGER_SSH_HOST != ''
+        env:
+          HOSTINGER_SSH_HOST: ${{ secrets.HOSTINGER_SSH_HOST }}
+          HOSTINGER_SSH_USER: ${{ secrets.HOSTINGER_SSH_USER }}
+          HOSTINGER_SSH_KEY: ${{ secrets.HOSTINGER_SSH_KEY }}
+          HOSTINGER_SSH_PORT: ${{ secrets.HOSTINGER_SSH_PORT || '22' }}
+          HOSTINGER_TARGET_DIR: ${{ secrets.HOSTINGER_TARGET_DIR || 'domains/dev.gpsoftware.in/public_html' }}
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOSTINGER_SSH_HOST }}
+          username: ${{ secrets.HOSTINGER_SSH_USER }}
+          key: ${{ secrets.HOSTINGER_SSH_KEY }}
+          port: ${{ secrets.HOSTINGER_SSH_PORT || 22 }}
+          script: |
+            cd ${{ secrets.HOSTINGER_TARGET_DIR || 'domains/dev.gpsoftware.in/public_html' }}
+            git pull origin main
+            cd backend-laravel
+            composer install --no-dev --optimize-autoloader --no-interaction
+            php artisan migrate --force
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache
