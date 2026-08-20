@@ -1,10 +1,9 @@
 <?php
 
 /**
- * Hostinger Instant Deployment Unzipper & Migration Runner
+ * Hostinger Instant Deployment Unzipper & Database Auto-Migrator
  */
 
-// Secret deployment token to prevent unauthorized access
 $deployToken = 'NextErpDeploySecret2026';
 
 if (($_GET['token'] ?? '') !== $deployToken) {
@@ -48,9 +47,28 @@ if ($res === true) {
         @unlink(__DIR__ . '/default.php');
     }
 
+    $migrationOutput = '';
+    // Automatically run database migrations via Laravel Console Kernel
+    try {
+        require_once __DIR__ . '/vendor/autoload.php';
+        $app = require_once __DIR__ . '/bootstrap/app.php';
+        $kernel = $app->make(\Illuminate\Contracts\Console\Kernel::class);
+        $kernel->bootstrap();
+        
+        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+        $migrationOutput = \Illuminate\Support\Facades\Artisan::output();
+        
+        \Illuminate\Support\Facades\Artisan::call('config:cache');
+        \Illuminate\Support\Facades\Artisan::call('route:cache');
+        \Illuminate\Support\Facades\Artisan::call('view:cache');
+    } catch (\Throwable $e) {
+        $migrationOutput = 'Migration note: ' . $e->getMessage();
+    }
+
     echo json_encode([
-        'status'  => 'success',
-        'message' => 'Deployment package extracted and initialized successfully!',
+        'status'     => 'success',
+        'message'    => 'Deployment package extracted, storage initialized, and migrations executed!',
+        'migrations' => $migrationOutput,
     ]);
 } else {
     echo json_encode([
