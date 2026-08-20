@@ -20,6 +20,10 @@ try {
     $kernel = $app->make(\Illuminate\Contracts\Console\Kernel::class);
     $kernel->bootstrap();
 
+    if (function_exists('opcache_reset')) {
+        @opcache_reset();
+    }
+
     // 1. Clear old caches
     \Illuminate\Support\Facades\Artisan::call('optimize:clear');
 
