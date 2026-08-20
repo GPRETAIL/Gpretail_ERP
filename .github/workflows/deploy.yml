@@ -87,6 +87,17 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Setup PHP for Production Deployment Package
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_sqlite, pdo_mysql, bcmath, curl
+          coverage: none
+
+      - name: Install Production Composer Dependencies
+        working-directory: backend-laravel
+        run: composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --ignore-platform-req=php+
+
       - name: Download Frontend Build
         uses: actions/download-artifact@v4
         with:
@@ -98,6 +109,12 @@ jobs:
           mkdir -p backend-laravel/public/
           cp -r frontend-dist/* backend-laravel/public/
           cp backend-laravel/.env.production.example backend-laravel/.env
+          mkdir -p backend-laravel/storage/framework/cache/data
+          mkdir -p backend-laravel/storage/framework/sessions
+          mkdir -p backend-laravel/storage/framework/views
+          mkdir -p backend-laravel/storage/logs
+          mkdir -p backend-laravel/bootstrap/cache
+          chmod -R 777 backend-laravel/storage backend-laravel/bootstrap/cache
 
       - name: 🚀 Sync via FTP to Hostinger
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
