@@ -1,68 +1,66 @@
-# CodeIgniter 4 Application Starter
+# GPRETAIL / phpapp
 
-## What is CodeIgniter?
+Full-stack ERP system built with a **Unified Laravel 13 API Backend** and a **React 19 + Vite Frontend**.
 
-CodeIgniter is a PHP full-stack web framework that is light, fast, flexible and secure.
-More information can be found at the [official site](https://codeigniter.com).
+---
 
-This repository holds a composer-installable app starter.
-It has been built from the
-[development repository](https://github.com/codeigniter4/CodeIgniter4).
+## 🏗 Project Structure
 
-More information about the plans for version 4 can be found in [CodeIgniter 4](https://forum.codeigniter.com/forumdisplay.php?fid=28) on the forums.
+- `backend-laravel/`: Laravel 13 REST API (Sanctum authentication, MariaDB / MySQL database, unified master lookup batch endpoints, inventory & billing workflows).
+- `frontend/`: React 19 SPA (Vite, Tailwind CSS, Lucide icons, Shimmer Skeleton loading, hybrid high-speed search dropdowns).
 
-You can read the [user guide](https://codeigniter.com/user_guide/)
-corresponding to the latest version of the framework.
+---
 
-## Installation & updates
+## 🚀 Local Development
 
-`composer create-project codeigniter4/appstarter` then `composer update` whenever
-there is a new release of the framework.
+### 1. Backend (Laravel 13)
+```bash
+cd backend-laravel
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate
+php artisan serve --port=8000
+```
 
-When updating, check the release notes to see if there are any changes you might need to apply
-to your `app` folder. The affected files can be copied or merged from
-`vendor/codeigniter4/framework/app`.
+### 2. Frontend (React 19 + Vite)
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-## Setup
+---
 
-Copy `env` to `.env` and tailor for your app, specifically the baseURL
-and any database settings.
+## 🌐 Production Deployment (Hostinger / cPanel)
 
-## Important Change with index.php
+### 1. Build Frontend
+```bash
+cd frontend
+npm run build
+```
+Copy `frontend/dist/*` into `backend-laravel/public/`.
 
-`index.php` is no longer in the root of the project! It has been moved inside the *public* folder,
-for better security and separation of components.
+### 2. Configure Hostinger Database (`backend-laravel/.env`)
+```env
+APP_NAME=GPRETAIL
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://dev.gpsoftware.in
 
-This means that you should configure your web server to "point" to your project's *public* folder, and
-not to the project root. A better practice would be to configure a virtual host to point there. A poor practice would be to point your web server to the project root and expect to enter *public/...*, as the rest of your logic and the
-framework are exposed.
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=u597975289_Dev
+DB_USERNAME=u597975289_Dev
+DB_PASSWORD=Saran@1300!
+```
 
-**Please** read the user guide for a better explanation of how CI4 works!
-
-## Repository Management
-
-We use GitHub issues, in our main repository, to track **BUGS** and to track approved **DEVELOPMENT** work packages.
-We use our [forum](http://forum.codeigniter.com) to provide SUPPORT and to discuss
-FEATURE REQUESTS.
-
-This repository is a "distribution" one, built by our release preparation script.
-Problems with it can be raised on our forum, or as issues in the main repository.
-
-## Server Requirements
-
-PHP version 8.1 or higher is required, with the following extensions installed:
-
-- [intl](http://php.net/manual/en/intl.requirements.php)
-- [mbstring](http://php.net/manual/en/mbstring.installation.php)
-
-> [!WARNING]
-> - The end of life date for PHP 7.4 was November 28, 2022.
-> - The end of life date for PHP 8.0 was November 26, 2023.
-> - If you are still using PHP 7.4 or 8.0, you should upgrade immediately.
-> - The end of life date for PHP 8.1 will be December 31, 2025.
-
-Additionally, make sure that the following extensions are enabled in your PHP:
-
-- json (enabled by default - don't turn it off)
-- [mysqlnd](http://php.net/manual/en/mysqlnd.install.php) if you plan to use MySQL
-- [libcurl](http://php.net/manual/en/curl.requirements.php) if you plan to use the HTTP\CURLRequest library
+### 3. Run Migrations & Cache Optimization
+```bash
+cd backend-laravel
+php artisan migrate --force
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+```

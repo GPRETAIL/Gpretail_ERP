@@ -1,0 +1,803 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ── Global layout overrides ── */
+/* Remove min-h-screen from page wrappers so they fit inside the flex layout */
+main > div {
+  min-height: 0 !important;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Strip excessive bottom-padding (pb-16 … pb-28) left over from old fixed footer */
+main > div > div {
+  padding-bottom: 0.375rem !important;
+  flex-shrink: 0;
+}
+
+/* The LAST child div is the main content area — let it fill remaining space */
+main > div > div:last-child {
+  padding: 0.375rem 0.5rem !important;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* Also handle p-6 module pages */
+main > .p-6 {
+  padding: 0.5rem !important;
+}
+
+/* ── Liquid Glass Keyframes ── */
+@keyframes glassShimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+/* ── Liquid Glass Base Button ──
+   Neutral frosted glass by default (like Apple iOS liquid glass).
+   Color tint only appears on hover via the variant classes.
+*/
+.topbar-action-btn,
+.glass-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0.34rem 0.68rem;
+  border: 1px solid rgba(200, 200, 200, 0.5);
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+  color: #374151;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.72) 0%,
+      rgba(240, 240, 240, 0.45) 100%
+    );
+  backdrop-filter: blur(16px) saturate(1.8);
+  -webkit-backdrop-filter: blur(16px) saturate(1.8);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.06),
+    0 0 0 0.5px rgba(255, 255, 255, 0.7) inset,
+    0 1px 0 rgba(255, 255, 255, 0.85) inset,
+    0 -0.5px 0 rgba(0, 0, 0, 0.04) inset;
+  transition:
+    transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 250ms ease,
+    border-color 250ms ease,
+    background 250ms ease,
+    color 250ms ease;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+/* Shimmer highlight layer */
+.topbar-action-btn::before,
+.glass-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.55) 45%,
+    rgba(255, 255, 255, 0.8) 50%,
+    rgba(255, 255, 255, 0.55) 55%,
+    transparent 70%
+  );
+  background-size: 200% 100%;
+  opacity: 0;
+  transition: opacity 300ms ease;
+  pointer-events: none;
+}
+
+/* ── Base hover — neutral lift ── */
+.topbar-action-btn:hover,
+.glass-btn:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, 0.1),
+    0 0 0 0.5px rgba(255, 255, 255, 0.8) inset,
+    0 2px 0 rgba(255, 255, 255, 0.9) inset,
+    0 -0.5px 0 rgba(0, 0, 0, 0.03) inset;
+  border-color: rgba(200, 200, 200, 0.65);
+}
+
+.topbar-action-btn:hover::before,
+.glass-btn:hover::before {
+  opacity: 1;
+  animation: glassShimmer 1.2s ease-in-out;
+}
+
+.topbar-action-btn:active,
+.glass-btn:active {
+  transform: translateY(0) scale(0.97);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.08),
+    0 0 0 0.5px rgba(255, 255, 255, 0.4) inset;
+}
+
+.topbar-action-btn:focus-visible,
+.glass-btn:focus-visible {
+  outline: 2px solid rgba(99, 102, 241, 0.5);
+  outline-offset: 2px;
+}
+
+.topbar-action-btn:disabled,
+.glass-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  transform: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  backdrop-filter: blur(8px);
+}
+
+/* ── Color Variants — neutral by default, colored on hover ── */
+
+/* Primary (blue) */
+.topbar-action-new,
+.glass-btn-primary {
+  color: #374151;
+}
+.topbar-action-new:hover,
+.glass-btn-primary:hover {
+  color: #1d4ed8;
+  border-color: rgba(99, 102, 241, 0.35);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(99, 102, 241, 0.1) 0%,
+      rgba(129, 140, 248, 0.18) 100%
+    );
+  box-shadow:
+    0 6px 20px rgba(99, 102, 241, 0.18),
+    0 0 0 0.5px rgba(99, 102, 241, 0.12) inset,
+    0 1px 0 rgba(255, 255, 255, 0.7) inset;
+}
+
+/* Warning (amber) */
+.topbar-action-upload,
+.glass-btn-warning {
+  color: #374151;
+}
+.topbar-action-upload:hover,
+.glass-btn-warning:hover {
+  color: #b45309;
+  border-color: rgba(245, 158, 11, 0.35);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(245, 158, 11, 0.08) 0%,
+      rgba(251, 191, 36, 0.16) 100%
+    );
+  box-shadow:
+    0 6px 20px rgba(245, 158, 11, 0.16),
+    0 0 0 0.5px rgba(245, 158, 11, 0.1) inset,
+    0 1px 0 rgba(255, 255, 255, 0.7) inset;
+}
+
+/* Success (green) */
+.topbar-action-export,
+.glass-btn-success {
+  color: #374151;
+}
+.topbar-action-export:hover,
+.glass-btn-success:hover {
+  color: #047857;
+  border-color: rgba(16, 185, 129, 0.35);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(16, 185, 129, 0.08) 0%,
+      rgba(52, 211, 153, 0.16) 100%
+    );
+  box-shadow:
+    0 6px 20px rgba(16, 185, 129, 0.16),
+    0 0 0 0.5px rgba(16, 185, 129, 0.1) inset,
+    0 1px 0 rgba(255, 255, 255, 0.7) inset;
+}
+
+/* Danger (red) */
+.glass-btn-danger {
+  color: #374151;
+}
+.glass-btn-danger:hover {
+  color: #dc2626;
+  border-color: rgba(239, 68, 68, 0.35);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(239, 68, 68, 0.08) 0%,
+      rgba(248, 113, 113, 0.16) 100%
+    );
+  box-shadow:
+    0 6px 20px rgba(239, 68, 68, 0.16),
+    0 0 0 0.5px rgba(239, 68, 68, 0.1) inset,
+    0 1px 0 rgba(255, 255, 255, 0.7) inset;
+}
+
+/* Secondary (gray) */
+.glass-btn-secondary {
+  color: #374151;
+}
+.glass-btn-secondary:hover {
+  color: #1e293b;
+  border-color: rgba(100, 116, 139, 0.3);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(100, 116, 139, 0.06) 0%,
+      rgba(148, 163, 184, 0.12) 100%
+    );
+  box-shadow:
+    0 6px 20px rgba(100, 116, 139, 0.12),
+    0 0 0 0.5px rgba(100, 116, 139, 0.08) inset,
+    0 1px 0 rgba(255, 255, 255, 0.7) inset;
+}
+
+/* ═══════════════════════════════════════════════════
+   MOBILE-FIRST RESPONSIVE STYLES (max-width: 767px)
+   ═══════════════════════════════════════════════════ */
+@media (max-width: 767px) {
+
+  /* ── Global font scaling ── */
+  html { font-size: 14px; }
+
+  body {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* ── Glass buttons — compact for mobile ── */
+  .topbar-action-btn,
+  .glass-btn {
+    padding: 0.3rem 0.55rem;
+    font-size: 0.68rem;
+    gap: 0.2rem;
+    border-radius: 0.375rem;
+  }
+
+  /* ── Page headers / breadcrumbs ── */
+  h1, h2 {
+    font-size: 0.8rem !important;
+    line-height: 1.3 !important;
+  }
+
+  /* ── All text sizes scale down ── */
+  .text-xs { font-size: 0.65rem !important; }
+  .text-sm { font-size: 0.75rem !important; }
+  .text-base { font-size: 0.82rem !important; }
+  .text-lg { font-size: 0.9rem !important; }
+  .text-xl { font-size: 1rem !important; }
+  .text-2xl { font-size: 1.15rem !important; }
+
+  /* ── Inputs, selects, textareas ── */
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 0.75rem !important;
+    padding: 0.35rem 0.5rem !important;
+  }
+
+  /* ── Tables — horizontal scroll ── */
+  table { font-size: 0.68rem; }
+  th, td { padding: 0.3rem 0.4rem !important; }
+
+  /* Wrap table in scroll container */
+  .overflow-x-auto { -webkit-overflow-scrolling: touch; }
+
+  /* ── Page content padding ── */
+  main > div > div:last-child {
+    padding: 0.25rem 0.35rem !important;
+  }
+
+  main > .p-6,
+  .p-4 { padding: 0.35rem !important; }
+
+  /* ── Topbar action bar — wrap buttons ── */
+  .flex.items-center.space-x-3,
+  .flex.items-center.gap-3,
+  .flex.items-center.gap-2 {
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+
+  /* ── Form grids — stack vertically on mobile ── */
+  [class*="grid-cols-"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ── Two-panel layouts — stack on mobile ── */
+  [class*="lg:flex-row"] { flex-direction: column !important; }
+  [class*="lg:w-1/"],
+  [class*="lg:w-2/"],
+  [class*="lg:w-3/"],
+  .w-1\/2,
+  .w-1\/3,
+  .w-2\/3 { width: 100% !important; }
+
+  /* ── Dialogs/modals — full width on mobile ── */
+  .max-w-sm,
+  .max-w-md,
+  .max-w-lg,
+  .max-w-xl,
+  .max-w-2xl,
+  .max-w-3xl {
+    max-width: calc(100vw - 1rem) !important;
+  }
+
+  /* ── Tab bar — smaller tabs on mobile ── */
+  .w-\[160px\] { width: 100px !important; }
+
+  /* ── Status tabs/pills — compact ── */
+  .rounded-full { padding: 0.2rem 0.5rem !important; font-size: 0.62rem !important; }
+
+  /* ── Page topbar (breadcrumb + buttons) — wrap on mobile ── */
+  .flex.justify-between.items-center.px-4 {
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    padding: 0.35rem 0.5rem !important;
+  }
+
+  /* ── Space-x/gap utilities — tighten on mobile ── */
+  .space-x-3 > * + * { margin-left: 0.35rem !important; }
+  .space-x-2 > * + * { margin-left: 0.25rem !important; }
+
+  /* ── Separator pipes — hide on very small screens ── */
+  .space-x-3 > span:only-child { display: none; }
+
+  /* ── Bottom action bars (Save/Clear/Next) — full width ── */
+  .flex.items-center.justify-end.gap-2 {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+  .flex.items-center.justify-end.gap-2 > .glass-btn {
+    flex: 1;
+    justify-content: center;
+    min-width: 0;
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   SMALL MOBILE (max-width: 480px)
+   ═══════════════════════════════════════════════════ */
+@media (max-width: 480px) {
+  html { font-size: 13px; }
+
+  .topbar-action-btn,
+  .glass-btn {
+    padding: 0.25rem 0.45rem;
+    font-size: 0.62rem;
+  }
+
+  h1, h2 {
+    font-size: 0.72rem !important;
+  }
+
+  /* ── Footer compact ── */
+  footer, [class*="shrink-0"][class*="border-t"] {
+    font-size: 0.6rem;
+    padding-top: 0.2rem;
+    padding-bottom: 0.2rem;
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   TABLET (768px – 1023px)
+   ═══════════════════════════════════════════════════ */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .topbar-action-btn,
+  .glass-btn {
+    font-size: 0.72rem;
+    padding: 0.32rem 0.6rem;
+  }
+
+  /* Form grids — 2 columns on tablet */
+  [class*="grid-cols-3"],
+  [class*="grid-cols-4"],
+  [class*="grid-cols-5"],
+  [class*="grid-cols-6"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* ── Master page responsive scaling (desktop) ── */
+@media (min-width: 1280px) {
+  .master-responsive h1 {
+    font-size: 1.2rem;
+    line-height: 1.25;
+  }
+
+  .master-responsive h2 {
+    font-size: 1.05rem;
+    line-height: 1.25;
+  }
+
+  .master-responsive .topbar-action-btn {
+    font-size: 0.82rem;
+    padding: 0.42rem 0.82rem;
+  }
+
+  .master-responsive input:not([type="checkbox"]):not([type="radio"]),
+  .master-responsive select,
+  .master-responsive textarea,
+  .master-responsive button {
+    font-size: 0.82rem;
+  }
+
+  .master-responsive input:not([type="checkbox"]):not([type="radio"]),
+  .master-responsive select,
+  .master-responsive textarea {
+    padding-top: 0.42rem;
+    padding-bottom: 0.42rem;
+  }
+
+  .master-responsive table {
+    font-size: 0.82rem;
+  }
+
+  .master-responsive th,
+  .master-responsive td {
+    padding-top: 0.52rem;
+    padding-bottom: 0.52rem;
+  }
+}
+
+@media (min-width: 1536px) {
+  .master-responsive h1 {
+    font-size: 1.32rem;
+  }
+
+  .master-responsive h2 {
+    font-size: 1.15rem;
+  }
+
+  .master-responsive .topbar-action-btn {
+    font-size: 0.9rem;
+    padding: 0.5rem 0.95rem;
+  }
+
+  .master-responsive input:not([type="checkbox"]):not([type="radio"]),
+  .master-responsive select,
+  .master-responsive textarea,
+  .master-responsive button {
+    font-size: 0.9rem;
+  }
+
+  .master-responsive table {
+    font-size: 0.9rem;
+  }
+}
+
+@media (min-height: 900px) and (min-width: 1024px) {
+  .master-responsive h1 {
+    font-size: 1.26rem;
+    line-height: 1.25;
+  }
+
+  .master-responsive h2 {
+    font-size: 1.1rem;
+    line-height: 1.25;
+  }
+
+  .master-responsive .topbar-action-btn {
+    font-size: 0.86rem;
+    padding: 0.46rem 0.9rem;
+  }
+
+  .master-responsive .text-xs {
+    font-size: 0.8rem;
+    line-height: 1.2;
+  }
+
+  .master-responsive .text-sm {
+    font-size: 0.92rem;
+    line-height: 1.3;
+  }
+
+  .master-responsive input:not([type="checkbox"]):not([type="radio"]),
+  .master-responsive select,
+  .master-responsive textarea,
+  .master-responsive button {
+    font-size: 0.86rem;
+  }
+
+  .master-responsive input:not([type="checkbox"]):not([type="radio"]),
+  .master-responsive select,
+  .master-responsive textarea {
+    padding-top: 0.46rem;
+    padding-bottom: 0.46rem;
+  }
+
+  .master-responsive table {
+    font-size: 0.86rem;
+  }
+
+  .master-responsive th,
+  .master-responsive td {
+    padding-top: 0.56rem;
+    padding-bottom: 0.56rem;
+  }
+}
+
+@media (min-height: 1050px) and (min-width: 1280px) {
+  .master-responsive h1 {
+    font-size: 1.4rem;
+  }
+
+  .master-responsive h2 {
+    font-size: 1.2rem;
+  }
+
+  .master-responsive .topbar-action-btn {
+    font-size: 0.96rem;
+    padding: 0.54rem 1rem;
+  }
+
+  .master-responsive .text-xs {
+    font-size: 0.86rem;
+  }
+
+  .master-responsive .text-sm {
+    font-size: 0.98rem;
+  }
+
+  .master-responsive input:not([type="checkbox"]):not([type="radio"]),
+  .master-responsive select,
+  .master-responsive textarea,
+  .master-responsive button {
+    font-size: 0.96rem;
+  }
+
+  .master-responsive table {
+    font-size: 0.96rem;
+  }
+}
+
+/* Keep "Master / Page" breadcrumb segments same size in Master module headers.
+   The first segment is rendered as a <button>, so it should follow the h1 font. */
+.master-responsive h1 button {
+  font-size: inherit;
+  line-height: inherit;
+  font-weight: inherit;
+}
+
+/* Keep Master page breadcrumb header at Warehouse-sized text (text-sm),
+   regardless of desktop h1 scaling rules above. */
+.master-responsive h1.text-sm.font-semibold {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.compact-data-table table {
+  font-size: 0.72rem !important;
+}
+
+.compact-data-table thead th {
+  padding-top: 0.25rem !important;
+  padding-bottom: 0.25rem !important;
+  line-height: 1.1 !important;
+}
+
+.compact-data-table tbody tr {
+  height: 2rem !important;
+}
+
+/* Row-virtualization leading/trailing spacer rows (FilterableDataTable, enableVirtualization).
+   More specific than the rule above (2 classes + 2 types beats 1 class + 2 types), so it wins the
+   !important-vs-!important tie -- letting the JS-computed --vt-spacer-h custom property control
+   height instead of being pinned to the fixed 2rem every other body row gets. */
+.compact-data-table tbody tr.virtual-spacer-row {
+  height: var(--vt-spacer-h, 0px) !important;
+}
+
+.compact-data-table tbody td {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  line-height: 1 !important;
+  vertical-align: middle !important;
+}
+
+.bg-white.shadow-lg.rounded-lg.border.border-gray-200.h-full.flex.flex-col.min-h-0:has(.compact-data-table) {
+  padding-bottom: 0.25rem !important;
+}
+
+.compact-pagination-select {
+  font-size: 0.56rem !important;
+  line-height: 1.1 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.compact-pagination-button {
+  font-size: 0.6rem !important;
+  line-height: 1 !important;
+}
+
+/* Login page-specific responsive/input fixes */
+.login-page input:not([type="checkbox"]):not([type="radio"]) {
+  color: #111827 !important;
+  background-color: #ffffff !important;
+  -webkit-text-fill-color: #111827 !important;
+  caret-color: #111827 !important;
+}
+
+.login-page input:-webkit-autofill,
+.login-page input:-webkit-autofill:hover,
+.login-page input:-webkit-autofill:focus,
+.login-page input:-webkit-autofill:active {
+  -webkit-text-fill-color: #111827 !important;
+  box-shadow: 0 0 0 1000px #ffffff inset !important;
+  transition: background-color 9999s ease-in-out 0s;
+}
+
+.login-page label {
+  background-color: #ffffff;
+}
+
+@media (max-width: 767px) {
+  .login-page input:not([type="checkbox"]):not([type="radio"]) {
+    font-size: 1rem !important;
+    line-height: 1.5rem !important;
+    padding-top: 1.2rem !important;
+    padding-bottom: 0.55rem !important;
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+
+  .login-page label {
+    font-size: 0.75rem !important;
+  }
+}
+
+/* POS Sale page-specific responsive typography */
+.pos-sale-page .pos-sale-page-title {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.pos-sale-page .pos-sale-page-title button {
+  font-size: inherit;
+  line-height: inherit;
+  font-weight: inherit;
+}
+
+.pos-sale-page .text-\[8px\] {
+  font-size: 0.52rem !important;
+  line-height: 0.78rem !important;
+}
+
+.pos-sale-page .text-\[9px\] {
+  font-size: 0.6rem !important;
+  line-height: 0.9rem !important;
+}
+
+.pos-sale-page .text-\[10px\] {
+  font-size: 0.68rem !important;
+  line-height: 0.98rem !important;
+}
+
+.pos-sale-page .text-xs {
+  font-size: 0.74rem !important;
+  line-height: 1.05rem !important;
+}
+
+.pos-sale-page .text-sm {
+  font-size: 0.82rem !important;
+  line-height: 1.15rem !important;
+}
+
+.pos-sale-page input:not([type="checkbox"]):not([type="radio"]),
+.pos-sale-page select,
+.pos-sale-page textarea,
+.pos-sale-page .glass-btn {
+  font-size: 0.82rem !important;
+}
+
+@media (min-width: 768px) {
+  .pos-sale-page .pos-sale-page-title {
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
+
+  .pos-sale-page .text-\[8px\] {
+    font-size: 0.58rem !important;
+    line-height: 0.84rem !important;
+  }
+
+  .pos-sale-page .text-\[9px\] {
+    font-size: 0.66rem !important;
+    line-height: 0.95rem !important;
+  }
+
+  .pos-sale-page .text-\[10px\] {
+    font-size: 0.74rem !important;
+    line-height: 1.02rem !important;
+  }
+
+  .pos-sale-page .text-xs {
+    font-size: 0.8rem !important;
+    line-height: 1.1rem !important;
+  }
+
+  .pos-sale-page .text-sm {
+    font-size: 0.88rem !important;
+    line-height: 1.2rem !important;
+  }
+
+  .pos-sale-page input:not([type="checkbox"]):not([type="radio"]),
+  .pos-sale-page select,
+  .pos-sale-page textarea,
+  .pos-sale-page .glass-btn {
+    font-size: 0.88rem !important;
+  }
+}
+
+@media (min-width: 1280px) {
+  .pos-sale-page .pos-sale-page-title {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+  }
+
+  .pos-sale-page .text-\[8px\] {
+    font-size: 0.64rem !important;
+    line-height: 0.9rem !important;
+  }
+
+  .pos-sale-page .text-\[9px\] {
+    font-size: 0.72rem !important;
+    line-height: 1rem !important;
+  }
+
+  .pos-sale-page .text-\[10px\] {
+    font-size: 0.82rem !important;
+    line-height: 1.12rem !important;
+  }
+
+  .pos-sale-page .text-xs {
+    font-size: 0.875rem !important;
+    line-height: 1.2rem !important;
+  }
+
+  .pos-sale-page .text-sm {
+    font-size: 0.95rem !important;
+    line-height: 1.3rem !important;
+  }
+
+  .pos-sale-page input:not([type="checkbox"]):not([type="radio"]),
+  .pos-sale-page select,
+  .pos-sale-page textarea,
+  .pos-sale-page .glass-btn {
+    font-size: 0.95rem !important;
+  }
+}
+
+/* ── Dashboard card scroll — same thumb/track on every card that uses it ── */
+.dashboard-card-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent; /* slate-300 thumb, transparent track */
+}
+
+.dashboard-card-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.dashboard-card-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dashboard-card-scroll::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1; /* slate-300 */
+  border-radius: 9999px;
+}
+
+.dashboard-card-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: #94a3b8; /* slate-400 */
+}

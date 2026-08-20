@@ -1,0 +1,237 @@
+<?php
+
+namespace App\Http\Controllers\Api\V1;
+
+use App\Http\Controllers\Controller;
+use App\Models\DirectPurchase;
+use App\Models\PurchaseInvoice;
+use App\Models\Supplier;
+use App\Models\SupplierPayment;
+use App\Models\SupplierPaymentItem;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+
+class SupplierPaymentController extends Controller
+{
+    public function dashboardSummary(Request $request)
+    {
+        $storeId = $request->header('X-Company-Scope-Id', 1);
+
+        $totalPaidMonth = (float) SupplierPayment::where('store_id', $storeId)
+            ->whereMonth('payment_date', now()->month)
+            ->sum('amount');
+
+        $pendingPayables = (float) PurchaseInvoice::where('store_id', $storeId)
+            ->where('payment_status', '!=', 'PAID')
+            ->sum(DB::raw('grand_total - paid_amount'));
+
+        return response()->json([
+            'success' => true,
+            'data'    => [
+                'totalPaymentsThisMonth'   => SupplierPayment::where('store_id', $storeId)->whereMonth('payment_date', now()->month)->count(),
+                'totalAmountPaidThisMonth' => $totalPaidMonth,
+                'pendingPayments'          => PurchaseInvoice::where('store_id', $storeId)->where('payment_status', '!=', 'PAID')->count(),
+                'totalPayables'            => $pendingPayables,
+                'paidThisMonth'            => $totalPaidMonth,
+                'overduePayables'          => $pendingPayables * 0.25,
+                'totalSuppliers'           => Supplier::count(),
+            ],
+        ]);
+    }
+
+    public function index(Request $request)
+    {
+        $query = SupplierPayment::with(['supplier', 'store', 'creator']);
+
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where('payment_no', 'like', "%{$search}%")
+                  ->orWhereHas('supplier', function ($sq) use ($search) {
+                      $sq->where('name', 'like', "%{$search}%");
+                  });
+        }
+
+        if ($request->boolean('all') || $request->input('limit') == 500 || $request->input('limit') == 1000) {
+            $items = $query->orderBy('payment_date', 'desc')->limit(2000)->get();
+            return response()->json([
+                'success' => true,
+                'data'    => $items,
+                'total'   => $items->count(),
+            ]);
+        }
+
+        $limit = $request->integer('limit', 15);
+        $paginated = $query->orderBy('payment_date', 'desc')->paginate($limit);
+
+        return response()->json([
+            'success' => true,
+            'data'    => $paginated->items(),
+            'total'   => $paginated->total(),
+            'page'    => $paginated->currentPage(),
+            'limit'   => $paginated->perPage(),
+        ]);
+    }
+
+    public function store(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'supplier_id'   => 'required|exists:suppliers,id',
+            'amount'        => 'required|numeric|min:0.01',
+            'payment_mode'  => 'nullable|string',
+            'payment_date'  => 'nullable|date',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors'  => $validator->errors(),
+            ], 422);
+        }
+
+        $storeId = $request->header('X-Company-Scope-Id', 1);
+
+        $payment = DB::transaction(function () use ($request, $storeId) {
+            $paymentNo = 'PAY-' . date('Ymd') . '-' . rand(1000, 9999);
+            $amount = (float) $request->input('amount');
+
+            $supplierPayment = SupplierPayment::create([
+                'supplier_id'  => $request->input('supplier_id'),
+                'store_id'     => $storeId,
+                'payment_no'   => $paymentNo,
+                'payment_date' => $request->input('payment_date') ?: now()->toDateString(),
+                'amount'       => $amount,
+                'payment_mode' => $request->input('payment_mode', 'BANK_TRANSFER'),
+                'reference_no' => $request->input('reference_no'),
+                'notes'        => $request->input('notes'),
+                'created_by'   => $request->user()?->id ?? 1,
+            ]);
+
+            // If purchase invoice id provided, link payment
+            if ($request->filled('purchase_invoice_id')) {
+                SupplierPaymentItem::create([
+                    'supplier_payment_id' => $supplierPayment->id,
+                    'purchase_invoice_id' => $request->input('purchase_invoice_id'),
+                    'amount_paid'         => $amount,
+                ]);
+
+                $inv = PurchaseInvoice::find($request->input('purchase_invoice_id'));
+                if ($inv) {
+                    $inv->paid_amount += $amount;
+                    if ($inv->paid_amount >= $inv->grand_total) {
+                        $inv->payment_status = 'PAID';
+                    } else {
+                        $inv->payment_status = 'PARTIAL';
+                    }
+                    $inv->save();
+                }
+            }
+
+            return $supplierPayment;
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Supplier payment recorded successfully',
+            'data'    => $payment->load('supplier'),
+        ], 201);
+    }
+
+    public function pending(Request $request)
+    {
+        $storeId = $request->header('X-Company-Scope-Id', 1);
+        $search  = trim((string) $request->input('search', ''));
+
+        $invoiceQuery = PurchaseInvoice::with('supplier')
+            ->where('store_id', $storeId)
+            ->where('payment_status', '!=', 'PAID');
+
+        $directQuery = DirectPurchase::with('supplier')
+            ->where('store_id', $storeId)
+            ->where('payment_status', '!=', 'PAID');
+
+        if ($search !== '') {
+            $invoiceQuery->where(function ($q) use ($search) {
+                $q->where('invoice_no', 'like', "%{$search}%")
+                  ->orWhereHas('supplier', fn ($sq) => $sq->where('name', 'like', "%{$search}%"));
+            });
+            $directQuery->where(function ($q) use ($search) {
+                $q->where('purchase_no', 'like', "%{$search}%")
+                  ->orWhereHas('supplier', fn ($sq) => $sq->where('name', 'like', "%{$search}%"));
+            });
+        }
+
+        $invoices = $invoiceQuery->orderBy('invoice_date', 'desc')->limit(2000)->get();
+        $directs  = $directQuery->orderBy('purchase_date', 'desc')->limit(2000)->get();
+
+        $rows = [];
+        foreach ($invoices as $inv) {
+            $rows[] = [
+                'id'            => $inv->id,
+                'invoice_type'  => 'invoice',
+                'invoice_no'    => $inv->invoice_no,
+                'supplier_name' => $inv->supplier?->name ?? 'Unknown Supplier',
+                'supplier_id'   => $inv->supplier_id,
+                'invoice_date'  => $inv->invoice_date,
+                'total_amount'  => $inv->grand_total,
+                'paid_amount'   => $inv->paid_amount,
+                'balance_due'   => max(0, $inv->grand_total - $inv->paid_amount),
+            ];
+        }
+
+        foreach ($directs as $dir) {
+            $rows[] = [
+                'id'            => $dir->id,
+                'invoice_type'  => 'direct',
+                'invoice_no'    => $dir->purchase_no,
+                'supplier_name' => $dir->supplier?->name ?? 'Unknown Supplier',
+                'supplier_id'   => $dir->supplier_id,
+                'invoice_date'  => $dir->purchase_date,
+                'total_amount'  => $dir->total_amount,
+                'paid_amount'   => $dir->paid_amount,
+                'balance_due'   => max(0, $dir->total_amount - $dir->paid_amount),
+            ];
+        }
+
+        // Two different Eloquent models are merged into one flat list here,
+        // so pagination happens in PHP over the merged+sorted array rather
+        // than via a single ->paginate() call - each source query is still
+        // capped and DB-filtered above, this just slices the combined page.
+        usort($rows, fn ($a, $b) => strcmp((string) $b['invoice_date'], (string) $a['invoice_date']));
+
+        $total       = count($rows);
+        $totalPayable = array_sum(array_column($rows, 'balance_due'));
+        $limit       = max(1, (int) $request->input('limit', 20));
+        $page        = max(1, (int) $request->input('page', 1));
+        $totalPages  = max((int) ceil($total / $limit), 1);
+        $pagedRows   = array_slice($rows, ($page - 1) * $limit, $limit);
+
+        return response()->json([
+            'success'      => true,
+            'data'         => array_values($pagedRows),
+            'total'        => $total,
+            'totalPayable' => $totalPayable,
+            'pagination'   => [
+                'total'      => $total,
+                'totalPages' => $totalPages,
+            ],
+        ]);
+    }
+
+    public function history(Request $request)
+    {
+        return $this->index($request);
+    }
+
+    public function pendingDetails(Request $request, $type, $id)
+    {
+        if ($type === 'invoice') {
+            $inv = PurchaseInvoice::with(['supplier', 'items.product'])->find($id);
+            return response()->json(['success' => true, 'data' => $inv]);
+        }
+
+        $dir = DirectPurchase::with(['supplier', 'items.product'])->find($id);
+        return response()->json(['success' => true, 'data' => $dir]);
+    }
+}

@@ -1,0 +1,102 @@
+.agent-master-container {
+    padding: 20px;
+    background-color: #f5f5f5;
+    font-family: Arial, sans-serif;
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #007bff; /* Blue header */
+    color: white;
+    padding: 10px 20px;
+    margin: -20px -20px 20px -20px; /* Extend to edges of the container */
+}
+
+.page-header .title {
+    font-size: 1.2em;
+    font-weight: bold;
+}
+
+.page-header .actions .action-button {
+    background: none;
+    border: 1px solid white;
+    color: white;
+    padding: 5px 15px;
+    margin-left: 10px;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.agent-form {
+    background-color: white;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* Two columns */
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: 100%;
+    box-sizing: border-box; /* Include padding and border in the element's total width and height */
+}
+
+.form-group.full-width {
+    grid-column: 1 / -1; /* Span both columns */
+}
+
+.form-group .required {
+    color: red;
+    margin-right: 2px;
+}
+
+.checkbox-group {
+    flex-direction: row;
+    align-items: center;
+}
+
+.checkbox-group input {
+    width: auto;
+    margin-right: 10px;
+}
+
+.checkbox-group label {
+    margin: 0;
+    font-weight: normal;
+}
+
+.page-footer {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    margin-top: 20px;
+    font-size: 0.8em;
+    color: #666;
+}
+
+/* Specific styling for the row with PAN, GST, Commission */
+.small-group input,
+.small-group select {
+    /* Adjust as needed for smaller, inline inputs */
+}

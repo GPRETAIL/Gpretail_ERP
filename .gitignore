@@ -1,135 +1,28 @@
-#-------------------------
-# Operating Specific Junk Files
-#-------------------------
-
-# OS X
-.DS_Store
-.AppleDouble
-.LSOverride
-
-# OS X Thumbnails
-._*
-
-# Windows image file caches
-Thumbs.db
-ehthumbs.db
-Desktop.ini
-
-# Recycle Bin used on file shares
-$RECYCLE.BIN/
-
-# Windows Installer files
-*.cab
-*.msi
-*.msm
-*.msp
-
-# Windows shortcuts
-*.lnk
-
-# Linux
-*~
-
-# KDE directory preferences
-.directory
-
-# Linux trash folder which might appear on any partition or disk
-.Trash-*
-
-#-------------------------
-# Environment Files
-#-------------------------
-# These should never be under version control,
-# as it poses a security risk.
+# Environment & Secrets
 .env
-.vagrant
-Vagrantfile
+.env.local
+.env.*.local
+*.pem
+certs/
 
-#-------------------------
-# Temporary Files
-#-------------------------
-writable/cache/*
-!writable/cache/index.html
-
-writable/logs/*
-!writable/logs/index.html
-
-writable/session/*
-!writable/session/index.html
-
-writable/uploads/*
-!writable/uploads/index.html
-
-writable/debugbar/*
-!writable/debugbar/.gitkeep
-
-# Database backups/dumps created during maintenance work - real business
-# data, not source code, and too large for GitHub's 100MB per-file limit.
-writable/backups/
-needed files/
-
-# Stray PHP session files (found accumulated outside writable/session/,
-# likely from a misconfigured session save path at some point).
-public/null/
-
-php_errors.log
-
-#-------------------------
-# User Guide Temp Files
-#-------------------------
-user_guide_src/build/*
-user_guide_src/cilexer/build/*
-user_guide_src/cilexer/dist/*
-user_guide_src/cilexer/pycilexer.egg-info/*
-
-#-------------------------
-# Test Files
-#-------------------------
-tests/coverage*
-
-# Don't save phpunit under version control.
-phpunit
-
-#-------------------------
-# Composer
-#-------------------------
+# Dependencies
+node_modules/
 vendor/
 
-#-------------------------
-# IDE / Development Files
-#-------------------------
+# Build outputs & caches
+frontend/dist/
+frontend/build/
+storage/logs/*.log
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+bootstrap/cache/*.php
 
-# Modules Testing
-_modules/*
-
-# phpenv local config
-.php-version
-
-# Jetbrains editors (PHPStorm, etc)
-.idea/
-*.iml
-
-# Netbeans
-nbproject/
-build/
-nbbuild/
-dist/
-nbdist/
-nbactions.xml
-nb-configuration.xml
-.nb-gradle/
-
-# Sublime Text
-*.tmlanguage.cache
-*.tmPreferences.cache
-*.stTheme.cache
-*.sublime-workspace
-*.sublime-project
-.phpintel
-/api/
-
-# Visual Studio Code
+# IDE & OS
+.DS_Store
+Thumbs.db
 .vscode/
-
-/results/
-/phpunit*.xml
+.idea/
+.tempmediaStorage/
+.agents/
+scratch/
