@@ -38,6 +38,29 @@ try {
         // Already seeded
     }
 
+    // 4. Ensure Super Admin (Global platform admin) exists
+    try {
+        $superUser = \App\Models\User::where('username', 'superadmin')->orWhere('email', 'superadmin@gpretail.uk')->first();
+        if (!$superUser) {
+            \App\Models\User::create([
+                'name'                 => 'Super Administrator',
+                'username'             => 'superadmin',
+                'email'                => 'superadmin@gpretail.uk',
+                'password'             => \Illuminate\Support\Facades\Hash::make('password'),
+                'role'                 => 'super_admin',
+                'store_id'             => null,
+                'phone'                => '9876543210',
+                'is_active'            => true,
+                'must_change_password' => false,
+            ]);
+        } else {
+            $superUser->update([
+                'role'     => 'super_admin',
+                'password' => \Illuminate\Support\Facades\Hash::make('password'),
+            ]);
+        }
+    } catch (\Throwable $userErr) {}
+
     // 4. Cache clean configurations
     \Illuminate\Support\Facades\Artisan::call('config:cache');
     \Illuminate\Support\Facades\Artisan::call('route:cache');
