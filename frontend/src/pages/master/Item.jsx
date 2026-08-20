@@ -499,22 +499,35 @@ export default function Item() {
       if (savingRef.current) return;
       savingRef.current = true;
       setSaving(true);
-      const fd = new FormData();
-      // Append all text/boolean fields
-      Object.entries(form).forEach(([k, v]) => {
-        if (v !== "" && v !== undefined) fd.append(k, v);
-      });
-      if (imageFile) fd.append("image", imageFile);
 
       if (editingId) {
-        await api.put(`/items/${editingId}`, fd, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
+        if (imageFile) {
+          const fd = new FormData();
+          Object.entries(form).forEach(([k, v]) => {
+            if (v !== "" && v !== undefined) fd.append(k, v);
+          });
+          fd.append("image", imageFile);
+          fd.append("_method", "PUT");
+          await api.post(`/items/${editingId}`, fd, {
+            headers: { "Content-Type": "multipart/form-data" },
+          });
+        } else {
+          await api.put(`/items/${editingId}`, form);
+        }
         toast.success("Item updated successfully");
       } else {
-        await api.post("/items", fd, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
+        if (imageFile) {
+          const fd = new FormData();
+          Object.entries(form).forEach(([k, v]) => {
+            if (v !== "" && v !== undefined) fd.append(k, v);
+          });
+          fd.append("image", imageFile);
+          await api.post("/items", fd, {
+            headers: { "Content-Type": "multipart/form-data" },
+          });
+        } else {
+          await api.post("/items", form);
+        }
         toast.success("Item saved successfully");
       }
       handleNew();
