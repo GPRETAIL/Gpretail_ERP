@@ -167,15 +167,13 @@ class ProductController extends Controller
         if (empty($ids)) {
             $items = [];
         } else {
-            $items = Product::select([
-                'id', 'name', 'code', 'sku', 'barcode',
-                'category_id', 'brand_id', 'tax_id', 'size_group_id',
-                'hsn_code', 'unit', 'cost_price', 'selling_price', 'mrp',
-                'min_stock', 'max_stock', 'is_active', 'created_at', 'updated_at'
-            ])->with([
+            $items = Product::with([
                 'category:id,name',
                 'brand:id,name',
                 'tax:id,name,rate',
+                'purchaseTax:id,name,rate',
+                'salesTax:id,name,rate',
+                'sizeGroup:id,name,code',
             ])->whereIn('id', $ids)
               ->orderBy('name')
               ->get();
@@ -199,15 +197,15 @@ class ProductController extends Controller
 
     public function show($id)
     {
-        $product = Product::with(['category', 'brand', 'tax', 'variants'])
+        $product = Product::with(['category', 'brand', 'tax', 'purchaseTax', 'salesTax', 'sizeGroup', 'variants'])
             ->where('id', $id)
             ->orWhere('code', $id)
             ->firstOrFail();
 
         $data = $product->toArray();
         $data['product_group_id'] = $product->category_id;
-        $data['sales_tax_id'] = $product->tax_id;
-        $data['purchase_tax_id'] = $product->tax_id;
+        $data['sales_tax_id'] = $product->sales_tax_id ?: $product->tax_id;
+        $data['purchase_tax_id'] = $product->purchase_tax_id ?: $product->tax_id;
         $data['barcode_id'] = $product->barcode;
         $data['hsn'] = $product->hsn_code;
         $data['uom'] = $product->unit;
