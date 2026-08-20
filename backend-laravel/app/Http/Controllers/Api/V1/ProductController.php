@@ -199,8 +199,21 @@ class ProductController extends Controller
 
     public function show($id)
     {
-        $product = Product::with(['category', 'brand', 'tax', 'variants'])->findOrFail($id);
-        return response()->json(['success' => true, 'data' => $product]);
+        $product = Product::with(['category', 'brand', 'tax', 'variants'])
+            ->where('id', $id)
+            ->orWhere('code', $id)
+            ->firstOrFail();
+
+        $data = $product->toArray();
+        $data['product_group_id'] = $product->category_id;
+        $data['sales_tax_id'] = $product->tax_id;
+        $data['purchase_tax_id'] = $product->tax_id;
+        $data['barcode_id'] = $product->barcode;
+        $data['hsn'] = $product->hsn_code;
+        $data['uom'] = $product->unit;
+        $data['active'] = (bool) $product->is_active;
+
+        return response()->json(['success' => true, 'data' => $data]);
     }
 
     public function findByBarcode($barcode)
@@ -227,10 +240,27 @@ class ProductController extends Controller
             $data['code'] = !empty($data['sku']) ? $data['sku'] : ('PRD_' . strtoupper(substr(uniqid(), -6)));
         }
         if (empty($data['barcode'])) {
-            $data['barcode'] = $data['code'];
+            $data['barcode'] = !empty($data['barcode_id']) ? $data['barcode_id'] : $data['code'];
         }
 
-        // Validate tax_id existence only if non-empty
+        // Aliased field mappings
+        if (empty($data['category_id']) && !empty($data['product_group_id'])) {
+            $data['category_id'] = $data['product_group_id'];
+        }
+        if (empty($data['tax_id'])) {
+            $data['tax_id'] = !empty($data['sales_tax_id']) ? $data['sales_tax_id'] : (!empty($data['purchase_tax_id']) ? $data['purchase_tax_id'] : null);
+        }
+        if (empty($data['hsn_code']) && !empty($data['hsn'])) {
+            $data['hsn_code'] = $data['hsn'];
+        }
+        if (empty($data['unit']) && !empty($data['uom'])) {
+            $data['unit'] = $data['uom'];
+        }
+        if (isset($data['active'])) {
+            $data['is_active'] = (bool) $data['active'];
+        }
+
+        // Validate foreign key existence only if non-empty
         if (!empty($data['tax_id']) && !DB::table('taxes')->where('id', $data['tax_id'])->exists()) {
             $data['tax_id'] = null;
         }
@@ -268,18 +298,49 @@ class ProductController extends Controller
 
     public function update(Request $request, $id)
     {
-        $product = Product::findOrFail($id);
+        $product = Product::where('id', $id)
+            ->orWhere('code', $id)
+            ->firstOrFail();
 
-        $validator = Validator::make($request->all(), [
+        $data = $request->all();
+
+        // Aliased field mappings
+        if (empty($data['category_id']) && !empty($data['product_group_id'])) {
+            $data['category_id'] = $data['product_group_id'];
+        }
+        if (empty($data['tax_id'])) {
+            $data['tax_id'] = !empty($data['sales_tax_id']) ? $data['sales_tax_id'] : (!empty($data['purchase_tax_id']) ? $data['purchase_tax_id'] : null);
+        }
+        if (empty($data['hsn_code']) && !empty($data['hsn'])) {
+            $data['hsn_code'] = $data['hsn'];
+        }
+        if (empty($data['unit']) && !empty($data['uom'])) {
+            $data['unit'] = $data['uom'];
+        }
+        if (isset($data['active'])) {
+            $data['is_active'] = (bool) $data['active'];
+        }
+
+        if (!empty($data['tax_id']) && !DB::table('taxes')->where('id', $data['tax_id'])->exists()) {
+            unset($data['tax_id']);
+        }
+        if (!empty($data['category_id']) && !DB::table('categories')->where('id', $data['category_id'])->exists()) {
+            unset($data['category_id']);
+        }
+        if (!empty($data['brand_id']) && !DB::table('brands')->where('id', $data['brand_id'])->exists()) {
+            unset($data['brand_id']);
+        }
+
+        $validator = Validator::make($data, [
             'name' => 'sometimes|required|string|max:255',
-            'code' => 'sometimes|required|string|max:50|unique:products,code,' . $id,
+            'code' => 'sometimes|required|string|max:50|unique:products,code,' . $product->id,
         ]);
 
         if ($validator->fails()) {
             return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
-        $product->update($request->all());
+        $product->update($data);
 
         return response()->json([
             'success' => true,
@@ -290,7 +351,10 @@ class ProductController extends Controller
 
     public function destroy($id)
     {
-        $product = Product::findOrFail($id);
+        $product = Product::where('id', $id)
+            ->orWhere('code', $id)
+            ->firstOrFail();
+
         $product->delete();
         Cache::forget('products_total_unfiltered_count');
 
