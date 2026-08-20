@@ -14,14 +14,26 @@ if (($_GET['token'] ?? '') !== $deployToken) {
 
 header('Content-Type: application/json');
 
-// Root directory is either current or parent
-$rootDir = file_exists(__DIR__ . '/../deploy.zip') ? dirname(__DIR__) : __DIR__;
-$zipFile = $rootDir . '/deploy.zip';
+$possiblePaths = [
+    dirname(__DIR__) . '/deploy.zip',
+    __DIR__ . '/deploy.zip',
+];
 
-if (!file_exists($zipFile)) {
+$zipFile = null;
+$rootDir = dirname(__DIR__);
+
+foreach ($possiblePaths as $p) {
+    if (file_exists($p)) {
+        $zipFile = realpath($p);
+        $rootDir = dirname($zipFile);
+        break;
+    }
+}
+
+if (!$zipFile) {
     echo json_encode([
         'status'  => 'error',
-        'message' => 'deploy.zip not found in ' . $rootDir,
+        'message' => 'deploy.zip not found in ' . implode(' or ', $possiblePaths),
     ]);
     exit;
 }
