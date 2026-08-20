@@ -84,8 +84,24 @@ class ProductAttributeController extends Controller
             });
         }
 
+        $formatter = fn($item) => [
+            'id'                => $item->id,
+            'attribute_type_id' => $item->attribute_type_id,
+            'name'              => $item->name,
+            'value'             => $item->value,
+            'code'              => $item->code,
+            'sort_order'        => $item->sort_order,
+            'extra_data'        => $item->extra_data,
+            'company_id'        => $item->company_id ?: 1,
+            'created_by'        => $item->created_by ?: 'Superadmin',
+            'updated_by'        => $item->updated_by,
+            'is_active'         => (bool) $item->is_active,
+            'created_at'        => $item->created_at,
+            'updated_at'        => $item->updated_at,
+        ];
+
         if ($request->boolean('all') || $request->input('limit') == 500 || $request->input('limit') == 1000) {
-            $items = $query->orderBy('name')->limit(2000)->get();
+            $items = $query->orderBy('name')->limit(2000)->get()->map($formatter);
             return response()->json([
                 'success' => true,
                 'data'    => $items,
@@ -98,7 +114,7 @@ class ProductAttributeController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $paginated->items(),
+            'data'    => collect($paginated->items())->map($formatter),
             'total'   => $paginated->total(),
             'page'    => $paginated->currentPage(),
             'limit'   => $paginated->perPage(),
@@ -122,8 +138,9 @@ class ProductAttributeController extends Controller
         $code = $request->input('code') ?: $request->input('short_code') ?: null;
         $sortOrder = $request->has('sort_order') ? $request->integer('sort_order') : ($request->has('display_order') ? $request->integer('display_order') : 0);
         $extraData = $request->input('extra_data') ?: null;
-        $companyId = $request->input('company_id') ?: null;
-        $createdBy = $request->input('created_by') ?: ($request->user()?->name ?? null);
+        $user = $request->user();
+        $createdBy = $request->input('created_by') ?: ($user?->name ?: ($user?->username ?: 'Superadmin'));
+        $companyId = $request->input('company_id') ?: ($user?->company_id ?: 1);
 
         if (!$name) {
             return response()->json([

@@ -134,8 +134,8 @@ const ProductAttributes = () => {
           name: s.size_name,
           isActive: true,
           code: s.code || "--",
-          created_by: s.created_by ?? "",
-          company_id: s.company_id ?? null,
+          created_by: s.created_by || s.createdByName || "Superadmin",
+          company_id: s.company_id || 1,
         }));
       } else if (formData.productType === "SIZEGROUP") {
         const res = await api.get("/size-groups", { params: { all: "true" } });
@@ -144,8 +144,8 @@ const ProductAttributes = () => {
           name: g.group_name,
           isActive: true,
           code: (g.sizes || []).map((s) => s.size_name).join(", ") || "--",
-          created_by: g.created_by ?? "",
-          company_id: g.company_id ?? null,
+          created_by: g.created_by || g.createdByName || "Superadmin",
+          company_id: g.company_id || 1,
         }));
       } else {
         const res = await api.get(`/attributes/${formData.productType.toLowerCase()}`, { params: { all: "true" } });
@@ -154,8 +154,8 @@ const ProductAttributes = () => {
           name: a.name,
           isActive: a.is_active,
           code: a.code || "--",
-          created_by: a.created_by ?? "",
-          company_id: a.company_id ?? null,
+          created_by: a.created_by || a.createdByName || "Superadmin",
+          company_id: a.company_id || 1,
         }));
       }
 
@@ -217,14 +217,14 @@ const ProductAttributes = () => {
     {
       key: "created_by",
       label: "Created By",
-      render: (value) => value || "—",
-      searchValue: (row) => row.created_by || "",
+      render: (value) => value || "Superadmin",
+      searchValue: (row) => row.created_by || "Superadmin",
     },
     {
       key: "company_id",
       label: "Store/Warehouse",
-      render: (value) => storeMap[String(value)] ?? "—",
-      searchValue: (row) => storeMap[String(row.company_id)] ?? "",
+      render: (value) => storeMap[String(value)] || (storeMap["1"] ?? "Main Store"),
+      searchValue: (row) => storeMap[String(row.company_id)] || (storeMap["1"] ?? "Main Store"),
     },
   ];
 

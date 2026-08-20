@@ -28,6 +28,9 @@ class SizeController extends Controller
         $arr['is_variant'] = (bool) ($size->is_variant ?? false);
         $arr['isVariant'] = (bool) ($size->is_variant ?? false);
         $arr['is_active'] = (bool) ($size->is_active ?? true);
+        $arr['company_id'] = $size->company_id ?? 1;
+        $arr['created_by'] = $size->created_by ?: 'Superadmin';
+        $arr['updated_by'] = $size->updated_by ?? null;
         return $arr;
     }
 
@@ -40,6 +43,9 @@ class SizeController extends Controller
         $arr['enableSizeRatio'] = (bool) ($group->enable_size_ratio ?? false);
         $arr['sort_order'] = (int) ($group->sort_order ?? 0);
         $arr['sortOrder'] = (int) ($group->sort_order ?? 0);
+        $arr['company_id'] = $group->company_id ?? 1;
+        $arr['created_by'] = $group->created_by ?: 'Superadmin';
+        $arr['updated_by'] = $group->updated_by ?? null;
         if (isset($group->sizes)) {
             $arr['sizes'] = collect($group->sizes)->map(fn($s) => $this->formatSize($s))->values()->all();
         }
@@ -124,11 +130,17 @@ class SizeController extends Controller
 
         $code = $request->input('code') ?: strtoupper($name);
 
+        $user = $request->user();
+        $createdBy = $request->input('created_by') ?: ($user?->name ?: ($user?->username ?: 'Superadmin'));
+        $companyId = $request->input('company_id') ?: ($user?->company_id ?: 1);
+
         $size = Size::create([
             'size_group_id' => $sizeGroupId,
             'name'          => $name,
             'code'          => $code,
             'sort_order'    => $request->input('sort_order', 0),
+            'company_id'    => $companyId,
+            'created_by'    => $createdBy,
         ]);
 
         return response()->json([
@@ -149,12 +161,16 @@ class SizeController extends Controller
             ], 404);
         }
 
-        $data = [];
+        $user = $request->user();
+        $updatedBy = $request->input('updated_by') ?: ($user?->name ?: ($user?->username ?: 'Superadmin'));
+
+        $data = ['updated_by' => $updatedBy];
         $name = $request->input('size_name') ?? $request->input('name') ?? $request->input('sizeName');
         if ($name !== null) $data['name'] = $name;
         if ($request->has('code')) $data['code'] = $request->input('code');
         if ($request->has('sort_order')) $data['sort_order'] = (int) $request->input('sort_order');
         if ($request->has('size_group_id')) $data['size_group_id'] = $request->input('size_group_id');
+        if ($request->has('company_id')) $data['company_id'] = $request->input('company_id');
 
         $size->update($data);
 
@@ -231,12 +247,17 @@ class SizeController extends Controller
             ], 422);
         }
 
+        $user = $request->user();
+        $createdBy = $request->input('created_by') ?: ($user?->name ?: ($user?->username ?: 'Superadmin'));
+        $companyId = $request->input('company_id') ?: ($user?->company_id ?: 1);
         $code = $request->input('code') ?: 'SG_' . strtoupper(substr(uniqid(), -6));
 
         $group = SizeGroup::create([
             'name'        => $name,
             'code'        => $code,
             'description' => $request->input('description'),
+            'company_id'  => $companyId,
+            'created_by'  => $createdBy,
             'is_active'   => $request->boolean('is_active', true),
         ]);
 
@@ -258,12 +279,16 @@ class SizeController extends Controller
             ], 404);
         }
 
-        $data = [];
+        $user = $request->user();
+        $updatedBy = $request->input('updated_by') ?: ($user?->name ?: ($user?->username ?: 'Superadmin'));
+
+        $data = ['updated_by' => $updatedBy];
         $name = $request->input('group_name') ?? $request->input('name') ?? $request->input('groupName');
         if ($name !== null) $data['name'] = $name;
         if ($request->has('code')) $data['code'] = $request->input('code');
         if ($request->has('description')) $data['description'] = $request->input('description');
         if ($request->has('is_active')) $data['is_active'] = $request->boolean('is_active');
+        if ($request->has('company_id')) $data['company_id'] = $request->input('company_id');
 
         $group->update($data);
 
