@@ -185,7 +185,7 @@ class DashboardController extends Controller
                 DB::raw('SUM(pos_sale_items.quantity) as saleQty'),
                 DB::raw('SUM(pos_sale_items.subtotal) as value')
             )
-            ->groupBy('name')
+            ->groupBy(DB::raw('COALESCE(pos_sale_items.sales_man_name, employees.name, "Store Admin")'))
             ->orderByDesc('saleQty')
             ->limit(10)
             ->get();
