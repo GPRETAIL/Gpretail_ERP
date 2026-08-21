@@ -37,17 +37,6 @@ const currency = (value) => `₹${wholeNumber(value)}`;
 
 export const MODULE_TABS = [
   {
-    id: "warehouse",
-    label: "Warehouse",
-    endpoint: "/items/dashboard-summary",
-    mapToCards: (data) => [
-      { label: "Total Items", value: wholeNumber(data?.totalItems) },
-      { label: "Total Barcodes", value: wholeNumber(data?.totalBarcodes) },
-      { label: "Total Stock Value", value: currency(data?.totalStockValue) },
-      { label: "Low Stock Items", value: wholeNumber(data?.lowStockItems) },
-    ],
-  },
-  {
     id: "crm",
     label: "CRM",
     endpoint: "/customers/dashboard-summary",

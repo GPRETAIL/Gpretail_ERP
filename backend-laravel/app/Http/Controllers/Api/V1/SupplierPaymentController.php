@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\DirectPurchase;
 use App\Models\PurchaseInvoice;
+use App\Models\StockBatch;
 use App\Models\Supplier;
 use App\Models\SupplierPayment;
 use App\Models\SupplierPaymentItem;
@@ -224,14 +225,152 @@ class SupplierPaymentController extends Controller
         return $this->index($request);
     }
 
+    /**
+     * Invoice-level detail for the "click an invoice number" drill-down.
+     * The frontend (SupplierPayment.jsx) has always expected an
+     * {invoice, lines, summary} shape - the previous version of this
+     * method returned the raw Eloquent model instead, so this screen never
+     * actually rendered real data. Also adds invoice-level batch tracking:
+     * sold/remaining quantity and value per line, sourced from the same
+     * stock_batches ledger StockService writes on every purchase/sale -
+     * never derived from current product-level stock, and never merged
+     * across suppliers/invoices (each batch is scoped to exactly one
+     * reference_type + reference_id).
+     */
     public function pendingDetails(Request $request, $type, $id)
     {
         if ($type === 'invoice') {
-            $inv = PurchaseInvoice::with(['supplier', 'items.product'])->find($id);
-            return response()->json(['success' => true, 'data' => $inv]);
+            $inv = PurchaseInvoice::with(['supplier', 'items.product', 'items.variant.brand', 'items.variant.size'])->find($id);
+            if (!$inv) {
+                return response()->json(['success' => false, 'message' => 'Purchase invoice not found'], 404);
+            }
+
+            $sellThrough = StockBatch::sellThroughByVariant('PURCHASE_INVOICE', $inv->id, $inv->items->pluck('variant_id'));
+
+            $lines = $inv->items->map(function ($item) use ($sellThrough) {
+                return $this->buildLine(
+                    id: $item->id,
+                    productName: $item->product?->name,
+                    brandName: $item->variant?->brand?->name ?? $item->product?->brand?->name,
+                    size: $item->variant?->size?->name,
+                    designNo: $item->variant?->design_no,
+                    rate: (float) $item->rate,
+                    purchasedQty: (float) $item->quantity,
+                    variantId: $item->variant_id,
+                    sellThrough: $sellThrough,
+                );
+            })->values();
+
+            $paid = (float) $inv->paid_amount;
+            $total = (float) $inv->grand_total;
+
+            return response()->json(['success' => true, 'data' => [
+                'invoice' => [
+                    'id' => $inv->id,
+                    'invoice_type' => 'invoice',
+                    'invoice_no' => $inv->invoice_no,
+                    'supplier_name' => $inv->supplier?->name,
+                    'company_name' => null,
+                    'invoice_date' => $inv->invoice_date,
+                    'total' => $total,
+                    'tax' => (float) $inv->tax_amount,
+                    'discount' => (float) $inv->discount_amount,
+                    'paid' => $paid,
+                    'balance' => max(0, $total - $paid),
+                    'payment_amount' => $total,
+                    'paid_amount' => $paid,
+                    'outstanding_amount' => max(0, $total - $paid),
+                ],
+                'lines' => $lines,
+                'summary' => $this->buildSummary($lines),
+            ]]);
         }
 
         $dir = DirectPurchase::with(['supplier', 'items.product'])->find($id);
-        return response()->json(['success' => true, 'data' => $dir]);
+        if (!$dir) {
+            return response()->json(['success' => false, 'message' => 'Direct purchase not found'], 404);
+        }
+
+        $sellThrough = StockBatch::sellThroughByVariant('DIRECT_PURCHASE', $dir->id, $dir->items->pluck('variant_id'));
+
+        $lines = $dir->items->map(function ($item) use ($sellThrough) {
+            return $this->buildLine(
+                id: $item->id,
+                productName: $item->product_name ?? $item->product?->name,
+                brandName: $item->brand_name,
+                size: $item->size,
+                designNo: $item->design_no,
+                rate: (float) $item->cost,
+                purchasedQty: (float) $item->qty,
+                variantId: $item->variant_id,
+                sellThrough: $sellThrough,
+            );
+        })->values();
+
+        $paid = (float) $dir->paid_amount;
+        $total = (float) $dir->total_amount;
+
+        return response()->json(['success' => true, 'data' => [
+            'invoice' => [
+                'id' => $dir->id,
+                'invoice_type' => 'direct',
+                'invoice_no' => $dir->invoice_no ?: $dir->purchase_no,
+                'supplier_name' => $dir->supplier?->name ?? $dir->supplier_name,
+                'company_name' => $dir->company_name,
+                'invoice_date' => $dir->invoice_date ?: $dir->purchase_date,
+                'total' => $total,
+                'tax' => (float) $dir->tax_amount,
+                'discount' => (float) $dir->discount_amount,
+                'paid' => $paid,
+                'balance' => max(0, $total - $paid),
+                'payment_amount' => $total,
+                'paid_amount' => $paid,
+                'outstanding_amount' => max(0, $total - $paid),
+            ],
+            'lines' => $lines,
+            'summary' => $this->buildSummary($lines),
+        ]]);
+    }
+
+    private function buildLine(
+        $id,
+        ?string $productName,
+        ?string $brandName,
+        ?string $size,
+        ?string $designNo,
+        float $rate,
+        float $purchasedQty,
+        ?int $variantId,
+        \Illuminate\Support\Collection $sellThrough,
+    ): array {
+        $through = $variantId ? $sellThrough->get($variantId) : null;
+        $soldQty = $through['sold_qty'] ?? null;
+        $remainingQty = $through['remaining_qty'] ?? null;
+
+        return [
+            'id' => $id,
+            'product_name' => $productName,
+            'brand_name' => $brandName,
+            'size' => $size,
+            'design_no' => $designNo,
+            'rate' => $rate,
+            'purchased_qty' => $purchasedQty,
+            'purchase_cost' => $rate,
+            'purchased_value' => $purchasedQty * $rate,
+            'sold_qty' => $soldQty,
+            'remaining_qty' => $remainingQty,
+            'remaining_stock_value' => $remainingQty !== null ? $remainingQty * $rate : null,
+        ];
+    }
+
+    private function buildSummary($lines): array
+    {
+        return [
+            'purchased_qty' => $lines->sum('purchased_qty'),
+            'sold_qty' => $lines->sum('sold_qty'),
+            'remaining_qty' => $lines->sum('remaining_qty'),
+            'purchased_value' => $lines->sum('purchased_value'),
+            'remaining_stock_value' => $lines->sum('remaining_stock_value'),
+        ];
     }
 }

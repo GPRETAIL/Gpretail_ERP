@@ -440,10 +440,10 @@ const WarehouseDashboard = () => {
       const statusLabel = STATUS_LABELS[entry.status] || entry.status || "";
       const lrDateText = entry.lr_date
         ? `${entry.lr_date} ${new Date(entry.lr_date).toLocaleDateString("en-IN", {
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-          })}`
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        })}`
         : "";
       const fromLocationText = `${entry.fromCity?.name || ""} ${entry.auto_transfer_location || ""}`.trim();
       const receivedByText = entry.purchase_manager || "";
@@ -776,17 +776,17 @@ const WarehouseDashboard = () => {
             (!isDirectPurchase && entry.entry_source === "transport_entry")
           )
             ? {
-                ...entry,
-                ...(isDirectPurchase
-                  ? {
-                      invoice_workflow_status: "invoice_completed",
-                      status: mapDirectPurchaseWorkflowToDashboardStatus({
-                        ...entry,
-                        invoice_workflow_status: "invoice_completed",
-                      }),
-                    }
-                  : { status: newStatus }),
-              }
+              ...entry,
+              ...(isDirectPurchase
+                ? {
+                  invoice_workflow_status: "invoice_completed",
+                  status: mapDirectPurchaseWorkflowToDashboardStatus({
+                    ...entry,
+                    invoice_workflow_status: "invoice_completed",
+                  }),
+                }
+                : { status: newStatus }),
+            }
             : entry
         )
       );
@@ -1110,11 +1110,10 @@ const WarehouseDashboard = () => {
               key={step.key}
               disabled={!isEnabled}
               onClick={() => isEnabled && handleWorkflowClick(index)}
-              className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded transition ${
-                isEnabled
+              className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded transition ${isEnabled
                   ? "bg-blue-600 text-white hover:bg-blue-700 shadow-sm"
                   : "bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed border border-gray-200 dark:border-gray-600"
-              }`}
+                }`}
             >
               <Icon className="w-4 h-4" />
               {step.label}
@@ -1122,8 +1121,8 @@ const WarehouseDashboard = () => {
           );
         })}
 
-          {selectedEntry && (
-            <span className="ml-auto text-xs text-gray-500 dark:text-gray-400">
+        {selectedEntry && (
+          <span className="ml-auto text-xs text-gray-500 dark:text-gray-400">
             Selected: <strong>#{selectedEntry.lr_entry_no || selectedEntry.invoice_no || selectedEntry.id}</strong> —{" "}
             {STATUS_LABELS[selectedEntry.status] || selectedEntry.status}
           </span>
@@ -1141,11 +1140,10 @@ const WarehouseDashboard = () => {
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
-                  className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition ${
-                    active
+                  className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition ${active
                       ? "border-blue-600 dark:border-blue-500 bg-blue-600 dark:bg-blue-600 text-white"
                       : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                  }`}
+                    }`}
                 >
                   {tab.label}
                   <span className={`rounded-full px-1.5 py-0.5 text-[10px] ${active ? "bg-blue-500" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"}`}>
@@ -1214,34 +1212,30 @@ const WarehouseDashboard = () => {
                       type="button"
                       title={`Sort ${col.label}`}
                       onClick={() => toggleSort(col.key)}
-                      className={`flex flex-col items-center leading-none ${
-                        sortColumn === col.key ? "text-blue-600 dark:text-blue-400" : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
-                      }`}
+                      className={`flex flex-col items-center leading-none ${sortColumn === col.key ? "text-blue-600 dark:text-blue-400" : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+                        }`}
                     >
                       <ChevronUp
-                        className={`w-3 h-3 -mb-1 ${
-                          sortColumn === col.key && sortDirection === "asc"
+                        className={`w-3 h-3 -mb-1 ${sortColumn === col.key && sortDirection === "asc"
                             ? "text-blue-600 dark:text-blue-400"
                             : "text-gray-300 dark:text-gray-600"
-                        }`}
+                          }`}
                       />
                       <ChevronDown
-                        className={`w-3 h-3 ${
-                          sortColumn === col.key && sortDirection === "desc"
+                        className={`w-3 h-3 ${sortColumn === col.key && sortDirection === "desc"
                             ? "text-blue-600 dark:text-blue-400"
                             : "text-gray-300 dark:text-gray-600"
-                        }`}
+                          }`}
                       />
                     </button>
                     <button
                       type="button"
                       title={`Filter ${col.label}`}
                       onClick={(event) => toggleColumnFilterPopup(col.key, event.currentTarget)}
-                      className={`${
-                        isFilterActive(col.key)
+                      className={`${isFilterActive(col.key)
                           ? "text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
                           : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-                      }`}
+                        }`}
                     >
                       <Filter className="w-3.5 h-3.5" />
                     </button>
@@ -1342,9 +1336,8 @@ const WarehouseDashboard = () => {
                 return (
                   <div
                     key={entry.dashboardKey}
-                    className={`flex border-b border-gray-100 dark:border-gray-700 text-sm cursor-pointer transition-colors ${
-                      isSelected ? "bg-blue-50 dark:bg-blue-900/20" : "hover:bg-gray-50 dark:hover:bg-gray-700"
-                    }`}
+                    className={`flex border-b border-gray-100 dark:border-gray-700 text-sm cursor-pointer transition-colors ${isSelected ? "bg-blue-50 dark:bg-blue-900/20" : "hover:bg-gray-50 dark:hover:bg-gray-700"
+                      }`}
                     onClick={() => handleRowSelect(entry.dashboardKey)}
                   >
                     <div className="p-2 w-[50px] text-center flex-shrink-0 border-r border-gray-100 dark:border-gray-700 flex items-center justify-center">
@@ -1374,9 +1367,8 @@ const WarehouseDashboard = () => {
                           })()
                         ) : col.key === "status" ? (
                           <span
-                            className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
-                              STATUS_COLORS[entry.status] || "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
-                            }`}
+                            className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[entry.status] || "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
+                              }`}
                           >
                             {STATUS_LABELS[entry.status] || entry.status || "-"}
                           </span>
@@ -1556,11 +1548,10 @@ const WarehouseDashboard = () => {
                           setDraftSelectedOrder((prev) => [...prev, column.key]);
                           setAvailableHighlight(null);
                         }}
-                        className={`px-3 py-1.5 text-xs cursor-pointer select-none border-b border-gray-100 dark:border-gray-700 last:border-b-0 ${
-                          availableHighlight === column.key
+                        className={`px-3 py-1.5 text-xs cursor-pointer select-none border-b border-gray-100 dark:border-gray-700 last:border-b-0 ${availableHighlight === column.key
                             ? "bg-blue-600 text-white"
                             : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                        }`}
+                          }`}
                       >
                         {column.label}
                       </div>
@@ -1624,11 +1615,10 @@ const WarehouseDashboard = () => {
                         setDraftSelectedOrder((prev) => prev.filter((key) => key !== column.key));
                         setSelectedHighlight(null);
                       }}
-                      className={`px-3 py-1.5 text-xs cursor-pointer select-none border-b border-gray-100 dark:border-gray-700 last:border-b-0 ${
-                        selectedHighlight === column.key
+                      className={`px-3 py-1.5 text-xs cursor-pointer select-none border-b border-gray-100 dark:border-gray-700 last:border-b-0 ${selectedHighlight === column.key
                           ? "bg-blue-600 text-white"
                           : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                      }`}
+                        }`}
                     >
                       {column.label}
                     </div>

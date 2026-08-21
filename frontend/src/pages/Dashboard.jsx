@@ -8,6 +8,7 @@ import DashboardHighlightCards from "../components/DashboardHighlightCards";
 import DashboardTables, { DailySalesSummaryTable } from "../components/DashboardTables";
 import DashboardPlaceholder from "../components/DashboardPlaceholder";
 import ModuleStatCards, { MetricCard } from "../components/DashboardStatCards";
+import WarehouseDashboardTabPane from "../components/WarehouseDashboardTabPane";
 import useCompanyOptions from "../utils/useCompanyOptions";
 import useDashboardRealtime from "../hooks/useDashboardRealtime";
 import useModuleDashboardSummary from "../hooks/useModuleDashboardSummary";
@@ -304,6 +305,17 @@ const Dashboard = () => {
       {openedTabs.has("store") && (
         <div className={activeTab === "store" ? "" : "hidden"}>
           <DailySalesSummaryTable table={tables?.dailySalesSummary} loading={loading} />
+        </div>
+      )}
+
+      {openedTabs.has("warehouse") && (
+        <div className={activeTab === "warehouse" ? "" : "hidden"}>
+          <WarehouseDashboardTabPane
+            active={openedTabs.has("warehouse")}
+            fromDate={fromDate}
+            toDate={toDate}
+            companyId={companyId}
+          />
         </div>
       )}
 

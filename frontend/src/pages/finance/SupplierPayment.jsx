@@ -30,6 +30,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Divider,
 } from "@mui/material";
 
 const fmt = (val) => {
@@ -39,6 +40,19 @@ const fmt = (val) => {
 };
 
 const PAYMENT_MODES = ["Cheque", "Cash", "Multiple Cheque", "PDC"];
+const getSellThroughMeta = (summary) => {
+  const purchasedQty = Number(summary?.purchased_qty || 0);
+  const soldQty = Number(summary?.sold_qty || 0);
+
+  if (purchasedQty <= 0) {
+    return { label: "No Stock Movement Data", tone: "slate", pct: null };
+  }
+
+  const pct = Math.round((soldQty / purchasedQty) * 100);
+  if (pct >= 100) return { label: "Fully Sold - Safe to Release", tone: "success", pct };
+  if (pct >= 50) return { label: `Partially Sold (${pct}%)`, tone: "warning", pct };
+  return { label: `Mostly Unsold (${pct}%) - Review Before Paying`, tone: "error", pct };
+};
 const getPaymentStatusMeta = (row) => {
   const paid = Number(row?.paid || 0);
   const balance = Number(row?.balance || 0);
@@ -61,6 +75,10 @@ const DETAIL_COLUMNS = [
   { key: "design_no", label: "Design No", align: "left" },
   { key: "rate", label: "Rate", align: "right" },
   { key: "purchased_qty", label: "Bought Qty", align: "right" },
+  { key: "sold_qty", label: "Sold Qty", align: "right" },
+  { key: "remaining_qty", label: "Remaining Qty", align: "right" },
+  { key: "purchased_value", label: "Purchased Value", align: "right" },
+  { key: "remaining_stock_value", label: "Remaining Value", align: "right" },
 ];
 const PENDING_TABLE_COLUMNS = [
   { key: "supplier_name", label: "Supplier Name" },
@@ -795,6 +813,48 @@ const SupplierPayment = () => {
                       <SummaryField label="Balance" sx={{ fontSize: 15, fontWeight: 700, color: TONES.error.fg, bgcolor: TONES.error.bg, py: 1 }}>
                         {fmt(detailData.invoice.balance)}
                       </SummaryField>
+
+                      <Divider sx={{ my: 0.5 }} />
+                      <Typography sx={{ fontSize: 12, fontWeight: 700, color: "text.secondary" }}>
+                        Stock Movement
+                      </Typography>
+                      <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1 }}>
+                        <SummaryField label="Bought Qty">{fmt(detailData.summary?.purchased_qty)}</SummaryField>
+                        <SummaryField label="Sold Qty">{fmt(detailData.summary?.sold_qty)}</SummaryField>
+                        <SummaryField label="Remaining Qty" sx={{ color: TONES.info.fg, bgcolor: TONES.info.bg }}>
+                          {fmt(detailData.summary?.remaining_qty)}
+                        </SummaryField>
+                        <SummaryField label="Purchased Value">{fmt(detailData.summary?.purchased_value)}</SummaryField>
+                        <SummaryField label="Sold Value" sx={{ color: TONES.success.fg, bgcolor: TONES.success.bg }}>
+                          {fmt(
+                            (detailData.summary?.purchased_value ?? 0) - (detailData.summary?.remaining_stock_value ?? 0)
+                          )}
+                        </SummaryField>
+                        <SummaryField label="Remaining Value" sx={{ color: TONES.warning.fg, bgcolor: TONES.warning.bg }}>
+                          {fmt(detailData.summary?.remaining_stock_value)}
+                        </SummaryField>
+                      </Box>
+
+                      {(() => {
+                        const meta = getSellThroughMeta(detailData.summary);
+                        return (
+                          <Box
+                            sx={{
+                              fontSize: 12.5,
+                              fontWeight: 700,
+                              textAlign: "center",
+                              color: TONES[meta.tone].fg,
+                              bgcolor: TONES[meta.tone].bg,
+                              borderRadius: 1,
+                              py: 1,
+                              px: 1,
+                            }}
+                          >
+                            {meta.label}
+                          </Box>
+                        );
+                      })()}
+
                       <Button
                         type="button"
                         variant="contained"
@@ -857,6 +917,16 @@ const SupplierPayment = () => {
                             <TableCell sx={{ fontSize: 12 }}>{line.design_no}</TableCell>
                             <TableCell align="right" sx={{ fontSize: 12, fontVariantNumeric: "tabular-nums" }}>{fmt(line.rate)}</TableCell>
                             <TableCell align="right" sx={{ fontSize: 12, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>{fmt(line.purchased_qty)}</TableCell>
+                            <TableCell align="right" sx={{ fontSize: 12, fontVariantNumeric: "tabular-nums" }}>
+                              {line.sold_qty === null || line.sold_qty === undefined ? "-" : fmt(line.sold_qty)}
+                            </TableCell>
+                            <TableCell align="right" sx={{ fontSize: 12, fontVariantNumeric: "tabular-nums" }}>
+                              {line.remaining_qty === null || line.remaining_qty === undefined ? "-" : fmt(line.remaining_qty)}
+                            </TableCell>
+                            <TableCell align="right" sx={{ fontSize: 12, fontVariantNumeric: "tabular-nums" }}>{fmt(line.purchased_value)}</TableCell>
+                            <TableCell align="right" sx={{ fontSize: 12, fontVariantNumeric: "tabular-nums" }}>
+                              {line.remaining_stock_value === null || line.remaining_stock_value === undefined ? "-" : fmt(line.remaining_stock_value)}
+                            </TableCell>
                           </TableRow>
                         ))
                       )}
@@ -868,9 +938,17 @@ const SupplierPayment = () => {
                   direction="row"
                   sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1.5, borderTop: 1, borderColor: "divider", bgcolor: "action.hover" }}
                 >
-                  <Typography sx={{ fontSize: 13, fontWeight: 700 }}>
-                    Bought Qty: <Box component="span">{fmt(detailData?.summary?.purchased_qty || 0)}</Box>
-                  </Typography>
+                  <Stack direction="row" spacing={2.5}>
+                    <Typography sx={{ fontSize: 13, fontWeight: 700 }}>
+                      Bought Qty: <Box component="span">{fmt(detailData?.summary?.purchased_qty || 0)}</Box>
+                    </Typography>
+                    <Typography sx={{ fontSize: 13, fontWeight: 700, color: TONES.success.fg }}>
+                      Sold Qty: <Box component="span">{fmt(detailData?.summary?.sold_qty || 0)}</Box>
+                    </Typography>
+                    <Typography sx={{ fontSize: 13, fontWeight: 700, color: TONES.warning.fg }}>
+                      Remaining Qty: <Box component="span">{fmt(detailData?.summary?.remaining_qty || 0)}</Box>
+                    </Typography>
+                  </Stack>
                   <Button
                     type="button"
                     variant="contained"

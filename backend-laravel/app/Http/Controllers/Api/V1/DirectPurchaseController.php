@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Exceptions\InsufficientStockException;
 use App\Http\Controllers\Controller;
+use App\Models\Barcode;
 use App\Models\DirectPurchase;
 use App\Models\DirectPurchaseItem;
 use App\Models\Product;
@@ -139,31 +140,14 @@ class DirectPurchaseController extends Controller
      */
     private function attachSellThrough(DirectPurchase $purchase): void
     {
-        $variantIds = $purchase->items->pluck('variant_id')->filter()->unique()->values();
-        if ($variantIds->isEmpty()) {
-            return;
-        }
+        $sellThrough = StockBatch::sellThroughByVariant(
+            'DIRECT_PURCHASE',
+            $purchase->id,
+            $purchase->items->pluck('variant_id'),
+        );
 
-        $batches = StockBatch::where('reference_type', 'DIRECT_PURCHASE')
-            ->where('reference_id', $purchase->id)
-            ->whereIn('variant_id', $variantIds)
-            ->get()
-            ->groupBy('variant_id');
-
-        $purchase->items->each(function ($item) use ($batches) {
-            $group = $item->variant_id ? $batches->get((int) $item->variant_id) : null;
-            if (!$group || $group->isEmpty()) {
-                $item->sell_through = null;
-                return;
-            }
-
-            $received = (float) $group->sum('received_qty');
-            $remaining = (float) $group->sum('remaining_qty');
-            $item->sell_through = [
-                'received_qty' => $received,
-                'remaining_qty' => $remaining,
-                'sold_qty' => $received - $remaining,
-            ];
+        $purchase->items->each(function ($item) use ($sellThrough) {
+            $item->sell_through = $item->variant_id ? ($sellThrough->get((int) $item->variant_id) ?? null) : null;
         });
     }
 
@@ -446,16 +430,30 @@ class DirectPurchaseController extends Controller
             // real barcodes exist, and stock hasn't been applied yet. Covers
             // the Dashboard's Complete action, which sends only the status
             // field - $purchase->items (untouched above) is exactly right.
-            $hadBarcodes = $purchase->barcodes()->exists();
+            // A PACK/CUT repeat purchase never gets its OWN barcode row
+            // (BarcodeController::generate() correctly reuses the variant's
+            // existing one instead) - direct_purchase_id on that row still
+            // points at whichever invoice first created it, so checking
+            // barcodes()->exists() alone would never see this purchase as
+            // "barcoded" and stock would silently never apply. Falls back to
+            // checking whether each item's own variant already has an
+            // active barcode anywhere (the reuse case).
+            $freshItems = $purchase->items()->get();
+            $hadBarcodes = $purchase->barcodes()->exists()
+                || ($freshItems->isNotEmpty() && $freshItems->every(
+                    fn ($item) => $item->variant_id && Barcode::where('variant_id', $item->variant_id)->where('is_active', true)->exists()
+                ));
             $willComplete = !$purchase->stock_applied
                 && ($updates['invoice_workflow_status'] ?? $purchase->invoice_workflow_status) === 'invoice_completed'
                 && $hadBarcodes;
 
             if ($willComplete) {
-                // Query fresh rather than $purchase->items - if items were
-                // just replaced above, the relation would otherwise still be
-                // holding whichever set (old or none) it first lazy-loaded.
-                foreach ($purchase->items()->get() as $item) {
+                // Reuse $freshItems from the hadBarcodes check above - it
+                // was already queried fresh rather than via $purchase->items
+                // (which, if items were just replaced above, would otherwise
+                // still hold whichever set - old or none - it first
+                // lazy-loaded).
+                foreach ($freshItems as $item) {
                     $this->stockService->adjust(
                         storeId: $purchase->store_id,
                         productId: (int) $item->product_id,

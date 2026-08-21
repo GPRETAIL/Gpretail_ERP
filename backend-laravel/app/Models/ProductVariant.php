@@ -41,6 +41,11 @@ class ProductVariant extends Model
         return $this->belongsTo(Size::class);
     }
 
+    public function brand()
+    {
+        return $this->belongsTo(Brand::class);
+    }
+
     public function barcodes()
     {
         return $this->hasMany(Barcode::class, 'variant_id');
