@@ -38,6 +38,7 @@ use App\Http\Controllers\Api\V1\ConfigurationController;
 use App\Http\Controllers\Api\V1\SupplierPaymentController;
 use App\Http\Controllers\Api\V1\ItemController;
 use App\Http\Controllers\Api\V1\SalesReportController;
+use App\Http\Controllers\Api\V1\WarehouseDashboardController;
 use App\Http\Controllers\Api\V1\WarehouseReportController;
 use App\Http\Controllers\Api\V1\UserAccessController;
 use App\Http\Controllers\Api\V1\SettingsController;
@@ -224,6 +225,15 @@ $registerAppRoutes = function () {
     Route::get('warehouse-reports', [WarehouseReportController::class, 'index']);
     Route::get('stock-analyzer', [WarehouseReportController::class, 'stockAnalyzer']);
     Route::match(['get', 'post', 'put'], 'warehouse-customisation', [WarehouseReportController::class, 'warehouseCustomization']);
+
+    // Warehouse Dashboard & Operations Command Center
+    Route::get('warehouse/dashboard/export', [WarehouseDashboardController::class, 'export']);
+    Route::get('warehouse/dashboard/inventory', [WarehouseDashboardController::class, 'inventory']);
+    Route::get('warehouse/dashboard/incoming', [WarehouseDashboardController::class, 'incoming']);
+    Route::get('warehouse/dashboard/outgoing', [WarehouseDashboardController::class, 'outgoing']);
+    Route::get('warehouse/dashboard/alerts', [WarehouseDashboardController::class, 'alerts']);
+    Route::get('warehouse/dashboard/activity', [WarehouseDashboardController::class, 'activity']);
+    Route::get('warehouse/dashboard', [WarehouseDashboardController::class, 'index']);
 
     // Customer & Supplier Dashboard Summaries
     Route::get('customers/dashboard-summary', [CustomerController::class, 'dashboardSummary']);
