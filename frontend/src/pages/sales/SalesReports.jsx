@@ -191,10 +191,9 @@ const buildCompanyWiseSaleCollectionRows = async () => {
   ]);
 
   return rows.map((row) => {
-    const companyId = row?.company_id ?? row?.company?.id ?? null;
+    const companyId = row?.store_id ?? null;
     const companyName =
-      row?.company?.name
-      || companyNameMap.get(String(companyId || ""))
+      companyNameMap.get(String(companyId || ""))
       || `Company ${companyId || "-"}`;
     const summary = getSaleSummary(row);
 
@@ -403,44 +402,18 @@ const buildCashOpeningClosingRows = async () => {
   const grouped = new Map();
   const getKey = (dateKey, counterName) => `${dateKey}__${counterName || "-"}`;
 
+  // CashRegisterSession has no counter/location/paidBy/receivedBy - those
+  // stay "-" honestly rather than reading relations that don't exist;
+  // `user` is the one real relation available, used for the cashier name.
   openings.forEach((row) => {
-    const dayKey = formatDayKey(row?.opening_at || row?.created_at);
-    const counterName = row?.counter?.name || "-";
+    const dayKey = formatDayKey(row?.opened_at || row?.created_at);
+    const counterName = "-";
     const key = getKey(dayKey, counterName);
     if (!grouped.has(key)) {
       grouped.set(key, {
         id: key,
         day_key: dayKey,
-        event_date: row?.opening_at || row?.created_at || "",
-        location_name: row?.location?.name || "-",
-        counter_name: counterName,
-        opening_amount: 0,
-        closing_bill_no: "-",
-        closing_amount: 0,
-        difference: 0,
-        paid_by: "-",
-        received_by: "-",
-        cashier_name: "-",
-      });
-    }
-
-    const entry = grouped.get(key);
-    entry.location_name = row?.location?.name || entry.location_name;
-    entry.opening_amount = round2(toNumber(row?.amount));
-    entry.paid_by = row?.paidBy?.name || row?.paidBy?.employee_code || "-";
-    entry.cashier_name = row?.cashier?.name || row?.cashier?.employee_code || entry.cashier_name;
-    entry.event_date = row?.opening_at || entry.event_date;
-  });
-
-  closings.forEach((row) => {
-    const dayKey = formatDayKey(row?.closing_at || row?.created_at);
-    const counterName = row?.counter?.name || "-";
-    const key = getKey(dayKey, counterName);
-    if (!grouped.has(key)) {
-      grouped.set(key, {
-        id: key,
-        day_key: dayKey,
-        event_date: row?.closing_at || row?.created_at || "",
+        event_date: row?.opened_at || row?.created_at || "",
         location_name: "-",
         counter_name: counterName,
         opening_amount: 0,
@@ -454,14 +427,39 @@ const buildCashOpeningClosingRows = async () => {
     }
 
     const entry = grouped.get(key);
-    entry.closing_bill_no = row?.bill_no || "-";
-    entry.closing_amount = round2(toNumber(row?.closing_amount));
+    entry.opening_amount = round2(toNumber(row?.opening_cash));
+    entry.cashier_name = row?.user?.name || entry.cashier_name;
+    entry.event_date = row?.opened_at || entry.event_date;
+  });
+
+  closings.forEach((row) => {
+    const dayKey = formatDayKey(row?.closed_at || row?.created_at);
+    const counterName = "-";
+    const key = getKey(dayKey, counterName);
+    if (!grouped.has(key)) {
+      grouped.set(key, {
+        id: key,
+        day_key: dayKey,
+        event_date: row?.closed_at || row?.created_at || "",
+        location_name: "-",
+        counter_name: counterName,
+        opening_amount: 0,
+        closing_bill_no: "-",
+        closing_amount: 0,
+        difference: 0,
+        paid_by: "-",
+        received_by: "-",
+        cashier_name: "-",
+      });
+    }
+
+    const entry = grouped.get(key);
+    entry.closing_amount = round2(toNumber(row?.closing_cash));
     entry.difference = round2(toNumber(row?.difference));
-    entry.received_by = row?.receivedBy?.name || row?.receivedBy?.employee_code || "-";
-    entry.cashier_name = row?.cashier?.name || row?.cashier?.employee_code || entry.cashier_name;
-    entry.event_date = row?.closing_at || entry.event_date;
-    if (!entry.opening_amount && toNumber(row?.opening_amount) > 0) {
-      entry.opening_amount = round2(row?.opening_amount);
+    entry.cashier_name = row?.user?.name || entry.cashier_name;
+    entry.event_date = row?.closed_at || entry.event_date;
+    if (!entry.opening_amount && toNumber(row?.opening_cash) > 0) {
+      entry.opening_amount = round2(row?.opening_cash);
     }
   });
 
@@ -473,13 +471,13 @@ const buildDayEndSettlementSummaryRows = async () => {
   const grouped = new Map();
 
   rows.forEach((row) => {
-    const key = formatDayKey(row?.closing_at || row?.created_at);
+    const key = formatDayKey(row?.closed_at || row?.created_at);
     if (!key) return;
     if (!grouped.has(key)) {
       grouped.set(key, {
         id: key,
         day_key: key,
-        closing_date: row?.closing_at || row?.created_at || "",
+        closing_date: row?.closed_at || row?.created_at || "",
         bill_count: 0,
         counters: new Set(),
         cashiers: new Set(),
@@ -491,10 +489,10 @@ const buildDayEndSettlementSummaryRows = async () => {
 
     const entry = grouped.get(key);
     entry.bill_count += 1;
-    entry.counters.add(row?.counter?.name || "-");
-    entry.cashiers.add(row?.cashier?.name || row?.cashier?.employee_code || "-");
-    entry.opening_amount += round2(row?.opening_amount);
-    entry.closing_amount += round2(row?.closing_amount);
+    entry.counters.add("-");
+    entry.cashiers.add(row?.user?.name || "-");
+    entry.opening_amount += round2(row?.opening_cash);
+    entry.closing_amount += round2(row?.closing_cash);
     entry.difference += round2(row?.difference);
   });
 
@@ -515,7 +513,7 @@ const buildCashierSettlementSummaryRows = async () => {
   const grouped = new Map();
 
   rows.forEach((row) => {
-    const key = String(row?.cashier?.name || row?.cashier?.employee_code || "Unassigned");
+    const key = String(row?.user?.name || "Unassigned");
     if (!grouped.has(key)) {
       grouped.set(key, {
         id: key,
@@ -530,9 +528,9 @@ const buildCashierSettlementSummaryRows = async () => {
 
     const entry = grouped.get(key);
     entry.bill_count += 1;
-    entry.counters.add(row?.counter?.name || "-");
-    entry.opening_amount += round2(row?.opening_amount);
-    entry.closing_amount += round2(row?.closing_amount);
+    entry.counters.add("-");
+    entry.opening_amount += round2(row?.opening_cash);
+    entry.closing_amount += round2(row?.closing_cash);
     entry.difference += round2(row?.difference);
   });
 
@@ -681,7 +679,10 @@ const buildEmployeeRows = async () => {
   const rows = await getAllRows("/employees");
   return rows.map((row) => ({
     ...row,
-    employee_name: [row?.name, row?.surname].filter(Boolean).join(" ") || row?.name || "-",
+    employee_name: row?.name || "-",
+    employee_code: row?.code || "-",
+    contact_no: row?.phone || "-",
+    email_id: row?.email || "-",
     active_label: row?.is_active ? "Active" : "Inactive",
   }));
 };
@@ -695,7 +696,7 @@ const buildStockRows = async () => {
     qty: Math.max(0, toNumber(row?.qty)),
     cost: round2(row?.cost),
     sale_price: round2(row?.selling_price || row?.final_price),
-    batch: row?.batch_id || "-",
+    batch: row?.batch_no || "-",
     size: row?.size || "-",
     design_no: row?.design_no || "-",
   }));

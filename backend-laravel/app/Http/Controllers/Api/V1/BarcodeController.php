@@ -8,6 +8,7 @@ use App\Models\DirectPurchase;
 use App\Models\DirectPurchaseItem;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Models\Stock;
 use App\Models\Store;
 use App\Services\VariantResolverService;
 use Illuminate\Http\Request;
@@ -435,9 +436,44 @@ class BarcodeController extends Controller
         ]);
     }
 
+    /**
+     * GET /api/barcodes/physical-stock - used by Sales Reports' stock
+     * tabs. Previously just aliased index(), returning bare Barcode rows -
+     * quantity and cost aren't columns on Barcode at all (a barcode row is
+     * a per-unit/per-variant label, not a stock count), so every stock
+     * report always showed qty=0/cost=0. Enriches each row with the real
+     * current quantity (from Stock, keyed by product+variant) and cost
+     * (Product.cost_price - the only cost basis available at this
+     * granularity; Barcode itself never recorded a per-unit cost).
+     */
     public function physicalStock(Request $request)
     {
-        return $this->index($request);
+        $response = $this->index($request);
+        $payload = json_decode($response->getContent(), true);
+        $rows = $payload['data'] ?? [];
+
+        $productIds = collect($rows)->pluck('product_id')->filter()->unique()->values();
+        $products = Product::whereIn('id', $productIds)->get(['id', 'cost_price'])->keyBy('id');
+
+        $storeId = $request->header('X-Company-Scope-Id', 1);
+        $stockByKey = Stock::where('store_id', $storeId)
+            ->whereIn('product_id', $productIds)
+            ->get(['product_id', 'variant_id', 'quantity'])
+            ->keyBy(fn ($s) => $s->product_id . ':' . ($s->variant_id ?? 'null'));
+
+        $enriched = collect($rows)->map(function ($row) use ($products, $stockByKey) {
+            $stockKey = ($row['product_id'] ?? null) . ':' . ($row['variant_id'] ?? 'null');
+            $row['qty'] = (float) ($stockByKey->get($stockKey)->quantity ?? 0);
+            $row['cost'] = (float) ($products->get($row['product_id'] ?? null)->cost_price ?? 0);
+
+            return $row;
+        });
+
+        return response()->json([
+            'success' => true,
+            'data'    => $enriched->values(),
+            'total'   => $enriched->count(),
+        ]);
     }
 
     /* ─────────────────────────────────────────────────────────────

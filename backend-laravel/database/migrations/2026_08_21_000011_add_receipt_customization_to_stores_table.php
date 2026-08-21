@@ -20,7 +20,7 @@ return new class extends Migration
     {
         Schema::table('stores', function (Blueprint $table) {
             if (!Schema::hasColumn('stores', 'receipt_customization')) {
-                $table->json('receipt_customization')->nullable()->after('printer_configurations');
+                $table->json('receipt_customization')->nullable();
             }
         });
     }
