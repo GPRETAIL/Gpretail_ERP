@@ -9,6 +9,7 @@ import DashboardTables, { DailySalesSummaryTable } from "../components/Dashboard
 import DashboardPlaceholder from "../components/DashboardPlaceholder";
 import ModuleStatCards, { MetricCard } from "../components/DashboardStatCards";
 import WarehouseDashboardTabPane from "../components/WarehouseDashboardTabPane";
+import CrmDashboardTabPane from "../components/CrmDashboardTabPane";
 import useCompanyOptions from "../utils/useCompanyOptions";
 import useDashboardRealtime from "../hooks/useDashboardRealtime";
 import useModuleDashboardSummary from "../hooks/useModuleDashboardSummary";
@@ -312,6 +313,17 @@ const Dashboard = () => {
         <div className={activeTab === "warehouse" ? "" : "hidden"}>
           <WarehouseDashboardTabPane
             active={openedTabs.has("warehouse")}
+            fromDate={fromDate}
+            toDate={toDate}
+            companyId={companyId}
+          />
+        </div>
+      )}
+
+      {openedTabs.has("crm") && (
+        <div className={activeTab === "crm" ? "" : "hidden"}>
+          <CrmDashboardTabPane
+            active={openedTabs.has("crm")}
             fromDate={fromDate}
             toDate={toDate}
             companyId={companyId}

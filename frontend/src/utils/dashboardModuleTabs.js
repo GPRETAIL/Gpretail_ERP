@@ -37,15 +37,6 @@ const currency = (value) => `₹${wholeNumber(value)}`;
 
 export const MODULE_TABS = [
   {
-    id: "crm",
-    label: "CRM",
-    endpoint: "/customers/dashboard-summary",
-    mapToCards: (data) => [
-      { label: "Total Customers", value: wholeNumber(data?.totalCustomers) },
-      { label: "Active Customers", value: wholeNumber(data?.activeCustomers) },
-    ],
-  },
-  {
     id: "sales",
     label: "Sales",
     // Today's snapshot -- distinct from Overview, which is the selected date-range's totals.

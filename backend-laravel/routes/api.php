@@ -36,9 +36,11 @@ use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\CompanyController;
 use App\Http\Controllers\Api\V1\ConfigurationController;
 use App\Http\Controllers\Api\V1\SupplierPaymentController;
+use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\ItemController;
 use App\Http\Controllers\Api\V1\SalesReportController;
 use App\Http\Controllers\Api\V1\WarehouseDashboardController;
+use App\Http\Controllers\Api\V1\CrmDashboardController;
 use App\Http\Controllers\Api\V1\WarehouseReportController;
 use App\Http\Controllers\Api\V1\UserAccessController;
 use App\Http\Controllers\Api\V1\SettingsController;
@@ -236,6 +238,8 @@ $registerAppRoutes = function () {
     Route::get('warehouse/dashboard', [WarehouseDashboardController::class, 'index']);
 
     // Customer & Supplier Dashboard Summaries
+    Route::get('crm/dashboard/export', [CrmDashboardController::class, 'export']);
+    Route::get('crm/dashboard', [CrmDashboardController::class, 'index']);
     Route::get('customers/dashboard-summary', [CustomerController::class, 'dashboardSummary']);
     Route::post('customers/bulk', [CustomerController::class, 'bulk']);
     Route::get('customers/{id}/profile', [CustomerController::class, 'profile']);
@@ -250,6 +254,11 @@ $registerAppRoutes = function () {
     Route::get('supplier-payments/history', [SupplierPaymentController::class, 'history']);
     Route::get('supplier-payments', [SupplierPaymentController::class, 'index']);
     Route::post('supplier-payments', [SupplierPaymentController::class, 'store']);
+
+    Route::get('notifications', [NotificationController::class, 'index']);
+    Route::get('notifications/unread-count', [NotificationController::class, 'unreadCount']);
+    Route::post('notifications/{id}/read', [NotificationController::class, 'markRead']);
+    Route::post('notifications/read-all', [NotificationController::class, 'markAllRead']);
 
     // Customer Orders
     Route::post('customer-orders/bulk', [CustomerOrderController::class, 'bulk']);

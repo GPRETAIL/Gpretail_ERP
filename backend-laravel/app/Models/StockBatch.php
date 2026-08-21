@@ -70,6 +70,10 @@ class StockBatch extends Model
                     'received_qty' => $received,
                     'remaining_qty' => $remaining,
                     'sold_qty' => $received - $remaining,
+                    // Earliest receipt for this document - "how long has
+                    // this stock been available to sell", used for the
+                    // sales-velocity / movement-tier calculation.
+                    'earliest_received_at' => $group->min('received_at'),
                 ];
             });
     }

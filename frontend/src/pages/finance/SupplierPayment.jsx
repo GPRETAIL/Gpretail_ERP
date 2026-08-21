@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { useSelector } from "react-redux";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { ArrowLeft, Search } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../../api/axios";
 import { toast } from "react-toastify";
 import FilterableDataTable from "../../components/FilterableDataTable";
@@ -40,19 +40,6 @@ const fmt = (val) => {
 };
 
 const PAYMENT_MODES = ["Cheque", "Cash", "Multiple Cheque", "PDC"];
-const getSellThroughMeta = (summary) => {
-  const purchasedQty = Number(summary?.purchased_qty || 0);
-  const soldQty = Number(summary?.sold_qty || 0);
-
-  if (purchasedQty <= 0) {
-    return { label: "No Stock Movement Data", tone: "slate", pct: null };
-  }
-
-  const pct = Math.round((soldQty / purchasedQty) * 100);
-  if (pct >= 100) return { label: "Fully Sold - Safe to Release", tone: "success", pct };
-  if (pct >= 50) return { label: `Partially Sold (${pct}%)`, tone: "warning", pct };
-  return { label: `Mostly Unsold (${pct}%) - Review Before Paying`, tone: "error", pct };
-};
 const getPaymentStatusMeta = (row) => {
   const paid = Number(row?.paid || 0);
   const balance = Number(row?.balance || 0);
@@ -74,11 +61,11 @@ const DETAIL_COLUMNS = [
   { key: "size", label: "Size", align: "left" },
   { key: "design_no", label: "Design No", align: "left" },
   { key: "rate", label: "Rate", align: "right" },
-  { key: "purchased_qty", label: "Bought Qty", align: "right" },
+  { key: "purchased_qty", label: "Purchased Qty", align: "right" },
   { key: "sold_qty", label: "Sold Qty", align: "right" },
-  { key: "remaining_qty", label: "Remaining Qty", align: "right" },
+  { key: "remaining_qty", label: "Available Qty", align: "right" },
   { key: "purchased_value", label: "Purchased Value", align: "right" },
-  { key: "remaining_stock_value", label: "Remaining Value", align: "right" },
+  { key: "remaining_stock_value", label: "Stock Value", align: "right" },
 ];
 const PENDING_TABLE_COLUMNS = [
   { key: "supplier_name", label: "Supplier Name" },
@@ -142,6 +129,7 @@ const SummaryField = ({ label, children, sx }) => (
 
 const SupplierPayment = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { theme: appTheme } = useAppTheme();
   const brand = useSelector((state) => state.auth.user?.brand);
   const muiTheme = useMemo(
@@ -436,6 +424,19 @@ const SupplierPayment = () => {
       setDetailLoading(false);
     }
   };
+
+  // Deep-link from a notification click (Navbar's bell): ?openInvoiceType=
+  // direct&openInvoiceId=123 auto-opens that invoice's detail screen on
+  // arrival, then clears the params so a later refresh doesn't re-trigger it.
+  useEffect(() => {
+    const type = searchParams.get("openInvoiceType");
+    const id = searchParams.get("openInvoiceId");
+    if (type && id) {
+      handlePaySingle({ invoice_type: type, id });
+      setSearchParams({}, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleAddPayment = () => {
     if (selectedRows.length === 0) {
@@ -819,9 +820,9 @@ const SupplierPayment = () => {
                         Stock Movement
                       </Typography>
                       <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1 }}>
-                        <SummaryField label="Bought Qty">{fmt(detailData.summary?.purchased_qty)}</SummaryField>
+                        <SummaryField label="Purchased Qty">{fmt(detailData.summary?.purchased_qty)}</SummaryField>
                         <SummaryField label="Sold Qty">{fmt(detailData.summary?.sold_qty)}</SummaryField>
-                        <SummaryField label="Remaining Qty" sx={{ color: TONES.info.fg, bgcolor: TONES.info.bg }}>
+                        <SummaryField label="Available Qty" sx={{ color: TONES.info.fg, bgcolor: TONES.info.bg }}>
                           {fmt(detailData.summary?.remaining_qty)}
                         </SummaryField>
                         <SummaryField label="Purchased Value">{fmt(detailData.summary?.purchased_value)}</SummaryField>
@@ -830,30 +831,42 @@ const SupplierPayment = () => {
                             (detailData.summary?.purchased_value ?? 0) - (detailData.summary?.remaining_stock_value ?? 0)
                           )}
                         </SummaryField>
-                        <SummaryField label="Remaining Value" sx={{ color: TONES.warning.fg, bgcolor: TONES.warning.bg }}>
+                        <SummaryField label="Stock Value" sx={{ color: TONES.warning.fg, bgcolor: TONES.warning.bg }}>
                           {fmt(detailData.summary?.remaining_stock_value)}
                         </SummaryField>
                       </Box>
 
-                      {(() => {
-                        const meta = getSellThroughMeta(detailData.summary);
-                        return (
-                          <Box
-                            sx={{
-                              fontSize: 12.5,
-                              fontWeight: 700,
-                              textAlign: "center",
-                              color: TONES[meta.tone].fg,
-                              bgcolor: TONES[meta.tone].bg,
-                              borderRadius: 1,
-                              py: 1,
-                              px: 1,
-                            }}
-                          >
-                            {meta.label}
-                          </Box>
-                        );
-                      })()}
+                      {detailData.summary?.movement_label && (
+                        <Box sx={{ display: "flex", justifyContent: "center" }}>
+                          <StatusChip
+                            label={detailData.summary.movement_label}
+                            tone={
+                              detailData.summary.movement_status === "FAST"
+                                ? "success"
+                                : detailData.summary.movement_status === "SLOW"
+                                ? "error"
+                                : "warning"
+                            }
+                          />
+                        </Box>
+                      )}
+                      <Box
+                        sx={{
+                          fontSize: 12.5,
+                          fontWeight: 700,
+                          textAlign: "center",
+                          color: detailData.summary?.eligible_for_payment ? TONES.success.fg : TONES.error.fg,
+                          bgcolor: detailData.summary?.eligible_for_payment ? TONES.success.bg : TONES.error.bg,
+                          borderRadius: 1,
+                          py: 1,
+                          px: 1,
+                        }}
+                      >
+                        {detailData.summary?.eligible_for_payment ? "Eligible for Payment" : "Review Before Paying"}
+                        <Typography component="div" sx={{ fontSize: 11, fontWeight: 500, mt: 0.25 }}>
+                          {detailData.summary?.eligibility_reason}
+                        </Typography>
+                      </Box>
 
                       <Button
                         type="button"
@@ -940,13 +953,13 @@ const SupplierPayment = () => {
                 >
                   <Stack direction="row" spacing={2.5}>
                     <Typography sx={{ fontSize: 13, fontWeight: 700 }}>
-                      Bought Qty: <Box component="span">{fmt(detailData?.summary?.purchased_qty || 0)}</Box>
+                      Purchased Qty: <Box component="span">{fmt(detailData?.summary?.purchased_qty || 0)}</Box>
                     </Typography>
                     <Typography sx={{ fontSize: 13, fontWeight: 700, color: TONES.success.fg }}>
                       Sold Qty: <Box component="span">{fmt(detailData?.summary?.sold_qty || 0)}</Box>
                     </Typography>
                     <Typography sx={{ fontSize: 13, fontWeight: 700, color: TONES.warning.fg }}>
-                      Remaining Qty: <Box component="span">{fmt(detailData?.summary?.remaining_qty || 0)}</Box>
+                      Available Qty: <Box component="span">{fmt(detailData?.summary?.remaining_qty || 0)}</Box>
                     </Typography>
                   </Stack>
                   <Button

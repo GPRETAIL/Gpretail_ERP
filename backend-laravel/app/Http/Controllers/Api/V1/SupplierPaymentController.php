@@ -168,6 +168,8 @@ class SupplierPaymentController extends Controller
 
         $rows = [];
         foreach ($invoices as $inv) {
+            $total = (float) $inv->grand_total;
+            $paid = (float) $inv->paid_amount;
             $rows[] = [
                 'id'            => $inv->id,
                 'invoice_type'  => 'invoice',
@@ -175,13 +177,21 @@ class SupplierPaymentController extends Controller
                 'supplier_name' => $inv->supplier?->name ?? 'Unknown Supplier',
                 'supplier_id'   => $inv->supplier_id,
                 'invoice_date'  => $inv->invoice_date,
-                'total_amount'  => $inv->grand_total,
-                'paid_amount'   => $inv->paid_amount,
-                'balance_due'   => max(0, $inv->grand_total - $inv->paid_amount),
+                'total_amount'  => $total,
+                'paid_amount'   => $paid,
+                'balance_due'   => max(0, $total - $paid),
+                'days'          => $inv->invoice_date ? (int) now()->diffInDays($inv->invoice_date, true) : 0,
+                'discount_perc' => (float) ($inv->discount_amount && $total > 0 ? round($inv->discount_amount / $total * 100, 1) : 0),
+                'total'         => $total,
+                'paid'          => $paid,
+                'balance'       => max(0, $total - $paid),
+                'amount'        => $total,
             ];
         }
 
         foreach ($directs as $dir) {
+            $total = (float) $dir->total_amount;
+            $paid = (float) $dir->paid_amount;
             $rows[] = [
                 'id'            => $dir->id,
                 'invoice_type'  => 'direct',
@@ -189,9 +199,15 @@ class SupplierPaymentController extends Controller
                 'supplier_name' => $dir->supplier?->name ?? 'Unknown Supplier',
                 'supplier_id'   => $dir->supplier_id,
                 'invoice_date'  => $dir->purchase_date,
-                'total_amount'  => $dir->total_amount,
-                'paid_amount'   => $dir->paid_amount,
-                'balance_due'   => max(0, $dir->total_amount - $dir->paid_amount),
+                'total_amount'  => $total,
+                'paid_amount'   => $paid,
+                'balance_due'   => max(0, $total - $paid),
+                'days'          => $dir->purchase_date ? (int) now()->diffInDays($dir->purchase_date, true) : 0,
+                'discount_perc' => (float) ($dir->discount_amount && $total > 0 ? round($dir->discount_amount / $total * 100, 1) : 0),
+                'total'         => $total,
+                'paid'          => $paid,
+                'balance'       => max(0, $total - $paid),
+                'amount'        => $total,
             ];
         }
 
@@ -346,6 +362,11 @@ class SupplierPaymentController extends Controller
         $through = $variantId ? $sellThrough->get($variantId) : null;
         $soldQty = $through['sold_qty'] ?? null;
         $remainingQty = $through['remaining_qty'] ?? null;
+        $earliestReceivedAt = $through['earliest_received_at'] ?? null;
+
+        $daysInStock = $earliestReceivedAt ? max(1, (int) now()->diffInDays($earliestReceivedAt, true)) : null;
+        $velocity = ($soldQty !== null && $daysInStock !== null) ? round($soldQty / $daysInStock, 3) : null;
+        $movementStatus = $velocity !== null ? $this->classifyMovement($velocity) : null;
 
         return [
             'id' => $id,
@@ -360,17 +381,83 @@ class SupplierPaymentController extends Controller
             'sold_qty' => $soldQty,
             'remaining_qty' => $remainingQty,
             'remaining_stock_value' => $remainingQty !== null ? $remainingQty * $rate : null,
+            'days_in_stock' => $daysInStock,
+            'velocity' => $velocity,
+            'movement_status' => $movementStatus,
         ];
+    }
+
+    /** Sales velocity (units sold per day since the stock was received) tiering. */
+    private function classifyMovement(float $velocity): string
+    {
+        if ($velocity >= 1) {
+            return 'FAST';
+        }
+        if ($velocity < 0.3) {
+            return 'SLOW';
+        }
+
+        return 'MODERATE';
+    }
+
+    /**
+     * Movement relaxes the sold% bar for "eligible for payment": a Fast
+     * Moving item will clear its remaining stock soon even if not fully
+     * sold yet, so it needs a lower sold% to be considered safe to pay;
+     * a Slow Moving item needs much more of it actually sold first.
+     */
+    private function eligibilityThreshold(?string $movementStatus): float
+    {
+        return match ($movementStatus) {
+            'FAST' => 0.30,
+            'SLOW' => 0.70,
+            default => 0.50,
+        };
     }
 
     private function buildSummary($lines): array
     {
+        $purchasedQty = (float) $lines->sum('purchased_qty');
+        $soldQty = (float) $lines->sum('sold_qty');
+        $remainingQty = $lines->sum('remaining_qty');
+        $purchasedValue = (float) $lines->sum('purchased_value');
+        $remainingStockValue = $lines->sum('remaining_stock_value');
+
+        // Dominant movement tier = whichever tier's lines carry the most
+        // purchased qty, so one odd line doesn't skew the whole invoice's
+        // verdict. Falls back to null (no batch/sell-through data yet -
+        // e.g. a purchase not yet Completed) rather than guessing.
+        $tieredQty = $lines->filter(fn ($l) => $l['movement_status'])->groupBy('movement_status')
+            ->map(fn ($group) => $group->sum('purchased_qty'));
+        $movementStatus = $tieredQty->isEmpty() ? null : $tieredQty->sortDesc()->keys()->first();
+
+        $soldPct = $purchasedQty > 0 ? $soldQty / $purchasedQty : 0;
+        $threshold = $this->eligibilityThreshold($movementStatus);
+        $eligible = $movementStatus !== null && $soldPct >= $threshold;
+
+        $movementLabel = match ($movementStatus) {
+            'FAST' => 'Fast Moving',
+            'SLOW' => 'Slow Moving',
+            'MODERATE' => 'Moderate Moving',
+            default => 'No Sales Data',
+        };
+        $pctLabel = round($soldPct * 100) . '%';
+        $reason = $movementStatus === null
+            ? 'No stock movement recorded yet for this invoice.'
+            : ($eligible
+                ? "{$pctLabel} sold, {$movementLabel} - eligible for payment."
+                : "{$pctLabel} sold, {$movementLabel} - needs " . round($threshold * 100) . "%+ sold before payment is recommended.");
+
         return [
-            'purchased_qty' => $lines->sum('purchased_qty'),
-            'sold_qty' => $lines->sum('sold_qty'),
-            'remaining_qty' => $lines->sum('remaining_qty'),
-            'purchased_value' => $lines->sum('purchased_value'),
-            'remaining_stock_value' => $lines->sum('remaining_stock_value'),
+            'purchased_qty' => $purchasedQty,
+            'sold_qty' => $soldQty,
+            'remaining_qty' => $remainingQty,
+            'purchased_value' => $purchasedValue,
+            'remaining_stock_value' => $remainingStockValue,
+            'movement_status' => $movementStatus,
+            'movement_label' => $movementLabel,
+            'eligible_for_payment' => $eligible,
+            'eligibility_reason' => $reason,
         ];
     }
 }
