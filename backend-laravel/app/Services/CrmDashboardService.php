@@ -108,10 +108,10 @@ class CrmDashboardService
 
         $ordersAgg = (clone $ordersQuery)->selectRaw('
             COUNT(*) as total_orders,
-            COALESCE(SUM(net_amount), 0) as total_order_value,
+            COALESCE(SUM(total_amount), 0) as total_order_value,
             COALESCE(SUM(advance_paid), 0) as advance_received,
             COALESCE(SUM(balance_due), 0) as balance_receivable,
-            COALESCE(AVG(net_amount), 0) as avg_order_value
+            COALESCE(AVG(total_amount), 0) as avg_order_value
         ')->first();
 
         // 3. Customer Receivables / Outstanding balance
@@ -329,7 +329,7 @@ class CrmDashboardService
                 'customers.credit_limit',
                 'customers.customer_type',
                 DB::raw('(SELECT COUNT(*) FROM customer_orders WHERE customer_orders.customer_id = customers.id) as orders_count'),
-                DB::raw('(SELECT COALESCE(SUM(net_amount), 0) FROM customer_orders WHERE customer_orders.customer_id = customers.id) as total_spent'),
+                DB::raw('(SELECT COALESCE(SUM(total_amount), 0) FROM customer_orders WHERE customer_orders.customer_id = customers.id) as total_spent'),
             ])
             ->orderByDesc('loyalty_points')
             ->limit($limit)
@@ -351,7 +351,7 @@ class CrmDashboardService
                 'customer_orders.order_no',
                 'customer_orders.order_date',
                 'customer_orders.delivery_date',
-                'customer_orders.net_amount',
+                DB::raw('customer_orders.total_amount as net_amount'),
                 'customer_orders.advance_paid',
                 'customer_orders.balance_due',
                 'customer_orders.status',
@@ -453,7 +453,7 @@ class CrmDashboardService
         $orders = DB::table('customer_orders')
             ->when($storeId, fn($q) => $q->where('store_id', $storeId))
             ->whereBetween('order_date', [$startDate->toDateString(), $endDate->toDateString()])
-            ->selectRaw('DATE(order_date) as d, COUNT(*) as c, COALESCE(SUM(net_amount), 0) as amount')
+            ->selectRaw('DATE(order_date) as d, COUNT(*) as c, COALESCE(SUM(total_amount), 0) as amount')
             ->groupBy(DB::raw('DATE(order_date)'))
             ->get();
 
