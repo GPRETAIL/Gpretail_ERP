@@ -130,7 +130,7 @@ class PosSaleController extends Controller
         $search = $request->input('search') ?? $request->input('q') ?? '';
         $storeId = $request->header('X-Company-Scope-Id', 1);
 
-        $stocks = Stock::with(['product.brand', 'product.category', 'product.tax'])
+        $query = Stock::with(['product.brand', 'product.category', 'product.tax'])
             ->where('store_id', $storeId)
             ->where('quantity', '>', 0)
             ->whereHas('product', function ($q) use ($search) {
@@ -139,9 +139,14 @@ class PosSaleController extends Controller
                       ->orWhere('code', 'like', "%{$search}%")
                       ->orWhere('barcode', 'like', "%{$search}%");
                 }
-            })
-            ->limit(50)
-            ->get();
+            });
+
+        // POSSales.jsx does live search-as-you-type (small, frequent
+        // requests - the 50 cap keeps those fast); POSOld.jsx instead
+        // pre-loads the whole in-stock catalog once for client-side
+        // filtering, so it needs the same all=true escape hatch every
+        // other list endpoint in this app already supports.
+        $stocks = $request->boolean('all') ? $query->limit(2000)->get() : $query->limit(50)->get();
 
         $data = $stocks->map(function ($s) {
             $sellingMode = strtoupper((string) ($s->product?->selling_mode ?: 'PIECE'));
@@ -162,6 +167,8 @@ class PosSaleController extends Controller
                 'tax'         => (float) ($s->product?->tax?->rate ?? 0),
                 'taxName'     => $s->product?->tax?->name,
                 'taxType'     => $s->product?->tax?->type,
+                'brandId'     => $s->product?->brand_id,
+                'brandName'   => $s->product?->brand?->name,
             ];
         });
 
@@ -208,9 +215,24 @@ class PosSaleController extends Controller
     {
         $storeId = $request->header('X-Company-Scope-Id');
 
-        $query = PosSale::with(['customer', 'user', 'items.product', 'payments'])
+        $query = PosSale::with(['customer', 'user', 'items.product', 'items.barcode', 'payments'])
             ->when($storeId && $storeId !== 'all', fn ($q) => $q->where('store_id', $storeId))
             ->orderBy('id', 'desc');
+
+        // SalesReports.jsx's getAllRows() helper always asks for all=true so
+        // it can aggregate every sale client-side - unlike every sibling
+        // list endpoint in this app, this one never honored that, so every
+        // report on that page was silently capped at the 50 most recent
+        // sales regardless of the report's actual date range.
+        if ($request->boolean('all') || in_array($request->input('limit'), ['500', '1000', 500, 1000], true)) {
+            $sales = $query->limit(2000)->get();
+
+            return response()->json([
+                'success' => true,
+                'data'    => $sales,
+                'total'   => $sales->count(),
+            ]);
+        }
 
         $limit = max(1, (int) $request->input('limit', 50));
         $sales = $query->paginate($limit);
@@ -233,6 +255,49 @@ class PosSaleController extends Controller
             'success' => true,
             'data'    => $this->withBillNo($sale),
         ]);
+    }
+
+    /**
+     * POST /pos-old-sales - POSOld.jsx's payload shape predates and
+     * differs from store()'s (barcodeId instead of productId,
+     * discountAmt instead of discount, paidCash instead of cashAmount,
+     * no card/UPI split) - this translates it and delegates to the same
+     * store() logic rather than duplicating the sale-creation/stock/
+     * batch/loyalty flow a second time.
+     *
+     * Exchange checkout (isExchange: true) is explicitly rejected for
+     * now - the frontend only sends a net returnAmount figure, not which
+     * specific items were returned, so there's nothing here yet that can
+     * correctly reverse the returned items' stock or record a proper
+     * PosReturn - deferred as its own piece of work rather than silently
+     * completing a sale that drops the return side.
+     */
+    public function storeLegacy(Request $request)
+    {
+        if ($request->boolean('isExchange')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Exchange checkout is not supported yet - please record the return and the new sale separately.',
+            ], 422);
+        }
+
+        $items = collect($request->input('items', []))->map(fn ($item) => [
+            'productId' => $item['barcodeId'] ?? null,
+            'variantId' => $item['variantId'] ?? null,
+            'qty'       => $item['qty'] ?? null,
+            'price'     => $item['price'] ?? null,
+            'mrp'       => $item['mrp'] ?? null,
+            'discount'  => $item['discountAmt'] ?? 0,
+        ])->all();
+
+        $request->merge([
+            'items'      => $items,
+            'customerId' => $request->input('customerId'),
+            'customer'   => $request->input('customer'),
+            'cashAmount' => $request->input('paidCash', 0),
+        ]);
+
+        return $this->store($request);
     }
 
     public function store(Request $request)

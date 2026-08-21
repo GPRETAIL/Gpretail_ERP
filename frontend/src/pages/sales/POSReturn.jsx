@@ -667,6 +667,8 @@ const POSReturn = () => {
       return {
         lineId: `${item.productId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         stockId: item.productId,
+        variantId: item.variantId ?? null,
+        barcodeId: item.barcodeId ?? null,
         barcode: item.barcode || "",
         productName: item.productName || "",
         standaloneLine: isStandalone,
@@ -1195,6 +1197,8 @@ const POSReturn = () => {
       returnAt: now.toISOString(),
       items: activeItems.map((line) => ({
         productId: line.stockId,
+        variantId: line.variantId ?? null,
+        barcodeId: line.barcodeId ?? null,
         barcode: line.barcode,
         productName: line.productName,
         qty: line.qty,

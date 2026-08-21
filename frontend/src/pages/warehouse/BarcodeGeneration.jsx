@@ -22,6 +22,7 @@ import {
   getWarehouseStickerMetrics,
   isWarehouseLabelFieldVisible,
   loadWarehouseBarcodeCustomization,
+  fetchWarehouseBarcodeCustomization,
   splitWarehouseLabelFieldsForCenter,
 } from "../../utils/warehouseBarcodeCustomization";
 
@@ -1290,8 +1291,17 @@ const BarcodeGeneration = () => {
   const [qrLoading, setQrLoading] = useState(false);
 
   useEffect(() => {
-    setLabelCustomization(loadWarehouseBarcodeCustomization());
-  }, []);
+    let cancelled = false;
+    const targetCompany = transportCompanyId || authUser?.company_id || "default";
+    fetchWarehouseBarcodeCustomization(api, targetCompany).then((config) => {
+      if (!cancelled) {
+        setLabelCustomization(config);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [transportCompanyId, authUser?.company_id]);
 
   useEffect(() => {
     let cancelled = false;

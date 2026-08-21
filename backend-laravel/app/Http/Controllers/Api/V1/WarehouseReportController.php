@@ -147,20 +147,37 @@ class WarehouseReportController extends Controller
 
     public function warehouseCustomization(Request $request)
     {
+        $storeId = $request->input('company_id')
+            ?? $request->input('companyId')
+            ?? $request->header('X-Company-Scope-Id', 1);
+
         if ($request->isMethod('post') || $request->isMethod('put')) {
+            if (!$storeId) {
+                return response()->json(['success' => false, 'message' => 'companyId is required'], 422);
+            }
+
+            $store = \App\Models\Store::find($storeId);
+            if (!$store) {
+                return response()->json(['success' => false, 'message' => 'Store not found'], 404);
+            }
+
+            $customization = $request->except(['companyId', 'company_id']);
+            $store->update([
+                'barcode_customization' => $customization,
+            ]);
+
             return response()->json([
                 'success' => true,
-                'message' => 'Warehouse preferences saved',
+                'message' => 'Warehouse barcode customisation saved successfully',
+                'data'    => $store->barcode_customization,
             ]);
         }
 
+        $store = $storeId ? \App\Models\Store::find($storeId) : null;
+
         return response()->json([
             'success' => true,
-            'data'    => [
-                'enable_bin_management' => true,
-                'auto_barcode_generate' => true,
-                'default_rack'          => 'A-1',
-            ],
+            'data'    => $store?->barcode_customization ?? [],
         ]);
     }
 }

@@ -63,6 +63,15 @@ class AuthController extends Controller
                     'email'                => $user->email,
                     'role'                 => $user->role,
                     'store_id'             => $user->store_id ?? 1,
+                    // "Company" and "Store" are the same concept in this
+                    // app (CompanyController is backed by the Store model,
+                    // the "Switch Store" dialog is the company switcher) -
+                    // several frontend pages (Sales Customisation, POS
+                    // receipt sync) have always expected company_id/
+                    // company_name on the auth user but never received
+                    // them, so those sync calls silently never fired.
+                    'company_id'           => $user->store_id ?? 1,
+                    'company_name'         => $user->store?->name,
                     'must_change_password' => (bool) $user->must_change_password,
                 ],
             ],
@@ -95,12 +104,14 @@ class AuthController extends Controller
         return response()->json([
             'success' => true,
             'data'    => [
-                'id'       => $user->id,
-                'username' => $user->username,
-                'name'     => $user->name,
-                'email'    => $user->email,
-                'role'     => $user->role,
-                'store_id' => $user->store_id ?? 1,
+                'id'           => $user->id,
+                'username'     => $user->username,
+                'name'         => $user->name,
+                'email'        => $user->email,
+                'role'         => $user->role,
+                'store_id'     => $user->store_id ?? 1,
+                'company_id'   => $user->store_id ?? 1,
+                'company_name' => $user->store?->name,
             ],
         ]);
     }
@@ -133,13 +144,15 @@ class AuthController extends Controller
             'success' => true,
             'data'    => [
                 'user'  => [
-                    'id'         => $user->id,
-                    'username'   => $user->username,
-                    'name'       => $user->name,
-                    'email'      => $user->email,
-                    'role'       => $user->role,
-                    'store_id'   => $user->store_id ?? 1,
-                    'counter_id' => $counterId,
+                    'id'           => $user->id,
+                    'username'     => $user->username,
+                    'name'         => $user->name,
+                    'email'        => $user->email,
+                    'role'         => $user->role,
+                    'store_id'     => $user->store_id ?? 1,
+                    'company_id'   => $user->store_id ?? 1,
+                    'company_name' => $user->store?->name,
+                    'counter_id'   => $counterId,
                 ],
                 'token' => $request->bearerToken(),
             ],

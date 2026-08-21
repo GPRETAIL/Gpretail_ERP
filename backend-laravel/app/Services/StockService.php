@@ -139,22 +139,61 @@ class StockService
 
         if ($stock->variant_id && abs($delta) > 0.0005) {
             if ($delta > 0) {
-                StockBatch::create([
-                    'variant_id' => $stock->variant_id,
-                    'store_id' => $stock->store_id,
-                    'reference_type' => $referenceType,
-                    'reference_id' => $referenceId,
-                    'received_qty' => $delta,
-                    'remaining_qty' => $delta,
-                    'cost_price' => $costPrice,
-                    'received_at' => now(),
-                ]);
+                $this->receiveBatch((int) $stock->variant_id, (int) $stock->store_id, $delta, $referenceType, $referenceId, $costPrice);
             } else {
                 $this->depleteBatches((int) $stock->variant_id, (int) $stock->store_id, abs($delta), $transaction->id, $referenceType, $referenceId);
             }
         }
 
         return $stock;
+    }
+
+    /**
+     * A positive delta is either a genuine new receipt (create a batch) or
+     * a document reversing its own earlier OUT movement (e.g. deleting a
+     * POS sale gives its stock back) - in the reversal case this must
+     * restore the exact batch(es) that sale originally depleted, not mint a
+     * brand new "receipt" batch under the sale's reference. Distinguished
+     * by whether prior OUT transactions for this exact
+     * (reference_type, reference_id, variant) have allocation records.
+     */
+    private function receiveBatch(
+        int $variantId,
+        int $storeId,
+        float $delta,
+        string $referenceType,
+        ?int $referenceId,
+        float $costPrice,
+    ): void {
+        $priorOutTransactionIds = StockTransaction::where('reference_type', $referenceType)
+            ->where('reference_id', $referenceId)
+            ->where('variant_id', $variantId)
+            ->where('type', 'OUT')
+            ->pluck('id');
+
+        if ($priorOutTransactionIds->isNotEmpty()) {
+            $allocations = StockBatchAllocation::whereIn('stock_transaction_id', $priorOutTransactionIds)->get();
+            if ($allocations->isNotEmpty()) {
+                foreach ($allocations as $allocation) {
+                    StockBatch::where('id', $allocation->stock_batch_id)
+                        ->lockForUpdate()
+                        ->increment('remaining_qty', $allocation->quantity);
+                }
+
+                return;
+            }
+        }
+
+        StockBatch::create([
+            'variant_id' => $variantId,
+            'store_id' => $storeId,
+            'reference_type' => $referenceType,
+            'reference_id' => $referenceId,
+            'received_qty' => $delta,
+            'remaining_qty' => $delta,
+            'cost_price' => $costPrice,
+            'received_at' => now(),
+        ]);
     }
 
     /**

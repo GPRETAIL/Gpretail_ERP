@@ -1433,7 +1433,9 @@ const POSSales = () => {
             tax: toNum(taxInfo.taxPerc ?? row.tax, 0),
             taxName: taxInfo.taxName || row.taxName || "",
             taxType: taxInfo.taxType || row.taxType || "",
-            sellingMode: productSellingModeMap.get(normalize(productName)) || "Piece",
+            sellingMode: row.sellingMode || productSellingModeMap.get(normalize(productName)) || "Piece",
+            variantId: row.variantId ?? null,
+            requiresQuantityPrompt: !!row.requiresQuantityPrompt,
           };
         })
         .filter((row) => row.qty > 0);
@@ -2382,7 +2384,10 @@ const POSSales = () => {
               tax: toNum(found.tax_rate, 0),
               taxName: "",
               taxType: "",
-              sellingMode: "Piece",
+              sellingMode: found.sellingMode || "Piece",
+              variantId: found.variantId ?? null,
+              barcodeId: found.barcodeId ?? null,
+              requiresQuantityPrompt: !!found.requiresQuantityPrompt,
             }
           : null;
       } catch {
@@ -2440,6 +2445,8 @@ const POSSales = () => {
             salesManId: "",
             salesManName: "",
             sellingMode: source.sellingMode || "Piece",
+            variantId: source.variantId ?? null,
+            barcodeId: source.barcodeId ?? null,
           },
         ];
       }
@@ -2862,6 +2869,8 @@ const POSSales = () => {
           : null,
       items: cartWithTotals.map((line) => ({
         productId: line.stockId,
+        variantId: line.variantId ?? null,
+        barcodeId: line.barcodeId ?? null,
         barcode: line.barcode,
         productName: line.productName,
         qty: line.qty,

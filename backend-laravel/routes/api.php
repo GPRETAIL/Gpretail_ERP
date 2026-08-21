@@ -283,6 +283,7 @@ $registerAppRoutes = function () {
     Route::get('pos-old-sales/session-summary', [PosSaleController::class, 'sessionSummary']);
     Route::get('pos-old-sales/next-bill-no', [PosSaleController::class, 'nextBillNo']);
     Route::get('pos-old-sales', [PosSaleController::class, 'posOldSales']);
+    Route::post('pos-old-sales', [PosSaleController::class, 'storeLegacy']);
 
     // POS Returns
     Route::get('pos-returns/next-return-no', [PosReturnController::class, 'nextReturnNo']);

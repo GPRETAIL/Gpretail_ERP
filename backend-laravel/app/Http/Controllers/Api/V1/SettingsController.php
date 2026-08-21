@@ -145,24 +145,43 @@ class SettingsController extends Controller
     }
 
     // Sales Customization
+    /**
+     * Receipt layout customization (fonts, columns, messages, etc.) set on
+     * the Sales > Customisation page. Keyed by store (the frontend calls
+     * this "company"), stored as one JSON blob on stores.receipt_customization
+     * - every POS screen fetches this on load to sync its localStorage
+     * cache, so returning the wrong shape here doesn't just fail to save,
+     * it actively resets the cached customization back to defaults.
+     */
     public function salesCustomization(Request $request)
     {
+        $storeId = $request->input('companyId') ?? $request->input('company_id');
+
         if ($request->isMethod('post') || $request->isMethod('put')) {
+            if (!$storeId) {
+                return response()->json(['success' => false, 'message' => 'companyId is required'], 422);
+            }
+
+            $store = Store::find($storeId);
+            if (!$store) {
+                return response()->json(['success' => false, 'message' => 'Store not found'], 404);
+            }
+
+            $store->update([
+                'receipt_customization' => $request->except(['companyId', 'company_id']),
+            ]);
+
             return response()->json([
                 'success' => true,
                 'message' => 'POS customization settings updated',
             ]);
         }
 
+        $store = $storeId ? Store::find($storeId) : null;
+
         return response()->json([
             'success' => true,
-            'data'    => [
-                'allow_negative_stock' => false,
-                'enable_discounts'     => true,
-                'require_salesman'     => false,
-                'default_payment_mode' => 'CASH',
-                'print_barcode_on_bill'=> true,
-            ],
+            'data'    => $store?->receipt_customization ?? [],
         ]);
     }
 

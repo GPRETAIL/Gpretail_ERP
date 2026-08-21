@@ -62,7 +62,7 @@ const getAllRows = async (url, params = {}) => {
 
 const getSaleDate = (row) => row?.sale_at || row?.created_at || "";
 const getSaleCustomerName = (row) => row?.customer_name || row?.customer?.name || "-";
-const getSaleCustomerMobile = (row) => row?.customer_mobile || row?.customer?.mobile_no || "-";
+const getSaleCustomerMobile = (row) => row?.customer_mobile || row?.customer?.phone || "-";
 const getSaleItems = (row) => (Array.isArray(row?.items) ? row.items : []);
 const getSaleBillNo = (row) => row?.bill_no || row?.bill?.bill_no || row?.id || "-";
 const getSaleStatus = (row) =>
@@ -76,46 +76,39 @@ const getSaleStatus = (row) =>
 
 const getSalePaymentMode = (row) => {
   if (row?.is_credit) return "Credit";
-  const modes = [];
-  if (toNumber(row?.cash_amount) > 0) modes.push("Cash");
-  if (toNumber(row?.card_amount) > 0) modes.push("Card");
-  if (toNumber(row?.upi_amount) > 0) modes.push("UPI");
+  const payments = Array.isArray(row?.payments) ? row.payments : [];
+  const modes = ["CASH", "CARD", "UPI"]
+    .filter((mode) => payments.some((p) => p?.payment_mode === mode && toNumber(p?.amount) > 0))
+    .map((mode) => mode.charAt(0) + mode.slice(1).toLowerCase());
   return modes.length > 0 ? modes.join(" + ") : "Paid";
 };
 
 const getSaleSettledAmount = (row) => {
-  const netAmount = Math.max(0, round2(row?.amount));
   const status = getSaleStatus(row);
   if (status === "cancelled") return 0;
-
-  const remainingAmount = Math.max(0, round2(row?.bill?.remaining_amount));
-  const derivedSettledAmount = round2(Math.max(netAmount - remainingAmount, 0));
-
-  if (status === "paid" || status === "settled") {
-    return derivedSettledAmount > 0 ? derivedSettledAmount : netAmount;
-  }
-
-  return derivedSettledAmount;
+  // PosSale already tracks exactly how much was collected - no need to
+  // derive it from a "remaining_amount" field that doesn't exist anywhere
+  // in the response.
+  return Math.max(0, round2(row?.paid_amount));
 };
 
 const getSaleSummary = (row) => {
   const items = getSaleItems(row);
-  const totalQty = items.reduce((sum, item) => sum + Math.max(0, parseInt(item?.qty, 10) || 0), 0);
+  const totalQty = items.reduce((sum, item) => sum + Math.max(0, toNumber(item?.quantity)), 0);
+  const discount = round2(row?.discount_amount);
+  const net = round2(row?.grand_total);
+  const cost = items.reduce(
+    (sum, item) => sum + Math.max(0, toNumber(item?.cost_price)) * Math.max(0, toNumber(item?.quantity)),
+    0
+  );
   return {
     lines: items.length,
     totalQty,
-    gross: round2(row?.gross_value),
-    discount: round2(row?.total_discount),
-    net: round2(row?.amount),
-    tax: round2(
-      items.reduce((sum, item) => {
-        const qty = Math.max(0, parseInt(item?.qty, 10) || 0);
-        const price = Math.max(0, toNumber(item?.price));
-        const taxPerc = Math.max(0, toNumber(item?.tax_perc ?? item?.taxPerc ?? item?.tax));
-        return sum + round2((qty * price * taxPerc) / 100);
-      }, 0)
-    ),
-    margin: round2(toNumber(row?.amount) - toNumber(row?.gross_value)),
+    gross: round2(toNumber(row?.subtotal) + discount),
+    discount,
+    net,
+    tax: round2(row?.tax_amount),
+    margin: round2(net - cost),
   };
 };
 
@@ -123,14 +116,20 @@ const buildPosSaleItemRows = async () => {
   const rows = await getAllRows("/pos-sales");
   return rows.flatMap((sale, saleIndex) =>
     getSaleItems(sale).map((item, itemIndex) => {
-      const qty = Math.max(0, parseInt(item?.qty, 10) || 0);
-      const price = Math.max(0, toNumber(item?.price));
-      const taxPerc = Math.max(0, toNumber(item?.tax_perc ?? item?.taxPerc ?? item?.tax));
-      const subtotal = round2(qty * price);
-      const taxAmount = round2((subtotal * taxPerc) / 100);
+      const qty = Math.max(0, toNumber(item?.quantity));
+      const price = Math.max(0, toNumber(item?.selling_price));
+      const taxPerc = Math.max(0, toNumber(item?.tax_rate));
       const discount = round2(item?.discount);
-      const total = round2(item?.total || Math.max(subtotal + taxAmount - discount, 0));
-      const gross = round2(toNumber(item?.cost) * qty);
+      const taxAmount = round2(item?.tax_amount);
+      // PosSaleItem.subtotal is already discount-and-tax-inclusive (the
+      // full line total) - used directly as `total` rather than
+      // recomputed, since it's the authoritative value from when the sale
+      // was actually recorded. `subtotal` here is our own pre-tax,
+      // net-of-discount figure for the report column of that name.
+      const subtotal = round2(Math.max(qty * price - discount, 0));
+      const total = round2(item?.subtotal ?? subtotal + taxAmount);
+      const cost = Math.max(0, toNumber(item?.cost_price));
+      const gross = round2(cost * qty);
       return {
         id: `${sale.id || saleIndex}-${itemIndex}`,
         sale_id: sale.id || null,
@@ -138,8 +137,8 @@ const buildPosSaleItemRows = async () => {
         sale_at: getSaleDate(sale),
         customer_name: getSaleCustomerName(sale),
         customer_mobile: getSaleCustomerMobile(sale),
-        barcode: item?.barcode || item?.barcodeRef?.barcode || "-",
-        product_name: item?.product_name || "-",
+        barcode: item?.barcode?.barcode || "-",
+        product_name: item?.product?.name || "-",
         salesman_name: item?.sales_man_name || item?.salesManName || "Unassigned",
         qty,
         price,
@@ -1383,29 +1382,24 @@ const billerWiseDiscountColumns = [
 const buildCashierWiseDiscountRows = async () => {
   const rows = await getAllRows("/pos-sales");
   return rows
-    .filter((row) => {
-      const applied = Boolean(row?.discount_applied_by_cashier) || toNumber(row?.total_discount) > 0;
-      return applied && toNumber(row?.total_discount) > 0;
-    })
+    .filter((row) => toNumber(row?.discount_amount) > 0)
     .map((row) => {
-      const billAmountBeforeDiscount = round2(toNumber(row?.amount) + toNumber(row?.total_discount));
-      const totalDiscount = round2(row?.total_discount);
+      const totalDiscount = round2(row?.discount_amount);
+      const billAmountBeforeDiscount = round2(toNumber(row?.grand_total) + totalDiscount);
       const discountPercentage = billAmountBeforeDiscount > 0
         ? round2((totalDiscount / billAmountBeforeDiscount) * 100)
         : 0;
 
       return {
         ...row,
-        cashier_name: String(
-          row?.discount_cashier_name || row?.cashier_name || row?.created_by || "Unknown"
-        ).trim() || "Unknown",
+        cashier_name: String(row?.user?.name || "Unknown").trim() || "Unknown",
         bill_no: getSaleBillNo(row),
         sale_at: getSaleDate(row),
         customer_name: getSaleCustomerName(row),
         bill_amount_before_discount: billAmountBeforeDiscount,
         total_discount: totalDiscount,
         discount_percentage: discountPercentage,
-        amount: round2(row?.amount),
+        amount: round2(row?.grand_total),
       };
     })
     .sort((a, b) => String(a.cashier_name).localeCompare(String(b.cashier_name)) || String(b.bill_no).localeCompare(String(a.bill_no)));

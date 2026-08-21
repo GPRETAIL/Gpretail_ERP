@@ -6,8 +6,12 @@ import { toast } from "react-toastify";
 import {
   buildCode39SvgMarkup,
 } from "../../utils/salesReceiptCustomization";
+import api from "../../api/axios";
+import useCompanyOptions from "../../utils/useCompanyOptions";
 import {
   DEFAULT_WAREHOUSE_BARCODE_CUSTOMIZATION,
+  createDefaultWarehouseBarcodeCustomization,
+  fetchWarehouseBarcodeCustomization,
   getWarehouseCodePosition,
   getWarehouseEffectiveFieldPosition,
   getWarehouseLabelFieldAlignClass,
@@ -439,18 +443,50 @@ const StickerCard = ({ label, settings, storeName, qrSrc = "" }) => {
 
 export default function WarehouseCustomisation() {
   const authUser = useSelector((state) => state.auth.user);
+  const companyOptions = useCompanyOptions() || [];
+  const [companyId, setCompanyId] = useState(() => authUser?.company_id ? String(authUser.company_id) : "");
   const [settings, setSettings] = useState(DEFAULT_WAREHOUSE_BARCODE_CUSTOMIZATION);
   const [savedSettings, setSavedSettings] = useState(DEFAULT_WAREHOUSE_BARCODE_CUSTOMIZATION);
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [qrSources, setQrSources] = useState({});
-  const storeName =
-    String(authUser?.company_name || "").trim()
-    || "Store";
 
   useEffect(() => {
-    const stored = loadWarehouseBarcodeCustomization();
-    setSettings(stored);
-    setSavedSettings(stored);
-  }, []);
+    if (!companyId && authUser?.company_id) {
+      setCompanyId(String(authUser.company_id));
+    }
+  }, [authUser?.company_id, companyId]);
+
+  const selectedStoreName = useMemo(() => {
+    if (companyId && companyOptions.length > 0) {
+      const match = companyOptions.find((opt) => String(opt.value) === String(companyId));
+      if (match) return match.label;
+    }
+    return String(authUser?.company_name || "").trim() || "Store";
+  }, [companyId, companyOptions, authUser?.company_name]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadConfig = async () => {
+      setLoading(true);
+      const targetCompany = companyId || authUser?.company_id || "default";
+      try {
+        const config = await fetchWarehouseBarcodeCustomization(api, targetCompany);
+        if (!cancelled) {
+          setSettings(config);
+          setSavedSettings(config);
+        }
+      } catch (err) {
+        console.error("Error loading warehouse barcode customization:", err);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    loadConfig();
+    return () => {
+      cancelled = true;
+    };
+  }, [companyId, authUser?.company_id]);
 
   useEffect(() => {
     if (settings.codeType !== "code") {
@@ -517,17 +553,32 @@ export default function WarehouseCustomisation() {
   };
 
   const handleReset = () => {
-    const next = resetWarehouseBarcodeCustomization();
+    const next = createDefaultWarehouseBarcodeCustomization();
     setSettings(next);
-    setSavedSettings(next);
-    toast.success("Warehouse customisation reset to defaults");
+    toast.info("Draft reset to default. Click Save to persist.");
   };
 
-  const handleSave = () => {
-    const next = saveWarehouseBarcodeCustomization(settings);
-    setSettings(next);
-    setSavedSettings(next);
-    toast.success("Warehouse customisation saved");
+  const handleSave = async () => {
+    const next = normalizeWarehouseBarcodeCustomization(settings);
+    const targetCompany = companyId || authUser?.company_id;
+    setSaving(true);
+    try {
+      if (targetCompany) {
+        await api.put("/warehouse-customisation", {
+          companyId: targetCompany,
+          ...next,
+        });
+      }
+      saveWarehouseBarcodeCustomization(targetCompany || "default", next);
+      setSettings(next);
+      setSavedSettings(next);
+      toast.success("Warehouse customisation saved");
+    } catch (err) {
+      console.error("Save error:", err);
+      toast.error(err?.response?.data?.message || "Failed to save warehouse customisation on server");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -535,14 +586,27 @@ export default function WarehouseCustomisation() {
       <div className="mx-auto grid max-w-7xl gap-4 xl:grid-cols-[minmax(0,1fr)_460px]">
         <div className="space-y-4">
           <div className={`${baseCardClass} px-5 py-5`}>
-            <div className="flex items-start justify-between gap-4">
+            <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <div className="text-xl font-semibold text-gray-900 dark:text-gray-100">Warehouse Customisation</div>
                 <div className="mt-1 max-w-2xl text-sm leading-6 text-gray-500 dark:text-gray-400">
                   Control barcode sticker layout for warehouse label preview and print.
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                {companyOptions && companyOptions.length > 1 && (
+                  <select
+                    value={companyId}
+                    onChange={(e) => setCompanyId(e.target.value)}
+                    className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-800 dark:text-gray-100"
+                  >
+                    {companyOptions.map((c) => (
+                      <option key={c.value} value={c.value}>
+                        {c.label}
+                      </option>
+                    ))}
+                  </select>
+                )}
                 <button
                   type="button"
                   onClick={handleReset}
@@ -554,10 +618,11 @@ export default function WarehouseCustomisation() {
                 <button
                   type="button"
                   onClick={handleSave}
-                  className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
+                  disabled={saving || loading}
+                  className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-60"
                 >
                   <Save className="h-4 w-4" />
-                  Save
+                  {saving ? "Saving..." : "Save"}
                 </button>
               </div>
             </div>
@@ -815,7 +880,7 @@ export default function WarehouseCustomisation() {
                   <StickerCard
                     label={previewLabels[0]}
                     settings={settings}
-                    storeName={storeName}
+                    storeName={selectedStoreName}
                     qrSrc={qrSources[previewLabels[0].key] || ""}
                   />
                 </div>
@@ -836,7 +901,7 @@ export default function WarehouseCustomisation() {
                       key={label.key}
                       label={label}
                       settings={settings}
-                      storeName={storeName}
+                      storeName={selectedStoreName}
                       qrSrc={qrSources[label.key] || ""}
                     />
                   ))}

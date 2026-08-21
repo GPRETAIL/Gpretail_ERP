@@ -417,13 +417,24 @@ export const buildWarehouseLabelTextStyle = (customization = {}) => {
   };
 };
 
-export const loadWarehouseBarcodeCustomization = () => {
+const getStorageKey = (companyId) => {
+  const normalizedCompanyId = String(companyId || "").trim();
+  return normalizedCompanyId && normalizedCompanyId !== "default"
+    ? `${STORAGE_KEY}.${normalizedCompanyId}`
+    : STORAGE_KEY;
+};
+
+export const loadWarehouseBarcodeCustomization = (companyId) => {
   if (typeof window === "undefined") {
     return { ...DEFAULT_WAREHOUSE_BARCODE_CUSTOMIZATION };
   }
 
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const key = getStorageKey(companyId);
+    let raw = window.localStorage.getItem(key);
+    if (!raw && key !== STORAGE_KEY) {
+      raw = window.localStorage.getItem(STORAGE_KEY);
+    }
     if (!raw) return { ...DEFAULT_WAREHOUSE_BARCODE_CUSTOMIZATION };
     return normalizeWarehouseBarcodeCustomization(JSON.parse(raw));
   } catch {
@@ -431,12 +442,60 @@ export const loadWarehouseBarcodeCustomization = () => {
   }
 };
 
-export const saveWarehouseBarcodeCustomization = (value) => {
+export const saveWarehouseBarcodeCustomization = (companyIdOrValue, valueIfCompanyId) => {
+  let companyId = null;
+  let value = companyIdOrValue;
+  if (valueIfCompanyId !== undefined) {
+    companyId = companyIdOrValue;
+    value = valueIfCompanyId;
+  } else if (typeof companyIdOrValue === "string" || typeof companyIdOrValue === "number") {
+    companyId = companyIdOrValue;
+    value = {};
+  }
+
   const normalized = normalizeWarehouseBarcodeCustomization(value);
   if (typeof window !== "undefined") {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+    const key = getStorageKey(companyId);
+    window.localStorage.setItem(key, JSON.stringify(normalized));
+    if (key !== STORAGE_KEY) {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+    }
   }
   return normalized;
+};
+
+export const applyServerWarehouseBarcodeCustomization = (companyId, serverData = {}) => {
+  if (!serverData || Object.keys(serverData).length === 0) {
+    return loadWarehouseBarcodeCustomization(companyId);
+  }
+  const merged = normalizeWarehouseBarcodeCustomization({
+    ...DEFAULT_WAREHOUSE_BARCODE_CUSTOMIZATION,
+    ...serverData,
+  });
+  return saveWarehouseBarcodeCustomization(companyId, merged);
+};
+
+export const fetchWarehouseBarcodeCustomization = async (
+  apiClient,
+  companyId,
+  { fallbackToLocal = true } = {}
+) => {
+  const storageKey = String(companyId || "").trim();
+  try {
+    const res = await apiClient.get("/warehouse-customisation", {
+      params: companyId ? { company_id: companyId } : {},
+    });
+    const serverData = res.data?.data;
+    if (serverData && Object.keys(serverData).length > 0 && (serverData.labelWidthMm || serverData.labelFields || serverData.codeType)) {
+      return applyServerWarehouseBarcodeCustomization(storageKey, serverData);
+    }
+    return loadWarehouseBarcodeCustomization(storageKey);
+  } catch {
+    if (fallbackToLocal) {
+      return loadWarehouseBarcodeCustomization(storageKey);
+    }
+    return normalizeWarehouseBarcodeCustomization(DEFAULT_WAREHOUSE_BARCODE_CUSTOMIZATION);
+  }
 };
 
 export const createDefaultWarehouseBarcodeCustomization = () =>
@@ -445,9 +504,9 @@ export const createDefaultWarehouseBarcodeCustomization = () =>
     labelFields: buildFieldDefaults(WAREHOUSE_BARCODE_FIELD_DEFINITIONS),
   });
 
-export const resetWarehouseBarcodeCustomization = () => {
+export const resetWarehouseBarcodeCustomization = (companyId) => {
   const defaults = createDefaultWarehouseBarcodeCustomization();
-  return saveWarehouseBarcodeCustomization(defaults);
+  return saveWarehouseBarcodeCustomization(companyId, defaults);
 };
 
 export const getWarehouseLabelFieldFontMm = (metrics = {}, fieldKey) => {

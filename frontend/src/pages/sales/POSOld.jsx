@@ -94,29 +94,41 @@ const buildPosOldSaleReceiptPayload = ({
   const receiptCompanyId = sale?.company_id || authUser?.company_id || null;
   const savedBillNo = sale?.bill_no ?? sale?.billNo;
   const displayBillNo = getPosBillBarcodeValue(savedBillNo);
-  const totalAmount = round2(toNum(sale?.amount, 0));
-  const receiptDiscountAmount = round2(Math.max(0, toNum(sale?.total_discount ?? sale?.totalDiscount, 0)));
+  // A re-fetched historical sale (last-receipt/lookup-sale) returns the
+  // real PosSale columns (grand_total/discount_amount/paid_amount), not
+  // the cart-draft field names (amount/totalDiscount/paidCash) - both are
+  // handled so reprinting doesn't zero out the whole bill summary.
+  const totalAmount = round2(toNum(sale?.grand_total ?? sale?.amount, 0));
+  const receiptDiscountAmount = round2(Math.max(0, toNum(sale?.discount_amount ?? sale?.total_discount ?? sale?.totalDiscount, 0)));
   const saleAmount = round2(
-    (sale?.items || []).reduce((sum, item) => sum + Math.max(0, toNum(item.total, 0)), 0)
+    (sale?.items || []).reduce((sum, item) => sum + Math.max(0, toNum(item.subtotal ?? item.total, 0)), 0)
   );
-  const paidCash = round2(Math.max(0, toNum(sale?.paid_cash ?? sale?.paidCash, 0)));
-  const balanceAmount = round2(Math.max(0, -toNum(sale?.balance_amount ?? sale?.balanceAmount, 0)));
+  const paidCash = round2(Math.max(0, toNum(sale?.paid_amount ?? sale?.paid_cash ?? sale?.paidCash, 0)));
+  const balanceAmount = round2(Math.max(0, totalAmount - paidCash));
   const receiptItems = (sale?.items || []).map((item) => {
+    // A freshly-saved sale (still in memory) uses the cart-line shape
+    // (qty/price/discountAmt/barcode); a re-fetched historical sale (via
+    // last-receipt/lookup-sale) returns the real PosSaleItem columns
+    // instead (quantity/selling_price/discount/tax_rate, product name only
+    // under the nested product relation) - both are handled here so
+    // reprinting an old bill doesn't silently blank out every line.
     const barcodeId = item.barcode_id ?? item.barcodeId;
     const stockLine = stockRows.find((row) => String(row.id) === String(barcodeId));
-    const qty = Math.max(0, toNum(item.qty, 0));
-    const rate = Math.max(0, toNum(item.price, 0));
-    const discountAmount = Math.max(0, toNum(item.discount_amt ?? item.discountAmt, 0));
-    const taxPerc = Math.max(0, toNum(stockLine?.tax, 0));
+    const qty = Math.max(0, toNum(item.quantity ?? item.qty, 0));
+    const rate = Math.max(0, toNum(item.selling_price ?? item.price, 0));
+    const discountAmount = Math.max(0, toNum(item.discount ?? item.discount_amt ?? item.discountAmt, 0));
+    const taxPerc = Math.max(0, toNum(item.tax_rate ?? item.taxPerc ?? stockLine?.tax, 0));
     const grossLineAmount = round2(Math.max(qty * rate - discountAmount, 0));
     const divisor = 1 + (taxPerc / 100);
     const baseAmount = taxPerc > 0 ? round2(grossLineAmount / divisor) : grossLineAmount;
     const taxAmount = round2(grossLineAmount - baseAmount);
     const productName = String(
-      item.product_name
+      item.product?.name
+      ?? item.product_name
       ?? item.productName
       ?? item.barcodeRef?.product_name
       ?? item.barcode
+      ?? stockLine?.productName
       ?? ""
     ).trim();
 
@@ -125,8 +137,8 @@ const buildPosOldSaleReceiptPayload = ({
       qty,
       rate,
       taxPerc,
-      taxName: taxPerc > 0 ? "GST" : "",
-      taxType: taxPerc > 0 ? "GST" : "",
+      taxName: item.tax_name || (taxPerc > 0 ? "GST" : ""),
+      taxType: item.tax_type || (taxPerc > 0 ? "GST" : ""),
       baseAmount,
       taxAmount,
       discountAmount,
@@ -344,9 +356,8 @@ const POSOld = () => {
           )
           .catch(() => []);
 
-      const [barcodesRes, productsRes, customersRes, brandsRes, reasonRows] = await Promise.all([
-        api.get("/barcodes").catch(() => ({ data: { data: [] } })),
-        api.get("/products", { params: { limit: 500 } }).catch(() => ({ data: { data: [] } })),
+      const [stockProductsRes, customersRes, brandsRes, reasonRows] = await Promise.all([
+        api.get("/pos-sales/stock-products", { params: { all: true } }).catch(() => ({ data: { data: [] } })),
         api.get("/customers").catch(() => ({ data: { data: [] } })),
         api.get("/brands").catch(() => ({ data: { data: [] } })),
         cfgRows("return_reason"),
@@ -354,33 +365,24 @@ const POSOld = () => {
 
       setReturnReasons(reasonRows);
 
-      const products = productsRes.data?.data || [];
-      const productTaxMap = new Map();
-      const productBrandMap = new Map();
-      products.forEach((p) => {
-        const key = normalize(p.name);
-        if (!key) return;
-        productTaxMap.set(key, toNum(p?.salesTax?.tax_percentage, 0));
-        if (p.brand) productBrandMap.set(key, { id: p.brand_id, name: p.brand?.name || "" });
-      });
-
-      const stock = (barcodesRes.data?.data || [])
-        .map((row) => {
-          const productName = row.product_name || "Unknown";
-          const brandInfo = productBrandMap.get(normalize(productName));
-          return {
-            id: String(row.id),
-            barcode: row.barcode || "",
-            productName,
-            qty: Math.max(0, toNum(row.qty, 0)),
-            cost: toNum(row.cost, 0),
-            price: toNum(row.final_price || row.selling_price || row.mrp, 0),
-            mrp: toNum(row.mrp, 0),
-            tax: productTaxMap.get(normalize(productName)) || 0,
-            brandId: brandInfo?.id || null,
-            brandName: brandInfo?.name || "",
-          };
-        })
+      const stock = (stockProductsRes.data?.data || [])
+        .map((row) => ({
+          id: String(row.id),
+          variantId: row.variantId ?? null,
+          sellingMode: row.sellingMode || "PIECE",
+          requiresQuantityPrompt: !!row.requiresQuantityPrompt,
+          barcode: row.barcode || "",
+          productName: row.productName || "Unknown",
+          qty: Math.max(0, toNum(row.qty, 0)),
+          cost: toNum(row.cost, 0),
+          price: toNum(row.price || row.mrp, 0),
+          mrp: toNum(row.mrp, 0),
+          tax: toNum(row.tax, 0),
+          taxName: row.taxName || "",
+          taxType: row.taxType || "",
+          brandId: row.brandId || null,
+          brandName: row.brandName || "",
+        }))
         .filter((r) => r.qty > 0);
 
       setStockRows(stock);
@@ -727,6 +729,7 @@ const POSOld = () => {
           {
             lineId: `${source.id}-${Date.now()}`,
             stockId: source.id,
+            variantId: source.variantId ?? null,
             barcode: source.barcode,
             productName: source.productName,
             mrp: source.mrp,
@@ -1276,6 +1279,10 @@ const POSOld = () => {
 
   const handleSave = async () => {
     if (cartWithTotals.length === 0) { toast.error("Add at least one product"); return; }
+    if (activeTab.isExchange) {
+      toast.error("Exchange checkout isn't available yet - please process the return and the new sale separately");
+      return;
+    }
     const customerMobile = String(activeTab.customerMobile || "").trim();
     const customerName = String(activeTab.customerName || "").trim();
     if (activeTab.customerMode === "existing" && !activeTab.existingCustomerId) {
@@ -1323,6 +1330,7 @@ const POSOld = () => {
       isExchange: !!activeTab.isExchange,
       items: positiveCartLines.map((l) => ({
         barcodeId: l.stockId,
+        variantId: l.variantId ?? null,
         barcode: l.barcode,
         productName: l.productName,
         mrp: l.mrp,
