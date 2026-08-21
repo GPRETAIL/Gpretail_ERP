@@ -13,8 +13,9 @@ if (($_GET['token'] ?? '') !== 'NextErpDeploySecret2026') {
 }
 
 try {
-    require_once __DIR__ . '/vendor/autoload.php';
-    $app = require_once __DIR__ . '/bootstrap/app.php';
+    $baseDir = file_exists(__DIR__ . '/vendor/autoload.php') ? __DIR__ : dirname(__DIR__);
+    require_once $baseDir . '/vendor/autoload.php';
+    $app = require_once $baseDir . '/bootstrap/app.php';
     $kernel = $app->make(\Illuminate\Contracts\Console\Kernel::class);
     $kernel->bootstrap();
 
