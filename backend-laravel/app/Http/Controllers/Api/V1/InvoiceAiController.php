@@ -3,64 +3,26 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Services\InvoiceOcrService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class InvoiceAiController extends Controller
 {
-    public function extract(Request $request)
+    public function extract(Request $request, InvoiceOcrService $ocr)
     {
         $request->validate([
-            'file' => ['required', 'file', 'max:15360', 'mimes:pdf,jpg,jpeg,png,webp,tif,tiff'],
+            'file' => ['required', 'file', 'max:1024', 'mimes:pdf,jpg,jpeg,png,webp'],
         ]);
 
-        $baseUrl = rtrim((string) config('invoice_ai.url'), '/');
-        $token = (string) config('invoice_ai.token');
-
-        if ($baseUrl === '') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Invoice AI service is not configured.',
-            ], 503);
-        }
-
         try {
-            $client = Http::timeout((int) config('invoice_ai.timeout', 120))
-                ->connectTimeout((int) config('invoice_ai.connect_timeout', 10))
-                ->acceptJson();
-
-            if ($token !== '') {
-                $client = $client->withHeaders(['X-API-Key' => $token]);
-            }
-
-            $response = $client
-                ->attach('file', fopen($request->file('file')->getRealPath(), 'r'), $request->file('file')->getClientOriginalName())
-                ->post($baseUrl . '/api/v1/invoices/extract');
-
-            if ($response->failed()) {
-                Log::warning('Invoice AI extraction failed', [
-                    'status' => $response->status(),
-                    'body' => $response->body(),
-                ]);
-
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Invoice OCR service could not process the document.',
-                    'service_status' => $response->status(),
-                ], 502);
-            }
-
-            return response()->json($response->json(), $response->status());
-        } catch (\Throwable $e) {
-            Log::error('Invoice AI service unavailable', [
-                'message' => $e->getMessage(),
-            ]);
-
+            return response()->json($ocr->extract($request->file('file')));
+        } catch (Throwable $e) {
+            report($e);
             return response()->json([
                 'success' => false,
-                'message' => 'Invoice OCR service is unavailable.',
-            ], 503);
+                'message' => $e->getMessage() ?: 'Invoice OCR failed.',
+            ], 422);
         }
     }
 }
