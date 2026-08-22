@@ -2,10 +2,8 @@ import React, { Suspense, lazy } from "react";
 import { matchRoutes, Navigate, Route, Routes } from "react-router-dom";
 import PageSkeleton from "../components/PageSkeleton";
 
-// Loading Fallback Component with Shimmer Skeleton for All App Pages
 const RouteLoadingFallback = () => <PageSkeleton variant="form" rows={8} />;
 
-// Dynamic Lazy Route Components (Code-Splitting)
 const Dashboard = lazy(() => import("../pages/Dashboard"));
 const ComingSoon = lazy(() => import("../pages/ComingSoon"));
 const ModulePage = lazy(() => import("../pages/ModulePage"));
@@ -35,6 +33,7 @@ const BackupCenter = lazy(() => import("../pages/settings/BackupCenter"));
 const UserAccess = lazy(() => import("../pages/settings/UserAccess"));
 const UserAccessHome = lazy(() => import("../pages/settings/UserAccessHome"));
 const WarehouseDashboard = lazy(() => import("../pages/warehouse/WarehouseDashboard"));
+const WarehouseNewPage = lazy(() => import("../pages/warehouse/NewPage"));
 const TransportEntry = lazy(() => import("../pages/warehouse/TransportEntry"));
 const TransportEntrySearchPage = lazy(() => import("../pages/warehouse/TransportEntrySearchPage"));
 const Intray = lazy(() => import("../pages/warehouse/Intray"));
@@ -84,7 +83,6 @@ const SalesVsPurchase = lazy(() => import("../pages/analytical/SalesVsPurchase")
 const SalesVsStock = lazy(() => import("../pages/analytical/SalesVsStock"));
 const SupplierPayment = lazy(() => import("../pages/finance/SupplierPayment"));
 
-// eslint-disable-next-line react-refresh/only-export-components
 export const protectedLayoutRoutes = [
   { path: "/masters/brand", render: () => <Brand /> },
   { path: "/masters/tax", render: () => <Tax /> },
@@ -122,6 +120,7 @@ export const protectedLayoutRoutes = [
   { path: "/settings/user-access", render: () => <Navigate to="/user-access" replace /> },
   { path: "/:moduleName", render: () => <ModulePage /> },
   { path: "/warehouse/dashboard", render: () => <WarehouseDashboard /> },
+  { path: "/warehouse/new-page", render: () => <WarehouseNewPage /> },
   { path: "/warehouse/courier", render: () => <h1>/warehouse/courier</h1> },
   { path: "/warehouse/transport-entry", render: () => <TransportEntry /> },
   { path: "/warehouse/transport-entry/search", render: () => <TransportEntrySearchPage /> },
@@ -177,11 +176,9 @@ export const protectedLayoutRoutes = [
   { path: "/finance/supplier-payment", render: () => <SupplierPayment /> },
 ];
 
-// eslint-disable-next-line react-refresh/only-export-components
 export const isRegisteredProtectedPath = (pathname) =>
   Boolean(matchRoutes(protectedLayoutRoutes, String(pathname || "")));
 
-// eslint-disable-next-line react-refresh/only-export-components
 export const renderProtectedLayoutRouteElements = () =>
   protectedLayoutRoutes.map((route) => (
     <Route key={route.path} path={route.path} element={route.render()} />
