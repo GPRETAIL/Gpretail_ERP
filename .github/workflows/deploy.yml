@@ -75,10 +75,13 @@ jobs:
         working-directory: backend-laravel
         run: php artisan test --without-tty
 
+  # Hostinger deployment is intentionally optional. The repository can be
+  # tested/build-verified without FTP credentials. Set the repository variable
+  # HOSTINGER_DEPLOY_ENABLED=true when the Hostinger secrets are available.
   deploy:
-    name: Deploy to Hostinger
+    name: Deploy to Hostinger (Optional)
     needs: [frontend, backend]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && vars.HOSTINGER_DEPLOY_ENABLED == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -101,47 +104,42 @@ jobs:
           name: frontend-dist
           path: frontend-dist/
 
-      - name: Prepare & Package Deployment Archive
+      - name: Validate Deployment Secrets
         env:
           OCR_SPACE_API_KEY: ${{ secrets.OCR_SPACE_API_KEY }}
           HOSTINGER_FTP_USERNAME: ${{ secrets.HOSTINGER_FTP_USERNAME }}
           HOSTINGER_FTP_PASSWORD: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
           HOSTINGER_DEPLOY_TOKEN: ${{ secrets.HOSTINGER_DEPLOY_TOKEN }}
         run: |
-          if [ -z "$OCR_SPACE_API_KEY" ]; then
-            echo "OCR_SPACE_API_KEY GitHub secret is not configured."
-            exit 1
-          fi
-          if [ -z "$HOSTINGER_FTP_USERNAME" ]; then
-            echo "HOSTINGER_FTP_USERNAME GitHub secret is not configured."
-            exit 1
-          fi
-          if [ -z "$HOSTINGER_FTP_PASSWORD" ]; then
-            echo "HOSTINGER_FTP_PASSWORD GitHub secret is not configured."
-            exit 1
-          fi
-          if [ -z "$HOSTINGER_DEPLOY_TOKEN" ]; then
-            echo "HOSTINGER_DEPLOY_TOKEN GitHub secret is not configured."
+          missing=0
+          for name in OCR_SPACE_API_KEY HOSTINGER_FTP_USERNAME HOSTINGER_FTP_PASSWORD HOSTINGER_DEPLOY_TOKEN; do
+            value="${!name}"
+            if [ -z "$value" ]; then
+              echo "$name GitHub secret is not configured."
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
             exit 1
           fi
 
+      - name: Prepare & Package Deployment Archive
+        env:
+          OCR_SPACE_API_KEY: ${{ secrets.OCR_SPACE_API_KEY }}
+        run: |
           mkdir -p backend-laravel/public/
           cp -r frontend-dist/* backend-laravel/public/
           cp backend-laravel/.env.production.example backend-laravel/.env
-
           printf '\nOCR_SPACE_API_KEY=%s\n' "$OCR_SPACE_API_KEY" >> backend-laravel/.env
-
           mkdir -p backend-laravel/storage/framework/cache/data
           mkdir -p backend-laravel/storage/framework/sessions
           mkdir -p backend-laravel/storage/framework/views
           mkdir -p backend-laravel/storage/logs
           mkdir -p backend-laravel/bootstrap/cache
           chmod -R 777 backend-laravel/storage backend-laravel/bootstrap/cache
-
           cd backend-laravel
           zip -r ../deploy.zip . -x "*.git*" "node_modules/*" "tests/*"
           cd ..
-
           mkdir -p ftp_upload/public
           cp deploy.zip ftp_upload/
           cp backend-laravel/unzip.php ftp_upload/
