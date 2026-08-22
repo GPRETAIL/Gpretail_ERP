@@ -15,10 +15,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -37,7 +37,7 @@ jobs:
         run: npm run build
 
       - name: Upload Frontend Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: frontend-dist
           path: frontend/dist/
@@ -48,7 +48,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -82,7 +82,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup PHP for Production Deployment Package
         uses: shivammathur/setup-php@v2
@@ -96,7 +96,7 @@ jobs:
         run: composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --ignore-platform-req=php+
 
       - name: Download Frontend Build
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: frontend-dist
           path: frontend-dist/
@@ -104,9 +104,24 @@ jobs:
       - name: Prepare & Package Deployment Archive
         env:
           OCR_SPACE_API_KEY: ${{ secrets.OCR_SPACE_API_KEY }}
+          HOSTINGER_FTP_USERNAME: ${{ secrets.HOSTINGER_FTP_USERNAME }}
+          HOSTINGER_FTP_PASSWORD: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
+          HOSTINGER_DEPLOY_TOKEN: ${{ secrets.HOSTINGER_DEPLOY_TOKEN }}
         run: |
           if [ -z "$OCR_SPACE_API_KEY" ]; then
             echo "OCR_SPACE_API_KEY GitHub secret is not configured."
+            exit 1
+          fi
+          if [ -z "$HOSTINGER_FTP_USERNAME" ]; then
+            echo "HOSTINGER_FTP_USERNAME GitHub secret is not configured."
+            exit 1
+          fi
+          if [ -z "$HOSTINGER_FTP_PASSWORD" ]; then
+            echo "HOSTINGER_FTP_PASSWORD GitHub secret is not configured."
+            exit 1
+          fi
+          if [ -z "$HOSTINGER_DEPLOY_TOKEN" ]; then
+            echo "HOSTINGER_DEPLOY_TOKEN GitHub secret is not configured."
             exit 1
           fi
 
@@ -136,7 +151,7 @@ jobs:
           cp backend-laravel/public/migrate.php ftp_upload/public/
 
       - name: Fast Upload via FTP to Hostinger
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
         with:
           server: 157.173.216.156
           username: ${{ secrets.HOSTINGER_FTP_USERNAME }}
@@ -147,10 +162,12 @@ jobs:
           dangerous-clean-slate: false
 
       - name: Trigger Remote Unzip & Run Migrations
+        env:
+          HOSTINGER_DEPLOY_TOKEN: ${{ secrets.HOSTINGER_DEPLOY_TOKEN }}
         run: |
-          curl -fsS "https://dev.gpsoftware.in/unzip.php?token=${{ secrets.HOSTINGER_DEPLOY_TOKEN }}"
+          curl -fsS "https://dev.gpsoftware.in/unzip.php?token=${HOSTINGER_DEPLOY_TOKEN}"
           sleep 3
-          curl -fsS "https://dev.gpsoftware.in/migrate.php?token=${{ secrets.HOSTINGER_DEPLOY_TOKEN }}"
+          curl -fsS "https://dev.gpsoftware.in/migrate.php?token=${HOSTINGER_DEPLOY_TOKEN}"
 
       - name: Deploy via SSH to Hostinger
         if: env.HOSTINGER_SSH_HOST != ''
