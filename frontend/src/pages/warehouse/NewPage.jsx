@@ -16,7 +16,6 @@ import api from "../../api/axios";
 
 const ACCEPTED_TYPES = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
 const MAX_FILE_SIZE = 1 * 1024 * 1024;
-const FOOTER_SAFE_BOTTOM = "bottom-14";
 
 const NewPage = () => {
   const navigate = useNavigate();
@@ -40,6 +39,16 @@ const NewPage = () => {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
   }, [previewUrl]);
 
+  const clearFile = () => {
+    setFile(null);
+    setResult(null);
+    setError("");
+    setSupplierId("");
+    setSupplierOptions([]);
+    setProductOptions({});
+    setSelectedProducts({});
+  };
+
   const selectFile = (candidate) => {
     setError("");
     setResult(null);
@@ -59,14 +68,8 @@ const NewPage = () => {
     setFile(candidate);
   };
 
-  const clearFile = () => {
-    setFile(null);
-    setResult(null);
-    setError("");
-  };
-
   const processInvoice = async () => {
-    if (!file) return;
+    if (!file || processing) return;
     setProcessing(true);
     setError("");
     setResult(null);
@@ -134,7 +137,6 @@ const NewPage = () => {
       setError("No invoice line items were extracted. Review the invoice manually before posting.");
       return;
     }
-
     const missing = items.findIndex((_, index) => !selectedProducts[index]);
     if (missing >= 0) {
       setError(`Select a product for line ${missing + 1} before creating the purchase invoice.`);
@@ -186,7 +188,7 @@ const NewPage = () => {
   const hasResult = Boolean(result?.invoice);
 
   return (
-    <section className="relative min-h-full bg-gray-50 dark:bg-gray-900 p-4 md:p-6 pb-28 space-y-5">
+    <section className="min-h-full bg-gray-50 dark:bg-gray-900 p-4 md:p-6 space-y-5 pb-8">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-3">
           <button
@@ -214,16 +216,37 @@ const NewPage = () => {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-5 items-start">
-        <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between gap-3">
+        <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
+          <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <h2 className="font-semibold text-gray-900 dark:text-white">Invoice Document</h2>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">PDF, JPG, PNG or WEBP · Maximum 1 MB on free OCR tier</p>
             </div>
-            {file && <button type="button" onClick={clearFile} className="text-xs text-gray-500 hover:text-red-600">Clear</button>}
+            <div className="flex items-center gap-2 shrink-0">
+              {file && (
+                <button
+                  type="button"
+                  onClick={clearFile}
+                  className="inline-flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                >
+                  Clear
+                </button>
+              )}
+              {file && !hasResult && (
+                <button
+                  type="button"
+                  onClick={processInvoice}
+                  disabled={processing}
+                  className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {processing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                  {processing ? "Processing..." : "Process Invoice with OCR"}
+                </button>
+              )}
+            </div>
           </div>
 
-          <div className="p-5 pb-24">
+          <div className="p-5">
             {!file ? (
               <label
                 htmlFor="warehouse-new-page-file"
@@ -232,7 +255,9 @@ const NewPage = () => {
                 onDrop={(event) => { event.preventDefault(); setDragging(false); selectFile(event.dataTransfer.files?.[0]); }}
                 className={`flex min-h-[300px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed transition ${dragging ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30" : "border-gray-300 dark:border-gray-600 hover:border-indigo-400"}`}
               >
-                <div className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center"><UploadCloud className="w-7 h-7 text-indigo-500" /></div>
+                <div className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center">
+                  <UploadCloud className="w-7 h-7 text-indigo-500" />
+                </div>
                 <p className="mt-5 text-sm font-semibold text-gray-800 dark:text-gray-100">Drop invoice here or browse files</p>
                 <span className="mt-5 inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white">Choose File</span>
                 <input id="warehouse-new-page-file" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp" className="sr-only" onChange={(event) => selectFile(event.target.files?.[0])} />
@@ -241,24 +266,28 @@ const NewPage = () => {
               <div className="rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
                 <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-9 h-9 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center">{isImage ? <ImageIcon className="w-4 h-4 text-indigo-500" /> : <FileText className="w-4 h-4 text-indigo-500" />}</div>
-                    <div className="min-w-0"><p className="text-sm font-medium text-gray-900 dark:text-white truncate">{file.name}</p><p className="text-xs text-gray-500 dark:text-gray-400">{(file.size / 1024 / 1024).toFixed(2)} MB</p></div>
+                    <div className="w-9 h-9 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center">
+                      {isImage ? <ImageIcon className="w-4 h-4 text-indigo-500" /> : <FileText className="w-4 h-4 text-indigo-500" />}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{file.name}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                    </div>
                   </div>
-                  <button type="button" onClick={clearFile} className="p-2 rounded-lg text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700" aria-label="Remove file"><X className="w-4 h-4" /></button>
+                  <button type="button" onClick={clearFile} className="p-2 rounded-lg text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700" aria-label="Remove file">
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
                 {isImage ? (
-                  <div className="min-h-[260px] max-h-[480px] p-5 flex items-center justify-center bg-gray-100 dark:bg-gray-950"><img src={previewUrl} alt="Selected invoice preview" className="max-h-[440px] max-w-full object-contain rounded-lg shadow-sm" /></div>
+                  <div className="min-h-[260px] max-h-[520px] p-5 flex items-center justify-center bg-gray-100 dark:bg-gray-950">
+                    <img src={previewUrl} alt="Selected invoice preview" className="max-h-[480px] max-w-full object-contain rounded-lg shadow-sm" />
+                  </div>
                 ) : (
-                  <div className="min-h-[260px] flex flex-col items-center justify-center text-center bg-gray-50 dark:bg-gray-900/50"><FileText className="w-12 h-12 text-gray-400" /><p className="mt-3 text-sm font-medium text-gray-700 dark:text-gray-200">PDF ready for OCR</p></div>
+                  <div className="min-h-[260px] flex flex-col items-center justify-center text-center bg-gray-50 dark:bg-gray-900/50">
+                    <FileText className="w-12 h-12 text-gray-400" />
+                    <p className="mt-3 text-sm font-medium text-gray-700 dark:text-gray-200">PDF ready for OCR</p>
+                  </div>
                 )}
-              </div>
-            )}
-
-            {file && !hasResult && (
-              <div className={`sticky ${FOOTER_SAFE_BOTTOM} z-30 mt-4 -mx-1 px-1 pt-2 pb-2 bg-white/95 dark:bg-gray-800/95 backdrop-blur border-t border-gray-200 dark:border-gray-700`}>
-                <button type="button" onClick={processInvoice} disabled={processing} className="w-full min-h-12 inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed">
-                  {processing ? <><Loader2 className="w-4 h-4 animate-spin" /> Processing invoice...</> : <><Sparkles className="w-4 h-4" /> Process Invoice with OCR</>}
-                </button>
               </div>
             )}
 
@@ -286,17 +315,34 @@ const NewPage = () => {
                         {supplierOptions.map((supplier) => <option key={supplier.id} value={supplier.id}>{supplier.name}</option>)}
                       </select>
                     </div>
-
                     <div className="overflow-x-auto">
                       <table className="min-w-full text-sm">
-                        <thead><tr className="text-left text-xs text-gray-500 border-b border-gray-200 dark:border-gray-700"><th className="py-2 pr-3">OCR Description</th><th className="py-2 pr-3">Qty</th><th className="py-2 pr-3">Rate</th><th className="py-2 pr-3">Product</th></tr></thead>
+                        <thead>
+                          <tr className="text-left text-xs text-gray-500 border-b border-gray-200 dark:border-gray-700">
+                            <th className="py-2 pr-3">OCR Description</th>
+                            <th className="py-2 pr-3">Qty</th>
+                            <th className="py-2 pr-3">Rate</th>
+                            <th className="py-2 pr-3">Product</th>
+                          </tr>
+                        </thead>
                         <tbody>
                           {(result.invoice.items || []).map((item, index) => (
                             <tr key={index} className="border-b last:border-0 border-gray-100 dark:border-gray-700">
-                              <td className="py-3 pr-3 min-w-[220px]"><input value={item.description || ""} onChange={(e) => updateItem(index, "description", e.target.value)} className="w-full rounded-md border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 px-2 py-1.5 text-sm" /></td>
-                              <td className="py-3 pr-3"><input type="number" value={item.quantity ?? ""} onChange={(e) => updateItem(index, "quantity", e.target.value)} className="w-20 rounded-md border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 px-2 py-1.5 text-sm" /></td>
-                              <td className="py-3 pr-3"><input type="number" value={item.rate ?? ""} onChange={(e) => updateItem(index, "rate", e.target.value)} className="w-24 rounded-md border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 px-2 py-1.5 text-sm" /></td>
-                              <td className="py-3 min-w-[240px]"><select value={selectedProducts[index] || ""} onChange={(e) => setSelectedProducts((current) => ({ ...current, [index]: e.target.value }))} className="w-full rounded-md border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 px-2 py-1.5 text-sm"><option value="">Select product</option>{(productOptions[index] || []).map((product) => <option key={product.id} value={product.id}>{product.name} {product.code ? `(${product.code})` : ""}</option>)}</select></td>
+                              <td className="py-3 pr-3 min-w-[220px]">
+                                <input value={item.description || ""} onChange={(e) => updateItem(index, "description", e.target.value)} className="w-full rounded-md border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 px-2 py-1.5 text-sm" />
+                              </td>
+                              <td className="py-3 pr-3">
+                                <input type="number" value={item.quantity ?? ""} onChange={(e) => updateItem(index, "quantity", e.target.value)} className="w-20 rounded-md border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 px-2 py-1.5 text-sm" />
+                              </td>
+                              <td className="py-3 pr-3">
+                                <input type="number" value={item.rate ?? ""} onChange={(e) => updateItem(index, "rate", e.target.value)} className="w-24 rounded-md border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 px-2 py-1.5 text-sm" />
+                              </td>
+                              <td className="py-3 min-w-[240px]">
+                                <select value={selectedProducts[index] || ""} onChange={(e) => setSelectedProducts((current) => ({ ...current, [index]: e.target.value }))} className="w-full rounded-md border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 px-2 py-1.5 text-sm">
+                                  <option value="">Select product</option>
+                                  {(productOptions[index] || []).map((product) => <option key={product.id} value={product.id}>{product.name} {product.code ? `(${product.code})` : ""}</option>)}
+                                </select>
+                              </td>
                             </tr>
                           ))}
                         </tbody>
@@ -305,19 +351,22 @@ const NewPage = () => {
                   </div>
                 </div>
 
-                <div className={`sticky ${FOOTER_SAFE_BOTTOM} z-30 -mx-1 px-1 pt-2 pb-2 bg-white/95 dark:bg-gray-800/95 backdrop-blur`}>
-                  <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between rounded-xl bg-gray-50 dark:bg-gray-900/95 border border-gray-200 dark:border-gray-700 p-4 shadow-lg">
-                    <div className="text-xs text-gray-500">OCR provider: <strong>OCR.space</strong> · Validation: <strong>{result.validation?.status || "review_required"}</strong></div>
-                    <button type="button" onClick={savePurchaseInvoice} disabled={saving} className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed">
-                      {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                      {saving ? "Creating..." : "Create Purchase Invoice"}
-                    </button>
-                  </div>
+                <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between rounded-xl bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 p-4">
+                  <div className="text-xs text-gray-500">OCR provider: <strong>OCR.space</strong> · Validation: <strong>{result.validation?.status || "review_required"}</strong></div>
+                  <button type="button" onClick={savePurchaseInvoice} disabled={saving} className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60">
+                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    {saving ? "Creating..." : "Create Purchase Invoice"}
+                  </button>
                 </div>
               </div>
             )}
 
-            {error && <div className="mt-4 flex items-start gap-2 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 px-3 py-2.5 text-sm text-red-700 dark:text-red-300"><Info className="w-4 h-4 mt-0.5 shrink-0" /><span>{error}</span></div>}
+            {error && (
+              <div className="mt-4 flex items-start gap-2 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 px-3 py-2.5 text-sm text-red-700 dark:text-red-300">
+                <Info className="w-4 h-4 mt-0.5 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -325,16 +374,31 @@ const NewPage = () => {
           <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm p-5">
             <div className="flex items-center gap-2"><Sparkles className="w-4 h-4 text-indigo-500" /><h2 className="font-semibold text-gray-900 dark:text-white">Processing Pipeline</h2></div>
             <div className="mt-5 space-y-4">
-              {[["01", "Upload", "React → Laravel"], ["02", "OCR.space", "Hosted OCR extracts invoice text and table rows"], ["03", "Invoice Parser", "Header, tax and line items"], ["04", "Review", "Supplier and product mapping"], ["05", "Purchase Invoice", "Laravel writes MariaDB and stock"]].map(([number, title, description], index, rows) => (
+              {[
+                ["01", "Upload", "React → Laravel"],
+                ["02", "OCR.space", "Hosted OCR extracts invoice text and table rows"],
+                ["03", "Invoice Parser", "Header, tax and line items"],
+                ["04", "Review", "Supplier and product mapping"],
+                ["05", "Purchase Invoice", "Laravel writes MariaDB and stock"],
+              ].map(([number, title, description], index, rows) => (
                 <div key={number} className="flex gap-3">
-                  <div className="flex flex-col items-center"><span className="w-7 h-7 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-300 text-[11px] font-semibold flex items-center justify-center">{number}</span>{index < rows.length - 1 && <span className="w-px flex-1 min-h-5 bg-gray-200 dark:bg-gray-700 mt-1" />}</div>
+                  <div className="flex flex-col items-center">
+                    <span className="w-7 h-7 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-300 text-[11px] font-semibold flex items-center justify-center">{number}</span>
+                    {index < rows.length - 1 && <span className="w-px flex-1 min-h-5 bg-gray-200 dark:bg-gray-700 mt-1" />}
+                  </div>
                   <div className="pb-2"><p className="text-sm font-medium text-gray-800 dark:text-gray-100">{title}</p><p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{description}</p></div>
                 </div>
               ))}
             </div>
           </div>
           <div className="rounded-2xl border border-indigo-100 dark:border-indigo-900/50 bg-indigo-50/70 dark:bg-indigo-950/20 p-5">
-            <div className="flex items-start gap-3"><CheckCircle2 className="w-5 h-5 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" /><div><p className="text-sm font-semibold text-indigo-900 dark:text-indigo-200">Hostinger-compatible architecture</p><p className="mt-1.5 text-xs leading-5 text-indigo-800/80 dark:text-indigo-300/80">Hostinger runs React, Laravel and MariaDB. Laravel calls the hosted OCR API; no VPS, Docker or Python runtime is required.</p></div></div>
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="w-5 h-5 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-indigo-900 dark:text-indigo-200">Hostinger-compatible architecture</p>
+                <p className="mt-1.5 text-xs leading-5 text-indigo-800/80 dark:text-indigo-300/80">Hostinger runs React, Laravel and MariaDB. Laravel calls the hosted OCR API; no VPS, Docker or Python runtime is required.</p>
+              </div>
+            </div>
           </div>
         </aside>
       </div>
