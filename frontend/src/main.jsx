@@ -11,6 +11,14 @@ import ThemeProvider from "./features/ThemeProvider.jsx";
 import TenantThemeProvider from "./theme/TenantThemeProvider.jsx";
 import { PrintProvider } from "./context/PrintContext.jsx";
 
+if ("serviceWorker" in navigator && import.meta.env.PROD) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch((error) => {
+      console.warn("Vynerix PWA service worker registration failed", error);
+    });
+  });
+}
+
 createRoot(document.getElementById("root")).render(
   <Provider store={store}>
     <ThemeProvider>
