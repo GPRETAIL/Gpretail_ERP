@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Any
 
+from .parser import parse_invoice
 
 _ocr = None
 
@@ -20,7 +21,6 @@ def _get_ocr():
 
 
 def _flatten_ocr_result(result: Any) -> list[dict[str, Any]]:
-    """Normalize PaddleOCR output into a stable service response."""
     rows: list[dict[str, Any]] = []
     for page in result:
         payload = getattr(page, "json", None)
@@ -35,13 +35,14 @@ def _flatten_ocr_result(result: Any) -> list[dict[str, Any]]:
         boxes = data.get("rec_polys", data.get("rec_boxes", [])) or []
 
         for index, text in enumerate(texts):
-            rows.append(
-                {
-                    "text": str(text),
-                    "confidence": float(scores[index]) if index < len(scores) else None,
-                    "box": boxes[index].tolist() if index < len(boxes) and hasattr(boxes[index], "tolist") else (boxes[index] if index < len(boxes) else None),
-                }
-            )
+            box = boxes[index] if index < len(boxes) else None
+            if hasattr(box, "tolist"):
+                box = box.tolist()
+            rows.append({
+                "text": str(text),
+                "confidence": float(scores[index]) if index < len(scores) else None,
+                "box": box,
+            })
     return rows
 
 
@@ -50,10 +51,9 @@ def extract_document(path: str, content_type: str) -> dict[str, Any]:
     result = ocr.predict(input=path)
     text_blocks = _flatten_ocr_result(result)
 
-    average_confidence = None
     scores = [x["confidence"] for x in text_blocks if x["confidence"] is not None]
-    if scores:
-        average_confidence = round(sum(scores) / len(scores), 4)
+    average_confidence = round(sum(scores) / len(scores), 4) if scores else None
+    invoice = parse_invoice(text_blocks)
 
     return {
         "success": True,
@@ -62,12 +62,6 @@ def extract_document(path: str, content_type: str) -> dict[str, Any]:
         "ocr_engine": "paddleocr",
         "confidence": average_confidence,
         "text_blocks": text_blocks,
-        "invoice": {
-            "supplier": {},
-            "invoice": {},
-            "items": [],
-            "tax": {},
-            "totals": {},
-        },
-        "parser_status": "ocr_only",
+        "invoice": invoice,
+        "parser_status": "fields_v1",
     }
