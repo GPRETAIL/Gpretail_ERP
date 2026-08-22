@@ -15,7 +15,7 @@ import {
 import api from "../../api/axios";
 
 const ACCEPTED_TYPES = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
-const MAX_FILE_SIZE = 15 * 1024 * 1024;
+const MAX_FILE_SIZE = 1 * 1024 * 1024;
 
 const NewPage = () => {
   const navigate = useNavigate();
@@ -52,7 +52,7 @@ const NewPage = () => {
       return;
     }
     if (candidate.size > MAX_FILE_SIZE) {
-      setError("File size must be 15 MB or smaller.");
+      setError("The free OCR provider accepts files up to 1 MB. Compress the invoice before uploading.");
       return;
     }
     setFile(candidate);
@@ -188,14 +188,14 @@ const NewPage = () => {
         </div>
         <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs ${hasResult ? "text-emerald-600" : "text-gray-500"}`}>
           {hasResult ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5" />}
-          {hasResult ? "OCR completed" : "PaddleOCR ready"}
+          {hasResult ? "OCR completed" : "OCR API ready"}
         </span>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-5">
         <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between gap-3">
-            <div><h2 className="font-semibold text-gray-900 dark:text-white">Invoice Document</h2><p className="text-sm text-gray-500 dark:text-gray-400 mt-1">PDF, JPG, PNG or WEBP · Maximum 15 MB</p></div>
+            <div><h2 className="font-semibold text-gray-900 dark:text-white">Invoice Document</h2><p className="text-sm text-gray-500 dark:text-gray-400 mt-1">PDF, JPG, PNG or WEBP · Maximum 1 MB on free OCR tier</p></div>
             {file && <button type="button" onClick={clearFile} className="text-xs text-gray-500 hover:text-red-600">Clear</button>}
           </div>
           <div className="p-5">
@@ -216,7 +216,7 @@ const NewPage = () => {
               </div>
             )}
 
-            {file && !hasResult && <button type="button" onClick={processInvoice} disabled={processing} className="mt-4 w-full inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60">{processing ? <><Loader2 className="w-4 h-4 animate-spin" /> Processing invoice...</> : <><Sparkles className="w-4 h-4" /> Process Invoice with PaddleOCR</>}</button>}
+            {file && !hasResult && <button type="button" onClick={processInvoice} disabled={processing} className="mt-4 w-full inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60">{processing ? <><Loader2 className="w-4 h-4 animate-spin" /> Processing invoice...</> : <><Sparkles className="w-4 h-4" /> Process Invoice with OCR</>}</button>}
 
             {hasResult && (
               <div className="mt-5 space-y-5">
@@ -237,7 +237,7 @@ const NewPage = () => {
                   </div>
                 </div>
 
-                <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between rounded-xl bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 p-4"><div className="text-xs text-gray-500">OCR confidence: <strong>{result.confidence != null ? `${(Number(result.confidence) * 100).toFixed(1)}%` : "N/A"}</strong> · Validation: <strong>{result.validation?.status || "review_required"}</strong></div><button type="button" onClick={savePurchaseInvoice} disabled={saving} className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60">{saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}{saving ? "Creating..." : "Create Purchase Invoice"}</button></div>
+                <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between rounded-xl bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 p-4"><div className="text-xs text-gray-500">OCR provider: <strong>OCR.space</strong> · Validation: <strong>{result.validation?.status || "review_required"}</strong></div><button type="button" onClick={savePurchaseInvoice} disabled={saving} className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60">{saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}{saving ? "Creating..." : "Create Purchase Invoice"}</button></div>
               </div>
             )}
 
@@ -246,8 +246,8 @@ const NewPage = () => {
         </div>
 
         <aside className="space-y-5">
-          <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm p-5"><div className="flex items-center gap-2"><Sparkles className="w-4 h-4 text-indigo-500" /><h2 className="font-semibold text-gray-900 dark:text-white">Processing Pipeline</h2></div><div className="mt-5 space-y-4">{[["01", "Upload", "React → Laravel"],["02", "PaddleOCR", "OCR server extracts text and layout"],["03", "Invoice Parser", "Header, tax and line items"],["04", "Review", "Supplier and product mapping"],["05", "Purchase Invoice", "Laravel writes MariaDB and stock"]].map(([number, title, description], index, rows) => <div key={number} className="flex gap-3"><div className="flex flex-col items-center"><span className="w-7 h-7 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-300 text-[11px] font-semibold flex items-center justify-center">{number}</span>{index < rows.length - 1 && <span className="w-px flex-1 min-h-5 bg-gray-200 dark:bg-gray-700 mt-1" />}</div><div className="pb-2"><p className="text-sm font-medium text-gray-800 dark:text-gray-100">{title}</p><p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{description}</p></div></div>)}</div></div>
-          <div className="rounded-2xl border border-indigo-100 dark:border-indigo-900/50 bg-indigo-50/70 dark:bg-indigo-950/20 p-5"><div className="flex items-start gap-3"><CheckCircle2 className="w-5 h-5 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" /><div><p className="text-sm font-semibold text-indigo-900 dark:text-indigo-200">Hostinger-safe architecture</p><p className="mt-1.5 text-xs leading-5 text-indigo-800/80 dark:text-indigo-300/80">Hostinger runs React, Laravel and MariaDB. The separate OCR server runs Python + FastAPI + PaddleOCR. Laravel is the only service that writes ERP data.</p></div></div></div>
+          <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm p-5"><div className="flex items-center gap-2"><Sparkles className="w-4 h-4 text-indigo-500" /><h2 className="font-semibold text-gray-900 dark:text-white">Processing Pipeline</h2></div><div className="mt-5 space-y-4">{[["01", "Upload", "React → Laravel"],["02", "OCR.space", "Hosted OCR extracts invoice text and table rows"],["03", "Invoice Parser", "Header, tax and line items"],["04", "Review", "Supplier and product mapping"],["05", "Purchase Invoice", "Laravel writes MariaDB and stock"]].map(([number, title, description], index, rows) => <div key={number} className="flex gap-3"><div className="flex flex-col items-center"><span className="w-7 h-7 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-300 text-[11px] font-semibold flex items-center justify-center">{number}</span>{index < rows.length - 1 && <span className="w-px flex-1 min-h-5 bg-gray-200 dark:bg-gray-700 mt-1" />}</div><div className="pb-2"><p className="text-sm font-medium text-gray-800 dark:text-gray-100">{title}</p><p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{description}</p></div></div>)}</div></div>
+          <div className="rounded-2xl border border-indigo-100 dark:border-indigo-900/50 bg-indigo-50/70 dark:bg-indigo-950/20 p-5"><div className="flex items-start gap-3"><CheckCircle2 className="w-5 h-5 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" /><div><p className="text-sm font-semibold text-indigo-900 dark:text-indigo-200">Hostinger-compatible architecture</p><p className="mt-1.5 text-xs leading-5 text-indigo-800/80 dark:text-indigo-300/80">Hostinger runs React, Laravel and MariaDB. Laravel calls the hosted OCR API; no VPS, Docker or Python runtime is required.</p></div></div></div>
         </aside>
       </div>
     </section>
