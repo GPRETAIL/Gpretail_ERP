@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\V1\InvoiceAiController;
 
 // System migration and cache helper for Hostinger deployments
 Route::get('/run-migrations', function () {
@@ -23,6 +24,10 @@ Route::get('/run-migrations', function () {
         ], 500);
     }
 });
+
+// Invoice AI proxy. Laravel owns auth/store context; the OCR server never accesses MariaDB.
+Route::post('/api/v1/invoice-ai/extract', [InvoiceAiController::class, 'extract'])
+    ->middleware('auth:sanctum');
 
 // Serve React SPA index.html for all frontend web routes
 Route::get('/{any?}', function () {
