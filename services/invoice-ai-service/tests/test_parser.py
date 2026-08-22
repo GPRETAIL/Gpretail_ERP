@@ -31,6 +31,17 @@ def test_parse_indian_invoice_fields_and_items():
     assert invoice["totals"]["grand_total"] == 6490
 
 
+def test_parse_short_invoice_prefix():
+    invoice = parse_invoice(blocks(
+        "ABC TRADERS",
+        "INV. No: ABC/2026/77",
+        "Date: 23-08-2026",
+        "Description Qty Rate Amount",
+        "Product A 1 100 100",
+    ))
+    assert invoice["invoice"]["number"] == "ABC/2026/77"
+
+
 def test_validation_reconciles_total():
     result = validate_invoice({
         "supplier": {"name": "ABC", "gstin": "33ABCDE1234F1Z5"},
