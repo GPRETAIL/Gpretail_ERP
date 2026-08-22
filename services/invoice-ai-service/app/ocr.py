@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import Any
+import tempfile
 
 from .parser import parse_invoice
 
@@ -46,10 +47,36 @@ def _flatten_ocr_result(result: Any) -> list[dict[str, Any]]:
     return rows
 
 
+def _render_pdf_pages(path: str) -> list[str]:
+    import fitz
+
+    output_paths: list[str] = []
+    document = fitz.open(path)
+    try:
+        for page_index, page in enumerate(document):
+            pixmap = page.get_pixmap(matrix=fitz.Matrix(2, 2), alpha=False)
+            temp = tempfile.NamedTemporaryFile(delete=False, suffix=f"-page-{page_index + 1}.png")
+            temp.close()
+            pixmap.save(temp.name)
+            output_paths.append(temp.name)
+    finally:
+        document.close()
+    return output_paths
+
+
 def extract_document(path: str, content_type: str) -> dict[str, Any]:
     ocr = _get_ocr()
-    result = ocr.predict(input=path)
-    text_blocks = _flatten_ocr_result(result)
+    input_paths = _render_pdf_pages(path) if content_type == "application/pdf" else [path]
+
+    try:
+        text_blocks: list[dict[str, Any]] = []
+        for input_path in input_paths:
+            result = ocr.predict(input=input_path)
+            text_blocks.extend(_flatten_ocr_result(result))
+    finally:
+        if content_type == "application/pdf":
+            for input_path in input_paths:
+                Path(input_path).unlink(missing_ok=True)
 
     scores = [x["confidence"] for x in text_blocks if x["confidence"] is not None]
     average_confidence = round(sum(scores) / len(scores), 4) if scores else None
@@ -61,7 +88,8 @@ def extract_document(path: str, content_type: str) -> dict[str, Any]:
         "content_type": content_type,
         "ocr_engine": "paddleocr",
         "confidence": average_confidence,
+        "page_count": len(input_paths),
         "text_blocks": text_blocks,
         "invoice": invoice,
-        "parser_status": "fields_v1",
+        "parser_status": "fields_v2",
     }
