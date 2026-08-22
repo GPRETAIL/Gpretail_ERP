@@ -1,14 +1,14 @@
 import api from "../api/axios";
 
-const get = async (url, params = {}) => {
-  const response = await api.get(url, { params });
-  return response?.data?.data ?? response?.data ?? {};
-};
-
+const unwrap = (response) => response?.data?.data ?? response?.data ?? {};
+const get = async (url, params = {}) => unwrap(await api.get(url, { params }));
 const list = async (url, params = {}) => {
   const payload = await get(url, params);
-  return Array.isArray(payload) ? payload : (payload.items ?? payload.data ?? []);
+  return Array.isArray(payload) ? payload : (payload.items ?? payload.data ?? payload.results ?? []);
 };
+const create = async (url, payload) => unwrap(await api.post(`/${url}`, payload));
+const update = async (url, id, payload) => unwrap(await api.put(`/${url}/${id}`, payload));
+const remove = async (url, id) => unwrap(await api.delete(`/${url}/${id}`));
 
 export const mobileApi = {
   dashboard: (params) => get("/dashboard", params),
@@ -21,6 +21,9 @@ export const mobileApi = {
   expenses: (params) => list("/expenses", params),
   reports: (params) => get("/sales-reports", params),
   notifications: (params) => list("/notifications", params),
+  create,
+  update,
+  remove,
 };
 
 export async function loadMobilePage(loader, params) {
