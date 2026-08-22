@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 from .ocr import extract_document
 from .validation import validate_invoice
 
-app = FastAPI(title="Vynerix Invoice AI Service", version="0.3.0")
+app = FastAPI(title="Vynerix Invoice AI Service", version="0.3.1")
 
 ALLOWED_TYPES = {
     "application/pdf",
@@ -23,7 +23,9 @@ MAX_FILE_BYTES = 15 * 1024 * 1024
 
 def require_api_key(x_api_key: str | None) -> None:
     expected = os.getenv("INVOICE_AI_API_KEY", "").strip()
-    if expected and not hmac.compare_digest(x_api_key or "", expected):
+    if not expected:
+        raise HTTPException(status_code=503, detail="OCR service API key is not configured")
+    if not hmac.compare_digest(x_api_key or "", expected):
         raise HTTPException(status_code=401, detail="Invalid OCR service API key")
 
 
@@ -34,7 +36,13 @@ def health():
 
 @app.get("/ready")
 def ready():
-    return {"status": "ready", "ocr": "paddleocr", "parser": "invoice-fields-v2"}
+    configured = bool(os.getenv("INVOICE_AI_API_KEY", "").strip())
+    return {
+        "status": "ready" if configured else "not_ready",
+        "ocr": "paddleocr",
+        "parser": "invoice-fields-v2",
+        "api_key_configured": configured,
+    }
 
 
 @app.post("/api/v1/invoices/extract")
