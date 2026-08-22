@@ -1,0 +1,16 @@
+[Unit]
+Description=Vynerix Invoice AI Service
+After=network.target
+
+[Service]
+Type=simple
+User=vynerix
+Group=vynerix
+WorkingDirectory=/opt/vynerix/invoice-ai-service
+EnvironmentFile=/opt/vynerix/invoice-ai-service/.env
+ExecStart=/opt/vynerix/invoice-ai-service/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8080
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
