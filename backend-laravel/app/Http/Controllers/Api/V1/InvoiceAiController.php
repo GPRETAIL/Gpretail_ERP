@@ -15,8 +15,8 @@ class InvoiceAiController extends Controller
             'file' => ['required', 'file', 'max:15360', 'mimes:pdf,jpg,jpeg,png,webp,tif,tiff'],
         ]);
 
-        $baseUrl = rtrim((string) config('services.invoice_ai.url'), '/');
-        $token = (string) config('services.invoice_ai.token');
+        $baseUrl = rtrim((string) config('invoice_ai.url'), '/');
+        $token = (string) config('invoice_ai.token');
 
         if ($baseUrl === '') {
             return response()->json([
@@ -26,8 +26,8 @@ class InvoiceAiController extends Controller
         }
 
         try {
-            $client = Http::timeout((int) config('services.invoice_ai.timeout', 120))
-                ->connectTimeout((int) config('services.invoice_ai.connect_timeout', 10))
+            $client = Http::timeout((int) config('invoice_ai.timeout', 120))
+                ->connectTimeout((int) config('invoice_ai.connect_timeout', 10))
                 ->acceptJson();
 
             if ($token !== '') {
