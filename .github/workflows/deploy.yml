@@ -65,15 +65,15 @@ jobs:
         working-directory: backend-laravel
         run: php artisan test --without-tty
 
-  deploy:
-    name: Deploy to Hostinger
+  deploy-package:
+    name: Build Deployment Package
     needs: [frontend, backend]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v7
-      - name: Setup PHP for Production Deployment Package
+      - name: Setup PHP for Deployment Package
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
@@ -87,32 +87,16 @@ jobs:
         with:
           name: frontend-dist
           path: frontend-dist/
-      - name: Validate Deployment Secrets
-        env:
-          OCR_SPACE_API_KEY: ${{ secrets.OCR_SPACE_API_KEY }}
-          HOSTINGER_FTP_USERNAME: ${{ secrets.HOSTINGER_FTP_USERNAME }}
-          HOSTINGER_FTP_PASSWORD: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
-          HOSTINGER_DEPLOY_TOKEN: ${{ secrets.HOSTINGER_DEPLOY_TOKEN }}
-        run: |
-          missing=0
-          for name in OCR_SPACE_API_KEY HOSTINGER_FTP_USERNAME HOSTINGER_FTP_PASSWORD HOSTINGER_DEPLOY_TOKEN; do
-            value="${!name}"
-            if [ -z "$value" ]; then
-              echo "$name GitHub secret is not configured."
-              missing=1
-            fi
-          done
-          if [ "$missing" -ne 0 ]; then
-            exit 1
-          fi
-      - name: Prepare & Package Deployment Archive
+      - name: Prepare Deployment Package
         env:
           OCR_SPACE_API_KEY: ${{ secrets.OCR_SPACE_API_KEY }}
         run: |
           mkdir -p backend-laravel/public/
           cp -r frontend-dist/* backend-laravel/public/
           cp backend-laravel/.env.production.example backend-laravel/.env
-          printf '\nOCR_SPACE_API_KEY=%s\n' "$OCR_SPACE_API_KEY" >> backend-laravel/.env
+          if [ -n "$OCR_SPACE_API_KEY" ]; then
+            printf '\nOCR_SPACE_API_KEY=%s\n' "$OCR_SPACE_API_KEY" >> backend-laravel/.env
+          fi
           mkdir -p backend-laravel/storage/framework/cache/data
           mkdir -p backend-laravel/storage/framework/sessions
           mkdir -p backend-laravel/storage/framework/views
@@ -122,50 +106,11 @@ jobs:
           cd backend-laravel
           zip -r ../deploy.zip . -x "*.git*" "node_modules/*" "tests/*"
           cd ..
-          mkdir -p ftp_upload/public
-          cp deploy.zip ftp_upload/
-          cp backend-laravel/unzip.php ftp_upload/
-          cp backend-laravel/migrate.php ftp_upload/
-          cp backend-laravel/.htaccess ftp_upload/
-          cp backend-laravel/public/unzip.php ftp_upload/public/
-          cp backend-laravel/public/migrate.php ftp_upload/public/
-      - name: Fast Upload via FTP to Hostinger
-        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
+      - name: Upload Deployment Artifact
+        uses: actions/upload-artifact@v6
         with:
-          server: 157.173.216.156
-          username: ${{ secrets.HOSTINGER_FTP_USERNAME }}
-          password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
-          port: 21
-          server-dir: ./
-          local-dir: ./ftp_upload/
-          dangerous-clean-slate: false
-      - name: Trigger Remote Unzip & Run Migrations
-        env:
-          HOSTINGER_DEPLOY_TOKEN: ${{ secrets.HOSTINGER_DEPLOY_TOKEN }}
-        run: |
-          curl -fsS "https://dev.gpsoftware.in/unzip.php?token=${HOSTINGER_DEPLOY_TOKEN}"
-          sleep 3
-          curl -fsS "https://dev.gpsoftware.in/migrate.php?token=${HOSTINGER_DEPLOY_TOKEN}"
-      - name: Deploy via SSH to Hostinger
-        if: env.HOSTINGER_SSH_HOST != ''
-        env:
-          HOSTINGER_SSH_HOST: ${{ secrets.HOSTINGER_SSH_HOST }}
-          HOSTINGER_SSH_USER: ${{ secrets.HOSTINGER_SSH_USER }}
-          HOSTINGER_SSH_KEY: ${{ secrets.HOSTINGER_SSH_KEY }}
-          HOSTINGER_SSH_PORT: ${{ secrets.HOSTINGER_SSH_PORT || '22' }}
-          HOSTINGER_TARGET_DIR: ${{ secrets.HOSTINGER_TARGET_DIR || 'domains/dev.gpsoftware.in/public_html' }}
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.HOSTINGER_SSH_HOST }}
-          username: ${{ secrets.HOSTINGER_SSH_USER }}
-          key: ${{ secrets.HOSTINGER_SSH_KEY }}
-          port: ${{ secrets.HOSTINGER_SSH_PORT || 22 }}
-          script: |
-            cd ${{ secrets.HOSTINGER_TARGET_DIR || 'domains/dev.gpsoftware.in/public_html' }}
-            git pull origin main
-            cd backend-laravel
-            composer install --no-dev --optimize-autoloader --no-interaction
-            php artisan migrate --force
-            php artisan config:cache
-            php artisan route:cache
-            php artisan view:cache
+          name: hostinger-deployment-package
+          path: deploy.zip
+          retention-days: 7
+      - name: Deployment Package Ready
+        run: echo "Deployment package created successfully. Hostinger upload/authentication is not configured, so no remote upload is attempted."
