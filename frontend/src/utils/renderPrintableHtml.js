@@ -29,7 +29,9 @@ export const renderPrintableHtmlToImageJob = async (
     await new Promise((resolve) => setTimeout(resolve, 300));
 
     const target = iframe.contentDocument?.querySelector(".receipt") || iframe.contentDocument?.body;
-    if (!target) {
+    // A <body> with no children is still a truthy DOM node, not null - rasterizing it would
+    // silently produce a blank page/print instead of surfacing the real problem (empty input).
+    if (!target || target.children.length === 0) {
       throw new Error("Printable HTML body is empty.");
     }
 

@@ -2,17 +2,36 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderPrintableHtmlToImageJob } from "../renderPrintableHtml";
 
 /**
- * The receipt rasterizer splices markup into an SVG <foreignObject>, which the browser parses as
- * XML. It used to splice `element.innerHTML` -- an HTML serialization, where void elements come back
- * unclosed -- so the first receipt to contain an <img> produced malformed XML, the SVG failed to
- * load, and silent printing quietly fell back to a plain ESC/POS receipt with no QR on it.
+ * renderPrintableHtmlToImageJob renders a receipt into an offscreen iframe and hands the live DOM
+ * element to html2pdf.js (html2canvas under the hood) to rasterize - it no longer serializes markup
+ * into an SVG <foreignObject> the way an earlier implementation did, so there's nothing left to
+ * parse as XML. html2canvas can't actually render in jsdom (no real layout/painting), so it must be
+ * mocked at the module boundary rather than relying on low-level Image/Canvas stubs - without this,
+ * the real library hangs waiting on browser behavior jsdom doesn't provide, and every test times out
+ * instead of failing fast.
  *
- * jsdom cannot rasterize an SVG, so these tests intercept the generated markup at the Blob boundary
- * and assert it is well-formed XML -- which is the actual invariant that broke.
+ * jsdom also never fires a real `load` event for an iframe's `srcdoc` (no actual sub-document
+ * navigation happens), which the implementation awaits before doing anything else - every test hung
+ * at that very first line regardless of the html2pdf mock above until this was stubbed too.
  */
-describe("renderPrintableHtmlToImageJob", () => {
-  let capturedSvg;
+const fromMock = vi.fn();
+const toCanvasMock = vi.fn();
+const getMock = vi.fn();
+const fakeCanvas = { toDataURL: vi.fn(() => "data:image/png;base64,rendered") };
 
+vi.mock("html2pdf.js", () => ({
+  default: () => {
+    const worker = {
+      from: (...args) => { fromMock(...args); return worker; },
+      set: () => worker,
+      toCanvas: (...args) => { toCanvasMock(...args); return worker; },
+      get: (...args) => getMock(...args),
+    };
+    return worker;
+  },
+}));
+
+describe("renderPrintableHtmlToImageJob", () => {
   const QR_IMG =
     '<img src="data:image/png;base64,iVBORw0KGgo=" alt="" width="120" height="120" ' +
     'style="display:block;margin:0 auto;" />';
@@ -32,75 +51,62 @@ describe("renderPrintableHtmlToImageJob", () => {
     </html>`;
 
   beforeEach(() => {
-    capturedSvg = null;
+    fromMock.mockClear();
+    toCanvasMock.mockClear();
+    getMock.mockReset();
+    fakeCanvas.toDataURL.mockClear();
+    getMock.mockResolvedValue(fakeCanvas);
 
-    // jsdom never fetches images, so `complete` stays false and neither load nor error ever fires.
-    // Production has a timeout for exactly that case; forcing complete keeps these tests instant.
-    if (globalThis.HTMLImageElement) {
-      Object.defineProperty(globalThis.HTMLImageElement.prototype, "complete", {
-        configurable: true,
-        get: () => true,
-      });
-    }
-
-    vi.stubGlobal("Blob", class {
-      constructor(parts) {
-        capturedSvg = String(parts?.[0] || "");
-      }
-    });
-    vi.stubGlobal("URL", { createObjectURL: () => "blob:svg", revokeObjectURL: () => {} });
-    vi.stubGlobal("requestAnimationFrame", (cb) => { cb(); return 0; });
-
-    // Resolve the Image load so the pipeline proceeds to the canvas step.
-    vi.stubGlobal("Image", class {
-      set src(_value) {
+    // jsdom never performs real sub-document navigation for an iframe's srcdoc, so `load` never
+    // fires on its own - parse the markup ourselves and fire onload the same way a real load would.
+    const iframeDocs = new WeakMap();
+    Object.defineProperty(HTMLIFrameElement.prototype, "srcdoc", {
+      configurable: true,
+      set(value) {
+        iframeDocs.set(this, new DOMParser().parseFromString(String(value || ""), "text/html"));
         setTimeout(() => this.onload?.(), 0);
-      }
+      },
+      get() {
+        return "";
+      },
     });
-
-    const canvasProto = globalThis.HTMLCanvasElement?.prototype;
-    if (canvasProto) {
-      canvasProto.getContext = () => ({
-        scale: () => {},
-        fillRect: () => {},
-        drawImage: () => {},
-        set fillStyle(_v) {},
-      });
-      canvasProto.toDataURL = () => "data:image/png;base64,rendered";
-    }
+    Object.defineProperty(HTMLIFrameElement.prototype, "contentDocument", {
+      configurable: true,
+      get() {
+        return iframeDocs.get(this) || null;
+      },
+    });
   });
 
-  const parseXml = (markup) => {
-    const parsed = new DOMParser().parseFromString(markup, "application/xml");
-    return parsed.querySelector("parsererror");
-  };
+  it("resolves with the rendered image and page dimensions for a receipt containing an <img> (the payment QR)", async () => {
+    const result = await renderPrintableHtmlToImageJob(receiptHtml(QR_IMG));
 
-  it("produces well-formed XML for a receipt containing an <img> (the payment QR)", async () => {
+    expect(result.imageDataUrl).toBe("data:image/png;base64,rendered");
+    expect(result.pageWidthMm).toBeGreaterThan(0);
+    expect(result.pageHeightMm).toBeGreaterThan(0);
+  });
+
+  it("keeps the QR image in the DOM element handed to the rasterizer rather than dropping it", async () => {
     await renderPrintableHtmlToImageJob(receiptHtml(QR_IMG));
 
-    expect(capturedSvg).toBeTruthy();
-    expect(parseXml(capturedSvg)).toBeNull();
+    expect(fromMock).toHaveBeenCalledTimes(1);
+    const target = fromMock.mock.calls[0][0];
+    expect(target.querySelector("img")?.src).toContain("data:image/png;base64,iVBORw0KGgo=");
   });
 
-  it("keeps the QR image in the serialized markup rather than dropping it", async () => {
-    await renderPrintableHtmlToImageJob(receiptHtml(QR_IMG));
-
-    expect(capturedSvg).toContain("data:image/png;base64,iVBORw0KGgo=");
-    // Self-closed, which is what makes it parseable inside foreignObject.
-    expect(capturedSvg).toMatch(/<img[^>]*\/>/);
-  });
-
-  it("produces well-formed XML for a receipt with only inline svg (the barcode case that always worked)", async () => {
+  it("hands the receipt's own inline svg through untouched (the barcode case that always worked)", async () => {
     await renderPrintableHtmlToImageJob(
       receiptHtml('<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"></svg>')
     );
 
-    expect(parseXml(capturedSvg)).toBeNull();
+    const target = fromMock.mock.calls[0][0];
+    expect(target.querySelector("svg")).not.toBeNull();
   });
 
   it("rejects empty printable html rather than rasterizing a blank sheet", async () => {
     await expect(renderPrintableHtmlToImageJob("<html><body></body></html>")).rejects.toThrow(
       /body is empty/i
     );
+    expect(fromMock).not.toHaveBeenCalled();
   });
 });
