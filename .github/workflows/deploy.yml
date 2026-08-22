@@ -16,26 +16,21 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v7
-
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-
       - name: Install Frontend Dependencies
         working-directory: frontend
         run: npm ci
-
       - name: Run Frontend Tests
         working-directory: frontend
         run: npm test
-
       - name: Build Frontend Bundle
         working-directory: frontend
         run: npm run build
-
       - name: Upload Frontend Artifact
         uses: actions/upload-artifact@v6
         with:
@@ -49,61 +44,49 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v7
-
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
           extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_sqlite, pdo_mysql, bcmath, curl
           coverage: none
-
       - name: Validate Composer Configuration
         working-directory: backend-laravel
         run: composer validate --strict
-
       - name: Install Composer Dependencies
         working-directory: backend-laravel
         run: composer install --prefer-dist --no-progress --no-interaction --ignore-platform-req=php+
-
       - name: Setup Test Environment
         working-directory: backend-laravel
         run: |
           cp .env.example .env
           php artisan key:generate
-
       - name: Run Backend Tests
         working-directory: backend-laravel
         run: php artisan test --without-tty
 
-  # Hostinger deployment is intentionally optional. The repository can be
-  # tested/build-verified without FTP credentials. Set the repository variable
-  # HOSTINGER_DEPLOY_ENABLED=true when the Hostinger secrets are available.
   deploy:
-    name: Deploy to Hostinger (Optional)
+    name: Deploy to Hostinger
     needs: [frontend, backend]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && vars.HOSTINGER_DEPLOY_ENABLED == 'true'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v7
-
       - name: Setup PHP for Production Deployment Package
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
           extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_sqlite, pdo_mysql, bcmath, curl
           coverage: none
-
       - name: Install Production Composer Dependencies
         working-directory: backend-laravel
         run: composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --ignore-platform-req=php+
-
       - name: Download Frontend Build
         uses: actions/download-artifact@v7
         with:
           name: frontend-dist
           path: frontend-dist/
-
       - name: Validate Deployment Secrets
         env:
           OCR_SPACE_API_KEY: ${{ secrets.OCR_SPACE_API_KEY }}
@@ -122,7 +105,6 @@ jobs:
           if [ "$missing" -ne 0 ]; then
             exit 1
           fi
-
       - name: Prepare & Package Deployment Archive
         env:
           OCR_SPACE_API_KEY: ${{ secrets.OCR_SPACE_API_KEY }}
@@ -147,7 +129,6 @@ jobs:
           cp backend-laravel/.htaccess ftp_upload/
           cp backend-laravel/public/unzip.php ftp_upload/public/
           cp backend-laravel/public/migrate.php ftp_upload/public/
-
       - name: Fast Upload via FTP to Hostinger
         uses: SamKirkland/FTP-Deploy-Action@v4.4.0
         with:
@@ -158,7 +139,6 @@ jobs:
           server-dir: ./
           local-dir: ./ftp_upload/
           dangerous-clean-slate: false
-
       - name: Trigger Remote Unzip & Run Migrations
         env:
           HOSTINGER_DEPLOY_TOKEN: ${{ secrets.HOSTINGER_DEPLOY_TOKEN }}
@@ -166,7 +146,6 @@ jobs:
           curl -fsS "https://dev.gpsoftware.in/unzip.php?token=${HOSTINGER_DEPLOY_TOKEN}"
           sleep 3
           curl -fsS "https://dev.gpsoftware.in/migrate.php?token=${HOSTINGER_DEPLOY_TOKEN}"
-
       - name: Deploy via SSH to Hostinger
         if: env.HOSTINGER_SSH_HOST != ''
         env:
