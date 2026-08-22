@@ -1103,7 +1103,16 @@ const WarehouseDashboard = () => {
       <div className="flex items-center gap-3 px-4 py-3 bg-white dark:bg-gray-800 border-b dark:border-gray-700">
         {workflowSteps.map((step, index) => {
           const isLREntry = index === 0;
-          const isEnabled = isLREntry || step.key === nextStepKey;
+          // Once barcodes are generated, the "next step" pointer moves past this step entirely (or
+          // the whole entry is done) - but the barcode screen still needs to be reachable afterward
+          // to reprint a lost/damaged sticker, so keep it clickable rather than graying it out.
+          const isBarcodeRevisit =
+            step.key === "barcode"
+            && selectedEntry
+            && ["barcode_generated", "completed"].includes(
+              String(selectedEntry.status || "").trim().toLowerCase()
+            );
+          const isEnabled = isLREntry || step.key === nextStepKey || isBarcodeRevisit;
           const Icon = step.icon;
           return (
             <button

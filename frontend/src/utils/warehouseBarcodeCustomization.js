@@ -101,9 +101,25 @@ export const DEFAULT_WAREHOUSE_BARCODE_LABEL_FIELDS = buildFieldDefaults(
   WAREHOUSE_BARCODE_FIELD_DEFINITIONS
 );
 
+// Mirrors PRINT_MODE_OPTIONS in salesReceiptCustomization.js - same choice, same wording pattern,
+// applied to barcode sticker printing instead of sales receipts/return slips/settlements.
+export const WAREHOUSE_PRINT_MODE_OPTIONS = [
+  {
+    value: "direct",
+    label: "Direct / Silent Printing",
+    description: "Prints barcode stickers directly in the background without browser print preview popups (uses local printer connector).",
+  },
+  {
+    value: "browser",
+    label: "Browser Default Print (Preview)",
+    description: "Opens the standard browser print popup window with print preview before sending barcode stickers to the printer.",
+  },
+];
+
 export const DEFAULT_WAREHOUSE_BARCODE_CUSTOMIZATION = {
   codeType: "barcode",
   codePosition: "left",
+  printMode: "direct",
   note: "",
   labelWidthMm: DEFAULT_LABEL_WIDTH_MM,
   labelHeightMm: DEFAULT_LABEL_HEIGHT_MM,
@@ -118,10 +134,21 @@ export const DEFAULT_WAREHOUSE_BARCODE_CUSTOMIZATION = {
   barcodeNumberFontSizePx: 10,
   barcodeSizeMm: 13.5,
   qrCodeSizeMm: 13.5,
-  fontFamily: "arial",
-  fontBold: false,
+  // Print-time offsets only - shift where the label content lands on the physical print, without
+  // touching the label's own internal layout. Needed because a printer's print head doesn't always
+  // start exactly where its gap sensor detected the label edge; can be negative to shift up/left.
+  printMarginTopMm: 0,
+  printMarginBottomMm: 0,
+  printMarginLeftMm: 0,
+  printMarginRightMm: 0,
+  // Tahoma bold: uniform stroke widths and a tall x-height hold up far better than Arial's thin/
+  // thick contrast or any serif face once transferred through a ribbon thermal printer's ribbon at
+  // typical 203dpi - thin strokes are what break up/drop out first on that hardware.
+  fontFamily: "tahoma",
+  fontBold: true,
   fontItalic: false,
   fontUnderline: false,
+  mrpStrikeOut: false,
   labelFields: DEFAULT_WAREHOUSE_BARCODE_LABEL_FIELDS,
 };
 
@@ -130,6 +157,12 @@ const normalizeDimension = (value, fallback) => {
   if (!Number.isFinite(parsed)) return fallback;
   if (parsed <= 0) return fallback;
   return Math.round(parsed * 100) / 100;
+};
+
+const normalizeMarginMm = (value, fallback = 0) => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(-10, Math.min(10, Math.round(parsed * 100) / 100));
 };
 
 const normalizeFontFamily = (value) => {
@@ -304,6 +337,7 @@ export const normalizeWarehouseBarcodeCustomization = (value = {}) => {
       value.codePosition ?? value.qrCodePosition,
       DEFAULT_WAREHOUSE_BARCODE_CUSTOMIZATION.codePosition
     ),
+    printMode: String(value.printMode || "").trim().toLowerCase() === "browser" ? "browser" : "direct",
     note: String(value.note || "").trim(),
     labelWidthMm: normalizeDimension(
       value.labelWidthMm,
@@ -340,6 +374,10 @@ export const normalizeWarehouseBarcodeCustomization = (value = {}) => {
       value.qrCodeSizeMm,
       DEFAULT_WAREHOUSE_BARCODE_CUSTOMIZATION.qrCodeSizeMm
     ),
+    printMarginTopMm: normalizeMarginMm(value.printMarginTopMm, DEFAULT_WAREHOUSE_BARCODE_CUSTOMIZATION.printMarginTopMm),
+    printMarginBottomMm: normalizeMarginMm(value.printMarginBottomMm, DEFAULT_WAREHOUSE_BARCODE_CUSTOMIZATION.printMarginBottomMm),
+    printMarginLeftMm: normalizeMarginMm(value.printMarginLeftMm, DEFAULT_WAREHOUSE_BARCODE_CUSTOMIZATION.printMarginLeftMm),
+    printMarginRightMm: normalizeMarginMm(value.printMarginRightMm, DEFAULT_WAREHOUSE_BARCODE_CUSTOMIZATION.printMarginRightMm),
     fontFamily: normalizeFontFamily(value.fontFamily),
     fontBold: value.fontBold !== undefined
       ? Boolean(value.fontBold)
@@ -350,6 +388,9 @@ export const normalizeWarehouseBarcodeCustomization = (value = {}) => {
     fontUnderline: value.fontUnderline !== undefined
       ? Boolean(value.fontUnderline)
       : DEFAULT_WAREHOUSE_BARCODE_CUSTOMIZATION.fontUnderline,
+    mrpStrikeOut: value.mrpStrikeOut !== undefined
+      ? Boolean(value.mrpStrikeOut)
+      : (value.mrpStrikethrough !== undefined ? Boolean(value.mrpStrikethrough) : DEFAULT_WAREHOUSE_BARCODE_CUSTOMIZATION.mrpStrikeOut),
     labelFields: normalizeLabelFields(value),
   };
 };
@@ -602,16 +643,25 @@ export const getWarehouseStickerMetrics = (customization = {}) => {
     codeColumnWidthMm,
     qrSizeMm,
     barcodeHeightMm,
+    // A linear (Code39) barcode needs most of the label's own width to stay scannable (unlike a
+    // QR, which is naturally square) - it gets a dedicated full-width strip instead of the side
+    // column, capped only by this height so short values (which are naturally taller at a given
+    // width) don't blow out the label's vertical rhythm.
+    barcodeStripMaxHeightMm: Math.max(3.2, Math.round(4 * scale * 100) / 100),
     bodyGapMm: Math.max(0.8, Math.round(1.25 * scale * 100) / 100),
     bodyPadXMm: Math.max(0.8, Math.round(1.6 * scale * 100) / 100),
     bodyPadYMm: Math.max(0.8, Math.round(1.2 * scale * 100) / 100),
-    codeTextFontMm: scaleBarcodeNumberText(Math.max(1.6, Math.round(2.2 * scale * 100) / 100)),
-    storeNameFontMm: scaleStoreNameText(Math.max(2, Math.round(3 * scale * 100) / 100)),
-    productNameFontMm: scaleProductNameText(Math.max(1.9, Math.round(2.6 * scale * 100) / 100)),
-    mrpFontMm: scaleMrpText(Math.max(1.8, Math.round(2.35 * scale * 100) / 100)),
-    discountFontMm: scaleDiscountText(Math.max(1.8, Math.round(2.35 * scale * 100) / 100)),
-    priceFontMm: scalePriceText(Math.max(1.8, Math.round(2.35 * scale * 100) / 100)),
-    noteFontMm: scaleNoteText(Math.max(1.6, Math.round(2.2 * scale * 100) / 100)),
+    // Base sizes tuned to fill a real 49.5x24.5mm label legibly - price is the hero element
+    // (largest/bolded, matches what a customer scans first), store/product name clearly readable,
+    // MRP/discount secondary and smaller, note the smallest. Pulled back somewhat from an earlier
+    // pass that overshot on the real label size - confirmed too large on an actual print.
+    codeTextFontMm: scaleBarcodeNumberText(Math.max(1.4, Math.round(1.9 * scale * 100) / 100)),
+    storeNameFontMm: scaleStoreNameText(Math.max(2.2, Math.round(3.1 * scale * 100) / 100)),
+    productNameFontMm: scaleProductNameText(Math.max(1.7, Math.round(2.5 * scale * 100) / 100)),
+    mrpFontMm: scaleMrpText(Math.max(1.7, Math.round(2.2 * scale * 100) / 100)),
+    discountFontMm: scaleDiscountText(Math.max(1.7, Math.round(2.2 * scale * 100) / 100)),
+    priceFontMm: scalePriceText(Math.max(2.1, Math.round(3.8 * scale * 100) / 100)),
+    noteFontMm: scaleNoteText(Math.max(1.4, Math.round(1.8 * scale * 100) / 100)),
     noteMarginTopMm: Math.max(0.2, Math.round(0.35 * scale * 100) / 100),
     fieldsMarginTopMm: Math.max(0.5, Math.round(1 * scale * 100) / 100),
     fieldRowGapMm: Math.max(0.15, Math.round(0.25 * scale * 100) / 100),

@@ -31,8 +31,11 @@ class CustomerController extends Controller
 
     public function index(Request $request)
     {
-        $query = Customer::query()->where('is_active', true);
-        $hasFilters = false;
+        $query = Customer::query();
+        $hasFilters = $request->boolean('includeInactive');
+        if (!$hasFilters) {
+            $query->where('is_active', true);
+        }
 
         // 1. FULLTEXT / Indexed Search
         if ($request->filled('search')) {

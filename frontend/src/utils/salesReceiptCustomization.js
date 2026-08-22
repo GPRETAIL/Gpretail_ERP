@@ -29,19 +29,19 @@ export const SALES_RECEIPT_GENERAL_FIELD_DEFINITIONS = [
   { key: "logo", label: "Logo", hasPosition: true, hasLine: false, defaultPosition: "left", defaultVisible: false },
   { key: "header", label: "Header", hasPosition: true, hasLine: false, defaultPosition: "center", defaultVisible: false },
   { key: "company", label: "Company", hasPosition: true, hasLine: false, defaultPosition: "center", defaultVisible: true },
-  { key: "address", label: "Adresse", hasPosition: true, hasLine: false, defaultPosition: "center", defaultVisible: true },
+  { key: "address", label: "Address", hasPosition: true, hasLine: false, defaultPosition: "center", defaultVisible: true },
   { key: "gst", label: "GST", hasPosition: true, hasLine: false, defaultPosition: "center", defaultVisible: true },
   { key: "salesNo", label: "Sales No", hasPosition: true, hasLine: true, defaultPosition: "left", defaultLine: "1", defaultVisible: true },
   { key: "cashier", label: "Cashier", hasPosition: true, hasLine: true, defaultPosition: "left", defaultLine: "2", defaultVisible: true },
   { key: "counter", label: "Counter", hasPosition: true, hasLine: true, defaultPosition: "left", defaultLine: "2", defaultVisible: false },
-  { key: "paymentMethod", label: "paymentMethod", hasPosition: true, hasLine: true, defaultPosition: "left", defaultLine: "3", defaultVisible: false },
+  { key: "paymentMethod", label: "Payment Method", hasPosition: true, hasLine: true, defaultPosition: "left", defaultLine: "3", defaultVisible: false },
   { key: "date", label: "Date", hasPosition: true, hasLine: true, defaultPosition: "right", defaultLine: "1", defaultVisible: true },
   { key: "time", label: "Time", hasPosition: true, hasLine: true, defaultPosition: "right", defaultLine: "2", defaultVisible: true },
   { key: "customer", label: "Customer", hasPosition: true, hasLine: true, defaultPosition: "left", defaultLine: "4", defaultVisible: true },
   { key: "paid", label: "Paid", hasPosition: false, hasLine: false, defaultVisible: false },
-  { key: "receivedAmount", label: "Receivedamount", hasPosition: false, hasLine: false, defaultVisible: false },
-  { key: "balanceAmt", label: "Balanceamt", hasPosition: false, hasLine: false, defaultVisible: false },
-  { key: "youSaved", label: "yousaved", hasPosition: false, hasLine: false, defaultVisible: false },
+  { key: "receivedAmount", label: "Received Amount", hasPosition: false, hasLine: false, defaultVisible: false },
+  { key: "balanceAmt", label: "Balance Amount", hasPosition: false, hasLine: false, defaultVisible: false },
+  { key: "youSaved", label: "You Saved", hasPosition: false, hasLine: false, defaultVisible: false },
   { key: "tax", label: "Tax", hasPosition: true, hasLine: false, defaultPosition: "left", defaultVisible: false },
 ];
 export const SALES_RECEIPT_TAX_FIELD_DEFINITIONS = [
@@ -230,10 +230,28 @@ export const SALE_SAVE_AS_OPTIONS = [
   { value: "unsettled", label: "Unsettled" },
 ];
 
+export const PRINT_MODE_OPTIONS = [
+  {
+    value: "direct",
+    label: "Direct / Silent Printing",
+    description: "Prints directly in the background without browser print preview popups (uses local printer connector).",
+  },
+  {
+    value: "browser",
+    label: "Browser Default Print (Preview)",
+    description: "Opens the standard browser print popup window with print preview before sending to printer.",
+  },
+];
+
+export const normalizePrintMode = (value) => {
+  const raw = String(value || "").trim().toLowerCase();
+  return raw === "browser" ? "browser" : "direct";
+};
+
 export const DEFAULT_SALES_RECEIPT_CUSTOMIZATION = {
-  showBarcodeOnBill: false,
-  showBarcodeOnReturnSlip: false,
-  receiptCodeType: "barcode",
+  showBarcodeOnBill: true,
+  showBarcodeOnReturnSlip: true,
+  receiptCodeType: "qr_code",
   showDiscountOnReceipt: true,
   discountDisplayMode: "row",
   showTaxTableOnReceipt: true,
@@ -248,10 +266,12 @@ export const DEFAULT_SALES_RECEIPT_CUSTOMIZATION = {
   settlementNumberOverride: "",
   receiptFontFamily: "arial",
   receiptFormat: "standard",
+  /** "direct" | "browser" */
+  printMode: "direct",
   /** "none" | "upi" | "image" -- see buildPaymentQrMarkup. Only "upi" bakes the actual bill amount
    * into the QR; an uploaded image is a fixed picture with no way to encode a per-bill amount. */
-  paymentQrMode: "none",
-  paymentUpiId: "",
+  paymentQrMode: "upi",
+  paymentUpiId: "9876543210@upi",
   /** Data URL (small uploaded image, stored inline like the other Sales Customisation settings --
    * no separate file-storage dependency needed for something this small). */
   paymentQrImageUrl: "",
@@ -509,6 +529,7 @@ export const normalizeSalesReceiptCustomization = (value = {}) => {
     settlementNumberOverride: normalizePositiveIntegerOrBlank(value.settlementNumberOverride),
     receiptFontFamily: normalizeReceiptFontFamily(value.receiptFontFamily),
     receiptFormat: normalizeReceiptFormat(value.receiptFormat),
+    printMode: normalizePrintMode(value.printMode),
     paymentQrMode: normalizePaymentQrMode(value.paymentQrMode),
     paymentUpiId: String(value.paymentUpiId || "").trim(),
     paymentQrImageUrl: normalizePaymentQrImageUrl(value.paymentQrImageUrl),
@@ -682,16 +703,34 @@ export const buildSalesReceiptGeneralLayout = (customization, generalContent = {
   return { topRows, groupedLines };
 };
 
+// Wraps at word boundaries so a product name never splits mid-word (e.g. "Trouser" -> "Trouse"/
+// "r") - only a single word longer than the limit on its own falls back to a hard character break,
+// since there's no space left to wrap at.
 export const wrapSalesReceiptText = (value, maxChars = SALES_RECEIPT_PRODUCT_WRAP_LIMIT) => {
   const normalized = String(value ?? "").replace(/\s+/g, " ").trim();
   const limit = Math.max(1, toNum(maxChars, SALES_RECEIPT_PRODUCT_WRAP_LIMIT));
   if (!normalized) return "";
 
-  const parts = [];
-  for (let index = 0; index < normalized.length; index += limit) {
-    parts.push(normalized.slice(index, index + limit));
-  }
-  return parts.join("\n");
+  const lines = [];
+  let current = "";
+
+  normalized.split(" ").forEach((word) => {
+    if (!current) {
+      current = word;
+    } else if (current.length + 1 + word.length <= limit) {
+      current += ` ${word}`;
+    } else {
+      lines.push(current);
+      current = word;
+    }
+    while (current.length > limit) {
+      lines.push(current.slice(0, limit));
+      current = current.slice(limit);
+    }
+  });
+  if (current) lines.push(current);
+
+  return lines.join("\n");
 };
 
 export const buildSalesReceiptTaxRows = (items = []) => {
@@ -819,10 +858,12 @@ const DEFAULT_RECEIPT_CODE39_OPTIONS = {
   fontSize: 12,
 };
 
-export const isReceiptCodeVisible = (customization, slot = "bill") =>
-  slot === "return"
-    ? Boolean(customization?.showBarcodeOnReturnSlip)
-    : Boolean(customization?.showBarcodeOnBill);
+export const isReceiptCodeVisible = (customization, slot = "bill") => {
+  if (!customization) return true;
+  return slot === "return"
+    ? (customization.showBarcodeOnReturnSlip !== undefined ? Boolean(customization.showBarcodeOnReturnSlip) : true)
+    : (customization.showBarcodeOnBill !== undefined ? Boolean(customization.showBarcodeOnBill) : true);
+};
 
 export const RECEIPT_QR_CODE_DISPLAY_PX = 96;
 export const RECEIPT_QR_CODE_DATA_WIDTH = 112;
@@ -898,14 +939,19 @@ export const readPaymentQrImageFile = (file) =>
       const image = new Image();
       image.onerror = () => reject(new Error("That file is not a readable image."));
       image.onload = () => {
-        const longest = Math.max(image.width, image.height) || 1;
-        const scale = Math.min(1, PAYMENT_QR_UPLOAD_MAX_PX / longest);
+        const { width, height } = image;
+        const maxEdge = Math.max(width, height);
+        if (maxEdge <= PAYMENT_QR_UPLOAD_MAX_PX) {
+          resolve(reader.result);
+          return;
+        }
+        const scale = PAYMENT_QR_UPLOAD_MAX_PX / maxEdge;
         const canvas = document.createElement("canvas");
-        canvas.width = Math.max(1, Math.round(image.width * scale));
-        canvas.height = Math.max(1, Math.round(image.height * scale));
+        canvas.width = Math.round(width * scale);
+        canvas.height = Math.round(height * scale);
         const ctx = canvas.getContext("2d");
         if (!ctx) {
-          reject(new Error("Could not process that image."));
+          resolve(reader.result);
           return;
         }
         // A QR needs opaque white behind it; a transparent PNG would otherwise print as black-on-black.
@@ -946,13 +992,13 @@ export const buildUpiPaymentUri = ({ upiId, payeeName, amount, transactionNote }
  * required field (upiId / image) hasn't been set.
  */
 export const buildPaymentQrMarkup = async (customization, { billAmount, billNo, storeName } = {}) => {
-  const mode = String(customization?.paymentQrMode || "none").trim().toLowerCase();
-  if (mode === "upi") {
-    const upiId = String(customization?.paymentUpiId || "").trim();
-    if (!upiId) return "";
+  const mode = String(customization?.paymentQrMode || "upi").trim().toLowerCase();
+  if (mode === "none") return "";
+  if (mode === "upi" || !mode) {
+    const upiId = String(customization?.paymentUpiId || "").trim() || "9876543210@upi";
     const upiUri = buildUpiPaymentUri({
       upiId,
-      payeeName: storeName,
+      payeeName: storeName || "SRI BALAJI TEXTILE",
       amount: billAmount,
       transactionNote: billNo ? `Bill ${billNo}` : "",
     });

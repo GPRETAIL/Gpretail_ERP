@@ -9,33 +9,28 @@ use Illuminate\Support\Facades\DB;
 
 class ConfigurationController extends Controller
 {
+    /**
+     * Real counters live in system_configurations (key='counter') - the
+     * same generic store the Configuration master page (type=COUNTER)
+     * already writes to. This used to be a hardcoded pair of fake
+     * counters that never reflected anything a user actually configured.
+     */
     public function getCounters(Request $request)
     {
-        $counters = [
-            [
-                'id'          => 1,
-                'name'        => 'Counter 01 - Main Terminal',
-                'code'        => 'COUNTER_01',
-                'store_id'    => 1,
-                'is_active'   => true,
-                'assigned_to' => null,
-                'status'      => 'AVAILABLE',
-            ],
-            [
-                'id'          => 2,
-                'name'        => 'Counter 02 - Express Checkout',
-                'code'        => 'COUNTER_02',
-                'store_id'    => 1,
-                'is_active'   => true,
-                'assigned_to' => null,
-                'status'      => 'AVAILABLE',
-            ],
-        ];
+        $rows = SystemConfiguration::where('key', 'counter')
+            ->orWhere('config_key', 'counter')
+            ->orWhere('group', 'counter')
+            ->orWhere('group_name', 'counter')
+            ->get()
+            ->map(fn ($c) => [
+                'id'   => $c->id,
+                'name' => $c->value ?? $c->config_value,
+            ]);
 
         return response()->json([
             'success' => true,
-            'data'    => $counters,
-            'total'   => count($counters),
+            'data'    => $rows,
+            'total'   => $rows->count(),
         ]);
     }
 

@@ -8,6 +8,8 @@ import FilterableDataTable from "../../components/FilterableDataTable";
 import UploadImportButton from "../../components/UploadImportButton";
 import CounterAssignmentDialog from "../../components/CounterAssignmentDialog";
 import { usePrintContext } from "../../context/PrintContext";
+import { downloadHtmlAsPdf } from "../../utils/htmlToPdf";
+import { buildPosSaleReceiptHtml, buildPosReturnReceiptHtml } from "../../utils/posReceiptHtml";
 
 const POS_SALE_IMPORT_CONFIG = {
   aliases: {
@@ -169,47 +171,6 @@ const escapeHtml = (value) =>
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
-const escapePdfText = (value) =>
-  String(value ?? "")
-    .replace(/[^\x20-\x7E]/g, "?")
-    .replace(/\\/g, "\\\\")
-    .replace(/\(/g, "\\(")
-    .replace(/\)/g, "\\)");
-const trimToPdfCellWidth = (value, width, fontSize = 8) => {
-  const text = String(value ?? "").replace(/\s+/g, " ").trim();
-  const maxChars = Math.max(1, Math.floor((width - 6) / (fontSize * 0.55)));
-  if (text.length <= maxChars) return text;
-  if (maxChars <= 3) return text.slice(0, maxChars);
-  return `${text.slice(0, maxChars - 3)}...`;
-};
-const downloadBlob = (blob, fileName) => {
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = fileName;
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
-  URL.revokeObjectURL(url);
-};
-const findMatchingReceiptLine = (lines, item) => {
-  const itemBarcodeId = String(item?.barcode_id ?? item?.barcodeId ?? item?.stockId ?? "").trim();
-  const itemBarcode = String(item?.barcode || "").trim();
-  const itemProductName = String(item?.product_name || item?.productName || "").trim();
-
-  return lines.find((line) => {
-    const lineBarcodeId = String(line.stockId || "").trim();
-    const lineBarcode = String(line.barcode || "").trim();
-    const lineProductName = String(line.productName || "").trim();
-
-    return (
-      (itemBarcodeId && lineBarcodeId && itemBarcodeId === lineBarcodeId)
-      || (itemBarcode && lineBarcode && itemBarcode === lineBarcode)
-      || (itemProductName && lineProductName && itemProductName === lineProductName)
-    );
-  }) || null;
-};
-
 const getReceiptPositionClass = (position) =>
   position === "right" ? "text-right" : position === "center" ? "text-center" : "text-left";
 
@@ -242,12 +203,29 @@ const buildReceiptMetaLineHtml = (line) => {
   `;
 };
 
+// PosSale itself has no cash_amount/card_amount/upi_amount columns - those only ever existed as
+// live payment-form UI state. A saved sale's real tender breakdown lives in its `payments` relation
+// (each row's own `payment_mode`), which is present whether this is a just-saved sale (store()
+// eager-loads it) or a re-fetched historical one (index()/show() do too).
 const getSaleReceiptPaymentMethod = (sale = {}, paymentTotals = {}) => {
+  const payments = Array.isArray(sale?.payments) ? sale.payments : [];
+  if (payments.length > 0) {
+    const modes = [...new Set(payments.map((p) => String(p.payment_mode || "").trim()).filter(Boolean))];
+    if (modes.length > 0) {
+      return modes
+        .map((mode) => mode.charAt(0) + mode.slice(1).toLowerCase())
+        .join(" / ");
+    }
+  }
+  if (sale?.payment_mode) {
+    const mode = String(sale.payment_mode).trim();
+    return mode.charAt(0) + mode.slice(1).toLowerCase();
+  }
   const labels = [];
-  if (Math.max(0, toNum(sale.cash_amount ?? sale.cashAmount ?? paymentTotals.cashAmount, 0)) > 0) labels.push("Cash");
-  if (Math.max(0, toNum(sale.card_amount ?? sale.cardAmount ?? paymentTotals.cardAmount, 0)) > 0) labels.push("Card");
-  if (Math.max(0, toNum(sale.upi_amount ?? sale.upiAmount ?? paymentTotals.upiAmount, 0)) > 0) labels.push("UPI");
-  if (Math.max(0, toNum(sale.return_refund_amount ?? paymentTotals.refundAmount, 0)) > 0) labels.push("Refund");
+  if (Math.max(0, toNum(paymentTotals.cashAmount, 0)) > 0) labels.push("Cash");
+  if (Math.max(0, toNum(paymentTotals.cardAmount, 0)) > 0) labels.push("Card");
+  if (Math.max(0, toNum(paymentTotals.upiAmount, 0)) > 0) labels.push("UPI");
+  if (Math.max(0, toNum(paymentTotals.refundAmount, 0)) > 0) labels.push("Refund");
   return labels.join(" / ");
 };
 
@@ -262,592 +240,6 @@ const getAppliedReturnItemTotal = (item) => {
   const subtotal = round2(qty * price);
   const taxAmount = round2((subtotal * tax) / 100);
   return round2(Math.max(subtotal + taxAmount - discount, 0));
-};
-
-const buildPosSalePdf = ({
-  storeName,
-  branchName,
-  reportType,
-  generatedOn,
-  customerLines,
-  billLines,
-  totalsLines,
-  headers,
-  body,
-}) => {
-  const resolvedHeaders = (headers || []).map((value) => String(value ?? ""));
-  const resolvedBody = (body || []).map((row) => resolvedHeaders.map((_, index) => String(row?.[index] ?? "")));
-  const pageWidth = 842;
-  const pageHeight = 595;
-  const margin = 28;
-  const tableWidth = pageWidth - (margin * 2);
-  const headerHeight = 20;
-  const rowHeight = 18;
-  const sectionGap = 14;
-  const bodyFontSize = 8;
-  const headerFontSize = 8;
-  const metaStartY = pageHeight - 278;
-  const metaLineHeight = 13;
-  const nextPageTableTop = pageHeight - margin - 24;
-  const rawWidths = resolvedHeaders.map((header, colIdx) => {
-    const bodyMax = resolvedBody.slice(0, 200).reduce((acc, row) => Math.max(acc, String(row[colIdx] ?? "").length), 0);
-    return Math.max(6, Math.min(40, Math.max(header.length, bodyMax)));
-  });
-
-  let colWidths;
-  if (resolvedHeaders.length > 12) {
-    colWidths = resolvedHeaders.map(() => tableWidth / resolvedHeaders.length);
-  } else {
-    const totalRaw = rawWidths.reduce((sum, width) => sum + width, 0) || 1;
-    colWidths = rawWidths.map((width) => (width / totalRaw) * tableWidth);
-    const minWidth = 48;
-    if (resolvedHeaders.length * minWidth <= tableWidth) {
-      colWidths = colWidths.map((width) => Math.max(minWidth, width));
-      const sumAfterMin = colWidths.reduce((sum, width) => sum + width, 0);
-      if (sumAfterMin > tableWidth) {
-        const shrink = sumAfterMin - tableWidth;
-        const adjustable = colWidths.reduce((sum, width) => sum + (width - minWidth), 0);
-        if (adjustable > 0) {
-          colWidths = colWidths.map((width) => {
-            const room = width - minWidth;
-            return width - ((room / adjustable) * shrink);
-          });
-        }
-      }
-    }
-  }
-
-  const xCoords = [margin];
-  colWidths.forEach((width) => xCoords.push(xCoords[xCoords.length - 1] + width));
-
-  const bottomLimit = margin;
-  let previewMetaY = metaStartY;
-  const consumeMetaLines = (lines = []) => {
-    lines.filter(Boolean).forEach(() => {
-      previewMetaY -= metaLineHeight;
-    });
-  };
-  consumeMetaLines(customerLines);
-  if ((customerLines || []).length > 0) previewMetaY -= sectionGap - 4;
-  consumeMetaLines(billLines);
-  if ((billLines || []).length > 0) previewMetaY -= sectionGap - 4;
-  consumeMetaLines(totalsLines);
-  const firstPageTableTop = Math.max(bottomLimit + headerHeight + rowHeight, previewMetaY - 8);
-  const firstRowsPerPage = Math.max(1, Math.floor((firstPageTableTop - bottomLimit - headerHeight) / rowHeight));
-  const nextRowsPerPage = Math.max(1, Math.floor((nextPageTableTop - bottomLimit - headerHeight) / rowHeight));
-  const pageRows = [];
-  if (resolvedBody.length === 0) {
-    pageRows.push([]);
-  } else {
-    let index = 0;
-    pageRows.push(resolvedBody.slice(index, index + firstRowsPerPage));
-    index += firstRowsPerPage;
-    while (index < resolvedBody.length) {
-      pageRows.push(resolvedBody.slice(index, index + nextRowsPerPage));
-      index += nextRowsPerPage;
-    }
-  }
-
-  const objects = [];
-  const addObject = (content) => {
-    objects.push(content);
-    return objects.length;
-  };
-
-  const bodyFontId = addObject("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
-  const headerFontId = addObject("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>");
-  const pageIds = [];
-
-  pageRows.forEach((rowsChunk, pageIndex) => {
-    const renderedRows = rowsChunk.length > 0 ? rowsChunk : [resolvedHeaders.map((_, index) => (index === 0 ? "No records found." : ""))];
-    const tableTop = pageIndex === 0 ? firstPageTableTop : nextPageTableTop;
-    const tableBottom = tableTop - headerHeight - (renderedRows.length * rowHeight);
-    const commands = [];
-
-    if (pageIndex === 0) {
-      commands.push(`BT /F2 32 Tf 1 0 0 1 ${pageWidth - 280} ${pageHeight - 96} Tm (${escapePdfText(storeName || "STORE")}) Tj ET`);
-      if (branchName) {
-        commands.push(`BT /F1 16 Tf 1 0 0 1 ${margin + 60} ${pageHeight - 156} Tm (${escapePdfText(branchName)}) Tj ET`);
-      }
-      commands.push(`BT /F2 20 Tf 1 0 0 1 ${margin + 60} ${pageHeight - 210} Tm (${escapePdfText(`Report Type: ${reportType || "POS SALE REPORT"}`)}) Tj ET`);
-      commands.push(`BT /F1 18 Tf 1 0 0 1 ${margin + 60} ${pageHeight - 242} Tm (${escapePdfText(`Report Generated On: ${generatedOn || ""}`)}) Tj ET`);
-
-      let metaY = metaStartY;
-      const writeMetaLine = (label, value) => {
-        commands.push(`BT /F2 10 Tf 1 0 0 1 ${margin + 60} ${metaY} Tm (${escapePdfText(`${label}:`)}) Tj ET`);
-        commands.push(`BT /F1 10 Tf 1 0 0 1 ${margin + 150} ${metaY} Tm (${escapePdfText(value)}) Tj ET`);
-        metaY -= 13;
-      };
-
-      (customerLines || []).forEach((line) => writeMetaLine(line.label, line.value));
-      if ((customerLines || []).length > 0) metaY -= sectionGap - 4;
-      (billLines || []).forEach((line) => writeMetaLine(line.label, line.value));
-      if ((billLines || []).length > 0) metaY -= sectionGap - 4;
-      (totalsLines || []).forEach((line) => writeMetaLine(line.label, line.value));
-    } else {
-      commands.push(`BT /F2 14 Tf 1 0 0 1 ${margin} ${pageHeight - margin} Tm (${escapePdfText(`${storeName || "STORE"} - ${reportType || "POS SALE REPORT"}`)}) Tj ET`);
-    }
-
-    commands.push(`0.95 g ${margin} ${tableTop - headerHeight} ${tableWidth} ${headerHeight} re f`);
-    commands.push("0 g");
-
-    for (let rowIndex = 0; rowIndex <= renderedRows.length + 1; rowIndex += 1) {
-      const y = rowIndex === 0 ? tableTop : rowIndex === 1 ? tableTop - headerHeight : tableTop - headerHeight - ((rowIndex - 1) * rowHeight);
-      commands.push(`${margin} ${y} m ${margin + tableWidth} ${y} l S`);
-    }
-
-    xCoords.forEach((x) => {
-      commands.push(`${x} ${tableTop} m ${x} ${tableBottom} l S`);
-    });
-
-    resolvedHeaders.forEach((header, colIdx) => {
-      const text = trimToPdfCellWidth(header, colWidths[colIdx], headerFontSize);
-      commands.push(`BT /F2 ${headerFontSize} Tf 1 0 0 1 ${xCoords[colIdx] + 3} ${tableTop - headerHeight + 6} Tm (${escapePdfText(text)}) Tj ET`);
-    });
-
-    renderedRows.forEach((row, rowIdx) => {
-      resolvedHeaders.forEach((_, colIdx) => {
-        const text = trimToPdfCellWidth(row[colIdx] ?? "", colWidths[colIdx], bodyFontSize);
-        commands.push(`BT /F1 ${bodyFontSize} Tf 1 0 0 1 ${xCoords[colIdx] + 3} ${tableTop - headerHeight - (rowIdx * rowHeight) - 12} Tm (${escapePdfText(text)}) Tj ET`);
-      });
-    });
-
-    const stream = `${commands.join("\n")}\n`;
-    const contentId = addObject(`<< /Length ${stream.length} >>\nstream\n${stream}endstream`);
-    const pageId = addObject(`<< /Type /Page /Parent __PAGES__ /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /Font << /F1 ${bodyFontId} 0 R /F2 ${headerFontId} 0 R >> >> /Contents ${contentId} 0 R >>`);
-    pageIds.push(pageId);
-  });
-
-  const kids = pageIds.map((id) => `${id} 0 R`).join(" ");
-  const pagesId = addObject(`<< /Type /Pages /Kids [${kids}] /Count ${pageIds.length} >>`);
-  const catalogId = addObject(`<< /Type /Catalog /Pages ${pagesId} 0 R >>`);
-  for (let index = 0; index < objects.length; index += 1) {
-    objects[index] = objects[index].replaceAll("__PAGES__", `${pagesId} 0 R`);
-  }
-
-  let pdf = "%PDF-1.4\n";
-  const offsets = [0];
-  objects.forEach((obj, index) => {
-    offsets[index + 1] = pdf.length;
-    pdf += `${index + 1} 0 obj\n${obj}\nendobj\n`;
-  });
-  const xrefPos = pdf.length;
-  pdf += `xref\n0 ${objects.length + 1}\n`;
-  pdf += "0000000000 65535 f \n";
-  for (let index = 1; index <= objects.length; index += 1) {
-    pdf += `${String(offsets[index]).padStart(10, "0")} 00000 n \n`;
-  }
-  pdf += `trailer\n<< /Size ${objects.length + 1} /Root ${catalogId} 0 R >>\nstartxref\n${xrefPos}\n%%EOF`;
-  return new Blob([pdf], { type: "application/pdf" });
-};
-
-const buildPosSaleReceiptHtml = (receiptData, customization) => {
-  const receiptItems = (receiptData.items || []).map((item) => ({
-    ...item,
-    rateWithTax: getSalesReceiptRateWithTax(item.rate, item.taxPerc),
-    grossAmount: round2(toNum(item.amount, 0) + Math.max(0, toNum(item.discountAmount, 0))),
-  }));
-  const returnItems = (receiptData.returnItems || []).map((item) => ({
-    ...item,
-    qty: Math.max(0, toNum(item.qty, 0)),
-    amount: Math.abs(toNum(item.amount, 0)),
-  }));
-  const showDiscountColumn = shouldShowSalesReceiptDiscountColumn(customization, receiptItems);
-  const productColumns = getVisibleSalesReceiptProductColumns(customization, {
-    includeDiscountColumn: showDiscountColumn,
-  });
-  const taxColumns = getVisibleSalesReceiptTaxColumns(customization);
-  const taxRows = customization?.showTaxTableOnReceipt && taxColumns.length > 0
-    ? buildSalesReceiptTaxRows(receiptItems)
-    : [];
-  const generalContent = {
-    logo: receiptData.logoText || RECEIPT_LOGO_TEXT,
-    header: receiptData.headerTitle || "POS RECEIPT",
-    company: receiptData.storeName || "",
-    address: receiptData.storeAddress || "",
-    gst: receiptData.storeGstNo ? `GST No: ${receiptData.storeGstNo}` : "",
-    salesNo: receiptData.billNo || "",
-    cashier: receiptData.cashierName || "",
-    counter: receiptData.counterName || "",
-    paymentMethod: receiptData.paymentMethod || "",
-    date: receiptData.dateTime ? new Date(receiptData.dateTime).toLocaleDateString() : "",
-    time: receiptData.dateTime ? new Date(receiptData.dateTime).toLocaleTimeString() : "",
-    customer: receiptData.customerName || WALKING_CUSTOMER_NAME,
-    paid: toNum(receiptData.paidAmount, 0) > 0 ? Number(receiptData.paidAmount).toFixed(2) : "",
-    receivedAmount: toNum(receiptData.receivedAmount, 0) > 0 ? Number(receiptData.receivedAmount).toFixed(2) : "",
-    balanceAmt: toNum(receiptData.balanceAmount, 0) > 0 ? Number(receiptData.balanceAmount).toFixed(2) : "",
-    youSaved: toNum(receiptData.discountAmount, 0) > 0 ? Number(receiptData.discountAmount).toFixed(2) : "",
-    tax: toNum(receiptData.taxAmount, 0) > 0 ? `Tax: ${Number(receiptData.taxAmount).toFixed(2)}` : "",
-  };
-  const { topRows, groupedLines } = buildSalesReceiptGeneralLayout(customization, generalContent);
-  const productCellValue = (item, key) => {
-    if (key === "productName") return wrapSalesReceiptText(item.name || "-");
-    if (key === "qty") return Number(item.qty || 0).toFixed(2);
-    if (key === "mrp") return Number(item.rateWithTax || 0).toFixed(2);
-    if (key === "rate") return Number(item.rate || 0).toFixed(2);
-    if (key === "discount") return Number(item.discountAmount || 0).toFixed(2);
-    if (key === "amount") return Number(showDiscountColumn ? item.amount : item.grossAmount).toFixed(2);
-    if (key === "tax") return Number(item.taxPerc || 0).toFixed(2);
-    return "";
-  };
-  const rowsHtml = receiptItems
-    .map(
-      (item) => `
-        <tr>
-          ${productColumns.map((column) => `
-            <td class="${column.key === "productName" ? "product-cell" : "num"}">${escapeHtml(productCellValue(item, column.key))}</td>
-          `).join("")}
-        </tr>
-      `
-    )
-    .join("");
-  const returnProductCellValue = (item, key) => {
-    if (key === "productName") return wrapSalesReceiptText(item.name || "-");
-    if (key === "qty") return Number(item.qty || 0).toFixed(2);
-    if (key === "amount") return Number(item.amount || 0).toFixed(2);
-    return "";
-  };
-  const returnRowsHtml = returnItems
-    .map(
-      (item) => `
-        <tr>
-          ${productColumns.map((column) => `
-            <td class="${column.key === "productName" ? "product-cell" : "num"}">${escapeHtml(returnProductCellValue(item, column.key))}</td>
-          `).join("")}
-        </tr>
-      `
-    )
-    .join("");
-  const taxCellValue = (row, key) => {
-    if (key === "taxName") return row.label;
-    if (key === "percent") return Number(row.taxPerc || 0).toFixed(2);
-    if (key === "amount") return Number(row.baseAmount || 0).toFixed(2);
-    if (key === "total") return Number(row.taxAmount || 0).toFixed(2);
-    return "";
-  };
-  const taxRowsHtml = taxRows
-    .map(
-      (row) => `
-        <tr>
-          ${taxColumns.map((column) => `
-            <td class="${column.key === "taxName" ? "" : "num"}">${escapeHtml(taxCellValue(row, column.key))}</td>
-          `).join("")}
-        </tr>
-      `
-    )
-    .join("");
-
-  const receiptWidth = getSalesReceiptWidthCss(customization?.receiptWidthInches);
-  const billBarcode = String(receiptData.billBarcode || receiptData.billNo || "").trim();
-  const barcodeMarkup =
-    receiptData.billCodeMarkup
-    ?? buildReceiptCodeMarkupSync(billBarcode, customization, "bill");
-
-  return `<!DOCTYPE html>
-    <html>
-      <head>
-        <title>POS Receipt #${escapeHtml(receiptData.billNo)}</title>
-        <style>
-          @page { margin: 0.18in; size: auto; }
-          * { box-sizing: border-box; }
-          body {
-            font-family: ${getSalesReceiptFontCss(customization?.receiptFontFamily)};
-            margin: 0;
-            padding: 12px;
-            color: #111827;
-            background: #ffffff;
-          }
-          .receipt {
-            width: ${receiptWidth};
-            max-width: 100%;
-            margin: 0 auto;
-            font-size: 12px;
-          }
-          .center { text-align: center; }
-          .text-left { text-align: left; }
-          .text-center { text-align: center; }
-          .text-right { text-align: right; }
-          .title { font-size: 18px; font-weight: 700; margin-bottom: 4px; letter-spacing: 0.08em; }
-          .store-meta { margin: 2px 0; font-size: 11px; line-height: 1.35; color: #374151; }
-          .meta { margin: 8px 0; }
-          .meta-row { margin: 3px 0; }
-          .meta-row-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; align-items: start; gap: 8px; }
-          .meta-row-single { display: block; }
-          .meta-group { display: flex; flex-wrap: wrap; gap: 2px 14px; width: 100%; }
-          .meta-group.text-right { justify-content: flex-end; }
-          .meta-group.text-center { justify-content: center; }
-          .meta-group.text-left { justify-content: flex-start; }
-          .meta-item { white-space: nowrap; }
-          .line { border-top: 1px dashed #111827; margin: 8px 0; }
-          table { width: 100%; border-collapse: collapse; }
-          th, td { padding: 4px 2px; border-bottom: 1px solid #e5e7eb; text-align: left; vertical-align: top; }
-          th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
-          .product-cell { white-space: pre-line; line-height: 1.35; }
-          .num { text-align: right; white-space: nowrap; }
-          .totals-row { display: flex; justify-content: space-between; margin: 4px 0; }
-          .grand { font-weight: 700; font-size: 14px; }
-          .section-label { margin: 8px 0 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #374151; }
-          .thanks { margin-top: 10px; text-align: center; font-size: 12px; font-weight: 700; line-height: 1.5; white-space: pre-line; }
-          .barcode-wrap { margin-top: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
-          .barcode-wrap svg { width: 100%; height: auto; max-width: 100%; }
-          .barcode-wrap img { width: ${RECEIPT_QR_CODE_DISPLAY_PX}px; height: ${RECEIPT_QR_CODE_DISPLAY_PX}px; max-width: 100%; object-fit: contain; }
-          ${buildReceiptFormatCss(customization?.receiptFormat)}
-        </style>
-      </head>
-      <body>
-        <div class="receipt">
-          <div class="space-y-1">
-            ${topRows.map((row) => `
-              <div class="${escapeHtml(getReceiptPositionClass(row.position))} store-meta ${row.key === "company" ? "title" : ""}">
-                ${row.key === "logo"
-                  ? `<span style="display:inline-flex;border:1px dashed #d1d5db;border-radius:8px;padding:8px 16px;font-size:10px;font-weight:700;letter-spacing:0.18em;color:#6b7280;">${escapeHtml(row.value)}</span>`
-                  : escapeHtml(row.value)}
-              </div>
-            `).join("")}
-            ${receiptData.storePhone ? `<div class="center store-meta">Contact: ${escapeHtml(receiptData.storePhone)}</div>` : ""}
-          </div>
-          <div class="meta">
-            ${groupedLines.map((line) => buildReceiptMetaLineHtml(line)).join("")}
-            ${receiptData.footerNote ? `<div class="meta-row"><span>Salesman</span><span>${escapeHtml(receiptData.footerNote.replace(/^Salesman:\s*/, ""))}</span></div>` : ""}
-          </div>
-          <div class="line"></div>
-          ${
-            productColumns.length > 0
-              ? `<table>
-                  <thead>
-                    <tr>
-                      ${productColumns.map((column) => `<th class="${column.key === "productName" ? "" : "num"}">${escapeHtml(column.label)}</th>`).join("")}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${rowsHtml || `<tr><td colspan="${productColumns.length}" class="center">No items</td></tr>`}
-                  </tbody>
-                </table>`
-              : ""
-          }
-          <div class="line"></div>
-          <div class="totals-row"><span>Bill Amount</span><span>${escapeHtml(Number(receiptData.billAmount || 0).toFixed(2))}</span></div>
-          ${
-            customization?.showDiscountOnReceipt && !showDiscountColumn
-              ? `<div class="totals-row"><span>Discount</span><span>${escapeHtml(Number(receiptData.discountAmount || 0).toFixed(2))}</span></div>`
-              : ""
-          }
-          <div class="totals-row grand"><span>Net Amount</span><span>${escapeHtml(Number(receiptData.total || 0).toFixed(2))}</span></div>
-          ${receiptData.generalTaxVisible ? `<div class="totals-row"><span>Tax</span><span>${escapeHtml(Number(receiptData.taxAmount || 0).toFixed(2))}</span></div>` : ""}
-          ${receiptData.generalPaidVisible ? `<div class="totals-row"><span>Paid</span><span>${escapeHtml(Number(receiptData.paidAmount || 0).toFixed(2))}</span></div>` : ""}
-          ${receiptData.generalReceivedVisible ? `<div class="totals-row"><span>Receivedamount</span><span>${escapeHtml(Number(receiptData.receivedAmount || 0).toFixed(2))}</span></div>` : ""}
-          ${receiptData.generalBalanceVisible ? `<div class="totals-row"><span>Balanceamt</span><span>${escapeHtml(Number(receiptData.balanceAmount || 0).toFixed(2))}</span></div>` : ""}
-          ${receiptData.generalYouSavedVisible ? `<div class="totals-row"><span>yousaved</span><span>${escapeHtml(Number(receiptData.discountAmount || 0).toFixed(2))}</span></div>` : ""}
-          ${
-            Number(receiptData.refundAmount || 0) > 0
-              ? `<div class="totals-row"><span>Refund</span><span>${escapeHtml(Number(receiptData.refundAmount || 0).toFixed(2))}</span></div>`
-              : ""
-          }
-          ${
-            receiptData.changeAmount
-              ? `<div class="totals-row"><span>Change</span><span>${escapeHtml(Number(receiptData.changeAmount || 0).toFixed(2))}</span></div>`
-              : ""
-          }
-          ${
-            returnRowsHtml
-              ? `<div class="section-label">Returned Items${receiptData.appliedReturnNo ? ` - ${escapeHtml(receiptData.appliedReturnNo)}` : ""}</div>
-                 <table>
-                   <thead>
-                     <tr>
-                       ${productColumns.map((column) => `<th class="${column.key === "productName" ? "" : "num"}">${escapeHtml(column.label)}</th>`).join("")}
-                     </tr>
-                   </thead>
-                   <tbody>
-                     ${returnRowsHtml}
-                   </tbody>
-                 </table>`
-              : ""
-          }
-          ${
-            taxRowsHtml
-              ? `<div class="section-label">Tax Summary</div>
-                 <table>
-                   <thead>
-                     <tr>
-                       ${taxColumns.map((column) => `<th class="${column.key === "taxName" ? "" : "num"}">${escapeHtml(column.label)}</th>`).join("")}
-                     </tr>
-                   </thead>
-                   <tbody>
-                     ${taxRowsHtml}
-                   </tbody>
-                 </table>`
-              : ""
-          }
-          ${
-            barcodeMarkup
-              ? `<div class="barcode-wrap">${barcodeMarkup}</div>`
-              : ""
-          }
-          ${
-            receiptData.paymentQrMarkup
-              ? `<div class="barcode-wrap">${receiptData.paymentQrMarkup}</div>`
-              : ""
-          }
-          <div class="thanks">${escapeHtml(receiptData.message || DEFAULT_SALES_RECEIPT_MESSAGE)}</div>
-        </div>
-      </body>
-    </html>`;
-};
-
-const buildPosReturnReceiptHtml = (receiptData, customization) => {
-  const receiptItems = (receiptData.items || []).map((item) => ({
-    ...item,
-    rateWithTax: getSalesReceiptRateWithTax(item.rate, item.taxPerc),
-    grossAmount: round2(toNum(item.amount, 0) + Math.max(0, toNum(item.discountAmount, 0))),
-  }));
-  const showDiscountColumn = shouldShowSalesReceiptDiscountColumn(customization, receiptItems);
-  const productColumns = getVisibleSalesReceiptProductColumns(customization, {
-    includeDiscountColumn: showDiscountColumn,
-  });
-  const taxColumns = getVisibleSalesReceiptTaxColumns(customization);
-  const taxRows = customization?.showTaxTableOnReceipt && taxColumns.length > 0
-    ? buildSalesReceiptTaxRows(receiptItems)
-    : [];
-  const generalContent = {
-    logo: receiptData.logoText || RECEIPT_LOGO_TEXT,
-    header: receiptData.headerTitle || "POS RETURN",
-    company: receiptData.storeName || "",
-    address: receiptData.storeAddress || "",
-    gst: receiptData.storeGstNo ? `GST No: ${receiptData.storeGstNo}` : "",
-    salesNo: receiptData.billNo || "",
-    cashier: receiptData.cashierName || "",
-    counter: receiptData.counterName || "",
-    paymentMethod: receiptData.paymentMethod || "",
-    date: receiptData.dateTime ? new Date(receiptData.dateTime).toLocaleDateString() : "",
-    time: receiptData.dateTime ? new Date(receiptData.dateTime).toLocaleTimeString() : "",
-    customer: receiptData.customerName || WALKING_CUSTOMER_NAME,
-    paid: toNum(receiptData.paidAmount, 0) > 0 ? Number(receiptData.paidAmount).toFixed(2) : "",
-    receivedAmount: toNum(receiptData.receivedAmount, 0) > 0 ? Number(receiptData.receivedAmount).toFixed(2) : "",
-    balanceAmt: toNum(receiptData.balanceAmount, 0) > 0 ? Number(receiptData.balanceAmount).toFixed(2) : "",
-    youSaved: toNum(receiptData.discountAmount, 0) > 0 ? Number(receiptData.discountAmount).toFixed(2) : "",
-    tax: toNum(receiptData.taxAmount, 0) > 0 ? `Tax: ${Number(receiptData.taxAmount).toFixed(2)}` : "",
-  };
-  const { topRows, groupedLines } = buildSalesReceiptGeneralLayout(customization, generalContent);
-  const productCellValue = (item, key) => {
-    if (key === "productName") return wrapSalesReceiptText(item.name || "-");
-    if (key === "qty") return Number(item.qty || 0).toFixed(2);
-    if (key === "mrp") return Number(item.rateWithTax || 0).toFixed(2);
-    if (key === "rate") return Number(item.rate || 0).toFixed(2);
-    if (key === "discount") return Number(item.discountAmount || 0).toFixed(2);
-    if (key === "amount") return Number(showDiscountColumn ? item.amount : item.grossAmount).toFixed(2);
-    if (key === "tax") return Number(item.taxPerc || 0).toFixed(2);
-    return "";
-  };
-  const rowsHtml = receiptItems.map((item) => `
-    <tr>
-      ${productColumns.map((column) => `
-        <td class="${column.key === "productName" ? "product-cell" : "num"}">${escapeHtml(productCellValue(item, column.key))}</td>
-      `).join("")}
-    </tr>
-  `).join("");
-  const taxCellValue = (row, key) => {
-    if (key === "taxName") return row.label;
-    if (key === "percent") return Number(row.taxPerc || 0).toFixed(2);
-    if (key === "amount") return Number(row.baseAmount || 0).toFixed(2);
-    if (key === "total") return Number(row.taxAmount || 0).toFixed(2);
-    return "";
-  };
-  const taxRowsHtml = taxRows.map((row) => `
-    <tr>
-      ${taxColumns.map((column) => `
-        <td class="${column.key === "taxName" ? "" : "num"}">${escapeHtml(taxCellValue(row, column.key))}</td>
-      `).join("")}
-    </tr>
-  `).join("");
-
-  const receiptWidth = getSalesReceiptWidthCss(customization?.receiptWidthInches);
-  const returnBarcode = String(receiptData.billBarcode || receiptData.billNo || "").trim();
-  const barcodeMarkup =
-    receiptData.returnCodeMarkup
-    ?? buildReceiptCodeMarkupSync(returnBarcode, customization, "return");
-
-  return `<!DOCTYPE html>
-    <html>
-      <head>
-        <title>POS Return #${escapeHtml(receiptData.billNo)}</title>
-        <style>
-          @page { margin: 0.18in; size: auto; }
-          * { box-sizing: border-box; }
-          body { font-family: ${getSalesReceiptFontCss(customization?.receiptFontFamily)}; margin: 0; padding: 12px; color: #111827; background: #ffffff; }
-          .receipt { width: ${receiptWidth}; max-width: 100%; margin: 0 auto; font-size: 12px; }
-          .center { text-align: center; }
-          .text-left { text-align: left; }
-          .text-center { text-align: center; }
-          .text-right { text-align: right; }
-          .title { font-size: 18px; font-weight: 700; margin-bottom: 4px; letter-spacing: 0.08em; }
-          .store-meta { margin: 2px 0; font-size: 11px; line-height: 1.35; color: #374151; }
-          .meta { margin: 8px 0; }
-          .meta-row { margin: 3px 0; }
-          .meta-row-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; align-items: start; gap: 8px; }
-          .meta-row-single { display: block; }
-          .meta-group { display: flex; flex-wrap: wrap; gap: 2px 14px; width: 100%; }
-          .meta-group.text-right { justify-content: flex-end; }
-          .meta-group.text-center { justify-content: center; }
-          .meta-group.text-left { justify-content: flex-start; }
-          .meta-item { white-space: nowrap; }
-          .line { border-top: 1px dashed #111827; margin: 8px 0; }
-          table { width: 100%; border-collapse: collapse; }
-          th, td { padding: 4px 2px; border-bottom: 1px solid #e5e7eb; text-align: left; vertical-align: top; }
-          th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
-          .product-cell { white-space: pre-line; line-height: 1.35; }
-          .num { text-align: right; white-space: nowrap; }
-          .totals-row { display: flex; justify-content: space-between; margin: 4px 0; }
-          .grand { font-weight: 700; font-size: 14px; }
-          .section-label { margin: 8px 0 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #374151; }
-          .thanks { margin-top: 10px; text-align: center; font-size: 12px; font-weight: 700; line-height: 1.5; white-space: pre-line; }
-          .barcode-wrap { margin-top: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
-          .barcode-wrap svg { width: 100%; height: auto; max-width: 100%; }
-          .barcode-wrap img { width: ${RECEIPT_QR_CODE_DISPLAY_PX}px; height: ${RECEIPT_QR_CODE_DISPLAY_PX}px; max-width: 100%; object-fit: contain; }
-          ${buildReceiptFormatCss(customization?.receiptFormat)}
-        </style>
-      </head>
-      <body>
-        <div class="receipt">
-          <div class="space-y-1">
-            ${topRows.map((row) => `
-              <div class="${escapeHtml(getReceiptPositionClass(row.position))} store-meta ${row.key === "company" ? "title" : ""}">
-                ${row.key === "logo"
-                  ? `<span style="display:inline-flex;border:1px dashed #d1d5db;border-radius:8px;padding:8px 16px;font-size:10px;font-weight:700;letter-spacing:0.18em;color:#6b7280;">${escapeHtml(row.value)}</span>`
-                  : escapeHtml(row.value)}
-              </div>
-            `).join("")}
-            ${receiptData.storePhone ? `<div class="center store-meta">Contact: ${escapeHtml(receiptData.storePhone)}</div>` : ""}
-          </div>
-          <div class="meta">
-            ${groupedLines.map((line) => buildReceiptMetaLineHtml(line)).join("")}
-            ${receiptData.sourceBillNo ? `<div class="meta-row"><span>Source Bill</span><span>${escapeHtml(receiptData.sourceBillNo)}</span></div>` : ""}
-            ${receiptData.returnReason ? `<div class="meta-row"><span>Reason</span><span>${escapeHtml(receiptData.returnReason)}</span></div>` : ""}
-          </div>
-          <div class="line"></div>
-          ${
-            productColumns.length > 0
-              ? `<table><thead><tr>${productColumns.map((column) => `<th class="${column.key === "productName" ? "" : "num"}">${escapeHtml(column.label)}</th>`).join("")}</tr></thead><tbody>${rowsHtml || `<tr><td colspan="${productColumns.length}" class="center">No items</td></tr>`}</tbody></table>`
-              : ""
-          }
-          <div class="line"></div>
-          <div class="totals-row"><span>Bill Amount</span><span>${escapeHtml(Number(receiptData.billAmount || 0).toFixed(2))}</span></div>
-          ${customization?.showDiscountOnReceipt && !showDiscountColumn ? `<div class="totals-row"><span>Discount</span><span>${escapeHtml(Number(receiptData.discountAmount || 0).toFixed(2))}</span></div>` : ""}
-          <div class="totals-row grand"><span>Net Amount</span><span>${escapeHtml(Number(receiptData.total || 0).toFixed(2))}</span></div>
-          ${receiptData.generalTaxVisible ? `<div class="totals-row"><span>Tax</span><span>${escapeHtml(Number(receiptData.taxAmount || 0).toFixed(2))}</span></div>` : ""}
-          ${receiptData.generalPaidVisible ? `<div class="totals-row"><span>Paid</span><span>${escapeHtml(Number(receiptData.paidAmount || 0).toFixed(2))}</span></div>` : ""}
-          ${receiptData.generalReceivedVisible ? `<div class="totals-row"><span>Receivedamount</span><span>${escapeHtml(Number(receiptData.receivedAmount || 0).toFixed(2))}</span></div>` : ""}
-          ${receiptData.generalBalanceVisible ? `<div class="totals-row"><span>Balanceamt</span><span>${escapeHtml(Number(receiptData.balanceAmount || 0).toFixed(2))}</span></div>` : ""}
-          ${receiptData.generalYouSavedVisible ? `<div class="totals-row"><span>yousaved</span><span>${escapeHtml(Number(receiptData.discountAmount || 0).toFixed(2))}</span></div>` : ""}
-          ${
-            taxRowsHtml
-              ? `<div class="section-label">Tax Summary</div><table><thead><tr>${taxColumns.map((column) => `<th class="${column.key === "taxName" ? "" : "num"}">${escapeHtml(column.label)}</th>`).join("")}</tr></thead><tbody>${taxRowsHtml}</tbody></table>`
-              : ""
-          }
-          ${barcodeMarkup ? `<div class="barcode-wrap">${barcodeMarkup}</div>` : ""}
-          <div class="thanks">${escapeHtml(receiptData.message || DEFAULT_SALES_RECEIPT_MESSAGE)}</div>
-        </div>
-      </body>
-    </html>`;
 };
 
 const POS_TABLE_COLS = {
@@ -1217,19 +609,19 @@ const POSSales = () => {
       {
         key: "sale_at",
         label: "Date",
-        valueGetter: (row) => row.sale_at || "",
+        valueGetter: (row) => row.sale_date || "",
         render: (value) => (value ? new Date(value).toLocaleString() : "-"),
-        searchValue: (row) => (row.sale_at ? new Date(row.sale_at).toLocaleString() : ""),
+        searchValue: (row) => (row.sale_date ? new Date(row.sale_date).toLocaleString() : ""),
       },
       {
         key: "customer_name",
         label: "Customer",
-        valueGetter: (row) => row.customer_name || row.customer?.name || "-",
+        valueGetter: (row) => row.customer?.name || "-",
       },
       {
         key: "user_name",
         label: "User",
-        valueGetter: (row) => row.user_name || "-",
+        valueGetter: (row) => row.user?.name || "-",
       },
       {
         key: "counter_name",
@@ -1241,13 +633,13 @@ const POSSales = () => {
         label: "Barcode",
         valueGetter: (row) =>
           (row.items || [])
-            .map((item) => item.barcode || item.barcodeRef?.barcode || "-")
+            .map((item) => item.barcode?.barcode || item.product?.barcode || "-")
             .join(", "),
         render: (_, row) => {
           const items = row.items || [];
           const barcodeText = items
             .slice(0, 2)
-            .map((item) => item.barcode || item.barcodeRef?.barcode || "-")
+            .map((item) => item.barcode?.barcode || item.product?.barcode || "-")
             .join(", ");
           const extra = items.length > 2 ? ` +${items.length - 2} more` : "";
           return `${barcodeText || "-"}${extra}`;
@@ -1258,13 +650,13 @@ const POSSales = () => {
         label: "Products",
         valueGetter: (row) =>
           (row.items || [])
-            .map((item) => item.product_name || item.barcode || "-")
+            .map((item) => item.product?.name || item.barcode?.product_name || "-")
             .join(", "),
         render: (_, row) => {
           const items = row.items || [];
           const productText = items
             .slice(0, 2)
-            .map((item) => item.product_name || item.barcode || "-")
+            .map((item) => item.product?.name || item.barcode?.product_name || "-")
             .join(", ");
           const extra = items.length > 2 ? ` +${items.length - 2} more` : "";
           return `${productText || "-"}${extra}`;
@@ -1368,7 +760,7 @@ const POSSales = () => {
 
       const [customersRes, stockProductsRes, productsRes, cities, states, customerCategories, areas] =
         await Promise.all([
-          api.get("/customers").catch(() => ({ data: { data: [] } })),
+          api.get("/customers", { params: { all: true } }).catch(() => ({ data: { data: [] } })),
           api.get("/pos-sales/stock-products").catch(() => ({ data: { data: [] } })),
           api.get("/products", { params: { limit: 500 } }).catch(() => ({ data: { data: [] } })),
           cfg("city"),
@@ -1382,14 +774,14 @@ const POSSales = () => {
       setCustomers(
         customerRows.map((row) => ({
           value: String(row.id),
-          label: `${row.name || "Unnamed"}${row.mobile_no ? ` (${row.mobile_no})` : ""}`,
+          label: `${row.name || "Unnamed"}${row.phone ? ` (${row.phone})` : ""}`,
           id: String(row.id),
           name: row.name || "Unnamed",
-          mobileNo: row.mobile_no || "",
+          mobileNo: row.phone || "",
           dateOfBirth: row.date_of_birth || "",
           billingName: row.billing_name || "",
-          cardNo: row.card_no || "",
-          gstNo: row.gst_no || "",
+          cardNo: row.loyalty_card_number || "",
+          gstNo: row.gstin || "",
           address: row.address || "",
           cityId: row.city_id ? String(row.city_id) : "",
           cityName: row.city?.name || "",
@@ -1397,7 +789,7 @@ const POSSales = () => {
           stateName: row.state?.name || "",
           customerCategoryId: row.customer_category_id ? String(row.customer_category_id) : "",
           customerCategoryName: row.customerCategory?.name || "",
-          emailId: row.email_id || "",
+          emailId: row.email || "",
           areaId: row.area_id ? String(row.area_id) : "",
           areaName: areaMap.get(String(row.area_id || "")) || "",
           sectionReligion: row.section_religion || "",
@@ -2900,12 +2292,14 @@ const POSSales = () => {
       const res = await api.get(`/companies/${companyId}`);
       const company = res.data?.data || {};
       return {
+        storeName: String(company.name || company.reg_name || company.regName || "").trim(),
         storeAddress: String(company.address || "").trim(),
-        storePhone: String(company.contact_no || company.phone || "").trim(),
-        storeGstNo: String(company.gst_no || company.gstin || "").trim(),
+        storePhone: String(company.contact_no || company.phone || company.contactNo || "").trim(),
+        storeGstNo: String(company.gst_no || company.gstin || company.gstNo || "").trim(),
       };
     } catch {
       return {
+        storeName: "",
         storeAddress: "",
         storePhone: "",
         storeGstNo: "",
@@ -2915,10 +2309,9 @@ const POSSales = () => {
 
   const printSaleReceipt = async (savedSale) => {
     const savedItems = savedSale?.items || [];
-    const liveReceiptLines = cartWithTotals;
     const billNumber = savedSale?.bill_no || billNo;
     const displayBillNo = getPosBillBarcodeValue(billNumber);
-    const saleAt = savedSale?.sale_at || now.toISOString();
+    const saleAt = savedSale?.sale_date || now.toISOString();
     const receiptCustomization = loadSalesReceiptCustomization(authUser?.company_id || "default");
     const printCopies = clampReceiptCopies(receiptCustomization.posReceiptPrintCopies);
     const appliedReturnId = toNum(
@@ -2933,40 +2326,36 @@ const POSSales = () => {
     ]);
     const linkedReturn = linkedReturnRes?.data?.data || null;
     const storeName =
-      String(authUser?.company_name || "").trim()
-      || String(authUser?.name || "").trim()
-      || "Store";
+      String(companyInfo?.storeName || authUser?.company_name || "").trim()
+      || "SRI BALAJI TEXTILE";
     const cashierName = String(authUser?.name || authUser?.email || "").trim();
     const receiptCustomerName =
       String(savedSale?.customer_name || savedSale?.customer?.name || "").trim()
       || String(selectedCustomer?.name || "").trim()
       || String(newCustomer.name || "").trim()
       || WALKING_CUSTOMER_NAME;
-    const allSalesMen = savedItems.map((item) => String(item.sales_man_name || item.salesManName || "").trim());
+    const allSalesMen = savedItems.map((item) => String(item.sales_man_name || "").trim());
     const namedSalesMen = allSalesMen.filter(Boolean);
     const uniqueSalesMen = [...new Set(namedSalesMen)];
     const commonSalesMan =
       namedSalesMen.length === savedItems.length && uniqueSalesMen.length === 1 ? uniqueSalesMen[0] : "";
-    const receiptReceivedAmount = Math.max(0, toNum(savedSale?.received_amount, paymentTotals.receivedAmount));
+    const receiptReceivedAmount = Math.max(0, toNum(savedSale?.paid_amount, paymentTotals.receivedAmount));
     const receiptChangeAmount = Math.max(0, toNum(savedSale?.change_amount, paymentTotals.changeAmount));
-    const receiptTaxAmount = round2(
-      savedItems.reduce((sum, item) => {
-        const qty = Math.max(0, toNum(item.qty, 0));
-        const price = Math.max(0, toNum(item.price, 0));
-        const taxPerc = Math.max(0, toNum(item.tax_perc ?? item.taxPerc ?? item.tax, 0));
-        return sum + round2((qty * price * taxPerc) / 100);
-      }, 0) + toNum(savedSale?.addnl_tax_amount, 0)
-    );
-    const receiptItems = (savedItems.length > 0 ? savedItems : liveReceiptLines).map((item) => {
-      const liveLine = findMatchingReceiptLine(liveReceiptLines, item);
-      const qty = Math.max(0, toNum(item.qty ?? liveLine?.qty, 0));
-      const rate = Math.max(0, toNum(item.price ?? item.rate ?? liveLine?.price, 0));
-      const taxPerc = Math.max(0, toNum(liveLine?.tax ?? item.tax_perc ?? item.taxPerc ?? item.tax, 0));
-      const subtotal = round2(liveLine?.subtotal ?? (qty * rate));
-      const taxAmount = round2(liveLine?.taxAmount ?? ((subtotal * taxPerc) / 100));
-      const discountAmount = round2(Math.max(0, toNum(liveLine?.discount ?? item.discount, 0)));
-      const salesManName = String(item.sales_man_name || item.salesManName || liveLine?.salesManName || "").trim();
-      const baseName = item.product_name || item.productName || liveLine?.productName || item.barcode || "-";
+    const receiptTaxAmount = round2(toNum(savedSale?.tax_amount, 0));
+    // PosSaleItem's own columns (quantity/selling_price/tax_rate/subtotal/discount/product relation)
+    // are always present, whether savedSale just came back from store() or was re-fetched later
+    // (Last Bill reprint, PDF download) - liveLine (the in-memory cart line) is no longer needed as
+    // the primary source, only these real columns are.
+    const receiptItems = savedItems.map((item) => {
+      const qty = Math.max(0, toNum(item.quantity, 0));
+      const rate = Math.max(0, toNum(item.selling_price, 0));
+      const taxPerc = Math.max(0, toNum(item.tax_rate, 0));
+      const discountAmount = round2(Math.max(0, toNum(item.discount, 0)));
+      const taxAmount = round2(toNum(item.tax_amount, 0));
+      const amount = round2(toNum(item.subtotal, qty * rate - discountAmount + taxAmount));
+      const subtotal = round2(amount - taxAmount);
+      const salesManName = String(item.sales_man_name || "").trim();
+      const baseName = String(item.product?.name || item.barcode?.product_name || "-").trim();
       const itemName =
         commonSalesMan || !salesManName ? baseName : `${baseName} / SM: ${salesManName}`;
 
@@ -2975,28 +2364,31 @@ const POSSales = () => {
         qty,
         rate,
         taxPerc,
-        taxName: liveLine?.taxName || item.tax_name || "",
-        taxType: liveLine?.taxType || item.tax_type || "",
+        taxName: item.tax_name || "",
+        taxType: item.tax_type || "",
         baseAmount: subtotal,
         taxAmount,
         discountAmount,
-        amount: round2(liveLine?.total ?? item.total ?? item.amount ?? (subtotal + taxAmount)),
-        code: item.barcode || liveLine?.barcode || "",
+        amount,
+        code: item.barcode?.barcode || item.product?.barcode || "",
+        hsnCode: item.product?.hsn_code || "",
       };
     });
-    const receiptGrossAmount = round2(receiptItems.reduce((sum, item) => sum + toNum(item.amount, 0), 0));
-    const receiptTotalDiscount = Math.max(0, toNum(savedSale?.total_discount, summary.totalDiscount));
-    const receiptBillsAmount = round2(receiptGrossAmount + toNum(savedSale?.addnl_amount, 0) + receiptTotalDiscount);
-    const receiptReturnAdjustment = Math.min(0, toNum(savedSale?.applied_return_amount, summary.returnAdjustment));
-    const receiptRefundAmount = Math.max(0, toNum(savedSale?.return_refund_amount, paymentTotals.refundAmount));
-    const receiptNetAmount = round2(summary.amount < 0 ? summary.amount : toNum(savedSale?.amount, summary.amount));
-    const receiptBillAmount = round2(receiptNetAmount < 0 ? receiptNetAmount : receiptBillsAmount);
+    const receiptTotalDiscount = Math.max(0, toNum(savedSale?.discount_amount, summary.totalDiscount));
+    const receiptReturnAdjustment = Math.min(0, toNum(summary.returnAdjustment, 0));
+    const receiptRefundAmount = Math.max(0, toNum(paymentTotals.refundAmount, 0));
+    const receiptNetAmount = round2(toNum(savedSale?.grand_total, summary.amount));
+    const receiptBillAmount = round2(
+      receiptNetAmount < 0
+        ? receiptNetAmount
+        : round2(toNum(savedSale?.subtotal, 0)) + receiptTotalDiscount
+    );
     const receiptPaymentMethod = getSaleReceiptPaymentMethod(savedSale, paymentTotals);
     const receiptReturnItems = (linkedReturn?.items || appliedReturn?.items || []).map((item) => ({
-      name: item.product_name || item.productName || item.barcode || "-",
-      qty: Math.max(0, toNum(item.qty, 0)),
-      amount: Math.abs(toNum(item.total ?? item.amount, 0)),
-      code: item.barcode || item.barcodeRef?.barcode || "",
+      name: String(item.product?.name || item.product_name || item.productName || "-").trim(),
+      qty: Math.max(0, toNum(item.qty ?? item.quantity, 0)),
+      amount: Math.abs(toNum(item.total ?? item.amount ?? item.subtotal, 0)),
+      code: item.barcode?.barcode || item.barcodeRef?.barcode || "",
     }));
 
     const receiptData = {
@@ -3045,15 +2437,17 @@ const POSSales = () => {
     };
     const browserReceiptHtml = buildPosSaleReceiptHtml(receiptData, receiptCustomization);
 
-    if (printerConnected) {
-      const jobId = await queuePrintHtml(browserReceiptHtml, {
+    const isDirectPrint = receiptCustomization.printMode !== "browser";
+
+    if (isDirectPrint) {
+      await queuePrintHtml(browserReceiptHtml, {
         label: `POSSale-${billNumber}`,
         docType: "pos_sale_receipt",
         copies: printCopies,
         companyId: authUser?.company_id,
         receiptData,
       });
-      if (jobId) return;
+      return;
     }
 
     browserPrintHtml(browserReceiptHtml, { copies: printCopies });
@@ -3073,37 +2467,37 @@ const POSSales = () => {
     const displayReturnNo = getPosReturnBarcodeValue(
       detail?.display_return_no || detail?.return_no || detail?.id
     );
-    const sourceBillNo = detail?.source_bill_no ? formatSaleBillNo(detail.source_bill_no) : "";
+    const sourceBillNo = detail?.pos_sale?.id ? formatSaleBillNo(detail.pos_sale.id) : "";
     const storeName =
       String(authUser?.company_name || "").trim()
       || String(authUser?.name || "").trim()
       || "Store";
     const cashierName = String(authUser?.name || authUser?.email || "").trim();
     const receiptItems = (detail?.items || []).map((item) => {
-      const qty = Math.max(0, toNum(item.qty, 0));
-      const rate = Math.max(0, toNum(item.price ?? item.rate, 0));
-      const taxPerc = Math.max(0, toNum(item.tax_perc ?? item.taxPerc ?? item.tax, 0));
+      const qty = Math.max(0, toNum(item.quantity, 0));
+      const rate = Math.max(0, toNum(item.refund_price, 0));
+      const taxPerc = Math.max(0, toNum(item.tax_rate, 0));
       const discountAmount = round2(Math.max(0, toNum(item.discount, 0)));
-      const subtotal = round2(qty * rate);
-      const taxAmount = round2((subtotal * taxPerc) / 100);
-      const amount = round2(Math.abs(toNum(item.total ?? item.amount, 0)) || Math.max(subtotal + taxAmount - discountAmount, 0));
+      const taxAmount = round2(toNum(item.tax_amount, 0));
+      const amount = round2(Math.abs(toNum(item.subtotal, qty * rate - discountAmount + taxAmount)));
+      const subtotal = round2(amount - taxAmount);
 
       return {
-        name: item.product_name || item.productName || item.barcode || "-",
+        name: String(item.product?.name || "-").trim(),
         qty,
         rate,
         taxPerc,
-        taxName: item.tax_name || item.taxName || "",
-        taxType: item.tax_type || item.taxType || "",
+        taxName: item.tax_name || "",
+        taxType: item.tax_type || "",
         baseAmount: subtotal,
         taxAmount,
         discountAmount,
         amount,
-        code: item.barcode || item.barcodeRef?.barcode || "",
+        code: item.product?.barcode || "",
       };
     });
-    const receiptTotalDiscount = Math.max(0, toNum(detail?.total_discount, 0));
-    const receiptNetAmount = round2(-Math.abs(toNum(detail?.amount, 0)));
+    const receiptTotalDiscount = round2(receiptItems.reduce((sum, item) => sum + toNum(item.discountAmount, 0), 0));
+    const receiptNetAmount = round2(-Math.abs(toNum(detail?.total_refund, 0)));
     const receiptData = {
       storeName,
       storeAddress: companyInfo.storeAddress,
@@ -3111,10 +2505,10 @@ const POSSales = () => {
       storeGstNo: companyInfo.storeGstNo,
       billNo: displayReturnNo,
       billBarcode: displayReturnNo,
-      dateTime: detail?.return_at || detail?.created_at || now.toISOString(),
+      dateTime: detail?.return_date || now.toISOString(),
       cashierName,
-      counterName: String(authUser?.counter_name || detail?.counter_name || "").trim(),
-      customerName: String(detail?.customer_name || detail?.customer?.name || "").trim() || WALKING_CUSTOMER_NAME,
+      counterName: String(authUser?.counter_name || "").trim(),
+      customerName: String(detail?.customer?.name || "").trim() || WALKING_CUSTOMER_NAME,
       sourceBillNo,
       returnReason: String(detail?.return_reason_name || "").trim(),
       paperSize: getSalesReceiptPaperSize(receiptCustomization.receiptWidthInches),
@@ -3137,15 +2531,16 @@ const POSSales = () => {
     };
     const browserReceiptHtml = buildPosReturnReceiptHtml(receiptData, receiptCustomization);
 
-    if (printerConnected) {
-      const jobId = await queuePrintHtml(browserReceiptHtml, {
+    const isReturnDirectPrint = receiptCustomization.printMode !== "browser";
+    if (isReturnDirectPrint) {
+      await queuePrintHtml(browserReceiptHtml, {
         label: `POSReturn-${displayReturnNo}`,
         docType: "pos_return_receipt",
         copies: 1,
         companyId: authUser?.company_id,
         receiptData,
       });
-      if (jobId) return;
+      return;
     }
 
     browserPrintHtml(browserReceiptHtml, { copies: 1 });
@@ -3187,77 +2582,86 @@ const POSSales = () => {
         return;
       }
 
+      const receiptCustomization = loadSalesReceiptCustomization(authUser?.company_id || "default");
+      const companyInfo = await fetchReceiptCompanyInfo();
+      const savedBillNo = saved.bill_no ?? billNo;
+      const displayBillNo = getPosBillBarcodeValue(savedBillNo);
+
+      const receiptItems = items.map((item) => {
+        const qty = Math.max(0, toNum(item.quantity, 0));
+        const rate = Math.max(0, toNum(item.selling_price, 0));
+        const taxPerc = Math.max(0, toNum(item.tax_rate, 0));
+        const discountAmount = Math.max(0, toNum(item.discount, 0));
+        const amount = round2(toNum(item.subtotal, qty * rate - discountAmount));
+        const baseAmount = taxPerc > 0 ? round2(amount / (1 + taxPerc / 100)) : amount;
+        const taxAmount = round2(toNum(item.tax_amount, amount - baseAmount));
+
+        return {
+          name: String(item.product?.name || item.barcode?.product_name || "-").trim(),
+          qty,
+          rate,
+          taxPerc,
+          taxName: item.tax_name || "",
+          taxType: item.tax_type || "",
+          baseAmount,
+          taxAmount,
+          discountAmount,
+          amount,
+          code: item.barcode?.barcode || item.product?.barcode || "",
+          hsnCode: item.product?.hsn_code || "",
+        };
+      });
+
       const storeName =
         String(authUser?.company_name || "").trim()
         || String(authUser?.name || "").trim()
-        || "A TO Z SHOP";
-      const branchName =
-        String(authUser?.branch_name || "").trim()
-        || `${storeName} - Main Branch`;
-      const customerName =
-        String(saved.customer_name || saved.customer?.name || "").trim()
-        || WALKING_CUSTOMER_NAME;
-      const customerMobile =
-        String(saved.customer_mobile || saved.customer?.mobile_no || "").trim() || "-";
-      const customerAddress = "-";
-      const cashierName = String(authUser?.name || authUser?.email || "").trim() || "-";
-      const reportGeneratedOn = `${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
-      const savedBillNo = saved.bill_no ?? billNo;
-      const billDate = saved.sale_at ? new Date(saved.sale_at).toLocaleDateString() : "-";
+        || "Store";
 
-      const taxFromLines = round2(
-        items.reduce((sum, item) => {
-          const qty = Math.max(0, toNum(item.qty, 0));
-          const price = Math.max(0, toNum(item.price ?? item.rate, 0));
-          const taxPerc = Math.max(0, toNum(item.tax_perc ?? item.taxPerc ?? item.tax, 0));
-          return sum + round2((qty * price * taxPerc) / 100);
-        }, 0) + toNum(saved.addnl_tax_amount, 0)
-      );
-      const totalDiscount = Math.max(0, toNum(saved.total_discount, 0));
-      const returnAdj = Math.min(0, toNum(saved.applied_return_amount, 0));
-      const netAmount = round2(toNum(saved.amount, 0));
-
-      const headers = ["Barcode", "Product", "Qty", "Rate", "Amount", "Salesman"];
-      const body = items.map((line) => [
-        String(line.barcode || line.barcodeRef?.barcode || "").trim() || "-",
-        String(line.product_name || line.productName || "").trim() || "-",
-        String(toNum(line.qty, 0)),
-        formatMoney(line.price ?? line.rate),
-        formatMoney(line.total ?? line.amount),
-        String(line.sales_man_name || line.salesManName || "").trim() || "-",
-      ]);
-
-      const totalsLines = [
-        { label: "Net Amount", value: formatMoney(netAmount) },
-        { label: "Discount", value: formatMoney(totalDiscount) },
-        { label: "Tax", value: formatMoney(taxFromLines) },
-      ];
-      if (returnAdj < 0) {
-        totalsLines.push({ label: "Return Adj.", value: formatMoney(returnAdj) });
-      }
-
-      const blob = buildPosSalePdf({
+      const receiptData = {
         storeName,
-        branchName,
-        reportType: "POS SALE REPORT",
-        generatedOn: reportGeneratedOn,
-        customerLines: [
-          { label: "Customer Name", value: customerName },
-          { label: "Customer Mobile", value: customerMobile },
-          { label: "Customer Address", value: customerAddress },
-        ],
-        billLines: [
-          { label: "Bill No", value: formatSaleBillNo(savedBillNo) },
-          { label: "Bill Date", value: billDate },
-          { label: "Cashier", value: cashierName },
-        ],
-        totalsLines,
-        headers,
-        body,
-      });
-      downloadBlob(blob, `pos-sale-${savedBillNo}.pdf`);
+        storeAddress: companyInfo.storeAddress,
+        storePhone: companyInfo.storePhone,
+        storeGstNo: companyInfo.storeGstNo,
+        billNo: displayBillNo,
+        billBarcode: displayBillNo,
+        dateTime: saved.sale_date || new Date().toISOString(),
+        cashierName: String(saved.user?.name || authUser?.name || authUser?.email || "").trim(),
+        counterName: String(authUser?.counter_name || "").trim(),
+        customerName: String(saved.customer?.name || "").trim() || WALKING_CUSTOMER_NAME,
+        paperSize: getSalesReceiptPaperSize(receiptCustomization.receiptWidthInches),
+        items: receiptItems,
+        billAmount: round2(toNum(saved.subtotal, 0)),
+        discountAmount: round2(toNum(saved.discount_amount, 0)),
+        taxAmount: round2(toNum(saved.tax_amount, 0)),
+        returnAdjustment: 0,
+        refundAmount: 0,
+        appliedReturnNo: "",
+        returnItems: [],
+        total: round2(toNum(saved.grand_total, 0)),
+        paidAmount: round2(toNum(saved.paid_amount, 0)),
+        receivedAmount: round2(toNum(saved.paid_amount, 0)),
+        balanceAmount: Math.max(0, round2(toNum(saved.grand_total, 0) - toNum(saved.paid_amount, 0))),
+        changeAmount: round2(toNum(saved.change_amount, 0)),
+        paymentMethod: String(saved.payment_mode || "Cash").trim(),
+        generalTaxVisible: Boolean(receiptCustomization.generalFields?.tax?.visible),
+        generalPaidVisible: Boolean(receiptCustomization.generalFields?.paid?.visible),
+        generalReceivedVisible: Boolean(receiptCustomization.generalFields?.receivedAmount?.visible),
+        generalBalanceVisible: Boolean(receiptCustomization.generalFields?.balanceAmt?.visible),
+        generalYouSavedVisible: Boolean(receiptCustomization.generalFields?.youSaved?.visible),
+        footerNote: "",
+        message: receiptCustomization.thankYouMessage || DEFAULT_SALES_RECEIPT_MESSAGE,
+        billCodeMarkup: await buildReceiptCodeMarkupAsync(displayBillNo, receiptCustomization, "bill"),
+        paymentQrMarkup: await buildPaymentQrMarkup(receiptCustomization, {
+          billAmount: round2(toNum(saved.grand_total, 0)),
+          billNo: displayBillNo,
+          storeName,
+        }),
+      };
+
+      const html = buildPosSaleReceiptHtml(receiptData, receiptCustomization);
+      await downloadHtmlAsPdf(html, `pos-sale-${savedBillNo}.pdf`, { paperSize: receiptData.paperSize });
     } catch (err) {
-      toast.error(err?.response?.data?.message || "Failed to load last bill for PDF");
+      toast.error(err?.response?.data?.message || err?.message || "Failed to load last bill for PDF");
     } finally {
       setDownloadingPosPdf(false);
     }
@@ -3268,6 +2672,11 @@ const POSSales = () => {
     paymentFormOverride,
     allowUnsettledWithoutPayment = false,
   } = {}) => {
+    if (!authUser?.counter_id) {
+      setCounterAssignmentOpen(true);
+      toast.error("Please assign a counter before checkout");
+      return;
+    }
     const payload =
       paymentFormOverride !== undefined
         ? buildSavePayload(paymentFormOverride, { allowUnsettledWithoutPayment })
@@ -3998,57 +3407,63 @@ const POSSales = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <UploadImportButton
-            endpoint="/pos-sales/bulk"
-            fieldConfig={POS_SALE_IMPORT_CONFIG}
-          />
-          <button
-            onClick={() => void downloadLastPosSalePdf()}
-            disabled={showSearchPage || downloadingPosPdf}
-            className="glass-btn glass-btn-secondary inline-flex items-center disabled:opacity-50"
-          >
-            <FileText className="w-4 h-4 mr-1" />
-            PDF
-          </button>
-          <button
-            onClick={() => {
-              if (!validateSaleEntry()) return;
-              if (posCheckoutPrefs.paymentDialogVisible) {
-                openPaymentDialog();
-                return;
-              }
-              const isUnsettledSave = posCheckoutPrefs.saleSaveAs === "unsettled";
-              handleSaveSale({
-                shouldPrint: false,
-                paymentFormOverride: buildQuickPaymentFormSnapshot({ unsettled: isUnsettledSave }),
-                allowUnsettledWithoutPayment: isUnsettledSave,
-              });
-            }}
-            disabled={saving || showSearchPage}
-            className="glass-btn glass-btn-success inline-flex items-center disabled:opacity-50"
-          >
-            <Save className="w-4 h-4 mr-1" />
-            {saving ? "Saving..." : "Save"}
-          </button>
-          {!posCheckoutPrefs.paymentDialogVisible ? (
-            <button
-              type="button"
-              onClick={() => {
-                if (!validateSaleEntry()) return;
-                const isUnsettledSave = posCheckoutPrefs.saleSaveAs === "unsettled";
-                handleSaveSale({
-                  shouldPrint: true,
-                  paymentFormOverride: buildQuickPaymentFormSnapshot({ unsettled: isUnsettledSave }),
-                  allowUnsettledWithoutPayment: isUnsettledSave,
-                });
-              }}
-              disabled={saving || showSearchPage}
-              className="glass-btn glass-btn-primary inline-flex items-center disabled:opacity-50"
-            >
-              <Printer className="w-4 h-4 mr-1" />
-              {saving ? "Saving..." : "Save & Print"}
-            </button>
-          ) : null}
+          {!showSearchPage && (
+            <>
+              <button
+                onClick={() => void downloadLastPosSalePdf()}
+                disabled={downloadingPosPdf}
+                className="glass-btn glass-btn-secondary inline-flex items-center disabled:opacity-50"
+              >
+                <FileText className="w-4 h-4 mr-1" />
+                PDF
+              </button>
+              <button
+                onClick={() => {
+                  if (!validateSaleEntry()) return;
+                  if (posCheckoutPrefs.paymentDialogVisible) {
+                    openPaymentDialog();
+                    return;
+                  }
+                  const isUnsettledSave = posCheckoutPrefs.saleSaveAs === "unsettled";
+                  handleSaveSale({
+                    shouldPrint: false,
+                    paymentFormOverride: buildQuickPaymentFormSnapshot({ unsettled: isUnsettledSave }),
+                    allowUnsettledWithoutPayment: isUnsettledSave,
+                  });
+                }}
+                disabled={saving}
+                className="glass-btn glass-btn-success inline-flex items-center disabled:opacity-50"
+              >
+                <Save className="w-4 h-4 mr-1" />
+                {saving ? "Saving..." : "Save"}
+              </button>
+              {!posCheckoutPrefs.paymentDialogVisible ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!validateSaleEntry()) return;
+                    const isUnsettledSave = posCheckoutPrefs.saleSaveAs === "unsettled";
+                    handleSaveSale({
+                      shouldPrint: true,
+                      paymentFormOverride: buildQuickPaymentFormSnapshot({ unsettled: isUnsettledSave }),
+                      allowUnsettledWithoutPayment: isUnsettledSave,
+                    });
+                  }}
+                  disabled={saving}
+                  className="glass-btn glass-btn-primary inline-flex items-center disabled:opacity-50"
+                >
+                  <Printer className="w-4 h-4 mr-1" />
+                  {saving ? "Saving..." : "Save & Print"}
+                </button>
+              ) : null}
+            </>
+          )}
+          {showSearchPage && (
+            <UploadImportButton
+              endpoint="/pos-sales/bulk"
+              fieldConfig={POS_SALE_IMPORT_CONFIG}
+            />
+          )}
           <button
             onClick={showSearchPage ? () => setShowSearchPage(false) : openSearchPage}
             className="glass-btn glass-btn-primary inline-flex items-center"

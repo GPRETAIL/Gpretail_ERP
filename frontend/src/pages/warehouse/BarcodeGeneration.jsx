@@ -337,12 +337,70 @@ const escapeXml = (value = "") =>
 
 const MM_TO_PX = 96 / 25.4;
 const BARCODE_SHEET_ROW_GAP_MM = 1;
-const BARCODE_RENDER_SCALE = 2;
+// Thermal label printers are commonly 203-300 DPI natively. At the old scale of 2 (96*2=192 DPI)
+// the rendered source PNG was already close to or below that, so the connector's print-time
+// DrawImage had to upsample slightly - on a 1-bit monochrome printer that shows up as soft/uneven
+// edges on fine detail (QR modules, small text) no matter how good the interpolation mode is.
+// Rendering well above any realistic printer DPI means the connector always downsamples instead,
+// which stays crisp with NearestNeighbor.
+const BARCODE_RENDER_SCALE = 4;
 
 const svgToDataUrl = (svgMarkup) =>
   `data:image/svg+xml;charset=utf-8,${encodeURIComponent(String(svgMarkup || "").trim())}`;
 
 const mmToPx = (value) => (Number(value || 0) || 0) * MM_TO_PX;
+
+// The printed sticker sheet is built as raw SVG (rasterized to a PNG for the local print
+// connector / silent print path), so it doesn't get the browser's normal CSS text-overflow/
+// ellipsis handling the on-screen preview and popup-print HTML paths get for free - long product
+// names were overflowing past the label edge instead of truncating, and the MRP strikethrough
+// (drawn as a separate line, not real text-decoration) used a rough per-character width estimate
+// that didn't match the real rendered text, making it look like garbled overlapping pixels once
+// printed at label scale. Both are fixed by measuring real text width via a shared canvas context.
+let barcodeMeasureCtx = null;
+const getBarcodeMeasureCtx = () => {
+  if (!barcodeMeasureCtx) {
+    barcodeMeasureCtx = document.createElement("canvas").getContext("2d");
+  }
+  return barcodeMeasureCtx;
+};
+
+const buildSvgFontString = (fontSizePx, textStyle, fontWeight = textStyle.fontWeight) =>
+  `${textStyle.fontStyle === "italic" ? "italic " : ""}${fontWeight || 400} ${fontSizePx}px ${textStyle.fontFamily}`;
+
+const measureSvgTextWidthPx = (text, fontSizePx, textStyle, fontWeight) => {
+  const ctx = getBarcodeMeasureCtx();
+  ctx.font = buildSvgFontString(fontSizePx, textStyle, fontWeight);
+  return ctx.measureText(String(text || "")).width;
+};
+
+const truncateSvgTextToWidth = (text, maxWidthPx, fontSizePx, textStyle, fontWeight) => {
+  const str = String(text || "");
+  if (!str || maxWidthPx <= 0) return str;
+  if (measureSvgTextWidthPx(str, fontSizePx, textStyle, fontWeight) <= maxWidthPx) return str;
+  let lo = 0;
+  let hi = str.length;
+  while (lo < hi) {
+    const mid = Math.ceil((lo + hi) / 2);
+    const candidate = `${str.slice(0, mid)}…`;
+    if (measureSvgTextWidthPx(candidate, fontSizePx, textStyle, fontWeight) <= maxWidthPx) {
+      lo = mid;
+    } else {
+      hi = mid - 1;
+    }
+  }
+  return lo > 0 ? `${str.slice(0, lo)}…` : "…";
+};
+
+// buildCode39SvgMarkup returns an <svg> with fixed width/height attributes (raw generator units,
+// treated by the browser as literal CSS px when injected via dangerouslySetInnerHTML) - a CSS rule
+// targeting the injected svg is expected to override those, but in practice the injected element
+// kept its native pixel size regardless, overflowing its container. Rewriting the attributes
+// directly is a more reliable fix than depending on a CSS override winning against them.
+const makeCode39SvgResponsive = (svgMarkup) =>
+  String(svgMarkup || "")
+    .replace(/(<svg[^>]*\swidth=")[\d.]+(")/, "$1100%$2")
+    .replace(/(<svg[^>]*\sheight=")[\d.]+(")/, "$1100%$2");
 
 const buildBarcodeSheetMarkup = ({
   labels = [],
@@ -365,8 +423,28 @@ const buildBarcodeSheetMarkup = ({
         getWarehouseLabelFieldPosition(customization, field.key),
         codePosition
       );
+      const isMrp = field.key === "mrp";
+      const isRs = field.key === "rs" || field.key === "price";
+      const isStriked = isMrp && Boolean(customization.mrpStrikeOut);
+      const fieldFontWeight = isRs
+        ? (textStyle.fontWeight === 700 ? 800 : 700)
+        : textStyle.fontWeight;
+      if (isStriked) {
+        return `
+          <div class="field-row" style="justify-content: ${getWarehouseLabelFieldFlexJustifyContent(fieldPosition)}; text-align: ${getWarehouseLabelFieldTextAlign(fieldPosition)}; font-size: ${getWarehouseLabelFieldFontMm(metrics, field.key)}mm; font-weight: ${fieldFontWeight};">
+            <span style="position: relative; display: inline-flex; align-items: center; gap: 0.8mm;">
+              <span class="field-label">${escapeHtml(field.label)}</span>
+              <span class="field-value">${escapeHtml(field.value)}</span>
+              <svg style="position: absolute; left: -2px; top: 0; width: calc(100% + 4px); height: 100%; pointer-events: none; overflow: visible;" viewBox="0 0 100 100" preserveAspectRatio="none">
+                <line x1="0" y1="50" x2="100" y2="50" stroke="#dc2626" stroke-width="8" stroke-linecap="round" />
+              </svg>
+            </span>
+          </div>
+        `;
+      }
+
       return `
-        <div class="field-row" style="justify-content: ${getWarehouseLabelFieldFlexJustifyContent(fieldPosition)}; text-align: ${getWarehouseLabelFieldTextAlign(fieldPosition)}; font-size: ${getWarehouseLabelFieldFontMm(metrics, field.key)}mm;">
+        <div class="field-row" style="justify-content: ${getWarehouseLabelFieldFlexJustifyContent(fieldPosition)}; text-align: ${getWarehouseLabelFieldTextAlign(fieldPosition)}; font-size: ${getWarehouseLabelFieldFontMm(metrics, field.key)}mm; font-weight: ${fieldFontWeight}; text-decoration: ${textStyle.textDecoration};">
           <span class="field-label">${escapeHtml(field.label)}</span>
           <span class="field-value">${escapeHtml(field.value)}</span>
         </div>
@@ -374,7 +452,13 @@ const buildBarcodeSheetMarkup = ({
     }).join("");
 
   const cardsHtml = labels.map((label) => {
-    const barcodeMarkup = label.codeType === "barcode"
+    // A linear (Code39) barcode is naturally wide/short, unlike a QR's square footprint - forcing
+    // it into the same narrow side-column sized for a QR shrinks it in BOTH dimensions to preserve
+    // its aspect ratio, collapsing every bar to a fraction of a millimetre and making it unscannable
+    // regardless of print quality. Barcode-type labels get their own full-width stacked layout
+    // instead, so the barcode strip can use nearly the entire label width.
+    const isBarcodeType = label.codeType === "barcode";
+    const barcodeMarkup = isBarcodeType
       ? buildCode39SvgMarkup(label.codeValue, {
           height: 42,
           narrowWidth: 1.2,
@@ -400,6 +484,37 @@ const buildBarcodeSheetMarkup = ({
       return true;
     });
     const orderedVisibleFields = getWarehouseOrderedFields(customization, visibleFields);
+    const productNameHtml = showProductName ? `
+      <div class="product-name-row" style="justify-content: ${getWarehouseLabelFieldFlexJustifyContent(productNamePosition)}; text-align: ${getWarehouseLabelFieldTextAlign(productNamePosition)};">
+        <div class="product-name">${escapeHtml(label.productName)}</div>
+      </div>
+    ` : "";
+    const noteHtml = showNote ? `
+      <div class="note-text-row" style="justify-content: ${getWarehouseLabelFieldFlexJustifyContent(notePosition)}; text-align: ${getWarehouseLabelFieldTextAlign(notePosition)};">
+        <div class="note-text">${escapeHtml(customization.note)}</div>
+      </div>
+    ` : "";
+
+    if (isBarcodeType) {
+      const fieldsRowHtml = orderedVisibleFields.length > 0
+        ? `<div class="fields-wrap fields-wrap-row">${buildFieldsHtml(orderedVisibleFields)}</div>`
+        : "";
+      return `
+        <div class="label-card">
+          ${headerHtml}
+          <div class="label-body-stack">
+            ${productNameHtml}
+            ${fieldsRowHtml}
+            <div class="barcode-strip">
+              <div class="barcode-strip-svg">${makeCode39SvgResponsive(barcodeMarkup)}</div>
+              <div class="code-text">${escapeHtml(label.codeValue)}</div>
+            </div>
+            ${noteHtml}
+          </div>
+        </div>
+      `;
+    }
+
     const { leftFields, rightFields } = splitWarehouseLabelFieldsForCenter(customization, orderedVisibleFields);
     const isCodeRight = codePosition === "right";
     const isCodeCentered = codePosition === "center";
@@ -414,20 +529,10 @@ const buildBarcodeSheetMarkup = ({
       : "";
     const codeColHtml = `
       <div class="code-col">
-        ${label.codeType === "code" ? qrImgHtml : `<div class="barcode-svg">${barcodeMarkup}</div>`}
+        ${qrImgHtml}
         <div class="code-text">${escapeHtml(label.codeValue)}</div>
       </div>
     `;
-    const productNameHtml = showProductName ? `
-      <div class="product-name-row" style="justify-content: ${getWarehouseLabelFieldFlexJustifyContent(productNamePosition)}; text-align: ${getWarehouseLabelFieldTextAlign(productNamePosition)};">
-        <div class="product-name">${escapeHtml(label.productName)}</div>
-      </div>
-    ` : "";
-    const noteHtml = showNote ? `
-      <div class="note-text-row" style="justify-content: ${getWarehouseLabelFieldFlexJustifyContent(notePosition)}; text-align: ${getWarehouseLabelFieldTextAlign(notePosition)};">
-        <div class="note-text">${escapeHtml(customization.note)}</div>
-      </div>
-    ` : "";
 
     return `
       <div class="label-card">
@@ -471,6 +576,11 @@ const buildBarcodeSheetMarkup = ({
     .store-name { width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: ${metrics.storeNameFontMm}mm; text-transform: uppercase; letter-spacing: ${metrics.storeNameLetterSpacingEm}em; color: #111827; }
     .label-body { display: grid; grid-template-columns: ${metrics.codeColumnWidthMm}mm minmax(0, 1fr); gap: ${metrics.bodyGapMm}mm; padding: ${metrics.bodyPadYMm}mm ${metrics.bodyPadXMm}mm; height: ${metrics.topBandHeightMm > 0 ? `calc(${metrics.labelHeightMm}mm - ${metrics.topBandHeightMm}mm)` : `${metrics.labelHeightMm}mm`}; }
     .label-body-center { display: flex; flex-direction: column; }
+    .label-body-stack { display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; gap: ${metrics.bodyGapMm}mm; padding: ${metrics.bodyPadYMm}mm ${metrics.bodyPadXMm}mm; height: ${metrics.topBandHeightMm > 0 ? `calc(${metrics.labelHeightMm}mm - ${metrics.topBandHeightMm}mm)` : `${metrics.labelHeightMm}mm`}; overflow: hidden; }
+    .fields-wrap.fields-wrap-row { display: flex; flex-direction: row; justify-content: space-between; align-items: center; column-gap: ${metrics.bodyGapMm}mm; }
+    .barcode-strip { display: flex; flex-direction: column; align-items: center; width: 100%; }
+    .barcode-strip-svg { width: 100%; display: flex; justify-content: center; }
+    .barcode-strip-svg svg { width: 100%; height: auto; max-height: ${metrics.barcodeStripMaxHeightMm}mm; }
     .center-fields-row { display: grid; grid-template-columns: minmax(0, 1fr) ${metrics.codeColumnWidthMm}mm minmax(0, 1fr); column-gap: ${metrics.bodyGapMm}mm; align-items: center; min-height: 0; flex: 1; }
     .code-col { display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
     .barcode-svg { display: flex; max-height: ${metrics.barcodeHeightMm}mm; width: 100%; align-items: center; justify-content: center; overflow: hidden; }
@@ -551,7 +661,6 @@ const buildBarcodeSheetSvgMarkup = (markup) => {
   const bodyPadYPx = mmToPx(metrics.bodyPadYMm);
   const bodyGapPx = mmToPx(metrics.bodyGapMm);
   const codeColumnPx = mmToPx(metrics.codeColumnWidthMm);
-  const barcodeHeightPx = mmToPx(metrics.barcodeHeightMm);
   const qrSizePx = mmToPx(metrics.qrSizeMm);
   const codeTextMarginTopPx = mmToPx(metrics.codeTextMarginTopMm);
   const fieldsMarginTopPx = mmToPx(metrics.fieldsMarginTopMm);
@@ -571,6 +680,17 @@ const buildBarcodeSheetSvgMarkup = (markup) => {
   const notePosition = getWarehouseLabelFieldPosition(customization, "note");
   const centerX = labelWidthPx / 2;
   const centerY = contentTopPx + (contentHeightPx / 2);
+
+  // SVG <text> is positioned by its baseline, not its top edge - stacking rows by adding a fixed
+  // "previous row's font size" step (as this used to) only works when every row is the same size.
+  // Once one row (the hero price) is deliberately much bigger than its neighbours, that fixed step
+  // stops reserving enough headroom for the bigger row's own ascent, so it visually collides with
+  // the row above it. Advancing/trailing by each row's OWN font size (not the neighbour's) fixes
+  // that regardless of how differently-sized adjacent rows are.
+  const TEXT_ASCENT_RATIO = 0.82;
+  const TEXT_DESCENT_RATIO = 0.22;
+  const advanceForFont = (fontSizePx) => fontSizePx * TEXT_ASCENT_RATIO;
+  const trailForFont = (fontSizePx) => fontSizePx * TEXT_DESCENT_RATIO;
 
   const getAnchor = (position) =>
     position === "right" ? "end" : position === "center" ? "middle" : "start";
@@ -592,9 +712,35 @@ const buildBarcodeSheetSvgMarkup = (markup) => {
     letterSpacing = 0,
     uppercase = false,
     fontWeight = textStyle.fontWeight,
+    textDecoration = textStyle.textDecoration,
   }) => {
     const content = uppercase ? String(text || "").toUpperCase() : String(text || "");
-    return `<text x="${x}" y="${y}" text-anchor="${anchor}" font-family="${escapeXml(textStyle.fontFamily)}" font-size="${fontSizePx}" font-weight="${escapeXml(fontWeight)}" font-style="${escapeXml(textStyle.fontStyle)}" text-decoration="${escapeXml(textStyle.textDecoration)}" fill="${fill}"${letterSpacing ? ` letter-spacing="${letterSpacing}"` : ""}>${escapeXml(content)}</text>`;
+    return `<text x="${x}" y="${y}" text-anchor="${anchor}" font-family="${escapeXml(textStyle.fontFamily)}" font-size="${fontSizePx}" font-weight="${escapeXml(fontWeight)}" font-style="${escapeXml(textStyle.fontStyle)}" text-decoration="${escapeXml(textDecoration)}" fill="${fill}"${letterSpacing ? ` letter-spacing="${letterSpacing}"` : ""}>${escapeXml(content)}</text>`;
+  };
+
+  // A real "line-through" (matching what the Customisation page's "MRP Strikethrough" setting
+  // describes) is a single line across the middle of the text - not an X - and a thin one at that,
+  // so the struck-through number stays legible underneath instead of getting visually buried.
+  const buildCrossStrikeSvg = ({ text, x, y, fontSizePx, anchor = "start", textWidthPx }) => {
+    const textStr = String(text || "");
+    const textW = Number.isFinite(textWidthPx) && textWidthPx > 0
+      ? textWidthPx
+      : Math.max(fontSizePx * 2, textStr.length * fontSizePx * 0.58);
+    const x1 = anchor === "end" ? x - textW : anchor === "middle" ? x - (textW / 2) : x;
+    const x2 = x1 + textW;
+    const yMid = y - (fontSizePx * 0.32);
+    const strokeW = Math.max(0.6, fontSizePx * 0.055);
+    return `<line x1="${x1}" y1="${yMid}" x2="${x2}" y2="${yMid}" stroke="#dc2626" stroke-width="${strokeW}" stroke-linecap="round" />`;
+  };
+
+  // A linear (Code39) barcode needs most of the label's own width to stay scannable (unlike a QR,
+  // which is naturally square and fits the side column fine) - forcing it into that same narrow
+  // column shrinks it in BOTH dimensions to keep its aspect ratio, collapsing every bar to a
+  // fraction of a millimetre. Extracts the raw generator's own width/height so the strip below can
+  // size itself to the real aspect ratio instead of guessing.
+  const parseCode39Dims = (svgMarkup) => {
+    const match = /<svg[^>]*\swidth="([\d.]+)"\s+height="([\d.]+)"/.exec(svgMarkup || "");
+    return match ? { width: Number(match[1]), height: Number(match[2]) } : null;
   };
 
   const buildLabelSvg = (label, index) => {
@@ -610,6 +756,166 @@ const buildBarcodeSheetSvgMarkup = (markup) => {
       return true;
     });
     const orderedVisibleFields = getWarehouseOrderedFields(customization, visibleFields);
+    const productNamePositionEffective = getWarehouseEffectiveFieldPosition(productNamePosition, codePosition);
+    const notePositionEffective = getWarehouseEffectiveFieldPosition(notePosition, codePosition);
+    const headerNode = showStoreNameHeader && metrics.topBandHeightMm > 0
+      ? buildTextNode({
+          text: storeName,
+          x: getXForPosition(storeNamePosition, 0, labelWidthPx),
+          y: Math.max(mmToPx(metrics.storeNameFontMm), topBandPx - mmToPx(0.8)),
+          fontSizePx: mmToPx(metrics.storeNameFontMm),
+          anchor: getAnchor(storeNamePosition),
+          fill: "#111827",
+          uppercase: true,
+          letterSpacing: metrics.storeNameLetterSpacingEm ? `${metrics.storeNameLetterSpacingEm}em` : 0,
+        })
+      : "";
+
+    if (label.codeType === "barcode") {
+      const stripLeftPx = bodyPadXPx;
+      const stripWidthPx = Math.max(labelWidthPx - (2 * bodyPadXPx), 1);
+      const nodes = [];
+      let cursorY = contentTopPx;
+
+      if (showProductName) {
+        const productNameFontSizePx = mmToPx(metrics.productNameFontMm);
+        const displayProductName = truncateSvgTextToWidth(
+          String(label.productName || "").toUpperCase(),
+          stripWidthPx,
+          productNameFontSizePx,
+          textStyle
+        );
+        const baselineY = cursorY + advanceForFont(productNameFontSizePx);
+        nodes.push(buildTextNode({
+          text: displayProductName,
+          x: getXForPosition(productNamePositionEffective, stripLeftPx, stripWidthPx),
+          y: baselineY,
+          fontSizePx: productNameFontSizePx,
+          anchor: getAnchor(productNamePositionEffective),
+        }));
+        cursorY = baselineY + trailForFont(productNameFontSizePx) + fieldsMarginTopPx;
+      }
+
+      if (orderedVisibleFields.length > 0) {
+        // Give each field its own NATURAL width (the price is deliberately the biggest font, as
+        // the "hero" element) instead of forcing all fields into equal thirds - an equal split
+        // truncated the bigger price text ("Rs 280.00" -> "Rs 2...") even though there was plenty
+        // of room elsewhere in the row.
+        const fieldMeta = orderedVisibleFields.map((field) => {
+          const isMrp = field.key === "mrp";
+          const isRs = field.key === "rs" || field.key === "price";
+          const isStriked = isMrp && Boolean(customization.mrpStrikeOut);
+          const fieldFontWeight = isRs
+            ? (textStyle.fontWeight === 700 ? 800 : 700)
+            : textStyle.fontWeight;
+          const fontSizePx = mmToPx(getWarehouseLabelFieldFontMm(metrics, field.key));
+          const text = `${field.label} ${field.value}`;
+          return {
+            field, isMrp, isRs, isStriked, fieldFontWeight, fontSizePx, text,
+            naturalWidthPx: measureSvgTextWidthPx(text, fontSizePx, textStyle, fieldFontWeight),
+          };
+        });
+        const minGapPx = mmToPx(1.5);
+        const totalNaturalPx = fieldMeta.reduce((sum, m) => sum + m.naturalWidthPx, 0);
+        const totalWithGapsPx = totalNaturalPx + (minGapPx * Math.max(0, fieldMeta.length - 1));
+        // A small safety margin (not the full strip width) since measureSvgTextWidthPx's estimate
+        // and the browser's own glyph rendering can differ by a pixel or two - fitting flush
+        // against the exact edge left the very last field (the price) clipped by that rounding gap.
+        const availableWidthPx = stripWidthPx * 0.94;
+        // Shrink the FONT ITSELF to fit the row - shrinking just the truncation width at the
+        // original font size only clips characters off with an ellipsis, which looks broken for a
+        // short value like a price (and the price's own font is deliberately the biggest of the
+        // three, so an arbitrary shrink floor left it the one still overflowing).
+        const fontScaleDown = totalWithGapsPx > availableWidthPx ? availableWidthPx / totalWithGapsPx : 1;
+
+        let cursorX = stripLeftPx;
+        let maxTrailY = cursorY;
+        fieldMeta.forEach((m) => {
+          const renderFontSizePx = m.fontSizePx * fontScaleDown;
+          const renderWidthPx = measureSvgTextWidthPx(m.text, renderFontSizePx, textStyle, m.fieldFontWeight);
+          const remainingPx = stripLeftPx + availableWidthPx - cursorX;
+          const textStr = renderWidthPx > remainingPx
+            ? truncateSvgTextToWidth(m.text, remainingPx, renderFontSizePx, textStyle, m.fieldFontWeight)
+            : m.text;
+          const baselineY = cursorY + advanceForFont(renderFontSizePx);
+          nodes.push(buildTextNode({
+            text: textStr,
+            x: cursorX,
+            y: baselineY,
+            fontSizePx: renderFontSizePx,
+            anchor: "start",
+            fill: m.isStriked ? "#4b5563" : m.isRs ? "#111827" : "#1f2937",
+            fontWeight: m.fieldFontWeight,
+            textDecoration: textStyle.textDecoration,
+          }));
+          if (m.isStriked) {
+            nodes.push(buildCrossStrikeSvg({
+              text: textStr,
+              x: cursorX,
+              y: baselineY,
+              fontSizePx: renderFontSizePx,
+              anchor: "start",
+              textWidthPx: measureSvgTextWidthPx(textStr, renderFontSizePx, textStyle, m.fieldFontWeight),
+            }));
+          }
+          maxTrailY = Math.max(maxTrailY, baselineY + trailForFont(renderFontSizePx));
+          cursorX += renderWidthPx + minGapPx;
+        });
+        cursorY = maxTrailY + fieldRowGapPx;
+      }
+
+      const barcodeMarkup = buildCode39SvgMarkup(label.codeValue, {
+        height: 42,
+        narrowWidth: 1.2,
+        wideWidth: 3.2,
+        quietZone: 8,
+        showText: false,
+      });
+      const naturalDims = parseCode39Dims(barcodeMarkup);
+      const naturalRatio = naturalDims && naturalDims.height > 0 ? naturalDims.width / naturalDims.height : 4;
+      const stripMaxHeightPx = mmToPx(metrics.barcodeStripMaxHeightMm);
+      let barHeightPx = Math.min(stripMaxHeightPx, stripWidthPx / naturalRatio);
+      let barWidthPx = barHeightPx * naturalRatio;
+      if (barWidthPx > stripWidthPx) {
+        barWidthPx = stripWidthPx;
+        barHeightPx = barWidthPx / naturalRatio;
+      }
+      const barX = stripLeftPx + ((stripWidthPx - barWidthPx) / 2);
+      const barY = cursorY;
+      nodes.push(`<image x="${barX}" y="${barY}" width="${barWidthPx}" height="${barHeightPx}" href="${svgToDataUrl(barcodeMarkup)}" preserveAspectRatio="none" />`);
+      cursorY = barY + barHeightPx + codeTextMarginTopPx;
+
+      const codeTextFontSizePx = mmToPx(metrics.codeTextFontMm);
+      const codeTextBaselineY = cursorY + advanceForFont(codeTextFontSizePx);
+      nodes.push(buildTextNode({
+        text: label.codeValue,
+        x: labelWidthPx / 2,
+        y: codeTextBaselineY,
+        fontSizePx: codeTextFontSizePx,
+        anchor: "middle",
+        fill: "#374151",
+      }));
+
+      if (showNote) {
+        nodes.push(buildTextNode({
+          text: customization.note,
+          x: getXForPosition(notePositionEffective, stripLeftPx, stripWidthPx),
+          y: contentBottomPx - noteMarginTopPx,
+          fontSizePx: mmToPx(metrics.noteFontMm),
+          anchor: getAnchor(notePositionEffective),
+          fill: "#374151",
+        }));
+      }
+
+      return `
+        <g transform="translate(${offsetX}, ${offsetY})">
+          <rect x="0" y="0" width="${labelWidthPx}" height="${labelHeightPx}" rx="${mmToPx(3)}" ry="${mmToPx(3)}" fill="#ffffff" stroke="#d1d5db" stroke-width="${mmToPx(0.2)}" />
+          ${headerNode}
+          ${nodes.join("")}
+        </g>
+      `;
+    }
+
     const { leftFields, rightFields } = splitWarehouseLabelFieldsForCenter(customization, orderedVisibleFields);
 
     let contentLeftPx = bodyPadXPx;
@@ -630,60 +936,44 @@ const buildBarcodeSheetSvgMarkup = (markup) => {
         ? labelWidthPx - bodyPadXPx - codeColumnPx
         : bodyPadXPx;
     const codeCenterX = codeX + (codeColumnPx / 2);
-    const codeY = centerY - ((barcodeHeightPx + mmToPx(metrics.codeTextFontMm) + codeTextMarginTopPx) / 2);
-
-    const barcodeMarkup = label.codeType === "barcode"
-      ? buildCode39SvgMarkup(label.codeValue, {
-          height: 42,
-          narrowWidth: 1.2,
-          wideWidth: 3.2,
-          quietZone: 8,
-          showText: false,
-        })
-      : "";
-    const barcodeImageHref = barcodeMarkup ? svgToDataUrl(barcodeMarkup) : "";
     const qrHref = qrSources[label.key] || "";
 
-    const codeGroup = label.codeType === "code"
-      ? `
-          <image x="${codeCenterX - (qrSizePx / 2)}" y="${centerY - (qrSizePx / 2)}" width="${qrSizePx}" height="${qrSizePx}" href="${qrHref}" preserveAspectRatio="xMidYMid meet" />
-          ${buildTextNode({
-            text: label.codeValue,
-            x: codeCenterX,
-            y: centerY + (qrSizePx / 2) + codeTextMarginTopPx + mmToPx(metrics.codeTextFontMm),
-            fontSizePx: mmToPx(metrics.codeTextFontMm),
-            anchor: "middle",
-            fill: "#374151",
-          })}
-        `
-      : `
-          <image x="${codeX}" y="${codeY}" width="${codeColumnPx}" height="${barcodeHeightPx}" href="${barcodeImageHref}" preserveAspectRatio="xMidYMid meet" />
-          ${buildTextNode({
-            text: label.codeValue,
-            x: codeCenterX,
-            y: codeY + barcodeHeightPx + codeTextMarginTopPx + mmToPx(metrics.codeTextFontMm),
-            fontSizePx: mmToPx(metrics.codeTextFontMm),
-            anchor: "middle",
-            fill: "#374151",
-          })}
-        `;
+    // Only QR ("code") labels reach here - Code39 ("barcode") labels return early above via their
+    // own full-width strip layout.
+    const codeGroup = `
+      <image x="${codeCenterX - (qrSizePx / 2)}" y="${centerY - (qrSizePx / 2)}" width="${qrSizePx}" height="${qrSizePx}" href="${qrHref}" preserveAspectRatio="xMidYMid meet" />
+      ${buildTextNode({
+        text: label.codeValue,
+        x: codeCenterX,
+        y: centerY + (qrSizePx / 2) + codeTextMarginTopPx + mmToPx(metrics.codeTextFontMm),
+        fontSizePx: mmToPx(metrics.codeTextFontMm),
+        anchor: "middle",
+        fill: "#374151",
+      })}
+    `;
 
-    const productNamePositionEffective = getWarehouseEffectiveFieldPosition(productNamePosition, codePosition);
-    const notePositionEffective = getWarehouseEffectiveFieldPosition(notePosition, codePosition);
-
-    let textCursorY = contentTopPx + mmToPx(metrics.productNameFontMm);
+    // Top-of-next-row cursor (not a baseline) - each row computes its own baseline via
+    // advanceForFont/trailForFont so rows of different sizes stack correctly (see note above).
+    let contentCursorY = contentTopPx;
     const contentNodes = [];
 
     if (showProductName) {
+      const productNameFontSizePx = mmToPx(metrics.productNameFontMm);
+      const displayProductName = truncateSvgTextToWidth(
+        String(label.productName || "").toUpperCase(),
+        contentWidthPx,
+        productNameFontSizePx,
+        textStyle
+      );
+      const productNameBaselineY = contentCursorY + advanceForFont(productNameFontSizePx);
       contentNodes.push(buildTextNode({
-        text: label.productName,
+        text: displayProductName,
         x: getXForPosition(productNamePositionEffective, contentLeftPx, contentWidthPx),
-        y: textCursorY,
-        fontSizePx: mmToPx(metrics.productNameFontMm),
+        y: productNameBaselineY,
+        fontSizePx: productNameFontSizePx,
         anchor: getAnchor(productNamePositionEffective),
-        uppercase: true,
       }));
-      textCursorY += mmToPx(metrics.productNameFontMm) + fieldsMarginTopPx;
+      contentCursorY = productNameBaselineY + trailForFont(productNameFontSizePx) + fieldsMarginTopPx;
     }
 
     if (isCodeCentered) {
@@ -691,41 +981,99 @@ const buildBarcodeSheetSvgMarkup = (markup) => {
       const leftColumnWidth = Math.max((labelWidthPx - (2 * bodyPadXPx) - codeColumnPx - (2 * bodyGapPx)) / 2, 1);
       const rightColumnLeft = leftColumnLeft + leftColumnWidth + bodyGapPx + codeColumnPx + bodyGapPx;
       const columnTopY = showProductName
-        ? contentTopPx + mmToPx(metrics.productNameFontMm) + fieldsMarginTopPx
+        ? contentCursorY
         : centerY - ((Math.max(leftFields.length, rightFields.length, 1) * (mmToPx(metrics.mrpFontMm || metrics.priceFontMm) + fieldRowGapPx)) / 2);
 
-      leftFields.forEach((field, fieldIndex) => {
+      let leftColumnCursorY = columnTopY;
+      leftFields.forEach((field) => {
         const fieldPosition = getWarehouseEffectiveFieldPosition(
           getWarehouseLabelFieldPosition(customization, field.key),
           codePosition
         );
+        const isMrp = field.key === "mrp";
+        const isRs = field.key === "rs" || field.key === "price";
+        const isStriked = isMrp && Boolean(customization.mrpStrikeOut);
+        const fieldFontWeight = isRs
+          ? (textStyle.fontWeight === 700 ? 800 : 700)
+          : textStyle.fontWeight;
         const fontSizePx = mmToPx(getWarehouseLabelFieldFontMm(metrics, field.key));
-        const y = columnTopY + (fieldIndex * (fontSizePx + fieldRowGapPx)) + fontSizePx;
+        const y = leftColumnCursorY + advanceForFont(fontSizePx);
+        leftColumnCursorY = y + trailForFont(fontSizePx) + fieldRowGapPx;
+        const nodeX = getXForPosition(fieldPosition, leftColumnLeft, leftColumnWidth);
+        const nodeAnchor = getAnchor(fieldPosition);
+        const textStr = truncateSvgTextToWidth(
+          `${field.label} ${field.value}`,
+          leftColumnWidth,
+          fontSizePx,
+          textStyle,
+          fieldFontWeight
+        );
         contentNodes.push(buildTextNode({
-          text: `${field.label} ${field.value}`,
-          x: getXForPosition(fieldPosition, leftColumnLeft, leftColumnWidth),
+          text: textStr,
+          x: nodeX,
           y,
           fontSizePx,
-          anchor: getAnchor(fieldPosition),
-          fill: "#1f2937",
+          anchor: nodeAnchor,
+          fill: isStriked ? "#4b5563" : isRs ? "#111827" : "#1f2937",
+          fontWeight: fieldFontWeight,
+          textDecoration: textStyle.textDecoration,
         }));
+        if (isStriked) {
+          contentNodes.push(buildCrossStrikeSvg({
+            text: textStr,
+            x: nodeX,
+            y,
+            fontSizePx,
+            anchor: nodeAnchor,
+            textWidthPx: measureSvgTextWidthPx(textStr, fontSizePx, textStyle, fieldFontWeight),
+          }));
+        }
       });
 
-      rightFields.forEach((field, fieldIndex) => {
+      let rightColumnCursorY = columnTopY;
+      rightFields.forEach((field) => {
         const fieldPosition = getWarehouseEffectiveFieldPosition(
           getWarehouseLabelFieldPosition(customization, field.key),
           codePosition
         );
+        const isMrp = field.key === "mrp";
+        const isRs = field.key === "rs" || field.key === "price";
+        const isStriked = isMrp && Boolean(customization.mrpStrikeOut);
+        const fieldFontWeight = isRs
+          ? (textStyle.fontWeight === 700 ? 800 : 700)
+          : textStyle.fontWeight;
         const fontSizePx = mmToPx(getWarehouseLabelFieldFontMm(metrics, field.key));
-        const y = columnTopY + (fieldIndex * (fontSizePx + fieldRowGapPx)) + fontSizePx;
+        const y = rightColumnCursorY + advanceForFont(fontSizePx);
+        rightColumnCursorY = y + trailForFont(fontSizePx) + fieldRowGapPx;
+        const nodeX = getXForPosition(fieldPosition, rightColumnLeft, leftColumnWidth);
+        const nodeAnchor = getAnchor(fieldPosition);
+        const textStr = truncateSvgTextToWidth(
+          `${field.label} ${field.value}`,
+          leftColumnWidth,
+          fontSizePx,
+          textStyle,
+          fieldFontWeight
+        );
         contentNodes.push(buildTextNode({
-          text: `${field.label} ${field.value}`,
-          x: getXForPosition(fieldPosition, rightColumnLeft, leftColumnWidth),
+          text: textStr,
+          x: nodeX,
           y,
           fontSizePx,
-          anchor: getAnchor(fieldPosition),
-          fill: "#1f2937",
+          anchor: nodeAnchor,
+          fill: isStriked ? "#4b5563" : isRs ? "#111827" : "#1f2937",
+          fontWeight: fieldFontWeight,
+          textDecoration: textStyle.textDecoration,
         }));
+        if (isStriked) {
+          contentNodes.push(buildCrossStrikeSvg({
+            text: textStr,
+            x: nodeX,
+            y,
+            fontSizePx,
+            anchor: nodeAnchor,
+            textWidthPx: measureSvgTextWidthPx(textStr, fontSizePx, textStyle, fieldFontWeight),
+          }));
+        }
       });
     } else {
       orderedVisibleFields.forEach((field) => {
@@ -733,16 +1081,44 @@ const buildBarcodeSheetSvgMarkup = (markup) => {
           getWarehouseLabelFieldPosition(customization, field.key),
           codePosition
         );
+        const isMrp = field.key === "mrp";
+        const isRs = field.key === "rs" || field.key === "price";
+        const isStriked = isMrp && Boolean(customization.mrpStrikeOut);
+        const fieldFontWeight = isRs
+          ? (textStyle.fontWeight === 700 ? 800 : 700)
+          : textStyle.fontWeight;
         const fontSizePx = mmToPx(getWarehouseLabelFieldFontMm(metrics, field.key));
-        contentNodes.push(buildTextNode({
-          text: `${field.label} ${field.value}`,
-          x: getXForPosition(fieldPosition, contentLeftPx, contentWidthPx),
-          y: textCursorY,
+        const nodeX = getXForPosition(fieldPosition, contentLeftPx, contentWidthPx);
+        const nodeAnchor = getAnchor(fieldPosition);
+        const textStr = truncateSvgTextToWidth(
+          `${field.label} ${field.value}`,
+          contentWidthPx,
           fontSizePx,
-          anchor: getAnchor(fieldPosition),
-          fill: "#1f2937",
+          textStyle,
+          fieldFontWeight
+        );
+        const fieldBaselineY = contentCursorY + advanceForFont(fontSizePx);
+        contentNodes.push(buildTextNode({
+          text: textStr,
+          x: nodeX,
+          y: fieldBaselineY,
+          fontSizePx,
+          anchor: nodeAnchor,
+          fill: isStriked ? "#4b5563" : isRs ? "#111827" : "#1f2937",
+          fontWeight: fieldFontWeight,
+          textDecoration: textStyle.textDecoration,
         }));
-        textCursorY += fontSizePx + fieldRowGapPx;
+        if (isStriked) {
+          contentNodes.push(buildCrossStrikeSvg({
+            text: textStr,
+            x: nodeX,
+            y: fieldBaselineY,
+            fontSizePx,
+            anchor: nodeAnchor,
+            textWidthPx: measureSvgTextWidthPx(textStr, fontSizePx, textStyle, fieldFontWeight),
+          }));
+        }
+        contentCursorY = fieldBaselineY + trailForFont(fontSizePx) + fieldRowGapPx;
       });
     }
 
@@ -757,19 +1133,6 @@ const buildBarcodeSheetSvgMarkup = (markup) => {
         fill: "#374151",
       }));
     }
-
-    const headerNode = showStoreNameHeader && metrics.topBandHeightMm > 0
-      ? buildTextNode({
-          text: storeName,
-          x: getXForPosition(storeNamePosition, 0, labelWidthPx),
-          y: Math.max(mmToPx(metrics.storeNameFontMm), topBandPx - mmToPx(0.8)),
-          fontSizePx: mmToPx(metrics.storeNameFontMm),
-          anchor: getAnchor(storeNamePosition),
-          fill: "#111827",
-          uppercase: true,
-          letterSpacing: metrics.storeNameLetterSpacingEm ? `${metrics.storeNameLetterSpacingEm}em` : 0,
-        })
-      : "";
 
     return `
       <g transform="translate(${offsetX}, ${offsetY})">
@@ -921,32 +1284,106 @@ const hasGeneratedDirectPurchaseBarcodes = (entry) => {
   });
 };
 
-const StickerFieldsBlock = ({ fields, metrics, textStyle, customization }) => {
+const StickerFieldsBlock = ({ fields, metrics, textStyle, customization, layout = "stack", availableWidthMm }) => {
   if (fields.length === 0) return null;
   const codePosition = getWarehouseCodePosition(customization);
+  const isRow = layout === "row";
+
+  const fieldMeta = fields.map((field) => {
+    const isMrp = field.key === "mrp";
+    const isRs = field.key === "rs" || field.key === "price";
+    const isStriked = isMrp && Boolean(customization.mrpStrikeOut);
+    const fieldFontWeight = isRs
+      ? (textStyle.fontWeight === 700 ? 800 : 700)
+      : textStyle.fontWeight;
+    return { field, isMrp, isRs, isStriked, fieldFontWeight, fontMm: getWarehouseLabelFieldFontMm(metrics, field.key) };
+  });
+
+  // In row layout (the barcode full-width strip), the price is deliberately the biggest font of
+  // the three fields as the "hero" element - a plain flexbox row only shrinks each field's BOX via
+  // text-ellipsis, not its actual font size, so the price (needing the most room) was the one that
+  // visibly clipped even when the smaller fields fit fine. Measuring real widths and shrinking the
+  // FONT ITSELF (like the direct-print SVG render already does) keeps all three fully readable.
+  let fontScaleDown = 1;
+  if (isRow && availableWidthMm) {
+    const availablePx = (availableWidthMm * MM_TO_PX) * 0.94;
+    const gapPx = metrics.bodyGapMm * MM_TO_PX;
+    const totalNaturalPx = fieldMeta.reduce(
+      (sum, m) => sum + measureSvgTextWidthPx(`${m.field.label} ${m.field.value}`, m.fontMm * MM_TO_PX, textStyle, m.fieldFontWeight),
+      0
+    );
+    const totalWithGapsPx = totalNaturalPx + (gapPx * Math.max(0, fieldMeta.length - 1));
+    if (totalWithGapsPx > availablePx) {
+      fontScaleDown = availablePx / totalWithGapsPx;
+    }
+  }
 
   return (
     <div
-      style={{
-        marginTop: `${metrics.fieldsMarginTopMm}mm`,
-        display: "grid",
-        rowGap: `${metrics.fieldRowGapMm}mm`,
-      }}
+      style={
+        isRow
+          ? {
+              marginTop: `${metrics.fieldsMarginTopMm}mm`,
+              display: "flex",
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              columnGap: `${metrics.bodyGapMm}mm`,
+            }
+          : {
+              marginTop: `${metrics.fieldsMarginTopMm}mm`,
+              display: "grid",
+              rowGap: `${metrics.fieldRowGapMm}mm`,
+            }
+      }
     >
-      {fields.map((field) => {
+      {fieldMeta.map((m) => {
+        const { field, isRs, isStriked, fieldFontWeight, fontMm } = m;
         const fieldPosition = getWarehouseEffectiveFieldPosition(
           getWarehouseLabelFieldPosition(customization, field.key),
           codePosition
         );
+        const displayFontMm = fontMm * fontScaleDown;
+
+        if (isStriked) {
+          return (
+            <div
+              key={field.key}
+              className={`flex items-center text-gray-700 ${getWarehouseLabelFieldJustifyClass(fieldPosition)} ${getWarehouseLabelFieldAlignClass(fieldPosition)}`}
+              style={{
+                gap: `${metrics.bodyGapMm}mm`,
+                fontSize: `${displayFontMm}mm`,
+                lineHeight: 1.1,
+                fontFamily: textStyle.fontFamily,
+                fontWeight: fieldFontWeight,
+                fontStyle: textStyle.fontStyle,
+              }}
+            >
+              <span className="relative inline-flex items-center gap-[0.8mm]">
+                <span className="truncate uppercase">{field.label}</span>
+                <span className="truncate">{field.value}</span>
+                <svg
+                  className="pointer-events-none absolute -inset-x-1 inset-y-0 h-full w-[calc(100%+8px)] overflow-visible"
+                  viewBox="0 0 100 100"
+                  preserveAspectRatio="none"
+                >
+                  <line x1="0" y1="50" x2="100" y2="50" stroke="#dc2626" strokeWidth="8" strokeLinecap="round" />
+                </svg>
+              </span>
+            </div>
+          );
+        }
+
         return (
           <div
             key={field.key}
-            className={`flex items-center text-gray-800 ${getWarehouseLabelFieldJustifyClass(fieldPosition)} ${getWarehouseLabelFieldAlignClass(fieldPosition)}`}
+            className={`flex items-center ${isRs ? "font-bold text-gray-950" : "text-gray-800"} ${getWarehouseLabelFieldJustifyClass(fieldPosition)} ${getWarehouseLabelFieldAlignClass(fieldPosition)}`}
             style={{
               gap: `${metrics.bodyGapMm}mm`,
-              fontSize: `${getWarehouseLabelFieldFontMm(metrics, field.key)}mm`,
+              fontSize: `${displayFontMm}mm`,
+              lineHeight: 1.1,
               fontFamily: textStyle.fontFamily,
-              fontWeight: textStyle.fontWeight,
+              fontWeight: fieldFontWeight,
               fontStyle: textStyle.fontStyle,
               textDecoration: textStyle.textDecoration,
             }}
@@ -1009,7 +1446,7 @@ const StickerCard = ({ label, customization, storeName, qrSrc = "" }) => {
         <div
           className="flex w-full items-center justify-center overflow-hidden"
           style={{ maxHeight: `${metrics.barcodeHeightMm}mm` }}
-          dangerouslySetInnerHTML={{ __html: barcodeMarkup }}
+          dangerouslySetInnerHTML={{ __html: makeCode39SvgResponsive(barcodeMarkup) }}
         />
       )}
       <div
@@ -1077,35 +1514,90 @@ const StickerCard = ({ label, customization, storeName, qrSrc = "" }) => {
     </div>
   );
 
-  return (
+  const headerBlock = metrics.topBandHeightMm > 0 ? (
     <div
-      className="overflow-hidden rounded-[3mm] border border-gray-300 bg-white"
-      style={{ width: `${metrics.labelWidthMm}mm`, height: `${metrics.labelHeightMm}mm` }}
+      className={`flex items-center px-[1.5mm] ${getWarehouseLabelFieldJustifyClass(storeNamePosition)} ${getWarehouseLabelFieldAlignClass(storeNamePosition)}`}
+      style={{ minHeight: `${metrics.topBandHeightMm}mm` }}
     >
-      {metrics.topBandHeightMm > 0 ? (
+      {showStoreName ? (
         <div
-          className={`flex items-center px-[1.5mm] ${getWarehouseLabelFieldJustifyClass(storeNamePosition)} ${getWarehouseLabelFieldAlignClass(storeNamePosition)}`}
+          className={`w-full truncate uppercase text-gray-900 ${getWarehouseLabelFieldAlignClass(storeNamePosition)}`}
           style={{
-            minHeight: `${metrics.topBandHeightMm}mm`,
+            fontSize: `${metrics.storeNameFontMm}mm`,
+            letterSpacing: `${metrics.storeNameLetterSpacingEm}em`,
+            fontFamily: textStyle.fontFamily,
+            fontWeight: textStyle.fontWeight,
+            fontStyle: textStyle.fontStyle,
+            textDecoration: textStyle.textDecoration,
           }}
         >
-          {showStoreName ? (
+          {storeName}
+        </div>
+      ) : null}
+    </div>
+  ) : null;
+
+  // A linear (Code39) barcode is naturally wide/short, unlike a QR's square footprint - squeezing
+  // it into the same narrow side column shrinks it in BOTH dimensions to preserve its aspect ratio,
+  // collapsing every bar to a fraction of a millimetre and making it unscannable. Barcode-type
+  // labels get their own full-width stacked layout so the barcode can use nearly the whole label.
+  if (label.codeType === "barcode") {
+    return (
+      <div
+        className="overflow-hidden rounded-[3mm] border border-gray-300 bg-white"
+        style={{ width: `${metrics.labelWidthMm}mm`, height: `${metrics.labelHeightMm}mm` }}
+      >
+        {headerBlock}
+        <div
+          className="flex flex-col overflow-hidden"
+          style={{
+            padding: `${metrics.bodyPadYMm}mm ${metrics.bodyPadXMm}mm`,
+            height: metrics.topBandHeightMm > 0
+              ? `calc(${metrics.labelHeightMm}mm - ${metrics.topBandHeightMm}mm)`
+              : `${metrics.labelHeightMm}mm`,
+          }}
+        >
+          {productNameContent}
+          <StickerFieldsBlock
+            fields={orderedVisibleFields}
+            metrics={metrics}
+            textStyle={textStyle}
+            customization={customization}
+            layout="row"
+            availableWidthMm={metrics.labelWidthMm - (2 * metrics.bodyPadXMm)}
+          />
+          <div className="flex w-full flex-col items-center" style={{ marginTop: `${metrics.fieldsMarginTopMm}mm` }}>
             <div
-              className={`w-full truncate uppercase text-gray-900 ${getWarehouseLabelFieldAlignClass(storeNamePosition)}`}
+              className="flex w-full items-center justify-center overflow-hidden"
+              style={{ maxHeight: `${metrics.barcodeStripMaxHeightMm}mm` }}
+              dangerouslySetInnerHTML={{ __html: makeCode39SvgResponsive(barcodeMarkup) }}
+            />
+            <div
+              className="max-w-full truncate text-center tracking-[0.02em] text-gray-700"
               style={{
-                fontSize: `${metrics.storeNameFontMm}mm`,
-                letterSpacing: `${metrics.storeNameLetterSpacingEm}em`,
+                marginTop: `${metrics.codeTextMarginTopMm}mm`,
+                fontSize: `${metrics.codeTextFontMm}mm`,
                 fontFamily: textStyle.fontFamily,
                 fontWeight: textStyle.fontWeight,
                 fontStyle: textStyle.fontStyle,
                 textDecoration: textStyle.textDecoration,
               }}
             >
-              {storeName}
+              {label.codeValue}
             </div>
-          ) : null}
+          </div>
+          {noteContent}
         </div>
-      ) : null}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="overflow-hidden rounded-[3mm] border border-gray-300 bg-white"
+      style={{ width: `${metrics.labelWidthMm}mm`, height: `${metrics.labelHeightMm}mm` }}
+    >
+      {headerBlock}
 
       <div
         className={isCodeCentered ? "flex flex-col" : "grid"}
@@ -1253,7 +1745,7 @@ const BarcodeGeneration = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const authUser = useSelector((state) => state.auth.user);
-  const { connected: printerConnected, printHtml: queuePrintHtml } = usePrintContext();
+  const { printHtml: queuePrintHtml } = usePrintContext();
   const transportEntryId = searchParams.get("transport_entry_id");
   const directPurchaseId = searchParams.get("direct_purchase_id");
   const isDirectPurchaseFlow = !!directPurchaseId;
@@ -1289,6 +1781,7 @@ const BarcodeGeneration = () => {
   const [previewLabels, setPreviewLabels] = useState([]);
   const [qrSources, setQrSources] = useState({});
   const [qrLoading, setQrLoading] = useState(false);
+  const [directPrinting, setDirectPrinting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -1749,7 +2242,7 @@ const BarcodeGeneration = () => {
             label.key,
             await QRCode.toDataURL(label.codeValue, {
               margin: 1,
-              width: 180,
+              width: 360,
               errorCorrectionLevel: "M",
             }),
           ])
@@ -1986,29 +2479,97 @@ const BarcodeGeneration = () => {
     setPreviewOpen(false);
   };
 
-  const handlePrintPreview = async () => {
-    if (previewLabels.length === 0 || qrLoading) return;
+  // Builds labels + QR data URLs directly (independent of the previewOpen-gated effects above),
+  // so the toolbar's "Print" button can print in one click without needing the preview modal to
+  // open and its effects to settle first - it reuses the exact same label-building/QR logic.
+  const buildLabelsAndQrSources = async () => {
+    const labels = previewItems.flatMap((item) =>
+      buildStickerLabels({
+        item,
+        barcodeRows: getItemBarcodeRows(item, barcodeValuesMap, barcodeMap),
+        customization: labelCustomization,
+      })
+    );
+    const qrLabels = labels.filter((label) => label.codeType === "code");
+    let qrSrcs = {};
+    if (qrLabels.length > 0) {
+      const entries = await Promise.all(
+        qrLabels.map(async (label) => [
+          label.key,
+          await QRCode.toDataURL(label.codeValue, {
+            margin: 1,
+            width: 360,
+            errorCorrectionLevel: "M",
+          }),
+        ])
+      );
+      qrSrcs = Object.fromEntries(entries);
+    }
+    return { labels, qrSrcs };
+  };
+
+  const handlePrintPreview = async (override) => {
+    const labels = override?.labels || previewLabels;
+    const qrSrcs = override?.qrSrcs || qrSources;
+    if (labels.length === 0 || qrLoading) return;
     const sheetMarkup = buildBarcodeSheetMarkup({
-      labels: previewLabels,
+      labels,
       customization: labelCustomization,
       storeName,
-      qrSources,
+      qrSources: qrSrcs,
     });
 
-    if (printerConnected) {
+    // Mirrors POSSales.jsx's printMode handling for sales receipts: "browser" mode always uses the
+    // popup print dialog, skipping the local connector attempt entirely rather than silently
+    // falling back to it only when disconnected - the whole point of choosing a mode explicitly.
+    const isDirectPrintMode = labelCustomization?.printMode !== "browser";
+    if (isDirectPrintMode) {
       try {
-        const imageDataUrl = await renderBarcodeSheetToPngDataUrl(sheetMarkup);
+        // Label printers with die-cut/gap-sensing roll media are normally driven by their
+        // Windows driver as one page PER physical label row - the driver (not our software) owns
+        // the real label pitch and advances/cuts at each page boundary. Sending the whole
+        // multi-row sheet as a single tall "page" instead relies on the driver accepting an
+        // arbitrarily tall custom page size, which some label-printer drivers silently refuse -
+        // they just print whatever fits their configured one-label media size and drop the rest,
+        // which looks like "only the first label printed" regardless of how many were requested.
+        // Render each row as its own image and send them as separate pages of one print job so
+        // the printer's own gap sensor paces each one correctly.
+        const labelsPerRow = Math.max(1, sheetMarkup.metrics.labelsPerRow || 1);
+        const rowChunks = [];
+        for (let i = 0; i < labels.length; i += labelsPerRow) {
+          rowChunks.push(labels.slice(i, i + labelsPerRow));
+        }
+        const pages = await Promise.all(rowChunks.map(async (rowLabels) => {
+          const rowSheetMarkup = buildBarcodeSheetMarkup({
+            labels: rowLabels,
+            customization: labelCustomization,
+            storeName,
+            qrSources: qrSrcs,
+          });
+          const rowImageDataUrl = await renderBarcodeSheetToPngDataUrl(rowSheetMarkup);
+          return {
+            imageDataUrl: rowImageDataUrl,
+            pageWidthMm: rowSheetMarkup.sheetWidthMm,
+            pageHeightMm: rowSheetMarkup.sheetHeightMm,
+          };
+        }));
+
         const jobId = await queuePrintHtml("", {
           label: {
-            kind: "rendered_sheet_v1",
+            kind: "rendered_sheet_pages_v1",
             jobName: previewItems.length === 1
               ? `${previewItems[0].productName} barcode`
               : previewItems.length > 1
                 ? `${previewItems.length} warehouse barcodes`
                 : "Warehouse barcode",
-            imageDataUrl,
-            pageWidthMm: sheetMarkup.sheetWidthMm,
-            pageHeightMm: sheetMarkup.sheetHeightMm,
+            pages,
+            // Print-time calibration offset - shifts where content lands on the physical page
+            // without touching the label's own layout, for compensating a printer's own print-
+            // head-vs-gap-sensor offset. Zero by default (no shift).
+            marginTopMm: toNumber(labelCustomization?.printMarginTopMm, 0),
+            marginBottomMm: toNumber(labelCustomization?.printMarginBottomMm, 0),
+            marginLeftMm: toNumber(labelCustomization?.printMarginLeftMm, 0),
+            marginRightMm: toNumber(labelCustomization?.printMarginRightMm, 0),
           },
           docType: "generic",
           printerFunction: "barcode",
@@ -2039,6 +2600,24 @@ const BarcodeGeneration = () => {
 
     previewWindow.document.write(buildBarcodeSheetDocumentHtml(sheetMarkup, { autoPrint: true }));
     previewWindow.document.close();
+  };
+
+  const handleDirectPrint = async () => {
+    if (!canPreviewBarcodes || qrLoading || directPrinting) return;
+    setDirectPrinting(true);
+    try {
+      const { labels, qrSrcs } = await buildLabelsAndQrSources();
+      if (labels.length === 0) {
+        showToast("error", "No generated barcodes available to print.");
+        return;
+      }
+      await handlePrintPreview({ labels, qrSrcs });
+    } catch (err) {
+      console.error("Direct barcode print failed:", err);
+      showToast("error", err?.message || "Failed to print barcode stickers.");
+    } finally {
+      setDirectPrinting(false);
+    }
   };
 
   if (loading) {
@@ -2111,6 +2690,14 @@ const BarcodeGeneration = () => {
             className="glass-btn glass-btn-primary flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Eye className="w-4 h-4 mr-1" /> Preview Barcode
+          </button>
+          <button
+            onClick={handleDirectPrint}
+            disabled={!canPreviewBarcodes || qrLoading || directPrinting}
+            title="Print the already-generated barcodes for the checked/active item without opening the preview"
+            className="glass-btn glass-btn-primary flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Printer className="w-4 h-4 mr-1" /> {directPrinting ? "Printing..." : "Print"}
           </button>
           <button
             onClick={handleSave}
@@ -2201,6 +2788,14 @@ const BarcodeGeneration = () => {
               className="glass-btn glass-btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Eye className="w-4 h-4 inline mr-1" /> Preview Barcode
+            </button>
+
+            <button
+              onClick={handleDirectPrint}
+              disabled={!canPreviewBarcodes || qrLoading || directPrinting}
+              className="glass-btn glass-btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Printer className="w-4 h-4 inline mr-1" /> {directPrinting ? "Printing..." : "Print"}
             </button>
 
             {activeItem ? (

@@ -9,6 +9,7 @@ import FilterableDataTable from "../../components/FilterableDataTable";
 import UploadImportButton from "../../components/UploadImportButton";
 import { usePrintContext } from "../../context/PrintContext";
 import { buildSettlementReceiptHtml, browserPrintHtml } from "../../utils/settlementReceiptHtml";
+import { loadSalesReceiptCustomization } from "../../utils/salesReceiptCustomization";
 import { openNativeSelect } from "../../utils/enterToNextField";
 
 const SETTLEMENT_IMPORT_CONFIG = {
@@ -317,14 +318,17 @@ const Settlement = () => {
       payments,
     });
 
-    if (printerConnected) {
-      const jobId = await queuePrintHtml(receiptHtml, {
+    const receiptCustomization = loadSalesReceiptCustomization(authUser?.company_id || "default");
+    const isDirectPrint = receiptCustomization.printMode !== "browser";
+
+    if (isDirectPrint) {
+      await queuePrintHtml(receiptHtml, {
         label: `Settlement-${settlement?.settlement_no || settlement?.settlementNo || "slip"}`,
         docType: "settlement_receipt",
         copies: 1,
         companyId: authUser?.company_id,
       });
-      if (jobId) return;
+      return;
     }
 
     browserPrintHtml(receiptHtml, { copies: 1 });

@@ -14,11 +14,6 @@ import { useTheme } from "../features/theme-context";
 
 const chartCardClass = "rounded-md border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 min-h-[320px]";
 
-const formatAmount = (value) =>
-  Number(value || 0).toLocaleString("en-IN", {
-    maximumFractionDigits: 0,
-  });
-
 const DISPLAY_SCALES = [
   { threshold: 10000000, divisor: 10000000, label: "Crores" },
   { threshold: 100000, divisor: 100000, label: "Lakhs" },
@@ -89,8 +84,27 @@ const buildDailyTrendPoints = (points = []) => {
   };
 };
 
+const buildHourlySalesPoints = (points = []) => {
+  const maxSales = Math.max(0, ...points.map((point) => toNum(point?.salesAmount, 0)));
+  const salesScale = getDisplayScale(maxSales);
+  return {
+    salesScale,
+    rows: points.map((point) => {
+      const salesAmount = toNum(point?.salesAmount, 0);
+      return {
+        ...point,
+        salesAmount,
+        salesAmountScaled: scaleSeriesValue(salesAmount, salesScale),
+      };
+    }),
+  };
+};
+
 const HourlySalesChart = ({ chart, loading }) => {
   const points = chart?.points || [];
+  const { rows, salesScale } = buildHourlySalesPoints(points);
+  const salesAxisLabel = buildAxisLabel("Sales", salesScale);
+  const salesSeriesLabel = "Sales amount";
   const { theme } = useTheme() || {};
   const isDark = theme === "dark";
   const gridStroke = isDark ? "#374151" : "#e2e8f0";
@@ -111,7 +125,7 @@ const HourlySalesChart = ({ chart, loading }) => {
         <div className="h-[260px] flex items-center justify-center text-sm text-slate-500 dark:text-gray-400">Loading chart...</div>
       ) : (
         <ResponsiveContainer width="100%" height={260}>
-          <ComposedChart data={points} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+          <ComposedChart data={rows} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="hourlyBarGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#6366f1" />
@@ -119,18 +133,20 @@ const HourlySalesChart = ({ chart, loading }) => {
               </linearGradient>
             </defs>
             <CartesianGrid stroke={gridStroke} vertical={false} />
-            <XAxis dataKey="label" tick={{ fontSize: 11, fill: tickColor }} interval={1} />
+            <XAxis dataKey="label" tick={{ fontSize: 10, fill: tickColor }} interval={2} />
             <YAxis yAxisId="left" tick={{ fontSize: 11, fill: tickColor }} allowDecimals={false} />
             <YAxis
               yAxisId="right"
               orientation="right"
               tick={{ fontSize: 11, fill: tickColor }}
-              tickFormatter={formatAmount}
+              tickFormatter={formatScaledValue}
+              label={{ value: salesAxisLabel, angle: 90, position: "insideRight", offset: 10, fontSize: 11, fill: tickColor }}
             />
             <Tooltip
               contentStyle={tooltipStyle}
-              formatter={(value, name) => {
-                if (name === "salesAmount") return [formatAmount(value), "Sales amount"];
+              formatter={(value, name, entry) => {
+                const payload = entry?.payload || {};
+                if (name === salesSeriesLabel) return [formatRawAmount(payload.salesAmount), name];
                 return [value, "Bills"];
               }}
             />
@@ -139,8 +155,8 @@ const HourlySalesChart = ({ chart, loading }) => {
             <Line
               yAxisId="right"
               type="monotone"
-              dataKey="salesAmount"
-              name="Sales amount"
+              dataKey="salesAmountScaled"
+              name={salesSeriesLabel}
               stroke="#f97316"
               strokeWidth={2}
               dot={{ r: 3 }}

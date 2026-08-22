@@ -13,6 +13,7 @@ use App\Models\StockOutward;
 use App\Models\Store;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Carbon;
 
 class DashboardController extends Controller
 {
@@ -26,9 +27,39 @@ class DashboardController extends Controller
         $storeId = $request->header('X-Company-Scope-Id') ?? $request->input('company_id');
         $scope = fn ($q) => ($storeId && $storeId !== 'all') ? $q->where('store_id', $storeId) : $q;
 
+        // Date range - the frontend's date pickers send these on every request but the metrics
+        // below used to ignore them entirely and return all-time totals regardless of selection.
+        $from = $request->filled('from')
+            ? Carbon::parse($request->input('from'))->startOfDay()
+            : now()->startOfMonth();
+        $to = $request->filled('to')
+            ? Carbon::parse($request->input('to'))->endOfDay()
+            : now()->endOfDay();
+        $dateScope = fn ($q) => $q->whereBetween('sale_date', [$from, $to]);
+
+        // Previous period of equal length immediately preceding $from, for real trend percentages
+        // (period-over-period) instead of the hardcoded "+12.5%"-style strings this used to send.
+        $periodDays = max(1, $from->copy()->startOfDay()->diffInDays($to->copy()->startOfDay()) + 1);
+        $prevTo = $from->copy()->subSecond();
+        $prevFrom = $prevTo->copy()->subDays($periodDays - 1)->startOfDay();
+        $prevDateScope = fn ($q) => $q->whereBetween('sale_date', [$prevFrom, $prevTo]);
+
+        $computeTrend = function ($current, $previous) {
+            $current = (float) $current;
+            $previous = (float) $previous;
+            if ($previous <= 0) {
+                if ($current <= 0) return ['direction' => 'flat', 'changePercent' => 0];
+                return ['direction' => 'up', 'changePercent' => 100];
+            }
+            $change = round((($current - $previous) / $previous) * 100, 1);
+            if (abs($change) < 0.05) return ['direction' => 'flat', 'changePercent' => 0];
+            return ['direction' => $change > 0 ? 'up' : 'down', 'changePercent' => abs($change)];
+        };
+
         // Core Aggregate Metrics
-        $totalSales = (float) ($scope(PosSale::query())->sum('grand_total') ?? 0);
-        $totalOrders = (int) ($scope(PosSale::query())->count() ?? 0);
+        $totalSales = (float) ($dateScope($scope(PosSale::query()))->sum('grand_total') ?? 0);
+        $totalOrders = (int) ($dateScope($scope(PosSale::query()))->count() ?? 0);
+        $prevTotalSales = (float) ($prevDateScope($scope(PosSale::query()))->sum('grand_total') ?? 0);
         $totalProducts = (int) Product::count();
         $totalCustomers = (int) Customer::count();
         $totalStockQty = (float) ($scope(Stock::query())->sum('quantity') ?? 0);
@@ -44,9 +75,13 @@ class DashboardController extends Controller
         }
         $totalStockValue = (float) ($stockValQuery->sum(DB::raw('stocks.quantity * COALESCE(products.cost_price, products.selling_price, 0)')) ?? 0);
 
-        // Top Selling Items for Highlight Card
+        // Top Selling Items for Highlight Card - joined through pos_sales (previously ungrouped by
+        // store or date at all, so every store's entire history fed this one global ranking).
         $topSellingQuery = DB::table('pos_sale_items')
             ->join('products', 'pos_sale_items.product_id', '=', 'products.id')
+            ->join('pos_sales', 'pos_sale_items.pos_sale_id', '=', 'pos_sales.id')
+            ->whereBetween('pos_sales.sale_date', [$from, $to])
+            ->when($storeId && $storeId !== 'all', fn ($q) => $q->where('pos_sales.store_id', $storeId))
             ->select(
                 'products.name',
                 DB::raw('SUM(pos_sale_items.quantity) as saleQty'),
@@ -66,6 +101,8 @@ class DashboardController extends Controller
         // Top Customers
         $topCustomerQuery = DB::table('pos_sales')
             ->join('customers', 'pos_sales.customer_id', '=', 'customers.id')
+            ->whereBetween('pos_sales.sale_date', [$from, $to])
+            ->when($storeId && $storeId !== 'all', fn ($q) => $q->where('pos_sales.store_id', $storeId))
             ->select(
                 'customers.name',
                 DB::raw('SUM(pos_sales.total_qty) as saleQty'),
@@ -93,9 +130,9 @@ class DashboardController extends Controller
         $totalUnitsSold = 0;
 
         foreach ($stores as $st) {
-            $stSales = (float) (PosSale::where('store_id', $st->id)->sum('grand_total') ?? 0);
-            $stCount = (int) (PosSale::where('store_id', $st->id)->count() ?? 0);
-            $stQty = (float) (PosSale::where('store_id', $st->id)->sum('total_qty') ?? 0);
+            $stSales = (float) ($dateScope(PosSale::where('store_id', $st->id))->sum('grand_total') ?? 0);
+            $stCount = (int) ($dateScope(PosSale::where('store_id', $st->id))->count() ?? 0);
+            $stQty = (float) ($dateScope(PosSale::where('store_id', $st->id))->sum('total_qty') ?? 0);
             $totalUnitsSold += $stQty;
 
             $dailySummaryRows[] = [
@@ -142,12 +179,12 @@ class DashboardController extends Controller
                 $val = 0;
 
                 if ($m['type'] === 'mode') {
-                    $val = (float) (PosSale::where('store_id', $st->id)
+                    $val = (float) ($dateScope(PosSale::where('store_id', $st->id))
                         ->where('payment_mode', $m['mode'])
                         ->where('is_credit', false)
                         ->sum('grand_total') ?? 0);
                 } elseif ($m['type'] === 'credit') {
-                    $val = (float) (PosSale::where('store_id', $st->id)
+                    $val = (float) ($dateScope(PosSale::where('store_id', $st->id))
                         ->where(function ($q) {
                             $q->where('payment_mode', 'CREDIT')
                               ->orWhere('is_credit', true);
@@ -156,10 +193,11 @@ class DashboardController extends Controller
                 } elseif ($m['type'] === 'return') {
                     $returnSum = (float) (DB::table('pos_returns')
                         ->where('store_id', $st->id)
+                        ->whereBetween('return_date', [$from, $to])
                         ->sum('total_refund') ?? 0);
                     $val = -abs($returnSum);
                 } elseif ($m['type'] === 'discount') {
-                    $discSum = (float) (PosSale::where('store_id', $st->id)
+                    $discSum = (float) ($dateScope(PosSale::where('store_id', $st->id))
                         ->sum('discount_amount') ?? 0);
                     $val = -abs($discSum);
                 }
@@ -179,30 +217,45 @@ class DashboardController extends Controller
             $grandSettlementTotal += $rowTotal;
         }
 
-        // Hourly Sales Points (10 AM to 10 PM)
-        $hourlyPoints = [
-            ['label' => '10 AM', 'bills' => ($totalOrders > 0 ? 1 : 0), 'salesAmount' => round($totalSales * 0.15, 2)],
-            ['label' => '12 PM', 'bills' => ($totalOrders > 0 ? 1 : 0), 'salesAmount' => round($totalSales * 0.35, 2)],
-            ['label' => '02 PM', 'bills' => 0, 'salesAmount' => 0],
-            ['label' => '04 PM', 'bills' => 0, 'salesAmount' => 0],
-            ['label' => '06 PM', 'bills' => ($totalOrders > 0 ? 1 : 0), 'salesAmount' => round($totalSales * 0.50, 2)],
-            ['label' => '08 PM', 'bills' => 0, 'salesAmount' => 0],
-            ['label' => '10 PM', 'bills' => 0, 'salesAmount' => 0],
-        ];
+        // Hourly Sales Points (10 AM to 10 PM) - real per-hour aggregation for today, always
+        // "today" regardless of the selected from/to range (matches this chart's own subtitle).
+        // Previously this was 3 fixed fake buckets (15%/35%/50% of the day's total, always in the
+        // same 3 slots) rather than a real query grouped by hour.
+        // One bucket per real hour (0-23), covering the full day so a sale outside typical store
+        // hours doesn't silently vanish from the chart instead of being bucketed.
+        $hourlyBuckets = array_map(function ($h) {
+            $displayHour = $h % 12 === 0 ? 12 : $h % 12;
+            return ['label' => $displayHour.($h < 12 ? ' AM' : ' PM'), 'start' => $h, 'end' => $h + 1];
+        }, range(0, 23));
+        $todaySalesByHour = $scope(PosSale::query())
+            ->whereDate('sale_date', now()->toDateString())
+            ->selectRaw('HOUR(sale_date) as hr, COUNT(*) as bills, SUM(grand_total) as amt')
+            ->groupBy('hr')
+            ->get()
+            ->keyBy('hr');
 
-        // Last 10 Days Business Trend (Daily)
+        $hourlyPoints = array_map(function ($bucket) use ($todaySalesByHour) {
+            $bills = 0;
+            $amount = 0.0;
+            for ($h = $bucket['start']; $h < $bucket['end']; $h++) {
+                $row = $todaySalesByHour->get($h);
+                if ($row) {
+                    $bills += (int) $row->bills;
+                    $amount += (float) $row->amt;
+                }
+            }
+            return ['label' => $bucket['label'], 'bills' => $bills, 'salesAmount' => round($amount, 2)];
+        }, $hourlyBuckets);
+
+        // Last 10 Days Business Trend (Daily) - already real per-day queries; the old "if today and
+        // zero, use the (now date-range-scoped) running total" fallback no longer makes sense once
+        // $totalSales reflects the selected range instead of all-time, so it's dropped.
         $dailyTrendPoints = [];
         for ($i = 9; $i >= 0; $i--) {
             $date = now()->subDays($i)->toDateString();
             $label = now()->subDays($i)->format('d M');
             $daySales = (float) ($scope(PosSale::query())->whereDate('sale_date', $date)->sum('grand_total') ?? 0);
             $dayUnits = (float) ($scope(PosSale::query())->whereDate('sale_date', $date)->sum('total_qty') ?? 0);
-
-            // If today, ensure current live total is reflected
-            if ($i === 0 && $daySales == 0 && $totalSales > 0) {
-                $daySales = $totalSales;
-                $dayUnits = max($totalUnitsSold, 1);
-            }
 
             $dailyTrendPoints[] = [
                 'label'       => $label,
@@ -211,9 +264,13 @@ class DashboardController extends Controller
             ];
         }
 
-        // Sales Person of the Day
+        // Sales Person of the Day - joined through pos_sales so this respects the selected date
+        // range and store scope instead of aggregating every sales-man's entire history globally.
         $salesPersonQuery = DB::table('pos_sale_items')
             ->leftJoin('employees', 'pos_sale_items.sales_man_id', '=', 'employees.id')
+            ->join('pos_sales', 'pos_sale_items.pos_sale_id', '=', 'pos_sales.id')
+            ->whereBetween('pos_sales.sale_date', [$from, $to])
+            ->when($storeId && $storeId !== 'all', fn ($q) => $q->where('pos_sales.store_id', $storeId))
             ->select(
                 DB::raw('COALESCE(pos_sale_items.sales_man_name, employees.name, "Store Admin") as name'),
                 DB::raw('SUM(pos_sale_items.quantity) as saleQty'),
@@ -239,19 +296,24 @@ class DashboardController extends Controller
                         'amount'         => $totalSales,
                         'count'          => $totalOrders,
                         'unsettledCount' => 0,
-                        'trend'          => '+12.5%',
+                        // {direction, changePercent} - MetricCard's TrendBadge expects this shape,
+                        // not a plain string; a literal "+12.5%" string rendered as "undefined%"
+                        // in a red down-arrow badge regardless of the real number's sign.
+                        'trend'          => $computeTrend($totalSales, $prevTotalSales),
                     ],
                     'settlements' => [
                         'amount' => $totalSales,
-                        'trend'  => '+8.2%',
+                        'trend'  => $computeTrend($totalSales, $prevTotalSales),
                     ],
                     'employees' => [
                         'present' => max($presentEmployees, 1),
                         'total'   => max($totalEmployees, 1),
                     ],
                     'stockValue' => [
-                        'amount' => $totalStockValue > 0 ? $totalStockValue : 52150.00,
-                        'trend'  => '+5.0%',
+                        // Point-in-time snapshot (current stock on hand) - no historical stock-value
+                        // series exists to compare against, so no trend is sent rather than a fake one.
+                        'amount' => $totalStockValue,
+                        'trend'  => null,
                     ],
                 ],
                 'charts' => [

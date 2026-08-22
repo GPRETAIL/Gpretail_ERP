@@ -122,12 +122,12 @@ export const PrintProvider = ({ children }) => {
     let timer = null;
 
     const probe = async () => {
-      if (cancelled) return;
+      if (cancelled || isLocalPrinterServiceConnected()) return;
       try {
         const detected = await detectLocalPrinterService({ timeoutMs: DETECT_TIMEOUT_MS });
         if (cancelled) return;
         setServiceDetected(detected);
-        if (detected) {
+        if (detected && !isLocalPrinterServiceConnected()) {
           await connectPrinter({ silent: true });
         }
       } catch {
@@ -138,13 +138,17 @@ export const PrintProvider = ({ children }) => {
     const schedule = () => {
       if (cancelled) return;
       timer = setTimeout(async () => {
-        if (!isLocalPrinterServiceConnected()) await probe();
+        if (!isLocalPrinterServiceConnected()) {
+          await probe();
+        }
         schedule();
       }, DETECT_RETRY_MS);
     };
 
     const onFocus = () => {
-      if (!isLocalPrinterServiceConnected()) probe();
+      if (!isLocalPrinterServiceConnected()) {
+        probe();
+      }
     };
 
     probe();
@@ -197,17 +201,19 @@ export const PrintProvider = ({ children }) => {
           if (shouldRenderReceiptAsImage(job)) {
             try {
               const rendered = await renderPrintableHtmlToImageJob(job.html);
-              html = "";
-              receiptData = null;
-              label = {
-                kind: "rendered_sheet_v1",
-                jobName: String(job.label || "Receipt").trim() || "Receipt",
-                imageDataUrl: rendered.imageDataUrl,
-                pageWidthMm: rendered.pageWidthMm,
-                pageHeightMm: rendered.pageHeightMm,
-              };
-            } catch (renderErr) {
-              console.error("Failed to render receipt HTML for single-page print:", renderErr);
+              if (rendered?.imageDataUrl) {
+                html = "";
+                receiptData = null;
+                label = {
+                  kind: "rendered_sheet_v1",
+                  jobName: String(job.label || "Receipt").trim() || "Receipt",
+                  imageDataUrl: rendered.imageDataUrl,
+                  pageWidthMm: rendered.pageWidthMm,
+                  pageHeightMm: rendered.pageHeightMm,
+                };
+              }
+            } catch {
+              // Direct GDI structured thermal receipt printing handles this natively in the connector
             }
           }
 
@@ -385,6 +391,23 @@ export const PrintProvider = ({ children }) => {
     );
   }, []);
 
+  // Re-submits a failed job's original content as a fresh queued job - everything enqueue() needs
+  // is already sitting on the stored job object from when it was first submitted.
+  const retryJob = useCallback((jobId) => {
+    const job = jobs.find((j) => j.id === jobId);
+    if (!job) return;
+    enqueue({
+      html: job.html,
+      receiptData: job.receiptData,
+      label: job.label,
+      copies: job.totalCopies,
+      docType: job.docType,
+      companyId: job.companyId,
+      printerConfig: job.printerConfig,
+      printerFunction: job.printerFunction,
+    });
+  }, [jobs, enqueue]);
+
   const activeJobs = jobs.filter(
     (j) => j.status === STATUS.QUEUED || j.status === STATUS.PRINTING
   );
@@ -405,6 +428,7 @@ export const PrintProvider = ({ children }) => {
     printReceipt,
     printHtml,
     cancelJob,
+    retryJob,
     clearFinished,
     STATUS,
     printerConnected: connected,

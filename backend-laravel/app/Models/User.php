@@ -18,6 +18,7 @@ class User extends Authenticatable
         'password',
         'role',
         'store_id',
+        'counter_id',
         'phone',
         'is_active',
         'must_change_password',

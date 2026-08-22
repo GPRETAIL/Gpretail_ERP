@@ -497,7 +497,6 @@ export default function PrintingConfiguration() {
                         onChange={(event) =>
                           handleRouteChange(name, { printer_function: event.target.value })
                         }
-                        disabled={!isSelected}
                         className="w-full rounded border border-gray-300 dark:border-gray-600 px-2 py-1 text-xs disabled:bg-gray-100 disabled:text-gray-400"
                       >
                         {PRINTER_FUNCTION_OPTIONS.map((option) => (
@@ -519,7 +518,6 @@ export default function PrintingConfiguration() {
                             user_name: selectedUser?.name || selectedUser?.email || "",
                           });
                         }}
-                        disabled={!isSelected}
                         className="w-full rounded border border-gray-300 dark:border-gray-600 px-2 py-1 text-xs disabled:bg-gray-100 disabled:text-gray-400"
                       >
                         <option value="">Any user</option>

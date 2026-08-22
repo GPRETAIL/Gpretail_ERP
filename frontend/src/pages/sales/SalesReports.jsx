@@ -96,7 +96,10 @@ const getSaleSummary = (row) => {
   const items = getSaleItems(row);
   const totalQty = items.reduce((sum, item) => sum + Math.max(0, toNumber(item?.quantity)), 0);
   const discount = round2(row?.discount_amount);
-  const net = round2(row?.grand_total);
+  // Shared by PosSale-backed reports (real field: grand_total) and
+  // CustomerOrder-backed ones like Estimate Bill Report (real field:
+  // net_amount) - both real column names, not a guess either way.
+  const net = round2(row?.grand_total ?? row?.net_amount);
   const cost = items.reduce(
     (sum, item) => sum + Math.max(0, toNumber(item?.cost_price)) * Math.max(0, toNumber(item?.quantity)),
     0
@@ -104,7 +107,12 @@ const getSaleSummary = (row) => {
   return {
     lines: items.length,
     totalQty,
-    gross: round2(toNumber(row?.subtotal) + discount),
+    // PosSale.subtotal is already net-of-discount (add it back for gross);
+    // CustomerOrder has no subtotal field at all - its total_amount is
+    // already the gross, pre-discount figure, so used as-is.
+    gross: row?.subtotal !== undefined
+      ? round2(toNumber(row.subtotal) + discount)
+      : round2(toNumber(row?.total_amount)),
     discount,
     net,
     tax: round2(row?.tax_amount),
@@ -215,7 +223,7 @@ const buildProductHsnMap = async () => {
   rows.forEach((row) => {
     const key = String(row?.name || "").trim().toLowerCase();
     if (!key) return;
-    map.set(key, String(row?.hsn || "").trim() || "-");
+    map.set(key, String(row?.hsn_code || "").trim() || "-");
   });
   return map;
 };
@@ -597,16 +605,16 @@ const buildSalesVsStockRows = async () => {
 };
 
 const buildCustomerRows = async (inactiveOnly = false) => {
-  const rows = await getAllRows("/customers");
+  const rows = await getAllRows("/customers", inactiveOnly ? { includeInactive: "true" } : {});
   return rows
     .filter((row) => (inactiveOnly ? !row?.is_active : true))
     .map((row) => ({
       ...row,
       customer_type: row?.customer_type || "-",
       customer_category: row?.customerCategory?.name || "-",
-      city_name: row?.city?.name || "-",
-      state_name: row?.state?.name || "-",
-      mobile_no: row?.mobile_no || "-",
+      city_name: row?.city || "-",
+      state_name: row?.state || "-",
+      mobile_no: row?.phone || "-",
       active_label: row?.is_active ? "Active" : "Inactive",
     }));
 };
@@ -877,14 +885,13 @@ const salesVsSettlementColumns = [
 ];
 
 const unsettledBillColumns = [
-  { key: "bill_no", label: "Bill No" },
-  { key: "order_number", label: "Order No" },
-  { key: "sale_type", label: "Sale Type" },
+  { key: "bill_no", label: "Bill No", render: (_, row) => getSaleBillNo(row) },
+  { key: "payment_mode", label: "Sale Type", render: (_, row) => (row?.is_credit ? "Credit" : row?.payment_mode || "-") },
   { key: "status", label: "Status" },
   {
     key: "amount",
     label: "Amount",
-    render: (value) => <div className="text-right">{toNumber(value).toFixed(2)}</div>,
+    render: (_, row) => <div className="text-right">{toNumber(row?.grand_total).toFixed(2)}</div>,
   },
   {
     key: "discount_amount",
@@ -894,7 +901,9 @@ const unsettledBillColumns = [
   {
     key: "remaining_amount",
     label: "Remaining",
-    render: (value) => <div className="text-right">{toNumber(value).toFixed(2)}</div>,
+    render: (_, row) => (
+      <div className="text-right">{Math.max(0, toNumber(row?.grand_total) - toNumber(row?.paid_amount)).toFixed(2)}</div>
+    ),
   },
 ];
 
@@ -1155,12 +1164,15 @@ const deliveryReportColumns = [
     searchValue: (row) => formatDateTime(row.created_at || row.updated_at),
   },
   { key: "customer_name", label: "Customer", valueGetter: (row) => row.customer_name || row.customer?.name || "-" },
-  { key: "customer_mobile", label: "Mobile", valueGetter: (row) => row.customer_mobile || row.customer?.mobile_no || "-" },
-  { key: "location", label: "Location", valueGetter: (row) => row.location?.name || "-" },
-  { key: "counter", label: "Counter", valueGetter: (row) => row.counter?.name || "-" },
+  { key: "customer_mobile", label: "Mobile", valueGetter: (row) => row.customer_mobile || row.customer?.phone || "-" },
+  { key: "location", label: "Location", valueGetter: () => "-" },
+  { key: "counter", label: "Counter", valueGetter: () => "-" },
   {
     key: "total_qty",
     label: "Qty",
+    // CustomerOrder has no aggregate qty column - summed from its items.
+    valueGetter: (row) =>
+      (Array.isArray(row?.items) ? row.items : []).reduce((sum, item) => sum + Math.max(0, toNumber(item?.quantity)), 0),
     render: (value) => <div className="text-right">{toNumber(value)}</div>,
   },
   {
@@ -1168,7 +1180,7 @@ const deliveryReportColumns = [
     label: "Amount",
     render: (value) => <div className="text-right">{toNumber(value).toFixed(2)}</div>,
   },
-  { key: "received_by", label: "Received By", valueGetter: (row) => row.receivedBy?.name || row.receivedBy?.employee_code || "-" },
+  { key: "received_by", label: "Received By", valueGetter: () => "-" },
 ];
 
 const salesHsnColumns = [
@@ -1640,8 +1652,11 @@ const REPORT_DATA_SOURCES = {
   unsettled_bill_report: {
     columns: unsettledBillColumns,
     fetchRows: async () => {
-      const rows = await getAllRows("/settlements/unpaid-bills", { status: "all" });
-      return rows.filter((row) => row?.sale_type === "pos_sale" && String(row?.status || "").toLowerCase() === "unsettled");
+      // Backend already filters to genuinely outstanding bills (paid_amount
+      // < grand_total) for status=all - no further client-side filtering
+      // needed (PosSale has no sale_type/"unsettled" status value at all,
+      // so filtering on those always returned zero rows).
+      return getAllRows("/settlements/unpaid-bills", { status: "all" });
     },
     emptyText: "No unsettled sales bills found.",
   },
@@ -1673,8 +1688,7 @@ const REPORT_DATA_SOURCES = {
   cancelled_sales_report: {
     columns: unsettledBillColumns,
     fetchRows: async () => {
-      const rows = await getAllRows("/settlements/unpaid-bills", { status: "canceled" });
-      return rows.filter((row) => row?.sale_type === "pos_sale");
+      return getAllRows("/settlements/unpaid-bills", { status: "canceled" });
     },
     emptyText: "No cancelled sales found.",
   },
@@ -1770,8 +1784,7 @@ const REPORT_DATA_SOURCES = {
   credit_sale_collection_report: {
     columns: unsettledBillColumns,
     fetchRows: async () => {
-      const rows = await getAllRows("/settlements/unpaid-bills", { status: "credit" });
-      return rows.filter((row) => row?.sale_type === "pos_sale" && String(row?.status || "").toLowerCase() === "credit");
+      return getAllRows("/settlements/unpaid-bills", { status: "credit" });
     },
     emptyText: "No credit sale collection rows found.",
   },
@@ -1903,8 +1916,7 @@ const REPORT_DATA_SOURCES = {
   credit_customer_outstanding_report: {
     columns: unsettledBillColumns,
     fetchRows: async () => {
-      const rows = await getAllRows("/settlements/unpaid-bills", { status: "credit" });
-      return rows.filter((r) => r?.sale_type === "pos_sale");
+      return getAllRows("/settlements/unpaid-bills", { status: "credit" });
     },
     emptyText: "No credit outstanding rows found.",
   },

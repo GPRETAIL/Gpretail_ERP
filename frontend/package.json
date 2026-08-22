@@ -23,6 +23,7 @@
     "@zxing/browser": "^0.2.1",
     "axios": "^1.18.1",
     "dotenv": "^17.4.2",
+    "html2pdf.js": "^0.14.0",
     "lucide-react": "^1.25.0",
     "qrcode": "^1.5.4",
     "react": "^19.2.8",

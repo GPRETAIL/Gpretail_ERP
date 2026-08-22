@@ -198,8 +198,15 @@ class PosSaleController extends Controller
 
     public function posOldSales(Request $request)
     {
+        $query = PosSale::with(['customer', 'user', 'items.product', 'items.barcode'])->orderByDesc('id');
+
+        if ($request->boolean('all') || in_array($request->input('limit'), ['500', '1000', 500, 1000], true)) {
+            $sales = $query->limit(2000)->get();
+            return response()->json(['success' => true, 'data' => $sales, 'total' => $sales->count()]);
+        }
+
         $limit = max(1, (int) $request->input('limit', 50));
-        $sales = PosSale::with(['customer', 'items.product'])->orderByDesc('id')->paginate($limit);
+        $sales = $query->paginate($limit);
         return response()->json([
             'success' => true,
             'data'    => $sales->items(),

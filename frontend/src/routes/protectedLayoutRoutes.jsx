@@ -43,6 +43,7 @@ const InvoiceSearchPage = lazy(() => import("../pages/warehouse/InvoiceSearchPag
 const InventoryEntry = lazy(() => import("../pages/warehouse/InventoryEntry"));
 const InventoryEntrySearchPage = lazy(() => import("../pages/warehouse/InventoryEntrySearchPage"));
 const BarcodeGeneration = lazy(() => import("../pages/warehouse/BarcodeGeneration"));
+const BarcodeSearchPage = lazy(() => import("../pages/warehouse/BarcodeSearchPage"));
 const WarehouseCustomisation = lazy(() => import("../pages/warehouse/Customisation"));
 const TransportIssueEntry = lazy(() => import("../pages/warehouse/TransportIssueEntry"));
 const TransportIssueSearchPage = lazy(() => import("../pages/warehouse/TransportIssueSearchPage"));
@@ -131,7 +132,8 @@ export const protectedLayoutRoutes = [
   { path: "/warehouse/inventory-entry/search", render: () => <InventoryEntrySearchPage /> },
   { path: "/warehouse/barcode", render: () => <BarcodeGeneration /> },
   { path: "/warehouse/customisation", render: () => <WarehouseCustomisation /> },
-  { path: "/warehouse/barcode/search", render: () => <InventoryEntrySearchPage /> },
+  { path: "/warehouse/customization", render: () => <WarehouseCustomisation /> },
+  { path: "/warehouse/barcode/search", render: () => <BarcodeSearchPage /> },
   { path: "/warehouse/transport-issue", render: () => <TransportIssueEntry /> },
   { path: "/warehouse/transport-issue/search", render: () => <TransportIssueSearchPage /> },
   { path: "/warehouse/transport-receipt", render: () => <TransportReceipt /> },
@@ -167,6 +169,7 @@ export const protectedLayoutRoutes = [
   { path: "/sales/cash-closing", render: () => <CashClosing /> },
   { path: "/sales/pos-old", render: () => <POSOld /> },
   { path: "/sales/customisation", render: () => <Customisation /> },
+  { path: "/sales/customization", render: () => <Customisation /> },
   { path: "/analytical/stock-analyzer", render: () => <StockAnalyzer /> },
   { path: "/analytical/sales-comparer", render: () => <SalesComparer /> },
   { path: "/analytical/sales-vs-purchase", render: () => <SalesVsPurchase /> },

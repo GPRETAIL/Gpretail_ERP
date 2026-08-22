@@ -1,0 +1,15 @@
+{
+  "name": "erp-printer-connector",
+  "version": "2.0.0",
+  "description": "GP Retail ERP Silent Printer Connector Service",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "configure": "node configure.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "author": "GP Retail",
+  "license": "ISC"
+}

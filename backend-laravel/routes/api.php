@@ -101,6 +101,9 @@ $registerAppRoutes = function () {
     Route::put('companies/{id}/theme', [SettingsController::class, 'updateTheme']);
     Route::post('companies/{id}/force-logout', [UserAccessController::class, 'forceLogout']);
     Route::get('companies/{id}', [CompanyController::class, 'show']);
+    Route::put('companies/{id}', [CompanyController::class, 'update']);
+    Route::delete('companies/{id}', [CompanyController::class, 'destroy']);
+    Route::post('companies', [CompanyController::class, 'store']);
     Route::get('companies', [CompanyController::class, 'index']);
     Route::get('admin/monitoring/companies', [CompanyController::class, 'index']);
     Route::post('admin/notify', [SettingsController::class, 'notify']);
@@ -227,6 +230,7 @@ $registerAppRoutes = function () {
     Route::get('warehouse-reports', [WarehouseReportController::class, 'index']);
     Route::get('stock-analyzer', [WarehouseReportController::class, 'stockAnalyzer']);
     Route::match(['get', 'post', 'put'], 'warehouse-customisation', [WarehouseReportController::class, 'warehouseCustomization']);
+    Route::match(['get', 'post', 'put'], 'warehouse-customization', [WarehouseReportController::class, 'warehouseCustomization']);
 
     // Warehouse Dashboard & Operations Command Center
     Route::get('warehouse/dashboard/export', [WarehouseDashboardController::class, 'export']);
@@ -333,6 +337,7 @@ $registerAppRoutes = function () {
     Route::get('sales-vs-purchase', [SalesReportController::class, 'salesVsPurchase']);
     Route::get('sales-vs-stock', [SalesReportController::class, 'salesVsStock']);
     Route::match(['get', 'post', 'put'], 'sales-customization', [SettingsController::class, 'salesCustomization']);
+    Route::match(['get', 'post', 'put'], 'sales-customisation', [SettingsController::class, 'salesCustomization']);
 
     // Masters
     Route::apiResource('brand', BrandController::class);

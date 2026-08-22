@@ -33,6 +33,7 @@ import {
   RECEIPT_FONT_OPTIONS,
   RECEIPT_FORMAT_OPTIONS,
   SALE_SAVE_AS_OPTIONS,
+  PRINT_MODE_OPTIONS,
   RECEIPT_CODE_TYPE_OPTIONS,
   PAYMENT_QR_MODE_OPTIONS,
   buildPaymentQrMarkup,
@@ -41,6 +42,7 @@ import {
   shouldShowSalesReceiptDiscountColumn,
   wrapSalesReceiptText,
 } from "../../utils/salesReceiptCustomization";
+import { buildPosSaleReceiptHtml } from "../../utils/posReceiptHtml";
 
 const fieldLabelClass = "mb-1 block text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400";
 const baseCardClass = "rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800";
@@ -450,13 +452,13 @@ const ReceiptPreview = ({ companyInfo, settings }) => {
     ...(generalFields.tax?.visible ? [{ key: "tax", label: "Tax", value: formatMoney(taxAmountTotal) }] : []),
     ...(generalFields.paid?.visible ? [{ key: "paid", label: "Paid", value: formatMoney(paidAmount) }] : []),
     ...(generalFields.receivedAmount?.visible
-      ? [{ key: "receivedAmount", label: "Receivedamount", value: formatMoney(receivedAmount) }]
+      ? [{ key: "receivedAmount", label: "Received Amount", value: formatMoney(receivedAmount) }]
       : []),
     ...(generalFields.balanceAmt?.visible
-      ? [{ key: "balanceAmt", label: "Balanceamt", value: formatMoney(balanceAmount) }]
+      ? [{ key: "balanceAmt", label: "Balance Amount", value: formatMoney(balanceAmount) }]
       : []),
     ...(generalFields.youSaved?.visible
-      ? [{ key: "youSaved", label: "yousaved", value: formatMoney(youSavedAmount) }]
+      ? [{ key: "youSaved", label: "You Saved", value: formatMoney(youSavedAmount) }]
       : []),
   ];
 
@@ -482,6 +484,82 @@ const ReceiptPreview = ({ companyInfo, settings }) => {
       cancelled = true;
     };
   }, [billBarcode, companyInfo.storeName, previewNetAmount, settings]);
+
+  // A4 uses a genuinely different layout (buildPosSaleReceiptHtml dispatches to the real tax-
+  // invoice template), not just a wider version of the thermal preview above - render the real
+  // generated HTML here too, so this preview never drifts from what printing/PDF actually produce.
+  const isA4Preview = String(settings.receiptWidthInches || "").toUpperCase() === "A4";
+  const a4PreviewHtml = useMemo(() => {
+    if (!isA4Preview) return "";
+    const receiptItems = previewItems.map((item) => ({
+      name: item.name,
+      qty: item.qty,
+      rate: item.rate,
+      taxPerc: item.taxPerc,
+      taxName: item.taxName,
+      taxType: item.taxType,
+      baseAmount: item.qty * item.rate - Number(item.discountAmount || 0),
+      taxAmount: item.taxAmount,
+      discountAmount: item.discountAmount,
+      amount: item.amount,
+      hsnCode: "",
+      code: "",
+    }));
+    const receiptData = {
+      storeName: sampleStoreName,
+      storeAddress: sampleAddress,
+      storePhone: samplePhone,
+      storeGstNo: sampleGst,
+      billNo: billBarcode,
+      billBarcode,
+      dateTime: sampleDate.toISOString(),
+      cashierName: "Admin",
+      counterName: "Main Counter",
+      customerName: "Walking customer",
+      paperSize: "A4",
+      items: receiptItems,
+      billAmount: grossTotal,
+      discountAmount: discount,
+      taxAmount: taxAmountTotal,
+      total: previewNetAmount,
+      paidAmount,
+      receivedAmount,
+      balanceAmount,
+      paymentMethod,
+      billCodeMarkup,
+      paymentQrMarkup,
+      message: settings.thankYouMessage,
+    };
+    return buildPosSaleReceiptHtml(receiptData, settings);
+  }, [
+    isA4Preview, previewItems, sampleStoreName, sampleAddress, samplePhone, sampleGst, billBarcode,
+    sampleDate, grossTotal, discount, taxAmountTotal, previewNetAmount, paidAmount, receivedAmount,
+    balanceAmount, paymentMethod, billCodeMarkup, paymentQrMarkup, settings,
+  ]);
+
+  if (isA4Preview) {
+    return (
+      <div className={`${baseCardClass} overflow-hidden`}>
+        <div className="border-b border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-700/50">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">Receipt Preview</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">Sample tax invoice at A4 size</div>
+            </div>
+            <Eye className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+          </div>
+        </div>
+        <div className="bg-[#eef2f7] p-4 dark:bg-gray-900/40">
+          <iframe
+            title="A4 invoice preview"
+            srcDoc={a4PreviewHtml}
+            className="mx-auto block w-full rounded-2xl border border-gray-300 bg-white shadow-lg"
+            style={{ height: "80vh" }}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`${baseCardClass} overflow-hidden`}>
@@ -1028,6 +1106,42 @@ export default function Customisation() {
                     className="h-4 w-4"
                   />
                   <span>{option.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className={`${baseCardClass} p-5`}>
+            <label className={fieldLabelClass}>Printing Mode (Direct / Silent vs Browser Default)</label>
+            <p className="mb-3 max-w-3xl text-sm leading-6 text-gray-500 dark:text-gray-400">
+              Choose whether sales receipts, return slips, and settlement summaries print directly to your thermal printer in the background (no popup) or open the browser print preview dialog.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {PRINT_MODE_OPTIONS.map((option) => (
+                <label
+                  key={option.value}
+                  className={`flex cursor-pointer flex-col justify-between rounded-xl border p-4 transition ${
+                    settings.printMode === option.value
+                      ? "border-blue-600 bg-blue-50/70 shadow-sm dark:border-blue-500 dark:bg-blue-900/30"
+                      : "border-gray-300 bg-white hover:border-gray-400 dark:border-gray-600 dark:bg-gray-800 dark:hover:border-gray-500"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="radio"
+                      name="sales-print-mode"
+                      value={option.value}
+                      checked={settings.printMode === option.value}
+                      onChange={() => updateSetting({ printMode: option.value })}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      {option.label}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-xs leading-5 text-gray-600 dark:text-gray-400">
+                    {option.description}
+                  </p>
                 </label>
               ))}
             </div>

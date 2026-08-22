@@ -9,16 +9,12 @@ const resolveWsCandidateUrls = () => {
   if (import.meta.env.VITE_LOCAL_PRINTER_SERVICE_URL) {
     return [import.meta.env.VITE_LOCAL_PRINTER_SERVICE_URL];
   }
-  const isHttps = typeof window !== "undefined" && window.location?.protocol === "https:";
-  if (isHttps) {
-    return [
-      "wss://localhost:5001",
-      "wss://127.0.0.1:5001",
-      "ws://localhost:5001",
-      "ws://127.0.0.1:5001",
-    ];
-  }
-  return ["ws://localhost:5001", "ws://127.0.0.1:5001"];
+  return [
+    "ws://localhost:5001",
+    "ws://127.0.0.1:5001",
+    "wss://localhost:5001",
+    "wss://127.0.0.1:5001",
+  ];
 };
 
 const DEFAULT_WS_CANDIDATES = resolveWsCandidateUrls();

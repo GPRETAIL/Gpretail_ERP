@@ -114,21 +114,59 @@ class SettingsController extends Controller
         return response()->json([
             'success' => true,
             'data'    => [
+                'fileName'        => 'erp-printer-connector.zip',
+                'type'            => 'ZIP Archive',
+                'installHint'     => 'Extract ZIP and run run.bat on Windows or run.sh on macOS/Linux. Select printers in terminal for silent printing.',
                 'service_running' => false,
-                'version'         => '1.0.0',
-                'platform'        => 'Windows',
+                'version'         => '2.0.0',
+                'platform'        => PHP_OS_FAMILY,
             ],
         ]);
     }
 
     public function localPrinterInstaller(Request $request)
     {
-        return response()->json([
-            'success' => true,
-            'data'    => [
-                'download_url' => '/files/printer_service_installer.exe',
-            ],
-        ]);
+        $connectorDir = resource_path('printer-connector');
+        $tempZipPath = storage_path('app/erp-printer-connector-' . time() . '.zip');
+
+        if (!is_dir(storage_path('app'))) {
+            @mkdir(storage_path('app'), 0755, true);
+        }
+
+        $zip = new \ZipArchive();
+        if ($zip->open($tempZipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === true) {
+            if (is_dir($connectorDir)) {
+                $files = new \RecursiveIteratorIterator(
+                    new \RecursiveDirectoryIterator($connectorDir, \RecursiveDirectoryIterator::SKIP_DOTS),
+                    \RecursiveIteratorIterator::LEAVES_ONLY
+                );
+
+                foreach ($files as $file) {
+                    if (!$file->isDir()) {
+                        $filePath = $file->getRealPath();
+                        $relativePath = substr($filePath, strlen($connectorDir) + 1);
+                        $zip->addFile($filePath, $relativePath);
+                    }
+                }
+            } else {
+                // Fallback default readme
+                $zip->addFromString('README.txt', "GP Retail Silent Printer Connector\nRun node server.js on port 5001");
+            }
+            $zip->close();
+        }
+
+        if (!file_exists($tempZipPath)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create connector archive.',
+            ], 500);
+        }
+
+        return response()->download($tempZipPath, 'erp-printer-connector.zip', [
+            'Content-Type'        => 'application/zip',
+            'Content-Disposition' => 'attachment; filename="erp-printer-connector.zip"',
+            'Cache-Control'       => 'no-cache, no-store, must-revalidate',
+        ])->deleteFileAfterSend(true);
     }
 
     // Local Server Config Test

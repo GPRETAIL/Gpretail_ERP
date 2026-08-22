@@ -29,13 +29,20 @@ const escapeHtml = (value) =>
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
 
+// wrapSalesReceiptText() embeds literal "\n" line breaks (word-wrapped product names) - relying on
+// CSS `white-space: pre-line` to render those visually is fragile under html2canvas (used for the
+// PDF download), which doesn't reliably honor it and was collapsing wrapped names back onto one
+// line. Real <br> tags render correctly everywhere (browser print, html2canvas, the local silent-
+// print connector's headless-browser path).
+const escapeHtmlWithBreaks = (value) => escapeHtml(value).replaceAll("\n", "<br>");
+
 const getReceiptPositionClass = (position) =>
   position === "right" ? "text-right" : position === "center" ? "text-center" : "text-left";
 
 const buildReceiptMetaInlineHtml = (items = []) =>
   items.map((item) => `
     <span class="meta-item">
-      ${escapeHtml(item.label)}: <span${item.key === "salesNo" ? ' style="font-family:monospace;font-weight:600;"' : ""}>${escapeHtml(item.value)}</span>
+      ${escapeHtml(item.label)}: <span${item.key === "salesNo" ? ' style="font-weight:700;"' : ""}>${escapeHtml(item.value)}</span>
     </span>
   `).join("");
 
@@ -48,10 +55,10 @@ const buildReceiptMetaLineHtml = (line) => {
     return `<div class="meta-row meta-row-single"><div class="meta-group ${positionClass}">${buildReceiptMetaInlineHtml(items)}</div></div>`;
   }
 
-  return `<div class="meta-row meta-row-grid"><div class="meta-group text-left">${buildReceiptMetaInlineHtml(items.filter((item) => item.position === "left"))}</div><div class="meta-group text-center">${buildReceiptMetaInlineHtml(items.filter((item) => item.position === "center"))}</div><div class="meta-group text-right">${buildReceiptMetaInlineHtml(items.filter((item) => item.position === "right"))}</div></div>`;
+  return `<div class="meta-row meta-row-grid"><div class="meta-group text-left">${buildReceiptMetaInlineHtml(items.filter((item) => item.position === "left"))}</div><div class="meta-group text-right">${buildReceiptMetaInlineHtml(items.filter((item) => item.position !== "left"))}</div></div>`;
 };
 
-export const buildPosSaleReceiptHtml = (receiptData, customization) => {
+const buildThermalSaleReceiptHtml = (receiptData, customization) => {
   const receiptItems = (receiptData.items || []).map((item) => ({
     ...item,
     rateWithTax: getSalesReceiptRateWithTax(item.rate, item.taxPerc),
@@ -70,24 +77,31 @@ export const buildPosSaleReceiptHtml = (receiptData, customization) => {
   const taxRows = customization?.showTaxTableOnReceipt && taxColumns.length > 0
     ? buildSalesReceiptTaxRows(receiptItems)
     : [];
+
+  const storeName = receiptData.storeName || "SRI BALAJI TEXTILE";
+  const storeAddress = receiptData.storeAddress || "Main Bazaar, Retail Street";
+  const storeGstNo = receiptData.storeGstNo || "33AAAAA0000A1Z5";
+  const storePhone = receiptData.storePhone || "9876543210";
+
   const generalContent = {
     logo: receiptData.logoText || "LOGO",
     header: receiptData.headerTitle || "POS RECEIPT",
-    company: receiptData.storeName || "",
-    address: receiptData.storeAddress || "",
-    gst: receiptData.storeGstNo ? `GST No: ${receiptData.storeGstNo}` : "",
+    company: storeName,
+    address: storeAddress,
+    gst: storeGstNo ? (storeGstNo.startsWith("GST") ? storeGstNo : `GST No: ${storeGstNo}`) : "",
     salesNo: receiptData.billNo || "",
-    cashier: receiptData.cashierName || "",
+    cashier: receiptData.cashierName || "Admin",
     counter: receiptData.counterName || "",
     paymentMethod: receiptData.paymentMethod || "",
     date: receiptData.dateTime ? new Date(receiptData.dateTime).toLocaleDateString() : "",
-    time: receiptData.dateTime ? new Date(receiptData.dateTime).toLocaleTimeString() : "",
+    time: receiptData.dateTime ? new Date(receiptData.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "",
     customer: receiptData.customerName || "Walking customer",
   };
   const { topRows, groupedLines } = buildSalesReceiptGeneralLayout(customization, generalContent);
+
   const productCellValue = (item, key) => {
     if (key === "productName") return wrapSalesReceiptText(item.name || "-");
-    if (key === "qty") return Number(item.qty || 0).toFixed(2);
+    if (key === "qty") return Number(item.qty || 0).toFixed(0);
     if (key === "mrp") return Number(item.rateWithTax || 0).toFixed(2);
     if (key === "rate") return Number(item.rate || 0).toFixed(2);
     if (key === "discount") return Number(item.discountAmount || 0).toFixed(2);
@@ -95,26 +109,30 @@ export const buildPosSaleReceiptHtml = (receiptData, customization) => {
     if (key === "tax") return Number(item.taxPerc || 0).toFixed(2);
     return "";
   };
+
   const rowsHtml = receiptItems.map((item) => `
     <tr>
       ${productColumns.map((column) => `
-        <td class="${column.key === "productName" ? "product-cell" : "num"}">${escapeHtml(productCellValue(item, column.key))}</td>
+        <td class="${column.key === "productName" ? "product-cell" : "num"}">${column.key === "productName" ? escapeHtmlWithBreaks(productCellValue(item, column.key)) : escapeHtml(productCellValue(item, column.key))}</td>
       `).join("")}
     </tr>
   `).join("");
+
   const returnCellValue = (item, key) => {
     if (key === "productName") return wrapSalesReceiptText(item.name || "-");
-    if (key === "qty") return Number(item.qty || 0).toFixed(2);
+    if (key === "qty") return Number(item.qty || 0).toFixed(0);
     if (key === "amount") return Number(item.amount || 0).toFixed(2);
     return "";
   };
+
   const returnRowsHtml = returnItems.map((item) => `
     <tr>
       ${productColumns.map((column) => `
-        <td class="${column.key === "productName" ? "product-cell" : "num"}">${escapeHtml(returnCellValue(item, column.key))}</td>
+        <td class="${column.key === "productName" ? "product-cell" : "num"}">${column.key === "productName" ? escapeHtmlWithBreaks(returnCellValue(item, column.key)) : escapeHtml(returnCellValue(item, column.key))}</td>
       `).join("")}
     </tr>
   `).join("");
+
   const taxCellValue = (row, key) => {
     if (key === "taxName") return row.label;
     if (key === "percent") return Number(row.taxPerc || 0).toFixed(2);
@@ -122,6 +140,7 @@ export const buildPosSaleReceiptHtml = (receiptData, customization) => {
     if (key === "total") return Number(row.taxAmount || 0).toFixed(2);
     return "";
   };
+
   const taxRowsHtml = taxRows.map((row) => `
     <tr>
       ${taxColumns.map((column) => `
@@ -129,33 +148,263 @@ export const buildPosSaleReceiptHtml = (receiptData, customization) => {
       `).join("")}
     </tr>
   `).join("");
-  const receiptWidth = getSalesReceiptWidthCss(customization?.receiptWidthInches);
+
   const billBarcode = String(receiptData.billBarcode || receiptData.billNo || "").trim();
   const barcodeMarkup =
     receiptData.billCodeMarkup
-    ?? buildReceiptCodeMarkupSync(billBarcode, customization, "bill");
+    || (billBarcode ? buildReceiptCodeMarkupSync(billBarcode, customization, "bill") : "");
+  const paymentQrMarkup = receiptData.paymentQrMarkup || "";
 
   return `<!DOCTYPE html><html><head><title>POS Receipt #${escapeHtml(receiptData.billNo)}</title><style>
-    @page { margin: 0.18in; size: auto; } * { box-sizing: border-box; } body { font-family: ${getSalesReceiptFontCss(customization?.receiptFontFamily)}; margin: 0; padding: 12px; color: #111827; background: #ffffff; }
-    .receipt { width: ${receiptWidth}; max-width: 100%; margin: 0 auto; font-size: 12px; } .center { text-align: center; } .text-left { text-align: left; } .text-center { text-align: center; } .text-right { text-align: right; }
-    .title { font-size: 18px; font-weight: 700; margin-bottom: 4px; letter-spacing: 0.08em; } .store-meta { margin: 2px 0; font-size: 11px; line-height: 1.35; color: #374151; } .meta { margin: 8px 0; }
-    .meta-row { margin: 3px 0; } .meta-row-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; align-items: start; gap: 8px; } .meta-row-single { display: block; } .meta-group { display: flex; flex-wrap: wrap; gap: 2px 14px; width: 100%; } .meta-group.text-right { justify-content: flex-end; } .meta-group.text-center { justify-content: center; } .meta-group.text-left { justify-content: flex-start; } .meta-item { white-space: nowrap; } .line { border-top: 1px dashed #111827; margin: 8px 0; } table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 4px 2px; border-bottom: 1px solid #e5e7eb; text-align: left; vertical-align: top; } th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; } .product-cell { white-space: pre-line; line-height: 1.35; }
-    .num { text-align: right; white-space: nowrap; } .totals-row { display: flex; justify-content: space-between; margin: 4px 0; } .grand { font-weight: 700; font-size: 14px; } .section-label { margin: 8px 0 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #374151; }
-    .thanks { margin-top: 10px; text-align: center; font-size: 12px; font-weight: 700; line-height: 1.5; white-space: pre-line; } .barcode-wrap { margin-top: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; } .barcode-wrap svg { width: 100%; height: auto; max-width: 100%; } .barcode-wrap img { width: ${RECEIPT_QR_CODE_DISPLAY_PX}px; height: ${RECEIPT_QR_CODE_DISPLAY_PX}px; max-width: 100%; object-fit: contain; }
+    @page { margin: 0; size: auto; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: ${getSalesReceiptFontCss(customization?.receiptFontFamily)};
+      margin: 0;
+      padding: 4px;
+      color: #111827;
+      background: #ffffff;
+    }
+    .receipt {
+      width: 100%;
+      max-width: 275px;
+      margin: 0 auto;
+      font-size: 11px;
+    }
+    .center { text-align: center; }
+    .text-left { text-align: left; }
+    .text-center { text-align: center; }
+    .text-right { text-align: right; }
+    .title { font-size: 16px; font-weight: 800; letter-spacing: 0.12em; text-align: center; margin-bottom: 2px; }
+    .store-meta { margin: 1px 0; font-size: 10.5px; line-height: 1.35; color: #4b5563; text-align: center; }
+    .meta { margin: 6px 0; font-size: 10.5px; }
+    .meta-row { margin: 2px 0; }
+    .meta-row-flex { display: flex; justify-content: space-between; align-items: center; margin: 2px 0; width: 100%; font-size: 10.5px; }
+    .line { border-top: 1px dashed #9ca3af; margin: 6px 0; }
+    .receipt-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      overflow: hidden;
+      margin: 4px 0;
+    }
+    .receipt-table th {
+      background: #f9fafb;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #4b5563;
+      padding: 4px 3px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .receipt-table td {
+      padding: 4px 3px;
+      border-bottom: 1px solid #f3f4f6;
+      font-size: 10.5px;
+      vertical-align: top;
+    }
+    .receipt-table tr:last-child td { border-bottom: none; }
+    .product-cell { white-space: pre-line; line-height: 1.3; font-weight: 500; }
+    .num { text-align: right; white-space: nowrap; }
+    .totals-row { display: flex; justify-content: space-between; margin: 3px 0; font-size: 11px; }
+    .grand { font-weight: 800; font-size: 13px; margin: 4px 0; }
+    .section-label { margin: 6px 0 2px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #4b5563; }
+    .thanks { margin-top: 8px; text-align: center; font-size: 10px; font-weight: 600; line-height: 1.4; white-space: pre-line; color: #374151; }
+    .barcode-wrap { margin: 8px 0; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; text-align: center; }
+    .barcode-wrap svg { width: 100%; height: auto; max-width: 160px; display: block; margin: 0 auto; }
+    .barcode-wrap img { width: 100px; height: 100px; max-width: 100%; object-fit: contain; display: block; margin: 0 auto; }
     ${buildReceiptFormatCss(customization?.receiptFormat)}
   </style></head><body><div class="receipt">
-    <div class="space-y-1">${topRows.map((row) => `<div class="${escapeHtml(getReceiptPositionClass(row.position))} store-meta ${row.key === "company" ? "title" : ""}">${row.key === "logo" ? `<span style="display:inline-flex;border:1px dashed #d1d5db;border-radius:8px;padding:8px 16px;font-size:10px;font-weight:700;letter-spacing:0.18em;color:#6b7280;">${escapeHtml(row.value)}</span>` : escapeHtml(row.value)}</div>`).join("")}${receiptData.storePhone ? `<div class="center store-meta">Contact: ${escapeHtml(receiptData.storePhone)}</div>` : ""}</div>
-    <div class="meta">${groupedLines.map((line) => buildReceiptMetaLineHtml(line)).join("")}${receiptData.footerNote ? `<div class="meta-row"><span>Salesman</span><span>${escapeHtml(receiptData.footerNote.replace(/^Salesman:\\s*/, ""))}</span></div>` : ""}</div>
+    <div class="space-y-1">
+      ${topRows.length > 0
+        ? topRows.map((row) => `<div class="${escapeHtml(getReceiptPositionClass(row.position))} store-meta ${row.key === "company" ? "title" : ""}">${row.key === "logo" ? `<span style="display:inline-flex;border:1px dashed #d1d5db;border-radius:8px;padding:8px 16px;font-size:10px;font-weight:700;letter-spacing:0.18em;color:#6b7280;">${escapeHtml(row.value)}</span>` : escapeHtml(row.value)}</div>`).join("")
+        : `
+          <div class="title">${escapeHtml(storeName)}</div>
+          <div class="store-meta">${escapeHtml(storeAddress)}</div>
+          <div class="store-meta">${escapeHtml(storeGstNo ? (storeGstNo.startsWith("GST") ? storeGstNo : `GST No: ${storeGstNo}`) : "GST No: 33AAAAA0000A1Z5")}</div>
+        `
+      }
+      ${storePhone ? `<div class="store-meta">Contact: ${escapeHtml(storePhone)}</div>` : ""}
+    </div>
     <div class="line"></div>
-    ${productColumns.length > 0 ? `<table><thead><tr>${productColumns.map((column) => `<th class="${column.key === "productName" ? "" : "num"}">${escapeHtml(column.label)}</th>`).join("")}</tr></thead><tbody>${rowsHtml || `<tr><td colspan="${productColumns.length}" class="center">No items</td></tr>`}</tbody></table>` : ""}
-    <div class="line"></div><div class="totals-row"><span>Bill Amount</span><span>${escapeHtml(Number(receiptData.billAmount || 0).toFixed(2))}</span></div>${customization?.showDiscountOnReceipt && !showDiscountColumn ? `<div class="totals-row"><span>Discount</span><span>${escapeHtml(Number(receiptData.discountAmount || 0).toFixed(2))}</span></div>` : ""}<div class="totals-row grand"><span>Net Amount</span><span>${escapeHtml(Number(receiptData.total || 0).toFixed(2))}</span></div>
-    ${receiptData.generalTaxVisible ? `<div class="totals-row"><span>Tax</span><span>${escapeHtml(Number(receiptData.taxAmount || 0).toFixed(2))}</span></div>` : ""}${receiptData.generalPaidVisible ? `<div class="totals-row"><span>Paid</span><span>${escapeHtml(Number(receiptData.paidAmount || 0).toFixed(2))}</span></div>` : ""}${receiptData.generalReceivedVisible ? `<div class="totals-row"><span>Receivedamount</span><span>${escapeHtml(Number(receiptData.receivedAmount || 0).toFixed(2))}</span></div>` : ""}${receiptData.generalBalanceVisible ? `<div class="totals-row"><span>Balanceamt</span><span>${escapeHtml(Number(receiptData.balanceAmount || 0).toFixed(2))}</span></div>` : ""}${receiptData.generalYouSavedVisible ? `<div class="totals-row"><span>yousaved</span><span>${escapeHtml(Number(receiptData.discountAmount || 0).toFixed(2))}</span></div>` : ""}
+    <div class="meta">${groupedLines.map((line) => buildReceiptMetaLineHtml(line)).join("")}${receiptData.footerNote ? `<div class="meta-row"><span>Salesman: <b>${escapeHtml(receiptData.footerNote.replace(/^Salesman:\s*/, ""))}</b></span></div>` : ""}</div>
+    <div class="line"></div>
+    ${productColumns.length > 0 ? `<table class="receipt-table"><thead><tr>${productColumns.map((column) => `<th class="${column.key === "productName" ? "text-left" : "num"}">${escapeHtml(column.label)}</th>`).join("")}</tr></thead><tbody>${rowsHtml || `<tr><td colspan="${productColumns.length}" class="center">No items</td></tr>`}</tbody></table>` : ""}
+    <div class="line"></div>
+    <div class="totals-row"><span>Bill Amount</span><span>${escapeHtml(Number(receiptData.billAmount || 0).toFixed(2))}</span></div>${customization?.showDiscountOnReceipt && !showDiscountColumn ? `<div class="totals-row"><span>Discount</span><span>${escapeHtml(Number(receiptData.discountAmount || 0).toFixed(2))}</span></div>` : ""}<div class="totals-row grand"><span>Net Amount</span><span>${escapeHtml(Number(receiptData.total || 0).toFixed(2))}</span></div>
+    ${receiptData.generalTaxVisible ? `<div class="totals-row"><span>Tax</span><span>${escapeHtml(Number(receiptData.taxAmount || 0).toFixed(2))}</span></div>` : ""}${receiptData.generalPaidVisible ? `<div class="totals-row"><span>Paid</span><span>${escapeHtml(Number(receiptData.paidAmount || 0).toFixed(2))}</span></div>` : ""}${receiptData.generalReceivedVisible ? `<div class="totals-row"><span>Received Amount</span><span>${escapeHtml(Number(receiptData.receivedAmount || 0).toFixed(2))}</span></div>` : ""}${receiptData.generalBalanceVisible ? `<div class="totals-row"><span>Balance Amount</span><span>${escapeHtml(Number(receiptData.balanceAmount || 0).toFixed(2))}</span></div>` : ""}${receiptData.generalYouSavedVisible ? `<div class="totals-row"><span>You Saved</span><span>${escapeHtml(Number(receiptData.discountAmount || 0).toFixed(2))}</span></div>` : ""}
     ${Number(receiptData.refundAmount || 0) > 0 ? `<div class="totals-row"><span>Refund</span><span>${escapeHtml(Number(receiptData.refundAmount || 0).toFixed(2))}</span></div>` : ""}${receiptData.changeAmount ? `<div class="totals-row"><span>Change</span><span>${escapeHtml(Number(receiptData.changeAmount || 0).toFixed(2))}</span></div>` : ""}
-    ${returnRowsHtml ? `<div class="section-label">Returned Items${receiptData.appliedReturnNo ? ` - ${escapeHtml(receiptData.appliedReturnNo)}` : ""}</div><table><thead><tr>${productColumns.map((column) => `<th class="${column.key === "productName" ? "" : "num"}">${escapeHtml(column.label)}</th>`).join("")}</tr></thead><tbody>${returnRowsHtml}</tbody></table>` : ""}
-    ${taxRowsHtml ? `<div class="section-label">Tax Summary</div><table><thead><tr>${taxColumns.map((column) => `<th class="${column.key === "taxName" ? "" : "num"}">${escapeHtml(column.label)}</th>`).join("")}</tr></thead><tbody>${taxRowsHtml}</tbody></table>` : ""}
-    ${barcodeMarkup ? `<div class="barcode-wrap">${barcodeMarkup}</div>` : ""}${receiptData.paymentQrMarkup ? `<div class="barcode-wrap">${receiptData.paymentQrMarkup}</div>` : ""}<div class="thanks">${escapeHtml(receiptData.message || DEFAULT_SALES_RECEIPT_MESSAGE)}</div>
+    ${returnRowsHtml ? `<div class="section-label">Returned Items${receiptData.appliedReturnNo ? ` - ${escapeHtml(receiptData.appliedReturnNo)}` : ""}</div><table class="receipt-table"><thead><tr>${productColumns.map((column) => `<th class="${column.key === "productName" ? "text-left" : "num"}">${escapeHtml(column.label)}</th>`).join("")}</tr></thead><tbody>${returnRowsHtml}</tbody></table>` : ""}
+    ${taxRowsHtml ? `<div class="section-label">Tax Summary</div><table class="receipt-table"><thead><tr>${taxColumns.map((column) => `<th class="${column.key === "taxName" ? "text-left" : "num"}">${escapeHtml(column.label)}</th>`).join("")}</tr></thead><tbody>${taxRowsHtml}</tbody></table>` : ""}
+    ${barcodeMarkup ? `<div class="line"></div><div class="barcode-wrap">${barcodeMarkup}</div>` : ""}
+    ${paymentQrMarkup ? `<div class="line"></div><div class="barcode-wrap">${paymentQrMarkup}</div>` : ""}
+    <div class="line"></div>
+    <div class="thanks">${escapeHtml(receiptData.message || DEFAULT_SALES_RECEIPT_MESSAGE)}</div>
   </div></body></html>`;
+};
+
+// Formal A4 GST tax invoice - a genuinely different layout from the thermal receipt (letterhead,
+// HSN/tax-rate columns, signature block), not the same narrow design just stretched wider. Used
+// automatically whenever the store's configured receipt width is A4 (see the dispatcher below).
+const buildA4SaleInvoiceHtml = (receiptData, customization) => {
+  const items = (receiptData.items || []).map((item) => ({
+    ...item,
+    grossAmount: round2(toNum(item.amount, 0) + Math.max(0, toNum(item.discountAmount, 0))),
+  }));
+  const taxRows = buildSalesReceiptTaxRows(items);
+  const hasDiscount = items.some((item) => toNum(item.discountAmount, 0) > 0);
+
+  const formattedDate = receiptData.dateTime
+    ? new Date(receiptData.dateTime).toLocaleDateString()
+    : new Date().toLocaleDateString();
+  const formattedTime = receiptData.dateTime
+    ? new Date(receiptData.dateTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    : new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+  const storeName = receiptData.storeName || "Store";
+  const storeAddress = receiptData.storeAddress || "";
+  const storeGstNo = receiptData.storeGstNo || "";
+  const storePhone = receiptData.storePhone || "";
+
+  const itemRowsHtml = items.map((item, index) => `
+    <tr>
+      <td class="num">${index + 1}</td>
+      <td>${escapeHtmlWithBreaks(String(item.name || "-").trim())}</td>
+      <td>${escapeHtml(item.hsnCode || "-")}</td>
+      <td class="num">${Number(item.qty || 0).toFixed(2)}</td>
+      <td class="num">${Number(item.rate || 0).toFixed(2)}</td>
+      ${hasDiscount ? `<td class="num">${Number(item.discountAmount || 0).toFixed(2)}</td>` : ""}
+      <td class="num">${Number(item.baseAmount || 0).toFixed(2)}</td>
+      <td class="num">${Number(item.taxPerc || 0).toFixed(2)}%</td>
+      <td class="num">${Number(item.taxAmount || 0).toFixed(2)}</td>
+      <td class="num">${Number(item.amount || 0).toFixed(2)}</td>
+    </tr>
+  `).join("") || `<tr><td colspan="${hasDiscount ? 9 : 8}" class="center">No items</td></tr>`;
+
+  const taxRowsHtml = taxRows.map((row) => `
+    <tr>
+      <td>${escapeHtml(row.label)}</td>
+      <td class="num">${Number(row.taxPerc || 0).toFixed(2)}%</td>
+      <td class="num">${Number(row.baseAmount || 0).toFixed(2)}</td>
+      <td class="num">${Number(row.taxAmount || 0).toFixed(2)}</td>
+    </tr>
+  `).join("");
+
+  const billBarcode = String(receiptData.billBarcode || receiptData.billNo || "").trim();
+  const barcodeMarkup =
+    receiptData.billCodeMarkup
+    || (billBarcode ? buildReceiptCodeMarkupSync(billBarcode, customization, "bill") : "");
+  const paymentQrMarkup = receiptData.paymentQrMarkup || "";
+
+  return `<!DOCTYPE html><html><head><title>Tax Invoice #${escapeHtml(receiptData.billNo)}</title><style>
+    @page { margin: 14mm; }
+    * { box-sizing: border-box; }
+    body { font-family: ${getSalesReceiptFontCss(customization?.receiptFontFamily)}; margin: 0; padding: 0; color: #1f2937; background: #ffffff; font-size: 12px; }
+    .invoice { width: 100%; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #1f2937; padding-bottom: 12px; margin-bottom: 16px; }
+    .company-name { font-size: 21px; font-weight: 800; }
+    .company-meta { font-size: 11px; color: #4b5563; line-height: 1.6; margin-top: 4px; }
+    .invoice-title { text-align: right; }
+    .invoice-title h1 { font-size: 20px; letter-spacing: 0.08em; margin: 0; }
+    .invoice-title .inv-no { font-size: 13px; font-weight: 700; margin-top: 8px; }
+    .meta-grid { display: flex; justify-content: space-between; gap: 24px; font-size: 11.5px; margin-bottom: 16px; }
+    .meta-grid .label { color: #6b7280; }
+    .items-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+    .items-table th { background: #1f2937; color: #ffffff; font-size: 10px; text-transform: uppercase; letter-spacing: 0.03em; padding: 7px 6px; text-align: left; }
+    .items-table .num { text-align: right; }
+    .items-table td { padding: 6px; border-bottom: 1px solid #e5e7eb; font-size: 11px; vertical-align: top; }
+    .totals-wrap { display: flex; justify-content: flex-end; margin-bottom: 16px; }
+    .totals { width: 300px; font-size: 11.5px; }
+    .totals-row { display: flex; justify-content: space-between; padding: 3px 0; }
+    .grand { border-top: 2px solid #1f2937; margin-top: 4px; padding-top: 6px; font-size: 15px; font-weight: 800; }
+    .tax-summary { margin-bottom: 16px; }
+    .tax-summary-table { width: auto; min-width: 320px; border-collapse: collapse; font-size: 11px; }
+    .tax-summary-table th { background: #f3f4f6; padding: 5px 8px; text-align: left; }
+    .tax-summary-table td { padding: 5px 8px; border-bottom: 1px solid #e5e7eb; }
+    .footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 48px; }
+    .terms { font-size: 10px; color: #6b7280; max-width: 55%; line-height: 1.5; }
+    .signature { text-align: center; font-size: 11px; }
+    .sig-line { border-top: 1px solid #1f2937; width: 170px; margin-bottom: 4px; }
+    .qr-wrap { text-align: center; margin-top: 14px; }
+    .qr-wrap img { width: 90px; height: 90px; }
+    .qr-wrap svg { width: 90px; height: 90px; }
+    .center { text-align: center; }
+  </style></head><body><div class="invoice">
+    <div class="header">
+      <div>
+        <div class="company-name">${escapeHtml(storeName)}</div>
+        <div class="company-meta">
+          ${escapeHtml(storeAddress)}<br>
+          ${storeGstNo ? `GSTIN: ${escapeHtml(storeGstNo)}<br>` : ""}
+          ${storePhone ? `Contact: ${escapeHtml(storePhone)}` : ""}
+        </div>
+      </div>
+      <div class="invoice-title">
+        <h1>TAX INVOICE</h1>
+        <div class="inv-no">${escapeHtml(receiptData.billNo || "")}</div>
+      </div>
+    </div>
+    <div class="meta-grid">
+      <div>
+        <div><span class="label">Date:</span> ${escapeHtml(formattedDate)} &nbsp; <span class="label">Time:</span> ${escapeHtml(formattedTime)}</div>
+        <div><span class="label">Cashier:</span> ${escapeHtml(receiptData.cashierName || "")}</div>
+        ${receiptData.counterName ? `<div><span class="label">Counter:</span> ${escapeHtml(receiptData.counterName)}</div>` : ""}
+      </div>
+      <div>
+        <div><span class="label">Billed To:</span> ${escapeHtml(receiptData.customerName || "Walking customer")}</div>
+        <div><span class="label">Payment Mode:</span> ${escapeHtml(receiptData.paymentMethod || "-")}</div>
+      </div>
+    </div>
+    <table class="items-table">
+      <thead><tr>
+        <th class="num">#</th>
+        <th>Product Description</th>
+        <th>HSN</th>
+        <th class="num">Qty</th>
+        <th class="num">Rate</th>
+        ${hasDiscount ? `<th class="num">Discount</th>` : ""}
+        <th class="num">Taxable Value</th>
+        <th class="num">GST %</th>
+        <th class="num">GST Amt</th>
+        <th class="num">Total</th>
+      </tr></thead>
+      <tbody>${itemRowsHtml}</tbody>
+    </table>
+    <div class="totals-wrap">
+      <div class="totals">
+        <div class="totals-row"><span>Subtotal</span><span>${escapeHtml(Number(receiptData.billAmount || 0).toFixed(2))}</span></div>
+        ${hasDiscount ? `<div class="totals-row"><span>Discount</span><span>-${escapeHtml(Number(receiptData.discountAmount || 0).toFixed(2))}</span></div>` : ""}
+        <div class="totals-row"><span>Total GST</span><span>${escapeHtml(Number(receiptData.taxAmount || 0).toFixed(2))}</span></div>
+        <div class="totals-row grand"><span>Grand Total</span><span>${escapeHtml(Number(receiptData.total || 0).toFixed(2))}</span></div>
+        ${toNum(receiptData.paidAmount, 0) > 0 ? `<div class="totals-row"><span>Paid</span><span>${escapeHtml(Number(receiptData.paidAmount || 0).toFixed(2))}</span></div>` : ""}
+        ${toNum(receiptData.balanceAmount, 0) > 0 ? `<div class="totals-row"><span>Balance Due</span><span>${escapeHtml(Number(receiptData.balanceAmount || 0).toFixed(2))}</span></div>` : ""}
+      </div>
+    </div>
+    ${taxRowsHtml ? `<div class="tax-summary"><table class="tax-summary-table"><thead><tr><th>Tax</th><th class="num">Rate</th><th class="num">Taxable Amt</th><th class="num">Tax Amt</th></tr></thead><tbody>${taxRowsHtml}</tbody></table></div>` : ""}
+    <div class="footer">
+      <div class="terms">${escapeHtml(receiptData.message || DEFAULT_SALES_RECEIPT_MESSAGE)}</div>
+      <div class="signature">
+        ${paymentQrMarkup ? `<div class="qr-wrap">${paymentQrMarkup}<div>Scan to Pay</div></div>` : ""}
+        <div class="sig-line"></div>
+        <div>Authorized Signatory</div>
+      </div>
+    </div>
+    ${barcodeMarkup ? `<div class="center" style="margin-top:10px;">${barcodeMarkup}</div>` : ""}
+  </div></body></html>`;
+};
+
+// Dispatches to the A4 tax-invoice layout when the store is configured for A4 paper, otherwise the
+// thermal receipt layout - every existing call site (live print, "Last Bill" reprint, PDF download)
+// picks up the right template automatically with no changes needed at the call site.
+export const buildPosSaleReceiptHtml = (receiptData, customization) => {
+  const isA4 =
+    String(receiptData?.paperSize || "").toUpperCase() === "A4"
+    || String(customization?.receiptWidthInches || "").toUpperCase() === "A4";
+  return isA4
+    ? buildA4SaleInvoiceHtml(receiptData, customization)
+    : buildThermalSaleReceiptHtml(receiptData, customization);
 };
 
 export const buildPosReturnReceiptHtml = (receiptData, customization) => {
@@ -172,29 +421,31 @@ export const buildPosReturnReceiptHtml = (receiptData, customization) => {
   const taxRows = customization?.showTaxTableOnReceipt && taxColumns.length > 0
     ? buildSalesReceiptTaxRows(receiptItems)
     : [];
+
+  const storeName = receiptData.storeName || "SRI BALAJI TEXTILE";
+  const storeAddress = receiptData.storeAddress || "Main Bazaar, Retail Street";
+  const storeGstNo = receiptData.storeGstNo || "33AAAAA0000A1Z5";
+  const storePhone = receiptData.storePhone || "9876543210";
+
   const generalContent = {
     logo: receiptData.logoText || "LOGO",
     header: receiptData.headerTitle || "POS RETURN",
-    company: receiptData.storeName || "",
-    address: receiptData.storeAddress || "",
-    gst: receiptData.storeGstNo ? `GST No: ${receiptData.storeGstNo}` : "",
+    company: storeName,
+    address: storeAddress,
+    gst: storeGstNo ? (storeGstNo.startsWith("GST") ? storeGstNo : `GST No: ${storeGstNo}`) : "",
     salesNo: receiptData.billNo || "",
-    cashier: receiptData.cashierName || "",
+    cashier: receiptData.cashierName || "Admin",
     counter: receiptData.counterName || "",
     paymentMethod: receiptData.paymentMethod || "",
     date: receiptData.dateTime ? new Date(receiptData.dateTime).toLocaleDateString() : "",
-    time: receiptData.dateTime ? new Date(receiptData.dateTime).toLocaleTimeString() : "",
+    time: receiptData.dateTime ? new Date(receiptData.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "",
     customer: receiptData.customerName || "Walking customer",
-    paid: toNum(receiptData.paidAmount, 0) > 0 ? Number(receiptData.paidAmount).toFixed(2) : "",
-    receivedAmount: toNum(receiptData.receivedAmount, 0) > 0 ? Number(receiptData.receivedAmount).toFixed(2) : "",
-    balanceAmt: toNum(receiptData.balanceAmount, 0) > 0 ? Number(receiptData.balanceAmount).toFixed(2) : "",
-    youSaved: toNum(receiptData.discountAmount, 0) > 0 ? Number(receiptData.discountAmount).toFixed(2) : "",
-    tax: toNum(receiptData.taxAmount, 0) > 0 ? `Tax: ${Number(receiptData.taxAmount).toFixed(2)}` : "",
   };
   const { topRows, groupedLines } = buildSalesReceiptGeneralLayout(customization, generalContent);
+
   const productCellValue = (item, key) => {
     if (key === "productName") return wrapSalesReceiptText(item.name || "-");
-    if (key === "qty") return Number(item.qty || 0).toFixed(2);
+    if (key === "qty") return Number(item.qty || 0).toFixed(0);
     if (key === "mrp") return Number(item.rateWithTax || 0).toFixed(2);
     if (key === "rate") return Number(item.rate || 0).toFixed(2);
     if (key === "discount") return Number(item.discountAmount || 0).toFixed(2);
@@ -202,13 +453,15 @@ export const buildPosReturnReceiptHtml = (receiptData, customization) => {
     if (key === "tax") return Number(item.taxPerc || 0).toFixed(2);
     return "";
   };
+
   const rowsHtml = receiptItems.map((item) => `
     <tr>
       ${productColumns.map((column) => `
-        <td class="${column.key === "productName" ? "product-cell" : "num"}">${escapeHtml(productCellValue(item, column.key))}</td>
+        <td class="${column.key === "productName" ? "product-cell" : "num"}">${column.key === "productName" ? escapeHtmlWithBreaks(productCellValue(item, column.key)) : escapeHtml(productCellValue(item, column.key))}</td>
       `).join("")}
     </tr>
   `).join("");
+
   const taxCellValue = (row, key) => {
     if (key === "taxName") return row.label;
     if (key === "percent") return Number(row.taxPerc || 0).toFixed(2);
@@ -216,6 +469,7 @@ export const buildPosReturnReceiptHtml = (receiptData, customization) => {
     if (key === "total") return Number(row.taxAmount || 0).toFixed(2);
     return "";
   };
+
   const taxRowsHtml = taxRows.map((row) => `
     <tr>
       ${taxColumns.map((column) => `
@@ -223,29 +477,101 @@ export const buildPosReturnReceiptHtml = (receiptData, customization) => {
       `).join("")}
     </tr>
   `).join("");
-  const receiptWidth = getSalesReceiptWidthCss(customization?.receiptWidthInches);
+
   const returnBarcode = String(receiptData.billBarcode || receiptData.billNo || "").trim();
   const barcodeMarkup =
     receiptData.returnCodeMarkup
     ?? buildReceiptCodeMarkupSync(returnBarcode, customization, "return");
 
   return `<!DOCTYPE html><html><head><title>POS Return #${escapeHtml(receiptData.billNo)}</title><style>
-    @page { margin: 0.18in; size: auto; } * { box-sizing: border-box; } body { font-family: ${getSalesReceiptFontCss(customization?.receiptFontFamily)}; margin: 0; padding: 12px; color: #111827; background: #ffffff; }
-    .receipt { width: ${receiptWidth}; max-width: 100%; margin: 0 auto; font-size: 12px; } .center { text-align: center; } .text-left { text-align: left; } .text-center { text-align: center; } .text-right { text-align: right; }
-    .title { font-size: 18px; font-weight: 700; margin-bottom: 4px; letter-spacing: 0.08em; } .store-meta { margin: 2px 0; font-size: 11px; line-height: 1.35; color: #374151; } .meta { margin: 8px 0; }
-    .meta-row { margin: 3px 0; } .meta-row-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; align-items: start; gap: 8px; } .meta-row-single { display: block; } .meta-group { display: flex; flex-wrap: wrap; gap: 2px 14px; width: 100%; } .meta-group.text-right { justify-content: flex-end; } .meta-group.text-center { justify-content: center; } .meta-group.text-left { justify-content: flex-start; } .meta-item { white-space: nowrap; } .line { border-top: 1px dashed #111827; margin: 8px 0; } table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 4px 2px; border-bottom: 1px solid #e5e7eb; text-align: left; vertical-align: top; } th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; } .product-cell { white-space: pre-line; line-height: 1.35; }
-    .num { text-align: right; white-space: nowrap; } .totals-row { display: flex; justify-content: space-between; margin: 4px 0; } .grand { font-weight: 700; font-size: 14px; } .section-label { margin: 8px 0 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #374151; }
-    .thanks { margin-top: 10px; text-align: center; font-size: 12px; font-weight: 700; line-height: 1.5; white-space: pre-line; } .barcode-wrap { margin-top: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; } .barcode-wrap svg { width: 100%; height: auto; max-width: 100%; } .barcode-wrap img { width: ${RECEIPT_QR_CODE_DISPLAY_PX}px; height: ${RECEIPT_QR_CODE_DISPLAY_PX}px; max-width: 100%; object-fit: contain; }
+    @page { margin: 0; size: auto; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: ${getSalesReceiptFontCss(customization?.receiptFontFamily)};
+      margin: 0;
+      padding: 4px;
+      color: #111827;
+      background: #ffffff;
+    }
+    .receipt {
+      width: 100%;
+      max-width: 275px;
+      margin: 0 auto;
+      font-size: 11px;
+    }
+    .center { text-align: center; }
+    .text-left { text-align: left; }
+    .text-center { text-align: center; }
+    .text-right { text-align: right; }
+    .title { font-size: 16px; font-weight: 800; letter-spacing: 0.12em; text-align: center; margin-bottom: 2px; }
+    .store-meta { margin: 1px 0; font-size: 10.5px; line-height: 1.35; color: #4b5563; text-align: center; }
+    .meta { margin: 6px 0; font-size: 10.5px; }
+    .meta-row { margin: 2px 0; }
+    .meta-row-grid { display: grid; grid-template-columns: 1fr 1fr; align-items: start; gap: 4px; }
+    .meta-row-single { display: block; }
+    .meta-group { display: flex; flex-wrap: wrap; gap: 2px 8px; width: 100%; }
+    .meta-group.text-right { justify-content: flex-end; }
+    .meta-group.text-center { justify-content: center; }
+    .meta-group.text-left { justify-content: flex-start; }
+    .meta-item { white-space: nowrap; }
+    .line { border-top: 1px dashed #9ca3af; margin: 6px 0; }
+    .receipt-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      overflow: hidden;
+      margin: 4px 0;
+    }
+    .receipt-table th {
+      background: #f9fafb;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #4b5563;
+      padding: 4px 3px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .receipt-table td {
+      padding: 4px 3px;
+      border-bottom: 1px solid #f3f4f6;
+      font-size: 10.5px;
+      vertical-align: top;
+    }
+    .receipt-table tr:last-child td { border-bottom: none; }
+    .product-cell { white-space: pre-line; line-height: 1.3; font-weight: 500; }
+    .num { text-align: right; white-space: nowrap; }
+    .totals-row { display: flex; justify-content: space-between; margin: 3px 0; font-size: 11px; }
+    .grand { font-weight: 800; font-size: 13px; margin: 4px 0; }
+    .section-label { margin: 6px 0 2px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #4b5563; }
+    .thanks { margin-top: 8px; text-align: center; font-size: 10px; font-weight: 600; line-height: 1.4; white-space: pre-line; color: #374151; }
+    .barcode-wrap { margin: 8px 0; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+    .barcode-wrap svg { width: 100%; height: auto; max-width: 160px; }
+    .barcode-wrap img { width: 100px; height: 100px; max-width: 100%; object-fit: contain; }
     ${buildReceiptFormatCss(customization?.receiptFormat)}
   </style></head><body><div class="receipt">
-    <div class="space-y-1">${topRows.map((row) => `<div class="${escapeHtml(getReceiptPositionClass(row.position))} store-meta ${row.key === "company" ? "title" : ""}">${row.key === "logo" ? `<span style="display:inline-flex;border:1px dashed #d1d5db;border-radius:8px;padding:8px 16px;font-size:10px;font-weight:700;letter-spacing:0.18em;color:#6b7280;">${escapeHtml(row.value)}</span>` : escapeHtml(row.value)}</div>`).join("")}${receiptData.storePhone ? `<div class="center store-meta">Contact: ${escapeHtml(receiptData.storePhone)}</div>` : ""}</div>
+    <div class="space-y-1">
+      ${topRows.length > 0
+        ? topRows.map((row) => `<div class="${escapeHtml(getReceiptPositionClass(row.position))} store-meta ${row.key === "company" ? "title" : ""}">${row.key === "logo" ? `<span style="display:inline-flex;border:1px dashed #d1d5db;border-radius:8px;padding:8px 16px;font-size:10px;font-weight:700;letter-spacing:0.18em;color:#6b7280;">${escapeHtml(row.value)}</span>` : escapeHtml(row.value)}</div>`).join("")
+        : `
+          <div class="title">${escapeHtml(storeName)}</div>
+          <div class="store-meta">${escapeHtml(storeAddress)}</div>
+          <div class="store-meta">${escapeHtml(storeGstNo ? `GST No: ${storeGstNo}` : "")}</div>
+        `
+      }
+      ${storePhone ? `<div class="store-meta">Contact: ${escapeHtml(storePhone)}</div>` : ""}
+    </div>
+    <div class="line"></div>
     <div class="meta">${groupedLines.map((line) => buildReceiptMetaLineHtml(line)).join("")}${receiptData.sourceBillNo ? `<div class="meta-row"><span>Source Bill</span><span>${escapeHtml(receiptData.sourceBillNo)}</span></div>` : ""}${receiptData.returnReason ? `<div class="meta-row"><span>Reason</span><span>${escapeHtml(receiptData.returnReason)}</span></div>` : ""}</div>
     <div class="line"></div>
-    ${productColumns.length > 0 ? `<table><thead><tr>${productColumns.map((column) => `<th class="${column.key === "productName" ? "" : "num"}">${escapeHtml(column.label)}</th>`).join("")}</tr></thead><tbody>${rowsHtml || `<tr><td colspan="${productColumns.length}" class="center">No items</td></tr>`}</tbody></table>` : ""}
-    <div class="line"></div><div class="totals-row"><span>Bill Amount</span><span>${escapeHtml(Number(receiptData.billAmount || 0).toFixed(2))}</span></div>${customization?.showDiscountOnReceipt && !showDiscountColumn ? `<div class="totals-row"><span>Discount</span><span>${escapeHtml(Number(receiptData.discountAmount || 0).toFixed(2))}</span></div>` : ""}<div class="totals-row grand"><span>Net Amount</span><span>${escapeHtml(Number(receiptData.total || 0).toFixed(2))}</span></div>
-    ${receiptData.generalTaxVisible ? `<div class="totals-row"><span>Tax</span><span>${escapeHtml(Number(receiptData.taxAmount || 0).toFixed(2))}</span></div>` : ""}${receiptData.generalPaidVisible ? `<div class="totals-row"><span>Paid</span><span>${escapeHtml(Number(receiptData.paidAmount || 0).toFixed(2))}</span></div>` : ""}${receiptData.generalReceivedVisible ? `<div class="totals-row"><span>Receivedamount</span><span>${escapeHtml(Number(receiptData.receivedAmount || 0).toFixed(2))}</span></div>` : ""}${receiptData.generalBalanceVisible ? `<div class="totals-row"><span>Balanceamt</span><span>${escapeHtml(Number(receiptData.balanceAmount || 0).toFixed(2))}</span></div>` : ""}${receiptData.generalYouSavedVisible ? `<div class="totals-row"><span>yousaved</span><span>${escapeHtml(Number(receiptData.discountAmount || 0).toFixed(2))}</span></div>` : ""}
-    ${taxRowsHtml ? `<div class="section-label">Tax Summary</div><table><thead><tr>${taxColumns.map((column) => `<th class="${column.key === "taxName" ? "" : "num"}">${escapeHtml(column.label)}</th>`).join("")}</tr></thead><tbody>${taxRowsHtml}</tbody></table>` : ""}
-    ${barcodeMarkup ? `<div class="barcode-wrap">${barcodeMarkup}</div>` : ""}<div class="thanks">${escapeHtml(receiptData.message || DEFAULT_SALES_RECEIPT_MESSAGE)}</div>
+    ${productColumns.length > 0 ? `<table class="receipt-table"><thead><tr>${productColumns.map((column) => `<th class="${column.key === "productName" ? "text-left" : "num"}">${escapeHtml(column.label)}</th>`).join("")}</tr></thead><tbody>${rowsHtml || `<tr><td colspan="${productColumns.length}" class="center">No items</td></tr>`}</tbody></table>` : ""}
+    <div class="line"></div>
+    <div class="totals-row"><span>Bill Amount</span><span>${escapeHtml(Number(receiptData.billAmount || 0).toFixed(2))}</span></div>${customization?.showDiscountOnReceipt && !showDiscountColumn ? `<div class="totals-row"><span>Discount</span><span>${escapeHtml(Number(receiptData.discountAmount || 0).toFixed(2))}</span></div>` : ""}<div class="totals-row grand"><span>Net Amount</span><span>${escapeHtml(Number(receiptData.total || 0).toFixed(2))}</span></div>
+    ${taxRowsHtml ? `<div class="section-label">Tax Summary</div><table class="receipt-table"><thead><tr>${taxColumns.map((column) => `<th class="${column.key === "taxName" ? "text-left" : "num"}">${escapeHtml(column.label)}</th>`).join("")}</tr></thead><tbody>${taxRowsHtml}</tbody></table>` : ""}
+    ${barcodeMarkup ? `<div class="line"></div><div class="barcode-wrap">${barcodeMarkup}</div>` : ""}
+    <div class="line"></div>
+    <div class="thanks">${escapeHtml(receiptData.message || DEFAULT_SALES_RECEIPT_MESSAGE)}</div>
   </div></body></html>`;
 };
+

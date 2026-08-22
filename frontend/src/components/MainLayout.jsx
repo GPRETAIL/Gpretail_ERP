@@ -16,6 +16,7 @@ import useSubscriptionStatus from "../hooks/useSubscriptionStatus";
 import useStoreNameMap, { resolveStoreName } from "../hooks/useStoreNameMap";
 import { ProtectedLayoutRouteRenderer } from "../routes/protectedLayoutRoutes";
 import { useLocation } from "react-router-dom";
+import PrintQueueTray from "./PrintQueueTray";
 
 const MOBILE_BREAKPOINT = 768;
 
@@ -37,8 +38,14 @@ const TabbedWorkspaces = () => {
   );
 };
 
+// A job's label is usually a plain string, but jobs whose content gets rendered to an image
+// before printing (e.g. barcode sticker sheets, or any receipt routed through the image-render
+// path) carry a { kind, jobName, imageDataUrl, ... } object instead - fall back to jobName there.
+const getPrintJobLabel = (job) =>
+  typeof job?.label === "string" ? job.label : job?.label?.jobName || "Print job";
+
 const PrintStatusFooter = () => {
-  const { connected, printer, hasActiveJobs, jobs, currentJob, cancelJob, clearFinished, STATUS } =
+  const { connected, hasActiveJobs, jobs, currentJob, cancelJob, retryJob, clearFinished, STATUS } =
     usePrintContext();
   const { activeActivity, recentActivity, clearRecentActivity, TYPE } = useTransferActivity();
   const { navigateActiveTab } = useTabs();
@@ -196,65 +203,16 @@ const PrintStatusFooter = () => {
 
   return (
     <div className="shrink-0 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
-      {/* Expandable job list */}
-      {expanded && recentJobs.length > 0 && (
-        <div className="px-3 md:px-6 lg:px-8 py-1.5 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 max-h-32 overflow-auto">
-          {recentJobs.map((job) => (
-            <React.Fragment key={job.id}>
-              <div className="flex items-center justify-between gap-2 py-0.5 text-[10px] md:text-xs">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  {job.status === STATUS.PRINTING && (
-                    <Loader2 className="w-3 h-3 text-blue-500 animate-spin shrink-0" />
-                  )}
-                  {job.status === STATUS.QUEUED && (
-                    <Printer className="w-3 h-3 text-gray-400 dark:text-gray-500 shrink-0" />
-                  )}
-                  {job.status === STATUS.DONE && (
-                    <CheckCircle2 className="w-3 h-3 text-green-500 shrink-0" />
-                  )}
-                  {job.status === STATUS.FAILED && (
-                    <AlertCircle className="w-3 h-3 text-red-500 shrink-0" />
-                  )}
-                  {job.status === STATUS.CANCELLED && (
-                    <X className="w-3 h-3 text-gray-400 dark:text-gray-500 shrink-0" />
-                  )}
-                  <span className="truncate text-gray-700 dark:text-gray-300">{job.label}</span>
-                  {job.totalCopies > 1 &&
-                    (job.status === STATUS.PRINTING || job.status === STATUS.DONE || job.status === STATUS.CANCELLED) && (
-                      <span className="text-gray-500 dark:text-gray-400 shrink-0">
-                        ({job.completedCopies || 0}/{job.totalCopies} copies)
-                      </span>
-                    )}
-                  {job.error && <span className="text-red-500 truncate">— {job.error}</span>}
-                </div>
-                {(job.status === STATUS.QUEUED || job.status === STATUS.PRINTING) && (
-                  <button
-                    type="button"
-                    onClick={() => cancelJob(job.id)}
-                    className="text-red-500 hover:text-red-700 shrink-0"
-                    title="Cancel printing"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                )}
-              </div>
-              {job.totalCopies > 1 && job.status === STATUS.PRINTING && (
-                <div className="ml-5 h-1 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden mb-0.5">
-                  <div
-                    className="h-full bg-blue-500 rounded-full transition-all duration-300"
-                    style={{ width: `${((job.completedCopies || 0) / job.totalCopies) * 100}%` }}
-                  />
-                </div>
-              )}
-            </React.Fragment>
-          ))}
-          {jobs.some((j) => j.status === STATUS.DONE || j.status === STATUS.FAILED || j.status === STATUS.CANCELLED) && (
-            <button type="button" onClick={clearFinished} className="text-[10px] text-blue-600 hover:underline mt-0.5">
-              Clear finished
-            </button>
-          )}
-        </div>
-      )}
+      <PrintQueueTray
+        open={expanded}
+        onClose={() => setExpanded(false)}
+        jobs={recentJobs}
+        STATUS={STATUS}
+        connected={connected}
+        onCancel={cancelJob}
+        onRetry={retryJob}
+        onClearFinished={clearFinished}
+      />
 
       {/* Main footer bar */}
       <div className="flex justify-between items-center px-3 md:px-6 lg:px-8 py-1 text-[10px] md:text-xs text-gray-600 dark:text-gray-400">
@@ -377,7 +335,7 @@ const PrintStatusFooter = () => {
 
           <button
             type="button"
-            onClick={() => recentJobs.length > 0 && setExpanded((p) => !p)}
+            onClick={() => setExpanded((p) => !p)}
             className="flex items-center gap-1.5 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
           >
             {hasActiveJobs ? (
@@ -386,8 +344,8 @@ const PrintStatusFooter = () => {
                 <span className="text-blue-600 dark:text-blue-400 font-medium">
                   {currentJob
                     ? currentJob.totalCopies > 1
-                      ? `Printing: ${currentJob.label} — Copy ${currentJob.currentCopy}/${currentJob.totalCopies}`
-                      : `Printing: ${currentJob.label}`
+                      ? `Printing: ${getPrintJobLabel(currentJob)} — Copy ${currentJob.currentCopy}/${currentJob.totalCopies}`
+                      : `Printing: ${getPrintJobLabel(currentJob)}`
                     : "Printing..."}
                 </span>
               </>
@@ -395,13 +353,13 @@ const PrintStatusFooter = () => {
               <>
                 <Printer className="w-3 h-3 text-green-500" />
                 <span className="text-green-600 dark:text-green-400">
-                  {printer?.name || "Printer Service Connected"}
+                  Print Service
                 </span>
               </>
             ) : (
               <>
                 <Printer className="w-3 h-3 text-gray-400 dark:text-gray-500" />
-                <span>No Printer</span>
+                <span>Print Service (Offline)</span>
               </>
             )}
           </button>

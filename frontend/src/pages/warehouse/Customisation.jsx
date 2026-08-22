@@ -30,6 +30,7 @@ import {
   WAREHOUSE_BARCODE_POSITION_OPTIONS,
   WAREHOUSE_FONT_FAMILY_OPTIONS,
   WAREHOUSE_FONT_SIZE_CONTROLS,
+  WAREHOUSE_PRINT_MODE_OPTIONS,
 } from "../../utils/warehouseBarcodeCustomization";
 
 const fieldLabelClass = "mb-1 block text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400";
@@ -209,15 +210,51 @@ const StickerFieldsBlock = ({ fields, metrics, textStyle, settings }) => {
           getWarehouseLabelFieldPosition(settings, field.key),
           codePosition
         );
+        const isMrp = field.key === "mrp";
+        const isRs = field.key === "rs" || field.key === "price";
+        const isStriked = isMrp && Boolean(settings.mrpStrikeOut);
+        const fieldFontWeight = isRs
+          ? (textStyle.fontWeight === 700 ? 800 : 700)
+          : textStyle.fontWeight;
+
+        if (isStriked) {
+          return (
+            <div
+              key={field.key}
+              className={`flex items-center text-gray-700 ${getWarehouseLabelFieldJustifyClass(fieldPosition)} ${getWarehouseLabelFieldAlignClass(fieldPosition)}`}
+              style={{
+                gap: `${metrics.bodyGapMm}mm`,
+                fontSize: `${getWarehouseLabelFieldFontMm(metrics, field.key)}mm`,
+                fontFamily: textStyle.fontFamily,
+                fontWeight: fieldFontWeight,
+                fontStyle: textStyle.fontStyle,
+              }}
+            >
+              <span className="relative inline-flex items-center gap-[0.8mm]">
+                <span className="truncate uppercase">{field.label}</span>
+                <span className="truncate">{field.value}</span>
+                <svg
+                  className="pointer-events-none absolute -inset-x-1 inset-y-0 h-full w-[calc(100%+8px)] overflow-visible"
+                  viewBox="0 0 100 100"
+                  preserveAspectRatio="none"
+                >
+                  <line x1="0" y1="12" x2="100" y2="88" stroke="#dc2626" strokeWidth="12" strokeLinecap="round" />
+                  <line x1="0" y1="88" x2="100" y2="12" stroke="#dc2626" strokeWidth="12" strokeLinecap="round" />
+                </svg>
+              </span>
+            </div>
+          );
+        }
+
         return (
           <div
             key={field.key}
-            className={`flex items-center text-gray-800 ${getWarehouseLabelFieldJustifyClass(fieldPosition)} ${getWarehouseLabelFieldAlignClass(fieldPosition)}`}
+            className={`flex items-center ${isRs ? "font-bold text-gray-950" : "text-gray-800"} ${getWarehouseLabelFieldJustifyClass(fieldPosition)} ${getWarehouseLabelFieldAlignClass(fieldPosition)}`}
             style={{
               gap: `${metrics.bodyGapMm}mm`,
               fontSize: `${getWarehouseLabelFieldFontMm(metrics, field.key)}mm`,
               fontFamily: textStyle.fontFamily,
-              fontWeight: textStyle.fontWeight,
+              fontWeight: fieldFontWeight,
               fontStyle: textStyle.fontStyle,
               textDecoration: textStyle.textDecoration,
             }}
@@ -676,6 +713,42 @@ export default function WarehouseCustomisation() {
           </div>
 
           <div className={`${baseCardClass} p-5`}>
+            <label className={fieldLabelClass}>Printing Mode (Direct / Silent vs Browser Default)</label>
+            <p className="mb-3 max-w-3xl text-sm leading-6 text-gray-500 dark:text-gray-400">
+              Choose whether barcode stickers print directly to your thermal printer in the background (no popup) or open the browser print preview dialog.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {WAREHOUSE_PRINT_MODE_OPTIONS.map((option) => (
+                <label
+                  key={option.value}
+                  className={`flex cursor-pointer flex-col justify-between rounded-xl border p-4 transition ${
+                    settings.printMode === option.value
+                      ? "border-blue-600 bg-blue-50/70 shadow-sm dark:border-blue-500 dark:bg-blue-900/30"
+                      : "border-gray-300 bg-white hover:border-gray-400 dark:border-gray-600 dark:bg-gray-800 dark:hover:border-gray-500"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="radio"
+                      name="warehouse-print-mode"
+                      value={option.value}
+                      checked={settings.printMode === option.value}
+                      onChange={() => updateSetting({ printMode: option.value })}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      {option.label}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-xs leading-5 text-gray-600 dark:text-gray-400">
+                    {option.description}
+                  </p>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className={`${baseCardClass} p-5`}>
             <label className={fieldLabelClass}>Code Size In Mm</label>
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
@@ -770,6 +843,76 @@ export default function WarehouseCustomisation() {
           </div>
 
           <div className={`${baseCardClass} p-5`}>
+            <label className={fieldLabelClass}>Print Position (mm)</label>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+              Shifts where content lands on the physical label without changing its layout - use this to
+              compensate for your printer's own print-head/gap-sensor offset. Negative values shift up/left.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div>
+                <label htmlFor="warehouse-margin-top" className={fieldLabelClass}>
+                  Margin Top
+                </label>
+                <input
+                  id="warehouse-margin-top"
+                  type="number"
+                  min="-10"
+                  max="10"
+                  step="0.1"
+                  value={settings.printMarginTopMm}
+                  onChange={(event) => updateSetting({ printMarginTopMm: event.target.value })}
+                  className="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-3 text-sm text-gray-800 dark:text-gray-100 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+              </div>
+              <div>
+                <label htmlFor="warehouse-margin-bottom" className={fieldLabelClass}>
+                  Margin Bottom
+                </label>
+                <input
+                  id="warehouse-margin-bottom"
+                  type="number"
+                  min="-10"
+                  max="10"
+                  step="0.1"
+                  value={settings.printMarginBottomMm}
+                  onChange={(event) => updateSetting({ printMarginBottomMm: event.target.value })}
+                  className="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-3 text-sm text-gray-800 dark:text-gray-100 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+              </div>
+              <div>
+                <label htmlFor="warehouse-margin-left" className={fieldLabelClass}>
+                  Margin Left
+                </label>
+                <input
+                  id="warehouse-margin-left"
+                  type="number"
+                  min="-10"
+                  max="10"
+                  step="0.1"
+                  value={settings.printMarginLeftMm}
+                  onChange={(event) => updateSetting({ printMarginLeftMm: event.target.value })}
+                  className="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-3 text-sm text-gray-800 dark:text-gray-100 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+              </div>
+              <div>
+                <label htmlFor="warehouse-margin-right" className={fieldLabelClass}>
+                  Margin Right
+                </label>
+                <input
+                  id="warehouse-margin-right"
+                  type="number"
+                  min="-10"
+                  max="10"
+                  step="0.1"
+                  value={settings.printMarginRightMm}
+                  onChange={(event) => updateSetting({ printMarginRightMm: event.target.value })}
+                  className="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-3 text-sm text-gray-800 dark:text-gray-100 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className={`${baseCardClass} p-5`}>
             <label className={fieldLabelClass}>Font</label>
             <div className="grid gap-x-3 gap-y-2 sm:grid-cols-2 lg:grid-cols-4">
               {WAREHOUSE_FONT_SIZE_CONTROLS.map((control) => (
@@ -827,6 +970,12 @@ export default function WarehouseCustomisation() {
                 hint="Underline sticker text."
                 checked={settings.fontUnderline}
                 onChange={(checked) => updateSetting({ fontUnderline: checked })}
+              />
+              <ToggleCard
+                label="MRP Strikethrough"
+                hint="Strike out MRP (line-through) on barcode sticker to emphasize discounted price."
+                checked={settings.mrpStrikeOut}
+                onChange={(checked) => updateSetting({ mrpStrikeOut: checked })}
               />
             </div>
           </div>

@@ -94,13 +94,19 @@ class SettlementController extends Controller
     public function unpaidBills(Request $request)
     {
         $storeId = $request->header('X-Company-Scope-Id', 1);
+        $status = $request->input('status', 'all');
 
-        $sales = PosSale::with(['customer', 'payments'])
-            ->where('store_id', $storeId)
-            ->where('payment_mode', 'CREDIT')
-            ->orderBy('sale_date', 'desc')
-            ->limit(50)
-            ->get();
+        $query = PosSale::with(['customer', 'payments'])
+            ->where('store_id', $storeId);
+
+        match ($status) {
+            'credit' => $query->where('payment_mode', 'CREDIT'),
+            'canceled', 'cancelled' => $query->where('status', 'CANCELLED'),
+            // "all" - genuinely outstanding bills, not just credit-mode ones
+            default => $query->whereColumn('paid_amount', '<', 'grand_total'),
+        };
+
+        $sales = $query->orderBy('sale_date', 'desc')->limit(50)->get();
 
         return response()->json([
             'success' => true,

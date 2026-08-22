@@ -72,6 +72,7 @@ class AuthController extends Controller
                     // them, so those sync calls silently never fired.
                     'company_id'           => $user->store_id ?? 1,
                     'company_name'         => $user->store?->name,
+                    'counter_id'           => $user->counter_id,
                     'must_change_password' => (bool) $user->must_change_password,
                 ],
             ],
@@ -112,6 +113,7 @@ class AuthController extends Controller
                 'store_id'     => $user->store_id ?? 1,
                 'company_id'   => $user->store_id ?? 1,
                 'company_name' => $user->store?->name,
+                'counter_id'   => $user->counter_id,
             ],
         ]);
     }
@@ -138,8 +140,8 @@ class AuthController extends Controller
             ], 401);
         }
 
-        // Update user's assigned counter (store in session/cache or on user model)
-        // For now, return the user data with counter_id set
+        $user->update(['counter_id' => $counterId]);
+
         return response()->json([
             'success' => true,
             'data'    => [

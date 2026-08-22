@@ -111,13 +111,21 @@ const buildReceiptMetaLineHtml = (line) => {
 
   return `<div class="meta-row meta-row-grid"><div class="meta-group text-left">${buildReceiptMetaInlineHtml(items.filter((item) => item.position === "left"))}</div><div class="meta-group text-center">${buildReceiptMetaInlineHtml(items.filter((item) => item.position === "center"))}</div><div class="meta-group text-right">${buildReceiptMetaInlineHtml(items.filter((item) => item.position === "right"))}</div></div>`;
 };
+// PosSale itself has no cash_amount/card_amount/upi_amount columns - the real tender breakdown
+// lives in its `payments` relation (each row's own `payment_mode`).
 const getSaleReceiptPaymentMethod = (sale = {}) => {
-  const labels = [];
-  if (Math.max(0, toNum(sale.cash_amount ?? sale.cashAmount, 0)) > 0) labels.push("Cash");
-  if (Math.max(0, toNum(sale.card_amount ?? sale.cardAmount, 0)) > 0) labels.push("Card");
-  if (Math.max(0, toNum(sale.upi_amount ?? sale.upiAmount, 0)) > 0) labels.push("UPI");
-  if (Math.max(0, toNum(sale.return_refund_amount, 0)) > 0) labels.push("Refund");
-  return labels.join(" / ");
+  const payments = Array.isArray(sale?.payments) ? sale.payments : [];
+  if (payments.length > 0) {
+    const modes = [...new Set(payments.map((p) => String(p.payment_mode || "").trim()).filter(Boolean))];
+    if (modes.length > 0) {
+      return modes.map((mode) => mode.charAt(0) + mode.slice(1).toLowerCase()).join(" / ");
+    }
+  }
+  if (sale?.payment_mode) {
+    const mode = String(sale.payment_mode).trim();
+    return mode.charAt(0) + mode.slice(1).toLowerCase();
+  }
+  return "";
 };
 
 const buildPosSaleReceiptHtml = (receiptData, customization) => {
@@ -412,9 +420,9 @@ const buildPosReturnReceiptHtml = (receiptData, customization) => {
           <div class="totals-row grand"><span>Net Amount</span><span>${escapeHtml(Number(receiptData.total || 0).toFixed(2))}</span></div>
           ${receiptData.generalTaxVisible ? `<div class="totals-row"><span>Tax</span><span>${escapeHtml(Number(receiptData.taxAmount || 0).toFixed(2))}</span></div>` : ""}
           ${receiptData.generalPaidVisible ? `<div class="totals-row"><span>Paid</span><span>${escapeHtml(Number(receiptData.paidAmount || 0).toFixed(2))}</span></div>` : ""}
-          ${receiptData.generalReceivedVisible ? `<div class="totals-row"><span>Receivedamount</span><span>${escapeHtml(Number(receiptData.receivedAmount || 0).toFixed(2))}</span></div>` : ""}
-          ${receiptData.generalBalanceVisible ? `<div class="totals-row"><span>Balanceamt</span><span>${escapeHtml(Number(receiptData.balanceAmount || 0).toFixed(2))}</span></div>` : ""}
-          ${receiptData.generalYouSavedVisible ? `<div class="totals-row"><span>yousaved</span><span>${escapeHtml(Number(receiptData.discountAmount || 0).toFixed(2))}</span></div>` : ""}
+          ${receiptData.generalReceivedVisible ? `<div class="totals-row"><span>Received Amount</span><span>${escapeHtml(Number(receiptData.receivedAmount || 0).toFixed(2))}</span></div>` : ""}
+          ${receiptData.generalBalanceVisible ? `<div class="totals-row"><span>Balance Amount</span><span>${escapeHtml(Number(receiptData.balanceAmount || 0).toFixed(2))}</span></div>` : ""}
+          ${receiptData.generalYouSavedVisible ? `<div class="totals-row"><span>You Saved</span><span>${escapeHtml(Number(receiptData.discountAmount || 0).toFixed(2))}</span></div>` : ""}
           ${
             taxRowsHtml
               ? `<div class="section-label">Tax Summary</div>
@@ -895,42 +903,39 @@ const POSReturn = () => {
         || "Store";
       const cashierName = String(authUser?.name || authUser?.email || "").trim();
       const receiptCustomerName =
-        String(savedReturn?.customer_name || savedReturn?.customer?.name || "").trim()
+        String(savedReturn?.customer?.name || "").trim()
         || String(newCustomer.name || "").trim()
         || WALKING_CUSTOMER_NAME;
-      const receiptItems = (savedItems.length > 0 ? savedItems : cartWithTotals).map((item) => {
-        const qty = Math.max(0, toNum(item.qty, 0));
-        const rate = Math.max(0, toNum(item.price ?? item.rate, 0));
-        const taxPerc = Math.max(0, toNum(item.tax_perc ?? item.taxPerc ?? item.tax, 0));
-        const discount = Math.max(0, toNum(item.discount, 0));
-        const subtotal = round2(qty * rate);
-        const taxAmount = round2((subtotal * taxPerc) / 100);
-        const amount = round2(
-          Math.abs(toNum(item.total ?? item.amount, 0)) || Math.max(subtotal + taxAmount - discount, 0)
-        );
+      // PosReturnItem's own columns (quantity/refund_price/tax_rate/subtotal/discount/product
+      // relation) are always present whether savedReturn just came back from store() or was
+      // re-fetched later - no live cart fallback needed for these.
+      const receiptItems = savedItems.map((item) => {
+        const qty = Math.max(0, toNum(item.quantity, 0));
+        const rate = Math.max(0, toNum(item.refund_price, 0));
+        const taxPerc = Math.max(0, toNum(item.tax_rate, 0));
+        const discount = round2(Math.max(0, toNum(item.discount, 0)));
+        const taxAmount = round2(toNum(item.tax_amount, 0));
+        const amount = round2(Math.abs(toNum(item.subtotal, qty * rate - discount + taxAmount)));
+        const subtotal = round2(amount - taxAmount);
 
         return {
-          name: item.product_name || item.productName || item.barcode || "-",
+          name: String(item.product?.name || "-").trim(),
           qty,
           rate,
           taxPerc,
-          taxName: item.tax_name || item.taxName || "",
-          taxType: item.tax_type || item.taxType || "",
+          taxName: item.tax_name || "",
+          taxType: item.tax_type || "",
           baseAmount: subtotal,
           taxAmount,
-          discountAmount: round2(Math.max(0, toNum(item.discount, 0))),
+          discountAmount: discount,
           amount,
-          code: item.barcode || item.barcodeRef?.barcode || "",
+          code: item.product?.barcode || "",
         };
       });
-      const receiptTotalDiscount = Math.max(
-        0,
-        toNum(savedReturn?.total_discount, summary.totalDiscount)
+      const receiptTotalDiscount = round2(
+        receiptItems.reduce((sum, item) => sum + toNum(item.discountAmount, 0), 0)
       );
-      const receiptGrossAmount = round2(
-        receiptItems.reduce((sum, item) => sum + toNum(item.amount, 0), 0)
-      );
-      const receiptNetAmount = round2(-Math.abs(toNum(savedReturn?.amount, summary.amount || -receiptGrossAmount)));
+      const receiptNetAmount = round2(-Math.abs(toNum(savedReturn?.total_refund, 0)));
 
       const receiptData = {
         storeName,
@@ -939,9 +944,9 @@ const POSReturn = () => {
         storeGstNo: companyInfo.storeGstNo,
         billNo: displayReturnNo,
         billBarcode: displayReturnNo,
-        dateTime: savedReturn?.return_at || now.toISOString(),
+        dateTime: savedReturn?.return_date || now.toISOString(),
         cashierName,
-        counterName: String(authUser?.counter_name || savedReturn?.counter_name || "").trim(),
+        counterName: String(authUser?.counter_name || "").trim(),
         customerName: receiptCustomerName,
         sourceBillNo,
         returnReason:
@@ -968,16 +973,17 @@ const POSReturn = () => {
         returnCodeMarkup: await buildReceiptCodeMarkupAsync(displayReturnNo, receiptCustomization, "return"),
       };
       const browserReceiptHtml = buildPosReturnReceiptHtml(receiptData, receiptCustomization);
+      const isDirectPrint = receiptCustomization.printMode !== "browser";
 
-      if (printerConnected) {
-        const jobId = await queuePrintHtml(browserReceiptHtml, {
+      if (isDirectPrint) {
+        await queuePrintHtml(browserReceiptHtml, {
           label: `POSReturn-${displayReturnNo}`,
           docType: "pos_return_receipt",
           copies: 1,
           companyId: authUser?.company_id,
           receiptData,
         });
-        if (jobId) return;
+        return;
       }
 
       const printWindow = window.open("", "_blank", "width=420,height=720");
@@ -1039,20 +1045,21 @@ const POSReturn = () => {
         || String(authUser?.name || "").trim()
         || "Store";
       const cashierName = String(authUser?.name || authUser?.email || "").trim();
-      const allSalesMen = (detail?.items || []).map((item) => String(item.sales_man_name || item.salesManName || "").trim());
+      const allSalesMen = (detail?.items || []).map((item) => String(item.sales_man_name || "").trim());
       const namedSalesMen = allSalesMen.filter(Boolean);
       const uniqueSalesMen = [...new Set(namedSalesMen)];
       const commonSalesMan =
         namedSalesMen.length === (detail?.items || []).length && uniqueSalesMen.length === 1 ? uniqueSalesMen[0] : "";
       const receiptItems = (detail?.items || []).map((item) => {
-        const qty = Math.max(0, toNum(item.qty, 0));
-        const rate = Math.max(0, toNum(item.price ?? item.rate, 0));
-        const taxPerc = Math.max(0, toNum(item.tax_perc ?? item.taxPerc ?? item.tax, 0));
-        const subtotal = round2(qty * rate);
-        const taxAmount = round2((subtotal * taxPerc) / 100);
+        const qty = Math.max(0, toNum(item.quantity, 0));
+        const rate = Math.max(0, toNum(item.selling_price, 0));
+        const taxPerc = Math.max(0, toNum(item.tax_rate, 0));
         const discountAmount = round2(Math.max(0, toNum(item.discount, 0)));
-        const salesManName = String(item.sales_man_name || item.salesManName || "").trim();
-        const baseName = item.product_name || item.productName || item.barcode || "-";
+        const taxAmount = round2(toNum(item.tax_amount, 0));
+        const amount = round2(toNum(item.subtotal, qty * rate - discountAmount + taxAmount));
+        const subtotal = round2(amount - taxAmount);
+        const salesManName = String(item.sales_man_name || "").trim();
+        const baseName = String(item.product?.name || item.barcode?.product_name || "-").trim();
         const itemName = commonSalesMan || !salesManName ? baseName : `${baseName} / SM: ${salesManName}`;
 
         return {
@@ -1065,23 +1072,20 @@ const POSReturn = () => {
           baseAmount: subtotal,
           taxAmount,
           discountAmount,
-          amount: round2(toNum(item.total ?? item.amount, subtotal + taxAmount - discountAmount)),
-          code: item.barcode || "",
+          amount,
+          code: item.barcode?.barcode || item.product?.barcode || "",
         };
       });
-      const receiptGrossAmount = round2(receiptItems.reduce((sum, item) => sum + toNum(item.amount, 0), 0));
-      const receiptTotalDiscount = Math.max(0, toNum(detail?.total_discount, 0));
-      const receiptBillAmount = round2(receiptGrossAmount + toNum(detail?.addnl_amount, 0) + receiptTotalDiscount);
-      const receiptNetAmount = round2(toNum(detail?.amount, receiptGrossAmount));
-      const receiptTaxAmount = round2(
-        receiptItems.reduce((sum, item) => sum + toNum(item.taxAmount, 0), 0) + toNum(detail?.addnl_tax_amount, 0)
-      );
+      const receiptTotalDiscount = Math.max(0, toNum(detail?.discount_amount, 0));
+      const receiptNetAmount = round2(toNum(detail?.grand_total, 0));
+      const receiptBillAmount = round2(toNum(detail?.subtotal, 0) + receiptTotalDiscount);
+      const receiptTaxAmount = round2(toNum(detail?.tax_amount, 0));
       const receiptReturnItems = (linkedReturn?.items || []).map((item) => ({
-        name: item.product_name || item.productName || item.barcode || "-",
-        qty: Math.max(0, toNum(item.qty, 0)),
-        amount: Math.abs(toNum(item.total ?? item.amount, 0)),
+        name: String(item.product?.name || "-").trim(),
+        qty: Math.max(0, toNum(item.quantity, 0)),
+        amount: Math.abs(toNum(item.subtotal, 0)),
       }));
-      const receiptReceivedAmount = Math.max(0, toNum(detail?.received_amount, 0));
+      const receiptReceivedAmount = Math.max(0, toNum(detail?.paid_amount, 0));
       const receiptData = {
         storeName,
         storeAddress: companyInfo.storeAddress,
@@ -1089,10 +1093,10 @@ const POSReturn = () => {
         storeGstNo: companyInfo.storeGstNo,
         billNo: displayBillNo,
         billBarcode: displayBillNo,
-        dateTime: detail?.sale_at || detail?.created_at || now.toISOString(),
+        dateTime: detail?.sale_date || now.toISOString(),
         cashierName,
-        counterName: String(authUser?.counter_name || detail?.counter_name || "").trim(),
-        customerName: String(detail?.customer_name || detail?.customer?.name || "").trim() || WALKING_CUSTOMER_NAME,
+        counterName: String(authUser?.counter_name || "").trim(),
+        customerName: String(detail?.customer?.name || "").trim() || WALKING_CUSTOMER_NAME,
         paperSize: getSalesReceiptPaperSize(receiptCustomization.receiptWidthInches),
         items: receiptItems,
         billAmount: receiptBillAmount,
@@ -1122,16 +1126,17 @@ const POSReturn = () => {
         }),
       };
       const browserReceiptHtml = buildPosSaleReceiptHtml(receiptData, receiptCustomization);
+      const isDirectPrint = receiptCustomization.printMode !== "browser";
 
-      if (printerConnected) {
-        const jobId = await queuePrintHtml(browserReceiptHtml, {
+      if (isDirectPrint) {
+        await queuePrintHtml(browserReceiptHtml, {
           label: `POSSale-${displayBillNo}`,
           docType: "pos_sale_receipt",
           copies: 1,
           companyId: authUser?.company_id,
           receiptData,
         });
-        if (jobId) return;
+        return;
       }
 
       const printWindow = window.open("", "_blank", "width=420,height=720");
@@ -1359,12 +1364,12 @@ const POSReturn = () => {
         key: "products",
         label: "Products",
         valueGetter: (row) =>
-          (row.items || []).map((item) => item.product_name || item.barcode || "-").join(", "),
+          (row.items || []).map((item) => item.product?.name || "-").join(", "),
         render: (_, row) => {
           const items = row.items || [];
           const productText = items
             .slice(0, 2)
-            .map((item) => item.product_name || item.barcode || "-")
+            .map((item) => item.product?.name || "-")
             .join(", ");
           const extra = items.length > 2 ? ` +${items.length - 2} more` : "";
           return `${productText || "-"}${extra}`;

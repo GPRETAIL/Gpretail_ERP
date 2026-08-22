@@ -1100,15 +1100,16 @@ const POSOld = () => {
       },
       receiptCustomization
     );
-    if (printerConnected) {
-      const jobId = await queuePrintHtml(html, {
+    const isDirectPrint = receiptCustomization.printMode !== "browser";
+    if (isDirectPrint) {
+      await queuePrintHtml(html, {
         label: `POSOld-${data.billNo}`,
         docType: "pos_old_sale_receipt",
         copies: 1,
         companyId: data.companyId,
         receiptData: data,
       });
-      if (jobId) return;
+      return;
     }
 
     const win = window.open("", "_blank", "width=400,height=650");
@@ -1201,15 +1202,16 @@ const POSOld = () => {
     };
     const html = buildPosReturnReceiptHtml(receiptData, receiptCustomization);
 
-    if (printerConnected) {
-      const jobId = await queuePrintHtml(html, {
+    const isReturnDirectPrint = receiptCustomization.printMode !== "browser";
+    if (isReturnDirectPrint) {
+      await queuePrintHtml(html, {
         label: `POSOldReturn-${displayReturnNo}`,
         docType: "pos_return_receipt",
         copies: 1,
         companyId: authUser?.company_id,
         receiptData,
       });
-      if (jobId) return;
+      return;
     }
 
     const win = window.open("", "_blank", "width=420,height=720");
@@ -1278,6 +1280,11 @@ const POSOld = () => {
   }, [activeTab.customerMode, customers, updateActiveTab]);
 
   const handleSave = async () => {
+    if (!authUser?.counter_id) {
+      setCounterAssignmentOpen(true);
+      toast.error("Please assign a counter before checkout");
+      return;
+    }
     if (cartWithTotals.length === 0) { toast.error("Add at least one product"); return; }
     if (activeTab.isExchange) {
       toast.error("Exchange checkout isn't available yet - please process the return and the new sale separately");
@@ -2093,22 +2100,19 @@ const POSOld = () => {
       {
         key: "sale_at",
         label: "Date",
-        valueGetter: (row) => row.sale_at || "",
+        valueGetter: (row) => row.sale_date || "",
         render: (value) => (value ? new Date(value).toLocaleString() : "-"),
-        searchValue: (row) => (row.sale_at ? new Date(row.sale_at).toLocaleString() : ""),
+        searchValue: (row) => (row.sale_date ? new Date(row.sale_date).toLocaleString() : ""),
       },
       {
         key: "customer_name",
         label: "Customer",
-        valueGetter: (row) =>
-          row.customer_name
-          || row.customer?.name
-          || (String(row.customer_mode || "").toLowerCase() === "walking" ? WALKING_CUSTOMER_NAME : "-"),
+        valueGetter: (row) => row.customer?.name || "-",
       },
       {
         key: "user_name",
         label: "User",
-        valueGetter: (row) => row.user_name || "-",
+        valueGetter: (row) => row.user?.name || "-",
       },
       {
         key: "counter_name",
@@ -2120,13 +2124,13 @@ const POSOld = () => {
         label: "Barcode",
         valueGetter: (row) =>
           (row.items || [])
-            .map((item) => item.barcode || item.barcodeRef?.barcode || "-")
+            .map((item) => item.barcode?.barcode || item.product?.barcode || "-")
             .join(", "),
         render: (_, row) => {
           const items = row.items || [];
           const barcodeText = items
             .slice(0, 2)
-            .map((item) => item.barcode || item.barcodeRef?.barcode || "-")
+            .map((item) => item.barcode?.barcode || item.product?.barcode || "-")
             .join(", ");
           const extra = items.length > 2 ? ` +${items.length - 2} more` : "";
           return `${barcodeText || "-"}${extra}`;
@@ -2137,13 +2141,13 @@ const POSOld = () => {
         label: "Products",
         valueGetter: (row) =>
           (row.items || [])
-            .map((item) => item.product_name || item.barcode || "-")
+            .map((item) => item.product?.name || item.barcode?.product_name || "-")
             .join(", "),
         render: (_, row) => {
           const items = row.items || [];
           const productText = items
             .slice(0, 2)
-            .map((item) => item.product_name || item.barcode || "-")
+            .map((item) => item.product?.name || item.barcode?.product_name || "-")
             .join(", ");
           const extra = items.length > 2 ? ` +${items.length - 2} more` : "";
           return `${productText || "-"}${extra}`;
@@ -2252,7 +2256,7 @@ const POSOld = () => {
   }, [runPosOldSearch, searchLimit]);
 
   const renderSearchPage = () => (
-    <div className="flex flex-1 min-h-0 flex-col rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm">
+    <div className="flex flex-1 min-h-0 min-w-0 flex-col rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm">
       <FilterableDataTable
         rows={searchResults}
         columns={posOldSearchColumns}
@@ -2320,41 +2324,47 @@ const POSOld = () => {
 
         {/* Top right buttons */}
         <div className="flex items-center gap-2">
-          <UploadImportButton
-            endpoint="/pos-old-sales/bulk"
-            fieldConfig={POS_OLD_SALE_IMPORT_CONFIG}
-          />
-          <button
-            onClick={async () => {
-              try {
-                const res = await api.get("/pos-old-sales/last-receipt");
-                const sale = res.data?.data;
-                if (!sale) {
-                  toast.error("No previous sale found");
-                  return;
-                }
-                const receiptCompanyId = sale?.company_id || authUser?.company_id || null;
-                const receiptCustomization = loadSalesReceiptCustomization(receiptCompanyId || "default");
-                const companyInfo = await fetchReceiptCompanyInfo(receiptCompanyId);
-                await handlePrintReceipt(buildPosOldSaleReceiptPayload({
-                  sale,
-                  authUser,
-                  receiptCustomization,
-                  companyInfo,
-                  stockRows,
-                  paymentMethod: sale?.is_exchange ? "Exchange" : "Cash",
-                }));
-              } catch (err) {
-                toast.error(err?.response?.data?.message || "No previous sale found");
-              }
-            }}
-            className="glass-btn glass-btn-primary inline-flex items-center gap-1 text-sm"
-          >
-            <Printer className="w-4 h-4" /> Receipt
-          </button>
-          <button onClick={handleOpenCloseRegister} className="glass-btn glass-btn-primary inline-flex items-center gap-1 text-sm">
-            <CreditCard className="w-4 h-4" /> Close
-          </button>
+          {!showSearchPage && (
+            <>
+              <button
+                onClick={async () => {
+                  try {
+                    const res = await api.get("/pos-old-sales/last-receipt");
+                    const sale = res.data?.data;
+                    if (!sale) {
+                      toast.error("No previous sale found");
+                      return;
+                    }
+                    const receiptCompanyId = sale?.company_id || authUser?.company_id || null;
+                    const receiptCustomization = loadSalesReceiptCustomization(receiptCompanyId || "default");
+                    const companyInfo = await fetchReceiptCompanyInfo(receiptCompanyId);
+                    await handlePrintReceipt(buildPosOldSaleReceiptPayload({
+                      sale,
+                      authUser,
+                      receiptCustomization,
+                      companyInfo,
+                      stockRows,
+                      paymentMethod: sale?.is_exchange ? "Exchange" : "Cash",
+                    }));
+                  } catch (err) {
+                    toast.error(err?.response?.data?.message || "No previous sale found");
+                  }
+                }}
+                className="glass-btn glass-btn-primary inline-flex items-center gap-1 text-sm"
+              >
+                <Printer className="w-4 h-4" /> Receipt
+              </button>
+              <button onClick={handleOpenCloseRegister} className="glass-btn glass-btn-primary inline-flex items-center gap-1 text-sm">
+                <CreditCard className="w-4 h-4" /> Close
+              </button>
+            </>
+          )}
+          {showSearchPage && (
+            <UploadImportButton
+              endpoint="/pos-old-sales/bulk"
+              fieldConfig={POS_OLD_SALE_IMPORT_CONFIG}
+            />
+          )}
           <button
             onClick={showSearchPage ? () => setShowSearchPage(false) : openSearchPage}
             className="glass-btn glass-btn-primary inline-flex items-center gap-1 text-sm"
@@ -2365,7 +2375,7 @@ const POSOld = () => {
       </div>
 
       {/* ─── MAIN AREA ─── */}
-      {showSearchPage ? <div className="flex flex-1 min-h-0 p-4">{renderSearchPage()}</div> : <div className="flex flex-1 overflow-hidden">
+      {showSearchPage ? <div className="flex flex-1 min-h-0 min-w-0 overflow-hidden p-4">{renderSearchPage()}</div> : <div className="flex flex-1 overflow-hidden">
         {/* ─── LEFT PANEL ─── */}
         <div className="flex-1 flex flex-col overflow-hidden border-r dark:border-gray-700">
           {/* Customer + Barcode row */}

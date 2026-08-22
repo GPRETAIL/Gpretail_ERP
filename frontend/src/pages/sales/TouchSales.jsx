@@ -578,15 +578,17 @@ const TouchSales = () => {
       };
 
       const html = buildPosSaleReceiptHtml(receiptData, receiptCustomization);
-      if (printerConnected) {
-        const jobId = await queuePrintHtml(html, {
+      const isDirectPrint = receiptCustomization.printMode !== "browser";
+
+      if (isDirectPrint) {
+        await queuePrintHtml(html, {
           label: `TouchPOS-${billNumber}`,
           docType: "pos_sale_receipt",
           copies: 1,
           companyId: receiptCompanyId,
           receiptData,
         });
-        if (jobId) return;
+        return;
       }
 
       const win = window.open("", "_blank", "width=400,height=650");

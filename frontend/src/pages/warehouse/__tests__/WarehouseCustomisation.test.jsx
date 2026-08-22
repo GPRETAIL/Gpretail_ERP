@@ -101,6 +101,20 @@ describe("Warehouse Customisation Page", () => {
     });
   });
 
+  it("toggles MRP Strikethrough and updates settings", async () => {
+    renderComponent();
+
+    await waitFor(() => {
+      expect(screen.getByText("MRP Strikethrough")).toBeDefined();
+    });
+
+    const mrpToggle = screen.getByLabelText(/MRP Strikethrough/i);
+    expect(mrpToggle.checked).toBe(false);
+
+    fireEvent.click(mrpToggle);
+    expect(mrpToggle.checked).toBe(true);
+  });
+
   it("handles save with API call and shows success toast", async () => {
     renderComponent();
 

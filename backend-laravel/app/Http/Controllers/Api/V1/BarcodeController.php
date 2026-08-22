@@ -29,7 +29,12 @@ class BarcodeController extends Controller
      * ───────────────────────────────────────────────────────────── */
     public function index(Request $request)
     {
-        $query = Barcode::with(['product.brand', 'product.category', 'variant']);
+        $query = Barcode::with([
+            'product.brand',
+            'product.category',
+            'variant',
+            'directPurchase:id,supplier_name,invoice_no,purchase_date',
+        ]);
 
         // --- Source filters (warehouse workflows) ---
         if ($request->filled('direct_purchase_id')) {
