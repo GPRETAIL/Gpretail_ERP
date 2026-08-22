@@ -4,7 +4,8 @@ from typing import Any
 MONEY_RE = r"(?:₹|Rs\.?|INR)?\s*([0-9]+(?:,[0-9]{3})*(?:\.[0-9]{1,2})?)"
 GSTIN_RE = re.compile(r"\b[0-9]{2}[A-Z0-9]{5}[0-9]{4}[A-Z][A-Z0-9]Z[A-Z0-9]\b", re.I)
 DATE_RE = re.compile(r"\b(?:\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}|\d{4}[-/.]\d{1,2}[-/.]\d{1,2})\b")
-INVOICE_NO_RE = re.compile(r"(?:invoice|inv|bill)\s*(?:no|number|#)?\s*[:\-]?\s*([A-Z0-9][A-Z0-9./_-]{2,})", re.I)
+INVOICE_NO_RE = re.compile(r"\b(?:invoice|bill)\b\s*(?:no|number|#)?\s*[:\-]?\s*([A-Z0-9][A-Z0-9./_-]{2,})", re.I)
+INV_SHORT_RE = re.compile(r"\binv\.?\b\s*(?:no|number|#)?\s*[:\-]?\s*([A-Z0-9][A-Z0-9./_-]{2,})", re.I)
 ITEM_HEADER_RE = re.compile(r"\b(?:description|item|product|particular|details)\b.*\b(?:qty|quantity)\b.*\b(?:rate|price)\b", re.I)
 TOTAL_LABELS = ("grand total", "invoice total", "net payable", "total amount", "amount payable", "net amount")
 
@@ -17,11 +18,12 @@ def line_text(blocks: list[dict[str, Any]]) -> list[str]:
     return [str(x.get("text", "")).strip() for x in blocks if str(x.get("text", "")).strip()]
 
 
-def find_near(lines: list[str], pattern: re.Pattern[str]) -> str | None:
+def find_near(lines: list[str], patterns: tuple[re.Pattern[str], ...]) -> str | None:
     for line in lines:
-        match = pattern.search(line)
-        if match:
-            return match.group(1)
+        for pattern in patterns:
+            match = pattern.search(line)
+            if match:
+                return match.group(1)
     return None
 
 
@@ -110,7 +112,10 @@ def parse_invoice(blocks: list[dict[str, Any]]) -> dict[str, Any]:
 
     return {
         "supplier": {"name": supplier_name, "gstin": find_gstin(lines)},
-        "invoice": {"number": find_near(lines, INVOICE_NO_RE), "date": find_date(lines)},
+        "invoice": {
+            "number": find_near(lines, (INVOICE_NO_RE, INV_SHORT_RE)),
+            "date": find_date(lines),
+        },
         "items": parse_items(lines),
         "tax": {
             "cgst": find_amount(lines, ("cgst",)),
