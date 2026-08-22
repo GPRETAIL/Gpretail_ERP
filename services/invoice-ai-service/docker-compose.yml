@@ -1,0 +1,7 @@
+services:
+  invoice-ai-service:
+    build: .
+    container_name: vynerix-invoice-ai
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
