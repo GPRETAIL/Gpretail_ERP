@@ -4,8 +4,9 @@ from pathlib import Path
 import tempfile
 
 from .ocr import extract_document
+from .validation import validate_invoice
 
-app = FastAPI(title="Vynerix Invoice AI Service", version="0.1.0")
+app = FastAPI(title="Vynerix Invoice AI Service", version="0.2.0")
 
 ALLOWED_TYPES = {
     "application/pdf",
@@ -23,7 +24,7 @@ def health():
 
 @app.get("/ready")
 def ready():
-    return {"status": "ready", "ocr": "paddleocr"}
+    return {"status": "ready", "ocr": "paddleocr", "parser": "invoice-fields-v1"}
 
 
 @app.post("/api/v1/invoices/extract")
@@ -42,6 +43,7 @@ async def extract_invoice(file: UploadFile = File(...)):
 
     try:
         result = extract_document(path, file.content_type)
+        result["validation"] = validate_invoice(result["invoice"])
         return JSONResponse(content=result)
     finally:
         Path(path).unlink(missing_ok=True)
