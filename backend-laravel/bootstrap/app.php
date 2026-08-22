@@ -13,7 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
         then: function (): void {
-            Route::middleware('api')->group(base_path('routes/invoice_ai.php'));
+            Route::middleware('api')->prefix('api')->group(base_path('routes/invoice_ai.php'));
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
