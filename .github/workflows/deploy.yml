@@ -10,7 +10,6 @@ on:
   workflow_dispatch:
 
 jobs:
-  # ─── 1. FRONTEND TEST & BUILD ───────────────────────────────────────────────
   frontend:
     name: Frontend Test & Build
     runs-on: ubuntu-latest
@@ -44,7 +43,6 @@ jobs:
           path: frontend/dist/
           retention-days: 1
 
-  # ─── 2. BACKEND TEST & VALIDATE ─────────────────────────────────────────────
   backend:
     name: Backend Test & Validate
     runs-on: ubuntu-latest
@@ -77,7 +75,6 @@ jobs:
         working-directory: backend-laravel
         run: php artisan test --without-tty
 
-  # ─── 3. DEPLOY TO HOSTINGER (MAIN BRANCH ONLY) ──────────────────────────────
   deploy:
     name: Deploy to Hostinger
     needs: [frontend, backend]
@@ -105,21 +102,31 @@ jobs:
           path: frontend-dist/
 
       - name: Prepare & Package Deployment Archive
+        env:
+          OCR_SPACE_API_KEY: ${{ secrets.OCR_SPACE_API_KEY }}
         run: |
+          if [ -z "$OCR_SPACE_API_KEY" ]; then
+            echo "OCR_SPACE_API_KEY GitHub secret is not configured."
+            exit 1
+          fi
+
           mkdir -p backend-laravel/public/
           cp -r frontend-dist/* backend-laravel/public/
           cp backend-laravel/.env.production.example backend-laravel/.env
+
+          printf '\nOCR_SPACE_API_KEY=%s\n' "$OCR_SPACE_API_KEY" >> backend-laravel/.env
+
           mkdir -p backend-laravel/storage/framework/cache/data
           mkdir -p backend-laravel/storage/framework/sessions
           mkdir -p backend-laravel/storage/framework/views
           mkdir -p backend-laravel/storage/logs
           mkdir -p backend-laravel/bootstrap/cache
           chmod -R 777 backend-laravel/storage backend-laravel/bootstrap/cache
-          
+
           cd backend-laravel
           zip -r ../deploy.zip . -x "*.git*" "node_modules/*" "tests/*"
           cd ..
-          
+
           mkdir -p ftp_upload/public
           cp deploy.zip ftp_upload/
           cp backend-laravel/unzip.php ftp_upload/
@@ -128,24 +135,22 @@ jobs:
           cp backend-laravel/public/unzip.php ftp_upload/public/
           cp backend-laravel/public/migrate.php ftp_upload/public/
 
-      - name: 🚀 Fast Upload via FTP to Hostinger
+      - name: Fast Upload via FTP to Hostinger
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: 157.173.216.156
-          username: ${{ secrets.HOSTINGER_FTP_USERNAME || 'u597975289.Dev' }}
-          password: ${{ secrets.HOSTINGER_FTP_PASSWORD || 'Saran@1300!' }}
+          username: ${{ secrets.HOSTINGER_FTP_USERNAME }}
+          password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
           port: 21
           server-dir: ./
           local-dir: ./ftp_upload/
           dangerous-clean-slate: false
 
-      - name: ⚡ Trigger Remote Unzip & Run Migrations
+      - name: Trigger Remote Unzip & Run Migrations
         run: |
-          echo "Triggering instant remote extraction on Hostinger..."
-          curl -s "https://dev.gpsoftware.in/unzip.php?token=NextErpDeploySecret2026"
+          curl -fsS "https://dev.gpsoftware.in/unzip.php?token=${{ secrets.HOSTINGER_DEPLOY_TOKEN }}"
           sleep 3
-          echo "Running database migrations..."
-          curl -s "https://dev.gpsoftware.in/migrate.php?token=NextErpDeploySecret2026"
+          curl -fsS "https://dev.gpsoftware.in/migrate.php?token=${{ secrets.HOSTINGER_DEPLOY_TOKEN }}"
 
       - name: Deploy via SSH to Hostinger
         if: env.HOSTINGER_SSH_HOST != ''
