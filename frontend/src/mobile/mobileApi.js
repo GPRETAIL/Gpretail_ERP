@@ -1,4 +1,4 @@
-import api from "../services/api";
+import api from "../api/axios";
 
 const get = async (url, params = {}) => {
   const response = await api.get(url, { params });
