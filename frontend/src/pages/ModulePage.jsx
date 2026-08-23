@@ -1,4 +1,3 @@
-// src/pages/ModulePage.jsx
 import React from "react";
 import { Link, useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
@@ -70,6 +69,8 @@ const ModulePage = () => {
     );
   }
 
+  const isWarehouse = normalizedModuleName === "warehouse";
+
   return (
     <section className="p-6">
       {/* Module Header Card: clickable to all-modules hub */}
@@ -82,6 +83,21 @@ const ModulePage = () => {
             {moduleData.name}
           </span>
         </Link>
+
+        {isWarehouse && (
+          <Link
+            to="/warehouse/new-page"
+            className="flex items-center gap-3 p-4 bg-indigo-600 shadow-md rounded-xl hover:bg-indigo-700 hover:shadow-lg transition-all duration-200 group min-h-[72px]"
+          >
+            <div className="w-10 h-10 rounded-lg bg-white/15 flex items-center justify-center text-white text-xl font-semibold">
+              +
+            </div>
+            <div>
+              <span className="block font-semibold text-white">New Page</span>
+              <span className="block text-xs text-indigo-100 mt-0.5">Invoice AI intake</span>
+            </div>
+          </Link>
+        )}
       </div>
 
       {/* Submenu Cards */}

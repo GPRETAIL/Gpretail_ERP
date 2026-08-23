@@ -10,74 +10,61 @@ on:
   workflow_dispatch:
 
 jobs:
-  # ─── 1. FRONTEND TEST & BUILD ───────────────────────────────────────────────
   frontend:
     name: Frontend Test & Build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
-
+        uses: actions/checkout@v7
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-
       - name: Install Frontend Dependencies
         working-directory: frontend
         run: npm ci
-
       - name: Run Frontend Tests
         working-directory: frontend
         run: npm test
-
       - name: Build Frontend Bundle
         working-directory: frontend
         run: npm run build
-
       - name: Upload Frontend Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: frontend-dist
           path: frontend/dist/
           retention-days: 1
 
-  # ─── 2. BACKEND TEST & VALIDATE ─────────────────────────────────────────────
   backend:
     name: Backend Test & Validate
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
-
+        uses: actions/checkout@v7
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
           extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_sqlite, pdo_mysql, bcmath, curl
           coverage: none
-
       - name: Validate Composer Configuration
         working-directory: backend-laravel
         run: composer validate --strict
-
       - name: Install Composer Dependencies
         working-directory: backend-laravel
         run: composer install --prefer-dist --no-progress --no-interaction --ignore-platform-req=php+
-
       - name: Setup Test Environment
         working-directory: backend-laravel
         run: |
           cp .env.example .env
           php artisan key:generate
-
       - name: Run Backend Tests
         working-directory: backend-laravel
         run: php artisan test --without-tty
 
-  # ─── 3. DEPLOY TO HOSTINGER (MAIN BRANCH ONLY) ──────────────────────────────
   deploy:
     name: Deploy to Hostinger
     needs: [frontend, backend]
@@ -85,68 +72,70 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
-
+        uses: actions/checkout@v7
       - name: Setup PHP for Production Deployment Package
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
           extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_sqlite, pdo_mysql, bcmath, curl
           coverage: none
-
       - name: Install Production Composer Dependencies
         working-directory: backend-laravel
         run: composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --ignore-platform-req=php+
-
       - name: Download Frontend Build
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: frontend-dist
           path: frontend-dist/
-
-      - name: Prepare & Package Deployment Archive
+      - name: Prepare Deployment Package
+        env:
+          OCR_SPACE_API_KEY: ${{ secrets.OCR_SPACE_API_KEY }}
         run: |
           mkdir -p backend-laravel/public/
           cp -r frontend-dist/* backend-laravel/public/
           cp backend-laravel/.env.production.example backend-laravel/.env
+          if [ -n "$OCR_SPACE_API_KEY" ]; then
+            printf '\nOCR_SPACE_API_KEY=%s\n' "$OCR_SPACE_API_KEY" >> backend-laravel/.env
+          fi
           mkdir -p backend-laravel/storage/framework/cache/data
           mkdir -p backend-laravel/storage/framework/sessions
           mkdir -p backend-laravel/storage/framework/views
           mkdir -p backend-laravel/storage/logs
           mkdir -p backend-laravel/bootstrap/cache
           chmod -R 777 backend-laravel/storage backend-laravel/bootstrap/cache
-          
           cd backend-laravel
           zip -r ../deploy.zip . -x "*.git*" "node_modules/*" "tests/*"
           cd ..
-          
-          mkdir -p ftp_upload/public
+          mkdir -p ftp_upload
           cp deploy.zip ftp_upload/
           cp backend-laravel/unzip.php ftp_upload/
-          cp backend-laravel/migrate.php ftp_upload/
-          cp backend-laravel/.htaccess ftp_upload/
-          cp backend-laravel/public/unzip.php ftp_upload/public/
-          cp backend-laravel/public/migrate.php ftp_upload/public/
-
-      - name: 🚀 Fast Upload via FTP to Hostinger
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+      - name: Upload Deployment Archive to GitHub Artifacts
+        uses: actions/upload-artifact@v6
+        with:
+          name: hostinger-deployment-package
+          path: deploy.zip
+          retention-days: 7
+      - name: Fast Upload via FTP to Hostinger
+        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
         with:
           server: 157.173.216.156
-          username: ${{ secrets.HOSTINGER_FTP_USERNAME || 'u597975289.Dev' }}
-          password: ${{ secrets.HOSTINGER_FTP_PASSWORD || 'Saran@1300!' }}
+          username: ${{ secrets.HOSTINGER_FTP_USERNAME }}
+          password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
           port: 21
           server-dir: ./
           local-dir: ./ftp_upload/
           dangerous-clean-slate: false
-
-      - name: ⚡ Trigger Remote Unzip & Run Migrations
+      - name: Trigger Remote Unzip and Run Migrations
+        env:
+          HOSTINGER_DEPLOY_TOKEN: ${{ secrets.HOSTINGER_DEPLOY_TOKEN }}
         run: |
-          echo "Triggering instant remote extraction on Hostinger..."
-          curl -s "https://dev.gpsoftware.in/unzip.php?token=NextErpDeploySecret2026"
-          sleep 3
-          echo "Running database migrations..."
-          curl -s "https://dev.gpsoftware.in/migrate.php?token=NextErpDeploySecret2026"
-
+          if [ -n "$HOSTINGER_DEPLOY_TOKEN" ]; then
+            curl -fsS "https://dev.gpsoftware.in/unzip.php?token=${HOSTINGER_DEPLOY_TOKEN}"
+            sleep 2
+            curl -fsS "https://dev.gpsoftware.in/run-migrations"
+          else
+            echo "HOSTINGER_DEPLOY_TOKEN is not configured; remote trigger skipped."
+          fi
       - name: Deploy via SSH to Hostinger
         if: env.HOSTINGER_SSH_HOST != ''
         env:
