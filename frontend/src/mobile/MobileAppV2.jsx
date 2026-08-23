@@ -19,6 +19,7 @@ import PurchaseScreen from "./screens/PurchaseScreen";
 import InventoryScreen from "./screens/InventoryScreen";
 import ProductDetailScreen from "./screens/ProductDetailScreen";
 import ReportsScreen from "./screens/ReportsScreen";
+import ReportDetailScreen from "./screens/ReportDetailScreen";
 import SettingsScreen from "./screens/SettingsScreen";
 import MobileLoginScreen from "./screens/MobileLoginScreen";
 import { checkSupplierPaymentAlerts } from "./notifications/notificationService";
@@ -35,6 +36,9 @@ const TITLES = {
   inventory: "Inventory Summary",
   product_details: "Product Details",
   reports: "Reports",
+  report_profit_loss: "Profit & Loss",
+  report_gst: "GST Report",
+  report_receivables: "Receivables Report",
   settings: "Settings",
   customers: "Customers",
   suppliers: "Suppliers",
@@ -182,7 +186,11 @@ export default function VynerixMobileApp() {
           <ProductDetailScreen product={selectedProduct} onBack={goBack} />
         )}
 
-        {page === "reports" && <ReportsScreen />}
+        {page === "reports" && <ReportsScreen onNavigate={navigateTo} />}
+
+        {(page === "report_profit_loss" || page === "report_gst" || page === "report_receivables") && (
+          <ReportDetailScreen reportType={page.replace("report_", "")} />
+        )}
 
         {page === "settings" && (
           <SettingsScreen onLogout={handleLogout} onTriggerPwa={triggerInstall} />
