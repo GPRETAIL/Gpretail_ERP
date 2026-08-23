@@ -702,3 +702,88 @@
     left: 0;
   }
 }
+
+/* ─── Real Progress Bar (driven by useAppInit) ───────────────────────── */
+.vx-splash-bar--real {
+  animation: none;
+  transition: width 0.4s ease;
+  background: linear-gradient(90deg, rgba(255,255,255,0.6), #ffffff, rgba(255,255,255,0.6));
+}
+
+/* ─── Skeleton Loaders ───────────────────────────────────────────────── */
+.vx-skel {
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  animation: vxShimmer 1.5s infinite;
+  border-radius: 6px;
+}
+
+.vx-skel-line {
+  height: 12px;
+  margin-bottom: 6px;
+}
+
+.vx-skel-line.vx-skel-lg {
+  height: 22px;
+}
+
+.vx-skel-block {
+  width: 100%;
+  border-radius: 12px;
+}
+
+@keyframes vxShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ─── Offline / Reconnected Banner ───────────────────────────────────── */
+.vx-offline-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #fef3c7;
+  color: #92400e;
+  z-index: 39;
+  animation: vxSlideDown 0.25s ease;
+}
+
+.vx-offline-banner.vx-reconnected {
+  background: #dcfce7;
+  color: #166534;
+}
+
+@keyframes vxSlideDown {
+  from { transform: translateY(-100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* ─── Page Transition ────────────────────────────────────────────────── */
+.vx-ws-main {
+  flex: 1;
+  min-width: 0;
+  padding: 16px;
+  padding-bottom: 90px;
+  animation: vxPageIn 0.2s ease;
+}
+
+@keyframes vxPageIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Safe Area for Notched Devices ──────────────────────────────────── */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .vx-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+    height: calc(64px + env(safe-area-inset-bottom));
+  }
+  .vx-ws-topbar {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+

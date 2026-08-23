@@ -11,7 +11,7 @@ import ActivationGate from "./components/ActivationGate";
 import ActivationWizard from "./pages/ActivationWizard";
 import SetPassword from "./pages/SetPassword";
 import ForceChangePassword from "./pages/ForceChangePassword";
-import EnterpriseMobileWorkspace from "./mobile/EnterpriseMobileWorkspace";
+import VynerixMobileApp from "./mobile/MobileAppV2";
 import PwaInstallPrompt from "./components/PwaInstallPrompt";
 
 function App() {
@@ -35,7 +35,7 @@ function App() {
               <Route path="/set-password" element={<SetPassword />} />
               <Route path="/register" element={isAuthenticated ? <Navigate to={homePath} replace /> : <Register />} />
               <Route element={<ProtectedRoute />}>
-                <Route path="/app/*" element={<EnterpriseMobileWorkspace />} />
+                <Route path="/app/*" element={<VynerixMobileApp />} />
                 <Route path="*" element={<MainLayout />} />
               </Route>
               <Route path="/" element={isAuthenticated ? <Navigate to={homePath} replace /> : <Navigate to="/login" replace />} />
