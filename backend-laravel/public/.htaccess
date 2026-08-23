@@ -7,6 +7,27 @@
 # renders the right route.
 ErrorDocument 403 /index.php
 
+# Hostinger's platform applies a blanket 7-day Cache-Control (public,
+# max-age=604800) to static files regardless of what this app sends -
+# harmless for Vite's content-hashed JS/CSS (a new deploy gets a new
+# filename anyway), but fatal for the PWA service worker and manifest:
+# browsers only ever re-check sw.js for updates when they can fetch a
+# fresh copy, so with a week-long cache a phone that visited before a
+# deploy keeps running the OLD service worker - and therefore the old
+# cached app shell - for up to 7 days no matter how many times the
+# backend gets redeployed. Force these specific files to always
+# revalidate so PWA updates actually reach users after a deploy.
+<IfModule mod_headers.c>
+    <FilesMatch "^(sw|service-worker|registerSW)\.js$">
+        Header set Cache-Control "no-cache, no-store, must-revalidate"
+        Header set Pragma "no-cache"
+        Header unset Expires
+    </FilesMatch>
+    <FilesMatch "^manifest\.webmanifest$">
+        Header set Cache-Control "no-cache, must-revalidate"
+    </FilesMatch>
+</IfModule>
+
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes
