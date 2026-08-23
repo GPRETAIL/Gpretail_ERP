@@ -7,8 +7,9 @@ import {
   ChevronRight,
   AlertTriangle,
   FileText,
-  CreditCard,
-  Users,
+  RotateCcw,
+  Wallet,
+  Sparkles,
 } from "lucide-react";
 import api from "../../api/axios";
 import { setCachedData, getCachedData } from "../offline/db";
@@ -19,6 +20,18 @@ const money = (n) =>
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
+
+// Matches the color keys DashboardController::overview() assigns per payment
+// method (cash/card/upi/credit/return/discount), same palette the desktop
+// Settlement Details table already uses.
+const SETTLEMENT_DOT_CLASS = {
+  emerald: "bg-emerald-500",
+  blue: "bg-blue-500",
+  violet: "bg-violet-500",
+  amber: "bg-amber-500",
+  rose: "bg-rose-500",
+  slate: "bg-slate-400",
+};
 
 const formatYmd = (date) => {
   const year = date.getFullYear();
@@ -33,6 +46,7 @@ export default function DashboardScreen({ onNavigate }) {
   const [overviewData, setOverviewData] = useState(null);
   const [, setSummaryData] = useState(null);
   const [attentionData, setAttentionData] = useState(null);
+  const [supplierDues, setSupplierDues] = useState(null);
 
   // Compute date range dates
   const { fromDate, toDate } = useMemo(() => {
@@ -60,7 +74,7 @@ export default function DashboardScreen({ onNavigate }) {
   const loadDashboardData = useCallback(async () => {
     setLoading(true);
     try {
-      const [overviewRes, summaryRes, purchasesRes, attentionRes] = await Promise.allSettled([
+      const [overviewRes, summaryRes, purchasesRes, attentionRes, duesRes] = await Promise.allSettled([
         api.get("/dashboard/overview", {
           params: {
             from: fromDate,
@@ -71,23 +85,29 @@ export default function DashboardScreen({ onNavigate }) {
         api.get("/dashboard/summary"),
         api.get("/direct-purchases", { params: { limit: 10 } }),
         api.get("/dashboard/attention-summary"),
+        api.get("/supplier-payments/pending", { params: { limit: 1 } }),
       ]);
 
       const ov = overviewRes.status === "fulfilled" ? overviewRes.value.data?.data : null;
       const sm = summaryRes.status === "fulfilled" ? summaryRes.value.data?.data : null;
       const pc = purchasesRes.status === "fulfilled" ? purchasesRes.value.data?.data : null;
       const att = attentionRes.status === "fulfilled" ? attentionRes.value.data?.data : null;
+      const dues = duesRes.status === "fulfilled"
+        ? { totalPayable: duesRes.value.data?.totalPayable, count: duesRes.value.data?.total }
+        : null;
 
       const combined = {
         overview: ov,
         summary: sm,
         purchases: Array.isArray(pc) ? pc : pc?.data || [],
         attention: att,
+        dues,
       };
 
       setOverviewData(ov);
       setSummaryData(sm);
       setAttentionData(att);
+      setSupplierDues(dues);
 
       // Cache locally in IndexedDB for offline viewing
       setCachedData(`dashboard_${dateRange}`, combined);
@@ -98,6 +118,7 @@ export default function DashboardScreen({ onNavigate }) {
         setOverviewData(cached.overview);
         setSummaryData(cached.summary);
         setAttentionData(cached.attention);
+        setSupplierDues(cached.dues);
       }
     } finally {
       setLoading(false);
@@ -112,12 +133,9 @@ export default function DashboardScreen({ onNavigate }) {
     return () => window.removeEventListener("vx-network-restored", handleRestored);
   }, [loadDashboardData]);
 
-  // Extract core metrics from the real /dashboard/overview response shape -
-  // the same four cards the desktop Dashboard.jsx renders (Total Bills,
-  // Settlement, Employees, Stock value), so mobile and desktop agree on
-  // both the numbers and the labels instead of mobile inventing its own
-  // "Net Sales"/"Closing Stock" names for the same underlying fields.
+  // Extract core metrics from the real /dashboard/overview response shape.
   const metrics = overviewData?.metrics || {};
+  const tables = overviewData?.tables || {};
 
   const hasBillsData = metrics.totalBills != null;
   const totalBillsAmount = Number(metrics.totalBills?.amount ?? 0);
@@ -126,19 +144,24 @@ export default function DashboardScreen({ onNavigate }) {
   const billsTrend = metrics.totalBills?.trend?.changePercent ?? null;
   const billsTrendDirection = metrics.totalBills?.trend?.direction ?? null;
 
-  const hasSettlementData = metrics.settlements != null;
-  const settlementAmount = Number(metrics.settlements?.amount ?? 0);
-  const settlementTrend = metrics.settlements?.trend?.changePercent ?? null;
-  const settlementTrendDirection = metrics.settlements?.trend?.direction ?? null;
-
-  const hasEmployeeData = metrics.employees != null;
-  const employeesPresent = Number(metrics.employees?.present ?? 0);
-  const employeesTotal = Number(metrics.employees?.total ?? 0);
-
   const hasStockData = metrics.stockValue != null;
   const totalStockVal = Number(metrics.stockValue?.amount ?? 0);
   const stockTrend = metrics.stockValue?.trend?.changePercent ?? null;
   const stockTrendDirection = metrics.stockValue?.trend?.direction ?? null;
+
+  const hasReturnsData = metrics.returns != null;
+  const returnsAmount = Number(metrics.returns?.amount ?? 0);
+  const returnsCount = Number(metrics.returns?.count ?? 0);
+  const returnsTrend = metrics.returns?.trend?.changePercent ?? null;
+  const returnsTrendDirection = metrics.returns?.trend?.direction ?? null;
+
+  const hasDuesData = supplierDues != null;
+  const duesAmount = Number(supplierDues?.totalPayable ?? 0);
+  const duesCount = Number(supplierDues?.count ?? 0);
+
+  const fastMovingRows = tables.fastMovingSection?.rows || [];
+  const settlementRows = tables.settlementDetails?.rows || [];
+  const settlementGrandTotal = tables.settlementDetails?.grandTotal ?? null;
 
   return (
     <div className="space-y-3.5 pb-8">
@@ -308,65 +331,42 @@ export default function DashboardScreen({ onNavigate }) {
           </div>
         </div>
 
-        {/* CARD 2: Settlement */}
+        {/* CARD 2: Returns */}
         <div
           onClick={() => onNavigate("sales")}
-          className="p-3 rounded-2xl bg-gradient-to-br from-blue-500/10 via-white to-white border border-blue-200/80 shadow-xs active:scale-98 transition-all cursor-pointer flex flex-col justify-between"
+          className="p-3 rounded-2xl bg-gradient-to-br from-rose-500/10 via-white to-white border border-rose-200/80 shadow-xs active:scale-98 transition-all cursor-pointer flex flex-col justify-between"
         >
           <div>
             <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] font-black uppercase tracking-wider text-blue-700">
-                Settlement
+              <span className="text-[10px] font-black uppercase tracking-wider text-rose-700">
+                Returns
               </span>
-              <div className="w-5 h-5 rounded-md bg-blue-100 text-blue-700 flex items-center justify-center">
-                <CreditCard size={12} />
+              <div className="w-5 h-5 rounded-md bg-rose-100 text-rose-700 flex items-center justify-center">
+                <RotateCcw size={12} />
               </div>
             </div>
 
             <div className="text-[14px] font-black text-slate-900 tracking-tight leading-snug">
-              {hasSettlementData ? money(settlementAmount) : "—"}
+              {hasReturnsData ? money(returnsAmount) : "—"}
             </div>
           </div>
 
-          <div className="mt-2 pt-1.5 border-t border-blue-100/70 flex items-center justify-end text-[9.5px] text-slate-600 font-semibold">
-            {settlementTrend != null && (
+          <div className="mt-2 pt-1.5 border-t border-rose-100/70 flex items-center justify-between text-[9.5px] text-slate-600 font-semibold">
+            <span>{returnsCount} Returns</span>
+            {returnsTrend != null && (
               <span
                 className={`font-bold ${
-                  settlementTrendDirection === "down" ? "text-rose-600" : "text-emerald-600"
+                  returnsTrendDirection === "down" ? "text-emerald-600" : "text-rose-600"
                 }`}
               >
-                {settlementTrendDirection === "down" ? "↓" : "↑"}
-                {settlementTrend}%
+                {returnsTrendDirection === "down" ? "↓" : "↑"}
+                {returnsTrend}%
               </span>
             )}
           </div>
         </div>
 
-        {/* CARD 3: Employees (Present / Total) */}
-        <div
-          className="p-3 rounded-2xl bg-gradient-to-br from-amber-500/10 via-white to-white border border-amber-200/80 shadow-xs flex flex-col justify-between"
-        >
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] font-black uppercase tracking-wider text-amber-700">
-                Employees
-              </span>
-              <div className="w-5 h-5 rounded-md bg-amber-100 text-amber-700 flex items-center justify-center">
-                <Users size={12} />
-              </div>
-            </div>
-
-            <div className="text-[14px] font-black text-slate-900 tracking-tight leading-snug">
-              {hasEmployeeData ? `${employeesPresent}/${employeesTotal}` : "—"}
-            </div>
-          </div>
-
-          <div className="mt-2 pt-1.5 border-t border-amber-100/70 text-[9.5px] text-slate-600 font-semibold">
-            Present / total
-          </div>
-        </div>
-
-        {/* CARD 4: Stock value */}
+        {/* CARD 3: Stock value */}
         <div
           onClick={() => onNavigate("inventory")}
           className="p-3 rounded-2xl bg-gradient-to-br from-purple-500/10 via-white to-white border border-purple-200/80 shadow-xs active:scale-98 transition-all cursor-pointer flex flex-col justify-between"
@@ -399,6 +399,111 @@ export default function DashboardScreen({ onNavigate }) {
             )}
           </div>
         </div>
+      </div>
+
+      {/* ─── Supplier Pending Dues (real data: GET /supplier-payments/pending) ─── */}
+      <div
+        onClick={() => onNavigate("purchase")}
+        className="p-3.5 rounded-2xl bg-white border border-slate-200/80 shadow-xs active:scale-98 transition-all cursor-pointer flex items-center justify-between"
+      >
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+            <Wallet size={16} />
+          </div>
+          <div>
+            <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-wider m-0">
+              Supplier Dues
+            </h4>
+            <p className="text-[9.5px] text-slate-500 font-semibold m-0 mt-0.5">
+              {hasDuesData ? `${duesCount} bill${duesCount === 1 ? "" : "s"} pending` : "—"}
+            </p>
+          </div>
+        </div>
+        <div className="text-right">
+          <span className="text-[13px] font-black text-amber-700">
+            {hasDuesData ? money(duesAmount) : "—"}
+          </span>
+        </div>
+      </div>
+
+      {/* ─── Fast Moving Products (real data: tables.fastMovingSection) ─── */}
+      <div className="p-3.5 rounded-2xl bg-white border border-slate-200/80 shadow-xs">
+        <div className="flex items-center gap-1.5 mb-2.5">
+          <Sparkles size={15} className="text-amber-500" />
+          <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-wider m-0">
+            Fast Moving Products
+          </h4>
+        </div>
+
+        {fastMovingRows.length > 0 ? (
+          <div className="space-y-1.5">
+            {fastMovingRows.slice(0, 5).map((item, idx) => (
+              <div
+                key={idx}
+                className="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-100"
+              >
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <span className="w-5 h-5 rounded-md bg-indigo-100 text-indigo-700 font-black text-[10px] flex items-center justify-center shrink-0">
+                    {idx + 1}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11.5px] font-bold text-slate-900 truncate m-0 leading-tight">
+                      {item.name}
+                    </p>
+                    <p className="text-[9.5px] font-semibold text-slate-500 m-0 mt-0.5">
+                      Sold: <strong className="text-emerald-600">{Number(item.saleQty).toLocaleString("en-IN")} Pcs</strong>
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right pl-2 shrink-0">
+                  <p className="text-[11.5px] font-black text-slate-900 m-0">{money(item.value)}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-[10.5px] text-center text-slate-400 py-3">No product sales in this range</p>
+        )}
+      </div>
+
+      {/* ─── Settlement Details by Mode (real data: tables.settlementDetails) ─── */}
+      <div className="p-3.5 rounded-2xl bg-white border border-slate-200/80 shadow-xs">
+        <div className="flex items-center justify-between mb-2.5">
+          <div className="flex items-center gap-1.5">
+            <Wallet size={15} className="text-indigo-600" />
+            <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-wider m-0">
+              Settlement Details
+            </h4>
+          </div>
+          <span className="text-[9.5px] font-bold text-slate-400">By Mode</span>
+        </div>
+
+        {settlementRows.length > 0 ? (
+          <div className="space-y-1.5">
+            {settlementRows.map((row) => (
+              <div
+                key={row.key}
+                className="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-100"
+              >
+                <div className="flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-full ${SETTLEMENT_DOT_CLASS[row.color] || "bg-slate-400"}`} />
+                  <span className="text-[11px] font-bold text-slate-700">{row.label}</span>
+                </div>
+                <span className={`text-[11.5px] font-black ${row.total < 0 ? "text-rose-600" : "text-slate-900"}`}>
+                  {row.total < 0 ? "-" : ""}{money(Math.abs(row.total))}
+                </span>
+              </div>
+            ))}
+            {settlementGrandTotal != null && (
+              <div className="flex items-center justify-between pt-2 mt-1 border-t border-slate-100">
+                <span className="text-[11px] font-black text-slate-900 uppercase">Total</span>
+                <span className="text-[12.5px] font-black text-indigo-600">{money(settlementGrandTotal)}</span>
+              </div>
+            )}
+          </div>
+        ) : (
+          <p className="text-[10.5px] text-center text-slate-400 py-3">No settlements in this range</p>
+        )}
       </div>
     </div>
   );

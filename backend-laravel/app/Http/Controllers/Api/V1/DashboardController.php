@@ -60,6 +60,17 @@ class DashboardController extends Controller
         $totalSales = (float) ($dateScope($scope(PosSale::query()))->sum('grand_total') ?? 0);
         $totalOrders = (int) ($dateScope($scope(PosSale::query()))->count() ?? 0);
         $prevTotalSales = (float) ($prevDateScope($scope(PosSale::query()))->sum('grand_total') ?? 0);
+
+        // Returns - real count+amount for the selected range (previously the only place this was
+        // aggregated was buried as one row inside settlementDetails, with no standalone metric a
+        // KPI card could read the way totalBills/stockValue already can).
+        $returnDateScope = fn ($q) => $q->whereBetween('return_date', [$from, $to]);
+        $returnScope = fn ($q) => ($storeId && $storeId !== 'all') ? $q->where('store_id', $storeId) : $q;
+        $totalReturns = (float) ($returnDateScope($returnScope(DB::table('pos_returns')))->sum('total_refund') ?? 0);
+        $totalReturnCount = (int) ($returnDateScope($returnScope(DB::table('pos_returns')))->count() ?? 0);
+        $prevReturnDateScope = fn ($q) => $q->whereBetween('return_date', [$prevFrom, $prevTo]);
+        $prevTotalReturns = (float) ($prevReturnDateScope($returnScope(DB::table('pos_returns')))->sum('total_refund') ?? 0);
+
         $totalProducts = (int) Product::count();
         $totalCustomers = (int) Customer::count();
         $totalStockQty = (float) ($scope(Stock::query())->sum('quantity') ?? 0);
@@ -314,6 +325,11 @@ class DashboardController extends Controller
                         // series exists to compare against, so no trend is sent rather than a fake one.
                         'amount' => $totalStockValue,
                         'trend'  => null,
+                    ],
+                    'returns' => [
+                        'amount' => $totalReturns,
+                        'count'  => $totalReturnCount,
+                        'trend'  => $computeTrend($totalReturns, $prevTotalReturns),
                     ],
                 ],
                 'charts' => [
