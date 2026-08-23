@@ -10,6 +10,7 @@ import BottomNav from "./components/BottomNav";
 import OfflineBanner from "./components/OfflineBanner";
 import PwaUpdateBanner from "./components/PwaUpdateBanner";
 import NotificationsModal from "./components/NotificationsModal";
+import UserProfileModal from "./components/UserProfileModal";
 import DashboardScreen from "./screens/DashboardScreen";
 import ModulesScreen from "./screens/ModulesScreen";
 import SalesScreen from "./screens/SalesScreen";
@@ -45,14 +46,6 @@ const ROOT_SCREENS = new Set(["dashboard", "modules", "sales", "purchase", "inve
 
 /**
  * Vynerix ERP — Dedicated Mobile Application Root
- *
- * Orchestrates:
- *   1. Splash screen with real initialization
- *   2. Mobile login if unauthenticated
- *   3. Mobile header with unread notification badge & alert modal
- *   4. Screen routing (state-based for native mobile feel)
- *   5. Bottom navigation
- *   6. Offline awareness & background synchronization
  */
 export default function VynerixMobileApp() {
   const isAuthenticated = useSelector((s) => s.auth.isAuthenticated);
@@ -67,6 +60,7 @@ export default function VynerixMobileApp() {
   const [history, setHistory] = useState(["dashboard"]);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   const userName = authUser?.name || authUser?.username || "Admin";
 
@@ -127,6 +121,7 @@ export default function VynerixMobileApp() {
         onBack={goBack}
         userName={userName}
         onOpenNotifications={() => setIsNotificationsOpen(true)}
+        onOpenUserMenu={() => setIsUserMenuOpen(true)}
       />
 
       {/* Offline Banner */}
@@ -139,6 +134,16 @@ export default function VynerixMobileApp() {
       <NotificationsModal
         isOpen={isNotificationsOpen}
         onClose={() => setIsNotificationsOpen(false)}
+      />
+
+      {/* User Profile & Quick Actions Sheet Modal */}
+      <UserProfileModal
+        isOpen={isUserMenuOpen}
+        onClose={() => setIsUserMenuOpen(false)}
+        user={authUser}
+        onNavigate={navigateTo}
+        onLogout={handleLogout}
+        onTriggerPwa={triggerInstall}
       />
 
       {/* Main Content Area */}

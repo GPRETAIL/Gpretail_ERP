@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ArrowLeft, Bell, User } from "lucide-react";
+import { ArrowLeft, Bell } from "lucide-react";
 import api from "../../api/axios";
 import { getStoredNotifications } from "../offline/db";
 
@@ -8,7 +8,7 @@ import { getStoredNotifications } from "../offline/db";
  * - Back arrow for sub-screens
  * - Centered screen title
  * - Notification bell with unread badge and open trigger
- * - User avatar initial circle
+ * - User avatar button with quick profile & action sheet trigger
  */
 export default function MobileHeader({
   title,
@@ -16,6 +16,7 @@ export default function MobileHeader({
   onBack,
   userName,
   onOpenNotifications,
+  onOpenUserMenu,
 }) {
   const [unreadCount, setUnreadCount] = useState(
     () => window.__vx_unread_count || 0
@@ -80,22 +81,31 @@ export default function MobileHeader({
         {title}
       </div>
 
-      {/* Right: Bell + Avatar */}
-      <button
-        type="button"
-        onClick={onOpenNotifications}
-        className="vx-ws-icon relative"
-        aria-label="Notifications"
-      >
-        <Bell size={19} />
-        {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center px-1">
-            {unreadCount > 99 ? "99+" : unreadCount}
-          </span>
-        )}
-      </button>
+      {/* Right: Bell + User Avatar Button */}
+      <div className="flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={onOpenNotifications}
+          className="vx-ws-icon relative"
+          aria-label="Notifications"
+        >
+          <Bell size={19} />
+          {unreadCount > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center px-1">
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </span>
+          )}
+        </button>
 
-      <div className="vx-avatar">{initial}</div>
+        <button
+          type="button"
+          onClick={onOpenUserMenu}
+          className="vx-avatar cursor-pointer hover:ring-2 hover:ring-indigo-400 active:scale-95 transition-all"
+          aria-label="User Profile"
+        >
+          {initial}
+        </button>
+      </div>
     </header>
   );
 }
