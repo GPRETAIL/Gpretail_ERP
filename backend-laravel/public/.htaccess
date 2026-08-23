@@ -5,9 +5,18 @@
 
     RewriteEngine On
 
+    # A real "app" directory exists on the server from an earlier deployment attempt
+    # (a standalone static PWA build, since replaced by a client-side React route).
+    # Apache's own directory-slash/index handling runs BEFORE mod_rewrite for a bare
+    # request that matches an existing directory - that's what was 403ing /app/ even
+    # with the RewriteRule below in place, since this directive intercepted the
+    # request before the rule ever got evaluated. Turning it off hands every request
+    # to mod_rewrite instead, so the RewriteRule below is what actually decides.
+    DirectorySlash Off
+
     # The responsive PWA is a React route (/app/*), not a physical public directory.
-    # Force these requests through Laravel/React even if Hostinger creates a physical
-    # /app folder, otherwise Apache's directory handling can return 403 Forbidden.
+    # Force these requests through Laravel/React even though a physical /app folder
+    # still exists on the server (see DirectorySlash above for why that mattered).
     RewriteRule ^app(?:/.*)?/?$ index.php [L]
 
     # Handle Authorization Header
