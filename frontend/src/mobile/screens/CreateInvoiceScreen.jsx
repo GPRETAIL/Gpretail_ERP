@@ -324,7 +324,10 @@ export default function CreateInvoiceScreen({ onBack }) {
         )}
 
         {/* ─── SCANNER VIEW (TOP 40%) ─── */}
-        <div className="h-[40%] relative w-full overflow-hidden bg-black shrink-0">
+        <div
+          className="relative w-full overflow-hidden bg-black shrink-0"
+          style={{ flexBasis: "calc((100vh - 64px) * 0.4)" }}
+        >
           
           {/* Header Action Bar */}
           <div className="absolute top-3 left-3 right-3 z-30 flex items-center justify-between">

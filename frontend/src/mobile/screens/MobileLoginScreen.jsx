@@ -77,7 +77,7 @@ export default function MobileLoginScreen({ onLoginSuccess }) {
       </div>
 
       {/* Floating Login Card */}
-      <div className="-mt-10 px-5 flex-1 flex flex-col justify-start max-w-[440px] mx-auto w-full">
+      <div className="relative -mt-10 px-5 flex-1 flex flex-col justify-start max-w-[440px] mx-auto w-full">
         <div className="bg-white rounded-3xl p-6 shadow-xl shadow-slate-900/5 border border-slate-100">
           <div className="flex items-center justify-between mb-4">
             <div>
