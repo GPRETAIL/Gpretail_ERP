@@ -15,7 +15,11 @@ export default function Splash({ progress = 0 }) {
         <div className="vx-splash-logo-card">
           <svg
             viewBox="0 0 100 100"
-            className="w-14 h-14 drop-shadow-md"
+            className="w-16 h-16"
+            style={{
+              filter:
+                "drop-shadow(0 0 14px rgba(255,255,255,0.85)) drop-shadow(0 0 30px rgba(165,180,252,0.9)) drop-shadow(0 0 50px rgba(99,102,241,0.55))",
+            }}
             aria-hidden
           >
             <defs>
