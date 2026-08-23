@@ -34,18 +34,6 @@ const daysOutstandingClass = (days) => {
   return "text-slate-500";
 };
 
-// Matches the color keys DashboardController::overview() assigns per payment
-// method (cash/card/upi/credit/return/discount), same palette the desktop
-// Settlement Details table already uses.
-const SETTLEMENT_DOT_CLASS = {
-  emerald: "bg-emerald-500",
-  blue: "bg-blue-500",
-  violet: "bg-violet-500",
-  amber: "bg-amber-500",
-  rose: "bg-rose-500",
-  slate: "bg-slate-400",
-};
-
 const formatYmd = (date) => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -194,9 +182,6 @@ export default function DashboardScreen({ onNavigate }) {
   const duesRows = supplierDues?.rows || [];
 
   const fastMovingRows = tables.fastMovingSection?.rows || [];
-  const settlementRows = tables.settlementDetails?.rows || [];
-  const settlementGrandTotal = tables.settlementDetails?.grandTotal ?? null;
-
   return (
     <div className="space-y-3.5 pb-8">
       {/* ─── 1. Store Header & Date Filter Strip (Zoho / Quanto style) ─── */}
@@ -646,51 +631,6 @@ export default function DashboardScreen({ onNavigate }) {
         )}
       </div>
 
-      {/* ─── Settlement Details by Mode (real data: tables.settlementDetails) ─── */}
-      <div className="p-3.5 rounded-2xl bg-white border border-slate-200/80 shadow-xs">
-        <div
-          onClick={() => onNavigate("sales_summary")}
-          className="flex items-center justify-between mb-2.5 cursor-pointer active:scale-98 transition-all"
-        >
-          <div className="flex items-center gap-1.5">
-            <Wallet size={15} className="text-indigo-600" />
-            <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-wider m-0">
-              Settlement Details
-            </h4>
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="text-[9.5px] font-bold text-slate-400">By Mode</span>
-            <ChevronRight size={14} className="text-slate-400" />
-          </div>
-        </div>
-
-        {settlementRows.length > 0 ? (
-          <div className="space-y-1.5">
-            {settlementRows.map((row) => (
-              <div
-                key={row.key}
-                className="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-100"
-              >
-                <div className="flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full ${SETTLEMENT_DOT_CLASS[row.color] || "bg-slate-400"}`} />
-                  <span className="text-[11px] font-bold text-slate-700">{row.label}</span>
-                </div>
-                <span className={`text-[11.5px] font-black ${row.total < 0 ? "text-rose-600" : "text-slate-900"}`}>
-                  {row.total < 0 ? "-" : ""}{money(Math.abs(row.total))}
-                </span>
-              </div>
-            ))}
-            {settlementGrandTotal != null && (
-              <div className="flex items-center justify-between pt-2 mt-1 border-t border-slate-100">
-                <span className="text-[11px] font-black text-slate-900 uppercase">Total</span>
-                <span className="text-[12.5px] font-black text-indigo-600">{money(settlementGrandTotal)}</span>
-              </div>
-            )}
-          </div>
-        ) : (
-          <p className="text-[10.5px] text-center text-slate-400 py-3">No settlements in this range</p>
-        )}
-      </div>
     </div>
   );
 }
