@@ -17,6 +17,7 @@ header('Content-Type: application/json');
 $zipFile = __DIR__ . '/deploy.zip';
 
 if (!file_exists($zipFile)) {
+    http_response_code(503);
     echo json_encode([
         'status'  => 'error',
         'message' => 'deploy.zip not found in ' . __DIR__,
@@ -75,6 +76,7 @@ if ($res === true) {
         'migrations' => $migrationOutput,
     ]);
 } else {
+    http_response_code(503);
     echo json_encode([
         'status'  => 'error',
         'message' => 'Failed to open deploy.zip, error code: ' . $res,

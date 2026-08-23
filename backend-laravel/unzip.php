@@ -23,6 +23,12 @@ header('Content-Type: application/json');
 $zipFile = __DIR__ . '/deploy.zip';
 
 if (!file_exists($zipFile)) {
+    // A non-2xx status here is what lets the CI deploy step's retry loop
+    // (curl -f) actually detect failure and retry - it only checks the
+    // HTTP status code, not this JSON body, so returning 200 on failure
+    // made the very first attempt look like a success and the retry loop
+    // exit immediately, even though FTP hadn't finished writing deploy.zip.
+    http_response_code(503);
     echo json_encode([
         'status'  => 'error',
         'message' => 'deploy.zip not found in ' . __DIR__,
@@ -81,6 +87,11 @@ if ($res === true) {
         'migrations' => $migrationOutput,
     ]);
 } else {
+    // Same reasoning as the file_exists() check above: a truncated/still-
+    // being-written zip fails ZipArchive::open() with a corruption code -
+    // this must not look like an HTTP success or the CI retry loop stops
+    // here instead of retrying once the FTP upload actually finishes.
+    http_response_code(503);
     echo json_encode([
         'status'  => 'error',
         'message' => 'Failed to open deploy.zip, error code: ' . $res,
