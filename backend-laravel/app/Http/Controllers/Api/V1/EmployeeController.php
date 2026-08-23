@@ -80,8 +80,10 @@ class EmployeeController extends Controller
         }
 
         $code = $request->input('code') ?: 'EMP_' . strtoupper(substr(uniqid(), -6));
+        $storeId = $request->header('X-Company-Scope-Id');
 
         $employee = Employee::create([
+            'store_id'       => ($storeId && $storeId !== 'all') ? $storeId : null,
             'name'           => $request->input('name'),
             'code'           => $code,
             'email'          => $request->input('email'),

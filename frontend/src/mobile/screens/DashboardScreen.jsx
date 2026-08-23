@@ -323,6 +323,20 @@ export default function DashboardScreen({ onNavigate }) {
             </div>
             <ChevronRight size={14} className="text-slate-400" />
           </div>
+
+          {/* Item 4: Employees on Leave */}
+          <div
+            onClick={() => onNavigate("attendance")}
+            className="flex items-center justify-between p-2.5 rounded-xl bg-violet-50/50 border border-violet-100/80 active:scale-98 transition-all cursor-pointer"
+          >
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-violet-500" />
+              <span className="text-[11.5px] font-bold text-slate-700">
+                {attentionData?.employees_on_leave ?? 0} Employees on Leave
+              </span>
+            </div>
+            <ChevronRight size={14} className="text-slate-400" />
+          </div>
         </div>
       </div>
 

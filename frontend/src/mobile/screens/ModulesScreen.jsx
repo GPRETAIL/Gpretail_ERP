@@ -9,6 +9,7 @@ import {
   Wallet,
   BarChart3,
   Settings,
+  UserCheck,
 } from "lucide-react";
 import api from "../../api/axios";
 
@@ -26,6 +27,7 @@ const MODULE_TILES = [
   { key: "inventory", name: "Products", icon: Package, bg: "bg-emerald-500" },
   { key: "customers", name: "Customers", icon: Users, bg: "bg-blue-500" },
   { key: "suppliers", name: "Suppliers", icon: Store, bg: "bg-cyan-600" },
+  { key: "attendance", name: "Attendance", icon: UserCheck, bg: "bg-teal-600" },
   { key: "dashboard", name: "Expenses", icon: Wallet, bg: "bg-orange-500" },
   { key: "reports", name: "Reports", icon: BarChart3, bg: "bg-slate-600" },
   { key: "settings", name: "Settings", icon: Settings, bg: "bg-slate-500" },

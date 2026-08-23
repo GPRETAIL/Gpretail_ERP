@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\V1\ProductAttributeController;
 use App\Http\Controllers\Api\V1\SizeController;
 use App\Http\Controllers\Api\V1\HrConfigurationController;
 use App\Http\Controllers\Api\V1\EmployeeController;
+use App\Http\Controllers\Api\V1\AttendanceController;
 use App\Http\Controllers\Api\V1\CustomerController;
 use App\Http\Controllers\Api\V1\LoyaltyController;
 use App\Http\Controllers\Api\V1\PosSaleController;
@@ -183,6 +184,13 @@ $registerAppRoutes = function () {
     Route::post('employees/{id}/upload', [EmployeeController::class, 'uploadDocument']);
     Route::post('employees/{id}/education-certificate', [EmployeeController::class, 'educationCertificate']);
     Route::apiResource('employees', EmployeeController::class);
+
+    // Attendance
+    Route::get('attendance/today', [AttendanceController::class, 'today']);
+    Route::post('attendance/check-in', [AttendanceController::class, 'checkIn']);
+    Route::post('attendance/check-out', [AttendanceController::class, 'checkOut']);
+    Route::post('attendance/mark-leave', [AttendanceController::class, 'markLeave']);
+    Route::match(['get', 'post', 'put'], 'attendance/settings', [AttendanceController::class, 'settings']);
 
     // Transport Entries & Logistics
     Route::get('transport-entries/next-lr-number', [TransportEntryController::class, 'nextLrNumber']);

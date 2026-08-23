@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\Attendance;
 use App\Models\DirectPurchase;
 use App\Models\Employee;
 use App\Models\PosSale;
@@ -107,8 +108,14 @@ class DashboardController extends Controller
         $totalCustomers = (int) Customer::count();
         $totalStockQty = (float) ($scope(Stock::query())->sum('quantity') ?? 0);
         $lowStockAlerts = (int) ($scope(Stock::query())->where('quantity', '<=', 5)->count() ?? 0);
-        $totalEmployees = (int) Employee::count();
-        $presentEmployees = (int) Employee::where('is_active', true)->count();
+        // Real attendance-derived counts (was previously just Employee::count() /
+        // is_active count, unrelated to who actually checked in today).
+        $todayForAttendance = now()->toDateString();
+        $totalEmployees = (int) ($scope(Employee::query())->where('is_active', true)->count() ?? 0);
+        $presentEmployees = (int) (Attendance::whereDate('date', $todayForAttendance)
+            ->where('status', 'PRESENT')
+            ->whereHas('employee', fn ($q) => $scope($q))
+            ->count() ?? 0);
 
         // GST/Tax collected - real sum of pos_sales.tax_amount for the range (combined CGST+SGST,
         // there's no separate column for each half).
@@ -585,12 +592,19 @@ class DashboardController extends Controller
         // 3. Overdue Payables (Unpaid Purchase Bills)
         $overduePayables = (int) ($scope(\App\Models\PurchaseInvoice::query())->where('payment_status', '!=', 'PAID')->count() ?? 0);
 
+        // 4. Employees on Leave (today)
+        $employeesOnLeave = (int) (Attendance::whereDate('date', now()->toDateString())
+            ->where('status', 'LEAVE')
+            ->whereHas('employee', fn ($q) => $scope($q))
+            ->count() ?? 0);
+
         return response()->json([
             'success' => true,
             'data'    => [
                 'low_stock'          => $lowStock,
                 'pending_approvals'  => $pendingApprovals,
                 'overdue_payables'   => $overduePayables,
+                'employees_on_leave' => $employeesOnLeave,
             ],
         ]);
     }
