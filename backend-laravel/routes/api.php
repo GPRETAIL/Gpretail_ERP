@@ -90,6 +90,7 @@ $registerAppRoutes = function () {
     Route::get('dashboard/warehouse', [DashboardController::class, 'warehouse']);
     Route::get('dashboard/summary', [DashboardController::class, 'summary']);
     Route::get('dashboard/analytics', [DashboardController::class, 'analytics']);
+    Route::get('dashboard/attention-summary', [DashboardController::class, 'attentionSummary']);
     Route::get('dashboard', [DashboardController::class, 'index']);
 
     // Companies & Subscriptions

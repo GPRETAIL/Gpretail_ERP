@@ -187,6 +187,27 @@ export default function VynerixMobileApp() {
         {page === "settings" && (
           <SettingsScreen onLogout={handleLogout} onTriggerPwa={triggerInstall} />
         )}
+
+        {page === "approvals" && (
+          <div className="p-5 bg-white rounded-3xl border border-slate-200/85 shadow-sm text-center space-y-4 max-w-[360px] mx-auto mt-10">
+            <div className="w-12 h-12 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto">
+              <AlertTriangle size={24} />
+            </div>
+            <div>
+              <h3 className="text-sm font-black text-slate-800 m-0">Approvals Center</h3>
+              <p className="text-xs text-slate-500 mt-2 leading-relaxed">
+                Sales, purchase, and expense approval requests will be fully actionable here in the next phase.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={goBack}
+              className="w-full bg-indigo-600 text-white text-xs font-bold py-2.5 rounded-xl active:scale-95 transition-all shadow"
+            >
+              Back to Dashboard
+            </button>
+          </div>
+        )}
       </main>
 
       {/* Bottom Navigation */}

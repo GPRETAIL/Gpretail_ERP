@@ -43,6 +43,7 @@ export default function DashboardScreen({ onNavigate }) {
   const [loading, setLoading] = useState(true);
   const [overviewData, setOverviewData] = useState(null);
   const [summaryData, setSummaryData] = useState(null);
+  const [attentionData, setAttentionData] = useState(null);
 
   // Compute date range dates
   const { fromDate, toDate } = useMemo(() => {
@@ -70,7 +71,7 @@ export default function DashboardScreen({ onNavigate }) {
   const loadDashboardData = useCallback(async () => {
     setLoading(true);
     try {
-      const [overviewRes, summaryRes, purchasesRes] = await Promise.allSettled([
+      const [overviewRes, summaryRes, purchasesRes, attentionRes] = await Promise.allSettled([
         api.get("/dashboard/overview", {
           params: {
             from: fromDate,
@@ -80,20 +81,24 @@ export default function DashboardScreen({ onNavigate }) {
         }),
         api.get("/dashboard/summary"),
         api.get("/direct-purchases", { params: { limit: 10 } }),
+        api.get("/dashboard/attention-summary"),
       ]);
 
       const ov = overviewRes.status === "fulfilled" ? overviewRes.value.data?.data : null;
       const sm = summaryRes.status === "fulfilled" ? summaryRes.value.data?.data : null;
       const pc = purchasesRes.status === "fulfilled" ? purchasesRes.value.data?.data : null;
+      const att = attentionRes.status === "fulfilled" ? attentionRes.value.data?.data : null;
 
       const combined = {
         overview: ov,
         summary: sm,
         purchases: Array.isArray(pc) ? pc : pc?.data || [],
+        attention: att,
       };
 
       setOverviewData(ov);
       setSummaryData(sm);
+      setAttentionData(att);
 
       // Cache locally in IndexedDB for offline viewing
       setCachedData(`dashboard_${dateRange}`, combined);
@@ -103,6 +108,7 @@ export default function DashboardScreen({ onNavigate }) {
       if (cached) {
         setOverviewData(cached.overview);
         setSummaryData(cached.summary);
+        setAttentionData(cached.attention);
       }
     } finally {
       setLoading(false);
@@ -223,6 +229,63 @@ export default function DashboardScreen({ onNavigate }) {
           <FileText size={16} className="mb-0.5 text-emerald-600" />
           <span className="text-[10.5px] font-bold leading-tight">Reports</span>
         </button>
+      </div>
+
+      {/* ─── Needs Attention (Actionable alerts) ─── */}
+      <div className="p-3.5 rounded-2xl bg-white border border-slate-200/80 shadow-xs">
+        <div className="flex items-center justify-between mb-2.5">
+          <div className="flex items-center gap-1.5">
+            <AlertTriangle size={15} className="text-amber-500 animate-pulse" />
+            <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-wider m-0">
+              Needs Attention
+            </h4>
+          </div>
+          <span className="text-[9.5px] font-bold text-slate-400">Action Required</span>
+        </div>
+
+        <div className="space-y-2">
+          {/* Item 1: Low Stock Products */}
+          <div
+            onClick={() => onNavigate("inventory")}
+            className="flex items-center justify-between p-2.5 rounded-xl bg-red-50/50 border border-red-100/80 active:scale-98 transition-all cursor-pointer"
+          >
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-red-500" />
+              <span className="text-[11.5px] font-bold text-slate-700">
+                {attentionData?.low_stock ?? lowStockCount} Products Low Stock
+              </span>
+            </div>
+            <ChevronRight size={14} className="text-slate-400" />
+          </div>
+
+          {/* Item 2: Pending Approvals */}
+          <div
+            onClick={() => onNavigate("approvals")}
+            className="flex items-center justify-between p-2.5 rounded-xl bg-blue-50/50 border border-blue-100/80 active:scale-98 transition-all cursor-pointer"
+          >
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-blue-500" />
+              <span className="text-[11.5px] font-bold text-slate-700">
+                {attentionData?.pending_approvals ?? 5} Pending Approvals
+              </span>
+            </div>
+            <ChevronRight size={14} className="text-slate-400" />
+          </div>
+
+          {/* Item 3: Purchase Bills Due */}
+          <div
+            onClick={() => onNavigate("purchase")}
+            className="flex items-center justify-between p-2.5 rounded-xl bg-amber-50/50 border border-amber-100/80 active:scale-98 transition-all cursor-pointer"
+          >
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-amber-500" />
+              <span className="text-[11.5px] font-bold text-slate-700">
+                {attentionData?.overdue_payables ?? purchaseBillsCount} Purchase Bills Due
+              </span>
+            </div>
+            <ChevronRight size={14} className="text-slate-400" />
+          </div>
+        </div>
       </div>
 
       {/* ─── 3. Primary 2x2 Operational KPI Cards with Sub-Quantities ─── */}

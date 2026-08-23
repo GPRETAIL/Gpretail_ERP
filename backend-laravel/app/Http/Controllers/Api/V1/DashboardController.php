@@ -473,4 +473,28 @@ class DashboardController extends Controller
             ],
         ]);
     }
+
+    public function attentionSummary(Request $request)
+    {
+        $storeId = $request->header('X-Company-Scope-Id') ?? $request->input('company_id');
+        $scope = fn ($q) => ($storeId && $storeId !== 'all') ? $q->where('store_id', $storeId) : $q;
+
+        // 1. Low Stock Alerts
+        $lowStock = (int) ($scope(\App\Models\Stock::query())->where('quantity', '<=', 5)->count() ?? 0);
+
+        // 2. Pending Approvals
+        $pendingApprovals = (int) ($scope(\App\Models\SalesApproval::query())->where('status', 'PENDING')->count() ?? 0);
+
+        // 3. Overdue Payables (Unpaid Purchase Bills)
+        $overduePayables = (int) ($scope(\App\Models\PurchaseInvoice::query())->where('payment_status', '!=', 'PAID')->count() ?? 0);
+
+        return response()->json([
+            'success' => true,
+            'data'    => [
+                'low_stock'          => $lowStock,
+                'pending_approvals'  => $pendingApprovals,
+                'overdue_payables'   => $overduePayables,
+            ],
+        ]);
+    }
 }
