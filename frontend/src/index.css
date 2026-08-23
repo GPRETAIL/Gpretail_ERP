@@ -243,16 +243,22 @@ main > .p-6 {
 
 /* ═══════════════════════════════════════════════════
    MOBILE-FIRST RESPONSIVE STYLES (max-width: 767px)
+   Scoped to exclude the dedicated Vynerix mobile PWA (.vx-workspace) -
+   these rules exist to make the DESKTOP React app usable on a narrow
+   browser window, but the PWA is always narrow by design and has its
+   own styling (workspace.css). Without this exclusion, these !important
+   overrides (input padding, .rounded-full pill padding, text sizing,
+   etc.) silently fought the PWA's own layout on every screen.
    ═══════════════════════════════════════════════════ */
 @media (max-width: 767px) {
+ /* html/body can't be nested as descendants of the body-scoped rule
+    below (html is body's ancestor; body can't descend from itself), so
+    these two get their own top-level, individually-scoped rules. */
+ html:not(:has(.vx-workspace)) { font-size: 14px; }
 
-  /* ── Global font scaling ── */
-  html { font-size: 14px; }
-
-  body {
-    -webkit-text-size-adjust: 100%;
-    -webkit-tap-highlight-color: transparent;
-  }
+ body:not(:has(.vx-workspace)) {
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
 
   /* ── Glass buttons — compact for mobile ── */
   .topbar-action-btn,
@@ -362,14 +368,17 @@ main > .p-6 {
     justify-content: center;
     min-width: 0;
   }
+ }
 }
 
 /* ═══════════════════════════════════════════════════
    SMALL MOBILE (max-width: 480px)
+   Scoped to exclude .vx-workspace - see note above the 767px block.
    ═══════════════════════════════════════════════════ */
 @media (max-width: 480px) {
-  html { font-size: 13px; }
+ html:not(:has(.vx-workspace)) { font-size: 13px; }
 
+ body:not(:has(.vx-workspace)) {
   .topbar-action-btn,
   .glass-btn {
     padding: 0.25rem 0.45rem;
@@ -386,12 +395,14 @@ main > .p-6 {
     padding-top: 0.2rem;
     padding-bottom: 0.2rem;
   }
+ }
 }
 
 /* ═══════════════════════════════════════════════════
    TABLET (768px – 1023px)
    ═══════════════════════════════════════════════════ */
 @media (min-width: 768px) and (max-width: 1023px) {
+ body:not(:has(.vx-workspace)) {
   .topbar-action-btn,
   .glass-btn {
     font-size: 0.72rem;
@@ -405,6 +416,7 @@ main > .p-6 {
   [class*="grid-cols-6"] {
     grid-template-columns: repeat(2, 1fr) !important;
   }
+ }
 }
 
 /* ── Master page responsive scaling (desktop) ── */
