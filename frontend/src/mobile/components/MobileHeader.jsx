@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { ArrowLeft, Bell } from "lucide-react";
+import { ArrowLeft, Bell, Moon, Sun } from "lucide-react";
 import api from "../../api/axios";
 import { getStoredNotifications } from "../offline/db";
+import { useTheme } from "../../features/theme-context";
 
 /**
  * Mobile top header bar with:
@@ -59,6 +60,8 @@ export default function MobileHeader({
   }, []);
 
   const initial = (userName || "U").charAt(0).toUpperCase();
+  const { theme, setTheme } = useTheme();
+  const isDark = theme === "dark";
 
   return (
     <header className="vx-ws-topbar">
@@ -85,8 +88,17 @@ export default function MobileHeader({
         {title}
       </div>
 
-      {/* Right: Bell + User Avatar Button */}
+      {/* Right: Theme toggle + Bell + User Avatar Button */}
       <div className="flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={() => setTheme(isDark ? "light" : "dark")}
+          className="vx-ws-icon"
+          aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+        >
+          {isDark ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
+
         <button
           type="button"
           onClick={onOpenNotifications}
