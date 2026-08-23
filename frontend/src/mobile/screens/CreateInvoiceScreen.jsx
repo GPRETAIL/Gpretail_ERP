@@ -37,7 +37,7 @@ export default function CreateInvoiceScreen({ onBack }) {
   // Data States
   const [customers, setCustomers] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState("");
-  const [nextBillNo, setNextBillNo] = useState("");
+  const [, setNextBillNo] = useState("");
   const [catalog, setCatalog] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -70,7 +70,7 @@ export default function CreateInvoiceScreen({ onBack }) {
         setCustomers(custList);
         setCachedData("customers_list", custList);
 
-        const billNo = billRes.data?.data?.billNo || billRes.data?.data?.nextBillNo || billRes.data?.billNo || "";
+        const billNo = billRes.data?.data?.bill_no || billRes.data?.data?.invoice_no || "";
         setNextBillNo(billNo);
 
         const prodList = prodRes.data?.data || prodRes.data?.items || [];
@@ -234,7 +234,7 @@ export default function CreateInvoiceScreen({ onBack }) {
 
   // Calculations
   const subtotal = cartItems.reduce(
-    (sum, item) => sum + item.quantity * Number(item.product.sellingPrice || item.product.price || 0),
+    (sum, item) => sum + item.quantity * Number(item.product.selling_price || 0),
     0
   );
   const cgst = subtotal * 0.09;
@@ -242,25 +242,18 @@ export default function CreateInvoiceScreen({ onBack }) {
   const total = subtotal + cgst + sgst;
   const totalItemsCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
-  // Payload Construction
+  // Payload Construction — must match PosSaleController::store()'s real
+  // contract (items[].productId/qty/price, customerId), not display-only
+  // field names. A mismatch here used to fail backend validation (422),
+  // get silently caught, and the invoice was never actually saved.
   const buildPayload = () => ({
-    customerName: selectedCustomer || "Walking Customer",
-    billNo: nextBillNo || `INV-${Date.now().toString().slice(-6)}`,
-    date: new Date().toLocaleDateString("en-IN", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    }),
+    customerId: selectedCustomer || null,
     items: cartItems.map((item) => ({
-      productName: item.product.productName || item.product.name,
-      hsnCode: item.product.hsnCode || item.product.hsn || "9987",
-      quantity: item.quantity,
-      sellingPrice: Number(item.product.sellingPrice || item.product.price || 0),
+      productId: item.product.id,
+      qty: item.quantity,
+      price: Number(item.product.selling_price || 0),
+      tax: 18, // matches the flat CGST 9% + SGST 9% shown in the checkout summary
     })),
-    subtotal,
-    cgst,
-    sgst,
-    total,
   });
 
   // Offline Draft & Sync Queue Integration
@@ -427,7 +420,7 @@ export default function CreateInvoiceScreen({ onBack }) {
                         <span>{prod.productName || prod.name}</span>
                         <span className="text-[10px] text-slate-400 block font-mono">{prod.productCode || prod.sku}</span>
                       </div>
-                      <span className="text-indigo-600">{money(prod.sellingPrice || prod.price)}</span>
+                      <span className="text-indigo-600">{money(prod.selling_price)}</span>
                     </div>
                   ))
                 ) : (
@@ -455,7 +448,7 @@ export default function CreateInvoiceScreen({ onBack }) {
               <div className="space-y-2.5">
                 {cartItems.map((item) => {
                   const name = item.product.productName || item.product.name;
-                  const rate = Number(item.product.sellingPrice || item.product.price || 0);
+                  const rate = Number(item.product.selling_price || 0);
                   return (
                     <div key={item.product.id} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200/80 rounded-2xl shadow-xs">
                       <div className="flex items-center gap-3">
@@ -570,8 +563,8 @@ export default function CreateInvoiceScreen({ onBack }) {
         >
           <option value="">Walking Customer ▾</option>
           {customers.map((c) => (
-            <option key={c.id} value={c.name || c.customerName}>
-              {c.name || c.customerName}
+            <option key={c.id} value={c.id}>
+              {c.name}
             </option>
           ))}
         </select>
@@ -590,7 +583,7 @@ export default function CreateInvoiceScreen({ onBack }) {
           <tbody className="divide-y divide-slate-100">
             {cartItems.map((item) => {
               const name = item.product.productName || item.product.name;
-              const rate = Number(item.product.sellingPrice || item.product.price || 0);
+              const rate = Number(item.product.selling_price || 0);
               return (
                 <tr key={item.product.id}>
                   <td className="p-3 font-bold text-slate-800">

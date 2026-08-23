@@ -403,7 +403,18 @@ class WarehouseDashboardService
             ->groupBy('categories.name')
             ->orderByDesc('cost_value')
             ->limit(8)
-            ->get();
+            ->get()
+            ->map(function ($row) {
+                // MySQL SUM()/COALESCE() aggregates come back through PDO as
+                // numeric strings, not native floats/ints - left uncast, JS
+                // consumers silently string-concatenate them instead of
+                // summing (e.g. 0 + "12.00" === "012.00"), corrupting any
+                // downstream percentage/ratio math into NaN.
+                $row->qty = (float) $row->qty;
+                $row->cost_value = (float) $row->cost_value;
+                $row->retail_value = (float) $row->retail_value;
+                return $row;
+            });
 
         return [
             'by_category' => $byCategory,

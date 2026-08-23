@@ -118,10 +118,10 @@ export default function SalesScreen({ onNavigate }) {
       ) : (
         <div>
           {filtered.map((inv) => {
-            const id = inv.billNo || inv.invoiceNo || inv.salesNo || `INV-${inv.id}`;
-            const customer = inv.customerName || inv.customer?.name || inv.partyName || "Customer";
-            const date = formatDate(inv.billDate || inv.date || inv.created_at);
-            const amount = inv.totalAmount || inv.grandTotal || inv.netAmount || 0;
+            const id = inv.invoice_no || `INV-${inv.id}`;
+            const customer = inv.customer?.name || "Customer";
+            const date = formatDate(inv.sale_date || inv.created_at);
+            const amount = inv.grand_total || 0;
             const status = mapStatus(inv);
 
             return (

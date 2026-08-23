@@ -53,15 +53,17 @@ export default function InventoryScreen({ onNavigate, onSelectProduct }) {
     };
   }, [loadInventory]);
 
-  // Extract metrics from warehouse dashboard data
-  const totalProducts = data?.inventory?.totalProducts ?? data?.totalProducts ?? data?.metrics?.totalProducts ?? 0;
-  const lowStock = data?.inventory?.lowStockCount ?? data?.lowStockCount ?? data?.alerts?.lowStockCount ?? 0;
-  const outOfStock = data?.inventory?.outOfStockCount ?? data?.outOfStockCount ?? data?.alerts?.outOfStockCount ?? 0;
-  const totalValue = data?.inventory?.totalStockValue ?? data?.totalStockValue ?? data?.metrics?.totalStockValue ?? 0;
+  // Extract metrics from the real /warehouse/dashboard response shape:
+  // { summary: {total_products, low_stock_count, out_of_stock_count, total_retail_value},
+  //   valuation: {by_category: [{category_name, qty, cost_value, retail_value}]} }
+  const totalProducts = data?.summary?.total_products ?? 0;
+  const lowStock = data?.summary?.low_stock_count ?? 0;
+  const outOfStock = data?.summary?.out_of_stock_count ?? 0;
+  const totalValue = data?.summary?.total_retail_value ?? 0;
 
   // Category breakdown for donut chart
-  const categories = data?.inventory?.categoryBreakdown || data?.categoryBreakdown || [];
-  const totalCatValue = categories.reduce((s, c) => s + (c.value || c.count || 0), 0) || 1;
+  const categories = data?.valuation?.by_category || [];
+  const totalCatValue = categories.reduce((s, c) => s + Number(c.retail_value || 0), 0) || 1;
 
   return (
     <div className="space-y-4">
@@ -97,14 +99,14 @@ export default function InventoryScreen({ onNavigate, onSelectProduct }) {
             <DonutChart categories={categories} totalValue={totalCatValue} />
             <div className="space-y-2 text-xs">
               {categories.slice(0, 4).map((cat, i) => {
-                const pct = Math.round(((cat.value || cat.count || 0) / totalCatValue) * 100);
+                const pct = Math.round(((cat.retail_value || 0) / totalCatValue) * 100);
                 return (
                   <div key={i} className="flex items-center gap-2">
                     <span
                       className="w-2.5 h-2.5 rounded-full"
                       style={{ backgroundColor: DONUT_COLORS[i % DONUT_COLORS.length] }}
                     />
-                    <span className="text-slate-600">{cat.name || cat.category || `Cat ${i + 1}`}</span>
+                    <span className="text-slate-600">{cat.category_name || `Cat ${i + 1}`}</span>
                     <strong className="text-slate-900 font-bold ml-auto">{pct}%</strong>
                   </div>
                 );
@@ -134,14 +136,14 @@ export default function InventoryScreen({ onNavigate, onSelectProduct }) {
         >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm">
-              {(p.productName || p.name || "P").charAt(0).toUpperCase()}
+              {(p.name || "P").charAt(0).toUpperCase()}
             </div>
             <div>
               <h4 className="text-xs font-bold text-slate-900 m-0">
-                {p.productName || p.name}
+                {p.name}
               </h4>
               <p className="text-[11px] text-slate-400 m-0">
-                {p.productCode || p.sku || ""}{p.categoryName ? ` · ${p.categoryName}` : ""}
+                {p.code || p.sku || ""}{p.category?.name ? ` · ${p.category.name}` : ""}
               </p>
             </div>
           </div>
@@ -163,7 +165,7 @@ function DonutChart({ categories, totalValue }) {
       <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
         <circle cx="50" cy="50" r={R} fill="none" stroke="#e2e8f0" strokeWidth="18" />
         {categories.slice(0, 6).map((cat, i) => {
-          const pct = (cat.value || cat.count || 0) / totalValue;
+          const pct = (cat.retail_value || 0) / totalValue;
           const dash = pct * C;
           const thisOffset = offset;
           offset += dash;

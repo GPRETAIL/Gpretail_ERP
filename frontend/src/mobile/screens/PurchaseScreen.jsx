@@ -62,7 +62,7 @@ export default function PurchaseScreen({ onNavigate }) {
   }, [loadBills]);
 
   const mapStatus = (bill) => {
-    const s = (bill.status || bill.paymentStatus || "paid").toLowerCase();
+    const s = (bill.payment_status || bill.status || "paid").toLowerCase();
     return s;
   };
 
@@ -115,15 +115,10 @@ export default function PurchaseScreen({ onNavigate }) {
       ) : (
         <div>
           {filtered.map((bill) => {
-            const id =
-              bill.billNo || bill.invoiceNo || bill.purchaseNo || `BILL-${bill.id}`;
-            const supplier =
-              bill.supplierName || bill.supplier?.name || bill.partyName || "Supplier";
-            const date = formatDate(
-              bill.billDate || bill.purchaseDate || bill.date || bill.created_at
-            );
-            const amount =
-              bill.totalAmount || bill.grandTotal || bill.netAmount || 0;
+            const id = bill.invoice_no || bill.purchase_no || `BILL-${bill.id}`;
+            const supplier = bill.supplier_name || "Supplier";
+            const date = formatDate(bill.purchase_date || bill.created_at);
+            const amount = bill.total_amount || 0;
             const status = mapStatus(bill);
 
             return (

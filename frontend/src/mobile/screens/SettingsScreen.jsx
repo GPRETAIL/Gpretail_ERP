@@ -113,12 +113,12 @@ export default function SettingsScreen({ onLogout, onTriggerPwa }) {
             </div>
             <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80">
               <h4 className="text-xs font-bold text-slate-400 uppercase">GSTIN / Tax ID</h4>
-              <p className="text-sm font-black text-slate-900 mt-1">{profile?.gstin || "33AAAAA1111A1Z1"}</p>
+              <p className="text-sm font-black text-slate-900 mt-1">{profile?.gstin || "Not set"}</p>
             </div>
             <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80">
               <h4 className="text-xs font-bold text-slate-400 uppercase">Primary Contact</h4>
-              <p className="text-sm font-bold text-slate-700 mt-1">{profile?.email || "billing@vynerix.com"}</p>
-              <p className="text-sm font-bold text-slate-700">{profile?.mobile || "+91 98765 43210"}</p>
+              <p className="text-sm font-bold text-slate-700 mt-1">{profile?.email || "Not set"}</p>
+              <p className="text-sm font-bold text-slate-700">{profile?.phone || "Not set"}</p>
             </div>
           </div>
         </SettingsDrawer>

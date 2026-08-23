@@ -16,7 +16,7 @@ export default function ProductDetailScreen({ product, onBack }) {
   const [loading, setLoading] = useState(!product);
 
   useEffect(() => {
-    if (product?.id && !product?.hsnCode) {
+    if (product?.id && !product?.hsn) {
       // Fetch full details
       setLoading(true);
       api
@@ -37,14 +37,14 @@ export default function ProductDetailScreen({ product, onBack }) {
     );
   }
 
-  const name = p.productName || p.name || "Product";
-  const code = p.productCode || p.sku || p.code || "";
-  const sellingPrice = p.sellingPrice || p.mrp || p.price || 0;
-  const costPrice = p.costPrice || p.purchasePrice || p.cost || 0;
-  const stock = p.currentStock ?? p.stock ?? p.quantity ?? 0;
-  const minStock = p.minimumStock ?? p.minStock ?? p.reorderLevel ?? 0;
-  const hsn = p.hsnCode || p.hsn || "";
-  const category = p.categoryName || p.category?.name || p.category || "";
+  const name = p.name || "Product";
+  const code = p.sku || p.code || "";
+  const sellingPrice = p.selling_price || p.mrp || 0;
+  const costPrice = p.cost_price || 0;
+  const stock = p.stock_qty ?? 0;
+  const minStock = p.min_stock ?? 0;
+  const hsn = p.hsn || "";
+  const category = p.category?.name || "";
   const initial = name.charAt(0).toUpperCase();
 
   return (

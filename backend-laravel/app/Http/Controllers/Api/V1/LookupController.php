@@ -43,7 +43,7 @@ class LookupController extends Controller
                 switch ($key) {
                     case 'companies':
                         $data['companies'] = Store::where('is_active', true)
-                            ->select(['id', 'name', 'code'])
+                            ->select(['id', 'name', 'code', 'gstin', 'email', 'phone'])
                             ->orderBy('name')
                             ->get();
                         break;

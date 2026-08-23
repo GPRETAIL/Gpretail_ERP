@@ -197,7 +197,7 @@ class ProductController extends Controller
 
     public function show($id)
     {
-        $product = Product::with(['category', 'brand', 'tax', 'purchaseTax', 'salesTax', 'sizeGroup', 'variants'])
+        $product = Product::with(['category', 'brand', 'tax', 'purchaseTax', 'salesTax', 'sizeGroup', 'variants', 'stocks'])
             ->where('id', $id)
             ->orWhere('code', $id)
             ->firstOrFail();
@@ -210,6 +210,7 @@ class ProductController extends Controller
         $data['hsn'] = $product->hsn_code;
         $data['uom'] = $product->unit;
         $data['active'] = (bool) $product->is_active;
+        $data['stock_qty'] = (float) $product->stocks->sum('quantity');
 
         return response()->json(['success' => true, 'data' => $data]);
     }
