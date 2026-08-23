@@ -24,6 +24,20 @@ class PosReturnController extends Controller
     {
         $query = PosReturn::with(['posSale', 'customer', 'items.product', 'creator']);
 
+        // Same gap PurchaseInvoiceController had: never scoped by store, so every
+        // store's returns were returned regardless of X-Company-Scope-Id.
+        $storeId = $request->header('X-Company-Scope-Id');
+        if ($storeId && $storeId !== 'all') {
+            $query->where('store_id', $storeId);
+        }
+
+        if ($request->filled('from') && $request->filled('to')) {
+            $query->whereBetween('return_date', [
+                \Illuminate\Support\Carbon::parse($request->input('from'))->startOfDay(),
+                \Illuminate\Support\Carbon::parse($request->input('to'))->endOfDay(),
+            ]);
+        }
+
         if ($request->filled('search')) {
             $search = $request->input('search');
             $query->where('return_no', 'like', "%{$search}%")

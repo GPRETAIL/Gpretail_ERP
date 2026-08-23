@@ -78,6 +78,13 @@ class DirectPurchaseController extends Controller
             });
         }
 
+        if ($request->filled('from') && $request->filled('to')) {
+            $query->whereBetween('purchase_date', [
+                \Illuminate\Support\Carbon::parse($request->input('from'))->startOfDay(),
+                \Illuminate\Support\Carbon::parse($request->input('to'))->endOfDay(),
+            ]);
+        }
+
         if ($request->boolean('all') || $request->input('limit') == 500 || $request->input('limit') == 1000) {
             $purchases = $query->orderBy('id', 'desc')->limit(2000)->get();
             return response()->json([

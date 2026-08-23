@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\DirectPurchase;
 use App\Models\Employee;
 use App\Models\PosSale;
+use App\Models\PurchaseInvoice;
 use App\Models\Product;
 use App\Models\Customer;
 use App\Models\Stock;
@@ -70,6 +71,30 @@ class DashboardController extends Controller
         $totalReturnCount = (int) ($returnDateScope($returnScope(DB::table('pos_returns')))->count() ?? 0);
         $prevReturnDateScope = fn ($q) => $q->whereBetween('return_date', [$prevFrom, $prevTo]);
         $prevTotalReturns = (float) ($prevReturnDateScope($returnScope(DB::table('pos_returns')))->sum('total_refund') ?? 0);
+
+        // Purchases - this ERP has two independent real purchase-bill sources
+        // (Direct Purchase entries, and Invoices from the Transport Entry ->
+        // Invoice -> Inventory Entry flow), so both are summed together
+        // rather than treating Direct Purchase as the only pathway.
+        $directPurchaseScope = fn ($q) => ($storeId && $storeId !== 'all')
+            ? $q->where(fn ($sq) => $sq->where('store_id', $storeId)->orWhere('company_id', $storeId))
+            : $q;
+        $directPurchaseDateScope = fn ($q) => $q->whereBetween('purchase_date', [$from, $to]);
+        $prevDirectPurchaseDateScope = fn ($q) => $q->whereBetween('purchase_date', [$prevFrom, $prevTo]);
+        $totalDirectPurchases = (float) ($directPurchaseDateScope($directPurchaseScope(DirectPurchase::query()))->sum('total_amount') ?? 0);
+        $prevDirectPurchases = (float) ($prevDirectPurchaseDateScope($directPurchaseScope(DirectPurchase::query()))->sum('total_amount') ?? 0);
+        $directPurchaseCount = (int) ($directPurchaseDateScope($directPurchaseScope(DirectPurchase::query()))->count() ?? 0);
+
+        $invoicePurchaseScope = fn ($q) => ($storeId && $storeId !== 'all') ? $q->where('store_id', $storeId) : $q;
+        $invoiceDateScope = fn ($q) => $q->whereBetween('invoice_date', [$from, $to]);
+        $prevInvoiceDateScope = fn ($q) => $q->whereBetween('invoice_date', [$prevFrom, $prevTo]);
+        $totalInvoicePurchases = (float) ($invoiceDateScope($invoicePurchaseScope(PurchaseInvoice::query()))->sum('grand_total') ?? 0);
+        $prevInvoicePurchases = (float) ($prevInvoiceDateScope($invoicePurchaseScope(PurchaseInvoice::query()))->sum('grand_total') ?? 0);
+        $invoicePurchaseCount = (int) ($invoiceDateScope($invoicePurchaseScope(PurchaseInvoice::query()))->count() ?? 0);
+
+        $totalPurchases = $totalDirectPurchases + $totalInvoicePurchases;
+        $prevTotalPurchases = $prevDirectPurchases + $prevInvoicePurchases;
+        $totalPurchaseCount = $directPurchaseCount + $invoicePurchaseCount;
 
         $totalProducts = (int) Product::count();
         $totalCustomers = (int) Customer::count();
@@ -353,6 +378,13 @@ class DashboardController extends Controller
                         'amount' => $totalReturns,
                         'count'  => $totalReturnCount,
                         'trend'  => $computeTrend($totalReturns, $prevTotalReturns),
+                    ],
+                    'purchases' => [
+                        // Sum of Direct Purchase entries + Invoices (Transport Entry -> Invoice ->
+                        // Inventory Entry flow) - two independent real sources, not just one.
+                        'amount' => $totalPurchases,
+                        'count'  => $totalPurchaseCount,
+                        'trend'  => $computeTrend($totalPurchases, $prevTotalPurchases),
                     ],
                     'gst' => [
                         'amount' => $totalTaxCollected,

@@ -1,7 +1,21 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { Search, Filter, Plus } from "lucide-react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { Search, Filter, Plus, LayoutGrid } from "lucide-react";
 import api from "../../api/axios";
 import { SkeletonTransList } from "../components/SkeletonCards";
+
+const formatYmd = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const DATE_RANGE_OPTIONS = [
+  { id: "all", label: "All Time" },
+  { id: "today", label: "Today" },
+  { id: "week", label: "This Week" },
+  { id: "month", label: "This Month" },
+];
 
 const money = (n) =>
   "₹ " +
@@ -41,12 +55,28 @@ export default function SalesScreen({ onNavigate }) {
   const [search, setSearch] = useState("");
   const [sales, setSales] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [dateRange, setDateRange] = useState("all");
+  const [showDateFilter, setShowDateFilter] = useState(false);
+
+  const dateParams = useMemo(() => {
+    if (dateRange === "all") return {};
+    const now = new Date();
+    let from = new Date();
+    if (dateRange === "today") {
+      from = now;
+    } else if (dateRange === "week") {
+      from = new Date(new Date().setDate(now.getDate() - 7));
+    } else if (dateRange === "month") {
+      from = new Date(now.getFullYear(), now.getMonth(), 1);
+    }
+    return { from: formatYmd(from), to: formatYmd(new Date()) };
+  }, [dateRange]);
 
   const loadSales = useCallback(async () => {
     setLoading(true);
     try {
       const res = await api.get("/pos-sales", {
-        params: { page: 1, limit: 30, search: search || undefined },
+        params: { page: 1, limit: 30, search: search || undefined, ...dateParams },
       });
       const data = res.data?.data;
       const list = Array.isArray(data)
@@ -58,7 +88,7 @@ export default function SalesScreen({ onNavigate }) {
     } finally {
       setLoading(false);
     }
-  }, [search]);
+  }, [search, dateParams]);
 
   useEffect(() => {
     loadSales();
@@ -85,7 +115,7 @@ export default function SalesScreen({ onNavigate }) {
   return (
     <div>
       {/* Search & Filter */}
-      <div className="vx-search-row">
+      <div className="vx-search-row relative">
         <div className="vx-search-input-wrap">
           <Search size={16} className="text-slate-400" />
           <input
@@ -95,9 +125,43 @@ export default function SalesScreen({ onNavigate }) {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <button type="button" className="vx-filter-btn" aria-label="Filter">
+        <button
+          type="button"
+          className={`vx-filter-btn ${dateRange !== "all" ? "!bg-indigo-600 !text-white" : ""}`}
+          aria-label="Filter by date"
+          onClick={() => setShowDateFilter((v) => !v)}
+        >
           <Filter size={17} />
         </button>
+        <button
+          type="button"
+          className="vx-filter-btn"
+          aria-label="Summary Layouts"
+          title="Summary Layouts"
+          onClick={() => onNavigate && onNavigate("sales_summary")}
+        >
+          <LayoutGrid size={17} />
+        </button>
+
+        {showDateFilter && (
+          <div className="absolute right-0 top-full mt-1.5 z-30 bg-white border border-slate-200 shadow-xl rounded-2xl p-1.5 flex flex-col gap-0.5 min-w-[140px]">
+            {DATE_RANGE_OPTIONS.map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => {
+                  setDateRange(opt.id);
+                  setShowDateFilter(false);
+                }}
+                className={`px-3 py-2 text-left text-[11.5px] font-bold rounded-xl transition-all ${
+                  dateRange === opt.id ? "bg-indigo-50 text-indigo-600" : "text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Filter Tabs */}

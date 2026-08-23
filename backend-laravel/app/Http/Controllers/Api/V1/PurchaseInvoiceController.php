@@ -25,6 +25,21 @@ class PurchaseInvoiceController extends Controller
     {
         $query = PurchaseInvoice::with(['supplier', 'items.product', 'transport']);
 
+        // This never scoped by store at all - every store's invoices were
+        // returned regardless of X-Company-Scope-Id, unlike every sibling
+        // purchase-list endpoint (DirectPurchaseController etc.) which does.
+        $storeId = $request->header('X-Company-Scope-Id');
+        if ($storeId && $storeId !== 'all') {
+            $query->where('store_id', $storeId);
+        }
+
+        if ($request->filled('from') && $request->filled('to')) {
+            $query->whereBetween('invoice_date', [
+                \Illuminate\Support\Carbon::parse($request->input('from'))->startOfDay(),
+                \Illuminate\Support\Carbon::parse($request->input('to'))->endOfDay(),
+            ]);
+        }
+
         if ($request->filled('search')) {
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {

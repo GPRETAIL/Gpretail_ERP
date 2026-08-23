@@ -62,7 +62,7 @@ export default function MobileHeader({
 
   return (
     <header className="vx-ws-topbar">
-      {/* Left: Back or spacer */}
+      {/* Left: Back button, or the Vynerix brand mark on screens with nothing to go back to */}
       {canGoBack ? (
         <button
           type="button"
@@ -73,7 +73,11 @@ export default function MobileHeader({
           <ArrowLeft size={20} />
         </button>
       ) : (
-        <div style={{ width: 36 }} />
+        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-600 to-purple-700 flex items-center justify-center shrink-0">
+          <svg viewBox="0 0 100 100" className="w-4 h-4 fill-white" aria-hidden>
+            <path d="M18 20 L38 20 L50 64 L62 20 L82 20 L59 86 L41 86 Z" />
+          </svg>
+        </div>
       )}
 
       {/* Center: Title */}

@@ -16,8 +16,11 @@ import ModulesScreen from "./screens/ModulesScreen";
 import SalesScreen from "./screens/SalesScreen";
 import CreateInvoiceScreen from "./screens/CreateInvoiceScreen";
 import PurchaseScreen from "./screens/PurchaseScreen";
+import ReturnsScreen from "./screens/ReturnsScreen";
 import InventoryScreen from "./screens/InventoryScreen";
 import ProductDetailScreen from "./screens/ProductDetailScreen";
+import SupplierDuesScreen from "./screens/SupplierDuesScreen";
+import FastMovingScreen from "./screens/FastMovingScreen";
 import ReportsScreen from "./screens/ReportsScreen";
 import ReportDetailScreen from "./screens/ReportDetailScreen";
 import SettingsScreen from "./screens/SettingsScreen";
@@ -33,8 +36,11 @@ const TITLES = {
   sales: "Sales Invoices",
   create_invoice: "Create Invoice",
   purchase: "Purchase Bills",
+  returns: "Return Invoices",
   inventory: "Inventory Summary",
   product_details: "Product Details",
+  supplier_dues: "Supplier Dues",
+  fast_moving: "Fast Moving Products",
   reports: "Reports",
   report_profit_loss: "Profit & Loss",
   report_gst: "GST Report",
@@ -46,7 +52,12 @@ const TITLES = {
 };
 
 // Root-level screens where we don't show a back button
-const ROOT_SCREENS = new Set(["dashboard", "modules", "sales", "purchase", "inventory"]);
+// Only Dashboard and Modules are true "home" screens with nothing logical to
+// go back to. Sales/Purchase/Inventory used to be listed here too because
+// they're also reachable directly from the bottom nav, but they're now also
+// drill-down destinations from Dashboard cards - suppressing their back
+// button meant there was no way back except re-tapping the bottom nav.
+const ROOT_SCREENS = new Set(["dashboard", "modules"]);
 
 /**
  * Vynerix ERP — Dedicated Mobile Application Root
@@ -172,6 +183,8 @@ export default function VynerixMobileApp() {
           <PurchaseScreen onNavigate={navigateTo} />
         )}
 
+        {page === "returns" && <ReturnsScreen />}
+
         {page === "inventory" && (
           <InventoryScreen
             onNavigate={navigateTo}
@@ -185,6 +198,10 @@ export default function VynerixMobileApp() {
         {page === "product_details" && (
           <ProductDetailScreen product={selectedProduct} onBack={goBack} />
         )}
+
+        {page === "supplier_dues" && <SupplierDuesScreen />}
+
+        {page === "fast_moving" && <FastMovingScreen />}
 
         {page === "reports" && <ReportsScreen onNavigate={navigateTo} />}
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { Search, Filter, Plus, LayoutGrid } from "lucide-react";
+import { Search, Filter } from "lucide-react";
 import api from "../../api/axios";
 import { SkeletonTransList } from "../components/SkeletonCards";
 
@@ -35,18 +35,12 @@ const DATE_RANGE_OPTIONS = [
   { id: "month", label: "This Month" },
 ];
 
-const mapStatus = (bill) => (bill.payment_status || bill.status || "unpaid").toLowerCase();
-
 /**
- * Purchase Bills list screen - merges the two real purchase-bill sources
- * this ERP has (Direct Purchase entries and Invoices from the Transport
- * Entry -> Invoice -> Inventory Entry flow), since a bill can land in
- * either one depending on which workflow a store uses.
+ * Return Invoices list screen - fetches real data from GET /pos-returns.
  */
-export default function PurchaseScreen({ onNavigate }) {
-  const [filter, setFilter] = useState("All");
+export default function ReturnsScreen() {
   const [search, setSearch] = useState("");
-  const [bills, setBills] = useState([]);
+  const [returns, setReturns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState("all");
   const [showDateFilter, setShowDateFilter] = useState(false);
@@ -65,59 +59,25 @@ export default function PurchaseScreen({ onNavigate }) {
     return { from: formatYmd(from), to: formatYmd(new Date()) };
   }, [dateRange]);
 
-  const loadBills = useCallback(async () => {
+  const loadReturns = useCallback(async () => {
     setLoading(true);
     try {
-      const params = { page: 1, limit: 30, search: search || undefined, ...dateParams };
-      const [directRes, invoiceRes] = await Promise.allSettled([
-        api.get("/direct-purchases", { params }),
-        api.get("/invoices", { params }),
-      ]);
-
-      const extract = (res) => {
-        if (res.status !== "fulfilled") return [];
-        const data = res.value.data?.data;
-        return Array.isArray(data) ? data : data?.data || data?.items || data?.results || [];
-      };
-
-      const directList = extract(directRes).map((b) => ({ ...b, _source: "direct" }));
-      const invoiceList = extract(invoiceRes).map((b) => ({ ...b, _source: "invoice" }));
-
-      const merged = [...directList, ...invoiceList].sort((a, b) => {
-        const da = new Date(a.purchase_date || a.invoice_date || a.created_at || 0);
-        const db = new Date(b.purchase_date || b.invoice_date || b.created_at || 0);
-        return db - da;
+      const res = await api.get("/pos-returns", {
+        params: { page: 1, limit: 30, search: search || undefined, ...dateParams },
       });
-
-      setBills(merged);
+      const data = res.data?.data;
+      const list = Array.isArray(data) ? data : data?.data || data?.items || [];
+      setReturns(list);
     } catch {
-      setBills([]);
+      setReturns([]);
     } finally {
       setLoading(false);
     }
   }, [search, dateParams]);
 
   useEffect(() => {
-    loadBills();
-
-    const handleNetworkRestored = () => {
-      loadBills();
-    };
-
-    window.addEventListener("vx-network-restored", handleNetworkRestored);
-    return () => {
-      window.removeEventListener("vx-network-restored", handleNetworkRestored);
-    };
-  }, [loadBills]);
-
-  // Real payment_status values are UNPAID/PARTIAL/PAID on both sources -
-  // there's no "draft" workflow state for either kind of purchase bill.
-  const filtered = bills.filter((b) => {
-    const status = mapStatus(b);
-    if (filter === "Paid" && status !== "paid") return false;
-    if (filter === "Unpaid" && status === "paid") return false;
-    return true;
-  });
+    loadReturns();
+  }, [loadReturns]);
 
   return (
     <div>
@@ -127,7 +87,7 @@ export default function PurchaseScreen({ onNavigate }) {
           <Search size={16} className="text-slate-400" />
           <input
             type="text"
-            placeholder="Search bills..."
+            placeholder="Search returns..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -139,15 +99,6 @@ export default function PurchaseScreen({ onNavigate }) {
           onClick={() => setShowDateFilter((v) => !v)}
         >
           <Filter size={17} />
-        </button>
-        <button
-          type="button"
-          className="vx-filter-btn"
-          aria-label="Summary Layouts"
-          title="Summary Layouts"
-          onClick={() => onNavigate && onNavigate("purchase_summary")}
-        >
-          <LayoutGrid size={17} />
         </button>
 
         {showDateFilter && (
@@ -171,41 +122,31 @@ export default function PurchaseScreen({ onNavigate }) {
         )}
       </div>
 
-      {/* Filter Tabs */}
-      <div className="vx-filter-tabs">
-        {["All", "Paid", "Unpaid"].map((t) => (
-          <button
-            key={t}
-            type="button"
-            className={`vx-filter-pill ${filter === t ? "active" : ""}`}
-            onClick={() => setFilter(t)}
-          >
-            {t}
-          </button>
-        ))}
-      </div>
-
-      {/* Bills List */}
+      {/* Returns List */}
       {loading ? (
         <SkeletonTransList count={4} />
-      ) : filtered.length === 0 ? (
+      ) : returns.length === 0 ? (
         <div className="vx-card text-center py-8">
-          <p className="text-sm text-slate-400">No purchase bills found</p>
+          <p className="text-sm text-slate-400">No returns found</p>
         </div>
       ) : (
         <div>
-          {filtered.map((bill) => {
-            const id = bill.invoice_no || bill.purchase_no || `BILL-${bill.id}`;
-            const supplier = bill.supplier_name || bill.supplier?.name || "Supplier";
-            const date = formatDate(bill.purchase_date || bill.invoice_date || bill.created_at);
-            const amount = bill.total_amount || bill.grand_total || 0;
-            const status = mapStatus(bill);
+          {returns.map((ret) => {
+            const id = ret.display_return_no || ret.return_no || `RR/${ret.id}`;
+            const customer = ret.customer?.name || "Walk-in Customer";
+            const sourceInvoice = ret.pos_sale?.invoice_no;
+            const date = formatDate(ret.return_date || ret.created_at);
+            const amount = ret.total_refund || 0;
+            const status = String(ret.status || "completed").toLowerCase();
 
             return (
-              <div key={`${bill._source}-${bill.id || id}`} className="vx-trans-card">
+              <div key={ret.id} className="vx-trans-card">
                 <div className="vx-trans-left">
                   <span className="vx-trans-id">{id}</span>
-                  <span className="vx-trans-meta">{supplier}</span>
+                  <span className="vx-trans-meta">{customer}</span>
+                  {sourceInvoice && (
+                    <span className="vx-trans-meta text-[10px]">Against: {sourceInvoice}</span>
+                  )}
                   <span className="vx-trans-meta text-[10px]">{date}</span>
                 </div>
                 <div className="vx-trans-right">
@@ -217,16 +158,6 @@ export default function PurchaseScreen({ onNavigate }) {
           })}
         </div>
       )}
-
-      {/* FAB */}
-      <button
-        type="button"
-        className="vx-fab-btn"
-        title="Create Purchase Bill"
-        aria-label="Create Purchase Bill"
-      >
-        <Plus size={26} />
-      </button>
     </div>
   );
 }

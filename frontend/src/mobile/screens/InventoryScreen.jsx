@@ -59,7 +59,9 @@ export default function InventoryScreen({ onNavigate, onSelectProduct }) {
   const totalProducts = data?.summary?.total_products ?? 0;
   const lowStock = data?.summary?.low_stock_count ?? 0;
   const outOfStock = data?.summary?.out_of_stock_count ?? 0;
-  const totalValue = data?.summary?.total_retail_value ?? 0;
+  const totalSellingPrice = data?.summary?.total_retail_value ?? 0;
+  const totalPurchasePrice = data?.summary?.total_cost_value ?? 0;
+  const margin = totalSellingPrice - totalPurchasePrice;
 
   // Category breakdown for donut chart
   const categories = data?.valuation?.by_category || [];
@@ -85,8 +87,24 @@ export default function InventoryScreen({ onNavigate, onSelectProduct }) {
             <span className="vx-kpi-val text-rose-600">{Number(outOfStock).toLocaleString("en-IN")}</span>
           </div>
           <div className="vx-kpi-card">
-            <span className="vx-kpi-label">Total Value</span>
-            <span className="vx-kpi-val text-xs sm:text-base">{money(totalValue)}</span>
+            <span className="vx-kpi-label">Total Selling Price</span>
+            <span className="vx-kpi-val text-xs sm:text-base">{money(totalSellingPrice)}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Purchase Price & Margin */}
+      {!loading && (
+        <div className="vx-kpis-grid" style={{ marginTop: "-4px" }}>
+          <div className="vx-kpi-card">
+            <span className="vx-kpi-label">Total Purchase Price</span>
+            <span className="vx-kpi-val text-xs sm:text-base">{money(totalPurchasePrice)}</span>
+          </div>
+          <div className="vx-kpi-card">
+            <span className="vx-kpi-label">Margin</span>
+            <span className={`vx-kpi-val text-xs sm:text-base ${margin < 0 ? "text-rose-600" : "text-emerald-600"}`}>
+              {money(margin)}
+            </span>
           </div>
         </div>
       )}

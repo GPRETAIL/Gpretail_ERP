@@ -227,6 +227,12 @@ class PosSaleController extends Controller
             // The mobile Sales screen's search box has always sent this param, but nothing here
             // ever read it - every keystroke silently no-opped and kept showing the same
             // unfiltered recent-sales list regardless of what was typed.
+            ->when($request->filled('from') && $request->filled('to'), function ($q) use ($request) {
+                $q->whereBetween('sale_date', [
+                    \Illuminate\Support\Carbon::parse($request->input('from'))->startOfDay(),
+                    \Illuminate\Support\Carbon::parse($request->input('to'))->endOfDay(),
+                ]);
+            })
             ->when($request->filled('search'), function ($q) use ($request) {
                 $s = trim($request->input('search'));
                 $q->where(function ($sub) use ($s) {

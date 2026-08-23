@@ -21,6 +21,17 @@ const money = (n) =>
     maximumFractionDigits: 2,
   });
 
+// There's no due_date/payment-terms field anywhere on a purchase bill (only
+// the invoice/purchase date itself), so "days remaining" can't be shown
+// honestly - it would imply a due date that was never set. This shows how
+// long the bill has been outstanding instead, color-coded for urgency.
+const daysOutstandingClass = (days) => {
+  const d = Number(days || 0);
+  if (d > 30) return "text-rose-600";
+  if (d > 15) return "text-amber-600";
+  return "text-slate-500";
+};
+
 // Matches the color keys DashboardController::overview() assigns per payment
 // method (cash/card/upi/credit/return/discount), same palette the desktop
 // Settlement Details table already uses.
@@ -85,7 +96,7 @@ export default function DashboardScreen({ onNavigate }) {
         api.get("/dashboard/summary"),
         api.get("/direct-purchases", { params: { limit: 10 } }),
         api.get("/dashboard/attention-summary"),
-        api.get("/supplier-payments/pending", { params: { limit: 1 } }),
+        api.get("/supplier-payments/pending", { params: { limit: 5 } }),
       ]);
 
       const ov = overviewRes.status === "fulfilled" ? overviewRes.value.data?.data : null;
@@ -93,7 +104,11 @@ export default function DashboardScreen({ onNavigate }) {
       const pc = purchasesRes.status === "fulfilled" ? purchasesRes.value.data?.data : null;
       const att = attentionRes.status === "fulfilled" ? attentionRes.value.data?.data : null;
       const dues = duesRes.status === "fulfilled"
-        ? { totalPayable: duesRes.value.data?.totalPayable, count: duesRes.value.data?.total }
+        ? {
+            totalPayable: duesRes.value.data?.totalPayable,
+            count: duesRes.value.data?.total,
+            rows: duesRes.value.data?.data || [],
+          }
         : null;
 
       const combined = {
@@ -155,9 +170,16 @@ export default function DashboardScreen({ onNavigate }) {
   const returnsTrend = metrics.returns?.trend?.changePercent ?? null;
   const returnsTrendDirection = metrics.returns?.trend?.direction ?? null;
 
+  const hasPurchasesData = metrics.purchases != null;
+  const purchasesAmount = Number(metrics.purchases?.amount ?? 0);
+  const purchasesCount = Number(metrics.purchases?.count ?? 0);
+  const purchasesTrend = metrics.purchases?.trend?.changePercent ?? null;
+  const purchasesTrendDirection = metrics.purchases?.trend?.direction ?? null;
+
   const hasDuesData = supplierDues != null;
   const duesAmount = Number(supplierDues?.totalPayable ?? 0);
   const duesCount = Number(supplierDues?.count ?? 0);
+  const duesRows = supplierDues?.rows || [];
 
   const fastMovingRows = tables.fastMovingSection?.rows || [];
   const settlementRows = tables.settlementDetails?.rows || [];
@@ -292,10 +314,10 @@ export default function DashboardScreen({ onNavigate }) {
         </div>
       </div>
 
-      {/* ─── 3. Primary KPI Cards — mirrors desktop Dashboard.jsx's 4 cards exactly ─── */}
+      {/* ─── 3. Primary KPI Cards ─── */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "10px" }}>
 
-        {/* CARD 1: Total Bills */}
+        {/* CARD 1: Sales Today */}
         <div
           onClick={() => onNavigate("sales")}
           className="p-3 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-white to-white border border-emerald-200/80 shadow-xs active:scale-98 transition-all cursor-pointer flex flex-col justify-between"
@@ -303,7 +325,7 @@ export default function DashboardScreen({ onNavigate }) {
           <div>
             <div className="flex items-center justify-between mb-1">
               <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700">
-                Total Bills
+                Sales Today
               </span>
               <div className="w-5 h-5 rounded-md bg-emerald-100 text-emerald-700 flex items-center justify-center">
                 <TrendingUp size={12} />
@@ -331,9 +353,44 @@ export default function DashboardScreen({ onNavigate }) {
           </div>
         </div>
 
-        {/* CARD 2: Returns */}
+        {/* CARD 2: Purchase Today */}
         <div
-          onClick={() => onNavigate("sales")}
+          onClick={() => onNavigate("purchase")}
+          className="p-3 rounded-2xl bg-gradient-to-br from-blue-500/10 via-white to-white border border-blue-200/80 shadow-xs active:scale-98 transition-all cursor-pointer flex flex-col justify-between"
+        >
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] font-black uppercase tracking-wider text-blue-700">
+                Purchase Today
+              </span>
+              <div className="w-5 h-5 rounded-md bg-blue-100 text-blue-700 flex items-center justify-center">
+                <ShoppingBag size={12} />
+              </div>
+            </div>
+
+            <div className="text-[14px] font-black text-slate-900 tracking-tight leading-snug">
+              {hasPurchasesData ? money(purchasesAmount) : "—"}
+            </div>
+          </div>
+
+          <div className="mt-2 pt-1.5 border-t border-blue-100/70 flex items-center justify-between text-[9.5px] text-slate-600 font-semibold">
+            <span>{purchasesCount} Bills</span>
+            {purchasesTrend != null && (
+              <span
+                className={`font-bold ${
+                  purchasesTrendDirection === "down" ? "text-rose-600" : "text-emerald-600"
+                }`}
+              >
+                {purchasesTrendDirection === "down" ? "↓" : "↑"}
+                {purchasesTrend}%
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* CARD 3: Returns */}
+        <div
+          onClick={() => onNavigate("returns")}
           className="p-3 rounded-2xl bg-gradient-to-br from-rose-500/10 via-white to-white border border-rose-200/80 shadow-xs active:scale-98 transition-all cursor-pointer flex flex-col justify-between"
         >
           <div>
@@ -366,7 +423,7 @@ export default function DashboardScreen({ onNavigate }) {
           </div>
         </div>
 
-        {/* CARD 3: Stock value */}
+        {/* CARD 4: Stock value */}
         <div
           onClick={() => onNavigate("inventory")}
           className="p-3 rounded-2xl bg-gradient-to-br from-purple-500/10 via-white to-white border border-purple-200/80 shadow-xs active:scale-98 transition-all cursor-pointer flex flex-col justify-between"
@@ -402,37 +459,66 @@ export default function DashboardScreen({ onNavigate }) {
       </div>
 
       {/* ─── Supplier Pending Dues (real data: GET /supplier-payments/pending) ─── */}
-      <div
-        onClick={() => onNavigate("purchase")}
-        className="p-3.5 rounded-2xl bg-white border border-slate-200/80 shadow-xs active:scale-98 transition-all cursor-pointer flex items-center justify-between"
-      >
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-            <Wallet size={16} />
+      <div className="p-3.5 rounded-2xl bg-white border border-slate-200/80 shadow-xs">
+        <div
+          onClick={() => onNavigate("supplier_dues")}
+          className="flex items-center justify-between cursor-pointer active:scale-98 transition-all"
+        >
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+              <Wallet size={16} />
+            </div>
+            <div>
+              <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-wider m-0">
+                Supplier Dues
+              </h4>
+              <p className="text-[9.5px] text-slate-500 font-semibold m-0 mt-0.5">
+                {hasDuesData ? `${duesCount} bill${duesCount === 1 ? "" : "s"} pending` : "—"}
+              </p>
+            </div>
           </div>
-          <div>
-            <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-wider m-0">
-              Supplier Dues
-            </h4>
-            <p className="text-[9.5px] text-slate-500 font-semibold m-0 mt-0.5">
-              {hasDuesData ? `${duesCount} bill${duesCount === 1 ? "" : "s"} pending` : "—"}
-            </p>
+          <div className="flex items-center gap-1">
+            <span className="text-[13px] font-black text-amber-700">
+              {hasDuesData ? money(duesAmount) : "—"}
+            </span>
+            <ChevronRight size={14} className="text-slate-400" />
           </div>
         </div>
-        <div className="text-right">
-          <span className="text-[13px] font-black text-amber-700">
-            {hasDuesData ? money(duesAmount) : "—"}
-          </span>
-        </div>
+
+        {duesRows.length > 0 && (
+          <div className="mt-2.5 pt-2.5 border-t border-slate-100 space-y-1.5">
+            {duesRows.slice(0, 5).map((row) => (
+              <div
+                key={`${row.invoice_type}-${row.id}`}
+                onClick={() => onNavigate("supplier_dues")}
+                className="flex items-center justify-between text-[10.5px] cursor-pointer gap-2"
+              >
+                <span className="font-semibold text-slate-700 truncate flex-1">
+                  {row.supplier_name} · {row.invoice_no}
+                </span>
+                <span className={`font-bold shrink-0 ${daysOutstandingClass(row.days)}`}>
+                  {row.days}d
+                </span>
+                <span className="font-black text-amber-700 shrink-0">{money(row.balance_due)}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* ─── Fast Moving Products (real data: tables.fastMovingSection) ─── */}
       <div className="p-3.5 rounded-2xl bg-white border border-slate-200/80 shadow-xs">
-        <div className="flex items-center gap-1.5 mb-2.5">
-          <Sparkles size={15} className="text-amber-500" />
-          <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-wider m-0">
-            Fast Moving Products
-          </h4>
+        <div
+          onClick={() => onNavigate("fast_moving")}
+          className="flex items-center justify-between mb-2.5 cursor-pointer active:scale-98 transition-all"
+        >
+          <div className="flex items-center gap-1.5">
+            <Sparkles size={15} className="text-amber-500" />
+            <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-wider m-0">
+              Fast Moving Products
+            </h4>
+          </div>
+          <ChevronRight size={14} className="text-slate-400" />
         </div>
 
         {fastMovingRows.length > 0 ? (
@@ -440,7 +526,8 @@ export default function DashboardScreen({ onNavigate }) {
             {fastMovingRows.slice(0, 5).map((item, idx) => (
               <div
                 key={idx}
-                className="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-100"
+                onClick={() => onNavigate("fast_moving")}
+                className="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-100 cursor-pointer"
               >
                 <div className="flex items-center gap-2 min-w-0 flex-1">
                   <span className="w-5 h-5 rounded-md bg-indigo-100 text-indigo-700 font-black text-[10px] flex items-center justify-center shrink-0">
@@ -468,14 +555,20 @@ export default function DashboardScreen({ onNavigate }) {
 
       {/* ─── Settlement Details by Mode (real data: tables.settlementDetails) ─── */}
       <div className="p-3.5 rounded-2xl bg-white border border-slate-200/80 shadow-xs">
-        <div className="flex items-center justify-between mb-2.5">
+        <div
+          onClick={() => onNavigate("sales_summary")}
+          className="flex items-center justify-between mb-2.5 cursor-pointer active:scale-98 transition-all"
+        >
           <div className="flex items-center gap-1.5">
             <Wallet size={15} className="text-indigo-600" />
             <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-wider m-0">
               Settlement Details
             </h4>
           </div>
-          <span className="text-[9.5px] font-bold text-slate-400">By Mode</span>
+          <div className="flex items-center gap-1">
+            <span className="text-[9.5px] font-bold text-slate-400">By Mode</span>
+            <ChevronRight size={14} className="text-slate-400" />
+          </div>
         </div>
 
         {settlementRows.length > 0 ? (

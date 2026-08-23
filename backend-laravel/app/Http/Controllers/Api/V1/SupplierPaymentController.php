@@ -211,6 +211,12 @@ class SupplierPaymentController extends Controller
             ];
         }
 
+        // A row can have payment_status != PAID (e.g. an incomplete/zero-
+        // amount entry left at the default UNPAID status) while its actual
+        // computed balance is already 0 - that's not really "pending" money,
+        // so it shouldn't show up in a dues list at all.
+        $rows = array_values(array_filter($rows, fn ($r) => $r['balance_due'] > 0));
+
         // Two different Eloquent models are merged into one flat list here,
         // so pagination happens in PHP over the merged+sorted array rather
         // than via a single ->paginate() call - each source query is still
