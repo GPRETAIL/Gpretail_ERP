@@ -1,10 +1,14 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
-    # Allow direct access to existing root files (unzip.php, migrate.php, etc.)
-    RewriteCond %{REQUEST_FILENAME} -f [OR]
-    RewriteCond %{REQUEST_FILENAME} -d
-    RewriteRule ^ - [L]
+    # Only these specific root-level deploy utility scripts get direct access - NOT a blanket
+    # "any existing file or directory" pass-through. That blanket version was matching every real
+    # file/dir at the document root, which meant Laravel's OWN app/, config/, storage/, vendor/,
+    # etc. (extracted here by unzip.php alongside the actual public/ folder) were directly
+    # web-accessible - including storage/logs/laravel.log and composer.json, confirmed exposed.
+    # Everything else now forwards through public/ so Laravel's routing (and public/.htaccess)
+    # decides what's actually servable, the same as it always should have.
+    RewriteRule ^(unzip\.php|migrate\.php|cleanup_stray_app\.php|default\.php)$ - [L]
 
     # Forward all other requests to public/
     RewriteCond %{REQUEST_URI} !^/public/
