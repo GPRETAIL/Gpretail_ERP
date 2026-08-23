@@ -78,6 +78,29 @@ class DashboardController extends Controller
         $totalEmployees = (int) Employee::count();
         $presentEmployees = (int) Employee::where('is_active', true)->count();
 
+        // GST/Tax collected - real sum of pos_sales.tax_amount for the range (combined CGST+SGST,
+        // there's no separate column for each half).
+        $totalTaxCollected = (float) ($dateScope($scope(PosSale::query()))->sum('tax_amount') ?? 0);
+        $prevTotalTax = (float) ($prevDateScope($scope(PosSale::query()))->sum('tax_amount') ?? 0);
+
+        // Gross profit - sum(qty * (selling_price - cost_price)) across sold line items in range.
+        // cost_price is only recorded on items where the sale screen actually sent one (older/manual
+        // entries can be null), so this is a real but partial figure - flagged via hasIncompleteCost
+        // rather than silently understating profit as if every line item were accounted for.
+        $profitQuery = DB::table('pos_sale_items')
+            ->join('pos_sales', 'pos_sale_items.pos_sale_id', '=', 'pos_sales.id')
+            ->whereBetween('pos_sales.sale_date', [$from, $to])
+            ->when($storeId && $storeId !== 'all', fn ($q) => $q->where('pos_sales.store_id', $storeId));
+        $grossProfit = (float) ((clone $profitQuery)->whereNotNull('pos_sale_items.cost_price')
+            ->sum(DB::raw('pos_sale_items.quantity * (pos_sale_items.selling_price - pos_sale_items.cost_price)')) ?? 0);
+        $itemsMissingCost = (int) ((clone $profitQuery)->whereNull('pos_sale_items.cost_price')->count() ?? 0);
+        $prevProfitQuery = DB::table('pos_sale_items')
+            ->join('pos_sales', 'pos_sale_items.pos_sale_id', '=', 'pos_sales.id')
+            ->whereBetween('pos_sales.sale_date', [$prevFrom, $prevTo])
+            ->when($storeId && $storeId !== 'all', fn ($q) => $q->where('pos_sales.store_id', $storeId))
+            ->whereNotNull('pos_sale_items.cost_price');
+        $prevGrossProfit = (float) ($prevProfitQuery->sum(DB::raw('pos_sale_items.quantity * (pos_sale_items.selling_price - pos_sale_items.cost_price)')) ?? 0);
+
         // Calculate Stock Value (Qty * Product Cost Price)
         $stockValQuery = DB::table('stocks')
             ->join('products', 'stocks.product_id', '=', 'products.id');
@@ -330,6 +353,20 @@ class DashboardController extends Controller
                         'amount' => $totalReturns,
                         'count'  => $totalReturnCount,
                         'trend'  => $computeTrend($totalReturns, $prevTotalReturns),
+                    ],
+                    'gst' => [
+                        'amount' => $totalTaxCollected,
+                        'trend'  => $computeTrend($totalTaxCollected, $prevTotalTax),
+                    ],
+                    'profitLoss' => [
+                        'amount'           => $grossProfit,
+                        'itemsMissingCost' => $itemsMissingCost,
+                        'trend'            => $computeTrend($grossProfit, $prevGrossProfit),
+                    ],
+                    'receivables' => [
+                        // Real customer credit balance (Customer.current_balance) - same figure
+                        // CustomerController::dashboardSummary() already exposes as totalCreditBalance.
+                        'amount' => (float) (Customer::sum('current_balance') ?? 0),
                     ],
                 ],
                 'charts' => [

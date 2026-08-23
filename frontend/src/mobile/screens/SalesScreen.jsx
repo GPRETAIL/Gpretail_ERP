@@ -27,6 +27,12 @@ const mapStatus = (sale) => {
   return "paid";
 };
 
+// Every POS sale's `status` is always "COMPLETED" (there's no draft/sent
+// workflow for a POS bill - it's created and completed in one step), so
+// filter tabs built around that field could never match anything. The one
+// real, data-backed distinction on a sale is how it was paid.
+const isCreditSale = (sale) => sale.payment_mode === "CREDIT" || sale.is_credit === true;
+
 /**
  * Sales Invoices list screen — fetches real data from GET /pos-sales.
  */
@@ -67,12 +73,12 @@ export default function SalesScreen({ onNavigate }) {
     };
   }, [loadSales]);
 
-  // Client-side filter
+  // Client-side filter - based on how the sale was actually paid, since
+  // every sale's `status` is always COMPLETED (no draft/sent workflow
+  // exists for a POS bill) and could never distinguish anything.
   const filtered = sales.filter((s) => {
-    const status = mapStatus(s);
-    if (filter === "Draft" && status !== "draft") return false;
-    if (filter === "Sent" && status !== "sent") return false;
-    if (filter === "Paid" && status !== "paid") return false;
+    if (filter === "Paid" && isCreditSale(s)) return false;
+    if (filter === "Credit" && !isCreditSale(s)) return false;
     return true;
   });
 
@@ -96,7 +102,7 @@ export default function SalesScreen({ onNavigate }) {
 
       {/* Filter Tabs */}
       <div className="vx-filter-tabs">
-        {["All", "Draft", "Sent", "Paid"].map((t) => (
+        {["All", "Paid", "Credit"].map((t) => (
           <button
             key={t}
             type="button"

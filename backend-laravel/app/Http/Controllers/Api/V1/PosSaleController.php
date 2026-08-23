@@ -224,6 +224,16 @@ class PosSaleController extends Controller
 
         $query = PosSale::with(['customer', 'user', 'items.product', 'items.barcode', 'payments'])
             ->when($storeId && $storeId !== 'all', fn ($q) => $q->where('store_id', $storeId))
+            // The mobile Sales screen's search box has always sent this param, but nothing here
+            // ever read it - every keystroke silently no-opped and kept showing the same
+            // unfiltered recent-sales list regardless of what was typed.
+            ->when($request->filled('search'), function ($q) use ($request) {
+                $s = trim($request->input('search'));
+                $q->where(function ($sub) use ($s) {
+                    $sub->where('invoice_no', 'like', "%{$s}%")
+                        ->orWhereHas('customer', fn ($cq) => $cq->where('name', 'like', "%{$s}%"));
+                });
+            })
             ->orderBy('id', 'desc');
 
         // SalesReports.jsx's getAllRows() helper always asks for all=true so
