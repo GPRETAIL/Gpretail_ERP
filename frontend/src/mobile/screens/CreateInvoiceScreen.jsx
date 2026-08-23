@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { Plus } from "lucide-react";
+import { Plus, CloudOff, Check } from "lucide-react";
 import api from "../../api/axios";
+import { saveDraft, addToSyncQueue, getCachedData, setCachedData } from "../offline/db";
 
 const money = (n) =>
   "₹ " +
@@ -10,7 +11,7 @@ const money = (n) =>
   });
 
 /**
- * Create Invoice screen with real API integration.
+ * Create Invoice screen with Offline Draft & Sync Queue integration.
  */
 export default function CreateInvoiceScreen({ onBack }) {
   const [customers, setCustomers] = useState([]);
@@ -20,9 +21,10 @@ export default function CreateInvoiceScreen({ onBack }) {
     { name: "", hsn: "", qty: 1, rate: 0 },
   ]);
   const [saving, setSaving] = useState(false);
+  const [feedback, setFeedback] = useState(null);
 
   useEffect(() => {
-    // Load customers and next bill number
+    // Load customers and next bill number (with offline cache fallback)
     (async () => {
       try {
         const [custRes, billRes] = await Promise.all([
@@ -34,6 +36,7 @@ export default function CreateInvoiceScreen({ onBack }) {
           ? custData
           : custData?.data || custData?.items || [];
         setCustomers(custList);
+        setCachedData("customers_list", custList);
 
         const billNo =
           billRes.data?.data?.billNo ||
@@ -42,7 +45,10 @@ export default function CreateInvoiceScreen({ onBack }) {
           "";
         setNextBillNo(billNo);
       } catch {
-        // Silently handle
+        // Fallback to cached customers
+        const cachedCusts = await getCachedData("customers_list");
+        if (cachedCusts) setCustomers(cachedCusts);
+        setNextBillNo(`OFFLINE-${Date.now().toString().slice(-6)}`);
       }
     })();
   }, []);
@@ -69,26 +75,53 @@ export default function CreateInvoiceScreen({ onBack }) {
     setItems(newItems);
   };
 
-  const handleSave = async (sendToo) => {
+  const buildPayload = () => ({
+    customerName: selectedCustomer || "Walking Customer",
+    billNo: nextBillNo || `INV-${Date.now().toString().slice(-6)}`,
+    date: dateStr,
+    items: items
+      .filter((item) => item.name && item.rate > 0)
+      .map((item) => ({
+        productName: item.name,
+        hsnCode: item.hsn,
+        quantity: item.qty,
+        sellingPrice: item.rate,
+      })),
+    subtotal,
+    cgst,
+    sgst,
+    total,
+  });
+
+  const handleSaveOffline = async () => {
     setSaving(true);
-    try {
-      // Build payload matching existing POS sales API
-      const payload = {
-        customerName: selectedCustomer || "Walking Customer",
-        billNo: nextBillNo,
-        items: items
-          .filter((item) => item.name && item.rate > 0)
-          .map((item) => ({
-            productName: item.name,
-            hsnCode: item.hsn,
-            quantity: item.qty,
-            sellingPrice: item.rate,
-          })),
-      };
-      await api.post("/pos-sales", payload);
+    const payload = buildPayload();
+    await saveDraft("invoice", payload);
+    await addToSyncQueue("create_invoice", "/pos-sales", "POST", payload);
+    setFeedback("Saved as Offline Draft & Queued for Sync!");
+    setTimeout(() => {
       onBack();
+    }, 900);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    const payload = buildPayload();
+
+    if (!navigator.onLine) {
+      await handleSaveOffline();
+      return;
+    }
+
+    try {
+      await api.post("/pos-sales", payload);
+      setFeedback("Invoice created successfully!");
+      setTimeout(() => {
+        onBack();
+      }, 700);
     } catch {
-      // Handle error
+      // Auto fallback to offline draft if network fails
+      await handleSaveOffline();
     } finally {
       setSaving(false);
     }
@@ -96,6 +129,13 @@ export default function CreateInvoiceScreen({ onBack }) {
 
   return (
     <div className="space-y-4 pb-12">
+      {feedback && (
+        <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
+          <Check size={16} />
+          <span>{feedback}</span>
+        </div>
+      )}
+
       {/* Customer Selection */}
       <div className="vx-card">
         <label className="text-xs font-semibold text-slate-700 block mb-1">
@@ -216,19 +256,20 @@ export default function CreateInvoiceScreen({ onBack }) {
       <div className="flex gap-2 pt-2">
         <button
           type="button"
-          onClick={onBack}
+          onClick={handleSaveOffline}
           disabled={saving}
-          className="flex-1 py-3 rounded-xl border border-slate-300 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 active:scale-98 transition-all"
+          className="flex-1 py-3 rounded-xl border border-slate-300 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 active:scale-98 transition-all flex items-center justify-center gap-1.5"
         >
-          Save Draft
+          <CloudOff size={14} className="text-slate-500" />
+          <span>Save Draft</span>
         </button>
         <button
           type="button"
-          onClick={() => handleSave(true)}
+          onClick={handleSave}
           disabled={saving}
           className="flex-1 py-3 rounded-xl bg-indigo-600 text-xs font-bold text-white shadow-lg shadow-indigo-500/30 hover:bg-indigo-700 active:scale-98 transition-all disabled:opacity-50"
         >
-          {saving ? "Saving..." : "Save & Send"}
+          {saving ? "Saving..." : "Save & Create"}
         </button>
       </div>
     </div>

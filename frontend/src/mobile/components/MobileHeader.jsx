@@ -1,38 +1,60 @@
 import React, { useEffect, useState } from "react";
 import { ArrowLeft, Bell, User } from "lucide-react";
 import api from "../../api/axios";
+import { getStoredNotifications } from "../offline/db";
 
 /**
  * Mobile top header bar with:
  * - Back arrow for sub-screens
  * - Centered screen title
- * - Notification bell with unread badge
+ * - Notification bell with unread badge and open trigger
  * - User avatar initial circle
  */
-export default function MobileHeader({ title, canGoBack, onBack, userName }) {
+export default function MobileHeader({
+  title,
+  canGoBack,
+  onBack,
+  userName,
+  onOpenNotifications,
+}) {
   const [unreadCount, setUnreadCount] = useState(
     () => window.__vx_unread_count || 0
   );
 
-  // Refresh unread count periodically
-  useEffect(() => {
-    let cancelled = false;
-    const fetchCount = async () => {
+  const refreshCount = async () => {
+    try {
+      // Check stored IndexedDB payment & stock alerts
+      const localNotifs = await getStoredNotifications();
+      const localUnread = localNotifs.filter((n) => !n.isRead).length;
+
+      // Check remote notifications
+      let remoteUnread = 0;
       try {
         const res = await api.get("/notifications/unread-count");
-        const count = res.data?.data?.count ?? res.data?.count ?? 0;
-        if (!cancelled) {
-          setUnreadCount(count);
-          window.__vx_unread_count = count;
-        }
+        remoteUnread = res.data?.data?.count ?? res.data?.count ?? 0;
       } catch {
-        // Silently ignore
+        // Fallback
       }
+
+      const total = Math.max(localUnread, remoteUnread);
+      setUnreadCount(total);
+      window.__vx_unread_count = total;
+    } catch {
+      // Silently ignore
+    }
+  };
+
+  useEffect(() => {
+    refreshCount();
+
+    const handleNotifUpdate = () => refreshCount();
+    window.addEventListener("vx-notifications-updated", handleNotifUpdate);
+    const interval = setInterval(refreshCount, 45000);
+
+    return () => {
+      window.removeEventListener("vx-notifications-updated", handleNotifUpdate);
+      clearInterval(interval);
     };
-    // Fetch on mount if stale
-    fetchCount();
-    const interval = setInterval(fetchCount, 60000); // Refresh every 60s
-    return () => { cancelled = true; clearInterval(interval); };
   }, []);
 
   const initial = (userName || "U").charAt(0).toUpperCase();
@@ -61,6 +83,7 @@ export default function MobileHeader({ title, canGoBack, onBack, userName }) {
       {/* Right: Bell + Avatar */}
       <button
         type="button"
+        onClick={onOpenNotifications}
         className="vx-ws-icon relative"
         aria-label="Notifications"
       >

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { logoutUser } from "../features/authSlice";
@@ -9,6 +9,7 @@ import MobileHeader from "./components/MobileHeader";
 import BottomNav from "./components/BottomNav";
 import OfflineBanner from "./components/OfflineBanner";
 import PwaUpdateBanner from "./components/PwaUpdateBanner";
+import NotificationsModal from "./components/NotificationsModal";
 import DashboardScreen from "./screens/DashboardScreen";
 import ModulesScreen from "./screens/ModulesScreen";
 import SalesScreen from "./screens/SalesScreen";
@@ -19,6 +20,8 @@ import ProductDetailScreen from "./screens/ProductDetailScreen";
 import ReportsScreen from "./screens/ReportsScreen";
 import SettingsScreen from "./screens/SettingsScreen";
 import MobileLoginScreen from "./screens/MobileLoginScreen";
+import { checkSupplierPaymentAlerts } from "./notifications/notificationService";
+import { processSyncQueue } from "./offline/syncManager";
 import "./workspace.css";
 
 // Screen title map
@@ -43,14 +46,13 @@ const ROOT_SCREENS = new Set(["dashboard", "modules", "sales", "purchase", "inve
 /**
  * Vynerix ERP — Dedicated Mobile Application Root
  *
- * This is the main entry point for the /app/ mobile experience.
- * It orchestrates:
+ * Orchestrates:
  *   1. Splash screen with real initialization
  *   2. Mobile login if unauthenticated
- *   3. Mobile header with notifications
- *   4. Screen routing (state-based, not URL-based for native feel)
+ *   3. Mobile header with unread notification badge & alert modal
+ *   4. Screen routing (state-based for native mobile feel)
  *   5. Bottom navigation
- *   6. Offline awareness
+ *   6. Offline awareness & background synchronization
  */
 export default function VynerixMobileApp() {
   const isAuthenticated = useSelector((s) => s.auth.isAuthenticated);
@@ -64,8 +66,17 @@ export default function VynerixMobileApp() {
   const [page, setPage] = useState("dashboard");
   const [history, setHistory] = useState(["dashboard"]);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
   const userName = authUser?.name || authUser?.username || "Admin";
+
+  // Check supplier payment alerts and process pending sync queue on startup
+  useEffect(() => {
+    if (ready && isAuthenticated) {
+      checkSupplierPaymentAlerts();
+      processSyncQueue();
+    }
+  }, [ready, isAuthenticated]);
 
   const navigateTo = useCallback((target) => {
     setHistory((prev) => [...prev, target]);
@@ -115,6 +126,7 @@ export default function VynerixMobileApp() {
         canGoBack={canGoBack}
         onBack={goBack}
         userName={userName}
+        onOpenNotifications={() => setIsNotificationsOpen(true)}
       />
 
       {/* Offline Banner */}
@@ -122,6 +134,12 @@ export default function VynerixMobileApp() {
 
       {/* PWA Update Notification */}
       <PwaUpdateBanner />
+
+      {/* Supplier Payment & Stock Alerts Drawer Modal */}
+      <NotificationsModal
+        isOpen={isNotificationsOpen}
+        onClose={() => setIsNotificationsOpen(false)}
+      />
 
       {/* Main Content Area */}
       <main className="vx-ws-main" style={{ paddingBottom: 80 }}>
