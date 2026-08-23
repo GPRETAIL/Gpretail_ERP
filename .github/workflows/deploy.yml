@@ -138,6 +138,14 @@ jobs:
           # it's retried (this is what actually happened: all 8 attempts
           # failed with 403, not a timing issue at all).
           TOKEN=$(printf '%s' "${HOSTINGER_DEPLOY_TOKEN:-NextErpDeploySecret2026}" | tr -d '[:space:]')
+          # Diagnostic only, never prints the token itself: a sha256 hash
+          # reveals whether TOKEN matches one of the 3 values unzip.php
+          # already accepts (their hashes are not secret - the plaintext
+          # values are hardcoded in that public file) without leaking
+          # anything new. Lets us tell "secret is wrong" apart from
+          # "secret is fine, something else is rejecting it".
+          echo "Token length: $(printf '%s' "$TOKEN" | wc -c), sha256: $(printf '%s' "$TOKEN" | sha256sum | cut -d' ' -f1)"
+          echo "(Reference - NextErpDeploySecret2026: 0aa741ce0745dbbffb2e88c61c367d7aabce7548a19b1fe9404c038c12342c78)"
           sleep 5
           success=false
           for i in 1 2 3 4 5 6 7 8; do
