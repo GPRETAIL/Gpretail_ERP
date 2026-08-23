@@ -3,6 +3,7 @@ import { ArrowLeft, ChevronsLeft, Minus, Plus, Printer, X, Search, RotateCcw, Re
 import { toast } from "react-toastify";
 import { useSelector } from "react-redux";
 import api from "../../api/axios";
+import { fetchReceiptCompanyInfo } from "../../utils/receiptCompanyInfo";
 import FilterableDataTable from "../../components/FilterableDataTable";
 import SearchableSelect from "../../components/SearchableSelect";
 import UploadImportButton from "../../components/UploadImportButton";
@@ -1059,32 +1060,6 @@ const POSOld = () => {
     if (activeTabId === tabId) setActiveTabId(1);
   };
 
-  const fetchReceiptCompanyInfo = useCallback(async (companyId) => {
-    if (!companyId) {
-      return {
-        storeAddress: "",
-        storePhone: "",
-        storeGstNo: "",
-      };
-    }
-
-    try {
-      const res = await api.get(`/companies/${companyId}`);
-      const company = res.data?.data || {};
-      return {
-        storeAddress: String(company.address || "").trim(),
-        storePhone: String(company.contact_no || company.phone || "").trim(),
-        storeGstNo: String(company.gst_no || company.gstin || "").trim(),
-      };
-    } catch {
-      return {
-        storeAddress: "",
-        storePhone: "",
-        storeGstNo: "",
-      };
-    }
-  }, []);
-
   const handlePrintReceipt = useCallback(async (data) => {
     const receiptCustomization = data.receiptCustomization;
     const billCode = String(data.billBarcode || data.billNo || "").trim();
@@ -1231,7 +1206,6 @@ const POSOld = () => {
     authUser?.counter_name,
     authUser?.email,
     authUser?.name,
-    fetchReceiptCompanyInfo,
     printerConnected,
     queuePrintHtml,
   ]);

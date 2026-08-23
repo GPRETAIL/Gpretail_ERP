@@ -4,6 +4,7 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import api from "../../api/axios";
+import { fetchReceiptCompanyInfo } from "../../utils/receiptCompanyInfo";
 import FilterableDataTable from "../../components/FilterableDataTable";
 import UploadImportButton from "../../components/UploadImportButton";
 import CounterAssignmentDialog from "../../components/CounterAssignmentDialog";
@@ -2278,35 +2279,6 @@ const POSSales = () => {
     };
   };
 
-  const fetchReceiptCompanyInfo = async () => {
-    const companyId = Number(authUser?.company_id || 0);
-    if (!companyId) {
-      return {
-        storeAddress: "",
-        storePhone: "",
-        storeGstNo: "",
-      };
-    }
-
-    try {
-      const res = await api.get(`/companies/${companyId}`);
-      const company = res.data?.data || {};
-      return {
-        storeName: String(company.name || company.reg_name || company.regName || "").trim(),
-        storeAddress: String(company.address || "").trim(),
-        storePhone: String(company.contact_no || company.phone || company.contactNo || "").trim(),
-        storeGstNo: String(company.gst_no || company.gstin || company.gstNo || "").trim(),
-      };
-    } catch {
-      return {
-        storeName: "",
-        storeAddress: "",
-        storePhone: "",
-        storeGstNo: "",
-      };
-    }
-  };
-
   const printSaleReceipt = async (savedSale) => {
     const savedItems = savedSale?.items || [];
     const billNumber = savedSale?.bill_no || billNo;
@@ -2319,7 +2291,7 @@ const POSSales = () => {
       0
     );
     const [companyInfo, linkedReturnRes] = await Promise.all([
-      fetchReceiptCompanyInfo(),
+      fetchReceiptCompanyInfo(authUser?.company_id),
       appliedReturnId
         ? api.get(`/pos-returns/${appliedReturnId}`).catch(() => ({ data: { data: null } }))
         : Promise.resolve({ data: { data: null } }),
@@ -2463,7 +2435,7 @@ const POSSales = () => {
     }
 
     const receiptCustomization = loadSalesReceiptCustomization(authUser?.company_id || "default");
-    const companyInfo = await fetchReceiptCompanyInfo();
+    const companyInfo = await fetchReceiptCompanyInfo(authUser?.company_id);
     const displayReturnNo = getPosReturnBarcodeValue(
       detail?.display_return_no || detail?.return_no || detail?.id
     );
@@ -2583,7 +2555,7 @@ const POSSales = () => {
       }
 
       const receiptCustomization = loadSalesReceiptCustomization(authUser?.company_id || "default");
-      const companyInfo = await fetchReceiptCompanyInfo();
+      const companyInfo = await fetchReceiptCompanyInfo(authUser?.company_id);
       const savedBillNo = saved.bill_no ?? billNo;
       const displayBillNo = getPosBillBarcodeValue(savedBillNo);
 

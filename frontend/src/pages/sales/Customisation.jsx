@@ -676,7 +676,7 @@ const ReceiptPreview = ({ companyInfo, settings }) => {
             ))}
           </div>
 
-          {taxRows.length > 0 && visibleTaxColumns.length > 0 ? (
+          {settings.showTaxTableOnReceipt && taxRows.length > 0 && visibleTaxColumns.length > 0 ? (
             <div className="mb-3 overflow-hidden rounded-lg border border-gray-200">
               <div
                 className="grid bg-gray-50 text-[10px] font-bold uppercase tracking-wide text-gray-500"
@@ -959,7 +959,9 @@ export default function Customisation() {
     <div className="h-[calc(100vh-53px)] overflow-hidden bg-gray-100 px-4 py-4 text-gray-800 dark:bg-gray-900 dark:text-gray-100">
       <div className="grid h-full gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
         <div className="min-h-0 space-y-4 overflow-y-auto pr-1">
-          <div className={`${baseCardClass} px-5 py-5`}>
+          {/* Sticky so the header - title, description, and Save/Reset - stays reachable while
+              scrolling through the settings below, instead of scrolling away with them. */}
+          <div className={`${baseCardClass} sticky top-0 z-20 px-5 py-5`}>
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <div className="text-xl font-semibold text-gray-900 dark:text-gray-100">Sales Customisation</div>

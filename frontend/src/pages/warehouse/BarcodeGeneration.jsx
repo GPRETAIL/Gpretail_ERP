@@ -319,6 +319,18 @@ const buildStickerLabels = ({
   return [];
 };
 
+// Shared across all three render paths (HTML print, SVG direct-print, JSX preview) so the price
+// field's emphasis stays in sync with whichever "Barcode and QR Code Format" preset is selected -
+// "plain" drops the usual bold treatment, "boxed"/"accent" add a border box around the price.
+const getWarehousePriceEmphasis = (formatStyle, textStyle) => {
+  const priceStyle = formatStyle?.priceStyle || "bold";
+  const boostedWeight = textStyle.fontWeight === 700 ? 800 : 700;
+  if (priceStyle === "plain") return { fontWeight: textStyle.fontWeight, boxed: false, accentColor: null };
+  if (priceStyle === "boxed") return { fontWeight: boostedWeight, boxed: true, accentColor: null };
+  if (priceStyle === "accent") return { fontWeight: boostedWeight, boxed: true, accentColor: "#2563eb" };
+  return { fontWeight: boostedWeight, boxed: false, accentColor: null };
+};
+
 const escapeHtml = (value = "") =>
   String(value ?? "")
     .replace(/&/g, "&amp;")
@@ -410,6 +422,14 @@ const buildBarcodeSheetMarkup = ({
 }) => {
   const metrics = getWarehouseStickerMetrics(customization);
   const textStyle = metrics.textStyle;
+  const formatStyle = metrics.formatStyle;
+  const cardBorderCss = formatStyle.cardBorder ? "border: 0.2mm solid #d1d5db;" : "border: none;";
+  const cardRadiusCss = `border-radius: ${formatStyle.rounded ? "3mm" : "0"};`;
+  const headerDividerCss = formatStyle.headerDivider === "accent"
+    ? "border-bottom: 0.4mm solid #2563eb;"
+    : formatStyle.headerDivider === "solid"
+      ? "border-bottom: 0.25mm solid #111827;"
+      : "";
   const storeNamePosition = getWarehouseLabelFieldPosition(customization, "storeName");
   const productNamePosition = getWarehouseLabelFieldPosition(customization, "productName");
   const notePosition = getWarehouseLabelFieldPosition(customization, "note");
@@ -426,9 +446,11 @@ const buildBarcodeSheetMarkup = ({
       const isMrp = field.key === "mrp";
       const isRs = field.key === "rs" || field.key === "price";
       const isStriked = isMrp && Boolean(customization.mrpStrikeOut);
-      const fieldFontWeight = isRs
-        ? (textStyle.fontWeight === 700 ? 800 : 700)
-        : textStyle.fontWeight;
+      const priceEmphasis = isRs ? getWarehousePriceEmphasis(metrics.formatStyle, textStyle) : null;
+      const fieldFontWeight = isRs ? priceEmphasis.fontWeight : textStyle.fontWeight;
+      const priceBoxCss = priceEmphasis?.boxed
+        ? `border: 1px solid ${priceEmphasis.accentColor || "#111827"}; border-radius: 1mm; padding: 0.3mm 1mm; ${priceEmphasis.accentColor ? `background: ${priceEmphasis.accentColor}1a; color: ${priceEmphasis.accentColor};` : ""}`
+        : "";
       if (isStriked) {
         return `
           <div class="field-row" style="justify-content: ${getWarehouseLabelFieldFlexJustifyContent(fieldPosition)}; text-align: ${getWarehouseLabelFieldTextAlign(fieldPosition)}; font-size: ${getWarehouseLabelFieldFontMm(metrics, field.key)}mm; font-weight: ${fieldFontWeight};">
@@ -444,7 +466,7 @@ const buildBarcodeSheetMarkup = ({
       }
 
       return `
-        <div class="field-row" style="justify-content: ${getWarehouseLabelFieldFlexJustifyContent(fieldPosition)}; text-align: ${getWarehouseLabelFieldTextAlign(fieldPosition)}; font-size: ${getWarehouseLabelFieldFontMm(metrics, field.key)}mm; font-weight: ${fieldFontWeight}; text-decoration: ${textStyle.textDecoration};">
+        <div class="field-row" style="justify-content: ${getWarehouseLabelFieldFlexJustifyContent(fieldPosition)}; text-align: ${getWarehouseLabelFieldTextAlign(fieldPosition)}; font-size: ${getWarehouseLabelFieldFontMm(metrics, field.key)}mm; font-weight: ${fieldFontWeight}; text-decoration: ${textStyle.textDecoration}; ${priceBoxCss}">
           <span class="field-label">${escapeHtml(field.label)}</span>
           <span class="field-value">${escapeHtml(field.value)}</span>
         </div>
@@ -570,8 +592,8 @@ const buildBarcodeSheetMarkup = ({
     * { box-sizing: border-box; }
     body { margin: 0; padding: 0; font-family: ${textStyle.fontFamily}; background: #ffffff; }
     .sheet { display: grid; grid-template-columns: repeat(${metrics.labelsPerRow}, ${metrics.labelWidthMm}mm); column-gap: 0; row-gap: ${BARCODE_SHEET_ROW_GAP_MM}mm; justify-content: start; padding: 0; width: ${metrics.labelWidthMm * metrics.labelsPerRow}mm; background: #ffffff; }
-    .label-card { width: ${metrics.labelWidthMm}mm; height: ${metrics.labelHeightMm}mm; overflow: hidden; border: 0.2mm solid #d1d5db; border-radius: 3mm; background: #fff; }
-    .label-header { min-height: ${metrics.topBandHeightMm}mm; display: flex; align-items: center; justify-content: center; padding: 0 1.5mm; text-align: center; }
+    .label-card { width: ${metrics.labelWidthMm}mm; height: ${metrics.labelHeightMm}mm; overflow: hidden; ${cardBorderCss} ${cardRadiusCss} background: #fff; }
+    .label-header { min-height: ${metrics.topBandHeightMm}mm; display: flex; align-items: center; justify-content: center; padding: 0 1.5mm; text-align: center; ${headerDividerCss} }
     .store-name, .code-text, .product-name, .field-row, .note-text { font-family: ${textStyle.fontFamily}; font-weight: ${textStyle.fontWeight}; font-style: ${textStyle.fontStyle}; text-decoration: ${textStyle.textDecoration}; }
     .store-name { width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: ${metrics.storeNameFontMm}mm; text-transform: uppercase; letter-spacing: ${metrics.storeNameLetterSpacingEm}em; color: #111827; }
     .label-body { display: grid; grid-template-columns: ${metrics.codeColumnWidthMm}mm minmax(0, 1fr); gap: ${metrics.bodyGapMm}mm; padding: ${metrics.bodyPadYMm}mm ${metrics.bodyPadXMm}mm; height: ${metrics.topBandHeightMm > 0 ? `calc(${metrics.labelHeightMm}mm - ${metrics.topBandHeightMm}mm)` : `${metrics.labelHeightMm}mm`}; }
@@ -657,6 +679,18 @@ const buildBarcodeSheetSvgMarkup = (markup) => {
   const sheetWidthPx = mmToPx(markup.sheetWidthMm);
   const sheetHeightPx = mmToPx(markup.sheetHeightMm);
   const topBandPx = mmToPx(metrics.topBandHeightMm);
+  const formatStyle = metrics.formatStyle;
+  const cardCornerPx = formatStyle.rounded ? mmToPx(3) : 0;
+  const cardStrokePx = formatStyle.cardBorder ? mmToPx(0.2) : 0;
+  const cardStrokeColor = formatStyle.cardBorder ? "#d1d5db" : "none";
+  const headerDividerColor = formatStyle.headerDivider === "accent"
+    ? "#2563eb"
+    : formatStyle.headerDivider === "solid"
+      ? "#111827"
+      : null;
+  const headerDividerLine = headerDividerColor && metrics.topBandHeightMm > 0
+    ? `<line x1="0" y1="${topBandPx}" x2="${labelWidthPx}" y2="${topBandPx}" stroke="${headerDividerColor}" stroke-width="${formatStyle.headerDivider === "accent" ? mmToPx(0.4) : mmToPx(0.25)}" />`
+    : "";
   const bodyPadXPx = mmToPx(metrics.bodyPadXMm);
   const bodyPadYPx = mmToPx(metrics.bodyPadYMm);
   const bodyGapPx = mmToPx(metrics.bodyGapMm);
@@ -733,6 +767,25 @@ const buildBarcodeSheetSvgMarkup = (markup) => {
     return `<line x1="${x1}" y1="${yMid}" x2="${x2}" y2="${yMid}" stroke="#dc2626" stroke-width="${strokeW}" stroke-linecap="round" />`;
   };
 
+  // Draws behind the price text (pushed to `nodes` before the text node) for the "boxed"/"accent"
+  // Barcode and QR Code Format presets - a border box around the sticker's one "total"-equivalent
+  // number, mirroring buildReceiptFormatCss's boxed/highlighted total treatment for sales receipts.
+  const buildPriceBoxSvg = ({ text, x, y, fontSizePx, anchor = "start", textWidthPx, accentColor }) => {
+    const textStr = String(text || "");
+    const textW = Number.isFinite(textWidthPx) && textWidthPx > 0
+      ? textWidthPx
+      : Math.max(fontSizePx * 2, textStr.length * fontSizePx * 0.58);
+    const padX = fontSizePx * 0.35;
+    const padY = fontSizePx * 0.28;
+    const x1 = (anchor === "end" ? x - textW : anchor === "middle" ? x - (textW / 2) : x) - padX;
+    const boxW = textW + (padX * 2);
+    const boxH = (fontSizePx * (TEXT_ASCENT_RATIO + TEXT_DESCENT_RATIO)) + (padY * 2);
+    const boxY = y - (fontSizePx * TEXT_ASCENT_RATIO) - padY;
+    const stroke = accentColor || "#111827";
+    const fill = accentColor ? `${accentColor}1a` : "none";
+    return `<rect x="${x1}" y="${boxY}" width="${boxW}" height="${boxH}" rx="${fontSizePx * 0.15}" fill="${fill}" stroke="${stroke}" stroke-width="${Math.max(0.6, fontSizePx * 0.06)}" />`;
+  };
+
   // A linear (Code39) barcode needs most of the label's own width to stay scannable (unlike a QR,
   // which is naturally square and fits the side column fine) - forcing it into that same narrow
   // column shrinks it in BOTH dimensions to keep its aspect ratio, collapsing every bar to a
@@ -805,13 +858,12 @@ const buildBarcodeSheetSvgMarkup = (markup) => {
           const isMrp = field.key === "mrp";
           const isRs = field.key === "rs" || field.key === "price";
           const isStriked = isMrp && Boolean(customization.mrpStrikeOut);
-          const fieldFontWeight = isRs
-            ? (textStyle.fontWeight === 700 ? 800 : 700)
-            : textStyle.fontWeight;
+          const priceEmphasis = isRs ? getWarehousePriceEmphasis(metrics.formatStyle, textStyle) : null;
+          const fieldFontWeight = isRs ? priceEmphasis.fontWeight : textStyle.fontWeight;
           const fontSizePx = mmToPx(getWarehouseLabelFieldFontMm(metrics, field.key));
           const text = `${field.label} ${field.value}`;
           return {
-            field, isMrp, isRs, isStriked, fieldFontWeight, fontSizePx, text,
+            field, isMrp, isRs, isStriked, fieldFontWeight, fontSizePx, text, priceEmphasis,
             naturalWidthPx: measureSvgTextWidthPx(text, fontSizePx, textStyle, fieldFontWeight),
           };
         });
@@ -838,13 +890,24 @@ const buildBarcodeSheetSvgMarkup = (markup) => {
             ? truncateSvgTextToWidth(m.text, remainingPx, renderFontSizePx, textStyle, m.fieldFontWeight)
             : m.text;
           const baselineY = cursorY + advanceForFont(renderFontSizePx);
+          if (m.priceEmphasis?.boxed) {
+            nodes.push(buildPriceBoxSvg({
+              text: textStr,
+              x: cursorX,
+              y: baselineY,
+              fontSizePx: renderFontSizePx,
+              anchor: "start",
+              textWidthPx: measureSvgTextWidthPx(textStr, renderFontSizePx, textStyle, m.fieldFontWeight),
+              accentColor: m.priceEmphasis.accentColor,
+            }));
+          }
           nodes.push(buildTextNode({
             text: textStr,
             x: cursorX,
             y: baselineY,
             fontSizePx: renderFontSizePx,
             anchor: "start",
-            fill: m.isStriked ? "#4b5563" : m.isRs ? "#111827" : "#1f2937",
+            fill: m.isStriked ? "#4b5563" : m.isRs ? (m.priceEmphasis?.accentColor || "#111827") : "#1f2937",
             fontWeight: m.fieldFontWeight,
             textDecoration: textStyle.textDecoration,
           }));
@@ -909,8 +972,9 @@ const buildBarcodeSheetSvgMarkup = (markup) => {
 
       return `
         <g transform="translate(${offsetX}, ${offsetY})">
-          <rect x="0" y="0" width="${labelWidthPx}" height="${labelHeightPx}" rx="${mmToPx(3)}" ry="${mmToPx(3)}" fill="#ffffff" stroke="#d1d5db" stroke-width="${mmToPx(0.2)}" />
+          <rect x="0" y="0" width="${labelWidthPx}" height="${labelHeightPx}" rx="${cardCornerPx}" ry="${cardCornerPx}" fill="#ffffff" stroke="${cardStrokeColor}" stroke-width="${cardStrokePx}" />
           ${headerNode}
+          ${headerDividerLine}
           ${nodes.join("")}
         </g>
       `;
@@ -993,9 +1057,8 @@ const buildBarcodeSheetSvgMarkup = (markup) => {
         const isMrp = field.key === "mrp";
         const isRs = field.key === "rs" || field.key === "price";
         const isStriked = isMrp && Boolean(customization.mrpStrikeOut);
-        const fieldFontWeight = isRs
-          ? (textStyle.fontWeight === 700 ? 800 : 700)
-          : textStyle.fontWeight;
+        const priceEmphasis = isRs ? getWarehousePriceEmphasis(metrics.formatStyle, textStyle) : null;
+        const fieldFontWeight = isRs ? priceEmphasis.fontWeight : textStyle.fontWeight;
         const fontSizePx = mmToPx(getWarehouseLabelFieldFontMm(metrics, field.key));
         const y = leftColumnCursorY + advanceForFont(fontSizePx);
         leftColumnCursorY = y + trailForFont(fontSizePx) + fieldRowGapPx;
@@ -1008,13 +1071,20 @@ const buildBarcodeSheetSvgMarkup = (markup) => {
           textStyle,
           fieldFontWeight
         );
+        if (priceEmphasis?.boxed) {
+          contentNodes.push(buildPriceBoxSvg({
+            text: textStr, x: nodeX, y, fontSizePx, anchor: nodeAnchor,
+            textWidthPx: measureSvgTextWidthPx(textStr, fontSizePx, textStyle, fieldFontWeight),
+            accentColor: priceEmphasis.accentColor,
+          }));
+        }
         contentNodes.push(buildTextNode({
           text: textStr,
           x: nodeX,
           y,
           fontSizePx,
           anchor: nodeAnchor,
-          fill: isStriked ? "#4b5563" : isRs ? "#111827" : "#1f2937",
+          fill: isStriked ? "#4b5563" : isRs ? (priceEmphasis?.accentColor || "#111827") : "#1f2937",
           fontWeight: fieldFontWeight,
           textDecoration: textStyle.textDecoration,
         }));
@@ -1039,9 +1109,8 @@ const buildBarcodeSheetSvgMarkup = (markup) => {
         const isMrp = field.key === "mrp";
         const isRs = field.key === "rs" || field.key === "price";
         const isStriked = isMrp && Boolean(customization.mrpStrikeOut);
-        const fieldFontWeight = isRs
-          ? (textStyle.fontWeight === 700 ? 800 : 700)
-          : textStyle.fontWeight;
+        const priceEmphasis = isRs ? getWarehousePriceEmphasis(metrics.formatStyle, textStyle) : null;
+        const fieldFontWeight = isRs ? priceEmphasis.fontWeight : textStyle.fontWeight;
         const fontSizePx = mmToPx(getWarehouseLabelFieldFontMm(metrics, field.key));
         const y = rightColumnCursorY + advanceForFont(fontSizePx);
         rightColumnCursorY = y + trailForFont(fontSizePx) + fieldRowGapPx;
@@ -1054,13 +1123,20 @@ const buildBarcodeSheetSvgMarkup = (markup) => {
           textStyle,
           fieldFontWeight
         );
+        if (priceEmphasis?.boxed) {
+          contentNodes.push(buildPriceBoxSvg({
+            text: textStr, x: nodeX, y, fontSizePx, anchor: nodeAnchor,
+            textWidthPx: measureSvgTextWidthPx(textStr, fontSizePx, textStyle, fieldFontWeight),
+            accentColor: priceEmphasis.accentColor,
+          }));
+        }
         contentNodes.push(buildTextNode({
           text: textStr,
           x: nodeX,
           y,
           fontSizePx,
           anchor: nodeAnchor,
-          fill: isStriked ? "#4b5563" : isRs ? "#111827" : "#1f2937",
+          fill: isStriked ? "#4b5563" : isRs ? (priceEmphasis?.accentColor || "#111827") : "#1f2937",
           fontWeight: fieldFontWeight,
           textDecoration: textStyle.textDecoration,
         }));
@@ -1084,9 +1160,8 @@ const buildBarcodeSheetSvgMarkup = (markup) => {
         const isMrp = field.key === "mrp";
         const isRs = field.key === "rs" || field.key === "price";
         const isStriked = isMrp && Boolean(customization.mrpStrikeOut);
-        const fieldFontWeight = isRs
-          ? (textStyle.fontWeight === 700 ? 800 : 700)
-          : textStyle.fontWeight;
+        const priceEmphasis = isRs ? getWarehousePriceEmphasis(metrics.formatStyle, textStyle) : null;
+        const fieldFontWeight = isRs ? priceEmphasis.fontWeight : textStyle.fontWeight;
         const fontSizePx = mmToPx(getWarehouseLabelFieldFontMm(metrics, field.key));
         const nodeX = getXForPosition(fieldPosition, contentLeftPx, contentWidthPx);
         const nodeAnchor = getAnchor(fieldPosition);
@@ -1098,13 +1173,20 @@ const buildBarcodeSheetSvgMarkup = (markup) => {
           fieldFontWeight
         );
         const fieldBaselineY = contentCursorY + advanceForFont(fontSizePx);
+        if (priceEmphasis?.boxed) {
+          contentNodes.push(buildPriceBoxSvg({
+            text: textStr, x: nodeX, y: fieldBaselineY, fontSizePx, anchor: nodeAnchor,
+            textWidthPx: measureSvgTextWidthPx(textStr, fontSizePx, textStyle, fieldFontWeight),
+            accentColor: priceEmphasis.accentColor,
+          }));
+        }
         contentNodes.push(buildTextNode({
           text: textStr,
           x: nodeX,
           y: fieldBaselineY,
           fontSizePx,
           anchor: nodeAnchor,
-          fill: isStriked ? "#4b5563" : isRs ? "#111827" : "#1f2937",
+          fill: isStriked ? "#4b5563" : isRs ? (priceEmphasis?.accentColor || "#111827") : "#1f2937",
           fontWeight: fieldFontWeight,
           textDecoration: textStyle.textDecoration,
         }));
@@ -1136,8 +1218,9 @@ const buildBarcodeSheetSvgMarkup = (markup) => {
 
     return `
       <g transform="translate(${offsetX}, ${offsetY})">
-        <rect x="0" y="0" width="${labelWidthPx}" height="${labelHeightPx}" rx="${mmToPx(3)}" ry="${mmToPx(3)}" fill="#ffffff" stroke="#d1d5db" stroke-width="${mmToPx(0.2)}" />
+        <rect x="0" y="0" width="${labelWidthPx}" height="${labelHeightPx}" rx="${cardCornerPx}" ry="${cardCornerPx}" fill="#ffffff" stroke="${cardStrokeColor}" stroke-width="${cardStrokePx}" />
         ${headerNode}
+        ${headerDividerLine}
         ${codeGroup}
         ${contentNodes.join("")}
       </g>
@@ -1293,10 +1376,12 @@ const StickerFieldsBlock = ({ fields, metrics, textStyle, customization, layout 
     const isMrp = field.key === "mrp";
     const isRs = field.key === "rs" || field.key === "price";
     const isStriked = isMrp && Boolean(customization.mrpStrikeOut);
-    const fieldFontWeight = isRs
-      ? (textStyle.fontWeight === 700 ? 800 : 700)
-      : textStyle.fontWeight;
-    return { field, isMrp, isRs, isStriked, fieldFontWeight, fontMm: getWarehouseLabelFieldFontMm(metrics, field.key) };
+    const priceEmphasis = isRs ? getWarehousePriceEmphasis(metrics.formatStyle, textStyle) : null;
+    const fieldFontWeight = isRs ? priceEmphasis.fontWeight : textStyle.fontWeight;
+    return {
+      field, isMrp, isRs, isStriked, fieldFontWeight, priceEmphasis,
+      fontMm: getWarehouseLabelFieldFontMm(metrics, field.key),
+    };
   });
 
   // In row layout (the barcode full-width strip), the price is deliberately the biggest font of
@@ -1338,7 +1423,7 @@ const StickerFieldsBlock = ({ fields, metrics, textStyle, customization, layout 
       }
     >
       {fieldMeta.map((m) => {
-        const { field, isRs, isStriked, fieldFontWeight, fontMm } = m;
+        const { field, isRs, isStriked, fieldFontWeight, fontMm, priceEmphasis } = m;
         const fieldPosition = getWarehouseEffectiveFieldPosition(
           getWarehouseLabelFieldPosition(customization, field.key),
           codePosition
@@ -1377,7 +1462,7 @@ const StickerFieldsBlock = ({ fields, metrics, textStyle, customization, layout 
         return (
           <div
             key={field.key}
-            className={`flex items-center ${isRs ? "font-bold text-gray-950" : "text-gray-800"} ${getWarehouseLabelFieldJustifyClass(fieldPosition)} ${getWarehouseLabelFieldAlignClass(fieldPosition)}`}
+            className={`flex items-center ${isRs && !priceEmphasis?.boxed ? "font-bold text-gray-950" : "text-gray-800"} ${getWarehouseLabelFieldJustifyClass(fieldPosition)} ${getWarehouseLabelFieldAlignClass(fieldPosition)}`}
             style={{
               gap: `${metrics.bodyGapMm}mm`,
               fontSize: `${displayFontMm}mm`,
@@ -1386,6 +1471,15 @@ const StickerFieldsBlock = ({ fields, metrics, textStyle, customization, layout 
               fontWeight: fieldFontWeight,
               fontStyle: textStyle.fontStyle,
               textDecoration: textStyle.textDecoration,
+              ...(priceEmphasis?.boxed
+                ? {
+                    border: `1px solid ${priceEmphasis.accentColor || "#111827"}`,
+                    borderRadius: "1mm",
+                    padding: "0.3mm 1mm",
+                    color: priceEmphasis.accentColor || "#111827",
+                    background: priceEmphasis.accentColor ? `${priceEmphasis.accentColor}1a` : "transparent",
+                  }
+                : null),
             }}
           >
             <span className="truncate uppercase">{field.label}</span>
@@ -1406,6 +1500,13 @@ const StickerCard = ({ label, customization, storeName, qrSrc = "" }) => {
   const notePosition = getWarehouseLabelFieldPosition(customization, "note");
   const metrics = getWarehouseStickerMetrics(customization);
   const textStyle = metrics.textStyle;
+  const formatStyle = metrics.formatStyle;
+  const cardClassName = `overflow-hidden bg-white ${formatStyle.rounded ? "rounded-[3mm]" : ""} ${formatStyle.cardBorder ? "border border-gray-300" : ""}`;
+  const headerDividerStyle = formatStyle.headerDivider === "accent"
+    ? { borderBottom: "0.4mm solid #2563eb" }
+    : formatStyle.headerDivider === "solid"
+      ? { borderBottom: "0.25mm solid #111827" }
+      : null;
   const codePosition = getWarehouseCodePosition(customization);
   const isCodeRight = codePosition === "right";
   const isCodeCentered = codePosition === "center";
@@ -1517,7 +1618,7 @@ const StickerCard = ({ label, customization, storeName, qrSrc = "" }) => {
   const headerBlock = metrics.topBandHeightMm > 0 ? (
     <div
       className={`flex items-center px-[1.5mm] ${getWarehouseLabelFieldJustifyClass(storeNamePosition)} ${getWarehouseLabelFieldAlignClass(storeNamePosition)}`}
-      style={{ minHeight: `${metrics.topBandHeightMm}mm` }}
+      style={{ minHeight: `${metrics.topBandHeightMm}mm`, ...(headerDividerStyle || {}) }}
     >
       {showStoreName ? (
         <div
@@ -1544,7 +1645,7 @@ const StickerCard = ({ label, customization, storeName, qrSrc = "" }) => {
   if (label.codeType === "barcode") {
     return (
       <div
-        className="overflow-hidden rounded-[3mm] border border-gray-300 bg-white"
+        className={cardClassName}
         style={{ width: `${metrics.labelWidthMm}mm`, height: `${metrics.labelHeightMm}mm` }}
       >
         {headerBlock}
@@ -1594,7 +1695,7 @@ const StickerCard = ({ label, customization, storeName, qrSrc = "" }) => {
 
   return (
     <div
-      className="overflow-hidden rounded-[3mm] border border-gray-300 bg-white"
+      className={cardClassName}
       style={{ width: `${metrics.labelWidthMm}mm`, height: `${metrics.labelHeightMm}mm` }}
     >
       {headerBlock}

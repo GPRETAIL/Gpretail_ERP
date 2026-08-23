@@ -13,6 +13,7 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import api from "../../api/axios";
+import { fetchReceiptCompanyInfo } from "../../utils/receiptCompanyInfo";
 import CounterAssignmentDialog from "../../components/CounterAssignmentDialog";
 import UploadImportButton from "../../components/UploadImportButton";
 import { usePrintContext } from "../../context/PrintContext";
@@ -171,23 +172,6 @@ const TouchSales = () => {
       setBillNo(toNum(res.data?.data?.billNo, 1));
     } catch {
       setBillNo(1);
-    }
-  }, []);
-
-  const fetchReceiptCompanyInfo = useCallback(async (companyId) => {
-    if (!companyId) {
-      return { storeAddress: "", storePhone: "", storeGstNo: "" };
-    }
-    try {
-      const res = await api.get(`/companies/${companyId}`);
-      const company = res.data?.data || {};
-      return {
-        storeAddress: String(company.address || "").trim(),
-        storePhone: String(company.contact_no || company.phone || "").trim(),
-        storeGstNo: String(company.gst_no || company.gstin || "").trim(),
-      };
-    } catch {
-      return { storeAddress: "", storePhone: "", storeGstNo: "" };
     }
   }, []);
 
@@ -615,7 +599,6 @@ const TouchSales = () => {
       appliedReturn?.items,
       appliedReturn?.displayReturnNo,
       appliedReturn?.returnNo,
-      fetchReceiptCompanyInfo,
       printerConnected,
       queuePrintHtml,
     ]

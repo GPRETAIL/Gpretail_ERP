@@ -116,10 +116,58 @@ export const WAREHOUSE_PRINT_MODE_OPTIONS = [
   },
 ];
 
+// Mirrors RECEIPT_FORMAT_OPTIONS in salesReceiptCustomization.js - same "pick an overall look"
+// pattern, adapted to what's actually visible on a small sticker rather than a tall itemised
+// receipt: a divider between the header band and body instead of a line-item rule, and how the
+// price (the sticker's one "total"-equivalent number) is emphasised instead of a grand-total row.
+export const WAREHOUSE_LABEL_FORMAT_OPTIONS = [
+  {
+    value: "basic", label: "Basic",
+    description: "No border, no divider, tightest spacing.",
+    style: { cardBorder: false, rounded: false, headerDivider: "none", priceStyle: "plain", spacing: "compact" },
+  },
+  {
+    value: "standard", label: "Standard",
+    description: "The original default look.",
+    style: { cardBorder: true, rounded: true, headerDivider: "none", priceStyle: "bold", spacing: "normal" },
+  },
+  {
+    value: "compact", label: "Compact",
+    description: "Dense layout to fit more on the sheet.",
+    style: { cardBorder: true, rounded: false, headerDivider: "none", priceStyle: "plain", spacing: "compact" },
+  },
+  {
+    value: "classic", label: "Classic",
+    description: "Solid rule under the header, boxed price.",
+    style: { cardBorder: true, rounded: false, headerDivider: "solid", priceStyle: "boxed", spacing: "normal" },
+  },
+  {
+    value: "bold_accent", label: "Bold Accent",
+    description: "Accent-coloured header rule and price box.",
+    style: { cardBorder: true, rounded: true, headerDivider: "accent", priceStyle: "accent", spacing: "normal" },
+  },
+];
+
+const DEFAULT_WAREHOUSE_LABEL_FORMAT_STYLE = WAREHOUSE_LABEL_FORMAT_OPTIONS[1].style; // "standard"
+
+export const normalizeWarehouseLabelFormat = (value) => {
+  const raw = String(value || "").trim().toLowerCase();
+  return WAREHOUSE_LABEL_FORMAT_OPTIONS.some((option) => option.value === raw) ? raw : "standard";
+};
+
+export const getWarehouseLabelFormatStyle = (format) => {
+  const normalized = normalizeWarehouseLabelFormat(format);
+  return WAREHOUSE_LABEL_FORMAT_OPTIONS.find((option) => option.value === normalized)?.style
+    || DEFAULT_WAREHOUSE_LABEL_FORMAT_STYLE;
+};
+
+const WAREHOUSE_FORMAT_SPACING_SCALE = { compact: 0.75, normal: 1, relaxed: 1.3 };
+
 export const DEFAULT_WAREHOUSE_BARCODE_CUSTOMIZATION = {
   codeType: "barcode",
   codePosition: "left",
   printMode: "direct",
+  labelFormat: "standard",
   note: "",
   labelWidthMm: DEFAULT_LABEL_WIDTH_MM,
   labelHeightMm: DEFAULT_LABEL_HEIGHT_MM,
@@ -338,6 +386,7 @@ export const normalizeWarehouseBarcodeCustomization = (value = {}) => {
       DEFAULT_WAREHOUSE_BARCODE_CUSTOMIZATION.codePosition
     ),
     printMode: String(value.printMode || "").trim().toLowerCase() === "browser" ? "browser" : "direct",
+    labelFormat: normalizeWarehouseLabelFormat(value.labelFormat),
     note: String(value.note || "").trim(),
     labelWidthMm: normalizeDimension(
       value.labelWidthMm,
@@ -634,6 +683,9 @@ export const getWarehouseStickerMetrics = (customization = {}) => {
     Math.round((Math.max(barcodeHeightMm, qrSizeMm) + (2.5 * scale)) * 100) / 100
   );
 
+  const formatStyle = getWarehouseLabelFormatStyle(normalized.labelFormat);
+  const spacingScale = WAREHOUSE_FORMAT_SPACING_SCALE[formatStyle.spacing] || 1;
+
   return {
     labelWidthMm,
     labelHeightMm,
@@ -643,14 +695,15 @@ export const getWarehouseStickerMetrics = (customization = {}) => {
     codeColumnWidthMm,
     qrSizeMm,
     barcodeHeightMm,
+    formatStyle,
     // A linear (Code39) barcode needs most of the label's own width to stay scannable (unlike a
     // QR, which is naturally square) - it gets a dedicated full-width strip instead of the side
     // column, capped only by this height so short values (which are naturally taller at a given
     // width) don't blow out the label's vertical rhythm.
     barcodeStripMaxHeightMm: Math.max(3.2, Math.round(4 * scale * 100) / 100),
-    bodyGapMm: Math.max(0.8, Math.round(1.25 * scale * 100) / 100),
-    bodyPadXMm: Math.max(0.8, Math.round(1.6 * scale * 100) / 100),
-    bodyPadYMm: Math.max(0.8, Math.round(1.2 * scale * 100) / 100),
+    bodyGapMm: Math.max(0.6, Math.round(1.25 * scale * spacingScale * 100) / 100),
+    bodyPadXMm: Math.max(0.6, Math.round(1.6 * scale * spacingScale * 100) / 100),
+    bodyPadYMm: Math.max(0.6, Math.round(1.2 * scale * spacingScale * 100) / 100),
     // Base sizes tuned to fill a real 49.5x24.5mm label legibly - price is the hero element
     // (largest/bolded, matches what a customer scans first), store/product name clearly readable,
     // MRP/discount secondary and smaller, note the smallest. Pulled back somewhat from an earlier
@@ -662,10 +715,10 @@ export const getWarehouseStickerMetrics = (customization = {}) => {
     discountFontMm: scaleDiscountText(Math.max(1.7, Math.round(2.2 * scale * 100) / 100)),
     priceFontMm: scalePriceText(Math.max(2.1, Math.round(3.8 * scale * 100) / 100)),
     noteFontMm: scaleNoteText(Math.max(1.4, Math.round(1.8 * scale * 100) / 100)),
-    noteMarginTopMm: Math.max(0.2, Math.round(0.35 * scale * 100) / 100),
-    fieldsMarginTopMm: Math.max(0.5, Math.round(1 * scale * 100) / 100),
-    fieldRowGapMm: Math.max(0.15, Math.round(0.25 * scale * 100) / 100),
-    codeTextMarginTopMm: Math.max(0.3, Math.round(0.6 * scale * 100) / 100),
+    noteMarginTopMm: Math.max(0.2, Math.round(0.35 * scale * spacingScale * 100) / 100),
+    fieldsMarginTopMm: Math.max(0.4, Math.round(1 * scale * spacingScale * 100) / 100),
+    fieldRowGapMm: Math.max(0.12, Math.round(0.25 * scale * spacingScale * 100) / 100),
+    codeTextMarginTopMm: Math.max(0.25, Math.round(0.6 * scale * spacingScale * 100) / 100),
     storeNameLetterSpacingEm: 0.03,
     textStyle: buildWarehouseLabelTextStyle(normalized),
     labelFields: normalized.labelFields,

@@ -18,6 +18,15 @@ const EventEmitter = require('events');
 
 const PORT = process.env.PORT || 5001;
 const CONFIG_FILE = path.join(__dirname, 'printer_config.json');
+// The connector normally runs as a hidden background process (install_autostart.bat /
+// start_background.bat) with no visible console, so console.log alone is invisible to whoever's
+// debugging a real print job - append to a real file next to the script instead.
+const DEBUG_LOG_FILE = path.join(__dirname, 'print-debug.log');
+const logDebug = (line) => {
+  try {
+    fs.appendFileSync(DEBUG_LOG_FILE, `[${new Date().toISOString()}] ${line}\n`);
+  } catch {}
+};
 const VERSION = '2.0.0';
 const isWindows = process.platform === 'win32';
 
@@ -56,8 +65,16 @@ function saveConfig(cfg) {
   }
 }
 
-// Discover system printers
-function getSystemPrinters() {
+// Installed printers essentially never change during normal operation, but this was being
+// re-queried via a fresh PowerShell + WMI (Get-CimInstance) call on every single print job -
+// measured at ~1.3s by itself, more than every other stage of the print pipeline combined. Cache
+// it for a minute; the explicit "list printers" UI action (Settings > Printing Configuration)
+// still forces a fresh read so a newly-connected printer shows up without waiting out the cache.
+const PRINTER_LIST_CACHE_TTL_MS = 60000;
+let printerListCache = null;
+let printerListCacheAt = 0;
+
+function fetchSystemPrintersUncached() {
   return new Promise((resolve) => {
     const isWindows = os.platform() === 'win32';
 
@@ -137,6 +154,16 @@ function getSystemPrinters() {
   });
 }
 
+async function getSystemPrinters({ forceRefresh = false } = {}) {
+  if (!forceRefresh && printerListCache && (Date.now() - printerListCacheAt) < PRINTER_LIST_CACHE_TTL_MS) {
+    return printerListCache;
+  }
+  const printers = await fetchSystemPrintersUncached();
+  printerListCache = printers;
+  printerListCacheAt = Date.now();
+  return printers;
+}
+
 // Silent print execution without print preview
 async function executeSilentPrint(payload) {
   const isWindows = os.platform() === 'win32';
@@ -146,6 +173,7 @@ async function executeSilentPrint(payload) {
 
   const labelData = payload.Label || payload.label;
   const imageDataUrl = labelData?.imageDataUrl || labelData?.dataUrl;
+  logDebug(`Job received: docType=${payload.DocumentType || payload.documentType} printerFunction=${payload.PrinterFunction || payload.printerFunction} labelKind=${typeof labelData === "object" ? labelData?.kind : typeof labelData} hasLabelPages=${Array.isArray(labelData?.pages)} hasImageDataUrl=${!!imageDataUrl} imageDataUrlLen=${imageDataUrl ? String(imageDataUrl).length : 0} hasReceipt=${!!(payload.Receipt || payload.receipt)} hasMessage=${!!(payload.Message || payload.message)} messageLen=${String(payload.Message || payload.message || "").length}`);
   const isReceiptOrLabel = Boolean(imageDataUrl || labelData || /receipt|label|pos/i.test(payload.DocumentType || payload.documentType || ''));
 
   const systemPrinters = await getSystemPrinters();
@@ -209,6 +237,7 @@ async function executeSilentPrint(payload) {
   // one PrintDocument so the printer's own gap sensor paces each one correctly.
   const labelPages = Array.isArray(labelData?.pages) ? labelData.pages.filter((p) => p?.imageDataUrl) : [];
   if (isWindows && labelPages.length > 0) {
+    logDebug(`Branch 0 (multi-page label) selected: ${labelPages.length} pages`);
     const mmToHundredthsInch = (mm) => Math.round((Number(mm) || 0) * 100 / 25.4);
     const pageImagePaths = labelPages.map((pageData, index) => {
       const base64Data = pageData.imageDataUrl.replace(/^data:image\/\w+;base64,/, '');
@@ -320,8 +349,118 @@ $doc.Dispose()
     });
   }
 
+  // ESC/POS raw byte print (GDI-free fast path for receipts) - checked ahead of the rendered-image
+  // branch so it takes priority when present. Unlike every other branch in this function, this one
+  // deliberately never loads System.Drawing/GDI+ - the whole point is skipping that assembly-load
+  // cost (and all image rasterization) entirely, writing the already-built byte stream straight to
+  // the printer via the spooler's RAW datatype (OpenPrinter/StartDocPrinter/WritePrinter/
+  // EndDocPrinter from winspool.drv - the standard "RawPrinterHelper" P/Invoke pattern). On any
+  // failure this throws/rejects the same way Branch 1 does, which is what lets the frontend's
+  // queue-level catch fall back cleanly to the rendered-image path rather than the job vanishing.
+  if (isWindows && labelData?.kind === 'escpos_raw_v1' && typeof labelData.dataBase64 === 'string' && labelData.dataBase64) {
+    // Many receipt-printer vendors only ship a GDI-oriented driver (built for the rendered-image
+    // path, not for raw ESC/POS bytes) - even with datatype "RAW", that kind of driver can still
+    // intercept and reprocess the byte stream through its own font/rendering logic instead of
+    // passing it straight to the printer. config.escposPrinterName lets this branch target a
+    // separate queue (e.g. a "Generic / Text Only" queue on the same port) that's a genuine raw
+    // passthrough, without disturbing targetPrinterName used by every other (image-based) branch.
+    const escposTargetPrinterName = config.escposPrinterName || targetPrinterName;
+    logDebug(`Branch ESC/POS (raw bytes) selected: ~${labelData.byteLength || labelData.dataBase64.length} bytes, printer="${escposTargetPrinterName}"`);
+    const rawBuffer = Buffer.from(labelData.dataBase64, 'base64');
+    const tempPrnPath = path.join(tempDir, `print_job_${timestamp}.prn`);
+    fs.writeFileSync(tempPrnPath, rawBuffer);
+
+    return new Promise((resolve, reject) => {
+      const psScript = `
+Add-Type -TypeDefinition @"
+using System;
+using System.Runtime.InteropServices;
+
+public class RawPrinterHelper {
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+    public class DOCINFOA {
+        [MarshalAs(UnmanagedType.LPStr)] public string pDocName;
+        [MarshalAs(UnmanagedType.LPStr)] public string pOutputFile;
+        [MarshalAs(UnmanagedType.LPStr)] public string pDataType;
+    }
+
+    [DllImport("winspool.drv", CharSet = CharSet.Ansi, SetLastError = true)]
+    public static extern bool OpenPrinter(string pPrinterName, out IntPtr phPrinter, IntPtr pDefault);
+
+    [DllImport("winspool.drv", SetLastError = true)]
+    public static extern bool ClosePrinter(IntPtr hPrinter);
+
+    [DllImport("winspool.drv", CharSet = CharSet.Ansi, SetLastError = true)]
+    public static extern bool StartDocPrinter(IntPtr hPrinter, int level, DOCINFOA di);
+
+    [DllImport("winspool.drv", SetLastError = true)]
+    public static extern bool EndDocPrinter(IntPtr hPrinter);
+
+    [DllImport("winspool.drv", SetLastError = true)]
+    public static extern bool StartPagePrinter(IntPtr hPrinter);
+
+    [DllImport("winspool.drv", SetLastError = true)]
+    public static extern bool EndPagePrinter(IntPtr hPrinter);
+
+    [DllImport("winspool.drv", SetLastError = true)]
+    public static extern bool WritePrinter(IntPtr hPrinter, byte[] pBytes, int dwCount, out int dwWritten);
+
+    public static bool SendBytesToPrinter(string printerName, byte[] bytes) {
+        IntPtr hPrinter;
+        if (!OpenPrinter(printerName, out hPrinter, IntPtr.Zero)) return false;
+        try {
+            DOCINFOA di = new DOCINFOA();
+            di.pDocName = "GP Retail ESC/POS Receipt";
+            di.pDataType = "RAW";
+            if (!StartDocPrinter(hPrinter, 1, di)) return false;
+            try {
+                if (!StartPagePrinter(hPrinter)) return false;
+                try {
+                    int written;
+                    return WritePrinter(hPrinter, bytes, bytes.Length, out written) && written == bytes.Length;
+                } finally { EndPagePrinter(hPrinter); }
+            } finally { EndDocPrinter(hPrinter); }
+        } finally { ClosePrinter(hPrinter); }
+    }
+}
+"@
+
+$targetPrinter = "${escposTargetPrinterName.replace(/"/g, '`"')}"
+$bytes = [System.IO.File]::ReadAllBytes("${tempPrnPath.replace(/\\/g, '\\\\')}")
+
+if (-not $targetPrinter) {
+    Write-Error "No target printer resolved"
+    exit 1
+}
+
+$ok = [RawPrinterHelper]::SendBytesToPrinter($targetPrinter, $bytes)
+if (-not $ok) {
+    Write-Error "WritePrinter failed for '$targetPrinter'"
+    exit 1
+}
+`;
+      const tempPs1 = path.join(tempDir, `print_job_${timestamp}_escpos.ps1`);
+      fs.writeFileSync(tempPs1, psScript, 'utf8');
+
+      exec(`powershell -NoProfile -ExecutionPolicy Bypass -File "${tempPs1}"`, { timeout: 15000 }, (err, out, stderr) => {
+        try { fs.unlinkSync(tempPs1); } catch {}
+        try { fs.unlinkSync(tempPrnPath); } catch {}
+        if (err) {
+          logDebug(`Branch ESC/POS failed: ${err.message} ${stderr}`);
+          console.error('[Connector] ESC/POS raw print error:', err.message, stderr);
+          reject(new Error(`Silent print failed: ${err.message}`));
+        } else {
+          logDebug('Branch ESC/POS succeeded');
+          console.log(`[Connector] ESC/POS receipt (${rawBuffer.length} bytes) printed directly to "${escposTargetPrinterName}"`);
+          resolve({ success: true, message: `Receipt printed silently to ${escposTargetPrinterName}` });
+        }
+      });
+    });
+  }
+
   // 1. Image-based print (pixel-perfect rendered receipt sheet, barcodes, labels)
   if (imageDataUrl && imageDataUrl.startsWith('data:image/')) {
+    logDebug('Branch 1 (rendered image) selected');
     const base64Data = imageDataUrl.replace(/^data:image\/\w+;base64,/, '');
     const imgBuffer = Buffer.from(base64Data, 'base64');
     const tempImgPath = path.join(tempDir, `print_job_${timestamp}.png`);
@@ -360,6 +499,18 @@ if (-not $doc.PrinterSettings.IsValid) {
     exit 1
 }
 
+# GDI/the driver otherwise silently picks whatever resolution profile it defaults to (often a
+# conservative "Normal"/lower-DPI preset, not the print head's real native maximum) - the app has
+# to explicitly ask for the highest one the driver reports, or a print can look soft even with a
+# high-resolution source image, since the actual dots on the page are capped by this setting
+# regardless of source detail.
+try {
+    $bestRes = $doc.PrinterSettings.PrinterResolutions | Sort-Object X -Descending | Select-Object -First 1
+    if ($bestRes) {
+        $doc.DefaultPageSettings.PrinterResolution = $bestRes
+    }
+} catch {}
+
 $doc.DefaultPageSettings.Margins = New-Object System.Drawing.Printing.Margins(0, 0, 0, 0)
 $doc.OriginAtMargins = $false
 
@@ -373,8 +524,25 @@ ${explicitHeightHundredths
   ? `$pageH = ${explicitHeightHundredths}`
   : `$ratio = $image.Height / $image.Width\n$pageH = [int]($printableW * $ratio)`}
 
+# The rendered content's own width can be a hair wider than what the printer's driver actually
+# registers as its paper/print-head width (a "3 inch" roll's real printable area is very often
+# narrower than the nominal 3.00in, e.g. this driver reports "80(76)mm" media as 2.83in) -
+# requesting a custom page wider than that doesn't make the printer wider, it just prints past
+# where the head can reach and the excess is lost, clipping the right edge. Cap to the driver's
+# own reported maximum (with a small safety margin) instead of trusting the source content's width.
 try {
-    $rollSize = New-Object System.Drawing.Printing.PaperSize("CustomReceipt", ([int]$printableW + 8), [int]($pageH + 20))
+    $maxPaperW = ($doc.PrinterSettings.PaperSizes | Measure-Object -Property Width -Maximum).Maximum
+    if ($maxPaperW -gt 0 -and $printableW -gt ($maxPaperW - 3)) {
+        $printableW = [int]($maxPaperW - 3)
+    }
+} catch {}
+
+try {
+    # Exact page size, no extra buffer - a previous "+8/+20 hundredths-inch bleed" attempt made the
+    # driver think the page was larger than the real media, which (on gap-sensing label stock) was
+    # the root cause of skipped labels; kept exact here for the same reason and because any padding
+    # only makes the already-tight right-edge fit worse.
+    $rollSize = New-Object System.Drawing.Printing.PaperSize("CustomReceipt", [int]$printableW, [int]$pageH)
     $doc.DefaultPageSettings.PaperSize = $rollSize
 } catch {}
 
@@ -385,7 +553,7 @@ $doc.add_PrintPage({
     $e.Graphics.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::NearestNeighbor
     $e.Graphics.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::Half
     $e.Graphics.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::None
-    $e.Graphics.DrawImage($image, 2, 0, [int]$printableW, [int]$pageH)
+    $e.Graphics.DrawImage($image, 0, 0, [int]$printableW, [int]$pageH)
     $e.HasMorePages = $false
 })
 
@@ -421,12 +589,14 @@ $doc.Dispose()
   // 2. Structured Receipt Print (Fallback)
   const receipt = payload.Receipt || payload.receipt || payload.receiptData;
   if (receipt && typeof receipt === 'object' && (Array.isArray(receipt.items) || Array.isArray(receipt.Items) || receipt.storeName || receipt.StoreName || receipt.billNo || receipt.BillNo)) {
+    logDebug(`Branch 2 (structured GDI receipt) selected: storeName=${receipt.storeName || receipt.StoreName} billNo=${receipt.billNo || receipt.BillNo}`);
     return printReceiptViaGdi(receipt, targetPrinterName, timestamp, tempDir);
   }
 
   // 3. HTML content printing (A4, invoices, thermal receipts)
   const htmlContent = payload.Message || payload.message || '';
   if (htmlContent) {
+    logDebug(`Branch 3 (HTML via headless browser/shell print) selected: htmlLen=${htmlContent.length}`);
     const tempHtmlPath = path.join(tempDir, `print_job_${timestamp}.html`);
     fs.writeFileSync(tempHtmlPath, htmlContent, 'utf8');
 
@@ -471,6 +641,7 @@ $doc.Dispose()
     });
   }
 
+  logDebug('No branch matched - empty print payload');
   return { success: true, message: 'Empty print payload received' };
 }
 
@@ -930,7 +1101,10 @@ function handleClientConnection(ws) {
     // 2. Discover Printers
     if (action === 'getprinters' || action === 'listprinters' || action === 'printers') {
       const config = loadConfig();
-      const printers = await getSystemPrinters();
+      // Explicit user-initiated "list printers" action (Settings > Printing Configuration) - force
+      // a fresh read so a newly-connected printer shows up immediately, unlike the print-job path
+      // which deliberately uses the cache to avoid paying the ~1.3s WMI query on every print.
+      const printers = await getSystemPrinters({ forceRefresh: true });
 
       ws.send(JSON.stringify({
         Success: true,

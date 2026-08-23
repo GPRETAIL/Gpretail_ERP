@@ -21,6 +21,43 @@ const toNum = (value, fallback = 0) => {
 
 const round2 = (value) => Math.round((toNum(value, 0) + Number.EPSILON) * 100) / 100;
 
+// buildCode39SvgMarkup returns a raw <svg>...</svg> string with its own embedded <text> label (the
+// human-readable code below the bars). Injected as inline SVG, that works fine in a real browser
+// print, but html2canvas (used for direct/silent printing) has long-standing, well-known gaps
+// rendering nested SVG <text> - the bars render, the text label often doesn't (or renders cut off/
+// mispositioned), which is exactly the "barcode number half-showing" symptom. Wrapping the same SVG
+// as a data-URI <img> instead makes html2canvas rasterize it via its (far more reliable) ordinary
+// image-loading path rather than walking the SVG DOM itself - and a plain <img> pointing at an SVG
+// data URI still renders identically in a real browser print, so this is safe either way.
+const wrapSvgMarkupAsImg = (markup) => {
+  const str = String(markup || "").trim();
+  if (!str.startsWith("<svg")) return str;
+  const dataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(str)}`;
+  return `<img src="${dataUrl}" alt="" style="display:block;margin:0 auto;width:100%;height:auto;" />`;
+};
+
+// getSalesReceiptWidthCss returns mixed units ("3.0in", "320px") depending on the setting: convert
+// to a raw px number so it can be compared/capped in JS. CSS min()/clamp() would be simpler, but
+// html2canvas's CSS support is inconsistent enough (this whole file exists because of html2canvas
+// rendering surprises) that resolving the cap in JS first is the safer bet.
+const cssLengthToPx = (cssLength) => {
+  const str = String(cssLength || "").trim();
+  const inchMatch = str.match(/^([\d.]+)in$/);
+  if (inchMatch) return parseFloat(inchMatch[1]) * 96;
+  const pxMatch = str.match(/^([\d.]+)px$/);
+  if (pxMatch) return parseFloat(pxMatch[1]);
+  return 265;
+};
+
+// A "3 inch" thermal roll's real printable width is very often narrower than its nominal size
+// (measured on real hardware: a printer reporting "3 inch" media actually only prints ~2.83in wide)
+// - the connector caps to whatever the printer driver actually reports as a last-resort safety net,
+// but starting from a width that's already safely under typical thermal printable widths avoids
+// relying on that cap to squeeze the whole receipt down at print time.
+const THERMAL_RECEIPT_SAFE_MAX_WIDTH_PX = 265;
+const getThermalReceiptMaxWidthPx = (receiptWidthInches) =>
+  Math.min(THERMAL_RECEIPT_SAFE_MAX_WIDTH_PX, cssLengthToPx(getSalesReceiptWidthCss(receiptWidthInches)));
+
 const escapeHtml = (value) =>
   String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -150,9 +187,10 @@ const buildThermalSaleReceiptHtml = (receiptData, customization) => {
   `).join("");
 
   const billBarcode = String(receiptData.billBarcode || receiptData.billNo || "").trim();
-  const barcodeMarkup =
+  const barcodeMarkup = wrapSvgMarkupAsImg(
     receiptData.billCodeMarkup
-    || (billBarcode ? buildReceiptCodeMarkupSync(billBarcode, customization, "bill") : "");
+    || (billBarcode ? buildReceiptCodeMarkupSync(billBarcode, customization, "bill") : "")
+  );
   const paymentQrMarkup = receiptData.paymentQrMarkup || "";
 
   return `<!DOCTYPE html><html><head><title>POS Receipt #${escapeHtml(receiptData.billNo)}</title><style>
@@ -167,7 +205,7 @@ const buildThermalSaleReceiptHtml = (receiptData, customization) => {
     }
     .receipt {
       width: 100%;
-      max-width: 275px;
+      max-width: ${getThermalReceiptMaxWidthPx(customization?.receiptWidthInches)}px;
       margin: 0 auto;
       font-size: 11px;
     }
@@ -180,6 +218,13 @@ const buildThermalSaleReceiptHtml = (receiptData, customization) => {
     .meta { margin: 6px 0; font-size: 10.5px; }
     .meta-row { margin: 2px 0; }
     .meta-row-flex { display: flex; justify-content: space-between; align-items: center; margin: 2px 0; width: 100%; font-size: 10.5px; }
+    .meta-row-grid { display: grid; grid-template-columns: 1fr 1fr; align-items: start; gap: 4px; }
+    .meta-row-single { display: block; }
+    .meta-group { display: flex; flex-wrap: wrap; gap: 2px 8px; width: 100%; }
+    .meta-group.text-right { justify-content: flex-end; }
+    .meta-group.text-center { justify-content: center; }
+    .meta-group.text-left { justify-content: flex-start; }
+    .meta-item { white-space: nowrap; }
     .line { border-top: 1px dashed #9ca3af; margin: 6px 0; }
     .receipt-table {
       width: 100%;
@@ -212,9 +257,17 @@ const buildThermalSaleReceiptHtml = (receiptData, customization) => {
     .grand { font-weight: 800; font-size: 13px; margin: 4px 0; }
     .section-label { margin: 6px 0 2px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #4b5563; }
     .thanks { margin-top: 8px; text-align: center; font-size: 10px; font-weight: 600; line-height: 1.4; white-space: pre-line; color: #374151; }
-    .barcode-wrap { margin: 8px 0; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; text-align: center; }
+    /* text-align (not flexbox) for centering - html2canvas's flexbox/cross-axis centering support
+       has been unreliable enough in this codebase already (see the container-hiding rewrite in
+       renderPrintableHtml.js) that plain block/inline-block centering, supported since its earliest
+       versions, is the safer bet here too. */
+    /* No overflow:hidden here - it was clipping the caption text underneath the QR/barcode image
+       (and risked clipping the image itself) whenever this container's computed height came out
+       even slightly short of its actual content during capture. Nothing in this wrapper is meant
+       to be cropped, so there's nothing for overflow:hidden to safely protect against. */
+    .barcode-wrap { margin: 8px 0; text-align: center; }
     .barcode-wrap svg { width: 100%; height: auto; max-width: 160px; display: block; margin: 0 auto; }
-    .barcode-wrap img { width: 100px; height: 100px; max-width: 100%; object-fit: contain; display: block; margin: 0 auto; }
+    .barcode-wrap img { max-width: 100%; object-fit: contain; display: block; margin: 0 auto; }
     ${buildReceiptFormatCss(customization?.receiptFormat)}
   </style></head><body><div class="receipt">
     <div class="space-y-1">
@@ -293,9 +346,10 @@ const buildA4SaleInvoiceHtml = (receiptData, customization) => {
   `).join("");
 
   const billBarcode = String(receiptData.billBarcode || receiptData.billNo || "").trim();
-  const barcodeMarkup =
+  const barcodeMarkup = wrapSvgMarkupAsImg(
     receiptData.billCodeMarkup
-    || (billBarcode ? buildReceiptCodeMarkupSync(billBarcode, customization, "bill") : "");
+    || (billBarcode ? buildReceiptCodeMarkupSync(billBarcode, customization, "bill") : "")
+  );
   const paymentQrMarkup = receiptData.paymentQrMarkup || "";
 
   return `<!DOCTYPE html><html><head><title>Tax Invoice #${escapeHtml(receiptData.billNo)}</title><style>
@@ -479,9 +533,10 @@ export const buildPosReturnReceiptHtml = (receiptData, customization) => {
   `).join("");
 
   const returnBarcode = String(receiptData.billBarcode || receiptData.billNo || "").trim();
-  const barcodeMarkup =
+  const barcodeMarkup = wrapSvgMarkupAsImg(
     receiptData.returnCodeMarkup
-    ?? buildReceiptCodeMarkupSync(returnBarcode, customization, "return");
+    ?? buildReceiptCodeMarkupSync(returnBarcode, customization, "return")
+  );
 
   return `<!DOCTYPE html><html><head><title>POS Return #${escapeHtml(receiptData.billNo)}</title><style>
     @page { margin: 0; size: auto; }
@@ -495,7 +550,7 @@ export const buildPosReturnReceiptHtml = (receiptData, customization) => {
     }
     .receipt {
       width: 100%;
-      max-width: 275px;
+      max-width: ${getThermalReceiptMaxWidthPx(customization?.receiptWidthInches)}px;
       margin: 0 auto;
       font-size: 11px;
     }
@@ -546,9 +601,13 @@ export const buildPosReturnReceiptHtml = (receiptData, customization) => {
     .grand { font-weight: 800; font-size: 13px; margin: 4px 0; }
     .section-label { margin: 6px 0 2px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #4b5563; }
     .thanks { margin-top: 8px; text-align: center; font-size: 10px; font-weight: 600; line-height: 1.4; white-space: pre-line; color: #374151; }
-    .barcode-wrap { margin: 8px 0; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
-    .barcode-wrap svg { width: 100%; height: auto; max-width: 160px; }
-    .barcode-wrap img { width: 100px; height: 100px; max-width: 100%; object-fit: contain; }
+    /* No overflow:hidden here - it was clipping the caption text underneath the QR/barcode image
+       (and risked clipping the image itself) whenever this container's computed height came out
+       even slightly short of its actual content during capture. Nothing in this wrapper is meant
+       to be cropped, so there's nothing for overflow:hidden to safely protect against. */
+    .barcode-wrap { margin: 8px 0; text-align: center; }
+    .barcode-wrap svg { width: 100%; height: auto; max-width: 160px; display: block; margin: 0 auto; }
+    .barcode-wrap img { max-width: 100%; object-fit: contain; display: block; margin: 0 auto; }
     ${buildReceiptFormatCss(customization?.receiptFormat)}
   </style></head><body><div class="receipt">
     <div class="space-y-1">

@@ -11,6 +11,8 @@ import {
   printWithLocalService,
 } from "../utils/localPrinterService";
 import { renderPrintableHtmlToImageJob } from "../utils/renderPrintableHtml";
+import { loadSalesReceiptCustomization } from "../utils/salesReceiptCustomization";
+import { buildEscposReceiptJob, isEscposReceiptEligible } from "../utils/escposReceiptBuilder";
 
 const PrintContext = createContext(null);
 
@@ -197,8 +199,30 @@ export const PrintProvider = ({ children }) => {
           let html = job.html;
           let receiptData = job.receiptData;
           let label = job.label;
+          let escposHandled = false;
 
           if (shouldRenderReceiptAsImage(job)) {
+            try {
+              const customization = loadSalesReceiptCustomization(job.companyId);
+              if (isEscposReceiptEligible(job.receiptData, customization)) {
+                const kind = /return/i.test(String(job.docType || "")) ? "return" : "sale";
+                const escposJob = buildEscposReceiptJob(job.receiptData, customization, {
+                  kind,
+                  jobName: String(job.label || "Receipt").trim() || "Receipt",
+                });
+                html = "";
+                receiptData = null;
+                label = escposJob;
+                escposHandled = true;
+              }
+            } catch (escposErr) {
+              // Falls through to the existing image-render attempt below - printing can only get
+              // faster or stay exactly as reliable as it is today, never worse.
+              console.error("ESC/POS fast-path receipt build failed, falling back to rendered image:", escposErr);
+            }
+          }
+
+          if (!escposHandled && shouldRenderReceiptAsImage(job)) {
             try {
               const rendered = await renderPrintableHtmlToImageJob(job.html);
               if (rendered?.imageDataUrl) {
@@ -212,8 +236,11 @@ export const PrintProvider = ({ children }) => {
                   pageHeightMm: rendered.pageHeightMm,
                 };
               }
-            } catch {
-              // Direct GDI structured thermal receipt printing handles this natively in the connector
+            } catch (renderErr) {
+              // Falls through to the bare structured receipt payload below (no store info, no
+              // barcode/QR, no format styling) - surface this loudly rather than silently
+              // degrading to a receipt that looks nothing like the customization preview.
+              console.error("Receipt image rasterization failed, falling back to plain structured print:", renderErr);
             }
           }
 

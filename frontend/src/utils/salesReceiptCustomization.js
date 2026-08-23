@@ -164,7 +164,11 @@ export const RECEIPT_FORMAT_OPTIONS = [
   {
     value: "detailed", label: "Detailed",
     description: "Double rules, boxed sections, relaxed spacing.",
-    style: { dividerStyle: "double", dividerWeight: 2, headerBoxed: true, headerAccent: "underline", accentColor: "#2563eb", totalStyle: "boxed", spacing: "relaxed", rounded: false },
+    // dividerWeight must be >= 3 for CSS's "double" border style to actually render as two visible
+    // lines - confirmed empirically: at 1-2px it renders indistinguishably from a single solid
+    // line, silently breaking this preset's own "double rules" description. Matches the weight
+    // already used by the other two double-style presets (elegant, enterprise).
+    style: { dividerStyle: "double", dividerWeight: 3, headerBoxed: true, headerAccent: "underline", accentColor: "#2563eb", totalStyle: "boxed", spacing: "relaxed", rounded: false },
   },
   {
     value: "enterprise", label: "Enterprise",
@@ -201,14 +205,20 @@ export const buildReceiptFormatCss = (format) => {
     ? `${style.dividerWeight}px double #111827`
     : `${style.dividerWeight}px ${style.dividerStyle} #111827`;
   const spacingPx = SPACING_PX[style.spacing] || SPACING_PX.normal;
+  // "highlighted"/"bar" used to fill with a 10%-opacity tint of accentColor, which looks right on
+  // screen but composites to a luminance well above the direct/silent print path's binarization
+  // threshold (200) - i.e. it prints as plain white, the accent vanishes entirely. A solid fill
+  // (any real accent color binarizes to black regardless of hue) with white text survives that
+  // pipeline as a genuine reverse-video highlight instead, while still rendering fine on screen and
+  // in Browser Print mode.
   const totalRules = {
     plain: "font-weight: 400;",
     bold: "font-weight: 700;",
     boxed: "font-weight: 700; border: 1px solid #111827; border-radius: 4px; padding: 6px 8px;",
-    highlighted: `font-weight: 700; background: ${style.accentColor || "#2563eb"}1a; border-radius: 4px; padding: 6px 8px;`,
+    highlighted: `font-weight: 700; background: ${style.accentColor || "#2563eb"}; color: #ffffff; border-radius: 4px; padding: 6px 8px;`,
   };
   const headerAccentRule = style.headerAccent === "bar"
-    ? `.receipt .title { background: ${style.accentColor || "#2563eb"}1a; padding: 6px 10px; margin: -4px -10px 6px; border-radius: ${style.rounded ? "10px" : "2px"}; }`
+    ? `.receipt .title { background: ${style.accentColor || "#2563eb"}; color: #ffffff; padding: 6px 10px; margin: -4px -10px 6px; border-radius: ${style.rounded ? "10px" : "2px"}; }`
     : style.headerAccent === "underline"
       ? `.receipt .title { border-bottom: 2px solid ${style.accentColor || "#2563eb"}; padding-bottom: 4px; }`
       : "";
@@ -855,7 +865,8 @@ const DEFAULT_RECEIPT_CODE39_OPTIONS = {
   narrowWidth: 2,
   wideWidth: 5,
   quietZone: 10,
-  fontSize: 12,
+  fontSize: 14,
+  textGap: 10,
 };
 
 export const isReceiptCodeVisible = (customization, slot = "bill") => {
@@ -866,14 +877,22 @@ export const isReceiptCodeVisible = (customization, slot = "bill") => {
 };
 
 export const RECEIPT_QR_CODE_DISPLAY_PX = 96;
-export const RECEIPT_QR_CODE_DATA_WIDTH = 112;
+// The direct/silent print path captures this <img> via html2canvas at a 4x render scale (see
+// DEFAULT_RENDER_SCALE in renderPrintableHtml.js), so a QR generated much smaller than
+// displaySize * 4 gets upscaled by the browser's own smooth image interpolation before capture -
+// blurring crisp module edges into soft grey transitions. Those pixels are deliberately excluded
+// from this session's binarization pass (thresholding them broke scanning a different way), so
+// nothing downstream cleans up that blur - the bitmap has to already be sharp at generation time.
+// Confirmed via a real QR decoder: at the old 112px this scanned ~13% ambiguous-luminance pixels
+// and failed to decode; at 480px (>= 96*4) it decoded cleanly with zero ambiguous pixels.
+export const RECEIPT_QR_CODE_DATA_WIDTH = 480;
 
-export const buildReceiptQrCodeImgMarkup = (dataUrl, { label = "", fontSize = 11, size = RECEIPT_QR_CODE_DISPLAY_PX } = {}) => {
+export const buildReceiptQrCodeImgMarkup = (dataUrl, { label = "", fontSize = 13, size = RECEIPT_QR_CODE_DISPLAY_PX } = {}) => {
   if (!dataUrl) return "";
   const displaySize = Math.max(64, Number(size) || RECEIPT_QR_CODE_DISPLAY_PX);
   const caption = String(label || "").trim();
   const captionNode = caption
-    ? `<div style="margin-top:4px;text-align:center;font-family:monospace;font-size:${Math.max(10, Number(fontSize) || 11)}px;color:#111827;">${escapeMarkup(caption)}</div>`
+    ? `<div style="margin-top:6px;text-align:center;font-family:monospace;font-size:${Math.max(10, Number(fontSize) || 13)}px;color:#111827;">${escapeMarkup(caption)}</div>`
     : "";
   return `<img src="${dataUrl}" alt="" width="${displaySize}" height="${displaySize}" style="display:block;margin:0 auto;width:${displaySize}px;height:${displaySize}px;max-width:100%;object-fit:contain;" />${captionNode}`;
 };
@@ -882,9 +901,15 @@ export const createReceiptQrCodeDataUrl = async (value, { width = RECEIPT_QR_COD
   const normalized = String(value || "").trim();
   if (!normalized) return "";
   return QRCode.toDataURL(normalized, {
-    margin: 1,
+    // ISO/IEC 18004 requires a minimum 4-module quiet zone - scanners use it to locate the QR
+    // pattern before they even attempt to decode it, so a too-tight margin can fail uniformly
+    // across every app regardless of how clean the QR's own modules are.
+    margin: 4,
     width: Math.max(80, Number(width) || RECEIPT_QR_CODE_DATA_WIDTH),
-    errorCorrectionLevel: "M",
+    // "H" (~30% damage tolerance) instead of "M" (~15%) - real receipt paper (thermal fade,
+    // handling, camera glare) degrades a printed QR more than an on-screen one, so the extra
+    // error-correction headroom is worth the modest increase in module density.
+    errorCorrectionLevel: "H",
   });
 };
 
@@ -1002,7 +1027,10 @@ export const buildPaymentQrMarkup = async (customization, { billAmount, billNo, 
       amount: billAmount,
       transactionNote: billNo ? `Bill ${billNo}` : "",
     });
-    const dataUrl = await createReceiptQrCodeDataUrl(upiUri, { width: 160 });
+    // width: 480 = displayed size (120) * the print pipeline's 4x render scale - see
+    // RECEIPT_QR_CODE_DATA_WIDTH's comment for why generating below that upscales into a blurry,
+    // often-unscannable QR once captured for silent printing.
+    const dataUrl = await createReceiptQrCodeDataUrl(upiUri, { width: 480 });
     return buildReceiptQrCodeImgMarkup(dataUrl, { label: "Scan to Pay", size: 120 });
   }
   if (mode === "image") {

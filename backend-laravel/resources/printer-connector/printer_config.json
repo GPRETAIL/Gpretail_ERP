@@ -3,5 +3,13 @@
   "selectedPrinterNames": [],
   "selectedTransport": "printer",
   "selectedBluetoothDeviceName": "",
-  "printerRoutes": []
+  "escposPrinterName": "TVSE RP3200 Raw (Generic Text Only)",
+  "printerRoutes": [
+    {
+      "printer_name": "TVSE RP3200 Lite",
+      "printer_function": "receipt",
+      "user_id": null,
+      "user_name": ""
+    }
+  ]
 }

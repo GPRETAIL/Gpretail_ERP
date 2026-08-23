@@ -31,6 +31,7 @@ import {
   WAREHOUSE_FONT_FAMILY_OPTIONS,
   WAREHOUSE_FONT_SIZE_CONTROLS,
   WAREHOUSE_PRINT_MODE_OPTIONS,
+  WAREHOUSE_LABEL_FORMAT_OPTIONS,
 } from "../../utils/warehouseBarcodeCustomization";
 
 const fieldLabelClass = "mb-1 block text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400";
@@ -620,9 +621,11 @@ export default function WarehouseCustomisation() {
 
   return (
     <div className="min-h-full bg-gray-100 dark:bg-gray-900 px-4 py-4 text-gray-800 dark:text-gray-100">
-      <div className="mx-auto grid max-w-7xl gap-4 xl:grid-cols-[minmax(0,1fr)_460px]">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_460px]">
         <div className="space-y-4">
-          <div className={`${baseCardClass} px-5 py-5`}>
+          {/* Sticky so the whole header - title, description, and Save/Reset - stays reachable
+              while scrolling through the settings below, instead of scrolling away with them. */}
+          <div className="sticky top-0 z-20 rounded-xl border border-gray-200 bg-white/95 px-5 py-5 shadow-sm backdrop-blur dark:border-gray-700 dark:bg-gray-800/95">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <div className="text-xl font-semibold text-gray-900 dark:text-gray-100">Warehouse Customisation</div>
@@ -743,6 +746,38 @@ export default function WarehouseCustomisation() {
                   <p className="mt-2 text-xs leading-5 text-gray-600 dark:text-gray-400">
                     {option.description}
                   </p>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className={`${baseCardClass} p-5`}>
+            <label className={fieldLabelClass}>Barcode and QR Code Format</label>
+            <p className="mb-3 max-w-3xl text-sm leading-6 text-gray-500 dark:text-gray-400">
+              Choose the overall look of the printed receipt -- border and divider style, spacing, and how the header and total are emphasised. Applies to the preview on the right and every Barcode print.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+              {WAREHOUSE_LABEL_FORMAT_OPTIONS.map((option) => (
+                <label
+                  key={option.value}
+                  className={`flex cursor-pointer flex-col gap-1 rounded-lg border px-4 py-3 text-sm ${
+                    settings.labelFormat === option.value
+                      ? "border-blue-600 bg-blue-50 text-blue-700 dark:border-blue-500 dark:bg-blue-900/30 dark:text-blue-400"
+                      : "border-gray-300 bg-white text-gray-700 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300"
+                  }`}
+                >
+                  <span className="flex items-center gap-2 font-medium">
+                    <input
+                      type="radio"
+                      name="warehouse-label-format"
+                      value={option.value}
+                      checked={settings.labelFormat === option.value}
+                      onChange={() => updateSetting({ labelFormat: option.value })}
+                      className="h-4 w-4"
+                    />
+                    {option.label}
+                  </span>
+                  <span className="text-xs leading-5 text-gray-500 dark:text-gray-400">{option.description}</span>
                 </label>
               ))}
             </div>
