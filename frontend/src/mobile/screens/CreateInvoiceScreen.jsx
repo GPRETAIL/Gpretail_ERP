@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useSelector } from "react-redux";
 import {
   Plus,
   Minus,
@@ -18,6 +19,7 @@ import {
 import { BrowserMultiFormatReader } from "@zxing/browser";
 import api from "../../api/axios";
 import { saveDraft, addToSyncQueue, getCachedData, setCachedData } from "../offline/db";
+import { fetchSalesReceiptCustomization, buildUpiPaymentUri } from "../../utils/salesReceiptCustomization";
 
 const money = (n) =>
   "₹ " +
@@ -31,6 +33,8 @@ const money = (n) =>
  * Inspired by flutter_billing_app layout and flow.
  */
 export default function CreateInvoiceScreen({ onBack }) {
+  const authUser = useSelector((s) => s.auth.user);
+
   // Navigation & Step Control
   const [step, setStep] = useState("billing"); // 'billing' | 'checkout'
 
@@ -40,6 +44,7 @@ export default function CreateInvoiceScreen({ onBack }) {
   const [, setNextBillNo] = useState("");
   const [catalog, setCatalog] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [paymentUpiId, setPaymentUpiId] = useState("");
 
   // Cart State
   const [cartItems, setCartItems] = useState([]); // { product, quantity }
@@ -87,6 +92,24 @@ export default function CreateInvoiceScreen({ onBack }) {
       }
     })();
   }, []);
+
+  // Real "Scan to Pay" UPI ID from the Sales Customization settings - was
+  // previously a hardcoded gpsoftware@okaxis, which routed every mobile
+  // sale's payment to the wrong account regardless of what the store
+  // actually configured.
+  useEffect(() => {
+    const cid = authUser?.company_id;
+    if (!cid) return;
+    let cancelled = false;
+    fetchSalesReceiptCustomization(api, cid, { fallbackToLocal: false })
+      .then((customization) => {
+        if (!cancelled) setPaymentUpiId(customization?.paymentUpiId || "");
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [authUser?.company_id]);
 
   // Add Item callback after barcode match
   const handleScanBarcode = useCallback((barcode) => {
@@ -302,8 +325,15 @@ export default function CreateInvoiceScreen({ onBack }) {
       String(p.productCode || p.sku || "").toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // QR Code Data Source Link
-  const upiUrl = `upi://pay?pa=gpsoftware@okaxis&pn=GP%20Retail&am=${total.toFixed(2)}&cu=INR`;
+  // QR Code Data Source Link - built from the store's real configured UPI ID
+  // (Sales Customization page), matching the desktop receipt's own
+  // buildUpiPaymentUri()/9876543210@upi fallback rather than a hardcoded
+  // third-party account.
+  const upiUrl = buildUpiPaymentUri({
+    upiId: paymentUpiId || "9876543210@upi",
+    payeeName: authUser?.company_name || "",
+    amount: total,
+  });
   const qrCodeImgSrc = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(upiUrl)}`;
 
   // Return step 1: Billing & Barcode scanning
