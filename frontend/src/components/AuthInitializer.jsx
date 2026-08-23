@@ -5,7 +5,8 @@ import checkAuth from "../utils/checkAuth";
 
 const AuthInitializer = ({ children }) => {
   const dispatch = useDispatch();
-  const [loading, setLoading] = useState(true);
+  const isMobileApp = typeof window !== "undefined" && window.location.pathname.startsWith("/app");
+  const [loading, setLoading] = useState(!isMobileApp);
 
   useEffect(() => {
     const init = async () => {
@@ -15,10 +16,16 @@ const AuthInitializer = ({ children }) => {
     init();
   }, [dispatch]);
 
+  // Mobile App (/app/*) bypasses desktop loading screen entirely
+  // It handles its own branded Splash -> Mobile Login -> Dashboard flow
+  if (isMobileApp) {
+    return children;
+  }
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen text-blue-500 text-xl">
-        Checking authentication...
+      <div className="flex items-center justify-center h-screen bg-slate-900 text-indigo-400">
+        <div className="w-8 h-8 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
