@@ -1,150 +1,154 @@
-/* Vynerix ERP Mobile Application Workspace Styles */
+/* ==========================================================================
+   Vynerix ERP — Dedicated Mobile Application Native Design System
+   ========================================================================== */
+
 :root {
-  --vx-primary: #4f46e5;
-  --vx-primary-dark: #4338ca;
-  --vx-primary-light: #eef2ff;
-  --vx-surface: #ffffff;
+  --vx-primary: #4338ca;
+  --vx-primary-gradient: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
+  --vx-blue-gradient: linear-gradient(160deg, #3746ec 0%, #2937dc 50%, #1f2cb8 100%);
   --vx-bg: #f8fafc;
-  --vx-text-main: #0f172a;
-  --vx-text-muted: #64748b;
+  --vx-card-bg: #ffffff;
+  --vx-text: #0f172a;
+  --vx-muted: #64748b;
   --vx-border: #e2e8f0;
 }
 
+/* Global Mobile App Wrapper */
 .vx-workspace {
+  max-width: 480px;
+  margin: 0 auto;
   min-height: 100vh;
-  background-color: #f8fafc;
-  color: #0f172a;
+  min-height: 100dvh;
+  background-color: var(--vx-bg);
+  color: var(--vx-text);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   -webkit-tap-highlight-color: transparent;
+  position: relative;
+  box-shadow: 0 0 50px rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
 }
 
-/* Splash Loading Screen */
-.vx-splash {
+/* ─── 1. Splash Screen (Pixel-perfect matching reference image) ──────── */
+.vx-splash-screen {
   position: fixed;
   inset: 0;
-  z-index: 100;
+  z-index: 9999;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(145deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%);
+  background: linear-gradient(165deg, #3d4ef8 0%, #2938e8 55%, #1c29be 100%);
   color: #ffffff;
   padding: 24px;
-  animation: vxSplashFadeIn 0.3s ease-out;
+  animation: vxFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@keyframes vxSplashFadeIn {
-  from { opacity: 0; transform: scale(0.98); }
+@keyframes vxFadeIn {
+  from { opacity: 0; transform: scale(0.97); }
   to { opacity: 1; transform: scale(1); }
 }
 
-.vx-splash-logo-box {
-  position: relative;
-  width: 88px;
-  height: 88px;
-  border-radius: 24px;
-  background: linear-gradient(135deg, #6366f1, #4f46e5);
+.vx-splash-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.vx-splash-logo-card {
+  width: 92px;
+  height: 92px;
+  border-radius: 26px;
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1.5px solid rgba(255, 255, 255, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 12px 32px rgba(99, 102, 241, 0.4);
-  margin-bottom: 20px;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.6);
+  margin-bottom: 24px;
+  animation: vxFloat 3s ease-in-out infinite;
 }
 
-.vx-splash-title {
-  font-size: 30px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
+@keyframes vxFloat {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-4px); }
+}
+
+.vx-splash-brand-name {
+  font-size: 34px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
   margin: 0;
   color: #ffffff;
 }
 
-.vx-splash-sub {
-  font-size: 13px;
-  color: #a5b4fc;
-  margin-top: 6px;
-  letter-spacing: 0.04em;
+.vx-splash-brand-erp {
+  font-size: 34px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  margin: 0;
+  color: #ffffff;
+}
+
+.vx-splash-tagline {
+  font-size: 13.5px;
+  color: rgba(255, 255, 255, 0.85);
+  margin-top: 10px;
+  letter-spacing: 0.02em;
   font-weight: 500;
 }
 
-.vx-splash-bar-wrap {
-  width: 140px;
-  height: 4px;
+.vx-splash-progress-track {
+  width: 170px;
+  height: 5px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.15);
-  margin-top: 36px;
+  background: rgba(255, 255, 255, 0.22);
+  margin-top: 40px;
   overflow: hidden;
   position: relative;
 }
 
-.vx-splash-bar {
+.vx-splash-progress-fill {
   height: 100%;
   border-radius: 999px;
   background: #ffffff;
-  width: 50%;
-  animation: vxSplashProgress 1s infinite linear;
+  transition: width 0.35s ease;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
 }
 
-@keyframes vxSplashProgress {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(200%); }
-}
-
-/* Top Navigation Bar */
+/* ─── 2. Top Header Bar ──────────────────────────────────────────────── */
 .vx-ws-topbar {
-  height: 56px;
+  height: 58px;
   display: flex;
   align-items: center;
   padding: 0 16px;
   gap: 12px;
-  background: rgba(255, 255, 255, 0.94);
-  border-bottom: 1px solid #e2e8f0;
+  background: rgba(255, 255, 255, 0.95);
+  border-bottom: 1px solid var(--vx-border);
   position: sticky;
   top: 0;
   z-index: 40;
   backdrop-filter: blur(16px);
-}
-
-.vx-ws-brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.vx-ws-brand span {
-  width: 32px;
-  height: 32px;
-  border-radius: 10px;
-  display: grid;
-  place-items: center;
-  background: linear-gradient(135deg, #4f46e5, #7c3aed);
-  color: #ffffff;
-  font-weight: 800;
-  font-size: 17px;
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
-}
-
-.vx-ws-brand strong {
-  font-size: 16px;
-  font-weight: 700;
-  color: #0f172a;
+  -webkit-backdrop-filter: blur(16px);
 }
 
 .vx-page-title-center {
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 800;
   color: #0f172a;
-}
-
-.vx-spacer {
-  flex: 1;
+  letter-spacing: -0.02em;
 }
 
 .vx-ws-icon {
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   border: 0;
-  border-radius: 10px;
+  border-radius: 12px;
   background: #f1f5f9;
   display: grid;
   place-items: center;
@@ -153,92 +157,42 @@
   transition: all 0.15s ease;
 }
 
-.vx-ws-icon:hover {
+.vx-ws-icon:active {
   background: #e2e8f0;
-  color: #0f172a;
+  transform: scale(0.95);
 }
 
 .vx-avatar {
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: #e0e7ff;
-  color: #4338ca;
-  font-weight: 700;
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  color: #ffffff;
+  font-weight: 800;
   font-size: 14px;
+  box-shadow: 0 3px 10px rgba(79, 70, 229, 0.3);
 }
 
-/* Shell Layout */
-.vx-ws-shell {
-  display: flex;
-  min-height: calc(100vh - 56px);
-}
-
-.vx-ws-sidebar {
-  width: 240px;
-  background: #ffffff;
-  border-right: 1px solid #e2e8f0;
-  padding: 16px 12px;
-  position: sticky;
-  top: 56px;
-  height: calc(100vh - 56px);
-}
-
-.vx-ws-space {
-  padding: 8px 10px 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.vx-ws-sidebar nav {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.vx-ws-sidebar nav button {
-  border: 0;
-  background: transparent;
-  padding: 10px 12px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: #64748b;
-  text-align: left;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 500;
-  transition: all 0.15s ease;
-}
-
-.vx-ws-sidebar nav button:hover {
-  background: #f1f5f9;
-  color: #0f172a;
-}
-
-.vx-ws-sidebar nav button.active {
-  background: #eef2ff;
-  color: #4f46e5;
-  font-weight: 700;
-}
-
+/* ─── 3. Main Content Area ───────────────────────────────────────────── */
 .vx-ws-main {
   flex: 1;
-  min-width: 0;
-  padding: 16px;
-  padding-bottom: 90px;
+  padding: 14px 16px 88px;
+  animation: vxPageIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* User Greeting Card */
+@keyframes vxPageIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── 4. User Greeting & Date Pill ───────────────────────────────────── */
 .vx-user-greeting {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
 
 .vx-greeting-left {
@@ -250,175 +204,157 @@
 .vx-greeting-avatar {
   width: 44px;
   height: 44px;
-  border-radius: 50%;
+  border-radius: 14px;
   background: linear-gradient(135deg, #4f46e5, #6366f1);
   color: #ffffff;
   display: grid;
   place-items: center;
-  font-weight: 700;
+  font-weight: 800;
   font-size: 18px;
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.25);
 }
 
 .vx-greeting-text h2 {
   margin: 0;
-  font-size: 17px;
-  font-weight: 700;
+  font-size: 16.5px;
+  font-weight: 800;
   color: #0f172a;
+  letter-spacing: -0.02em;
 }
 
 .vx-greeting-text p {
   margin: 2px 0 0;
-  font-size: 12px;
+  font-size: 11.5px;
   color: #64748b;
+  font-weight: 600;
 }
 
-/* Date Pill Filter */
 .vx-date-pill {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   background: #ffffff;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--vx-border);
   border-radius: 12px;
-  padding: 8px 14px;
+  padding: 7px 14px;
   font-size: 12px;
-  font-weight: 600;
-  color: #475569;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
-  margin-bottom: 14px;
+  font-weight: 700;
+  color: #334155;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.02);
+  margin-bottom: 12px;
 }
 
-/* 2x2 KPI Grid */
+/* ─── 5. 2x2 KPI Cards Grid ─────────────────────────────────────────── */
 .vx-kpis-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: 10px;
+  margin-bottom: 14px;
 }
 
 .vx-kpi-card {
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 16px;
-  padding: 14px 16px;
+  padding: 13px 14px;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.03);
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.02);
 }
 
 .vx-kpi-label {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 10.5px;
+  font-weight: 700;
   color: #64748b;
   text-transform: uppercase;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.03em;
 }
 
 .vx-kpi-val {
-  font-size: 20px;
-  font-weight: 800;
+  font-size: 19px;
+  font-weight: 900;
   color: #0f172a;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
+  margin-top: 1px;
 }
 
 .vx-kpi-badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   font-size: 11px;
   font-weight: 700;
-  margin-top: 4px;
+  margin-top: 2px;
   width: fit-content;
 }
 
-.vx-kpi-badge.positive {
-  color: #10b981;
-}
+.vx-kpi-badge.positive { color: #10b981; }
+.vx-kpi-badge.negative { color: #ef4444; }
+.vx-kpi-badge.info { color: #3b82f6; }
+.vx-kpi-badge.purple { color: #8b5cf6; }
 
-.vx-kpi-badge.negative {
-  color: #ef4444;
-}
-
-.vx-kpi-badge.info {
-  color: #3b82f6;
-}
-
-.vx-kpi-badge.purple {
-  color: #8b5cf6;
-}
-
-/* Sales Overview Card */
+/* ─── 6. Clean Card Containers ───────────────────────────────────────── */
 .vx-card {
   background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  padding: 16px;
-  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.03);
-  margin-bottom: 16px;
+  border: 1px solid var(--vx-border);
+  border-radius: 18px;
+  padding: 15px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.03);
+  margin-bottom: 14px;
 }
 
 .vx-card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
 
 .vx-card-title {
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 14.5px;
+  font-weight: 800;
   color: #0f172a;
+  letter-spacing: -0.01em;
   margin: 0;
-}
-
-.vx-select-sm {
-  background: #f8fafc;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  padding: 4px 10px;
-  font-size: 11px;
-  font-weight: 600;
-  color: #475569;
-  outline: none;
 }
 
 .vx-chart-box {
   width: 100%;
-  height: 160px;
+  height: 155px;
 }
 
-/* 3x3 Modules Grid */
+/* ─── 7. 3x3 Modules Grid ───────────────────────────────────────────── */
 .vx-modules-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: 10px;
+  margin-bottom: 16px;
 }
 
 .vx-module-tile {
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  padding: 16px 8px;
+  border-radius: 18px;
+  padding: 14px 6px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.02);
   transition: all 0.15s ease;
 }
 
 .vx-module-tile:active {
-  transform: scale(0.96);
+  transform: scale(0.95);
+  background: #f8fafc;
 }
 
 .vx-module-icon-box {
   width: 46px;
   height: 46px;
-  border-radius: 14px;
+  border-radius: 15px;
   display: grid;
   place-items: center;
   color: #ffffff;
@@ -426,17 +362,17 @@
 }
 
 .vx-module-name {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 11.5px;
+  font-weight: 700;
   color: #334155;
 }
 
-/* Filter Tab Pills */
+/* ─── 8. Filter Pills & Search ───────────────────────────────────────── */
 .vx-filter-tabs {
   display: flex;
   gap: 8px;
   overflow-x: auto;
-  padding-bottom: 6px;
+  padding-bottom: 4px;
   margin-bottom: 12px;
   scrollbar-width: none;
 }
@@ -446,12 +382,12 @@
 }
 
 .vx-filter-pill {
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--vx-border);
   background: #ffffff;
   border-radius: 20px;
   padding: 6px 14px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 11.5px;
+  font-weight: 700;
   color: #64748b;
   cursor: pointer;
   white-space: nowrap;
@@ -465,11 +401,10 @@
   box-shadow: 0 3px 10px rgba(79, 70, 229, 0.3);
 }
 
-/* Search Bar Row */
 .vx-search-row {
   display: flex;
   gap: 8px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .vx-search-input-wrap {
@@ -478,11 +413,10 @@
   align-items: center;
   gap: 8px;
   background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
+  border: 1px solid var(--vx-border);
+  border-radius: 14px;
   padding: 0 12px;
   height: 42px;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.02);
 }
 
 .vx-search-input-wrap input {
@@ -496,8 +430,8 @@
 .vx-filter-btn {
   width: 42px;
   height: 42px;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
+  border: 1px solid var(--vx-border);
+  border-radius: 14px;
   background: #ffffff;
   display: grid;
   place-items: center;
@@ -505,35 +439,41 @@
   cursor: pointer;
 }
 
-/* Transaction Card Item */
+/* ─── 9. Transaction Cards ───────────────────────────────────────────── */
 .vx-trans-card {
   background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 14px;
-  padding: 14px;
+  border: 1px solid var(--vx-border);
+  border-radius: 16px;
+  padding: 13px 15px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 10px;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.02);
+  margin-bottom: 9px;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.02);
   cursor: pointer;
+  transition: transform 0.12s ease;
+}
+
+.vx-trans-card:active {
+  transform: scale(0.98);
 }
 
 .vx-trans-left {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
 }
 
 .vx-trans-id {
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 800;
   color: #0f172a;
 }
 
 .vx-trans-meta {
   font-size: 11px;
   color: #64748b;
+  font-weight: 500;
 }
 
 .vx-trans-right {
@@ -545,7 +485,7 @@
 
 .vx-trans-amount {
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 900;
   color: #0f172a;
 }
 
@@ -558,26 +498,15 @@
   text-transform: capitalize;
 }
 
-.vx-pill-badge.paid {
-  background: #dcfce7;
-  color: #15803d;
-}
+.vx-pill-badge.paid { background: #dcfce7; color: #15803d; }
+.vx-pill-badge.sent { background: #dbeafe; color: #1d4ed8; }
+.vx-pill-badge.draft { background: #fef3c7; color: #b45309; }
 
-.vx-pill-badge.sent {
-  background: #dbeafe;
-  color: #1d4ed8;
-}
-
-.vx-pill-badge.draft {
-  background: #fef3c7;
-  color: #b45309;
-}
-
-/* Floating Action Button (+) */
+/* ─── 10. Floating Action Button (+) ─────────────────────────────────── */
 .vx-fab-btn {
   position: fixed;
-  right: 20px;
-  bottom: 80px;
+  right: calc(50% - 220px);
+  bottom: 82px;
   width: 52px;
   height: 52px;
   border-radius: 50%;
@@ -586,29 +515,38 @@
   display: grid;
   place-items: center;
   border: 0;
-  box-shadow: 0 8px 24px rgba(79, 70, 229, 0.4);
+  box-shadow: 0 10px 25px rgba(79, 70, 229, 0.45);
   cursor: pointer;
   z-index: 45;
   transition: transform 0.15s ease;
+}
+
+@media (max-width: 480px) {
+  .vx-fab-btn {
+    right: 20px;
+  }
 }
 
 .vx-fab-btn:active {
   transform: scale(0.92);
 }
 
-/* Bottom Navigation Bar */
+/* ─── 11. Persistent 5-Tab Bottom Navigation ─────────────────────────── */
 .vx-bottom {
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
+  max-width: 480px;
+  margin: 0 auto;
   height: 64px;
-  background: rgba(255, 255, 255, 0.97);
-  border-top: 1px solid #e2e8f0;
+  background: rgba(255, 255, 255, 0.96);
+  border-top: 1px solid var(--vx-border);
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   z-index: 50;
   backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
 
 .vx-bottom button {
@@ -618,19 +556,20 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 3px;
   color: #64748b;
   font-size: 10px;
   font-weight: 600;
   cursor: pointer;
+  transition: color 0.15s ease;
 }
 
 .vx-bottom button.active {
   color: #4f46e5;
-  font-weight: 700;
+  font-weight: 800;
 }
 
-/* Report / Setting Menu Row */
+/* ─── 12. Menu Rows (Reports & Settings) ──────────────────────────────── */
 .vx-menu-row {
   width: 100%;
   display: flex;
@@ -638,15 +577,16 @@
   justify-content: space-between;
   padding: 12px 14px;
   background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 14px;
+  border: 1px solid var(--vx-border);
+  border-radius: 16px;
   margin-bottom: 8px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.12s ease;
 }
 
 .vx-menu-row:active {
   background: #f8fafc;
+  transform: scale(0.99);
 }
 
 .vx-menu-row-left {
@@ -656,8 +596,8 @@
 }
 
 .vx-menu-icon-box {
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   border-radius: 12px;
   display: grid;
   place-items: center;
@@ -667,7 +607,7 @@
 .vx-menu-row-text h4 {
   margin: 0;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   color: #0f172a;
 }
 
@@ -677,40 +617,7 @@
   color: #64748b;
 }
 
-/* Responsive Overrides */
-@media (min-width: 768px) {
-  .vx-bottom {
-    display: none;
-  }
-  .vx-ws-sidebar {
-    display: block;
-  }
-}
-
-@media (max-width: 767px) {
-  .vx-ws-sidebar {
-    position: fixed;
-    left: -270px;
-    top: 56px;
-    z-index: 60;
-    width: 250px;
-    height: calc(100vh - 56px);
-    transition: left 0.2s ease;
-    box-shadow: 15px 0 30px rgba(15, 23, 42, 0.15);
-  }
-  .vx-ws-sidebar.open {
-    left: 0;
-  }
-}
-
-/* ─── Real Progress Bar (driven by useAppInit) ───────────────────────── */
-.vx-splash-bar--real {
-  animation: none;
-  transition: width 0.4s ease;
-  background: linear-gradient(90deg, rgba(255,255,255,0.6), #ffffff, rgba(255,255,255,0.6));
-}
-
-/* ─── Skeleton Loaders ───────────────────────────────────────────────── */
+/* ─── 13. Skeleton Shimmers ──────────────────────────────────────────── */
 .vx-skel {
   background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
   background-size: 200% 100%;
@@ -729,7 +636,7 @@
 
 .vx-skel-block {
   width: 100%;
-  border-radius: 12px;
+  border-radius: 14px;
 }
 
 @keyframes vxShimmer {
@@ -737,7 +644,7 @@
   100% { background-position: -200% 0; }
 }
 
-/* ─── Offline / Reconnected Banner ───────────────────────────────────── */
+/* ─── 14. Offline Banner ─────────────────────────────────────────────── */
 .vx-offline-banner {
   display: flex;
   align-items: center;
@@ -745,7 +652,7 @@
   gap: 8px;
   padding: 8px 16px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   background: #fef3c7;
   color: #92400e;
   z-index: 39;
@@ -762,28 +669,10 @@
   to { transform: translateY(0); opacity: 1; }
 }
 
-/* ─── Page Transition ────────────────────────────────────────────────── */
-.vx-ws-main {
-  flex: 1;
-  min-width: 0;
-  padding: 16px;
-  padding-bottom: 90px;
-  animation: vxPageIn 0.2s ease;
-}
-
-@keyframes vxPageIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* ─── Safe Area for Notched Devices ──────────────────────────────────── */
+/* Safe Area Insets for iPhones */
 @supports (padding: env(safe-area-inset-bottom)) {
   .vx-bottom {
     padding-bottom: env(safe-area-inset-bottom);
     height: calc(64px + env(safe-area-inset-bottom));
   }
-  .vx-ws-topbar {
-    padding-top: env(safe-area-inset-top);
-  }
 }
-

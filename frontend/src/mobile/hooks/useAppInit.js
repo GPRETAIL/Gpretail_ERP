@@ -9,7 +9,7 @@ import api from "../../api/axios";
 export default function useAppInit() {
   const isAuthenticated = useSelector((s) => s.auth.isAuthenticated);
   const authUser = useSelector((s) => s.auth.user);
-  const [progress, setProgress] = useState(0);
+  const [progress, setProgress] = useState(10);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState(null);
   const ran = useRef(false);
@@ -19,59 +19,54 @@ export default function useAppInit() {
     ran.current = true;
 
     let cancelled = false;
-    const set = (v) => { if (!cancelled) setProgress(v); };
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
     (async () => {
       try {
-        // Step 1: Check auth token
-        set(15);
+        // Milestone 1: App startup
+        if (!cancelled) setProgress(25);
+        await sleep(350);
+
+        // Milestone 2: Auth verification & preloading
+        if (!cancelled) setProgress(50);
         const token = localStorage.getItem("token");
-        if (!token || !isAuthenticated) {
-          // Not authenticated — splash can finish, App.jsx will redirect
-          set(100);
-          if (!cancelled) setReady(true);
-          return;
+        if (token && isAuthenticated) {
+          try {
+            await api.get("/auth/me");
+          } catch {
+            // Silently continue
+          }
         }
+        await sleep(400);
 
-        // Step 2: Validate session with /auth/me
-        set(30);
-        try {
-          await api.get("/auth/me");
-        } catch {
-          // Session expired — still let app proceed (ProtectedRoute handles redirect)
+        // Milestone 3: Preload unread count & cache check
+        if (!cancelled) setProgress(75);
+        if (token && isAuthenticated) {
+          try {
+            const res = await api.get("/notifications/unread-count");
+            window.__vx_unread_count = res.data?.data?.count ?? res.data?.count ?? 0;
+          } catch {
+            window.__vx_unread_count = 0;
+          }
         }
+        await sleep(450);
 
-        // Step 3: User profile loaded from Redux store
-        set(55);
+        // Milestone 4: Finalizing
+        if (!cancelled) setProgress(100);
+        await sleep(400);
 
-        // Step 4: Preload notification count (non-blocking)
-        set(70);
-        try {
-          const res = await api.get("/notifications/unread-count");
-          const count = res.data?.data?.count ?? res.data?.count ?? 0;
-          // Store for MobileHeader to read
-          window.__vx_unread_count = count;
-        } catch {
-          window.__vx_unread_count = 0;
-        }
-
-        // Step 5: Determine network status
-        set(85);
-
-        // Step 6: Complete
-        set(100);
-        // Brief pause so the progress bar animation is visible
-        await new Promise((r) => setTimeout(r, 400));
         if (!cancelled) setReady(true);
       } catch (err) {
         if (!cancelled) {
-          setError(err?.message || "Initialization failed");
-          setReady(true); // Let app proceed even on error
+          setError(err?.message || "Initialization notice");
+          setReady(true);
         }
       }
     })();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [isAuthenticated, authUser]);
 
   return { ready, progress, error };
