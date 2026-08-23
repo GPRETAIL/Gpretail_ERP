@@ -50,6 +50,15 @@ export default function PurchaseScreen({ onNavigate }) {
 
   useEffect(() => {
     loadBills();
+
+    const handleNetworkRestored = () => {
+      loadBills();
+    };
+
+    window.addEventListener("vx-network-restored", handleNetworkRestored);
+    return () => {
+      window.removeEventListener("vx-network-restored", handleNetworkRestored);
+    };
   }, [loadBills]);
 
   const mapStatus = (bill) => {

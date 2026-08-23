@@ -1,29 +1,46 @@
 import { useState, useEffect } from "react";
 
 /**
- * Tracks browser online/offline state.
- * Returns { isOnline, wasOffline } — wasOffline is true briefly after reconnection.
+ * Tracks browser online/offline status with network restoration triggers.
+ * 
+ * Features:
+ * - isOnline: boolean
+ * - wasOffline: boolean (active for 4s following reconnection)
+ * - Broadcasts 'vx-network-restored' event when returning online so screens auto-refresh data.
  */
 export default function useNetworkStatus() {
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [isOnline, setIsOnline] = useState(
+    typeof navigator !== "undefined" ? navigator.onLine : true
+  );
   const [wasOffline, setWasOffline] = useState(false);
 
   useEffect(() => {
-    const goOnline = () => {
+    const handleOnline = () => {
       setIsOnline(true);
       setWasOffline(true);
-      // Clear the "was offline" flag after showing the reconnection toast
-      setTimeout(() => setWasOffline(false), 3000);
-    };
-    const goOffline = () => {
-      setIsOnline(false);
+
+      // Notify active screens to re-fetch live backend data
+      window.dispatchEvent(new CustomEvent("vx-network-restored"));
+
+      // Keep reconnection notification active for 4 seconds
+      const timer = setTimeout(() => {
+        setWasOffline(false);
+      }, 4000);
+
+      return () => clearTimeout(timer);
     };
 
-    window.addEventListener("online", goOnline);
-    window.addEventListener("offline", goOffline);
+    const handleOffline = () => {
+      setIsOnline(false);
+      setWasOffline(false);
+    };
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
     return () => {
-      window.removeEventListener("online", goOnline);
-      window.removeEventListener("offline", goOffline);
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
     };
   }, []);
 

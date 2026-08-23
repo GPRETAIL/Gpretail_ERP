@@ -20,27 +20,38 @@ export default function InventoryScreen({ onNavigate, onSelectProduct }) {
   const [data, setData] = useState(null);
   const [products, setProducts] = useState([]);
 
-  useEffect(() => {
-    (async () => {
-      setLoading(true);
-      try {
-        const [invRes, prodRes] = await Promise.all([
-          api.get("/warehouse/dashboard"),
-          api.get("/products", { params: { limit: 10 } }),
-        ]);
-        setData(invRes.data?.data || invRes.data || {});
-        const prodData = prodRes.data?.data;
-        const prodList = Array.isArray(prodData)
-          ? prodData
-          : prodData?.data || prodData?.items || [];
-        setProducts(prodList);
-      } catch {
-        // Silently handle
-      } finally {
-        setLoading(false);
-      }
-    })();
+  const loadInventory = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [invRes, prodRes] = await Promise.all([
+        api.get("/warehouse/dashboard"),
+        api.get("/products", { params: { limit: 10 } }),
+      ]);
+      setData(invRes.data?.data || invRes.data || {});
+      const prodData = prodRes.data?.data;
+      const prodList = Array.isArray(prodData)
+        ? prodData
+        : prodData?.data || prodData?.items || [];
+      setProducts(prodList);
+    } catch {
+      // Silently handle
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadInventory();
+
+    const handleNetworkRestored = () => {
+      loadInventory();
+    };
+
+    window.addEventListener("vx-network-restored", handleNetworkRestored);
+    return () => {
+      window.removeEventListener("vx-network-restored", handleNetworkRestored);
+    };
+  }, [loadInventory]);
 
   // Extract metrics from warehouse dashboard data
   const totalProducts = data?.inventory?.totalProducts ?? data?.totalProducts ?? data?.metrics?.totalProducts ?? 0;

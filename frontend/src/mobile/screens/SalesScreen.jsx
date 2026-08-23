@@ -56,6 +56,15 @@ export default function SalesScreen({ onNavigate }) {
 
   useEffect(() => {
     loadSales();
+
+    const handleNetworkRestored = () => {
+      loadSales();
+    };
+
+    window.addEventListener("vx-network-restored", handleNetworkRestored);
+    return () => {
+      window.removeEventListener("vx-network-restored", handleNetworkRestored);
+    };
   }, [loadSales]);
 
   // Client-side filter

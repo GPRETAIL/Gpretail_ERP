@@ -8,6 +8,7 @@ import Splash from "./components/Splash";
 import MobileHeader from "./components/MobileHeader";
 import BottomNav from "./components/BottomNav";
 import OfflineBanner from "./components/OfflineBanner";
+import PwaUpdateBanner from "./components/PwaUpdateBanner";
 import DashboardScreen from "./screens/DashboardScreen";
 import ModulesScreen from "./screens/ModulesScreen";
 import SalesScreen from "./screens/SalesScreen";
@@ -118,6 +119,9 @@ export default function VynerixMobileApp() {
 
       {/* Offline Banner */}
       <OfflineBanner isOnline={isOnline} wasOffline={wasOffline} />
+
+      {/* PWA Update Notification */}
+      <PwaUpdateBanner />
 
       {/* Main Content Area */}
       <main className="vx-ws-main" style={{ paddingBottom: 80 }}>

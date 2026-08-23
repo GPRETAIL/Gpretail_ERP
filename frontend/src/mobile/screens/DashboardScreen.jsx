@@ -64,6 +64,15 @@ export default function DashboardScreen({ onNavigate }) {
 
   useEffect(() => {
     loadDashboard();
+
+    const handleNetworkRestored = () => {
+      loadDashboard();
+    };
+
+    window.addEventListener("vx-network-restored", handleNetworkRestored);
+    return () => {
+      window.removeEventListener("vx-network-restored", handleNetworkRestored);
+    };
   }, [loadDashboard]);
 
   const { pullHandlers } = usePullToRefresh(loadDashboard);
