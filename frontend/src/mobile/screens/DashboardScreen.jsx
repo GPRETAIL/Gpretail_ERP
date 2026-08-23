@@ -7,6 +7,8 @@ import {
   ChevronRight,
   AlertTriangle,
   FileText,
+  CreditCard,
+  Users,
 } from "lucide-react";
 import api from "../../api/axios";
 import { setCachedData, getCachedData } from "../offline/db";
@@ -110,23 +112,33 @@ export default function DashboardScreen({ onNavigate }) {
     return () => window.removeEventListener("vx-network-restored", handleRestored);
   }, [loadDashboardData]);
 
-  // Extract core metrics from the real /dashboard/overview response shape:
-  // { metrics: { totalBills: {amount,count,trend}, settlements: {amount,trend}, stockValue: {amount,trend} } }
-  // Earlier field names here (metrics.totalSales, metrics.totalOrders, overviewData.settlementDetails,
-  // tables.fastMovingSection, etc.) never matched anything the API actually returns, so every value
-  // silently fell through to a hardcoded demo number - a real store showing genuine 0 sales today
-  // would have displayed "Rs 84,250.00" instead. Only wire up fields that actually exist in the
-  // response; the sections below with no real backend aggregate yet are hidden rather than faked.
+  // Extract core metrics from the real /dashboard/overview response shape -
+  // the same four cards the desktop Dashboard.jsx renders (Total Bills,
+  // Settlement, Employees, Stock value), so mobile and desktop agree on
+  // both the numbers and the labels instead of mobile inventing its own
+  // "Net Sales"/"Closing Stock" names for the same underlying fields.
   const metrics = overviewData?.metrics || {};
 
-  const hasSalesData = metrics.totalBills != null;
-  const totalSales = Number(metrics.totalBills?.amount ?? 0);
-  const totalOrders = Number(metrics.totalBills?.count ?? 0);
-  const salesTrend = metrics.totalBills?.trend?.changePercent ?? null;
-  const salesTrendDirection = metrics.totalBills?.trend?.direction ?? null;
+  const hasBillsData = metrics.totalBills != null;
+  const totalBillsAmount = Number(metrics.totalBills?.amount ?? 0);
+  const totalBillsCount = Number(metrics.totalBills?.count ?? 0);
+  const unsettledCount = Number(metrics.totalBills?.unsettledCount ?? 0);
+  const billsTrend = metrics.totalBills?.trend?.changePercent ?? null;
+  const billsTrendDirection = metrics.totalBills?.trend?.direction ?? null;
+
+  const hasSettlementData = metrics.settlements != null;
+  const settlementAmount = Number(metrics.settlements?.amount ?? 0);
+  const settlementTrend = metrics.settlements?.trend?.changePercent ?? null;
+  const settlementTrendDirection = metrics.settlements?.trend?.direction ?? null;
+
+  const hasEmployeeData = metrics.employees != null;
+  const employeesPresent = Number(metrics.employees?.present ?? 0);
+  const employeesTotal = Number(metrics.employees?.total ?? 0);
 
   const hasStockData = metrics.stockValue != null;
   const totalStockVal = Number(metrics.stockValue?.amount ?? 0);
+  const stockTrend = metrics.stockValue?.trend?.changePercent ?? null;
+  const stockTrendDirection = metrics.stockValue?.trend?.direction ?? null;
 
   return (
     <div className="space-y-3.5 pb-8">
@@ -257,10 +269,10 @@ export default function DashboardScreen({ onNavigate }) {
         </div>
       </div>
 
-      {/* ─── 3. Primary KPI Cards (only metrics with a real backend source) ─── */}
+      {/* ─── 3. Primary KPI Cards — mirrors desktop Dashboard.jsx's 4 cards exactly ─── */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "10px" }}>
 
-        {/* CARD 1: Net Sales + Bills + Trend */}
+        {/* CARD 1: Total Bills */}
         <div
           onClick={() => onNavigate("sales")}
           className="p-3 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-white to-white border border-emerald-200/80 shadow-xs active:scale-98 transition-all cursor-pointer flex flex-col justify-between"
@@ -268,7 +280,7 @@ export default function DashboardScreen({ onNavigate }) {
           <div>
             <div className="flex items-center justify-between mb-1">
               <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700">
-                Net Sales
+                Total Bills
               </span>
               <div className="w-5 h-5 rounded-md bg-emerald-100 text-emerald-700 flex items-center justify-center">
                 <TrendingUp size={12} />
@@ -276,27 +288,85 @@ export default function DashboardScreen({ onNavigate }) {
             </div>
 
             <div className="text-[14px] font-black text-slate-900 tracking-tight leading-snug">
-              {hasSalesData ? money(totalSales) : "—"}
+              {hasBillsData ? money(totalBillsAmount) : "—"}
             </div>
           </div>
 
           {/* Sub-Quantities */}
           <div className="mt-2 pt-1.5 border-t border-emerald-100/70 flex items-center justify-between text-[9.5px] text-slate-600 font-semibold">
-            <span>{totalOrders} Bills</span>
-            {salesTrend != null && (
+            <span>{totalBillsCount} Bills ({unsettledCount} unsettled)</span>
+            {billsTrend != null && (
               <span
                 className={`font-bold ${
-                  salesTrendDirection === "down" ? "text-rose-600" : "text-emerald-600"
+                  billsTrendDirection === "down" ? "text-rose-600" : "text-emerald-600"
                 }`}
               >
-                {salesTrendDirection === "down" ? "↓" : "↑"}
-                {salesTrend}%
+                {billsTrendDirection === "down" ? "↓" : "↑"}
+                {billsTrend}%
               </span>
             )}
           </div>
         </div>
 
-        {/* CARD 2: Closing Stock Valuation */}
+        {/* CARD 2: Settlement */}
+        <div
+          onClick={() => onNavigate("sales")}
+          className="p-3 rounded-2xl bg-gradient-to-br from-blue-500/10 via-white to-white border border-blue-200/80 shadow-xs active:scale-98 transition-all cursor-pointer flex flex-col justify-between"
+        >
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] font-black uppercase tracking-wider text-blue-700">
+                Settlement
+              </span>
+              <div className="w-5 h-5 rounded-md bg-blue-100 text-blue-700 flex items-center justify-center">
+                <CreditCard size={12} />
+              </div>
+            </div>
+
+            <div className="text-[14px] font-black text-slate-900 tracking-tight leading-snug">
+              {hasSettlementData ? money(settlementAmount) : "—"}
+            </div>
+          </div>
+
+          <div className="mt-2 pt-1.5 border-t border-blue-100/70 flex items-center justify-end text-[9.5px] text-slate-600 font-semibold">
+            {settlementTrend != null && (
+              <span
+                className={`font-bold ${
+                  settlementTrendDirection === "down" ? "text-rose-600" : "text-emerald-600"
+                }`}
+              >
+                {settlementTrendDirection === "down" ? "↓" : "↑"}
+                {settlementTrend}%
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* CARD 3: Employees (Present / Total) */}
+        <div
+          className="p-3 rounded-2xl bg-gradient-to-br from-amber-500/10 via-white to-white border border-amber-200/80 shadow-xs flex flex-col justify-between"
+        >
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] font-black uppercase tracking-wider text-amber-700">
+                Employees
+              </span>
+              <div className="w-5 h-5 rounded-md bg-amber-100 text-amber-700 flex items-center justify-center">
+                <Users size={12} />
+              </div>
+            </div>
+
+            <div className="text-[14px] font-black text-slate-900 tracking-tight leading-snug">
+              {hasEmployeeData ? `${employeesPresent}/${employeesTotal}` : "—"}
+            </div>
+          </div>
+
+          <div className="mt-2 pt-1.5 border-t border-amber-100/70 text-[9.5px] text-slate-600 font-semibold">
+            Present / total
+          </div>
+        </div>
+
+        {/* CARD 4: Stock value */}
         <div
           onClick={() => onNavigate("inventory")}
           className="p-3 rounded-2xl bg-gradient-to-br from-purple-500/10 via-white to-white border border-purple-200/80 shadow-xs active:scale-98 transition-all cursor-pointer flex flex-col justify-between"
@@ -304,7 +374,7 @@ export default function DashboardScreen({ onNavigate }) {
           <div>
             <div className="flex items-center justify-between mb-1">
               <span className="text-[10px] font-black uppercase tracking-wider text-purple-700">
-                Closing Stock
+                Stock value
               </span>
               <div className="w-5 h-5 rounded-md bg-purple-100 text-purple-700 flex items-center justify-center">
                 <Package size={12} />
@@ -314,6 +384,19 @@ export default function DashboardScreen({ onNavigate }) {
             <div className="text-[14px] font-black text-slate-900 tracking-tight leading-snug">
               {hasStockData ? money(totalStockVal) : "—"}
             </div>
+          </div>
+
+          <div className="mt-2 pt-1.5 border-t border-purple-100/70 flex items-center justify-end text-[9.5px] text-slate-600 font-semibold">
+            {stockTrend != null && (
+              <span
+                className={`font-bold ${
+                  stockTrendDirection === "down" ? "text-rose-600" : "text-emerald-600"
+                }`}
+              >
+                {stockTrendDirection === "down" ? "↓" : "↑"}
+                {stockTrend}%
+              </span>
+            )}
           </div>
         </div>
       </div>
