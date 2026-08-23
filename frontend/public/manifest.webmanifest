@@ -1,14 +1,65 @@
 {
   "name": "Vynerix ERP",
-  "short_name": "Vynerix ERP",
-  "description": "Vynerix ERP responsive progressive web application",
+  "short_name": "Vynerix",
+  "description": "Vynerix ERP - Cloud Point of Sale, Warehouse & Inventory Management Mobile App",
   "start_url": "/app/",
   "scope": "/",
+  "id": "/app/",
   "display": "standalone",
+  "display_override": ["standalone", "window-controls-overlay", "minimal-ui"],
   "orientation": "portrait-primary",
-  "background_color": "#f6f7fb",
-  "theme_color": "#4338ca",
+  "background_color": "#0f172a",
+  "theme_color": "#4f46e5",
+  "categories": ["business", "finance", "productivity", "shopping", "utilities"],
   "icons": [
-    { "src": "/pwa-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
-  ]
+    {
+      "src": "/pwa-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/pwa-icon.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Mobile Workspace",
+      "short_name": "Mobile App",
+      "description": "Open Vynerix Mobile Operations Workspace",
+      "url": "/app/",
+      "icons": [{ "src": "/pwa-icon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "POS Quick Billing",
+      "short_name": "POS Sale",
+      "description": "Open POS Quick Billing Screen",
+      "url": "/sales/pos-sales",
+      "icons": [{ "src": "/pwa-icon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Warehouse Dashboard",
+      "short_name": "Warehouse",
+      "description": "Open Warehouse Stock & Consignments",
+      "url": "/warehouse",
+      "icons": [{ "src": "/pwa-icon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Direct Purchase",
+      "short_name": "Purchase",
+      "description": "Inward Purchase Stock",
+      "url": "/warehouse/direct-purchase",
+      "icons": [{ "src": "/pwa-icon.svg", "sizes": "any" }]
+    }
+  ],
+  "prefer_related_applications": false
 }

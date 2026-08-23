@@ -11,11 +11,16 @@ import ThemeProvider from "./features/ThemeProvider.jsx";
 import TenantThemeProvider from "./theme/TenantThemeProvider.jsx";
 import { PrintProvider } from "./context/PrintContext.jsx";
 
-if ("serviceWorker" in navigator && import.meta.env.PROD) {
+if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch((error) => {
-      console.warn("Vynerix PWA service worker registration failed", error);
-    });
+    navigator.serviceWorker
+      .register("/sw.js", { scope: "/" })
+      .then((reg) => {
+        console.log("[PWA] ServiceWorker registered with scope:", reg.scope);
+      })
+      .catch((error) => {
+        console.warn("[PWA] ServiceWorker registration failed:", error);
+      });
   });
 }
 

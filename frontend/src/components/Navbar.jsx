@@ -10,6 +10,7 @@ import {
   UserIcon,
   PrinterIcon,
   XMarkIcon,
+  DevicePhoneMobileIcon,
 } from "@heroicons/react/24/outline";
 import {
   AppBar,
@@ -670,6 +671,31 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
                   <Cog6ToothIcon className="w-5 h-5" />
                 </ListItemIcon>
                 <ListItemText>Settings</ListItemText>
+              </MenuItem>
+
+              <MenuItem
+                onClick={() => {
+                  closeMenu();
+                  navigateActiveTab("/app/");
+                }}
+              >
+                <ListItemIcon>
+                  <DevicePhoneMobileIcon className="w-5 h-5" />
+                </ListItemIcon>
+                <ListItemText>Mobile Workspace</ListItemText>
+              </MenuItem>
+
+              <MenuItem
+                onClick={() => {
+                  closeMenu();
+                  window.dispatchEvent(new CustomEvent("pwa-show-install-prompt"));
+                }}
+                sx={{ color: "primary.main", fontWeight: 600 }}
+              >
+                <ListItemIcon sx={{ color: "inherit" }}>
+                  <DevicePhoneMobileIcon className="w-5 h-5" />
+                </ListItemIcon>
+                <ListItemText>Install Mobile App</ListItemText>
               </MenuItem>
 
               <Divider />
