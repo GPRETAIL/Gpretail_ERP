@@ -15,6 +15,14 @@ import VynerixMobileApp from "./mobile/MobileAppV2";
 import PwaInstallPrompt from "./components/PwaInstallPrompt";
 
 function App() {
+  // Normalize capital /App path to lowercase /app for case-insensitive mobile routing
+  if (window.location.pathname.toLowerCase() === "/app" || window.location.pathname.toLowerCase().startsWith("/app/")) {
+    if (!window.location.pathname.startsWith("/app")) {
+      window.location.replace("/app" + window.location.pathname.substring(4));
+      return null;
+    }
+  }
+
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
   const authUser = useSelector((state) => state.auth.user);
   const homePath = "/dashboard";
