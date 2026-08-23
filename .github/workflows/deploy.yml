@@ -15,9 +15,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
       - name: Setup Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
@@ -32,7 +32,7 @@ jobs:
         working-directory: frontend
         run: npm run build
       - name: Upload Frontend Artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: frontend-dist
           path: frontend/dist/
@@ -43,7 +43,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -72,7 +72,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
       - name: Setup PHP for Production Deployment Package
         uses: shivammathur/setup-php@v2
         with:
@@ -83,7 +83,7 @@ jobs:
         working-directory: backend-laravel
         run: composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --ignore-platform-req=php+
       - name: Download Frontend Build
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v4
         with:
           name: frontend-dist
           path: frontend-dist/
@@ -110,7 +110,7 @@ jobs:
           cp deploy.zip ftp_upload/
           cp backend-laravel/unzip.php ftp_upload/
       - name: Upload Deployment Archive to GitHub Artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: hostinger-deployment-package
           path: deploy.zip

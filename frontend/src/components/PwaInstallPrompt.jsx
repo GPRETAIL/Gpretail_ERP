@@ -138,19 +138,26 @@ export default function PwaInstallPrompt() {
     );
   }
 
-  // Hide if dismissed and not showing iOS guide
+  // Check if mobile device
+  const isMobile =
+    isIos ||
+    /android|iphone|ipad|ipod|mobile/i.test(
+      (typeof navigator !== "undefined" ? navigator.userAgent : "").toLowerCase()
+    );
+
+  // Hide if dismissed and not showing guide
   if (dismissed && !showIosGuide) {
     return null;
   }
 
-  // Only show banner if installable OR iOS
-  const shouldShow = isInstallable || isIos;
+  // Show banner on mobile browsers, or when beforeinstallprompt is ready, or when iOS
+  const shouldShow = isMobile || isInstallable || isIos;
   if (!shouldShow && !showIosGuide) {
     return null;
   }
 
   return (
-    <div className="fixed bottom-4 left-3 right-3 z-50 mx-auto max-w-lg animate-in fade-in slide-in-from-bottom-6 duration-300 sm:bottom-6 sm:left-auto sm:right-6">
+    <div className="fixed bottom-[72px] left-3 right-3 z-50 mx-auto max-w-lg animate-in fade-in slide-in-from-bottom-6 duration-300 sm:bottom-6 sm:left-auto sm:right-6">
       <div className="relative overflow-hidden rounded-2xl border border-indigo-500/30 bg-slate-900/95 p-4 text-white shadow-2xl shadow-indigo-950/60 backdrop-blur-xl transition-all">
         {/* Decorative background glow */}
         <div className="pointer-events-none absolute -top-12 -right-12 h-32 w-32 rounded-full bg-indigo-500/20 blur-2xl" />
@@ -219,15 +226,19 @@ export default function PwaInstallPrompt() {
             </div>
           </div>
         ) : (
-          /* iOS Step-by-Step Guide */
+          /* Step-by-Step Home Screen Guide */
           <div className="flex flex-col gap-3 pr-4">
             <div className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-500/20 text-indigo-400">
                 <Smartphone className="h-4 w-4" />
               </div>
               <div>
-                <h4 className="text-sm font-bold text-white">Install on iPhone / iPad</h4>
-                <p className="text-[11px] text-slate-400">Follow 2 simple steps in Safari</p>
+                <h4 className="text-sm font-bold text-white">
+                  {isIos ? "Install on iPhone / iPad" : "Add to Home Screen"}
+                </h4>
+                <p className="text-[11px] text-slate-400">
+                  {isIos ? "Follow 2 simple steps in Safari" : "Follow these quick steps in your browser"}
+                </p>
               </div>
             </div>
 
@@ -237,7 +248,11 @@ export default function PwaInstallPrompt() {
                   1
                 </span>
                 <span>
-                  Tap the <strong className="text-indigo-300 font-semibold inline-flex items-center gap-1"><Share2 className="h-3.5 w-3.5 inline" /> Share</strong> button in Safari's bottom bar.
+                  {isIos ? (
+                    <>Tap the <strong className="text-indigo-300 font-semibold inline-flex items-center gap-1"><Share2 className="h-3.5 w-3.5 inline" /> Share</strong> button in Safari's bottom bar.</>
+                  ) : (
+                    <>Tap the browser menu <strong className="text-indigo-300 font-semibold">⋮ (three dots)</strong> in the top right corner.</>
+                  )}
                 </span>
               </div>
               <div className="flex items-center gap-2.5">
@@ -245,7 +260,15 @@ export default function PwaInstallPrompt() {
                   2
                 </span>
                 <span>
-                  Scroll down & select <strong className="text-indigo-300 font-semibold inline-flex items-center gap-1"><PlusSquare className="h-3.5 w-3.5 inline" /> Add to Home Screen</strong>.
+                  Scroll down & select <strong className="text-indigo-300 font-semibold inline-flex items-center gap-1"><PlusSquare className="h-3.5 w-3.5 inline" /> Add to Home Screen / Install App</strong>.
+                </span>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-indigo-500 text-[10px] font-bold text-white">
+                  3
+                </span>
+                <span>
+                  Tap <strong className="text-indigo-300 font-semibold">Add / Install</strong> to launch Vynerix ERP anytime!
                 </span>
               </div>
             </div>

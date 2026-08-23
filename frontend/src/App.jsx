@@ -33,9 +33,8 @@ function App() {
               />
               <Route path="/login" element={isAuthenticated ? <Navigate to={homePath} replace /> : <Login />} />
               <Route path="/set-password" element={<SetPassword />} />
-              <Route path="/register" element={isAuthenticated ? <Navigate to={homePath} replace /> : <Register />} />
+              <Route path="/app/*" element={<VynerixMobileApp />} />
               <Route element={<ProtectedRoute />}>
-                <Route path="/app/*" element={<VynerixMobileApp />} />
                 <Route path="*" element={<MainLayout />} />
               </Route>
               <Route path="/" element={isAuthenticated ? <Navigate to={homePath} replace /> : <Navigate to="/login" replace />} />

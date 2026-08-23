@@ -17,6 +17,7 @@ import InventoryScreen from "./screens/InventoryScreen";
 import ProductDetailScreen from "./screens/ProductDetailScreen";
 import ReportsScreen from "./screens/ReportsScreen";
 import SettingsScreen from "./screens/SettingsScreen";
+import MobileLoginScreen from "./screens/MobileLoginScreen";
 import "./workspace.css";
 
 // Screen title map
@@ -44,12 +45,14 @@ const ROOT_SCREENS = new Set(["dashboard", "modules", "sales", "purchase", "inve
  * This is the main entry point for the /app/ mobile experience.
  * It orchestrates:
  *   1. Splash screen with real initialization
- *   2. Mobile header with notifications
- *   3. Screen routing (state-based, not URL-based for native feel)
- *   4. Bottom navigation
- *   5. Offline awareness
+ *   2. Mobile login if unauthenticated
+ *   3. Mobile header with notifications
+ *   4. Screen routing (state-based, not URL-based for native feel)
+ *   5. Bottom navigation
+ *   6. Offline awareness
  */
 export default function VynerixMobileApp() {
+  const isAuthenticated = useSelector((s) => s.auth.isAuthenticated);
   const authUser = useSelector((s) => s.auth.user);
   const dispatch = useDispatch();
   const appNavigate = useNavigate();
@@ -80,8 +83,8 @@ export default function VynerixMobileApp() {
 
   const handleLogout = useCallback(() => {
     dispatch(logoutUser());
-    appNavigate("/login");
-  }, [dispatch, appNavigate]);
+    setPage("dashboard");
+  }, [dispatch]);
 
   const triggerInstall = useCallback(() => {
     window.dispatchEvent(new CustomEvent("pwa-show-install-prompt"));
@@ -90,6 +93,15 @@ export default function VynerixMobileApp() {
   // Show splash until initialization is complete
   if (!ready) {
     return <Splash progress={progress} />;
+  }
+
+  // If not authenticated after splash, show dedicated mobile login
+  if (!isAuthenticated) {
+    return (
+      <div className="vx-workspace min-h-screen bg-slate-50">
+        <MobileLoginScreen onLoginSuccess={() => setPage("dashboard")} />
+      </div>
+    );
   }
 
   const canGoBack = !ROOT_SCREENS.has(page) && history.length > 1;
