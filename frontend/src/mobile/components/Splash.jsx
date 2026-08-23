@@ -1,41 +1,17 @@
 import React from "react";
+import VynerixVLogo from "./VynerixVLogo";
 import "../../mobile/workspace.css";
 
 /**
  * Branded Vynerix ERP splash / loading screen.
- * Matches user's exact reference design with royal blue background,
- * glowing layered logo, clean bold typography, and smooth progress indicator.
  */
 export default function Splash({ progress = 0 }) {
   return (
     <div className="vx-splash-screen">
       {/* Centered Brand Content */}
       <div className="vx-splash-content">
-        {/* Layered Glowing V Logo Box */}
         <div className="vx-splash-logo-card">
-          <svg
-            viewBox="0 0 100 100"
-            className="w-16 h-16"
-            style={{
-              filter:
-                "drop-shadow(0 0 14px rgba(255,255,255,0.85)) drop-shadow(0 0 30px rgba(165,180,252,0.9)) drop-shadow(0 0 50px rgba(99,102,241,0.55))",
-            }}
-            aria-hidden
-          >
-            <defs>
-              <linearGradient id="vynerixVGrad" x1="20" y1="20" x2="80" y2="90" gradientUnits="userSpaceOnUse">
-                <stop offset="0%" stopColor="#ffffff" />
-                <stop offset="100%" stopColor="#c7d2fe" />
-              </linearGradient>
-              <clipPath id="vynerixVClip">
-                <path d="M18 20 L38 20 L50 64 L62 20 L82 20 L59 86 L41 86 Z" />
-              </clipPath>
-            </defs>
-            <path d="M18 20 L38 20 L50 64 L62 20 L82 20 L59 86 L41 86 Z" fill="url(#vynerixVGrad)" />
-            <g clipPath="url(#vynerixVClip)">
-              <path d="M50 55 L72 80 L50 100 L28 80 Z" fill="#ffffff" fillOpacity="0.32" />
-            </g>
-          </svg>
+          <VynerixVLogo variant="splash" size={110} animated />
         </div>
 
         {/* Title */}

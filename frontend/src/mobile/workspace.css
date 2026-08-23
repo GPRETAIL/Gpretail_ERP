@@ -11,6 +11,17 @@
   --vx-text: #0f172a;
   --vx-muted: #64748b;
   --vx-border: #e2e8f0;
+
+  /* Vynerix brand mark tokens */
+  --vynerix-indigo: #3332c3;
+  --vynerix-indigo-light: #4d4bf3;
+  --vynerix-indigo-deep: #302fae;
+  --logo-white: #ffffff;
+  --logo-silver: #ededf5;
+  --logo-lavender: #c8c8f2;
+  --logo-purple: #9997ea;
+  --logo-overlap: #7775e9;
+  --logo-glow: rgba(130, 128, 255, 0.22);
 }
 
 /* Global Mobile App Wrapper */
@@ -29,7 +40,7 @@
   flex-direction: column;
 }
 
-/* ─── 1. Splash Screen (Pixel-perfect matching reference image) ──────── */
+/* ─── 1. Splash Screen ────────────────────────────────────────────────── */
 .vx-splash-screen {
   position: fixed;
   inset: 0;
@@ -38,7 +49,13 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(165deg, #3d4ef8 0%, #2938e8 55%, #1c29be 100%);
+  background: radial-gradient(
+    circle at 50% 48%,
+    #4d4bf3 0%,
+    #3b3acb 28%,
+    #3332c3 65%,
+    #3231c0 100%
+  );
   color: #ffffff;
   padding: 24px;
   animation: vxFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
@@ -57,76 +74,86 @@
 }
 
 .vx-splash-logo-card {
-  width: 92px;
-  height: 92px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 24px;
-  position: relative;
-  animation: vxFloat 3s ease-in-out infinite;
+  margin-bottom: 35px;
 }
 
-.vx-splash-logo-card::before {
-  content: "";
-  position: absolute;
-  inset: -35%;
-  background: radial-gradient(circle, rgba(199, 210, 254, 0.55) 0%, rgba(129, 140, 248, 0.28) 45%, transparent 72%);
-  filter: blur(4px);
-  z-index: -1;
+.vx-v-logo-animated {
+  animation:
+    vynerixLogoReveal 650ms cubic-bezier(0.22, 1, 0.36, 1) both,
+    vynerixBreath 3s ease-in-out 700ms infinite;
 }
 
-@keyframes vxFloat {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-4px); }
+@keyframes vynerixLogoReveal {
+  0% { opacity: 0; transform: scale(0.82); filter: blur(6px); }
+  60% { opacity: 1; transform: scale(1.03); filter: blur(0); }
+  100% { opacity: 1; transform: scale(1); filter: blur(0); }
+}
+
+@keyframes vynerixBreath {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.018); }
+}
+
+@keyframes vxFadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .vx-splash-logo-card { animation: none; }
+  .vx-v-logo-animated { animation: none; }
+  .vx-splash-brand-name, .vx-splash-tagline, .vx-splash-progress-track { animation: none !important; opacity: 1 !important; }
 }
 
 .vx-splash-brand-name {
-  font-size: 34px;
-  font-weight: 900;
-  letter-spacing: -0.03em;
+  font-size: 52px;
+  font-weight: 700;
+  letter-spacing: -2px;
   line-height: 1.05;
   margin: 0;
-  color: #ffffff;
-}
-
-.vx-splash-brand-erp {
-  font-size: 34px;
-  font-weight: 900;
-  letter-spacing: -0.03em;
-  line-height: 1.05;
-  margin: 0;
-  color: #ffffff;
+  color: #f7f7ff;
+  opacity: 0;
+  animation: vxFadeUp 400ms ease-out 900ms both;
 }
 
 .vx-splash-tagline {
-  font-size: 13.5px;
+  font-size: clamp(16px, 4vw, 22px);
   color: rgba(255, 255, 255, 0.85);
-  margin-top: 10px;
-  letter-spacing: 0.02em;
+  margin-top: 14px;
+  letter-spacing: 0;
   font-weight: 500;
+  opacity: 0;
+  animation: vxFadeUp 400ms ease-out 1000ms both;
 }
 
 .vx-splash-progress-track {
-  width: 170px;
-  height: 5px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.22);
-  margin-top: 40px;
+  position: absolute;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  max-width: 220px;
+  height: 7px;
+  border-radius: 10px;
+  background: rgba(117, 124, 255, 0.25);
   overflow: hidden;
-  position: relative;
+  opacity: 0;
+  animation: vxFadeIn2 400ms ease-out 1200ms both;
+}
+
+@keyframes vxFadeIn2 {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .vx-splash-progress-fill {
   height: 100%;
-  border-radius: 999px;
-  background: #ffffff;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #ffffff, #dcdfff, #9c9eff);
   transition: width 0.35s ease;
-  box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.45);
 }
 
 /* ─── 2. Top Header Bar ──────────────────────────────────────────────── */
