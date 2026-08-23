@@ -17,6 +17,14 @@ class SalesReportController extends Controller
     {
         $query = PosSale::with(['customer', 'user', 'items.product', 'payments']);
 
+        // Same gap found and fixed in PurchaseInvoiceController/PosReturnController
+        // this session - never scoped by store, so every store's sales fed every
+        // report tab on this page regardless of X-Company-Scope-Id.
+        $storeId = $request->header('X-Company-Scope-Id');
+        if ($storeId && $storeId !== 'all') {
+            $query->where('store_id', $storeId);
+        }
+
         if ($request->filled('start_date') && $request->filled('end_date')) {
             $query->whereBetween('sale_date', [$request->input('start_date'), $request->input('end_date')]);
         }

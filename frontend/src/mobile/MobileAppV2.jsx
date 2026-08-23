@@ -21,6 +21,8 @@ import InventoryScreen from "./screens/InventoryScreen";
 import ProductDetailScreen from "./screens/ProductDetailScreen";
 import SupplierDuesScreen from "./screens/SupplierDuesScreen";
 import FastMovingScreen from "./screens/FastMovingScreen";
+import SalesSummaryScreen from "./screens/SalesSummaryScreen";
+import PurchaseSummaryScreen from "./screens/PurchaseSummaryScreen";
 import ReportsScreen from "./screens/ReportsScreen";
 import ReportDetailScreen from "./screens/ReportDetailScreen";
 import SettingsScreen from "./screens/SettingsScreen";
@@ -35,12 +37,14 @@ const TITLES = {
   modules: "Modules",
   sales: "Sales Invoices",
   create_invoice: "Create Invoice",
-  purchase: "Purchase Bills",
+  purchase: "Purchase Invoices",
   returns: "Return Invoices",
   inventory: "Inventory Summary",
   product_details: "Product Details",
   supplier_dues: "Supplier Dues",
   fast_moving: "Fast Moving Products",
+  sales_summary: "Sales Summary",
+  purchase_summary: "Purchase Summary",
   reports: "Reports",
   report_profit_loss: "Profit & Loss",
   report_gst: "GST Report",
@@ -202,6 +206,10 @@ export default function VynerixMobileApp() {
         {page === "supplier_dues" && <SupplierDuesScreen />}
 
         {page === "fast_moving" && <FastMovingScreen />}
+
+        {page === "sales_summary" && <SalesSummaryScreen />}
+
+        {page === "purchase_summary" && <PurchaseSummaryScreen />}
 
         {page === "reports" && <ReportsScreen onNavigate={navigateTo} />}
 

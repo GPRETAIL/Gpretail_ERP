@@ -72,6 +72,13 @@ class DashboardController extends Controller
         $prevReturnDateScope = fn ($q) => $q->whereBetween('return_date', [$prevFrom, $prevTo]);
         $prevTotalReturns = (float) ($prevReturnDateScope($returnScope(DB::table('pos_returns')))->sum('total_refund') ?? 0);
 
+        // Purchase Return - goods sent back to a supplier, a real, separate
+        // concept from a customer's POS return (different table entirely:
+        // purchase_returns, keyed to a supplier_id/purchase_invoice_id).
+        $totalPurchaseReturns = (float) ($returnDateScope($returnScope(DB::table('purchase_returns')))->sum('total_amount') ?? 0);
+        $totalPurchaseReturnCount = (int) ($returnDateScope($returnScope(DB::table('purchase_returns')))->count() ?? 0);
+        $prevTotalPurchaseReturns = (float) ($prevReturnDateScope($returnScope(DB::table('purchase_returns')))->sum('total_amount') ?? 0);
+
         // Purchases - this ERP has two independent real purchase-bill sources
         // (Direct Purchase entries, and Invoices from the Transport Entry ->
         // Invoice -> Inventory Entry flow), so both are summed together
@@ -378,6 +385,11 @@ class DashboardController extends Controller
                         'amount' => $totalReturns,
                         'count'  => $totalReturnCount,
                         'trend'  => $computeTrend($totalReturns, $prevTotalReturns),
+                    ],
+                    'purchaseReturns' => [
+                        'amount' => $totalPurchaseReturns,
+                        'count'  => $totalPurchaseReturnCount,
+                        'trend'  => $computeTrend($totalPurchaseReturns, $prevTotalPurchaseReturns),
                     ],
                     'purchases' => [
                         // Sum of Direct Purchase entries + Invoices (Transport Entry -> Invoice ->

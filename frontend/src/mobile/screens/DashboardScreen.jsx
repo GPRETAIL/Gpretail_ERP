@@ -8,8 +8,10 @@ import {
   AlertTriangle,
   FileText,
   RotateCcw,
+  Undo2,
   Wallet,
   Sparkles,
+  Users,
 } from "lucide-react";
 import api from "../../api/axios";
 import { setCachedData, getCachedData } from "../offline/db";
@@ -175,6 +177,16 @@ export default function DashboardScreen({ onNavigate }) {
   const purchasesCount = Number(metrics.purchases?.count ?? 0);
   const purchasesTrend = metrics.purchases?.trend?.changePercent ?? null;
   const purchasesTrendDirection = metrics.purchases?.trend?.direction ?? null;
+
+  const hasPurchaseReturnsData = metrics.purchaseReturns != null;
+  const purchaseReturnsAmount = Number(metrics.purchaseReturns?.amount ?? 0);
+  const purchaseReturnsCount = Number(metrics.purchaseReturns?.count ?? 0);
+  const purchaseReturnsTrend = metrics.purchaseReturns?.trend?.changePercent ?? null;
+  const purchaseReturnsTrendDirection = metrics.purchaseReturns?.trend?.direction ?? null;
+
+  const hasEmployeeData = metrics.employees != null;
+  const employeesPresent = Number(metrics.employees?.present ?? 0);
+  const employeesTotal = Number(metrics.employees?.total ?? 0);
 
   const hasDuesData = supplierDues != null;
   const duesAmount = Number(supplierDues?.totalPayable ?? 0);
@@ -423,7 +435,42 @@ export default function DashboardScreen({ onNavigate }) {
           </div>
         </div>
 
-        {/* CARD 4: Stock value */}
+        {/* CARD 4: Purchase Return */}
+        <div
+          onClick={() => onNavigate("purchase")}
+          className="p-3 rounded-2xl bg-gradient-to-br from-orange-500/10 via-white to-white border border-orange-200/80 shadow-xs active:scale-98 transition-all cursor-pointer flex flex-col justify-between"
+        >
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] font-black uppercase tracking-wider text-orange-700">
+                Purchase Return
+              </span>
+              <div className="w-5 h-5 rounded-md bg-orange-100 text-orange-700 flex items-center justify-center">
+                <Undo2 size={12} />
+              </div>
+            </div>
+
+            <div className="text-[14px] font-black text-slate-900 tracking-tight leading-snug">
+              {hasPurchaseReturnsData ? money(purchaseReturnsAmount) : "—"}
+            </div>
+          </div>
+
+          <div className="mt-2 pt-1.5 border-t border-orange-100/70 flex items-center justify-between text-[9.5px] text-slate-600 font-semibold">
+            <span>{purchaseReturnsCount} Returns</span>
+            {purchaseReturnsTrend != null && (
+              <span
+                className={`font-bold ${
+                  purchaseReturnsTrendDirection === "down" ? "text-emerald-600" : "text-rose-600"
+                }`}
+              >
+                {purchaseReturnsTrendDirection === "down" ? "↓" : "↑"}
+                {purchaseReturnsTrend}%
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* CARD 5: Stock value */}
         <div
           onClick={() => onNavigate("inventory")}
           className="p-3 rounded-2xl bg-gradient-to-br from-purple-500/10 via-white to-white border border-purple-200/80 shadow-xs active:scale-98 transition-all cursor-pointer flex flex-col justify-between"
@@ -454,6 +501,28 @@ export default function DashboardScreen({ onNavigate }) {
                 {stockTrend}%
               </span>
             )}
+          </div>
+        </div>
+
+        {/* CARD 6: Employees (Present / Total) */}
+        <div className="p-3 rounded-2xl bg-gradient-to-br from-cyan-500/10 via-white to-white border border-cyan-200/80 shadow-xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] font-black uppercase tracking-wider text-cyan-700">
+                Employees
+              </span>
+              <div className="w-5 h-5 rounded-md bg-cyan-100 text-cyan-700 flex items-center justify-center">
+                <Users size={12} />
+              </div>
+            </div>
+
+            <div className="text-[14px] font-black text-slate-900 tracking-tight leading-snug">
+              {hasEmployeeData ? `${employeesPresent}/${employeesTotal}` : "—"}
+            </div>
+          </div>
+
+          <div className="mt-2 pt-1.5 border-t border-cyan-100/70 text-[9.5px] text-slate-600 font-semibold">
+            Present / total
           </div>
         </div>
       </div>
@@ -487,6 +556,11 @@ export default function DashboardScreen({ onNavigate }) {
 
         {duesRows.length > 0 && (
           <div className="mt-2.5 pt-2.5 border-t border-slate-100 space-y-1.5">
+            <div className="flex items-center justify-between gap-2 text-[9px] font-black text-slate-400 uppercase tracking-wider">
+              <span className="flex-1">Supplier Name</span>
+              <span className="shrink-0 text-center" style={{ minWidth: "56px" }}>Overdue Days</span>
+              <span className="shrink-0 text-right" style={{ minWidth: "60px" }}>Value</span>
+            </div>
             {duesRows.slice(0, 5).map((row) => (
               <div
                 key={`${row.invoice_type}-${row.id}`}
@@ -496,10 +570,15 @@ export default function DashboardScreen({ onNavigate }) {
                 <span className="font-semibold text-slate-700 truncate flex-1">
                   {row.supplier_name} · {row.invoice_no}
                 </span>
-                <span className={`font-bold shrink-0 ${daysOutstandingClass(row.days)}`}>
+                <span
+                  className={`font-bold shrink-0 text-center ${daysOutstandingClass(row.days)}`}
+                  style={{ minWidth: "56px" }}
+                >
                   {row.days}d
                 </span>
-                <span className="font-black text-amber-700 shrink-0">{money(row.balance_due)}</span>
+                <span className="font-black text-amber-700 shrink-0 text-right" style={{ minWidth: "60px" }}>
+                  {money(row.balance_due)}
+                </span>
               </div>
             ))}
           </div>
