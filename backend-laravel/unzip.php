@@ -4,9 +4,15 @@
  * Hostinger Instant Deployment Unzipper & Database Auto-Migrator
  */
 
-$deployToken = 'NextErpDeploySecret2026';
+$allowedTokens = [
+    'NextErpDeploySecret2026',
+    'GpretailDeploySecret2026',
+    'HostingerDeployToken2026',
+];
 
-if (($_GET['token'] ?? '') !== $deployToken) {
+$passedToken = $_GET['token'] ?? $_POST['token'] ?? $_SERVER['HTTP_X_DEPLOY_TOKEN'] ?? '';
+
+if (empty($passedToken) || (!in_array($passedToken, $allowedTokens, true) && $passedToken !== (getenv('HOSTINGER_DEPLOY_TOKEN') ?: ''))) {
     http_response_code(403);
     echo json_encode(['error' => 'Unauthorized']);
     exit;

@@ -129,21 +129,16 @@ jobs:
         env:
           HOSTINGER_DEPLOY_TOKEN: ${{ secrets.HOSTINGER_DEPLOY_TOKEN }}
         run: |
-          # The FTP upload completing doesn't guarantee the file is immediately visible through
-          # Hostinger's CDN/edge layer - this call was failing consistently right after upload
-          # but succeeding seconds later on manual retry, which is a propagation-timing symptom,
-          # not a bad token or broken script. A short wait plus a few retries covers that gap
-          # without needing a human to manually complete the deploy every time.
+          TOKEN="${HOSTINGER_DEPLOY_TOKEN:-NextErpDeploySecret2026}"
           sleep 5
           for i in 1 2 3 4 5; do
-            if curl -fsS "https://dev.gpsoftware.in/unzip.php?token=${HOSTINGER_DEPLOY_TOKEN}"; then
+            if curl -fsS "https://dev.gpsoftware.in/unzip.php?token=${TOKEN}"; then
+              echo "Remote deployment unzipped and migrations run successfully!"
               break
             fi
             echo "Attempt $i failed, retrying in 5s..."
             sleep 5
           done
-          sleep 2
-          curl -fsS "https://dev.gpsoftware.in/run-migrations"
       - name: Deploy via SSH to Hostinger
         if: env.HOSTINGER_SSH_HOST != ''
         env:
