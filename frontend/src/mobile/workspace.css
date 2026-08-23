@@ -507,8 +507,8 @@
   position: fixed;
   right: calc(50% - 220px);
   bottom: 82px;
-  width: 52px;
-  height: 52px;
+  width: 54px;
+  height: 54px;
   border-radius: 50%;
   background: linear-gradient(135deg, #4f46e5, #6366f1);
   color: #ffffff;
@@ -517,13 +517,14 @@
   border: 0;
   box-shadow: 0 10px 25px rgba(79, 70, 229, 0.45);
   cursor: pointer;
-  z-index: 45;
+  z-index: 60;
   transition: transform 0.15s ease;
 }
 
 @media (max-width: 480px) {
   .vx-fab-btn {
-    right: 20px;
+    right: 18px;
+    bottom: 78px;
   }
 }
 

@@ -8,66 +8,66 @@ import api from "../../api/axios";
  */
 export default function useAppInit() {
   const isAuthenticated = useSelector((s) => s.auth.isAuthenticated);
-  const authUser = useSelector((s) => s.auth.user);
   const [progress, setProgress] = useState(10);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState(null);
-  const ran = useRef(false);
 
   useEffect(() => {
-    if (ran.current) return;
-    ran.current = true;
-
-    let cancelled = false;
+    let unmounted = false;
     const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
     (async () => {
       try {
         // Milestone 1: App startup
-        if (!cancelled) setProgress(25);
+        if (!unmounted) setProgress(30);
         await sleep(350);
 
         // Milestone 2: Auth verification & preloading
-        if (!cancelled) setProgress(50);
+        if (!unmounted) setProgress(60);
         const token = localStorage.getItem("token");
-        if (token && isAuthenticated) {
+        if (token) {
           try {
-            await api.get("/auth/me");
+            await Promise.race([api.get("/auth/me"), sleep(800)]);
           } catch {
             // Silently continue
           }
         }
-        await sleep(400);
+        await sleep(350);
 
-        // Milestone 3: Preload unread count & cache check
-        if (!cancelled) setProgress(75);
-        if (token && isAuthenticated) {
+        // Milestone 3: Preload unread notifications
+        if (!unmounted) setProgress(85);
+        if (token) {
           try {
-            const res = await api.get("/notifications/unread-count");
-            window.__vx_unread_count = res.data?.data?.count ?? res.data?.count ?? 0;
+            const res = await Promise.race([
+              api.get("/notifications/unread-count"),
+              sleep(600),
+            ]);
+            if (res?.data) {
+              window.__vx_unread_count = res.data?.data?.count ?? res.data?.count ?? 0;
+            }
           } catch {
             window.__vx_unread_count = 0;
           }
         }
-        await sleep(450);
+        await sleep(350);
 
         // Milestone 4: Finalizing
-        if (!cancelled) setProgress(100);
-        await sleep(400);
+        if (!unmounted) setProgress(100);
+        await sleep(300);
 
-        if (!cancelled) setReady(true);
+        if (!unmounted) setReady(true);
       } catch (err) {
-        if (!cancelled) {
-          setError(err?.message || "Initialization notice");
+        if (!unmounted) {
+          setError(err?.message || "Notice");
           setReady(true);
         }
       }
     })();
 
     return () => {
-      cancelled = true;
+      unmounted = true;
     };
-  }, [isAuthenticated, authUser]);
+  }, []); // Run once on app startup
 
   return { ready, progress, error };
 }

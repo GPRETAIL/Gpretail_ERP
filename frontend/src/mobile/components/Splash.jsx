@@ -24,7 +24,6 @@ export default function Splash({ progress = 0 }) {
 
         {/* Title */}
         <h1 className="vx-splash-brand-name">Vynerix</h1>
-        <h2 className="vx-splash-brand-erp">ERP</h2>
 
         {/* Tagline */}
         <p className="vx-splash-tagline">Smart. Secure. Simplified.</p>

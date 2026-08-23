@@ -157,7 +157,7 @@ export default function PwaInstallPrompt() {
   }
 
   return (
-    <div className="fixed bottom-[72px] left-3 right-3 z-50 mx-auto max-w-lg animate-in fade-in slide-in-from-bottom-6 duration-300 sm:bottom-6 sm:left-auto sm:right-6">
+    <div className="fixed bottom-[72px] left-3 right-3 z-40 mx-auto max-w-[440px] animate-in fade-in slide-in-from-bottom-6 duration-300 sm:bottom-6 sm:left-auto sm:right-6">
       <div className="relative overflow-hidden rounded-2xl border border-indigo-500/30 bg-slate-900/95 p-4 text-white shadow-2xl shadow-indigo-950/60 backdrop-blur-xl transition-all">
         {/* Decorative background glow */}
         <div className="pointer-events-none absolute -top-12 -right-12 h-32 w-32 rounded-full bg-indigo-500/20 blur-2xl" />
