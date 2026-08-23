@@ -131,11 +131,17 @@ jobs:
         env:
           HOSTINGER_DEPLOY_TOKEN: ${{ secrets.HOSTINGER_DEPLOY_TOKEN }}
         run: |
-          TOKEN="${HOSTINGER_DEPLOY_TOKEN:-NextErpDeploySecret2026}"
+          # Trim whitespace defensively - a GitHub secret pasted with a
+          # trailing newline is non-empty, so `${VAR:-default}` silently
+          # uses the corrupted value instead of falling back, and every
+          # request then gets a consistent 403 no matter how many times
+          # it's retried (this is what actually happened: all 8 attempts
+          # failed with 403, not a timing issue at all).
+          TOKEN=$(printf '%s' "${HOSTINGER_DEPLOY_TOKEN:-NextErpDeploySecret2026}" | tr -d '[:space:]')
           sleep 5
           success=false
           for i in 1 2 3 4 5 6 7 8; do
-            response=$(curl -fsS "https://dev.gpsoftware.in/unzip.php?token=${TOKEN}") && \
+            response=$(curl -fsS -G "https://dev.gpsoftware.in/unzip.php" --data-urlencode "token=${TOKEN}") && \
             echo "$response" | grep -q '"status":"success"' && {
               echo "Remote deployment unzipped and migrations run successfully!"
               echo "$response"
