@@ -129,13 +129,9 @@ jobs:
         env:
           HOSTINGER_DEPLOY_TOKEN: ${{ secrets.HOSTINGER_DEPLOY_TOKEN }}
         run: |
-          if [ -n "$HOSTINGER_DEPLOY_TOKEN" ]; then
-            curl -fsS "https://dev.gpsoftware.in/unzip.php?token=${HOSTINGER_DEPLOY_TOKEN}"
-            sleep 2
-            curl -fsS "https://dev.gpsoftware.in/run-migrations"
-          else
-            echo "HOSTINGER_DEPLOY_TOKEN is not configured; remote trigger skipped."
-          fi
+          curl -fsS "https://dev.gpsoftware.in/unzip.php?token=${HOSTINGER_DEPLOY_TOKEN}"
+          sleep 2
+          curl -fsS "https://dev.gpsoftware.in/run-migrations"
       - name: Deploy via SSH to Hostinger
         if: env.HOSTINGER_SSH_HOST != ''
         env:
