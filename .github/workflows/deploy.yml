@@ -118,10 +118,12 @@ jobs:
       - name: Fast Upload via FTP to Hostinger
         uses: SamKirkland/FTP-Deploy-Action@v4.4.0
         with:
-          server: 157.173.216.156
+          server: ${{ secrets.HOSTINGER_FTP_SERVER || 'dev.gpsoftware.in' }}
           username: ${{ secrets.HOSTINGER_FTP_USERNAME }}
           password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
           port: 21
+          protocol: ftp
+          security: loose
           server-dir: ./
           local-dir: ./ftp_upload/
           dangerous-clean-slate: false
