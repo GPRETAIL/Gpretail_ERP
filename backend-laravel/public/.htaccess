@@ -1,3 +1,12 @@
+# Fallback for the stray "app" directory 403 (see the mod_rewrite block below for why it exists):
+# neither the RewriteRule nor DirectorySlash Off stopped Apache's own directory-index handling
+# from winning for the bare /app/ request. Catching the 403 itself and internally serving
+# index.php instead is a blunter fix, but doesn't depend on out-precedence-ing that directory
+# handling - and since this is a client-side-routed SPA, the browser's address bar still shows
+# /app/ regardless of how the server internally produced the response, so React Router still
+# renders the right route.
+ErrorDocument 403 /index.php
+
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes
