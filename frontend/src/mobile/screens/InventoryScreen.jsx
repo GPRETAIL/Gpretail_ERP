@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { ChevronRight } from "lucide-react";
 import api from "../../api/axios";
 import { SkeletonKpiGrid } from "../components/SkeletonCards";
