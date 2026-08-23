@@ -67,14 +67,40 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.6);
+  box-shadow: 0 0 55px 10px rgba(129, 140, 248, 0.5), 0 24px 48px rgba(0, 0, 0, 0.32), inset 0 1px 1px rgba(255, 255, 255, 0.65);
   margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
   animation: vxFloat 3s ease-in-out infinite;
+}
+
+.vx-splash-logo-card::after {
+  content: "";
+  position: absolute;
+  top: -60%;
+  left: -70%;
+  width: 45%;
+  height: 220%;
+  background: linear-gradient(115deg, transparent 0%, rgba(255, 255, 255, 0.55) 50%, transparent 100%);
+  transform: rotate(10deg);
+  animation: vxShimmer 2.4s ease-in-out 0.5s 1;
 }
 
 @keyframes vxFloat {
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(-4px); }
+}
+
+@keyframes vxShimmer {
+  0% { left: -70%; opacity: 0; }
+  18% { opacity: 1; }
+  55% { opacity: 1; }
+  100% { left: 135%; opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vx-splash-logo-card { animation: none; }
+  .vx-splash-logo-card::after { display: none; }
 }
 
 .vx-splash-brand-name {

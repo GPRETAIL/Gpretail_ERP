@@ -116,8 +116,15 @@ export default function VynerixMobileApp() {
   }, []);
 
   // Show splash until initialization is complete
+  // Wrapped in .vx-workspace (matching the login/main branches below) so the
+  // global desktop CSS guard `body:not(:has(.vx-workspace)) h1 {...}` doesn't
+  // match and shrink the splash wordmark before the real app shell mounts.
   if (!ready) {
-    return <Splash progress={progress} />;
+    return (
+      <div className="vx-workspace">
+        <Splash progress={progress} />
+      </div>
+    );
   }
 
   // If not authenticated after splash, show dedicated mobile login

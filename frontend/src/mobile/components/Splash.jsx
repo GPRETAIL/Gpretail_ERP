@@ -15,10 +15,22 @@ export default function Splash({ progress = 0 }) {
         <div className="vx-splash-logo-card">
           <svg
             viewBox="0 0 100 100"
-            className="w-14 h-14 fill-white drop-shadow-md"
+            className="w-14 h-14 drop-shadow-md"
             aria-hidden
           >
-            <path d="M18 20 L38 20 L50 64 L62 20 L82 20 L59 86 L41 86 Z" />
+            <defs>
+              <linearGradient id="vynerixVGrad" x1="20" y1="20" x2="80" y2="90" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="#ffffff" />
+                <stop offset="100%" stopColor="#c7d2fe" />
+              </linearGradient>
+              <clipPath id="vynerixVClip">
+                <path d="M18 20 L38 20 L50 64 L62 20 L82 20 L59 86 L41 86 Z" />
+              </clipPath>
+            </defs>
+            <path d="M18 20 L38 20 L50 64 L62 20 L82 20 L59 86 L41 86 Z" fill="url(#vynerixVGrad)" />
+            <g clipPath="url(#vynerixVClip)">
+              <path d="M50 55 L72 80 L50 100 L28 80 Z" fill="#ffffff" fillOpacity="0.32" />
+            </g>
           </svg>
         </div>
 
