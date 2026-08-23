@@ -9,7 +9,7 @@
  * 5. Lifecycle Updates — skipWaiting and client claim support
  */
 
-const CACHE_VERSION = "vynerix-pwa-v3.0.1";
+const CACHE_VERSION = "vynerix-pwa-v3.0.2";
 const CACHE_STATIC = `vynerix-static-${CACHE_VERSION}`;
 const CACHE_API = `vynerix-api-${CACHE_VERSION}`;
 
@@ -20,6 +20,11 @@ const PRECACHE_ASSETS = [
   "/index.html",
   "/manifest.webmanifest",
   "/pwa-icon.svg",
+  "/pwa-192x192.png",
+  "/pwa-512x512.png",
+  "/pwa-maskable-512x512.png",
+  "/apple-touch-icon.png",
+  "/favicon-32x32.png",
   "/vite.svg"
 ];
 
