@@ -325,6 +325,26 @@ export default function BackupCenter() {
   const [importFile, setImportFile] = useState(null);
   const [importPassword, setImportPassword] = useState("");
   const importFileInputRef = useRef(null);
+  const [creatingBackup, setCreatingBackup] = useState(false);
+  const [createElapsedMs, setCreateElapsedMs] = useState(0);
+  const [restoring, setRestoring] = useState(false);
+  const [restoreElapsedMs, setRestoreElapsedMs] = useState(0);
+
+  useEffect(() => {
+    if (!creatingBackup) return undefined;
+    const start = Date.now();
+    const interval = setInterval(() => setCreateElapsedMs(Date.now() - start), 200);
+    return () => clearInterval(interval);
+  }, [creatingBackup]);
+
+  useEffect(() => {
+    if (!restoring) return undefined;
+    const start = Date.now();
+    const interval = setInterval(() => setRestoreElapsedMs(Date.now() - start), 200);
+    return () => clearInterval(interval);
+  }, [restoring]);
+
+  const formatElapsed = (ms) => `${(ms / 1000).toFixed(1)}s`;
 
   const loadOverview = useCallback(async (companyId = "") => {
     try {
@@ -491,15 +511,23 @@ export default function BackupCenter() {
     { key: "completed_at", label: "Completed", render: (value, row) => toDateTime(value || row.created_at) },
   ];
 
+  const createFormIncludesUsers = createForm.backupType !== "module" || createForm.moduleNames.includes("store");
+
   const handleCreateBackup = async () => {
     if (createForm.backupType === "module" && !createForm.moduleNames.length) {
       toast.warning("Select at least one module for module-wise backup");
+      return;
+    }
+    if (createFormIncludesUsers && !createForm.encryptionEnabled) {
+      toast.warning('This backup includes the Users table (login accounts) - enable encryption first, or pick a module-wise backup that excludes "Store".');
       return;
     }
     if (createForm.encryptionEnabled && !createForm.encryptionPassword) {
       toast.warning("Enter an encryption password before running an encrypted backup.");
       return;
     }
+    setCreateElapsedMs(0);
+    setCreatingBackup(true);
     try {
       const response = await api.post("/backups", {
         ...createForm,
@@ -525,6 +553,8 @@ export default function BackupCenter() {
       await loadOverview(selectedCompanyId);
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to create backup");
+    } finally {
+      setCreatingBackup(false);
     }
   };
 
@@ -580,6 +610,8 @@ export default function BackupCenter() {
       toast.warning("Select a backup to restore");
       return;
     }
+    setRestoreElapsedMs(0);
+    setRestoring(true);
     try {
       const response = await api.post(`/backups/${restoreForm.backupId}/restore`, {
         ...restoreForm,
@@ -596,6 +628,8 @@ export default function BackupCenter() {
       await loadOverview(selectedCompanyId);
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to restore backup");
+    } finally {
+      setRestoring(false);
     }
   };
 
@@ -872,6 +906,12 @@ export default function BackupCenter() {
                 )}
               </div>
 
+              {createFormIncludesUsers && !createForm.encryptionEnabled ? (
+                <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-md p-2">
+                  This backup includes the Users table (login accounts with password hashes). Encryption is required to include it.
+                </p>
+              ) : null}
+
               <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                 <input
                   type="checkbox"
@@ -908,9 +948,20 @@ export default function BackupCenter() {
                 Local storage writes to the system backup folder, cloud storage writes to the server backup folder, and hybrid writes to both.
               </div>
 
-              <button type="button" className="glass-btn glass-btn-success flex items-center" onClick={handleCreateBackup}>
-                <Play className="mr-1 h-4 w-4" /> Run Backup
+              <button
+                type="button"
+                className="glass-btn glass-btn-success flex items-center disabled:opacity-70"
+                onClick={handleCreateBackup}
+                disabled={creatingBackup}
+              >
+                <Play className="mr-1 h-4 w-4" />
+                {creatingBackup ? `Backing up… ${formatElapsed(createElapsedMs)}` : "Run Backup"}
               </button>
+              {creatingBackup ? (
+                <p className="text-xs text-amber-600 dark:text-amber-400">
+                  Please don&apos;t close this window or navigate away until the backup finishes.
+                </p>
+              ) : null}
             </div>
           </div>
 
@@ -1073,6 +1124,11 @@ export default function BackupCenter() {
                   Get the real secret value from the server&apos;s{" "}
                   <span className="font-mono">BACKUP_CRON_SECRET</span> environment
                   variable — it is never shown here.
+                  <p className="mt-2 pt-2 border-t border-blue-200 dark:border-blue-800">
+                    Scheduled backups always run unencrypted (no one is present to type a
+                    password), so the Users table is skipped automatically to avoid storing
+                    password hashes unencrypted. Run a manual encrypted backup to include it.
+                  </p>
                 </div>
               ) : null}
 
@@ -1292,9 +1348,20 @@ export default function BackupCenter() {
                 </div>
               </div>
 
-              <button type="button" className="glass-btn glass-btn-danger flex items-center" onClick={handleRestore}>
-                <RotateCcw className="mr-1 h-4 w-4" /> Run Restore
+              <button
+                type="button"
+                className="glass-btn glass-btn-danger flex items-center disabled:opacity-70"
+                onClick={handleRestore}
+                disabled={restoring}
+              >
+                <RotateCcw className="mr-1 h-4 w-4" />
+                {restoring ? `Restoring… ${formatElapsed(restoreElapsedMs)}` : "Run Restore"}
               </button>
+              {restoring ? (
+                <p className="text-xs text-amber-600 dark:text-amber-400">
+                  Please don&apos;t close this window or navigate away until the restore finishes. Larger restores can take a while.
+                </p>
+              ) : null}
 
               <div className="border-t dark:border-gray-700 pt-3 space-y-3">
                 <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Import Backup File</label>

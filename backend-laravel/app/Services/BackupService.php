@@ -76,6 +76,10 @@ class BackupService
             'permissions' => ['scope' => 'none'],
             'role_permissions' => ['scope' => 'none'],
             'printer_configs' => ['scope' => 'store_id'],
+            // Login accounts - carries password hashes, so BackupController::store()
+            // requires encryption whenever this table is part of the export.
+            'users' => ['scope' => 'store_id', 'sensitive' => true],
+            'user_table_preferences' => ['scope' => 'via_parent', 'parent' => 'users', 'local_fk' => 'user_id'],
         ],
         'crm' => [
             'customers' => ['scope' => 'none'],
@@ -125,6 +129,29 @@ class BackupService
     public function fullTableManifest(): array
     {
         return $this->buildTableManifestForModules(array_keys(self::MODULE_MAP));
+    }
+
+    /**
+     * True if the manifest includes a table marked 'sensitive' (e.g. users - password hashes).
+     */
+    public function manifestContainsSensitiveTable(array $manifest): bool
+    {
+        foreach ($manifest as $spec) {
+            if (! empty($spec['sensitive'])) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Remove sensitive tables from a manifest - used for unattended scheduled backups,
+     * which always run without encryption (no human present to supply a password).
+     */
+    public function stripSensitiveTables(array $manifest): array
+    {
+        return array_filter($manifest, fn ($spec) => empty($spec['sensitive']));
     }
 
     /**
@@ -279,23 +306,26 @@ class BackupService
     /**
      * @return array{restoredRows: int, tables: array<string,int>}
      */
+    /**
+     * Restore straight from the zip archive's in-memory entries - no extract-to-disk
+     * step. Avoids writing/reading N small files per table, which dominated the time
+     * for large restores (measured: extracting to disk first made this meaningfully
+     * slower than reading each table's JSON directly out of the zip stream).
+     */
     public function restoreTablesFromArchive(string $zipPath, ?array $tableFilter, ?int $targetCompanyId, ?int $originalCompanyId): array
     {
-        $extractDir = storage_path('app/private/backups/tmp/restore_'.uniqid());
-        mkdir($extractDir, 0755, true);
-
         $zip = new ZipArchive;
         if ($zip->open($zipPath) !== true) {
             throw new RuntimeException('Could not open backup archive.');
         }
-        $zip->extractTo($extractDir);
-        $zip->close();
 
-        $manifestPath = $extractDir.'/manifest.json';
-        if (! file_exists($manifestPath)) {
+        $manifestRaw = $zip->getFromName('manifest.json');
+        if ($manifestRaw === false) {
+            $zip->close();
+
             throw new RuntimeException('Backup archive is missing manifest.json.');
         }
-        $manifest = json_decode(file_get_contents($manifestPath), true) ?? [];
+        $manifest = json_decode($manifestRaw, true) ?? [];
         $tables = array_keys($manifest['tables'] ?? []);
 
         if ($tableFilter) {
@@ -305,13 +335,13 @@ class BackupService
         $restoredRows = 0;
         $tableCounts = [];
 
-        DB::transaction(function () use ($extractDir, $tables, $targetCompanyId, $originalCompanyId, &$restoredRows, &$tableCounts) {
+        DB::transaction(function () use ($zip, $tables, $targetCompanyId, $originalCompanyId, &$restoredRows, &$tableCounts) {
             foreach ($tables as $table) {
-                $file = $extractDir."/tables/{$table}.json";
-                if (! file_exists($file) || ! Schema::hasTable($table)) {
+                if (! Schema::hasTable($table)) {
                     continue;
                 }
-                $rows = json_decode(file_get_contents($file), true) ?? [];
+                $raw = $zip->getFromName("tables/{$table}.json");
+                $rows = $raw === false ? [] : (json_decode($raw, true) ?? []);
                 if (! $rows) {
                     $tableCounts[$table] = 0;
 
@@ -333,7 +363,9 @@ class BackupService
                 $uniqueBy = $table === 'role_permissions' ? ['role_id', 'permission_id'] : ['id'];
                 $updateColumns = array_values(array_diff(array_keys($rows[0]), $uniqueBy));
 
-                foreach (array_chunk($rows, 500) as $chunk) {
+                // Larger batches = fewer round trips to the DB, which is what actually
+                // dominates restore time (not PHP-side JSON decoding).
+                foreach (array_chunk($rows, 1000) as $chunk) {
                     DB::table($table)->upsert($chunk, $uniqueBy, $updateColumns);
                 }
 
@@ -342,7 +374,7 @@ class BackupService
             }
         });
 
-        $this->deleteDirectory($extractDir);
+        $zip->close();
 
         return ['restoredRows' => $restoredRows, 'tables' => $tableCounts];
     }
@@ -383,21 +415,6 @@ class BackupService
         }, $rows);
     }
 
-    private function deleteDirectory(string $dir): void
-    {
-        if (! is_dir($dir)) {
-            return;
-        }
-        $items = scandir($dir);
-        foreach ($items as $item) {
-            if ($item === '.' || $item === '..') {
-                continue;
-            }
-            $path = $dir.DIRECTORY_SEPARATOR.$item;
-            is_dir($path) ? $this->deleteDirectory($path) : @unlink($path);
-        }
-        @rmdir($dir);
-    }
 
     public function findLatestSuccessfulBackup(?int $companyId): ?Backup
     {

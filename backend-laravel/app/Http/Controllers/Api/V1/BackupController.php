@@ -101,6 +101,16 @@ class BackupController extends Controller
             ? ($request->input('moduleNames') ?: [])
             : ['sales', 'warehouse', 'masters', 'store', 'crm', 'finance', 'settings', 'dashboard', 'analytical'];
 
+        // Backups that include the Users table (password hashes) must be encrypted -
+        // an unencrypted backup file would put hashed passwords in plain-readable JSON.
+        $plannedManifest = $this->backups->buildTableManifestForModules($moduleNames);
+        if ($this->backups->manifestContainsSensitiveTable($plannedManifest) && ! $request->boolean('encryptionEnabled')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This backup includes the Users table. Enable encryption and set a password before running it, or switch to a module-wise backup that excludes "Store" to skip it.',
+            ], 422);
+        }
+
         $startedAt      = now();
         $status         = 'success';
         $statusMessage  = null;
@@ -121,7 +131,7 @@ class BackupController extends Controller
                 }
             }
 
-            $manifest = $this->backups->buildTableManifestForModules($moduleNames);
+            $manifest = $plannedManifest;
             $exported = $this->backups->exportTablesToJson($manifest, $companyId, $since);
             foreach ($exported as $table => $rows) {
                 $tableCounts[$table] = count($rows);
@@ -599,7 +609,7 @@ class BackupController extends Controller
 
             $startedAt = now();
             $status = 'success';
-            $statusMessage = 'Scheduled run (unencrypted - no operator present to supply a password).';
+            $statusMessage = 'Scheduled run (unencrypted, no operator present - the Users table was skipped; run a manual encrypted backup to include it).';
             $tableCounts = [];
             $fileName = null;
             $filePath = null;
@@ -614,6 +624,10 @@ class BackupController extends Controller
                     }
                 }
                 $manifest = $this->backups->buildTableManifestForModules($moduleNames);
+                // Scheduled runs are always unencrypted (no operator present to supply a
+                // password), so sensitive tables (users - password hashes) are skipped here.
+                // They're still covered by manual, encrypted, on-demand backups.
+                $manifest = $this->backups->stripSensitiveTables($manifest);
                 $exported = $this->backups->exportTablesToJson($manifest, $store->id, $since);
                 foreach ($exported as $table => $rows) {
                     $tableCounts[$table] = count($rows);
