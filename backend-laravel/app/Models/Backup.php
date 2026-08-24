@@ -16,6 +16,7 @@ class Backup extends Model
         'module_names',
         'company_id',
         'file_path',
+        'cloud_path',
         'file_size',
         'file_size_label',
         'status',

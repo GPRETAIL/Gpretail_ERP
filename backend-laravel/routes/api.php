@@ -114,6 +114,7 @@ $registerAppRoutes = function () {
     // Backups - real synchronous local-storage backup/restore engine
     Route::get('backups/overview', [BackupController::class, 'overview']);
     Route::match(['get', 'post', 'put'], 'backups/settings', [BackupController::class, 'settings']);
+    Route::post('backups/cloud-test', [BackupController::class, 'cloudTest']);
     Route::match(['get', 'post'], 'backups/scheduled-run', [BackupController::class, 'scheduledRun']);
     Route::post('backups/import', [BackupController::class, 'import']);
     Route::get('backups/{id}/download', [BackupController::class, 'download']);

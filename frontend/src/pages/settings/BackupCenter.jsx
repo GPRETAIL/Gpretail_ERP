@@ -29,8 +29,8 @@ const cardClass = "rounded-lg border border-gray-200 dark:border-gray-700 bg-whi
 
 const storageModeOptions = [
   { value: "local", label: "Local Storage" },
-  { value: "cloud", label: "Cloud Storage (requires cloud credentials - not yet configured)", disabled: true },
-  { value: "hybrid", label: "Hybrid Storage (requires cloud credentials - not yet configured)", disabled: true },
+  { value: "cloud", label: "Cloud Storage (OCI Object Storage)" },
+  { value: "hybrid", label: "Hybrid (Local + OCI Cloud)" },
 ];
 
 const backupTypeOptions = [
@@ -127,7 +127,7 @@ const createDefaultCreateForm = () => ({
 const createDefaultSettingsForm = () => ({
   storageMode: "local",
   localStorageEnabled: true,
-  cloudStorageEnabled: true,
+  cloudStorageEnabled: false,
   encryptionEnabled: false,
   encryptionPassword: "",
   restorePasswordHint: "",
@@ -142,6 +142,12 @@ const createDefaultSettingsForm = () => ({
   retentionWeekly: 4,
   retentionMonthly: 12,
   autoCleanupEnabled: true,
+  // Oracle Cloud Infrastructure (OCI) Object Storage
+  ociNamespace: "",
+  ociRegion: "ap-mumbai-1",
+  ociAccessKeyId: "",
+  ociSecretAccessKey: "",
+  ociBucket: "",
 });
 
 const createDefaultRestoreForm = () => ({
@@ -175,6 +181,13 @@ const normalizeSetting = (setting = {}) => ({
   autoCleanupEnabled: setting.auto_cleanup_enabled ?? setting.autoCleanupEnabled ?? true,
   nextScheduledAt: setting.next_scheduled_at || setting.nextScheduledAt || null,
   lastScheduledAt: setting.last_scheduled_at || setting.lastScheduledAt || null,
+  // Oracle Cloud Infrastructure (OCI) Object Storage
+  ociNamespace: setting.oci_namespace || setting.ociNamespace || "",
+  ociRegion: setting.oci_region || setting.ociRegion || "ap-mumbai-1",
+  ociAccessKeyId: setting.oci_access_key_id || setting.ociAccessKeyId || "",
+  ociSecretAccessKey: setting.oci_secret_access_key || setting.ociSecretAccessKey || "",
+  ociBucket: setting.oci_bucket || setting.ociBucket || "",
+  cloudConfigured: setting.cloud_configured ?? false,
 });
 
 const normalizeBackupRow = (row = {}) => ({
@@ -310,6 +323,7 @@ export default function BackupCenter() {
   const [restoreCardHighlighted, setRestoreCardHighlighted] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState({ open: false, row: null });
   const [importFile, setImportFile] = useState(null);
+  const [importPassword, setImportPassword] = useState("");
   const importFileInputRef = useRef(null);
 
   const loadOverview = useCallback(async (companyId = "") => {
@@ -482,16 +496,26 @@ export default function BackupCenter() {
       toast.warning("Select at least one module for module-wise backup");
       return;
     }
+    if (createForm.encryptionEnabled && !createForm.encryptionPassword) {
+      toast.warning("Enter an encryption password before running an encrypted backup.");
+      return;
+    }
     try {
       const response = await api.post("/backups", {
         ...createForm,
         companyId: selectedCompanyId || undefined,
       });
-      const status = response.data?.data?.status;
+      const backupData = response.data?.data;
+      const status = backupData?.status;
+      const statusMessage = backupData?.summary?.status_message;
       if (status === "failed") {
-        toast.error(response.data?.data?.summary?.status_message || "Backup failed");
+        toast.error(statusMessage || "Backup failed");
       } else {
         toast.success(response.data?.message || "Backup created");
+        // Show warning if incremental silently fell back to a full backup
+        if (statusMessage) {
+          toast.warning(statusMessage);
+        }
       }
       setCreateForm((prev) => ({
         ...createDefaultCreateForm(),
@@ -505,19 +529,49 @@ export default function BackupCenter() {
   };
 
   const handleSaveSettings = async () => {
-    if (!selectedCompanyId) {
+    // Non-super-admin users always operate under their own store scope
+    if (!isSuperAdmin && !selectedCompanyId) {
       toast.error("Select a store first.");
       return;
     }
     try {
       const response = await api.post("/backups/settings", {
         ...settingsForm,
-        companyId: selectedCompanyId,
+        // Super Admin with no store selected sends no companyId → global save across all stores
+        companyId: selectedCompanyId || undefined,
+        ociNamespace: settingsForm.ociNamespace,
+        ociRegion: settingsForm.ociRegion,
+        ociAccessKeyId: settingsForm.ociAccessKeyId,
+        ociSecretAccessKey: settingsForm.ociSecretAccessKey,
+        ociBucket: settingsForm.ociBucket,
       });
       toast.success(response.data?.message || "Backup settings saved");
       await loadOverview(selectedCompanyId);
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to save backup settings");
+    }
+  };
+
+  const [cloudTestStatus, setCloudTestStatus] = useState(null); // null | 'testing' | 'ok' | 'fail'
+  const [cloudTestMessage, setCloudTestMessage] = useState("");
+
+  const handleTestCloudConnection = async () => {
+    setCloudTestStatus("testing");
+    setCloudTestMessage("");
+    try {
+      const response = await api.post("/backups/cloud-test", {
+        companyId: selectedCompanyId || undefined,
+        ociNamespace: settingsForm.ociNamespace,
+        ociRegion: settingsForm.ociRegion,
+        ociAccessKeyId: settingsForm.ociAccessKeyId,
+        ociSecretAccessKey: settingsForm.ociSecretAccessKey,
+        ociBucket: settingsForm.ociBucket,
+      });
+      setCloudTestStatus("ok");
+      setCloudTestMessage(response.data?.message || "Connection successful");
+    } catch (err) {
+      setCloudTestStatus("fail");
+      setCloudTestMessage(err.response?.data?.message || "Connection failed");
     }
   };
 
@@ -554,17 +608,36 @@ export default function BackupCenter() {
       const formData = new FormData();
       formData.append("backupFile", importFile);
       if (selectedCompanyId) formData.append("companyId", selectedCompanyId);
-      if (restoreForm.password) formData.append("password", restoreForm.password);
+      // Use dedicated import password field (not the restore card password)
+      if (importPassword) formData.append("password", importPassword);
       const response = await api.post("/backups/import", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       toast.success(response.data?.message || "Backup imported");
       setImportFile(null);
+      setImportPassword("");
       if (importFileInputRef.current) importFileInputRef.current.value = "";
       await loadOverview(selectedCompanyId);
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to import backup");
     }
+  };
+
+  // Helper: when Axios returns an error response as a Blob (responseType:'blob'),
+  // the JSON error body is wrapped in a Blob — decode it to get the real message.
+  const readBlobErrorMessage = async (err) => {
+    const data = err?.response?.data;
+    if (data instanceof Blob && data.type?.includes("application/json")) {
+      try {
+        const text = await data.text();
+        const parsed = JSON.parse(text);
+        return parsed?.message || null;
+      } catch {
+        return null;
+      }
+    }
+    // Non-blob error: standard axios response
+    return err?.response?.data?.message || null;
   };
 
   const downloadBlob = async (url, fallbackName) => {
@@ -587,7 +660,8 @@ export default function BackupCenter() {
     try {
       await downloadBlob(`/backups/${row.id}/download`, row.file_name || `backup-${row.id}.zip`);
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to download backup");
+      const message = await readBlobErrorMessage(err);
+      toast.error(message || "Failed to download backup");
     }
   };
 
@@ -595,7 +669,8 @@ export default function BackupCenter() {
     try {
       await downloadBlob(`/backups/${row.id}/logs`, `backup-${row.id}-log.txt`);
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to download logs");
+      const message = await readBlobErrorMessage(err);
+      toast.error(message || "Failed to download logs");
     }
   };
 
@@ -780,15 +855,21 @@ export default function BackupCenter() {
                   onChange={(event) => setCreateForm((prev) => ({ ...prev, storageMode: event.target.value }))}
                   className={inputClass}
                 >
-                  {storageModeOptions.map((option) => (
-                    <option key={option.value} value={option.value} disabled={option.disabled}>
-                      {option.label}
-                    </option>
-                  ))}
+                  {storageModeOptions.map((option) => {
+                    const needsCloud = option.value === "cloud" || option.value === "hybrid";
+                    const isDisabled = needsCloud && !settingsForm.cloudConfigured;
+                    return (
+                      <option key={option.value} value={option.value} disabled={isDisabled}>
+                        {option.label}{isDisabled ? " (configure OCI in Settings first)" : ""}
+                      </option>
+                    );
+                  })}
                 </select>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  Only Local Storage is available on this server right now.
-                </p>
+                {settingsForm.cloudConfigured ? (
+                  <p className="mt-1 text-xs text-green-600 dark:text-green-400">✓ OCI Object Storage is configured for this store.</p>
+                ) : (
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Cloud options require OCI credentials saved in Storage Settings.</p>
+                )}
               </div>
 
               <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
@@ -853,33 +934,92 @@ export default function BackupCenter() {
                   onChange={(event) => setSettingsForm((prev) => ({ ...prev, storageMode: event.target.value }))}
                   className={inputClass}
                 >
-                  {storageModeOptions.map((option) => (
-                    <option key={option.value} value={option.value} disabled={option.disabled}>
-                      {option.label}
-                    </option>
-                  ))}
+                  {storageModeOptions.map((option) => {
+                    const needsCloud = option.value === "cloud" || option.value === "hybrid";
+                    const isDisabled = needsCloud && !settingsForm.cloudConfigured;
+                    return (
+                      <option key={option.value} value={option.value} disabled={isDisabled}>
+                        {option.label}{isDisabled ? " (configure OCI below first)" : ""}
+                      </option>
+                    );
+                  })}
                 </select>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  Only Local Storage is available on this server right now.
-                </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+              {/* Oracle Cloud Infrastructure (OCI) Credentials */}
+              <div className="rounded-lg border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/20 p-3 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-indigo-800 dark:text-indigo-200">☁ Oracle Cloud (OCI) Object Storage</p>
+                    <p className="text-xs text-indigo-600 dark:text-indigo-400">Always Free: 20 GB Storage · 10 TB Egress/mo · 50k API Calls</p>
+                  </div>
+                  {settingsForm.cloudConfigured ? (
+                    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">✓ Configured</span>
+                  ) : (
+                    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">Not configured</span>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    placeholder="Object Storage Namespace"
+                    value={settingsForm.ociNamespace}
+                    onChange={(event) => setSettingsForm((prev) => ({ ...prev, ociNamespace: event.target.value }))}
+                    className={inputClass}
+                  />
+                  <input
+                    placeholder="Region (e.g. ap-mumbai-1, us-ashburn-1)"
+                    value={settingsForm.ociRegion}
+                    onChange={(event) => setSettingsForm((prev) => ({ ...prev, ociRegion: event.target.value }))}
+                    className={inputClass}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    placeholder="Customer Secret Key (Access Key)"
+                    value={settingsForm.ociAccessKeyId}
+                    onChange={(event) => setSettingsForm((prev) => ({ ...prev, ociAccessKeyId: event.target.value }))}
+                    className={inputClass}
+                  />
+                  <input
+                    type="password"
+                    placeholder="Secret Key"
+                    value={settingsForm.ociSecretAccessKey}
+                    onChange={(event) => setSettingsForm((prev) => ({ ...prev, ociSecretAccessKey: event.target.value }))}
+                    className={inputClass}
+                    autoComplete="new-password"
+                  />
+                </div>
+                <input
+                  placeholder="Bucket Name (e.g. gpretail-backups)"
+                  value={settingsForm.ociBucket}
+                  onChange={(event) => setSettingsForm((prev) => ({ ...prev, ociBucket: event.target.value }))}
+                  className={inputClass}
+                />
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={handleTestCloudConnection}
+                    disabled={cloudTestStatus === "testing"}
+                    className="flex items-center gap-1.5 rounded-sm bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
+                  >
+                    <Cloud className="h-3.5 w-3.5" />
+                    {cloudTestStatus === "testing" ? "Testing..." : "Test Connection"}
+                  </button>
+                  {cloudTestStatus === "ok" && (
+                    <span className="text-xs text-green-600 dark:text-green-400 font-medium">✓ {cloudTestMessage}</span>
+                  )}
+                  {cloudTestStatus === "fail" && (
+                    <span className="text-xs text-red-600 dark:text-red-400">{cloudTestMessage}</span>
+                  )}
+                </div>
+                <label className="flex items-center gap-2 text-sm text-indigo-800 dark:text-indigo-200">
                   <input
                     type="checkbox"
-                    checked={!!settingsForm.localStorageEnabled}
-                    onChange={(event) => setSettingsForm((prev) => ({ ...prev, localStorageEnabled: event.target.checked }))}
+                    checked={!!settingsForm.cloudStorageEnabled}
+                    onChange={(event) => setSettingsForm((prev) => ({ ...prev, cloudStorageEnabled: event.target.checked }))}
                     className="h-4 w-4"
                   />
-                  Local storage
-                </label>
-                <label
-                  className="flex items-center gap-2 text-sm text-gray-400 dark:text-gray-500"
-                  title="Requires cloud credentials - not yet configured on this server"
-                >
-                  <input type="checkbox" checked={false} disabled className="h-4 w-4" />
-                  Cloud storage (not configured)
+                  Enable cloud storage for scheduled backups
                 </label>
               </div>
 
@@ -926,13 +1066,13 @@ export default function BackupCenter() {
                   This server has no background job runner, so scheduled backups need an
                   external trigger to actually run. Set up a free service like{" "}
                   <span className="font-semibold">cron-job.org</span>, or your hosting
-                  panel's cron jobs, to periodically call:
-                  <div className="mt-1 rounded bg-white/60 p-2 font-mono dark:bg-black/20">
-                    GET {"{api-base}"}/backups/scheduled-run?token=YOUR_SECRET
+                  panel&apos;s cron jobs, to periodically call:
+                  <div className="mt-1 rounded bg-white/60 p-2 font-mono dark:bg-black/20 break-all">
+                    GET {(import.meta.env.VITE_API_BASE_URL || "/api").replace(/\/api$/, "")}/api/backups/scheduled-run?token=YOUR_SECRET
                   </div>
                   Get the real secret value from the server&apos;s{" "}
                   <span className="font-mono">BACKUP_CRON_SECRET</span> environment
-                  variable - it is never shown here.
+                  variable — it is never shown here.
                 </div>
               ) : null}
 
@@ -1156,7 +1296,7 @@ export default function BackupCenter() {
                 <RotateCcw className="mr-1 h-4 w-4" /> Run Restore
               </button>
 
-              <div className="border-t dark:border-gray-700 pt-3">
+              <div className="border-t dark:border-gray-700 pt-3 space-y-3">
                 <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Import Backup File</label>
                 <input
                   type="file"
@@ -1164,7 +1304,20 @@ export default function BackupCenter() {
                   onChange={(event) => setImportFile(event.target.files?.[0] || null)}
                   className={inputClass}
                 />
-                <button type="button" className="glass-btn glass-btn-primary mt-3 flex items-center" onClick={handleImport}>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Import Password</label>
+                  <div className="relative">
+                    <input
+                      type="password"
+                      value={importPassword}
+                      onChange={(event) => setImportPassword(event.target.value)}
+                      className={`${inputClass} pr-10`}
+                      placeholder="Only required for encrypted backup files"
+                    />
+                    <KeyRound className="pointer-events-none absolute right-3 top-2.5 h-4 w-4 text-gray-400 dark:text-gray-500" />
+                  </div>
+                </div>
+                <button type="button" className="glass-btn glass-btn-primary flex items-center" onClick={handleImport}>
                   <Upload className="mr-1 h-4 w-4" /> Import Backup
                 </button>
               </div>

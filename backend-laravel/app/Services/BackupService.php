@@ -6,6 +6,7 @@ use App\Models\Backup;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 use ZipArchive;
 
@@ -446,5 +447,158 @@ class BackupService
         $power = min($power, count($units) - 1);
 
         return round($bytes / (1024 ** $power), 1).' '.$units[$power];
+    }
+
+    // ─── Oracle Cloud Infrastructure (OCI) Object Storage ─────────────────────
+
+    /**
+     * Check whether OCI Object Storage credentials are configured in backup_settings.
+     * Free tier: 20 GB storage, 10 TB egress/month, 50 000 API calls/month.
+     */
+    public static function isCloudConfigured(array $settings): bool
+    {
+        return ! empty($settings['oci_namespace'])
+            && ! empty($settings['oci_region'])
+            && ! empty($settings['oci_access_key_id'])
+            && ! empty($settings['oci_secret_access_key'])
+            && ! empty($settings['oci_bucket']);
+    }
+
+    /**
+     * Build an on-the-fly S3-compatible Flysystem disk from OCI Customer Secret Key credentials.
+     * OCI S3-compatible endpoint: https://{namespace}.compat.objectstorage.{region}.oraclecloud.com
+     * Does NOT modify the global filesystem config.
+     */
+    public function buildOciDisk(array $settings): \Illuminate\Contracts\Filesystem\Filesystem
+    {
+        $namespace = $settings['oci_namespace'] ?? '';
+        $region    = $settings['oci_region']    ?? 'ap-mumbai-1';
+        $endpoint  = "https://{$namespace}.compat.objectstorage.{$region}.oraclecloud.com";
+
+        $config = [
+            'driver'                  => 's3',
+            'key'                     => $settings['oci_access_key_id'],
+            'secret'                  => $settings['oci_secret_access_key'],
+            'region'                  => $region,
+            'bucket'                  => $settings['oci_bucket'],
+            'endpoint'                => $endpoint,
+            'use_path_style_endpoint' => true,
+            'version'                 => 'latest',
+            'throw'                   => true,
+        ];
+
+        // Local XAMPP dev machines often lack a valid CA bundle, which breaks TLS
+        // verification against OCI. Never disable verification outside local dev.
+        if (app()->environment('local')) {
+            $config['http'] = ['verify' => false];
+        }
+
+        return Storage::build($config);
+    }
+
+    /**
+     * Upload a local backup file to OCI Object Storage.
+     * Returns the remote object path stored in the bucket.
+     */
+    public function uploadToCloud(string $localPath, array $settings): string
+    {
+        $disk       = $this->buildOciDisk($settings);
+        $remotePath = 'backups/'.basename($localPath);
+        $stream     = fopen($localPath, 'rb');
+
+        if ($stream === false) {
+            throw new RuntimeException("Cannot open local backup file for cloud upload: {$localPath}");
+        }
+
+        try {
+            $disk->writeStream($remotePath, $stream);
+        } finally {
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
+        }
+
+        return $remotePath;
+    }
+
+    /**
+     * Download a backup from OCI Object Storage to a local temp file and return its path.
+     */
+    public function downloadFromCloud(string $remotePath, array $settings): string
+    {
+        $disk    = $this->buildOciDisk($settings);
+        $tmpDir  = storage_path('app/private/backups/tmp');
+        if (! is_dir($tmpDir)) {
+            mkdir($tmpDir, 0755, true);
+        }
+
+        $tmpPath = $tmpDir.DIRECTORY_SEPARATOR.'cloud_dl_'.uniqid().'_'.basename($remotePath);
+        $stream  = $disk->readStream($remotePath);
+
+        if ($stream === false || $stream === null) {
+            throw new RuntimeException("Could not read backup from cloud storage: {$remotePath}");
+        }
+
+        try {
+            file_put_contents($tmpPath, $stream);
+        } finally {
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
+        }
+
+        return $tmpPath;
+    }
+
+    /**
+     * Delete a backup object from OCI Object Storage.
+     */
+    public function deleteFromCloud(string $remotePath, array $settings): void
+    {
+        $disk = $this->buildOciDisk($settings);
+        $disk->delete($remotePath);
+    }
+
+    /**
+     * Test the OCI Object Storage connection by listing the backups prefix.
+     * Returns ['ok' => bool, 'message' => string].
+     */
+    public function testCloudConnection(array $settings): array
+    {
+        if (! self::isCloudConfigured($settings)) {
+            return ['ok' => false, 'message' => 'OCI credentials are incomplete. Please fill in all fields.'];
+        }
+
+        try {
+            $disk = $this->buildOciDisk($settings);
+            $disk->files('backups');  // lists prefix — throws on auth/network failure
+
+            return ['ok' => true, 'message' => 'Connection to OCI Object Storage successful.'];
+        } catch (\Throwable $e) {
+            return ['ok' => false, 'message' => 'Connection failed: '.$e->getMessage()];
+        }
+    }
+
+    /**
+     * Get the total storage bytes used in the OCI bucket by summing all backup object sizes.
+     */
+    public function cloudStorageUsedBytes(array $settings): int
+    {
+        if (! self::isCloudConfigured($settings)) {
+            return 0;
+        }
+
+        try {
+            $disk  = $this->buildOciDisk($settings);
+            $files = $disk->allFiles('backups');
+            $total = 0;
+            foreach ($files as $file) {
+                $total += $disk->size($file);
+            }
+
+            return $total;
+        } catch (\Throwable) {
+            return 0;
+        }
     }
 }
