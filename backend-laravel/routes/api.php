@@ -1,51 +1,52 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\ActivationController;
-use App\Http\Controllers\Api\V1\BrandController;
-use App\Http\Controllers\Api\V1\CategoryController;
-use App\Http\Controllers\Api\V1\ProductController;
-use App\Http\Controllers\Api\V1\TaxController;
-use App\Http\Controllers\Api\V1\SupplierController;
 use App\Http\Controllers\Api\V1\AgentController;
-use App\Http\Controllers\Api\V1\TransportController;
-use App\Http\Controllers\Api\V1\ProductAttributeController;
-use App\Http\Controllers\Api\V1\SizeController;
-use App\Http\Controllers\Api\V1\HrConfigurationController;
-use App\Http\Controllers\Api\V1\EmployeeController;
 use App\Http\Controllers\Api\V1\AttendanceController;
-use App\Http\Controllers\Api\V1\CustomerController;
-use App\Http\Controllers\Api\V1\LoyaltyController;
-use App\Http\Controllers\Api\V1\PosSaleController;
-use App\Http\Controllers\Api\V1\PosReturnController;
-use App\Http\Controllers\Api\V1\SalesApprovalController;
-use App\Http\Controllers\Api\V1\DealerInvoiceController;
-use App\Http\Controllers\Api\V1\CashRegisterController;
-use App\Http\Controllers\Api\V1\SettlementController;
-use App\Http\Controllers\Api\V1\CustomerOrderController;
-use App\Http\Controllers\Api\V1\DirectPurchaseController;
-use App\Http\Controllers\Api\V1\PurchaseInvoiceController;
-use App\Http\Controllers\Api\V1\InventoryEntryController;
+use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\BackupController;
 use App\Http\Controllers\Api\V1\BarcodeController;
-use App\Http\Controllers\Api\V1\PhysicalStockController;
-use App\Http\Controllers\Api\V1\PurchaseReturnController;
-use App\Http\Controllers\Api\V1\StockOutwardController;
-use App\Http\Controllers\Api\V1\TransportEntryController;
-use App\Http\Controllers\Api\V1\ItemLocatorController;
-use App\Http\Controllers\Api\V1\DashboardController;
+use App\Http\Controllers\Api\V1\BrandController;
+use App\Http\Controllers\Api\V1\CashRegisterController;
+use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\CompanyController;
 use App\Http\Controllers\Api\V1\ConfigurationController;
-use App\Http\Controllers\Api\V1\SupplierPaymentController;
-use App\Http\Controllers\Api\V1\NotificationController;
-use App\Http\Controllers\Api\V1\ItemController;
-use App\Http\Controllers\Api\V1\SalesReportController;
-use App\Http\Controllers\Api\V1\WarehouseDashboardController;
 use App\Http\Controllers\Api\V1\CrmDashboardController;
-use App\Http\Controllers\Api\V1\WarehouseReportController;
-use App\Http\Controllers\Api\V1\UserAccessController;
-use App\Http\Controllers\Api\V1\SettingsController;
+use App\Http\Controllers\Api\V1\CustomerController;
+use App\Http\Controllers\Api\V1\CustomerOrderController;
+use App\Http\Controllers\Api\V1\DashboardController;
+use App\Http\Controllers\Api\V1\DealerInvoiceController;
+use App\Http\Controllers\Api\V1\DirectPurchaseController;
+use App\Http\Controllers\Api\V1\EmployeeController;
+use App\Http\Controllers\Api\V1\HrConfigurationController;
+use App\Http\Controllers\Api\V1\InventoryEntryController;
+use App\Http\Controllers\Api\V1\ItemController;
+use App\Http\Controllers\Api\V1\ItemLocatorController;
 use App\Http\Controllers\Api\V1\LookupController;
+use App\Http\Controllers\Api\V1\LoyaltyController;
+use App\Http\Controllers\Api\V1\NotificationController;
+use App\Http\Controllers\Api\V1\PhysicalStockController;
+use App\Http\Controllers\Api\V1\PosReturnController;
+use App\Http\Controllers\Api\V1\PosSaleController;
+use App\Http\Controllers\Api\V1\ProductAttributeController;
+use App\Http\Controllers\Api\V1\ProductController;
+use App\Http\Controllers\Api\V1\PurchaseInvoiceController;
+use App\Http\Controllers\Api\V1\PurchaseReturnController;
+use App\Http\Controllers\Api\V1\SalesApprovalController;
+use App\Http\Controllers\Api\V1\SalesReportController;
+use App\Http\Controllers\Api\V1\SettingsController;
+use App\Http\Controllers\Api\V1\SettlementController;
+use App\Http\Controllers\Api\V1\SizeController;
+use App\Http\Controllers\Api\V1\StockOutwardController;
+use App\Http\Controllers\Api\V1\SupplierController;
+use App\Http\Controllers\Api\V1\SupplierPaymentController;
+use App\Http\Controllers\Api\V1\TaxController;
+use App\Http\Controllers\Api\V1\TransportController;
+use App\Http\Controllers\Api\V1\TransportEntryController;
+use App\Http\Controllers\Api\V1\UserAccessController;
+use App\Http\Controllers\Api\V1\WarehouseDashboardController;
+use App\Http\Controllers\Api\V1\WarehouseReportController;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -110,14 +111,16 @@ $registerAppRoutes = function () {
     Route::get('admin/monitoring/companies', [CompanyController::class, 'index']);
     Route::post('admin/notify', [SettingsController::class, 'notify']);
 
-    // Backups
-    Route::get('backups/overview', [SettingsController::class, 'backupsOverview']);
-    Route::match(['get', 'post', 'put'], 'backups/settings', [SettingsController::class, 'backupsSettings']);
-    Route::post('backups/import', [SettingsController::class, 'backupsStore']);
-    Route::post('backups/{id}/restore', [SettingsController::class, 'backupsRestore']);
-    Route::delete('backups/{id}', [SettingsController::class, 'backupsDestroy']);
-    Route::get('backups', [SettingsController::class, 'backupsIndex']);
-    Route::post('backups', [SettingsController::class, 'backupsStore']);
+    // Backups - real synchronous local-storage backup/restore engine
+    Route::get('backups/overview', [BackupController::class, 'overview']);
+    Route::match(['get', 'post', 'put'], 'backups/settings', [BackupController::class, 'settings']);
+    Route::match(['get', 'post'], 'backups/scheduled-run', [BackupController::class, 'scheduledRun']);
+    Route::post('backups/import', [BackupController::class, 'import']);
+    Route::get('backups/{id}/download', [BackupController::class, 'download']);
+    Route::get('backups/{id}/logs', [BackupController::class, 'logs']);
+    Route::post('backups/{id}/restore', [BackupController::class, 'restore']);
+    Route::delete('backups/{id}', [BackupController::class, 'destroy']);
+    Route::post('backups', [BackupController::class, 'store']);
 
     // Printer Configurations & Local Printer Service
     Route::get('printer-configs/resolve', [SettingsController::class, 'printerConfigsResolve']);
@@ -220,7 +223,6 @@ $registerAppRoutes = function () {
     Route::post('barcodes/generate', [BarcodeController::class, 'generate']);
     Route::get('barcodes', [BarcodeController::class, 'index']);
     Route::post('barcodes', [BarcodeController::class, 'generateSingle']);
-
 
     // Physical Stock
     Route::apiResource('physical-stocks', PhysicalStockController::class);

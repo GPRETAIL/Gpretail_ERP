@@ -29,8 +29,8 @@ const cardClass = "rounded-lg border border-gray-200 dark:border-gray-700 bg-whi
 
 const storageModeOptions = [
   { value: "local", label: "Local Storage" },
-  { value: "cloud", label: "Cloud Storage" },
-  { value: "hybrid", label: "Hybrid Storage" },
+  { value: "cloud", label: "Cloud Storage (requires cloud credentials - not yet configured)", disabled: true },
+  { value: "hybrid", label: "Hybrid Storage (requires cloud credentials - not yet configured)", disabled: true },
 ];
 
 const backupTypeOptions = [
@@ -43,9 +43,6 @@ const restoreTypeOptions = [
   { value: "partial", label: "Partial Restore" },
   { value: "full", label: "Full Restore" },
 ];
-
-const BACKUP_NOT_READY_MESSAGE =
-  "Backup & Restore isn't connected to a real backup engine yet - this action would not actually save or restore any data. Contact support before relying on it.";
 
 const scheduleFrequencyOptions = [
   { value: "daily", label: "Daily" },
@@ -120,7 +117,7 @@ const statCardClass =
 
 const createDefaultCreateForm = () => ({
   backupType: "full",
-  storageMode: "hybrid",
+  storageMode: "local",
   moduleNames: [],
   encryptionEnabled: false,
   encryptionPassword: "",
@@ -128,7 +125,7 @@ const createDefaultCreateForm = () => ({
 });
 
 const createDefaultSettingsForm = () => ({
-  storageMode: "hybrid",
+  storageMode: "local",
   localStorageEnabled: true,
   cloudStorageEnabled: true,
   encryptionEnabled: false,
@@ -157,9 +154,9 @@ const createDefaultRestoreForm = () => ({
 });
 
 const normalizeSetting = (setting = {}) => ({
-  storageMode: setting.storage_mode || setting.storageMode || "hybrid",
+  storageMode: setting.storage_mode || setting.storageMode || "local",
   localStorageEnabled: setting.local_storage_enabled ?? setting.localStorageEnabled ?? true,
-  cloudStorageEnabled: setting.cloud_storage_enabled ?? setting.cloudStorageEnabled ?? true,
+  cloudStorageEnabled: setting.cloud_storage_enabled ?? setting.cloudStorageEnabled ?? false,
   encryptionEnabled: setting.encryption_enabled ?? setting.encryptionEnabled ?? false,
   encryptionPassword: "",
   restorePasswordHint: setting.restore_password_hint || setting.restorePasswordHint || "",
@@ -312,6 +309,8 @@ export default function BackupCenter() {
   });
   const [restoreCardHighlighted, setRestoreCardHighlighted] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState({ open: false, row: null });
+  const [importFile, setImportFile] = useState(null);
+  const importFileInputRef = useRef(null);
 
   const loadOverview = useCallback(async (companyId = "") => {
     try {
@@ -479,27 +478,125 @@ export default function BackupCenter() {
   ];
 
   const handleCreateBackup = async () => {
-    toast.error(BACKUP_NOT_READY_MESSAGE);
+    if (createForm.backupType === "module" && !createForm.moduleNames.length) {
+      toast.warning("Select at least one module for module-wise backup");
+      return;
+    }
+    try {
+      const response = await api.post("/backups", {
+        ...createForm,
+        companyId: selectedCompanyId || undefined,
+      });
+      const status = response.data?.data?.status;
+      if (status === "failed") {
+        toast.error(response.data?.data?.summary?.status_message || "Backup failed");
+      } else {
+        toast.success(response.data?.message || "Backup created");
+      }
+      setCreateForm((prev) => ({
+        ...createDefaultCreateForm(),
+        encryptionEnabled: prev.encryptionEnabled,
+        restorePasswordHint: prev.restorePasswordHint,
+      }));
+      await loadOverview(selectedCompanyId);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to create backup");
+    }
   };
 
   const handleSaveSettings = async () => {
-    toast.error(BACKUP_NOT_READY_MESSAGE);
+    if (!selectedCompanyId) {
+      toast.error("Select a store first.");
+      return;
+    }
+    try {
+      const response = await api.post("/backups/settings", {
+        ...settingsForm,
+        companyId: selectedCompanyId,
+      });
+      toast.success(response.data?.message || "Backup settings saved");
+      await loadOverview(selectedCompanyId);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to save backup settings");
+    }
   };
 
   const handleRestore = async () => {
-    toast.error(BACKUP_NOT_READY_MESSAGE);
+    if (!restoreForm.backupId) {
+      toast.warning("Select a backup to restore");
+      return;
+    }
+    try {
+      const response = await api.post(`/backups/${restoreForm.backupId}/restore`, {
+        ...restoreForm,
+        companyId: selectedCompanyId || undefined,
+        targetCompanyId: restoreForm.targetCompanyId || undefined,
+      });
+      const status = response.data?.data?.status;
+      if (status === "failed") {
+        toast.error(response.data?.data?.summary?.status_message || "Restore failed");
+      } else {
+        toast.success(response.data?.message || "Restore completed");
+      }
+      setRestoreForm(createDefaultRestoreForm());
+      await loadOverview(selectedCompanyId);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to restore backup");
+    }
   };
 
   const handleImport = async () => {
-    toast.error(BACKUP_NOT_READY_MESSAGE);
+    if (!importFile) {
+      toast.warning("Choose a backup file first");
+      return;
+    }
+    try {
+      const formData = new FormData();
+      formData.append("backupFile", importFile);
+      if (selectedCompanyId) formData.append("companyId", selectedCompanyId);
+      if (restoreForm.password) formData.append("password", restoreForm.password);
+      const response = await api.post("/backups/import", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      toast.success(response.data?.message || "Backup imported");
+      setImportFile(null);
+      if (importFileInputRef.current) importFileInputRef.current.value = "";
+      await loadOverview(selectedCompanyId);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to import backup");
+    }
   };
 
-  const handleDownload = async () => {
-    toast.error(BACKUP_NOT_READY_MESSAGE);
+  const downloadBlob = async (url, fallbackName) => {
+    const response = await api.get(url, { responseType: "blob" });
+    const disposition = response.headers?.["content-disposition"];
+    const match = disposition && /filename="?([^"]+)"?/.exec(disposition);
+    const fileName = match ? match[1] : fallbackName;
+    const blob = response.data instanceof Blob ? response.data : new Blob([response.data]);
+    const objectUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(objectUrl);
   };
 
-  const handleDownloadLogs = async () => {
-    toast.error(BACKUP_NOT_READY_MESSAGE);
+  const handleDownload = async (row) => {
+    try {
+      await downloadBlob(`/backups/${row.id}/download`, row.file_name || `backup-${row.id}.zip`);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to download backup");
+    }
+  };
+
+  const handleDownloadLogs = async (row) => {
+    try {
+      await downloadBlob(`/backups/${row.id}/logs`, `backup-${row.id}-log.txt`);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to download logs");
+    }
   };
 
   const selectBackupForRestore = (row) => {
@@ -521,8 +618,19 @@ export default function BackupCenter() {
   };
 
   const handleDeleteConfirmed = async () => {
+    const row = deleteDialog.row;
     setDeleteDialog({ open: false, row: null });
-    toast.error(BACKUP_NOT_READY_MESSAGE);
+    if (!row) return;
+    try {
+      const response = await api.delete(`/backups/${row.id}`);
+      toast.success(response.data?.message || "Backup deleted");
+      if (String(restoreForm.backupId) === String(row.id)) {
+        setRestoreForm((prev) => ({ ...prev, backupId: "", moduleNames: [] }));
+      }
+      await loadOverview(selectedCompanyId);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to delete backup");
+    }
   };
 
   if (loading) {
@@ -608,16 +716,6 @@ export default function BackupCenter() {
           </div>
         </div>
 
-        <div className="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-200">
-          <Shield className="mt-0.5 h-5 w-5 shrink-0" />
-          <div>
-            <p className="font-semibold">Not yet connected to a real backup engine</p>
-            <p className="mt-0.5 text-xs">
-              This page isn't wired to actual backup storage yet - creating, restoring, importing, or deleting a backup here does not save or affect any real data. The stats above always show "Never" / "0 backups" for the same reason.
-            </p>
-          </div>
-        </div>
-
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
           <div className={cardClass + " xl:col-span-1"}>
             <div className="mb-4 flex items-center justify-between border-b dark:border-gray-700 pb-2">
@@ -683,11 +781,14 @@ export default function BackupCenter() {
                   className={inputClass}
                 >
                   {storageModeOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
+                    <option key={option.value} value={option.value} disabled={option.disabled}>
                       {option.label}
                     </option>
                   ))}
                 </select>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Only Local Storage is available on this server right now.
+                </p>
               </div>
 
               <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
@@ -753,11 +854,14 @@ export default function BackupCenter() {
                   className={inputClass}
                 >
                   {storageModeOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
+                    <option key={option.value} value={option.value} disabled={option.disabled}>
                       {option.label}
                     </option>
                   ))}
                 </select>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Only Local Storage is available on this server right now.
+                </p>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -770,14 +874,12 @@ export default function BackupCenter() {
                   />
                   Local storage
                 </label>
-                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                  <input
-                    type="checkbox"
-                    checked={!!settingsForm.cloudStorageEnabled}
-                    onChange={(event) => setSettingsForm((prev) => ({ ...prev, cloudStorageEnabled: event.target.checked }))}
-                    className="h-4 w-4"
-                  />
-                  Cloud storage
+                <label
+                  className="flex items-center gap-2 text-sm text-gray-400 dark:text-gray-500"
+                  title="Requires cloud credentials - not yet configured on this server"
+                >
+                  <input type="checkbox" checked={false} disabled className="h-4 w-4" />
+                  Cloud storage (not configured)
                 </label>
               </div>
 
@@ -818,6 +920,21 @@ export default function BackupCenter() {
                 />
                 Enable automatic backup scheduling
               </label>
+
+              {settingsForm.scheduleEnabled ? (
+                <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs text-blue-800 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-200">
+                  This server has no background job runner, so scheduled backups need an
+                  external trigger to actually run. Set up a free service like{" "}
+                  <span className="font-semibold">cron-job.org</span>, or your hosting
+                  panel's cron jobs, to periodically call:
+                  <div className="mt-1 rounded bg-white/60 p-2 font-mono dark:bg-black/20">
+                    GET {"{api-base}"}/backups/scheduled-run?token=YOUR_SECRET
+                  </div>
+                  Get the real secret value from the server&apos;s{" "}
+                  <span className="font-mono">BACKUP_CRON_SECRET</span> environment
+                  variable - it is never shown here.
+                </div>
+              ) : null}
 
               {settingsForm.scheduleEnabled ? (
                 <>
@@ -1041,7 +1158,12 @@ export default function BackupCenter() {
 
               <div className="border-t dark:border-gray-700 pt-3">
                 <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Import Backup File</label>
-                <input type="file" className={inputClass} />
+                <input
+                  type="file"
+                  ref={importFileInputRef}
+                  onChange={(event) => setImportFile(event.target.files?.[0] || null)}
+                  className={inputClass}
+                />
                 <button type="button" className="glass-btn glass-btn-primary mt-3 flex items-center" onClick={handleImport}>
                   <Upload className="mr-1 h-4 w-4" /> Import Backup
                 </button>

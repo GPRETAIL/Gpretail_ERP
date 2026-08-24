@@ -45,6 +45,7 @@ class Store extends Model
         'receipt_customization',
         'barcode_customization',
         'attendance_settings',
+        'backup_settings',
         'is_active',
         'loyalty_point_value',
         'loyalty_redeem_min_points',
@@ -54,17 +55,18 @@ class Store extends Model
     protected function casts(): array
     {
         return [
-            'is_active'               => 'boolean',
-            'as_supplier'             => 'boolean',
-            'as_customer'             => 'boolean',
-            'internal_vendor_margin'  => 'decimal:2',
-            'access_modules'          => 'array',
-            'printer_configurations'  => 'array',
-            'receipt_customization'   => 'array',
-            'barcode_customization'   => 'array',
-            'attendance_settings'     => 'array',
-            'loyalty_point_value'          => 'decimal:2',
-            'loyalty_redeem_min_points'    => 'integer',
+            'is_active' => 'boolean',
+            'as_supplier' => 'boolean',
+            'as_customer' => 'boolean',
+            'internal_vendor_margin' => 'decimal:2',
+            'access_modules' => 'array',
+            'printer_configurations' => 'array',
+            'receipt_customization' => 'array',
+            'barcode_customization' => 'array',
+            'attendance_settings' => 'array',
+            'backup_settings' => 'array',
+            'loyalty_point_value' => 'decimal:2',
+            'loyalty_redeem_min_points' => 'integer',
             'loyalty_redeem_window_months' => 'integer',
         ];
     }

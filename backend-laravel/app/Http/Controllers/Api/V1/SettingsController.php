@@ -5,91 +5,10 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\PrinterConfig;
 use App\Models\Store;
-use App\Models\SystemConfiguration;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class SettingsController extends Controller
 {
-    // Backups
-    public function backupsOverview(Request $request)
-    {
-        return response()->json([
-            'success' => true,
-            'data'    => [
-                'total_backups'    => 1,
-                'last_backup_date' => now()->toDateTimeString(),
-                'backup_size'      => '2.4 MB',
-                'auto_backup'      => true,
-                'backups'          => [
-                    [
-                        'id'         => 1,
-                        'filename'   => 'next_erp_auto_backup_' . date('Y_m_d') . '.sql',
-                        'size'       => '2.4 MB',
-                        'created_at' => now()->toDateTimeString(),
-                        'type'       => 'AUTOMATIC',
-                    ],
-                ],
-            ],
-        ]);
-    }
-
-    public function backupsIndex(Request $request)
-    {
-        return $this->backupsOverview($request);
-    }
-
-    public function backupsStore(Request $request)
-    {
-        $backupFile = 'next_erp_manual_backup_' . date('Y_m_d_His') . '.sql';
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Database backup created successfully',
-            'data'    => [
-                'id'         => rand(10, 999),
-                'filename'   => $backupFile,
-                'size'       => '2.5 MB',
-                'created_at' => now()->toDateTimeString(),
-            ],
-        ], 201);
-    }
-
-    public function backupsRestore(Request $request, $id)
-    {
-        return response()->json([
-            'success' => true,
-            'message' => 'Database backup restored successfully',
-        ]);
-    }
-
-    public function backupsDestroy($id)
-    {
-        return response()->json([
-            'success' => true,
-            'message' => 'Backup file deleted successfully',
-        ]);
-    }
-
-    public function backupsSettings(Request $request)
-    {
-        if ($request->isMethod('post') || $request->isMethod('put')) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Backup settings saved',
-            ]);
-        }
-
-        return response()->json([
-            'success' => true,
-            'data'    => [
-                'auto_backup_enabled' => true,
-                'frequency'           => 'DAILY',
-                'retention_days'      => 30,
-            ],
-        ]);
-    }
-
     // Printer Configs Resolve
     public function printerConfigsResolve(Request $request)
     {
@@ -98,12 +17,12 @@ class SettingsController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => [
+            'data' => [
                 'printer_name' => $config?->name ?? 'POS Thermal Printer',
                 'printer_type' => $config?->printer_type ?? 'THERMAL',
-                'paper_size'   => $config?->paper_size ?? '80mm',
-                'header_text'  => $config?->header_text ?? 'SRI BALAJI TEXTILE',
-                'footer_text'  => $config?->footer_text ?? 'Thank you for shopping with us!',
+                'paper_size' => $config?->paper_size ?? '80mm',
+                'header_text' => $config?->header_text ?? 'SRI BALAJI TEXTILE',
+                'footer_text' => $config?->footer_text ?? 'Thank you for shopping with us!',
             ],
         ]);
     }
@@ -113,13 +32,13 @@ class SettingsController extends Controller
     {
         return response()->json([
             'success' => true,
-            'data'    => [
-                'fileName'        => 'erp-printer-connector.zip',
-                'type'            => 'ZIP Archive',
-                'installHint'     => 'Extract ZIP and run run.bat on Windows or run.sh on macOS/Linux. Select printers in terminal for silent printing.',
+            'data' => [
+                'fileName' => 'erp-printer-connector.zip',
+                'type' => 'ZIP Archive',
+                'installHint' => 'Extract ZIP and run run.bat on Windows or run.sh on macOS/Linux. Select printers in terminal for silent printing.',
                 'service_running' => false,
-                'version'         => '2.0.0',
-                'platform'        => PHP_OS_FAMILY,
+                'version' => '2.0.0',
+                'platform' => PHP_OS_FAMILY,
             ],
         ]);
     }
@@ -127,13 +46,13 @@ class SettingsController extends Controller
     public function localPrinterInstaller(Request $request)
     {
         $connectorDir = resource_path('printer-connector');
-        $tempZipPath = storage_path('app/erp-printer-connector-' . time() . '.zip');
+        $tempZipPath = storage_path('app/erp-printer-connector-'.time().'.zip');
 
-        if (!is_dir(storage_path('app'))) {
+        if (! is_dir(storage_path('app'))) {
             @mkdir(storage_path('app'), 0755, true);
         }
 
-        $zip = new \ZipArchive();
+        $zip = new \ZipArchive;
         if ($zip->open($tempZipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === true) {
             if (is_dir($connectorDir)) {
                 $files = new \RecursiveIteratorIterator(
@@ -142,7 +61,7 @@ class SettingsController extends Controller
                 );
 
                 foreach ($files as $file) {
-                    if (!$file->isDir()) {
+                    if (! $file->isDir()) {
                         $filePath = $file->getRealPath();
                         $relativePath = substr($filePath, strlen($connectorDir) + 1);
                         $zip->addFile($filePath, $relativePath);
@@ -155,7 +74,7 @@ class SettingsController extends Controller
             $zip->close();
         }
 
-        if (!file_exists($tempZipPath)) {
+        if (! file_exists($tempZipPath)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to create connector archive.',
@@ -163,9 +82,9 @@ class SettingsController extends Controller
         }
 
         return response()->download($tempZipPath, 'erp-printer-connector.zip', [
-            'Content-Type'        => 'application/zip',
+            'Content-Type' => 'application/zip',
             'Content-Disposition' => 'attachment; filename="erp-printer-connector.zip"',
-            'Cache-Control'       => 'no-cache, no-store, must-revalidate',
+            'Cache-Control' => 'no-cache, no-store, must-revalidate',
         ])->deleteFileAfterSend(true);
     }
 
@@ -175,8 +94,8 @@ class SettingsController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Local server connection test successful',
-            'data'    => [
-                'status'  => 'ONLINE',
+            'data' => [
+                'status' => 'ONLINE',
                 'latency' => '2ms',
             ],
         ]);
@@ -196,12 +115,12 @@ class SettingsController extends Controller
         $storeId = $request->input('companyId') ?? $request->input('company_id');
 
         if ($request->isMethod('post') || $request->isMethod('put')) {
-            if (!$storeId) {
+            if (! $storeId) {
                 return response()->json(['success' => false, 'message' => 'companyId is required'], 422);
             }
 
             $store = Store::find($storeId);
-            if (!$store) {
+            if (! $store) {
                 return response()->json(['success' => false, 'message' => 'Store not found'], 404);
             }
 
@@ -219,7 +138,7 @@ class SettingsController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $store?->receipt_customization ?? [],
+            'data' => $store?->receipt_customization ?? [],
         ]);
     }
 
@@ -228,10 +147,10 @@ class SettingsController extends Controller
     {
         return response()->json([
             'success' => true,
-            'data'    => [
-                'primary_color'   => '#2563eb',
+            'data' => [
+                'primary_color' => '#2563eb',
                 'secondary_color' => '#1e40af',
-                'mode'            => 'light',
+                'mode' => 'light',
             ],
         ]);
     }
@@ -241,7 +160,7 @@ class SettingsController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Theme updated successfully',
-            'data'    => $request->all(),
+            'data' => $request->all(),
         ]);
     }
 
