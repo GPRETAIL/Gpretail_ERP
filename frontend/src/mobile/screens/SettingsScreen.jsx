@@ -15,8 +15,17 @@ import {
   Sliders,
   Building,
   Check,
+  Download,
+  Play,
 } from "lucide-react";
 import api from "../../api/axios";
+
+const formatDateTime = (value) => {
+  if (!value) return "--";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "--";
+  return d.toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+};
 
 /**
  * Mobile Settings screen with functional items
@@ -26,8 +35,54 @@ export default function SettingsScreen({ onLogout, onTriggerPwa }) {
   const [profile, setProfile] = useState(null);
   const [employees, setEmployees] = useState([]);
   const [roles, setRoles] = useState([]);
+  const [backupOverview, setBackupOverview] = useState(null);
+  const [creatingBackup, setCreatingBackup] = useState(false);
   const [prefPaper, setPrefPaper] = useState(() => localStorage.getItem("vx_paper_width") || "3-inch");
   const [prefMode, setPrefMode] = useState(() => localStorage.getItem("vx_print_mode") || "browser");
+  const activeStoreId = localStorage.getItem("activeStoreId") || "";
+
+  const loadBackupOverview = () => {
+    api.get("/backups/overview", { params: { companyId: activeStoreId || undefined } })
+      .then((res) => setBackupOverview(res.data?.data || null))
+      .catch(() => setBackupOverview(null));
+  };
+
+  const handleCreateBackup = async () => {
+    setCreatingBackup(true);
+    try {
+      const res = await api.post("/backups", {
+        backupType: "full",
+        storageMode: "local",
+        companyId: activeStoreId || undefined,
+      });
+      const status = res.data?.data?.status;
+      if (status === "failed") {
+        alert(res.data?.data?.summary?.status_message || "Backup failed");
+      }
+      loadBackupOverview();
+    } catch (err) {
+      alert(err.response?.data?.message || "Could not create backup.");
+    } finally {
+      setCreatingBackup(false);
+    }
+  };
+
+  const handleDownloadBackup = async (row) => {
+    try {
+      const res = await api.get(`/backups/${row.id}/download`, { responseType: "blob" });
+      const blob = res.data instanceof Blob ? res.data : new Blob([res.data]);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = row.file_name || `backup-${row.id}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      alert("Could not download backup.");
+    }
+  };
 
   // Load Settings Data
   useEffect(() => {
@@ -43,8 +98,12 @@ export default function SettingsScreen({ onLogout, onTriggerPwa }) {
       api.get("/user-access/groups").then((res) => {
         setRoles(res.data?.data || []);
       }).catch(() => setRoles([]));
+    } else if (activeModal === "backup") {
+      api.get("/backups/overview", { params: { companyId: activeStoreId || undefined } })
+        .then((res) => setBackupOverview(res.data?.data || null))
+        .catch(() => setBackupOverview(null));
     }
-  }, [activeModal]);
+  }, [activeModal, activeStoreId]);
 
   const handleSavePref = () => {
     localStorage.setItem("vx_paper_width", prefPaper);
@@ -237,17 +296,60 @@ export default function SettingsScreen({ onLogout, onTriggerPwa }) {
       {activeModal === "backup" && (
         <SettingsDrawer title="Backup & Restore" onClose={() => setActiveModal(null)}>
           <div className="space-y-4">
-            <div className="p-4 rounded-2xl bg-amber-50 border border-amber-100/80 flex items-center gap-3">
-              <Database size={20} className="text-amber-600 shrink-0" />
-              <div>
-                <h4 className="text-xs font-bold text-amber-800">Not available yet</h4>
-                <p className="text-[10px] text-amber-700 mt-0.5 leading-relaxed">
-                  A real database backup/restore isn't built yet - this will be added in a future update. "Clear Cache" below only resets this device's local app cache, not your business data.
+            <div className="grid grid-cols-2 gap-2">
+              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80">
+                <p className="text-[9.5px] font-bold text-slate-400 uppercase tracking-wide">Last Backup</p>
+                <p className="text-xs font-black text-slate-900 mt-1 capitalize">
+                  {backupOverview?.stats?.last_backup_status || "Never"}
                 </p>
+                <p className="text-[9.5px] text-slate-500 mt-0.5">{formatDateTime(backupOverview?.stats?.last_backup_at)}</p>
+              </div>
+              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80">
+                <p className="text-[9.5px] font-bold text-slate-400 uppercase tracking-wide">Storage Used</p>
+                <p className="text-xs font-black text-slate-900 mt-1">
+                  {backupOverview?.stats?.storage_usage?.total_label || "0 B"}
+                </p>
+                <p className="text-[9.5px] text-slate-500 mt-0.5">{backupOverview?.stats?.total_backups ?? 0} backups</p>
               </div>
             </div>
 
-            <div className="space-y-2">
+            <button
+              type="button"
+              onClick={handleCreateBackup}
+              disabled={creatingBackup}
+              className="w-full py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition-all disabled:opacity-50"
+            >
+              <Play size={14} /> {creatingBackup ? "Creating backup..." : "Create Full Backup Now"}
+            </button>
+            <p className="text-[9.5px] text-slate-400 -mt-2 text-center">
+              For restore, encryption, and scheduling, use Backup Center on the desktop app.
+            </p>
+
+            {backupOverview?.backups?.length > 0 && (
+              <div className="space-y-2 pt-2 border-t border-slate-100">
+                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-wide">Recent Backups</h4>
+                {backupOverview.backups.slice(0, 5).map((row) => (
+                  <div key={row.id} className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200/80">
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-bold text-slate-800 truncate">{row.file_name}</p>
+                      <p className="text-[9.5px] text-slate-500 mt-0.5">
+                        {row.file_size_label} &middot; {formatDateTime(row.completed_at)}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadBackup(row)}
+                      className="shrink-0 ml-2 p-2 rounded-lg bg-white border border-slate-200 text-indigo-600 active:scale-95 transition-all"
+                      aria-label="Download backup"
+                    >
+                      <Download size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="space-y-2 pt-2 border-t border-slate-100">
               <button
                 type="button"
                 onClick={handleClearCache}

@@ -253,22 +253,28 @@ const UserAccess = () => {
   }, [availableGroups, userForm.accessGroupId]);
 
   const loadRows = async () => {
-    try {
-      setLoading(true);
-      const res = await api.get("/user-access");
-      setUsers(Array.isArray(res.data?.data?.users) ? res.data.data.users : []);
-      setGroups(Array.isArray(res.data?.data?.groups) ? res.data.data.groups : []);
-      setCompanies(Array.isArray(res.data?.meta?.companies) ? res.data.meta.companies : []);
-      setRoles(
-        Array.isArray(res.data?.meta?.roles) && res.data.meta.roles.length
-          ? res.data.meta.roles
-          : USER_ROLE_PRESET_OPTIONS.map((option) => option.value)
-      );
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to load user access");
-    } finally {
-      setLoading(false);
+    setLoading(true);
+    // GET /user-access only ever returns a flat, paginated list of users - there is no
+    // combined users+groups+companies+roles payload on the backend. Fetch each real,
+    // independently-working endpoint instead of expecting a bundle that was never built.
+    const [usersRes, groupsRes, companiesRes] = await Promise.allSettled([
+      api.get("/user-access", { params: { all: true } }),
+      api.get("/user-access/groups"),
+      api.get("/companies", { params: { includeInactive: true, limit: 500 } }),
+    ]);
+
+    if (usersRes.status === "fulfilled") {
+      setUsers(Array.isArray(usersRes.value.data?.data) ? usersRes.value.data.data : []);
+    } else {
+      setUsers([]);
+      toast.error(usersRes.reason?.response?.data?.message || "Failed to load users");
     }
+    setGroups(groupsRes.status === "fulfilled" && Array.isArray(groupsRes.value.data?.data) ? groupsRes.value.data.data : []);
+    setCompanies(companiesRes.status === "fulfilled" && Array.isArray(companiesRes.value.data?.data) ? companiesRes.value.data.data : []);
+    // No backend endpoint enumerates distinct account roles - the preset list is the real,
+    // already-established source of truth for this (see userRolePresets.js).
+    setRoles(USER_ROLE_PRESET_OPTIONS.map((option) => option.value));
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -333,8 +339,8 @@ const UserAccess = () => {
     const companyIds =
       Array.isArray(row.company_ids) && row.company_ids.length
         ? row.company_ids.map((value) => String(value))
-        : row.company_id
-          ? [String(row.company_id)]
+        : row.store_id || row.company_id
+          ? [String(row.store_id || row.company_id)]
           : [];
     setEditingUserId(row.id);
     setUserForm({
@@ -559,14 +565,17 @@ const UserAccess = () => {
   };
 
   const getUserCompanyNames = (row) => {
+    // The real /user-access response scopes a user to a store via store_id/store (not
+    // company_id/company - those never exist on the actual User model), matching the
+    // store_id-based scoping convention used everywhere else in this backend.
     const ids =
       Array.isArray(row.company_ids) && row.company_ids.length
         ? row.company_ids.map((value) => String(value))
-        : row.company_id
-          ? [String(row.company_id)]
+        : row.store_id || row.company_id
+          ? [String(row.store_id || row.company_id)]
           : [];
-    if (!ids.length) return row.company?.name || "--";
-    const names = ids.map((id) => companyNameById.get(id) || row.company?.name || `Company ${id}`);
+    if (!ids.length) return row.store?.name || row.company?.name || "--";
+    const names = ids.map((id) => companyNameById.get(id) || row.store?.name || row.company?.name || `Company ${id}`);
     return [...new Set(names)].join(", ");
   };
 

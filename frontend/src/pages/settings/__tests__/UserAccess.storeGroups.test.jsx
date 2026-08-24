@@ -29,13 +29,18 @@ const mockStoreGroups = [
 ];
 
 const mockGet = vi.fn((url) => {
+  // The real backend has no combined users+groups+companies+roles endpoint - UserAccess
+  // fetches /user-access (flat user list), /user-access/groups (flat access-group list),
+  // and /companies (flat company list) separately, matching what each real endpoint
+  // actually returns.
   if (url === "/user-access") {
-    return Promise.resolve({
-      data: {
-        data: { users: [], groups: [] },
-        meta: { companies: mockCompanies, roles: ["user", "admin"] },
-      },
-    });
+    return Promise.resolve({ data: { data: [] } });
+  }
+  if (url === "/user-access/groups") {
+    return Promise.resolve({ data: { data: [] } });
+  }
+  if (url === "/companies") {
+    return Promise.resolve({ data: { data: mockCompanies } });
   }
   if (url === "/user-access/store-groups") {
     return Promise.resolve({ data: { data: mockStoreGroups } });
