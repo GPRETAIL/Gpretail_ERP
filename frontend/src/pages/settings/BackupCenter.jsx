@@ -44,9 +44,8 @@ const restoreTypeOptions = [
   { value: "full", label: "Full Restore" },
 ];
 
-const notifyBackupActivityRefresh = () => {
-  window.dispatchEvent(new Event("backup-activity-refresh"));
-};
+const BACKUP_NOT_READY_MESSAGE =
+  "Backup & Restore isn't connected to a real backup engine yet - this action would not actually save or restore any data. Contact support before relying on it.";
 
 const scheduleFrequencyOptions = [
   { value: "daily", label: "Daily" },
@@ -280,10 +279,6 @@ export default function BackupCenter() {
   const userRole = String(authUser?.role || "").toLowerCase();
   const isSuperAdmin = userRole === "super_admin";
   const [loading, setLoading] = useState(true);
-  const [submittingBackup, setSubmittingBackup] = useState(false);
-  const [savingSettings, setSavingSettings] = useState(false);
-  const [restoring, setRestoring] = useState(false);
-  const [importing, setImporting] = useState(false);
   const [selectedCompanyId, setSelectedCompanyId] = useState("");
   const [overview, setOverview] = useState({
     companies: [],
@@ -308,7 +303,6 @@ export default function BackupCenter() {
   const [createForm, setCreateForm] = useState(createDefaultCreateForm);
   const [settingsForm, setSettingsForm] = useState(createDefaultSettingsForm);
   const [restoreForm, setRestoreForm] = useState(createDefaultRestoreForm);
-  const [importFile, setImportFile] = useState(null);
   const [historyFilters, setHistoryFilters] = useState({
     status: "",
     module: "",
@@ -485,125 +479,27 @@ export default function BackupCenter() {
   ];
 
   const handleCreateBackup = async () => {
-    if (createForm.backupType === "module" && !createForm.moduleNames.length) {
-      toast.warning("Select at least one module for module-wise backup");
-      return;
-    }
-    try {
-      setSubmittingBackup(true);
-      const payload = {
-        ...createForm,
-        companyId: selectedCompanyId || undefined,
-      };
-      const response = await api.post("/backups", payload);
-      toast.success(response.data?.message || "Backup created");
-      notifyBackupActivityRefresh();
-      setCreateForm((prev) => ({
-        ...createDefaultCreateForm(),
-        storageMode: prev.storageMode,
-        encryptionEnabled: prev.encryptionEnabled,
-        restorePasswordHint: prev.restorePasswordHint,
-      }));
-      await loadOverview(selectedCompanyId);
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to create backup");
-    } finally {
-      setSubmittingBackup(false);
-    }
+    toast.error(BACKUP_NOT_READY_MESSAGE);
   };
 
   const handleSaveSettings = async () => {
-    try {
-      setSavingSettings(true);
-      const payload = {
-        ...settingsForm,
-        companyId: selectedCompanyId || undefined,
-      };
-      const response = await api.post("/backups/settings", payload);
-      toast.success(response.data?.message || "Backup settings saved");
-      await loadOverview(selectedCompanyId);
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to save backup settings");
-    } finally {
-      setSavingSettings(false);
-    }
+    toast.error(BACKUP_NOT_READY_MESSAGE);
   };
 
   const handleRestore = async () => {
-    if (!restoreForm.backupId) {
-      toast.warning("Select a backup to restore");
-      return;
-    }
-    try {
-      setRestoring(true);
-      const response = await api.post(`/backups/${restoreForm.backupId}/restore`, {
-        ...restoreForm,
-        companyId: selectedCompanyId || undefined,
-        targetCompanyId: restoreForm.targetCompanyId || undefined,
-      });
-      toast.success(response.data?.message || "Restore completed");
-      notifyBackupActivityRefresh();
-      setRestoreForm(createDefaultRestoreForm());
-      await loadOverview(selectedCompanyId);
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to restore backup");
-    } finally {
-      setRestoring(false);
-    }
+    toast.error(BACKUP_NOT_READY_MESSAGE);
   };
 
   const handleImport = async () => {
-    if (!importFile) {
-      toast.warning("Choose a backup file first");
-      return;
-    }
-    try {
-      setImporting(true);
-      const formData = new FormData();
-      formData.append("backupFile", importFile);
-      if (selectedCompanyId) formData.append("companyId", selectedCompanyId);
-      if (restoreForm.password) formData.append("password", restoreForm.password);
-      const response = await api.post("/backups/import", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      toast.success(response.data?.message || "Backup imported");
-      notifyBackupActivityRefresh();
-      setImportFile(null);
-      await loadOverview(selectedCompanyId);
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to import backup");
-    } finally {
-      setImporting(false);
-    }
+    toast.error(BACKUP_NOT_READY_MESSAGE);
   };
 
-  const downloadBlob = async (url, fallbackName) => {
-    const response = await api.get(url, { responseType: "blob" });
-    const blob = response.data instanceof Blob ? response.data : new Blob([response.data]);
-    const objectUrl = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = objectUrl;
-    link.download = fallbackName;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.URL.revokeObjectURL(objectUrl);
+  const handleDownload = async () => {
+    toast.error(BACKUP_NOT_READY_MESSAGE);
   };
 
-  const handleDownload = async (row) => {
-    try {
-      await downloadBlob(`/backups/${row.id}/download`, row.file_name || `backup-${row.id}.json.gz`);
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to download backup");
-    }
-  };
-
-  const handleDownloadLogs = async (row) => {
-    try {
-      await downloadBlob(`/backups/${row.id}/logs`, `backup-${row.id}-logs.txt`);
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to download logs");
-    }
+  const handleDownloadLogs = async () => {
+    toast.error(BACKUP_NOT_READY_MESSAGE);
   };
 
   const selectBackupForRestore = (row) => {
@@ -625,19 +521,8 @@ export default function BackupCenter() {
   };
 
   const handleDeleteConfirmed = async () => {
-    const row = deleteDialog.row;
     setDeleteDialog({ open: false, row: null });
-    if (!row) return;
-    try {
-      const response = await api.delete(`/backups/${row.id}`);
-      toast.success(response.data?.message || "Backup deleted");
-      if (String(restoreForm.backupId) === String(row.id)) {
-        setRestoreForm((prev) => ({ ...prev, backupId: "", moduleNames: [] }));
-      }
-      await loadOverview(selectedCompanyId);
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to delete backup");
-    }
+    toast.error(BACKUP_NOT_READY_MESSAGE);
   };
 
   if (loading) {
@@ -720,6 +605,16 @@ export default function BackupCenter() {
               </div>
               <History className="h-8 w-8 text-indigo-500" />
             </div>
+          </div>
+        </div>
+
+        <div className="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-200">
+          <Shield className="mt-0.5 h-5 w-5 shrink-0" />
+          <div>
+            <p className="font-semibold">Not yet connected to a real backup engine</p>
+            <p className="mt-0.5 text-xs">
+              This page isn't wired to actual backup storage yet - creating, restoring, importing, or deleting a backup here does not save or affect any real data. The stats above always show "Never" / "0 backups" for the same reason.
+            </p>
           </div>
         </div>
 
@@ -831,8 +726,8 @@ export default function BackupCenter() {
                 Local storage writes to the system backup folder, cloud storage writes to the server backup folder, and hybrid writes to both.
               </div>
 
-              <button type="button" className="glass-btn glass-btn-success flex items-center" onClick={handleCreateBackup} disabled={submittingBackup}>
-                <Play className="mr-1 h-4 w-4" /> {submittingBackup ? "Creating..." : "Run Backup"}
+              <button type="button" className="glass-btn glass-btn-success flex items-center" onClick={handleCreateBackup}>
+                <Play className="mr-1 h-4 w-4" /> Run Backup
               </button>
             </div>
           </div>
@@ -1033,8 +928,8 @@ export default function BackupCenter() {
                 Auto cleanup old scheduled backups
               </label>
 
-              <button type="button" className="glass-btn glass-btn-success flex items-center" onClick={handleSaveSettings} disabled={savingSettings}>
-                <Save className="mr-1 h-4 w-4" /> {savingSettings ? "Saving..." : "Save Settings"}
+              <button type="button" className="glass-btn glass-btn-success flex items-center" onClick={handleSaveSettings}>
+                <Save className="mr-1 h-4 w-4" /> Save Settings
               </button>
             </div>
           </div>
@@ -1140,15 +1035,15 @@ export default function BackupCenter() {
                 </div>
               </div>
 
-              <button type="button" className="glass-btn glass-btn-danger flex items-center" onClick={handleRestore} disabled={restoring}>
-                <RotateCcw className="mr-1 h-4 w-4" /> {restoring ? "Restoring..." : "Run Restore"}
+              <button type="button" className="glass-btn glass-btn-danger flex items-center" onClick={handleRestore}>
+                <RotateCcw className="mr-1 h-4 w-4" /> Run Restore
               </button>
 
               <div className="border-t dark:border-gray-700 pt-3">
                 <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Import Backup File</label>
-                <input type="file" onChange={(event) => setImportFile(event.target.files?.[0] || null)} className={inputClass} />
-                <button type="button" className="glass-btn glass-btn-primary mt-3 flex items-center" onClick={handleImport} disabled={importing}>
-                  <Upload className="mr-1 h-4 w-4" /> {importing ? "Importing..." : "Import Backup"}
+                <input type="file" className={inputClass} />
+                <button type="button" className="glass-btn glass-btn-primary mt-3 flex items-center" onClick={handleImport}>
+                  <Upload className="mr-1 h-4 w-4" /> Import Backup
                 </button>
               </div>
             </div>

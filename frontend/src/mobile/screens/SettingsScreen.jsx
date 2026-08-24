@@ -25,6 +25,7 @@ export default function SettingsScreen({ onLogout, onTriggerPwa }) {
   const [activeModal, setActiveModal] = useState(null); // 'profile' | 'users' | 'roles' | 'preferences' | 'backup' | 'about'
   const [profile, setProfile] = useState(null);
   const [employees, setEmployees] = useState([]);
+  const [roles, setRoles] = useState([]);
   const [prefPaper, setPrefPaper] = useState(() => localStorage.getItem("vx_paper_width") || "3-inch");
   const [prefMode, setPrefMode] = useState(() => localStorage.getItem("vx_print_mode") || "browser");
 
@@ -38,6 +39,10 @@ export default function SettingsScreen({ onLogout, onTriggerPwa }) {
       api.get("/employees").then((res) => {
         setEmployees(res.data?.data || []);
       }).catch(() => {});
+    } else if (activeModal === "roles") {
+      api.get("/user-access/groups").then((res) => {
+        setRoles(res.data?.data || []);
+      }).catch(() => setRoles([]));
     }
   }, [activeModal]);
 
@@ -151,17 +156,21 @@ export default function SettingsScreen({ onLogout, onTriggerPwa }) {
       {activeModal === "roles" && (
         <SettingsDrawer title="Roles & Permissions" onClose={() => setActiveModal(null)}>
           <div className="space-y-3">
-            {[
-              { role: "Super Admin", desc: "Full root access to all modules, transactions & store branches" },
-              { role: "Manager", desc: "Access to sales, purchase invoices, inventory, and analytics reports" },
-              { role: "Sales Associate", desc: "Restricted access to mobile POS billing, customer list, and orders" },
-              { role: "Warehouse Operative", desc: "Access to stock adjustments, inter-branch transfers, and counts" },
-            ].map((r, i) => (
-              <div key={i} className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
-                <h4 className="text-xs font-black text-indigo-600">{r.role}</h4>
-                <p className="text-[11px] text-slate-500 mt-1 leading-normal">{r.desc}</p>
-              </div>
-            ))}
+            <div className="p-3 rounded-2xl bg-amber-50 border border-amber-100/80">
+              <p className="text-[10.5px] text-amber-800 leading-relaxed">
+                These are the real role groups defined for this account. Fine-grained page-level permissions per role aren't enforced by the backend yet - a role name here doesn't currently restrict what a user can do.
+              </p>
+            </div>
+            {roles.length > 0 ? (
+              roles.map((r) => (
+                <div key={r.id} className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                  <h4 className="text-xs font-black text-indigo-600">{r.display_name || r.name}</h4>
+                  <p className="text-[11px] text-slate-500 mt-1 leading-normal">{r.description || "No description set"}</p>
+                </div>
+              ))
+            ) : (
+              <div className="p-3 text-center text-xs text-slate-500">Loading role groups...</div>
+            )}
           </div>
         </SettingsDrawer>
       )}
@@ -228,22 +237,17 @@ export default function SettingsScreen({ onLogout, onTriggerPwa }) {
       {activeModal === "backup" && (
         <SettingsDrawer title="Backup & Restore" onClose={() => setActiveModal(null)}>
           <div className="space-y-4">
-            <div className="p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100/80 flex items-center gap-3">
-              <Database size={20} className="text-indigo-600 shrink-0" />
+            <div className="p-4 rounded-2xl bg-amber-50 border border-amber-100/80 flex items-center gap-3">
+              <Database size={20} className="text-amber-600 shrink-0" />
               <div>
-                <h4 className="text-xs font-bold text-slate-800">Local Database Engine</h4>
-                <p className="text-[10px] text-slate-500 mt-0.5">IndexedDB cache storage initialized</p>
+                <h4 className="text-xs font-bold text-amber-800">Not available yet</h4>
+                <p className="text-[10px] text-amber-700 mt-0.5 leading-relaxed">
+                  A real database backup/restore isn't built yet - this will be added in a future update. "Clear Cache" below only resets this device's local app cache, not your business data.
+                </p>
               </div>
             </div>
 
             <div className="space-y-2">
-              <button
-                type="button"
-                onClick={() => alert("Local database backup generated successfully as vynerix_backup.json!")}
-                className="w-full py-2.5 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-all"
-              >
-                Download Local Backup
-              </button>
               <button
                 type="button"
                 onClick={handleClearCache}
