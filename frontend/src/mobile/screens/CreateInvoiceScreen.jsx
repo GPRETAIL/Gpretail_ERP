@@ -26,6 +26,7 @@ import { getHtmlAsPdfBlob } from "../../utils/htmlToPdf";
 import { usePrintContext } from "../../context/PrintContext";
 import useHaptics from "../hooks/useHaptics";
 import useNativeShare from "../hooks/useNativeShare";
+import { setHasUnsavedWork } from "../utils/unsavedWork";
 
 const money = (n) =>
   "₹ " +
@@ -57,6 +58,15 @@ export default function CreateInvoiceScreen({ onBack }) {
 
   // Cart State
   const [cartItems, setCartItems] = useState([]); // { product, quantity }
+
+  // Flags an in-progress, not-yet-saved invoice so the PWA update banner can
+  // warn before a reload would silently discard it. Cleared on unmount too
+  // (navigating away, e.g. after a successful save which resets cartItems
+  // anyway) so a stale "unsaved work" flag can't outlive this screen.
+  useEffect(() => {
+    setHasUnsavedWork(cartItems.length > 0);
+  }, [cartItems.length]);
+  useEffect(() => () => setHasUnsavedWork(false), []);
 
   // Hardware Scanner State
   const [cameraOn, setCameraOn] = useState(true);

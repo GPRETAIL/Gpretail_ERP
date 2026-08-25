@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Sparkles, RefreshCw } from "lucide-react";
+import { getHasUnsavedWork } from "../utils/unsavedWork";
 
 /**
  * In-App PWA Update Notification Banner
@@ -49,6 +50,19 @@ export default function PwaUpdateBanner() {
   }, []);
 
   const handleUpdate = () => {
+    // A new service worker taking over reloads the page (see the
+    // controllerchange listener above), which would silently wipe an
+    // in-progress, not-yet-saved invoice's cart - confirm first rather
+    // than losing scanned items to an update the user didn't realize
+    // would reset the screen.
+    if (
+      getHasUnsavedWork() &&
+      !window.confirm(
+        "You have an invoice in progress that hasn't been saved yet. Updating now will lose it. Update anyway?"
+      )
+    ) {
+      return;
+    }
     if (waitingWorker) {
       waitingWorker.postMessage({ type: "SKIP_WAITING" });
     } else {
