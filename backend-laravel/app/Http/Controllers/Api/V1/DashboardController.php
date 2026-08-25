@@ -580,7 +580,13 @@ class DashboardController extends Controller
 
     public function attentionSummary(Request $request)
     {
-        $storeId = $request->header('X-Company-Scope-Id') ?? $request->input('company_id');
+        // Mobile never sets the X-Company-Scope-Id header (no store-switcher there, unlike
+        // desktop's Navbar) - without falling back to the user's own store, $storeId stayed
+        // null and $scope became a no-op, silently running every count unscoped across ALL
+        // stores instead of the caller's, matching PosSaleController::store()'s fallback.
+        $storeId = $request->header('X-Company-Scope-Id')
+            ?? $request->input('company_id')
+            ?? $request->user()?->store_id;
         $scope = fn ($q) => ($storeId && $storeId !== 'all') ? $q->where('store_id', $storeId) : $q;
 
         // 1. Low Stock Alerts
