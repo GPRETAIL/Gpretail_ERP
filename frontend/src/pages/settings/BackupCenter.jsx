@@ -310,6 +310,7 @@ export default function BackupCenter() {
     },
     backups: [],
     restores: [],
+    cronSecretConfigured: false,
   });
   const [createForm, setCreateForm] = useState(createDefaultCreateForm);
   const [settingsForm, setSettingsForm] = useState(createDefaultSettingsForm);
@@ -364,6 +365,7 @@ export default function BackupCenter() {
         stats: data.stats || {},
         backups: Array.isArray(data.backups) ? data.backups.map(normalizeBackupRow) : [],
         restores: Array.isArray(data.restores) ? data.restores.map(normalizeRestoreRow) : [],
+        cronSecretConfigured: !!data.cronSecretConfigured,
       });
       setSettingsForm(normalizedSetting);
       setCreateForm((prev) => ({
@@ -1112,6 +1114,24 @@ export default function BackupCenter() {
                 />
                 Enable automatic backup scheduling
               </label>
+
+              {settingsForm.scheduleEnabled ? (
+                settingsForm.lastScheduledAt ? (
+                  <div className="rounded-lg border border-green-300 bg-green-50 p-3 text-xs text-green-800 dark:border-green-800 dark:bg-green-900/30 dark:text-green-200">
+                    ✓ Scheduled backups are actively running — last one completed {toDateTime(settingsForm.lastScheduledAt)}. Your external trigger is working.
+                  </div>
+                ) : (
+                  <div className={`rounded-lg border p-3 text-xs ${
+                    overview.cronSecretConfigured
+                      ? "border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-200"
+                      : "border-red-300 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-900/30 dark:text-red-200"
+                  }`}>
+                    {overview.cronSecretConfigured
+                      ? "⚠ The server is ready (BACKUP_CRON_SECRET is set), but no scheduled run has completed yet. Double-check your external trigger (cron-job.org etc.) is actually calling the URL below with the correct token."
+                      : "⚠ BACKUP_CRON_SECRET is not configured on this server yet. The trigger URL below will be rejected (403) no matter what token is used until it's set."}
+                  </div>
+                )
+              ) : null}
 
               {settingsForm.scheduleEnabled ? (
                 <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs text-blue-800 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-200">

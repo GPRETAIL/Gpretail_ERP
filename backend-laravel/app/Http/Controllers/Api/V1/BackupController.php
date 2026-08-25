@@ -32,7 +32,18 @@ class BackupController extends Controller
         $restoresQuery = BackupRestore::query()->orderByDesc('created_at');
         if ($companyId) {
             $backupsQuery->where('company_id', $companyId);
-            $restoresQuery->where('target_company_id', $companyId);
+            // target_company_id is only set when restoring INTO a different store than
+            // the backup's own - the default "Original store(s) from backup" option
+            // leaves it null, so a plain `where('target_company_id', $companyId)` never
+            // matched those rows at all (NULL never equals anything in SQL). Fall back to
+            // the backup's own company_id whenever target_company_id wasn't overridden.
+            $restoresQuery->where(function ($q) use ($companyId) {
+                $q->where('target_company_id', $companyId)
+                    ->orWhere(function ($q2) use ($companyId) {
+                        $q2->whereNull('target_company_id')
+                            ->whereHas('backup', fn ($b) => $b->where('company_id', $companyId));
+                    });
+            });
         }
         // Limit to 100 rows to avoid heavy payloads; clients may filter client-side
         $backups = $backupsQuery->limit(100)->get();
@@ -62,12 +73,16 @@ class BackupController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'companies'     => $companies,
-                'moduleOptions' => $this->backups->moduleOptions(),
-                'setting'       => $setting,
-                'stats'         => $stats,
-                'backups'       => $backups,
-                'restores'      => $restores,
+                'companies'          => $companies,
+                'moduleOptions'      => $this->backups->moduleOptions(),
+                'setting'            => $setting,
+                'stats'              => $stats,
+                'backups'            => $backups,
+                'restores'           => $restores,
+                // Lets the UI show real status instead of just static setup instructions -
+                // whether the server side is ready for an external trigger to call it, and
+                // whether one ever actually has.
+                'cronSecretConfigured' => ! empty(config('backup.cron_secret')),
             ],
         ]);
     }
