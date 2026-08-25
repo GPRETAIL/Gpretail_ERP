@@ -78,13 +78,18 @@ export default function VynerixMobileApp() {
 
   // Navigation state
   const [page, setPage] = useState("dashboard");
-  const [history, setHistory] = useState(["dashboard"]);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [showExitToast, setShowExitToast] = useState(false);
 
   const userName = authUser?.name || authUser?.username || "Admin";
+
+  // Tracks how many in-app screens deep we are (0 = a root screen with
+  // nothing to go back to). A plain ref, not state -- read from event
+  // handlers that must always see the latest value, not whatever it was
+  // when the effect below first ran.
+  const depthRef = useRef(0);
 
   // Check supplier payment alerts and process pending sync queue on startup
   useEffect(() => {
@@ -94,51 +99,66 @@ export default function VynerixMobileApp() {
     }
   }, [ready, isAuthenticated]);
 
-  // Android hardware/gesture back button support. This screen stack is plain
-  // React state (`page`/`history`, above) with no History API involvement at
-  // all, so the browser -- and an installed PWA's WebView -- had nothing to
-  // "go back" through: the very first back press exited the whole app
-  // instead of stepping to the previous in-app screen.
+  // Android hardware/gesture back button support.
   //
-  // Fix: seed one history entry and intercept `popstate`. Each back press
-  // either steps the *existing* `history` stack back by one (re-arming the
-  // guard entry so the next press is caught too), or -- once already at the
-  // root screen with nothing left in-app -- arms a "press back again to
-  // exit" toast for 2s (the same pattern real Android apps use, e.g.
-  // WhatsApp/Gmail) instead of a modal, since a modal would itself just get
-  // dismissed by a second back press. Only a second press within that
-  // window is allowed to fall through and actually exit.
-  const historyRef = useRef(history);
-  useEffect(() => {
-    historyRef.current = history;
-  }, [history]);
-
+  // First attempt (shipped separately) pushed a guard history entry on
+  // mount and re-pushed one from inside the popstate handler on every back
+  // press. That worked for the hardware back button but a real edge-swipe
+  // on a physical device blew straight through it and exited the whole
+  // app. Root cause: Chrome's "History Manipulation Intervention" marks
+  // any history entry added *without active user activation* (a mount
+  // effect, or code running inside a popstate handler, both count as no
+  // activation) as skippable -- back navigation jumps straight past all
+  // such entries instead of stopping on them. Entries pushed synchronously
+  // inside a real onClick handler DO carry activation and are never
+  // skipped, which is why simulating back presses via history.back() in
+  // testing looked fine (that JS API is explicitly exempt) while a real
+  // swipe wasn't.
+  //
+  // Fix: push a real, depth-tagged history entry for every in-app
+  // navigation *inside the click handler that causes it* (navigateTo/
+  // goBack below), so the entries between "here" and "outside the app"
+  // are never skippable and back navigation reliably lands one screen at
+  // a time. A best-effort floor entry is also seeded on mount and on the
+  // very first tap/touch anywhere (the latter does carry activation) so
+  // there's something non-skippable to land on even before the user has
+  // navigated anywhere. The double-back-to-exit toast still re-pushes a
+  // guard from inside the handler for the *first* press at the root
+  // screen -- if a subsequent swipe skips straight past that too, the
+  // net effect is just exiting one press sooner, never worse than before.
   useEffect(() => {
     if (!ready || !isAuthenticated) return;
 
-    window.history.pushState({ vxAppGuard: true }, "");
+    const pushFloor = () => window.history.pushState({ vxPage: "dashboard", vxDepth: 0 }, "");
+    pushFloor();
+
+    const seedOnFirstTouch = () => {
+      pushFloor();
+      window.removeEventListener("pointerdown", seedOnFirstTouch, true);
+    };
+    window.addEventListener("pointerdown", seedOnFirstTouch, true);
 
     let exitArmed = false;
     let exitTimer = null;
 
-    const handlePopState = () => {
-      const stack = historyRef.current;
+    const handlePopState = (event) => {
+      const state = event.state;
 
-      if (stack.length > 1) {
-        setHistory((prev) => {
-          if (prev.length <= 1) return prev;
-          const next = prev.slice(0, -1);
-          setPage(next[next.length - 1]);
-          return next;
-        });
-        window.history.pushState({ vxAppGuard: true }, "");
+      // A real, depth-tagged in-app entry - restore exactly what it says.
+      if (state && typeof state.vxDepth === "number" && state.vxDepth > 0) {
+        depthRef.current = state.vxDepth;
+        setPage(state.vxPage);
         return;
       }
+
+      // Landed at (or below) the floor - nothing left to go back to in-app.
+      depthRef.current = 0;
+      if (state?.vxPage) setPage(state.vxPage);
 
       if (!exitArmed) {
         exitArmed = true;
         setShowExitToast(true);
-        window.history.pushState({ vxAppGuard: true }, "");
+        pushFloor();
         exitTimer = setTimeout(() => {
           exitArmed = false;
           setShowExitToast(false);
@@ -147,8 +167,7 @@ export default function VynerixMobileApp() {
       }
 
       // Second press while armed: let this back navigation actually go
-      // through instead of re-pushing a guard entry -- the browser/PWA
-      // shell then exits or backs out of the app as normal.
+      // through instead of re-arming - the browser/PWA shell then exits.
       clearTimeout(exitTimer);
       setShowExitToast(false);
     };
@@ -156,26 +175,26 @@ export default function VynerixMobileApp() {
     window.addEventListener("popstate", handlePopState);
     return () => {
       window.removeEventListener("popstate", handlePopState);
+      window.removeEventListener("pointerdown", seedOnFirstTouch, true);
       clearTimeout(exitTimer);
     };
   }, [ready, isAuthenticated]);
 
   const navigateTo = useCallback((target) => {
-    setHistory((prev) => [...prev, target]);
+    const nextDepth = depthRef.current + 1;
+    depthRef.current = nextDepth;
+    window.history.pushState({ vxPage: target, vxDepth: nextDepth }, "");
     setPage(target);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
   const goBack = useCallback(() => {
-    setHistory((prev) => {
-      if (prev.length <= 1) return prev;
-      const next = prev.slice(0, -1);
-      setPage(next[next.length - 1]);
-      return next;
-    });
+    if (depthRef.current > 0) window.history.back();
   }, []);
 
   const handleLogout = useCallback(() => {
+    depthRef.current = 0;
+    window.history.pushState({ vxPage: "dashboard", vxDepth: 0 }, "");
     dispatch(logoutUser());
     setPage("dashboard");
   }, [dispatch]);
@@ -205,7 +224,10 @@ export default function VynerixMobileApp() {
     );
   }
 
-  const canGoBack = !ROOT_SCREENS.has(page) && history.length > 1;
+  // navigateTo always increments depthRef before setting a non-root page, so
+  // being on a non-root screen implies there's always something to go back
+  // to -- no separate depth check needed here.
+  const canGoBack = !ROOT_SCREENS.has(page);
 
   return (
     <div className="vx-workspace">
