@@ -1,16 +1,44 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { Fingerprint } from "lucide-react";
 import PinKeypad from "./PinKeypad";
 import useHaptics from "../hooks/useHaptics";
 
 /**
  * Full-screen PIN entry shown in place of the app shell whenever the device
  * PIN lock is on and the session hasn't been unlocked yet this page load.
+ * Fingerprint/Face unlock (when enabled) sits above the PIN as a faster
+ * path, but the PIN keypad is always live underneath it - a sensor can
+ * always fail to read, so there's never a dead end.
  */
-export default function AppLockScreen({ appLock, onForgotPin }) {
+export default function AppLockScreen({ appLock, biometrics, onForgotPin }) {
   const [pin, setPin] = useState("");
   const [shake, setShake] = useState(false);
   const [countdown, setCountdown] = useState(0);
+  const [biometricBusy, setBiometricBusy] = useState(false);
   const { vibrate } = useHaptics();
+
+  const tryBiometric = useCallback(async () => {
+    if (!biometrics?.isEnabled || biometricBusy) return;
+    setBiometricBusy(true);
+    const ok = await biometrics.verify();
+    setBiometricBusy(false);
+    if (ok) {
+      vibrate("success");
+      appLock.unlockWithoutPin();
+    }
+    // A failed/cancelled attempt just leaves the PIN keypad available -
+    // no error shown, since cancelling to type the PIN instead is a
+    // completely normal choice, not a mistake.
+  }, [biometrics, biometricBusy, appLock, vibrate]);
+
+  // Best-effort auto-prompt so unlocking feels native (open the app, see
+  // the fingerprint prompt immediately) - if the browser declines to run
+  // it without a fresh tap, this just silently no-ops and the button
+  // below still works.
+  useEffect(() => {
+    if (biometrics?.isEnabled) tryBiometric();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [biometrics?.isEnabled]);
 
   useEffect(() => {
     if (!appLock.lockoutUntil || appLock.lockoutUntil <= Date.now()) {
@@ -83,6 +111,18 @@ export default function AppLockScreen({ appLock, onForgotPin }) {
             />
           ))}
         </div>
+
+        {biometrics?.isEnabled && (
+          <button
+            type="button"
+            onClick={tryBiometric}
+            disabled={biometricBusy}
+            aria-label="Unlock with fingerprint or face"
+            className="mb-6 w-16 h-16 rounded-full bg-white/10 border border-white/25 flex items-center justify-center active:scale-95 transition-all disabled:opacity-50"
+          >
+            <Fingerprint size={30} className="text-white" />
+          </button>
+        )}
 
         <PinKeypad onDigit={handleDigit} onBackspace={handleBackspace} disabled={countdown > 0} />
 

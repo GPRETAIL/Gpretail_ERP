@@ -32,7 +32,7 @@ const formatDateTime = (value) => {
 /**
  * Mobile Settings screen with functional items
  */
-export default function SettingsScreen({ onLogout, onTriggerPwa, appLock }) {
+export default function SettingsScreen({ onLogout, onTriggerPwa, appLock, biometrics }) {
   const [activeModal, setActiveModal] = useState(null); // 'profile' | 'users' | 'roles' | 'security' | 'preferences' | 'backup' | 'about'
   const [profile, setProfile] = useState(null);
   const [employees, setEmployees] = useState([]);
@@ -245,7 +245,7 @@ export default function SettingsScreen({ onLogout, onTriggerPwa, appLock }) {
       {/* App Lock Modal */}
       {activeModal === "security" && (
         <SettingsDrawer title="App Lock" onClose={() => setActiveModal(null)}>
-          <SecurityPinSettings appLock={appLock} />
+          <SecurityPinSettings appLock={appLock} biometrics={biometrics} />
         </SettingsDrawer>
       )}
 

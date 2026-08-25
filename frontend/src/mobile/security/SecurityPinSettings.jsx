@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Lock, ShieldCheck } from "lucide-react";
+import { Lock, ShieldCheck, Fingerprint } from "lucide-react";
 import PinKeypad from "./PinKeypad";
 
 const STEP = {
@@ -21,12 +21,30 @@ const TITLES = {
  * Settings > App Lock content - view lock status, set/change/remove the
  * device PIN. Renders inside SettingsScreen's existing SettingsDrawer.
  */
-export default function SecurityPinSettings({ appLock }) {
+export default function SecurityPinSettings({ appLock, biometrics }) {
   const [step, setStep] = useState(STEP.IDLE);
   const [pinDraft, setPinDraft] = useState("");
   const [firstPin, setFirstPin] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [biometricBusy, setBiometricBusy] = useState(false);
+  const [biometricError, setBiometricError] = useState("");
+
+  const handleToggleBiometric = async () => {
+    setBiometricError("");
+    if (biometrics.isEnabled) {
+      biometrics.disable();
+      return;
+    }
+    setBiometricBusy(true);
+    try {
+      await biometrics.register();
+    } catch {
+      setBiometricError("Couldn't set up fingerprint/face unlock on this device.");
+    } finally {
+      setBiometricBusy(false);
+    }
+  };
 
   const reset = () => {
     setStep(STEP.IDLE);
@@ -82,6 +100,9 @@ export default function SecurityPinSettings({ appLock }) {
         setPinDraft("");
         return;
       }
+      // Biometric is a fast-path on top of the PIN, never a standalone
+      // lock method - it can't outlive the PIN it's layered on.
+      biometrics?.disable();
       reset();
     }
   };
@@ -144,6 +165,47 @@ export default function SecurityPinSettings({ appLock }) {
             >
               Turn Off PIN Lock
             </button>
+          </div>
+        )}
+
+        {appLock.isPinSet && biometrics?.isSupported && (
+          <div className="pt-1">
+            <button
+              type="button"
+              onClick={handleToggleBiometric}
+              disabled={biometricBusy}
+              className="w-full flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-200/80 disabled:opacity-60"
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                    biometrics.isEnabled ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-400"
+                  }`}
+                >
+                  <Fingerprint size={16} />
+                </div>
+                <div className="text-left">
+                  <h4 className="text-xs font-black text-slate-900">Fingerprint / Face Unlock</h4>
+                  <p className="text-[10.5px] text-slate-500 mt-0.5">
+                    {biometricBusy
+                      ? "Follow the prompt..."
+                      : biometrics.isEnabled
+                        ? "On - shown above the PIN pad"
+                        : "Off - unlock faster than typing your PIN"}
+                  </p>
+                </div>
+              </div>
+              <div
+                className={`w-10 h-6 rounded-full flex items-center px-0.5 transition-colors shrink-0 ${
+                  biometrics.isEnabled ? "bg-indigo-600 justify-end" : "bg-slate-200 justify-start"
+                }`}
+              >
+                <div className="w-5 h-5 rounded-full bg-white shadow" />
+              </div>
+            </button>
+            {biometricError && (
+              <p className="text-[10.5px] text-rose-600 font-semibold mt-1.5">{biometricError}</p>
+            )}
           </div>
         )}
 

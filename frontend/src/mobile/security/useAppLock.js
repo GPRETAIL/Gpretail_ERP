@@ -163,6 +163,16 @@ export default function useAppLock() {
     setLockoutUntil(0);
   }, []);
 
+  // Lets a successful biometric check (useBiometrics.js) unlock the same way
+  // a correct PIN does, without needing to know anything about how the PIN
+  // itself is hashed/verified - biometric success and PIN success both just
+  // mean "the device owner is present."
+  const unlockWithoutPin = useCallback(() => {
+    setFailedAttempts(0);
+    setLockoutUntil(0);
+    setIsLocked(false);
+  }, []);
+
   return {
     isPinSet,
     isLocked,
@@ -176,5 +186,6 @@ export default function useAppLock() {
     changePin,
     removePin,
     resetPinUnconditionally,
+    unlockWithoutPin,
   };
 }

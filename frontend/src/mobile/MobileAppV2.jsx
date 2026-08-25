@@ -35,6 +35,7 @@ import MobileLoginScreen from "./screens/MobileLoginScreen";
 import { checkSupplierPaymentAlerts } from "./notifications/notificationService";
 import { processSyncQueue } from "./offline/syncManager";
 import useAppLock from "./security/useAppLock";
+import useBiometrics from "./security/useBiometrics";
 import AppLockScreen from "./security/AppLockScreen";
 import PrivacyScreen from "./security/PrivacyScreen";
 import usePullToRefresh from "./hooks/usePullToRefresh";
@@ -215,6 +216,7 @@ export default function VynerixMobileApp() {
   }, []);
 
   const appLock = useAppLock();
+  const biometrics = useBiometrics();
   const { vibrate } = useHaptics();
 
   // Dispatches the same event screens already listen for to refresh their
@@ -235,8 +237,9 @@ export default function VynerixMobileApp() {
   // unconditionally and forces a fresh login instead.
   const handleForgotPin = useCallback(() => {
     appLock.resetPinUnconditionally();
+    biometrics.disable();
     handleLogout();
-  }, [appLock, handleLogout]);
+  }, [appLock, biometrics, handleLogout]);
 
   // Show splash until initialization is complete
   // Wrapped in .vx-workspace (matching the login/main branches below) so the
@@ -267,7 +270,7 @@ export default function VynerixMobileApp() {
   if (appLock.isPinSet && appLock.isLocked) {
     return (
       <div className="vx-workspace">
-        <AppLockScreen appLock={appLock} onForgotPin={handleForgotPin} />
+        <AppLockScreen appLock={appLock} biometrics={biometrics} onForgotPin={handleForgotPin} />
         <PrivacyScreen visible={appLock.isHidden} />
       </div>
     );
@@ -399,7 +402,12 @@ export default function VynerixMobileApp() {
         )}
 
         {page === "settings" && (
-          <SettingsScreen onLogout={handleLogout} onTriggerPwa={triggerInstall} appLock={appLock} />
+          <SettingsScreen
+            onLogout={handleLogout}
+            onTriggerPwa={triggerInstall}
+            appLock={appLock}
+            biometrics={biometrics}
+          />
         )}
 
         {page === "approvals" && <ApprovalsScreen />}
