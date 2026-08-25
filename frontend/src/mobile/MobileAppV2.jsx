@@ -32,6 +32,8 @@ import SettingsScreen from "./screens/SettingsScreen";
 import MobileLoginScreen from "./screens/MobileLoginScreen";
 import { checkSupplierPaymentAlerts } from "./notifications/notificationService";
 import { processSyncQueue } from "./offline/syncManager";
+import useAppLock from "./security/useAppLock";
+import AppLockScreen from "./security/AppLockScreen";
 import "./workspace.css";
 
 // Screen title map
@@ -206,6 +208,16 @@ export default function VynerixMobileApp() {
     window.dispatchEvent(new CustomEvent("pwa-show-install-prompt"));
   }, []);
 
+  const appLock = useAppLock();
+
+  // Forgot-PIN recovery falls back to real server re-auth: there's no way
+  // to verify a PIN the user has forgotten, so this clears the local lock
+  // unconditionally and forces a fresh login instead.
+  const handleForgotPin = useCallback(() => {
+    appLock.resetPinUnconditionally();
+    handleLogout();
+  }, [appLock, handleLogout]);
+
   // Show splash until initialization is complete
   // Wrapped in .vx-workspace (matching the login/main branches below) so the
   // global desktop CSS guard `body:not(:has(.vx-workspace)) h1 {...}` doesn't
@@ -223,6 +235,16 @@ export default function VynerixMobileApp() {
     return (
       <div className="vx-workspace min-h-screen bg-slate-50">
         <MobileLoginScreen onLoginSuccess={() => setPage("dashboard")} />
+      </div>
+    );
+  }
+
+  // Device PIN lock (if the user has set one up) gates the rest of the app
+  // shell on every fresh page load. Skipped entirely if no PIN is set.
+  if (appLock.isPinSet && appLock.isLocked) {
+    return (
+      <div className="vx-workspace">
+        <AppLockScreen appLock={appLock} onForgotPin={handleForgotPin} />
       </div>
     );
   }
@@ -323,7 +345,7 @@ export default function VynerixMobileApp() {
         )}
 
         {page === "settings" && (
-          <SettingsScreen onLogout={handleLogout} onTriggerPwa={triggerInstall} />
+          <SettingsScreen onLogout={handleLogout} onTriggerPwa={triggerInstall} appLock={appLock} />
         )}
 
         {page === "approvals" && <ApprovalsScreen />}

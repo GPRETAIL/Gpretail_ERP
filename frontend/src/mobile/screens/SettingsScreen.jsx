@@ -17,8 +17,10 @@ import {
   Check,
   Download,
   Play,
+  Lock,
 } from "lucide-react";
 import api from "../../api/axios";
+import SecurityPinSettings from "../security/SecurityPinSettings";
 
 const formatDateTime = (value) => {
   if (!value) return "--";
@@ -30,8 +32,8 @@ const formatDateTime = (value) => {
 /**
  * Mobile Settings screen with functional items
  */
-export default function SettingsScreen({ onLogout, onTriggerPwa }) {
-  const [activeModal, setActiveModal] = useState(null); // 'profile' | 'users' | 'roles' | 'preferences' | 'backup' | 'about'
+export default function SettingsScreen({ onLogout, onTriggerPwa, appLock }) {
+  const [activeModal, setActiveModal] = useState(null); // 'profile' | 'users' | 'roles' | 'security' | 'preferences' | 'backup' | 'about'
   const [profile, setProfile] = useState(null);
   const [employees, setEmployees] = useState([]);
   const [roles, setRoles] = useState([]);
@@ -129,6 +131,12 @@ export default function SettingsScreen({ onLogout, onTriggerPwa }) {
           <MenuItem icon={Building} title="Business Profile" onClick={() => setActiveModal("profile")} />
           <MenuItem icon={Users} title="Users" onClick={() => setActiveModal("users")} />
           <MenuItem icon={ShieldCheck} title="Roles & Permissions" onClick={() => setActiveModal("roles")} />
+          <MenuItem
+            icon={Lock}
+            title="App Lock"
+            subtitle={appLock?.isPinSet ? "PIN lock is ON" : "PIN lock is OFF"}
+            onClick={() => setActiveModal("security")}
+          />
           <MenuItem icon={Sliders} title="Preferences" onClick={() => setActiveModal("preferences")} />
         </div>
       </div>
@@ -231,6 +239,13 @@ export default function SettingsScreen({ onLogout, onTriggerPwa }) {
               <div className="p-3 text-center text-xs text-slate-500">Loading role groups...</div>
             )}
           </div>
+        </SettingsDrawer>
+      )}
+
+      {/* App Lock Modal */}
+      {activeModal === "security" && (
+        <SettingsDrawer title="App Lock" onClose={() => setActiveModal(null)}>
+          <SecurityPinSettings appLock={appLock} />
         </SettingsDrawer>
       )}
 
