@@ -34,6 +34,7 @@ import { checkSupplierPaymentAlerts } from "./notifications/notificationService"
 import { processSyncQueue } from "./offline/syncManager";
 import useAppLock from "./security/useAppLock";
 import AppLockScreen from "./security/AppLockScreen";
+import PrivacyScreen from "./security/PrivacyScreen";
 import "./workspace.css";
 
 // Screen title map
@@ -226,6 +227,7 @@ export default function VynerixMobileApp() {
     return (
       <div className="vx-workspace">
         <Splash progress={progress} />
+        <PrivacyScreen visible={appLock.isHidden} />
       </div>
     );
   }
@@ -235,16 +237,19 @@ export default function VynerixMobileApp() {
     return (
       <div className="vx-workspace min-h-screen bg-slate-50">
         <MobileLoginScreen onLoginSuccess={() => setPage("dashboard")} />
+        <PrivacyScreen visible={appLock.isHidden} />
       </div>
     );
   }
 
   // Device PIN lock (if the user has set one up) gates the rest of the app
-  // shell on every fresh page load. Skipped entirely if no PIN is set.
+  // shell on every fresh page load, and again after being backgrounded past
+  // the configured auto-lock duration. Skipped entirely if no PIN is set.
   if (appLock.isPinSet && appLock.isLocked) {
     return (
       <div className="vx-workspace">
         <AppLockScreen appLock={appLock} onForgotPin={handleForgotPin} />
+        <PrivacyScreen visible={appLock.isHidden} />
       </div>
     );
   }
@@ -361,6 +366,8 @@ export default function VynerixMobileApp() {
 
       {/* Bottom Navigation */}
       <BottomNav activePage={page} onNavigate={navigateTo} />
+
+      <PrivacyScreen visible={appLock.isHidden} />
     </div>
   );
 }

@@ -1,8 +1,10 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 
 const STORAGE_KEY = "vx_pin_lock";
+const AUTO_LOCK_KEY = "vx_pin_autolock_minutes";
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_MS = 30000;
+const DEFAULT_AUTO_LOCK_MINUTES = 5;
 
 const bufToHex = (buf) =>
   [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
@@ -41,8 +43,57 @@ export default function useAppLock() {
   const [isLocked, setIsLocked] = useState(() => Boolean(readStored()));
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [lockoutUntil, setLockoutUntil] = useState(0);
+  const [isHidden, setIsHidden] = useState(false);
+  const [autoLockMinutes, setAutoLockMinutesState] = useState(() => {
+    const raw = localStorage.getItem(AUTO_LOCK_KEY);
+    const parsed = raw !== null ? Number(raw) : NaN;
+    return Number.isFinite(parsed) ? parsed : DEFAULT_AUTO_LOCK_MINUTES;
+  });
 
   const isPinSet = Boolean(record);
+
+  const setAutoLockMinutes = useCallback((minutes) => {
+    localStorage.setItem(AUTO_LOCK_KEY, String(minutes));
+    setAutoLockMinutesState(minutes);
+  }, []);
+
+  // Privacy cover (instant, any time the tab/app is hidden) + auto-relock
+  // once it's been hidden longer than the configured duration. Scoped to
+  // "backgrounded for N minutes", not general foreground inactivity -
+  // locking someone out mid-task just because they paused reading a report
+  // would be more annoying than protective.
+  const recordRef = useRef(record);
+  const autoLockMinutesRef = useRef(autoLockMinutes);
+  const backgroundedAtRef = useRef(null);
+  useEffect(() => {
+    recordRef.current = record;
+  }, [record]);
+  useEffect(() => {
+    autoLockMinutesRef.current = autoLockMinutes;
+  }, [autoLockMinutes]);
+
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.hidden) {
+        setIsHidden(true);
+        backgroundedAtRef.current = Date.now();
+        return;
+      }
+
+      setIsHidden(false);
+      const backgroundedAt = backgroundedAtRef.current;
+      backgroundedAtRef.current = null;
+      if (backgroundedAt && recordRef.current) {
+        const elapsedMs = Date.now() - backgroundedAt;
+        if (elapsedMs >= autoLockMinutesRef.current * 60000) {
+          setIsLocked(true);
+        }
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, []);
 
   const setupPin = useCallback(async (pin) => {
     const salt = randomSalt();
@@ -117,6 +168,9 @@ export default function useAppLock() {
     isLocked,
     failedAttempts,
     lockoutUntil,
+    isHidden,
+    autoLockMinutes,
+    setAutoLockMinutes,
     setupPin,
     verifyPin,
     changePin,

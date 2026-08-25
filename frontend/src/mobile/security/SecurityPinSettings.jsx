@@ -146,6 +146,38 @@ export default function SecurityPinSettings({ appLock }) {
             </button>
           </div>
         )}
+
+        {appLock.isPinSet && (
+          <div className="pt-1">
+            <label className="text-xs font-bold text-slate-500 block mb-1.5">
+              Auto-Lock After Background
+            </label>
+            <div className="grid grid-cols-4 gap-1.5">
+              {[
+                { minutes: 0, label: "Instant" },
+                { minutes: 1, label: "1 min" },
+                { minutes: 5, label: "5 min" },
+                { minutes: 15, label: "15 min" },
+              ].map((opt) => (
+                <button
+                  key={opt.minutes}
+                  type="button"
+                  onClick={() => appLock.setAutoLockMinutes(opt.minutes)}
+                  className={`py-2 rounded-xl text-[11px] font-bold border transition-all ${
+                    appLock.autoLockMinutes === opt.minutes
+                      ? "bg-indigo-600 border-indigo-600 text-white"
+                      : "bg-slate-50 border-slate-200 text-slate-700"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <p className="text-[10px] text-slate-400 mt-1.5">
+              Re-ask for the PIN after the app has been in the background this long.
+            </p>
+          </div>
+        )}
       </div>
     );
   }
