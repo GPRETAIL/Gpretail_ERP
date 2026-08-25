@@ -872,4 +872,45 @@
 .dark .vx-workspace [class*="border-rose-200/"] { border-color: rgba(244, 63, 94, 0.3) !important; }
 .dark .vx-workspace [class*="border-orange-200/"] { border-color: rgba(249, 115, 22, 0.3) !important; }
 .dark .vx-workspace [class*="border-purple-200/"] { border-color: rgba(168, 85, 247, 0.3) !important; }
+
+/* ==========================================================================
+   16. High Contrast Accessibility Mode
+   Toggled via the .vx-high-contrast class added alongside .vx-workspace
+   (Settings > Display & Accessibility) - mobile-only, independent of the
+   .dark toggle above, and the two can be on at the same time. Same
+   override technique as Dark Theme: raw Tailwind utility classes need
+   !important since they can't respond to a variant per element. Targets
+   the muted text/border colors used for secondary labels throughout the
+   app, since those are what actually fail contrast checks at default
+   opacity - not a full redesign.
+   ========================================================================== */
+
+.vx-workspace.vx-high-contrast .text-slate-400,
+.vx-workspace.vx-high-contrast .text-slate-300 { color: #1e293b !important; }
+.vx-workspace.vx-high-contrast .text-slate-500,
+.vx-workspace.vx-high-contrast .text-slate-600 { color: #0f172a !important; }
+.vx-workspace.vx-high-contrast .border-slate-100,
+.vx-workspace.vx-high-contrast .border-slate-200,
+.vx-workspace.vx-high-contrast [class*="border-slate-200/"] { border-color: #64748b !important; }
+.vx-workspace.vx-high-contrast .vx-menu-row,
+.vx-workspace.vx-high-contrast .vx-card,
+.vx-workspace.vx-high-contrast .vx-kpi-card,
+.vx-workspace.vx-high-contrast .vx-module-tile,
+.vx-workspace.vx-high-contrast .vx-trans-card { border: 1.5px solid #475569 !important; }
+.vx-workspace.vx-high-contrast .vx-bottom { border-top: 2px solid #0f172a; }
+
+/* Dark + High Contrast combined - muted grays need to go light, not darker */
+.dark .vx-workspace.vx-high-contrast .text-slate-400,
+.dark .vx-workspace.vx-high-contrast .text-slate-300,
+.dark .vx-workspace.vx-high-contrast .text-slate-500,
+.dark .vx-workspace.vx-high-contrast .text-slate-600 { color: #f8fafc !important; }
+.dark .vx-workspace.vx-high-contrast .border-slate-100,
+.dark .vx-workspace.vx-high-contrast .border-slate-200,
+.dark .vx-workspace.vx-high-contrast [class*="border-slate-200/"] { border-color: #cbd5e1 !important; }
+.dark .vx-workspace.vx-high-contrast .vx-menu-row,
+.dark .vx-workspace.vx-high-contrast .vx-card,
+.dark .vx-workspace.vx-high-contrast .vx-kpi-card,
+.dark .vx-workspace.vx-high-contrast .vx-module-tile,
+.dark .vx-workspace.vx-high-contrast .vx-trans-card { border: 1.5px solid #94a3b8 !important; }
+.dark .vx-workspace.vx-high-contrast .vx-bottom { border-top: 2px solid #f8fafc; }
 .dark .vx-workspace [class*="border-cyan-200/"] { border-color: rgba(6, 182, 212, 0.3) !important; }

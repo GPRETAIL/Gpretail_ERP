@@ -6,6 +6,7 @@ import {
   Package,
   Menu,
 } from "lucide-react";
+import { isRestrictedRole } from "../utils/rolePermissions";
 
 const TABS = [
   { key: "dashboard", label: "Dashboard", icon: Home },
@@ -18,7 +19,11 @@ const TABS = [
 /**
  * Fixed 5-tab bottom navigation bar matching the Vynerix reference design.
  */
-export default function BottomNav({ activePage, onNavigate }) {
+export default function BottomNav({ activePage, onNavigate, authUser }) {
+  const tabs = isRestrictedRole(authUser?.role)
+    ? TABS.filter((t) => t.key !== "purchase")
+    : TABS;
+
   // Map sub-screens to their parent tab
   const activeTab = (() => {
     if (activePage === "create_invoice") return "sales";
@@ -29,7 +34,7 @@ export default function BottomNav({ activePage, onNavigate }) {
 
   return (
     <nav className="vx-bottom">
-      {TABS.map(({ key, label, icon: Icon }) => (
+      {tabs.map(({ key, label, icon: Icon }) => (
         <button
           key={key}
           type="button"

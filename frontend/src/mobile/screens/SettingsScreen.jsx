@@ -18,9 +18,12 @@ import {
   Download,
   Play,
   Lock,
+  Type,
 } from "lucide-react";
 import api from "../../api/axios";
 import SecurityPinSettings from "../security/SecurityPinSettings";
+import DisplayAccessibilitySettings from "./DisplayAccessibilitySettings";
+import { isRestrictedRole } from "../utils/rolePermissions";
 
 const formatDateTime = (value) => {
   if (!value) return "--";
@@ -32,8 +35,9 @@ const formatDateTime = (value) => {
 /**
  * Mobile Settings screen with functional items
  */
-export default function SettingsScreen({ onLogout, onTriggerPwa, appLock, biometrics, onOpenSyncCenter }) {
-  const [activeModal, setActiveModal] = useState(null); // 'profile' | 'users' | 'roles' | 'security' | 'preferences' | 'backup' | 'about'
+export default function SettingsScreen({ onLogout, onTriggerPwa, appLock, biometrics, onOpenSyncCenter, authUser, displayPrefs }) {
+  const [activeModal, setActiveModal] = useState(null); // 'profile' | 'users' | 'roles' | 'security' | 'preferences' | 'display' | 'backup' | 'about'
+  const isRestricted = isRestrictedRole(authUser?.role);
   const [profile, setProfile] = useState(null);
   const [employees, setEmployees] = useState([]);
   const [roles, setRoles] = useState([]);
@@ -128,9 +132,15 @@ export default function SettingsScreen({ onLogout, onTriggerPwa, appLock, biomet
           General
         </small>
         <div className="space-y-2">
-          <MenuItem icon={Building} title="Business Profile" onClick={() => setActiveModal("profile")} />
-          <MenuItem icon={Users} title="Users" onClick={() => setActiveModal("users")} />
-          <MenuItem icon={ShieldCheck} title="Roles & Permissions" onClick={() => setActiveModal("roles")} />
+          {!isRestricted && (
+            <MenuItem icon={Building} title="Business Profile" onClick={() => setActiveModal("profile")} />
+          )}
+          {!isRestricted && (
+            <MenuItem icon={Users} title="Users" onClick={() => setActiveModal("users")} />
+          )}
+          {!isRestricted && (
+            <MenuItem icon={ShieldCheck} title="Roles & Permissions" onClick={() => setActiveModal("roles")} />
+          )}
           <MenuItem
             icon={Lock}
             title="App Lock"
@@ -138,6 +148,7 @@ export default function SettingsScreen({ onLogout, onTriggerPwa, appLock, biomet
             onClick={() => setActiveModal("security")}
           />
           <MenuItem icon={Sliders} title="Preferences" onClick={() => setActiveModal("preferences")} />
+          <MenuItem icon={Type} title="Display & Accessibility" onClick={() => setActiveModal("display")} />
         </div>
       </div>
 
@@ -147,7 +158,9 @@ export default function SettingsScreen({ onLogout, onTriggerPwa, appLock, biomet
           Other
         </small>
         <div className="space-y-2">
-          <MenuItem icon={Database} title="Backup & Restore" onClick={() => setActiveModal("backup")} />
+          {!isRestricted && (
+            <MenuItem icon={Database} title="Backup & Restore" onClick={() => setActiveModal("backup")} />
+          )}
           <MenuItem
             icon={RefreshCw}
             title="Sync Center"
@@ -252,6 +265,13 @@ export default function SettingsScreen({ onLogout, onTriggerPwa, appLock, biomet
       {activeModal === "security" && (
         <SettingsDrawer title="App Lock" onClose={() => setActiveModal(null)}>
           <SecurityPinSettings appLock={appLock} biometrics={biometrics} />
+        </SettingsDrawer>
+      )}
+
+      {/* Display & Accessibility Modal */}
+      {activeModal === "display" && (
+        <SettingsDrawer title="Display & Accessibility" onClose={() => setActiveModal(null)}>
+          <DisplayAccessibilitySettings displayPrefs={displayPrefs} />
         </SettingsDrawer>
       )}
 

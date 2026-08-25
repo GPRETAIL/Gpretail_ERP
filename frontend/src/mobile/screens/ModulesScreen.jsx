@@ -12,6 +12,7 @@ import {
   UserCheck,
 } from "lucide-react";
 import api from "../../api/axios";
+import { isRestrictedRole } from "../utils/rolePermissions";
 
 const money = (n) =>
   "₹ " +
@@ -36,8 +37,13 @@ const MODULE_TILES = [
 /**
  * Modules Grid screen with recent activities from real API.
  */
-export default function ModulesScreen({ onNavigate }) {
+const RESTRICTED_TILE_KEYS = new Set(["purchase", "suppliers", "reports"]);
+
+export default function ModulesScreen({ onNavigate, authUser }) {
   const [activities, setActivities] = useState([]);
+  const tiles = isRestrictedRole(authUser?.role)
+    ? MODULE_TILES.filter((t) => !RESTRICTED_TILE_KEYS.has(t.key))
+    : MODULE_TILES;
 
   useEffect(() => {
     (async () => {
@@ -58,7 +64,7 @@ export default function ModulesScreen({ onNavigate }) {
     <div className="space-y-4">
       {/* 3x3 Grid */}
       <div className="vx-modules-grid">
-        {MODULE_TILES.map((tile, i) => {
+        {tiles.map((tile, i) => {
           const Icon = tile.icon;
           return (
             <button

@@ -41,6 +41,8 @@ import AppLockScreen from "./security/AppLockScreen";
 import PrivacyScreen from "./security/PrivacyScreen";
 import usePullToRefresh from "./hooks/usePullToRefresh";
 import useHaptics from "./hooks/useHaptics";
+import useDisplayPrefs from "./hooks/useDisplayPrefs";
+import { isPageGatedForRole } from "./utils/rolePermissions";
 import "./workspace.css";
 
 // Screen title map
@@ -195,12 +197,17 @@ export default function VynerixMobileApp() {
   }, [ready, isAuthenticated]);
 
   const navigateTo = useCallback((target) => {
+    // BottomNav/ModulesScreen/SettingsScreen already hide the entry points
+    // a restricted role shouldn't see, but Dashboard quick-action buttons
+    // and a couple of other shortcuts still link straight to these pages -
+    // this is the single choke-point that catches those too.
+    const safeTarget = isPageGatedForRole(target, authUser?.role) ? "dashboard" : target;
     const nextDepth = depthRef.current + 1;
     depthRef.current = nextDepth;
-    window.history.pushState({ vxPage: target, vxDepth: nextDepth }, "");
-    setPage(target);
+    window.history.pushState({ vxPage: safeTarget, vxDepth: nextDepth }, "");
+    setPage(safeTarget);
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }, []);
+  }, [authUser]);
 
   const goBack = useCallback(() => {
     if (depthRef.current > 0) window.history.back();
@@ -219,7 +226,10 @@ export default function VynerixMobileApp() {
 
   const appLock = useAppLock();
   const biometrics = useBiometrics();
+  const displayPrefs = useDisplayPrefs();
   const { vibrate } = useHaptics();
+  const workspaceClass = displayPrefs.highContrast ? "vx-workspace vx-high-contrast" : "vx-workspace";
+  const workspaceStyle = { zoom: displayPrefs.zoom };
 
   // Dispatches the same event screens already listen for to refresh their
   // own data (Dashboard, Suppliers, Inventory, Purchase, Sales) -- pull-
@@ -249,7 +259,7 @@ export default function VynerixMobileApp() {
   // match and shrink the splash wordmark before the real app shell mounts.
   if (!ready) {
     return (
-      <div className="vx-workspace">
+      <div className={workspaceClass} style={workspaceStyle}>
         <Splash progress={progress} />
         <PrivacyScreen visible={appLock.isHidden} />
       </div>
@@ -259,7 +269,7 @@ export default function VynerixMobileApp() {
   // If not authenticated after splash, show dedicated mobile login
   if (!isAuthenticated) {
     return (
-      <div className="vx-workspace min-h-screen bg-slate-50">
+      <div className={`${workspaceClass} min-h-screen bg-slate-50`} style={workspaceStyle}>
         <MobileLoginScreen onLoginSuccess={() => setPage("dashboard")} />
         <PrivacyScreen visible={appLock.isHidden} />
       </div>
@@ -271,7 +281,7 @@ export default function VynerixMobileApp() {
   // the configured auto-lock duration. Skipped entirely if no PIN is set.
   if (appLock.isPinSet && appLock.isLocked) {
     return (
-      <div className="vx-workspace">
+      <div className={workspaceClass} style={workspaceStyle}>
         <AppLockScreen appLock={appLock} biometrics={biometrics} onForgotPin={handleForgotPin} />
         <PrivacyScreen visible={appLock.isHidden} />
       </div>
@@ -284,7 +294,7 @@ export default function VynerixMobileApp() {
   const canGoBack = !ROOT_SCREENS.has(page);
 
   return (
-    <div className="vx-workspace">
+    <div className={workspaceClass} style={workspaceStyle}>
       {/* Mobile Header */}
       <MobileHeader
         title={TITLES[page] || "Vynerix ERP"}
@@ -358,7 +368,7 @@ export default function VynerixMobileApp() {
         )}
 
         {page === "modules" && (
-          <ModulesScreen onNavigate={navigateTo} />
+          <ModulesScreen onNavigate={navigateTo} authUser={authUser} />
         )}
 
         {page === "sales" && (
@@ -414,6 +424,8 @@ export default function VynerixMobileApp() {
             appLock={appLock}
             biometrics={biometrics}
             onOpenSyncCenter={() => setIsSyncCenterOpen(true)}
+            authUser={authUser}
+            displayPrefs={displayPrefs}
           />
         )}
 
@@ -429,7 +441,7 @@ export default function VynerixMobileApp() {
       )}
 
       {/* Bottom Navigation */}
-      <BottomNav activePage={page} onNavigate={navigateTo} />
+      <BottomNav activePage={page} onNavigate={navigateTo} authUser={authUser} />
 
       <PrivacyScreen visible={appLock.isHidden} />
     </div>
