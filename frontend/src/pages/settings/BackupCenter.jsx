@@ -323,7 +323,10 @@ export default function BackupCenter() {
     dateFrom: "",
     dateTo: "",
   });
-  const DEFAULT_HISTORY_LIMIT = 10;
+  // FilterableDataTable's page-size dropdown only offers 20/60/100/150 - a
+  // default outside that list still paginates correctly (safeLimit isn't
+  // clamped to the list), but the dropdown shows nothing selected. Match it.
+  const DEFAULT_HISTORY_LIMIT = 20;
   const [backupHistoryPage, setBackupHistoryPage] = useState(1);
   const [backupHistoryLimit, setBackupHistoryLimit] = useState(DEFAULT_HISTORY_LIMIT);
   const [restoreHistoryPage, setRestoreHistoryPage] = useState(1);
@@ -1098,6 +1101,19 @@ export default function BackupCenter() {
                   Enable cloud storage for scheduled backups
                 </label>
               </div>
+
+              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                <input
+                  type="checkbox"
+                  checked={!!settingsForm.localStorageEnabled}
+                  onChange={(event) => setSettingsForm((prev) => ({ ...prev, localStorageEnabled: event.target.checked }))}
+                  className="h-4 w-4"
+                />
+                Enable local storage for scheduled backups
+              </label>
+              <p className="-mt-3 text-xs text-gray-500 dark:text-gray-400">
+                Both checked = hybrid. Cloud only works if OCI is configured above; if it isn&apos;t, scheduled runs fall back to local automatically.
+              </p>
 
               <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                 <input

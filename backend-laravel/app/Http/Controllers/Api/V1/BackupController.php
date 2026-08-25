@@ -210,7 +210,7 @@ class BackupController extends Controller
         if ($request->isMethod('post') || $request->isMethod('put')) {
             $settings = [
                 'storage_mode'           => $request->input('storageMode', 'local'),
-                'local_storage_enabled'  => true,
+                'local_storage_enabled'  => $request->boolean('localStorageEnabled', true),
                 'cloud_storage_enabled'  => $request->boolean('cloudStorageEnabled'),
                 'encryption_enabled'     => $request->boolean('encryptionEnabled'),
                 'restore_password_hint'  => $request->input('restorePasswordHint', ''),
@@ -225,12 +225,18 @@ class BackupController extends Controller
                 'retention_weekly'       => (int) $request->input('retentionWeekly', 4),
                 'retention_monthly'      => (int) $request->input('retentionMonthly', 12),
                 'auto_cleanup_enabled'   => $request->boolean('autoCleanupEnabled', true),
-                // Oracle Cloud Infrastructure (OCI) Object Storage credentials
-                'oci_namespace'          => $request->input('ociNamespace', ''),
-                'oci_region'             => $request->input('ociRegion', 'ap-mumbai-1'),
-                'oci_access_key_id'      => $request->input('ociAccessKeyId', ''),
-                'oci_secret_access_key'  => $request->input('ociSecretAccessKey', ''),
-                'oci_bucket'             => $request->input('ociBucket', ''),
+                // Oracle Cloud Infrastructure (OCI) Object Storage credentials - no
+                // inline defaults here (region's old 'ap-mumbai-1' default silently
+                // overwrote a real saved region on any request that omitted it, since
+                // a non-empty default value can never be told apart from a real
+                // submission). Left null when omitted; resolved against the existing
+                // stored value below, only falling back to a real default as a last
+                // resort for a store that's never configured OCI at all.
+                'oci_namespace'          => $request->input('ociNamespace'),
+                'oci_region'             => $request->input('ociRegion'),
+                'oci_access_key_id'      => $request->input('ociAccessKeyId'),
+                'oci_secret_access_key'  => $request->input('ociSecretAccessKey'),
+                'oci_bucket'             => $request->input('ociBucket'),
             ];
 
             if ($settings['schedule_enabled']) {
@@ -260,10 +266,23 @@ class BackupController extends Controller
                     return response()->json(['success' => false, 'message' => 'Store not found'], 404);
                 }
                 $existing = $store->backup_settings ?? [];
-                // Preserve existing OCI secret if the field was submitted blank (masked)
-                if (empty($settings['oci_secret_access_key']) && ! empty($existing['oci_secret_access_key'])) {
-                    $settings['oci_secret_access_key'] = $existing['oci_secret_access_key'];
+                // Preserve every OCI credential field whenever it's submitted blank - a
+                // caller that only means to change scheduling/retention (not touching the
+                // OCI section at all) must never silently wipe working credentials. Real,
+                // reproduced bug: a settings save that omitted the OCI fields blanked
+                // oci_namespace/oci_bucket even though cloud was already configured.
+                foreach (['oci_namespace', 'oci_region', 'oci_access_key_id', 'oci_secret_access_key', 'oci_bucket'] as $ociField) {
+                    if (empty($settings[$ociField]) && ! empty($existing[$ociField])) {
+                        $settings[$ociField] = $existing[$ociField];
+                    }
                 }
+                // Only a genuinely first-time save (no existing region either) falls
+                // back to this default - never overwrites a real saved region.
+                $settings['oci_namespace'] ??= '';
+                $settings['oci_region'] ??= 'ap-mumbai-1';
+                $settings['oci_access_key_id'] ??= '';
+                $settings['oci_secret_access_key'] ??= '';
+                $settings['oci_bucket'] ??= '';
                 // Preserve the existing stored encryption password unless a real new one was submitted
                 if (! isset($settings['encryption_password_encrypted']) && ! empty($existing['encryption_password_encrypted'])) {
                     $settings['encryption_password_encrypted'] = $existing['encryption_password_encrypted'];
@@ -271,16 +290,23 @@ class BackupController extends Controller
                 $settings['last_scheduled_at'] = $existing['last_scheduled_at'] ?? null;
                 $store->update(['backup_settings' => $settings]);
             } else {
-                // Super Admin: apply as global default across all active stores
+                // Super Admin: apply schedule/retention as a global default across all
+                // active stores. OCI credentials are inherently per-store (each store's
+                // own bucket) - a global save must never overwrite one store's real
+                // credentials with another's blank/default values, so every OCI field
+                // (not just the secret) is preserved per-store here.
                 $stores = Store::where('is_active', true)->get();
                 foreach ($stores as $store) {
                     $existing      = $store->backup_settings ?? [];
                     $storeSettings = array_merge($settings, [
                         'last_scheduled_at'      => $existing['last_scheduled_at'] ?? null,
-                        // Preserve per-store OCI secrets and encryption password
-                        'oci_secret_access_key'  => $settings['oci_secret_access_key'] ?: ($existing['oci_secret_access_key'] ?? ''),
-                        'encryption_password_encrypted' => $settings['encryption_password_encrypted']
-                            ?? ($existing['encryption_password_encrypted'] ?? null),
+                        'oci_namespace'          => $existing['oci_namespace'] ?: ($settings['oci_namespace'] ?? ''),
+                        'oci_region'             => $existing['oci_region'] ?: ($settings['oci_region'] ?? 'ap-mumbai-1'),
+                        'oci_access_key_id'      => $existing['oci_access_key_id'] ?: ($settings['oci_access_key_id'] ?? ''),
+                        'oci_secret_access_key'  => $existing['oci_secret_access_key'] ?: ($settings['oci_secret_access_key'] ?? ''),
+                        'oci_bucket'             => $existing['oci_bucket'] ?: ($settings['oci_bucket'] ?? ''),
+                        'encryption_password_encrypted' => $existing['encryption_password_encrypted']
+                            ?? ($settings['encryption_password_encrypted'] ?? null),
                     ]);
                     $store->update(['backup_settings' => $storeSettings]);
                 }
@@ -672,10 +698,27 @@ class BackupController extends Controller
                 }
             }
             $encryptScheduled = $scheduledPassword !== null && $scheduledPassword !== '';
+
+            // Resolve the real storage mode from the two "Enable ... for scheduled
+            // backups" checkboxes, instead of the previous hardcoded 'local'. Cloud
+            // is only actually used if OCI credentials are genuinely configured for
+            // this store - otherwise it silently falls back to local rather than
+            // failing the whole scheduled run.
+            $wantsLocal = $settings['local_storage_enabled'] ?? true;
+            $wantsCloud = ! empty($settings['cloud_storage_enabled']) && BackupService::isCloudConfigured($settings);
+            if ($wantsCloud && $wantsLocal) {
+                $storageMode = 'hybrid';
+            } elseif ($wantsCloud) {
+                $storageMode = 'cloud';
+            } else {
+                $storageMode = 'local';
+            }
+
             $statusMessage = $encryptScheduled
                 ? 'Scheduled run (encrypted with the saved schedule password).'
                 : 'Scheduled run (unencrypted, no password saved - the Users table was skipped; save a password in Storage & Schedule settings to include it).';
 
+            $cloudPath = null;
             try {
                 $since = null;
                 if ($backupType === 'incremental') {
@@ -702,6 +745,14 @@ class BackupController extends Controller
                 $fileSize = filesize($zipPath) ?: 0;
                 $fileName = basename($zipPath);
                 $filePath = 'backups/'.$fileName;
+
+                if (in_array($storageMode, ['cloud', 'hybrid'], true)) {
+                    $cloudPath = $this->backups->uploadToCloud($zipPath, $settings);
+                    if ($storageMode === 'cloud') {
+                        @unlink($zipPath);
+                        $filePath = null;
+                    }
+                }
             } catch (Throwable $e) {
                 $status = 'failed';
                 $statusMessage = $e->getMessage();
@@ -710,10 +761,11 @@ class BackupController extends Controller
             $backup = Backup::create([
                 'file_name' => $fileName ?? ('backup_failed_'.now()->format('Ymd_His')),
                 'backup_type' => $backupType,
-                'storage_mode' => 'local',
+                'storage_mode' => $storageMode,
                 'module_names' => $moduleNames,
                 'company_id' => $store->id,
                 'file_path' => $filePath,
+                'cloud_path' => $cloudPath,
                 'file_size' => $fileSize,
                 'file_size_label' => $this->backups->formatBytes($fileSize),
                 'status' => $status,
@@ -761,6 +813,19 @@ class BackupController extends Controller
                 $path = storage_path('app/private/'.$old->file_path);
                 if (file_exists($path)) {
                     @unlink($path);
+                }
+            }
+            // Cloud/hybrid scheduled backups also have a cloud_path - without this,
+            // retention only ever cleaned the local copy, leaving cloud-only and
+            // hybrid backups orphaned in the OCI bucket forever once past retention
+            // (silently consuming the Always Free storage allowance over time).
+            if ($old->cloud_path && in_array($old->storage_mode, ['cloud', 'hybrid'], true)) {
+                try {
+                    if (BackupService::isCloudConfigured($settings)) {
+                        $this->backups->deleteFromCloud($old->cloud_path, $settings);
+                    }
+                } catch (Throwable) {
+                    // Non-fatal: the DB row is still cleaned up even if OCI removal fails
                 }
             }
             $old->delete();
