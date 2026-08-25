@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { logoutUser } from "../features/authSlice";
@@ -82,6 +82,7 @@ export default function VynerixMobileApp() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [showExitToast, setShowExitToast] = useState(false);
 
   const userName = authUser?.name || authUser?.username || "Admin";
 
@@ -91,6 +92,72 @@ export default function VynerixMobileApp() {
       checkSupplierPaymentAlerts();
       processSyncQueue();
     }
+  }, [ready, isAuthenticated]);
+
+  // Android hardware/gesture back button support. This screen stack is plain
+  // React state (`page`/`history`, above) with no History API involvement at
+  // all, so the browser -- and an installed PWA's WebView -- had nothing to
+  // "go back" through: the very first back press exited the whole app
+  // instead of stepping to the previous in-app screen.
+  //
+  // Fix: seed one history entry and intercept `popstate`. Each back press
+  // either steps the *existing* `history` stack back by one (re-arming the
+  // guard entry so the next press is caught too), or -- once already at the
+  // root screen with nothing left in-app -- arms a "press back again to
+  // exit" toast for 2s (the same pattern real Android apps use, e.g.
+  // WhatsApp/Gmail) instead of a modal, since a modal would itself just get
+  // dismissed by a second back press. Only a second press within that
+  // window is allowed to fall through and actually exit.
+  const historyRef = useRef(history);
+  useEffect(() => {
+    historyRef.current = history;
+  }, [history]);
+
+  useEffect(() => {
+    if (!ready || !isAuthenticated) return;
+
+    window.history.pushState({ vxAppGuard: true }, "");
+
+    let exitArmed = false;
+    let exitTimer = null;
+
+    const handlePopState = () => {
+      const stack = historyRef.current;
+
+      if (stack.length > 1) {
+        setHistory((prev) => {
+          if (prev.length <= 1) return prev;
+          const next = prev.slice(0, -1);
+          setPage(next[next.length - 1]);
+          return next;
+        });
+        window.history.pushState({ vxAppGuard: true }, "");
+        return;
+      }
+
+      if (!exitArmed) {
+        exitArmed = true;
+        setShowExitToast(true);
+        window.history.pushState({ vxAppGuard: true }, "");
+        exitTimer = setTimeout(() => {
+          exitArmed = false;
+          setShowExitToast(false);
+        }, 2000);
+        return;
+      }
+
+      // Second press while armed: let this back navigation actually go
+      // through instead of re-pushing a guard entry -- the browser/PWA
+      // shell then exits or backs out of the app as normal.
+      clearTimeout(exitTimer);
+      setShowExitToast(false);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+      clearTimeout(exitTimer);
+    };
   }, [ready, isAuthenticated]);
 
   const navigateTo = useCallback((target) => {
@@ -253,6 +320,14 @@ export default function VynerixMobileApp() {
           </div>
         )}
       </main>
+
+      {/* "Press back again to exit" -- shown for 2s after a back press at
+          the root screen with nothing left to go back to in-app. */}
+      {showExitToast && (
+        <div className="fixed bottom-[80px] left-1/2 -translate-x-1/2 z-[60] px-4 py-2.5 rounded-full bg-slate-900/90 text-white text-xs font-semibold shadow-lg backdrop-blur-sm animate-in fade-in slide-in-from-bottom-3 duration-200 whitespace-nowrap">
+          Press back again to exit
+        </div>
+      )}
 
       {/* Bottom Navigation */}
       <BottomNav activePage={page} onNavigate={navigateTo} />
