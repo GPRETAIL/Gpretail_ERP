@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import api from "../../api/axios";
 import { setCachedData, getCachedData } from "../offline/db";
+import useDashboardRealtime from "../../hooks/useDashboardRealtime";
 
 const money = (n) =>
   "₹ " +
@@ -72,8 +73,8 @@ export default function DashboardScreen({ onNavigate }) {
     return { fromDate: formatYmd(from), toDate: formatYmd(to) };
   }, [dateRange]);
 
-  const loadDashboardData = useCallback(async () => {
-    setLoading(true);
+  const loadDashboardData = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
     try {
       const [overviewRes, summaryRes, purchasesRes, attentionRes, duesRes] = await Promise.allSettled([
         api.get("/dashboard/overview", {
@@ -126,7 +127,7 @@ export default function DashboardScreen({ onNavigate }) {
         setSupplierDues(cached.dues);
       }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [fromDate, toDate, dateRange]);
 
@@ -137,6 +138,15 @@ export default function DashboardScreen({ onNavigate }) {
     window.addEventListener("vx-network-restored", handleRestored);
     return () => window.removeEventListener("vx-network-restored", handleRestored);
   }, [loadDashboardData]);
+
+  // Same 30s visibility-aware polling the desktop Dashboard uses (no backend
+  // WebSocket exists for this data, see useDashboardRealtime.js) -- kept the
+  // KPI cards, alerts, and fast-moving list in sync with new sales/purchases
+  // without the user needing to switch tabs and back to force a refetch.
+  useDashboardRealtime({
+    enabled: true,
+    onUpdate: loadDashboardData,
+  });
 
   // Extract core metrics from the real /dashboard/overview response shape.
   const metrics = overviewData?.metrics || {};
