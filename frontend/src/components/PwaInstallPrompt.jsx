@@ -18,6 +18,7 @@ export default function PwaInstallPrompt() {
   const [isStandalone, setIsStandalone] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [installedSuccessfully, setInstalledSuccessfully] = useState(false);
+  const [manualTriggerRequested, setManualTriggerRequested] = useState(false);
 
   useEffect(() => {
     // 1. Check if already installed / running in standalone window
@@ -69,9 +70,14 @@ export default function PwaInstallPrompt() {
 
     window.addEventListener("appinstalled", handleAppInstalled);
 
-    // 6. Support manual trigger from settings or topbar
+    // 6. Support manual trigger from settings or topbar. Must force the banner
+    // visible itself (not just clear `dismissed`) -- on desktop, with no
+    // beforeinstallprompt captured yet and not iOS, `shouldShow` below would
+    // otherwise stay false and the whole component renders null, so clicking
+    // "Install Mobile App" silently did nothing.
     const handleCustomTrigger = () => {
       setDismissed(false);
+      setManualTriggerRequested(true);
       if (isIosDevice) {
         setShowIosGuide(true);
       }
@@ -150,8 +156,10 @@ export default function PwaInstallPrompt() {
     return null;
   }
 
-  // Show banner on mobile browsers, or when beforeinstallprompt is ready, or when iOS
-  const shouldShow = isMobile || isInstallable || isIos;
+  // Show banner on mobile browsers, when beforeinstallprompt is ready, on iOS, or
+  // whenever the user explicitly asked via "Install Mobile App" -- desktop Chrome/Edge
+  // with no native prompt captured yet still needs to show *something* on request.
+  const shouldShow = isMobile || isInstallable || isIos || manualTriggerRequested;
   if (!shouldShow && !showIosGuide) {
     return null;
   }
