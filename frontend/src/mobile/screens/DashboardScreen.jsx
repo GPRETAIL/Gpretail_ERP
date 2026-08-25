@@ -12,9 +12,10 @@ import {
   Wallet,
   Sparkles,
   Users,
+  RefreshCw,
 } from "lucide-react";
 import api from "../../api/axios";
-import { setCachedData, getCachedData } from "../offline/db";
+import { setCachedData, getCachedData, getSyncQueue } from "../offline/db";
 import useDashboardRealtime from "../../hooks/useDashboardRealtime";
 
 const money = (n) =>
@@ -49,6 +50,7 @@ export default function DashboardScreen({ onNavigate }) {
   const [, setSummaryData] = useState(null);
   const [attentionData, setAttentionData] = useState(null);
   const [supplierDues, setSupplierDues] = useState(null);
+  const [pendingSyncCount, setPendingSyncCount] = useState(0);
 
   // Compute date range dates
   const { fromDate, toDate } = useMemo(() => {
@@ -138,6 +140,23 @@ export default function DashboardScreen({ onNavigate }) {
     window.addEventListener("vx-network-restored", handleRestored);
     return () => window.removeEventListener("vx-network-restored", handleRestored);
   }, [loadDashboardData]);
+
+  // Unsynced offline changes (drafts/mutations still waiting in the local
+  // IndexedDB queue) surfaced as a Needs Attention item, so a store that's
+  // been offline doesn't silently sit on unsaved sales/purchases.
+  useEffect(() => {
+    const refreshPendingSync = () => {
+      getSyncQueue().then((queue) => setPendingSyncCount(queue.length));
+    };
+    refreshPendingSync();
+
+    window.addEventListener("vx-sync-queue-updated", refreshPendingSync);
+    window.addEventListener("vx-sync-completed", refreshPendingSync);
+    return () => {
+      window.removeEventListener("vx-sync-queue-updated", refreshPendingSync);
+      window.removeEventListener("vx-sync-completed", refreshPendingSync);
+    };
+  }, []);
 
   // Same 30s visibility-aware polling the desktop Dashboard uses (no backend
   // WebSocket exists for this data, see useDashboardRealtime.js) -- kept the
@@ -332,6 +351,19 @@ export default function DashboardScreen({ onNavigate }) {
             </div>
             <ChevronRight size={14} className="text-slate-400" />
           </div>
+
+          {/* Item 5: Unsynced Offline Changes - only shown when there's something
+              actually waiting, since most sessions never queue anything */}
+          {pendingSyncCount > 0 && (
+            <div className="flex items-center justify-between p-2.5 rounded-xl bg-cyan-50/50 border border-cyan-100/80">
+              <div className="flex items-center gap-2">
+                <RefreshCw size={11} className="text-cyan-600 shrink-0" />
+                <span className="text-[11.5px] font-bold text-slate-700">
+                  {pendingSyncCount} Unsynced Change{pendingSyncCount === 1 ? "" : "s"} Waiting to Sync
+                </span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
