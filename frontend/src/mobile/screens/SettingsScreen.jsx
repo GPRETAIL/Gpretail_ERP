@@ -173,7 +173,7 @@ export default function SettingsScreen({ onLogout, onTriggerPwa }) {
           <div className="space-y-4 text-slate-800">
             <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80">
               <h4 className="text-xs font-bold text-slate-400 uppercase">Registered Company</h4>
-              <p className="text-sm font-black text-slate-900 mt-1">{profile?.name || "GP Retail ERP"}</p>
+              <p className="text-sm font-black text-slate-900 mt-1">{profile?.name || "Vynerix ERP"}</p>
             </div>
             <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80">
               <h4 className="text-xs font-bold text-slate-400 uppercase">GSTIN / Tax ID</h4>
