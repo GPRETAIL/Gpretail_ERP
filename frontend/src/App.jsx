@@ -47,7 +47,7 @@ function App() {
               </Route>
               <Route path="/" element={isAuthenticated ? <Navigate to={homePath} replace /> : <Navigate to="/login" replace />} />
             </Routes>
-            <PwaInstallPrompt />
+            {isAuthenticated && <PwaInstallPrompt />}
           </>
         )}
       </AuthInitializer>

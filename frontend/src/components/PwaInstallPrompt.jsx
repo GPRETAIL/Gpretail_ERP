@@ -157,7 +157,7 @@ export default function PwaInstallPrompt() {
           <div className="flex-1">
             <h4 className="font-bold text-sm">App Installed Successfully!</h4>
             <p className="text-xs text-emerald-100">
-              Launch GP Retail anytime from your home screen.
+              Launch Vynerix ERP anytime from your home screen.
             </p>
           </div>
         </div>
