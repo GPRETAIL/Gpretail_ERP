@@ -9,6 +9,7 @@ use App\Models\Store;
 use App\Services\BackupService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Validator;
 use Throwable;
 
@@ -223,6 +224,21 @@ class BackupController extends Controller
                 $settings['next_scheduled_at'] = null;
             }
 
+            // Scheduled backups run unattended - no human is present to type a
+            // password, so if the operator wants them encrypted (required to
+            // include the Users table), the password has to be stored somewhere
+            // the server can read it without a human. Encrypting it at rest with
+            // the app's own key (Crypt::encryptString, backed by APP_KEY) protects
+            // it if the backup FILE leaks or gets stolen separately - the same
+            // protection most backup systems rely on. It does NOT protect against
+            // someone who fully compromises this server, since they'd have the
+            // same key. That's a real, deliberate trade-off, not an oversight.
+            $submittedPassword = $request->input('encryptionPassword');
+            $isMaskedPassword = $submittedPassword !== null && str_repeat('*', 20) === $submittedPassword;
+            if ($submittedPassword && ! $isMaskedPassword) {
+                $settings['encryption_password_encrypted'] = Crypt::encryptString($submittedPassword);
+            }
+
             if ($companyId) {
                 $store = Store::find($companyId);
                 if (! $store) {
@@ -233,6 +249,10 @@ class BackupController extends Controller
                 if (empty($settings['oci_secret_access_key']) && ! empty($existing['oci_secret_access_key'])) {
                     $settings['oci_secret_access_key'] = $existing['oci_secret_access_key'];
                 }
+                // Preserve the existing stored encryption password unless a real new one was submitted
+                if (! isset($settings['encryption_password_encrypted']) && ! empty($existing['encryption_password_encrypted'])) {
+                    $settings['encryption_password_encrypted'] = $existing['encryption_password_encrypted'];
+                }
                 $settings['last_scheduled_at'] = $existing['last_scheduled_at'] ?? null;
                 $store->update(['backup_settings' => $settings]);
             } else {
@@ -242,8 +262,10 @@ class BackupController extends Controller
                     $existing      = $store->backup_settings ?? [];
                     $storeSettings = array_merge($settings, [
                         'last_scheduled_at'      => $existing['last_scheduled_at'] ?? null,
-                        // Preserve per-store OCI secrets
+                        // Preserve per-store OCI secrets and encryption password
                         'oci_secret_access_key'  => $settings['oci_secret_access_key'] ?: ($existing['oci_secret_access_key'] ?? ''),
+                        'encryption_password_encrypted' => $settings['encryption_password_encrypted']
+                            ?? ($existing['encryption_password_encrypted'] ?? null),
                     ]);
                     $store->update(['backup_settings' => $storeSettings]);
                 }
@@ -259,6 +281,13 @@ class BackupController extends Controller
         if (! empty($setting['oci_secret_access_key'])) {
             $setting['oci_secret_access_key'] = str_repeat('*', 20);
         }
+        // Same for the scheduled-backup encryption password - never send the
+        // encrypted blob to the client, just a flag saying one is stored.
+        $setting['scheduled_encryption_configured'] = ! empty($setting['encryption_password_encrypted']);
+        if (! empty($setting['encryption_password_encrypted'])) {
+            $setting['encryption_password'] = str_repeat('*', 20);
+        }
+        unset($setting['encryption_password_encrypted']);
         $setting['cloud_configured'] = BackupService::isCloudConfigured($store?->backup_settings ?? []);
 
         return response()->json([
@@ -609,11 +638,28 @@ class BackupController extends Controller
 
             $startedAt = now();
             $status = 'success';
-            $statusMessage = 'Scheduled run (unencrypted, no operator present - the Users table was skipped; run a manual encrypted backup to include it).';
             $tableCounts = [];
             $fileName = null;
             $filePath = null;
             $fileSize = 0;
+
+            // If the operator saved a scheduled-backup password (Storage & Schedule
+            // settings), decrypt it and include sensitive tables (Users) encrypted.
+            // Otherwise fall back to the safe default: strip them, run unencrypted.
+            $scheduledPassword = null;
+            if (! empty($settings['encryption_password_encrypted'])) {
+                try {
+                    $scheduledPassword = Crypt::decryptString($settings['encryption_password_encrypted']);
+                } catch (Throwable) {
+                    // APP_KEY rotated or the stored value is corrupt - fall back safely
+                    // rather than failing the whole scheduled run for this store.
+                    $scheduledPassword = null;
+                }
+            }
+            $encryptScheduled = $scheduledPassword !== null && $scheduledPassword !== '';
+            $statusMessage = $encryptScheduled
+                ? 'Scheduled run (encrypted with the saved schedule password).'
+                : 'Scheduled run (unencrypted, no password saved - the Users table was skipped; save a password in Storage & Schedule settings to include it).';
 
             try {
                 $since = null;
@@ -624,16 +670,20 @@ class BackupController extends Controller
                     }
                 }
                 $manifest = $this->backups->buildTableManifestForModules($moduleNames);
-                // Scheduled runs are always unencrypted (no operator present to supply a
-                // password), so sensitive tables (users - password hashes) are skipped here.
-                // They're still covered by manual, encrypted, on-demand backups.
-                $manifest = $this->backups->stripSensitiveTables($manifest);
+                if (! $encryptScheduled) {
+                    // No password on file - sensitive tables (users - password hashes)
+                    // are skipped here. Still covered by manual, encrypted backups.
+                    $manifest = $this->backups->stripSensitiveTables($manifest);
+                }
                 $exported = $this->backups->exportTablesToJson($manifest, $store->id, $since);
                 foreach ($exported as $table => $rows) {
                     $tableCounts[$table] = count($rows);
                 }
                 $baseName = 'backup_scheduled_'.$store->id.'_'.now()->format('Ymd_His').'_'.uniqid();
                 $zipPath = $this->backups->writeBackupArchive($exported, $manifest, $baseName);
+                if ($encryptScheduled) {
+                    $zipPath = $this->backups->encryptArchive($zipPath, $scheduledPassword);
+                }
                 $fileSize = filesize($zipPath) ?: 0;
                 $fileName = basename($zipPath);
                 $filePath = 'backups/'.$fileName;
@@ -652,7 +702,7 @@ class BackupController extends Controller
                 'file_size' => $fileSize,
                 'file_size_label' => $this->backups->formatBytes($fileSize),
                 'status' => $status,
-                'encryption_enabled' => false,
+                'encryption_enabled' => $encryptScheduled,
                 'summary' => ['status_message' => $statusMessage, 'tables' => $tableCounts, 'progress_percent' => 100, 'triggered_by' => 'scheduled'],
                 'started_at' => $startedAt,
                 'completed_at' => now(),
@@ -681,10 +731,13 @@ class BackupController extends Controller
 
         // `triggered_by` is stored as a plain JSON string value inside the summary column,
         // NOT as an array — so whereJsonContains (which checks array membership) will never
-        // match. Use whereJsonPath to compare the scalar value directly.
+        // match. `whereJsonPath` also isn't a real query-builder method (it silently gets
+        // treated as a literal column named "json_path", which errors with "column not
+        // found" the moment this ever actually runs). Laravel's real syntax for comparing
+        // a JSON path to a scalar is the `column->path` dot-arrow syntax in a plain where().
         $scheduled = Backup::where('company_id', $store->id)
             ->where('status', 'success')
-            ->whereJsonPath('summary.triggered_by', 'scheduled')
+            ->where('summary->triggered_by', 'scheduled')
             ->orderByDesc('completed_at')
             ->get();
 

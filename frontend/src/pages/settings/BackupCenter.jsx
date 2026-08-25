@@ -164,7 +164,8 @@ const normalizeSetting = (setting = {}) => ({
   localStorageEnabled: setting.local_storage_enabled ?? setting.localStorageEnabled ?? true,
   cloudStorageEnabled: setting.cloud_storage_enabled ?? setting.cloudStorageEnabled ?? false,
   encryptionEnabled: setting.encryption_enabled ?? setting.encryptionEnabled ?? false,
-  encryptionPassword: "",
+  encryptionPassword: setting.encryption_password || setting.encryptionPassword || "",
+  scheduledEncryptionConfigured: setting.scheduled_encryption_configured ?? setting.scheduledEncryptionConfigured ?? false,
   restorePasswordHint: setting.restore_password_hint || setting.restorePasswordHint || "",
   scheduleEnabled: setting.schedule_enabled ?? setting.scheduleEnabled ?? false,
   scheduleFrequency: setting.schedule_frequency || setting.scheduleFrequency || "daily",
@@ -1124,11 +1125,18 @@ export default function BackupCenter() {
                   Get the real secret value from the server&apos;s{" "}
                   <span className="font-mono">BACKUP_CRON_SECRET</span> environment
                   variable — it is never shown here.
-                  <p className="mt-2 pt-2 border-t border-blue-200 dark:border-blue-800">
-                    Scheduled backups always run unencrypted (no one is present to type a
-                    password), so the Users table is skipped automatically to avoid storing
-                    password hashes unencrypted. Run a manual encrypted backup to include it.
-                  </p>
+                  {settingsForm.encryptionEnabled && (settingsForm.encryptionPassword || settingsForm.scheduledEncryptionConfigured) ? (
+                    <p className="mt-2 pt-2 border-t border-blue-200 dark:border-blue-800 text-green-700 dark:text-green-400">
+                      ✓ A password is saved above, so scheduled backups will run encrypted and include the Users table. The password is stored encrypted at rest on the server - this protects the backup file if it leaks or gets stolen separately, but not against someone who fully compromises this server.
+                    </p>
+                  ) : (
+                    <p className="mt-2 pt-2 border-t border-blue-200 dark:border-blue-800">
+                      Scheduled backups will run unencrypted (no password saved above), so the
+                      Users table is skipped automatically to avoid storing password hashes
+                      unencrypted. Enable &quot;Default encryption&quot; and save a password
+                      above to include it in scheduled runs too.
+                    </p>
+                  )}
                 </div>
               ) : null}
 
@@ -1204,31 +1212,44 @@ export default function BackupCenter() {
                 </>
               ) : null}
 
-              <div className="grid grid-cols-3 gap-3">
-                <input
-                  type="number"
-                  min="1"
-                  value={settingsForm.retentionDaily}
-                  onChange={(event) => setSettingsForm((prev) => ({ ...prev, retentionDaily: Number(event.target.value) }))}
-                  className={inputClass}
-                  placeholder="Daily"
-                />
-                <input
-                  type="number"
-                  min="1"
-                  value={settingsForm.retentionWeekly}
-                  onChange={(event) => setSettingsForm((prev) => ({ ...prev, retentionWeekly: Number(event.target.value) }))}
-                  className={inputClass}
-                  placeholder="Weekly"
-                />
-                <input
-                  type="number"
-                  min="1"
-                  value={settingsForm.retentionMonthly}
-                  onChange={(event) => setSettingsForm((prev) => ({ ...prev, retentionMonthly: Number(event.target.value) }))}
-                  className={inputClass}
-                  placeholder="Monthly"
-                />
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Retention (how many old scheduled backups to keep)
+                </label>
+                <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
+                  Only the box matching your Schedule Frequency above is actually used right now - it&apos;s highlighted below. The other two are just saved for whenever you switch frequency later.
+                </p>
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { key: "retentionDaily", label: "Daily backups to keep", freq: "daily" },
+                    { key: "retentionWeekly", label: "Weekly backups to keep", freq: "weekly" },
+                    { key: "retentionMonthly", label: "Monthly backups to keep", freq: "monthly" },
+                  ].map(({ key, label, freq }) => {
+                    const active = settingsForm.scheduleFrequency === freq;
+                    return (
+                      <div
+                        key={key}
+                        className={`rounded-md border p-2 ${
+                          active
+                            ? "border-blue-400 bg-blue-50 dark:border-blue-600 dark:bg-blue-900/20"
+                            : "border-gray-200 dark:border-gray-700"
+                        }`}
+                      >
+                        <label className={`mb-1 block text-xs font-medium ${active ? "text-blue-700 dark:text-blue-300" : "text-gray-500 dark:text-gray-400"}`}>
+                          {label}
+                          {active ? " (active)" : ""}
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={settingsForm[key]}
+                          onChange={(event) => setSettingsForm((prev) => ({ ...prev, [key]: Number(event.target.value) }))}
+                          className={inputClass}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
               <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
