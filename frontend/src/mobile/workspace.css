@@ -142,6 +142,27 @@
   font-weight: 800;
   color: #0f172a;
   letter-spacing: -0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+/* Reserve equal width on both sides of the header so the centered title
+   sits at the true midpoint -- the right side (bell + avatar) is wider
+   than the left (back arrow / brand mark alone), so without this the
+   "centered" title box was pushed visibly left. Matches the right side's
+   natural content width (38px bell + 6px gap + 36px avatar = 80px). */
+.vx-ws-side {
+  flex: 0 0 80px;
+  display: flex;
+  align-items: center;
+}
+.vx-ws-side-left {
+  justify-content: flex-start;
+}
+.vx-ws-side-right {
+  justify-content: flex-end;
 }
 
 .vx-ws-icon {

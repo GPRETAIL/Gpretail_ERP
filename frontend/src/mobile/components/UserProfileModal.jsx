@@ -11,9 +11,12 @@ import {
   ChevronRight,
   Database,
   CheckCircle2,
+  Moon,
+  Sun,
 } from "lucide-react";
 import { getSyncQueue, getDrafts } from "../offline/db";
 import { processSyncQueue } from "../offline/syncManager";
+import { useTheme } from "../../features/theme-context";
 
 /**
  * Mobile User Profile Drawer & Quick Action Sheet
@@ -32,6 +35,8 @@ export default function UserProfileModal({
   const [draftsCount, setDraftsCount] = useState(0);
   const [syncing, setSyncing] = useState(false);
   const [syncSuccess, setSyncSuccess] = useState(false);
+  const { theme, setTheme } = useTheme();
+  const isDark = theme === "dark";
 
   const loadStorageStats = async () => {
     try {
@@ -160,6 +165,36 @@ export default function UserProfileModal({
 
         {/* Action Menu List */}
         <div className="flex-1 overflow-y-auto px-4 py-3 space-y-1.5">
+          {/* Theme Toggle -- moved out of the top header bar so the header's
+              icon cluster is small enough to leave room for a truly
+              centered page title without truncating it. */}
+          <button
+            type="button"
+            onClick={() => setTheme(isDark ? "light" : "dark")}
+            className="w-full flex items-center justify-between p-3 rounded-2xl hover:bg-slate-50 border border-transparent hover:border-slate-200 text-left transition-all"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                {isDark ? <Sun size={18} /> : <Moon size={18} />}
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-slate-900 leading-tight">
+                  {isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                </h4>
+                <p className="text-[11px] text-slate-500">
+                  Toggle the app's color theme
+                </p>
+              </div>
+            </div>
+            <div
+              className={`w-10 h-6 rounded-full flex items-center px-0.5 transition-colors shrink-0 ${
+                isDark ? "bg-indigo-600 justify-end" : "bg-slate-200 justify-start"
+              }`}
+            >
+              <div className="w-5 h-5 rounded-full bg-white shadow" />
+            </div>
+          </button>
+
           {/* Business / Branch Settings */}
           <button
             type="button"
