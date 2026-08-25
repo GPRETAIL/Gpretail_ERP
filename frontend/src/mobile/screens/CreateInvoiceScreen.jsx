@@ -20,6 +20,8 @@ import { BrowserMultiFormatReader } from "@zxing/browser";
 import api from "../../api/axios";
 import { saveDraft, addToSyncQueue, getCachedData, setCachedData } from "../offline/db";
 import { fetchSalesReceiptCustomization, buildUpiPaymentUri } from "../../utils/salesReceiptCustomization";
+import { printPosSaleReceipt } from "../../utils/posSaleReceiptPrinter";
+import { usePrintContext } from "../../context/PrintContext";
 
 const money = (n) =>
   "₹ " +
@@ -34,6 +36,7 @@ const money = (n) =>
  */
 export default function CreateInvoiceScreen({ onBack }) {
   const authUser = useSelector((s) => s.auth.user);
+  const { queuePrintHtml } = usePrintContext();
 
   // Navigation & Step Control
   const [step, setStep] = useState("billing"); // 'billing' | 'checkout'
@@ -55,6 +58,7 @@ export default function CreateInvoiceScreen({ onBack }) {
   const [errorMsg, setErrorMsg] = useState(null);
   const [successMsg, setSuccessMsg] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [printing, setPrinting] = useState(false);
 
   // Scanner Video reference & controls
   const videoRef = useRef(null);
@@ -314,8 +318,46 @@ export default function CreateInvoiceScreen({ onBack }) {
     }
   };
 
-  const handlePrint = () => {
-    window.print();
+  // "Print Receipt" always saves the invoice first (a receipt can't be printed for a
+  // sale that doesn't exist yet) using the exact same print pipeline as the desktop
+  // POS Sales page -- same template builder, same Sales Customisation settings
+  // (thermal/A4 format, direct-silent vs browser print mode), same print-connector --
+  // so a mobile-created invoice's receipt looks identical to one printed from desktop.
+  // "Complete & Save Invoice" (handleSave above) stays save-only, no printing.
+  const handlePrint = async () => {
+    setPrinting(true);
+    const payload = buildPayload();
+    const customerName =
+      customers.find((c) => String(c.id) === String(selectedCustomer))?.name || "";
+
+    if (!navigator.onLine) {
+      await handleSaveOffline();
+      setPrinting(false);
+      return;
+    }
+
+    let saved;
+    try {
+      const res = await api.post("/pos-sales", payload);
+      saved = res.data?.data;
+    } catch {
+      await handleSaveOffline();
+      setPrinting(false);
+      return;
+    }
+
+    try {
+      await printPosSaleReceipt(saved, { api, authUser, customerName, queuePrintHtml });
+      setSuccessMsg("Invoice saved & sent to printer!");
+    } catch (err) {
+      console.warn("Receipt print failed:", err);
+      setSuccessMsg("Invoice saved. Printing failed — check the printer connection.");
+    } finally {
+      setPrinting(false);
+      setTimeout(() => {
+        onBack();
+      }, 900);
+    }
   };
 
   // Filter Catalog by Search Query
@@ -673,17 +715,18 @@ export default function CreateInvoiceScreen({ onBack }) {
       <div className="space-y-2">
         <button
           type="button"
+          disabled={saving || printing}
           onClick={handlePrint}
-          className="w-full py-3 bg-white border border-slate-200 text-slate-700 rounded-2xl font-black text-xs flex items-center justify-center gap-2 hover:bg-slate-50 active:scale-98 transition-all"
+          className="w-full py-3 bg-white border border-slate-200 text-slate-700 rounded-2xl font-black text-xs flex items-center justify-center gap-2 hover:bg-slate-50 active:scale-98 transition-all disabled:opacity-60"
         >
-          <Printer size={16} /> Print Receipt
+          <Printer size={16} /> {printing ? "Saving & Printing..." : "Print Receipt"}
         </button>
 
         <button
           type="button"
-          disabled={saving}
+          disabled={saving || printing}
           onClick={handleSave}
-          className="w-full py-3.5 bg-indigo-600 text-white rounded-2xl font-black text-xs flex items-center justify-center gap-2 shadow-md shadow-indigo-600/10 hover:bg-indigo-700 active:scale-98 transition-all"
+          className="w-full py-3.5 bg-indigo-600 text-white rounded-2xl font-black text-xs flex items-center justify-center gap-2 shadow-md shadow-indigo-600/10 hover:bg-indigo-700 active:scale-98 transition-all disabled:opacity-60"
         >
           {saving ? "Creating Invoice..." : "Complete & Save Invoice"}
         </button>
