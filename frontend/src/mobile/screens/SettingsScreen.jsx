@@ -32,7 +32,7 @@ const formatDateTime = (value) => {
 /**
  * Mobile Settings screen with functional items
  */
-export default function SettingsScreen({ onLogout, onTriggerPwa, appLock, biometrics }) {
+export default function SettingsScreen({ onLogout, onTriggerPwa, appLock, biometrics, onOpenSyncCenter }) {
   const [activeModal, setActiveModal] = useState(null); // 'profile' | 'users' | 'roles' | 'security' | 'preferences' | 'backup' | 'about'
   const [profile, setProfile] = useState(null);
   const [employees, setEmployees] = useState([]);
@@ -148,6 +148,12 @@ export default function SettingsScreen({ onLogout, onTriggerPwa, appLock, biomet
         </small>
         <div className="space-y-2">
           <MenuItem icon={Database} title="Backup & Restore" onClick={() => setActiveModal("backup")} />
+          <MenuItem
+            icon={RefreshCw}
+            title="Sync Center"
+            subtitle="Pending offline changes & manual retry"
+            onClick={onOpenSyncCenter}
+          />
           <MenuItem
             icon={Smartphone}
             title="PWA / Mobile App Settings"

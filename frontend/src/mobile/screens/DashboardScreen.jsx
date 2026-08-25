@@ -46,7 +46,7 @@ const formatYmd = (date) => {
   return `${year}-${month}-${day}`;
 };
 
-export default function DashboardScreen({ onNavigate, onOpenSearch, authUser }) {
+export default function DashboardScreen({ onNavigate, onOpenSearch, onOpenSyncCenter, authUser }) {
   const [dateRange, setDateRange] = useState("today"); // 'today' | 'yesterday' | 'week' | 'month'
   const [loading, setLoading] = useState(true);
   const [overviewData, setOverviewData] = useState(null);
@@ -423,15 +423,22 @@ export default function DashboardScreen({ onNavigate, onOpenSearch, authUser }) 
           </div>
 
           {/* Item 5: Unsynced Offline Changes - only shown when there's something
-              actually waiting, since most sessions never queue anything */}
+              actually waiting, since most sessions never queue anything.
+              Opens the Sync Center to inspect/retry/discard queued items. */}
           {pendingSyncCount > 0 && (
-            <div className="flex items-center justify-between p-2.5 rounded-xl bg-cyan-50/50 border border-cyan-100/80">
+            <div
+              onClick={() => onOpenSyncCenter && onOpenSyncCenter()}
+              className={`flex items-center justify-between p-2.5 rounded-xl bg-cyan-50/50 border border-cyan-100/80 ${
+                onOpenSyncCenter ? "cursor-pointer active:scale-98 transition-all" : ""
+              }`}
+            >
               <div className="flex items-center gap-2">
                 <RefreshCw size={11} className="text-cyan-600 shrink-0" />
                 <span className="text-[11.5px] font-bold text-slate-700">
                   {pendingSyncCount} Unsynced Change{pendingSyncCount === 1 ? "" : "s"} Waiting to Sync
                 </span>
               </div>
+              {onOpenSyncCenter && <ChevronRight size={14} className="text-slate-400" />}
             </div>
           )}
         </div>

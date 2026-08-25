@@ -13,6 +13,7 @@ import PwaUpdateBanner from "./components/PwaUpdateBanner";
 import NotificationsModal from "./components/NotificationsModal";
 import UserProfileModal from "./components/UserProfileModal";
 import GlobalSearchModal from "./components/GlobalSearchModal";
+import SyncCenterModal from "./components/SyncCenterModal";
 import DashboardScreen from "./screens/DashboardScreen";
 import ModulesScreen from "./screens/ModulesScreen";
 import SalesScreen from "./screens/SalesScreen";
@@ -93,6 +94,7 @@ export default function VynerixMobileApp() {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isSyncCenterOpen, setIsSyncCenterOpen] = useState(false);
   const [showExitToast, setShowExitToast] = useState(false);
 
   const userName = authUser?.name || authUser?.username || "Admin";
@@ -320,6 +322,9 @@ export default function VynerixMobileApp() {
         <GlobalSearchModal onClose={() => setIsSearchOpen(false)} onNavigate={navigateTo} />
       )}
 
+      {/* Sync Center - pending offline changes, manual retry */}
+      <SyncCenterModal isOpen={isSyncCenterOpen} onClose={() => setIsSyncCenterOpen(false)} />
+
       {/* Pull-to-Refresh Indicator */}
       {(pullDistance > 0 || isRefreshing) && (
         <div
@@ -347,6 +352,7 @@ export default function VynerixMobileApp() {
           <DashboardScreen
             onNavigate={navigateTo}
             onOpenSearch={() => setIsSearchOpen(true)}
+            onOpenSyncCenter={() => setIsSyncCenterOpen(true)}
             authUser={authUser}
           />
         )}
@@ -407,6 +413,7 @@ export default function VynerixMobileApp() {
             onTriggerPwa={triggerInstall}
             appLock={appLock}
             biometrics={biometrics}
+            onOpenSyncCenter={() => setIsSyncCenterOpen(true)}
           />
         )}
 
