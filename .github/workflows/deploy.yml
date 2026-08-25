@@ -92,12 +92,20 @@ jobs:
       - name: Prepare Deployment Package
         env:
           OCR_SPACE_API_KEY: ${{ secrets.OCR_SPACE_API_KEY }}
+          BACKUP_CRON_SECRET: ${{ secrets.BACKUP_CRON_SECRET }}
         run: |
           mkdir -p backend-laravel/public/
           cp -r frontend-dist/* backend-laravel/public/
           cp backend-laravel/.env.production.example backend-laravel/.env
           if [ -n "$OCR_SPACE_API_KEY" ]; then
             printf '\nOCR_SPACE_API_KEY=%s\n' "$OCR_SPACE_API_KEY" >> backend-laravel/.env
+          fi
+          # .env is regenerated fresh from .env.production.example on every deploy
+          # (see cp above), which ships with BACKUP_CRON_SECRET blank - so without
+          # this, the scheduled-run endpoint fails closed (403) on every request,
+          # no matter what token is supplied. Same pattern as OCR_SPACE_API_KEY.
+          if [ -n "$BACKUP_CRON_SECRET" ]; then
+            printf '\nBACKUP_CRON_SECRET=%s\n' "$BACKUP_CRON_SECRET" >> backend-laravel/.env
           fi
           mkdir -p backend-laravel/storage/framework/cache/data
           mkdir -p backend-laravel/storage/framework/sessions
