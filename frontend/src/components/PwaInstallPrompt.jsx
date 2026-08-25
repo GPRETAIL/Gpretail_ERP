@@ -81,30 +81,30 @@ export default function PwaInstallPrompt() {
     // 6. Support manual trigger from settings or topbar. Previously this only
     // ever revealed the guide on iOS, and even then only after going through
     // our own marketing card first -- on desktop, with no beforeinstallprompt
-    // captured yet, nothing happened at all. Now: if the browser's native
-    // prompt is already available, fire it immediately (no extra card to find
-    // and click through); otherwise show the step-by-step guide directly.
-    const handleCustomTrigger = async () => {
+    // captured yet, nothing happened at all. Now: always show the step-by-step
+    // guide right away, and if the browser's native prompt is already
+    // available, fire it in the background at the same time -- if the user
+    // accepts it, the "installed" toast takes over; if they dismiss it or it
+    // never fires, the guide is still there walking them through it manually.
+    const handleCustomTrigger = () => {
       setDismissed(false);
-
-      if (deferredPromptRef.current) {
-        try {
-          const promptEvent = deferredPromptRef.current;
-          promptEvent.prompt();
-          const { outcome } = await promptEvent.userChoice;
-          if (outcome === "accepted") setInstalledSuccessfully(true);
-        } catch (err) {
-          console.warn("PWA install error:", err);
-        } finally {
-          deferredPromptRef.current = null;
-          setDeferredPrompt(null);
-          setIsInstallable(false);
-        }
-        return;
-      }
-
       setManualTriggerRequested(true);
       setShowIosGuide(true);
+
+      if (deferredPromptRef.current) {
+        const promptEvent = deferredPromptRef.current;
+        deferredPromptRef.current = null;
+        setDeferredPrompt(null);
+        setIsInstallable(false);
+        promptEvent
+          .prompt()
+          ?.catch?.((err) => console.warn("PWA install error:", err));
+        promptEvent.userChoice
+          .then(({ outcome }) => {
+            if (outcome === "accepted") setInstalledSuccessfully(true);
+          })
+          .catch((err) => console.warn("PWA install error:", err));
+      }
     };
     window.addEventListener("pwa-show-install-prompt", handleCustomTrigger);
 
