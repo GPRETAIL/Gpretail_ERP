@@ -323,6 +323,11 @@ export default function BackupCenter() {
     dateFrom: "",
     dateTo: "",
   });
+  const DEFAULT_HISTORY_LIMIT = 10;
+  const [backupHistoryPage, setBackupHistoryPage] = useState(1);
+  const [backupHistoryLimit, setBackupHistoryLimit] = useState(DEFAULT_HISTORY_LIMIT);
+  const [restoreHistoryPage, setRestoreHistoryPage] = useState(1);
+  const [restoreHistoryLimit, setRestoreHistoryLimit] = useState(DEFAULT_HISTORY_LIMIT);
   const [restoreCardHighlighted, setRestoreCardHighlighted] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState({ open: false, row: null });
   const [importFile, setImportFile] = useState(null);
@@ -1023,7 +1028,6 @@ export default function BackupCenter() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-semibold text-indigo-800 dark:text-indigo-200">☁ Oracle Cloud (OCI) Object Storage</p>
-                    <p className="text-xs text-indigo-600 dark:text-indigo-400">Always Free: 20 GB Storage · 10 TB Egress/mo · 50k API Calls</p>
                   </div>
                   {settingsForm.cloudConfigured ? (
                     <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">✓ Configured</span>
@@ -1457,6 +1461,16 @@ export default function BackupCenter() {
               <h2 className="text-base font-bold text-gray-800 dark:text-gray-100">Backup History</h2>
               <p className="text-sm text-gray-500 dark:text-gray-400">Track created by, time, size, status, storage target, store and module scope.</p>
             </div>
+            <button
+              type="button"
+              className="glass-btn glass-btn-secondary flex items-center shrink-0"
+              onClick={() => {
+                setBackupHistoryLimit(Math.max(filteredBackups.length, DEFAULT_HISTORY_LIMIT));
+                setBackupHistoryPage(1);
+              }}
+            >
+              View All
+            </button>
           </div>
 
           <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
@@ -1516,6 +1530,16 @@ export default function BackupCenter() {
             searchPlaceholder="Search backups..."
             showExport={false}
             tablePreferenceKey="settings.backup.history"
+            paginationMode="client"
+            page={backupHistoryPage}
+            limit={backupHistoryLimit}
+            totalRows={filteredBackups.length}
+            totalPages={Math.max(Math.ceil(filteredBackups.length / Math.max(backupHistoryLimit, 1)), 1)}
+            onPageChange={setBackupHistoryPage}
+            onLimitChange={(value) => {
+              setBackupHistoryLimit(value);
+              setBackupHistoryPage(1);
+            }}
             renderActions={(row) => (
               <div className="flex items-center gap-2">
                 <button type="button" className="glass-btn glass-btn-primary rounded p-1.5" onClick={() => handleDownload(row)} title="Download">
@@ -1542,6 +1566,16 @@ export default function BackupCenter() {
               <h2 className="text-base font-bold text-gray-800 dark:text-gray-100">Restore History</h2>
               <p className="text-sm text-gray-500 dark:text-gray-400">Audit trail of restore operations, status and affected rows.</p>
             </div>
+            <button
+              type="button"
+              className="glass-btn glass-btn-secondary flex items-center shrink-0"
+              onClick={() => {
+                setRestoreHistoryLimit(Math.max((overview.restores || []).length, DEFAULT_HISTORY_LIMIT));
+                setRestoreHistoryPage(1);
+              }}
+            >
+              View All
+            </button>
           </div>
           <FilterableDataTable
             rows={overview.restores || []}
@@ -1551,6 +1585,16 @@ export default function BackupCenter() {
             searchPlaceholder="Search restores..."
             showExport={false}
             tablePreferenceKey="settings.backup.restores"
+            paginationMode="client"
+            page={restoreHistoryPage}
+            limit={restoreHistoryLimit}
+            totalRows={(overview.restores || []).length}
+            totalPages={Math.max(Math.ceil((overview.restores || []).length / Math.max(restoreHistoryLimit, 1)), 1)}
+            onPageChange={setRestoreHistoryPage}
+            onLimitChange={(value) => {
+              setRestoreHistoryLimit(value);
+              setRestoreHistoryPage(1);
+            }}
             searchButtonClassName="glass-btn glass-btn-primary flex items-center disabled:opacity-50"
           />
         </div>
