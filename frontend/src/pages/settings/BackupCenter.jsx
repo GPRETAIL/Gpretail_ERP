@@ -21,6 +21,7 @@ import { useSelector } from "react-redux";
 import api from "../../api/axios";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import FilterableDataTable from "../../components/FilterableDataTable";
+import PageSkeleton from "../../components/PageSkeleton";
 
 const inputClass =
   "w-full rounded-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-gray-100 p-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500";
@@ -348,11 +349,21 @@ export default function BackupCenter() {
 
   const formatElapsed = (ms) => `${(ms / 1000).toFixed(1)}s`;
 
+  const loadOverviewAbortRef = useRef(null);
+
   const loadOverview = useCallback(async (companyId = "") => {
+    // The single-company auto-select below changes selectedCompanyId, which
+    // re-triggers the effect that calls this - so an unscoped load is almost
+    // always immediately followed by a second, scoped one. Cancel any load
+    // still in flight so the two never race/overlap against the backend.
+    loadOverviewAbortRef.current?.abort();
+    const controller = new AbortController();
+    loadOverviewAbortRef.current = controller;
     try {
       setLoading(true);
       const response = await api.get("/backups/overview", {
         params: companyId ? { companyId } : {},
+        signal: controller.signal,
       });
       const data = response.data?.data || {};
       const normalizedSetting = normalizeSetting(data.setting || {});
@@ -378,9 +389,16 @@ export default function BackupCenter() {
         setSelectedCompanyId(String(data.companies[0].id));
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to load backup center");
+      // A superseded request being cancelled is expected, not a real failure
+      if (err.code !== "ERR_CANCELED" && !api.isCancel?.(err)) {
+        toast.error(err.response?.data?.message || "Failed to load backup center");
+      }
     } finally {
-      setLoading(false);
+      // Only the still-current request should clear the loading state - an
+      // aborted, superseded one finishing late shouldn't flip it back off.
+      if (loadOverviewAbortRef.current === controller) {
+        setLoading(false);
+      }
     }
   }, []);
 
@@ -746,7 +764,7 @@ export default function BackupCenter() {
   };
 
   if (loading) {
-    return <div className="p-4 text-sm text-gray-600 dark:text-gray-300">Loading backup center...</div>;
+    return <PageSkeleton variant="form" rows={10} />;
   }
 
   return (
