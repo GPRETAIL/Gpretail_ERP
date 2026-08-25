@@ -115,29 +115,26 @@ export default function PwaInstallPrompt() {
     };
   }, []);
 
-  const handleInstallClick = async () => {
-    if (isIos) {
-      setShowIosGuide(true);
-      return;
-    }
+  // Same "both at once" pattern as the navbar's manual trigger: show the
+  // guide immediately, and if the browser's native install prompt is ready,
+  // fire it in the background at the same time so accepting it drops the
+  // app into the Start Menu / taskbar without the user having to also hunt
+  // through the guide -- the guide stays as a fallback if they decline it.
+  const handleInstallClick = () => {
+    setShowIosGuide(true);
 
-    if (!deferredPrompt) {
-      // If browser doesn't have prompt ready yet, navigate or explain
-      setShowIosGuide(true);
-      return;
-    }
+    if (isIos || !deferredPrompt) return;
 
-    try {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === "accepted") {
-        setInstalledSuccessfully(true);
-      }
-      setDeferredPrompt(null);
-      setIsInstallable(false);
-    } catch (err) {
-      console.warn("PWA install error:", err);
-    }
+    const promptEvent = deferredPrompt;
+    deferredPromptRef.current = null;
+    setDeferredPrompt(null);
+    setIsInstallable(false);
+    promptEvent.prompt();
+    promptEvent.userChoice
+      .then(({ outcome }) => {
+        if (outcome === "accepted") setInstalledSuccessfully(true);
+      })
+      .catch((err) => console.warn("PWA install error:", err));
   };
 
   const handleDismiss = () => {
