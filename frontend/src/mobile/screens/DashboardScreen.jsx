@@ -14,10 +14,12 @@ import {
   Users,
   RefreshCw,
   Search,
+  ChevronDown,
 } from "lucide-react";
 import api from "../../api/axios";
 import { setCachedData, getCachedData, getSyncQueue } from "../offline/db";
 import useDashboardRealtime from "../../hooks/useDashboardRealtime";
+import BranchSelectorModal from "../components/BranchSelectorModal";
 
 const money = (n) =>
   "₹ " +
@@ -44,13 +46,46 @@ const formatYmd = (date) => {
   return `${year}-${month}-${day}`;
 };
 
-export default function DashboardScreen({ onNavigate, onOpenSearch }) {
+export default function DashboardScreen({ onNavigate, onOpenSearch, authUser }) {
   const [dateRange, setDateRange] = useState("today"); // 'today' | 'yesterday' | 'week' | 'month'
   const [loading, setLoading] = useState(true);
   const [overviewData, setOverviewData] = useState(null);
   const [, setSummaryData] = useState(null);
   const [attentionData, setAttentionData] = useState(null);
   const [supplierDues, setSupplierDues] = useState(null);
+  const [branchModalOpen, setBranchModalOpen] = useState(false);
+  const [overrideStoreName, setOverrideStoreName] = useState(null);
+
+  // Same gate desktop's Navbar "Switch Store" uses, so the pill only
+  // becomes tappable for users who actually have somewhere else to switch
+  // to (a super admin, or someone explicitly assigned to more than one
+  // store) - a single-store clerk just sees their store name, same as
+  // before.
+  const isSuperAdmin = String(authUser?.role || "").toLowerCase() === "super_admin";
+  const hasMultipleStores = Array.isArray(authUser?.company_ids) && authUser.company_ids.length > 1;
+  const canSwitchStore = isSuperAdmin || hasMultipleStores;
+
+  const activeStoreId =
+    typeof window !== "undefined" ? localStorage.getItem("activeStoreId") : null;
+
+  // The pill used to hardcode "Main Retail Branch" regardless of which
+  // store was actually active - resolves the real name instead: the
+  // switched-to store's name when an override is set (and differs from
+  // the user's own store), otherwise the user's own store name from their
+  // login response (already present, no extra fetch needed for the
+  // common no-override case).
+  useEffect(() => {
+    if (!activeStoreId || String(authUser?.company_id) === String(activeStoreId)) {
+      setOverrideStoreName(null);
+      return;
+    }
+    api
+      .get(`/companies/${activeStoreId}`)
+      .then((res) => setOverrideStoreName(res.data?.data?.name || null))
+      .catch(() => setOverrideStoreName(null));
+  }, [activeStoreId, authUser?.company_id]);
+
+  const branchLabel = overrideStoreName || authUser?.company_name || "My Store";
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
 
   // Compute date range dates
@@ -234,10 +269,26 @@ export default function DashboardScreen({ onNavigate, onOpenSearch }) {
 
       {/* ─── 1. Store Header & Date Filter Strip (Zoho / Quanto style) ─── */}
       <div className="flex items-center justify-between gap-2 pt-1">
-        <div className="flex items-center gap-1.5 bg-white border border-slate-200/80 px-2.5 py-1.5 rounded-2xl shadow-xs">
-          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-[11px] font-black text-slate-800 tracking-tight">Main Retail Branch</span>
-        </div>
+        {canSwitchStore ? (
+          <button
+            type="button"
+            onClick={() => setBranchModalOpen(true)}
+            className="flex items-center gap-1.5 bg-white border border-slate-200/80 px-2.5 py-1.5 rounded-2xl shadow-xs active:scale-95 transition-all"
+          >
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+            <span className="text-[11px] font-black text-slate-800 tracking-tight truncate max-w-[140px]">
+              {branchLabel}
+            </span>
+            <ChevronDown size={12} className="text-slate-400 shrink-0" />
+          </button>
+        ) : (
+          <div className="flex items-center gap-1.5 bg-white border border-slate-200/80 px-2.5 py-1.5 rounded-2xl shadow-xs">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+            <span className="text-[11px] font-black text-slate-800 tracking-tight truncate max-w-[160px]">
+              {branchLabel}
+            </span>
+          </div>
+        )}
 
         {/* Date Filter Pills */}
         <div className="flex items-center gap-0.5 bg-slate-200/70 p-1 rounded-2xl">
@@ -692,6 +743,7 @@ export default function DashboardScreen({ onNavigate, onOpenSearch }) {
         )}
       </div>
 
+      <BranchSelectorModal isOpen={branchModalOpen} onClose={() => setBranchModalOpen(false)} />
     </div>
   );
 }

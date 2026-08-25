@@ -341,7 +341,11 @@ export default function VynerixMobileApp() {
       {/* Main Content Area */}
       <main className="vx-ws-main" style={{ paddingBottom: 80 }}>
         {page === "dashboard" && (
-          <DashboardScreen onNavigate={navigateTo} onOpenSearch={() => setIsSearchOpen(true)} />
+          <DashboardScreen
+            onNavigate={navigateTo}
+            onOpenSearch={() => setIsSearchOpen(true)}
+            authUser={authUser}
+          />
         )}
 
         {page === "modules" && (
