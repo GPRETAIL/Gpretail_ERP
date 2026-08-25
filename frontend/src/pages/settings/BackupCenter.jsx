@@ -1112,7 +1112,7 @@ export default function BackupCenter() {
                 Enable local storage for scheduled backups
               </label>
               <p className="-mt-3 text-xs text-gray-500 dark:text-gray-400">
-                Both checked = hybrid. Cloud only works if OCI is configured above; if it isn&apos;t, scheduled runs fall back to local automatically.
+                Enabling both stores a copy in each location (Hybrid). Cloud storage requires the OCI credentials above to be configured; scheduled backups fall back to local storage automatically if they are not.
               </p>
 
               <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">

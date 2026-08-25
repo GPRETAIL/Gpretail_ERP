@@ -3,12 +3,10 @@ import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 import TabBar from "../components/TabBar";
 import { useSelector } from "react-redux";
-import { toast } from "react-toastify";
 import { TabProvider, useTabs } from "../context/TabContext";
 import { TransferActivityProvider, useTransferActivity } from "../context/TransferActivityContext";
 import { handleEnterKeyNavigation } from "../utils/enterToNextField";
 import { usePrintContext } from "../context/PrintContext";
-import api from "../api/axios";
 import { Printer, Store, X, Loader2, CheckCircle2, AlertCircle, Upload, Download } from "lucide-react";
 import { Chip } from "@mui/material";
 import SubscriptionDuePopup from "./SubscriptionDuePopup";
@@ -51,7 +49,6 @@ const PrintStatusFooter = () => {
   const { navigateActiveTab } = useTabs();
   const authUser = useSelector((state) => state.auth.user);
   const userRole = String(authUser?.role || "").toLowerCase();
-  const canManageBackups = userRole === "super_admin" || userRole === "admin";
 
   // Active-store indicator: the Navbar's Switch Store choice, or "All Stores" when a super-admin
   // hasn't switched into one yet (they read unrestricted across the whole tenant in that state --
@@ -73,124 +70,6 @@ const PrintStatusFooter = () => {
 
   const recentJobs = jobs.slice(-5);
   const [expanded, setExpanded] = useState(false);
-  const [activeOperation, setActiveOperation] = useState(null);
-  const [recentOperation, setRecentOperation] = useState(null);
-  const previousOperationStatusRef = React.useRef(new Map());
-  const backupOpsLoadedRef = React.useRef(false);
-  const pollingIntervalRef = React.useRef(null);
-
-  useEffect(() => {
-    if (!recentOperation) return undefined;
-    const timer = window.setTimeout(() => setRecentOperation(null), 8000);
-    return () => window.clearTimeout(timer);
-  }, [recentOperation]);
-
-  useEffect(() => {
-    if (!canManageBackups) {
-      setActiveOperation(null);
-      setRecentOperation(null);
-      previousOperationStatusRef.current = new Map();
-      backupOpsLoadedRef.current = false;
-      if (pollingIntervalRef.current) {
-        window.clearInterval(pollingIntervalRef.current);
-        pollingIntervalRef.current = null;
-      }
-      return undefined;
-    }
-
-    let cancelled = false;
-
-    const stopPolling = () => {
-      if (!pollingIntervalRef.current) return;
-      window.clearInterval(pollingIntervalRef.current);
-      pollingIntervalRef.current = null;
-    };
-
-    const ensurePolling = () => {
-      if (pollingIntervalRef.current) return;
-      pollingIntervalRef.current = window.setInterval(() => {
-        pollOperations();
-      }, 3000);
-    };
-
-    const pollOperations = async () => {
-      try {
-        const response = await api.get("/backups/overview");
-        const data = response.data?.data || {};
-        const operationRows = [
-          ...((data.backups || []).map((row) => ({
-            key: `backup:${row.id}`,
-            id: row.id,
-            type: "backup",
-            status: String(row.status || "").toLowerCase(),
-            label: row.file_name || `Backup #${row.id}`,
-            progressPercent: Math.max(0, Math.min(100, Number(row.summary?.progress_percent) || 0)),
-            statusMessage: String(row.summary?.status_message || "").trim(),
-            startedAt: row.started_at || row.created_at || null,
-            completedAt: row.completed_at || null,
-          }))),
-          ...((data.restores || []).map((row) => ({
-            key: `restore:${row.id}`,
-            id: row.id,
-            type: "restore",
-            status: String(row.status || "").toLowerCase(),
-            label: `Restore #${row.id}`,
-            progressPercent: Math.max(0, Math.min(100, Number(row.summary?.progress_percent) || 0)),
-            statusMessage: String(row.summary?.status_message || "").trim(),
-            startedAt: row.started_at || row.created_at || null,
-            completedAt: row.completed_at || null,
-          }))),
-        ];
-
-        const nextStatusMap = new Map(operationRows.map((row) => [row.key, row.status]));
-        const runningOperations = operationRows
-          .filter((row) => row.status === "running")
-          .sort((a, b) => new Date(b.startedAt || 0).getTime() - new Date(a.startedAt || 0).getTime());
-        const hasRunningOperation = runningOperations.length > 0;
-
-        if (hasRunningOperation) ensurePolling();
-        else stopPolling();
-
-        if (!cancelled) {
-          setActiveOperation(runningOperations[0] || null);
-        }
-
-        if (backupOpsLoadedRef.current) {
-          for (const row of operationRows) {
-            const previousStatus = previousOperationStatusRef.current.get(row.key);
-            if (previousStatus !== "running" || row.status === "running") continue;
-
-            if (!cancelled) {
-              setRecentOperation({ ...row, at: Date.now() });
-            }
-
-            const label = row.type === "backup" ? "Backup" : "Restore";
-            if (row.status === "success") {
-              toast.success(`${label} completed successfully.`);
-            } else if (row.status === "failed") {
-              toast.error(row.statusMessage || `${label} failed.`);
-            }
-          }
-        }
-
-        previousOperationStatusRef.current = nextStatusMap;
-        backupOpsLoadedRef.current = true;
-      } catch {
-        // Footer polling should stay silent.
-      }
-    };
-
-    pollOperations();
-    const handleRefreshRequest = () => {
-      pollOperations();
-    };
-    window.addEventListener("backup-activity-refresh", handleRefreshRequest);
-    return () => {
-      cancelled = true;
-      stopPolling();
-      window.removeEventListener("backup-activity-refresh", handleRefreshRequest);
-    };
-  }, [canManageBackups]);
 
   const footerTransfer = activeActivity || recentActivity;
   const transferIcon = footerTransfer?.type === TYPE.IMPORT ? Upload : Download;
@@ -256,36 +135,6 @@ const PrintStatusFooter = () => {
                   : `${recentActivity?.type === TYPE.IMPORT ? "Import" : "Export"} ${recentActivity?.status === "success" ? "completed" : "failed"}${recentActivity?.statusMessage ? ` - ${recentActivity.statusMessage}` : ""}`}
               </span>
             </button>
-          ) : null}
-
-          {canManageBackups && (activeOperation || recentOperation) ? (
-            <div className="flex items-center gap-1.5 min-w-0 max-w-[320px]">
-              {activeOperation ? (
-                <Loader2 className="w-3 h-3 text-blue-500 animate-spin shrink-0" />
-              ) : recentOperation?.status === "success" ? (
-                <CheckCircle2 className="w-3 h-3 text-green-500 shrink-0" />
-              ) : (
-                <AlertCircle className="w-3 h-3 text-red-500 shrink-0" />
-              )}
-              <span
-                className={`truncate ${
-                  activeOperation
-                    ? "text-blue-600 dark:text-blue-400 font-medium"
-                    : recentOperation?.status === "success"
-                      ? "text-green-600 dark:text-green-400"
-                      : "text-red-600 dark:text-red-400"
-                }`}
-                title={
-                  activeOperation
-                    ? `${activeOperation.type === "backup" ? "Backup" : "Restore"} ${activeOperation.progressPercent}%`
-                    : recentOperation?.statusMessage || ""
-                }
-              >
-                {activeOperation
-                  ? `${activeOperation.type === "backup" ? "Backup" : "Restore"} ${activeOperation.progressPercent}%${activeOperation.statusMessage ? ` - ${activeOperation.statusMessage}` : ""}`
-                  : `${recentOperation?.type === "backup" ? "Backup" : "Restore"} ${recentOperation?.status === "success" ? "completed" : "failed"}`}
-              </span>
-            </div>
           ) : null}
 
           {canSwitchStore ? (
