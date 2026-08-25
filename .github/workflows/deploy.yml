@@ -70,6 +70,8 @@ jobs:
     needs: [frontend, backend]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
+    env:
+      HOSTINGER_SSH_HOST: ${{ secrets.HOSTINGER_SSH_HOST }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -115,7 +117,15 @@ jobs:
           name: hostinger-deployment-package
           path: deploy.zip
           retention-days: 7
+      # FTP is flaky on this host (control-socket connect timeouts, both plain
+      # FTP and FTPS - looks like Hostinger blocks/restricts it at the network
+      # level for GitHub Actions' runner IPs). Made non-blocking so a failed
+      # upload here doesn't prevent the independent SSH deploy path below from
+      # running. The final "Verify a deploy method succeeded" step still fails
+      # the job loudly if BOTH paths fail, so this never silently no-ops.
       - name: Fast Upload via FTP to Hostinger
+        id: ftp_upload
+        continue-on-error: true
         uses: SamKirkland/FTP-Deploy-Action@v4.4.0
         with:
           server: ${{ secrets.HOSTINGER_FTP_SERVER || '157.173.216.156' }}
@@ -128,6 +138,9 @@ jobs:
           local-dir: ./ftp_upload/
           dangerous-clean-slate: false
       - name: Trigger Remote Unzip and Run Migrations
+        if: steps.ftp_upload.outcome == 'success'
+        id: unzip_trigger
+        continue-on-error: true
         env:
           HOSTINGER_DEPLOY_TOKEN: ${{ secrets.HOSTINGER_DEPLOY_TOKEN }}
         run: |
@@ -165,13 +178,8 @@ jobs:
             exit 1
           fi
       - name: Deploy via SSH to Hostinger
-        if: env.HOSTINGER_SSH_HOST != ''
-        env:
-          HOSTINGER_SSH_HOST: ${{ secrets.HOSTINGER_SSH_HOST }}
-          HOSTINGER_SSH_USER: ${{ secrets.HOSTINGER_SSH_USER }}
-          HOSTINGER_SSH_KEY: ${{ secrets.HOSTINGER_SSH_KEY }}
-          HOSTINGER_SSH_PORT: ${{ secrets.HOSTINGER_SSH_PORT || '22' }}
-          HOSTINGER_TARGET_DIR: ${{ secrets.HOSTINGER_TARGET_DIR || 'domains/dev.gpsoftware.in/public_html' }}
+        if: steps.unzip_trigger.outcome != 'success' && env.HOSTINGER_SSH_HOST != ''
+        id: ssh_deploy
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.HOSTINGER_SSH_HOST }}
@@ -187,3 +195,12 @@ jobs:
             php artisan config:cache
             php artisan route:cache
             php artisan view:cache
+      - name: Verify a deploy method succeeded
+        if: always()
+        run: |
+          if [ "${{ steps.unzip_trigger.outcome }}" = "success" ] || [ "${{ steps.ssh_deploy.outcome }}" = "success" ]; then
+            echo "Deploy succeeded (FTP+unzip: ${{ steps.unzip_trigger.outcome || 'skipped' }}, SSH: ${{ steps.ssh_deploy.outcome || 'skipped' }})"
+          else
+            echo "::error::Both deploy paths failed or were skipped - nothing was deployed. FTP+unzip: ${{ steps.unzip_trigger.outcome || 'skipped' }}, SSH: ${{ steps.ssh_deploy.outcome || 'skipped' }}"
+            exit 1
+          fi
