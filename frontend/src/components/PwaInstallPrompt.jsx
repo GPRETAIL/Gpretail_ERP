@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Download,
   Smartphone,
@@ -19,6 +19,14 @@ export default function PwaInstallPrompt() {
   const [dismissed, setDismissed] = useState(false);
   const [installedSuccessfully, setInstalledSuccessfully] = useState(false);
   const [manualTriggerRequested, setManualTriggerRequested] = useState(false);
+
+  // Mirrors deferredPrompt so the mount-effect's event listener (a closure fixed
+  // at mount time) can still act on whatever the *latest* value is -- Chrome can
+  // fire beforeinstallprompt well after mount, long after the effect below ran.
+  const deferredPromptRef = useRef(null);
+  useEffect(() => {
+    deferredPromptRef.current = deferredPrompt;
+  }, [deferredPrompt]);
 
   useEffect(() => {
     // 1. Check if already installed / running in standalone window
@@ -70,17 +78,33 @@ export default function PwaInstallPrompt() {
 
     window.addEventListener("appinstalled", handleAppInstalled);
 
-    // 6. Support manual trigger from settings or topbar. Must force the banner
-    // visible itself (not just clear `dismissed`) -- on desktop, with no
-    // beforeinstallprompt captured yet and not iOS, `shouldShow` below would
-    // otherwise stay false and the whole component renders null, so clicking
-    // "Install Mobile App" silently did nothing.
-    const handleCustomTrigger = () => {
+    // 6. Support manual trigger from settings or topbar. Previously this only
+    // ever revealed the guide on iOS, and even then only after going through
+    // our own marketing card first -- on desktop, with no beforeinstallprompt
+    // captured yet, nothing happened at all. Now: if the browser's native
+    // prompt is already available, fire it immediately (no extra card to find
+    // and click through); otherwise show the step-by-step guide directly.
+    const handleCustomTrigger = async () => {
       setDismissed(false);
-      setManualTriggerRequested(true);
-      if (isIosDevice) {
-        setShowIosGuide(true);
+
+      if (deferredPromptRef.current) {
+        try {
+          const promptEvent = deferredPromptRef.current;
+          promptEvent.prompt();
+          const { outcome } = await promptEvent.userChoice;
+          if (outcome === "accepted") setInstalledSuccessfully(true);
+        } catch (err) {
+          console.warn("PWA install error:", err);
+        } finally {
+          deferredPromptRef.current = null;
+          setDeferredPrompt(null);
+          setIsInstallable(false);
+        }
+        return;
       }
+
+      setManualTriggerRequested(true);
+      setShowIosGuide(true);
     };
     window.addEventListener("pwa-show-install-prompt", handleCustomTrigger);
 
@@ -242,7 +266,7 @@ export default function PwaInstallPrompt() {
               </div>
               <div>
                 <h4 className="text-sm font-bold text-white">
-                  {isIos ? "Install on iPhone / iPad" : "Add to Home Screen"}
+                  {isIos ? "Install on iPhone / iPad" : isMobile ? "Add to Home Screen" : "Install on This Computer"}
                 </h4>
                 <p className="text-[11px] text-slate-400">
                   {isIos ? "Follow 2 simple steps in Safari" : "Follow these quick steps in your browser"}
@@ -258,8 +282,10 @@ export default function PwaInstallPrompt() {
                 <span>
                   {isIos ? (
                     <>Tap the <strong className="text-indigo-300 font-semibold inline-flex items-center gap-1"><Share2 className="h-3.5 w-3.5 inline" /> Share</strong> button in Safari's bottom bar.</>
-                  ) : (
+                  ) : isMobile ? (
                     <>Tap the browser menu <strong className="text-indigo-300 font-semibold">⋮ (three dots)</strong> in the top right corner.</>
+                  ) : (
+                    <>Look for the <strong className="text-indigo-300 font-semibold">install icon</strong> in the address bar, or open the browser's <strong className="text-indigo-300 font-semibold">⋮ menu</strong>.</>
                   )}
                 </span>
               </div>
@@ -268,7 +294,11 @@ export default function PwaInstallPrompt() {
                   2
                 </span>
                 <span>
-                  Scroll down & select <strong className="text-indigo-300 font-semibold inline-flex items-center gap-1"><PlusSquare className="h-3.5 w-3.5 inline" /> Add to Home Screen / Install App</strong>.
+                  {isMobile ? (
+                    <>Scroll down & select <strong className="text-indigo-300 font-semibold inline-flex items-center gap-1"><PlusSquare className="h-3.5 w-3.5 inline" /> Add to Home Screen / Install App</strong>.</>
+                  ) : (
+                    <>Click <strong className="text-indigo-300 font-semibold inline-flex items-center gap-1"><PlusSquare className="h-3.5 w-3.5 inline" /> Install Vynerix ERP...</strong></>
+                  )}
                 </span>
               </div>
               <div className="flex items-center gap-2.5">
@@ -276,7 +306,7 @@ export default function PwaInstallPrompt() {
                   3
                 </span>
                 <span>
-                  Tap <strong className="text-indigo-300 font-semibold">Add / Install</strong> to launch Vynerix ERP anytime!
+                  Confirm <strong className="text-indigo-300 font-semibold">Add / Install</strong> to launch Vynerix ERP anytime!
                 </span>
               </div>
             </div>
