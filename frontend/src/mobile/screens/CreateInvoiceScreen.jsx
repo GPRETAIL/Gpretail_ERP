@@ -11,6 +11,7 @@ import {
   ChevronLeft,
   QrCode,
   Printer,
+  Share2,
   ShoppingBasket,
   Search,
   Check,
@@ -20,9 +21,11 @@ import { BrowserMultiFormatReader } from "@zxing/browser";
 import api from "../../api/axios";
 import { saveDraft, addToSyncQueue, getCachedData, setCachedData } from "../offline/db";
 import { fetchSalesReceiptCustomization, buildUpiPaymentUri } from "../../utils/salesReceiptCustomization";
-import { printPosSaleReceipt } from "../../utils/posSaleReceiptPrinter";
+import { printPosSaleReceipt, buildPosSaleReceiptHtmlForSale } from "../../utils/posSaleReceiptPrinter";
+import { getHtmlAsPdfBlob } from "../../utils/htmlToPdf";
 import { usePrintContext } from "../../context/PrintContext";
 import useHaptics from "../hooks/useHaptics";
+import useNativeShare from "../hooks/useNativeShare";
 
 const money = (n) =>
   "₹ " +
@@ -39,6 +42,7 @@ export default function CreateInvoiceScreen({ onBack }) {
   const authUser = useSelector((s) => s.auth.user);
   const { queuePrintHtml } = usePrintContext();
   const { vibrate } = useHaptics();
+  const { isSupported: canShare, shareFile } = useNativeShare();
 
   // Navigation & Step Control
   const [step, setStep] = useState("billing"); // 'billing' | 'checkout'
@@ -61,6 +65,7 @@ export default function CreateInvoiceScreen({ onBack }) {
   const [successMsg, setSuccessMsg] = useState(null);
   const [saving, setSaving] = useState(false);
   const [printing, setPrinting] = useState(false);
+  const [sharing, setSharing] = useState(false);
 
   // Scanner Video reference & controls
   const videoRef = useRef(null);
@@ -320,6 +325,29 @@ export default function CreateInvoiceScreen({ onBack }) {
     }
   };
 
+  // Shared by Print and Share: a receipt can't be produced for a sale that
+  // doesn't exist yet, so both actions save first. Returns the saved sale
+  // record, or null if it went to the offline queue instead (nothing to
+  // print/share yet -- handleSaveOffline already handles its own message
+  // and navigates back).
+  const ensureInvoiceSaved = async () => {
+    const payload = buildPayload();
+    if (!navigator.onLine) {
+      await handleSaveOffline();
+      return null;
+    }
+    try {
+      const res = await api.post("/pos-sales", payload);
+      return res.data?.data;
+    } catch {
+      await handleSaveOffline();
+      return null;
+    }
+  };
+
+  const getCustomerName = () =>
+    customers.find((c) => String(c.id) === String(selectedCustomer))?.name || "";
+
   // "Print Receipt" always saves the invoice first (a receipt can't be printed for a
   // sale that doesn't exist yet) using the exact same print pipeline as the desktop
   // POS Sales page -- same template builder, same Sales Customisation settings
@@ -328,34 +356,60 @@ export default function CreateInvoiceScreen({ onBack }) {
   // "Complete & Save Invoice" (handleSave above) stays save-only, no printing.
   const handlePrint = async () => {
     setPrinting(true);
-    const payload = buildPayload();
-    const customerName =
-      customers.find((c) => String(c.id) === String(selectedCustomer))?.name || "";
-
-    if (!navigator.onLine) {
-      await handleSaveOffline();
-      setPrinting(false);
-      return;
-    }
-
-    let saved;
-    try {
-      const res = await api.post("/pos-sales", payload);
-      saved = res.data?.data;
-    } catch {
-      await handleSaveOffline();
+    const saved = await ensureInvoiceSaved();
+    if (!saved) {
       setPrinting(false);
       return;
     }
 
     try {
-      await printPosSaleReceipt(saved, { api, authUser, customerName, queuePrintHtml });
+      await printPosSaleReceipt(saved, { api, authUser, customerName: getCustomerName(), queuePrintHtml });
       setSuccessMsg("Invoice saved & sent to printer!");
     } catch (err) {
       console.warn("Receipt print failed:", err);
       setSuccessMsg("Invoice saved. Printing failed — check the printer connection.");
     } finally {
       setPrinting(false);
+      setTimeout(() => {
+        onBack();
+      }, 900);
+    }
+  };
+
+  // "Share Receipt" also saves first, same reasoning as Print -- then renders the
+  // exact same receipt template as a PDF (via the shared html2pdf pipeline
+  // htmlToPdf.js already uses for the desktop "Download PDF" button) and hands it
+  // to the OS share sheet, so a cashier can send it straight to a customer's
+  // WhatsApp/SMS/email without printing anything.
+  const handleShare = async () => {
+    setSharing(true);
+    const saved = await ensureInvoiceSaved();
+    if (!saved) {
+      setSharing(false);
+      return;
+    }
+
+    try {
+      const { html, receiptData } = await buildPosSaleReceiptHtmlForSale(saved, {
+        api,
+        authUser,
+        customerName: getCustomerName(),
+      });
+      // billNo looks like "SB/12345" - "/" isn't safe in a filename (some
+      // OS/share targets read it as a path separator), so swap it for "-".
+      const safeBillNo = String(receiptData.billNo || saved.id).replace(/[/\\]/g, "-");
+      const filename = `Receipt-${safeBillNo}.pdf`;
+      const file = await getHtmlAsPdfBlob(html, filename, { paperSize: receiptData.paperSize });
+      const shared = await shareFile(file, {
+        title: receiptData.storeName || "Receipt",
+        text: `Receipt ${receiptData.billNo} - ${receiptData.storeName || ""}`,
+      });
+      setSuccessMsg(shared ? "Invoice saved & shared!" : "Invoice saved.");
+    } catch (err) {
+      console.warn("Receipt share failed:", err);
+      setSuccessMsg("Invoice saved. Sharing failed.");
+    } finally {
+      setSharing(false);
       setTimeout(() => {
         onBack();
       }, 900);
@@ -715,18 +769,31 @@ export default function CreateInvoiceScreen({ onBack }) {
 
       {/* Action Buttons */}
       <div className="space-y-2">
-        <button
-          type="button"
-          disabled={saving || printing}
-          onClick={handlePrint}
-          className="w-full py-3 bg-white border border-slate-200 text-slate-700 rounded-2xl font-black text-xs flex items-center justify-center gap-2 hover:bg-slate-50 active:scale-98 transition-all disabled:opacity-60"
-        >
-          <Printer size={16} /> {printing ? "Saving & Printing..." : "Print Receipt"}
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            disabled={saving || printing || sharing}
+            onClick={handlePrint}
+            className="flex-1 py-3 bg-white border border-slate-200 text-slate-700 rounded-2xl font-black text-xs flex items-center justify-center gap-2 hover:bg-slate-50 active:scale-98 transition-all disabled:opacity-60"
+          >
+            <Printer size={16} /> {printing ? "Printing..." : "Print"}
+          </button>
+
+          {canShare && (
+            <button
+              type="button"
+              disabled={saving || printing || sharing}
+              onClick={handleShare}
+              className="flex-1 py-3 bg-white border border-slate-200 text-slate-700 rounded-2xl font-black text-xs flex items-center justify-center gap-2 hover:bg-slate-50 active:scale-98 transition-all disabled:opacity-60"
+            >
+              <Share2 size={16} /> {sharing ? "Sharing..." : "Share"}
+            </button>
+          )}
+        </div>
 
         <button
           type="button"
-          disabled={saving || printing}
+          disabled={saving || printing || sharing}
           onClick={handleSave}
           className="w-full py-3.5 bg-indigo-600 text-white rounded-2xl font-black text-xs flex items-center justify-center gap-2 shadow-md shadow-indigo-600/10 hover:bg-indigo-700 active:scale-98 transition-all disabled:opacity-60"
         >

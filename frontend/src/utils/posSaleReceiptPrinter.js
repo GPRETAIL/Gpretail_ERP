@@ -192,9 +192,16 @@ export const buildSimplePosSaleReceiptData = async (
  * @param queuePrintHtml - `usePrintContext().queuePrintHtml` (silent print via the local
  *   print-connector WS service when the store's customization has printMode !== "browser")
  */
-export const printPosSaleReceipt = async (
+/**
+ * Builds the receipt HTML (plus the underlying data/customization) for a
+ * saved sale without printing it - split out of printPosSaleReceipt so
+ * anything else that needs the same receipt document (Share Receipt via
+ * the Web Share API, a future PDF preview, etc.) assembles it the exact
+ * same way instead of re-deriving it.
+ */
+export const buildPosSaleReceiptHtmlForSale = async (
   savedSale,
-  { api, authUser, customerName, queuePrintHtml } = {}
+  { api, authUser, customerName } = {}
 ) => {
   const companyId = authUser?.company_id;
   const [companyInfo, receiptCustomization] = await Promise.all([
@@ -210,6 +217,20 @@ export const printPosSaleReceipt = async (
   });
 
   const html = buildPosSaleReceiptHtml(receiptData, receiptCustomization);
+  return { html, receiptData, receiptCustomization };
+};
+
+export const printPosSaleReceipt = async (
+  savedSale,
+  { api, authUser, customerName, queuePrintHtml } = {}
+) => {
+  const companyId = authUser?.company_id;
+  const { html, receiptData, receiptCustomization } = await buildPosSaleReceiptHtmlForSale(savedSale, {
+    api,
+    authUser,
+    customerName,
+  });
+
   const printCopies = clampReceiptCopies(receiptCustomization?.posReceiptPrintCopies);
   const isDirectPrint = receiptCustomization?.printMode !== "browser";
 

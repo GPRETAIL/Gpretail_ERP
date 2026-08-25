@@ -80,3 +80,67 @@ export const downloadHtmlAsPdf = async (html, filename, { paperSize } = {}) => {
     document.body.removeChild(iframe);
   }
 };
+
+// Same rendering pipeline as downloadHtmlAsPdf above, but resolves to a File
+// instead of triggering a save-to-disk - for navigator.share() (Web Share
+// API) rather than a plain download. Kept as its own function rather than
+// factored out of downloadHtmlAsPdf to avoid touching that function's
+// hard-won timing/sizing fixes (see its comments) for a change only this
+// path needs.
+export const getHtmlAsPdfBlob = async (html, filename, { paperSize } = {}) => {
+  const isA4 = String(paperSize || "").toUpperCase() === "A4";
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "fixed";
+  iframe.style.left = "-10000px";
+  iframe.style.top = "0";
+  iframe.style.border = "none";
+  iframe.style.width = isA4 ? "800px" : "400px";
+  document.body.appendChild(iframe);
+
+  try {
+    await new Promise((resolve) => {
+      iframe.onload = resolve;
+      iframe.srcdoc = html;
+    });
+    await new Promise((resolve) => setTimeout(resolve, 250));
+
+    const target = iframe.contentDocument?.body;
+    if (!target) throw new Error("Receipt document failed to load");
+    target.style.paddingBottom = `${(target.style.paddingBottom ? parseFloat(target.style.paddingBottom) : 0) + 16}px`;
+
+    const widthPx = target.scrollWidth || 320;
+    const heightPx = target.scrollHeight || 600;
+    const jsPdfOptions = isA4
+      ? { unit: "mm", format: "a4", orientation: "portrait" }
+      : {
+          unit: "mm",
+          format: [
+            Math.max(40, (widthPx / PX_PER_INCH) * MM_PER_INCH),
+            Math.max(60, (heightPx / PX_PER_INCH) * MM_PER_INCH),
+          ],
+          orientation: "portrait",
+        };
+
+    const blob = await html2pdf()
+      .set({
+        margin: 0,
+        filename,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: "#ffffff",
+          width: widthPx,
+          windowWidth: widthPx,
+        },
+        jsPDF: jsPdfOptions,
+        pagebreak: { mode: ["css", "legacy"] },
+      })
+      .from(target)
+      .outputPdf("blob");
+
+    return new File([blob], filename, { type: "application/pdf" });
+  } finally {
+    document.body.removeChild(iframe);
+  }
+};
