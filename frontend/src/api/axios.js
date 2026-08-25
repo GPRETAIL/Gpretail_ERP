@@ -15,6 +15,15 @@ const SELECT_STORE_MESSAGE = "Select a store first";
 // Passed through verbatim rather than reworded, because it already reads as an instruction.
 const NO_STORES_MESSAGE = "No stores are available";
 
+// The login endpoints return 401 for a plain wrong-password attempt too, not
+// just an expired/invalid session - excluded below so a mistyped password on
+// the login screen doesn't get treated as "your session expired" and clear
+// storage/redirect out from under the form the user is actively typing into.
+const LOGIN_PATHS = ["/auth/login", "/admin-auth/login"];
+// A screen that fires several requests on mount can all 401 back-to-back
+// once a token goes bad - only the first should trigger the clear+redirect.
+let authExpiredHandled = false;
+
 // Base URL: in Docker, nginx proxies /api → backend container.
 // In local dev, vite.config.js proxies /api → VITE_API_PROXY_TARGET.
 const api = axios.create({
@@ -41,11 +50,26 @@ api.interceptors.request.use(
 
 // ─── Response Interceptor ─────────────────────────────────────────────────────
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // A request succeeding proves the session is alive again (e.g. right
+    // after re-login), so the next real 401 is free to trigger the
+    // clear+redirect again instead of staying silenced forever.
+    authExpiredHandled = false;
+    return response;
+  },
   async (error) => {
     if (shouldRetryOnCloud(error)) {
       const retryConfig = buildCloudRetryConfig(error.config);
       return api.request(retryConfig);
+    }
+
+    const requestUrl = error.config?.url || "";
+    const isLoginRequest = LOGIN_PATHS.some((path) => requestUrl.includes(path));
+    if (error.response?.status === 401 && !isLoginRequest && !authExpiredHandled) {
+      authExpiredHandled = true;
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      window.dispatchEvent(new CustomEvent("vx-auth-expired"));
     }
 
     let message =

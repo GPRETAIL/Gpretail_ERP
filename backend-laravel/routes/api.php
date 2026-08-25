@@ -73,7 +73,7 @@ Route::prefix('auth')->group(function () {
     Route::post('logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
     Route::get('me', [AuthController::class, 'me'])->middleware('auth:sanctum');
     Route::post('counter', [AuthController::class, 'counter'])->middleware('auth:sanctum');
-    Route::get('counter', [ConfigurationController::class, 'getCounters']);
+    Route::get('counter', [ConfigurationController::class, 'getCounters'])->middleware('auth:sanctum');
     Route::post('change-password', [AuthController::class, 'login']);
 });
 Route::post('admin-auth/login', [AuthController::class, 'login']);
@@ -87,7 +87,7 @@ Route::get('sync/outbound/next', [SyncController::class, 'outboundNext']);
 Route::post('sync/outbound/ack', [SyncController::class, 'outboundAck']);
 Route::match(['get', 'post'], 'sync/run-cycle', [SyncController::class, 'runCycle']);
 Route::get('sync/catch-up-export', [SyncController::class, 'catchUpExport']);
-Route::get('sync/nodes', [SyncController::class, 'nodes']);
+Route::get('sync/nodes', [SyncController::class, 'nodes'])->middleware('auth:sanctum');
 
 // Helper function to define all application API routes
 $registerAppRoutes = function () {
@@ -125,7 +125,10 @@ $registerAppRoutes = function () {
     Route::get('backups/overview', [BackupController::class, 'overview']);
     Route::match(['get', 'post', 'put'], 'backups/settings', [BackupController::class, 'settings']);
     Route::post('backups/cloud-test', [BackupController::class, 'cloudTest']);
-    Route::match(['get', 'post'], 'backups/scheduled-run', [BackupController::class, 'scheduledRun']);
+    // Cron pinger auth (X-Backup-Cron-Token), not a user session - must stay
+    // outside the closure's blanket auth:sanctum wrap below.
+    Route::match(['get', 'post'], 'backups/scheduled-run', [BackupController::class, 'scheduledRun'])
+        ->withoutMiddleware('auth:sanctum');
     Route::post('backups/import', [BackupController::class, 'import']);
     Route::get('backups/{id}/download', [BackupController::class, 'download']);
     Route::get('backups/{id}/logs', [BackupController::class, 'logs']);
@@ -401,7 +404,7 @@ $registerAppRoutes = function () {
 };
 
 // Register directly on /api/...
-$registerAppRoutes();
+Route::middleware('auth:sanctum')->group($registerAppRoutes);
 
 // Register on /api/v1/...
-Route::prefix('v1')->name('v1.')->group($registerAppRoutes);
+Route::middleware('auth:sanctum')->prefix('v1')->name('v1.')->group($registerAppRoutes);

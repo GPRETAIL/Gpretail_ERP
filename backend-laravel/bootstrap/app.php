@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\CaptureSyncOutbox;
+use Illuminate\Auth\Middleware\Authenticate;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -20,6 +21,15 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->appendToGroup('api', [CaptureSyncOutbox::class]);
+
+        // This is a pure JSON API + React SPA - there is no server-rendered
+        // "login" web route to redirect to. Without this, Laravel's default
+        // auth:sanctum failure handler tries route('login') for any request
+        // that didn't send an Accept: application/json header (real
+        // frontend traffic always does - only direct/manual API callers
+        // hit this) and crashes with a 500 RouteNotFoundException instead
+        // of a clean 401.
+        Authenticate::redirectUsing(fn () => null);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
