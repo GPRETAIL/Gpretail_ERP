@@ -79,6 +79,8 @@ export default function UserProfileModal({
   const displayName = user?.name || user?.username || "Super Admin";
   const displayRole = user?.role || "Administrator";
   const displayEmail = user?.email || "admin@vynerix.com";
+  const displayBranch = user?.company_name || "My Store";
+  const displayCounter = user?.counter_name;
   const initial = displayName.charAt(0).toUpperCase();
 
   return (
@@ -116,7 +118,10 @@ export default function UserProfileModal({
               </p>
               <div className="flex items-center gap-1 mt-1 text-[11px] text-indigo-200 font-medium">
                 <Building size={12} className="shrink-0" />
-                <span className="truncate">Main Retail Branch — POS-01</span>
+                <span className="truncate">
+                  {displayBranch}
+                  {displayCounter ? ` — ${displayCounter}` : ""}
+                </span>
               </div>
             </div>
           </div>
