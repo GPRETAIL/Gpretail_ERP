@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use App\Models\DealerInvoice;
 use App\Models\DealerInvoiceItem;
+use App\Services\DocumentNumberService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -19,17 +20,18 @@ class DealerInvoiceController extends Controller
         if ($request->filled('search')) {
             $search = $request->input('search');
             $query->where('invoice_no', 'like', "%{$search}%")
-                  ->orWhereHas('customer', function ($cq) use ($search) {
-                      $cq->where('name', 'like', "%{$search}%");
-                  });
+                ->orWhereHas('customer', function ($cq) use ($search) {
+                    $cq->where('name', 'like', "%{$search}%");
+                });
         }
 
         if ($request->boolean('all') || $request->input('limit') == 500 || $request->input('limit') == 1000) {
             $items = $query->orderBy('invoice_date', 'desc')->limit(2000)->get();
+
             return response()->json([
                 'success' => true,
-                'data'    => $items,
-                'total'   => $items->count(),
+                'data' => $items,
+                'total' => $items->count(),
             ]);
         }
 
@@ -38,29 +40,29 @@ class DealerInvoiceController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $paginated->items(),
-            'total'   => $paginated->total(),
-            'page'    => $paginated->currentPage(),
-            'limit'   => $paginated->perPage(),
+            'data' => $paginated->items(),
+            'total' => $paginated->total(),
+            'page' => $paginated->currentPage(),
+            'limit' => $paginated->perPage(),
         ]);
     }
 
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'customer_id'  => 'nullable|exists:customers,id',
+            'customer_id' => 'nullable|exists:customers,id',
             'invoice_date' => 'nullable|date',
-            'items'        => 'required|array|min:1',
+            'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
-            'items.*.quantity'   => 'required|numeric|min:0.01',
-            'items.*.price'      => 'required|numeric|min:0',
+            'items.*.quantity' => 'required|numeric|min:0.01',
+            'items.*.price' => 'required|numeric|min:0',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors'  => $validator->errors(),
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -68,12 +70,12 @@ class DealerInvoiceController extends Controller
 
         $invoice = DB::transaction(function () use ($request, $storeId) {
             $customerId = $request->input('customer_id');
-            if (!$customerId) {
+            if (! $customerId) {
                 $defaultCustomer = Customer::first();
                 $customerId = $defaultCustomer ? $defaultCustomer->id : 1;
             }
 
-            $invoiceNo = $request->input('invoice_no') ?: 'DINV-' . date('Ymd') . '-' . rand(1000, 9999);
+            $invoiceNo = $request->input('invoice_no') ?: DocumentNumberService::resolve($request, (int) $storeId, 'DINV');
             $subtotal = 0;
             $taxAmount = 0;
             $itemsData = $request->input('items', []);
@@ -87,15 +89,15 @@ class DealerInvoiceController extends Controller
             }
 
             $dealerInvoice = DealerInvoice::create([
-                'store_id'     => $storeId,
-                'customer_id'  => $customerId,
-                'invoice_no'   => $invoiceNo,
+                'store_id' => $storeId,
+                'customer_id' => $customerId,
+                'invoice_no' => $invoiceNo,
                 'invoice_date' => $request->input('invoice_date') ?: now()->toDateString(),
-                'subtotal'     => $subtotal,
-                'tax_amount'   => $taxAmount,
-                'grand_total'  => $subtotal + $taxAmount,
-                'status'       => 'COMPLETED',
-                'created_by'   => $request->user()?->id ?? 1,
+                'subtotal' => $subtotal,
+                'tax_amount' => $taxAmount,
+                'grand_total' => $subtotal + $taxAmount,
+                'status' => 'COMPLETED',
+                'created_by' => $request->user()?->id ?? 1,
             ]);
 
             foreach ($itemsData as $item) {
@@ -105,11 +107,11 @@ class DealerInvoiceController extends Controller
 
                 DealerInvoiceItem::create([
                     'dealer_invoice_id' => $dealerInvoice->id,
-                    'product_id'        => $item['product_id'],
-                    'quantity'          => $qty,
-                    'price'             => $price,
-                    'tax_amount'        => $tax,
-                    'total'             => ($qty * $price) + $tax,
+                    'product_id' => $item['product_id'],
+                    'quantity' => $qty,
+                    'price' => $price,
+                    'tax_amount' => $tax,
+                    'total' => ($qty * $price) + $tax,
                 ]);
             }
 
@@ -119,18 +121,18 @@ class DealerInvoiceController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Dealer invoice created successfully',
-            'data'    => $invoice->load(['customer', 'items.product']),
+            'data' => $invoice->load(['customer', 'items.product']),
         ], 201);
     }
 
-    public function nextBillNo()
+    public function nextBillNo(Request $request)
     {
-        $latest = DealerInvoice::max('id') + 1;
-        $nextNo = 'DINV-' . date('Ymd') . '-' . str_pad($latest, 4, '0', STR_PAD_LEFT);
+        $storeId = (int) $request->header('X-Company-Scope-Id', 1);
+        $nextNo = DocumentNumberService::peek($storeId, 'DINV');
 
         return response()->json([
             'success' => true,
-            'data'    => $nextNo,
+            'data' => $nextNo,
             'next_bill_no' => $nextNo,
         ]);
     }
@@ -146,14 +148,17 @@ class DealerInvoiceController extends Controller
         return $this->store($request);
     }
 
-    public function nextReturnNo()
+    public function nextReturnNo(Request $request)
     {
-        $latest = DealerInvoice::max('id') + 1;
-        $nextNo = 'DRET-' . date('Ymd') . '-' . str_pad($latest, 4, '0', STR_PAD_LEFT);
+        // returnsStore() delegates straight to store(), which always mints from the
+        // DINV counter (there's no separate DRET persistence path) -- preview the same
+        // counter so this doesn't show a number that will never actually be assigned.
+        $storeId = (int) $request->header('X-Company-Scope-Id', 1);
+        $nextNo = DocumentNumberService::peek($storeId, 'DINV');
 
         return response()->json([
             'success' => true,
-            'data'    => $nextNo,
+            'data' => $nextNo,
             'next_return_no' => $nextNo,
         ]);
     }

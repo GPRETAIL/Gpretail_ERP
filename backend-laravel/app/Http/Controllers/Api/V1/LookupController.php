@@ -10,7 +10,7 @@ use App\Models\Store;
 use App\Models\Supplier;
 use App\Models\Tax;
 use App\Models\Transport;
-use App\Models\TransportEntry;
+use App\Services\DocumentNumberService;
 use Illuminate\Http\Request;
 
 class LookupController extends Controller
@@ -70,6 +70,7 @@ class LookupController extends Controller
                             ->get()
                             ->map(function ($t) {
                                 $t->tax_percentage = (float) $t->rate;
+
                                 return $t;
                             });
                         break;
@@ -111,17 +112,20 @@ class LookupController extends Controller
                             ->map(function ($e) {
                                 $designationName = $e->designation?->name ?? '';
                                 $e->designation = [
-                                    'id'        => $e->designation_id,
-                                    'name'      => $designationName,
+                                    'id' => $e->designation_id,
+                                    'name' => $designationName,
                                     'role_name' => $designationName,
                                 ];
+
                                 return $e;
                             });
                         break;
 
                     case 'next_lr':
-                        $latest = TransportEntry::max('id') ?: 0;
-                        $data['next_lr'] = 'LR-' . date('Ymd') . '-' . str_pad($latest + 1, 4, '0', STR_PAD_LEFT);
+                        $data['next_lr'] = DocumentNumberService::peek(
+                            (int) $request->header('X-Company-Scope-Id', 1),
+                            'LR'
+                        );
                         break;
                 }
             } catch (\Throwable $e) {
@@ -131,7 +135,7 @@ class LookupController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $data,
+            'data' => $data,
         ]);
     }
 }

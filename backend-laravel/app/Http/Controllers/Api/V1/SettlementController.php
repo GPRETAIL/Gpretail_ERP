@@ -3,11 +3,10 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Models\PosPayment;
 use App\Models\PosSale;
 use App\Models\Settlement;
+use App\Services\DocumentNumberService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class SettlementController extends Controller
@@ -23,10 +22,11 @@ class SettlementController extends Controller
 
         if ($request->boolean('all') || $request->input('limit') == 500 || $request->input('limit') == 1000) {
             $items = $query->orderBy('settlement_date', 'desc')->get();
+
             return response()->json([
                 'success' => true,
-                'data'    => $items,
-                'total'   => $items->count(),
+                'data' => $items,
+                'total' => $items->count(),
             ]);
         }
 
@@ -35,10 +35,10 @@ class SettlementController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $paginated->items(),
-            'total'   => $paginated->total(),
-            'page'    => $paginated->currentPage(),
-            'limit'   => $paginated->perPage(),
+            'data' => $paginated->items(),
+            'total' => $paginated->total(),
+            'page' => $paginated->currentPage(),
+            'limit' => $paginated->perPage(),
         ]);
     }
 
@@ -46,47 +46,47 @@ class SettlementController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'settlement_date' => 'nullable|date',
-            'total_sales'     => 'required|numeric',
+            'total_sales' => 'required|numeric',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors'  => $validator->errors(),
+                'errors' => $validator->errors(),
             ], 422);
         }
 
         $storeId = $request->header('X-Company-Scope-Id', 1);
-        $batchNo = $request->input('batch_no') ?: 'SETTLE-' . date('Ymd') . '-' . rand(1000, 9999);
+        $batchNo = $request->input('batch_no') ?: DocumentNumberService::resolve($request, (int) $storeId, 'SETTLE');
 
         $settlement = Settlement::create([
-            'store_id'        => $storeId,
-            'batch_no'        => $batchNo,
+            'store_id' => $storeId,
+            'batch_no' => $batchNo,
             'settlement_date' => $request->input('settlement_date') ?: now()->toDateString(),
-            'total_sales'     => $request->input('total_sales', 0),
-            'cash_total'      => $request->input('cash_total', 0),
-            'card_total'      => $request->input('card_total', 0),
-            'upi_total'       => $request->input('upi_total', 0),
-            'credit_total'    => $request->input('credit_total', 0),
-            'settled_by'      => $request->user()?->id ?? 1,
+            'total_sales' => $request->input('total_sales', 0),
+            'cash_total' => $request->input('cash_total', 0),
+            'card_total' => $request->input('card_total', 0),
+            'upi_total' => $request->input('upi_total', 0),
+            'credit_total' => $request->input('credit_total', 0),
+            'settled_by' => $request->user()?->id ?? 1,
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Daily settlement recorded successfully',
-            'data'    => $settlement->load('settler'),
+            'data' => $settlement->load('settler'),
         ], 201);
     }
 
-    public function nextSettlementNumber()
+    public function nextSettlementNumber(Request $request)
     {
-        $latest = Settlement::max('id') + 1;
-        $nextNo = 'SETTLE-' . date('Ymd') . '-' . str_pad($latest, 4, '0', STR_PAD_LEFT);
+        $storeId = (int) $request->header('X-Company-Scope-Id', 1);
+        $nextNo = DocumentNumberService::peek($storeId, 'SETTLE');
 
         return response()->json([
             'success' => true,
-            'data'    => $nextNo,
+            'data' => $nextNo,
             'next_settlement_number' => $nextNo,
         ]);
     }
@@ -110,8 +110,8 @@ class SettlementController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $sales,
-            'total'   => $sales->count(),
+            'data' => $sales,
+            'total' => $sales->count(),
         ]);
     }
 
@@ -121,16 +121,16 @@ class SettlementController extends Controller
             ->where('invoice_no', $billNo)
             ->first();
 
-        if (!$sale) {
+        if (! $sale) {
             return response()->json([
                 'success' => false,
-                'message' => 'Bill not found: ' . $billNo,
+                'message' => 'Bill not found: '.$billNo,
             ], 404);
         }
 
         return response()->json([
             'success' => true,
-            'data'    => $sale,
+            'data' => $sale,
         ]);
     }
 }

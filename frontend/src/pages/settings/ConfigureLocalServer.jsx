@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import {
   AlertCircle,
   CheckCircle2,
-  Download,
   Loader2,
   RefreshCw,
   Save,
@@ -18,32 +17,8 @@ const inputClass =
 const cardClass =
   "rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm";
 
-const parseFileNameFromDisposition = (contentDisposition = "") => {
-  const value = String(contentDisposition || "");
-  const utf8Match = value.match(/filename\*=UTF-8''([^;]+)/i);
-  if (utf8Match?.[1]) {
-    try {
-      return decodeURIComponent(utf8Match[1]).replace(/["\r\n]/g, "").trim();
-    } catch {
-      // ignore malformed encoding
-    }
-  }
-  const plainMatch = value.match(/filename="?([^";]+)"?/i);
-  if (plainMatch?.[1]) {
-    return plainMatch[1].replace(/["\r\n]/g, "").trim();
-  }
-  return "";
-};
-
-const normalizeApiClientPath = (value = "") => {
-  const text = String(value || "").trim();
-  if (!text) return "";
-  if (/^https?:\/\//i.test(text)) return text;
-  return text.startsWith("/api/") ? text.slice(4) : text;
-};
-
 const toStatusTone = (config = {}) => {
-  if (config.connector_tunnel_online || config.connector_status === "online") {
+  if (config.connector_status === "online") {
     return {
       label: "Online",
       icon: CheckCircle2,
@@ -54,7 +29,7 @@ const toStatusTone = (config = {}) => {
   }
   if (config.connector_last_seen_at) {
     return {
-      label: "Seen, tunnel offline",
+      label: "Seen, currently offline",
       icon: AlertCircle,
       textClass: "text-amber-600 dark:text-amber-400",
       bgClass: "bg-amber-50 dark:bg-amber-950/40",
@@ -82,9 +57,9 @@ export default function ConfigureLocalServer() {
   const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
-  const [downloading, setDownloading] = useState(false);
   const [config, setConfig] = useState(null);
   const [localServerUrl, setLocalServerUrl] = useState("");
+  const [nodes, setNodes] = useState([]);
 
   const loadConfig = async ({ silent = false } = {}) => {
     try {
@@ -103,11 +78,24 @@ export default function ConfigureLocalServer() {
     }
   };
 
+  const loadNodes = async () => {
+    try {
+      const res = await api.get("/sync/nodes");
+      setNodes(res.data?.data?.nodes || []);
+    } catch {
+      // Non-critical: leave the health table blank rather than surfacing another toast.
+    }
+  };
+
   useEffect(() => {
     let alive = true;
     loadConfig();
+    loadNodes();
     const timer = setInterval(() => {
-      if (alive) loadConfig({ silent: true });
+      if (alive) {
+        loadConfig({ silent: true });
+        loadNodes();
+      }
     }, 20000);
     return () => {
       alive = false;
@@ -147,56 +135,6 @@ export default function ConfigureLocalServer() {
     }
   };
 
-  const handleDownload = async () => {
-    try {
-      if (!config?.connector_download_url) {
-        toast.error(config?.connector_download_issue || "Connector download is not available");
-        return;
-      }
-
-      setDownloading(true);
-      // Bundled node_modules makes the zip large; default api timeout is 30s. Allow up to 15 minutes.
-      const response = await api.get(normalizeApiClientPath(config.connector_download_url), {
-        responseType: "blob",
-        timeout: 900_000,
-      });
-
-      const contentType = String(response.headers?.["content-type"] || "").toLowerCase();
-      if (contentType.includes("application/json")) {
-        const payloadText = await response.data.text();
-        let payload = null;
-        try {
-          payload = JSON.parse(payloadText);
-        } catch {
-          // ignore malformed json
-        }
-        throw new Error(payload?.message || "Connector download failed");
-      }
-
-      const disposition = String(response.headers?.["content-disposition"] || "");
-      const fileName = parseFileNameFromDisposition(disposition) || "connector-setup.zip";
-      const blob =
-        response.data instanceof Blob
-          ? response.data
-          : new Blob([response.data], { type: contentType || "application/zip" });
-
-      const objectUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = objectUrl;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(objectUrl);
-
-      toast.success("Connector downloaded. Run it on the company machine, then click Refresh Status.");
-    } catch (err) {
-      toast.error(err.response?.data?.message || err.message || "Unable to download connector");
-    } finally {
-      setDownloading(false);
-    }
-  };
-
   if (loading) {
     return (
       <div className="p-6 flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
@@ -217,7 +155,7 @@ export default function ConfigureLocalServer() {
             Configure Local Server
           </h1>
           <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
-            Download the company connector, run it on the company machine, then refresh this page to confirm tunnel status.
+            Save this store's local server address so devices can use it when available and automatically fail over to the cloud if it goes down.
           </p>
         </div>
 
@@ -255,37 +193,12 @@ export default function ConfigureLocalServer() {
 
       <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <section className={`${cardClass} p-4 md:p-5`}>
-          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Connector Setup</h2>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Local Server Address</h2>
           <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
-            The downloaded package is pre-configured for this company. After it starts successfully, the cloud backend will route company API requests through the local tunnel automatically when available.
+            This store's on-prem install runs the same application as the cloud. Enter the address other devices on this network use to reach it, then save.
           </p>
 
           <div className="mt-4 space-y-4">
-            <div className="rounded-md border border-dashed border-gray-300 dark:border-gray-700 p-4">
-              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100">Download Company Connector</div>
-                  <div className="mt-1 text-sm text-gray-600 dark:text-gray-300">
-                    Download, extract, and run the installer on the company’s local server machine.
-                  </div>
-                  {config?.connector_download_issue ? (
-                    <div className="mt-2 text-sm text-red-600 dark:text-red-400">
-                      {config.connector_download_issue}
-                    </div>
-                  ) : null}
-                </div>
-                <button
-                  type="button"
-                  onClick={handleDownload}
-                  disabled={downloading || !config?.connector_download_url}
-                  className="inline-flex items-center justify-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {downloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                  Download Connector
-                </button>
-              </div>
-            </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                 Local Server URL
@@ -294,11 +207,11 @@ export default function ConfigureLocalServer() {
                 type="text"
                 value={localServerUrl}
                 onChange={(e) => setLocalServerUrl(e.target.value)}
-                placeholder="http://192.168.1.25:5101"
+                placeholder="http://192.168.1.25:8000"
                 className={inputClass}
               />
               <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                Usually this is filled automatically after the connector starts and sends its heartbeat. You only need to override it if auto-detection is wrong.
+                The LAN address of this store's local server, e.g. http://192.168.1.25:8000. Leave blank to disable local-server failover for this store.
               </p>
             </div>
 
@@ -331,27 +244,74 @@ export default function ConfigureLocalServer() {
           <div className="mt-4 space-y-4 text-sm text-gray-700 dark:text-gray-300">
             <div className="flex gap-3">
               <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-semibold text-white">1</div>
-              <div>Download the connector ZIP and run it on the company’s Windows machine or local server.</div>
+              <div>Save this store's local server address above, then use Test Connection to confirm the cloud can reach it.</div>
             </div>
             <div className="flex gap-3">
               <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-semibold text-white">2</div>
-              <div>The connector starts the local backend and opens a secure tunnel back to the cloud ERP.</div>
+              <div>From then on, every device automatically checks the local server first and uses it when reachable — no separate login or URL to remember.</div>
             </div>
             <div className="flex gap-3">
               <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-semibold text-white">3</div>
-              <div>When the local connector is online, company API requests are handled locally first. If local is down, the cloud handles them automatically.</div>
-            </div>
-            <div className="flex gap-3">
-              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-semibold text-white">4</div>
-              <div>Data changes are synced both ways through the connector event queue, so the company user continues using the same ERP login and cloud URL.</div>
+              <div>If the local server goes down, devices switch to this cloud URL automatically so the store can keep working, and switch back the moment local is healthy again.</div>
             </div>
           </div>
 
           <div className="mt-5 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
-            Running the connector is required. This page does not itself start the local server; it only lets the company admin download, monitor, save, and test the setup.
+            Documents created directly on the cloud during an outage (e.g. invoice numbers) are marked with a "C" so they're easy to identify once local is back.
           </div>
         </section>
       </div>
+
+      {nodes.length > 0 && (
+        <section className={`${cardClass} p-4 md:p-5`}>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">All Stores — Sync Health</h2>
+          <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+            Every store with local-server failover configured, and whether its local install has checked in recently.
+          </p>
+
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead>
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                  <th className="py-2 pr-4">Store</th>
+                  <th className="py-2 pr-4">Status</th>
+                  <th className="py-2 pr-4">Last Heartbeat</th>
+                  <th className="py-2 pr-4">Last Catch-up</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                {nodes.map((node) => {
+                  const nodeTone = node.is_stale
+                    ? { label: "Stale", textClass: "text-amber-600 dark:text-amber-400", Icon: AlertCircle }
+                    : node.local_healthy
+                      ? { label: "Healthy", textClass: "text-green-600 dark:text-green-400", Icon: CheckCircle2 }
+                      : { label: "Offline", textClass: "text-gray-500 dark:text-gray-400", Icon: WifiOff };
+                  const NodeIcon = nodeTone.Icon;
+
+                  return (
+                    <tr key={node.store_id}>
+                      <td className="py-2 pr-4 text-gray-900 dark:text-gray-100">
+                        {node.store_name || `Store #${node.store_id}`}
+                        {node.store_code ? (
+                          <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">({node.store_code})</span>
+                        ) : null}
+                      </td>
+                      <td className={`py-2 pr-4 font-medium ${nodeTone.textClass}`}>
+                        <span className="inline-flex items-center gap-1.5">
+                          <NodeIcon className="w-3.5 h-3.5" />
+                          {nodeTone.label}
+                        </span>
+                      </td>
+                      <td className="py-2 pr-4 text-gray-700 dark:text-gray-300">{formatDateTime(node.last_heartbeat_at)}</td>
+                      <td className="py-2 pr-4 text-gray-700 dark:text-gray-300">{formatDateTime(node.last_catch_up_at)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
     </div>
   );
 }

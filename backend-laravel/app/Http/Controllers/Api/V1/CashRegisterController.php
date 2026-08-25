@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\CashRegisterSession;
 use App\Models\PosSale;
+use App\Services\DocumentNumberService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -21,8 +22,8 @@ class CashRegisterController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $sessions,
-            'total'   => $sessions->count(),
+            'data' => $sessions,
+            'total' => $sessions->count(),
         ]);
     }
 
@@ -37,7 +38,7 @@ class CashRegisterController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors'  => $validator->errors(),
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -46,18 +47,18 @@ class CashRegisterController extends Controller
 
         // Close any existing open session or create new
         $session = CashRegisterSession::create([
-            'store_id'     => $storeId,
-            'user_id'      => $userId,
-            'opened_at'    => now(),
+            'store_id' => $storeId,
+            'user_id' => $userId,
+            'opened_at' => now(),
             'opening_cash' => $request->input('opening_cash'),
-            'status'       => 'OPEN',
-            'notes'        => $request->input('notes'),
+            'status' => 'OPEN',
+            'notes' => $request->input('notes'),
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Cash register opened successfully',
-            'data'    => $session,
+            'data' => $session,
         ], 201);
     }
 
@@ -70,7 +71,7 @@ class CashRegisterController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => [
+            'data' => [
                 'has_open_session' => $lastSession && $lastSession->status === 'OPEN',
                 'last_closing_cash' => $lastSession ? $lastSession->closing_cash : 0,
                 'session' => $lastSession,
@@ -90,8 +91,8 @@ class CashRegisterController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $sessions,
-            'total'   => $sessions->count(),
+            'data' => $sessions,
+            'total' => $sessions->count(),
         ]);
     }
 
@@ -106,7 +107,7 @@ class CashRegisterController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors'  => $validator->errors(),
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -116,7 +117,7 @@ class CashRegisterController extends Controller
             ->orderBy('id', 'desc')
             ->first();
 
-        if (!$session) {
+        if (! $session) {
             $session = CashRegisterSession::where('store_id', $storeId)
                 ->orderBy('id', 'desc')
                 ->first();
@@ -134,19 +135,19 @@ class CashRegisterController extends Controller
             $difference = $closingCash - $expectedCash;
 
             $session->update([
-                'closed_at'     => now(),
-                'closing_cash'  => $closingCash,
+                'closed_at' => now(),
+                'closing_cash' => $closingCash,
                 'expected_cash' => $expectedCash,
-                'difference'    => $difference,
-                'status'        => 'CLOSED',
-                'notes'         => $request->input('notes'),
+                'difference' => $difference,
+                'status' => 'CLOSED',
+                'notes' => $request->input('notes'),
             ]);
         }
 
         return response()->json([
             'success' => true,
             'message' => 'Cash register closed successfully',
-            'data'    => $session,
+            'data' => $session,
         ]);
     }
 
@@ -166,23 +167,25 @@ class CashRegisterController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => [
-                'opening_cash'  => $openingCash,
-                'cash_sales'    => $cashSales,
+            'data' => [
+                'opening_cash' => $openingCash,
+                'cash_sales' => $cashSales,
                 'expected_cash' => $openingCash + $cashSales,
-                'opened_at'     => $session ? $session->opened_at : null,
+                'opened_at' => $session ? $session->opened_at : null,
             ],
         ]);
     }
 
-    public function closingNextBillNo()
+    public function closingNextBillNo(Request $request)
     {
-        $latest = PosSale::max('id') + 1;
-        $nextNo = 'BILL-' . date('Ymd') . '-' . str_pad($latest, 4, '0', STR_PAD_LEFT);
+        // Previews the same counter PosSaleController::store() actually mints from
+        // (prefix INV), not a separate BILL- sequence that would drift from reality.
+        $storeId = (int) $request->header('X-Company-Scope-Id', 1);
+        $nextNo = DocumentNumberService::peek($storeId, 'INV');
 
         return response()->json([
             'success' => true,
-            'data'    => $nextNo,
+            'data' => $nextNo,
             'next_bill_no' => $nextNo,
         ]);
     }
@@ -197,7 +200,7 @@ class CashRegisterController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => [
+            'data' => [
                 'opening_cash' => $session ? $session->opening_cash : 0,
             ],
         ]);

@@ -40,6 +40,7 @@ use App\Http\Controllers\Api\V1\SizeController;
 use App\Http\Controllers\Api\V1\StockOutwardController;
 use App\Http\Controllers\Api\V1\SupplierController;
 use App\Http\Controllers\Api\V1\SupplierPaymentController;
+use App\Http\Controllers\Api\V1\SyncController;
 use App\Http\Controllers\Api\V1\TaxController;
 use App\Http\Controllers\Api\V1\TransportController;
 use App\Http\Controllers\Api\V1\TransportEntryController;
@@ -77,7 +78,16 @@ Route::prefix('auth')->group(function () {
 });
 Route::post('admin-auth/login', [AuthController::class, 'login']);
 Route::get('local-server-config', [AuthController::class, 'localServerConfig']);
-Route::get('local-server-config/test', [SettingsController::class, 'localServerTest']);
+Route::put('local-server-config', [AuthController::class, 'localServerConfigUpdate']);
+Route::get('local-server-config/runtime', [AuthController::class, 'localServerConfigRuntime']);
+Route::match(['get', 'post'], 'local-server-config/test', [SettingsController::class, 'localServerTest']);
+Route::get('connector/web-config', [SyncController::class, 'webConfig']);
+Route::post('sync/heartbeat', [SyncController::class, 'heartbeat']);
+Route::get('sync/outbound/next', [SyncController::class, 'outboundNext']);
+Route::post('sync/outbound/ack', [SyncController::class, 'outboundAck']);
+Route::match(['get', 'post'], 'sync/run-cycle', [SyncController::class, 'runCycle']);
+Route::get('sync/catch-up-export', [SyncController::class, 'catchUpExport']);
+Route::get('sync/nodes', [SyncController::class, 'nodes']);
 
 // Helper function to define all application API routes
 $registerAppRoutes = function () {

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use App\Models\SalesApproval;
 use App\Models\SalesApprovalItem;
+use App\Services\DocumentNumberService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -19,9 +20,9 @@ class SalesApprovalController extends Controller
         if ($request->filled('search')) {
             $search = $request->input('search');
             $query->where('approval_no', 'like', "%{$search}%")
-                  ->orWhereHas('customer', function ($cq) use ($search) {
-                      $cq->where('name', 'like', "%{$search}%");
-                  });
+                ->orWhereHas('customer', function ($cq) use ($search) {
+                    $cq->where('name', 'like', "%{$search}%");
+                });
         }
 
         if ($request->filled('status')) {
@@ -30,10 +31,11 @@ class SalesApprovalController extends Controller
 
         if ($request->boolean('all') || $request->input('limit') == 500 || $request->input('limit') == 1000) {
             $items = $query->orderBy('approval_date', 'desc')->limit(2000)->get();
+
             return response()->json([
                 'success' => true,
-                'data'    => $items,
-                'total'   => $items->count(),
+                'data' => $items,
+                'total' => $items->count(),
             ]);
         }
 
@@ -42,28 +44,28 @@ class SalesApprovalController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $paginated->items(),
-            'total'   => $paginated->total(),
-            'page'    => $paginated->currentPage(),
-            'limit'   => $paginated->perPage(),
+            'data' => $paginated->items(),
+            'total' => $paginated->total(),
+            'page' => $paginated->currentPage(),
+            'limit' => $paginated->perPage(),
         ]);
     }
 
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'customer_id'   => 'nullable|exists:customers,id',
+            'customer_id' => 'nullable|exists:customers,id',
             'approval_date' => 'nullable|date',
-            'items'         => 'required|array|min:1',
+            'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
-            'items.*.quantity'   => 'required|numeric|min:0.01',
+            'items.*.quantity' => 'required|numeric|min:0.01',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors'  => $validator->errors(),
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -71,12 +73,12 @@ class SalesApprovalController extends Controller
 
         $approval = DB::transaction(function () use ($request, $storeId) {
             $customerId = $request->input('customer_id');
-            if (!$customerId) {
+            if (! $customerId) {
                 $defaultCustomer = Customer::first();
                 $customerId = $defaultCustomer ? $defaultCustomer->id : 1;
             }
 
-            $approvalNo = $request->input('approval_no') ?: 'APP-' . date('Ymd') . '-' . rand(1000, 9999);
+            $approvalNo = $request->input('approval_no') ?: DocumentNumberService::resolve($request, (int) $storeId, 'APP');
             $itemsData = $request->input('items', []);
             $totalAmount = 0;
 
@@ -87,23 +89,23 @@ class SalesApprovalController extends Controller
             }
 
             $salesApproval = SalesApproval::create([
-                'store_id'      => $storeId,
-                'customer_id'   => $customerId,
-                'approval_no'   => $approvalNo,
+                'store_id' => $storeId,
+                'customer_id' => $customerId,
+                'approval_no' => $approvalNo,
                 'approval_date' => $request->input('approval_date') ?: now()->toDateString(),
-                'valid_until'   => $request->input('valid_until') ?: now()->addDays(7)->toDateString(),
-                'total_amount'  => $totalAmount,
-                'status'        => 'PENDING',
-                'created_by'    => $request->user()?->id ?? 1,
+                'valid_until' => $request->input('valid_until') ?: now()->addDays(7)->toDateString(),
+                'total_amount' => $totalAmount,
+                'status' => 'PENDING',
+                'created_by' => $request->user()?->id ?? 1,
             ]);
 
             foreach ($itemsData as $item) {
                 SalesApprovalItem::create([
                     'sales_approval_id' => $salesApproval->id,
-                    'product_id'        => $item['product_id'],
-                    'quantity'          => $item['quantity'],
-                    'price'             => $item['price'] ?? 0,
-                    'status'            => 'PENDING',
+                    'product_id' => $item['product_id'],
+                    'quantity' => $item['quantity'],
+                    'price' => $item['price'] ?? 0,
+                    'status' => 'PENDING',
                 ]);
             }
 
@@ -113,7 +115,7 @@ class SalesApprovalController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Sales on approval request created successfully',
-            'data'    => $approval->load(['customer', 'items.product']),
+            'data' => $approval->load(['customer', 'items.product']),
         ], 201);
     }
 
@@ -121,7 +123,7 @@ class SalesApprovalController extends Controller
     {
         $approval = SalesApproval::with(['customer', 'items.product', 'creator'])->find($id);
 
-        if (!$approval) {
+        if (! $approval) {
             return response()->json([
                 'success' => false,
                 'message' => 'Sales approval record not found',
@@ -130,7 +132,7 @@ class SalesApprovalController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $approval,
+            'data' => $approval,
         ]);
     }
 
@@ -138,7 +140,7 @@ class SalesApprovalController extends Controller
     {
         $approval = SalesApproval::find($id);
 
-        if (!$approval) {
+        if (! $approval) {
             return response()->json([
                 'success' => false,
                 'message' => 'Sales approval record not found',
@@ -151,7 +153,7 @@ class SalesApprovalController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Sales approval accepted and converted',
-            'data'    => $approval->load(['customer', 'items.product']),
+            'data' => $approval->load(['customer', 'items.product']),
         ]);
     }
 
@@ -159,7 +161,7 @@ class SalesApprovalController extends Controller
     {
         $approval = SalesApproval::find($id);
 
-        if (!$approval) {
+        if (! $approval) {
             return response()->json([
                 'success' => false,
                 'message' => 'Sales approval record not found',
@@ -172,18 +174,18 @@ class SalesApprovalController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Sales approval rejected and items returned',
-            'data'    => $approval->load(['customer', 'items.product']),
+            'data' => $approval->load(['customer', 'items.product']),
         ]);
     }
 
-    public function nextApprovalNo()
+    public function nextApprovalNo(Request $request)
     {
-        $latest = SalesApproval::max('id') + 1;
-        $nextNo = 'APP-' . date('Ymd') . '-' . str_pad($latest, 4, '0', STR_PAD_LEFT);
+        $storeId = (int) $request->header('X-Company-Scope-Id', 1);
+        $nextNo = DocumentNumberService::peek($storeId, 'APP');
 
         return response()->json([
             'success' => true,
-            'data'    => $nextNo,
+            'data' => $nextNo,
             'next_approval_no' => $nextNo,
         ]);
     }
@@ -194,8 +196,8 @@ class SalesApprovalController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => ['count' => $count],
-            'count'   => $count,
+            'data' => ['count' => $count],
+            'count' => $count,
         ]);
     }
 }

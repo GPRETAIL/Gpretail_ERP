@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Backup;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -379,6 +380,84 @@ class BackupService
         return ['restoredRows' => $restoredRows, 'tables' => $tableCounts];
     }
 
+    /**
+     * Merge-safe counterpart to restoreTablesFromArchive(), for local-server /
+     * cloud-failover catch-up sync rather than a Backup Center restore. The
+     * difference matters because the target here is a *live, concurrently
+     * written* database, not an isolated restore target:
+     *  - Never remaps store/company scope columns (source and target are always
+     *    the same store for catch-up -- there is no "restore into a different
+     *    store" concept here).
+     *  - Does touch the stores table (a catch-up genuinely wants this store's
+     *    latest profile row, unlike a cross-store restore where overwriting the
+     *    target's own identity would be wrong).
+     *  - Skips any incoming row that is not newer (by updated_at) than what's
+     *    already there, so a stale cloud snapshot can never regress a row this
+     *    install has updated more recently on its own. Tables with no
+     *    updated_at column (pivot-style, e.g. role_permissions) are upserted
+     *    unconditionally, since there's nothing to compare and duplicate
+     *    application is harmless for them.
+     *
+     * @param  array<string, array>  $exportedData  table => rows[], as produced by exportTablesToJson()
+     * @return array{mergedRows: int, tables: array<string,int>}
+     */
+    public function mergeTablesFromExport(array $exportedData): array
+    {
+        $mergedRows = 0;
+        $tableCounts = [];
+
+        DB::transaction(function () use ($exportedData, &$mergedRows, &$tableCounts) {
+            foreach ($exportedData as $table => $rows) {
+                if (! Schema::hasTable($table) || ! $rows) {
+                    $tableCounts[$table] = 0;
+
+                    continue;
+                }
+
+                $uniqueBy = $table === 'role_permissions' ? ['role_id', 'permission_id'] : ['id'];
+                $toApply = Schema::hasColumn($table, 'updated_at')
+                    ? $this->filterNewerRows($table, $rows, $uniqueBy)
+                    : $rows;
+
+                if ($toApply) {
+                    $updateColumns = array_values(array_diff(array_keys($toApply[0]), $uniqueBy));
+                    foreach (array_chunk($toApply, 1000) as $chunk) {
+                        DB::table($table)->upsert($chunk, $uniqueBy, $updateColumns);
+                    }
+                }
+
+                $tableCounts[$table] = count($toApply);
+                $mergedRows += count($toApply);
+            }
+        });
+
+        return ['mergedRows' => $mergedRows, 'tables' => $tableCounts];
+    }
+
+    private function filterNewerRows(string $table, array $rows, array $uniqueBy): array
+    {
+        $keyOf = fn (array $row) => implode('|', array_map(fn ($k) => $row[$k] ?? '', $uniqueBy));
+
+        $existing = DB::table($table)
+            ->whereIn($uniqueBy[0], array_unique(array_column($rows, $uniqueBy[0])))
+            ->get(array_merge($uniqueBy, ['updated_at']))
+            ->keyBy(fn ($row) => implode('|', array_map(fn ($k) => $row->$k, $uniqueBy)));
+
+        return array_values(array_filter($rows, function ($row) use ($existing, $keyOf) {
+            $existingRow = $existing->get($keyOf($row));
+
+            if (! $existingRow) {
+                return true;
+            }
+
+            if (empty($row['updated_at'])) {
+                return false;
+            }
+
+            return Carbon::parse($row['updated_at'])->gt(Carbon::parse($existingRow->updated_at));
+        }));
+    }
+
     private function rewriteScopeColumn(string $table, array $rows, int $originalCompanyId, int $targetCompanyId): array
     {
         $spec = self::findSpecForTable($table);
@@ -414,7 +493,6 @@ class BackupService
             return $row;
         }, $rows);
     }
-
 
     public function findLatestSuccessfulBackup(?int $companyId): ?Backup
     {
@@ -486,22 +564,22 @@ class BackupService
      * OCI S3-compatible endpoint: https://{namespace}.compat.objectstorage.{region}.oraclecloud.com
      * Does NOT modify the global filesystem config.
      */
-    public function buildOciDisk(array $settings): \Illuminate\Contracts\Filesystem\Filesystem
+    public function buildOciDisk(array $settings): Filesystem
     {
         $namespace = $settings['oci_namespace'] ?? '';
-        $region    = $settings['oci_region']    ?? 'ap-mumbai-1';
-        $endpoint  = "https://{$namespace}.compat.objectstorage.{$region}.oraclecloud.com";
+        $region = $settings['oci_region'] ?? 'ap-mumbai-1';
+        $endpoint = "https://{$namespace}.compat.objectstorage.{$region}.oraclecloud.com";
 
         $config = [
-            'driver'                  => 's3',
-            'key'                     => $settings['oci_access_key_id'],
-            'secret'                  => $settings['oci_secret_access_key'],
-            'region'                  => $region,
-            'bucket'                  => $settings['oci_bucket'],
-            'endpoint'                => $endpoint,
+            'driver' => 's3',
+            'key' => $settings['oci_access_key_id'],
+            'secret' => $settings['oci_secret_access_key'],
+            'region' => $region,
+            'bucket' => $settings['oci_bucket'],
+            'endpoint' => $endpoint,
             'use_path_style_endpoint' => true,
-            'version'                 => 'latest',
-            'throw'                   => true,
+            'version' => 'latest',
+            'throw' => true,
         ];
 
         // Local XAMPP dev machines often lack a valid CA bundle, which breaks TLS
@@ -519,9 +597,9 @@ class BackupService
      */
     public function uploadToCloud(string $localPath, array $settings): string
     {
-        $disk       = $this->buildOciDisk($settings);
+        $disk = $this->buildOciDisk($settings);
         $remotePath = 'backups/'.basename($localPath);
-        $stream     = fopen($localPath, 'rb');
+        $stream = fopen($localPath, 'rb');
 
         if ($stream === false) {
             throw new RuntimeException("Cannot open local backup file for cloud upload: {$localPath}");
@@ -543,14 +621,14 @@ class BackupService
      */
     public function downloadFromCloud(string $remotePath, array $settings): string
     {
-        $disk    = $this->buildOciDisk($settings);
-        $tmpDir  = storage_path('app/private/backups/tmp');
+        $disk = $this->buildOciDisk($settings);
+        $tmpDir = storage_path('app/private/backups/tmp');
         if (! is_dir($tmpDir)) {
             mkdir($tmpDir, 0755, true);
         }
 
         $tmpPath = $tmpDir.DIRECTORY_SEPARATOR.'cloud_dl_'.uniqid().'_'.basename($remotePath);
-        $stream  = $disk->readStream($remotePath);
+        $stream = $disk->readStream($remotePath);
 
         if ($stream === false || $stream === null) {
             throw new RuntimeException("Could not read backup from cloud storage: {$remotePath}");
@@ -606,7 +684,7 @@ class BackupService
         }
 
         try {
-            $disk  = $this->buildOciDisk($settings);
+            $disk = $this->buildOciDisk($settings);
             $files = $disk->allFiles('backups');
             $total = 0;
             foreach ($files as $file) {

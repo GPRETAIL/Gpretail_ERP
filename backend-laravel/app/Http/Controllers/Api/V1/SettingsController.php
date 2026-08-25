@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\PrinterConfig;
 use App\Models\Store;
+use App\Models\StoreLocalNode;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 
 class SettingsController extends Controller
 {
@@ -88,15 +90,53 @@ class SettingsController extends Controller
         ])->deleteFileAfterSend(true);
     }
 
-    // Local Server Config Test
+    // Local Server Config Test — real cross-origin probe of the store's local install,
+    // done server-side (not trusted to the browser) so the result reflects what the
+    // cloud can actually reach, not just what the admin's own browser can reach.
     public function localServerTest(Request $request)
     {
+        $storeId = (int) $request->header('X-Company-Scope-Id', 1);
+        $url = trim((string) $request->input('local_server_url', ''));
+
+        $node = StoreLocalNode::where('store_id', $storeId)->first();
+        if ($url === '') {
+            $url = (string) ($node->local_server_url ?? '');
+        }
+
+        if ($url === '' || ! preg_match('#^https?://#i', $url)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Enter a valid local server URL (must start with http:// or https://) first.',
+            ], 422);
+        }
+
+        $probeUrl = rtrim($url, '/').'/api/connector/web-config';
+        $startedAt = microtime(true);
+        $healthy = false;
+
+        try {
+            $response = Http::timeout(5)->get($probeUrl);
+            $healthy = $response->successful() && (bool) data_get($response->json(), 'data.enabled', false);
+        } catch (\Throwable $e) {
+            $healthy = false;
+        }
+
+        $latencyMs = (int) round((microtime(true) - $startedAt) * 1000);
+
+        if ($node) {
+            $node->local_healthy = $healthy;
+            $node->last_health_check_at = now();
+            $node->save();
+        }
+
         return response()->json([
-            'success' => true,
-            'message' => 'Local server connection test successful',
+            'success' => $healthy,
+            'message' => $healthy
+                ? 'Local server is reachable and reporting healthy.'
+                : 'Could not reach a healthy local server at that URL.',
             'data' => [
-                'status' => 'ONLINE',
-                'latency' => '2ms',
+                'status' => $healthy ? 'ONLINE' : 'OFFLINE',
+                'latency' => $latencyMs.'ms',
             ],
         ]);
     }

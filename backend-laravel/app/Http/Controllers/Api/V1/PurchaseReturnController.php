@@ -4,11 +4,11 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Exceptions\InsufficientStockException;
 use App\Http\Controllers\Controller;
-use App\Models\Product;
 use App\Models\PurchaseReturn;
 use App\Models\PurchaseReturnItem;
 use App\Models\Stock;
 use App\Models\Supplier;
+use App\Services\DocumentNumberService;
 use App\Services\StockService;
 use App\Services\VariantResolverService;
 use Illuminate\Http\Request;
@@ -20,8 +20,7 @@ class PurchaseReturnController extends Controller
     public function __construct(
         private readonly StockService $stockService,
         private readonly VariantResolverService $variantResolver,
-    ) {
-    }
+    ) {}
 
     public function index(Request $request)
     {
@@ -30,17 +29,18 @@ class PurchaseReturnController extends Controller
         if ($request->filled('search')) {
             $search = $request->input('search');
             $query->where('return_no', 'like', "%{$search}%")
-                  ->orWhereHas('supplier', function ($sq) use ($search) {
-                      $sq->where('name', 'like', "%{$search}%");
-                  });
+                ->orWhereHas('supplier', function ($sq) use ($search) {
+                    $sq->where('name', 'like', "%{$search}%");
+                });
         }
 
         if ($request->boolean('all') || $request->input('limit') == 500 || $request->input('limit') == 1000) {
             $items = $query->orderBy('return_date', 'desc')->limit(2000)->get();
+
             return response()->json([
                 'success' => true,
-                'data'    => $items,
-                'total'   => $items->count(),
+                'data' => $items,
+                'total' => $items->count(),
             ]);
         }
 
@@ -49,10 +49,10 @@ class PurchaseReturnController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $paginated->items(),
-            'total'   => $paginated->total(),
-            'page'    => $paginated->currentPage(),
-            'limit'   => $paginated->perPage(),
+            'data' => $paginated->items(),
+            'total' => $paginated->total(),
+            'page' => $paginated->currentPage(),
+            'limit' => $paginated->perPage(),
         ]);
     }
 
@@ -61,16 +61,16 @@ class PurchaseReturnController extends Controller
         $validator = Validator::make($request->all(), [
             'supplier_id' => 'nullable|exists:suppliers,id',
             'return_date' => 'nullable|date',
-            'items'       => 'required|array|min:1',
+            'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
-            'items.*.quantity'   => 'required|numeric|min:0.01',
+            'items.*.quantity' => 'required|numeric|min:0.01',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors'  => $validator->errors(),
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -79,12 +79,12 @@ class PurchaseReturnController extends Controller
         try {
             $return = DB::transaction(function () use ($request, $storeId) {
                 $supplierId = $request->input('supplier_id');
-                if (!$supplierId) {
+                if (! $supplierId) {
                     $defaultSupplier = Supplier::first();
                     $supplierId = $defaultSupplier ? $defaultSupplier->id : 1;
                 }
 
-                $returnNo = $request->input('return_no') ?: 'PRET-' . date('Ymd') . '-' . rand(1000, 9999);
+                $returnNo = $request->input('return_no') ?: DocumentNumberService::resolve($request, (int) $storeId, 'PRET');
                 $itemsData = $request->input('items', []);
                 $totalAmount = 0;
 
@@ -95,14 +95,14 @@ class PurchaseReturnController extends Controller
                 }
 
                 $purchaseReturn = PurchaseReturn::create([
-                    'store_id'     => $storeId,
-                    'supplier_id'  => $supplierId,
-                    'return_no'    => $returnNo,
-                    'return_date'  => $request->input('return_date') ?: now()->toDateString(),
+                    'store_id' => $storeId,
+                    'supplier_id' => $supplierId,
+                    'return_no' => $returnNo,
+                    'return_date' => $request->input('return_date') ?: now()->toDateString(),
                     'total_amount' => $totalAmount,
-                    'reason'       => $request->input('reason'),
-                    'status'       => 'COMPLETED',
-                    'created_by'   => $request->user()?->id ?? 1,
+                    'reason' => $request->input('reason'),
+                    'status' => 'COMPLETED',
+                    'created_by' => $request->user()?->id ?? 1,
                 ]);
 
                 foreach ($itemsData as $item) {
@@ -113,12 +113,12 @@ class PurchaseReturnController extends Controller
 
                     PurchaseReturnItem::create([
                         'purchase_return_id' => $purchaseReturn->id,
-                        'product_id'         => $item['product_id'],
-                        'variant_id'         => $variantId,
-                        'quantity'           => $qty,
-                        'rate'               => $rate,
-                        'tax_amount'         => $item['tax_amount'] ?? 0,
-                        'total'              => $total,
+                        'product_id' => $item['product_id'],
+                        'variant_id' => $variantId,
+                        'quantity' => $qty,
+                        'rate' => $rate,
+                        'tax_amount' => $item['tax_amount'] ?? 0,
+                        'total' => $total,
                     ]);
 
                     // A return sends stock back to the supplier - decrement,
@@ -144,14 +144,14 @@ class PurchaseReturnController extends Controller
         } catch (InsufficientStockException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Cannot record this return: ' . $e->getMessage(),
+                'message' => 'Cannot record this return: '.$e->getMessage(),
             ], 422);
         }
 
         return response()->json([
             'success' => true,
             'message' => 'Purchase return recorded successfully',
-            'data'    => $return->load(['supplier', 'items.product']),
+            'data' => $return->load(['supplier', 'items.product']),
         ], 201);
     }
 
@@ -159,7 +159,7 @@ class PurchaseReturnController extends Controller
     {
         $return = PurchaseReturn::with(['supplier', 'items.product', 'creator'])->find($id);
 
-        if (!$return) {
+        if (! $return) {
             return response()->json([
                 'success' => false,
                 'message' => 'Purchase return not found',
@@ -168,7 +168,7 @@ class PurchaseReturnController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $return,
+            'data' => $return,
         ]);
     }
 
@@ -176,7 +176,7 @@ class PurchaseReturnController extends Controller
     {
         $return = PurchaseReturn::with('items')->find($id);
 
-        if (!$return) {
+        if (! $return) {
             return response()->json([
                 'success' => false,
                 'message' => 'Purchase return not found',
@@ -218,8 +218,8 @@ class PurchaseReturnController extends Controller
             ->whereHas('product', function ($q) use ($search) {
                 if ($search) {
                     $q->where('name', 'like', "%{$search}%")
-                      ->orWhere('code', 'like', "%{$search}%")
-                      ->orWhere('barcode', 'like', "%{$search}%");
+                        ->orWhere('code', 'like', "%{$search}%")
+                        ->orWhere('barcode', 'like', "%{$search}%");
                 }
             })
             ->limit(20)
@@ -227,21 +227,21 @@ class PurchaseReturnController extends Controller
 
         $data = $stocks->map(function ($s) {
             return [
-                'product_id'    => $s->product_id,
-                'name'          => $s->product?->name,
-                'code'          => $s->product?->code,
-                'barcode'       => $s->product?->barcode,
-                'unit'          => $s->product?->unit,
-                'cost_price'    => $s->product?->cost_price,
+                'product_id' => $s->product_id,
+                'name' => $s->product?->name,
+                'code' => $s->product?->code,
+                'barcode' => $s->product?->barcode,
+                'unit' => $s->product?->unit,
+                'cost_price' => $s->product?->cost_price,
                 'selling_price' => $s->product?->selling_price,
-                'mrp'           => $s->product?->mrp,
-                'quantity'      => $s->quantity,
+                'mrp' => $s->product?->mrp,
+                'quantity' => $s->quantity,
             ];
         });
 
         return response()->json([
             'success' => true,
-            'data'    => $data,
+            'data' => $data,
         ]);
     }
 }
