@@ -122,7 +122,7 @@ jobs:
           username: ${{ secrets.HOSTINGER_FTP_USERNAME }}
           password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
           port: 21
-          protocol: ftp
+          protocol: ftps
           security: loose
           server-dir: ./
           local-dir: ./ftp_upload/
