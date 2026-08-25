@@ -11,6 +11,7 @@ import OfflineBanner from "./components/OfflineBanner";
 import PwaUpdateBanner from "./components/PwaUpdateBanner";
 import NotificationsModal from "./components/NotificationsModal";
 import UserProfileModal from "./components/UserProfileModal";
+import GlobalSearchModal from "./components/GlobalSearchModal";
 import DashboardScreen from "./screens/DashboardScreen";
 import ModulesScreen from "./screens/ModulesScreen";
 import SalesScreen from "./screens/SalesScreen";
@@ -87,6 +88,7 @@ export default function VynerixMobileApp() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [showExitToast, setShowExitToast] = useState(false);
 
   const userName = authUser?.name || authUser?.username || "Admin";
@@ -293,10 +295,15 @@ export default function VynerixMobileApp() {
         onTriggerPwa={triggerInstall}
       />
 
+      {/* Global Search across Products, Customers, Invoices, Suppliers */}
+      {isSearchOpen && (
+        <GlobalSearchModal onClose={() => setIsSearchOpen(false)} onNavigate={navigateTo} />
+      )}
+
       {/* Main Content Area */}
       <main className="vx-ws-main" style={{ paddingBottom: 80 }}>
         {page === "dashboard" && (
-          <DashboardScreen onNavigate={navigateTo} />
+          <DashboardScreen onNavigate={navigateTo} onOpenSearch={() => setIsSearchOpen(true)} />
         )}
 
         {page === "modules" && (

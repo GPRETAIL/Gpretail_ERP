@@ -13,6 +13,7 @@ import {
   Sparkles,
   Users,
   RefreshCw,
+  Search,
 } from "lucide-react";
 import api from "../../api/axios";
 import { setCachedData, getCachedData, getSyncQueue } from "../offline/db";
@@ -43,7 +44,7 @@ const formatYmd = (date) => {
   return `${year}-${month}-${day}`;
 };
 
-export default function DashboardScreen({ onNavigate }) {
+export default function DashboardScreen({ onNavigate, onOpenSearch }) {
   const [dateRange, setDateRange] = useState("today"); // 'today' | 'yesterday' | 'week' | 'month'
   const [loading, setLoading] = useState(true);
   const [overviewData, setOverviewData] = useState(null);
@@ -213,6 +214,20 @@ export default function DashboardScreen({ onNavigate }) {
   const fastMovingRows = tables.fastMovingSection?.rows || [];
   return (
     <div className="space-y-3.5 pb-8">
+      {/* ─── 0. Global Search Entry ─── */}
+      {onOpenSearch && (
+        <button
+          type="button"
+          onClick={onOpenSearch}
+          className="w-full flex items-center gap-2 bg-white border border-slate-200/80 px-3.5 py-2.5 rounded-2xl shadow-xs text-left active:scale-98 transition-all"
+        >
+          <Search size={15} className="text-slate-400 shrink-0" />
+          <span className="text-xs font-semibold text-slate-400">
+            Search products, customers, invoices...
+          </span>
+        </button>
+      )}
+
       {/* ─── 1. Store Header & Date Filter Strip (Zoho / Quanto style) ─── */}
       <div className="flex items-center justify-between gap-2 pt-1">
         <div className="flex items-center gap-1.5 bg-white border border-slate-200/80 px-2.5 py-1.5 rounded-2xl shadow-xs">
