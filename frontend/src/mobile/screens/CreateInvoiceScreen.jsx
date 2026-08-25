@@ -22,6 +22,7 @@ import { saveDraft, addToSyncQueue, getCachedData, setCachedData } from "../offl
 import { fetchSalesReceiptCustomization, buildUpiPaymentUri } from "../../utils/salesReceiptCustomization";
 import { printPosSaleReceipt } from "../../utils/posSaleReceiptPrinter";
 import { usePrintContext } from "../../context/PrintContext";
+import useHaptics from "../hooks/useHaptics";
 
 const money = (n) =>
   "₹ " +
@@ -37,6 +38,7 @@ const money = (n) =>
 export default function CreateInvoiceScreen({ onBack }) {
   const authUser = useSelector((s) => s.auth.user);
   const { queuePrintHtml } = usePrintContext();
+  const { vibrate } = useHaptics();
 
   // Navigation & Step Control
   const [step, setStep] = useState("billing"); // 'billing' | 'checkout'
@@ -123,7 +125,7 @@ export default function CreateInvoiceScreen({ onBack }) {
     scanCooldownsRef.current[barcode] = now;
 
     // Vibrate to provide tactile scan confirmation
-    navigator.vibrate?.(100);
+    vibrate("scan");
 
     // Search product in catalog
     const matched = catalog.find(
@@ -153,7 +155,7 @@ export default function CreateInvoiceScreen({ onBack }) {
       setErrorMsg(`Product code "${barcode}" not found in catalog.`);
       setTimeout(() => setErrorMsg(null), 2500);
     }
-  }, [catalog]);
+  }, [catalog, vibrate]);
 
   // 2. Barcode Scanning Logic
   useEffect(() => {

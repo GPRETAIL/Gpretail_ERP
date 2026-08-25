@@ -98,8 +98,10 @@ export default function SalesScreen({ onNavigate }) {
     };
 
     window.addEventListener("vx-network-restored", handleNetworkRestored);
+    window.addEventListener("vx-pull-refresh", handleNetworkRestored);
     return () => {
       window.removeEventListener("vx-network-restored", handleNetworkRestored);
+      window.removeEventListener("vx-pull-refresh", handleNetworkRestored);
     };
   }, [loadSales]);
 

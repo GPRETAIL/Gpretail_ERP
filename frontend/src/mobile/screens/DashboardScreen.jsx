@@ -139,7 +139,11 @@ export default function DashboardScreen({ onNavigate, onOpenSearch }) {
 
     const handleRestored = () => loadDashboardData();
     window.addEventListener("vx-network-restored", handleRestored);
-    return () => window.removeEventListener("vx-network-restored", handleRestored);
+    window.addEventListener("vx-pull-refresh", handleRestored);
+    return () => {
+      window.removeEventListener("vx-network-restored", handleRestored);
+      window.removeEventListener("vx-pull-refresh", handleRestored);
+    };
   }, [loadDashboardData]);
 
   // Unsynced offline changes (drafts/mutations still waiting in the local

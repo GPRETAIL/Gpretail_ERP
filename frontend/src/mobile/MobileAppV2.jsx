@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { RefreshCw } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { logoutUser } from "../features/authSlice";
@@ -36,6 +37,8 @@ import { processSyncQueue } from "./offline/syncManager";
 import useAppLock from "./security/useAppLock";
 import AppLockScreen from "./security/AppLockScreen";
 import PrivacyScreen from "./security/PrivacyScreen";
+import usePullToRefresh from "./hooks/usePullToRefresh";
+import useHaptics from "./hooks/useHaptics";
 import "./workspace.css";
 
 // Screen title map
@@ -212,6 +215,20 @@ export default function VynerixMobileApp() {
   }, []);
 
   const appLock = useAppLock();
+  const { vibrate } = useHaptics();
+
+  // Dispatches the same event screens already listen for to refresh their
+  // own data (Dashboard, Suppliers, Inventory, Purchase, Sales) -- pull-
+  // to-refresh just becomes another trigger for the exact same refetch,
+  // with a floor delay so the spinner doesn't flash-and-vanish when the
+  // refetch itself is fast.
+  const handlePullRefresh = useCallback(async () => {
+    vibrate("tap");
+    window.dispatchEvent(new CustomEvent("vx-pull-refresh"));
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }, [vibrate]);
+
+  const { pullDistance, isRefreshing, threshold } = usePullToRefresh(handlePullRefresh);
 
   // Forgot-PIN recovery falls back to real server re-auth: there's no way
   // to verify a PIN the user has forgotten, so this clears the local lock
@@ -298,6 +315,27 @@ export default function VynerixMobileApp() {
       {/* Global Search across Products, Customers, Invoices, Suppliers */}
       {isSearchOpen && (
         <GlobalSearchModal onClose={() => setIsSearchOpen(false)} onNavigate={navigateTo} />
+      )}
+
+      {/* Pull-to-Refresh Indicator */}
+      {(pullDistance > 0 || isRefreshing) && (
+        <div
+          className="flex items-center justify-center overflow-hidden transition-[height,opacity]"
+          style={{
+            height: isRefreshing ? 40 : pullDistance,
+            opacity: Math.min((isRefreshing ? threshold : pullDistance) / threshold, 1),
+          }}
+        >
+          <RefreshCw
+            size={18}
+            className={`text-indigo-600 ${isRefreshing ? "animate-spin" : ""}`}
+            style={
+              isRefreshing
+                ? undefined
+                : { transform: `rotate(${Math.min(pullDistance / threshold, 1) * 360}deg)` }
+            }
+          />
+        </div>
       )}
 
       {/* Main Content Area */}

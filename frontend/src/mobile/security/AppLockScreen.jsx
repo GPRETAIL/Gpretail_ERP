@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import PinKeypad from "./PinKeypad";
+import useHaptics from "../hooks/useHaptics";
 
 /**
  * Full-screen PIN entry shown in place of the app shell whenever the device
@@ -9,6 +10,7 @@ export default function AppLockScreen({ appLock, onForgotPin }) {
   const [pin, setPin] = useState("");
   const [shake, setShake] = useState(false);
   const [countdown, setCountdown] = useState(0);
+  const { vibrate } = useHaptics();
 
   useEffect(() => {
     if (!appLock.lockoutUntil || appLock.lockoutUntil <= Date.now()) {
@@ -28,16 +30,20 @@ export default function AppLockScreen({ appLock, onForgotPin }) {
     async (candidate) => {
       const ok = await appLock.verifyPin(candidate);
       setPin("");
-      if (!ok) {
+      if (ok) {
+        vibrate("success");
+      } else {
+        vibrate("error");
         setShake(true);
         setTimeout(() => setShake(false), 400);
       }
     },
-    [appLock]
+    [appLock, vibrate]
   );
 
   const handleDigit = (d) => {
     if (countdown > 0) return;
+    vibrate("tap");
     setPin((prev) => {
       const next = (prev + d).slice(0, 4);
       if (next.length === 4) setTimeout(() => submit(next), 80);

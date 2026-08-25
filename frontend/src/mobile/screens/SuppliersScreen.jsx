@@ -41,7 +41,11 @@ export default function SuppliersScreen({ onNavigate }) {
 
     const handleRestored = () => load();
     window.addEventListener("vx-network-restored", handleRestored);
-    return () => window.removeEventListener("vx-network-restored", handleRestored);
+    window.addEventListener("vx-pull-refresh", handleRestored);
+    return () => {
+      window.removeEventListener("vx-network-restored", handleRestored);
+      window.removeEventListener("vx-pull-refresh", handleRestored);
+    };
   }, [load]);
 
   return (
