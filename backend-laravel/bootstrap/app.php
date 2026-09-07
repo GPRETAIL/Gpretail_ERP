@@ -7,7 +7,19 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Support\Env;
 use Illuminate\Support\Facades\Route;
+
+// putenv()/getenv() are process-wide, not per-request, under Apache's
+// threaded mpm_winnt + mod_php (and any other threaded/coroutine SAPI).
+// phpdotenv's default PutenvAdapter uses them, so concurrent requests can
+// race on that shared C-runtime environment table: one thread's read can
+// intermittently miss a key another thread is mid-write on, and Laravel
+// silently falls back to config defaults (APP_ENV=production,
+// DB_CONNECTION=sqlite) instead of throwing - this was firing intermittently
+// in production.ERROR/local.ERROR log entries. $_ENV/$_SERVER, which this
+// disables in favor of, are true per-request PHP arrays and immune to this.
+Env::disablePutenv();
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
