@@ -150,7 +150,12 @@ jobs:
         id: unzip_trigger
         continue-on-error: true
         env:
-          HOSTINGER_DEPLOY_TOKEN: ${{ secrets.HOSTINGER_DEPLOY_TOKEN }}
+          # The actual repository secret is named NEXTERPDEPLOYSECRET2026,
+          # not HOSTINGER_DEPLOY_TOKEN - that name doesn't exist in this
+          # repo's secrets, so it always resolved empty and every run has
+          # silently been using the hardcoded fallback literal below
+          # instead of the real secret. Wired up correctly now.
+          HOSTINGER_DEPLOY_TOKEN: ${{ secrets.NEXTERPDEPLOYSECRET2026 }}
         run: |
           # Trim whitespace defensively - a GitHub secret pasted with a
           # trailing newline is non-empty, so `${VAR:-default}` silently
