@@ -17,11 +17,23 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // The bug this fixes (implicit ON UPDATE CURRENT_TIMESTAMP on the first TIMESTAMP
+        // column) is a MySQL/MariaDB quirk that doesn't exist on SQLite, so there's nothing
+        // to fix under the CI/test suite's sqlite connection -- and MODIFY isn't valid there
+        // anyway.
+        if (DB::connection()->getDriverName() === 'sqlite') {
+            return;
+        }
+
         DB::statement('ALTER TABLE stock_batches MODIFY received_at DATETIME NOT NULL');
     }
 
     public function down(): void
     {
+        if (DB::connection()->getDriverName() === 'sqlite') {
+            return;
+        }
+
         DB::statement('ALTER TABLE stock_batches MODIFY received_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP');
     }
 };

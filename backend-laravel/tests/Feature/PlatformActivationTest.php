@@ -144,8 +144,14 @@ class PlatformActivationTest extends TestCase
             'https://platform.test/api/v1/tenant/CMP-TEST1/snapshot' => Http::response([], 500),
         ]);
 
-        $exitCode = $this->artisan('platform:sync');
-        $exitCode->assertExitCode(0);
+        // Not `$exitCode = $this->artisan(...); $exitCode->assertExitCode(0);` -- PendingCommand
+        // is lazy: assertExitCode() only records the expectation, the command itself doesn't
+        // actually run until the PendingCommand object is destructed. Assigning it to a variable
+        // that stays in scope for the rest of the test defers that destruction (and the real run)
+        // until the test method returns -- so a DB assertion made right after would race against a
+        // command that hasn't executed yet. Chaining without assigning lets PHP destruct the
+        // temporary at the end of this statement, forcing the real run to happen here.
+        $this->artisan('platform:sync')->assertExitCode(0);
 
         $activation = PlatformActivation::current();
         $this->assertEquals('active', $activation->status);

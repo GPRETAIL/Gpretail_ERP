@@ -9,6 +9,13 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // FULLTEXT indexes and SHOW INDEX are MySQL/MariaDB-specific; the CI/test suite
+        // runs against SQLite, which has no equivalent. Nothing meaningful to create
+        // there, so skip -- production (mysql/mariadb) runs the real migration below.
+        if (DB::connection()->getDriverName() === 'sqlite') {
+            return;
+        }
+
         // 1. Products FULLTEXT index
         $prodIndexes = collect(DB::select("SHOW INDEX FROM products WHERE Key_name = 'ft_products_search'"));
         if ($prodIndexes->isEmpty()) {
@@ -36,6 +43,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (DB::connection()->getDriverName() === 'sqlite') {
+            return;
+        }
+
         DB::statement('ALTER TABLE products DROP INDEX ft_products_search');
         DB::statement('ALTER TABLE suppliers DROP INDEX ft_suppliers_search');
         DB::statement('ALTER TABLE customers DROP INDEX ft_customers_search');
