@@ -2553,7 +2553,9 @@ export default function FilterableDataTable({
               {isServerGrouped
                 ? `${computedTotalRows.toLocaleString()} groups · ${(groupSummaryState.meta?.total_matching_rows ?? 0).toLocaleString()} rows total`
                 : isCursorMode
-                  ? `Showing ${rows.length} rows`
+                  ? (pagination?.estimated_total
+                      ? `Total: ~${Number(pagination.estimated_total).toLocaleString()}`
+                      : `Showing ${rows.length} rows`)
                   : `Total: ${computedTotalRows}`}
             </span>
           </div>

@@ -43,6 +43,13 @@ class PaginationService
 
         // 4. Delegate to Laravel 13 native paginators
         if ($mode === 'cursor') {
+            // Same O(1) information_schema estimate resolveMode() already used to decide on cursor
+            // mode in the first place -- reused here so the UI can show an approximate overall
+            // total instead of nothing, without adding a real COUNT(*) over a huge table (the exact
+            // cost this mode exists to avoid). It reflects the whole table, not the current
+            // search/filters, since information_schema.TABLES has no notion of a WHERE clause.
+            $estimatedTotal = $this->getEstimatedRowCount($query, $options);
+
             $cursor = $request->input('cursor') ?? $options['cursor'] ?? null;
             /** @var CursorPaginator $paginator */
             $paginator = $query->cursorPaginate(
@@ -52,7 +59,7 @@ class PaginationService
                 cursor: $cursor
             );
 
-            return $this->formatCursorResponse($paginator, $limit);
+            return $this->formatCursorResponse($paginator, $limit, $estimatedTotal);
         }
 
         // Offset Mode
@@ -266,7 +273,7 @@ class PaginationService
     /**
      * Format Laravel's CursorPaginator into ERP standard response.
      */
-    protected function formatCursorResponse(CursorPaginator $paginator, int $limit): array
+    protected function formatCursorResponse(CursorPaginator $paginator, int $limit, ?int $estimatedTotal = null): array
     {
         $items = $paginator->items();
         $nextCursor = $paginator->nextCursor()?->encode();
@@ -285,6 +292,11 @@ class PaginationService
                 'has_more'        => $hasMore,
                 'has_next'        => $hasMore,
                 'has_previous'    => $prevCursor !== null,
+                // Approximate, whole-table (not filtered) -- see the comment where this is computed
+                // in paginate(). Still no exact 'total' key: an exact count is precisely the cost
+                // cursor mode exists to avoid, so this is deliberately a separate, clearly-named field
+                // rather than something that could be mistaken for offset mode's real total.
+                'estimated_total' => $estimatedTotal,
             ],
             // Top-level aliases for UI tolerance. No top-level 'total' here -- unlike offset
             // mode's real grand total, cursor mode has no cheap way to know the true row count,

@@ -89,4 +89,34 @@ describe("FilterableDataTable — Adaptive Cursor & Offset Pagination", () => {
     fireEvent.click(nextBtn);
     expect(onNextCursor).toHaveBeenCalledWith("eyJpZCI6Mn0");
   });
+
+  it("shows the cheap information_schema estimate as an approximate total when the backend provides one", () => {
+    render(
+      <MemoryRouter>
+        <FilterableDataTable
+          rows={sampleRows}
+          columns={sampleColumns}
+          showExport={false}
+          pagination={{
+            mode: "cursor",
+            limit: 10,
+            next_cursor: "eyJpZCI6Mn0",
+            previous_cursor: null,
+            has_more: true,
+            has_next: true,
+            has_previous: false,
+            estimated_total: 1000002,
+          }}
+          limit={10}
+          onNextCursor={vi.fn()}
+          onLimitChange={vi.fn()}
+        />
+      </MemoryRouter>
+    );
+
+    // The real total (however approximate), not just the current page's row count. Locale-tolerant
+    // digit grouping, same reasoning as the server-group total test above.
+    expect(screen.getByText(/^Total: ~[\d,]+$/)).toBeDefined();
+    expect(screen.queryByText("Showing 2 rows")).not.toBeInTheDocument();
+  });
 });

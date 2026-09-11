@@ -813,3 +813,42 @@ main > .p-6 {
 .dashboard-card-scroll::-webkit-scrollbar-thumb:hover {
   background-color: #94a3b8; /* slate-400 */
 }
+
+/* ── Hover-to-reveal scrollbars, app-wide ──────────────────────────────────
+   Every scrollable area's scrollbar thumb stays fully transparent (still scrollable via wheel/
+   trackpad/drag -- track width is unchanged, so nothing shifts) until the cursor is somewhere over
+   that element, then fades in; it fades further to a solid color only while hovering the thumb
+   itself. Keeps the many dense, scroll-heavy screens in this app (tables, POS panels, dashboards)
+   from showing permanently-visible scrollbar clutter without removing the native affordance.
+   :not(select, input, textarea) sidesteps old WebKit form-control scrollbar quirks -- not a concern
+   for content scroll areas, which is everything this is meant to affect anyway. WebKit/Blink only
+   (Chrome/Edge, what this app's POS terminals actually run); scrollbar-width: thin on every element
+   gives Firefox an already-unobtrusive equivalent rather than nothing. */
+:not(select, input, textarea) {
+  scrollbar-width: thin;
+}
+
+:not(select, input, textarea)::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+:not(select, input, textarea)::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+:not(select, input, textarea)::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 0.15s ease;
+}
+
+:not(select, input, textarea):hover::-webkit-scrollbar-thumb {
+  background-color: rgba(100, 116, 139, 0.45); /* slate-500 @ 45% */
+}
+
+:not(select, input, textarea)::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(71, 85, 105, 0.7); /* slate-600 @ 70% -- darker while hovering the thumb itself */
+}
