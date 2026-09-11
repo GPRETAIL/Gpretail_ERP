@@ -14,6 +14,10 @@ return [
             'default_order' => 'asc',
             'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'name', 'code', 'barcode', 'sku', 'selling_price', 'created_at'],
+            'groupable_columns' => [
+                'active' => ['column' => 'is_active'],
+                'brand' => ['column' => 'brand_id', 'join' => ['table' => 'brands', 'foreign' => 'brand_id', 'local' => 'id'], 'label_from' => 'brands.name'],
+            ],
         ],
         'customers' => [
             'mode' => 'offset',
@@ -28,6 +32,12 @@ return [
             'default_order' => 'asc',
             'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'name', 'code', 'phone', 'email', 'created_at'],
+            // is_active isn't groupable here: SupplierController::index() only ever lists
+            // active suppliers (hardcoded where('is_active', true)), so grouping by it would
+            // always resolve to a single all-true bucket.
+            'groupable_columns' => [
+                'city_id' => ['column' => 'city'],
+            ],
         ],
         'employees' => [
             'mode' => 'offset',
@@ -35,6 +45,9 @@ return [
             'default_order' => 'asc',
             'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'name', 'code', 'phone', 'created_at'],
+            'groupable_columns' => [
+                'is_active' => ['column' => 'is_active'],
+            ],
         ],
         'brands' => [
             'mode' => 'offset',
@@ -42,6 +55,9 @@ return [
             'default_order' => 'asc',
             'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'name', 'created_at'],
+            'groupable_columns' => [
+                'is_active' => ['column' => 'is_active'],
+            ],
         ],
         'categories' => [
             'mode' => 'offset',
@@ -56,6 +72,9 @@ return [
             'default_order' => 'asc',
             'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'name', 'code', 'rate', 'created_at'],
+            'groupable_columns' => [
+                'taxType' => ['column' => 'type'],
+            ],
         ],
         'agents' => [
             'mode' => 'offset',
@@ -63,6 +82,9 @@ return [
             'default_order' => 'asc',
             'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'name', 'code', 'phone', 'email', 'created_at'],
+            'groupable_columns' => [
+                'is_active' => ['column' => 'is_active'],
+            ],
         ],
         'transports' => [
             'mode' => 'offset',
@@ -70,6 +92,9 @@ return [
             'default_order' => 'asc',
             'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'name', 'code', 'phone', 'vehicle_no', 'created_at'],
+            'groupable_columns' => [
+                'is_active' => ['column' => 'is_active'],
+            ],
         ],
         'sizes' => [
             'mode' => 'offset',

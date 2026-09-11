@@ -14,6 +14,11 @@ import ConfirmDialog from "../../components/ConfirmDialog";
 import FilterableDataTable from "../../components/FilterableDataTable";
 import ExportBottomSheet from "../../components/ExportBottomSheet";
 import useStoreNameMap from "../../hooks/useStoreNameMap";
+import { createGroupFetchers } from "../../utils/serverGrouping";
+
+// Matches config('pagination.resources.taxes.groupable_columns') on the backend.
+const { onFetchGroupSummaries: fetchTaxGroupSummaries, onFetchGroupRows: fetchTaxGroupRows } =
+  createGroupFetchers("/taxes", { taxType: "type" });
 
 const TAX_IMPORT_CONFIG = {
   aliases: {
@@ -73,6 +78,7 @@ const Tax = () => {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
   const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
+  const [rawPagination, setRawPagination] = useState(null);
   const [tableSearch, setTableSearch] = useState("");
   const [tableSearchField, setTableSearchField] = useState("all");
   const [forceFetchAll, setForceFetchAll] = useState(false);
@@ -82,18 +88,19 @@ const Tax = () => {
     fetchTaxData();
   }, [page, limit, tableSearch, forceFetchAll]);
 
-  const fetchTaxData = async (queryOverride = tableSearch) => {
+  const fetchTaxData = async (queryOverride = tableSearch, cursorToken = null) => {
     try {
       setLoading(true);
       const query = String(queryOverride || "").trim();
       const params = (query || forceFetchAll)
         ? { all: "true", search: query || undefined, field: tableSearchField !== "all" ? tableSearchField : undefined }
-        : { page, limit };
+        : { ...(cursorToken ? { cursor: cursorToken } : { page }), limit };
       const res = await api.get("/taxes", { params });
       const rows = mapTaxRows(res.data?.data || []);
       setTaxData(rows);
       if (query) {
         setPagination({ total: rows.length, totalPages: 1 });
+        setRawPagination(null);
       } else {
         const p = res.data?.pagination || {};
         const total = Number(p.total ?? res.data?.total ?? rows.length) || 0;
@@ -102,6 +109,7 @@ const Tax = () => {
           1
         );
         setPagination({ total, totalPages });
+        setRawPagination(res.data?.pagination || null);
       }
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to load taxes");
@@ -109,6 +117,9 @@ const Tax = () => {
       setLoading(false);
     }
   };
+
+  const handleTaxNextCursor = (cursor) => fetchTaxData(tableSearch, cursor);
+  const handleTaxPreviousCursor = (cursor) => fetchTaxData(tableSearch, cursor);
 
   const handleServerSearch = useCallback(({ query, field, fetchAll }) => {
     setTableSearch(query);
@@ -279,7 +290,13 @@ const Tax = () => {
             limit={limit}
             totalPages={pagination.totalPages}
             totalRows={pagination.total}
+            pagination={rawPagination}
+            enableVirtualization
             onPageChange={setPage}
+            onNextCursor={handleTaxNextCursor}
+            onPreviousCursor={handleTaxPreviousCursor}
+            onFetchGroupSummaries={fetchTaxGroupSummaries}
+            onFetchGroupRows={fetchTaxGroupRows}
             onLimitChange={(value) => {
               setLimit(value);
               setPage(1);

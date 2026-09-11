@@ -1,6 +1,6 @@
 import React from "react";
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent, within } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import FilterableDataTable from "../FilterableDataTable";
 
 describe("FilterableDataTable — Multi-Column Filter, Sorting, and Grouping Features", () => {
@@ -88,76 +88,8 @@ describe("FilterableDataTable — Multi-Column Filter, Sorting, and Grouping Fea
     expect(rows[0]).toContain("150");
   });
 
-  it("groups by column, calculates aggregate sums, and toggles child row visibility", () => {
-    const { container } = render(
-      <FilterableDataTable
-        rows={sampleRows}
-        columns={sampleColumns}
-        showExport={false}
-        defaultGroupByColumn="category"
-      />
-    );
-
-    // Groups with >1 row should display as collapsible group headers
-    // Hardware has 3 rows (sum: 150+250+300 = 700)
-    expect(screen.getByText("Category: Hardware")).toBeInTheDocument();
-    expect(screen.getByText("3 rows")).toBeInTheDocument();
-    expect(screen.getByText(/Sales: 700\.00/)).toBeInTheDocument();
-
-    // Software has 2 rows (sum: 400+500 = 900)
-    expect(screen.getByText("Category: Software")).toBeInTheDocument();
-    expect(screen.getByText("2 rows")).toBeInTheDocument();
-    expect(screen.getByText(/Sales: 900\.00/)).toBeInTheDocument();
-
-    // Services has 1 row (renders as a single plain row without group header)
-    expect(screen.queryByText("Category: Services")).not.toBeInTheDocument();
-    expect(screen.getByText("Services")).toBeInTheDocument();
-
-    // Expand Hardware group by clicking its toggle button
-    const hardwareHeader = screen.getByText("Category: Hardware").closest("tr");
-    const toggleBtn = hardwareHeader.querySelector("button");
-    fireEvent.click(toggleBtn);
-
-    // Now individual Hardware rows are visible
-    expect(screen.getByText("150")).toBeInTheDocument();
-    expect(screen.getByText("250")).toBeInTheDocument();
-    expect(screen.getByText("300")).toBeInTheDocument();
-
-    // Collapse Hardware group again
-    fireEvent.click(toggleBtn);
-    expect(screen.queryByText("150")).not.toBeInTheDocument();
-    expect(screen.queryByText("250")).not.toBeInTheDocument();
-  });
-
-  it("combines multi-column filtering with grouping and aggregation", () => {
-    const { container } = render(
-      <FilterableDataTable
-        rows={sampleRows}
-        columns={sampleColumns}
-        showExport={false}
-        defaultGroupByColumn="category"
-      />
-    );
-
-    // Initial Hardware group sum = 700 (3 rows)
-    expect(screen.getByText(/Sales: 700\.00/)).toBeInTheDocument();
-
-    // Apply Filter: Status = "Active"
-    fireEvent.click(screen.getByTitle("Filter Status"));
-    fireEvent.change(screen.getByDisplayValue("Contain"), { target: { value: "equal" } });
-    fireEvent.change(screen.getByPlaceholderText("Enter filter value"), {
-      target: { value: "Active" },
-    });
-
-    // ID 3 (sales 300, Inactive) is filtered out!
-    // Hardware now has 2 active rows (150 + 250 = 400)
-    const hardwareHeader = screen.getByText("Category: Hardware").closest("tr");
-    expect(within(hardwareHeader).getByText("2 rows")).toBeInTheDocument();
-    expect(within(hardwareHeader).getByText(/Sales: 400\.00/)).toBeInTheDocument();
-
-    // Software also has 2 rows (400 + 500 = 900)
-    const softwareHeader = screen.getByText("Category: Software").closest("tr");
-    expect(within(softwareHeader).getByText("2 rows")).toBeInTheDocument();
-    expect(within(softwareHeader).getByText(/Sales: 900\.00/)).toBeInTheDocument();
-  });
+  // Client-side row grouping (with per-column sum/avg aggregation) was removed in favor of
+  // server-side Group By (GroupAggregationService) -- see FilterableDataTable.serverGroup.test.jsx
+  // for the current grouping behavior. A capped, silently-sampled client computation was worse
+  // than not offering grouping at all once tables reached real scale.
 });

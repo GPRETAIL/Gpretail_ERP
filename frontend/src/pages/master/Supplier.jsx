@@ -4,6 +4,11 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 import FilterableDataTable from "../../components/FilterableDataTable";
+import { createGroupFetchers } from "../../utils/serverGrouping";
+
+// Matches config('pagination.resources.suppliers.groupable_columns') on the backend.
+const { onFetchGroupSummaries: fetchSupplierGroupSummaries, onFetchGroupRows: fetchSupplierGroupRows } =
+  createGroupFetchers("/suppliers", { city_id: "city" });
 import ConfirmDialog from "../../components/ConfirmDialog";
 import ExportBottomSheet from "../../components/ExportBottomSheet";
 import UploadImportButton from "../../components/UploadImportButton";
@@ -294,6 +299,7 @@ const Supplier = () => {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
   const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
+  const [rawPagination, setRawPagination] = useState(null);
   const [tableSearch, setTableSearch] = useState("");
   const [tableSearchField, setTableSearchField] = useState("all");
   const [forceFetchAll, setForceFetchAll] = useState(false);
@@ -444,12 +450,12 @@ const Supplier = () => {
   const labelOf = (options, id) =>
     options.find((o) => o.value === String(id))?.label || "—";
 
-  const fetchSuppliers = async (queryOverride = tableSearch) => {
+  const fetchSuppliers = async (queryOverride = tableSearch, cursorToken = null) => {
     try {
       setSearchLoading(true);
       const query = String(queryOverride || "").trim();
       const params = {
-        page,
+        ...(cursorToken ? { cursor: cursorToken } : { page }),
         limit,
         search: query || undefined,
         field: tableSearchField !== "all" ? tableSearchField : undefined,
@@ -469,12 +475,16 @@ const Supplier = () => {
         1
       );
       setPagination({ total, totalPages });
+      setRawPagination(res.data?.pagination || null);
     } catch (err) {
       toast.error(err?.response?.data?.message || "Failed to load suppliers");
     } finally {
       setSearchLoading(false);
     }
   };
+
+  const handleSupplierNextCursor = (cursor) => fetchSuppliers(tableSearch, cursor);
+  const handleSupplierPreviousCursor = (cursor) => fetchSuppliers(tableSearch, cursor);
 
   useEffect(() => {
     if (showSearchPage) fetchSuppliers();
@@ -925,13 +935,19 @@ const Supplier = () => {
                   limit={limit}
                   totalPages={pagination.totalPages}
                   totalRows={pagination.total}
+                  pagination={rawPagination}
                   onPageChange={setPage}
+                  onNextCursor={handleSupplierNextCursor}
+                  onPreviousCursor={handleSupplierPreviousCursor}
+                  onFetchGroupSummaries={fetchSupplierGroupSummaries}
+                  onFetchGroupRows={fetchSupplierGroupRows}
                   onLimitChange={(value) => {
                     setLimit(value);
                     setPage(1);
                   }}
                   onRowClick={loadSupplierForEdit}
                   paginationMode="server"
+                  enableVirtualization
                   enableSelection
                   enableKeyboardNav
                   selectedRows={selectedRows}

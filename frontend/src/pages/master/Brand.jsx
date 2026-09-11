@@ -3,6 +3,7 @@ import { ArrowLeft, Pencil, PlusCircle, Save, Search, Trash2 } from "lucide-reac
 import { toast } from "react-toastify";
 import api from "../../api/axios";
 import FilterableDataTable from "../../components/FilterableDataTable";
+import { createGroupFetchers } from "../../utils/serverGrouping";
 import ExportBottomSheet from "../../components/ExportBottomSheet";
 import UploadImportButton from "../../components/UploadImportButton";
 import { useNavigate } from "react-router-dom";
@@ -24,6 +25,10 @@ const buildActiveColumnFilters = (filters = {}) =>
       operator: filter?.operator || FILTER_DEFAULT.operator,
       value: String(filter?.value || ""),
     }));
+
+// Matches config('pagination.resources.brands.groupable_columns') on the backend.
+const { onFetchGroupSummaries: fetchBrandGroupSummaries, onFetchGroupRows: fetchBrandGroupRows } =
+  createGroupFetchers("/brands", { is_active: "is_active" }, buildActiveColumnFilters);
 
 const BRAND_IMPORT_CONFIG = {
   aliases: {
@@ -154,6 +159,7 @@ const Brand = () => {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
   const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
+  const [rawPagination, setRawPagination] = useState(null);
   const [tableSearch, setTableSearch] = useState("");
   const [tableSearchField, setTableSearchField] = useState("all");
   const [tableColumnFilters, setTableColumnFilters] = useState({});
@@ -179,14 +185,14 @@ const Brand = () => {
     fetchBrands();
   }, [showSearchPage, page, limit, tableSearch, tableSearchField, tableColumnFilters, forceFetchAll]);
 
-  const fetchBrands = async (queryOverride = tableSearch, filtersOverride = tableColumnFilters) => {
+  const fetchBrands = async (queryOverride = tableSearch, filtersOverride = tableColumnFilters, cursorToken = null) => {
     try {
       setSearchLoading(true);
       const query = String(queryOverride || "").trim();
       const activeColumnFilters = buildActiveColumnFilters(filtersOverride);
       const hasColumnFilters = activeColumnFilters.length > 0;
       const params = {
-        page,
+        ...(cursorToken ? { cursor: cursorToken } : { page }),
         limit,
         search: query || undefined,
         field: query && tableSearchField !== "all" ? tableSearchField : undefined,
@@ -207,12 +213,16 @@ const Brand = () => {
         1
       );
       setPagination({ total, totalPages });
+      setRawPagination(res.data?.pagination || null);
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to load brands");
     } finally {
       setSearchLoading(false);
     }
   };
+
+  const handleBrandsNextCursor = (cursor) => fetchBrands(tableSearch, tableColumnFilters, cursor);
+  const handleBrandsPreviousCursor = (cursor) => fetchBrands(tableSearch, tableColumnFilters, cursor);
 
   const handleServerSearch = useCallback(({ query, field, fetchAll, columnFilters }) => {
     setTableSearch(query);
@@ -747,13 +757,19 @@ const Brand = () => {
               limit={limit}
               totalPages={pagination.totalPages}
               totalRows={pagination.total}
+              pagination={rawPagination}
               onPageChange={setPage}
+              onNextCursor={handleBrandsNextCursor}
+              onPreviousCursor={handleBrandsPreviousCursor}
+              onFetchGroupSummaries={fetchBrandGroupSummaries}
+              onFetchGroupRows={fetchBrandGroupRows}
               onLimitChange={(value) => {
                 setLimit(value);
                 setPage(1);
               }}
               onRowClick={handleEditFromSearch}
               paginationMode="server"
+              enableVirtualization
               enableSelection
               enableKeyboardNav
               selectedRows={selectedRows}

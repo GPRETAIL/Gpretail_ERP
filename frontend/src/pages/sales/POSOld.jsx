@@ -2261,6 +2261,7 @@ const POSOld = () => {
           runPosOldSearch(null, 1, value);
         }}
         paginationMode="server"
+        enableVirtualization
         fillHeight
       />
     </div>

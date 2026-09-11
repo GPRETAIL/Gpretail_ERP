@@ -116,91 +116,10 @@ describe("FilterableDataTable — per-column filter popup", () => {
   });
 });
 
-describe("FilterableDataTable — row grouping with aggregation", () => {
-  const columns = [
-    { key: "category", label: "Category" },
-    { key: "amount", label: "Amount", aggregate: "sum" },
-  ];
-  const rows = [
-    { id: 1, category: "A", amount: 10 },
-    { id: 2, category: "A", amount: 20 },
-    { id: 3, category: "B", amount: 5 },
-  ];
-
-  it("sums a group's aggregate column and locks the 2-decimal format", () => {
-    render(
-      <FilterableDataTable
-        rows={rows}
-        columns={columns}
-        showExport={false}
-        defaultGroupByColumn="category"
-      />
-    );
-
-    expect(screen.getByText("Category: A")).toBeInTheDocument();
-    expect(screen.getByText("2 rows")).toBeInTheDocument();
-    expect(screen.getByText(/Amount: 30\.00/)).toBeInTheDocument();
-  });
-
-  it("renders a single-row group as a plain row, not a group header", () => {
-    render(
-      <FilterableDataTable
-        rows={rows}
-        columns={columns}
-        showExport={false}
-        defaultGroupByColumn="category"
-      />
-    );
-
-    expect(screen.queryByText("Category: B")).not.toBeInTheDocument();
-    expect(screen.queryByText("1 rows")).not.toBeInTheDocument();
-    expect(screen.queryByText(/Amount: 5\.00/)).not.toBeInTheDocument();
-    // The row itself still renders, plainly.
-    const row = screen.getByText("B").closest("tr");
-    expect(within(row).getByText("5")).toBeInTheDocument();
-  });
-
-  it("keeps child rows collapsed until the group is expanded", () => {
-    render(
-      <FilterableDataTable
-        rows={rows}
-        columns={columns}
-        showExport={false}
-        defaultGroupByColumn="category"
-      />
-    );
-
-    expect(screen.queryByText("10")).not.toBeInTheDocument();
-    expect(screen.queryByText("20")).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByText("Category: A").closest("tr").querySelector("button"));
-
-    expect(screen.getByText("10")).toBeInTheDocument();
-    expect(screen.getByText("20")).toBeInTheDocument();
-  });
-
-  it("supports a custom aggregate function, not just sum/avg", () => {
-    const customColumns = [
-      { key: "category", label: "Category" },
-      {
-        key: "amount",
-        label: "Amount",
-        aggregate: (groupRows) => Math.max(...groupRows.map((r) => r.amount)),
-      },
-    ];
-
-    render(
-      <FilterableDataTable
-        rows={rows}
-        columns={customColumns}
-        showExport={false}
-        defaultGroupByColumn="category"
-      />
-    );
-
-    expect(screen.getByText(/Amount: 20\.00/)).toBeInTheDocument();
-  });
-});
+// Client-side row grouping (with per-column sum/avg aggregation) was removed in favor of
+// server-side Group By (GroupAggregationService) -- see FilterableDataTable.serverGroup.test.jsx
+// for the current grouping behavior. A capped, silently-sampled client computation was worse than
+// not offering grouping at all once tables reached real scale.
 
 describe("FilterableDataTable — selection + bulk delete", () => {
   const columns = [{ key: "name", label: "Name" }];
@@ -788,68 +707,48 @@ describe("FilterableDataTable — row virtualization (opt-in)", () => {
     expect(bottomSpacer.style.getPropertyValue("--vt-spacer-h")).toMatch(/^\d+px$/);
   });
 
-  it("grouped case with a large expanded group: still branches correctly by item.type, no crash", () => {
+  it("grouped case (server-side) with a large expanded group: still windows correctly, no crash", async () => {
     const groupedColumns = [
       { key: "category", label: "Category" },
-      { key: "amount", label: "Amount", aggregate: "sum" },
+      { key: "amount", label: "Amount" },
     ];
-    const groupedRows = Array.from({ length: 150 }, (_, i) => ({
-      id: i + 1,
-      category: "A",
-      amount: 1,
-    }));
+    const onFetchGroupSummaries = vi.fn().mockResolvedValue({
+      success: true,
+      data: [{ group_value: "A", label: "A", row_count: 150 }],
+      pagination: { page: 1, total: 1, total_pages: 1, has_next: false, has_previous: false },
+      meta: { total_matching_rows: 150 },
+    });
+    const onFetchGroupRows = vi.fn().mockResolvedValue({
+      success: true,
+      data: Array.from({ length: 150 }, (_, i) => ({ id: i + 1, category: "A", amount: 1 })),
+      pagination: { has_next: false },
+    });
 
     render(
       <FilterableDataTable
-        rows={groupedRows}
+        rows={[]}
         columns={groupedColumns}
         showExport={false}
+        paginationMode="server"
         enableVirtualization
         defaultGroupByColumn="category"
+        onFetchGroupSummaries={onFetchGroupSummaries}
+        onFetchGroupRows={onFetchGroupRows}
       />
     );
 
-    expect(screen.getByText("Category: A")).toBeInTheDocument();
+    expect(await screen.findByText("Category: A")).toBeInTheDocument();
     fireEvent.click(screen.getByText("Category: A").closest("tr").querySelector("button"));
+    await waitFor(() => expect(onFetchGroupRows).toHaveBeenCalled());
 
     // The group header itself plus at least one windowed child row, and nowhere near all 150.
-    const renderedRows = Array.from(document.querySelectorAll("tbody tr")).filter(
-      (tr) => !tr.classList.contains("virtual-spacer-row")
-    );
-    expect(renderedRows.length).toBeGreaterThan(1);
-    expect(renderedRows.length).toBeLessThan(groupedRows.length);
-  });
-
-  it("resets scroll on filter/sort/group changes but not on expandedGroups-only changes", () => {
-    const groupedColumns = [
-      { key: "category", label: "Category" },
-      { key: "amount", label: "Amount", aggregate: "sum" },
-    ];
-    const groupedRows = [
-      { id: 1, category: "A", amount: 1 },
-      { id: 2, category: "A", amount: 2 },
-      { id: 3, category: "B", amount: 3 },
-      { id: 4, category: "B", amount: 4 },
-    ];
-
-    render(
-      <FilterableDataTable
-        rows={groupedRows}
-        columns={groupedColumns}
-        showExport={false}
-        enableVirtualization
-        defaultGroupByColumn="category"
-      />
-    );
-
-    // Mount itself triggers the reset effect once; only calls after this point are of interest.
-    Element.prototype.scrollTo.mockClear();
-
-    fireEvent.click(screen.getByText("Category: A").closest("tr").querySelector("button"));
-    expect(Element.prototype.scrollTo).not.toHaveBeenCalled();
-
-    fireEvent.click(screen.getByTitle("Sort Amount"));
-    expect(Element.prototype.scrollTo).toHaveBeenCalled();
+    await waitFor(() => {
+      const renderedRows = Array.from(document.querySelectorAll("tbody tr")).filter(
+        (tr) => !tr.classList.contains("virtual-spacer-row")
+      );
+      expect(renderedRows.length).toBeGreaterThan(1);
+      expect(renderedRows.length).toBeLessThan(150);
+    });
   });
 
   it("keyboard nav (enableKeyboardNav) under virtualization: End requests a scroll to the last row", () => {
@@ -1191,58 +1090,72 @@ describe("FilterableDataTable — row-level keyboard navigation (opt-in)", () =>
     expect(onSelectionChange).not.toHaveBeenCalled();
   });
 
-  describe("group rows", () => {
+  describe("group rows (server-side)", () => {
     const groupedColumns = [
       { key: "category", label: "Category" },
-      { key: "amount", label: "Amount", aggregate: "sum" },
+      { key: "amount", label: "Amount" },
     ];
-    const groupedRows = [
-      { id: 1, category: "A", amount: 10 },
-      { id: 2, category: "A", amount: 20 },
-      { id: 3, category: "B", amount: 5 },
-      { id: 4, category: "B", amount: 7 },
-    ];
+    const makeSummaries = () => vi.fn().mockResolvedValue({
+      success: true,
+      data: [{ group_value: "A", label: "A", row_count: 2 }],
+      pagination: { page: 1, total: 1, total_pages: 1, has_next: false, has_previous: false },
+      meta: { total_matching_rows: 2 },
+    });
+    const makeGroupRows = () => vi.fn().mockResolvedValue({
+      success: true,
+      data: [{ id: 1, category: "A", amount: 10 }, { id: 2, category: "A", amount: 20 }],
+      pagination: { has_next: false },
+    });
 
-    it("Enter toggles expand/collapse", () => {
+    it("Enter toggles expand/collapse", async () => {
+      const onFetchGroupRows = makeGroupRows();
       render(
         <FilterableDataTable
-          rows={groupedRows}
+          rows={[]}
           columns={groupedColumns}
           showExport={false}
+          paginationMode="server"
           enableKeyboardNav
           defaultGroupByColumn="category"
+          onFetchGroupSummaries={makeSummaries()}
+          onFetchGroupRows={onFetchGroupRows}
         />
       );
 
-      const groupRow = screen.getByText("Category: A").closest("tr");
+      const groupRow = (await screen.findByText("Category: A")).closest("tr");
       expect(screen.queryByText("10")).not.toBeInTheDocument();
 
       fireEvent.keyDown(groupRow, { key: "Enter" });
-      expect(screen.getByText("10")).toBeInTheDocument();
+      expect(await screen.findByText("10")).toBeInTheDocument();
 
       fireEvent.keyDown(groupRow, { key: "Enter" });
       expect(screen.queryByText("10")).not.toBeInTheDocument();
     });
 
-    it("Space is a no-op", () => {
+    it("Space is a no-op", async () => {
       const onSelectionChange = vi.fn();
+      const onFetchGroupRows = makeGroupRows();
       render(
         <FilterableDataTable
-          rows={groupedRows}
+          rows={[]}
           columns={groupedColumns}
           showExport={false}
+          paginationMode="server"
           enableKeyboardNav
           enableSelection
           selectedRows={[]}
           onSelectionChange={onSelectionChange}
           defaultGroupByColumn="category"
+          onFetchGroupSummaries={makeSummaries()}
+          onFetchGroupRows={onFetchGroupRows}
         />
       );
 
-      const groupRow = screen.getByText("Category: A").closest("tr");
+      const groupRow = (await screen.findByText("Category: A")).closest("tr");
       fireEvent.keyDown(groupRow, { key: " " });
 
       expect(onSelectionChange).not.toHaveBeenCalled();
+      expect(onFetchGroupRows).not.toHaveBeenCalled();
       expect(screen.queryByText("10")).not.toBeInTheDocument();
     });
   });

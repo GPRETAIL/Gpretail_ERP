@@ -276,6 +276,7 @@ const CrmCustomerOrders = () => {
               setPage(1);
             }}
             paginationMode="server"
+            enableVirtualization
             enableServerSearch
             onServerSearch={({ query, field, fetchAll }) => {
               const next = {

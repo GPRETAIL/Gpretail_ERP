@@ -6,13 +6,17 @@ use App\Http\Controllers\Controller;
 use App\Models\Employee;
 use App\Models\HrDepartment;
 use App\Models\HrDesignation;
+use App\Services\GroupAggregationService;
 use App\Services\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class EmployeeController extends Controller
 {
-    public function __construct(private readonly PaginationService $paginationService) {}
+    public function __construct(
+        private readonly PaginationService $paginationService,
+        private readonly GroupAggregationService $groupAggregationService,
+    ) {}
 
     public function dashboardSummary(Request $request)
     {
@@ -26,7 +30,7 @@ class EmployeeController extends Controller
         ]);
     }
 
-    public function index(Request $request)
+    private function filteredQuery(Request $request)
     {
         $query = Employee::with(['department', 'designation', 'store']);
 
@@ -39,6 +43,39 @@ class EmployeeController extends Controller
                   ->orWhere('email', 'like', "%{$search}%");
             });
         }
+
+        if ($request->filled('column_filters')) {
+            $filters = json_decode($request->input('column_filters'), true) ?? [];
+            $allowed = ['code', 'name', 'phone', 'email', 'is_active', 'department_id'];
+            foreach ($filters as $filter) {
+                $col = $filter['field'] ?? null;
+                $op = $filter['operator'] ?? 'contains';
+                $val = $filter['value'] ?? '';
+                if (!$col || !in_array($col, $allowed)) continue;
+                match ($op) {
+                    'equals' => $query->where($col, $val),
+                    'not_equals' => $query->where($col, '!=', $val),
+                    'starts' => $query->where($col, 'like', "{$val}%"),
+                    'ends' => $query->where($col, 'like', "%{$val}"),
+                    'blank' => $query->whereNull($col)->orWhere($col, ''),
+                    'not_blank' => $query->whereNotNull($col)->where($col, '!=', ''),
+                    default => $query->where($col, 'like', "%{$val}%"),
+                };
+            }
+        }
+
+        return $query;
+    }
+
+    public function groupedSummary(Request $request)
+    {
+        $result = $this->groupAggregationService->summarize($this->filteredQuery($request), 'employees', $request);
+        return response()->json($result, $result['success'] ? 200 : 422);
+    }
+
+    public function index(Request $request)
+    {
+        $query = $this->filteredQuery($request);
 
         if ($request->boolean('all') || $request->input('limit') == 500 || $request->input('limit') == 1000) {
             $items = $query->orderBy('name')->limit(2000)->get();

@@ -1543,6 +1543,7 @@ const SalesOnApproval = () => {
           runApprovalSearch(null, 1, value);
         }}
         paginationMode="server"
+        enableVirtualization
       />
     </div>
   );

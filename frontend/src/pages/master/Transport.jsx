@@ -8,6 +8,11 @@ import FilterableDataTable from "../../components/FilterableDataTable";
 import UploadImportButton from "../../components/UploadImportButton";
 import ExportBottomSheet from "../../components/ExportBottomSheet";
 import useStoreNameMap from "../../hooks/useStoreNameMap";
+import { createGroupFetchers } from "../../utils/serverGrouping";
+
+// Matches config('pagination.resources.transports.groupable_columns') on the backend.
+const { onFetchGroupSummaries: fetchTransportGroupSummaries, onFetchGroupRows: fetchTransportGroupRows } =
+  createGroupFetchers("/transports", { is_active: "is_active" });
 
 const TRANSPORT_IMPORT_CONFIG = {
   aliases: {
@@ -62,6 +67,7 @@ const Transport = () => {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
   const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
+  const [rawPagination, setRawPagination] = useState(null);
   const [tableSearch, setTableSearch] = useState("");
   const [tableSearchField, setTableSearchField] = useState("all");
   const [forceFetchAll, setForceFetchAll] = useState(false);
@@ -71,18 +77,19 @@ const Transport = () => {
     fetchData();
   }, [page, limit, tableSearch, forceFetchAll]);
 
-  const fetchData = async (queryOverride = tableSearch) => {
+  const fetchData = async (queryOverride = tableSearch, cursorToken = null) => {
     try {
       setLoading(true);
       const query = String(queryOverride || "").trim();
       const params = (query || forceFetchAll)
         ? { all: "true", search: query || undefined, field: tableSearchField !== "all" ? tableSearchField : undefined }
-        : { page, limit };
+        : { ...(cursorToken ? { cursor: cursorToken } : { page }), limit };
       const res = await api.get("/transports", { params });
       const rows = res.data?.data || [];
       setData(rows);
       if (query) {
         setPagination({ total: rows.length, totalPages: 1 });
+        setRawPagination(null);
       } else {
         const p = res.data?.pagination || {};
         const total = Number(p.total ?? res.data?.total ?? rows.length) || 0;
@@ -91,6 +98,7 @@ const Transport = () => {
           1
         );
         setPagination({ total, totalPages });
+        setRawPagination(res.data?.pagination || null);
       }
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to load transports");
@@ -98,6 +106,9 @@ const Transport = () => {
       setLoading(false);
     }
   };
+
+  const handleTransportNextCursor = (cursor) => fetchData(tableSearch, cursor);
+  const handleTransportPreviousCursor = (cursor) => fetchData(tableSearch, cursor);
 
   const handleServerSearch = useCallback(({ query, field, fetchAll }) => {
     setTableSearch(query);
@@ -244,7 +255,13 @@ const Transport = () => {
             limit={limit}
             totalPages={pagination.totalPages}
             totalRows={pagination.total}
+            pagination={rawPagination}
+            enableVirtualization
             onPageChange={setPage}
+            onNextCursor={handleTransportNextCursor}
+            onPreviousCursor={handleTransportPreviousCursor}
+            onFetchGroupSummaries={fetchTransportGroupSummaries}
+            onFetchGroupRows={fetchTransportGroupRows}
             onLimitChange={(value) => {
               setLimit(value);
               setPage(1);

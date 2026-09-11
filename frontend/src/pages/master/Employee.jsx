@@ -5,6 +5,11 @@ import { toast } from "react-toastify";
 import api from "../../api/axios";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import FilterableDataTable from "../../components/FilterableDataTable";
+import { createGroupFetchers } from "../../utils/serverGrouping";
+
+// Matches config('pagination.resources.employees.groupable_columns') on the backend.
+const { onFetchGroupSummaries: fetchEmployeeGroupSummaries, onFetchGroupRows: fetchEmployeeGroupRows } =
+  createGroupFetchers("/employees", { is_active: "is_active" });
 import ExportBottomSheet from "../../components/ExportBottomSheet";
 import UploadImportButton from "../../components/UploadImportButton";
 import { handleEnterKeyNavigation } from "../../utils/enterToNextField";
@@ -290,6 +295,7 @@ const Employee = () => {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
   const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
+  const [rawPagination, setRawPagination] = useState(null);
   const [tableSearch, setTableSearch] = useState("");
   const [tableSearchField, setTableSearchField] = useState("all");
   const [forceFetchAll, setForceFetchAll] = useState(false);
@@ -414,18 +420,19 @@ const Employee = () => {
     }
   };
 
-  const handleSearch = async (queryOverride = tableSearch) => {
+  const handleSearch = async (queryOverride = tableSearch, cursorToken = null) => {
     try {
       setSearchLoading(true);
       const query = String(queryOverride || "").trim();
       const params = (query || forceFetchAll)
         ? { all: "true", search: query || undefined, field: tableSearchField !== "all" ? tableSearchField : undefined }
-        : { page, limit };
+        : { ...(cursorToken ? { cursor: cursorToken } : { page }), limit };
       const res = await api.get("/employees", { params });
       const rows = res.data?.data || [];
       setSearchResults(rows);
       if (query) {
         setPagination({ total: rows.length, totalPages: 1 });
+        setRawPagination(null);
       } else {
         const p = res.data?.pagination || {};
         const total = Number(p.total ?? res.data?.total ?? rows.length) || 0;
@@ -434,6 +441,7 @@ const Employee = () => {
           1
         );
         setPagination({ total, totalPages });
+        setRawPagination(res.data?.pagination || null);
       }
       setShowSearchPage(true);
     } catch {
@@ -442,6 +450,9 @@ const Employee = () => {
       setSearchLoading(false);
     }
   };
+
+  const handleEmployeeNextCursor = (cursor) => handleSearch(tableSearch, cursor);
+  const handleEmployeePreviousCursor = (cursor) => handleSearch(tableSearch, cursor);
 
   useEffect(() => {
     if (showSearchPage) handleSearch();
@@ -1180,7 +1191,13 @@ const Employee = () => {
         limit={limit}
         totalPages={pagination.totalPages}
         totalRows={pagination.total}
+        pagination={rawPagination}
+        enableVirtualization
         onPageChange={setPage}
+        onNextCursor={handleEmployeeNextCursor}
+        onPreviousCursor={handleEmployeePreviousCursor}
+        onFetchGroupSummaries={fetchEmployeeGroupSummaries}
+        onFetchGroupRows={fetchEmployeeGroupRows}
         onLimitChange={(value) => {
           setLimit(value);
           setPage(1);

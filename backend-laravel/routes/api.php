@@ -193,6 +193,7 @@ $registerAppRoutes = function () {
     // Products Dashboard Summary & Barcode Search
     Route::get('products/dashboard-summary', [ProductController::class, 'dashboardSummary']);
     Route::get('products/barcode/{barcode}', [ProductController::class, 'findByBarcode']);
+    Route::get('products/grouped', [ProductController::class, 'groupedSummary']);
     Route::apiResource('products', ProductController::class);
     Route::apiResource('product', ProductController::class);
 
@@ -200,6 +201,7 @@ $registerAppRoutes = function () {
     Route::get('employees/dashboard-summary', [EmployeeController::class, 'dashboardSummary']);
     Route::post('employees/{id}/upload', [EmployeeController::class, 'uploadDocument']);
     Route::post('employees/{id}/education-certificate', [EmployeeController::class, 'educationCertificate']);
+    Route::get('employees/grouped', [EmployeeController::class, 'groupedSummary']);
     Route::apiResource('employees', EmployeeController::class);
 
     // Attendance
@@ -365,16 +367,21 @@ $registerAppRoutes = function () {
     Route::match(['get', 'post', 'put'], 'sales-customisation', [SettingsController::class, 'salesCustomization']);
 
     // Masters
+    Route::get('brands/grouped', [BrandController::class, 'groupedSummary']);
     Route::apiResource('brand', BrandController::class);
     Route::apiResource('brands', BrandController::class);
     Route::apiResource('categories', CategoryController::class);
     Route::apiResource('category', CategoryController::class);
+    Route::get('taxes/grouped', [TaxController::class, 'groupedSummary']);
     Route::apiResource('tax', TaxController::class);
     Route::apiResource('taxes', TaxController::class);
+    Route::get('suppliers/grouped', [SupplierController::class, 'groupedSummary']);
     Route::apiResource('suppliers', SupplierController::class);
     Route::apiResource('supplier', SupplierController::class);
+    Route::get('agents/grouped', [AgentController::class, 'groupedSummary']);
     Route::apiResource('agents', AgentController::class);
     Route::apiResource('agent', AgentController::class);
+    Route::get('transports/grouped', [TransportController::class, 'groupedSummary']);
     Route::apiResource('transports', TransportController::class);
     Route::apiResource('transport', TransportController::class);
     Route::apiResource('customers', CustomerController::class);

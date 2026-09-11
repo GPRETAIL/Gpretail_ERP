@@ -5,6 +5,11 @@ import { toast } from "react-toastify";
 import api from "../../api/axios";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import FilterableDataTable from "../../components/FilterableDataTable";
+import { createGroupFetchers } from "../../utils/serverGrouping";
+
+// Matches config('pagination.resources.agents.groupable_columns') on the backend.
+const { onFetchGroupSummaries: fetchAgentGroupSummaries, onFetchGroupRows: fetchAgentGroupRows } =
+  createGroupFetchers("/agents", { is_active: "is_active" });
 import ExportBottomSheet from "../../components/ExportBottomSheet";
 import SearchableSelect from "../../components/SearchableSelect";
 import UploadImportButton from "../../components/UploadImportButton";
@@ -119,6 +124,7 @@ const Agent = () => {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
   const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
+  const [rawPagination, setRawPagination] = useState(null);
   const [tableSearch, setTableSearch] = useState("");
   const [tableSearchField, setTableSearchField] = useState("all");
   const [forceFetchAll, setForceFetchAll] = useState(false);
@@ -236,18 +242,19 @@ const Agent = () => {
     }
   };
 
-  const fetchSearchResults = async (queryOverride = tableSearch) => {
+  const fetchSearchResults = async (queryOverride = tableSearch, cursorToken = null) => {
     setSearchLoading(true);
     try {
       const query = String(queryOverride || "").trim();
       const params = (query || forceFetchAll)
         ? { all: "true", search: query || undefined, field: tableSearchField !== "all" ? tableSearchField : undefined }
-        : { page, limit };
+        : { ...(cursorToken ? { cursor: cursorToken } : { page }), limit };
       const res = await api.get("/agents", { params });
       const rows = res.data?.data || [];
       setSearchResults(rows);
       if (query) {
         setPagination({ total: rows.length, totalPages: 1 });
+        setRawPagination(null);
       } else {
         const p = res.data?.pagination || {};
         const total = Number(p.total ?? res.data?.total ?? rows.length) || 0;
@@ -256,6 +263,7 @@ const Agent = () => {
           1
         );
         setPagination({ total, totalPages });
+        setRawPagination(res.data?.pagination || null);
       }
     } catch {
       toast.error("Failed to load agents");
@@ -263,6 +271,9 @@ const Agent = () => {
       setSearchLoading(false);
     }
   };
+
+  const handleAgentNextCursor = (cursor) => fetchSearchResults(tableSearch, cursor);
+  const handleAgentPreviousCursor = (cursor) => fetchSearchResults(tableSearch, cursor);
 
   const handleSearchOpen = () => {
     setShowSearch(true);
@@ -522,7 +533,13 @@ const Agent = () => {
               limit={limit}
               totalPages={pagination.totalPages}
               totalRows={pagination.total}
+              pagination={rawPagination}
+              enableVirtualization
               onPageChange={setPage}
+              onNextCursor={handleAgentNextCursor}
+              onPreviousCursor={handleAgentPreviousCursor}
+              onFetchGroupSummaries={fetchAgentGroupSummaries}
+              onFetchGroupRows={fetchAgentGroupRows}
               onLimitChange={(value) => {
                 setLimit(value);
                 setPage(1);

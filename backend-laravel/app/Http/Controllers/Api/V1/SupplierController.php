@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Supplier;
+use App\Services\GroupAggregationService;
 use App\Services\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -12,16 +13,17 @@ use Illuminate\Support\Facades\Validator;
 
 class SupplierController extends Controller
 {
-    public function __construct(private readonly PaginationService $paginationService) {}
+    public function __construct(
+        private readonly PaginationService $paginationService,
+        private readonly GroupAggregationService $groupAggregationService,
+    ) {}
 
-    public function index(Request $request)
+    private function filteredQuery(Request $request)
     {
         $query = Supplier::query()->where('is_active', true);
-        $hasFilters = false;
 
-        // 1. FULLTEXT / Indexed Search
+        // FULLTEXT / Indexed Search
         if ($request->filled('search')) {
-            $hasFilters = true;
             $s     = trim($request->input('search'));
             $field = $request->input('field');
 
@@ -47,9 +49,8 @@ class SupplierController extends Controller
             }
         }
 
-        // 2. Column filters
+        // Column filters
         if ($request->filled('column_filters')) {
-            $hasFilters = true;
             $filters = json_decode($request->input('column_filters'), true) ?? [];
             $allowed = ['code', 'name', 'gstin', 'phone', 'email', 'city', 'is_active'];
             foreach ($filters as $filter) {
@@ -69,13 +70,26 @@ class SupplierController extends Controller
             }
         }
 
+        return $query;
+    }
+
+    public function groupedSummary(Request $request)
+    {
+        $result = $this->groupAggregationService->summarize($this->filteredQuery($request), 'suppliers', $request);
+        return response()->json($result, $result['success'] ? 200 : 422);
+    }
+
+    public function index(Request $request)
+    {
+        $query = $this->filteredQuery($request);
+
         // ?all=true — for dropdowns & export
         if ($request->boolean('all') || in_array($request->input('limit'), ['500', '1000', 500, 1000])) {
             $items = $query->orderBy('name')->limit(2000)->get();
             return response()->json(['success' => true, 'data' => $items, 'total' => $items->count()]);
         }
 
-        // 3. Adaptive Server-Side Pagination
+        // Adaptive Server-Side Pagination
         $result = $this->paginationService->paginate($query, 'suppliers', $request, [
             'default_sort'  => 'name',
             'default_order' => 'asc',

@@ -4,15 +4,19 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Tax;
+use App\Services\GroupAggregationService;
 use App\Services\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class TaxController extends Controller
 {
-    public function __construct(private readonly PaginationService $paginationService) {}
+    public function __construct(
+        private readonly PaginationService $paginationService,
+        private readonly GroupAggregationService $groupAggregationService,
+    ) {}
 
-    public function index(Request $request)
+    private function filteredQuery(Request $request)
     {
         $query = Tax::with('slabs');
 
@@ -23,6 +27,39 @@ class TaxController extends Controller
                   ->orWhere('code', 'like', "%{$s}%");
             });
         }
+
+        if ($request->filled('column_filters')) {
+            $filters = json_decode($request->input('column_filters'), true) ?? [];
+            $allowed = ['code', 'name', 'type', 'is_active'];
+            foreach ($filters as $filter) {
+                $col = $filter['field'] ?? null;
+                $op = $filter['operator'] ?? 'contains';
+                $val = $filter['value'] ?? '';
+                if (!$col || !in_array($col, $allowed)) continue;
+                match ($op) {
+                    'equals' => $query->where($col, $val),
+                    'not_equals' => $query->where($col, '!=', $val),
+                    'starts' => $query->where($col, 'like', "{$val}%"),
+                    'ends' => $query->where($col, 'like', "%{$val}"),
+                    'blank' => $query->whereNull($col)->orWhere($col, ''),
+                    'not_blank' => $query->whereNotNull($col)->where($col, '!=', ''),
+                    default => $query->where($col, 'like', "%{$val}%"),
+                };
+            }
+        }
+
+        return $query;
+    }
+
+    public function groupedSummary(Request $request)
+    {
+        $result = $this->groupAggregationService->summarize($this->filteredQuery($request), 'taxes', $request);
+        return response()->json($result, $result['success'] ? 200 : 422);
+    }
+
+    public function index(Request $request)
+    {
+        $query = $this->filteredQuery($request);
 
         $formatTax = function ($t) {
             return [

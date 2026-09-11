@@ -8,6 +8,7 @@ use App\Models\Brand;
 use App\Models\Supplier;
 use App\Models\Tax;
 use App\Models\Stock;
+use App\Services\GroupAggregationService;
 use App\Services\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -17,7 +18,8 @@ use Illuminate\Support\Facades\Validator;
 class ProductController extends Controller
 {
     public function __construct(
-        protected PaginationService $paginationService
+        protected PaginationService $paginationService,
+        protected GroupAggregationService $groupAggregationService,
     ) {}
 
     public function dashboardSummary(Request $request)
@@ -35,15 +37,16 @@ class ProductController extends Controller
         ]);
     }
 
-    public function index(Request $request)
+    /**
+     * Shared by index() and groupedSummary() so grouping always reflects the same
+     * search/column_filters/category_id/brand_id filters the list view applies.
+     */
+    private function filteredQuery(Request $request)
     {
-        // 1. Base Query
         $query = Product::query();
-        $hasFilters = false;
 
-        // 2. High-Performance FULLTEXT / Indexed Search
+        // High-Performance FULLTEXT / Indexed Search
         if ($request->filled('search')) {
-            $hasFilters = true;
             $s     = trim($request->input('search'));
             $field = $request->input('field');
 
@@ -67,9 +70,8 @@ class ProductController extends Controller
             }
         }
 
-        // 3. Column filters
+        // Column filters
         if ($request->filled('column_filters')) {
-            $hasFilters = true;
             $filters = json_decode($request->input('column_filters'), true) ?? [];
             $allowed = ['code', 'name', 'sku', 'barcode', 'brand_id', 'category_id', 'is_active'];
             foreach ($filters as $filter) {
@@ -90,14 +92,25 @@ class ProductController extends Controller
         }
 
         if ($request->filled('category_id')) {
-            $hasFilters = true;
             $query->where('category_id', $request->input('category_id'));
         }
 
         if ($request->filled('brand_id')) {
-            $hasFilters = true;
             $query->where('brand_id', $request->input('brand_id'));
         }
+
+        return $query;
+    }
+
+    public function groupedSummary(Request $request)
+    {
+        $result = $this->groupAggregationService->summarize($this->filteredQuery($request), 'products', $request);
+        return response()->json($result, $result['success'] ? 200 : 422);
+    }
+
+    public function index(Request $request)
+    {
+        $query = $this->filteredQuery($request);
 
         // ?dropdown=true or ?all=true — fast direct join for dropdowns / search / export
         if ($request->boolean('dropdown') || $request->boolean('all') || $request->input('mode') === 'dropdown' || in_array($request->input('limit'), ['500', '1000', 500, 1000])) {

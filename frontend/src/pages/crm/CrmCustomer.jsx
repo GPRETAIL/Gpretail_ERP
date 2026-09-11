@@ -279,6 +279,7 @@ const CrmCustomer = () => {
               setPage(1);
             }}
             paginationMode="server"
+            enableVirtualization
             enableServerSearch
             onServerSearch={({ query, fetchAll }) => { setSearchQuery(query); setForceFetchAll(!!fetchAll); }}
             onExportRows={async ({ query }) => {

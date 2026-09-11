@@ -1121,6 +1121,7 @@ const DealerInvoiceReturn = () => {
           runDealerInvoiceReturnSearch(null, 1, value);
         }}
         paginationMode="server"
+        enableVirtualization
       />
     </div>
   );

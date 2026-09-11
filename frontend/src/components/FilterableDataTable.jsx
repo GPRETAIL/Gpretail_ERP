@@ -156,6 +156,13 @@ export default function FilterableDataTable({
   serverSearchDebounceMs = 350,
   onSortChange = null,
   defaultGroupByColumn = null,
+  // Server-side Group By (opt-in). When both are provided, grouping on `groupByColumn` fetches
+  // paginated group summaries from the real (unfiltered-by-page-size) dataset instead of grouping
+  // whatever's in `rows`/`allRowsSource` client-side -- see GroupAggregationService on the backend.
+  // onFetchGroupSummaries({groupByColumn, page, limit, search, field, columnFilters}) -> {data, pagination, meta}
+  // onFetchGroupRows({groupByColumn, groupValue, page, limit}) -> {data, pagination}
+  onFetchGroupSummaries = null,
+  onFetchGroupRows = null,
   // Feature 1: Fixed height
   fixedHeight = true,
   // Feature 1b: Fill available page height on large screens
@@ -202,6 +209,12 @@ export default function FilterableDataTable({
   const [expandedGroups, setExpandedGroups] = useState({});
   const [allRowsSource, setAllRowsSource] = useState([]);
   const [allRowsLoading, setAllRowsLoading] = useState(false);
+  // Server-side Group By state -- see onFetchGroupSummaries/onFetchGroupRows above.
+  const [groupSummaryState, setGroupSummaryState] = useState({
+    loading: false, page: 1, data: [], pagination: null, meta: null, unsupported: false,
+  });
+  const [groupRowsState, setGroupRowsState] = useState({});
+  // groupRowsState[groupKey] = { rows: [], page: 1, hasMore: true, loading: false, error: null }
   const [sortColumn, setSortColumn] = useState(null);
   const [sortDirection, setSortDirection] = useState("asc"); // "asc" | "desc"
   const [activeFilterColumn, setActiveFilterColumn] = useState(null);
@@ -563,10 +576,16 @@ export default function FilterableDataTable({
     });
   }, [columnFilters]);
 
+  const isServerGrouped = Boolean(
+    groupByColumn && typeof onFetchGroupSummaries === "function" && !groupSummaryState.unsupported
+  );
+  // Group By no longer uses this path at all (server-only, see isServerGrouped) -- this remains
+  // for the separate Filter Out / Show Matching features, which still operate on a bulk-fetched
+  // row set.
   const shouldLoadAllRowsSource = Boolean(
     paginationMode === "server" &&
       typeof onExportRows === "function" &&
-      (groupByColumn || hasActiveRowValueFilters || hasActiveColumnFilters)
+      (hasActiveRowValueFilters || hasActiveColumnFilters)
   );
   const sourceRows = shouldLoadAllRowsSource ? allRowsSource : rows;
   const filteredRows = useMemo(() => applyLocalFilters(sourceRows), [sourceRows, applyLocalFilters]);
@@ -623,14 +642,93 @@ export default function FilterableDataTable({
 
   useEffect(() => {
     setExpandedGroups({});
+    setGroupRowsState({});
+    setGroupSummaryState({ loading: false, page: 1, data: [], pagination: null, meta: null, unsupported: false });
   }, [groupByColumn]);
 
-  const toggleGroupExpanded = useCallback((groupKey) => {
-    setExpandedGroups((prev) => ({
+  // Fetch paginated group summaries from the server whenever grouping (in server mode) is active,
+  // the group-summary page changes, or the active search/filters change (mirrors shouldLoadAllRowsSource's
+  // dependency list for the client-side path).
+  useEffect(() => {
+    if (!isServerGrouped) return undefined;
+    let cancelled = false;
+    (async () => {
+      setGroupSummaryState((prev) => ({ ...prev, loading: true }));
+      try {
+        const result = await onFetchGroupSummaries({
+          groupByColumn,
+          page: groupSummaryState.page,
+          limit: Math.max(Number(limit) || 20, 1),
+          search: searchQuery,
+          field: searchField,
+          columnFilters,
+        });
+        if (cancelled) return;
+        if (!result || result.success === false) {
+          // Backend doesn't support grouping by this column -- fall back to the client-side path.
+          setGroupSummaryState((prev) => ({ ...prev, loading: false, unsupported: true }));
+          return;
+        }
+        setGroupSummaryState((prev) => ({
+          ...prev,
+          loading: false,
+          data: result.data || [],
+          pagination: result.pagination || null,
+          meta: result.meta || null,
+        }));
+      } catch {
+        if (!cancelled) setGroupSummaryState((prev) => ({ ...prev, loading: false, unsupported: true }));
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isServerGrouped, groupByColumn, groupSummaryState.page, limit, searchQuery, searchField, columnFilters]);
+
+  const fetchGroupRowsPage = useCallback(async (groupKey, targetPage) => {
+    if (typeof onFetchGroupRows !== "function") return;
+    setGroupRowsState((prev) => ({
       ...prev,
-      [groupKey]: !prev[groupKey],
+      [groupKey]: { ...(prev[groupKey] || { rows: [], hasMore: true }), loading: true, error: null },
     }));
-  }, []);
+    try {
+      const result = await onFetchGroupRows({ groupByColumn, groupValue: groupKey, page: targetPage, limit: 50 });
+      setGroupRowsState((prev) => {
+        const existing = prev[groupKey] || { rows: [] };
+        const nextRows = targetPage > 1 ? [...existing.rows, ...(result?.data || [])] : (result?.data || []);
+        return {
+          ...prev,
+          [groupKey]: {
+            rows: nextRows,
+            page: targetPage,
+            hasMore: Boolean(result?.pagination?.has_next),
+            loading: false,
+            error: null,
+          },
+        };
+      });
+    } catch {
+      setGroupRowsState((prev) => ({
+        ...prev,
+        [groupKey]: { ...(prev[groupKey] || { rows: [] }), loading: false, error: "Failed to load rows" },
+      }));
+    }
+  }, [onFetchGroupRows, groupByColumn]);
+
+  const toggleGroupExpanded = useCallback((groupKey) => {
+    setExpandedGroups((prev) => {
+      const next = { ...prev, [groupKey]: !prev[groupKey] };
+      return next;
+    });
+    if (isServerGrouped && !expandedGroups[groupKey] && !groupRowsState[groupKey]) {
+      fetchGroupRowsPage(groupKey, 1);
+    }
+  }, [isServerGrouped, expandedGroups, groupRowsState, fetchGroupRowsPage]);
+
+  const loadMoreGroupRows = useCallback((groupKey) => {
+    const current = groupRowsState[groupKey];
+    if (!current || current.loading || !current.hasMore) return;
+    fetchGroupRowsPage(groupKey, (current.page || 1) + 1);
+  }, [groupRowsState, fetchGroupRowsPage]);
 
   const emitServerSearch = useCallback(
     (query, field, immediate = false, fetchAll = false, filters = null) => {
@@ -1338,100 +1436,34 @@ export default function FilterableDataTable({
   );
   const safePage = Math.max(Number(page) || 1, 1);
   const safeLimit = Math.max(Number(limit) || 20, 1);
-  const groupedSortedRows = useMemo(() => {
-    if (!groupByColumn) return [];
-    return sortRowsForDisplay(filteredRows);
-  }, [groupByColumn, filteredRows, sortRowsForDisplay]);
-  const groupedUnits = useMemo(() => {
-    if (!groupByColumn) return [];
-
-    const groupColumn = columns.find((column) => column.key === groupByColumn);
-    if (!groupColumn) return [];
-
-    const groups = [];
-    const groupMap = new Map();
-
-    groupedSortedRows.forEach((row, index) => {
-      const rawValue = getRawValue(row, groupColumn);
-      const normalizedValue = normalize(rawValue);
-      const groupKey = normalizedValue === "" ? "__blank__" : normalizedValue;
-      let group = groupMap.get(groupKey);
-
-      if (!group) {
-        group = {
-          groupKey,
-          label: toText(rawValue),
-          rows: [],
-        };
-        groupMap.set(groupKey, group);
-        groups.push(group);
-      }
-
-      group.rows.push({ row, sourceIndex: index });
-    });
-
-    return groups.map((group) => {
-      if (group.rows.length <= 1) {
-        const [entry] = group.rows;
-        return {
-          type: "row",
-          row: entry.row,
-          sourceIndex: entry.sourceIndex,
-        };
-      }
-
-      // Per-column sums/averages for any column that opts in via `column.aggregate`. Computed here
-      // (once per group, while the full row set is still in hand) rather than at render time, so
-      // displayRows only ever carries the finished numbers forward, not the row list itself.
-      const aggregates = {};
-      columns.forEach((column) => {
-        if (!column.aggregate) return;
-        if (typeof column.aggregate === "function") {
-          aggregates[column.key] = column.aggregate(group.rows.map((entry) => entry.row));
-          return;
-        }
-        const values = group.rows.map((entry) => {
-          const num = Number(getRawValue(entry.row, column));
-          return isNaN(num) ? 0 : num;
-        });
-        if (column.aggregate === "sum") {
-          aggregates[column.key] = values.reduce((sum, value) => sum + value, 0);
-        } else if (column.aggregate === "avg") {
-          aggregates[column.key] = values.length
-            ? values.reduce((sum, value) => sum + value, 0) / values.length
-            : 0;
-        }
-      });
-
-      return {
-        type: "group",
-        groupKey: group.groupKey,
-        label: group.label,
-        rows: group.rows,
-        count: group.rows.length,
-        aggregates,
-      };
-    });
-  }, [groupByColumn, groupedSortedRows, columns]);
-  const useGroupedPagination = Boolean(groupByColumn);
-  const computedTotalRows = useGroupedPagination
-    ? groupedUnits.length
+  // Group By is server-only (GroupAggregationService) -- no client-side grouping fallback. A
+  // capped, silently-sampled client computation was worse than not offering grouping at all once
+  // tables reached real scale; see the "Group By" menu item gating above, which only lets a user
+  // start grouping when onFetchGroupSummaries is actually wired for this page.
+  const computedTotalRows = isServerGrouped
+    ? Number(groupSummaryState.pagination?.total) || 0
     : usesLocalPagination
       ? sortedRows.length
       : Number(totalRows) || 0;
-  const safeTotalPages = useGroupedPagination
-    ? Math.max(Math.ceil(computedTotalRows / safeLimit), 1)
+  const safeTotalPages = isServerGrouped
+    ? Math.max(Number(groupSummaryState.pagination?.total_pages) || 1, 1)
     : usesLocalPagination
       ? Math.max(Math.ceil(computedTotalRows / safeLimit), 1)
       : Math.max(Number(totalPages) || 1, 1);
-  const currentPage = Math.min(safePage, safeTotalPages);
-  const paginatedRows = !useGroupedPagination && usesLocalPagination
-    ? sortedRows.slice((currentPage - 1) * safeLimit, currentPage * safeLimit)
+  const currentPage = isServerGrouped ? groupSummaryState.page : Math.min(safePage, safeTotalPages);
+  const paginatedRows = !isServerGrouped && usesLocalPagination
+    ? sortedRows.slice((Math.min(safePage, safeTotalPages) - 1) * safeLimit, Math.min(safePage, safeTotalPages) * safeLimit)
     : sortedRows;
   const paginatedGroupUnits = useMemo(() => {
-    if (!useGroupedPagination) return [];
-    return groupedUnits.slice((currentPage - 1) * safeLimit, currentPage * safeLimit);
-  }, [useGroupedPagination, groupedUnits, currentPage, safeLimit]);
+    if (!isServerGrouped) return [];
+    return groupSummaryState.data.map((item) => ({
+      type: "group",
+      groupKey: String(item.group_value ?? "__blank__"),
+      label: item.label ?? (item.group_value === null ? "(Blank)" : String(item.group_value)),
+      count: item.row_count,
+      aggregates: {},
+    }));
+  }, [isServerGrouped, groupSummaryState.data]);
   const currentPageRowEntries = useMemo(() => {
     if (!groupByColumn) {
       return paginatedRows.map((row, index) => ({
@@ -1439,12 +1471,8 @@ export default function FilterableDataTable({
         sourceIndex: index,
       }));
     }
-    return paginatedGroupUnits.flatMap((unit) => (
-      unit.type === "group"
-        ? unit.rows
-        : [{ row: unit.row, sourceIndex: unit.sourceIndex }]
-    ));
-  }, [groupByColumn, paginatedRows, paginatedGroupUnits]);
+    return []; // grouped: rows come from groupRowsState, fetched lazily per expanded group
+  }, [groupByColumn, paginatedRows]);
   const displayRows = useMemo(() => {
     if (!groupByColumn) {
       return currentPageRowEntries.map((entry) => ({
@@ -1476,19 +1504,22 @@ export default function FilterableDataTable({
       }];
 
       if (expanded) {
-        items.push(
-          ...unit.rows.map((entry) => ({
-            type: "row",
-            row: entry.row,
-            sourceIndex: entry.sourceIndex,
-            isGroupedChild: true,
-          }))
-        );
+        const groupState = groupRowsState[unit.groupKey];
+        (groupState?.rows || []).forEach((row, idx) => {
+          items.push({ type: "row", row, sourceIndex: idx, isGroupedChild: true });
+        });
+        items.push({
+          type: "group-loader",
+          groupKey: unit.groupKey,
+          loading: Boolean(groupState?.loading),
+          hasMore: Boolean(groupState?.hasMore),
+          error: groupState?.error || null,
+        });
       }
 
       return items;
     });
-  }, [groupByColumn, currentPageRowEntries, paginatedGroupUnits, expandedGroups]);
+  }, [groupByColumn, isServerGrouped, currentPageRowEntries, paginatedGroupUnits, expandedGroups, groupRowsState]);
 
   // --- Row virtualization (opt-in, see `enableVirtualization` above) ---
   const virtualizationActive = enableVirtualization && compact;
@@ -1587,16 +1618,22 @@ export default function FilterableDataTable({
   }, [enableKeyboardNav, activeRowIndex, virtualWindowSignature, virtualizationActive]);
 
   const pageOptions = Array.from({ length: safeTotalPages }, (_, i) => i + 1);
-  const hasPrev = isCursorMode
-    ? Boolean(pagination?.has_previous || pagination?.previous_cursor)
-    : currentPage > 1;
-  const hasNext = isCursorMode
-    ? Boolean(pagination?.has_next || pagination?.has_more || pagination?.next_cursor)
-    : currentPage < safeTotalPages;
+  const hasPrev = isServerGrouped
+    ? currentPage > 1
+    : isCursorMode
+      ? Boolean(pagination?.has_previous || pagination?.previous_cursor)
+      : currentPage > 1;
+  const hasNext = isServerGrouped
+    ? Boolean(groupSummaryState.pagination?.has_next) || currentPage < safeTotalPages
+    : isCursorMode
+      ? Boolean(pagination?.has_next || pagination?.has_more || pagination?.next_cursor)
+      : currentPage < safeTotalPages;
 
   const handlePrevPage = useCallback(() => {
     if (!hasPrev) return;
-    if (isCursorMode) {
+    if (isServerGrouped) {
+      setGroupSummaryState((prev) => ({ ...prev, page: Math.max(1, prev.page - 1) }));
+    } else if (isCursorMode) {
       if (typeof onPreviousCursor === "function" && pagination?.previous_cursor) {
         onPreviousCursor(pagination.previous_cursor);
       } else if (typeof onPageChange === "function") {
@@ -1605,11 +1642,13 @@ export default function FilterableDataTable({
     } else if (typeof onPageChange === "function") {
       onPageChange(currentPage - 1);
     }
-  }, [hasPrev, isCursorMode, onPreviousCursor, onPageChange, pagination, currentPage]);
+  }, [hasPrev, isServerGrouped, isCursorMode, onPreviousCursor, onPageChange, pagination, currentPage]);
 
   const handleNextPage = useCallback(() => {
     if (!hasNext) return;
-    if (isCursorMode) {
+    if (isServerGrouped) {
+      setGroupSummaryState((prev) => ({ ...prev, page: prev.page + 1 }));
+    } else if (isCursorMode) {
       if (typeof onNextCursor === "function" && pagination?.next_cursor) {
         onNextCursor(pagination.next_cursor);
       } else if (typeof onPageChange === "function") {
@@ -1618,7 +1657,7 @@ export default function FilterableDataTable({
     } else if (typeof onPageChange === "function") {
       onPageChange(currentPage + 1);
     }
-  }, [hasNext, isCursorMode, onNextCursor, onPageChange, pagination, currentPage]);
+  }, [hasNext, isServerGrouped, isCursorMode, onNextCursor, onPageChange, pagination, currentPage]);
 
   const tableColSpan = visibleColumnDefs.length + (renderActions ? 2 : 1);
 
@@ -1715,13 +1754,15 @@ export default function FilterableDataTable({
     enableSelection &&
     currentPageRowEntries.some((entry) => selectedRows.includes(getRowKey(entry.row, entry.sourceIndex)));
   const showLoadingSkeleton =
-    loading || allRowsLoading || (enableServerSearch && isServerSearchDebouncing);
+    loading || allRowsLoading || (enableServerSearch && isServerSearchDebouncing) ||
+    (isServerGrouped && groupSummaryState.loading && groupSummaryState.data.length === 0);
 
   useEffect(() => {
-    if (!(usesLocalPagination || useGroupedPagination)) return;
+    if (isServerGrouped) return;
+    if (!usesLocalPagination) return;
     if (safePage <= safeTotalPages) return;
     onPageChange(safeTotalPages);
-  }, [usesLocalPagination, useGroupedPagination, safePage, safeTotalPages, onPageChange]);
+  }, [isServerGrouped, usesLocalPagination, safePage, safeTotalPages, onPageChange]);
 
   // Detect if selected search field is a date type
   const isSearchFieldDate = useMemo(() => {
@@ -2084,7 +2125,7 @@ export default function FilterableDataTable({
                   )}
                 </TableRow>
               ))
-            ) : (groupByColumn ? groupedUnits.length === 0 : sortedRows.length === 0) ? (
+            ) : (groupByColumn ? groupSummaryState.data.length === 0 : sortedRows.length === 0) ? (
               <TableRow>
                 <TableCell colSpan={tableColSpan} className="text-center py-4 text-gray-500 dark:text-gray-400">
                   {emptyText}
@@ -2168,6 +2209,31 @@ export default function FilterableDataTable({
                             </span>
                           )}
                         </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                }
+
+                if (item.type === "group-loader") {
+                  return (
+                    <TableRow key={`grouploader-${item.groupKey}`} className={`border-t border-gray-100 dark:border-gray-700 bg-slate-50/60 dark:bg-slate-800/20 ${bodyRowClass}`}>
+                      <TableCell colSpan={tableColSpan} className={`px-3 ${bodyCellYClass}`}>
+                        {item.loading ? (
+                          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                            <Skeleton variant="text" width={120} />
+                            <span>Loading rows…</span>
+                          </div>
+                        ) : item.error ? (
+                          <span className="text-xs text-rose-600 dark:text-rose-400">{item.error}</span>
+                        ) : item.hasMore ? (
+                          <button
+                            type="button"
+                            onClick={() => loadMoreGroupRows(item.groupKey)}
+                            className="text-xs font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                          >
+                            Load more…
+                          </button>
+                        ) : null}
                       </TableCell>
                     </TableRow>
                   );
@@ -2282,17 +2348,19 @@ export default function FilterableDataTable({
             <Pin className="h-3.5 w-3.5 text-amber-600 dark:text-amber-500" />
             {headerContextMenu.isPinned ? "Unpin Column" : "Pin Column"}
           </MenuItem>
-          <MenuItem
-            onClick={() => (
-              headerContextMenu.isGrouped
-                ? handleUngroupColumn()
-                : handleGroupByColumn(headerContextMenu.columnKey)
-            )}
-            className="gap-2 text-xs"
-          >
-            <Filter className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-            {headerContextMenu.isGrouped ? "Ungroup" : "Group By"}
-          </MenuItem>
+          {(typeof onFetchGroupSummaries === "function" || headerContextMenu.isGrouped) && (
+            <MenuItem
+              onClick={() => (
+                headerContextMenu.isGrouped
+                  ? handleUngroupColumn()
+                  : handleGroupByColumn(headerContextMenu.columnKey)
+              )}
+              className="gap-2 text-xs"
+            >
+              <Filter className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+              {headerContextMenu.isGrouped ? "Ungroup" : "Group By"}
+            </MenuItem>
+          )}
           <MenuItem
             onClick={() => openFilterPanel(headerContextMenu.columnKey)}
             className="gap-2 text-xs"
@@ -2482,9 +2550,11 @@ export default function FilterableDataTable({
               ))}
             </select>
             <span className="text-gray-500 dark:text-gray-400">
-              {isCursorMode
-                ? `Showing ${rows.length} rows`
-                : `Total: ${computedTotalRows}`}
+              {isServerGrouped
+                ? `${computedTotalRows.toLocaleString()} groups · ${(groupSummaryState.meta?.total_matching_rows ?? 0).toLocaleString()} rows total`
+                : isCursorMode
+                  ? `Showing ${rows.length} rows`
+                  : `Total: ${computedTotalRows}`}
             </span>
           </div>
 
@@ -2498,7 +2568,19 @@ export default function FilterableDataTable({
             >
               {"<"}
             </button>
-            {isCursorMode ? (
+            {isServerGrouped ? (
+              <select
+                value={currentPage}
+                onChange={(e) => setGroupSummaryState((prev) => ({ ...prev, page: Number(e.target.value) }))}
+                className={paginationControlClass}
+              >
+                {pageOptions.map((p) => (
+                  <option key={p} value={p}>
+                    Page {p}
+                  </option>
+                ))}
+              </select>
+            ) : isCursorMode ? (
               <span className="px-1.5 text-[9px] text-gray-500 dark:text-gray-400 font-medium select-none">
                 Continuous
               </span>

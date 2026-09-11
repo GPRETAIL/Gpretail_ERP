@@ -7,6 +7,7 @@ import ConfirmDialog from "../../components/ConfirmDialog";
 import ExportBottomSheet from "../../components/ExportBottomSheet";
 import FilterableDataTable from "../../components/FilterableDataTable";
 import UploadImportButton from "../../components/UploadImportButton";
+import { createGroupFetchers } from "../../utils/serverGrouping";
 
 const PRODUCT_IMPORT_CONFIG = {
   aliases: {
@@ -181,6 +182,10 @@ const buildActiveColumnFilters = (filters = {}) =>
       value: String(filter?.value || ""),
     }));
 
+// Matches config('pagination.resources.products.groupable_columns') on the backend.
+const { onFetchGroupSummaries: fetchProductGroupSummaries, onFetchGroupRows: fetchProductGroupRows } =
+  createGroupFetchers("/products", { active: "is_active", brand: "brand_id" }, buildActiveColumnFilters);
+
 const toText = (value, fallback = "--") => {
   if (value === null || value === undefined) return fallback;
   const text = String(value).trim();
@@ -278,6 +283,7 @@ const Product = () => {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
   const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
+  const [rawPagination, setRawPagination] = useState(null);
   const [tableSearch, setTableSearch] = useState("");
   const [tableSearchField, setTableSearchField] = useState("all");
   const [tableColumnFilters, setTableColumnFilters] = useState({});
@@ -305,7 +311,8 @@ const Product = () => {
     pageToLoad = page,
     limitToLoad = limit,
     queryOverride = tableSearch,
-    filtersOverride = tableColumnFilters
+    filtersOverride = tableColumnFilters,
+    cursorToken = null
   ) => {
     try {
       setLoading(true);
@@ -313,7 +320,7 @@ const Product = () => {
       const activeColumnFilters = buildActiveColumnFilters(filtersOverride);
       const hasColumnFilters = activeColumnFilters.length > 0;
       const params = {
-        page: pageToLoad,
+        ...(cursorToken ? { cursor: cursorToken } : { page: pageToLoad }),
         limit: limitToLoad,
         search: query || undefined,
         field: query && tableSearchField !== "all" ? tableSearchField : undefined,
@@ -330,12 +337,22 @@ const Product = () => {
         1
       );
       setPagination({ total, totalPages });
+      setRawPagination(res.data?.pagination || null);
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to load products");
     } finally {
       setLoading(false);
     }
   }, [page, limit, tableSearch, tableSearchField, tableColumnFilters, forceFetchAll]);
+
+  const handleNextCursor = useCallback(
+    (cursor) => fetchProducts(page, limit, tableSearch, tableColumnFilters, cursor),
+    [fetchProducts, page, limit, tableSearch, tableColumnFilters]
+  );
+  const handlePreviousCursor = useCallback(
+    (cursor) => fetchProducts(page, limit, tableSearch, tableColumnFilters, cursor),
+    [fetchProducts, page, limit, tableSearch, tableColumnFilters]
+  );
 
   useEffect(() => {
     fetchProducts();
@@ -820,12 +837,18 @@ const Product = () => {
                 limit={limit}
                 totalPages={pagination.totalPages}
                 totalRows={pagination.total}
+                pagination={rawPagination}
                 onPageChange={setPage}
+                onNextCursor={handleNextCursor}
+                onPreviousCursor={handlePreviousCursor}
+                onFetchGroupSummaries={fetchProductGroupSummaries}
+                onFetchGroupRows={fetchProductGroupRows}
                 onLimitChange={(value) => {
                   setLimit(value);
                   setPage(1);
                 }}
                 paginationMode="server"
+                enableVirtualization
                 enableSelection
                 selectedRows={selectedRows}
                 onSelectionChange={setSelectedRows}
