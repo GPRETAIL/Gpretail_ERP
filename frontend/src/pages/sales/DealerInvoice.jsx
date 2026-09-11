@@ -4,7 +4,12 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 import FilterableDataTable from "../../components/FilterableDataTable";
+import { createGroupFetchers } from "../../utils/serverGrouping";
 import SearchableSelect from "../../components/SearchableSelect";
+
+// Matches config('pagination.resources.dealer_invoices.groupable_columns') on the backend.
+const { onFetchGroupSummaries: fetchDealerInvoiceGroupSummaries, onFetchGroupRows: fetchDealerInvoiceGroupRows } =
+  createGroupFetchers("/dealer-invoices", { customer_name: "customer_id" });
 
 const normalize = (value) => String(value || "").trim().toLowerCase();
 const round2 = (value) => Math.round((Number(value || 0) + Number.EPSILON) * 100) / 100;
@@ -1290,6 +1295,8 @@ const DealerInvoice = () => {
           setSearchPage(1);
           runDealerInvoiceSearch(null, 1, value);
         }}
+        onFetchGroupSummaries={fetchDealerInvoiceGroupSummaries}
+        onFetchGroupRows={fetchDealerInvoiceGroupRows}
         paginationMode="server"
         enableVirtualization
       />

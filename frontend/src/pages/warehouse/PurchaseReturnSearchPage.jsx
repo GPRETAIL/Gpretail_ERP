@@ -5,8 +5,13 @@ import api from "../../api/axios";
 import Toast from "../../components/Toast";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import FilterableDataTable from "../../components/FilterableDataTable";
+import { createGroupFetchers } from "../../utils/serverGrouping";
 import ExportBottomSheet from "../../components/ExportBottomSheet";
 import { usePrintContext } from "../../context/PrintContext";
+
+// Matches config('pagination.resources.purchase_returns.groupable_columns') on the backend.
+const { onFetchGroupSummaries: fetchPurchaseReturnGroupSummaries, onFetchGroupRows: fetchPurchaseReturnGroupRows } =
+  createGroupFetchers("/purchase-returns", { supplier: "supplier_id" });
 
 const toNumber = (val) => {
   const n = parseFloat(val);
@@ -245,6 +250,9 @@ const PurchaseReturnSearchPage = () => {
               setLimit(value);
               setPage(1);
             }}
+            onFetchGroupSummaries={fetchPurchaseReturnGroupSummaries}
+            onFetchGroupRows={fetchPurchaseReturnGroupRows}
+            enableVirtualization
             paginationMode="client"
             fillHeight
             onRowClick={(entry) => navigate(`/warehouse/purchase-return?edit=${entry.id}`)}

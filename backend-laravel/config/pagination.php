@@ -46,6 +46,14 @@ return [
             'default_order' => 'asc',
             'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'name', 'code', 'phone', 'email', 'created_at'],
+            'groupable_columns' => [
+                'customerType' => ['column' => 'customer_type'],
+                'gender' => ['column' => 'gender'],
+                'supplyType' => ['column' => 'supply_type'],
+                'city' => ['column' => 'city'],
+                'state' => ['column' => 'state'],
+                'active' => ['column' => 'is_active'],
+            ],
         ],
         'suppliers' => [
             'mode' => 'offset',
@@ -168,6 +176,10 @@ return [
             'default_order' => 'desc',
             'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'sale_date', 'invoice_no', 'grand_total', 'created_at'],
+            'groupable_columns' => [
+                'customer_name' => ['column' => 'customer_id', 'join' => ['table' => 'customers', 'foreign' => 'customer_id', 'local' => 'id'], 'label_from' => 'customers.name'],
+                'user_name' => ['column' => 'user_id', 'join' => ['table' => 'users', 'foreign' => 'user_id', 'local' => 'id'], 'label_from' => 'users.name'],
+            ],
         ],
         'pos_old_sales' => [
             'mode' => 'cursor',
@@ -175,6 +187,11 @@ return [
             'default_order' => 'desc',
             'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'sale_date', 'invoice_no', 'created_at'],
+            // Same underlying pos_sales table as 'pos_sales' above -- same columns available.
+            'groupable_columns' => [
+                'customer_name' => ['column' => 'customer_id', 'join' => ['table' => 'customers', 'foreign' => 'customer_id', 'local' => 'id'], 'label_from' => 'customers.name'],
+                'user_name' => ['column' => 'user_id', 'join' => ['table' => 'users', 'foreign' => 'user_id', 'local' => 'id'], 'label_from' => 'users.name'],
+            ],
         ],
         'pos_returns' => [
             'mode' => 'cursor',
@@ -182,6 +199,11 @@ return [
             'default_order' => 'desc',
             'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'return_date', 'return_no', 'total_refund', 'created_at'],
+            'groupable_columns' => [
+                'customer_name' => ['column' => 'customer_id', 'join' => ['table' => 'customers', 'foreign' => 'customer_id', 'local' => 'id'], 'label_from' => 'customers.name'],
+                // pos_returns has no user_id column -- "User" in the UI is the creator, tracked via created_by.
+                'user_name' => ['column' => 'created_by', 'join' => ['table' => 'users', 'foreign' => 'created_by', 'local' => 'id'], 'label_from' => 'users.name'],
+            ],
         ],
         'direct_purchases' => [
             'mode' => 'cursor',
@@ -189,6 +211,14 @@ return [
             'default_order' => 'desc',
             'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'purchase_date', 'purchase_no', 'invoice_no', 'total_amount', 'created_at'],
+            // company_name/supplier_name/transport_name are denormalized directly onto this table
+            // (unlike most other resources), so no join is needed for these.
+            'groupable_columns' => [
+                'company' => ['column' => 'company_name'],
+                'supplier' => ['column' => 'supplier_name'],
+                'status' => ['column' => 'status'],
+                'transport' => ['column' => 'transport_name'],
+            ],
         ],
         'stock_transactions' => [
             'mode' => 'cursor',
@@ -203,6 +233,11 @@ return [
             'default_order' => 'desc',
             'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'order_date', 'order_no', 'total_amount', 'created_at'],
+            'groupable_columns' => [
+                'status' => ['column' => 'status'],
+                'customerName' => ['column' => 'customer_id', 'join' => ['table' => 'customers', 'foreign' => 'customer_id', 'local' => 'id'], 'label_from' => 'customers.name'],
+                'supplier' => ['column' => 'supplier_id', 'join' => ['table' => 'suppliers', 'foreign' => 'supplier_id', 'local' => 'id'], 'label_from' => 'suppliers.name'],
+            ],
         ],
         'supplier_payments' => [
             'mode' => 'cursor',
@@ -217,6 +252,9 @@ return [
             'default_order' => 'desc',
             'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'invoice_date', 'invoice_no', 'created_at'],
+            'groupable_columns' => [
+                'supplier' => ['column' => 'supplier_id', 'join' => ['table' => 'suppliers', 'foreign' => 'supplier_id', 'local' => 'id'], 'label_from' => 'suppliers.name'],
+            ],
         ],
         'invoices' => [
             'mode' => 'cursor',
@@ -231,6 +269,9 @@ return [
             'default_order' => 'desc',
             'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'return_date', 'return_no', 'grand_total', 'created_at'],
+            'groupable_columns' => [
+                'supplier' => ['column' => 'supplier_id', 'join' => ['table' => 'suppliers', 'foreign' => 'supplier_id', 'local' => 'id'], 'label_from' => 'suppliers.name'],
+            ],
         ],
         'inventory_entries' => [
             'mode' => 'cursor',
@@ -252,6 +293,9 @@ return [
             'default_order' => 'desc',
             'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'lr_no', 'lr_date', 'created_at'],
+            'groupable_columns' => [
+                'transport' => ['column' => 'transport_id', 'join' => ['table' => 'transports', 'foreign' => 'transport_id', 'local' => 'id'], 'label_from' => 'transports.name'],
+            ],
         ],
         'barcodes' => [
             'mode' => 'cursor',
@@ -273,6 +317,10 @@ return [
             'default_order' => 'desc',
             'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'approval_date', 'approval_no', 'created_at'],
+            'groupable_columns' => [
+                'status' => ['column' => 'status'],
+                'customer_name' => ['column' => 'customer_id', 'join' => ['table' => 'customers', 'foreign' => 'customer_id', 'local' => 'id'], 'label_from' => 'customers.name'],
+            ],
         ],
         'dealer_invoices' => [
             'mode' => 'cursor',
@@ -280,6 +328,9 @@ return [
             'default_order' => 'desc',
             'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'invoice_date', 'invoice_no', 'created_at'],
+            'groupable_columns' => [
+                'customer_name' => ['column' => 'customer_id', 'join' => ['table' => 'customers', 'foreign' => 'customer_id', 'local' => 'id'], 'label_from' => 'customers.name'],
+            ],
         ],
         'settlements' => [
             'mode' => 'cursor',

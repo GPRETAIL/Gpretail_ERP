@@ -6,15 +6,19 @@ use App\Http\Controllers\Controller;
 use App\Models\Transport;
 use App\Models\TransportEntry;
 use App\Services\DocumentNumberService;
+use App\Services\GroupAggregationService;
 use App\Services\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class TransportEntryController extends Controller
 {
-    public function __construct(private readonly PaginationService $paginationService) {}
+    public function __construct(
+        private readonly PaginationService $paginationService,
+        private readonly GroupAggregationService $groupAggregationService,
+    ) {}
 
-    public function index(Request $request)
+    private function filteredQuery(Request $request)
     {
         $query = TransportEntry::with(['transport', 'issues', 'receipts']);
 
@@ -33,6 +37,19 @@ class TransportEntryController extends Controller
         if ($request->filled('status')) {
             $query->where('status', $request->input('status'));
         }
+
+        return $query;
+    }
+
+    public function groupedSummary(Request $request)
+    {
+        $result = $this->groupAggregationService->summarize($this->filteredQuery($request), 'transport_entries', $request);
+        return response()->json($result, $result['success'] ? 200 : 422);
+    }
+
+    public function index(Request $request)
+    {
+        $query = $this->filteredQuery($request);
 
         if ($request->boolean('all') || $request->input('limit') == 500 || $request->input('limit') == 1000) {
             $items = $query->orderBy('created_at', 'desc')->limit(2000)->get();

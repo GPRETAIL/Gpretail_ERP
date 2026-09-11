@@ -5,6 +5,7 @@ import { useSelector } from "react-redux";
 import api from "../../api/axios";
 import { fetchReceiptCompanyInfo } from "../../utils/receiptCompanyInfo";
 import FilterableDataTable from "../../components/FilterableDataTable";
+import { createGroupFetchers } from "../../utils/serverGrouping";
 import SearchableSelect from "../../components/SearchableSelect";
 import UploadImportButton from "../../components/UploadImportButton";
 import CounterAssignmentDialog from "../../components/CounterAssignmentDialog";
@@ -32,6 +33,10 @@ import {
   buildPaymentQrMarkup,
   buildReceiptCodeMarkupAsync,
 } from "../../utils/salesReceiptCustomization";
+
+// Matches config('pagination.resources.pos_old_sales.groupable_columns') on the backend.
+const { onFetchGroupSummaries: fetchPosOldSaleGroupSummaries, onFetchGroupRows: fetchPosOldSaleGroupRows } =
+  createGroupFetchers("/pos-old-sales", { customer_name: "customer_id", user_name: "user_id" });
 import { buildPosReturnReceiptHtml, buildPosSaleReceiptHtml } from "../../utils/posReceiptHtml";
 
 const normalize = (v) => String(v || "").trim().toLowerCase();
@@ -2260,6 +2265,8 @@ const POSOld = () => {
           setSearchPage(1);
           runPosOldSearch(null, 1, value);
         }}
+        onFetchGroupSummaries={fetchPosOldSaleGroupSummaries}
+        onFetchGroupRows={fetchPosOldSaleGroupRows}
         paginationMode="server"
         enableVirtualization
         fillHeight

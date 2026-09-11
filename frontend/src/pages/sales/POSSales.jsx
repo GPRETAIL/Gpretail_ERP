@@ -6,6 +6,7 @@ import { useSelector } from "react-redux";
 import api from "../../api/axios";
 import { fetchReceiptCompanyInfo } from "../../utils/receiptCompanyInfo";
 import FilterableDataTable from "../../components/FilterableDataTable";
+import { createGroupFetchers } from "../../utils/serverGrouping";
 import UploadImportButton from "../../components/UploadImportButton";
 import CounterAssignmentDialog from "../../components/CounterAssignmentDialog";
 import { usePrintContext } from "../../context/PrintContext";
@@ -55,6 +56,10 @@ import {
   shouldShowSalesReceiptDiscountColumn,
   wrapSalesReceiptText,
 } from "../../utils/salesReceiptCustomization";
+
+// Matches config('pagination.resources.pos_sales.groupable_columns') on the backend.
+const { onFetchGroupSummaries: fetchPosSaleGroupSummaries, onFetchGroupRows: fetchPosSaleGroupRows } =
+  createGroupFetchers("/pos-sales", { customer_name: "customer_id", user_name: "user_id" });
 
 const normalize = (value) => String(value || "").trim().toLowerCase();
 const toNum = (value, fallback = 0) => {
@@ -3348,6 +3353,8 @@ const POSSales = () => {
           setSearchPage(1);
           runPosSearch(null, 1, value);
         }}
+        onFetchGroupSummaries={fetchPosSaleGroupSummaries}
+        onFetchGroupRows={fetchPosSaleGroupRows}
         paginationMode="server"
         enableVirtualization
         fillHeight

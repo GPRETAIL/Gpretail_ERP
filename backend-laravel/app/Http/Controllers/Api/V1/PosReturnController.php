@@ -10,6 +10,7 @@ use App\Models\PosSale;
 use App\Models\PosSaleItem;
 use App\Models\Product;
 use App\Services\DocumentNumberService;
+use App\Services\GroupAggregationService;
 use App\Services\PaginationService;
 use App\Services\StockService;
 use Illuminate\Http\Request;
@@ -21,10 +22,11 @@ class PosReturnController extends Controller
 {
     public function __construct(
         private readonly StockService $stockService,
-        private readonly PaginationService $paginationService
+        private readonly PaginationService $paginationService,
+        private readonly GroupAggregationService $groupAggregationService,
     ) {}
 
-    public function index(Request $request)
+    private function filteredQuery(Request $request)
     {
         $query = PosReturn::with(['posSale', 'customer', 'items.product', 'creator']);
 
@@ -49,6 +51,19 @@ class PosReturnController extends Controller
                     $sq->where('invoice_no', 'like', "%{$search}%");
                 });
         }
+
+        return $query;
+    }
+
+    public function groupedSummary(Request $request)
+    {
+        $result = $this->groupAggregationService->summarize($this->filteredQuery($request), 'pos_returns', $request);
+        return response()->json($result, $result['success'] ? 200 : 422);
+    }
+
+    public function index(Request $request)
+    {
+        $query = $this->filteredQuery($request);
 
         if ($request->boolean('all') || $request->input('limit') == 500 || $request->input('limit') == 1000) {
             $items = $query->orderBy('return_date', 'desc')->limit(2000)->get();

@@ -4,6 +4,13 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 import FilterableDataTable from "../../components/FilterableDataTable";
+import { createGroupFetchers } from "../../utils/serverGrouping";
+
+// dealer-invoice-returns reuses DealerInvoiceController::groupedSummary() (same underlying
+// dealer_invoices table -- returnsIndex() just calls index() directly), so this matches
+// config('pagination.resources.dealer_invoices.groupable_columns') on the backend.
+const { onFetchGroupSummaries: fetchDealerInvoiceReturnGroupSummaries, onFetchGroupRows: fetchDealerInvoiceReturnGroupRows } =
+  createGroupFetchers("/dealer-invoice-returns", { customer_name: "customer_id" });
 
 const normalize = (value) => String(value || "").trim().toLowerCase();
 const round2 = (value) => Math.round((Number(value || 0) + Number.EPSILON) * 100) / 100;
@@ -1120,6 +1127,8 @@ const DealerInvoiceReturn = () => {
           setSearchPage(1);
           runDealerInvoiceReturnSearch(null, 1, value);
         }}
+        onFetchGroupSummaries={fetchDealerInvoiceReturnGroupSummaries}
+        onFetchGroupRows={fetchDealerInvoiceReturnGroupRows}
         paginationMode="server"
         enableVirtualization
       />

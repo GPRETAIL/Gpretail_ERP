@@ -18,6 +18,7 @@ use App\Models\Stock;
 use App\Models\Store;
 use App\Models\User;
 use App\Services\DocumentNumberService;
+use App\Services\GroupAggregationService;
 use App\Services\PaginationService;
 use App\Services\StockService;
 use Illuminate\Http\Request;
@@ -29,7 +30,8 @@ class PosSaleController extends Controller
 {
     public function __construct(
         private readonly StockService $stockService,
-        private readonly PaginationService $paginationService
+        private readonly PaginationService $paginationService,
+        private readonly GroupAggregationService $groupAggregationService,
     ) {}
 
     public function nextBillNo(Request $request)
@@ -224,11 +226,11 @@ class PosSaleController extends Controller
         return response()->json($paginated);
     }
 
-    public function index(Request $request)
+    private function filteredSalesQuery(Request $request)
     {
         $storeId = $request->header('X-Company-Scope-Id');
 
-        $query = PosSale::with(['customer', 'user', 'items.product', 'items.barcode', 'payments'])
+        return PosSale::with(['customer', 'user', 'items.product', 'items.barcode', 'payments'])
             ->when($storeId && $storeId !== 'all', fn ($q) => $q->where('store_id', $storeId))
             // The mobile Sales screen's search box has always sent this param, but nothing here
             // ever read it - every keystroke silently no-opped and kept showing the same
@@ -246,6 +248,23 @@ class PosSaleController extends Controller
                         ->orWhereHas('customer', fn ($cq) => $cq->where('name', 'like', "%{$s}%"));
                 });
             });
+    }
+
+    public function groupedSummary(Request $request)
+    {
+        $result = $this->groupAggregationService->summarize($this->filteredSalesQuery($request), 'pos_sales', $request);
+        return response()->json($result, $result['success'] ? 200 : 422);
+    }
+
+    public function oldSalesGroupedSummary(Request $request)
+    {
+        $result = $this->groupAggregationService->summarize($this->filteredSalesQuery($request), 'pos_old_sales', $request);
+        return response()->json($result, $result['success'] ? 200 : 422);
+    }
+
+    public function index(Request $request)
+    {
+        $query = $this->filteredSalesQuery($request);
 
         // SalesReports.jsx's getAllRows() helper always asks for all=true so
         // it can aggregate every sale client-side - unlike every sibling

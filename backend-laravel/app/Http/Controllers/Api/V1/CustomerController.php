@@ -8,6 +8,7 @@ use App\Models\CustomerOrder;
 use App\Models\LoyaltyTransaction;
 use App\Models\PosReturn;
 use App\Models\PosSale;
+use App\Services\GroupAggregationService;
 use App\Services\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -16,7 +17,10 @@ use Illuminate\Support\Facades\Validator;
 
 class CustomerController extends Controller
 {
-    public function __construct(private readonly PaginationService $paginationService) {}
+    public function __construct(
+        private readonly PaginationService $paginationService,
+        private readonly GroupAggregationService $groupAggregationService,
+    ) {}
 
     public function dashboardSummary(Request $request)
     {
@@ -32,17 +36,15 @@ class CustomerController extends Controller
         ]);
     }
 
-    public function index(Request $request)
+    private function filteredQuery(Request $request)
     {
         $query = Customer::query();
-        $hasFilters = $request->boolean('includeInactive');
-        if (!$hasFilters) {
+        if (!$request->boolean('includeInactive')) {
             $query->where('is_active', true);
         }
 
         // 1. FULLTEXT / Indexed Search
         if ($request->filled('search')) {
-            $hasFilters = true;
             $s     = trim($request->input('search'));
             $field = $request->input('field');
 
@@ -68,7 +70,6 @@ class CustomerController extends Controller
 
         // 2. Column filters
         if ($request->filled('column_filters')) {
-            $hasFilters = true;
             $filters = json_decode($request->input('column_filters'), true) ?? [];
             $allowed = ['code', 'name', 'phone', 'email', 'is_active'];
             foreach ($filters as $filter) {
@@ -87,6 +88,19 @@ class CustomerController extends Controller
                 };
             }
         }
+
+        return $query;
+    }
+
+    public function groupedSummary(Request $request)
+    {
+        $result = $this->groupAggregationService->summarize($this->filteredQuery($request), 'customers', $request);
+        return response()->json($result, $result['success'] ? 200 : 422);
+    }
+
+    public function index(Request $request)
+    {
+        $query = $this->filteredQuery($request);
 
         // ?all=true — for dropdowns & export
         if ($request->boolean('all') || in_array($request->input('limit'), ['500', '1000', 500, 1000])) {

@@ -5,8 +5,13 @@ import api from "../../api/axios";
 import Toast from "../../components/Toast";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import FilterableDataTable from "../../components/FilterableDataTable";
+import { createGroupFetchers } from "../../utils/serverGrouping";
 import ExportBottomSheet from "../../components/ExportBottomSheet";
 import UploadImportButton from "../../components/UploadImportButton";
+
+// Matches config('pagination.resources.transport_entries.groupable_columns') on the backend.
+const { onFetchGroupSummaries: fetchTransportEntryGroupSummaries, onFetchGroupRows: fetchTransportEntryGroupRows } =
+  createGroupFetchers("/transport-entries", { transport: "transport_id" });
 
 const TRANSPORT_ENTRY_IMPORT_CONFIG = {
   aliases: {
@@ -300,6 +305,9 @@ const TransportEntrySearchPage = () => {
               setLimit(value);
               setPage(1);
             }}
+            onFetchGroupSummaries={fetchTransportEntryGroupSummaries}
+            onFetchGroupRows={fetchTransportEntryGroupRows}
+            enableVirtualization
             paginationMode={isAllMode ? "client" : "server"}
             enableSelection
             enableKeyboardNav

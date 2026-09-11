@@ -12,6 +12,7 @@ use App\Models\Supplier;
 use App\Models\Store;
 use App\Models\StockBatch;
 use App\Models\Transport;
+use App\Services\GroupAggregationService;
 use App\Services\PaginationService;
 use App\Services\StockService;
 use App\Services\VariantResolverService;
@@ -25,6 +26,7 @@ class DirectPurchaseController extends Controller
         private readonly StockService $stockService,
         private readonly VariantResolverService $variantResolver,
         private readonly PaginationService $paginationService,
+        private readonly GroupAggregationService $groupAggregationService,
     ) {
     }
 
@@ -46,7 +48,7 @@ class DirectPurchaseController extends Controller
         return $variant->id;
     }
 
-    public function index(Request $request)
+    private function filteredQuery(Request $request, bool $forGrouping = false)
     {
         $query = DirectPurchase::with([
             'company',
@@ -56,7 +58,15 @@ class DirectPurchaseController extends Controller
             'items.product',
             'items.brand',
             'items.color'
-        ])->withCount('barcodes');
+        ]);
+
+        // withCount() adds a correlated-subquery SELECT column (barcodes_count) to every row --
+        // groupedSummary() below replaces the SELECT with a GROUP BY aggregate, and that subquery
+        // column isn't part of the GROUP BY, which trips ONLY_FULL_GROUP_BY. Not needed for a
+        // group-value/count summary anyway, so it's skipped there.
+        if (!$forGrouping) {
+            $query->withCount('barcodes');
+        }
 
         $storeId = $request->header('X-Company-Scope-Id');
         if ($storeId && $storeId !== 'all') {
@@ -86,6 +96,19 @@ class DirectPurchaseController extends Controller
                 \Illuminate\Support\Carbon::parse($request->input('to'))->endOfDay(),
             ]);
         }
+
+        return $query;
+    }
+
+    public function groupedSummary(Request $request)
+    {
+        $result = $this->groupAggregationService->summarize($this->filteredQuery($request, forGrouping: true), 'direct_purchases', $request);
+        return response()->json($result, $result['success'] ? 200 : 422);
+    }
+
+    public function index(Request $request)
+    {
+        $query = $this->filteredQuery($request);
 
         if ($request->boolean('all') || $request->input('limit') == 500 || $request->input('limit') == 1000) {
             $purchases = $query->orderBy('id', 'desc')->limit(2000)->get();

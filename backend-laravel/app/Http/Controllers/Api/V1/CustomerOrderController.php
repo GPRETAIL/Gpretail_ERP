@@ -10,6 +10,7 @@ use App\Models\CustomerOrderItem;
 use App\Models\Product;
 use App\Models\Stock;
 use App\Services\DocumentNumberService;
+use App\Services\GroupAggregationService;
 use App\Services\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -18,10 +19,11 @@ use Illuminate\Support\Facades\Validator;
 class CustomerOrderController extends Controller
 {
     public function __construct(
-        protected PaginationService $paginationService
+        protected PaginationService $paginationService,
+        protected GroupAggregationService $groupAggregationService,
     ) {}
 
-    public function index(Request $request)
+    private function filteredQuery(Request $request)
     {
         $storeId = $request->header('X-Company-Scope-Id');
         $query = CustomerOrder::with(['customer', 'items.product', 'salesman', 'supplier', 'creator'])
@@ -50,6 +52,19 @@ class CustomerOrderController extends Controller
         if ($request->filled('to_date')) {
             $query->whereDate('order_date', '<=', $request->input('to_date'));
         }
+
+        return $query;
+    }
+
+    public function groupedSummary(Request $request)
+    {
+        $result = $this->groupAggregationService->summarize($this->filteredQuery($request), 'customer_orders', $request);
+        return response()->json($result, $result['success'] ? 200 : 422);
+    }
+
+    public function index(Request $request)
+    {
+        $query = $this->filteredQuery($request);
 
         if ($request->boolean('all') || in_array($request->input('limit'), ['500', '1000', 500, 1000])) {
             $items = $query->orderBy('order_date', 'desc')->orderBy('id', 'desc')->limit(2000)->get();

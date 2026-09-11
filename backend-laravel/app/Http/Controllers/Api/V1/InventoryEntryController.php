@@ -6,6 +6,7 @@ use App\Exceptions\InsufficientStockException;
 use App\Http\Controllers\Controller;
 use App\Models\InventoryEntry;
 use App\Models\InventoryEntryItem;
+use App\Services\GroupAggregationService;
 use App\Services\PaginationService;
 use App\Services\StockService;
 use App\Services\VariantResolverService;
@@ -19,10 +20,11 @@ class InventoryEntryController extends Controller
         private readonly StockService $stockService,
         private readonly VariantResolverService $variantResolver,
         private readonly PaginationService $paginationService,
+        private readonly GroupAggregationService $groupAggregationService,
     ) {
     }
 
-    public function index(Request $request)
+    private function filteredQuery(Request $request)
     {
         $storeId = $request->header('X-Company-Scope-Id');
         $query = InventoryEntry::with(['items.product', 'creator'])
@@ -37,6 +39,19 @@ class InventoryEntryController extends Controller
         if ($request->filled('status')) {
             $query->where('status', $request->input('status'));
         }
+
+        return $query;
+    }
+
+    public function groupedSummary(Request $request)
+    {
+        $result = $this->groupAggregationService->summarize($this->filteredQuery($request), 'inventory_entries', $request);
+        return response()->json($result, $result['success'] ? 200 : 422);
+    }
+
+    public function index(Request $request)
+    {
+        $query = $this->filteredQuery($request);
 
         if ($request->boolean('all') || $request->input('limit') == 500 || $request->input('limit') == 1000) {
             $items = $query->orderBy('entry_date', 'desc')->limit(2000)->get();

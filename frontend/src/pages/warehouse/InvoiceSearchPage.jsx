@@ -5,8 +5,15 @@ import api from "../../api/axios";
 import Toast from "../../components/Toast";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import FilterableDataTable from "../../components/FilterableDataTable";
+import { createGroupFetchers } from "../../utils/serverGrouping";
 import ExportBottomSheet from "../../components/ExportBottomSheet";
 import UploadImportButton from "../../components/UploadImportButton";
+
+// Matches config('pagination.resources.purchase_invoices.groupable_columns') on the backend
+// (the /invoices route is backed by PurchaseInvoiceController, which pages the
+// 'purchase_invoices' resource key, not the unused 'invoices' key).
+const { onFetchGroupSummaries: fetchInvoiceGroupSummaries, onFetchGroupRows: fetchInvoiceGroupRows } =
+  createGroupFetchers("/invoices", { supplier: "supplier_id" });
 
 const INVOICE_IMPORT_CONFIG = {
   aliases: {
@@ -327,6 +334,9 @@ const InvoiceSearchPage = () => {
               setLimit(value);
               setPage(1);
             }}
+            onFetchGroupSummaries={fetchInvoiceGroupSummaries}
+            onFetchGroupRows={fetchInvoiceGroupRows}
+            enableVirtualization
             paginationMode={isAllMode ? "client" : "server"}
             enableSelection
             enableKeyboardNav

@@ -188,6 +188,7 @@ $registerAppRoutes = function () {
 
     // Items (Warehouse Dashboard Summary)
     Route::get('items/dashboard-summary', [ItemController::class, 'dashboardSummary']);
+    Route::get('items/grouped', [ItemController::class, 'groupedSummary']);
     Route::apiResource('items', ItemController::class);
 
     // Products Dashboard Summary & Barcode Search
@@ -218,17 +219,21 @@ $registerAppRoutes = function () {
     Route::delete('transport-entries/attachments/{attId}', [TransportEntryController::class, 'destroyAttachment']);
     Route::get('transport-entries/next-issue-number', [TransportEntryController::class, 'nextIssueNumber']);
     Route::get('transport-entries/next-receipt-number', [TransportEntryController::class, 'nextReceiptNumber']);
+    Route::get('transport-entries/grouped', [TransportEntryController::class, 'groupedSummary']);
     Route::apiResource('transport-entries', TransportEntryController::class);
 
     // Invoices / Purchase Invoices
+    Route::get('invoices/grouped', [PurchaseInvoiceController::class, 'groupedSummary']);
     Route::apiResource('invoices', PurchaseInvoiceController::class);
 
     // Inventory Entries & Adjustments
+    Route::get('inventory-entries/grouped', [InventoryEntryController::class, 'groupedSummary']);
     Route::apiResource('inventory-entries', InventoryEntryController::class);
 
     // Direct Purchases
     Route::post('direct-purchases/bulk', [DirectPurchaseController::class, 'bulk']);
     Route::post('purchase-entry/bulk', [DirectPurchaseController::class, 'bulk']);
+    Route::get('direct-purchases/grouped', [DirectPurchaseController::class, 'groupedSummary']);
     Route::apiResource('direct-purchases', DirectPurchaseController::class);
     Route::apiResource('purchase-entry', DirectPurchaseController::class);
 
@@ -245,6 +250,7 @@ $registerAppRoutes = function () {
 
     // Purchase Returns
     Route::get('purchase-returns/stock-search', [PurchaseReturnController::class, 'stockSearch']);
+    Route::get('purchase-returns/grouped', [PurchaseReturnController::class, 'groupedSummary']);
     Route::apiResource('purchase-returns', PurchaseReturnController::class);
 
     // Stock Outwards (Inter-store Transfers)
@@ -274,6 +280,7 @@ $registerAppRoutes = function () {
     Route::get('customers/dashboard-summary', [CustomerController::class, 'dashboardSummary']);
     Route::post('customers/bulk', [CustomerController::class, 'bulk']);
     Route::get('customers/{id}/profile', [CustomerController::class, 'profile']);
+    Route::get('customers/grouped', [CustomerController::class, 'groupedSummary']);
 
     // Loyalty (CRM)
     Route::get('loyalty/balances', [LoyaltyController::class, 'balances']);
@@ -298,6 +305,7 @@ $registerAppRoutes = function () {
     Route::get('customer-orders/customer-search', [CustomerOrderController::class, 'customerSearch']);
     Route::get('customer-orders/stock-availability', [CustomerOrderController::class, 'stockAvailability']);
     Route::get('customer-orders/stock-products', [CustomerOrderController::class, 'stockProducts']);
+    Route::get('customer-orders/grouped', [CustomerOrderController::class, 'groupedSummary']);
     Route::apiResource('customer-orders', CustomerOrderController::class);
 
     // POS Special Endpoints (Must be registered before apiResource)
@@ -307,12 +315,14 @@ $registerAppRoutes = function () {
     Route::get('pos-sales/summary-report', [PosSaleController::class, 'summaryReport']);
     Route::get('pos-sales/stock-products', [PosSaleController::class, 'stockProducts']);
     Route::get('pos-sales/barcode-lookup', [PosSaleController::class, 'barcodes']);
+    Route::get('pos-sales/grouped', [PosSaleController::class, 'groupedSummary']);
     Route::get('touch-sales/next-bill-no', [PosSaleController::class, 'touchSalesNextBillNo']);
     Route::get('touch-sales', [PosSaleController::class, 'touchSales']);
     Route::get('pos-old-sales/last-receipt', [PosSaleController::class, 'lastReceipt']);
     Route::get('pos-old-sales/lookup-sale', [PosSaleController::class, 'lookupSale']);
     Route::get('pos-old-sales/session-summary', [PosSaleController::class, 'sessionSummary']);
     Route::get('pos-old-sales/next-bill-no', [PosSaleController::class, 'nextBillNo']);
+    Route::get('pos-old-sales/grouped', [PosSaleController::class, 'oldSalesGroupedSummary']);
     Route::get('pos-old-sales', [PosSaleController::class, 'posOldSales']);
     Route::post('pos-old-sales', [PosSaleController::class, 'storeLegacy']);
 
@@ -322,6 +332,7 @@ $registerAppRoutes = function () {
     Route::get('pos-returns/source-by-barcode', [PosReturnController::class, 'sourceByBarcode']);
     Route::get('pos-returns/return-product-barcode', [PosReturnController::class, 'returnProductBarcode']);
     Route::get('pos-returns/credit-return', [PosReturnController::class, 'lookupCredit']);
+    Route::get('pos-returns/grouped', [PosReturnController::class, 'groupedSummary']);
     Route::get('pos-returns', [PosReturnController::class, 'index']);
     Route::post('pos-returns', [PosReturnController::class, 'store']);
     Route::get('pos-returns/{id}', [PosReturnController::class, 'show']);
@@ -331,13 +342,16 @@ $registerAppRoutes = function () {
     Route::get('sales-on-approval/pending-count', [SalesApprovalController::class, 'pendingCount']);
     Route::post('sales-on-approval/{id}/accept', [SalesApprovalController::class, 'accept']);
     Route::post('sales-on-approval/{id}/reject', [SalesApprovalController::class, 'reject']);
+    Route::get('sales-on-approval/grouped', [SalesApprovalController::class, 'groupedSummary']);
     Route::apiResource('sales-on-approval', SalesApprovalController::class);
 
     // Dealer Invoices
     Route::get('dealer-invoices/next-bill-no', [DealerInvoiceController::class, 'nextBillNo']);
     Route::get('dealer-invoice-returns/next-return-no', [DealerInvoiceController::class, 'nextReturnNo']);
+    Route::get('dealer-invoice-returns/grouped', [DealerInvoiceController::class, 'groupedSummary']);
     Route::get('dealer-invoice-returns', [DealerInvoiceController::class, 'returnsIndex']);
     Route::post('dealer-invoice-returns', [DealerInvoiceController::class, 'returnsStore']);
+    Route::get('dealer-invoices/grouped', [DealerInvoiceController::class, 'groupedSummary']);
     Route::apiResource('dealer-invoices', DealerInvoiceController::class);
 
     // Cash Register Sessions

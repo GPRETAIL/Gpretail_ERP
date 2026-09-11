@@ -4,12 +4,18 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 import FilterableDataTable from "../../components/FilterableDataTable";
+import { createGroupFetchers } from "../../utils/serverGrouping";
 import UploadImportButton from "../../components/UploadImportButton";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import ExportBottomSheet from "../../components/ExportBottomSheet";
 import { handleEnterKeyNavigation } from "../../utils/enterToNextField";
 import useStoreNameMap from "../../hooks/useStoreNameMap";
 import { normalizeFormSignature } from "../../utils/formSignature";
+
+// items/ is backed by the Product model and reuses the 'products' pagination resource --
+// matches config('pagination.resources.products.groupable_columns') on the backend.
+const { onFetchGroupSummaries: fetchItemGroupSummaries, onFetchGroupRows: fetchItemGroupRows } =
+  createGroupFetchers("/items", { active: "is_active", brand: "brand_id" });
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
@@ -619,6 +625,9 @@ export default function Item() {
                 setLimit(value);
                 setPage(1);
               }}
+              onFetchGroupSummaries={fetchItemGroupSummaries}
+              onFetchGroupRows={fetchItemGroupRows}
+              enableVirtualization
               onRowClick={handleEdit}
               enableSelection
               enableKeyboardNav

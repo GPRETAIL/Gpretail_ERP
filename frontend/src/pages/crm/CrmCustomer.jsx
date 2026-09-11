@@ -5,7 +5,16 @@ import { toast } from "react-toastify";
 import api from "../../api/axios";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import FilterableDataTable from "../../components/FilterableDataTable";
+import { createGroupFetchers } from "../../utils/serverGrouping";
 import UploadImportButton from "../../components/UploadImportButton";
+
+// Matches config('pagination.resources.customers.groupable_columns') on the backend.
+const { onFetchGroupSummaries: fetchCustomerGroupSummaries, onFetchGroupRows: fetchCustomerGroupRows } =
+  createGroupFetchers("/customers", {
+    customerType: "customer_type",
+    supplyType: "supply_type",
+    active: "is_active",
+  });
 
 const CUSTOMER_IMPORT_CONFIG = {
   aliases: {
@@ -278,6 +287,8 @@ const CrmCustomer = () => {
               setLimit(v);
               setPage(1);
             }}
+            onFetchGroupSummaries={fetchCustomerGroupSummaries}
+            onFetchGroupRows={fetchCustomerGroupRows}
             paginationMode="server"
             enableVirtualization
             enableServerSearch

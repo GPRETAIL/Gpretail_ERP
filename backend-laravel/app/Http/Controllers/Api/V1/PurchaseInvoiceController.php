@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\PurchaseInvoice;
 use App\Models\PurchaseInvoiceItem;
 use App\Models\Supplier;
+use App\Services\GroupAggregationService;
 use App\Services\PaginationService;
 use App\Services\StockService;
 use App\Services\VariantResolverService;
@@ -20,10 +21,11 @@ class PurchaseInvoiceController extends Controller
         private readonly StockService $stockService,
         private readonly VariantResolverService $variantResolver,
         private readonly PaginationService $paginationService,
+        private readonly GroupAggregationService $groupAggregationService,
     ) {
     }
 
-    public function index(Request $request)
+    private function filteredQuery(Request $request)
     {
         $query = PurchaseInvoice::with(['supplier', 'items.product', 'transport']);
 
@@ -56,6 +58,22 @@ class PurchaseInvoiceController extends Controller
         if ($request->filled('status')) {
             $query->where('status', $request->input('status'));
         }
+
+        return $query;
+    }
+
+    public function groupedSummary(Request $request)
+    {
+        // index() below paginates against 'purchase_invoices', not the 'invoices' key already in
+        // config/pagination.php (that one is unused by this controller) -- matched here so
+        // groupable_columns actually applies.
+        $result = $this->groupAggregationService->summarize($this->filteredQuery($request), 'purchase_invoices', $request);
+        return response()->json($result, $result['success'] ? 200 : 422);
+    }
+
+    public function index(Request $request)
+    {
+        $query = $this->filteredQuery($request);
 
         if ($request->boolean('all') || $request->input('limit') == 500 || $request->input('limit') == 1000) {
             $items = $query->orderBy('invoice_date', 'desc')->limit(2000)->get();

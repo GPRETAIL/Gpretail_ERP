@@ -5,13 +5,17 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\Stock;
+use App\Services\GroupAggregationService;
 use App\Services\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class ItemController extends Controller
 {
-    public function __construct(private readonly PaginationService $paginationService) {}
+    public function __construct(
+        private readonly PaginationService $paginationService,
+        private readonly GroupAggregationService $groupAggregationService,
+    ) {}
 
     public function dashboardSummary(Request $request)
     {
@@ -115,7 +119,7 @@ class ItemController extends Controller
         return $data;
     }
 
-    public function index(Request $request)
+    private function filteredQuery(Request $request)
     {
         $query = Product::with(['category', 'brand', 'tax', 'stocks']);
 
@@ -127,6 +131,21 @@ class ItemController extends Controller
                   ->orWhere('barcode', 'like', "%{$s}%");
             });
         }
+
+        return $query;
+    }
+
+    public function groupedSummary(Request $request)
+    {
+        // Same underlying table/resource as ProductController -- reuses
+        // config('pagination.resources.products.groupable_columns') as-is.
+        $result = $this->groupAggregationService->summarize($this->filteredQuery($request), 'products', $request);
+        return response()->json($result, $result['success'] ? 200 : 422);
+    }
+
+    public function index(Request $request)
+    {
+        $query = $this->filteredQuery($request);
 
         $result = $this->paginationService->paginate($query, 'products', $request, [
             'default_sort'  => 'name',

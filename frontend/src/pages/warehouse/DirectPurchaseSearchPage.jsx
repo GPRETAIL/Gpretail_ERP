@@ -5,8 +5,17 @@ import api from "../../api/axios";
 import Toast from "../../components/Toast";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import FilterableDataTable from "../../components/FilterableDataTable";
+import { createGroupFetchers } from "../../utils/serverGrouping";
 import ExportBottomSheet from "../../components/ExportBottomSheet";
 import UploadImportButton from "../../components/UploadImportButton";
+
+// Matches config('pagination.resources.direct_purchases.groupable_columns') on the backend.
+const { onFetchGroupSummaries: fetchDirectPurchaseGroupSummaries, onFetchGroupRows: fetchDirectPurchaseGroupRows } =
+  createGroupFetchers("/direct-purchases", {
+    company: "company_name",
+    supplier: "supplier_name",
+    transport: "transport_name",
+  });
 
 const DIRECT_PURCHASE_IMPORT_CONFIG = {
   aliases: {
@@ -330,6 +339,9 @@ const DirectPurchaseSearchPage = () => {
               setLimit(value);
               setPage(1);
             }}
+            onFetchGroupSummaries={fetchDirectPurchaseGroupSummaries}
+            onFetchGroupRows={fetchDirectPurchaseGroupRows}
+            enableVirtualization
             paginationMode="client"
             onRowClick={(entry) => navigate(`/warehouse/direct-purchase?edit=${entry.id}`)}
             enableKeyboardNav

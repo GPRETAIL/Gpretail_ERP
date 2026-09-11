@@ -6,6 +6,7 @@ import { useSelector } from "react-redux";
 import api from "../../api/axios";
 import { fetchReceiptCompanyInfo } from "../../utils/receiptCompanyInfo";
 import FilterableDataTable from "../../components/FilterableDataTable";
+import { createGroupFetchers } from "../../utils/serverGrouping";
 import UploadImportButton from "../../components/UploadImportButton";
 import { usePrintContext } from "../../context/PrintContext";
 import {
@@ -37,6 +38,10 @@ import {
   shouldShowSalesReceiptDiscountColumn,
   wrapSalesReceiptText,
 } from "../../utils/salesReceiptCustomization";
+
+// Matches config('pagination.resources.pos_returns.groupable_columns') on the backend.
+const { onFetchGroupSummaries: fetchPosReturnGroupSummaries, onFetchGroupRows: fetchPosReturnGroupRows } =
+  createGroupFetchers("/pos-returns", { customer_name: "customer_id", user_name: "created_by" });
 
 // Header-only historical import: no line items, no stock restored, no source-sale linkage.
 // The backend records each row as a standalone unsettled return (see PosReturnService.bulkCreate).
@@ -1705,6 +1710,8 @@ const POSReturn = () => {
           setSearchPage(1);
           runPosReturnSearch(null, 1, value);
         }}
+        onFetchGroupSummaries={fetchPosReturnGroupSummaries}
+        onFetchGroupRows={fetchPosReturnGroupRows}
         paginationMode="server"
         enableVirtualization
       />

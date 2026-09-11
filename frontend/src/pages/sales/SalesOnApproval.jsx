@@ -4,6 +4,11 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 import FilterableDataTable from "../../components/FilterableDataTable";
+import { createGroupFetchers } from "../../utils/serverGrouping";
+
+// Matches config('pagination.resources.sales_approvals.groupable_columns') on the backend.
+const { onFetchGroupSummaries: fetchApprovalGroupSummaries, onFetchGroupRows: fetchApprovalGroupRows } =
+  createGroupFetchers("/sales-on-approval", { customer_name: "customer_id" });
 
 const normalize = (value) => String(value || "").trim().toLowerCase();
 const toNum = (value, fallback = 0) => {
@@ -1542,6 +1547,8 @@ const SalesOnApproval = () => {
           setSearchPage(1);
           runApprovalSearch(null, 1, value);
         }}
+        onFetchGroupSummaries={fetchApprovalGroupSummaries}
+        onFetchGroupRows={fetchApprovalGroupRows}
         paginationMode="server"
         enableVirtualization
       />

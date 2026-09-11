@@ -4,7 +4,13 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import api from "../../api/axios";
 import FilterableDataTable from "../../components/FilterableDataTable";
+import { createGroupFetchers } from "../../utils/serverGrouping";
 import { usePrintContext } from "../../context/PrintContext";
+
+// Same /customer-orders resource as CrmCustomerOrders.jsx -- matches
+// config('pagination.resources.customer_orders.groupable_columns') on the backend.
+const { onFetchGroupSummaries: fetchBillPrintGroupSummaries, onFetchGroupRows: fetchBillPrintGroupRows } =
+  createGroupFetchers("/customer-orders", { customerName: "customer_id" });
 
 const BILL_COLUMNS = [
   { key: "location", label: "Location" },
@@ -487,7 +493,10 @@ const CrmBillPrint = () => {
               setLimit(v);
               setPage(1);
             }}
+            onFetchGroupSummaries={fetchBillPrintGroupSummaries}
+            onFetchGroupRows={fetchBillPrintGroupRows}
             paginationMode="server"
+            enableVirtualization
             enableServerSearch
             onServerSearch={({ query, field, fetchAll }) => {
               const next = {
