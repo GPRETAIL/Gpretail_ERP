@@ -48,9 +48,12 @@ const ActivationWizard = ({ onActivated }) => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          companyCode: form.companyId.trim(),
-          clientId: form.clientId.trim(),
-          oneTimePassword: form.activationCode.trim(),
+          // ActivationController::register() validates snake_case and marks one_time_password
+          // required -- sending camelCase here meant that field never arrived, so every real
+          // activation attempt through this form failed validation regardless of credentials.
+          company_code: form.companyId.trim(),
+          client_id: form.clientId.trim(),
+          one_time_password: form.activationCode.trim(),
         }),
       });
       const body = await res.json().catch(() => ({}));
