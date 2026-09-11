@@ -7,12 +7,15 @@ use App\Models\Customer;
 use App\Models\SalesApproval;
 use App\Models\SalesApprovalItem;
 use App\Services\DocumentNumberService;
+use App\Services\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class SalesApprovalController extends Controller
 {
+    public function __construct(private readonly PaginationService $paginationService) {}
+
     public function index(Request $request)
     {
         $query = SalesApproval::with(['customer', 'items.product', 'creator']);
@@ -39,16 +42,14 @@ class SalesApprovalController extends Controller
             ]);
         }
 
-        $limit = $request->integer('limit', 15);
-        $paginated = $query->orderBy('approval_date', 'desc')->paginate($limit);
-
-        return response()->json([
-            'success' => true,
-            'data' => $paginated->items(),
-            'total' => $paginated->total(),
-            'page' => $paginated->currentPage(),
-            'limit' => $paginated->perPage(),
+        $result = $this->paginationService->paginate($query, 'sales_approvals', $request, [
+            'default_sort'  => 'id',
+            'default_order' => 'desc',
+            'tie_breaker'   => 'id',
+            'allowed_sorts' => ['id', 'approval_date', 'approval_no', 'created_at'],
         ]);
+
+        return response()->json($result);
     }
 
     public function store(Request $request)

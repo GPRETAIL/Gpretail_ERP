@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use App\Models\LoyaltyTransaction;
+use App\Services\PaginationService;
 use Illuminate\Http\Request;
 
 /**
@@ -15,6 +16,8 @@ use Illuminate\Http\Request;
  */
 class LoyaltyController extends Controller
 {
+    public function __construct(private readonly PaginationService $paginationService) {}
+
     public function balances(Request $request)
     {
         $query = Customer::query();
@@ -28,21 +31,16 @@ class LoyaltyController extends Controller
             });
         }
 
-        $limit = max(1, $request->integer('limit', 20));
-        $page  = max(1, $request->integer('page', 1));
-
-        $paginated = $query->orderByDesc('loyalty_points')
-            ->paginate($limit, ['id', 'name', 'phone', 'loyalty_card_number', 'loyalty_points', 'disable_loyalty'], 'page', $page);
-
-        return response()->json([
-            'success'     => true,
-            'data'        => $paginated->items(),
-            'total'       => $paginated->total(),
-            'page'        => $paginated->currentPage(),
-            'limit'       => $paginated->perPage(),
-            'totalPages'  => $paginated->lastPage(),
-            'totalPoints' => (int) Customer::sum('loyalty_points'),
+        $result = $this->paginationService->paginate($query, 'customers', $request, [
+            'default_sort'  => 'loyalty_points',
+            'default_order' => 'desc',
+            'tie_breaker'   => 'id',
+            'allowed_sorts' => ['id', 'name', 'phone', 'loyalty_card_number', 'loyalty_points'],
         ]);
+
+        $result['totalPoints'] = (int) Customer::sum('loyalty_points');
+
+        return response()->json($result);
     }
 
     public function transactions(Request $request)
@@ -62,17 +60,13 @@ class LoyaltyController extends Controller
             return response()->json(['success' => true, 'data' => $items, 'total' => $items->count()]);
         }
 
-        $limit     = max(1, $request->integer('limit', 20));
-        $page      = max(1, $request->integer('page', 1));
-        $paginated = $query->orderByDesc('created_at')->paginate($limit, ['*'], 'page', $page);
-
-        return response()->json([
-            'success'    => true,
-            'data'       => $paginated->items(),
-            'total'      => $paginated->total(),
-            'page'       => $paginated->currentPage(),
-            'limit'      => $paginated->perPage(),
-            'totalPages' => $paginated->lastPage(),
+        $result = $this->paginationService->paginate($query, 'stock_transactions', $request, [
+            'default_sort'  => 'id',
+            'default_order' => 'desc',
+            'tie_breaker'   => 'id',
+            'allowed_sorts' => ['id', 'created_at'],
         ]);
+
+        return response()->json($result);
     }
 }

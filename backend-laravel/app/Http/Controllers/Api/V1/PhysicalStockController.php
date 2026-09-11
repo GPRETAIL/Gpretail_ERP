@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\PhysicalStock;
 use App\Models\PhysicalStockItem;
+use App\Services\PaginationService;
 use App\Services\StockService;
 use App\Services\VariantResolverService;
 use Illuminate\Http\Request;
@@ -16,6 +17,7 @@ class PhysicalStockController extends Controller
     public function __construct(
         private readonly StockService $stockService,
         private readonly VariantResolverService $variantResolver,
+        private readonly PaginationService $paginationService
     ) {
     }
 
@@ -37,16 +39,14 @@ class PhysicalStockController extends Controller
             ]);
         }
 
-        $limit = $request->integer('limit', 15);
-        $paginated = $query->orderBy('audit_date', 'desc')->paginate($limit);
-
-        return response()->json([
-            'success' => true,
-            'data'    => $paginated->items(),
-            'total'   => $paginated->total(),
-            'page'    => $paginated->currentPage(),
-            'limit'   => $paginated->perPage(),
+        $result = $this->paginationService->paginate($query, 'physical_stocks', $request, [
+            'default_sort'  => 'id',
+            'default_order' => 'desc',
+            'tie_breaker'   => 'id',
+            'allowed_sorts' => ['id', 'audit_date', 'audit_no', 'created_at'],
         ]);
+
+        return response()->json($result);
     }
 
     public function store(Request $request)

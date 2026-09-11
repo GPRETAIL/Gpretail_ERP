@@ -5,10 +5,13 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\Stock;
+use App\Services\PaginationService;
 use Illuminate\Http\Request;
 
 class ItemLocatorController extends Controller
 {
+    public function __construct(private readonly PaginationService $paginationService) {}
+
     public function index(Request $request)
     {
         $search = $request->input('search') ?? $request->input('q') ?? '';
@@ -39,7 +42,6 @@ class ItemLocatorController extends Controller
             'mrp'           => $s->product?->mrp,
         ];
 
-        // Previously always unbounded, no pagination at all.
         if ($request->boolean('all')) {
             $data = $query->limit(2000)->get()->map($mapRow);
             return response()->json([
@@ -49,17 +51,15 @@ class ItemLocatorController extends Controller
             ]);
         }
 
-        $limit = $request->integer('limit', 50);
-        $paginated = $query->paginate($limit);
-        $data = collect($paginated->items())->map($mapRow);
-
-        return response()->json([
-            'success'    => true,
-            'data'       => $data,
-            'total'      => $paginated->total(),
-            'page'       => $paginated->currentPage(),
-            'limit'      => $paginated->perPage(),
-            'totalPages' => $paginated->lastPage(),
+        $result = $this->paginationService->paginate($query, 'stock_transactions', $request, [
+            'default_sort'  => 'id',
+            'default_order' => 'desc',
+            'tie_breaker'   => 'id',
+            'allowed_sorts' => ['id', 'quantity', 'created_at'],
         ]);
+
+        $result['data'] = collect($result['data'])->map($mapRow)->values();
+
+        return response()->json($result);
     }
 }

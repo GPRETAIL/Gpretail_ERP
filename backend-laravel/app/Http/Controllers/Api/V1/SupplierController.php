@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Supplier;
+use App\Services\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -11,6 +12,8 @@ use Illuminate\Support\Facades\Validator;
 
 class SupplierController extends Controller
 {
+    public function __construct(private readonly PaginationService $paginationService) {}
+
     public function index(Request $request)
     {
         $query = Supplier::query()->where('is_active', true);
@@ -72,38 +75,15 @@ class SupplierController extends Controller
             return response()->json(['success' => true, 'data' => $items, 'total' => $items->count()]);
         }
 
-        // 3. Deferred Join Server-Side Pagination
-        $limit  = max(1, $request->integer('limit', 20));
-        $page   = max(1, $request->integer('page', 1));
-        $offset = ($page - 1) * $limit;
-
-        if (!$hasFilters) {
-            $total = Cache::remember('suppliers_total_unfiltered_count', 60, fn() => Supplier::where('is_active', true)->count());
-        } else {
-            $total = (clone $query)->count();
-        }
-
-        $totalPages = max((int) ceil($total / $limit), 1);
-
-        $idSubquery = (clone $query)->select('suppliers.id')->orderBy('suppliers.name')->forPage($page, $limit);
-        $ids = $idSubquery->pluck('id')->toArray();
-
-        $items = empty($ids) ? [] : Supplier::whereIn('id', $ids)->orderBy('name')->get();
-
-        return response()->json([
-            'success'    => true,
-            'data'       => $items,
-            'total'      => $total,
-            'page'       => $page,
-            'limit'      => $limit,
-            'totalPages' => $totalPages,
-            'pagination' => [
-                'total'        => $total,
-                'current_page' => $page,
-                'last_page'    => $totalPages,
-                'per_page'     => $limit,
-            ],
+        // 3. Adaptive Server-Side Pagination
+        $result = $this->paginationService->paginate($query, 'suppliers', $request, [
+            'default_sort'  => 'name',
+            'default_order' => 'asc',
+            'tie_breaker'   => 'id',
+            'allowed_sorts' => ['id', 'name', 'code', 'gstin', 'phone', 'email', 'city', 'created_at'],
         ]);
+
+        return response()->json($result);
     }
 
     public function show($id)

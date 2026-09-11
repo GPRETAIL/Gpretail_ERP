@@ -10,6 +10,7 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Stock;
 use App\Models\Store;
+use App\Services\PaginationService;
 use App\Services\VariantResolverService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -18,8 +19,10 @@ use Illuminate\Support\Facades\Validator;
 
 class BarcodeController extends Controller
 {
-    public function __construct(private readonly VariantResolverService $variantResolver)
-    {
+    public function __construct(
+        private readonly VariantResolverService $variantResolver,
+        private readonly PaginationService $paginationService
+    ) {
     }
 
     /* ─────────────────────────────────────────────────────────────
@@ -80,16 +83,14 @@ class BarcodeController extends Controller
             ]);
         }
 
-        $limit     = $request->integer('limit', 15);
-        $paginated = $query->orderBy('created_at', 'desc')->paginate($limit);
-
-        return response()->json([
-            'success' => true,
-            'data'    => $paginated->items(),
-            'total'   => $paginated->total(),
-            'page'    => $paginated->currentPage(),
-            'limit'   => $paginated->perPage(),
+        $result = $this->paginationService->paginate($query, 'barcodes', $request, [
+            'default_sort'  => 'id',
+            'default_order' => 'desc',
+            'tie_breaker'   => 'id',
+            'allowed_sorts' => ['id', 'barcode', 'batch_no', 'created_at'],
         ]);
+
+        return response()->json($result);
     }
 
     /* ─────────────────────────────────────────────────────────────

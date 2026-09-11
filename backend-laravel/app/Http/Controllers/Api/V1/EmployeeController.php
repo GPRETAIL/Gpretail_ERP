@@ -6,11 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\Employee;
 use App\Models\HrDepartment;
 use App\Models\HrDesignation;
+use App\Services\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class EmployeeController extends Controller
 {
+    public function __construct(private readonly PaginationService $paginationService) {}
+
     public function dashboardSummary(Request $request)
     {
         return response()->json([
@@ -46,17 +49,14 @@ class EmployeeController extends Controller
             ]);
         }
 
-        $limit = $request->integer('limit', 15);
-        $paginated = $query->orderBy('name')->paginate($limit);
-
-        return response()->json([
-            'success'    => true,
-            'data'       => $paginated->items(),
-            'total'      => $paginated->total(),
-            'page'       => $paginated->currentPage(),
-            'limit'      => $paginated->perPage(),
-            'totalPages' => $paginated->lastPage(),
+        $result = $this->paginationService->paginate($query, 'employees', $request, [
+            'default_sort'  => 'name',
+            'default_order' => 'asc',
+            'tie_breaker'   => 'id',
+            'allowed_sorts' => ['id', 'name', 'code', 'phone', 'email', 'created_at'],
         ]);
+
+        return response()->json($result);
     }
 
     public function store(Request $request)

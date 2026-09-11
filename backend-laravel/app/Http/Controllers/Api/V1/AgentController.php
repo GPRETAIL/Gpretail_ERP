@@ -4,11 +4,14 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Agent;
+use App\Services\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class AgentController extends Controller
 {
+    public function __construct(private readonly PaginationService $paginationService) {}
+
     private function formatAgent($a)
     {
         return [
@@ -143,17 +146,16 @@ class AgentController extends Controller
             ]);
         }
 
-        $limit = $request->integer('limit', 20);
-        $paginated = $query->orderBy('name')->paginate($limit);
-
-        return response()->json([
-            'success'    => true,
-            'data'       => collect($paginated->items())->map(fn($a) => $this->formatAgent($a)),
-            'total'      => $paginated->total(),
-            'page'       => $paginated->currentPage(),
-            'limit'      => $paginated->perPage(),
-            'totalPages' => $paginated->lastPage(),
+        $result = $this->paginationService->paginate($query, 'agents', $request, [
+            'default_sort'  => 'name',
+            'default_order' => 'asc',
+            'tie_breaker'   => 'id',
+            'allowed_sorts' => ['id', 'name', 'code', 'phone', 'email', 'created_at'],
         ]);
+
+        $result['data'] = collect($result['data'])->map(fn($a) => $this->formatAgent($a))->values();
+
+        return response()->json($result);
     }
 
     public function store(Request $request)

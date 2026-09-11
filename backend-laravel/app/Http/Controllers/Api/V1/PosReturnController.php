@@ -10,6 +10,7 @@ use App\Models\PosSale;
 use App\Models\PosSaleItem;
 use App\Models\Product;
 use App\Services\DocumentNumberService;
+use App\Services\PaginationService;
 use App\Services\StockService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -18,7 +19,10 @@ use Illuminate\Support\Facades\Validator;
 
 class PosReturnController extends Controller
 {
-    public function __construct(private readonly StockService $stockService) {}
+    public function __construct(
+        private readonly StockService $stockService,
+        private readonly PaginationService $paginationService
+    ) {}
 
     public function index(Request $request)
     {
@@ -56,16 +60,16 @@ class PosReturnController extends Controller
             ]);
         }
 
-        $limit = $request->integer('limit', 15);
-        $paginated = $query->orderBy('return_date', 'desc')->paginate($limit);
-
-        return response()->json([
-            'success' => true,
-            'data' => collect($paginated->items())->map(fn ($r) => $this->withDisplayReturnNo($r))->values(),
-            'total' => $paginated->total(),
-            'page' => $paginated->currentPage(),
-            'limit' => $paginated->perPage(),
+        $result = $this->paginationService->paginate($query, 'pos_returns', $request, [
+            'default_sort'  => 'id',
+            'default_order' => 'desc',
+            'tie_breaker'   => 'id',
+            'allowed_sorts' => ['id', 'return_date', 'return_no', 'grand_total', 'created_at'],
         ]);
+
+        $result['data'] = collect($result['data'])->map(fn ($r) => $this->withDisplayReturnNo($r))->values();
+
+        return response()->json($result);
     }
 
     public function store(Request $request)

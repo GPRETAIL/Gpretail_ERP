@@ -4,11 +4,14 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
+use App\Services\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class CategoryController extends Controller
 {
+    public function __construct(private readonly PaginationService $paginationService) {}
+
     public function index(Request $request)
     {
         $query = Category::with('parent');
@@ -63,19 +66,15 @@ class CategoryController extends Controller
             ]);
         }
 
-        // Server-side pagination
-        $limit     = max(1, $request->integer('limit', 20));
-        $page      = max(1, $request->integer('page', 1));
-        $paginated = $query->orderBy('name')->paginate($limit, ['*'], 'page', $page);
-
-        return response()->json([
-            'success'    => true,
-            'data'       => $paginated->items(),
-            'total'      => $paginated->total(),
-            'page'       => $paginated->currentPage(),
-            'limit'      => $paginated->perPage(),
-            'totalPages' => $paginated->lastPage(),
+        // Adaptive Server-Side Pagination
+        $result = $this->paginationService->paginate($query, 'categories', $request, [
+            'default_sort'  => 'name',
+            'default_order' => 'asc',
+            'tie_breaker'   => 'id',
+            'allowed_sorts' => ['id', 'name', 'code', 'description', 'created_at'],
         ]);
+
+        return response()->json($result);
     }
 
     public function show($id)

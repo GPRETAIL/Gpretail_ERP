@@ -8,6 +8,7 @@ use App\Models\Brand;
 use App\Models\Supplier;
 use App\Models\Tax;
 use App\Models\Stock;
+use App\Services\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +16,10 @@ use Illuminate\Support\Facades\Validator;
 
 class ProductController extends Controller
 {
+    public function __construct(
+        protected PaginationService $paginationService
+    ) {}
+
     public function dashboardSummary(Request $request)
     {
         return response()->json([
@@ -147,52 +152,28 @@ class ProductController extends Controller
             return response()->json(['success' => true, 'data' => $items, 'total' => $items->count()]);
         }
 
-        // 4. Deferred Join Server-Side Pagination
-        $limit  = max(1, (int) ($request->input('limit') ?? $request->input('per_page') ?? 20));
-        $page   = max(1, $request->integer('page', 1));
-        $offset = ($page - 1) * $limit;
-
-        if (!$hasFilters) {
-            $total = Cache::remember('products_total_unfiltered_count', 60, fn() => Product::count());
-        } else {
-            $total = (clone $query)->count();
-        }
-
-        $totalPages = max((int) ceil($total / $limit), 1);
-
-        // Deferred Join: Index-only scan on subquery IDs, followed by main table join
-        $idSubquery = (clone $query)->select('products.id')->orderBy('products.name')->forPage($page, $limit);
-        $ids = $idSubquery->pluck('id')->toArray();
-
-        if (empty($ids)) {
-            $items = [];
-        } else {
-            $items = Product::with([
-                'category:id,name',
-                'brand:id,name',
-                'tax:id,name,rate',
-                'purchaseTax:id,name,rate',
-                'salesTax:id,name,rate',
-                'sizeGroup:id,name,code',
-            ])->whereIn('id', $ids)
-              ->orderBy('name')
-              ->get();
-        }
-
-        return response()->json([
-            'success'    => true,
-            'data'       => $items,
-            'total'      => $total,
-            'page'       => $page,
-            'limit'      => $limit,
-            'totalPages' => $totalPages,
-            'pagination' => [
-                'total'        => $total,
-                'current_page' => $page,
-                'last_page'    => $totalPages,
-                'per_page'     => $limit,
-            ],
+        // 4. Unified Server-Side Pagination via PaginationService
+        $query->with([
+            'category:id,name',
+            'brand:id,name',
+            'tax:id,name,rate',
+            'purchaseTax:id,name,rate',
+            'salesTax:id,name,rate',
+            'sizeGroup:id,name,code',
         ]);
+
+        $paginated = $this->paginationService->paginate(
+            query: $query,
+            resource: 'products',
+            request: $request,
+            options: [
+                'default_sort' => 'name',
+                'default_order' => 'asc',
+                'allowed_sorts' => ['id', 'name', 'code', 'barcode', 'sku', 'selling_price', 'created_at'],
+            ]
+        );
+
+        return response()->json($paginated);
     }
 
     public function show($id)

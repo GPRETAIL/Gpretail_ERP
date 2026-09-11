@@ -6,25 +6,38 @@ use App\Http\Controllers\Controller;
 use App\Models\CashRegisterSession;
 use App\Models\PosSale;
 use App\Services\DocumentNumberService;
+use App\Services\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class CashRegisterController extends Controller
 {
+    public function __construct(private readonly PaginationService $paginationService) {}
+
     // Cash Opening List
     public function openingIndex(Request $request)
     {
         $storeId = $request->header('X-Company-Scope-Id', 1);
-        $sessions = CashRegisterSession::with('user')
-            ->where('store_id', $storeId)
-            ->orderBy('opened_at', 'desc')
-            ->get();
+        $query = CashRegisterSession::with('user')
+            ->where('store_id', $storeId);
 
-        return response()->json([
-            'success' => true,
-            'data' => $sessions,
-            'total' => $sessions->count(),
+        if ($request->boolean('all')) {
+            $sessions = $query->orderBy('opened_at', 'desc')->limit(1000)->get();
+            return response()->json([
+                'success' => true,
+                'data'    => $sessions,
+                'total'   => $sessions->count(),
+            ]);
+        }
+
+        $result = $this->paginationService->paginate($query, 'cash_register_sessions', $request, [
+            'default_sort'  => 'id',
+            'default_order' => 'desc',
+            'tie_breaker'   => 'id',
+            'allowed_sorts' => ['id', 'opened_at', 'closed_at', 'status', 'created_at'],
         ]);
+
+        return response()->json($result);
     }
 
     // Cash Opening Action

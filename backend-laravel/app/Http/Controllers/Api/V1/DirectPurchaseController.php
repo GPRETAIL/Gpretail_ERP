@@ -12,6 +12,7 @@ use App\Models\Supplier;
 use App\Models\Store;
 use App\Models\StockBatch;
 use App\Models\Transport;
+use App\Services\PaginationService;
 use App\Services\StockService;
 use App\Services\VariantResolverService;
 use Illuminate\Http\Request;
@@ -23,6 +24,7 @@ class DirectPurchaseController extends Controller
     public function __construct(
         private readonly StockService $stockService,
         private readonly VariantResolverService $variantResolver,
+        private readonly PaginationService $paginationService,
     ) {
     }
 
@@ -94,22 +96,13 @@ class DirectPurchaseController extends Controller
             ]);
         }
 
-        $limit = $request->integer('limit', 15);
-        $paginated = $query->orderBy('id', 'desc')->paginate($limit);
-
-        return response()->json([
-            'success' => true,
-            'data'    => $paginated->items(),
-            'total'   => $paginated->total(),
-            'page'    => $paginated->currentPage(),
-            'limit'   => $paginated->perPage(),
-            'pagination' => [
-                'total'        => $paginated->total(),
-                'current_page' => $paginated->currentPage(),
-                'last_page'    => $paginated->lastPage(),
-                'per_page'     => $paginated->perPage(),
-            ],
+        $paginated = $this->paginationService->paginate($query, 'direct_purchases', $request, [
+            'default_sort' => 'id',
+            'default_order' => 'desc',
+            'allowed_sorts' => ['id', 'purchase_date', 'purchase_no', 'invoice_no', 'total_amount', 'created_at'],
         ]);
+
+        return response()->json($paginated);
     }
 
     public function show($id)

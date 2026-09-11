@@ -5,11 +5,14 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\Stock;
+use App\Services\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class ItemController extends Controller
 {
+    public function __construct(private readonly PaginationService $paginationService) {}
+
     public function dashboardSummary(Request $request)
     {
         $totalItems = Product::count();
@@ -125,18 +128,16 @@ class ItemController extends Controller
             });
         }
 
-        $limit = min(2000, max(1, $request->integer('limit', $request->integer('per_page', 50))));
-        $page  = max(1, $request->integer('page', 1));
-        $items = $query->orderBy('name')->paginate($limit, ['*'], 'page', $page);
-
-        return response()->json([
-            'success'    => true,
-            'data'       => collect($items->items())->map(fn($item) => $this->formatItem($item)),
-            'total'      => $items->total(),
-            'page'       => $items->currentPage(),
-            'limit'      => $items->perPage(),
-            'totalPages' => $items->lastPage(),
+        $result = $this->paginationService->paginate($query, 'products', $request, [
+            'default_sort'  => 'name',
+            'default_order' => 'asc',
+            'tie_breaker'   => 'id',
+            'allowed_sorts' => ['id', 'name', 'code', 'barcode', 'sku', 'selling_price', 'created_at'],
         ]);
+
+        $result['data'] = collect($result['data'])->map(fn($item) => $this->formatItem($item))->values();
+
+        return response()->json($result);
     }
 
     public function show($id)

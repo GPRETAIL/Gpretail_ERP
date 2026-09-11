@@ -9,12 +9,17 @@ use App\Models\StockBatch;
 use App\Models\Supplier;
 use App\Models\SupplierPayment;
 use App\Models\SupplierPaymentItem;
+use App\Services\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class SupplierPaymentController extends Controller
 {
+    public function __construct(
+        protected PaginationService $paginationService
+    ) {}
+
     public function dashboardSummary(Request $request)
     {
         $storeId = $request->header('X-Company-Scope-Id', 1);
@@ -43,7 +48,9 @@ class SupplierPaymentController extends Controller
 
     public function index(Request $request)
     {
-        $query = SupplierPayment::with(['supplier', 'store', 'creator']);
+        $storeId = $request->header('X-Company-Scope-Id');
+        $query = SupplierPayment::with(['supplier', 'store', 'creator'])
+            ->when($storeId && $storeId !== 'all', fn ($q) => $q->where('store_id', $storeId));
 
         if ($request->filled('search')) {
             $search = $request->input('search');
@@ -62,16 +69,13 @@ class SupplierPaymentController extends Controller
             ]);
         }
 
-        $limit = $request->integer('limit', 15);
-        $paginated = $query->orderBy('payment_date', 'desc')->paginate($limit);
-
-        return response()->json([
-            'success' => true,
-            'data'    => $paginated->items(),
-            'total'   => $paginated->total(),
-            'page'    => $paginated->currentPage(),
-            'limit'   => $paginated->perPage(),
+        $paginated = $this->paginationService->paginate($query, 'supplier_payments', $request, [
+            'default_sort' => 'id',
+            'default_order' => 'desc',
+            'allowed_sorts' => ['id', 'payment_date', 'payment_no', 'amount', 'created_at'],
         ]);
+
+        return response()->json($paginated);
     }
 
     public function store(Request $request)

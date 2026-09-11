@@ -6,6 +6,7 @@ use App\Exceptions\InsufficientStockException;
 use App\Http\Controllers\Controller;
 use App\Models\InventoryEntry;
 use App\Models\InventoryEntryItem;
+use App\Services\PaginationService;
 use App\Services\StockService;
 use App\Services\VariantResolverService;
 use Illuminate\Http\Request;
@@ -17,12 +18,15 @@ class InventoryEntryController extends Controller
     public function __construct(
         private readonly StockService $stockService,
         private readonly VariantResolverService $variantResolver,
+        private readonly PaginationService $paginationService,
     ) {
     }
 
     public function index(Request $request)
     {
-        $query = InventoryEntry::with(['items.product', 'creator']);
+        $storeId = $request->header('X-Company-Scope-Id');
+        $query = InventoryEntry::with(['items.product', 'creator'])
+            ->when($storeId && $storeId !== 'all', fn ($q) => $q->where('store_id', $storeId));
 
         if ($request->filled('search')) {
             $search = $request->input('search');
@@ -43,16 +47,14 @@ class InventoryEntryController extends Controller
             ]);
         }
 
-        $limit = $request->integer('limit', 15);
-        $paginated = $query->orderBy('entry_date', 'desc')->paginate($limit);
-
-        return response()->json([
-            'success' => true,
-            'data'    => $paginated->items(),
-            'total'   => $paginated->total(),
-            'page'    => $paginated->currentPage(),
-            'limit'   => $paginated->perPage(),
+        $result = $this->paginationService->paginate($query, 'inventory_entries', $request, [
+            'default_sort'  => 'id',
+            'default_order' => 'desc',
+            'tie_breaker'   => 'id',
+            'allowed_sorts' => ['id', 'entry_date', 'entry_no', 'status', 'created_at'],
         ]);
+
+        return response()->json($result);
     }
 
     public function store(Request $request)

@@ -18,6 +18,7 @@ use App\Models\Stock;
 use App\Models\Store;
 use App\Models\User;
 use App\Services\DocumentNumberService;
+use App\Services\PaginationService;
 use App\Services\StockService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -26,7 +27,10 @@ use Illuminate\Support\Facades\Validator;
 
 class PosSaleController extends Controller
 {
-    public function __construct(private readonly StockService $stockService) {}
+    public function __construct(
+        private readonly StockService $stockService,
+        private readonly PaginationService $paginationService
+    ) {}
 
     public function nextBillNo(Request $request)
     {
@@ -199,26 +203,25 @@ class PosSaleController extends Controller
 
     public function posOldSales(Request $request)
     {
-        $query = PosSale::with(['customer', 'user', 'items.product', 'items.barcode'])->orderByDesc('id');
+        $query = PosSale::with(['customer', 'user', 'items.product', 'items.barcode']);
 
         if ($request->boolean('all') || in_array($request->input('limit'), ['500', '1000', 500, 1000], true)) {
-            $sales = $query->limit(2000)->get();
+            $sales = $query->orderByDesc('id')->limit(2000)->get();
 
             return response()->json(['success' => true, 'data' => $sales, 'total' => $sales->count()]);
         }
 
-        $limit = max(1, (int) $request->input('limit', 50));
-        $sales = $query->paginate($limit);
-
-        return response()->json([
-            'success' => true,
-            'data' => $sales->items(),
-            'pagination' => [
-                'total' => $sales->total(),
-                'current_page' => $sales->currentPage(),
-                'last_page' => $sales->lastPage(),
-            ],
+        // See index()'s comment above: sorting is left to PaginationService so ?sort= values
+        // other than id actually work, instead of being silently shadowed by a query-level
+        // orderBy() applied before the service ever sees the query.
+        $paginated = $this->paginationService->paginate($query, 'pos_old_sales', $request, [
+            'default_sort' => 'id',
+            'default_order' => 'desc',
+            'tie_breaker' => 'id',
+            'allowed_sorts' => ['id', 'sale_date', 'invoice_no', 'created_at'],
         ]);
+
+        return response()->json($paginated);
     }
 
     public function index(Request $request)
@@ -242,8 +245,7 @@ class PosSaleController extends Controller
                     $sub->where('invoice_no', 'like', "%{$s}%")
                         ->orWhereHas('customer', fn ($cq) => $cq->where('name', 'like', "%{$s}%"));
                 });
-            })
-            ->orderBy('id', 'desc');
+            });
 
         // SalesReports.jsx's getAllRows() helper always asks for all=true so
         // it can aggregate every sale client-side - unlike every sibling
@@ -251,7 +253,7 @@ class PosSaleController extends Controller
         // report on that page was silently capped at the 50 most recent
         // sales regardless of the report's actual date range.
         if ($request->boolean('all') || in_array($request->input('limit'), ['500', '1000', 500, 1000], true)) {
-            $sales = $query->limit(2000)->get();
+            $sales = $query->orderBy('id', 'desc')->limit(2000)->get();
 
             return response()->json([
                 'success' => true,
@@ -260,18 +262,20 @@ class PosSaleController extends Controller
             ]);
         }
 
-        $limit = max(1, (int) $request->input('limit', 50));
-        $sales = $query->paginate($limit);
-
-        return response()->json([
-            'success' => true,
-            'data' => $sales->items(),
-            'pagination' => [
-                'total' => $sales->total(),
-                'current_page' => $sales->currentPage(),
-                'last_page' => $sales->lastPage(),
-            ],
+        // Sorting is left to PaginationService::applySorting() below (allowed_sorts +
+        // tie-breaker) -- a query-level ->orderBy('id','desc') here used to run
+        // unconditionally and get applied to $query before the service ever saw it, which
+        // makes applySorting() skip re-sorting entirely (it only sorts when the query
+        // arrives with no existing orders). That silently broke every ?sort= value except
+        // id -- the endpoint always returned newest-first regardless of what was requested.
+        $paginated = $this->paginationService->paginate($query, 'pos_sales', $request, [
+            'default_sort' => 'id',
+            'default_order' => 'desc',
+            'tie_breaker' => 'id',
+            'allowed_sorts' => ['id', 'sale_date', 'invoice_no', 'grand_total', 'created_at'],
         ]);
+
+        return response()->json($paginated);
     }
 
     public function show($id)

@@ -5,11 +5,14 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\Stock;
 use App\Models\Product;
+use App\Services\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class WarehouseReportController extends Controller
 {
+    public function __construct(private readonly PaginationService $paginationService) {}
+
     public function index(Request $request)
     {
         return $this->stockLedger($request);
@@ -31,18 +34,14 @@ class WarehouseReportController extends Controller
             ]);
         }
 
-        $stocks = $query->paginate($request->integer('limit', 50));
-
-        return response()->json([
-            'success' => true,
-            'data'    => $stocks->items(),
-            'total'   => $stocks->total(),
-            'pagination' => [
-                'total'        => $stocks->total(),
-                'current_page' => $stocks->currentPage(),
-                'last_page'    => $stocks->lastPage(),
-            ],
+        $result = $this->paginationService->paginate($query, 'stock_transactions', $request, [
+            'default_sort'  => 'id',
+            'default_order' => 'desc',
+            'tie_breaker'   => 'id',
+            'allowed_sorts' => ['id', 'quantity', 'created_at'],
         ]);
+
+        return response()->json($result);
     }
 
     public function lowStock(Request $request)
@@ -67,17 +66,17 @@ class WarehouseReportController extends Controller
             ]);
         }
 
-        $limit = $request->integer('limit', 50);
-        $paginated = $query->paginate($limit);
-
-        return response()->json([
-            'success'    => true,
-            'data'       => $paginated->items(),
-            'total'      => $paginated->total(),
-            'page'       => $paginated->currentPage(),
-            'limit'      => $paginated->perPage(),
-            'totalPages' => $paginated->lastPage(),
+        // This used Laravel's plain paginate() directly, bypassing PaginationService like
+        // every sibling method in this controller -- meaning no cursor mode, no sort
+        // whitelist, and a bespoke response shape instead of the app's standard one.
+        $result = $this->paginationService->paginate($query, 'stock_transactions', $request, [
+            'default_sort'  => 'id',
+            'default_order' => 'desc',
+            'tie_breaker'   => 'id',
+            'allowed_sorts' => ['id', 'quantity', 'created_at'],
         ]);
+
+        return response()->json($result);
     }
 
     public function valuation(Request $request)
@@ -131,18 +130,16 @@ class WarehouseReportController extends Controller
             ]);
         }
 
-        $limit = $request->integer('limit', 50);
-        $paginated = $query->paginate($limit);
-        $analysis = collect($paginated->items())->map($mapRow);
-
-        return response()->json([
-            'success'    => true,
-            'data'       => $analysis,
-            'total'      => $paginated->total(),
-            'page'       => $paginated->currentPage(),
-            'limit'      => $paginated->perPage(),
-            'totalPages' => $paginated->lastPage(),
+        $result = $this->paginationService->paginate($query, 'stock_transactions', $request, [
+            'default_sort'  => 'id',
+            'default_order' => 'desc',
+            'tie_breaker'   => 'id',
+            'allowed_sorts' => ['id', 'quantity', 'created_at'],
         ]);
+
+        $result['data'] = collect($result['data'])->map($mapRow)->values();
+
+        return response()->json($result);
     }
 
     public function warehouseCustomization(Request $request)

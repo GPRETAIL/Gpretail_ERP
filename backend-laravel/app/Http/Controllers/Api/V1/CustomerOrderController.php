@@ -10,15 +10,22 @@ use App\Models\CustomerOrderItem;
 use App\Models\Product;
 use App\Models\Stock;
 use App\Services\DocumentNumberService;
+use App\Services\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class CustomerOrderController extends Controller
 {
+    public function __construct(
+        protected PaginationService $paginationService
+    ) {}
+
     public function index(Request $request)
     {
-        $query = CustomerOrder::with(['customer', 'items.product', 'salesman', 'supplier', 'creator']);
+        $storeId = $request->header('X-Company-Scope-Id');
+        $query = CustomerOrder::with(['customer', 'items.product', 'salesman', 'supplier', 'creator'])
+            ->when($storeId && $storeId !== 'all', fn ($q) => $q->where('store_id', $storeId));
 
         if ($request->filled('search')) {
             $search = $request->input('search');
@@ -54,18 +61,13 @@ class CustomerOrderController extends Controller
             ]);
         }
 
-        $limit = max(1, $request->integer('limit', 20));
-        $page = max(1, $request->integer('page', 1));
-        $paginated = $query->orderBy('order_date', 'desc')->orderBy('id', 'desc')->paginate($limit, ['*'], 'page', $page);
-
-        return response()->json([
-            'success' => true,
-            'data' => $paginated->items(),
-            'total' => $paginated->total(),
-            'page' => $paginated->currentPage(),
-            'limit' => $paginated->perPage(),
-            'totalPages' => $paginated->lastPage(),
+        $paginated = $this->paginationService->paginate($query, 'customer_orders', $request, [
+            'default_sort' => 'id',
+            'default_order' => 'desc',
+            'allowed_sorts' => ['id', 'order_date', 'order_no', 'total_amount', 'created_at'],
         ]);
+
+        return response()->json($paginated);
     }
 
     public function store(Request $request)

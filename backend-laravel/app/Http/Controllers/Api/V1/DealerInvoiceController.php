@@ -7,15 +7,20 @@ use App\Models\Customer;
 use App\Models\DealerInvoice;
 use App\Models\DealerInvoiceItem;
 use App\Services\DocumentNumberService;
+use App\Services\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class DealerInvoiceController extends Controller
 {
+    public function __construct(private readonly PaginationService $paginationService) {}
+
     public function index(Request $request)
     {
-        $query = DealerInvoice::with(['customer', 'items.product', 'creator']);
+        $storeId = $request->header('X-Company-Scope-Id');
+        $query = DealerInvoice::with(['customer', 'items.product', 'creator'])
+            ->when($storeId && $storeId !== 'all', fn ($q) => $q->where('store_id', $storeId));
 
         if ($request->filled('search')) {
             $search = $request->input('search');
@@ -35,16 +40,14 @@ class DealerInvoiceController extends Controller
             ]);
         }
 
-        $limit = $request->integer('limit', 15);
-        $paginated = $query->orderBy('invoice_date', 'desc')->paginate($limit);
-
-        return response()->json([
-            'success' => true,
-            'data' => $paginated->items(),
-            'total' => $paginated->total(),
-            'page' => $paginated->currentPage(),
-            'limit' => $paginated->perPage(),
+        $result = $this->paginationService->paginate($query, 'dealer_invoices', $request, [
+            'default_sort'  => 'id',
+            'default_order' => 'desc',
+            'tie_breaker'   => 'id',
+            'allowed_sorts' => ['id', 'invoice_date', 'invoice_no', 'created_at'],
         ]);
+
+        return response()->json($result);
     }
 
     public function store(Request $request)

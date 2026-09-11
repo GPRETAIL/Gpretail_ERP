@@ -4,11 +4,14 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Transport;
+use App\Services\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class TransportController extends Controller
 {
+    public function __construct(private readonly PaginationService $paginationService) {}
+
     public function index(Request $request)
     {
         $query = Transport::query();
@@ -32,19 +35,14 @@ class TransportController extends Controller
             ]);
         }
 
-        // Same order as the all=true branch above - it was 'created_at desc' here, giving a
-        // different row order depending on which branch a given request happened to take.
-        $limit = $request->integer('limit', 15);
-        $paginated = $query->orderBy('name')->paginate($limit);
-
-        return response()->json([
-            'success'    => true,
-            'data'       => $paginated->items(),
-            'total'      => $paginated->total(),
-            'page'       => $paginated->currentPage(),
-            'limit'      => $paginated->perPage(),
-            'totalPages' => $paginated->lastPage(),
+        $result = $this->paginationService->paginate($query, 'transports', $request, [
+            'default_sort'  => 'name',
+            'default_order' => 'asc',
+            'tie_breaker'   => 'id',
+            'allowed_sorts' => ['id', 'name', 'code', 'phone', 'vehicle_no', 'created_at'],
         ]);
+
+        return response()->json($result);
     }
 
     public function store(Request $request)

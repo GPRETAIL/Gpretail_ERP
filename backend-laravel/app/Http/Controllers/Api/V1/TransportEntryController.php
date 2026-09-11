@@ -6,11 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\Transport;
 use App\Models\TransportEntry;
 use App\Services\DocumentNumberService;
+use App\Services\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class TransportEntryController extends Controller
 {
+    public function __construct(private readonly PaginationService $paginationService) {}
+
     public function index(Request $request)
     {
         $query = TransportEntry::with(['transport', 'issues', 'receipts']);
@@ -41,16 +44,14 @@ class TransportEntryController extends Controller
             ]);
         }
 
-        $limit = $request->integer('limit', 15);
-        $paginated = $query->orderBy('created_at', 'desc')->paginate($limit);
-
-        return response()->json([
-            'success' => true,
-            'data' => $paginated->items(),
-            'total' => $paginated->total(),
-            'page' => $paginated->currentPage(),
-            'limit' => $paginated->perPage(),
+        $result = $this->paginationService->paginate($query, 'transport_entries', $request, [
+            'default_sort'  => 'id',
+            'default_order' => 'desc',
+            'tie_breaker'   => 'id',
+            'allowed_sorts' => ['id', 'lr_no', 'lr_date', 'created_at'],
         ]);
+
+        return response()->json($result);
     }
 
     public function store(Request $request)

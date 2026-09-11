@@ -8,18 +8,18 @@ use App\Models\PosSaleItem;
 use App\Models\PurchaseInvoice;
 use App\Models\Stock;
 use App\Models\Product;
+use App\Services\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class SalesReportController extends Controller
 {
+    public function __construct(private readonly PaginationService $paginationService) {}
+
     public function index(Request $request)
     {
         $query = PosSale::with(['customer', 'user', 'items.product', 'payments']);
 
-        // Same gap found and fixed in PurchaseInvoiceController/PosReturnController
-        // this session - never scoped by store, so every store's sales fed every
-        // report tab on this page regardless of X-Company-Scope-Id.
         $storeId = $request->header('X-Company-Scope-Id');
         if ($storeId && $storeId !== 'all') {
             $query->where('store_id', $storeId);
@@ -42,18 +42,14 @@ class SalesReportController extends Controller
             ]);
         }
 
-        $sales = $query->orderBy('id', 'desc')->paginate(50);
-
-        return response()->json([
-            'success' => true,
-            'data'    => $sales->items(),
-            'total'   => $sales->total(),
-            'pagination' => [
-                'total'        => $sales->total(),
-                'current_page' => $sales->currentPage(),
-                'last_page'    => $sales->lastPage(),
-            ],
+        $result = $this->paginationService->paginate($query, 'pos_sales', $request, [
+            'default_sort'  => 'id',
+            'default_order' => 'desc',
+            'tie_breaker'   => 'id',
+            'allowed_sorts' => ['id', 'sale_date', 'invoice_no', 'grand_total', 'created_at'],
         ]);
+
+        return response()->json($result);
     }
 
     public function detailed(Request $request)

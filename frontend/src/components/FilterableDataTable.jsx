@@ -147,6 +147,9 @@ export default function FilterableDataTable({
   totalRows = 0,
   onPageChange = null,
   onLimitChange = null,
+  pagination = null,
+  onNextCursor = null,
+  onPreviousCursor = null,
   paginationMode = "server",
   enableServerSearch = false,
   onServerSearch = null,
@@ -1326,10 +1329,13 @@ export default function FilterableDataTable({
     if (node) node.style.width = "";
   }, []);
 
-  const canPaginate = typeof onPageChange === "function" && typeof onLimitChange === "function";
+  const canPaginate = (typeof onPageChange === "function" || typeof onNextCursor === "function") && typeof onLimitChange === "function";
   const isClientPagination = canPaginate && paginationMode === "client";
   const isFullDatasetPagination = canPaginate && shouldLoadAllRowsSource;
   const usesLocalPagination = isClientPagination || isFullDatasetPagination;
+  const isCursorMode = Boolean(
+    (pagination?.mode === "cursor" || paginationMode === "cursor") && !usesLocalPagination
+  );
   const safePage = Math.max(Number(page) || 1, 1);
   const safeLimit = Math.max(Number(limit) || 20, 1);
   const groupedSortedRows = useMemo(() => {
@@ -1581,8 +1587,39 @@ export default function FilterableDataTable({
   }, [enableKeyboardNav, activeRowIndex, virtualWindowSignature, virtualizationActive]);
 
   const pageOptions = Array.from({ length: safeTotalPages }, (_, i) => i + 1);
-  const hasPrev = currentPage > 1;
-  const hasNext = currentPage < safeTotalPages;
+  const hasPrev = isCursorMode
+    ? Boolean(pagination?.has_previous || pagination?.previous_cursor)
+    : currentPage > 1;
+  const hasNext = isCursorMode
+    ? Boolean(pagination?.has_next || pagination?.has_more || pagination?.next_cursor)
+    : currentPage < safeTotalPages;
+
+  const handlePrevPage = useCallback(() => {
+    if (!hasPrev) return;
+    if (isCursorMode) {
+      if (typeof onPreviousCursor === "function" && pagination?.previous_cursor) {
+        onPreviousCursor(pagination.previous_cursor);
+      } else if (typeof onPageChange === "function") {
+        onPageChange("prev", pagination?.previous_cursor);
+      }
+    } else if (typeof onPageChange === "function") {
+      onPageChange(currentPage - 1);
+    }
+  }, [hasPrev, isCursorMode, onPreviousCursor, onPageChange, pagination, currentPage]);
+
+  const handleNextPage = useCallback(() => {
+    if (!hasNext) return;
+    if (isCursorMode) {
+      if (typeof onNextCursor === "function" && pagination?.next_cursor) {
+        onNextCursor(pagination.next_cursor);
+      } else if (typeof onPageChange === "function") {
+        onPageChange("next", pagination?.next_cursor);
+      }
+    } else if (typeof onPageChange === "function") {
+      onPageChange(currentPage + 1);
+    }
+  }, [hasNext, isCursorMode, onNextCursor, onPageChange, pagination, currentPage]);
+
   const tableColSpan = visibleColumnDefs.length + (renderActions ? 2 : 1);
 
   // --- Row selection handlers ---
@@ -2438,40 +2475,52 @@ export default function FilterableDataTable({
               onChange={(e) => onLimitChange(Number(e.target.value))}
               className={paginationControlClass}
             >
-              {[20, 60, 100, 150].map((size) => (
+              {[20, 50, 60, 100, 150].map((size) => (
                 <option key={size} value={size}>
                   {size}
                 </option>
               ))}
             </select>
-            <span className="text-gray-500 dark:text-gray-400">Total: {computedTotalRows}</span>
+            <span className="text-gray-500 dark:text-gray-400">
+              {isCursorMode
+                ? `Showing ${rows.length} rows`
+                : `Total: ${computedTotalRows}`}
+            </span>
           </div>
 
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => hasPrev && onPageChange(currentPage - 1)}
+              onClick={handlePrevPage}
               disabled={!hasPrev}
               className={paginationButtonClass}
+              title="Previous"
             >
               {"<"}
             </button>
-            <select
-              value={currentPage}
-              onChange={(e) => onPageChange(Number(e.target.value))}
-              className={paginationControlClass}
-            >
-              {pageOptions.map((p) => (
-                <option key={p} value={p}>
-                  Page {p}
-                </option>
-              ))}
-            </select>
+            {isCursorMode ? (
+              <span className="px-1.5 text-[9px] text-gray-500 dark:text-gray-400 font-medium select-none">
+                Continuous
+              </span>
+            ) : (
+              <select
+                value={currentPage}
+                onChange={(e) => onPageChange(Number(e.target.value))}
+                className={paginationControlClass}
+              >
+                {pageOptions.map((p) => (
+                  <option key={p} value={p}>
+                    Page {p}
+                  </option>
+                ))}
+              </select>
+            )}
             <button
               type="button"
-              onClick={() => hasNext && onPageChange(currentPage + 1)}
+              onClick={handleNextPage}
               disabled={!hasNext}
               className={paginationButtonClass}
+              title="Next"
             >
               {">"}
             </button>

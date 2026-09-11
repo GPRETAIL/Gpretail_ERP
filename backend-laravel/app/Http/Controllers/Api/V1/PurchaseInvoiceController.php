@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\PurchaseInvoice;
 use App\Models\PurchaseInvoiceItem;
 use App\Models\Supplier;
+use App\Services\PaginationService;
 use App\Services\StockService;
 use App\Services\VariantResolverService;
 use Illuminate\Http\Request;
@@ -18,6 +19,7 @@ class PurchaseInvoiceController extends Controller
     public function __construct(
         private readonly StockService $stockService,
         private readonly VariantResolverService $variantResolver,
+        private readonly PaginationService $paginationService,
     ) {
     }
 
@@ -64,16 +66,13 @@ class PurchaseInvoiceController extends Controller
             ]);
         }
 
-        $limit = $request->integer('limit', 15);
-        $paginated = $query->orderBy('invoice_date', 'desc')->paginate($limit);
-
-        return response()->json([
-            'success' => true,
-            'data'    => $paginated->items(),
-            'total'   => $paginated->total(),
-            'page'    => $paginated->currentPage(),
-            'limit'   => $paginated->perPage(),
+        $paginated = $this->paginationService->paginate($query, 'purchase_invoices', $request, [
+            'default_sort' => 'id',
+            'default_order' => 'desc',
+            'allowed_sorts' => ['id', 'invoice_date', 'invoice_no', 'created_at'],
         ]);
+
+        return response()->json($paginated);
     }
 
     public function store(Request $request)

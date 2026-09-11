@@ -5,11 +5,14 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\Size;
 use App\Models\SizeGroup;
+use App\Services\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class SizeController extends Controller
 {
+    public function __construct(private readonly PaginationService $paginationService) {}
+
     private function formatSize($size)
     {
         $arr = $size->toArray();
@@ -78,17 +81,16 @@ class SizeController extends Controller
             ]);
         }
 
-        $limit = $request->integer('limit', 15);
-        $paginated = $query->orderBy('sort_order')->paginate($limit);
-
-        return response()->json([
-            'success'    => true,
-            'data'       => collect($paginated->items())->map(fn($s) => $this->formatSize($s)),
-            'total'      => $paginated->total(),
-            'page'       => $paginated->currentPage(),
-            'limit'      => $paginated->perPage(),
-            'totalPages' => $paginated->lastPage(),
+        $result = $this->paginationService->paginate($query, 'sizes', $request, [
+            'default_sort'  => 'sort_order',
+            'default_order' => 'asc',
+            'tie_breaker'   => 'id',
+            'allowed_sorts' => ['id', 'name', 'code', 'sort_order', 'created_at'],
         ]);
+
+        $result['data'] = collect($result['data'])->map(fn($s) => $this->formatSize($s))->values();
+
+        return response()->json($result);
     }
 
     public function show($id)

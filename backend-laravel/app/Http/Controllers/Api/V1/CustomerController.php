@@ -8,6 +8,7 @@ use App\Models\CustomerOrder;
 use App\Models\LoyaltyTransaction;
 use App\Models\PosReturn;
 use App\Models\PosSale;
+use App\Services\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +16,8 @@ use Illuminate\Support\Facades\Validator;
 
 class CustomerController extends Controller
 {
+    public function __construct(private readonly PaginationService $paginationService) {}
+
     public function dashboardSummary(Request $request)
     {
         return response()->json([
@@ -91,37 +94,15 @@ class CustomerController extends Controller
             return response()->json(['success' => true, 'data' => $items, 'total' => $items->count()]);
         }
 
-        // 3. Deferred Join Server-Side Pagination
-        $limit  = max(1, (int) ($request->input('limit') ?? $request->input('per_page') ?? 20));
-        $page   = max(1, $request->integer('page', 1));
-        $offset = ($page - 1) * $limit;
-
-        if (!$hasFilters) {
-            $total = Cache::remember('customers_total_unfiltered_count', 60, fn() => Customer::where('is_active', true)->count());
-        } else {
-            $total = (clone $query)->count();
-        }
-
-        $totalPages = max((int) ceil($total / $limit), 1);
-
-        $idSubquery = (clone $query)->select('customers.id')->orderBy('customers.name')->forPage($page, $limit);
-        $ids = $idSubquery->pluck('id')->toArray();
-
-        $items = empty($ids) ? [] : Customer::whereIn('id', $ids)->orderBy('name')->get();
-
-        return response()->json([
-            'success'    => true,
-            'data'       => $items,
-            'total'      => $total,
-            'page'       => $page,
-            'limit'      => $limit,
-            'totalPages' => $totalPages,
-            'pagination' => [
-                'total'        => $total,
-                'current_page' => $page,
-                'last_page'    => $totalPages,
-            ],
+        // 3. Adaptive Server-Side Pagination
+        $result = $this->paginationService->paginate($query, 'customers', $request, [
+            'default_sort'  => 'name',
+            'default_order' => 'asc',
+            'tie_breaker'   => 'id',
+            'allowed_sorts' => ['id', 'name', 'code', 'phone', 'email', 'created_at'],
         ]);
+
+        return response()->json($result);
     }
 
     public function show($id)

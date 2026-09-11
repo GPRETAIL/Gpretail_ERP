@@ -6,6 +6,7 @@ use App\Exceptions\InsufficientStockException;
 use App\Http\Controllers\Controller;
 use App\Models\StockOutward;
 use App\Models\StockOutwardItem;
+use App\Services\PaginationService;
 use App\Services\StockService;
 use App\Services\VariantResolverService;
 use Illuminate\Http\Request;
@@ -17,12 +18,18 @@ class StockOutwardController extends Controller
     public function __construct(
         private readonly StockService $stockService,
         private readonly VariantResolverService $variantResolver,
+        private readonly PaginationService $paginationService,
     ) {
     }
 
     public function index(Request $request)
     {
-        $query = StockOutward::with(['sourceStore', 'targetStore', 'items.product', 'creator']);
+        $storeId = $request->header('X-Company-Scope-Id');
+        $query = StockOutward::with(['sourceStore', 'targetStore', 'items.product', 'creator'])
+            ->when($storeId && $storeId !== 'all', fn ($q) => $q->where(function ($sub) use ($storeId) {
+                $sub->where('source_store_id', $storeId)
+                    ->orWhere('target_store_id', $storeId);
+            }));
 
         if ($request->filled('search')) {
             $search = $request->input('search');
@@ -38,16 +45,13 @@ class StockOutwardController extends Controller
             ]);
         }
 
-        $limit = $request->integer('limit', 15);
-        $paginated = $query->orderBy('outward_date', 'desc')->paginate($limit);
-
-        return response()->json([
-            'success' => true,
-            'data'    => $paginated->items(),
-            'total'   => $paginated->total(),
-            'page'    => $paginated->currentPage(),
-            'limit'   => $paginated->perPage(),
+        $paginated = $this->paginationService->paginate($query, 'stock_outwards', $request, [
+            'default_sort' => 'id',
+            'default_order' => 'desc',
+            'allowed_sorts' => ['id', 'outward_date', 'outward_no', 'created_at'],
         ]);
+
+        return response()->json($paginated);
     }
 
     public function store(Request $request)

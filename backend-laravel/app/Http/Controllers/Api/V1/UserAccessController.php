@@ -7,12 +7,15 @@ use App\Models\Permission;
 use App\Models\Role;
 use App\Models\Store;
 use App\Models\User;
+use App\Services\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 
 class UserAccessController extends Controller
 {
+    public function __construct(private readonly PaginationService $paginationService) {}
+
     // Users Management
     public function index(Request $request)
     {
@@ -36,16 +39,14 @@ class UserAccessController extends Controller
             ]);
         }
 
-        $limit = $request->integer('limit', 15);
-        $paginated = $query->orderBy('created_at', 'desc')->paginate($limit);
-
-        return response()->json([
-            'success' => true,
-            'data'    => $paginated->items(),
-            'total'   => $paginated->total(),
-            'page'    => $paginated->currentPage(),
-            'limit'   => $paginated->perPage(),
+        $result = $this->paginationService->paginate($query, 'users', $request, [
+            'default_sort'  => 'id',
+            'default_order' => 'desc',
+            'tie_breaker'   => 'id',
+            'allowed_sorts' => ['id', 'name', 'username', 'email', 'created_at'],
         ]);
+
+        return response()->json($result);
     }
 
     public function store(Request $request)

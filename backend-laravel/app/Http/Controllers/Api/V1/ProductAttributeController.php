@@ -5,11 +5,14 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\AttributeType;
 use App\Models\AttributeValue;
+use App\Services\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class ProductAttributeController extends Controller
 {
+    public function __construct(private readonly PaginationService $paginationService) {}
+
     private array $defaultAliases = [
         'color'   => 'colour',
         'colours' => 'colour',
@@ -109,16 +112,16 @@ class ProductAttributeController extends Controller
             ]);
         }
 
-        $limit = $request->integer('limit', 15);
-        $paginated = $query->orderBy('name')->paginate($limit);
-
-        return response()->json([
-            'success' => true,
-            'data'    => collect($paginated->items())->map($formatter),
-            'total'   => $paginated->total(),
-            'page'    => $paginated->currentPage(),
-            'limit'   => $paginated->perPage(),
+        $result = $this->paginationService->paginate($query, 'attribute_values', $request, [
+            'default_sort'  => 'name',
+            'default_order' => 'asc',
+            'tie_breaker'   => 'id',
+            'allowed_sorts' => ['id', 'name', 'value', 'code', 'sort_order', 'created_at'],
         ]);
+
+        $result['data'] = collect($result['data'])->map($formatter)->values();
+
+        return response()->json($result);
     }
 
     public function storeByType(Request $request, $type)

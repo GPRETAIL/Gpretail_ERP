@@ -4,11 +4,14 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Tax;
+use App\Services\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class TaxController extends Controller
 {
+    public function __construct(private readonly PaginationService $paginationService) {}
+
     public function index(Request $request)
     {
         $query = Tax::with('slabs');
@@ -55,18 +58,16 @@ class TaxController extends Controller
             return response()->json(['success' => true, 'data' => $items, 'total' => $items->count()]);
         }
 
-        $limit     = max(1, $request->integer('limit', 20));
-        $page      = max(1, $request->integer('page', 1));
-        $paginated = $query->orderBy('name')->paginate($limit, ['*'], 'page', $page);
-
-        return response()->json([
-            'success'    => true,
-            'data'       => collect($paginated->items())->map($formatTax),
-            'total'      => $paginated->total(),
-            'page'       => $paginated->currentPage(),
-            'limit'      => $paginated->perPage(),
-            'totalPages' => $paginated->lastPage(),
+        $result = $this->paginationService->paginate($query, 'taxes', $request, [
+            'default_sort'  => 'name',
+            'default_order' => 'asc',
+            'tie_breaker'   => 'id',
+            'allowed_sorts' => ['id', 'name', 'code', 'rate', 'created_at'],
         ]);
+
+        $result['data'] = collect($result['data'])->map($formatTax)->values();
+
+        return response()->json($result);
     }
 
     public function show($id)
