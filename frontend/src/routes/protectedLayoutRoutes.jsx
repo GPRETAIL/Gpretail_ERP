@@ -1,6 +1,7 @@
 import React, { Suspense, lazy } from "react";
 import { matchRoutes, Navigate, Route, Routes } from "react-router-dom";
 import PageSkeleton from "../components/PageSkeleton";
+import ChunkErrorBoundary from "../components/ChunkErrorBoundary";
 
 const RouteLoadingFallback = () => <PageSkeleton variant="form" rows={8} />;
 
@@ -185,10 +186,12 @@ export const renderProtectedLayoutRouteElements = () =>
   ));
 
 export const ProtectedLayoutRouteRenderer = ({ location }) => (
-  <Suspense fallback={<RouteLoadingFallback />}>
-    <Routes location={location}>
-      {renderProtectedLayoutRouteElements()}
-      <Route path="*" element={<ComingSoon />} />
-    </Routes>
-  </Suspense>
+  <ChunkErrorBoundary>
+    <Suspense fallback={<RouteLoadingFallback />}>
+      <Routes location={location}>
+        {renderProtectedLayoutRouteElements()}
+        <Route path="*" element={<ComingSoon />} />
+      </Routes>
+    </Suspense>
+  </ChunkErrorBoundary>
 );
