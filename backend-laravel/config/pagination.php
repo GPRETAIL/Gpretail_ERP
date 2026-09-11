@@ -92,6 +92,16 @@ return [
             'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'name', 'username', 'email', 'created_at'],
         ],
+        // offset, not cursor: the controller's fixed "unread first, then newest" sort uses
+        // orderByRaw('read_at IS NOT NULL'), which cursorPaginate() can't encode into a keyset
+        // WHERE clause (it needs real column names, not an arbitrary SQL expression).
+        'notifications' => [
+            'mode' => 'offset',
+            'default_limit' => 20,
+            'default_sort' => 'id',
+            'default_order' => 'desc',
+            'tie_breaker' => 'id',
+        ],
 
         // High-Volume Transactions & Logs (Cursor Keyset UX)
         'pos_sales' => [

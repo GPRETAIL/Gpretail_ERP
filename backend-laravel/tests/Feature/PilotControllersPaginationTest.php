@@ -483,4 +483,56 @@ class PilotControllersPaginationTest extends TestCase
         $res->assertJsonPath('pagination.mode', 'cursor');
         $this->assertCount(2, $res->json('data'));
     }
+
+    /**
+     * NotificationController::index() previously did a plain ->limit(20)->get() with no
+     * pagination metadata at all and no way to page past the most recent batch. Its "unread
+     * first, then newest" sort uses orderByRaw(), which cursorPaginate() can't turn into a
+     * keyset WHERE clause -- so this resource is offset mode, not cursor, unlike the others
+     * converted in this pass.
+     */
+    public function test_notifications_endpoint_uses_offset_mode_and_preserves_unread_first_order(): void
+    {
+        // Raw inserts, not Notification::create() -- created_at isn't fillable on the model, so
+        // mass-assigning it would be silently dropped, and back-to-back create() calls would
+        // otherwise land on the same (second-precision) timestamp, making created_at-desc an
+        // undefined tie instead of a real assertion.
+        $rows = [
+            ['title' => 'Read 1', 'read_at' => now(), 'created_at' => now()->subDays(5)],
+            ['title' => 'Read 2', 'read_at' => now(), 'created_at' => now()->subDays(4)],
+            ['title' => 'Read 3', 'read_at' => now(), 'created_at' => now()->subDays(3)],
+            ['title' => 'Unread 1', 'read_at' => null, 'created_at' => now()->subDays(2)],
+            ['title' => 'Unread 2', 'read_at' => null, 'created_at' => now()->subDays(1)],
+        ];
+        foreach ($rows as $row) {
+            \Illuminate\Support\Facades\DB::table('app_notifications')->insert(array_merge($row, [
+                'type' => 'INFO',
+                'updated_at' => now(),
+            ]));
+        }
+
+        $res = $this->getJson('/api/notifications');
+
+        $res->assertOk();
+        $res->assertJsonPath('success', true);
+        $res->assertJsonPath('pagination.mode', 'offset');
+        $res->assertJsonPath('pagination.total', 5);
+
+        $titles = array_column($res->json('data'), 'title');
+        // Both unread items first (newest of the two first), then read items newest-first.
+        $this->assertSame(['Unread 2', 'Unread 1', 'Read 3', 'Read 2', 'Read 1'], $titles);
+    }
+
+    public function test_notifications_endpoint_default_limit_is_20(): void
+    {
+        for ($i = 1; $i <= 25; $i++) {
+            \App\Models\Notification::create(['type' => 'INFO', 'title' => "N{$i}"]);
+        }
+
+        $res = $this->getJson('/api/notifications');
+
+        $res->assertOk();
+        $this->assertCount(20, $res->json('data'));
+        $res->assertJsonPath('pagination.per_page', 20);
+    }
 }

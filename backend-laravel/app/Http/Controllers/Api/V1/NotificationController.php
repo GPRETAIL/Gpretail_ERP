@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\DirectPurchase;
 use App\Models\Notification;
 use App\Models\PurchaseInvoice;
+use App\Services\PaginationService;
 use Illuminate\Http\Request;
 
 class NotificationController extends Controller
@@ -15,16 +16,22 @@ class NotificationController extends Controller
     private const DUE_SOON_DAYS = 30;
     private const OVERDUE_DAYS = 90;
 
+    public function __construct(private readonly PaginationService $paginationService) {}
+
     public function index(Request $request)
     {
         $this->generateSupplierPaymentAlerts();
 
-        $notifications = Notification::orderByRaw('read_at IS NOT NULL')
-            ->orderByDesc('created_at')
-            ->limit((int) $request->input('limit', 20))
-            ->get();
+        // orderByRaw() here (not applySorting()'s allowed_sorts) because "unread first, then
+        // newest" is fixed product behavior, not a user-choosable column -- the same pattern
+        // every other controller's "export all" branch relies on: a query already carrying its
+        // own orders is left untouched by PaginationService::applySorting().
+        $query = Notification::orderByRaw('read_at IS NOT NULL')
+            ->orderByDesc('created_at');
 
-        return response()->json(['success' => true, 'data' => $notifications]);
+        $result = $this->paginationService->paginate($query, 'notifications', $request);
+
+        return response()->json($result);
     }
 
     public function unreadCount()
