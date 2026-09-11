@@ -17,6 +17,27 @@ return [
             'groupable_columns' => [
                 'active' => ['column' => 'is_active'],
                 'brand' => ['column' => 'brand_id', 'join' => ['table' => 'brands', 'foreign' => 'brand_id', 'local' => 'id'], 'label_from' => 'brands.name'],
+                'productGroup' => ['column' => 'category_id', 'join' => ['table' => 'categories', 'foreign' => 'category_id', 'local' => 'id'], 'label_from' => 'categories.name'],
+                'name' => ['column' => 'name'],
+                'code' => ['column' => 'code'],
+                'hsn' => ['column' => 'hsn_code'],
+                'type' => ['column' => 'type'],
+                'uom' => ['column' => 'unit'],
+                'section' => ['column' => 'section'],
+                'sellingMode' => ['column' => 'selling_mode'],
+                'barcodeMode' => ['column' => 'barcode_mode'],
+                'barcodeSource' => ['column' => 'barcode_source'],
+                'discountMode' => ['column' => 'discount_mode'],
+                'purchasePlanMode' => ['column' => 'purchase_plan_mode'],
+                'expectedGender' => ['column' => 'expected_gender'],
+                'dumping' => ['column' => 'dumping'],
+                'cess' => ['column' => 'cess'],
+                'dailyPrice' => ['column' => 'daily_price'],
+                'isCore' => ['column' => 'is_core'],
+                'excludeReward' => ['column' => 'exclude_reward'],
+                'autoPo' => ['column' => 'auto_po'],
+                'createdBy' => ['column' => 'created_by'],
+                'updatedBy' => ['column' => 'updated_by'],
             ],
         ],
         'customers' => [
@@ -37,6 +58,9 @@ return [
             // always resolve to a single all-true bucket.
             'groupable_columns' => [
                 'city_id' => ['column' => 'city'],
+                'state_id' => ['column' => 'state'],
+                'name' => ['column' => 'name'],
+                'code' => ['column' => 'code'],
             ],
         ],
         'employees' => [
@@ -47,6 +71,8 @@ return [
             'allowed_sorts' => ['id', 'name', 'code', 'phone', 'created_at'],
             'groupable_columns' => [
                 'is_active' => ['column' => 'is_active'],
+                'name' => ['column' => 'name'],
+                'department_id' => ['column' => 'department_id'],
             ],
         ],
         'brands' => [
@@ -57,6 +83,8 @@ return [
             'allowed_sorts' => ['id', 'name', 'created_at'],
             'groupable_columns' => [
                 'is_active' => ['column' => 'is_active'],
+                'name' => ['column' => 'name'],
+                'code' => ['column' => 'code'],
             ],
         ],
         'categories' => [
@@ -74,6 +102,8 @@ return [
             'allowed_sorts' => ['id', 'name', 'code', 'rate', 'created_at'],
             'groupable_columns' => [
                 'taxType' => ['column' => 'type'],
+                'name' => ['column' => 'name'],
+                'taxCode' => ['column' => 'code'],
             ],
         ],
         'agents' => [
@@ -84,6 +114,7 @@ return [
             'allowed_sorts' => ['id', 'name', 'code', 'phone', 'email', 'created_at'],
             'groupable_columns' => [
                 'is_active' => ['column' => 'is_active'],
+                'name' => ['column' => 'name'],
             ],
         ],
         'transports' => [
@@ -94,6 +125,8 @@ return [
             'allowed_sorts' => ['id', 'name', 'code', 'phone', 'vehicle_no', 'created_at'],
             'groupable_columns' => [
                 'is_active' => ['column' => 'is_active'],
+                'name' => ['column' => 'name'],
+                'contact_person' => ['column' => 'contact_person'],
             ],
         ],
         'sizes' => [
