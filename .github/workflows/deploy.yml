@@ -174,7 +174,12 @@ jobs:
           echo "(Reference - NextErpDeploySecret2026: 0aa741ce0745dbbffb2e88c61c367d7aabce7548a19b1fe9404c038c12342c78)"
           sleep 5
           success=false
-          for i in 1 2 3 4 5 6 7 8; do
+          # 20 retries at 12s apart (~240s) plus the initial 5s sleep gives a
+          # ~245s window - comfortably longer than a 20-30MB deploy.zip can
+          # take to finish uploading via FTPS on this flaky host, so the loop
+          # self-heals instead of exhausting retries while the upload is
+          # still settling (as happened on 2026-09-11).
+          for i in $(seq 1 20); do
             response=$(curl -fsS -G "https://dev.gpsoftware.in/unzip.php" --data-urlencode "token=${TOKEN}") && \
             echo "$response" | grep -q '"status":"success"' && {
               echo "Remote deployment unzipped and migrations run successfully!"
@@ -182,9 +187,9 @@ jobs:
               success=true
               break
             }
-            echo "Attempt $i did not confirm success (FTP upload may still be settling), retrying in 8s..."
+            echo "Attempt $i did not confirm success (FTP upload may still be settling), retrying in 12s..."
             echo "$response"
-            sleep 8
+            sleep 12
           done
           if [ "$success" != "true" ]; then
             echo "::error::Remote unzip never confirmed success after all retries"
