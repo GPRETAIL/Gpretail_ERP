@@ -117,8 +117,10 @@ jobs:
           # example file now ships these blank, so a deploy without the secrets set
           # fails closed (blank DB_PASSWORD/APP_KEY) rather than silently reusing a
           # committed value.
+          # Quoted: dotenv treats an unquoted # as a comment start, which would
+          # silently truncate any password containing one.
           if [ -n "$DB_PASSWORD" ]; then
-            printf '\nDB_PASSWORD=%s\n' "$DB_PASSWORD" >> backend-laravel/.env
+            printf '\nDB_PASSWORD="%s"\n' "$DB_PASSWORD" >> backend-laravel/.env
           fi
           if [ -n "$APP_KEY" ]; then
             printf '\nAPP_KEY=%s\n' "$APP_KEY" >> backend-laravel/.env
