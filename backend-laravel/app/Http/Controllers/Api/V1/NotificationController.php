@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\DirectPurchase;
 use App\Models\Notification;
 use App\Models\PurchaseInvoice;
+use App\Models\StoreLocalNode;
 use App\Services\PaginationService;
 use Illuminate\Http\Request;
 
@@ -15,12 +16,15 @@ class NotificationController extends Controller
     private const OVERDUE_TYPE = 'SUPPLIER_PAYMENT_OVERDUE';
     private const DUE_SOON_DAYS = 30;
     private const OVERDUE_DAYS = 90;
+    private const SYNC_STALE_TYPE = 'SYNC_NODE_STALE';
+    private const SYNC_STALE_THRESHOLD_MINUTES = 5;
 
     public function __construct(private readonly PaginationService $paginationService) {}
 
     public function index(Request $request)
     {
         $this->generateSupplierPaymentAlerts();
+        $this->generateSyncStaleAlerts();
 
         // orderByRaw() here (not applySorting()'s allowed_sorts) because "unread first, then
         // newest" is fixed product behavior, not a user-choosable column -- the same pattern
@@ -37,6 +41,7 @@ class NotificationController extends Controller
     public function unreadCount()
     {
         $this->generateSupplierPaymentAlerts();
+        $this->generateSyncStaleAlerts();
 
         return response()->json(['success' => true, 'data' => ['count' => Notification::unread()->count()]]);
     }
@@ -119,6 +124,53 @@ class NotificationController extends Controller
                     'reference_id' => $bill['reference_id'],
                 ]);
             }
+        }
+    }
+
+    /**
+     * Same lazy-scan-on-open pattern as generateSupplierPaymentAlerts() above, for a
+     * store's local-server node going stale (enabled but hasn't heartbeated recently --
+     * see SyncController::nodes()'s is_stale). Deduped on an UNREAD notification existing
+     * for that store rather than "ever created": a node that recovers and later goes
+     * stale again is a new incident and should alert again, but re-scanning on every bell
+     * open must not spam a fresh row on every request while the first alert sits unread.
+     */
+    private function generateSyncStaleAlerts(): void
+    {
+        $staleThreshold = now()->subMinutes(self::SYNC_STALE_THRESHOLD_MINUTES);
+
+        $staleNodes = StoreLocalNode::with('store:id,name,code')
+            ->where('enabled', true)
+            ->where(function ($q) use ($staleThreshold) {
+                $q->whereNull('last_heartbeat_at')->orWhere('last_heartbeat_at', '<', $staleThreshold);
+            })
+            ->get();
+
+        if ($staleNodes->isEmpty()) {
+            return;
+        }
+
+        $alreadyAlerted = Notification::where('type', self::SYNC_STALE_TYPE)
+            ->whereNull('read_at')
+            ->pluck('reference_id')
+            ->flip();
+
+        foreach ($staleNodes as $node) {
+            if (isset($alreadyAlerted[$node->store_id])) {
+                continue;
+            }
+
+            $storeName = $node->store?->name ?? "Store #{$node->store_id}";
+            $lastSeen = $node->last_heartbeat_at ? $node->last_heartbeat_at->diffForHumans() : 'never';
+
+            Notification::create([
+                'type' => self::SYNC_STALE_TYPE,
+                'title' => 'Local server not syncing',
+                'message' => "{$storeName}'s local server hasn't checked in since {$lastSeen}. It may be down -- sales are running on cloud failover in the meantime.",
+                'link' => '/settings/configure-local-server',
+                'reference_type' => 'STORE_LOCAL_NODE',
+                'reference_id' => $node->store_id,
+            ]);
         }
     }
 }

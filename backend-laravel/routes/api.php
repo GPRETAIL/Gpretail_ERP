@@ -88,6 +88,9 @@ Route::post('sync/outbound/ack', [SyncController::class, 'outboundAck']);
 Route::match(['get', 'post'], 'sync/run-cycle', [SyncController::class, 'runCycle']);
 Route::get('sync/catch-up-export', [SyncController::class, 'catchUpExport']);
 Route::get('sync/nodes', [SyncController::class, 'nodes'])->middleware('auth:sanctum');
+Route::get('sync/outbox', [SyncController::class, 'outboxEvents'])->middleware('auth:sanctum');
+Route::post('sync/outbox/{id}/retry', [SyncController::class, 'retryOutboxEvent'])->middleware('auth:sanctum');
+Route::post('sync/outbox/retry-all', [SyncController::class, 'retryAllFailed'])->middleware('auth:sanctum');
 
 // Helper function to define all application API routes
 $registerAppRoutes = function () {

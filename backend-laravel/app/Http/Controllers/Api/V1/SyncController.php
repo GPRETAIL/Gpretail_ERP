@@ -161,16 +161,30 @@ class SyncController extends Controller
     /**
      * Admin-facing: every store's local-server node and whether it looks stale
      * (enabled but hasn't heartbeated recently). Computed at read time from
-     * last_heartbeat_at -- no background sweep/cron needed.
+     * last_heartbeat_at -- no background sweep/cron needed. Also folds in each
+     * store's sync_outbox backlog (pending/failed counts) -- a node can heartbeat
+     * fine while its own queued writes are stuck behind a failed one (pushPendingWrites
+     * stops draining a batch on the first 5xx), which last_heartbeat_at alone can't
+     * surface.
      */
     public function nodes(Request $request)
     {
         $staleThreshold = now()->subMinutes(5);
 
+        $outboxCounts = SyncOutboxEvent::selectRaw('store_id, status, COUNT(*) as total')
+            ->whereIn('status', ['pending', 'failed'])
+            ->groupBy('store_id', 'status')
+            ->get()
+            ->groupBy('store_id');
+
         $nodes = StoreLocalNode::with('store:id,name,code')
             ->orderBy('store_id')
             ->get()
-            ->map(function (StoreLocalNode $node) use ($staleThreshold) {
+            ->map(function (StoreLocalNode $node) use ($staleThreshold, $outboxCounts) {
+                $counts = $outboxCounts->get($node->store_id, collect());
+                $pending = (int) ($counts->firstWhere('status', 'pending')->total ?? 0);
+                $failed = (int) ($counts->firstWhere('status', 'failed')->total ?? 0);
+
                 return [
                     'store_id' => $node->store_id,
                     'store_name' => $node->store?->name,
@@ -180,10 +194,74 @@ class SyncController extends Controller
                     'last_heartbeat_at' => optional($node->last_heartbeat_at)->toIso8601String(),
                     'last_catch_up_at' => optional($node->last_catch_up_at)->toIso8601String(),
                     'is_stale' => $node->enabled && (! $node->last_heartbeat_at || $node->last_heartbeat_at->lt($staleThreshold)),
+                    'outbox_pending' => $pending,
+                    'outbox_failed' => $failed,
                 ];
             });
 
         return response()->json(['success' => true, 'data' => ['nodes' => $nodes]]);
+    }
+
+    /**
+     * Admin-facing drill-down behind the nodes() summary counts: the actual queued
+     * writes for one store, newest first, optionally narrowed to one status. This is
+     * what lets an admin see *why* a store's outbox is backed up (last_error) instead
+     * of just that it is.
+     */
+    public function outboxEvents(Request $request)
+    {
+        $storeId = (int) $request->input('store_id');
+        if (! $storeId) {
+            return response()->json(['success' => false, 'message' => 'store_id is required'], 422);
+        }
+
+        $query = SyncOutboxEvent::where('store_id', $storeId);
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->input('status'));
+        }
+
+        $events = $query->orderByDesc('id')
+            ->limit(100)
+            ->get(['id', 'method', 'path', 'status', 'attempts', 'last_error', 'synced_at', 'created_at']);
+
+        return response()->json(['success' => true, 'data' => ['events' => $events]]);
+    }
+
+    /**
+     * Resets one failed event back to pending so the next sync:cycle run picks it up
+     * again -- for a transient failure (cloud was briefly unhealthy) rather than a
+     * genuine bad payload, which just needs one more attempt rather than a code fix.
+     */
+    public function retryOutboxEvent(Request $request, $id)
+    {
+        $event = SyncOutboxEvent::find($id);
+        if (! $event) {
+            return response()->json(['success' => false, 'message' => 'Sync event not found'], 404);
+        }
+
+        $event->update(['status' => 'pending', 'last_error' => null]);
+
+        return response()->json(['success' => true, 'data' => $event]);
+    }
+
+    /**
+     * Bulk version of retryOutboxEvent for one store -- clearing a whole backlog after
+     * fixing whatever caused it (e.g. cloud was down for an hour) shouldn't need one
+     * click per event.
+     */
+    public function retryAllFailed(Request $request)
+    {
+        $storeId = (int) $request->input('store_id');
+        if (! $storeId) {
+            return response()->json(['success' => false, 'message' => 'store_id is required'], 422);
+        }
+
+        $count = SyncOutboxEvent::where('store_id', $storeId)
+            ->where('status', 'failed')
+            ->update(['status' => 'pending', 'last_error' => null]);
+
+        return response()->json(['success' => true, 'data' => ['retried' => $count]]);
     }
 
     private function authenticateNode(Request $request): ?StoreLocalNode

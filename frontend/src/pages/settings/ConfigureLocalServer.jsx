@@ -1,9 +1,12 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import {
   AlertCircle,
   CheckCircle2,
+  ChevronDown,
+  ChevronRight,
   Loader2,
   RefreshCw,
+  RotateCcw,
   Save,
   Wifi,
   WifiOff,
@@ -60,6 +63,11 @@ export default function ConfigureLocalServer() {
   const [config, setConfig] = useState(null);
   const [localServerUrl, setLocalServerUrl] = useState("");
   const [nodes, setNodes] = useState([]);
+  const [expandedStoreId, setExpandedStoreId] = useState(null);
+  const [outboxEvents, setOutboxEvents] = useState([]);
+  const [outboxLoading, setOutboxLoading] = useState(false);
+  const [retryingId, setRetryingId] = useState(null);
+  const [retryingAllStoreId, setRetryingAllStoreId] = useState(null);
 
   const loadConfig = async ({ silent = false } = {}) => {
     try {
@@ -84,6 +92,54 @@ export default function ConfigureLocalServer() {
       setNodes(res.data?.data?.nodes || []);
     } catch {
       // Non-critical: leave the health table blank rather than surfacing another toast.
+    }
+  };
+
+  const loadOutboxEvents = async (storeId) => {
+    try {
+      setOutboxLoading(true);
+      const res = await api.get("/sync/outbox", { params: { store_id: storeId } });
+      setOutboxEvents(res.data?.data?.events || []);
+    } catch {
+      setOutboxEvents([]);
+    } finally {
+      setOutboxLoading(false);
+    }
+  };
+
+  const toggleExpand = (storeId) => {
+    if (expandedStoreId === storeId) {
+      setExpandedStoreId(null);
+      setOutboxEvents([]);
+      return;
+    }
+    setExpandedStoreId(storeId);
+    loadOutboxEvents(storeId);
+  };
+
+  const handleRetryEvent = async (eventId, storeId) => {
+    try {
+      setRetryingId(eventId);
+      await api.post(`/sync/outbox/${eventId}/retry`);
+      toast.success("Event queued for retry");
+      await Promise.all([loadOutboxEvents(storeId), loadNodes()]);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to retry event");
+    } finally {
+      setRetryingId(null);
+    }
+  };
+
+  const handleRetryAll = async (storeId) => {
+    try {
+      setRetryingAllStoreId(storeId);
+      const res = await api.post("/sync/outbox/retry-all", { store_id: storeId });
+      toast.success(`${res.data?.data?.retried || 0} event(s) queued for retry`);
+      await Promise.all([loadOutboxEvents(storeId), loadNodes()]);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to retry events");
+    } finally {
+      setRetryingAllStoreId(null);
     }
   };
 
@@ -273,10 +329,12 @@ export default function ConfigureLocalServer() {
             <table className="w-full text-sm text-left">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                  <th className="py-2 pr-4"></th>
                   <th className="py-2 pr-4">Store</th>
                   <th className="py-2 pr-4">Status</th>
                   <th className="py-2 pr-4">Last Heartbeat</th>
                   <th className="py-2 pr-4">Last Catch-up</th>
+                  <th className="py-2 pr-4">Outbox</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -287,24 +345,129 @@ export default function ConfigureLocalServer() {
                       ? { label: "Healthy", textClass: "text-green-600 dark:text-green-400", Icon: CheckCircle2 }
                       : { label: "Offline", textClass: "text-gray-500 dark:text-gray-400", Icon: WifiOff };
                   const NodeIcon = nodeTone.Icon;
+                  const hasBacklog = (node.outbox_pending || 0) > 0 || (node.outbox_failed || 0) > 0;
+                  const isExpanded = expandedStoreId === node.store_id;
 
                   return (
-                    <tr key={node.store_id}>
-                      <td className="py-2 pr-4 text-gray-900 dark:text-gray-100">
-                        {node.store_name || `Store #${node.store_id}`}
-                        {node.store_code ? (
-                          <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">({node.store_code})</span>
-                        ) : null}
-                      </td>
-                      <td className={`py-2 pr-4 font-medium ${nodeTone.textClass}`}>
-                        <span className="inline-flex items-center gap-1.5">
-                          <NodeIcon className="w-3.5 h-3.5" />
-                          {nodeTone.label}
-                        </span>
-                      </td>
-                      <td className="py-2 pr-4 text-gray-700 dark:text-gray-300">{formatDateTime(node.last_heartbeat_at)}</td>
-                      <td className="py-2 pr-4 text-gray-700 dark:text-gray-300">{formatDateTime(node.last_catch_up_at)}</td>
-                    </tr>
+                    <Fragment key={node.store_id}>
+                      <tr
+                        className={hasBacklog ? "cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/60" : ""}
+                        onClick={hasBacklog ? () => toggleExpand(node.store_id) : undefined}
+                      >
+                        <td className="py-2 pl-1 w-6 text-gray-400 dark:text-gray-500">
+                          {hasBacklog ? (
+                            isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />
+                          ) : null}
+                        </td>
+                        <td className="py-2 pr-4 text-gray-900 dark:text-gray-100">
+                          {node.store_name || `Store #${node.store_id}`}
+                          {node.store_code ? (
+                            <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">({node.store_code})</span>
+                          ) : null}
+                        </td>
+                        <td className={`py-2 pr-4 font-medium ${nodeTone.textClass}`}>
+                          <span className="inline-flex items-center gap-1.5">
+                            <NodeIcon className="w-3.5 h-3.5" />
+                            {nodeTone.label}
+                          </span>
+                        </td>
+                        <td className="py-2 pr-4 text-gray-700 dark:text-gray-300">{formatDateTime(node.last_heartbeat_at)}</td>
+                        <td className="py-2 pr-4 text-gray-700 dark:text-gray-300">{formatDateTime(node.last_catch_up_at)}</td>
+                        <td className="py-2 pr-4">
+                          {node.outbox_pending > 0 && (
+                            <span className="mr-2 text-gray-600 dark:text-gray-300">{node.outbox_pending} pending</span>
+                          )}
+                          {node.outbox_failed > 0 && (
+                            <span className="font-medium text-red-600 dark:text-red-400">{node.outbox_failed} failed</span>
+                          )}
+                          {!hasBacklog && <span className="text-gray-400 dark:text-gray-500">Clear</span>}
+                        </td>
+                      </tr>
+                      {isExpanded && (
+                        <tr>
+                          <td colSpan={6} className="bg-gray-50 dark:bg-gray-800/40 px-3 py-3">
+                            <div className="flex items-center justify-between mb-2">
+                              <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                                Queued writes for this store
+                              </h3>
+                              {node.outbox_failed > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleRetryAll(node.store_id)}
+                                  disabled={retryingAllStoreId === node.store_id}
+                                  className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 dark:border-gray-600 px-2.5 py-1 text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-60"
+                                >
+                                  {retryingAllStoreId === node.store_id ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                  ) : (
+                                    <RotateCcw className="w-3 h-3" />
+                                  )}
+                                  Retry All Failed
+                                </button>
+                              )}
+                            </div>
+
+                            {outboxLoading ? (
+                              <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 py-2">
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                Loading...
+                              </div>
+                            ) : outboxEvents.length === 0 ? (
+                              <div className="text-xs text-gray-500 dark:text-gray-400 py-2">No queued events.</div>
+                            ) : (
+                              <div className="space-y-1.5">
+                                {outboxEvents.map((event) => (
+                                  <div
+                                    key={event.id}
+                                    className="flex items-start justify-between gap-3 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-2.5 py-2 text-xs"
+                                  >
+                                    <div className="min-w-0">
+                                      <div className="flex items-center gap-2">
+                                        <span
+                                          className={`font-medium ${
+                                            event.status === "failed"
+                                              ? "text-red-600 dark:text-red-400"
+                                              : event.status === "acked"
+                                                ? "text-green-600 dark:text-green-400"
+                                                : "text-gray-600 dark:text-gray-300"
+                                          }`}
+                                        >
+                                          {event.status}
+                                        </span>
+                                        <span className="text-gray-500 dark:text-gray-400">{event.method}</span>
+                                        <span className="text-gray-700 dark:text-gray-300 truncate">{event.path}</span>
+                                        {event.attempts > 0 && (
+                                          <span className="text-gray-400 dark:text-gray-500">({event.attempts} attempt{event.attempts === 1 ? "" : "s"})</span>
+                                        )}
+                                      </div>
+                                      {event.last_error && (
+                                        <div className="mt-1 text-red-500 dark:text-red-400 break-all">{event.last_error}</div>
+                                      )}
+                                      <div className="mt-1 text-gray-400 dark:text-gray-500">{formatDateTime(event.created_at)}</div>
+                                    </div>
+                                    {event.status === "failed" && (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleRetryEvent(event.id, node.store_id)}
+                                        disabled={retryingId === event.id}
+                                        className="shrink-0 inline-flex items-center gap-1 rounded border border-gray-300 dark:border-gray-600 px-2 py-1 text-[11px] font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-60"
+                                      >
+                                        {retryingId === event.id ? (
+                                          <Loader2 className="w-3 h-3 animate-spin" />
+                                        ) : (
+                                          <RotateCcw className="w-3 h-3" />
+                                        )}
+                                        Retry
+                                      </button>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
                   );
                 })}
               </tbody>
