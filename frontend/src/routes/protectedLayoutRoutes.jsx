@@ -1,9 +1,17 @@
 import React, { Suspense, lazy } from "react";
-import { matchRoutes, Navigate, Route, Routes } from "react-router-dom";
+import { matchRoutes, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import PageSkeleton from "../components/PageSkeleton";
 import ChunkErrorBoundary from "../components/ChunkErrorBoundary";
 
 const RouteLoadingFallback = () => <PageSkeleton variant="form" rows={8} />;
+
+// HRMS moved out from under /masters/* into its own module -- this keeps old
+// bookmarks/links (including deep links carrying ?type=&id=) working instead
+// of dropping the visitor on a blank/broken page.
+const RedirectPreservingQuery = ({ to }) => {
+  const location = useLocation();
+  return <Navigate to={`${to}${location.search}`} replace />;
+};
 
 const Dashboard = lazy(() => import("../pages/Dashboard"));
 const ComingSoon = lazy(() => import("../pages/ComingSoon"));
@@ -96,11 +104,14 @@ export const protectedLayoutRoutes = [
   { path: "/masters/transport/edit/:id", render: () => <TransportForm /> },
   { path: "/masters/supplier", render: () => <Supplier /> },
   { path: "/masters/agent", render: () => <Agent /> },
-  { path: "/masters/employee", render: () => <Employee /> },
   { path: "/masters/configuration", render: () => <Configuration /> },
   { path: "/masters/configuration/new", render: () => <ConfigurationForm /> },
-  { path: "/masters/hr-configuration", render: () => <HrConfiguration /> },
-  { path: "/masters/hr-configuration/new", render: () => <HrConfigurationForm /> },
+  { path: "/hrms/employee", render: () => <Employee /> },
+  { path: "/hrms/hr-configuration", render: () => <HrConfiguration /> },
+  { path: "/hrms/hr-configuration/new", render: () => <HrConfigurationForm /> },
+  { path: "/masters/employee", render: () => <RedirectPreservingQuery to="/hrms/employee" /> },
+  { path: "/masters/hr-configuration", render: () => <RedirectPreservingQuery to="/hrms/hr-configuration" /> },
+  { path: "/masters/hr-configuration/new", render: () => <RedirectPreservingQuery to="/hrms/hr-configuration/new" /> },
   { path: "/masters/product", render: () => <Product /> },
   { path: "/masters/product/new", render: () => <ProductForm /> },
   { path: "/masters/product/:code", render: () => <ProductForm /> },

@@ -71,10 +71,10 @@ const buildPresetPermissions = (presetRole) => {
   const storePaths = getSectionPaths("Store");
 
   const hrPaths = [
-    getPagePath("Masters", "Employee"),
-    getPagePath("Masters", "Employee In/Out"),
-    getPagePath("Masters", "HR Configuration"),
-    getPagePath("Masters", "Salary Management"),
+    getPagePath("HRMS", "Employee"),
+    getPagePath("HRMS", "Employee In/Out"),
+    getPagePath("HRMS", "HR Configuration"),
+    getPagePath("HRMS", "Salary Management"),
   ].filter(Boolean);
 
   const financeReportPaths = [
@@ -115,7 +115,7 @@ const buildPresetPermissions = (presetRole) => {
       setActionsForPaths(permissions, financePaths, FULL_ACTIONS);
       setActionsForPaths(permissions, salesPaths, VIEW_ONLY_ACTIONS);
       setActionsForPaths(permissions, warehousePaths, VIEW_ONLY_ACTIONS);
-      setActionsForPath(permissions, getPagePath("Masters", "Salary Management"), FULL_ACTIONS);
+      setActionsForPath(permissions, getPagePath("HRMS", "Salary Management"), FULL_ACTIONS);
       setActionsForPath(permissions, getPagePath("Settings", "Printing Configuration"), VIEW_ONLY_ACTIONS);
       break;
 

@@ -467,7 +467,7 @@ const Employee = () => {
 
   const handleBackClick = () => {
     if (showSearchPage) {
-      navigate("/masters");
+      navigate("/hrms");
       return;
     }
     setShowSearchPage(true);
@@ -1183,7 +1183,7 @@ const Employee = () => {
         searchButtonClassName="glass-btn glass-btn-primary flex items-center disabled:opacity-50"
         showExport={false}
         enableColumnResize
-        tablePreferenceKey="masters.employees.list"
+        tablePreferenceKey="hrms.employees.list"
         onRefresh={() => handleSearch()}
         enableServerSearch
         onServerSearch={handleServerSearch}
@@ -1280,10 +1280,10 @@ const Employee = () => {
           <h1 className="text-sm font-semibold flex items-center gap-1">
             <button
               type="button"
-              onClick={() => navigate("/masters")}
+              onClick={() => navigate("/hrms")}
               className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
             >
-              Master
+              HRMS
             </button>
             <span className="text-gray-500 dark:text-gray-400">/</span>
             <span>Employee</span>

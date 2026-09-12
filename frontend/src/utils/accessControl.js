@@ -17,7 +17,7 @@ export const USER_ROLE = {
 // on the auth user as `entitlements`). Absent => unrestricted (owner, super
 // admin, or legacy companies). Shape: { sections: { "<slug>": "all" | [paths] } }
 const MODULE_SLUGS = new Set([
-  "warehouse", "crm", "sales", "finance", "store", "analytical", "masters", "settings", "dashboard",
+  "warehouse", "crm", "sales", "finance", "store", "analytical", "masters", "hrms", "settings", "dashboard",
 ]);
 
 const firstSegment = (pathname) => {
@@ -111,6 +111,7 @@ const getCapability = (user) => {
     canStore: isSuperAdmin || isAdmin || isManager,
     canAnalytical: isSuperAdmin || isAdmin || isManager,
     canMasters: isSuperAdmin || isAdmin || isManager,
+    canHrms: isSuperAdmin || isAdmin || isManager,
     canSettings: isSuperAdmin || isAdmin,
   };
 };
@@ -180,6 +181,7 @@ export const canAccessPath = (pathname, user) => {
   if (path.startsWith("/store")) return cap.canStore;
   if (path.startsWith("/analytical")) return cap.canAnalytical;
   if (path.startsWith("/masters")) return cap.canMasters;
+  if (path.startsWith("/hrms")) return cap.canHrms;
 
   return false;
 };
@@ -217,6 +219,7 @@ export const getVisibleNavItems = (items, user) => {
       cap.canStore && "Store",
       cap.canAnalytical && "Analytical",
       cap.canMasters && "Masters",
+      cap.canHrms && "HRMS",
       canAccessUserAccess(user) && "User Access",
       cap.canSettings && "Settings",
     ].filter(Boolean)

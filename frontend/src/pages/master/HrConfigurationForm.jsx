@@ -271,7 +271,7 @@ const HrConfigurationForm = () => {
         await api.post(baseEndpoint, payload);
         toast.success(`${typeLabel} created successfully`);
       }
-      navigate("/masters/hr-configuration");
+      navigate("/hrms/hr-configuration");
     } catch (err) {
       toast.error(err.response?.data?.message || `Failed to save ${typeLabel.toLowerCase()}`);
     } finally {
@@ -290,15 +290,15 @@ const HrConfigurationForm = () => {
           <h1 className="text-sm font-semibold flex items-center gap-1">
             <button
               type="button"
-              onClick={() => navigate("/masters")}
+              onClick={() => navigate("/hrms")}
               className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
             >
-              Master
+              HRMS
             </button>
             <span className="text-gray-500 dark:text-gray-400">/</span>
             <button
               type="button"
-              onClick={() => navigate("/masters/hr-configuration")}
+              onClick={() => navigate("/hrms/hr-configuration")}
               className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
             >
               HR Configuration

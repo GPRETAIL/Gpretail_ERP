@@ -141,10 +141,10 @@ const HrConfiguration = () => {
           <h1 className="text-sm font-semibold flex items-center gap-1">
             <button
               type="button"
-              onClick={() => navigate("/masters")}
+              onClick={() => navigate("/hrms")}
               className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
             >
-              Master
+              HRMS
             </button>
             <span className="text-gray-500 dark:text-gray-400">/</span>
             <span>HR Configuration</span>
@@ -152,7 +152,7 @@ const HrConfiguration = () => {
         </div>
         <div className="flex items-center space-x-3 text-xs font-medium text-gray-700 dark:text-gray-300">
           <button
-            onClick={() => navigate(`/masters/hr-configuration/new?type=${configType}`)}
+            onClick={() => navigate(`/hrms/hr-configuration/new?type=${configType}`)}
             className="topbar-action-btn topbar-action-new"
           >
             <PlusCircle className="w-3 h-3 mr-1" /> New
@@ -179,14 +179,14 @@ const HrConfiguration = () => {
           <FilterableDataTable
             rows={rows}
             columns={hrColumns}
-            onRowClick={(row) => navigate(`/masters/hr-configuration/new?type=${configType}&id=${row.id}`)}
+            onRowClick={(row) => navigate(`/hrms/hr-configuration/new?type=${configType}&id=${row.id}`)}
             enableKeyboardNav
             loading={loading}
             emptyText="No records found."
             searchPlaceholder={`Search in ${typeLabel.toLowerCase()} fields...`}
             searchButtonClassName="glass-btn glass-btn-primary flex items-center disabled:opacity-50"
             showExport={false}
-            tablePreferenceKey={`masters.hr-configuration.${safeType}`}
+            tablePreferenceKey={`hrms.hr-configuration.${safeType}`}
             paginationMode="client"
             page={tablePage}
             limit={tableLimit}
@@ -200,7 +200,7 @@ const HrConfiguration = () => {
             renderActions={(row) => (
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => navigate(`/masters/hr-configuration/new?type=${configType}&id=${row.id}`)}
+                  onClick={() => navigate(`/hrms/hr-configuration/new?type=${configType}&id=${row.id}`)}
                   title="Edit"
                   className="glass-btn glass-btn-primary"
                   type="button"

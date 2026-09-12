@@ -8,6 +8,7 @@ import {
   CommandLineIcon, // Masters (Data/Configuration)
   Cog6ToothIcon, // Settings (System Config)
   BuildingOffice2Icon, // Create Company (Admin Portal)
+  UsersIcon, // HRMS (Employees/HR)
 
   // Sub-menu icons (Optional, for future use in NavItem component)
   TruckIcon,
@@ -505,22 +506,6 @@ export const navItems = [
         icon: DocumentTextIcon,
       },
       { name: "Agent", path: "/masters/agent", icon: CommandLineIcon },
-      { name: "Employee", path: "/masters/employee", icon: CommandLineIcon },
-      {
-        name: "Employee In/Out",
-        path: "/masters/employee-in-out",
-        icon: ClockIcon,
-      },
-      {
-        name: "HR Configuration",
-        path: "/masters/hr-configuration",
-        icon: Cog6ToothIcon,
-      },
-      {
-        name: "Salary Management",
-        path: "/masters/salary-management",
-        icon: CreditCardIcon,
-      },
       { name: "Tailor", path: "/masters/tailor", icon: CommandLineIcon },
       {
         name: "Configuration",
@@ -539,6 +524,29 @@ export const navItems = [
       },
     ],
     path: "/masters",
+  },
+  {
+    name: "HRMS",
+    icon: UsersIcon,
+    subItems: [
+      { name: "Employee", path: "/hrms/employee", icon: UsersIcon },
+      {
+        name: "Employee In/Out",
+        path: "/hrms/employee-in-out",
+        icon: ClockIcon,
+      },
+      {
+        name: "HR Configuration",
+        path: "/hrms/hr-configuration",
+        icon: Cog6ToothIcon,
+      },
+      {
+        name: "Salary Management",
+        path: "/hrms/salary-management",
+        icon: CreditCardIcon,
+      },
+    ],
+    path: "/hrms",
   },
   {
     name: "User Access",

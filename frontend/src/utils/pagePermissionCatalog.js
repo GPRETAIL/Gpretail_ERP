@@ -11,6 +11,7 @@ export const ASSIGNABLE_SECTION_NAMES = [
   "Store",
   "Analytical",
   "Masters",
+  "HRMS",
   "Settings",
 ];
 
