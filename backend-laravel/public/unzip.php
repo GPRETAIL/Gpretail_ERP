@@ -49,26 +49,41 @@ if ($res === true) {
     }
 
     $migrationOutput = '';
-    // Automatically run database migrations via Laravel Console Kernel
+    $cacheOutput = '';
+    // Bootstrap Laravel, then clear+rebuild caches BEFORE migrate. These used to
+    // run after migrate in the same try block, so a bad DB credential (this
+    // deploy's, or one baked into a stale bootstrap/cache/config.php from a much
+    // earlier deploy) made migrate throw, which aborted the block before
+    // config:clear/config:cache ever ran -- leaving the OLD cached config in
+    // place forever, since a stale bad password makes every future migrate fail
+    // the exact same way before it ever gets a chance to clear itself. Clearing
+    // and rebuilding first, unconditionally, means this deploy's real .env is
+    // what's actually in effect regardless of whether migrate itself succeeds.
     try {
         $baseDir = file_exists(__DIR__ . '/vendor/autoload.php') ? __DIR__ : dirname(__DIR__);
         require_once $baseDir . '/vendor/autoload.php';
         $app = require_once $baseDir . '/bootstrap/app.php';
         $kernel = $app->make(\Illuminate\Contracts\Console\Kernel::class);
         $kernel->bootstrap();
-        
-        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-        $migrationOutput = \Illuminate\Support\Facades\Artisan::output();
-        
+
         \Illuminate\Support\Facades\Artisan::call('config:clear');
         \Illuminate\Support\Facades\Artisan::call('route:clear');
         \Illuminate\Support\Facades\Artisan::call('cache:clear');
         \Illuminate\Support\Facades\Artisan::call('config:cache');
         \Illuminate\Support\Facades\Artisan::call('route:cache');
         \Illuminate\Support\Facades\Artisan::call('view:cache');
+        $cacheOutput = 'Caches cleared and rebuilt.';
+    } catch (\Throwable $e) {
+        $cacheOutput = 'Cache note: ' . $e->getMessage();
+    }
+
+    try {
+        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+        $migrationOutput = \Illuminate\Support\Facades\Artisan::output();
     } catch (\Throwable $e) {
         $migrationOutput = 'Migration note: ' . $e->getMessage();
     }
+    $migrationOutput = $cacheOutput . "\n" . $migrationOutput;
 
     echo json_encode([
         'status'     => 'success',
