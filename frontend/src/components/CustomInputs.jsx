@@ -1,3 +1,5 @@
+import AsyncSearchSelect from "./AsyncSearchSelect";
+
 const TextInput = ({
   label,
   name,
@@ -215,10 +217,49 @@ const DualTextInput = ({
   </div>
 );
 
+/**
+ * Same label/layout contract as SelectInput, but backed by AsyncSearchSelect so the field can
+ * find rows beyond whatever was preloaded. For fields fed by large tables (taxes, products,
+ * brands, suppliers, employees...) where a plain <select> over a capped preload can't ever
+ * surface most of the real data. Small fixed lists should keep using SelectInput.
+ */
+const AsyncSelectInput = ({
+  label,
+  name,
+  required = false,
+  options = [],
+  value,
+  onChange,
+  onAsyncSearch,
+  disabled = false,
+}) => (
+  <div className="flex items-center">
+    <label
+      className="w-2/5 text-xs font-medium
+      text-gray-700 dark:text-gray-300 text-right pr-3"
+    >
+      {required && <span className="text-red-500 mr-1">*</span>} {label}
+    </label>
+    <div className="flex-1">
+      <AsyncSearchSelect
+        name={name}
+        value={value}
+        onChange={onChange}
+        options={options}
+        onAsyncSearch={onAsyncSearch}
+        disabled={disabled}
+        placeholder={`Select ${label}`}
+        searchPlaceholder={`Search ${String(label || "").toLowerCase()}...`}
+      />
+    </div>
+  </div>
+);
+
 export {
   TextInput,
   CheckboxInput,
   CheckboxSelectInput,
   DualTextInput,
   SelectInput,
+  AsyncSelectInput,
 };

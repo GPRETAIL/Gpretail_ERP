@@ -4,8 +4,14 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../../api/axios";
 import Toast from "../../components/Toast";
 import PageSkeleton from "../../components/PageSkeleton";
+import AsyncSearchSelect from "../../components/AsyncSearchSelect";
 
 const today = new Date().toISOString().split("T")[0];
+
+const mapEmployeeOption = (employee) => ({
+  value: String(employee.id),
+  label: employee.name,
+});
 
 const formatDate = (value) => {
   if (!value) return "-";
@@ -87,6 +93,21 @@ const TransportIssueEntry = () => {
 
   const showToast = (type, message) => setToast({ open: true, type, message });
 
+  const handleAsyncEmployeeSearch = async (term) => {
+    try {
+      const res = await api.get("/employees", { params: { search: term, limit: 50 } });
+      const rows = res.data?.data || [];
+      const mapped = rows.map(mapEmployeeOption);
+      setEmployees((prev) => {
+        const existingIds = new Set(prev.map((e) => e.value));
+        return [...prev, ...mapped.filter((e) => !existingIds.has(e.value))];
+      });
+      return mapped;
+    } catch {
+      return [];
+    }
+  };
+
   useEffect(() => {
     if (!transportEntryId) {
       setLoading(false);
@@ -119,7 +140,7 @@ const TransportIssueEntry = () => {
         const nextIssueItems = persistedRows.length > 0 ? persistedRows : (defaultRow ? [defaultRow] : []);
 
         setTransportEntry(entry);
-        setEmployees(employeeRows);
+        setEmployees(employeeRows.map(mapEmployeeOption));
         setIssueItems(nextIssueItems);
         setForm({
           bookingOffice: toDisplay(entry?.transport?.name),
@@ -315,18 +336,15 @@ const TransportIssueEntry = () => {
               <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                 <span className="text-red-500 dark:text-red-400">*</span> Collected By
               </label>
-              <select
+              <AsyncSearchSelect
+                name="collectedById"
                 value={form.collectedById}
                 onChange={(e) => handleFieldChange("collectedById", e.target.value)}
-                className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-2 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500"
-              >
-                <option value="">Employee</option>
-                {employees.map((employee) => (
-                  <option key={employee.id} value={employee.id}>
-                    {employee.name}
-                  </option>
-                ))}
-              </select>
+                options={employees}
+                onAsyncSearch={handleAsyncEmployeeSearch}
+                placeholder="Employee"
+                searchPlaceholder="Search employees..."
+              />
             </div>
 
             <div>

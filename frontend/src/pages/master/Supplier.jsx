@@ -10,6 +10,7 @@ import { createGroupFetchers } from "../../utils/serverGrouping";
 const { onFetchGroupSummaries: fetchSupplierGroupSummaries, onFetchGroupRows: fetchSupplierGroupRows } =
   createGroupFetchers("/suppliers", { city_id: "city" });
 import ConfirmDialog from "../../components/ConfirmDialog";
+import AsyncSearchSelect from "../../components/AsyncSearchSelect";
 import ExportBottomSheet from "../../components/ExportBottomSheet";
 import UploadImportButton from "../../components/UploadImportButton";
 import { handleEnterKeyNavigation } from "../../utils/enterToNextField";
@@ -362,7 +363,7 @@ const Supplier = () => {
     Promise.all([
       cfg("city"),
       cfg("state"),
-      api.get("/transports").then((r) => (r.data?.data || []).map((x) => ({ value: String(x.id), label: x.name }))).catch(() => []),
+      api.get("/transports", { params: { limit: 100 } }).then((r) => (r.data?.data || []).map((x) => ({ value: String(x.id), label: x.name }))).catch(() => []),
       cfg("location"),
       api.get("/companies").then((r) => (r.data?.data || []).map((x) => ({ value: String(x.id), label: x.name }))).catch(() => []),
       cfg("supplier_group"),
@@ -372,14 +373,64 @@ const Supplier = () => {
       cfg("vendor"),
       cfg("tds_group"),
       cfg("address_type"),
-      api.get("/products").then((r) => (r.data?.data || []).map((x) => ({ value: String(x.id), label: x.name }))).catch(() => []),
-      api.get("/brands").then((r) => (r.data?.data || []).map((x) => ({ value: String(x.id), label: x.name }))).catch(() => []),
+      api.get("/products", { params: { limit: 300 } }).then((r) => (r.data?.data || []).map((x) => ({ value: String(x.id), label: x.name }))).catch(() => []),
+      api.get("/brands", { params: { limit: 300 } }).then((r) => (r.data?.data || []).map((x) => ({ value: String(x.id), label: x.name }))).catch(() => []),
       cfg("document_type"),
     ]).then(([cities, states, transports, locations, companies, supplierGroups, buyerGroups,
       deliveryLocations, banks, agents, tdsGroups, addressTypes, products, brands, documentTypes]) => {
       setOpts({ cities, states, transports, locations, companies, supplierGroups, buyerGroups,
         deliveryLocations, banks, agents, tdsGroups, addressTypes, products, brands, documentTypes });
     });
+  }, []);
+
+  // Preloads above are capped batches -- these hit each resource's own ?search= endpoint so
+  // AsyncSearchSelect can find anything beyond that initial batch.
+  const handleAsyncTransportSearch = useCallback(async (query) => {
+    try {
+      const res = await api.get("/transports", { params: { search: query, limit: 50 } });
+      const mapped = (res.data?.data || []).map((x) => ({ value: String(x.id), label: x.name }));
+      if (mapped.length) {
+        setOpts((prev) => {
+          const existingIds = new Set(prev.transports.map((o) => o.value));
+          return { ...prev, transports: [...prev.transports, ...mapped.filter((o) => !existingIds.has(o.value))] };
+        });
+      }
+      return mapped;
+    } catch {
+      return [];
+    }
+  }, []);
+
+  const handleAsyncProductSearch = useCallback(async (query) => {
+    try {
+      const res = await api.get("/products", { params: { search: query, limit: 50 } });
+      const mapped = (res.data?.data || []).map((x) => ({ value: String(x.id), label: x.name }));
+      if (mapped.length) {
+        setOpts((prev) => {
+          const existingIds = new Set(prev.products.map((o) => o.value));
+          return { ...prev, products: [...prev.products, ...mapped.filter((o) => !existingIds.has(o.value))] };
+        });
+      }
+      return mapped;
+    } catch {
+      return [];
+    }
+  }, []);
+
+  const handleAsyncBrandSearch = useCallback(async (query) => {
+    try {
+      const res = await api.get("/brands", { params: { search: query, limit: 50 } });
+      const mapped = (res.data?.data || []).map((x) => ({ value: String(x.id), label: x.name }));
+      if (mapped.length) {
+        setOpts((prev) => {
+          const existingIds = new Set(prev.brands.map((o) => o.value));
+          return { ...prev, brands: [...prev.brands, ...mapped.filter((o) => !existingIds.has(o.value))] };
+        });
+      }
+      return mapped;
+    } catch {
+      return [];
+    }
   }, []);
 
   const handleChange = (e) => {
@@ -682,7 +733,20 @@ const Supplier = () => {
         <TextInput label="Pincode" name="pincode" value={formData.pincode} onChange={handleChange} />
         <TextInput label="Email ID" name="emailId" value={formData.emailId} onChange={handleChange} />
 
-        <SelectInput label="Transport" name="transport" value={formData.transport} onChange={handleChange} options={opts.transports} />
+        <div className="flex items-center">
+          <label className="w-1/2 text-sm font-medium text-gray-700 dark:text-gray-300">Transport</label>
+          <div className="flex-1 ml-3">
+            <AsyncSearchSelect
+              name="transport"
+              value={formData.transport}
+              onChange={handleChange}
+              options={opts.transports}
+              onAsyncSearch={handleAsyncTransportSearch}
+              placeholder="Select Transport"
+              searchPlaceholder="Search transports..."
+            />
+          </div>
+        </div>
 
         <DualSelectInput label="Supplier / Buyer Group"
           name1="supplierGroup" value1={formData.supplierGroup}
@@ -820,7 +884,20 @@ const Supplier = () => {
         <h3 className="text-sm font-semibold text-red-600 dark:text-red-400">Product</h3>
         <div className="flex items-center">
           <div className="flex-1">
-            <AdvanceSelectInput label="Name" name="advanceProductName" options={opts.products} value={formData.advanceProductName} onChange={handleChange} />
+            <div className="flex items-center">
+              <label className="w-[35%] text-sm font-medium text-gray-700 dark:text-gray-300 pr-1 text-left">Name</label>
+              <div className="w-[65%]">
+                <AsyncSearchSelect
+                  name="advanceProductName"
+                  options={opts.products}
+                  value={formData.advanceProductName}
+                  onChange={handleChange}
+                  onAsyncSearch={handleAsyncProductSearch}
+                  placeholder="Select Name"
+                  searchPlaceholder="Search products..."
+                />
+              </div>
+            </div>
           </div>
           <button className="glass-btn glass-btn-primary p-1.5 ml-1" type="button">
             <PlusCircle className="w-4 h-4" />
@@ -842,7 +919,20 @@ const Supplier = () => {
         <h3 className="text-sm font-semibold text-red-600 dark:text-red-400 pt-3">Brand</h3>
         <div className="flex items-center">
           <div className="flex-1">
-            <AdvanceSelectInput label="Name" name="advanceBrandName" options={opts.brands} value={formData.advanceBrandName} onChange={handleChange} />
+            <div className="flex items-center">
+              <label className="w-[35%] text-sm font-medium text-gray-700 dark:text-gray-300 pr-1 text-left">Name</label>
+              <div className="w-[65%]">
+                <AsyncSearchSelect
+                  name="advanceBrandName"
+                  options={opts.brands}
+                  value={formData.advanceBrandName}
+                  onChange={handleChange}
+                  onAsyncSearch={handleAsyncBrandSearch}
+                  placeholder="Select Name"
+                  searchPlaceholder="Search brands..."
+                />
+              </div>
+            </div>
           </div>
           <button className="glass-btn glass-btn-primary p-1.5 ml-1" type="button">
             <PlusCircle className="w-4 h-4" />

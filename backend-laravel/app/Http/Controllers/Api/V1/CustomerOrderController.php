@@ -475,7 +475,8 @@ class CustomerOrderController extends Controller
             $query->where(function ($q) use ($s) {
                 $q->where('name', 'like', "%{$s}%")
                     ->orWhere('phone', 'like', "%{$s}%")
-                    ->orWhere('code', 'like', "%{$s}%");
+                    ->orWhere('code', 'like', "%{$s}%")
+                    ->orWhere('email', 'like', "%{$s}%");
             });
         }
 
@@ -509,11 +510,20 @@ class CustomerOrderController extends Controller
 
     public function stockProducts(Request $request)
     {
-        $products = Product::with(['brand', 'category', 'variants'])
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->limit(200)
-            ->get();
+        $query = Product::with(['brand', 'category', 'variants'])
+            ->where('is_active', true);
+
+        if ($request->filled('search')) {
+            $s = trim($request->input('search'));
+            $query->where(function ($q) use ($s) {
+                $q->where('name', 'like', "%{$s}%")
+                    ->orWhere('code', 'like', "%{$s}%")
+                    ->orWhere('sku', 'like', "%{$s}%")
+                    ->orWhere('barcode', 'like', "%{$s}%");
+            });
+        }
+
+        $products = $query->orderBy('name')->limit(200)->get();
 
         return response()->json([
             'success' => true,

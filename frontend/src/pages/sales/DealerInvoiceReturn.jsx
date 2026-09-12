@@ -4,6 +4,7 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 import FilterableDataTable from "../../components/FilterableDataTable";
+import AsyncSearchSelect from "../../components/AsyncSearchSelect";
 import { createGroupFetchers } from "../../utils/serverGrouping";
 
 // dealer-invoice-returns reuses DealerInvoiceController::groupedSummary() (same underlying
@@ -11,6 +12,14 @@ import { createGroupFetchers } from "../../utils/serverGrouping";
 // config('pagination.resources.dealer_invoices.groupable_columns') on the backend.
 const { onFetchGroupSummaries: fetchDealerInvoiceReturnGroupSummaries, onFetchGroupRows: fetchDealerInvoiceReturnGroupRows } =
   createGroupFetchers("/dealer-invoice-returns", { customer_name: "customer_id" });
+
+const mapCustomerOption = (row) => ({
+  value: String(row.id),
+  id: String(row.id),
+  label: `${row.name || "Unnamed"}${row.phone ? ` (${row.phone})` : ""}`,
+  name: row.name || "Unnamed",
+  mobileNo: row.phone || "",
+});
 
 const normalize = (value) => String(value || "").trim().toLowerCase();
 const round2 = (value) => Math.round((Number(value || 0) + Number.EPSILON) * 100) / 100;
@@ -117,19 +126,17 @@ const DealerInvoiceReturn = () => {
   const loadMasterData = useCallback(async () => {
     try {
       const [customersRes, barcodesRes, productsRes, taxesRes] = await Promise.all([
-        api.get("/customers").catch(() => ({ data: { data: [] } })),
+        // Was default (~50 rows), no way to search beyond it -- customer now has real async
+        // search (handleAsyncCustomerSearch below) covering the real table.
+        api.get("/customers", { params: { limit: 300 } }).catch(() => ({ data: { data: [] } })),
         api.get("/barcodes").catch(() => ({ data: { data: [] } })),
         api.get("/products", { params: { limit: 500 } }).catch(() => ({ data: { data: [] } })),
         api.get("/taxes").catch(() => ({ data: { data: [] } })),
       ]);
 
       const customerRows = customersRes.data?.data || [];
-      setCustomers(
-        customerRows.map((row) => ({
-          value: String(row.id),
-          label: `${row.name || "Unnamed"}${row.mobile_no ? ` (${row.mobile_no})` : ""}`,
-        }))
-      );
+      // row.mobile_no doesn't exist on the /customers response (the real field is `phone`).
+      setCustomers(customerRows.map(mapCustomerOption));
       setTaxes(taxesRes.data?.data || []);
 
       const products = productsRes.data?.data || [];
@@ -201,6 +208,27 @@ const DealerInvoiceReturn = () => {
     () => customers.find((row) => row.value === customerId) || null,
     [customers, customerId]
   );
+
+  // customers is only ever seeded with a small batch (see loadMasterData above) -- this hits
+  // /customers' own ?search= endpoint for anything beyond that.
+  const handleAsyncCustomerSearch = useCallback(async (query) => {
+    const trimmed = String(query || "").trim();
+    if (!trimmed) return [];
+    try {
+      const res = await api.get("/customers", { params: { search: trimmed, limit: 20 } });
+      const mapped = (res.data?.data || []).map(mapCustomerOption);
+      if (mapped.length) {
+        setCustomers((prev) => {
+          const existingIds = new Set(prev.map((c) => c.value));
+          const newOnes = mapped.filter((c) => !existingIds.has(c.value));
+          return newOnes.length ? [...prev, ...newOnes] : prev;
+        });
+      }
+      return mapped;
+    } catch {
+      return [];
+    }
+  }, []);
 
   const selectedStockHint = useMemo(() => {
     const byBarcode = normalize(addBarcode);
@@ -637,18 +665,15 @@ const DealerInvoiceReturn = () => {
 
         <div>
           <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Customer Name</label>
-          <select
+          <AsyncSearchSelect
+            name="customerId"
             value={customerId}
             onChange={(e) => setCustomerId(e.target.value)}
-            className="w-full rounded-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 p-2 text-xs focus:ring-1 focus:ring-blue-500"
-          >
-            <option value="">Select customer</option>
-            {customers.map((row) => (
-              <option key={row.value} value={row.value}>
-                {row.label}
-              </option>
-            ))}
-          </select>
+            options={customers}
+            onAsyncSearch={handleAsyncCustomerSearch}
+            placeholder="Select customer"
+            searchPlaceholder="Search customer..."
+          />
           {selectedCustomer && (
             <p className="mt-1.5 rounded-sm border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/30 p-2 text-[11px] text-green-700 dark:text-green-400">
               Selected: {selectedCustomer.label}

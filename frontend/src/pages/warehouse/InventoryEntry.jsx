@@ -5,6 +5,7 @@ import api from "../../api/axios";
 import Toast from "../../components/Toast";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import PageSkeleton from "../../components/PageSkeleton";
+import AsyncSearchSelect from "../../components/AsyncSearchSelect";
 import { buildSizeSelectOptions } from "../../utils/sizeSelectOptions";
 
 // ─── Reusable sub-components (defined OUTSIDE to prevent focus loss) ────────
@@ -815,6 +816,65 @@ const InventoryEntry = () => {
   const [marginMin, setMarginMin] = useState(null);
   const [marginMax, setMarginMax] = useState(null);
 
+  // The initial preload (?all=true for products, plain /brands for brands) is capped well below
+  // the real row count on both tables in this deployment -- these hit each resource's own
+  // ?search= endpoint so the dropdown can find anything beyond that initial batch.
+  const handleAsyncProductSearch = useCallback(async (query) => {
+    try {
+      const res = await api.get("/products", { params: { search: query, mode: "dropdown", limit: 50 } });
+      const results = Array.isArray(res.data?.data) ? res.data.data : [];
+      if (results.length) {
+        setProducts((prev) => {
+          const existingIds = new Set((prev || []).map((p) => String(p.id)));
+          const newItems = results.filter((p) => !existingIds.has(String(p.id)));
+          return newItems.length ? [...prev, ...newItems] : prev;
+        });
+      }
+      return results;
+    } catch {
+      return [];
+    }
+  }, []);
+
+  const handleAsyncBrandSearch = useCallback(async (query) => {
+    try {
+      const res = await api.get("/brands", { params: { search: query, limit: 50 } });
+      const results = Array.isArray(res.data?.data) ? res.data.data : [];
+      if (results.length) {
+        setBrands((prev) => {
+          const existingIds = new Set((prev || []).map((b) => String(b.id)));
+          const newItems = results.filter((b) => !existingIds.has(String(b.id)));
+          return newItems.length ? [...prev, ...newItems] : prev;
+        });
+      }
+      return results;
+    } catch {
+      return [];
+    }
+  }, []);
+
+  // The Tax field below used the plain AttrSelect component (pure client-side filtering, no async
+  // concept at all -- unlike Product/Brand above) against a ~1,000,000-row table, so it could never
+  // find a tax beyond whatever /taxes' default ~50-row fetch happened to return. `taxes` state is
+  // kept raw (not pre-formatted) here since the render below derives "Name X%" labels from
+  // .name/.tax_percentage itself -- merging pre-formatted objects would double up or blank the label.
+  const handleAsyncTaxSearch = useCallback(async (query) => {
+    try {
+      const res = await api.get("/taxes", { params: { search: query, limit: 50 } });
+      const rawResults = Array.isArray(res.data?.data) ? res.data.data : [];
+      if (rawResults.length) {
+        setTaxes((prev) => {
+          const existingIds = new Set((prev || []).map((t) => String(t.id)));
+          const newItems = rawResults.filter((t) => !existingIds.has(String(t.id)));
+          return newItems.length ? [...prev, ...newItems] : prev;
+        });
+      }
+      return rawResults.map((t) => ({ id: t.id, name: `${t.name} ${t.tax_percentage ?? t.rate ?? 0}%` }));
+    } catch {
+      return [];
+    }
+  }, []);
+
   // Mandatory fields derived from product's purchase_entry_attributes
   // Set of field names (e.g. "brandId", "size") that are mandatory
   const [mandatoryFields, setMandatoryFields] = useState(new Set());
@@ -887,7 +947,12 @@ const InventoryEntry = () => {
       try {
         const [prodRes, brandRes, taxRes, patternRes, styleRes, fitRes, sleeveRes, typeRes, materialRes, colorRes, sizeRes, sgRes] =
           await Promise.all([
-            api.get("/products?all=true"),
+            // Was ?all=true (up to 25,000 rows, unbounded relative to the ~1,000,000-row real table)
+            // -- now that Product has real async search (handleAsyncProductSearch below), this only
+            // needs to seed a small initial/browsable batch; a full-table fetch on every page load
+            // was both wasted bandwidth and, on a busy DB connection, enough to visibly delay the
+            // page and starve the search request behind it.
+            api.get("/products?mode=dropdown&limit=100"),
             api.get("/brands"),
             api.get("/taxes"),
             api.get("/attributes/pattern"),
@@ -1652,18 +1717,32 @@ const InventoryEntry = () => {
             </h2>
 
             <div className="grid grid-cols-2 gap-x-3 gap-y-1">
-              <AttrSelect
-                label="Product"
-                name="productId"
-                value={attrs.productId}
-                onChange={handleAttrChange}
-                options={products}
-                required
-                stacked
-                searchable
-                searchPlaceholder="Search product..."
-              />
-              <AttrSelect label="Brand" name="brandId" value={attrs.brandId} onChange={handleAttrChange} options={brands} required={mandatoryFields.has("brandId")} stacked searchable searchPlaceholder="Search brand..." />
+              <div className="mb-1.5">
+                <label className="block text-[11px] font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <span className="text-red-500 dark:text-red-400">* </span>Product
+                </label>
+                <AsyncSearchSelect
+                  name="productId"
+                  value={attrs.productId}
+                  onChange={handleAttrChange}
+                  options={products}
+                  onAsyncSearch={handleAsyncProductSearch}
+                  searchPlaceholder="Search product..."
+                />
+              </div>
+              <div className="mb-1.5">
+                <label className="block text-[11px] font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  {mandatoryFields.has("brandId") && <span className="text-red-500 dark:text-red-400">* </span>}Brand
+                </label>
+                <AsyncSearchSelect
+                  name="brandId"
+                  value={attrs.brandId}
+                  onChange={handleAttrChange}
+                  options={brands}
+                  onAsyncSearch={handleAsyncBrandSearch}
+                  searchPlaceholder="Search brand..."
+                />
+              </div>
               {marginMin !== null || marginMax !== null ? (
                 <div className="col-span-2 text-[11px] text-gray-500 dark:text-gray-400 -mt-1 mb-1">
                   Margin: {marginMin ?? "—"}% - {marginMax ?? "—"}%
@@ -1677,16 +1756,17 @@ const InventoryEntry = () => {
               <AttrSelect label="Type" name="typeId" value={attrs.typeId} onChange={handleAttrChange} options={types} required={mandatoryFields.has("typeId")} stacked searchable searchPlaceholder="Search type..." />
               <AttrSelect label="Material" name="materialId" value={attrs.materialId} onChange={handleAttrChange} options={materials} required={mandatoryFields.has("materialId")} stacked searchable searchPlaceholder="Search material..." />
               <AttrSelect label="Color" name="colorId" value={attrs.colorId} onChange={handleAttrChange} options={colors} required={mandatoryFields.has("colorId")} stacked searchable searchPlaceholder="Search color..." />
-              <AttrSelect
-                label="Tax"
-                name="taxId"
-                value={attrs.taxId}
-                onChange={handleAttrChange}
-                options={taxes.map((t) => ({ id: t.id, name: `${t.name} ${t.tax_percentage}%` }))}
-                stacked
-                searchable
-                searchPlaceholder="Search tax..."
-              />
+              <div className="mb-1.5">
+                <label className="block text-[11px] font-medium text-gray-700 dark:text-gray-300 mb-1">Tax</label>
+                <AsyncSearchSelect
+                  name="taxId"
+                  value={attrs.taxId}
+                  onChange={handleAttrChange}
+                  options={taxes.map((t) => ({ id: t.id, name: `${t.name} ${t.tax_percentage}%` }))}
+                  onAsyncSearch={handleAsyncTaxSearch}
+                  searchPlaceholder="Search tax..."
+                />
+              </div>
             </div>
 
             {/* Dynamic mandatory/visible fields from product configuration */}

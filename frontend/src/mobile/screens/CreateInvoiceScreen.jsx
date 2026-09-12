@@ -51,6 +51,8 @@ export default function CreateInvoiceScreen({ onBack }) {
   // Data States
   const [customers, setCustomers] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState("");
+  const [customerSearchTerm, setCustomerSearchTerm] = useState("");
+  const [customerSearching, setCustomerSearching] = useState(false);
   const [, setNextBillNo] = useState("");
   const [catalog, setCatalog] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -87,7 +89,7 @@ export default function CreateInvoiceScreen({ onBack }) {
     (async () => {
       try {
         const [custRes, billRes, prodRes] = await Promise.all([
-          api.get("/customers", { params: { limit: 100 } }),
+          api.get("/customers", { params: { limit: 300 } }),
           api.get("/pos-sales/next-bill-no"),
           api.get("/products", { params: { limit: 500 } }),
         ]);
@@ -113,6 +115,33 @@ export default function CreateInvoiceScreen({ onBack }) {
       }
     })();
   }, []);
+
+  // Only the first 300 customers are preloaded (real table can hold ~1,000,000 rows) -- this is a
+  // progressive enhancement, not a hard requirement: when offline the request just fails silently
+  // and the picker below still works with whatever's cached/preloaded, same as before this fix.
+  useEffect(() => {
+    const query = customerSearchTerm.trim();
+    if (query.length < 3) return undefined;
+    setCustomerSearching(true);
+    const timer = setTimeout(async () => {
+      try {
+        const res = await api.get("/customers", { params: { search: query, limit: 30 } });
+        const results = res.data?.data || [];
+        if (results.length) {
+          setCustomers((prev) => {
+            const existingIds = new Set(prev.map((c) => String(c.id)));
+            const newOnes = results.filter((c) => !existingIds.has(String(c.id)));
+            return newOnes.length ? [...prev, ...newOnes] : prev;
+          });
+        }
+      } catch {
+        // Offline or request failed -- silently keep whatever's already loaded/cached.
+      } finally {
+        setCustomerSearching(false);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [customerSearchTerm]);
 
   // Real "Scan to Pay" UPI ID from the Sales Customization settings - was
   // previously a hardcoded gpsoftware@okaxis, which routed every mobile
@@ -697,6 +726,13 @@ export default function CreateInvoiceScreen({ onBack }) {
         <label className="text-xs font-semibold text-slate-700 block mb-1">
           Select Customer
         </label>
+        <input
+          type="text"
+          value={customerSearchTerm}
+          onChange={(e) => setCustomerSearchTerm(e.target.value)}
+          placeholder={customerSearching ? "Searching..." : "Search customer by name or phone..."}
+          className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 outline-none mb-1.5"
+        />
         <select
           className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 outline-none font-bold"
           value={selectedCustomer}

@@ -5,6 +5,7 @@ import { toast } from "react-toastify";
 import {
   CheckboxInput,
   SelectInput,
+  AsyncSelectInput,
   TextInput,
 } from "../../components/CustomInputs";
 import api from "../../api/axios";
@@ -338,6 +339,22 @@ const ConfigurationForm = () => {
     });
   }, [typeKey]);
 
+  const handleAsyncTaxSearch = async (term) => {
+    try {
+      const res = await api.get("/taxes", { params: { search: term, limit: 50 } });
+      const rows = res.data?.data || [];
+      const mapped = rows.map(r => ({ value: String(r.id), label: r.tax_name || r.name }));
+      setDropdowns(prev => {
+        const existingIds = new Set(prev.taxes.map(t => t.value));
+        const merged = [...prev.taxes, ...mapped.filter(t => !existingIds.has(t.value))];
+        return { ...prev, taxes: merged };
+      });
+      return mapped;
+    } catch {
+      return [];
+    }
+  };
+
   // ─── Load existing record for edit ─────────────────────────────────────────
   useEffect(() => {
     if (!isEdit || !typeKey) return;
@@ -592,7 +609,7 @@ const ConfigurationForm = () => {
             <C>
               <CheckboxInput label="Tax Component"     name="tax_component"         checked={formData.tax_component}     onChange={handleChange} />
               <TextInput     label="HSN"               name="hsn"                                                        value={formData.hsn}          onChange={handleChange} />
-              <SelectInput   label="Tax"               name="tax_id"                options={taxes}                      value={formData.tax_id}       onChange={handleChange} />
+              <AsyncSelectInput label="Tax"            name="tax_id"                options={taxes}                      value={formData.tax_id}       onChange={handleChange} onAsyncSearch={handleAsyncTaxSearch} />
             </C>
           </>
         );
@@ -604,7 +621,7 @@ const ConfigurationForm = () => {
           <>
             <C>
               <TextInput   label="Charges"           name="charges"              value={formData.charges}             onChange={handleChange} />
-              <SelectInput label="Tax"               name="tax_id"               options={taxes}               value={formData.tax_id}              onChange={handleChange} />
+              <AsyncSelectInput label="Tax"           name="tax_id"               options={taxes}               value={formData.tax_id}              onChange={handleChange} onAsyncSearch={handleAsyncTaxSearch} />
               <SelectInput label="Additional Charge" name="additional_charge_id" options={additionalCharges}   value={formData.additional_charge_id} onChange={handleChange} />
             </C>
             <C>

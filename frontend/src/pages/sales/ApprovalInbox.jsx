@@ -3,6 +3,14 @@ import { ArrowLeft, CheckCircle2, Eye, RotateCcw, Search, X } from "lucide-react
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
+import AsyncSearchSelect from "../../components/AsyncSearchSelect";
+
+const mapCustomerOption = (row) => ({
+  value: String(row.id),
+  id: String(row.id),
+  label: `${row.name || "Unnamed"}${row.phone ? ` (${row.phone})` : ""}`,
+  name: row.name || "Unnamed",
+});
 
 const formatMoney = (value) =>
   Number(value || 0).toLocaleString("en-IN", {
@@ -38,6 +46,27 @@ const ApprovalInbox = () => {
   const [actingId, setActingId] = useState(null);
   const [actingAction, setActingAction] = useState("");
 
+  // customers is only ever seeded with a small batch (see loadFilters below) -- this hits
+  // /customers' own ?search= endpoint for anything beyond that.
+  const handleAsyncCustomerSearch = useCallback(async (query) => {
+    const trimmed = String(query || "").trim();
+    if (!trimmed) return [];
+    try {
+      const res = await api.get("/customers", { params: { search: trimmed, limit: 20 } });
+      const mapped = (res.data?.data || []).map(mapCustomerOption);
+      if (mapped.length) {
+        setCustomers((prev) => {
+          const existingIds = new Set(prev.map((c) => c.value));
+          const newOnes = mapped.filter((c) => !existingIds.has(c.value));
+          return newOnes.length ? [...prev, ...newOnes] : prev;
+        });
+      }
+      return mapped;
+    } catch {
+      return [];
+    }
+  }, []);
+
   const statusOptions = useMemo(
     () => [
       { value: "pending", label: "Pending" },
@@ -51,15 +80,11 @@ const ApprovalInbox = () => {
     setLoadingFilters(true);
     try {
       const [customersRes, barcodeRes] = await Promise.all([
-        api.get("/customers").catch(() => ({ data: { data: [] } })),
+        api.get("/customers", { params: { limit: 300 } }).catch(() => ({ data: { data: [] } })),
         api.get("/barcodes").catch(() => ({ data: { data: [] } })),
       ]);
 
-      const customerRows = (customersRes.data?.data || []).map((row) => ({
-        value: String(row.id),
-        label: `${row.name || "Unnamed"}${row.mobile_no ? ` (${row.mobile_no})` : ""}`,
-      }));
-      setCustomers(customerRows);
+      setCustomers((customersRes.data?.data || []).map(mapCustomerOption));
 
       const seen = new Set();
       const productRows = [];
@@ -220,19 +245,15 @@ const ApprovalInbox = () => {
 
             <div className="md:col-span-4">
               <label className="text-xs font-medium text-gray-600 dark:text-gray-400 block mb-1">Customer</label>
-              <select
+              <AsyncSearchSelect
+                name="customerId"
                 value={filters.customerId}
                 onChange={(e) => setFilters((prev) => ({ ...prev, customerId: e.target.value }))}
-                className="w-full border border-gray-300 dark:border-gray-600 rounded-sm p-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                disabled={loadingFilters}
-              >
-                <option value="">All customers</option>
-                {customers.map((row) => (
-                  <option key={row.value} value={row.value}>
-                    {row.label}
-                  </option>
-                ))}
-              </select>
+                options={customers}
+                onAsyncSearch={handleAsyncCustomerSearch}
+                placeholder="All customers"
+                searchPlaceholder="Search customer..."
+              />
             </div>
 
             <div className="md:col-span-2">

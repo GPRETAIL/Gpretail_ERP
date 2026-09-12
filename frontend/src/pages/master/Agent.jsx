@@ -12,6 +12,7 @@ const { onFetchGroupSummaries: fetchAgentGroupSummaries, onFetchGroupRows: fetch
   createGroupFetchers("/agents", { is_active: "is_active" });
 import ExportBottomSheet from "../../components/ExportBottomSheet";
 import SearchableSelect from "../../components/SearchableSelect";
+import AsyncSearchSelect from "../../components/AsyncSearchSelect";
 import UploadImportButton from "../../components/UploadImportButton";
 import { handleEnterKeyNavigation } from "../../utils/enterToNextField";
 import { normalizeFormSignature } from "../../utils/formSignature";
@@ -155,7 +156,9 @@ const Agent = () => {
           (res.data?.data || []).map((r) => ({ value: String(r.id), label: r.name }));
         setAgentTypes(cfg(atRes));
         setCities(cfg(cityRes));
-        setTaxes((taxRes.data?.data || []).map((t) => ({ value: String(t.id), label: t.name })));
+        // Was api.get("/taxes") with no params (default ~50 rows), no way to search beyond it --
+        // taxes now has real async search (handleAsyncTaxSearch below) covering the real table.
+        setTaxes((taxRes.data?.data || []).map((t) => ({ id: String(t.id), value: String(t.id), name: t.name, label: t.name })));
         setBanks(cfg(bankRes));
         setStates(cfg(stateRes));
       } catch {
@@ -163,6 +166,27 @@ const Agent = () => {
       }
     };
     load();
+  }, []);
+
+  // taxes is only ever seeded with a small batch above -- this hits /taxes' own ?search=
+  // endpoint for anything beyond that.
+  const handleAsyncTaxSearch = useCallback(async (query) => {
+    const trimmed = String(query || "").trim();
+    if (!trimmed) return [];
+    try {
+      const res = await api.get("/taxes", { params: { search: trimmed, limit: 50 } });
+      const mapped = (res.data?.data || []).map((t) => ({ id: String(t.id), value: String(t.id), name: t.name, label: t.name }));
+      if (mapped.length) {
+        setTaxes((prev) => {
+          const existingIds = new Set(prev.map((t) => t.value));
+          const newOnes = mapped.filter((t) => !existingIds.has(t.value));
+          return newOnes.length ? [...prev, ...newOnes] : prev;
+        });
+      }
+      return mapped;
+    } catch {
+      return [];
+    }
   }, []);
 
   // ─── Load record when editing from URL ───────────────────────────────────
@@ -503,7 +527,12 @@ const Agent = () => {
                 <SearchableSelect label="City"  name="cityId"  options={cities} value={formData.cityId}  onChange={handleChange} />
                 <SearchableSelect label="State" name="stateId" options={states} value={formData.stateId} onChange={handleChange} />
                 <TextInput label="Pincode"          name="pincode"          value={formData.pincode}          onChange={handleChange} />
-                <SearchableSelect label="Tax"  name="taxId"  options={taxes} value={formData.taxId}  onChange={handleChange} />
+                <div className="flex items-center w-full">
+                  <label className="w-2/5 text-xs font-medium text-gray-700 dark:text-gray-300 text-right pr-3 shrink-0">Tax</label>
+                  <div className="flex-1">
+                    <AsyncSearchSelect name="taxId" options={taxes} value={formData.taxId} onChange={handleChange} onAsyncSearch={handleAsyncTaxSearch} searchPlaceholder="Search tax..." />
+                  </div>
+                </div>
                 <SearchableSelect label="Bank" name="bankId" options={banks} value={formData.bankId} onChange={handleChange} />
                 <TextInput label="Bank Account Name" name="bankAccountName" value={formData.bankAccountName} onChange={handleChange} />
                 <TextInput label="IFSC"             name="ifsc"             value={formData.ifsc}             onChange={handleChange} />

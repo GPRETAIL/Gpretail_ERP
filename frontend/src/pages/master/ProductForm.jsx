@@ -3,6 +3,7 @@ import { ArrowLeft, PlusCircle, Save, Search } from "lucide-react";
 import {
   DualTextInput,
   SelectInput,
+  AsyncSelectInput,
   CheckboxInput,
   CheckboxSelectInput,
   TextInput,
@@ -10,6 +11,13 @@ import {
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import api from "../../api/axios";
+
+const mapTaxOption = (t) => ({
+  id: String(t.id),
+  value: t.id,
+  name: `${t.name} (${t.tax_percentage}%)`,
+  label: `${t.name} (${t.tax_percentage}%)`,
+});
 import { handleEnterKeyNavigation } from "../../utils/enterToNextField";
 import SearchableSelect from "../../components/SearchableSelect";
 
@@ -219,6 +227,25 @@ const ProductForm = () => {
 
   // ─── Dynamic dropdown state ────────────────────────────────────────────────
   const [taxOptions, setTaxOptions] = useState([]);
+
+  const handleAsyncTaxSearch = async (query) => {
+    const trimmed = String(query || "").trim();
+    if (!trimmed) return [];
+    try {
+      const res = await api.get("/taxes", { params: { search: trimmed, limit: 50 } });
+      const mapped = (res.data?.data || []).map(mapTaxOption);
+      if (mapped.length) {
+        setTaxOptions((prev) => {
+          const existing = new Set(prev.map((t) => String(t.value)));
+          const newOnes = mapped.filter((t) => !existing.has(String(t.value)));
+          return newOnes.length ? [...prev, ...newOnes] : prev;
+        });
+      }
+      return mapped;
+    } catch {
+      return [];
+    }
+  };
   const [productGroupOptions, setProductGroupOptions] = useState([]);
   const [sizeGroupOptions, setSizeGroupOptions] = useState([]);
   const [barcodeIdOptions, setBarcodeIdOptions] = useState([]);
@@ -234,9 +261,9 @@ const ProductForm = () => {
           api.get("/attributes/barcodeid"),
           api.get("/attributes/companytype"),
         ]);
-        setTaxOptions(
-          (taxRes.data?.data || []).map((t) => ({ label: `${t.name} (${t.tax_percentage}%)`, value: t.id }))
-        );
+        // Was api.get("/taxes") with no params (default ~50 rows), no way to search beyond it --
+        // taxes now has real async search (handleAsyncTaxSearch below) covering the real table.
+        setTaxOptions((taxRes.data?.data || []).map(mapTaxOption));
         setSizeGroupOptions(
           (sizeGrpRes.data?.data || []).map((g) => ({ label: g.group_name, value: g.id }))
         );
@@ -472,13 +499,14 @@ const ProductForm = () => {
                 value={formData.name}
                 onChange={handleChange}
               />
-              <SelectInput
+              <AsyncSelectInput
                 label="Sales Tax"
                 name="salesTax"
                 required
                 value={formData.salesTax}
                 onChange={handleChange}
                 options={taxOptions}
+                onAsyncSearch={handleAsyncTaxSearch}
               />
               <SelectInput
                 label="Barcode Mode"
@@ -581,12 +609,13 @@ const ProductForm = () => {
                 value={formData.hsn}
                 onChange={handleChange}
               />
-              <SelectInput
+              <AsyncSelectInput
                 label="Purchase Tax"
                 name="purchaseTax"
                 value={formData.purchaseTax}
                 onChange={handleChange}
                 options={taxOptions}
+                onAsyncSearch={handleAsyncTaxSearch}
               />
               <SelectInput
                 label="Selling Mode"

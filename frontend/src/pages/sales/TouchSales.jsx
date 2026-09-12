@@ -132,7 +132,7 @@ const TouchSales = () => {
       const [barcodesRes, productsRes, customersRes] = await Promise.all([
         api.get("/barcodes").catch(() => ({ data: { data: [] } })),
         api.get("/products", { params: { limit: 500 } }).catch(() => ({ data: { data: [] } })),
-        api.get("/customers").catch(() => ({ data: { data: [] } })),
+        api.get("/customers", { params: { limit: 300 } }).catch(() => ({ data: { data: [] } })),
       ]);
 
       const products = productsRes.data?.data || [];
@@ -206,8 +206,45 @@ const TouchSales = () => {
   const detectedCustomer = useMemo(() => {
     const mobile = String(customerMobile || "").trim();
     if (!mobile) return null;
-    return customers.find((c) => String(c.mobile_no || "") === mobile) || null;
+    // customers rows are the raw /customers API response -- the phone field is `phone`, not
+    // `mobile_no` (mobile_no is only ever accepted as an input alias on write, never returned),
+    // so this never matched anything before regardless of what was in the cache.
+    return customers.find((c) => String(c.phone || "") === mobile) || null;
   }, [customerMobile, customers]);
+
+  // customers is only ever seeded with a small batch above -- this hits /customers' own ?search=
+  // endpoint for anything beyond that, and merges matches into the cache so detectedCustomer
+  // (above) picks them up on its next recompute.
+  const handleAsyncCustomerSearch = useCallback(async (query) => {
+    const trimmed = String(query || "").trim();
+    if (!trimmed) return [];
+    try {
+      const res = await api.get("/customers", { params: { search: trimmed, limit: 20 } });
+      const rows = res.data?.data || [];
+      if (rows.length) {
+        setCustomers((prev) => {
+          const existingIds = new Set(prev.map((c) => String(c.id)));
+          const newOnes = rows.filter((c) => !existingIds.has(String(c.id)));
+          return newOnes.length ? [...prev, ...newOnes] : prev;
+        });
+      }
+      return rows;
+    } catch {
+      return [];
+    }
+  }, []);
+
+  // Fires once the typed/tapped number looks complete (a full Indian mobile number) and isn't
+  // already in the local cache, rather than on every digit -- detectedCustomer picks up the
+  // result automatically once handleAsyncCustomerSearch merges it into `customers`.
+  useEffect(() => {
+    const mobile = String(customerMobile || "").trim();
+    if (mobile.length < 10 || detectedCustomer) return undefined;
+    const timer = setTimeout(() => {
+      handleAsyncCustomerSearch(mobile);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [customerMobile, detectedCustomer, handleAsyncCustomerSearch]);
 
   const billSummary = useMemo(() => {
     let subtotal = 0;

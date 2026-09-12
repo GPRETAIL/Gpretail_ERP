@@ -5,6 +5,7 @@ import { useSelector } from "react-redux";
 import api from "../../api/axios";
 import Toast from "../../components/Toast";
 import PageSkeleton from "../../components/PageSkeleton";
+import AsyncSearchSelect from "../../components/AsyncSearchSelect";
 import { usePrintContext } from "../../context/PrintContext";
 
 const SelectField = ({
@@ -92,25 +93,6 @@ const InlineTextField = ({
       placeholder={placeholder}
       className={`w-full border border-gray-300 dark:border-gray-600 rounded-sm px-2 py-1 text-xs bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 ${inputClassName}`}
     />
-  </div>
-);
-
-const InlineSelectField = ({ label, name, value, onChange, options, className = "", selectClassName = "" }) => (
-  <div className={`flex items-center gap-2 ${className}`}>
-    <label className="w-24 shrink-0 text-xs font-medium text-gray-700 dark:text-gray-300">{label}</label>
-    <select
-      name={name}
-      value={value}
-      onChange={onChange}
-      className={`w-full border border-gray-300 dark:border-gray-600 rounded-sm px-2 py-1 text-xs bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 ${selectClassName}`}
-    >
-      <option value="">Select</option>
-      {options.map((opt) => (
-        <option key={opt.value} value={opt.value}>
-          {opt.label}
-        </option>
-      ))}
-    </select>
   </div>
 );
 
@@ -334,17 +316,87 @@ const PurchaseReturn = () => {
 
   const loadReferenceData = useCallback(async () => {
     const [taxRes, transportRes, companyRes, supplierRes, agentRes] = await Promise.all([
-      api.get("/taxes"),
-      api.get("/transports"),
+      api.get("/taxes", { params: { limit: 100 } }),
+      api.get("/transports", { params: { limit: 100 } }),
       api.get("/companies").catch(() => ({ data: { data: [] } })),
-      api.get("/suppliers", { params: { all: "true" } }).catch(() => ({ data: { data: [] } })),
-      api.get("/agents", { params: { all: "true" } }).catch(() => ({ data: { data: [] } })),
+      api.get("/suppliers", { params: { limit: 300 } }).catch(() => ({ data: { data: [] } })),
+      api.get("/agents", { params: { limit: 300 } }).catch(() => ({ data: { data: [] } })),
     ]);
     setTaxes(taxRes.data?.data || taxRes.data || []);
     setTransports(transportRes.data?.data || []);
     setCompanies(companyRes.data?.data || companyRes.data || []);
     setSuppliers(supplierRes.data?.data || supplierRes.data || []);
     setAgents(agentRes.data?.data || agentRes.data || []);
+  }, []);
+
+  // Preloads above are capped batches -- these hit each resource's own ?search= endpoint so
+  // AsyncSearchSelect can find anything beyond that initial batch.
+  const handleAsyncSupplierSearch = useCallback(async (query) => {
+    try {
+      const res = await api.get("/suppliers", { params: { search: query, limit: 50 } });
+      const results = Array.isArray(res.data?.data) ? res.data.data : [];
+      if (results.length) {
+        setSuppliers((prev) => {
+          const existingIds = new Set((prev || []).map((s) => String(s.id)));
+          const newItems = results.filter((s) => !existingIds.has(String(s.id)));
+          return newItems.length ? [...prev, ...newItems] : prev;
+        });
+      }
+      return results.map((row) => ({ value: String(row.id), label: row.name || `Supplier ${row.id}` }));
+    } catch {
+      return [];
+    }
+  }, []);
+
+  const handleAsyncAgentSearch = useCallback(async (query) => {
+    try {
+      const res = await api.get("/agents", { params: { search: query, limit: 50 } });
+      const results = Array.isArray(res.data?.data) ? res.data.data : [];
+      if (results.length) {
+        setAgents((prev) => {
+          const existingIds = new Set((prev || []).map((a) => String(a.id)));
+          const newItems = results.filter((a) => !existingIds.has(String(a.id)));
+          return newItems.length ? [...prev, ...newItems] : prev;
+        });
+      }
+      return results.map((row) => ({ value: String(row.id), label: row.name || `Agent ${row.id}` }));
+    } catch {
+      return [];
+    }
+  }, []);
+
+  const handleAsyncTaxSearch = useCallback(async (query) => {
+    try {
+      const res = await api.get("/taxes", { params: { search: query, limit: 50 } });
+      const results = Array.isArray(res.data?.data) ? res.data.data : [];
+      if (results.length) {
+        setTaxes((prev) => {
+          const existingIds = new Set((prev || []).map((t) => String(t.id)));
+          const newItems = results.filter((t) => !existingIds.has(String(t.id)));
+          return newItems.length ? [...prev, ...newItems] : prev;
+        });
+      }
+      return results.map((t) => ({ value: String(t.id), label: `${t.name} ${t.tax_percentage}%` }));
+    } catch {
+      return [];
+    }
+  }, []);
+
+  const handleAsyncTransportSearch = useCallback(async (query) => {
+    try {
+      const res = await api.get("/transports", { params: { search: query, limit: 50 } });
+      const results = Array.isArray(res.data?.data) ? res.data.data : [];
+      if (results.length) {
+        setTransports((prev) => {
+          const existingIds = new Set((prev || []).map((t) => String(t.id)));
+          const newItems = results.filter((t) => !existingIds.has(String(t.id)));
+          return newItems.length ? [...prev, ...newItems] : prev;
+        });
+      }
+      return results.map((t) => ({ value: String(t.id), label: t.name }));
+    } catch {
+      return [];
+    }
   }, []);
 
   const loadStockRows = useCallback(async (filters = {}) => {
@@ -998,14 +1050,20 @@ const PurchaseReturn = () => {
 
                 {isSupplierMode ? (
                   <>
-                    <SelectField
-                      label="Supplier"
-                      name="supplierId"
-                      value={header.supplierId}
-                      onChange={handleHeaderChange}
-                      options={supplierOptions}
-                      inline
-                    />
+                    <div className="flex items-center gap-2">
+                      <label className="w-28 shrink-0 text-xs font-medium text-gray-700 dark:text-gray-300">Supplier</label>
+                      <div className="flex-1">
+                        <AsyncSearchSelect
+                          name="supplierId"
+                          value={header.supplierId}
+                          onChange={handleHeaderChange}
+                          options={supplierOptions}
+                          onAsyncSearch={handleAsyncSupplierSearch}
+                          placeholder="Select"
+                          searchPlaceholder="Search suppliers..."
+                        />
+                      </div>
+                    </div>
 
                     <SelectField
                       label="Supplier Company"
@@ -1025,14 +1083,20 @@ const PurchaseReturn = () => {
                       inline
                     />
 
-                    <SelectField
-                      label="Agent"
-                      name="agentId"
-                      value={header.agentId}
-                      onChange={handleHeaderChange}
-                      options={agentOptions}
-                      inline
-                    />
+                    <div className="flex items-center gap-2">
+                      <label className="w-28 shrink-0 text-xs font-medium text-gray-700 dark:text-gray-300">Agent</label>
+                      <div className="flex-1">
+                        <AsyncSearchSelect
+                          name="agentId"
+                          value={header.agentId}
+                          onChange={handleHeaderChange}
+                          options={agentOptions}
+                          onAsyncSearch={handleAsyncAgentSearch}
+                          placeholder="Select"
+                          searchPlaceholder="Search agents..."
+                        />
+                      </div>
+                    </div>
                   </>
                 ) : null}
               </>
@@ -1415,14 +1479,20 @@ const PurchaseReturn = () => {
                 onChange={handleHeaderChange}
                 inputClassName="max-w-[120px]"
               />
-              <InlineSelectField
-                label="Tax"
-                name="taxId"
-                value={header.taxId}
-                onChange={handleHeaderChange}
-                options={taxOptions}
-                selectClassName="max-w-[180px]"
-              />
+              <div className="flex items-center gap-2">
+                <label className="w-24 shrink-0 text-xs font-medium text-gray-700 dark:text-gray-300">Tax</label>
+                <div className="max-w-[180px] w-full">
+                  <AsyncSearchSelect
+                    name="taxId"
+                    value={header.taxId}
+                    onChange={handleHeaderChange}
+                    options={taxOptions}
+                    onAsyncSearch={handleAsyncTaxSearch}
+                    placeholder="Select"
+                    searchPlaceholder="Search taxes..."
+                  />
+                </div>
+              </div>
               <InlineTextField
                 label="Remarks"
                 name="remarks"
@@ -1471,14 +1541,20 @@ const PurchaseReturn = () => {
                 <span className="text-gray-600 dark:text-gray-300">Gross</span>
                 <span className="font-medium text-gray-800 dark:text-gray-100">{tableTotals.gross.toFixed(2)}</span>
               </div>
-              <InlineSelectField
-                label="Transport"
-                name="transportId"
-                value={header.transportId}
-                onChange={handleHeaderChange}
-                options={transports.map((t) => ({ value: String(t.id), label: t.name }))}
-                selectClassName="max-w-[180px]"
-              />
+              <div className="flex items-center gap-2">
+                <label className="w-24 shrink-0 text-xs font-medium text-gray-700 dark:text-gray-300">Transport</label>
+                <div className="max-w-[180px] w-full">
+                  <AsyncSearchSelect
+                    name="transportId"
+                    value={header.transportId}
+                    onChange={handleHeaderChange}
+                    options={transports.map((t) => ({ value: String(t.id), label: t.name }))}
+                    onAsyncSearch={handleAsyncTransportSearch}
+                    placeholder="Select"
+                    searchPlaceholder="Search transports..."
+                  />
+                </div>
+              </div>
               <InlineTextField
                 label="LR No"
                 name="lrNo"

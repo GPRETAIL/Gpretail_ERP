@@ -6,6 +6,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../../api/axios";
 import Toast from "../../components/Toast";
 import PageSkeleton from "../../components/PageSkeleton";
+import AsyncSearchSelect from "../../components/AsyncSearchSelect";
 import { usePrintContext } from "../../context/PrintContext";
 import { buildCode39SvgMarkup } from "../../utils/salesReceiptCustomization";
 import {
@@ -1913,8 +1914,8 @@ const BarcodeGeneration = () => {
           typesRes,
           colorsRes,
         ] = await Promise.all([
-          api.get("/products", { params: { all: "true" } }).catch(() => ({ data: { data: [] } })),
-          api.get("/brands", { params: { all: "true" } }).catch(() => ({ data: { data: [] } })),
+          api.get("/products", { params: { limit: 300 } }).catch(() => ({ data: { data: [] } })),
+          api.get("/brands", { params: { limit: 300 } }).catch(() => ({ data: { data: [] } })),
           api.get("/attributes/style").catch(() => ({ data: { data: [] } })),
           api.get("/attributes/material").catch(() => ({ data: { data: [] } })),
           api.get("/attributes/pattern").catch(() => ({ data: { data: [] } })),
@@ -2390,6 +2391,40 @@ const BarcodeGeneration = () => {
   const handleEditorChange = (field, value) => {
     setEditForm((prev) => ({ ...prev, [field]: value }));
   };
+
+  // Preloads above are capped batches -- these hit each resource's own ?search= endpoint so
+  // AsyncSearchSelect can find anything beyond that initial batch.
+  const handleAsyncProductSearch = useCallback(async (query) => {
+    try {
+      const res = await api.get("/products", { params: { search: query, limit: 50 } });
+      const mapped = toOptions(res.data?.data);
+      if (mapped.length) {
+        setEditorOptions((prev) => {
+          const existingIds = new Set(prev.products.map((o) => o.value));
+          return { ...prev, products: [...prev.products, ...mapped.filter((o) => !existingIds.has(o.value))] };
+        });
+      }
+      return mapped;
+    } catch {
+      return [];
+    }
+  }, []);
+
+  const handleAsyncBrandSearch = useCallback(async (query) => {
+    try {
+      const res = await api.get("/brands", { params: { search: query, limit: 50 } });
+      const mapped = toOptions(res.data?.data);
+      if (mapped.length) {
+        setEditorOptions((prev) => {
+          const existingIds = new Set(prev.brands.map((o) => o.value));
+          return { ...prev, brands: [...prev.brands, ...mapped.filter((o) => !existingIds.has(o.value))] };
+        });
+      }
+      return mapped;
+    } catch {
+      return [];
+    }
+  }, []);
 
   const handleItemFilterDraftChange = (key, value) => {
     setItemFilterDraft((prev) => ({ ...prev, [key]: value }));
@@ -2910,8 +2945,30 @@ const BarcodeGeneration = () => {
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  {renderSelectField("Product", "productId", editorOptions.products)}
-                  {renderSelectField("Brand Name", "brandId", editorOptions.brands)}
+                  <div>
+                    <label className="block text-[10px] font-medium text-gray-600 dark:text-gray-400 mb-1">Product</label>
+                    <AsyncSearchSelect
+                      name="productId"
+                      value={editForm.productId || ""}
+                      onChange={(e) => handleEditorChange("productId", e.target.value)}
+                      options={editorOptions.products}
+                      onAsyncSearch={handleAsyncProductSearch}
+                      placeholder="Select"
+                      searchPlaceholder="Search products..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-medium text-gray-600 dark:text-gray-400 mb-1">Brand Name</label>
+                    <AsyncSearchSelect
+                      name="brandId"
+                      value={editForm.brandId || ""}
+                      onChange={(e) => handleEditorChange("brandId", e.target.value)}
+                      options={editorOptions.brands}
+                      onAsyncSearch={handleAsyncBrandSearch}
+                      placeholder="Select"
+                      searchPlaceholder="Search brands..."
+                    />
+                  </div>
                   {renderInputField("Size", "size")}
                   {renderSelectField("Style", "styleId", editorOptions.styles)}
                   {renderInputField("Design", "designNo")}

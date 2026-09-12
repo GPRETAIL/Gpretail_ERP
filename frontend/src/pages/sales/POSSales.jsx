@@ -61,6 +61,32 @@ import {
 const { onFetchGroupSummaries: fetchPosSaleGroupSummaries, onFetchGroupRows: fetchPosSaleGroupRows } =
   createGroupFetchers("/pos-sales", { customer_name: "customer_id", user_name: "user_id" });
 
+// Shared shape for both the initial bulk customer preload and async search results below --
+// keeping them identical means a customer found via search behaves exactly like one that was
+// already cached (same fields available to applyCustomerPanelRow / the quick-customer dialog).
+const mapCustomerRow = (row, areaMap) => ({
+  value: String(row.id),
+  label: `${row.name || "Unnamed"}${row.phone ? ` (${row.phone})` : ""}`,
+  id: String(row.id),
+  name: row.name || "Unnamed",
+  mobileNo: row.phone || "",
+  dateOfBirth: row.date_of_birth || "",
+  billingName: row.billing_name || "",
+  cardNo: row.loyalty_card_number || "",
+  gstNo: row.gstin || "",
+  address: row.address || "",
+  cityId: row.city_id ? String(row.city_id) : "",
+  cityName: row.city?.name || "",
+  stateId: row.state_id ? String(row.state_id) : "",
+  stateName: row.state?.name || "",
+  customerCategoryId: row.customer_category_id ? String(row.customer_category_id) : "",
+  customerCategoryName: row.customerCategory?.name || "",
+  emailId: row.email || "",
+  areaId: row.area_id ? String(row.area_id) : "",
+  areaName: (areaMap && areaMap.get(String(row.area_id || ""))) || "",
+  sectionReligion: row.section_religion || "",
+});
+
 const normalize = (value) => String(value || "").trim().toLowerCase();
 const toNum = (value, fallback = 0) => {
   const parsed = Number(value);
@@ -766,7 +792,10 @@ const POSSales = () => {
 
       const [customersRes, stockProductsRes, productsRes, cities, states, customerCategories, areas] =
         await Promise.all([
-          api.get("/customers", { params: { all: true } }).catch(() => ({ data: { data: [] } })),
+          // Was {all:true} (capped 2000, unconditional on every page load). Customer now has real
+          // async search (handleAsyncCustomerSearch below) covering the ~1,000,000-row real table,
+          // so this only needs to seed a small initial/instant-match cache.
+          api.get("/customers", { params: { limit: 300 } }).catch(() => ({ data: { data: [] } })),
           api.get("/pos-sales/stock-products").catch(() => ({ data: { data: [] } })),
           api.get("/products", { params: { limit: 500 } }).catch(() => ({ data: { data: [] } })),
           cfg("city"),
@@ -777,30 +806,7 @@ const POSSales = () => {
 
       const customerRows = customersRes.data?.data || [];
       const areaMap = new Map(areas.map((row) => [String(row.value), row.label]));
-      setCustomers(
-        customerRows.map((row) => ({
-          value: String(row.id),
-          label: `${row.name || "Unnamed"}${row.phone ? ` (${row.phone})` : ""}`,
-          id: String(row.id),
-          name: row.name || "Unnamed",
-          mobileNo: row.phone || "",
-          dateOfBirth: row.date_of_birth || "",
-          billingName: row.billing_name || "",
-          cardNo: row.loyalty_card_number || "",
-          gstNo: row.gstin || "",
-          address: row.address || "",
-          cityId: row.city_id ? String(row.city_id) : "",
-          cityName: row.city?.name || "",
-          stateId: row.state_id ? String(row.state_id) : "",
-          stateName: row.state?.name || "",
-          customerCategoryId: row.customer_category_id ? String(row.customer_category_id) : "",
-          customerCategoryName: row.customerCategory?.name || "",
-          emailId: row.email || "",
-          areaId: row.area_id ? String(row.area_id) : "",
-          areaName: areaMap.get(String(row.area_id || "")) || "",
-          sectionReligion: row.section_religion || "",
-        }))
-      );
+      setCustomers(customerRows.map((row) => mapCustomerRow(row, areaMap)));
       setCustomerConfigOptions({ cities, states, customerCategories, areas });
 
       const products = productsRes.data?.data || [];
@@ -970,6 +976,30 @@ const POSSales = () => {
       active: true,
     }));
   }, []);
+
+  // customers is only ever seeded with a small batch (see loadMasterData above) -- this hits
+  // /customers' own ?search= endpoint for anything beyond that, and merges any new matches into
+  // the cache so a customer found once stays instantly findable for the rest of the session.
+  const handleAsyncCustomerSearch = useCallback(async (query) => {
+    const trimmed = String(query || "").trim();
+    if (!trimmed) return [];
+    try {
+      const res = await api.get("/customers", { params: { search: trimmed, limit: 20 } });
+      const rows = res.data?.data || [];
+      const areaMap = new Map(customerConfigOptions.areas.map((row) => [String(row.value), row.label]));
+      const mapped = rows.map((row) => mapCustomerRow(row, areaMap));
+      if (mapped.length) {
+        setCustomers((prev) => {
+          const existingIds = new Set(prev.map((c) => c.id));
+          const newOnes = mapped.filter((c) => !existingIds.has(c.id));
+          return newOnes.length ? [...prev, ...newOnes] : prev;
+        });
+      }
+      return mapped;
+    } catch {
+      return [];
+    }
+  }, [customerConfigOptions.areas]);
 
   const usedQtyByBarcode = useMemo(() => {
     const map = new Map();
@@ -1293,7 +1323,7 @@ const POSSales = () => {
     barcodeInputRef.current?.focus();
   }, [showSearchPage, loading]);
 
-  const handleCustomerNumberLookup = useCallback((rawValue) => {
+  const handleCustomerNumberLookup = useCallback(async (rawValue) => {
     const query = String(rawValue || "").trim();
     const digitsQuery = query.replace(/\D/g, "");
 
@@ -1303,10 +1333,19 @@ const POSSales = () => {
       return null;
     }
 
-    const matched = customers.find((row) => {
+    const findByNumber = (list) => list.find((row) => {
       const mobileDigits = String(row.mobileNo || "").replace(/\D/g, "");
       return digitsQuery ? mobileDigits === digitsQuery : String(row.mobileNo || "").trim() === query;
     });
+
+    // Fast path: already-cached customer, no network round trip.
+    let matched = findByNumber(customers);
+    if (!matched) {
+      // Not in the local ~300-row seed cache -- the real table has ~1,000,000 rows, so this is
+      // expected for most numbers, not an edge case. Ask the server before concluding "new customer".
+      const serverResults = await handleAsyncCustomerSearch(query);
+      matched = findByNumber(serverResults);
+    }
 
     if (matched) {
       applyCustomerPanelRow(matched);
@@ -1320,7 +1359,7 @@ const POSSales = () => {
       name: prev.name || "",
     }));
     return null;
-  }, [applyCustomerPanelRow, customers]);
+  }, [applyCustomerPanelRow, customers, handleAsyncCustomerSearch]);
 
   const handleCustomerNumberChange = (value) => {
     setNewCustomer((prev) => ({ ...prev, mobileNo: value }));
@@ -1365,7 +1404,7 @@ const POSSales = () => {
     }
   };
 
-  const runQuickCustomerSearch = useCallback((mobileValue = quickCustomer.mobileNo) => {
+  const runQuickCustomerSearch = useCallback(async (mobileValue = quickCustomer.mobileNo) => {
     const rawQuery = String(mobileValue || "").trim();
     if (!rawQuery) {
       setQuickCustomerSearchResults([]);
@@ -1373,8 +1412,16 @@ const POSSales = () => {
       return [];
     }
 
+    // Ask the server too -- customers is only a small seed cache (see handleAsyncCustomerSearch),
+    // so a local-only filter here would miss most real matches. Built from this render's `customers`
+    // snapshot plus the server's response rather than re-reading `customers` state after the await,
+    // since the state update from the search wouldn't be visible in this closure yet.
+    const serverResults = await handleAsyncCustomerSearch(rawQuery);
+    const existingIds = new Set(customers.map((row) => row.id));
+    const pool = [...customers, ...serverResults.filter((row) => !existingIds.has(row.id))];
+
     const digitsQuery = rawQuery.replace(/\D/g, "");
-    const matched = customers
+    const matched = pool
       .filter((row) => {
         const mobile = String(row.mobileNo || "").trim();
         const digitsMobile = mobile.replace(/\D/g, "");
@@ -1397,7 +1444,7 @@ const POSSales = () => {
     );
     setQuickCustomerSelectedId(exactMatch?.value || matched[0]?.value || "");
     return matched;
-  }, [customers, quickCustomer.mobileNo]);
+  }, [customers, quickCustomer.mobileNo, handleAsyncCustomerSearch]);
 
   const focusNextQuickCustomerField = (fieldName) => {
     const index = quickCustomerFieldOrder.indexOf(fieldName);
@@ -1442,11 +1489,21 @@ const POSSales = () => {
       return;
     }
 
-    const exactExisting = customers.find(
-      (row) => String(row.mobileNo || "").replace(/\D/g, "") === mobileNo.replace(/\D/g, "")
+    const digitsQuery = mobileNo.replace(/\D/g, "");
+    let exactExisting = customers.find(
+      (row) => String(row.mobileNo || "").replace(/\D/g, "") === digitsQuery
     );
+    if (!exactExisting) {
+      // Local cache is only a ~300-row seed -- check the server before concluding this is a new
+      // customer. Skipping this previously meant a customer that existed but wasn't in the local
+      // cache would silently get a duplicate record created below.
+      const serverResults = await handleAsyncCustomerSearch(mobileNo);
+      exactExisting = serverResults.find(
+        (row) => String(row.mobileNo || "").replace(/\D/g, "") === digitsQuery
+      );
+    }
     if (exactExisting) {
-      setQuickCustomerSearchResults(runQuickCustomerSearch(mobileNo));
+      await runQuickCustomerSearch(mobileNo);
       setQuickCustomerSelectedId(exactExisting.value);
       toast.info("Customer already exists. Select it from search results.");
       return;

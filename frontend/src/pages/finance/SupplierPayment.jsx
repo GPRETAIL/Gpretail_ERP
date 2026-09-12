@@ -8,6 +8,7 @@ import { toast } from "react-toastify";
 import FilterableDataTable from "../../components/FilterableDataTable";
 import ExportBottomSheet from "../../components/ExportBottomSheet";
 import SearchableSelect from "../../components/SearchableSelect";
+import AsyncSearchSelect from "../../components/AsyncSearchSelect";
 import { useTheme as useAppTheme } from "../../features/theme-context";
 import { createNamedTheme, TONES } from "../../theme/themeRegistry";
 import { StatusChip } from "../../theme/StatusChip";
@@ -197,7 +198,7 @@ const SupplierPayment = () => {
         const [compRes, locRes, agentRes, cityRes, secRes] = await Promise.all([
           api.get("/companies").catch(() => ({ data: { data: [] } })),
           api.get("/configurations/location").catch(() => ({ data: { data: [] } })),
-          api.get("/agents", { params: { all: "true" } }).catch(() => ({ data: { data: [] } })),
+          api.get("/agents", { params: { limit: 300 } }).catch(() => ({ data: { data: [] } })),
           api.get("/configurations/city").catch(() => ({ data: { data: [] } })),
           api.get("/hr-sections").catch(() => ({ data: { data: [] } })),
         ]);
@@ -211,6 +212,23 @@ const SupplierPayment = () => {
       }
     };
     load();
+  }, []);
+
+  const handleAsyncAgentSearch = useCallback(async (query) => {
+    try {
+      const res = await api.get("/agents", { params: { search: query, limit: 50 } });
+      const results = Array.isArray(res.data?.data) ? res.data.data : [];
+      if (results.length) {
+        setAgents((prev) => {
+          const existingIds = new Set((prev || []).map((a) => String(a.id)));
+          const newItems = results.filter((a) => !existingIds.has(String(a.id)));
+          return newItems.length ? [...prev, ...newItems] : prev;
+        });
+      }
+      return results.map((a) => ({ value: String(a.id), label: a.name }));
+    } catch {
+      return [];
+    }
   }, []);
 
   // ─── Search pending invoices ───────────────────────────────────────────────
@@ -390,7 +408,7 @@ const SupplierPayment = () => {
   const searchableOptions = useMemo(() => ({
     companies: [{ value: "", label: "All Companies" }, ...companies.map((c) => ({ value: String(c.id), label: c.name }))],
     locations: [{ value: "", label: "All Locations" }, ...locations.map((l) => ({ value: l.name, label: l.name }))],
-    agents: [{ value: "", label: "All Agents" }, ...agents.map((a) => ({ value: String(a.id), label: a.name }))],
+    agents: agents.map((a) => ({ value: String(a.id), label: a.name })),
     cities: [{ value: "", label: "All Cities" }, ...cities.map((c) => ({ value: String(c.id), label: c.name }))],
     sections: [{ value: "", label: "All Sections" }, ...sections.map((s) => ({ value: s.name, label: s.name }))],
   }), [companies, locations, agents, cities, sections]);
@@ -588,15 +606,14 @@ const SupplierPayment = () => {
                     </Box>
                     <Box>
                       <Typography component="label" sx={fieldLabelSx}>Agent</Typography>
-                      <SearchableSelect
+                      <AsyncSearchSelect
                         name="agentId"
                         value={agentId}
                         options={searchableOptions.agents}
+                        onAsyncSearch={handleAsyncAgentSearch}
                         onChange={(e) => setAgentId(e.target.value)}
                         placeholder="All Agents"
-                        triggerClassName={searchableTriggerCls}
-                        showEmptyOption={false}
-                        portalDropdown
+                        searchPlaceholder="Search agents..."
                       />
                     </Box>
                     <Box>

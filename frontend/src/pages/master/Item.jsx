@@ -7,6 +7,7 @@ import FilterableDataTable from "../../components/FilterableDataTable";
 import { createGroupFetchers } from "../../utils/serverGrouping";
 import UploadImportButton from "../../components/UploadImportButton";
 import ConfirmDialog from "../../components/ConfirmDialog";
+import AsyncSearchSelect from "../../components/AsyncSearchSelect";
 import ExportBottomSheet from "../../components/ExportBottomSheet";
 import { handleEnterKeyNavigation } from "../../utils/enterToNextField";
 import useStoreNameMap from "../../hooks/useStoreNameMap";
@@ -276,8 +277,8 @@ export default function Item() {
     const load = (url, setter, transform) =>
       api.get(url).then((r) => setter((r.data?.data || []).map(transform))).catch(() => {});
 
-    load("/products?limit=500", setProducts, (p) => ({ value: String(p.id), label: p.name }));
-    load("/brands?limit=500", setBrands,  (b) => ({ value: String(b.id), label: b.name }));
+    load("/products?limit=300", setProducts, (p) => ({ value: String(p.id), label: p.name }));
+    load("/brands?limit=300", setBrands,  (b) => ({ value: String(b.id), label: b.name }));
     load("/sizes",             setSizes,   (s) => ({ value: String(s.id), label: s.size_name }));
     load("/attributes/type",     setTypes,    (a) => ({ value: String(a.id), label: a.name }));
     load("/attributes/style",    setStyles,   (a) => ({ value: String(a.id), label: a.name }));
@@ -286,6 +287,40 @@ export default function Item() {
     load("/attributes/material", setMaterials,(a) => ({ value: String(a.id), label: a.name }));
     load("/attributes/fit",      setFits,     (a) => ({ value: String(a.id), label: a.name }));
     load("/attributes/sleeve",   setSleeves,  (a) => ({ value: String(a.id), label: a.name }));
+  }, []);
+
+  // Preloads above are capped batches -- these hit each resource's own ?search= endpoint so
+  // AsyncSearchSelect can find anything beyond that initial batch.
+  const handleAsyncProductSearch = useCallback(async (query) => {
+    try {
+      const res = await api.get("/products", { params: { search: query, limit: 50 } });
+      const mapped = (res.data?.data || []).map((p) => ({ value: String(p.id), label: p.name }));
+      if (mapped.length) {
+        setProducts((prev) => {
+          const existingIds = new Set(prev.map((o) => o.value));
+          return [...prev, ...mapped.filter((o) => !existingIds.has(o.value))];
+        });
+      }
+      return mapped;
+    } catch {
+      return [];
+    }
+  }, []);
+
+  const handleAsyncBrandSearch = useCallback(async (query) => {
+    try {
+      const res = await api.get("/brands", { params: { search: query, limit: 50 } });
+      const mapped = (res.data?.data || []).map((b) => ({ value: String(b.id), label: b.name }));
+      if (mapped.length) {
+        setBrands((prev) => {
+          const existingIds = new Set(prev.map((o) => o.value));
+          return [...prev, ...mapped.filter((o) => !existingIds.has(o.value))];
+        });
+      }
+      return mapped;
+    } catch {
+      return [];
+    }
   }, []);
 
   // ─── Field helpers ────────────────────────────────────────────────────────
@@ -718,7 +753,15 @@ export default function Item() {
         <div className="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded shadow-sm p-3 flex flex-col gap-2 lg:h-full">
           {/* Product */}
           <Row label="Product" required>
-            <TSelect value={form.product_id} onChange={set("product_id")} options={products} />
+            <AsyncSearchSelect
+              name="product_id"
+              value={form.product_id}
+              onChange={set("product_id")}
+              options={products}
+              onAsyncSearch={handleAsyncProductSearch}
+              placeholder="Select Product"
+              searchPlaceholder="Search products..."
+            />
           </Row>
 
           {/* Item Code + Design on same row */}
@@ -740,7 +783,15 @@ export default function Item() {
             <TInput value={form.printing_name} onChange={set("printing_name")} />
           </Row>
           <Row label="Brand Name" required>
-            <TSelect value={form.brand_id} onChange={set("brand_id")} options={brands} />
+            <AsyncSearchSelect
+              name="brand_id"
+              value={form.brand_id}
+              onChange={set("brand_id")}
+              options={brands}
+              onAsyncSearch={handleAsyncBrandSearch}
+              placeholder="Select Brand"
+              searchPlaceholder="Search brands..."
+            />
           </Row>
           <Row label="Type">
             <TSelect value={form.type_id} onChange={set("type_id")} options={types} />

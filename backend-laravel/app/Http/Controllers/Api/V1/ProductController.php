@@ -142,9 +142,13 @@ class ProductController extends Controller
                 ])
                 ->when($request->filled('search'), function ($q) use ($request) {
                     $s = trim($request->input('search'));
+                    // Match filteredQuery()'s column set above (name/code/sku/barcode) -- this dropdown-mode
+                    // path is a separate raw query for speed and was missing sku, so a product findable by
+                    // SKU in the regular list view silently couldn't be found from this page's dropdowns.
                     $q->where(function ($sub) use ($s) {
                         $sub->where('products.name', 'like', "%{$s}%")
                             ->orWhere('products.code', 'like', "%{$s}%")
+                            ->orWhere('products.sku', 'like', "%{$s}%")
                             ->orWhere('products.barcode', 'like', "%{$s}%");
                     });
                 })

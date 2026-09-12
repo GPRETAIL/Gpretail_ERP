@@ -4,6 +4,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import api from "../../api/axios";
 import SearchableSelect from "../../components/SearchableSelect";
+import AsyncSearchSelect from "../../components/AsyncSearchSelect";
 import { usePrintContext } from "../../context/PrintContext";
 
 const PAYMENT_MODES = ["Inter bank transfer", "Cheque/DD", "Cash", "Card", "UPI"];
@@ -162,15 +163,15 @@ const CrmCustomerOrderForm = () => {
         api.get("/companies", { params: { limit: 500 } }).catch(() => ({ data: { data: [] } })),
         api.get("/configurations/location").catch(() => ({ data: { data: [] } })),
         api.get("/configurations/city").catch(() => ({ data: { data: [] } })),
-        api.get("/suppliers", { params: { all: "true" } }).catch(() => ({ data: { data: [] } })),
+        api.get("/suppliers", { params: { limit: 300 } }).catch(() => ({ data: { data: [] } })),
         api.get("/customer-orders/stock-products").catch(() => ({ data: { data: [] } })),
-        api.get("/products", { params: { all: "true" } }).catch(() => ({ data: { data: [] } })),
-        api.get("/brands", { params: { all: "true" } }).catch(() => ({ data: { data: [] } })),
+        api.get("/products", { params: { limit: 300 } }).catch(() => ({ data: { data: [] } })),
+        api.get("/brands", { params: { limit: 300 } }).catch(() => ({ data: { data: [] } })),
         api.get("/attributes/style").catch(() => ({ data: { data: [] } })),
         api.get("/sizes").catch(() => ({ data: { data: [] } })),
         api.get("/attributes/colour").catch(() => ({ data: { data: [] } })),
         api.get("/configurations/counter").catch(() => ({ data: { data: [] } })),
-        api.get("/employees", { params: { all: "true" } }).catch(() => ({ data: { data: [] } })),
+        api.get("/employees", { params: { limit: 300 } }).catch(() => ({ data: { data: [] } })),
         api.get("/configurations/bank").catch(() => ({ data: { data: [] } })),
         api.get("/customer-orders/next-order-no").catch(() => ({ data: { data: { orderNo: 1 } } })),
       ]);
@@ -193,7 +194,7 @@ const CrmCustomerOrderForm = () => {
       const counters = toSelectOptions(counterRes.data?.data || [], "id", "name");
       const employees = (employeeRes.data?.data || []).map((row) => ({
         value: String(row.id),
-        label: `${toText(row.name)} ${toText(row.surname)}`.trim() || row.employee_code || `EMP-${row.id}`,
+        label: toText(row.name) || row.code || `EMP-${row.id}`,
         raw: row,
       }));
       const banks = toSelectOptions(bankRes.data?.data || [], "id", "name");
@@ -224,6 +225,76 @@ const CrmCustomerOrderForm = () => {
   useEffect(() => {
     loadMasterData();
   }, [loadMasterData]);
+
+  // Preloads above are capped batches -- these hit each resource's own ?search= endpoint so
+  // AsyncSearchSelect can find anything beyond that initial batch.
+  const handleAsyncSupplierSearch = useCallback(async (query) => {
+    try {
+      const res = await api.get("/suppliers", { params: { search: query, limit: 50 } });
+      const mapped = toSelectOptions(res.data?.data || [], "id", "name");
+      if (mapped.length) {
+        setOptions((prev) => {
+          const existingIds = new Set(prev.suppliers.map((o) => o.value));
+          return { ...prev, suppliers: [...prev.suppliers, ...mapped.filter((o) => !existingIds.has(o.value))] };
+        });
+      }
+      return mapped;
+    } catch {
+      return [];
+    }
+  }, []);
+
+  const handleAsyncProductSearch = useCallback(async (query) => {
+    try {
+      const res = await api.get("/customer-orders/stock-products", { params: { search: query } });
+      const mapped = toSelectOptions(res.data?.data || [], "id", "name");
+      if (mapped.length) {
+        setOptions((prev) => {
+          const existingIds = new Set(prev.products.map((o) => o.value));
+          return { ...prev, products: [...prev.products, ...mapped.filter((o) => !existingIds.has(o.value))] };
+        });
+      }
+      return mapped;
+    } catch {
+      return [];
+    }
+  }, []);
+
+  const handleAsyncBrandSearch = useCallback(async (query) => {
+    try {
+      const res = await api.get("/brands", { params: { search: query, limit: 50 } });
+      const mapped = toSelectOptions(res.data?.data || [], "id", "name");
+      if (mapped.length) {
+        setOptions((prev) => {
+          const existingIds = new Set(prev.brands.map((o) => o.value));
+          return { ...prev, brands: [...prev.brands, ...mapped.filter((o) => !existingIds.has(o.value))] };
+        });
+      }
+      return mapped;
+    } catch {
+      return [];
+    }
+  }, []);
+
+  const handleAsyncEmployeeSearch = useCallback(async (query) => {
+    try {
+      const res = await api.get("/employees", { params: { search: query, limit: 50 } });
+      const mapped = (res.data?.data || []).map((row) => ({
+        value: String(row.id),
+        label: toText(row.name) || row.code || `EMP-${row.id}`,
+        raw: row,
+      }));
+      if (mapped.length) {
+        setOptions((prev) => {
+          const existingIds = new Set(prev.employees.map((o) => o.value));
+          return { ...prev, employees: [...prev.employees, ...mapped.filter((o) => !existingIds.has(o.value))] };
+        });
+      }
+      return mapped;
+    } catch {
+      return [];
+    }
+  }, []);
 
   useEffect(() => {
     if (!sourceOrderId) return;
@@ -970,33 +1041,36 @@ const CrmCustomerOrderForm = () => {
               <div className="grid grid-cols-3 gap-2 items-end">
                 <div>
                   <InputLabel text="Supplier" />
-                  <SearchableSelect
+                  <AsyncSearchSelect
                     name="supplierId"
                     value={form.supplierId}
                     onChange={(e) => updateForm("supplierId", e.target.value)}
                     options={options.suppliers}
+                    onAsyncSearch={handleAsyncSupplierSearch}
                     placeholder="Select"
                   />
                 </div>
 
                 <div>
                   <InputLabel text="Product" required />
-                  <SearchableSelect
+                  <AsyncSearchSelect
                     name="itemProductId"
                     value={itemDraft.productId}
                     onChange={(e) => setItemDraft((prev) => ({ ...prev, productId: e.target.value }))}
                     options={options.products}
+                    onAsyncSearch={handleAsyncProductSearch}
                     placeholder="Select"
                   />
                 </div>
 
                 <div>
                   <InputLabel text="Brand" />
-                  <SearchableSelect
+                  <AsyncSearchSelect
                     name="itemBrandId"
                     value={itemDraft.brandId}
                     onChange={(e) => setItemDraft((prev) => ({ ...prev, brandId: e.target.value }))}
                     options={options.brands}
+                    onAsyncSearch={handleAsyncBrandSearch}
                     placeholder="Select"
                   />
                 </div>
@@ -1148,11 +1222,12 @@ const CrmCustomerOrderForm = () => {
 
                 <div>
                   <InputLabel text="Received By" />
-                  <SearchableSelect
+                  <AsyncSearchSelect
                     name="receivedById"
                     value={form.receivedById}
                     onChange={(e) => updateForm("receivedById", e.target.value)}
                     options={options.employees}
+                    onAsyncSearch={handleAsyncEmployeeSearch}
                     placeholder="Select"
                   />
                 </div>

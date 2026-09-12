@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { ArrowLeft, Eye, PlusCircle, Save, Search, Upload, Trash2 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../../api/axios";
 import Toast from "../../components/Toast";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import SearchableSelect from "../../components/SearchableSelect";
+import AsyncSearchSelect from "../../components/AsyncSearchSelect";
 import PageSkeleton from "../../components/PageSkeleton";
 import { getMasterLookups } from "../../utils/lookupCache";
 
@@ -239,6 +240,60 @@ const TransportEntry = () => {
   const [sections, setSections] = useState([]);
   const [purchaseManagers, setPurchaseManagers] = useState([]);
 
+  // /lookups only preloads the first 100 of each of these (suppliers/agents/transports commonly
+  // hold 100k+ rows in this deployment) -- these hit each resource's own ?search= endpoint so
+  // AsyncSearchSelect can find anything beyond that initial batch.
+  const handleAsyncSupplierSearch = useCallback(async (query) => {
+    try {
+      const res = await api.get("/suppliers", { params: { search: query, limit: 50 } });
+      const results = Array.isArray(res.data?.data) ? res.data.data : [];
+      if (results.length) {
+        setSuppliers((prev) => {
+          const existingIds = new Set((prev || []).map((s) => String(s.id)));
+          const newItems = results.filter((s) => !existingIds.has(String(s.id)));
+          return newItems.length ? [...prev, ...newItems] : prev;
+        });
+      }
+      return results;
+    } catch {
+      return [];
+    }
+  }, []);
+
+  const handleAsyncAgentSearch = useCallback(async (query) => {
+    try {
+      const res = await api.get("/agents", { params: { search: query, limit: 50 } });
+      const results = Array.isArray(res.data?.data) ? res.data.data : [];
+      if (results.length) {
+        setAgents((prev) => {
+          const existingIds = new Set((prev || []).map((a) => String(a.id)));
+          const newItems = results.filter((a) => !existingIds.has(String(a.id)));
+          return newItems.length ? [...prev, ...newItems] : prev;
+        });
+      }
+      return results;
+    } catch {
+      return [];
+    }
+  }, []);
+
+  const handleAsyncTransportSearch = useCallback(async (query) => {
+    try {
+      const res = await api.get("/transports", { params: { search: query, limit: 50 } });
+      const results = Array.isArray(res.data?.data) ? res.data.data : [];
+      if (results.length) {
+        setTransports((prev) => {
+          const existingIds = new Set((prev || []).map((t) => String(t.id)));
+          const newItems = results.filter((t) => !existingIds.has(String(t.id)));
+          return newItems.length ? [...prev, ...newItems] : prev;
+        });
+      }
+      return results;
+    } catch {
+      return [];
+    }
+  }, []);
+
   // Hardcoded LR Mode options
   const lrModeOptions = [
     { label: "Lorry", value: "Lorry" },
@@ -269,8 +324,8 @@ const TransportEntry = () => {
   ];
 
   const purchaseManagerOptions = purchaseManagers.map((employee) => {
-    const code = String(employee?.employee_code || "").trim();
-    const name = [employee?.name, employee?.surname].map((part) => String(part || "").trim()).filter(Boolean).join(" ") || "Unnamed";
+    const code = String(employee?.code || "").trim();
+    const name = String(employee?.name || "").trim() || "Unnamed";
     const designationName = String(employee?.designation?.name || employee?.designation?.role_name || "").trim();
     const suffix = designationName ? ` - ${designationName}` : "";
     return {
@@ -278,6 +333,35 @@ const TransportEntry = () => {
       value: name,
     };
   });
+
+  // /lookups' 'employees' case was selecting a nonexistent 'employee_code' column, which threw
+  // and got silently swallowed -- this dropdown loaded empty on every page view. Fixed on the
+  // backend; this hits the working /employees?search= endpoint for anything beyond that preload.
+  const handleAsyncPurchaseManagerSearch = useCallback(async (query) => {
+    try {
+      const res = await api.get("/employees", { params: { search: query, limit: 50 } });
+      const results = Array.isArray(res.data?.data) ? res.data.data : [];
+      if (results.length) {
+        setPurchaseManagers((prev) => {
+          const existingIds = new Set((prev || []).map((e) => String(e.id)));
+          const newItems = results.filter((e) => !existingIds.has(String(e.id)));
+          return newItems.length ? [...prev, ...newItems] : prev;
+        });
+      }
+      return results.map((employee) => {
+        const code = String(employee?.code || "").trim();
+        const name = String(employee?.name || "").trim() || "Unnamed";
+        const designationName = String(employee?.designation?.name || "").trim();
+        const suffix = designationName ? ` - ${designationName}` : "";
+        return {
+          label: `${code ? `${code} - ` : ""}${name}${suffix}`,
+          value: name,
+        };
+      });
+    } catch {
+      return [];
+    }
+  }, []);
 
   // Fetch all dropdown data on mount via high-speed consolidated lookup
   useEffect(() => {
@@ -724,14 +808,14 @@ const TransportEntry = () => {
                   <span className="text-red-500 dark:text-red-400">* </span>Supplier
                 </label>
                 <div className="mt-0.5">
-                  <SearchableSelect
+                  <AsyncSearchSelect
                     name="supplierId"
-                    options={suppliers.map((s) => ({ label: s.name, value: String(s.id) }))}
+                    options={suppliers}
+                    onAsyncSearch={handleAsyncSupplierSearch}
                     value={String(formData.supplierId)}
                     onChange={(e) => { handleFieldChange("supplierId")(e); focusRef(agentRef); }}
                     placeholder="Select Supplier"
-                    triggerClassName={TRANSPORT_SEARCHABLE_TRIGGER_CLASS}
-                    searchInputClassName={TRANSPORT_SEARCHABLE_INPUT_CLASS}
+                    searchPlaceholder="Search supplier..."
                   />
                 </div>
               </div>
@@ -743,14 +827,14 @@ const TransportEntry = () => {
                     <span className="text-red-500 dark:text-red-400">* </span>Agent
                   </label>
                   <div className="mt-0.5">
-                    <SearchableSelect
+                    <AsyncSearchSelect
                       name="agentId"
-                      options={agents.map((a) => ({ label: a.name, value: String(a.id) }))}
+                      options={agents}
+                      onAsyncSearch={handleAsyncAgentSearch}
                       value={String(formData.agentId)}
                       onChange={(e) => { handleFieldChange("agentId")(e); focusRef(commissionRef); }}
                       placeholder="Select Agent"
-                      triggerClassName={TRANSPORT_SEARCHABLE_TRIGGER_CLASS}
-                      searchInputClassName={TRANSPORT_SEARCHABLE_INPUT_CLASS}
+                      searchPlaceholder="Search agent..."
                     />
                   </div>
                 </div>
@@ -768,14 +852,14 @@ const TransportEntry = () => {
               <div ref={transportRef}>
                 <label className={TRANSPORT_LABEL_CLASS}>Transport</label>
                 <div className="mt-0.5">
-                  <SearchableSelect
+                  <AsyncSearchSelect
                     name="transportId"
-                    options={transports.map((t) => ({ label: t.name, value: String(t.id) }))}
+                    options={transports}
+                    onAsyncSearch={handleAsyncTransportSearch}
                     value={String(formData.transportId)}
                     onChange={(e) => { handleFieldChange("transportId")(e); focusRef(fromCityRef); }}
                     placeholder="Select Transport"
-                    triggerClassName={TRANSPORT_SEARCHABLE_TRIGGER_CLASS}
-                    searchInputClassName={TRANSPORT_SEARCHABLE_INPUT_CLASS}
+                    searchPlaceholder="Search transport..."
                   />
                 </div>
               </div>
@@ -858,14 +942,14 @@ const TransportEntry = () => {
               <div>
                 <label className={TRANSPORT_LABEL_CLASS}>Purchase Manager</label>
                 <div className="mt-0.5">
-                  <SearchableSelect
+                  <AsyncSearchSelect
                     name="purchaseManager"
                     options={purchaseManagerOptions}
+                    onAsyncSearch={handleAsyncPurchaseManagerSearch}
                     value={String(formData.purchaseManager || "")}
                     onChange={handleFieldChange("purchaseManager")}
                     placeholder="Select Purchase Manager"
-                    triggerClassName={TRANSPORT_SEARCHABLE_TRIGGER_CLASS}
-                    searchInputClassName={TRANSPORT_SEARCHABLE_INPUT_CLASS}
+                    searchPlaceholder="Search employees..."
                   />
                 </div>
               </div>

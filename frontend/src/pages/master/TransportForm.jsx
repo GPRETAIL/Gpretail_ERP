@@ -3,8 +3,16 @@ import { ArrowLeft, PlusCircle, Save, Search, Trash2 } from "lucide-react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import api from "../../api/axios";
+import AsyncSearchSelect from "../../components/AsyncSearchSelect";
 import { normalizeFormSignature } from "../../utils/formSignature";
 import { handleEnterKeyNavigation } from "../../utils/enterToNextField";
+
+const mapTaxOption = (t) => ({
+  id: String(t.id),
+  value: String(t.id),
+  name: `${t.name} (${t.tax_percentage}%)`,
+  label: `${t.name} (${t.tax_percentage}%)`,
+});
 
 /* ─── tiny inline helpers ─────────────────────────────────────────────────── */
 const Label = ({ children, required }) => (
@@ -122,13 +130,34 @@ const TransportForm = () => {
         setCityOpts((cities.data?.data || []).map((c) => ({ value: String(c.id), label: c.name })));
         setStateOpts((states.data?.data || []).map((s) => ({ value: String(s.id), label: s.name })));
         setBankOpts((banks.data?.data || []).map((b) => ({ value: String(b.id), label: b.name })));
-        setTaxOpts((taxes.data?.data || []).map((t) => ({ value: String(t.id), label: `${t.name} (${t.tax_percentage}%)` })));
+        // Was api.get("/taxes") with no params (default ~50 rows), no way to search beyond it --
+        // taxes now has real async search (handleAsyncTaxSearch below) covering the real table.
+        setTaxOpts((taxes.data?.data || []).map(mapTaxOption));
       } catch {
         /* silently fail for dropdowns */
       }
     };
     load();
   }, []);
+
+  const handleAsyncTaxSearch = async (query) => {
+    const trimmed = String(query || "").trim();
+    if (!trimmed) return [];
+    try {
+      const res = await api.get("/taxes", { params: { search: trimmed, limit: 50 } });
+      const mapped = (res.data?.data || []).map(mapTaxOption);
+      if (mapped.length) {
+        setTaxOpts((prev) => {
+          const existing = new Set(prev.map((t) => t.value));
+          const newOnes = mapped.filter((t) => !existing.has(t.value));
+          return newOnes.length ? [...prev, ...newOnes] : prev;
+        });
+      }
+      return mapped;
+    } catch {
+      return [];
+    }
+  };
 
   /* ── load record for view/edit ── */
   useEffect(() => {
@@ -441,15 +470,18 @@ const TransportForm = () => {
                 disabled={readOnly}
                 placeholder="Price"
               />
-              <Select
-                name="taxId"
-                value={form.taxId}
-                onChange={handleChange}
-                disabled={readOnly}
-                options={taxOpts}
-                placeholder="Tax"
-                className="flex-1"
-              />
+              <div className="flex-1">
+                <AsyncSearchSelect
+                  name="taxId"
+                  value={form.taxId}
+                  onChange={handleChange}
+                  disabled={readOnly}
+                  options={taxOpts}
+                  onAsyncSearch={handleAsyncTaxSearch}
+                  placeholder="Tax"
+                  searchPlaceholder="Search tax..."
+                />
+              </div>
             </div>
           </Field>
 

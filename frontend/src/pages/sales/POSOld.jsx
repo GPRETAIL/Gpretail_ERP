@@ -39,6 +39,17 @@ const { onFetchGroupSummaries: fetchPosOldSaleGroupSummaries, onFetchGroupRows: 
   createGroupFetchers("/pos-old-sales", { customer_name: "customer_id", user_name: "user_id" });
 import { buildPosReturnReceiptHtml, buildPosSaleReceiptHtml } from "../../utils/posReceiptHtml";
 
+// mobileNo previously read r.mobile_no, a field the /customers API never actually returns (the
+// real column/response key is `phone`) -- phone lookup on this page never matched anything at all,
+// independent of the cache-size bug fixed alongside it below.
+const mapCustomerRow = (r) => ({
+  value: String(r.id),
+  label: `${r.name || "Unnamed"}${r.phone ? ` (${r.phone})` : ""}`,
+  id: String(r.id),
+  name: r.name || "",
+  mobileNo: r.phone || "",
+});
+
 const normalize = (v) => String(v || "").trim().toLowerCase();
 const compactBarcode = (v) => String(v || "").replace(/[^0-9a-z]/gi, "").toLowerCase();
 const toNum = (v, f = 0) => { const n = Number(v); return Number.isFinite(n) ? n : f; };
@@ -364,7 +375,7 @@ const POSOld = () => {
 
       const [stockProductsRes, customersRes, brandsRes, reasonRows] = await Promise.all([
         api.get("/pos-sales/stock-products", { params: { all: true } }).catch(() => ({ data: { data: [] } })),
-        api.get("/customers").catch(() => ({ data: { data: [] } })),
+        api.get("/customers", { params: { limit: 300 } }).catch(() => ({ data: { data: [] } })),
         api.get("/brands").catch(() => ({ data: { data: [] } })),
         cfgRows("return_reason"),
       ]);
@@ -408,14 +419,7 @@ const POSOld = () => {
       const brandRows = brandsRes.data?.data || [];
       setBrands(brandRows.map((b) => ({ id: b.id, name: b.name })));
 
-      setCustomers(
-        (customersRes.data?.data || []).map((r) => ({
-          value: String(r.id),
-          label: `${r.name || "Unnamed"}${r.mobile_no ? ` (${r.mobile_no})` : ""}`,
-          name: r.name || "",
-          mobileNo: r.mobile_no || "",
-        }))
-      );
+      setCustomers((customersRes.data?.data || []).map(mapCustomerRow));
     } catch {
       toast.error("Failed to load data");
     }
@@ -1215,8 +1219,30 @@ const POSOld = () => {
     queuePrintHtml,
   ]);
 
+  // customers is only ever seeded with a small batch (see the loadDropdownData-style effect
+  // above) -- this hits /customers' own ?search= endpoint for anything beyond that, and merges
+  // any new matches into the cache so a customer found once stays instantly findable.
+  const handleAsyncCustomerSearch = useCallback(async (query) => {
+    const trimmed = String(query || "").trim();
+    if (!trimmed) return [];
+    try {
+      const res = await api.get("/customers", { params: { search: trimmed, limit: 20 } });
+      const mapped = (res.data?.data || []).map(mapCustomerRow);
+      if (mapped.length) {
+        setCustomers((prev) => {
+          const existingIds = new Set(prev.map((c) => c.value));
+          const newOnes = mapped.filter((c) => !existingIds.has(c.value));
+          return newOnes.length ? [...prev, ...newOnes] : prev;
+        });
+      }
+      return mapped;
+    } catch {
+      return [];
+    }
+  }, []);
+
   /* ─── save sale (Quick Pay & Print) ─── */
-  const handleCustomerNumberLookup = useCallback((rawValue, mode = activeTab.customerMode) => {
+  const handleCustomerNumberLookup = useCallback(async (rawValue, mode = activeTab.customerMode) => {
     const query = String(rawValue || "").trim();
     const digitsQuery = query.replace(/\D/g, "");
 
@@ -1228,10 +1254,16 @@ const POSOld = () => {
       return null;
     }
 
-    const matched = customers.find((row) => {
+    const findByNumber = (list) => list.find((row) => {
       const mobileDigits = String(row.mobileNo || "").replace(/\D/g, "");
       return digitsQuery ? mobileDigits === digitsQuery : String(row.mobileNo || "").trim() === query;
     });
+
+    let matched = findByNumber(customers);
+    if (!matched) {
+      const serverResults = await handleAsyncCustomerSearch(query);
+      matched = findByNumber(serverResults);
+    }
 
     if (matched) {
       updateActiveTab({
@@ -1256,7 +1288,7 @@ const POSOld = () => {
       customerMobile: query,
     });
     return null;
-  }, [activeTab.customerMode, customers, updateActiveTab]);
+  }, [activeTab.customerMode, customers, updateActiveTab, handleAsyncCustomerSearch]);
 
   const handleSave = async () => {
     if (!authUser?.counter_id) {

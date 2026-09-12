@@ -42,9 +42,13 @@ class LookupController extends Controller
             try {
                 switch ($key) {
                     case 'companies':
+                        // Same defense-in-depth as transports/agents/taxes below: companies (tenant
+                        // stores/branches) isn't one of the confirmed ~1,000,000-row tables today, but
+                        // an unbounded get() here has no ceiling if that ever changes.
                         $data['companies'] = Store::where('is_active', true)
                             ->select(['id', 'name', 'code', 'gstin', 'email', 'phone'])
                             ->orderBy('name')
+                            ->limit(200)
                             ->get();
                         break;
 
@@ -57,9 +61,16 @@ class LookupController extends Controller
                         break;
 
                     case 'transports':
+                        // This and 'agents'/'taxes' below had no limit() at all -- fine when these
+                        // tables were small, but each now genuinely holds ~1,000,000 rows in this
+                        // deployment, so an unbounded ->get() here tried to load and JSON-serialize
+                        // the entire table on every page load. This endpoint is just the initial/
+                        // default preload for its dropdown now; anything beyond it is found via
+                        // that resource's own ?search= endpoint (see AsyncSearchSelect callers).
                         $data['transports'] = Transport::where('is_active', true)
                             ->select(['id', 'name', 'code', 'phone'])
                             ->orderBy('name')
+                            ->limit(100)
                             ->get();
                         break;
 
@@ -67,6 +78,7 @@ class LookupController extends Controller
                         $data['taxes'] = Tax::where('is_active', true)
                             ->select(['id', 'name', 'rate'])
                             ->orderBy('name')
+                            ->limit(100)
                             ->get()
                             ->map(function ($t) {
                                 $t->tax_percentage = (float) $t->rate;
@@ -79,6 +91,7 @@ class LookupController extends Controller
                         $data['agents'] = Agent::where('is_active', true)
                             ->select(['id', 'name', 'code'])
                             ->orderBy('name')
+                            ->limit(100)
                             ->get();
                         break;
 
@@ -100,12 +113,13 @@ class LookupController extends Controller
                     case 'designations':
                         $data['designations'] = HrDesignation::select(['id', 'name', 'code'])
                             ->orderBy('name')
+                            ->limit(200)
                             ->get();
                         break;
 
                     case 'employees':
                         $data['employees'] = Employee::with('designation:id,name,code')
-                            ->select(['id', 'name', 'employee_code', 'designation_id'])
+                            ->select(['id', 'name', 'code', 'designation_id'])
                             ->orderBy('name')
                             ->limit(100)
                             ->get()

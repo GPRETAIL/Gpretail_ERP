@@ -10,6 +10,33 @@ import { createGroupFetchers } from "../../utils/serverGrouping";
 const { onFetchGroupSummaries: fetchApprovalGroupSummaries, onFetchGroupRows: fetchApprovalGroupRows } =
   createGroupFetchers("/sales-on-approval", { customer_name: "customer_id" });
 
+// Shared shape for both the initial bulk customer preload and async search results below.
+// row.mobile_no/gst_no/card_no/email_id don't exist on the /customers API response (the real
+// columns/response keys are phone/gstin/loyalty_card_number/email) -- those fields silently read
+// as blank/undefined regardless of cache size or search.
+const mapCustomerRow = (row, areaMap) => ({
+  value: String(row.id),
+  id: String(row.id),
+  name: row.name || "Unnamed",
+  mobileNo: row.phone || "",
+  label: `${row.name || "Unnamed"}${row.phone ? ` (${row.phone})` : ""}`,
+  dateOfBirth: row.date_of_birth || "",
+  billingName: row.billing_name || "",
+  cardNo: row.loyalty_card_number || "",
+  gstNo: row.gstin || "",
+  address: row.address || "",
+  cityId: row.city_id ? String(row.city_id) : "",
+  cityName: row.city?.name || "",
+  stateId: row.state_id ? String(row.state_id) : "",
+  stateName: row.state?.name || "",
+  customerCategoryId: row.customer_category_id ? String(row.customer_category_id) : "",
+  customerCategoryName: row.customerCategory?.name || "",
+  emailId: row.email || "",
+  areaId: row.area_id ? String(row.area_id) : "",
+  areaName: (areaMap && areaMap.get(String(row.area_id || ""))) || "",
+  sectionReligion: row.section_religion || "",
+});
+
 const normalize = (value) => String(value || "").trim().toLowerCase();
 const toNum = (value, fallback = 0) => {
   const parsed = Number(value);
@@ -206,30 +233,7 @@ const SalesOnApproval = () => {
 
       const customerRows = customersRes.data?.data || [];
       const areaMap = new Map(areas.map((row) => [String(row.value), row.label]));
-      setCustomers(
-        customerRows.map((row) => ({
-          value: String(row.id),
-          id: String(row.id),
-          name: row.name || "Unnamed",
-          mobileNo: row.mobile_no || "",
-          label: `${row.name || "Unnamed"}${row.mobile_no ? ` (${row.mobile_no})` : ""}`,
-          dateOfBirth: row.date_of_birth || "",
-          billingName: row.billing_name || "",
-          cardNo: row.card_no || "",
-          gstNo: row.gst_no || "",
-          address: row.address || "",
-          cityId: row.city_id ? String(row.city_id) : "",
-          cityName: row.city?.name || "",
-          stateId: row.state_id ? String(row.state_id) : "",
-          stateName: row.state?.name || "",
-          customerCategoryId: row.customer_category_id ? String(row.customer_category_id) : "",
-          customerCategoryName: row.customerCategory?.name || "",
-          emailId: row.email_id || "",
-          areaId: row.area_id ? String(row.area_id) : "",
-          areaName: areaMap.get(String(row.area_id || "")) || "",
-          sectionReligion: row.section_religion || "",
-        }))
-      );
+      setCustomers(customerRows.map((row) => mapCustomerRow(row, areaMap)));
       setCustomerConfigOptions({ cities, states, customerCategories, areas });
 
       const products = productsRes.data?.data || [];
@@ -332,6 +336,30 @@ const SalesOnApproval = () => {
     }));
   }, []);
 
+  // customers is only ever seeded with a small preloaded batch (see loadMasterData) -- this hits
+  // /customers' own ?search= endpoint for anything beyond that, and merges any new matches into
+  // the cache so a customer found once stays instantly findable for the rest of the session.
+  const handleAsyncCustomerSearch = useCallback(async (query) => {
+    const trimmed = String(query || "").trim();
+    if (!trimmed) return [];
+    try {
+      const res = await api.get("/customers", { params: { search: trimmed, limit: 20 } });
+      const rows = res.data?.data || [];
+      const areaMap = new Map(customerConfigOptions.areas.map((row) => [String(row.value), row.label]));
+      const mapped = rows.map((row) => mapCustomerRow(row, areaMap));
+      if (mapped.length) {
+        setCustomers((prev) => {
+          const existingIds = new Set(prev.map((c) => c.id));
+          const newOnes = mapped.filter((c) => !existingIds.has(c.id));
+          return newOnes.length ? [...prev, ...newOnes] : prev;
+        });
+      }
+      return mapped;
+    } catch {
+      return [];
+    }
+  }, [customerConfigOptions.areas]);
+
   useEffect(() => {
     if (!quickCustomerDialogOpen) return;
     const timer = setTimeout(() => {
@@ -340,7 +368,7 @@ const SalesOnApproval = () => {
     return () => clearTimeout(timer);
   }, [quickCustomerDialogOpen]);
 
-  const handleCustomerNumberLookup = useCallback((rawValue) => {
+  const handleCustomerNumberLookup = useCallback(async (rawValue) => {
     const query = String(rawValue || "").trim();
     const digitsQuery = query.replace(/\D/g, "");
 
@@ -350,10 +378,16 @@ const SalesOnApproval = () => {
       return null;
     }
 
-    const matched = customers.find((row) => {
+    const findByNumber = (list) => list.find((row) => {
       const mobileDigits = String(row.mobileNo || "").replace(/\D/g, "");
       return digitsQuery ? mobileDigits === digitsQuery : String(row.mobileNo || "").trim() === query;
     });
+
+    let matched = findByNumber(customers);
+    if (!matched) {
+      const serverResults = await handleAsyncCustomerSearch(query);
+      matched = findByNumber(serverResults);
+    }
 
     if (matched) {
       applyCustomerPanelRow(matched);
@@ -367,7 +401,7 @@ const SalesOnApproval = () => {
       name: prev.name || "",
     }));
     return null;
-  }, [applyCustomerPanelRow, customers]);
+  }, [applyCustomerPanelRow, customers, handleAsyncCustomerSearch]);
 
   const handleCustomerNumberChange = (value) => {
     setNewCustomer((prev) => ({ ...prev, mobileNo: value }));
@@ -677,7 +711,7 @@ const SalesOnApproval = () => {
     }
   };
 
-  const runQuickCustomerSearch = useCallback((mobileValue = quickCustomer.mobileNo) => {
+  const runQuickCustomerSearch = useCallback(async (mobileValue = quickCustomer.mobileNo) => {
     const rawQuery = String(mobileValue || "").trim();
     if (!rawQuery) {
       setQuickCustomerSearchResults([]);
@@ -685,8 +719,15 @@ const SalesOnApproval = () => {
       return [];
     }
 
+    // Built from this render's `customers` snapshot plus the server's response rather than
+    // re-reading `customers` state after the await, since the merge from handleAsyncCustomerSearch
+    // wouldn't be visible in this closure yet.
+    const serverResults = await handleAsyncCustomerSearch(rawQuery);
+    const existingIds = new Set(customers.map((row) => row.id));
+    const pool = [...customers, ...serverResults.filter((row) => !existingIds.has(row.id))];
+
     const digitsQuery = rawQuery.replace(/\D/g, "");
-    const matched = customers
+    const matched = pool
       .filter((row) => {
         const mobile = String(row.mobileNo || "").trim();
         const digitsMobile = mobile.replace(/\D/g, "");
@@ -709,7 +750,7 @@ const SalesOnApproval = () => {
     );
     setQuickCustomerSelectedId(exactMatch?.value || matched[0]?.value || "");
     return matched;
-  }, [customers, quickCustomer.mobileNo]);
+  }, [customers, quickCustomer.mobileNo, handleAsyncCustomerSearch]);
 
   const focusNextQuickCustomerField = (fieldName) => {
     const index = quickCustomerFieldOrder.indexOf(fieldName);
@@ -754,11 +795,20 @@ const SalesOnApproval = () => {
       return;
     }
 
-    const exactExisting = customers.find(
-      (row) => String(row.mobileNo || "").replace(/\D/g, "") === mobileNo.replace(/\D/g, "")
+    const digitsQuery = mobileNo.replace(/\D/g, "");
+    let exactExisting = customers.find(
+      (row) => String(row.mobileNo || "").replace(/\D/g, "") === digitsQuery
     );
+    if (!exactExisting) {
+      // Local cache is only a small seed -- check the server before concluding this is a new
+      // customer, so this doesn't create a duplicate record for one that already exists.
+      const serverResults = await handleAsyncCustomerSearch(mobileNo);
+      exactExisting = serverResults.find(
+        (row) => String(row.mobileNo || "").replace(/\D/g, "") === digitsQuery
+      );
+    }
     if (exactExisting) {
-      setQuickCustomerSearchResults(runQuickCustomerSearch(mobileNo));
+      await runQuickCustomerSearch(mobileNo);
       setQuickCustomerSelectedId(exactExisting.value);
       toast.info("Customer already exists. Select it from search results.");
       return;

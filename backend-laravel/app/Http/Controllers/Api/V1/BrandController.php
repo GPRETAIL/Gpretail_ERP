@@ -27,7 +27,11 @@ class BrandController extends Controller
             $s     = trim($request->input('search'));
             $field = $request->input('field');
 
-            if ($field && in_array($field, ['name', 'code', 'printing_name'])) {
+            // 'printing_name' was allow-listed here and referenced below, but brands has no such
+            // column (Schema::getColumnListing('brands') -- only id/name/code/logo/description/
+            // is_active/timestamps exist) -- any search hitting that branch threw a 500. Dropped
+            // rather than migrated in: nothing else in this controller/model backs that field.
+            if ($field && in_array($field, ['name', 'code'])) {
                 $query->where($field, 'like', "%{$s}%");
             } else {
                 $cleaned = preg_replace('/[+\-><()~*\"@]+/', ' ', $s);
@@ -39,8 +43,7 @@ class BrandController extends Controller
                 } else {
                     $query->where(function ($q) use ($s) {
                         $q->where('name', 'like', "{$s}%")
-                          ->orWhere('code', 'like', "{$s}%")
-                          ->orWhere('printing_name', 'like', "{$s}%");
+                          ->orWhere('code', 'like', "{$s}%");
                     });
                 }
             }
@@ -49,7 +52,12 @@ class BrandController extends Controller
         // Column-level filters
         if ($request->filled('column_filters')) {
             $filters = json_decode($request->input('column_filters'), true) ?? [];
-            $allowed = ['code', 'name', 'printing_name', 'brand_type', 'discount_type', 'is_active', 'min_margin', 'max_margin'];
+            // printing_name/brand_type/discount_type/min_margin/max_margin were allow-listed here
+            // (and in allowed_sorts below) but brands has no such columns (Schema::getColumnListing
+            // confirms only id/name/code/logo/description/is_active/timestamps) -- same class of bug
+            // already fixed for the search path above, just missed here. Any filter/sort against one
+            // of those threw a 500.
+            $allowed = ['code', 'name', 'is_active'];
             foreach ($filters as $filter) {
                 $col = $filter['field']    ?? null;
                 $op  = $filter['operator'] ?? 'contains';
@@ -96,7 +104,7 @@ class BrandController extends Controller
             'default_sort'  => 'name',
             'default_order' => 'asc',
             'tie_breaker'   => 'id',
-            'allowed_sorts' => ['id', 'name', 'code', 'printing_name', 'created_at'],
+            'allowed_sorts' => ['id', 'name', 'code', 'created_at'],
         ]);
 
         return response()->json($result);

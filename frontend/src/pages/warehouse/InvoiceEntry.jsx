@@ -4,6 +4,7 @@ import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import api from "../../api/axios";
 import Toast from "../../components/Toast";
 import SearchableSelect from "../../components/SearchableSelect";
+import AsyncSearchSelect from "../../components/AsyncSearchSelect";
 import PageSkeleton from "../../components/PageSkeleton";
 import { usePrintContext } from "../../context/PrintContext";
 import { getMasterLookups } from "../../utils/lookupCache";
@@ -75,6 +76,49 @@ const InvoiceEntry = () => {
   const [companies, setCompanies] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // /lookups only preloads the first 100 of each (suppliers/taxes commonly hold 100k+ rows in this
+  // deployment) -- these hit each resource's own ?search= endpoint so the dropdown can find
+  // anything beyond that initial batch.
+  const handleAsyncSupplierSearch = useCallback(async (query) => {
+    try {
+      const res = await api.get("/suppliers", { params: { search: query, limit: 50 } });
+      const results = Array.isArray(res.data?.data) ? res.data.data : [];
+      if (results.length) {
+        setSuppliers((prev) => {
+          const existingIds = new Set((prev || []).map((s) => String(s.id)));
+          const newItems = results.filter((s) => !existingIds.has(String(s.id)));
+          return newItems.length ? [...prev, ...newItems] : prev;
+        });
+      }
+      return results;
+    } catch {
+      return [];
+    }
+  }, []);
+
+  const handleAsyncTaxSearch = useCallback(async (query) => {
+    try {
+      const res = await api.get("/taxes", { params: { search: query, limit: 50 } });
+      // Pre-formatted to the same "Name X%" label the preloaded list below already uses -- raw
+      // API objects here would show without the rate suffix, an inconsistency depending on
+      // whether a tax came from the initial preload or a search.
+      const results = (Array.isArray(res.data?.data) ? res.data.data : []).map((t) => ({
+        id: t.id,
+        name: `${t.name} ${t.tax_percentage ?? t.rate ?? 0}%`,
+      }));
+      if (results.length) {
+        setTaxes((prev) => {
+          const existingIds = new Set((prev || []).map((t) => String(t.id)));
+          const newItems = results.filter((t) => !existingIds.has(String(t.id)));
+          return newItems.length ? [...prev, ...newItems] : prev;
+        });
+      }
+      return results;
+    } catch {
+      return [];
+    }
+  }, []);
 
   const buildLrDisplay = (lrEntryNo, lrNo) => {
     const left = lrEntryNo === null || lrEntryNo === undefined || String(lrEntryNo).trim() === ""
@@ -1211,12 +1255,14 @@ const InvoiceEntry = () => {
                       className="w-full border border-gray-300 dark:border-gray-600 px-1.5 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 cursor-not-allowed"
                     />
                   ) : (
-                    <SearchableSelect
+                    <AsyncSearchSelect
                       name="supplier"
                       value={formData.supplier}
                       onChange={handleSupplierSelect}
-                      options={suppliers.map((s) => ({ label: s.name, value: String(s.id) }))}
+                      options={suppliers}
+                      onAsyncSearch={handleAsyncSupplierSearch}
                       placeholder="Select Supplier"
+                      searchPlaceholder="Search supplier..."
                     />
                   )}
                 </div>
@@ -1328,12 +1374,14 @@ const InvoiceEntry = () => {
                 <div className="w-44 shrink-0">
                   <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-0.5">Tax</label>
                   <div className="[&_button]:h-[30px] [&_button]:px-2 [&_button]:text-sm">
-                    <SearchableSelect
+                    <AsyncSearchSelect
                       name="taxId"
                       value={currentItem.taxId}
                       onChange={handleItemChange}
-                      options={taxes.map((t) => ({ label: `${t.name} ${t.tax_percentage}%`, value: String(t.id) }))}
+                      options={taxes.map((t) => ({ id: t.id, name: `${t.name} ${t.tax_percentage}%` }))}
+                      onAsyncSearch={handleAsyncTaxSearch}
                       placeholder="None"
+                      searchPlaceholder="Search tax..."
                     />
                   </div>
                 </div>
