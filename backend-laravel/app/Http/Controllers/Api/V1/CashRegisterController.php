@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\CashRegisterSession;
 use App\Models\PosSale;
+use App\Services\DashboardBroadcastService;
 use App\Services\DocumentNumberService;
 use App\Services\PaginationService;
 use Illuminate\Http\Request;
@@ -67,6 +68,8 @@ class CashRegisterController extends Controller
             'status' => 'OPEN',
             'notes' => $request->input('notes'),
         ]);
+
+        DashboardBroadcastService::cashPositionUpdated((int) $storeId);
 
         return response()->json([
             'success' => true,
@@ -156,6 +159,8 @@ class CashRegisterController extends Controller
                 'notes' => $request->input('notes'),
             ]);
         }
+
+        DashboardBroadcastService::cashPositionUpdated((int) $storeId);
 
         return response()->json([
             'success' => true,

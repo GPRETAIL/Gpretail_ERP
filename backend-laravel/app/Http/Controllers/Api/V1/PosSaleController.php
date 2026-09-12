@@ -17,6 +17,7 @@ use App\Models\Product;
 use App\Models\Stock;
 use App\Models\Store;
 use App\Models\User;
+use App\Services\DashboardBroadcastService;
 use App\Services\DocumentNumberService;
 use App\Services\GroupAggregationService;
 use App\Services\PaginationService;
@@ -582,6 +583,8 @@ class PosSaleController extends Controller
                         $customer->update(['current_balance' => $newCreditBalance]);
                     }
                 }
+
+                DashboardBroadcastService::salesUpdated((int) $storeId);
 
                 return response()->json([
                     'success' => true,

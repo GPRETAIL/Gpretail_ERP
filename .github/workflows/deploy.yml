@@ -93,6 +93,9 @@ jobs:
         env:
           OCR_SPACE_API_KEY: ${{ secrets.OCR_SPACE_API_KEY }}
           BACKUP_CRON_SECRET: ${{ secrets.BACKUP_CRON_SECRET }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          APP_KEY: ${{ secrets.APP_KEY }}
+          PUSHER_APP_SECRET: ${{ secrets.PUSHER_APP_SECRET }}
         run: |
           mkdir -p backend-laravel/public/
           cp -r frontend-dist/* backend-laravel/public/
@@ -106,6 +109,22 @@ jobs:
           # no matter what token is supplied. Same pattern as OCR_SPACE_API_KEY.
           if [ -n "$BACKUP_CRON_SECRET" ]; then
             printf '\nBACKUP_CRON_SECRET=%s\n' "$BACKUP_CRON_SECRET" >> backend-laravel/.env
+          fi
+          # DB_PASSWORD and APP_KEY used to be committed in plaintext directly in
+          # .env.production.example (a real, working production DB password and
+          # Laravel encryption key, sitting in a public repo's git history). Moved
+          # to the same GitHub-secret-injection pattern as the above two -- the
+          # example file now ships these blank, so a deploy without the secrets set
+          # fails closed (blank DB_PASSWORD/APP_KEY) rather than silently reusing a
+          # committed value.
+          if [ -n "$DB_PASSWORD" ]; then
+            printf '\nDB_PASSWORD=%s\n' "$DB_PASSWORD" >> backend-laravel/.env
+          fi
+          if [ -n "$APP_KEY" ]; then
+            printf '\nAPP_KEY=%s\n' "$APP_KEY" >> backend-laravel/.env
+          fi
+          if [ -n "$PUSHER_APP_SECRET" ]; then
+            printf '\nPUSHER_APP_SECRET=%s\n' "$PUSHER_APP_SECRET" >> backend-laravel/.env
           fi
           mkdir -p backend-laravel/storage/framework/cache/data
           mkdir -p backend-laravel/storage/framework/sessions

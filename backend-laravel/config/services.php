@@ -35,4 +35,15 @@ return [
         ],
     ],
 
+    // Live-dashboard push updates (DashboardBroadcastService). Not wired through
+    // Laravel's Broadcasting/Echo facades -- this app has no persistent queue
+    // worker on shared hosting, and ShouldBroadcast events queue by default, so
+    // calling the Pusher SDK directly keeps a trigger a plain synchronous call.
+    'pusher' => [
+        'app_id' => env('PUSHER_APP_ID'),
+        'key' => env('PUSHER_APP_KEY'),
+        'secret' => env('PUSHER_APP_SECRET'),
+        'cluster' => env('PUSHER_APP_CLUSTER'),
+    ],
+
 ];
