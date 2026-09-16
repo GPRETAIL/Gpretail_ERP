@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\ActivationController;
 use App\Http\Controllers\Api\V1\AgentController;
+use App\Http\Controllers\Api\V1\AnalyticalDashboardController;
 use App\Http\Controllers\Api\V1\AttendanceController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BackupController;
@@ -13,6 +14,10 @@ use App\Http\Controllers\Api\V1\CompanyController;
 use App\Http\Controllers\Api\V1\ConfigurationController;
 use App\Http\Controllers\Api\V1\CrmDashboardController;
 use App\Http\Controllers\Api\V1\CustomerController;
+use App\Http\Controllers\Api\V1\FinanceDashboardController;
+use App\Http\Controllers\Api\V1\MastersDashboardController;
+use App\Http\Controllers\Api\V1\SettingsDashboardController;
+use App\Http\Controllers\Api\V1\StoreDashboardController;
 use App\Http\Controllers\Api\V1\CustomerOrderController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DealerInvoiceController;
@@ -34,6 +39,7 @@ use App\Http\Controllers\Api\V1\ProductPurchaseAnalyticsController;
 use App\Http\Controllers\Api\V1\PurchaseInvoiceController;
 use App\Http\Controllers\Api\V1\PurchaseReturnController;
 use App\Http\Controllers\Api\V1\SalesApprovalController;
+use App\Http\Controllers\Api\V1\SalesDashboardController;
 use App\Http\Controllers\Api\V1\SalesReportController;
 use App\Http\Controllers\Api\V1\SettingsController;
 use App\Http\Controllers\Api\V1\SettlementController;
@@ -278,6 +284,25 @@ $registerAppRoutes = function () {
     Route::get('warehouse/dashboard/alerts', [WarehouseDashboardController::class, 'alerts']);
     Route::get('warehouse/dashboard/activity', [WarehouseDashboardController::class, 'activity']);
     Route::get('warehouse/dashboard', [WarehouseDashboardController::class, 'index']);
+
+    // Sales Dashboard (main Dashboard's Sales tab)
+    Route::get('sales/dashboard/export', [SalesDashboardController::class, 'export']);
+    Route::get('sales/dashboard', [SalesDashboardController::class, 'index']);
+
+    // Finance Dashboard (main Dashboard's Finance tab)
+    Route::get('finance/dashboard', [FinanceDashboardController::class, 'index']);
+
+    // Store Dashboard (main Dashboard's Store tab -- cross-store comparison)
+    Route::get('store/dashboard', [StoreDashboardController::class, 'index']);
+
+    // Masters Dashboard (main Dashboard's Masters tab)
+    Route::get('masters/dashboard', [MastersDashboardController::class, 'index']);
+
+    // Settings Dashboard (main Dashboard's Settings tab)
+    Route::get('settings/dashboard', [SettingsDashboardController::class, 'index']);
+
+    // Analytical Dashboard (main Dashboard's Analytical tab)
+    Route::get('analytical/dashboard', [AnalyticalDashboardController::class, 'index']);
 
     // Customer & Supplier Dashboard Summaries
     Route::get('crm/dashboard/export', [CrmDashboardController::class, 'export']);

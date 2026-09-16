@@ -5,15 +5,19 @@ import { toast } from "react-toastify";
 import api from "../api/axios";
 import DashboardCharts from "../components/DashboardCharts";
 import DashboardHighlightCards from "../components/DashboardHighlightCards";
-import DashboardTables, { DailySalesSummaryTable } from "../components/DashboardTables";
-import DashboardPlaceholder from "../components/DashboardPlaceholder";
-import ModuleStatCards, { MetricCard } from "../components/DashboardStatCards";
+import DashboardTables from "../components/DashboardTables";
+import { MetricCard } from "../components/DashboardStatCards";
 import WarehouseDashboardTabPane from "../components/WarehouseDashboardTabPane";
 import CrmDashboardTabPane from "../components/CrmDashboardTabPane";
+import SalesDashboardTabPane from "../components/SalesDashboardTabPane";
+import FinanceDashboardTabPane from "../components/FinanceDashboardTabPane";
+import StoreDashboardTabPane from "../components/StoreDashboardTabPane";
+import MastersDashboardTabPane from "../components/MastersDashboardTabPane";
+import SettingsDashboardTabPane from "../components/SettingsDashboardTabPane";
+import AnalyticalDashboardTabPane from "../components/AnalyticalDashboardTabPane";
 import useCompanyOptions from "../utils/useCompanyOptions";
 import useDashboardRealtime from "../hooks/useDashboardRealtime";
-import useModuleDashboardSummary from "../hooks/useModuleDashboardSummary";
-import { DASHBOARD_PAGES, MODULE_TABS, currency } from "../utils/dashboardModuleTabs";
+import { DASHBOARD_PAGES } from "../utils/dashboardModuleTabs";
 import { USER_ROLE, canAccessPath } from "../utils/accessControl";
 
 const formatMoney = (value) =>
@@ -30,60 +34,6 @@ const formatYmd = (date) => {
 };
 
 const startOfMonth = (date) => new Date(date.getFullYear(), date.getMonth(), 1);
-
-// One module tab's content: fetches its own dashboard-summary once it's first opened (`active`),
-// then keeps showing what it fetched even after the tab is switched away and back, since this
-// component is never unmounted -- only hidden -- by the parent (see the `hidden` wrapper below).
-const ModuleTabPane = ({ tab, active }) => {
-  const { data, loading, error } = useModuleDashboardSummary(tab.endpoint, { active });
-
-  if (error) {
-    return (
-      <DashboardPlaceholder
-        title={`${tab.label} data unavailable`}
-        description={error}
-      />
-    );
-  }
-
-  return <ModuleStatCards cards={tab.mapToCards(data || {})} loading={loading && !data} />;
-};
-
-const ANALYTICS_FORMATTERS = {
-  percent: (value) => `${Number(value || 0).toFixed(1)}%`,
-  currency: (value) => currency(value),
-  multiple: (value) => `${Number(value || 0).toFixed(2)}x`,
-};
-
-// "Analytical" tab -- reuses the vx-sales analytics endpoint the old (removed) Overview
-// "Analytics" section used to read from. Server response is pre-shaped per card
-// ({title, subtitle, value, valueType, trend}), so this only needs to format + render it.
-const AnalyticalTabPane = ({ active }) => {
-  const { data, loading, error } = useModuleDashboardSummary("/dashboard/analytics", { active });
-  const cards = data?.cards || [];
-
-  if (error) {
-    return <DashboardPlaceholder title="Analytical data unavailable" description={error} />;
-  }
-
-  if (loading && !data) {
-    return <ModuleStatCards cards={[]} loading />;
-  }
-
-  return (
-    <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
-      {cards.map((card) => (
-        <MetricCard
-          key={card.key}
-          eyebrow={card.title}
-          value={(ANALYTICS_FORMATTERS[card.valueType] || String)(card.value)}
-          subtitle={card.subtitle}
-          trend={card.trend}
-        />
-      ))}
-    </div>
-  );
-};
 
 // Derived from the same list Page Access grants from, so a tab can never be grantable but unrendered
 // (or rendered but ungrantable).
@@ -305,7 +255,11 @@ const Dashboard = () => {
 
       {openedTabs.has("store") && (
         <div className={activeTab === "store" ? "" : "hidden"}>
-          <DailySalesSummaryTable table={tables?.dailySalesSummary} loading={loading} />
+          <StoreDashboardTabPane
+            active={openedTabs.has("store")}
+            fromDate={fromDate}
+            toDate={toDate}
+          />
         </div>
       )}
 
@@ -331,18 +285,55 @@ const Dashboard = () => {
         </div>
       )}
 
-      {openedTabs.has("analytical") && (
-        <div className={activeTab === "analytical" ? "" : "hidden"}>
-          <AnalyticalTabPane active={openedTabs.has("analytical")} />
+      {openedTabs.has("sales") && (
+        <div className={activeTab === "sales" ? "" : "hidden"}>
+          <SalesDashboardTabPane
+            active={openedTabs.has("sales")}
+            fromDate={fromDate}
+            toDate={toDate}
+            companyId={companyId}
+          />
         </div>
       )}
 
-      {MODULE_TABS.map((tab) =>
-        openedTabs.has(tab.id) ? (
-          <div key={tab.id} className={activeTab === tab.id ? "" : "hidden"}>
-            <ModuleTabPane tab={tab} active={openedTabs.has(tab.id)} />
-          </div>
-        ) : null
+      {openedTabs.has("finance") && (
+        <div className={activeTab === "finance" ? "" : "hidden"}>
+          <FinanceDashboardTabPane
+            active={openedTabs.has("finance")}
+            fromDate={fromDate}
+            toDate={toDate}
+            companyId={companyId}
+          />
+        </div>
+      )}
+
+      {openedTabs.has("masters") && (
+        <div className={activeTab === "masters" ? "" : "hidden"}>
+          <MastersDashboardTabPane
+            active={openedTabs.has("masters")}
+            companyId={companyId}
+          />
+        </div>
+      )}
+
+      {openedTabs.has("settings") && (
+        <div className={activeTab === "settings" ? "" : "hidden"}>
+          <SettingsDashboardTabPane
+            active={openedTabs.has("settings")}
+            companyId={companyId}
+          />
+        </div>
+      )}
+
+      {openedTabs.has("analytical") && (
+        <div className={activeTab === "analytical" ? "" : "hidden"}>
+          <AnalyticalDashboardTabPane
+            active={openedTabs.has("analytical")}
+            fromDate={fromDate}
+            toDate={toDate}
+            companyId={companyId}
+          />
+        </div>
       )}
       </div>
     </div>
