@@ -15,6 +15,7 @@ class StoreLocalNode extends Model
         'sync_token',
         'enabled',
         'local_server_url',
+        'cloud_server_url',
         'advertised_local_server_url',
         'local_healthy',
         'last_heartbeat_at',

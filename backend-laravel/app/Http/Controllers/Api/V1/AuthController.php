@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\Store;
 use App\Models\StoreLocalNode;
+use App\Models\SyncOutboxEvent;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -128,7 +129,7 @@ class AuthController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $this->presentLocalServerNode($node),
+            'data' => $this->presentLocalServerNode($node, $storeId),
         ]);
     }
 
@@ -142,6 +143,14 @@ class AuthController extends Controller
         }
 
         $localServerUrl = trim((string) $request->input('local_server_url', ''));
+        $cloudServerUrl = trim((string) $request->input('cloud_server_url', ''));
+
+        if ($cloudServerUrl !== '' && ! preg_match('#^https?://#i', $cloudServerUrl)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Enter a valid cloud server URL (must start with http:// or https://).',
+            ], 422);
+        }
 
         $node = StoreLocalNode::where('store_id', $storeId)->first();
         if (! $node) {
@@ -151,13 +160,14 @@ class AuthController extends Controller
         }
 
         $node->local_server_url = $localServerUrl !== '' ? $localServerUrl : null;
+        $node->cloud_server_url = $cloudServerUrl !== '' ? $cloudServerUrl : null;
         $node->enabled = $localServerUrl !== '';
         $node->save();
 
         return response()->json([
             'success' => true,
             'message' => 'Local server configuration saved',
-            'data' => $this->presentLocalServerNode($node),
+            'data' => $this->presentLocalServerNode($node, $storeId),
         ]);
     }
 
@@ -176,17 +186,25 @@ class AuthController extends Controller
         ]);
     }
 
-    private function presentLocalServerNode(?StoreLocalNode $node): array
+    private function presentLocalServerNode(?StoreLocalNode $node, ?int $storeId = null): array
     {
+        $storeId = $storeId ?: $node?->store_id;
+        $outboxPending = $storeId ? SyncOutboxEvent::where('store_id', $storeId)->where('status', 'pending')->count() : 0;
+        $outboxFailed = $storeId ? SyncOutboxEvent::where('store_id', $storeId)->where('status', 'failed')->count() : 0;
+
         if (! $node) {
             return [
                 'enabled' => false,
                 'tenant_key' => null,
                 'local_server_url' => null,
+                'cloud_server_url' => null,
+                'effective_cloud_server_url' => config('sync.cloud_api_base_url'),
                 'advertised_local_server_url' => null,
                 'connector_status' => 'not_connected',
                 'connector_last_seen_at' => null,
                 'local_healthy' => false,
+                'outbox_pending' => $outboxPending,
+                'outbox_failed' => $outboxFailed,
             ];
         }
 
@@ -198,10 +216,14 @@ class AuthController extends Controller
             'enabled' => (bool) $node->enabled,
             'tenant_key' => $node->tenant_key,
             'local_server_url' => $node->local_server_url,
+            'cloud_server_url' => $node->cloud_server_url,
+            'effective_cloud_server_url' => $node->cloud_server_url ?: config('sync.cloud_api_base_url'),
             'advertised_local_server_url' => $node->advertised_local_server_url,
             'connector_status' => $status,
             'connector_last_seen_at' => optional($node->last_health_check_at)->toIso8601String(),
             'local_healthy' => (bool) $node->local_healthy,
+            'outbox_pending' => $outboxPending,
+            'outbox_failed' => $outboxFailed,
         ];
     }
 

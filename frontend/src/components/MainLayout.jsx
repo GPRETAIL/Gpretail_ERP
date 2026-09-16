@@ -7,7 +7,8 @@ import { TabProvider, useTabs } from "../context/TabContext";
 import { TransferActivityProvider, useTransferActivity } from "../context/TransferActivityContext";
 import { handleEnterKeyNavigation } from "../utils/enterToNextField";
 import { usePrintContext } from "../context/PrintContext";
-import { Printer, Store, X, Loader2, CheckCircle2, AlertCircle, Upload, Download } from "lucide-react";
+import { useSyncStatus } from "../context/SyncStatusContext";
+import { Printer, Store, Server, Cloud, X, Loader2, CheckCircle2, AlertCircle, Upload, Download } from "lucide-react";
 import { Chip } from "@mui/material";
 import SubscriptionDuePopup from "./SubscriptionDuePopup";
 import useSubscriptionStatus from "../hooks/useSubscriptionStatus";
@@ -45,6 +46,7 @@ const getPrintJobLabel = (job) =>
 const PrintStatusFooter = () => {
   const { connected, hasActiveJobs, jobs, currentJob, cancelJob, retryJob, clearFinished, STATUS } =
     usePrintContext();
+  const syncStatus = useSyncStatus();
   const { activeActivity, recentActivity, clearRecentActivity, TYPE } = useTransferActivity();
   const { navigateActiveTab } = useTabs();
   const authUser = useSelector((state) => state.auth.user);
@@ -212,6 +214,42 @@ const PrintStatusFooter = () => {
               </>
             )}
           </button>
+
+          {syncStatus.enabled ? (
+            <button
+              type="button"
+              onClick={() => navigateActiveTab("/settings/configure-local-server")}
+              className="flex items-center gap-1.5 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+              title={
+                syncStatus.target === "local"
+                  ? "Using this store's local server"
+                  : "Local server unreachable — failed over to cloud"
+              }
+            >
+              {syncStatus.target === "local" ? (
+                <>
+                  <Server className="w-3 h-3 text-green-500" />
+                  <span className="text-green-600 dark:text-green-400">Local Server</span>
+                </>
+              ) : (
+                <>
+                  <Cloud className="w-3 h-3 text-amber-500" />
+                  <span className="text-amber-600 dark:text-amber-400">Cloud (Local Down)</span>
+                </>
+              )}
+              {(syncStatus.outboxPending > 0 || syncStatus.outboxFailed > 0) && (
+                <span
+                  className={`rounded-full px-1.5 text-[10px] font-semibold ${
+                    syncStatus.outboxFailed > 0
+                      ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+                      : "bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-200"
+                  }`}
+                >
+                  {syncStatus.outboxFailed > 0 ? syncStatus.outboxFailed : syncStatus.outboxPending}
+                </span>
+              )}
+            </button>
+          ) : null}
 
           <span>Customer Care <b>+91 123456789</b></span>
         </div>

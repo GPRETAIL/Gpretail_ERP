@@ -10,6 +10,7 @@ import { ToastContainer } from "react-toastify";
 import ThemeProvider from "./features/ThemeProvider.jsx";
 import TenantThemeProvider from "./theme/TenantThemeProvider.jsx";
 import { PrintProvider } from "./context/PrintContext.jsx";
+import { SyncStatusProvider } from "./context/SyncStatusContext.jsx";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
@@ -30,10 +31,12 @@ createRoot(document.getElementById("root")).render(
       <TenantThemeProvider>
         <BrowserRouter>
           <PrintProvider>
-            <StrictMode>
-              <ToastContainer position="top-right" autoClose={3000} />
-              <App />
-            </StrictMode>
+            <SyncStatusProvider>
+              <StrictMode>
+                <ToastContainer position="top-right" autoClose={3000} />
+                <App />
+              </StrictMode>
+            </SyncStatusProvider>
           </PrintProvider>
         </BrowserRouter>
       </TenantThemeProvider>

@@ -394,6 +394,14 @@ export const getCloudBaseUrl = () => {
   return CLOUD_BASE_URL;
 };
 
+// Read-only snapshot of the live routing state for UI that just wants to display it (e.g. a
+// footer status indicator) without participating in routing decisions itself.
+export const getRuntimeRoutingSnapshot = () => ({
+  enabled: runtimeState.enabled,
+  currentTarget: runtimeState.currentTarget,
+  localHealthy: runtimeState.localHealthy,
+});
+
 const storedState = readStoredState();
 if (storedState) {
   runtimeState = {

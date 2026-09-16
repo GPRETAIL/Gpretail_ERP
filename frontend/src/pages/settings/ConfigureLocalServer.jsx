@@ -60,8 +60,10 @@ export default function ConfigureLocalServer() {
   const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [testingCloud, setTestingCloud] = useState(false);
   const [config, setConfig] = useState(null);
   const [localServerUrl, setLocalServerUrl] = useState("");
+  const [cloudServerUrl, setCloudServerUrl] = useState("");
   const [nodes, setNodes] = useState([]);
   const [expandedStoreId, setExpandedStoreId] = useState(null);
   const [outboxEvents, setOutboxEvents] = useState([]);
@@ -78,6 +80,7 @@ export default function ConfigureLocalServer() {
       const next = res.data?.data || {};
       setConfig(next);
       setLocalServerUrl(String(next.local_server_url || "").trim());
+      setCloudServerUrl(String(next.cloud_server_url || "").trim());
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to load local server configuration");
     } finally {
@@ -162,11 +165,15 @@ export default function ConfigureLocalServer() {
   const handleSave = async () => {
     try {
       setSaving(true);
-      const payload = { local_server_url: String(localServerUrl || "").trim() };
+      const payload = {
+        local_server_url: String(localServerUrl || "").trim(),
+        cloud_server_url: String(cloudServerUrl || "").trim(),
+      };
       const res = await api.put("/local-server-config", payload);
       const saved = res.data?.data || {};
       setConfig((prev) => ({ ...(prev || {}), ...saved }));
       setLocalServerUrl(String(saved.local_server_url || payload.local_server_url || "").trim());
+      setCloudServerUrl(String(saved.cloud_server_url || payload.cloud_server_url || "").trim());
       toast.success(res.data?.message || "Local server configuration saved");
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to save local server configuration");
@@ -188,6 +195,21 @@ export default function ConfigureLocalServer() {
       toast.error(err.response?.data?.message || "Connection test failed");
     } finally {
       setTesting(false);
+    }
+  };
+
+  const handleTestCloud = async () => {
+    try {
+      setTestingCloud(true);
+      const res = await api.post("/local-server-config/test-cloud", {
+        cloud_server_url: String(cloudServerUrl || "").trim(),
+      });
+      const message = res.data?.message || "Connection successful";
+      toast.success(message);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Connection test failed");
+    } finally {
+      setTestingCloud(false);
     }
   };
 
@@ -271,6 +293,23 @@ export default function ConfigureLocalServer() {
               </p>
             </div>
 
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                Cloud Server URL
+              </label>
+              <input
+                type="text"
+                value={cloudServerUrl}
+                onChange={(e) => setCloudServerUrl(e.target.value)}
+                placeholder={config?.effective_cloud_server_url || "https://yourcompany.gpsoftware.in"}
+                className={inputClass}
+              />
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Where devices fail over to when the local server above is unreachable. Leave blank to use the
+                platform default ({config?.effective_cloud_server_url || "not set"}).
+              </p>
+            </div>
+
             <div className="flex flex-col gap-3 md:flex-row">
               <button
                 type="button"
@@ -279,7 +318,7 @@ export default function ConfigureLocalServer() {
                 className="inline-flex items-center justify-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
               >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                Save URL
+                Save URLs
               </button>
 
               <button
@@ -289,7 +328,17 @@ export default function ConfigureLocalServer() {
                 className="inline-flex items-center justify-center gap-2 rounded-md border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-60"
               >
                 {testing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wifi className="w-4 h-4" />}
-                Test Connection
+                Test Local
+              </button>
+
+              <button
+                type="button"
+                onClick={handleTestCloud}
+                disabled={testingCloud}
+                className="inline-flex items-center justify-center gap-2 rounded-md border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-60"
+              >
+                {testingCloud ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wifi className="w-4 h-4" />}
+                Test Cloud
               </button>
             </div>
           </div>

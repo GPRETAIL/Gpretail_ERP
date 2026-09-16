@@ -141,6 +141,52 @@ class SettingsController extends Controller
         ]);
     }
 
+    // Cloud Server Config Test — same server-side probe pattern as localServerTest(), but the
+    // cloud install always answers connector/web-config with enabled:false (node_role is
+    // 'cloud' there, never 'local'), so reachability is judged by a successful JSON response
+    // rather than data.enabled.
+    public function cloudServerTest(Request $request)
+    {
+        $storeId = (int) $request->header('X-Company-Scope-Id', 1);
+        $url = trim((string) $request->input('cloud_server_url', ''));
+
+        $node = StoreLocalNode::where('store_id', $storeId)->first();
+        if ($url === '') {
+            $url = (string) ($node->cloud_server_url ?? '');
+        }
+
+        if ($url === '' || ! preg_match('#^https?://#i', $url)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Enter a valid cloud server URL (must start with http:// or https://) first.',
+            ], 422);
+        }
+
+        $probeUrl = rtrim($url, '/').'/api/connector/web-config';
+        $startedAt = microtime(true);
+        $healthy = false;
+
+        try {
+            $response = Http::timeout(5)->get($probeUrl);
+            $healthy = $response->successful() && (bool) data_get($response->json(), 'success', false);
+        } catch (\Throwable $e) {
+            $healthy = false;
+        }
+
+        $latencyMs = (int) round((microtime(true) - $startedAt) * 1000);
+
+        return response()->json([
+            'success' => $healthy,
+            'message' => $healthy
+                ? 'Cloud server is reachable.'
+                : 'Could not reach a cloud server at that URL.',
+            'data' => [
+                'status' => $healthy ? 'ONLINE' : 'OFFLINE',
+                'latency' => $latencyMs.'ms',
+            ],
+        ]);
+    }
+
     // Sales Customization
     /**
      * Receipt layout customization (fonts, columns, messages, etc.) set on

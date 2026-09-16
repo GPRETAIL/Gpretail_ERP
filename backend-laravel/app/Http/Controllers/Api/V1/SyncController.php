@@ -36,7 +36,7 @@ class SyncController extends Controller
             'data' => [
                 'enabled' => true,
                 'tenant_key' => $node->tenant_key,
-                'cloud_api_base_url' => config('sync.cloud_api_base_url'),
+                'cloud_api_base_url' => $node->cloud_server_url ?: config('sync.cloud_api_base_url'),
                 'local_healthy' => true,
             ],
         ]);
