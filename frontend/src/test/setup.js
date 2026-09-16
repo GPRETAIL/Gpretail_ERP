@@ -17,3 +17,13 @@ if (!window.matchMedia) {
     removeEventListener: () => {},
   });
 }
+
+// jsdom doesn't implement ResizeObserver either -- react-grid-layout's width-measuring hook
+// (used by the Dashboard's draggable/resizable tile grid) needs it just to mount.
+if (!window.ResizeObserver) {
+  window.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+}

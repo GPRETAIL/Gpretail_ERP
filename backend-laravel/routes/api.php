@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\V1\SettingsDashboardController;
 use App\Http\Controllers\Api\V1\StoreDashboardController;
 use App\Http\Controllers\Api\V1\CustomerOrderController;
 use App\Http\Controllers\Api\V1\DashboardController;
+use App\Http\Controllers\Api\V1\DashboardLayoutController;
 use App\Http\Controllers\Api\V1\DealerInvoiceController;
 use App\Http\Controllers\Api\V1\DirectPurchaseController;
 use App\Http\Controllers\Api\V1\EmployeeController;
@@ -88,6 +89,7 @@ Route::get('local-server-config', [AuthController::class, 'localServerConfig']);
 Route::put('local-server-config', [AuthController::class, 'localServerConfigUpdate']);
 Route::get('local-server-config/runtime', [AuthController::class, 'localServerConfigRuntime']);
 Route::match(['get', 'post'], 'local-server-config/test', [SettingsController::class, 'localServerTest']);
+Route::match(['get', 'post'], 'local-server-config/test-cloud', [SettingsController::class, 'cloudServerTest']);
 Route::get('connector/web-config', [SyncController::class, 'webConfig']);
 Route::post('sync/heartbeat', [SyncController::class, 'heartbeat']);
 Route::get('sync/outbound/next', [SyncController::class, 'outboundNext']);
@@ -113,6 +115,9 @@ $registerAppRoutes = function () {
     Route::get('dashboard/summary', [DashboardController::class, 'summary']);
     Route::get('dashboard/analytics', [DashboardController::class, 'analytics']);
     Route::get('dashboard/attention-summary', [DashboardController::class, 'attentionSummary']);
+    Route::get('dashboard/layout', [DashboardLayoutController::class, 'index']);
+    Route::put('dashboard/layout/{tabKey}', [DashboardLayoutController::class, 'update']);
+    Route::delete('dashboard/layout/{tabKey}', [DashboardLayoutController::class, 'reset']);
     Route::get('dashboard', [DashboardController::class, 'index']);
 
     // Companies & Subscriptions

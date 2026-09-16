@@ -1,12 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, LayoutGrid, Check, RotateCcw } from "lucide-react";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import api from "../api/axios";
 import DashboardCharts from "../components/DashboardCharts";
 import DashboardHighlightCards from "../components/DashboardHighlightCards";
 import DashboardTables from "../components/DashboardTables";
-import { MetricCard } from "../components/DashboardStatCards";
+import DashboardGrid from "../components/dashboard/DashboardGrid";
+import OverviewKpiGrid from "../components/dashboard/overview/OverviewKpiGrid";
 import WarehouseDashboardTabPane from "../components/WarehouseDashboardTabPane";
 import CrmDashboardTabPane from "../components/CrmDashboardTabPane";
 import SalesDashboardTabPane from "../components/SalesDashboardTabPane";
@@ -19,12 +20,7 @@ import useCompanyOptions from "../utils/useCompanyOptions";
 import useDashboardRealtime from "../hooks/useDashboardRealtime";
 import { DASHBOARD_PAGES } from "../utils/dashboardModuleTabs";
 import { USER_ROLE, canAccessPath } from "../utils/accessControl";
-
-const formatMoney = (value) =>
-  Number(value || 0).toLocaleString("en-IN", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+import { DashboardLayoutProvider, useDashboardLayout } from "../context/DashboardLayoutContext";
 
 const formatYmd = (date) => {
   const year = date.getFullYear();
@@ -40,6 +36,7 @@ const startOfMonth = (date) => new Date(date.getFullYear(), date.getMonth(), 1);
 const DASHBOARD_TABS = DASHBOARD_PAGES.map((page) => ({ id: page.id, label: page.name, path: page.path }));
 
 const Dashboard = () => {
+  const { editMode, setEditMode, resetLayout } = useDashboardLayout();
   const authUser = useSelector((state) => state.auth.user);
   const role = String(authUser?.role || "").toLowerCase();
   const isSuperAdmin = role === USER_ROLE.SUPER_ADMIN;
@@ -133,21 +130,82 @@ const Dashboard = () => {
   const employees = metrics?.employees || {};
   const stockValue = metrics?.stockValue || {};
 
+  const overviewWidgets = useMemo(
+    () => [
+      {
+        key: "kpi-summary",
+        title: "KPI Summary",
+        component: OverviewKpiGrid,
+        props: { totalBills, settlements, employees, stockValue, loading },
+        defaultLayout: { x: 0, y: 0, w: 12, h: 2, minW: 6, minH: 2 },
+      },
+      {
+        key: "charts",
+        title: "Charts",
+        component: DashboardCharts,
+        props: { charts, loading },
+        defaultLayout: { x: 0, y: 2, w: 12, h: 5, minW: 6, minH: 3 },
+      },
+      {
+        key: "tables",
+        title: "Tables",
+        component: DashboardTables,
+        props: { tables, loading },
+        defaultLayout: { x: 0, y: 7, w: 12, h: 6, minW: 6, minH: 4 },
+      },
+      {
+        key: "highlights",
+        title: "Highlights",
+        component: DashboardHighlightCards,
+        props: { tables, loading },
+        defaultLayout: { x: 0, y: 13, w: 12, h: 4, minW: 6, minH: 3 },
+      },
+    ],
+    [totalBills, settlements, employees, stockValue, loading, charts, tables]
+  );
+
   return (
     <div className="h-full min-h-0 overflow-y-auto bg-gray-50 dark:bg-gray-900">
       <div className="w-full min-w-0 space-y-6 px-9 py-4">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-bold text-slate-900 dark:text-gray-100">Dashboard</h1>
-        <button
-          type="button"
-          onClick={loadDashboard}
-          disabled={loading}
-          className="inline-flex h-10 items-center gap-2 rounded-sm border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 text-sm text-slate-700 dark:text-gray-200 hover:bg-slate-50 dark:hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-60"
-          aria-label="Refresh dashboard"
-        >
-          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-          Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setEditMode((prev) => !prev)}
+            className={`inline-flex h-10 items-center gap-2 rounded-sm border px-3 text-sm transition-colors ${
+              editMode
+                ? "border-indigo-600 bg-indigo-600 text-white hover:bg-indigo-700"
+                : "border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-slate-700 dark:text-gray-200 hover:bg-slate-50 dark:hover:bg-gray-700"
+            }`}
+            aria-label="Toggle dashboard layout customization"
+          >
+            {editMode ? <Check className="h-4 w-4" /> : <LayoutGrid className="h-4 w-4" />}
+            {editMode ? "Done Customizing" : "Customize Layout"}
+          </button>
+          {editMode && (
+            <button
+              type="button"
+              onClick={() => resetLayout(activeTab)}
+              className="inline-flex h-10 items-center gap-2 rounded-sm border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 text-sm text-slate-700 dark:text-gray-200 hover:bg-slate-50 dark:hover:bg-gray-700"
+              aria-label="Reset this tab's layout to default"
+              title="Reset this tab's layout to default"
+            >
+              <RotateCcw className="h-4 w-4" />
+              Reset Layout
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={loadDashboard}
+            disabled={loading}
+            className="inline-flex h-10 items-center gap-2 rounded-sm border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 text-sm text-slate-700 dark:text-gray-200 hover:bg-slate-50 dark:hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-60"
+            aria-label="Refresh dashboard"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
@@ -217,40 +275,7 @@ const Dashboard = () => {
       </div>
 
       <div className={activeTab === "overview" ? "space-y-6" : "hidden"}>
-        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
-          <MetricCard
-            eyebrow="Total Bills"
-            title="Total bill amount"
-            value={loading ? "..." : formatMoney(totalBills.amount)}
-            subtitle={
-              loading
-                ? "..."
-                : `${totalBills.count || 0} Bills (${totalBills.unsettledCount || 0} UNSETTLED)`
-            }
-            trend={totalBills.trend}
-          />
-          <MetricCard
-            eyebrow="Settlement"
-            title="Total settlement amount"
-            value={loading ? "..." : formatMoney(settlements.amount)}
-            trend={settlements.trend}
-          />
-          <MetricCard
-            eyebrow="Employees"
-            value={loading ? "..." : `${employees.present || 0}/${employees.total || 0}`}
-            valueSubheading="Present / total"
-          />
-          <MetricCard
-            eyebrow="Stock value"
-            title="Total stock value"
-            value={loading ? "..." : formatMoney(stockValue.amount)}
-            trend={stockValue.trend}
-          />
-        </div>
-
-        <DashboardCharts charts={charts} loading={loading} />
-        <DashboardTables tables={tables} loading={loading} />
-        <DashboardHighlightCards tables={tables} loading={loading} />
+        <DashboardGrid tabKey="overview" widgets={overviewWidgets} />
       </div>
 
       {openedTabs.has("store") && (
@@ -340,4 +365,10 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default function DashboardPage() {
+  return (
+    <DashboardLayoutProvider>
+      <Dashboard />
+    </DashboardLayoutProvider>
+  );
+}

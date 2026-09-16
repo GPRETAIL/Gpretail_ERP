@@ -43,6 +43,16 @@ export default defineConfig(({ mode }) => {
       setupFiles: ["./src/test/setup.js"],
       include: ["src/**/*.{test,spec}.{js,jsx}"],
     },
+    resolve: {
+      dedupe: ["react", "react-dom"],
+    },
+    optimizeDeps: {
+      // Vite's dependency crawler can miss react-grid-layout's /legacy subpath (a conditional
+      // export, not a static top-level import) and pre-bundle it separately from the app's own
+      // react-dom, which manifests as "Invalid hook call" in dev only (the production Rollup
+      // build is unaffected). Listing it explicitly forces a single, correctly-deduped bundle.
+      include: ["react-grid-layout/legacy"],
+    },
     server: {
       allowedHosts: ["home.gpretail.uk", "admin.gpretail.uk", "admin.home.gpretail.uk"],
       ...(https ? { https } : {}),

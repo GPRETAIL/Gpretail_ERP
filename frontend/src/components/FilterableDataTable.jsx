@@ -244,6 +244,8 @@ export default function FilterableDataTable({
   const stableSchemaColumnsRef = useRef(columns);
   const dragColRef = useRef(null);
   const dragOverColRef = useRef(null);
+  const dragListItemRef = useRef(null);
+  const dragOverListItemRef = useRef(null);
   const orderSaveTimer = useRef(null);
   const serverSearchTimerRef = useRef(null);
   const didInitServerSearchRef = useRef(false);
@@ -1066,9 +1068,7 @@ export default function FilterableDataTable({
 
   const handleMoveToSelected = () => {
     if (!availableHighlight) return;
-    setDraftVisibleColumns((prev) => [...prev, availableHighlight]);
-    setDraftSelectedOrder((prev) => [...prev, availableHighlight]);
-    setAvailableHighlight(null);
+    moveKeyToSelected(availableHighlight, null);
   };
 
   const handleMoveAllToSelected = () => {
@@ -1082,9 +1082,7 @@ export default function FilterableDataTable({
     if (!selectedHighlight) return;
     // Don't allow removing the last column
     if (draftVisibleColumns.length <= 1) return;
-    setDraftVisibleColumns((prev) => prev.filter((k) => k !== selectedHighlight));
-    setDraftSelectedOrder((prev) => prev.filter((k) => k !== selectedHighlight));
-    setSelectedHighlight(null);
+    moveKeyToAvailable(selectedHighlight);
   };
 
   const handleMoveAllToAvailable = () => {
@@ -1116,6 +1114,103 @@ export default function FilterableDataTable({
       return next;
     });
   };
+
+  // --- Column personalizer drag handlers (mirrors the table header's onDragStart/onDragOver/
+  // onDrop pattern below: refs instead of state so a drag doesn't re-render the dialog on every
+  // dragover frame, direct style/class mutation for the drag-over indicator for the same reason) ---
+  const moveKeyToSelected = useCallback((key, beforeKey) => {
+    setDraftVisibleColumns((prev) => (prev.includes(key) ? prev : [...prev, key]));
+    setDraftSelectedOrder((prev) => {
+      const withoutKey = prev.filter((k) => k !== key);
+      const idx = beforeKey ? withoutKey.indexOf(beforeKey) : -1;
+      return idx === -1 ? [...withoutKey, key] : [...withoutKey.slice(0, idx), key, ...withoutKey.slice(idx)];
+    });
+    setSelectedHighlight(key);
+    setAvailableHighlight(null);
+  }, []);
+
+  const moveKeyToAvailable = useCallback((key) => {
+    setDraftVisibleColumns((prev) => (prev.length <= 1 ? prev : prev.filter((k) => k !== key)));
+    setDraftSelectedOrder((prev) => (prev.length <= 1 ? prev : prev.filter((k) => k !== key)));
+    setAvailableHighlight(key);
+    setSelectedHighlight(null);
+  }, []);
+
+  const reorderSelected = useCallback((key, beforeKey) => {
+    if (key === beforeKey) return;
+    setDraftSelectedOrder((prev) => {
+      const withoutKey = prev.filter((k) => k !== key);
+      const idx = beforeKey ? withoutKey.indexOf(beforeKey) : -1;
+      return idx === -1 ? [...withoutKey, key] : [...withoutKey.slice(0, idx), key, ...withoutKey.slice(idx)];
+    });
+  }, []);
+
+  const onListItemDragStart = useCallback((e, key, from) => {
+    dragListItemRef.current = { key, from };
+    e.dataTransfer.effectAllowed = "move";
+    e.currentTarget.style.opacity = "0.5";
+  }, []);
+
+  const onListItemDragEnd = useCallback((e) => {
+    e.currentTarget.style.opacity = "";
+    dragListItemRef.current = null;
+    dragOverListItemRef.current = null;
+  }, []);
+
+  const onListItemDragOver = useCallback((e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  }, []);
+
+  const onListItemDragEnter = useCallback((e, key) => {
+    dragOverListItemRef.current = key;
+    e.currentTarget.classList.add("border-t-2", "border-t-blue-400");
+  }, []);
+
+  const onListItemDragLeave = useCallback((e) => {
+    e.currentTarget.classList.remove("border-t-2", "border-t-blue-400");
+  }, []);
+
+  const onAvailableListDrop = useCallback(
+    (e) => {
+      e.preventDefault();
+      const dragged = dragListItemRef.current;
+      if (dragged?.from === "selected") moveKeyToAvailable(dragged.key);
+      dragListItemRef.current = null;
+      dragOverListItemRef.current = null;
+    },
+    [moveKeyToAvailable]
+  );
+
+  const onSelectedListItemDrop = useCallback(
+    (e, targetKey) => {
+      e.preventDefault();
+      e.stopPropagation();
+      e.currentTarget.classList.remove("border-t-2", "border-t-blue-400");
+      const dragged = dragListItemRef.current;
+      if (dragged) {
+        if (dragged.from === "available") moveKeyToSelected(dragged.key, targetKey);
+        else reorderSelected(dragged.key, targetKey);
+      }
+      dragListItemRef.current = null;
+      dragOverListItemRef.current = null;
+    },
+    [moveKeyToSelected, reorderSelected]
+  );
+
+  const onSelectedListDrop = useCallback(
+    (e) => {
+      e.preventDefault();
+      const dragged = dragListItemRef.current;
+      if (dragged) {
+        if (dragged.from === "available") moveKeyToSelected(dragged.key, null);
+        else reorderSelected(dragged.key, null);
+      }
+      dragListItemRef.current = null;
+      dragOverListItemRef.current = null;
+    },
+    [moveKeyToSelected, reorderSelected]
+  );
 
   const draftAvailableColumns = useMemo(
     () => columns.filter((c) => !draftVisibleColumns.includes(c.key)),
@@ -2640,13 +2735,21 @@ export default function FilterableDataTable({
               {/* Available list */}
               <div className="flex-1 flex flex-col">
                 <span className="text-xs font-semibold text-gray-700 mb-1.5 dark:text-gray-300">Available</span>
-                <div className="flex-1 border border-gray-300 rounded-sm overflow-auto bg-white dark:border-gray-600 dark:bg-gray-900" style={{ maxHeight: 280 }}>
+                <div
+                  className="flex-1 border border-gray-300 rounded-sm overflow-auto bg-white dark:border-gray-600 dark:bg-gray-900"
+                  style={{ maxHeight: 280 }}
+                  onDragOver={onListItemDragOver}
+                  onDrop={onAvailableListDrop}
+                >
                   {draftAvailableColumns.length === 0 ? (
                     <div className="text-xs text-gray-400 p-3 text-center dark:text-gray-500">All columns selected</div>
                   ) : (
                     draftAvailableColumns.map((col) => (
                       <div
                         key={col.key}
+                        draggable
+                        onDragStart={(e) => onListItemDragStart(e, col.key, "available")}
+                        onDragEnd={onListItemDragEnd}
                         onClick={() => {
                           setAvailableHighlight(col.key);
                           setSelectedHighlight(null);
@@ -2656,12 +2759,17 @@ export default function FilterableDataTable({
                           setDraftSelectedOrder((prev) => [...prev, col.key]);
                           setAvailableHighlight(null);
                         }}
-                        className={`px-3 py-1.5 text-xs cursor-pointer select-none border-b border-gray-100 last:border-b-0 dark:border-gray-700 ${
+                        className={`flex items-center gap-1.5 px-2 py-1.5 text-xs cursor-grab active:cursor-grabbing select-none border-b border-gray-100 last:border-b-0 dark:border-gray-700 ${
                           availableHighlight === col.key
                             ? "bg-blue-600 text-white"
                             : "text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50"
                         }`}
                       >
+                        <GripVertical
+                          className={`w-3 h-3 shrink-0 ${
+                            availableHighlight === col.key ? "text-white/70" : "text-gray-400 dark:text-gray-500"
+                          }`}
+                        />
                         {col.label}
                       </div>
                     ))
@@ -2712,10 +2820,22 @@ export default function FilterableDataTable({
               {/* Selected list */}
               <div className="flex-1 flex flex-col">
                 <span className="text-xs font-semibold text-gray-700 mb-1.5 dark:text-gray-300">Selected</span>
-                <div className="flex-1 border border-gray-300 rounded-sm overflow-auto bg-white dark:border-gray-600 dark:bg-gray-900" style={{ maxHeight: 280 }}>
+                <div
+                  className="flex-1 border border-gray-300 rounded-sm overflow-auto bg-white dark:border-gray-600 dark:bg-gray-900"
+                  style={{ maxHeight: 280 }}
+                  onDragOver={onListItemDragOver}
+                  onDrop={onSelectedListDrop}
+                >
                   {draftSelectedColumns.map((col) => (
                     <div
                       key={col.key}
+                      draggable
+                      onDragStart={(e) => onListItemDragStart(e, col.key, "selected")}
+                      onDragEnd={onListItemDragEnd}
+                      onDragOver={onListItemDragOver}
+                      onDragEnter={(e) => onListItemDragEnter(e, col.key)}
+                      onDragLeave={onListItemDragLeave}
+                      onDrop={(e) => onSelectedListItemDrop(e, col.key)}
                       onClick={() => {
                         setSelectedHighlight(col.key);
                         setAvailableHighlight(null);
@@ -2726,12 +2846,17 @@ export default function FilterableDataTable({
                         setDraftSelectedOrder((prev) => prev.filter((k) => k !== col.key));
                         setSelectedHighlight(null);
                       }}
-                      className={`px-3 py-1.5 text-xs cursor-pointer select-none border-b border-gray-100 last:border-b-0 dark:border-gray-700 ${
+                      className={`flex items-center gap-1.5 px-2 py-1.5 text-xs cursor-grab active:cursor-grabbing select-none border-b border-gray-100 last:border-b-0 dark:border-gray-700 ${
                         selectedHighlight === col.key
                           ? "bg-blue-600 text-white"
                           : "text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50"
                       }`}
                     >
+                      <GripVertical
+                        className={`w-3 h-3 shrink-0 ${
+                          selectedHighlight === col.key ? "text-white/70" : "text-gray-400 dark:text-gray-500"
+                        }`}
+                      />
                       {col.label}
                     </div>
                   ))}

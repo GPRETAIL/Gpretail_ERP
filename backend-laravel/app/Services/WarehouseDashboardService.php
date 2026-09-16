@@ -173,9 +173,9 @@ class WarehouseDashboardService
             ->where('stocks.available_quantity', '<=', 0)
             ->count();
 
-        // 5. Transports
+        // 5. Transports (transport_issues has no store_id -- transports/transport_entries are
+        // store-agnostic master data in this schema, matching getTransportSummary() below)
         $transportIssues = DB::table('transport_issues')
-            ->when($storeId, fn($q) => $q->where('store_id', $storeId))
             ->whereNotIn('status', ['resolved', 'closed'])
             ->count();
 
@@ -216,9 +216,8 @@ class WarehouseDashboardService
             ->whereIn('status', ['pending', 'draft', 'in_transit', 'partially_received'])
             ->count();
 
-        // 2. Transport Issues
+        // 2. Transport Issues (no store_id column -- see getSummary() above)
         $openTransportIssues = DB::table('transport_issues')
-            ->when($storeId, fn($q) => $q->where('store_id', $storeId))
             ->whereNotIn('status', ['resolved', 'closed'])
             ->count();
 
