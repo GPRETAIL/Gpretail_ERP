@@ -121,7 +121,10 @@ class CrmDashboardService
         // 4. Loyalty Program
         $totalLoyaltyPoints = (float) DB::table('customers')->sum('loyalty_points');
         $loyaltyMembersCount = DB::table('customers')->where('loyalty_points', '>', 0)->count();
-        $totalPointsRedeemed = (float) DB::table('loyalty_transactions')->where('type', 'redeemed')->sum('points');
+        // 'REDEEM' (uppercase) is the real type value LoyaltyTransaction rows use
+        // (see PosSaleController's EARN write and CustomerController's redemption
+        // queries) -- this previously read 'redeemed' and so always summed to 0.
+        $totalPointsRedeemed = (float) DB::table('loyalty_transactions')->where('type', 'REDEEM')->sum('points');
 
         return [
             'total_customers'      => $totalCustomers,
@@ -247,44 +250,82 @@ class CrmDashboardService
     }
 
     /**
-     * Customer Segmentation Breakdown
+     * Customer Segmentation Breakdown -- RFM-lite (Recency/Frequency/Monetary),
+     * computed from real pos_sales history. Previously 4 hardcoded WHERE-clause
+     * buckets (customer_type LIKE, loyalty_points threshold) with no actual
+     * behavioral scoring; this replaces them with quartile-ranked RFM segments.
+     *
+     * Quartiles are computed in PHP over one grouped-by-customer query (row
+     * count = distinct customers with sales, not raw transactions, so this
+     * stays small even at real scale) rather than via SQL NTILE(), avoiding a
+     * MariaDB-version dependency (NTILE needs 10.2+) for a dataset this size.
      */
     public function getCustomerSegmentation(?int $storeId): array
     {
+        $rows = DB::table('pos_sales')
+            ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
+            ->whereNotNull('customer_id')
+            ->selectRaw('
+                customer_id,
+                DATEDIFF(NOW(), MAX(sale_date)) as recency_days,
+                COUNT(*) as frequency,
+                SUM(grand_total) as monetary
+            ')
+            ->groupBy('customer_id')
+            ->get();
+
+        $labels = [
+            'champions' => 'Champions',
+            'loyal'     => 'Loyal',
+            'at_risk'   => 'At Risk',
+            'lost'      => 'Lost / Inactive',
+        ];
+        $counts = ['champions' => 0, 'loyal' => 0, 'at_risk' => 0, 'lost' => 0];
         $total = DB::table('customers')->count() ?: 1;
 
-        // Retail vs Wholesale / Corporate
-        $retailCount = DB::table('customers')->where('customer_type', 'like', '%retail%')->orWhereNull('customer_type')->count();
-        $wholesaleCount = DB::table('customers')->where('customer_type', 'like', '%wholesale%')->orWhere('customer_type', 'like', '%corporate%')->count();
+        if ($rows->isNotEmpty()) {
+            $n = $rows->count();
+            // 0 = best quartile, 3 = worst, after sorting each metric so index 0
+            // is the most desirable value for that metric.
+            $quartileOf = function ($sorted) use ($n) {
+                $map = [];
+                foreach ($sorted->values() as $i => $row) {
+                    $map[$row->customer_id] = min(3, (int) floor(($i * 4) / $n));
+                }
+                return $map;
+            };
 
-        // High Value (Loyalty points > 1000 or balance/sales history)
-        $vipCount = DB::table('customers')->where('loyalty_points', '>=', 1000)->count();
+            $recencyQ = $quartileOf($rows->sortBy('recency_days'));       // lower days = better = rank 0
+            $frequencyQ = $quartileOf($rows->sortByDesc('frequency'));    // higher freq = better = rank 0
+            $monetaryQ = $quartileOf($rows->sortByDesc('monetary'));      // higher spend = better = rank 0
 
-        // Regular with orders
-        $withOrdersCount = DB::table('customer_orders')->distinct('customer_id')->count('customer_id');
+            foreach ($rows as $row) {
+                $r = $recencyQ[$row->customer_id];
+                $f = $frequencyQ[$row->customer_id];
+                $m = $monetaryQ[$row->customer_id];
 
-        return [
-            'retail'     => [
-                'label' => 'Retail Shoppers',
-                'count' => $retailCount,
-                'pct'   => round(($retailCount / $total) * 100, 1),
-            ],
-            'wholesale'  => [
-                'label' => 'Wholesale / Corporate',
-                'count' => $wholesaleCount,
-                'pct'   => round(($wholesaleCount / $total) * 100, 1),
-            ],
-            'vip'        => [
-                'label' => 'VIP Members (1000+ Pts)',
-                'count' => $vipCount,
-                'pct'   => round(($vipCount / $total) * 100, 1),
-            ],
-            'with_orders'=> [
-                'label' => 'Custom Order Clients',
-                'count' => $withOrdersCount,
-                'pct'   => round(($withOrdersCount / $total) * 100, 1),
-            ],
-        ];
+                if ($r <= 1 && $f <= 1) {
+                    $counts['champions']++;
+                } elseif ($f <= 1) {
+                    $counts['loyal']++;
+                } elseif ($r >= 2 && $m <= 1) {
+                    $counts['at_risk']++;
+                } else {
+                    $counts['lost']++;
+                }
+            }
+        }
+
+        $result = [];
+        foreach ($counts as $key => $count) {
+            $result[$key] = [
+                'label' => $labels[$key],
+                'count' => $count,
+                'pct'   => round(($count / $total) * 100, 1),
+            ];
+        }
+
+        return $result;
     }
 
     /**
@@ -314,10 +355,16 @@ class CrmDashboardService
     }
 
     /**
-     * Top 5 Valuable Customers
+     * Top Valuable Customers -- ranked and valued by actual pos_sales history,
+     * not `customer_orders` (a niche custom-order table). The previous version
+     * both undercounted nearly every regular retail customer (whose
+     * transactions live in pos_sales, not customer_orders) and ignored
+     * $storeId entirely despite accepting it as a parameter.
      */
     public function getTopCustomers(?int $storeId, int $limit = 5): array
     {
+        $salesSub = $storeId ? 'pos_sales.customer_id = customers.id AND pos_sales.store_id = ' . (int) $storeId : 'pos_sales.customer_id = customers.id';
+
         $customers = DB::table('customers')
             ->select([
                 'customers.id',
@@ -328,10 +375,10 @@ class CrmDashboardService
                 'customers.current_balance',
                 'customers.credit_limit',
                 'customers.customer_type',
-                DB::raw('(SELECT COUNT(*) FROM customer_orders WHERE customer_orders.customer_id = customers.id) as orders_count'),
-                DB::raw('(SELECT COALESCE(SUM(total_amount), 0) FROM customer_orders WHERE customer_orders.customer_id = customers.id) as total_spent'),
+                DB::raw("(SELECT COUNT(*) FROM pos_sales WHERE {$salesSub}) as orders_count"),
+                DB::raw("(SELECT COALESCE(SUM(grand_total), 0) FROM pos_sales WHERE {$salesSub}) as total_spent"),
             ])
-            ->orderByDesc('loyalty_points')
+            ->orderByDesc(DB::raw("(SELECT COALESCE(SUM(grand_total), 0) FROM pos_sales WHERE {$salesSub})"))
             ->limit($limit)
             ->get();
 
@@ -468,7 +515,11 @@ class CrmDashboardService
     }
 
     /**
-     * Operational Performance Metrics
+     * Operational Performance Metrics. loyalty_redemption_rate and
+     * customer_retention_rate were previously hardcoded string constants
+     * ('34.8%'/'89.4%') -- both now computed from real data.
+     * order_conversion_rate stays customer_orders-based (delivered/completed
+     * over total) since custom-order conversion genuinely is about that table.
      */
     public function getPerformanceMetrics(?int $storeId, ?Carbon $from, ?Carbon $to): array
     {
@@ -483,13 +534,56 @@ class CrmDashboardService
             ->whereRaw('updated_at <= delivery_date')
             ->count();
 
-        $deliveryRate = $totalDelivered > 0 ? round(($onTimeDelivered / $totalDelivered) * 100, 1) : 98.2;
+        $deliveryRate = $totalDelivered > 0 ? round(($onTimeDelivered / $totalDelivered) * 100, 1) : 0;
+
+        $totalOrders = DB::table('customer_orders')
+            ->when($storeId, fn($q) => $q->where('store_id', $storeId))
+            ->count();
+        $convertedOrders = DB::table('customer_orders')
+            ->when($storeId, fn($q) => $q->where('store_id', $storeId))
+            ->whereIn('status', ['delivered', 'completed'])
+            ->count();
+        $conversionRate = $totalOrders > 0 ? round(($convertedOrders / $totalOrders) * 100, 1) : 0;
+
+        // Real (as opposed to 'redeemed', a type value the app never actually
+        // writes -- see getSummary()) -- points redeemed vs. points earned in
+        // the same window.
+        $pointsQuery = fn ($type) => DB::table('loyalty_transactions')
+            ->where('type', $type)
+            ->when($from && $to, fn ($q) => $q->whereBetween('created_at', [$from, $to]));
+        $pointsEarned = (float) $pointsQuery('EARN')->sum('points');
+        $pointsRedeemed = (float) $pointsQuery('REDEEM')->sum('points');
+        $redemptionRate = $pointsEarned > 0 ? round(($pointsRedeemed / $pointsEarned) * 100, 1) : 0;
+
+        // Cohort-lite retention: of the customers who bought in the period
+        // immediately before this one, what fraction bought again in this one.
+        $periodTo = $to ? $to->copy() : Carbon::now();
+        $periodFrom = $from ? $from->copy() : $periodTo->copy()->subDays(30);
+        $periodLengthDays = max(1, $periodFrom->diffInDays($periodTo));
+        $prevTo = $periodFrom->copy()->subSecond();
+        $prevFrom = $prevTo->copy()->subDays($periodLengthDays);
+
+        $prevCustomerIds = DB::table('pos_sales')
+            ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
+            ->whereNotNull('customer_id')
+            ->whereBetween('sale_date', [$prevFrom, $prevTo])
+            ->distinct()
+            ->pluck('customer_id');
+
+        $retainedCount = $prevCustomerIds->isEmpty() ? 0 : DB::table('pos_sales')
+            ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
+            ->whereIn('customer_id', $prevCustomerIds)
+            ->whereBetween('sale_date', [$periodFrom, $periodTo])
+            ->distinct()
+            ->count('customer_id');
+
+        $retentionRate = $prevCustomerIds->isNotEmpty() ? round(($retainedCount / $prevCustomerIds->count()) * 100, 1) : 0;
 
         return [
-            'on_time_delivery_rate' => "{$deliveryRate}%",
-            'loyalty_redemption_rate'=> '34.8%',
-            'customer_retention_rate'=> '89.4%',
-            'order_conversion_rate' => '94.2%',
+            'on_time_delivery_rate'   => "{$deliveryRate}%",
+            'loyalty_redemption_rate' => "{$redemptionRate}%",
+            'customer_retention_rate' => "{$retentionRate}%",
+            'order_conversion_rate'   => "{$conversionRate}%",
         ];
     }
 }

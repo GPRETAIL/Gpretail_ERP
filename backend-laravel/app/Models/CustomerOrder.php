@@ -12,7 +12,6 @@ class CustomerOrder extends Model
     protected $fillable = [
         'store_id',
         'customer_id',
-        'supplier_id',
         'salesman_id',
         'counter_id',
         'location_id',

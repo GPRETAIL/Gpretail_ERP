@@ -180,6 +180,19 @@ return [
                 'customer_name' => ['column' => 'customer_id', 'join' => ['table' => 'customers', 'foreign' => 'customer_id', 'local' => 'id'], 'label_from' => 'customers.name'],
                 'user_name' => ['column' => 'user_id', 'join' => ['table' => 'users', 'foreign' => 'user_id', 'local' => 'id'], 'label_from' => 'users.name'],
             ],
+            // Used by GroupAggregationService::crossTab() -- see that file for why
+            // measures/pivotable_columns are separate, smaller-cardinality config
+            // blocks rather than reusing groupable_columns above.
+            'measures' => [
+                'revenue' => ['column' => 'grand_total', 'agg' => 'SUM', 'label' => 'Revenue'],
+                'qty' => ['column' => 'total_qty', 'agg' => 'SUM', 'label' => 'Qty'],
+                'bills' => ['column' => 'id', 'agg' => 'COUNT', 'label' => 'Bills'],
+            ],
+            'pivotable_columns' => [
+                'store' => ['column' => 'store_id', 'join' => ['table' => 'stores', 'foreign' => 'store_id', 'local' => 'id'], 'label_from' => 'stores.name'],
+                'month' => ['column' => "DATE_FORMAT(sale_date, '%Y-%m')", 'raw' => true],
+                'payment_mode' => ['column' => 'payment_mode'],
+            ],
         ],
         'pos_old_sales' => [
             'mode' => 'cursor',
@@ -227,16 +240,61 @@ return [
             'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'created_at', 'quantity'],
         ],
+        // Not used for list-page pagination (see stock_transactions above for
+        // that) -- exists only to feed GroupAggregationService::crossTab() for
+        // the stock-valuation pivot report (rows=stocks, joined to products).
+        'stocks' => [
+            // cost_value/retail_value need `products` joined for cost_price/
+            // selling_price even when neither pivot axis is brand/category
+            // (e.g. store x store makes no sense, but a future 3rd axis might
+            // not touch products) -- so the measure carries its own join too,
+            // applied independently of whichever dimensions are chosen.
+            'measures' => [
+                'qty' => ['column' => 'quantity', 'agg' => 'SUM', 'label' => 'Qty'],
+                'cost_value' => [
+                    'column' => 'quantity * products.cost_price', 'agg' => 'SUM', 'raw' => true, 'label' => 'Cost Value',
+                    'join' => ['table' => 'products', 'foreign' => 'product_id', 'local' => 'id'],
+                ],
+                'retail_value' => [
+                    'column' => 'quantity * products.selling_price', 'agg' => 'SUM', 'raw' => true, 'label' => 'Retail Value',
+                    'join' => ['table' => 'products', 'foreign' => 'product_id', 'local' => 'id'],
+                ],
+            ],
+            // brand/category are two hops from `stocks` (stocks -> products ->
+            // brands/categories), so their `join` is a chain: first reach
+            // products via stocks.product_id, then the label table via
+            // products.brand_id/category_id.
+            'pivotable_columns' => [
+                'store' => ['column' => 'store_id', 'join' => ['table' => 'stores', 'foreign' => 'store_id', 'local' => 'id'], 'label_from' => 'stores.name'],
+                'brand' => [
+                    'column' => 'products.brand_id',
+                    'join' => [
+                        ['table' => 'products', 'foreign' => 'product_id', 'local' => 'id'],
+                        ['table' => 'brands', 'foreign' => 'products.brand_id', 'local' => 'id'],
+                    ],
+                    'label_from' => 'brands.name',
+                ],
+                'category' => [
+                    'column' => 'products.category_id',
+                    'join' => [
+                        ['table' => 'products', 'foreign' => 'product_id', 'local' => 'id'],
+                        ['table' => 'categories', 'foreign' => 'products.category_id', 'local' => 'id'],
+                    ],
+                    'label_from' => 'categories.name',
+                ],
+            ],
+        ],
         'customer_orders' => [
             'mode' => 'cursor',
             'default_sort' => 'id',
             'default_order' => 'desc',
             'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'order_date', 'order_no', 'total_amount', 'created_at'],
+            // No 'supplier' groupable entry: customer_orders has no supplier_id column
+            // (never migrated -- leftover from the CI4 port; see CustomerOrder model).
             'groupable_columns' => [
                 'status' => ['column' => 'status'],
                 'customerName' => ['column' => 'customer_id', 'join' => ['table' => 'customers', 'foreign' => 'customer_id', 'local' => 'id'], 'label_from' => 'customers.name'],
-                'supplier' => ['column' => 'supplier_id', 'join' => ['table' => 'suppliers', 'foreign' => 'supplier_id', 'local' => 'id'], 'label_from' => 'suppliers.name'],
             ],
         ],
         'supplier_payments' => [

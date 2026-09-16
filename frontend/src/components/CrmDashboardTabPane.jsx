@@ -260,42 +260,42 @@ export default function CrmDashboardTabPane({ active, fromDate, toDate, companyI
           </div>
 
           <div className="space-y-3">
-            {/* Retail */}
+            {/* Champions: recent AND frequent buyers */}
             <div className="rounded-lg border border-slate-100 bg-slate-50 p-3 dark:border-gray-700 dark:bg-gray-700/50">
               <div className="flex items-center justify-between text-xs">
-                <span className="font-semibold text-slate-700 dark:text-gray-300">Retail Shoppers</span>
+                <span className="font-semibold text-slate-700 dark:text-gray-300">Champions</span>
                 <span className="font-bold text-blue-600 dark:text-blue-400">
-                  {segmentation.retail?.count || 0} ({segmentation.retail?.pct || 0}%)
+                  {segmentation.champions?.count || 0} ({segmentation.champions?.pct || 0}%)
                 </span>
               </div>
             </div>
 
-            {/* Wholesale */}
+            {/* Loyal: frequent buyers, not necessarily most recent */}
             <div className="rounded-lg border border-slate-100 bg-slate-50 p-3 dark:border-gray-700 dark:bg-gray-700/50">
               <div className="flex items-center justify-between text-xs">
-                <span className="font-semibold text-slate-700 dark:text-gray-300">Wholesale / Corporate</span>
+                <span className="font-semibold text-slate-700 dark:text-gray-300">Loyal</span>
                 <span className="font-bold text-indigo-600 dark:text-indigo-400">
-                  {segmentation.wholesale?.count || 0} ({segmentation.wholesale?.pct || 0}%)
+                  {segmentation.loyal?.count || 0} ({segmentation.loyal?.pct || 0}%)
                 </span>
               </div>
             </div>
 
-            {/* VIP */}
+            {/* At Risk: historically valuable, going quiet */}
             <div className="rounded-lg border border-slate-100 bg-slate-50 p-3 dark:border-gray-700 dark:bg-gray-700/50">
               <div className="flex items-center justify-between text-xs">
-                <span className="font-semibold text-slate-700 dark:text-gray-300">VIP Members (1000+ Pts)</span>
+                <span className="font-semibold text-slate-700 dark:text-gray-300">At Risk</span>
                 <span className="font-bold text-purple-600 dark:text-purple-400">
-                  {segmentation.vip?.count || 0} ({segmentation.vip?.pct || 0}%)
+                  {segmentation.at_risk?.count || 0} ({segmentation.at_risk?.pct || 0}%)
                 </span>
               </div>
             </div>
 
-            {/* Custom Orders */}
+            {/* Lost / Inactive */}
             <div className="rounded-lg border border-slate-100 bg-slate-50 p-3 dark:border-gray-700 dark:bg-gray-700/50">
               <div className="flex items-center justify-between text-xs">
-                <span className="font-semibold text-slate-700 dark:text-gray-300">Custom Order Clients</span>
+                <span className="font-semibold text-slate-700 dark:text-gray-300">Lost / Inactive</span>
                 <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                  {segmentation.with_orders?.count || 0} ({segmentation.with_orders?.pct || 0}%)
+                  {segmentation.lost?.count || 0} ({segmentation.lost?.pct || 0}%)
                 </span>
               </div>
             </div>

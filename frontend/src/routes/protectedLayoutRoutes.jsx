@@ -90,6 +90,9 @@ const StockAnalyzer = lazy(() => import("../pages/analytical/StockAnalyzer"));
 const SalesComparer = lazy(() => import("../pages/analytical/SalesComparer"));
 const SalesVsPurchase = lazy(() => import("../pages/analytical/SalesVsPurchase"));
 const SalesVsStock = lazy(() => import("../pages/analytical/SalesVsStock"));
+const SupplierProductAnalyzer = lazy(() => import("../pages/analytical/SupplierProductAnalyzer"));
+const SalesPivotAnalyzer = lazy(() => import("../pages/analytical/SalesPivotAnalyzer"));
+const StockValuationAnalyzer = lazy(() => import("../pages/analytical/StockValuationAnalyzer"));
 const SupplierPayment = lazy(() => import("../pages/finance/SupplierPayment"));
 
 export const protectedLayoutRoutes = [
@@ -185,6 +188,9 @@ export const protectedLayoutRoutes = [
   { path: "/analytical/sales-comparer", render: () => <SalesComparer /> },
   { path: "/analytical/sales-vs-purchase", render: () => <SalesVsPurchase /> },
   { path: "/analytical/sales-vs-stock", render: () => <SalesVsStock /> },
+  { path: "/analytical/purchase-analyzer", render: () => <SupplierProductAnalyzer /> },
+  { path: "/analytical/sales-analyzer", render: () => <SalesPivotAnalyzer /> },
+  { path: "/analytical/stock-marker-analyzer", render: () => <StockValuationAnalyzer /> },
   { path: "/finance/supplier-payment", render: () => <SupplierPayment /> },
 ];
 

@@ -5,17 +5,44 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\Stock;
 use App\Models\Product;
+use App\Services\GroupAggregationService;
 use App\Services\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class WarehouseReportController extends Controller
 {
-    public function __construct(private readonly PaginationService $paginationService) {}
+    public function __construct(
+        private readonly PaginationService $paginationService,
+        private readonly GroupAggregationService $groupAggregationService,
+    ) {}
 
     public function index(Request $request)
     {
         return $this->stockLedger($request);
+    }
+
+    /**
+     * Enterprise pivot: stock qty/cost/retail value by any two of
+     * store/brand/category, e.g. "retail value by brand x store". Point-in-time
+     * snapshot (stock has no date dimension), so no date filter here -- unlike
+     * salesPivot()/salesVsPurchase() which are all date-ranged. Thin wrapper
+     * around GroupAggregationService::crossTab(), driven by
+     * config('pagination.resources.stocks.pivotable_columns'/'measures').
+     */
+    public function stockPivot(Request $request)
+    {
+        $storeId = $request->input('company_id') ?: $request->header('X-Company-Scope-Id');
+        $storeId = ($storeId && $storeId !== 'all') ? $storeId : null;
+
+        $query = Stock::query();
+        if ($storeId) {
+            $query->where('store_id', $storeId);
+        }
+
+        $result = $this->groupAggregationService->crossTab($query, 'stocks', $request);
+
+        return response()->json($result, $result['success'] ? 200 : 422);
     }
 
     public function stockLedger(Request $request)
@@ -95,51 +122,110 @@ class WarehouseReportController extends Controller
         ]);
     }
 
+    /**
+     * Dimensions available to the 360 Stock Analyzer's field picker, grouping
+     * `stocks` joined to `products` (and, for company, to `stores`). Any field
+     * the frontend lists that isn't here has no backing column in the schema
+     * (garment-attribute leftovers from an older system) and gets a "not
+     * available" notice instead of fake/blank data. "Supplier" is deliberately
+     * not included -- products have no supplier_id, only purchase documents do,
+     * so a real supplier dimension belongs to the dedicated supplier/product
+     * purchase-history report, not a per-product grouping here.
+     */
+    private const STOCK_FIELD_CONFIG = [
+        'brand'         => ['label' => 'Brand', 'column' => 'brand_id', 'join_table' => 'brands', 'label_from' => 'brands.name'],
+        'product_group' => ['label' => 'Product Group', 'column' => 'category_id', 'join_table' => 'categories', 'label_from' => 'categories.name'],
+        'hsn_code'      => ['label' => 'HSN Code', 'column' => 'hsn_code'],
+        'type'          => ['label' => 'Type', 'column' => 'type'],
+        'section'       => ['label' => 'Section', 'column' => 'section'],
+        'product'       => ['label' => 'Product', 'column' => 'name'],
+        'item'          => ['label' => 'Item', 'column' => 'name'],
+        'product_code'  => ['label' => 'Product Code', 'column' => 'code'],
+        'barcode'       => ['label' => 'Barcode', 'column' => 'barcode'],
+    ];
+
     public function stockAnalyzer(Request $request)
     {
-        $storeId = $request->header('X-Company-Scope-Id', 1);
+        $field = (string) $request->input('groupBy', 'brand');
 
-        $query = Stock::with(['product.category', 'product.brand'])
-            ->where('store_id', $storeId);
-
-        $mapRow = function ($s) {
-            $qty = (float) $s->quantity;
-            $cost = (float) ($s->product?->cost_price ?? 0);
-            $retail = (float) ($s->product?->selling_price ?? 0);
-            return [
-                'product_id'    => $s->product_id,
-                'name'          => $s->product?->name,
-                'code'          => $s->product?->code,
-                'brand'         => $s->product?->brand?->name ?? 'Generic',
-                'category'      => $s->product?->category?->name ?? 'General',
-                'quantity'      => $qty,
-                'cost_value'    => $qty * $cost,
-                'retail_value'  => $qty * $retail,
-                'status'        => $qty <= 5 ? 'LOW_STOCK' : ($qty >= 100 ? 'OVERSTOCK' : 'OPTIMAL'),
-            ];
-        };
-
-        // Previously always loaded every stock row (+ product/category/brand
-        // relations) into memory on every call, unconditionally.
-        if ($request->boolean('all')) {
-            $analysis = $query->limit(2000)->get()->map($mapRow);
+        if ($field !== 'company' && !array_key_exists($field, self::STOCK_FIELD_CONFIG)) {
+            $label = self::STOCK_FIELD_CONFIG[$field]['label'] ?? strtoupper(str_replace('_', ' ', $field));
             return response()->json([
                 'success' => true,
-                'data'    => $analysis,
-                'total'   => $analysis->count(),
+                'data'    => [],
+                'totals'  => null,
+                'notice'  => "\"{$label}\" is not available for analysis yet -- this attribute has no matching data in the current system.",
             ]);
         }
 
-        $result = $this->paginationService->paginate($query, 'stock_transactions', $request, [
-            'default_sort'  => 'id',
-            'default_order' => 'desc',
-            'tie_breaker'   => 'id',
-            'allowed_sorts' => ['id', 'quantity', 'created_at'],
-        ]);
+        $storeId = $request->input('company_id') ?: $request->header('X-Company-Scope-Id');
+        $storeId = ($storeId && $storeId !== 'all') ? $storeId : null;
 
-        $result['data'] = collect($result['data'])->map($mapRow)->values();
+        $query = DB::table('stocks as s')->join('products as p', 'p.id', '=', 's.product_id');
+        if ($storeId) {
+            $query->where('s.store_id', $storeId);
+        }
 
-        return response()->json($result);
+        if ($field === 'company') {
+            $query->leftJoin('stores', 'stores.id', '=', 's.store_id');
+            $groupExpr = 's.store_id';
+            $selects = ["{$groupExpr} as group_value", 'MAX(stores.name) as group_label'];
+        } else {
+            $config = self::STOCK_FIELD_CONFIG[$field];
+            $groupExpr = "p.{$config['column']}";
+            $selects = ["{$groupExpr} as group_value"];
+            if (!empty($config['join_table'])) {
+                $query->leftJoin($config['join_table'], "{$config['join_table']}.id", '=', "p.{$config['column']}");
+                $selects[] = "MAX({$config['label_from']}) as group_label";
+            }
+        }
+
+        $rows = $query->selectRaw(implode(', ', array_merge($selects, [
+                'SUM(s.quantity) as qty',
+                'SUM(s.quantity * p.cost_price) as cost_value',
+                'SUM(s.quantity * p.selling_price) as retail_value',
+            ])))
+            ->groupBy($groupExpr)
+            ->orderByDesc('retail_value')
+            ->limit(500)
+            ->get();
+
+        $data = $rows->map(function ($row) {
+            $qty = (float) $row->qty;
+            $costValue = (float) $row->cost_value;
+            $retailValue = (float) $row->retail_value;
+            // margin % of retail, markup % of cost -- standard retail definitions.
+            // markdown is the mirror case (selling below cost), 0 otherwise.
+            $marginPerc = $retailValue > 0 ? round((($retailValue - $costValue) / $retailValue) * 100, 2) : 0;
+            $markupPerc = $costValue > 0 ? round((($retailValue - $costValue) / $costValue) * 100, 2) : 0;
+            $markdownPerc = ($costValue > 0 && $retailValue < $costValue)
+                ? round((($costValue - $retailValue) / $costValue) * 100, 2)
+                : 0;
+
+            return [
+                'description'   => empty($row->group_label) ? ($row->group_value === null ? '(Blank)' : (string) $row->group_value) : (string) $row->group_label,
+                'qty'           => $qty,
+                'cost_price'    => round($costValue, 2),
+                'sale_price'    => round($retailValue, 2),
+                'margin_perc'   => $marginPerc,
+                'markup_perc'   => $markupPerc,
+                'markdown_perc' => $markdownPerc,
+            ];
+        });
+
+        $totalCost = round($data->sum('cost_price'), 2);
+        $totalRetail = round($data->sum('sale_price'), 2);
+
+        $totals = [
+            'qty'           => $data->sum('qty'),
+            'cost_price'    => $totalCost,
+            'sale_price'    => $totalRetail,
+            'margin_perc'   => $totalRetail > 0 ? round((($totalRetail - $totalCost) / $totalRetail) * 100, 2) : 0,
+            'markup_perc'   => $totalCost > 0 ? round((($totalRetail - $totalCost) / $totalCost) * 100, 2) : 0,
+            'markdown_perc' => ($totalCost > 0 && $totalRetail < $totalCost) ? round((($totalCost - $totalRetail) / $totalCost) * 100, 2) : 0,
+        ];
+
+        return response()->json(['success' => true, 'data' => $data, 'totals' => $totals]);
     }
 
     public function warehouseCustomization(Request $request)

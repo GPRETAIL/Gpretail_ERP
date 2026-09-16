@@ -45,10 +45,10 @@ const mockCrmData = {
     { key: "loyalty_club_members", label: "Loyalty Club Members", count: 42, severity: "info", route: "/crm/loyalty", filter_param: "min_points=500" },
   ],
   segmentation: {
-    retail: { label: "Retail Shoppers", count: 2100, pct: 85.7 },
-    wholesale: { label: "Wholesale / Corporate", count: 350, pct: 14.3 },
-    vip: { label: "VIP Members (1000+ Pts)", count: 120, pct: 4.9 },
-    with_orders: { label: "Custom Order Clients", count: 180, pct: 7.3 },
+    champions: { label: "Champions", count: 210, pct: 8.6 },
+    loyal: { label: "Loyal", count: 350, pct: 14.3 },
+    at_risk: { label: "At Risk", count: 120, pct: 4.9 },
+    lost: { label: "Lost / Inactive", count: 180, pct: 7.3 },
   },
   top_customers: [
     { id: 1, name: "Rajesh Kumar", phone: "9876543210", loyalty_points: 3500, orders_count: 8, total_spent: 120000, current_balance: 0 },
@@ -135,7 +135,7 @@ describe("Main Dashboard CRM Tab", () => {
       expect(screen.getByText("Total Customers")).toBeDefined();
       expect(screen.getByText("2,450")).toBeDefined();
       expect(screen.getByText("Customer Segmentation")).toBeDefined();
-      expect(screen.getByText("Retail Shoppers")).toBeDefined();
+      expect(screen.getByText("Champions")).toBeDefined();
       expect(screen.getAllByText("Rajesh Kumar").length).toBeGreaterThan(0);
     });
   });

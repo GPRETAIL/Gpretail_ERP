@@ -30,6 +30,7 @@ use App\Http\Controllers\Api\V1\PosReturnController;
 use App\Http\Controllers\Api\V1\PosSaleController;
 use App\Http\Controllers\Api\V1\ProductAttributeController;
 use App\Http\Controllers\Api\V1\ProductController;
+use App\Http\Controllers\Api\V1\ProductPurchaseAnalyticsController;
 use App\Http\Controllers\Api\V1\PurchaseInvoiceController;
 use App\Http\Controllers\Api\V1\PurchaseReturnController;
 use App\Http\Controllers\Api\V1\SalesApprovalController;
@@ -265,6 +266,7 @@ $registerAppRoutes = function () {
     // Warehouse Reports & Stock Analyzer
     Route::get('warehouse-reports', [WarehouseReportController::class, 'index']);
     Route::get('stock-analyzer', [WarehouseReportController::class, 'stockAnalyzer']);
+    Route::get('stock-pivot', [WarehouseReportController::class, 'stockPivot']);
     Route::match(['get', 'post', 'put'], 'warehouse-customisation', [WarehouseReportController::class, 'warehouseCustomization']);
     Route::match(['get', 'post', 'put'], 'warehouse-customization', [WarehouseReportController::class, 'warehouseCustomization']);
 
@@ -380,6 +382,11 @@ $registerAppRoutes = function () {
     Route::get('sales-comparer', [SalesReportController::class, 'salesComparer']);
     Route::get('sales-vs-purchase', [SalesReportController::class, 'salesVsPurchase']);
     Route::get('sales-vs-stock', [SalesReportController::class, 'salesVsStock']);
+    Route::get('sales-pivot', [SalesReportController::class, 'salesPivot']);
+
+    // Supplier x Product purchase analytics (Direct Purchases + Purchase Invoices).
+    Route::get('supplier-product-analytics', [ProductPurchaseAnalyticsController::class, 'supplierProductSummary']);
+    Route::get('supplier-product-analytics/{productId}/history', [ProductPurchaseAnalyticsController::class, 'productPurchaseHistory']);
     Route::match(['get', 'post', 'put'], 'sales-customization', [SettingsController::class, 'salesCustomization']);
     Route::match(['get', 'post', 'put'], 'sales-customisation', [SettingsController::class, 'salesCustomization']);
 
