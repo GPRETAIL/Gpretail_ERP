@@ -119,4 +119,70 @@ describe("FilterableDataTable — Adaptive Cursor & Offset Pagination", () => {
     expect(screen.getByText(/^Total: ~[\d,]+$/)).toBeDefined();
     expect(screen.queryByText("Showing 2 rows")).not.toBeInTheDocument();
   });
+
+  it("renders a Load More button instead of Prev/Next when cursorLoadMode is append", () => {
+    const onNextCursor = vi.fn();
+    const onLimitChange = vi.fn();
+
+    render(
+      <MemoryRouter>
+        <FilterableDataTable
+          rows={sampleRows}
+          columns={sampleColumns}
+          showExport={false}
+          cursorLoadMode="append"
+          pagination={{
+            mode: "cursor",
+            limit: 10,
+            next_cursor: "eyJpZCI6Mn0",
+            previous_cursor: null,
+            has_more: true,
+            has_next: true,
+            has_previous: false,
+          }}
+          limit={10}
+          onNextCursor={onNextCursor}
+          onLimitChange={onLimitChange}
+        />
+      </MemoryRouter>
+    );
+
+    // Append mode drops the page-stepping controls entirely -- no "Continuous" label, no
+    // Previous/Next titles, just a single Load More action.
+    expect(screen.queryByText("Continuous")).not.toBeInTheDocument();
+    expect(screen.queryByTitle("Previous")).not.toBeInTheDocument();
+    expect(screen.queryByTitle("Next")).not.toBeInTheDocument();
+
+    const loadMoreBtn = screen.getByText("Load More");
+    fireEvent.click(loadMoreBtn);
+    expect(onNextCursor).toHaveBeenCalledWith("eyJpZCI6Mn0");
+  });
+
+  it("shows 'No more results' and disables Load More once has_next is false", () => {
+    render(
+      <MemoryRouter>
+        <FilterableDataTable
+          rows={sampleRows}
+          columns={sampleColumns}
+          showExport={false}
+          cursorLoadMode="append"
+          pagination={{
+            mode: "cursor",
+            limit: 10,
+            next_cursor: null,
+            previous_cursor: "eyJpZCI6MX0",
+            has_more: false,
+            has_next: false,
+            has_previous: true,
+          }}
+          limit={10}
+          onNextCursor={vi.fn()}
+          onLimitChange={vi.fn()}
+        />
+      </MemoryRouter>
+    );
+
+    const btn = screen.getByText("No more results");
+    expect(btn.closest("button").hasAttribute("disabled")).toBe(true);
+  });
 });

@@ -285,6 +285,8 @@ export const DEFAULT_SALES_RECEIPT_CUSTOMIZATION = {
   /** Data URL (small uploaded image, stored inline like the other Sales Customisation settings --
    * no separate file-storage dependency needed for something this small). */
   paymentQrImageUrl: "",
+  /** Displayed QR size in px -- see PAYMENT_QR_SIZE_MIN/MAX below for the recommended range. */
+  paymentQrSize: 120,
   /** Default bill status for new POS / POS Old / Touch sales (server applies on save). */
   saleSaveAs: "paid_settled",
   /** When false, POS skips payment entry and applies cash = net (unless credit / refund rules). */
@@ -486,6 +488,11 @@ const normalizePosReceiptPrintCopies = (value) => {
   return Math.min(3, Math.max(1, n));
 };
 
+const normalizePaymentQrSize = (value) => {
+  const n = toInt(value, PAYMENT_QR_SIZE_MIN);
+  return Math.min(PAYMENT_QR_SIZE_MAX, Math.max(PAYMENT_QR_SIZE_MIN, n));
+};
+
 const normalizePosPaymentDialogVisible = (value) => {
   if (value === undefined || value === null) return DEFAULT_SALES_RECEIPT_CUSTOMIZATION.posPaymentDialogVisible;
   if (value === false || value === "false" || value === 0 || value === "0") return false;
@@ -543,6 +550,7 @@ export const normalizeSalesReceiptCustomization = (value = {}) => {
     paymentQrMode: normalizePaymentQrMode(value.paymentQrMode),
     paymentUpiId: String(value.paymentUpiId || "").trim(),
     paymentQrImageUrl: normalizePaymentQrImageUrl(value.paymentQrImageUrl),
+    paymentQrSize: normalizePaymentQrSize(value.paymentQrSize),
     saleSaveAs,
     posPaymentDialogVisible,
     posReceiptPrintCopies: normalizePosReceiptPrintCopies(value.posReceiptPrintCopies),
@@ -938,6 +946,15 @@ export const PAYMENT_QR_MODE_OPTIONS = [
   { value: "image", label: "Upload QR image (fixed, no amount)" },
 ];
 
+/** Recommended (and enforced) displayed-QR-size range in px. Grounded in a real decoder test
+ * (see RECEIPT_QR_CODE_DISPLAY_PX's comment below): 112px failed to scan reliably while 120px --
+ * this range's floor -- decoded cleanly at the print pipeline's 4x capture scale. The ceiling is
+ * set against the narrowest supported receipt width (SALES_RECEIPT_SIZE_OPTIONS' 2.5") so the QR
+ * can't overflow the printable area on smaller paper. */
+export const PAYMENT_QR_SIZE_MIN = 120;
+export const PAYMENT_QR_SIZE_MAX = 200;
+export const PAYMENT_QR_SIZE_STEP = 10;
+
 /** Keeps an uploaded QR under SalesCustomizationHelper's inline size cap. A phone screenshot of a
  * payment QR is routinely 2-4 MB, which is far more than a 120px receipt block can use. */
 const PAYMENT_QR_UPLOAD_MAX_PX = 512;
@@ -1019,6 +1036,7 @@ export const buildUpiPaymentUri = ({ upiId, payeeName, amount, transactionNote }
 export const buildPaymentQrMarkup = async (customization, { billAmount, billNo, storeName } = {}) => {
   const mode = String(customization?.paymentQrMode || "upi").trim().toLowerCase();
   if (mode === "none") return "";
+  const size = normalizePaymentQrSize(customization?.paymentQrSize);
   if (mode === "upi" || !mode) {
     const upiId = String(customization?.paymentUpiId || "").trim() || "9876543210@upi";
     const upiUri = buildUpiPaymentUri({
@@ -1027,16 +1045,17 @@ export const buildPaymentQrMarkup = async (customization, { billAmount, billNo, 
       amount: billAmount,
       transactionNote: billNo ? `Bill ${billNo}` : "",
     });
-    // width: 480 = displayed size (120) * the print pipeline's 4x render scale - see
+    // Generation width = displayed size * the print pipeline's 4x render scale - see
     // RECEIPT_QR_CODE_DATA_WIDTH's comment for why generating below that upscales into a blurry,
-    // often-unscannable QR once captured for silent printing.
-    const dataUrl = await createReceiptQrCodeDataUrl(upiUri, { width: 480 });
-    return buildReceiptQrCodeImgMarkup(dataUrl, { label: "Scan to Pay", size: 120 });
+    // often-unscannable QR once captured for silent printing. Keeping this proportional to the
+    // chosen size (not the old hardcoded 480) preserves that invariant at any size in range.
+    const dataUrl = await createReceiptQrCodeDataUrl(upiUri, { width: size * 4 });
+    return buildReceiptQrCodeImgMarkup(dataUrl, { label: "Scan to Pay", size });
   }
   if (mode === "image") {
     const imageUrl = String(customization?.paymentQrImageUrl || "").trim();
     if (!imageUrl) return "";
-    return buildReceiptQrCodeImgMarkup(imageUrl, { label: "Scan to Pay", size: 120 });
+    return buildReceiptQrCodeImgMarkup(imageUrl, { label: "Scan to Pay", size });
   }
   return "";
 };

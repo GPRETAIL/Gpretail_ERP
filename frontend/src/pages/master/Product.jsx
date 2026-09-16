@@ -312,7 +312,8 @@ const Product = () => {
     limitToLoad = limit,
     queryOverride = tableSearch,
     filtersOverride = tableColumnFilters,
-    cursorToken = null
+    cursorToken = null,
+    appendMode = false
   ) => {
     try {
       setLoading(true);
@@ -329,7 +330,10 @@ const Product = () => {
       };
       const res = await api.get("/products", { params });
       const rows = (res.data?.data || []).map(mapProductRow);
-      setProducts(rows);
+      // "Load More" (cursorToken + appendMode) grows the list instead of replacing it -- every
+      // other call site (initial load, search, filter, page-size change) still replaces, since
+      // appendMode defaults to false.
+      setProducts((prev) => (cursorToken && appendMode ? [...prev, ...rows] : rows));
 
       const total = Number(res.data?.total ?? res.data?.pagination?.total ?? rows.length) || 0;
       const totalPages = Math.max(
@@ -346,7 +350,7 @@ const Product = () => {
   }, [page, limit, tableSearch, tableSearchField, tableColumnFilters, forceFetchAll]);
 
   const handleNextCursor = useCallback(
-    (cursor) => fetchProducts(page, limit, tableSearch, tableColumnFilters, cursor),
+    (cursor) => fetchProducts(page, limit, tableSearch, tableColumnFilters, cursor, true),
     [fetchProducts, page, limit, tableSearch, tableColumnFilters]
   );
   const handlePreviousCursor = useCallback(
@@ -841,6 +845,7 @@ const Product = () => {
                 onPageChange={setPage}
                 onNextCursor={handleNextCursor}
                 onPreviousCursor={handlePreviousCursor}
+                cursorLoadMode="append"
                 onFetchGroupSummaries={fetchProductGroupSummaries}
                 onFetchGroupRows={fetchProductGroupRows}
                 onLimitChange={(value) => {

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Eye, RotateCcw, Save } from "lucide-react";
+import { Eye, RotateCcw, Save, Minus, Plus } from "lucide-react";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import api from "../../api/axios";
@@ -36,6 +36,9 @@ import {
   PRINT_MODE_OPTIONS,
   RECEIPT_CODE_TYPE_OPTIONS,
   PAYMENT_QR_MODE_OPTIONS,
+  PAYMENT_QR_SIZE_MIN,
+  PAYMENT_QR_SIZE_MAX,
+  PAYMENT_QR_SIZE_STEP,
   buildPaymentQrMarkup,
   readPaymentQrImageFile,
   saveSalesReceiptCustomization,
@@ -871,6 +874,20 @@ export default function Customisation() {
     }
   };
 
+  const handlePaymentQrSizeStep = (delta) => {
+    const current = Number(settings.paymentQrSize) || PAYMENT_QR_SIZE_MIN;
+    const next = current + delta;
+    if (next > PAYMENT_QR_SIZE_MAX) {
+      toast.info(`Maximum recommended QR size is ${PAYMENT_QR_SIZE_MAX}px -- larger may not fit on narrower receipt paper.`);
+      return;
+    }
+    if (next < PAYMENT_QR_SIZE_MIN) {
+      toast.info(`Minimum recommended QR size is ${PAYMENT_QR_SIZE_MIN}px -- smaller QR codes may not scan reliably on thermal printers.`);
+      return;
+    }
+    updateSetting({ paymentQrSize: next });
+  };
+
   const updateSetting = (patch) => {
     setSettings((prev) => {
       const nextPatch = { ...patch };
@@ -1381,6 +1398,38 @@ export default function Customisation() {
                 </label>
               ))}
             </div>
+
+            {settings.paymentQrMode !== "none" ? (
+              <div className="mt-4">
+                <label className={fieldLabelClass}>QR Size</label>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => handlePaymentQrSizeStep(-PAYMENT_QR_SIZE_STEP)}
+                    disabled={settings.paymentQrSize <= PAYMENT_QR_SIZE_MIN}
+                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700/50"
+                    aria-label="Decrease QR size"
+                  >
+                    <Minus className="h-4 w-4" />
+                  </button>
+                  <span className="min-w-[64px] text-center text-sm font-medium text-gray-800 dark:text-gray-200">
+                    {settings.paymentQrSize}px
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handlePaymentQrSizeStep(PAYMENT_QR_SIZE_STEP)}
+                    disabled={settings.paymentQrSize >= PAYMENT_QR_SIZE_MAX}
+                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700/50"
+                    aria-label="Increase QR size"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    Recommended: {PAYMENT_QR_SIZE_MIN}-{PAYMENT_QR_SIZE_MAX}px
+                  </span>
+                </div>
+              </div>
+            ) : null}
 
             {settings.paymentQrMode === "upi" ? (
               <div className="mt-4">

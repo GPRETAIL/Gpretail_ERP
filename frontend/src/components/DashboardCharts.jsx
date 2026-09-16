@@ -150,7 +150,7 @@ const HourlySalesChart = ({ chart, loading }) => {
                 return [value, "Bills"];
               }}
             />
-            <Legend />
+            <Legend wrapperStyle={{ color: tickColor }} />
             <Bar yAxisId="left" dataKey="bills" name="Bills" fill="url(#hourlyBarGradient)" radius={[4, 4, 0, 0]} />
             <Line
               yAxisId="right"
@@ -225,7 +225,7 @@ const DailyTrendChart = ({ chart, loading }) => {
                 return [formatScaledValue(value), name];
               }}
             />
-            <Legend />
+            <Legend wrapperStyle={{ color: tickColor }} />
             <Bar yAxisId="left" dataKey="salesScaled" name={salesSeriesLabel} fill="#22c55e" radius={[4, 4, 0, 0]} />
             <Bar yAxisId="right" dataKey="unitsScaled" name={unitsSeriesLabel} fill="#fb923c" radius={[4, 4, 0, 0]} />
             <Line

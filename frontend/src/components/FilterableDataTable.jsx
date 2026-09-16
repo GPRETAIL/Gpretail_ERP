@@ -14,6 +14,7 @@ import {
   ChevronDown,
   ChevronsRight,
   ChevronsLeft,
+  Loader2,
 } from "lucide-react";
 import {
   Button,
@@ -150,6 +151,11 @@ export default function FilterableDataTable({
   pagination = null,
   onNextCursor = null,
   onPreviousCursor = null,
+  // "paginate" (default): cursor mode steps forward/back one page at a time, replacing the
+  // visible rows (today's behavior, unchanged for every existing caller). "append": renders a
+  // "Load More" button instead -- the caller appends the next page's rows to its own `rows`
+  // instead of replacing them, growing a continuous list. Has no effect outside cursor mode.
+  cursorLoadMode = "paginate",
   paginationMode = "server",
   enableServerSearch = false,
   onServerSearch = null,
@@ -1529,6 +1535,7 @@ export default function FilterableDataTable({
   const isCursorMode = Boolean(
     (pagination?.mode === "cursor" || paginationMode === "cursor") && !usesLocalPagination
   );
+  const isAppendCursorMode = isCursorMode && cursorLoadMode === "append";
   const safePage = Math.max(Number(page) || 1, 1);
   const safeLimit = Math.max(Number(limit) || 20, 1);
   // Group By is server-only (GroupAggregationService) -- no client-side grouping fallback. A
@@ -2656,53 +2663,67 @@ export default function FilterableDataTable({
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handlePrevPage}
-              disabled={!hasPrev}
-              className={paginationButtonClass}
-              title="Previous"
-            >
-              {"<"}
-            </button>
-            {isServerGrouped ? (
-              <select
-                value={currentPage}
-                onChange={(e) => setGroupSummaryState((prev) => ({ ...prev, page: Number(e.target.value) }))}
-                className={paginationControlClass}
+            {isAppendCursorMode ? (
+              <button
+                type="button"
+                onClick={handleNextPage}
+                disabled={!hasNext || loading}
+                className="inline-flex items-center gap-1.5 rounded-sm border border-gray-300 dark:border-gray-600 px-3 py-1 text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {pageOptions.map((p) => (
-                  <option key={p} value={p}>
-                    Page {p}
-                  </option>
-                ))}
-              </select>
-            ) : isCursorMode ? (
-              <span className="px-1.5 text-[9px] text-gray-500 dark:text-gray-400 font-medium select-none">
-                Continuous
-              </span>
+                {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                {hasNext ? "Load More" : "No more results"}
+              </button>
             ) : (
-              <select
-                value={currentPage}
-                onChange={(e) => onPageChange(Number(e.target.value))}
-                className={paginationControlClass}
-              >
-                {pageOptions.map((p) => (
-                  <option key={p} value={p}>
-                    Page {p}
-                  </option>
-                ))}
-              </select>
+              <>
+                <button
+                  type="button"
+                  onClick={handlePrevPage}
+                  disabled={!hasPrev}
+                  className={paginationButtonClass}
+                  title="Previous"
+                >
+                  {"<"}
+                </button>
+                {isServerGrouped ? (
+                  <select
+                    value={currentPage}
+                    onChange={(e) => setGroupSummaryState((prev) => ({ ...prev, page: Number(e.target.value) }))}
+                    className={paginationControlClass}
+                  >
+                    {pageOptions.map((p) => (
+                      <option key={p} value={p}>
+                        Page {p}
+                      </option>
+                    ))}
+                  </select>
+                ) : isCursorMode ? (
+                  <span className="px-1.5 text-[9px] text-gray-500 dark:text-gray-400 font-medium select-none">
+                    Continuous
+                  </span>
+                ) : (
+                  <select
+                    value={currentPage}
+                    onChange={(e) => onPageChange(Number(e.target.value))}
+                    className={paginationControlClass}
+                  >
+                    {pageOptions.map((p) => (
+                      <option key={p} value={p}>
+                        Page {p}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                <button
+                  type="button"
+                  onClick={handleNextPage}
+                  disabled={!hasNext}
+                  className={paginationButtonClass}
+                  title="Next"
+                >
+                  {">"}
+                </button>
+              </>
             )}
-            <button
-              type="button"
-              onClick={handleNextPage}
-              disabled={!hasNext}
-              className={paginationButtonClass}
-              title="Next"
-            >
-              {">"}
-            </button>
           </div>
         </div>
       )}
