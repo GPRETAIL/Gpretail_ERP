@@ -7,33 +7,49 @@ const formatMoney = (value) =>
     maximumFractionDigits: 2,
   });
 
-export default function OverviewKpiGrid({ totalBills = {}, settlements = {}, employees = {}, stockValue = {}, loading }) {
+// Four separate widgets (not one bundled grid) so DashboardGrid can drag/resize each KPI card
+// independently in the Overview tab's layout customizer, instead of moving the whole row at once.
+
+export function TotalBillsCard({ totalBills = {}, loading }) {
   return (
-    <div className="grid h-full grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
-      <MetricCard
-        eyebrow="Total Bills"
-        title="Total bill amount"
-        value={loading ? "..." : formatMoney(totalBills.amount)}
-        subtitle={loading ? "..." : `${totalBills.count || 0} Bills (${totalBills.unsettledCount || 0} UNSETTLED)`}
-        trend={totalBills.trend}
-      />
-      <MetricCard
-        eyebrow="Settlement"
-        title="Total settlement amount"
-        value={loading ? "..." : formatMoney(settlements.amount)}
-        trend={settlements.trend}
-      />
-      <MetricCard
-        eyebrow="Employees"
-        value={loading ? "..." : `${employees.present || 0}/${employees.total || 0}`}
-        valueSubheading="Present / total"
-      />
-      <MetricCard
-        eyebrow="Stock value"
-        title="Total stock value"
-        value={loading ? "..." : formatMoney(stockValue.amount)}
-        trend={stockValue.trend}
-      />
-    </div>
+    <MetricCard
+      eyebrow="Total Bills"
+      title="Total bill amount"
+      value={loading ? "..." : formatMoney(totalBills.amount)}
+      subtitle={loading ? "..." : `${totalBills.count || 0} Bills (${totalBills.unsettledCount || 0} UNSETTLED)`}
+      trend={totalBills.trend}
+    />
+  );
+}
+
+export function SettlementCard({ settlements = {}, loading }) {
+  return (
+    <MetricCard
+      eyebrow="Settlement"
+      title="Total settlement amount"
+      value={loading ? "..." : formatMoney(settlements.amount)}
+      trend={settlements.trend}
+    />
+  );
+}
+
+export function EmployeesCard({ employees = {}, loading }) {
+  return (
+    <MetricCard
+      eyebrow="Employees"
+      value={loading ? "..." : `${employees.present || 0}/${employees.total || 0}`}
+      valueSubheading="Present / total"
+    />
+  );
+}
+
+export function StockValueCard({ stockValue = {}, loading }) {
+  return (
+    <MetricCard
+      eyebrow="Stock value"
+      title="Total stock value"
+      value={loading ? "..." : formatMoney(stockValue.amount)}
+      trend={stockValue.trend}
+    />
   );
 }

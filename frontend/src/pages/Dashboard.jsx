@@ -7,7 +7,12 @@ import DashboardCharts from "../components/DashboardCharts";
 import DashboardHighlightCards from "../components/DashboardHighlightCards";
 import DashboardTables from "../components/DashboardTables";
 import DashboardGrid from "../components/dashboard/DashboardGrid";
-import OverviewKpiGrid from "../components/dashboard/overview/OverviewKpiGrid";
+import {
+  TotalBillsCard,
+  SettlementCard,
+  EmployeesCard,
+  StockValueCard,
+} from "../components/dashboard/overview/OverviewKpiGrid";
 import WarehouseDashboardTabPane from "../components/WarehouseDashboardTabPane";
 import CrmDashboardTabPane from "../components/CrmDashboardTabPane";
 import SalesDashboardTabPane from "../components/SalesDashboardTabPane";
@@ -132,33 +137,62 @@ const Dashboard = () => {
 
   const overviewWidgets = useMemo(
     () => [
+      // Each KPI card is its own grid item (not one bundled "KPI Summary" row) so it can be
+      // dragged/resized independently in the layout customizer.
       {
-        key: "kpi-summary",
-        title: "KPI Summary",
-        component: OverviewKpiGrid,
-        props: { totalBills, settlements, employees, stockValue, loading },
-        defaultLayout: { x: 0, y: 0, w: 12, h: 2, minW: 6, minH: 2 },
+        key: "kpi-total-bills",
+        title: "Total Bills",
+        component: TotalBillsCard,
+        props: { totalBills, loading },
+        defaultLayout: { x: 0, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
+      },
+      {
+        key: "kpi-settlement",
+        title: "Settlement",
+        component: SettlementCard,
+        props: { settlements, loading },
+        defaultLayout: { x: 3, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
+      },
+      {
+        key: "kpi-employees",
+        title: "Employees",
+        component: EmployeesCard,
+        props: { employees, loading },
+        defaultLayout: { x: 6, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
+      },
+      {
+        key: "kpi-stock-value",
+        title: "Stock value",
+        component: StockValueCard,
+        props: { stockValue, loading },
+        defaultLayout: { x: 9, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
       },
       {
         key: "charts",
         title: "Charts",
         component: DashboardCharts,
         props: { charts, loading },
-        defaultLayout: { x: 0, y: 2, w: 12, h: 5, minW: 6, minH: 3 },
+        // h:4 matches DashboardCharts' actual min-h-[320px] card height (h*72 + (h-1)*16 = 336px)
+        // instead of the old h:5 (424px), which left ~104px of dead space below the chart cards.
+        defaultLayout: { x: 0, y: 2, w: 12, h: 4, minW: 6, minH: 3 },
       },
       {
         key: "tables",
         title: "Tables",
         component: DashboardTables,
         props: { tables, loading },
-        defaultLayout: { x: 0, y: 7, w: 12, h: 6, minW: 6, minH: 4 },
+        // DashboardTables' cards are a fixed 320px (min-h and max-h both 320px), so h:4 (336px)
+        // fits them with ~16px to spare instead of the old h:6 (512px), which left ~192px of
+        // empty space inside this widget's box -- the largest single contributor to the grid's
+        // "extra space at the bottom" the Tables/Highlights row pair produced.
+        defaultLayout: { x: 0, y: 6, w: 12, h: 4, minW: 6, minH: 4 },
       },
       {
         key: "highlights",
         title: "Highlights",
         component: DashboardHighlightCards,
         props: { tables, loading },
-        defaultLayout: { x: 0, y: 13, w: 12, h: 4, minW: 6, minH: 3 },
+        defaultLayout: { x: 0, y: 10, w: 12, h: 4, minW: 6, minH: 3 },
       },
     ],
     [totalBills, settlements, employees, stockValue, loading, charts, tables]

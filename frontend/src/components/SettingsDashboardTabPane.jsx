@@ -10,7 +10,7 @@ import SettingsRecentBackupsTable from "./dashboard/settings/SettingsRecentBacku
 
 const QUICK_ACTIONS = [
   { label: "User Access", path: "/settings/user-access", color: "bg-blue-600 hover:bg-blue-700 text-white" },
-  { label: "Backup Center", path: "/settings/backup-center", color: "bg-emerald-600 hover:bg-emerald-700 text-white" },
+  { label: "Backup Center", path: "/settings/backup", color: "bg-emerald-600 hover:bg-emerald-700 text-white" },
   { label: "Company Settings", path: "/settings/company", color: "bg-indigo-600 hover:bg-indigo-700 text-white" },
   { label: "Configure Local Server", path: "/settings/configure-local-server", color: "bg-amber-600 hover:bg-amber-700 text-white" },
   { label: "HR Configuration", path: "/hrms/hr-configuration", color: "bg-purple-600 hover:bg-purple-700 text-white" },

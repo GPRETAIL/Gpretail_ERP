@@ -53,7 +53,7 @@ export default function SettingsKpiSummary({ summary = {}, loading }) {
       </div>
 
       <div
-        onClick={() => navigate("/settings/backup-center")}
+        onClick={() => navigate("/settings/backup")}
         className="group cursor-pointer rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-amber-300 hover:shadow-md dark:border-gray-800 dark:bg-gray-800"
       >
         <div className="flex items-center justify-between text-slate-500 dark:text-gray-400">

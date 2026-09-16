@@ -9,7 +9,7 @@ export default function WarehouseKpiSummary({ summary = {}, loading }) {
   return (
     <div className="grid h-full grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <div
-        onClick={() => navigate("/warehouse/item-locator")}
+        onClick={() => navigate("/warehouse/stock-item")}
         className="group cursor-pointer rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-blue-300 hover:shadow-md dark:border-gray-800 dark:bg-gray-800"
       >
         <div className="flex items-center justify-between text-slate-500 dark:text-gray-400">

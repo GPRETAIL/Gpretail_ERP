@@ -19,7 +19,7 @@ export default function SettingsRecentBackupsTable({ recentBackups = [] }) {
           Recent Backups
         </h3>
         <button
-          onClick={() => navigate("/settings/backup-center")}
+          onClick={() => navigate("/settings/backup")}
           className="text-xs font-semibold text-blue-600 hover:underline dark:text-blue-400"
         >
           Open Backup Center

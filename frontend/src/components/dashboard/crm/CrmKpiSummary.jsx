@@ -60,7 +60,7 @@ export default function CrmKpiSummary({ summary = {}, loading }) {
       </div>
 
       <div
-        onClick={() => navigate("/crm/loyalty")}
+        onClick={() => navigate("/crm/loyalty-management")}
         className="group cursor-pointer rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-purple-300 hover:shadow-md dark:border-gray-800 dark:bg-gray-800"
       >
         <div className="flex items-center justify-between text-slate-500 dark:text-gray-400">

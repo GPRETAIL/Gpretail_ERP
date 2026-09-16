@@ -40,6 +40,8 @@ import { useTabs } from "../context/TabContext";
 import { usePrintContext } from "../context/PrintContext";
 import { savePrinterRouting } from "../utils/localPrinterService";
 import CounterAssignmentDialog from "./CounterAssignmentDialog";
+import { navItems, ownerNavItems } from "../utils/navItems";
+import { getVisibleNavItems } from "../utils/accessControl";
 
 const PRINTER_FUNCTION_OPTIONS = [
   { value: "", label: "Select function" },
@@ -80,6 +82,18 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
 
   const isApprovalInboxRoute = String(activeTabPath || "").startsWith("/sales/approval-inbox");
   const isOwner = String(user?.role || "").toLowerCase() === "owner";
+
+  // The Settings menu item below used to hardcode "/settings/company", but that page is gated to
+  // isSuperAdmin only (see accessControl.js) -- for every other role it silently bounced back to
+  // /dashboard via ProtectedRoute with no explanation, looking exactly like a dead/broken link.
+  // Mirror the Sidebar's own capability filtering (getVisibleNavItems) so the click always lands
+  // on the first Settings sub-page this user can actually open, and hide the item entirely when
+  // they can't open any of them.
+  const settingsLandingPath = useMemo(() => {
+    const sourceNavItems = isOwner ? ownerNavItems : navItems;
+    const settingsModule = getVisibleNavItems(sourceNavItems, user).find((item) => item.name === "Settings");
+    return settingsModule?.subItems?.[0]?.path || null;
+  }, [isOwner, user]);
   const isSuperAdmin = String(user?.role || "").toLowerCase() === "super_admin";
   // A manager/user provisioned with 2+ stores (Company multi-select or a Store Group on the User
   // Access page) gets the same switcher a super-admin does -- company_ids is the tenant admin's
@@ -517,9 +531,14 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
               </IconButton>
             )}
             {(!sidebarExpanded || isMobile) ? (
-              <Typography variant="subtitle2" fontWeight={600} sx={{ color: "text.primary" }}>
-                GP Retails
-              </Typography>
+              <span className="text-base font-extrabold tracking-tight font-sans select-none flex items-center">
+                <span className="bg-gradient-to-r from-blue-600 via-sky-500 to-cyan-400 bg-clip-text text-transparent">
+                  Vyn
+                </span>
+                <span className="text-slate-800 dark:text-white">
+                  erix
+                </span>
+              </span>
             ) : null}
           </Box>
 
@@ -659,19 +678,21 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
                 </MenuItem>
               )}
 
-              {/* Settings — Company is the landing page: there is no /settings index route,
-                  only the four leaf pages under it. */}
-              <MenuItem
-                onClick={() => {
-                  closeMenu();
-                  navigateActiveTab("/settings/company");
-                }}
-              >
-                <ListItemIcon>
-                  <Cog6ToothIcon className="w-5 h-5" />
-                </ListItemIcon>
-                <ListItemText>Settings</ListItemText>
-              </MenuItem>
+              {/* Only shown when the user can actually open at least one Settings sub-page --
+                  settingsLandingPath is null otherwise, matching the Sidebar's own filtering. */}
+              {settingsLandingPath && (
+                <MenuItem
+                  onClick={() => {
+                    closeMenu();
+                    navigateActiveTab(settingsLandingPath);
+                  }}
+                >
+                  <ListItemIcon>
+                    <Cog6ToothIcon className="w-5 h-5" />
+                  </ListItemIcon>
+                  <ListItemText>Settings</ListItemText>
+                </MenuItem>
+              )}
 
               <MenuItem
                 onClick={() => {

@@ -109,6 +109,9 @@ const HourlySalesChart = ({ chart, loading }) => {
   const isDark = theme === "dark";
   const gridStroke = isDark ? "#374151" : "#e2e8f0";
   const tickColor = isDark ? "#9ca3af" : "#475569";
+  // Brighter than tickColor: legend labels are read at a glance rather than studied like axis
+  // ticks, so they need more contrast against the dark card background to stay legible.
+  const legendColor = isDark ? "#e2e8f0" : "#334155";
   const tooltipStyle = isDark
     ? { backgroundColor: "#1f2937", border: "1px solid #374151", color: "#f3f4f6" }
     : undefined;
@@ -150,7 +153,7 @@ const HourlySalesChart = ({ chart, loading }) => {
                 return [value, "Bills"];
               }}
             />
-            <Legend wrapperStyle={{ color: tickColor }} />
+            <Legend wrapperStyle={{ color: legendColor }} />
             <Bar yAxisId="left" dataKey="bills" name="Bills" fill="url(#hourlyBarGradient)" radius={[4, 4, 0, 0]} />
             <Line
               yAxisId="right"
@@ -180,6 +183,7 @@ const DailyTrendChart = ({ chart, loading }) => {
   const isDark = theme === "dark";
   const gridStroke = isDark ? "#374151" : "#e2e8f0";
   const tickColor = isDark ? "#9ca3af" : "#475569";
+  const legendColor = isDark ? "#e2e8f0" : "#334155";
   const tooltipStyle = isDark
     ? { backgroundColor: "#1f2937", border: "1px solid #374151", color: "#f3f4f6" }
     : undefined;
@@ -225,7 +229,7 @@ const DailyTrendChart = ({ chart, loading }) => {
                 return [formatScaledValue(value), name];
               }}
             />
-            <Legend wrapperStyle={{ color: tickColor }} />
+            <Legend wrapperStyle={{ color: legendColor }} />
             <Bar yAxisId="left" dataKey="salesScaled" name={salesSeriesLabel} fill="#22c55e" radius={[4, 4, 0, 0]} />
             <Bar yAxisId="right" dataKey="unitsScaled" name={unitsSeriesLabel} fill="#fb923c" radius={[4, 4, 0, 0]} />
             <Line

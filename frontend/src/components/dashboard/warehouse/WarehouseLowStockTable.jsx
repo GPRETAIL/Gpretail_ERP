@@ -13,7 +13,7 @@ export default function WarehouseLowStockTable({ alerts = [] }) {
           <h3 className="text-sm font-bold text-slate-800 dark:text-gray-200">Low Stock & Reorder Level Alerts</h3>
         </div>
         <button
-          onClick={() => navigate("/warehouse/item-locator?stock_filter=low_stock")}
+          onClick={() => navigate("/warehouse/stock-item?stock_filter=low_stock")}
           className="text-xs font-semibold text-blue-600 hover:underline dark:text-blue-400"
         >
           Open Item Locator
