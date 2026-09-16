@@ -58,9 +58,19 @@ class DashboardController extends Controller
             return ['direction' => $change > 0 ? 'up' : 'down', 'changePercent' => abs($change)];
         };
 
-        // Core Aggregate Metrics
-        $totalSales = (float) ($dateScope($scope(PosSale::query()))->sum('grand_total') ?? 0);
-        $totalOrders = (int) ($dateScope($scope(PosSale::query()))->count() ?? 0);
+        // Core Aggregate Metrics. Every sum()+count() pair below that shares the identical
+        // WHERE clause is combined into one selectRaw() query instead of two -- the database has
+        // to do the same table scan / index lookup either way, so asking it for both aggregates
+        // in one pass halves the round trips this section makes. This endpoint previously issued
+        // 40-50+ separate queries per load (a major contributor to the "Failed to load dashboard"
+        // timeouts under this dev environment's known slow-MariaDB conditions); consolidating the
+        // ones below and the per-store loops further down cuts that roughly in half without
+        // changing any returned value.
+        $salesAgg = $dateScope($scope(PosSale::query()))
+            ->selectRaw('COALESCE(SUM(grand_total), 0) as total, COUNT(*) as cnt')
+            ->first();
+        $totalSales = (float) $salesAgg->total;
+        $totalOrders = (int) $salesAgg->cnt;
         $prevTotalSales = (float) ($prevDateScope($scope(PosSale::query()))->sum('grand_total') ?? 0);
 
         // Returns - real count+amount for the selected range (previously the only place this was
@@ -68,16 +78,22 @@ class DashboardController extends Controller
         // KPI card could read the way totalBills/stockValue already can).
         $returnDateScope = fn ($q) => $q->whereBetween('return_date', [$from, $to]);
         $returnScope = fn ($q) => ($storeId && $storeId !== 'all') ? $q->where('store_id', $storeId) : $q;
-        $totalReturns = (float) ($returnDateScope($returnScope(DB::table('pos_returns')))->sum('total_refund') ?? 0);
-        $totalReturnCount = (int) ($returnDateScope($returnScope(DB::table('pos_returns')))->count() ?? 0);
+        $returnsAgg = $returnDateScope($returnScope(DB::table('pos_returns')))
+            ->selectRaw('COALESCE(SUM(total_refund), 0) as total, COUNT(*) as cnt')
+            ->first();
+        $totalReturns = (float) $returnsAgg->total;
+        $totalReturnCount = (int) $returnsAgg->cnt;
         $prevReturnDateScope = fn ($q) => $q->whereBetween('return_date', [$prevFrom, $prevTo]);
         $prevTotalReturns = (float) ($prevReturnDateScope($returnScope(DB::table('pos_returns')))->sum('total_refund') ?? 0);
 
         // Purchase Return - goods sent back to a supplier, a real, separate
         // concept from a customer's POS return (different table entirely:
         // purchase_returns, keyed to a supplier_id/purchase_invoice_id).
-        $totalPurchaseReturns = (float) ($returnDateScope($returnScope(DB::table('purchase_returns')))->sum('total_amount') ?? 0);
-        $totalPurchaseReturnCount = (int) ($returnDateScope($returnScope(DB::table('purchase_returns')))->count() ?? 0);
+        $purchaseReturnsAgg = $returnDateScope($returnScope(DB::table('purchase_returns')))
+            ->selectRaw('COALESCE(SUM(total_amount), 0) as total, COUNT(*) as cnt')
+            ->first();
+        $totalPurchaseReturns = (float) $purchaseReturnsAgg->total;
+        $totalPurchaseReturnCount = (int) $purchaseReturnsAgg->cnt;
         $prevTotalPurchaseReturns = (float) ($prevReturnDateScope($returnScope(DB::table('purchase_returns')))->sum('total_amount') ?? 0);
 
         // Purchases - this ERP has two independent real purchase-bill sources
@@ -89,16 +105,22 @@ class DashboardController extends Controller
             : $q;
         $directPurchaseDateScope = fn ($q) => $q->whereBetween('purchase_date', [$from, $to]);
         $prevDirectPurchaseDateScope = fn ($q) => $q->whereBetween('purchase_date', [$prevFrom, $prevTo]);
-        $totalDirectPurchases = (float) ($directPurchaseDateScope($directPurchaseScope(DirectPurchase::query()))->sum('total_amount') ?? 0);
+        $directPurchaseAgg = $directPurchaseDateScope($directPurchaseScope(DirectPurchase::query()))
+            ->selectRaw('COALESCE(SUM(total_amount), 0) as total, COUNT(*) as cnt')
+            ->first();
+        $totalDirectPurchases = (float) $directPurchaseAgg->total;
+        $directPurchaseCount = (int) $directPurchaseAgg->cnt;
         $prevDirectPurchases = (float) ($prevDirectPurchaseDateScope($directPurchaseScope(DirectPurchase::query()))->sum('total_amount') ?? 0);
-        $directPurchaseCount = (int) ($directPurchaseDateScope($directPurchaseScope(DirectPurchase::query()))->count() ?? 0);
 
         $invoicePurchaseScope = fn ($q) => ($storeId && $storeId !== 'all') ? $q->where('store_id', $storeId) : $q;
         $invoiceDateScope = fn ($q) => $q->whereBetween('invoice_date', [$from, $to]);
         $prevInvoiceDateScope = fn ($q) => $q->whereBetween('invoice_date', [$prevFrom, $prevTo]);
-        $totalInvoicePurchases = (float) ($invoiceDateScope($invoicePurchaseScope(PurchaseInvoice::query()))->sum('grand_total') ?? 0);
+        $invoicePurchaseAgg = $invoiceDateScope($invoicePurchaseScope(PurchaseInvoice::query()))
+            ->selectRaw('COALESCE(SUM(grand_total), 0) as total, COUNT(*) as cnt')
+            ->first();
+        $totalInvoicePurchases = (float) $invoicePurchaseAgg->total;
+        $invoicePurchaseCount = (int) $invoicePurchaseAgg->cnt;
         $prevInvoicePurchases = (float) ($prevInvoiceDateScope($invoicePurchaseScope(PurchaseInvoice::query()))->sum('grand_total') ?? 0);
-        $invoicePurchaseCount = (int) ($invoiceDateScope($invoicePurchaseScope(PurchaseInvoice::query()))->count() ?? 0);
 
         $totalPurchases = $totalDirectPurchases + $totalInvoicePurchases;
         $prevTotalPurchases = $prevDirectPurchases + $prevInvoicePurchases;
@@ -106,8 +128,13 @@ class DashboardController extends Controller
 
         $totalProducts = (int) Product::count();
         $totalCustomers = (int) Customer::count();
-        $totalStockQty = (float) ($scope(Stock::query())->sum('quantity') ?? 0);
-        $lowStockAlerts = (int) ($scope(Stock::query())->where('quantity', '<=', 5)->count() ?? 0);
+        // Stock qty + low-stock count combined into one query (same table/scope, two aggregates
+        // via conditional SUM) instead of a sum() call followed by a separate count() call.
+        $stockAgg = $scope(Stock::query())
+            ->selectRaw('COALESCE(SUM(quantity), 0) as total_qty, SUM(CASE WHEN quantity <= 5 THEN 1 ELSE 0 END) as low_stock_count')
+            ->first();
+        $totalStockQty = (float) $stockAgg->total_qty;
+        $lowStockAlerts = (int) $stockAgg->low_stock_count;
         // Real attendance-derived counts (was previously just Employee::count() /
         // is_active count, unrelated to who actually checked in today).
         $todayForAttendance = now()->toDateString();
@@ -126,13 +153,21 @@ class DashboardController extends Controller
         // cost_price is only recorded on items where the sale screen actually sent one (older/manual
         // entries can be null), so this is a real but partial figure - flagged via hasIncompleteCost
         // rather than silently understating profit as if every line item were accounted for.
-        $profitQuery = DB::table('pos_sale_items')
+        // Profit total and the missing-cost count are combined into one query via conditional
+        // aggregation instead of two separate passes over the same joined row set.
+        $profitAgg = DB::table('pos_sale_items')
             ->join('pos_sales', 'pos_sale_items.pos_sale_id', '=', 'pos_sales.id')
             ->whereBetween('pos_sales.sale_date', [$from, $to])
-            ->when($storeId && $storeId !== 'all', fn ($q) => $q->where('pos_sales.store_id', $storeId));
-        $grossProfit = (float) ((clone $profitQuery)->whereNotNull('pos_sale_items.cost_price')
-            ->sum(DB::raw('pos_sale_items.quantity * (pos_sale_items.selling_price - pos_sale_items.cost_price)')) ?? 0);
-        $itemsMissingCost = (int) ((clone $profitQuery)->whereNull('pos_sale_items.cost_price')->count() ?? 0);
+            ->when($storeId && $storeId !== 'all', fn ($q) => $q->where('pos_sales.store_id', $storeId))
+            ->selectRaw(
+                'COALESCE(SUM(CASE WHEN pos_sale_items.cost_price IS NOT NULL '
+                . 'THEN pos_sale_items.quantity * (pos_sale_items.selling_price - pos_sale_items.cost_price) '
+                . 'ELSE 0 END), 0) as profit, '
+                . 'SUM(CASE WHEN pos_sale_items.cost_price IS NULL THEN 1 ELSE 0 END) as missing_cost_count'
+            )
+            ->first();
+        $grossProfit = (float) $profitAgg->profit;
+        $itemsMissingCost = (int) $profitAgg->missing_cost_count;
         $prevProfitQuery = DB::table('pos_sale_items')
             ->join('pos_sales', 'pos_sale_items.pos_sale_id', '=', 'pos_sales.id')
             ->whereBetween('pos_sales.sale_date', [$prevFrom, $prevTo])
@@ -198,14 +233,24 @@ class DashboardController extends Controller
             $stores = Store::all();
         }
 
-        // Daily Summary Rows
+        // Daily Summary Rows - one grouped query across every visible store instead of 3 separate
+        // queries (sum, count, sum) run once per store (previously up to 3xN round trips).
+        $storeIds = $stores->pluck('id');
+        $dailySummaryByStore = $dateScope(PosSale::query())
+            ->whereIn('store_id', $storeIds)
+            ->selectRaw('store_id, COALESCE(SUM(grand_total), 0) as sales, COUNT(*) as cnt, COALESCE(SUM(total_qty), 0) as qty')
+            ->groupBy('store_id')
+            ->get()
+            ->keyBy('store_id');
+
         $dailySummaryRows = [];
         $totalUnitsSold = 0;
 
         foreach ($stores as $st) {
-            $stSales = (float) ($dateScope(PosSale::where('store_id', $st->id))->sum('grand_total') ?? 0);
-            $stCount = (int) ($dateScope(PosSale::where('store_id', $st->id))->count() ?? 0);
-            $stQty = (float) ($dateScope(PosSale::where('store_id', $st->id))->sum('total_qty') ?? 0);
+            $agg = $dailySummaryByStore->get($st->id);
+            $stSales = (float) ($agg->sales ?? 0);
+            $stCount = (int) ($agg->cnt ?? 0);
+            $stQty = (float) ($agg->qty ?? 0);
             $totalUnitsSold += $stQty;
 
             $dailySummaryRows[] = [
@@ -217,7 +262,45 @@ class DashboardController extends Controller
             ];
         }
 
-        // Settlement Details (Payment Methods: Cash, Card, UPI, Credit, Return, Discount across Store Locations)
+        // Settlement Details (Payment Methods: Cash, Card, UPI, Credit, Return, Discount across
+        // Store Locations). Previously up to 6 methods x N stores individual queries; replaced
+        // with 4 grouped queries total -- CASH/CARD/UPI share one grouped-by-(store_id,
+        // payment_mode) query since they're the same shape, differing only in which mode value
+        // gets read back out per row below.
+        $modeAggRows = $dateScope(PosSale::query())
+            ->whereIn('store_id', $storeIds)
+            ->where('is_credit', false)
+            ->whereIn('payment_mode', ['CASH', 'CARD', 'UPI'])
+            ->selectRaw('store_id, payment_mode, COALESCE(SUM(grand_total), 0) as total')
+            ->groupBy('store_id', 'payment_mode')
+            ->get();
+        $modeByStore = [];
+        foreach ($modeAggRows as $row) {
+            $modeByStore[$row->store_id][$row->payment_mode] = (float) $row->total;
+        }
+
+        $creditAggByStore = $dateScope(PosSale::query())
+            ->whereIn('store_id', $storeIds)
+            ->where(fn ($q) => $q->where('payment_mode', 'CREDIT')->orWhere('is_credit', true))
+            ->selectRaw('store_id, COALESCE(SUM(grand_total), 0) as total')
+            ->groupBy('store_id')
+            ->get()
+            ->keyBy('store_id');
+
+        $returnAggByStore = $returnDateScope(DB::table('pos_returns'))
+            ->whereIn('store_id', $storeIds)
+            ->selectRaw('store_id, COALESCE(SUM(total_refund), 0) as total')
+            ->groupBy('store_id')
+            ->get()
+            ->keyBy('store_id');
+
+        $discountAggByStore = $dateScope(PosSale::query())
+            ->whereIn('store_id', $storeIds)
+            ->selectRaw('store_id, COALESCE(SUM(discount_amount), 0) as total')
+            ->groupBy('store_id')
+            ->get()
+            ->keyBy('store_id');
+
         $settlementColumns = [];
         $settlementColumnTotals = [];
 
@@ -252,26 +335,14 @@ class DashboardController extends Controller
                 $val = 0;
 
                 if ($m['type'] === 'mode') {
-                    $val = (float) ($dateScope(PosSale::where('store_id', $st->id))
-                        ->where('payment_mode', $m['mode'])
-                        ->where('is_credit', false)
-                        ->sum('grand_total') ?? 0);
+                    $val = (float) ($modeByStore[$st->id][$m['mode']] ?? 0);
                 } elseif ($m['type'] === 'credit') {
-                    $val = (float) ($dateScope(PosSale::where('store_id', $st->id))
-                        ->where(function ($q) {
-                            $q->where('payment_mode', 'CREDIT')
-                              ->orWhere('is_credit', true);
-                        })
-                        ->sum('grand_total') ?? 0);
+                    $val = (float) ($creditAggByStore->get($st->id)->total ?? 0);
                 } elseif ($m['type'] === 'return') {
-                    $returnSum = (float) (DB::table('pos_returns')
-                        ->where('store_id', $st->id)
-                        ->whereBetween('return_date', [$from, $to])
-                        ->sum('total_refund') ?? 0);
+                    $returnSum = (float) ($returnAggByStore->get($st->id)->total ?? 0);
                     $val = -abs($returnSum);
                 } elseif ($m['type'] === 'discount') {
-                    $discSum = (float) ($dateScope(PosSale::where('store_id', $st->id))
-                        ->sum('discount_amount') ?? 0);
+                    $discSum = (float) ($discountAggByStore->get($st->id)->total ?? 0);
                     $val = -abs($discSum);
                 }
 
@@ -300,9 +371,15 @@ class DashboardController extends Controller
             $displayHour = $h % 12 === 0 ? 12 : $h % 12;
             return ['label' => $displayHour.($h < 12 ? ' AM' : ' PM'), 'start' => $h, 'end' => $h + 1];
         }, range(0, 23));
+        // HOUR() is MySQL-specific; the test suite runs against in-memory SQLite (phpunit.xml),
+        // which needs strftime() instead -- this only swaps the expression under the test driver,
+        // production (MySQL) behavior is unchanged.
+        $hourExpr = DB::connection()->getDriverName() === 'sqlite'
+            ? "CAST(strftime('%H', sale_date) AS INTEGER)"
+            : 'HOUR(sale_date)';
         $todaySalesByHour = $scope(PosSale::query())
             ->whereDate('sale_date', now()->toDateString())
-            ->selectRaw('HOUR(sale_date) as hr, COUNT(*) as bills, SUM(grand_total) as amt')
+            ->selectRaw("{$hourExpr} as hr, COUNT(*) as bills, SUM(grand_total) as amt")
             ->groupBy('hr')
             ->get()
             ->keyBy('hr');
@@ -320,20 +397,30 @@ class DashboardController extends Controller
             return ['label' => $bucket['label'], 'bills' => $bills, 'salesAmount' => round($amount, 2)];
         }, $hourlyBuckets);
 
-        // Last 10 Days Business Trend (Daily) - already real per-day queries; the old "if today and
-        // zero, use the (now date-range-scoped) running total" fallback no longer makes sense once
-        // $totalSales reflects the selected range instead of all-time, so it's dropped.
+        // Last 10 Days Business Trend (Daily) - the old "if today and zero, use the (now
+        // date-range-scoped) running total" fallback no longer makes sense once $totalSales
+        // reflects the selected range instead of all-time, so it's dropped. This used to run 2
+        // individual queries per day (20 total for the 10-day window); replaced with one grouped
+        // query across the whole window, same consolidation pattern as the per-store sections above.
+        $trendRangeStart = now()->subDays(9)->startOfDay();
+        $trendRangeEnd = now()->endOfDay();
+        $dailyTrendByDate = $scope(PosSale::query())
+            ->whereBetween('sale_date', [$trendRangeStart, $trendRangeEnd])
+            ->selectRaw('DATE(sale_date) as d, COALESCE(SUM(grand_total), 0) as sales, COALESCE(SUM(total_qty), 0) as units')
+            ->groupBy('d')
+            ->get()
+            ->keyBy('d');
+
         $dailyTrendPoints = [];
         for ($i = 9; $i >= 0; $i--) {
             $date = now()->subDays($i)->toDateString();
             $label = now()->subDays($i)->format('d M');
-            $daySales = (float) ($scope(PosSale::query())->whereDate('sale_date', $date)->sum('grand_total') ?? 0);
-            $dayUnits = (float) ($scope(PosSale::query())->whereDate('sale_date', $date)->sum('total_qty') ?? 0);
+            $agg = $dailyTrendByDate->get($date);
 
             $dailyTrendPoints[] = [
                 'label'       => $label,
-                'salesAmount' => $daySales,
-                'units'       => $dayUnits,
+                'salesAmount' => (float) ($agg->sales ?? 0),
+                'units'       => (float) ($agg->units ?? 0),
             ];
         }
 
