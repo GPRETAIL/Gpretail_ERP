@@ -1906,15 +1906,15 @@ export default function FilterableDataTable({
   const bodyRowClass = compact ? "h-8" : "";
   const tableTextClass = compact ? "text-[10px] xl:text-[11px] leading-tight" : "text-xs xl:text-sm";
   // Row-count/page-size info now lives on its own line -- the actual page controls (Prev/Next,
-  // page selector, or Load More) got their own full-width centered row below it instead of
-  // sharing this line's right-hand corner, so they read as a distinct "footer action bar" under
-  // the last table row rather than small controls squeezed in next to the row count.
+  // page selector, or Load More) got their own full-width row below it instead of sharing this
+  // line's right-hand corner, so they read as a distinct "footer action bar" under the last table
+  // row. Right-aligned (not centered) to match where Prev/Next sat before this split.
   const paginationRowClass = compact
     ? "mt-0.5 flex h-8 items-center gap-2 text-[8px] text-gray-700 dark:text-gray-300"
     : "mt-0 flex h-7 items-center gap-2 text-[10px] text-gray-700 dark:text-gray-300";
   const paginationControlsBarClass = compact
-    ? "flex w-full items-center justify-center gap-2 border-t border-gray-200 dark:border-gray-700 py-1.5"
-    : "flex w-full items-center justify-center gap-2 border-t border-gray-200 dark:border-gray-700 py-2";
+    ? "flex w-full items-center justify-end gap-2 border-t border-gray-200 dark:border-gray-700 py-1.5"
+    : "flex w-full items-center justify-end gap-2 border-t border-gray-200 dark:border-gray-700 py-2";
   const paginationControlClass = compact
     ? "compact-pagination-select h-[26px] rounded-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-1 text-[7px] leading-tight dark:text-gray-100"
     : "h-7 rounded-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-1.5 text-[10px] dark:text-gray-100";

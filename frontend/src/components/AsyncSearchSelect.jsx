@@ -222,7 +222,7 @@ const AsyncSearchSelect = ({ name, value, onChange, options, onAsyncSearch, plac
         disabled={disabled}
         onClick={() => { if (disabled) return; keyboardSelectionArmedRef.current = false; setOpen((p) => !p); setHighlightedIndex(-1); }}
         onKeyDown={(e) => { if (disabled) return; handleTriggerKeyDown(e); }}
-        className={`w-full border border-gray-300 dark:border-gray-600 rounded px-1 py-1 text-sm bg-white dark:bg-gray-700 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-left flex items-center justify-between ${disabled ? "opacity-60 cursor-not-allowed" : ""}`}
+        className={`w-full border border-gray-300 dark:border-gray-600 rounded-sm px-1 py-1 text-xs bg-white dark:bg-gray-700 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-left flex items-center justify-between ${disabled ? "opacity-60 cursor-not-allowed" : ""}`}
       >
         <span className={selectedLabel ? "text-gray-800 dark:text-gray-100 truncate text-xs" : "text-gray-400 dark:text-gray-500 truncate text-xs"}>{selectedLabel || placeholder}</span>
         <ChevronDown className={`w-3 h-3 text-gray-400 dark:text-gray-500 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
