@@ -13,6 +13,7 @@ import {
   EmployeesCard,
   StockValueCard,
 } from "../components/dashboard/overview/OverviewKpiGrid";
+import OverviewActionRequiredCard from "../components/dashboard/overview/OverviewActionRequiredCard";
 import WarehouseDashboardTabPane from "../components/WarehouseDashboardTabPane";
 import CrmDashboardTabPane from "../components/CrmDashboardTabPane";
 import SalesDashboardTabPane from "../components/SalesDashboardTabPane";
@@ -64,6 +65,8 @@ const Dashboard = () => {
   const [metrics, setMetrics] = useState(null);
   const [charts, setCharts] = useState(null);
   const [tables, setTables] = useState(null);
+  const [actionRequiredItems, setActionRequiredItems] = useState([]);
+  const [actionRequiredLoading, setActionRequiredLoading] = useState(true);
 
   // Tabs the signed-in user may actually see. canAccessPath returns true for everyone not in
   // page-permission mode, so this is a no-op for owners/admins and only narrows a permissioned user.
@@ -131,6 +134,38 @@ const Dashboard = () => {
     loadDashboard();
   }, [loadDashboard]);
 
+  // Every module tab has its own "Action Required" banner surfacing that module's urgent
+  // conditions -- Overview didn't have an equivalent, even though it's the first thing anyone
+  // sees. Rather than re-deriving those 40-odd conditions again here, this reuses the same
+  // cross-module alert scan the notification bell already runs (see NotificationController),
+  // so the two stay in sync automatically instead of drifting into two parallel definitions of
+  // "urgent". Kept as its own request, independent of loadDashboard's date/company params --
+  // notifications aren't range-scoped -- so it can't add to the main dashboard load's timing.
+  const loadActionRequired = useCallback(async () => {
+    setActionRequiredLoading(true);
+    try {
+      const res = await api.get("/notifications", { params: { limit: 8 } });
+      setActionRequiredItems(res.data?.data || []);
+    } catch {
+      // Non-critical widget -- a failed fetch here shouldn't block or warn over the rest of an
+      // otherwise-successful dashboard load.
+      setActionRequiredItems([]);
+    } finally {
+      setActionRequiredLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadActionRequired();
+  }, [loadActionRequired]);
+
+  // Optimistic local update so a clicked item's unread dot clears immediately instead of
+  // waiting on a full re-fetch -- the item stays visible (it may still be genuinely unresolved),
+  // just no longer marked unread.
+  const handleActionRequiredItem = useCallback((id) => {
+    setActionRequiredItems((prev) => prev.map((item) => (item.id === id ? { ...item, read_at: new Date().toISOString() } : item)));
+  }, []);
+
   useDashboardRealtime({
     enabled: Boolean(authUser?.id),
     companyId: isSuperAdmin ? companyId : String(authUser?.company_id || ""),
@@ -175,13 +210,23 @@ const Dashboard = () => {
         defaultLayout: { x: 9, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
       },
       {
+        key: "action-required",
+        title: "Action Required",
+        component: OverviewActionRequiredCard,
+        props: { items: actionRequiredItems, loading: actionRequiredLoading, onItemHandled: handleActionRequiredItem },
+        // Every other module tab places its own Action Required banner right after its KPI row
+        // (y:0 h:2) at the same h:2 -- matched here so Overview's shifts everything below it down
+        // by exactly the same 2 units those tabs already budget for it.
+        defaultLayout: { x: 0, y: 2, w: 12, h: 2, minW: 6, minH: 2 },
+      },
+      {
         key: "charts",
         title: "Charts",
         component: DashboardCharts,
         props: { charts, loading, privacyMode },
         // h:4 matches DashboardCharts' actual min-h-[320px] card height (h*72 + (h-1)*16 = 336px)
         // instead of the old h:5 (424px), which left ~104px of dead space below the chart cards.
-        defaultLayout: { x: 0, y: 2, w: 12, h: 4, minW: 6, minH: 3 },
+        defaultLayout: { x: 0, y: 4, w: 12, h: 4, minW: 6, minH: 3 },
       },
       {
         key: "tables",
@@ -192,17 +237,20 @@ const Dashboard = () => {
         // fits them with ~16px to spare instead of the old h:6 (512px), which left ~192px of
         // empty space inside this widget's box -- the largest single contributor to the grid's
         // "extra space at the bottom" the Tables/Highlights row pair produced.
-        defaultLayout: { x: 0, y: 6, w: 12, h: 4, minW: 6, minH: 4 },
+        defaultLayout: { x: 0, y: 8, w: 12, h: 4, minW: 6, minH: 4 },
       },
       {
         key: "highlights",
         title: "Highlights",
         component: DashboardHighlightCards,
         props: { tables, loading, privacyMode },
-        defaultLayout: { x: 0, y: 10, w: 12, h: 4, minW: 6, minH: 3 },
+        defaultLayout: { x: 0, y: 12, w: 12, h: 4, minW: 6, minH: 3 },
       },
     ],
-    [totalBills, settlements, employees, stockValue, loading, charts, tables, privacyMode]
+    [
+      totalBills, settlements, employees, stockValue, loading, charts, tables, privacyMode,
+      actionRequiredItems, actionRequiredLoading, handleActionRequiredItem,
+    ]
   );
 
   return (
@@ -252,7 +300,10 @@ const Dashboard = () => {
           )}
           <button
             type="button"
-            onClick={loadDashboard}
+            onClick={() => {
+              loadDashboard();
+              loadActionRequired();
+            }}
             disabled={loading}
             className="inline-flex h-10 items-center gap-2 rounded-sm border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 text-sm text-slate-700 dark:text-gray-200 hover:bg-slate-50 dark:hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-60"
             aria-label="Refresh dashboard"
