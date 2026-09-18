@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { AlertTriangle } from "lucide-react";
+import { Box, Button, Stack, Typography } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import api from "../api/axios";
 import DashboardGrid from "./dashboard/DashboardGrid";
 import {
@@ -106,24 +108,31 @@ export default function StoreDashboardTabPane({ active, fromDate, toDate, privac
 
   if (error) {
     return (
-      <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <AlertTriangle className="h-5 w-5 text-red-600" />
-          <span>{error}</span>
-        </div>
-        <button
-          onClick={fetchData}
-          className="rounded bg-red-600 px-3 py-1 text-xs font-semibold text-white hover:bg-red-700"
-        >
+      <Stack
+        direction="row"
+        sx={{
+          alignItems: "center", justifyContent: "space-between",
+          borderRadius: "10.5px", border: "1px solid", borderColor: "error.main",
+          bgcolor: (theme) => alpha(theme.palette.error.main, theme.palette.mode === "dark" ? 0.16 : 0.08),
+          p: 2, fontSize: 14,
+        }}
+      >
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+          <Box sx={{ color: "error.main", display: "inline-flex" }}>
+            <AlertTriangle className="h-5 w-5" />
+          </Box>
+          <Typography sx={{ fontSize: 14, color: "error.dark" }}>{error}</Typography>
+        </Stack>
+        <Button size="small" variant="contained" color="error" onClick={fetchData}>
           Retry
-        </button>
-      </div>
+        </Button>
+      </Stack>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <Stack spacing={3}>
       <DashboardGrid tabKey="store" widgets={widgets} />
-    </div>
+    </Stack>
   );
 }

@@ -1,37 +1,51 @@
 import React from "react";
 import { Trophy } from "lucide-react";
+import { Box, Stack, Typography } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import { formatCurrency } from "../../../utils/dashboardFormatters";
 
 export default function SalesLeaderboard({ topSalesPersons = [] }) {
   return (
-    <div className="h-full rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-800">
-      <div className="mb-3 flex items-center gap-2">
-        <Trophy className="h-4 w-4 text-amber-600" />
-        <h3 className="text-sm font-bold text-slate-800 dark:text-gray-200">Sales Person Leaderboard</h3>
-      </div>
-      <div className="space-y-2">
+    <Box sx={{ height: "100%", borderRadius: "10.5px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", p: 2.5, boxShadow: 1 }}>
+      <Stack direction="row" spacing={1} sx={{ mb: 1.5, alignItems: "center" }}>
+        <Box sx={{ color: "warning.main", display: "inline-flex" }}>
+          <Trophy className="h-4 w-4" />
+        </Box>
+        <Typography component="h3" sx={{ fontSize: 13, fontWeight: 700, color: "text.primary" }}>Sales Person Leaderboard</Typography>
+      </Stack>
+      <Stack spacing={1}>
         {topSalesPersons.length > 0 ? (
           topSalesPersons.map((row, idx) => (
-            <div
+            <Stack
               key={row.sales_man_name}
-              className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-xs dark:border-gray-700 dark:bg-gray-700/50"
+              direction="row"
+              sx={{
+                alignItems: "center", justifyContent: "space-between", fontSize: 12,
+                borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "action.hover", px: 1.5, py: 1,
+              }}
             >
-              <span className="flex items-center gap-2 font-medium text-slate-700 dark:text-gray-300">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-100 text-[10px] font-bold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+              <Stack direction="row" spacing={1} sx={{ alignItems: "center", fontWeight: 500, color: "text.secondary" }}>
+                <Box
+                  sx={{
+                    display: "flex", height: 20, width: 20, alignItems: "center", justifyContent: "center",
+                    borderRadius: "50%", fontSize: 10, fontWeight: 700, color: "warning.dark",
+                    bgcolor: (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.24 : 0.15),
+                  }}
+                >
                   {idx + 1}
-                </span>
-                {row.sales_man_name}
-              </span>
-              <span className="text-right">
-                <div className="font-bold text-slate-900 dark:text-gray-100">{formatCurrency(row.amount)}</div>
-                <div className="text-[10px] text-slate-500 dark:text-gray-400">{row.bills} bills</div>
-              </span>
-            </div>
+                </Box>
+                <Typography component="span" sx={{ fontSize: "inherit", fontWeight: "inherit", color: "inherit" }}>{row.sales_man_name}</Typography>
+              </Stack>
+              <Box sx={{ textAlign: "right" }}>
+                <Typography sx={{ fontSize: 12, fontWeight: 700, color: "text.primary" }}>{formatCurrency(row.amount)}</Typography>
+                <Typography sx={{ fontSize: 10, color: "text.secondary" }}>{row.bills} bills</Typography>
+              </Box>
+            </Stack>
           ))
         ) : (
-          <div className="py-4 text-center text-xs text-slate-400">No sales-person data in range</div>
+          <Typography sx={{ py: 2, textAlign: "center", fontSize: 12, color: "text.disabled" }}>No sales-person data in range</Typography>
         )}
-      </div>
-    </div>
+      </Stack>
+    </Box>
   );
 }

@@ -39,6 +39,11 @@ main > .p-6 {
    Neutral frosted glass by default (like Apple iOS liquid glass).
    Color tint only appears on hover via the variant classes.
 */
+/* !important on border/border-radius/box-shadow/color below: when this class lands on a real MUI
+   component (Button, IconButton -- part of the Tailwind-to-MUI migration), MUI's own emotion-
+   injected component styles are inserted into <head> AFTER this stylesheet and win same-specificity
+   ties by cascade order, silently dropping this treatment's border/radius/shadow/text-color even
+   though the className survives untouched. Same bridging precedent as theme/themeStyles.css. */
 .topbar-action-btn,
 .glass-btn {
   position: relative;
@@ -46,13 +51,13 @@ main > .p-6 {
   align-items: center;
   justify-content: center;
   gap: 0.3rem;
-  padding: 0.34rem 0.68rem;
-  border: 1px solid rgba(200, 200, 200, 0.5);
-  border-radius: 0.5rem;
-  font-size: 0.75rem;
+  padding: 0.34rem 0.68rem !important;
+  border: 1px solid rgba(200, 200, 200, 0.5) !important;
+  border-radius: 0.5rem !important;
+  font-size: 0.75rem !important;
   font-weight: 600;
   line-height: 1;
-  color: #374151;
+  color: #374151 !important;
   background:
     linear-gradient(
       180deg,
@@ -65,7 +70,7 @@ main > .p-6 {
     0 1px 3px rgba(0, 0, 0, 0.06),
     0 0 0 0.5px rgba(255, 255, 255, 0.7) inset,
     0 1px 0 rgba(255, 255, 255, 0.85) inset,
-    0 -0.5px 0 rgba(0, 0, 0, 0.04) inset;
+    0 -0.5px 0 rgba(0, 0, 0, 0.04) inset !important;
   transition:
     transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1),
     box-shadow 250ms ease,
@@ -105,8 +110,8 @@ main > .p-6 {
     0 6px 20px rgba(0, 0, 0, 0.1),
     0 0 0 0.5px rgba(255, 255, 255, 0.8) inset,
     0 2px 0 rgba(255, 255, 255, 0.9) inset,
-    0 -0.5px 0 rgba(0, 0, 0, 0.03) inset;
-  border-color: rgba(200, 200, 200, 0.65);
+    0 -0.5px 0 rgba(0, 0, 0, 0.03) inset !important;
+  border-color: rgba(200, 200, 200, 0.65) !important;
 }
 
 .topbar-action-btn:hover::before,
@@ -134,7 +139,7 @@ main > .p-6 {
   cursor: not-allowed;
   opacity: 0.45;
   transform: none;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
   backdrop-filter: blur(8px);
 }
 
@@ -143,12 +148,12 @@ main > .p-6 {
 /* Primary (blue) */
 .topbar-action-new,
 .glass-btn-primary {
-  color: #374151;
+  color: #374151 !important;
 }
 .topbar-action-new:hover,
 .glass-btn-primary:hover {
-  color: #1d4ed8;
-  border-color: rgba(99, 102, 241, 0.35);
+  color: #1d4ed8 !important;
+  border-color: rgba(99, 102, 241, 0.35) !important;
   background:
     linear-gradient(
       180deg,
@@ -158,18 +163,18 @@ main > .p-6 {
   box-shadow:
     0 6px 20px rgba(99, 102, 241, 0.18),
     0 0 0 0.5px rgba(99, 102, 241, 0.12) inset,
-    0 1px 0 rgba(255, 255, 255, 0.7) inset;
+    0 1px 0 rgba(255, 255, 255, 0.7) inset !important;
 }
 
 /* Warning (amber) */
 .topbar-action-upload,
 .glass-btn-warning {
-  color: #374151;
+  color: #374151 !important;
 }
 .topbar-action-upload:hover,
 .glass-btn-warning:hover {
-  color: #b45309;
-  border-color: rgba(245, 158, 11, 0.35);
+  color: #b45309 !important;
+  border-color: rgba(245, 158, 11, 0.35) !important;
   background:
     linear-gradient(
       180deg,
@@ -179,18 +184,18 @@ main > .p-6 {
   box-shadow:
     0 6px 20px rgba(245, 158, 11, 0.16),
     0 0 0 0.5px rgba(245, 158, 11, 0.1) inset,
-    0 1px 0 rgba(255, 255, 255, 0.7) inset;
+    0 1px 0 rgba(255, 255, 255, 0.7) inset !important;
 }
 
 /* Success (green) */
 .topbar-action-export,
 .glass-btn-success {
-  color: #374151;
+  color: #374151 !important;
 }
 .topbar-action-export:hover,
 .glass-btn-success:hover {
-  color: #047857;
-  border-color: rgba(16, 185, 129, 0.35);
+  color: #047857 !important;
+  border-color: rgba(16, 185, 129, 0.35) !important;
   background:
     linear-gradient(
       180deg,
@@ -200,16 +205,16 @@ main > .p-6 {
   box-shadow:
     0 6px 20px rgba(16, 185, 129, 0.16),
     0 0 0 0.5px rgba(16, 185, 129, 0.1) inset,
-    0 1px 0 rgba(255, 255, 255, 0.7) inset;
+    0 1px 0 rgba(255, 255, 255, 0.7) inset !important;
 }
 
 /* Danger (red) */
 .glass-btn-danger {
-  color: #374151;
+  color: #374151 !important;
 }
 .glass-btn-danger:hover {
-  color: #dc2626;
-  border-color: rgba(239, 68, 68, 0.35);
+  color: #dc2626 !important;
+  border-color: rgba(239, 68, 68, 0.35) !important;
   background:
     linear-gradient(
       180deg,
@@ -219,16 +224,16 @@ main > .p-6 {
   box-shadow:
     0 6px 20px rgba(239, 68, 68, 0.16),
     0 0 0 0.5px rgba(239, 68, 68, 0.1) inset,
-    0 1px 0 rgba(255, 255, 255, 0.7) inset;
+    0 1px 0 rgba(255, 255, 255, 0.7) inset !important;
 }
 
 /* Secondary (gray) */
 .glass-btn-secondary {
-  color: #374151;
+  color: #374151 !important;
 }
 .glass-btn-secondary:hover {
-  color: #1e293b;
-  border-color: rgba(100, 116, 139, 0.3);
+  color: #1e293b !important;
+  border-color: rgba(100, 116, 139, 0.3) !important;
   background:
     linear-gradient(
       180deg,
@@ -238,7 +243,7 @@ main > .p-6 {
   box-shadow:
     0 6px 20px rgba(100, 116, 139, 0.12),
     0 0 0 0.5px rgba(100, 116, 139, 0.08) inset,
-    0 1px 0 rgba(255, 255, 255, 0.7) inset;
+    0 1px 0 rgba(255, 255, 255, 0.7) inset !important;
 }
 
 /* ═══════════════════════════════════════════════════

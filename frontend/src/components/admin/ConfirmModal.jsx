@@ -1,5 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { AlertTriangle, X } from "lucide-react";
+import {
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  IconButton,
+  Stack,
+  TextField,
+  Typography,
+} from "@mui/material";
 
 // Reusable confirmation dialog. Open it by setting `config`:
 //   { title, message, confirmLabel?, tone? ("danger" default | "primary"), requireText?, onConfirm }
@@ -32,45 +43,54 @@ const ConfirmModal = ({ config, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-md rounded-2xl bg-white dark:bg-gray-800 p-6 shadow-xl space-y-4">
-        <div className="flex items-start gap-3">
-          <div className={`rounded-full p-2 ${danger ? "bg-rose-50 text-rose-600" : "bg-sky-50 text-sky-600"}`}>
-            <AlertTriangle className="w-5 h-5" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h2 className="text-lg font-bold text-slate-900">{config.title}</h2>
-            <p className="mt-1 text-sm text-slate-600">{config.message}</p>
-          </div>
-          <button type="button" onClick={onClose} aria-label="Close"><X className="w-5 h-5 text-slate-400" /></button>
-        </div>
-        {needsText ? (
-          <div>
-            <label className="block text-sm text-slate-600 mb-1">
-              Type <span className="font-mono font-bold text-slate-800">{config.requireText}</span> to confirm
-            </label>
-            <input
+    <Dialog open={Boolean(config)} onClose={onClose} maxWidth="xs" fullWidth>
+      <DialogContent sx={{ p: 3 }}>
+        <Stack spacing={2}>
+          <Stack direction="row" spacing={1.5} sx={{ alignItems: "flex-start" }}>
+            <Box
+              sx={{
+                borderRadius: "50%", p: 1, display: "flex",
+                bgcolor: danger ? "error.light" : "info.light",
+                color: danger ? "error.main" : "info.main",
+              }}
+            >
+              <AlertTriangle className="h-5 w-5" />
+            </Box>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography sx={{ fontSize: 18, fontWeight: 700 }}>{config.title}</Typography>
+              <Typography sx={{ fontSize: 13, color: "text.secondary", mt: 0.5 }}>{config.message}</Typography>
+            </Box>
+            <IconButton size="small" onClick={onClose} aria-label="Close">
+              <X className="h-5 w-5" />
+            </IconButton>
+          </Stack>
+          {needsText ? (
+            <TextField
+              size="small"
+              label={`Type "${config.requireText}" to confirm`}
               value={text}
               onChange={(e) => setText(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && confirm()}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
               autoFocus
+              fullWidth
             />
-          </div>
-        ) : null}
-        <div className="flex justify-end gap-3">
-          <button type="button" onClick={onClose} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">Cancel</button>
-          <button
-            type="button"
-            onClick={confirm}
-            disabled={!canConfirm || busy}
-            className={`rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 ${danger ? "bg-rose-600 hover:bg-rose-700" : "bg-[#3a6ea5] hover:bg-[#345f8f]"}`}
-          >
-            {busy ? "Working…" : config.confirmLabel || "Confirm"}
-          </button>
-        </div>
-      </div>
-    </div>
+          ) : null}
+        </Stack>
+      </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 3 }}>
+        <Button variant="outlined" color="inherit" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button
+          variant="contained"
+          color={danger ? "error" : "primary"}
+          onClick={confirm}
+          disabled={!canConfirm || busy}
+        >
+          {busy ? "Working…" : config.confirmLabel || "Confirm"}
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 };
 

@@ -1,26 +1,34 @@
 import React from "react";
 import { BarChart3 } from "lucide-react";
+import { Box, Stack, Typography } from "@mui/material";
 
 export default function WarehouseStockMovementChart({ stockMovementChart = [] }) {
   return (
-    <div className="h-full rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-800">
-      <div className="mb-4 flex items-center justify-between">
-        <h3 className="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-gray-200">
-          <BarChart3 className="h-4 w-4 text-blue-600" />
+    <Box
+      sx={{
+        height: "100%", borderRadius: "10.5px", border: "1px solid", borderColor: "divider",
+        bgcolor: "background.paper", p: 2.5, boxShadow: 1,
+      }}
+    >
+      <Stack direction="row" sx={{ mb: 2, alignItems: "center", justifyContent: "space-between" }}>
+        <Typography component="h3" sx={{ display: "flex", alignItems: "center", gap: 1, fontSize: 13, fontWeight: 700, color: "text.primary" }}>
+          <Box sx={{ color: "primary.main", display: "inline-flex" }}>
+            <BarChart3 className="h-4 w-4" />
+          </Box>
           Stock Movement Timeline (Inward vs Outward)
-        </h3>
-        <div className="flex items-center gap-4 text-xs font-semibold">
-          <span className="flex items-center gap-1 text-emerald-600">
-            <span className="h-2 w-2 rounded-full bg-emerald-500"></span> Inward
-          </span>
-          <span className="flex items-center gap-1 text-purple-600">
-            <span className="h-2 w-2 rounded-full bg-purple-500"></span> Outward
-          </span>
-        </div>
-      </div>
+        </Typography>
+        <Stack direction="row" sx={{ alignItems: "center", gap: 2, fontSize: 12, fontWeight: 600 }}>
+          <Stack direction="row" sx={{ alignItems: "center", gap: 0.5, color: "#10b981" }}>
+            <Box sx={{ height: 8, width: 8, borderRadius: "50%", bgcolor: "#10b981" }} /> Inward
+          </Stack>
+          <Stack direction="row" sx={{ alignItems: "center", gap: 0.5, color: "#a855f7" }}>
+            <Box sx={{ height: 8, width: 8, borderRadius: "50%", bgcolor: "#a855f7" }} /> Outward
+          </Stack>
+        </Stack>
+      </Stack>
 
       {stockMovementChart.length > 0 ? (
-        <div className="grid grid-cols-7 gap-2 pt-4">
+        <Box sx={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 1, pt: 2 }}>
           {stockMovementChart.map((item) => {
             const maxVal = Math.max(
               ...stockMovementChart.map((d) => Math.max(d.incoming || 0, d.outgoing || 0)),
@@ -30,27 +38,37 @@ export default function WarehouseStockMovementChart({ stockMovementChart = [] })
             const outHeight = Math.min(100, Math.round(((item.outgoing || 0) / maxVal) * 100));
 
             return (
-              <div key={item.raw_date} className="flex flex-col items-center gap-1 text-center">
-                <div className="flex h-28 w-full items-end justify-center gap-1 rounded bg-slate-50 p-1 dark:bg-gray-700/40">
-                  <div
-                    style={{ height: `${incHeight}%` }}
-                    className="w-2.5 rounded-t bg-emerald-500 transition-all hover:bg-emerald-600"
+              <Stack key={item.raw_date} sx={{ alignItems: "center", gap: 0.5, textAlign: "center" }}>
+                <Stack
+                  direction="row"
+                  sx={{
+                    height: 98, width: "100%", alignItems: "flex-end", justifyContent: "center", gap: 0.5,
+                    borderRadius: "3.5px", bgcolor: "action.hover", p: 0.5,
+                  }}
+                >
+                  <Box
+                    sx={{
+                      height: `${incHeight}%`, width: 10, borderRadius: "1.75px 1.75px 0 0", bgcolor: "#10b981",
+                      transition: "background-color 0.15s", "&:hover": { bgcolor: "#059669" },
+                    }}
                     title={`Inward: ${item.incoming}`}
                   />
-                  <div
-                    style={{ height: `${outHeight}%` }}
-                    className="w-2.5 rounded-t bg-purple-500 transition-all hover:bg-purple-600"
+                  <Box
+                    sx={{
+                      height: `${outHeight}%`, width: 10, borderRadius: "1.75px 1.75px 0 0", bgcolor: "#a855f7",
+                      transition: "background-color 0.15s", "&:hover": { bgcolor: "#9333ea" },
+                    }}
                     title={`Outward: ${item.outgoing}`}
                   />
-                </div>
-                <span className="text-[10px] font-medium text-slate-500 dark:text-gray-400">{item.date}</span>
-              </div>
+                </Stack>
+                <Typography sx={{ fontSize: 10, fontWeight: 500, color: "text.secondary" }}>{item.date}</Typography>
+              </Stack>
             );
           })}
-        </div>
+        </Box>
       ) : (
-        <div className="py-8 text-center text-xs text-slate-400">No stock movements in range</div>
+        <Box sx={{ py: 4, textAlign: "center", fontSize: 12, color: "text.disabled" }}>No stock movements in range</Box>
       )}
-    </div>
+    </Box>
   );
 }

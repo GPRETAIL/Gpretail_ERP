@@ -1,54 +1,63 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Trophy } from "lucide-react";
+import { Box, Button, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
 import { formatCurrency } from "../../../utils/dashboardFormatters";
 
 export default function SalesTopProductsTable({ topProducts = [] }) {
   const navigate = useNavigate();
 
   return (
-    <div className="h-full rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-800">
-      <div className="mb-3 flex items-center justify-between">
-        <h3 className="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-gray-200">
-          <Trophy className="h-4 w-4 text-blue-600" />
+    <Box sx={{ height: "100%", borderRadius: "10.5px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", p: 2.5, boxShadow: 1 }}>
+      <Stack direction="row" sx={{ mb: 1.5, alignItems: "center", justifyContent: "space-between" }}>
+        <Typography component="h3" sx={{ display: "flex", alignItems: "center", gap: 1, fontSize: 13, fontWeight: 700, color: "text.primary" }}>
+          <Box sx={{ color: "primary.main", display: "inline-flex" }}>
+            <Trophy className="h-4 w-4" />
+          </Box>
           Top Selling Products
-        </h3>
-        <button
+        </Typography>
+        <Button
+          size="small"
           onClick={() => navigate("/sales/reports")}
-          className="text-xs font-semibold text-blue-600 hover:underline dark:text-blue-400"
+          sx={{ fontSize: 12, fontWeight: 600, p: 0, minWidth: "auto", "&:hover": { bgcolor: "transparent", textDecoration: "underline" } }}
         >
           View sales reports
-        </button>
-      </div>
+        </Button>
+      </Stack>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs">
-          <thead>
-            <tr className="border-b border-slate-100 text-[11px] font-bold uppercase text-slate-500 dark:border-gray-700 dark:text-gray-400">
-              <th className="pb-2">Product</th>
-              <th className="pb-2 text-right">Qty Sold</th>
-              <th className="pb-2 text-right">Revenue</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-gray-700">
+      <Box sx={{ overflowX: "auto" }}>
+        <Table size="small" sx={{ "& td, & th": { border: 0, fontSize: 12 } }}>
+          <TableHead>
+            <TableRow sx={{ borderBottom: "1px solid", borderColor: "divider" }}>
+              <TableCell sx={{ pb: 1, fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>Product</TableCell>
+              <TableCell align="right" sx={{ pb: 1, fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>Qty Sold</TableCell>
+              <TableCell align="right" sx={{ pb: 1, fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>Revenue</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
             {topProducts.length > 0 ? (
               topProducts.map((row) => (
-                <tr key={row.product_id} className="hover:bg-slate-50 dark:hover:bg-gray-700/50">
-                  <td className="py-2.5 font-medium text-slate-800 dark:text-gray-200">{row.product_name}</td>
-                  <td className="py-2.5 text-right font-mono font-semibold">{Number(row.qty || 0).toLocaleString()}</td>
-                  <td className="py-2.5 text-right font-mono">{formatCurrency(row.amount)}</td>
-                </tr>
+                <TableRow
+                  key={row.product_id}
+                  sx={{ borderBottom: "1px solid", borderColor: "divider", "&:hover": { bgcolor: "action.hover" }, "&:last-of-type": { borderBottom: 0 } }}
+                >
+                  <TableCell sx={{ py: 1.25, fontWeight: 500, color: "text.primary" }}>{row.product_name}</TableCell>
+                  <TableCell align="right" sx={{ py: 1.25, fontFamily: "monospace", fontWeight: 600 }}>
+                    {Number(row.qty || 0).toLocaleString()}
+                  </TableCell>
+                  <TableCell align="right" sx={{ py: 1.25, fontFamily: "monospace" }}>{formatCurrency(row.amount)}</TableCell>
+                </TableRow>
               ))
             ) : (
-              <tr>
-                <td colSpan={3} className="py-6 text-center text-slate-400">
+              <TableRow>
+                <TableCell colSpan={3} align="center" sx={{ py: 3, color: "text.disabled" }}>
                   No product-level sales recorded in range.
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             )}
-          </tbody>
-        </table>
-      </div>
-    </div>
+          </TableBody>
+        </Table>
+      </Box>
+    </Box>
   );
 }

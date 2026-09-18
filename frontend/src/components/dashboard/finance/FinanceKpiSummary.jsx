@@ -1,92 +1,101 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { HandCoins, Wallet, ShoppingBag, Receipt } from "lucide-react";
+import { Box, ButtonBase, Stack, Typography } from "@mui/material";
 import { formatCurrency } from "../../../utils/dashboardFormatters";
 
 // Four separate widgets (not one bundled row) so DashboardGrid can drag/resize each KPI card
 // independently in the layout customizer, same split as the Overview tab's KPI row.
-const blurClass = (privacyMode) => (privacyMode ? "blur-sm select-none" : "");
+const blurSx = (privacyMode) => (privacyMode ? { filter: "blur(4px)", userSelect: "none" } : {});
+
+const cardSx = (hoverColor) => ({
+  display: "block", width: "100%", height: "100%", textAlign: "left", cursor: "pointer",
+  borderRadius: "10.5px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper",
+  p: 2, boxShadow: 1, transition: "border-color 0.15s ease, box-shadow 0.15s ease",
+  "&:hover": { borderColor: hoverColor, boxShadow: 2 },
+});
 
 export function PayablesOutstandingCard({ summary = {}, loading, privacyMode }) {
   const navigate = useNavigate();
   return (
-    <div
-      onClick={() => navigate("/warehouse/direct-purchase?filter=unpaid")}
-      className="group h-full cursor-pointer rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-red-300 hover:shadow-md dark:border-gray-800 dark:bg-gray-800"
-    >
-      <div className="flex items-center justify-between text-slate-500 dark:text-gray-400">
-        <span className="text-xs font-bold uppercase tracking-wider">Payables Outstanding</span>
-        <HandCoins className="h-5 w-5 text-red-600 dark:text-red-400" />
-      </div>
-      <div className={`mt-2 text-2xl font-extrabold text-red-600 dark:text-red-400 ${blurClass(privacyMode)}`}>
+    <ButtonBase onClick={() => navigate("/warehouse/direct-purchase?filter=unpaid")} sx={cardSx("error.main")}>
+      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
+        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          Payables Outstanding
+        </Typography>
+        <Box sx={{ color: "error.main", display: "inline-flex" }}>
+          <HandCoins className="h-5 w-5" />
+        </Box>
+      </Stack>
+      <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "error.main", ...blurSx(privacyMode) }}>
         {loading ? "..." : formatCurrency(summary.payables_outstanding)}
-      </div>
-      <div className="mt-1 text-xs text-slate-500 dark:text-gray-400">Owed to suppliers</div>
-    </div>
+      </Typography>
+      <Typography sx={{ mt: 0.5, fontSize: 11, color: "text.secondary" }}>Owed to suppliers</Typography>
+    </ButtonBase>
   );
 }
 
 export function ReceivablesOutstandingCard({ summary = {}, loading, privacyMode }) {
   const navigate = useNavigate();
   return (
-    <div
-      onClick={() => navigate("/sales/pos-sales?filter=credit")}
-      className="group h-full cursor-pointer rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-blue-300 hover:shadow-md dark:border-gray-800 dark:bg-gray-800"
-    >
-      <div className="flex items-center justify-between text-slate-500 dark:text-gray-400">
-        <span className="text-xs font-bold uppercase tracking-wider">Receivables Outstanding</span>
-        <Wallet className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-      </div>
-      <div className={`mt-2 text-2xl font-extrabold text-blue-600 dark:text-blue-400 ${blurClass(privacyMode)}`}>
+    <ButtonBase onClick={() => navigate("/sales/pos-sales?filter=credit")} sx={cardSx("primary.main")}>
+      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
+        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          Receivables Outstanding
+        </Typography>
+        <Box sx={{ color: "primary.main", display: "inline-flex" }}>
+          <Wallet className="h-5 w-5" />
+        </Box>
+      </Stack>
+      <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "primary.main", ...blurSx(privacyMode) }}>
         {loading ? "..." : formatCurrency(summary.receivables_outstanding)}
-      </div>
-      <div className="mt-1 text-xs text-slate-500 dark:text-gray-400">Owed by credit customers</div>
-    </div>
+      </Typography>
+      <Typography sx={{ mt: 0.5, fontSize: 11, color: "text.secondary" }}>Owed by credit customers</Typography>
+    </ButtonBase>
   );
 }
 
 export function PurchaseValueCard({ summary = {}, loading, privacyMode }) {
   const navigate = useNavigate();
   return (
-    <div
-      onClick={() => navigate("/warehouse/direct-purchase")}
-      className="group h-full cursor-pointer rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-purple-300 hover:shadow-md dark:border-gray-800 dark:bg-gray-800"
-    >
-      <div className="flex items-center justify-between text-slate-500 dark:text-gray-400">
-        <span className="text-xs font-bold uppercase tracking-wider">Purchase Value (Period)</span>
-        <ShoppingBag className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-      </div>
-      <div className={`mt-2 text-2xl font-extrabold text-slate-900 dark:text-gray-100 ${blurClass(privacyMode)}`}>
+    <ButtonBase onClick={() => navigate("/warehouse/direct-purchase")} sx={cardSx("#d8b4fe")}>
+      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
+        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          Purchase Value (Period)
+        </Typography>
+        <Box sx={{ color: "#9333ea", display: "inline-flex" }}>
+          <ShoppingBag className="h-5 w-5" />
+        </Box>
+      </Stack>
+      <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
         {loading ? "..." : formatCurrency(summary.purchase_value_range)}
-      </div>
-      <div className={`mt-1 text-xs text-slate-500 dark:text-gray-400 ${blurClass(privacyMode)}`}>
+      </Typography>
+      <Typography sx={{ mt: 0.5, fontSize: 11, color: "text.secondary", ...blurSx(privacyMode) }}>
         Payments made: {formatCurrency(summary.payments_made_range)}
-      </div>
-    </div>
+      </Typography>
+    </ButtonBase>
   );
 }
 
 export function NetPositionCard({ summary = {}, loading, privacyMode }) {
   const navigate = useNavigate();
+  const positive = (summary.net_position || 0) >= 0;
   return (
-    <div
-      onClick={() => navigate("/warehouse/purchase-return")}
-      className="group h-full cursor-pointer rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-emerald-300 hover:shadow-md dark:border-gray-800 dark:bg-gray-800"
-    >
-      <div className="flex items-center justify-between text-slate-500 dark:text-gray-400">
-        <span className="text-xs font-bold uppercase tracking-wider">Net Position</span>
-        <Receipt className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-      </div>
-      <div
-        className={`mt-2 text-2xl font-extrabold ${
-          (summary.net_position || 0) >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
-        } ${blurClass(privacyMode)}`}
-      >
+    <ButtonBase onClick={() => navigate("/warehouse/purchase-return")} sx={cardSx("success.main")}>
+      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
+        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          Net Position
+        </Typography>
+        <Box sx={{ color: "success.main", display: "inline-flex" }}>
+          <Receipt className="h-5 w-5" />
+        </Box>
+      </Stack>
+      <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: positive ? "success.main" : "error.main", ...blurSx(privacyMode) }}>
         {loading ? "..." : formatCurrency(summary.net_position)}
-      </div>
-      <div className={`mt-1 text-xs text-slate-500 dark:text-gray-400 ${blurClass(privacyMode)}`}>
+      </Typography>
+      <Typography sx={{ mt: 0.5, fontSize: 11, color: "text.secondary", ...blurSx(privacyMode) }}>
         Refunds due: {formatCurrency(summary.refunds_due)}
-      </div>
-    </div>
+      </Typography>
+    </ButtonBase>
   );
 }

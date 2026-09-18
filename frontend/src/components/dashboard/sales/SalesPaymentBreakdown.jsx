@@ -1,64 +1,75 @@
 import React from "react";
 import { PieChart } from "lucide-react";
+import { Box, Stack, Typography } from "@mui/material";
 import { formatCurrency } from "../../../utils/dashboardFormatters";
 
+// CASH/CARD/CREDIT happen to align with real success/primary/warning tokens; UPI (purple) doesn't
+// map onto any semantic token so it's kept as a literal hex, same as other per-series chart colors.
 const PAYMENT_MODE_COLOR = {
-  CASH: "bg-emerald-500",
-  CARD: "bg-blue-500",
-  UPI: "bg-purple-500",
-  CREDIT: "bg-amber-500",
+  CASH: "success.main",
+  CARD: "primary.main",
+  UPI: "#a855f7",
+  CREDIT: "warning.main",
 };
 
 export default function SalesPaymentBreakdown({ paymentBreakdown = [], performance = {} }) {
   const maxPaymentAmount = Math.max(...paymentBreakdown.map((p) => p.amount || 0), 1);
 
   return (
-    <div className="h-full space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-800">
-      <div className="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-gray-700">
-        <h3 className="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-gray-200">
-          <PieChart className="h-4 w-4 text-blue-600" />
-          Payment Mode Breakdown
-        </h3>
-      </div>
+    <Box sx={{ height: "100%", borderRadius: "10.5px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", p: 2.5, boxShadow: 1 }}>
+      <Stack spacing={2}>
+        <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", pb: 1.5 }}>
+          <Typography component="h3" sx={{ display: "flex", alignItems: "center", gap: 1, fontSize: 13, fontWeight: 700, color: "text.primary" }}>
+            <Box sx={{ color: "primary.main", display: "inline-flex" }}>
+              <PieChart className="h-4 w-4" />
+            </Box>
+            Payment Mode Breakdown
+          </Typography>
+        </Stack>
 
-      <div className="space-y-3">
-        {paymentBreakdown.length > 0 ? (
-          paymentBreakdown.map((row) => (
-            <div
-              key={row.mode}
-              className="rounded-lg border border-slate-100 bg-slate-50 p-3 dark:border-gray-700 dark:bg-gray-700/50"
-            >
-              <div className="flex items-center justify-between text-xs">
-                <span className="flex items-center gap-2 font-semibold text-slate-700 dark:text-gray-300">
-                  <span className={`h-2.5 w-2.5 rounded-full ${PAYMENT_MODE_COLOR[row.mode] || "bg-slate-400"}`} />
-                  {row.mode}
-                </span>
-                <span className="font-bold text-slate-900 dark:text-gray-100">{formatCurrency(row.amount)}</span>
-              </div>
-              <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-gray-600">
-                <div
-                  className={`h-full rounded-full ${PAYMENT_MODE_COLOR[row.mode] || "bg-slate-400"}`}
-                  style={{ width: `${Math.min(100, Math.round(((row.amount || 0) / maxPaymentAmount) * 100))}%` }}
-                />
-              </div>
-              <div className="mt-1 text-[11px] text-slate-500 dark:text-gray-400">{row.bills} bills</div>
-            </div>
-          ))
-        ) : (
-          <div className="py-4 text-center text-xs text-slate-400">No sales in range</div>
-        )}
-      </div>
+        <Stack spacing={1.5}>
+          {paymentBreakdown.length > 0 ? (
+            paymentBreakdown.map((row) => {
+              const color = PAYMENT_MODE_COLOR[row.mode] || "text.disabled";
+              return (
+                <Box key={row.mode} sx={{ borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "action.hover", p: 1.5 }}>
+                  <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", fontSize: 12 }}>
+                    <Stack direction="row" spacing={1} sx={{ alignItems: "center", fontWeight: 600, color: "text.secondary" }}>
+                      <Box sx={{ width: 10, height: 10, borderRadius: "50%", bgcolor: color }} />
+                      <Typography component="span" sx={{ fontSize: "inherit", fontWeight: "inherit", color: "inherit" }}>{row.mode}</Typography>
+                    </Stack>
+                    <Typography component="span" sx={{ fontSize: 12, fontWeight: 700, color: "text.primary" }}>{formatCurrency(row.amount)}</Typography>
+                  </Stack>
+                  <Box sx={{ mt: 0.75, height: 6, width: "100%", overflow: "hidden", borderRadius: "50px", bgcolor: "divider" }}>
+                    <Box
+                      sx={{
+                        height: "100%", borderRadius: "50px", bgcolor: color,
+                        width: `${Math.min(100, Math.round(((row.amount || 0) / maxPaymentAmount) * 100))}%`,
+                      }}
+                    />
+                  </Box>
+                  <Typography sx={{ mt: 0.5, fontSize: 11, color: "text.secondary" }}>{row.bills} bills</Typography>
+                </Box>
+              );
+            })
+          ) : (
+            <Typography sx={{ py: 2, textAlign: "center", fontSize: 12, color: "text.disabled" }}>No sales in range</Typography>
+          )}
+        </Stack>
 
-      <div className="border-t border-slate-100 pt-3 dark:border-gray-700">
-        <div className="flex items-center justify-between text-xs font-semibold text-slate-700 dark:text-gray-300">
-          <span>Avg Basket Value</span>
-          <span className="text-emerald-600 dark:text-emerald-400">{formatCurrency(performance.avg_basket_value)}</span>
-        </div>
-        <div className="mt-1 flex items-center justify-between text-xs text-slate-500 dark:text-gray-400">
-          <span>Discount Rate</span>
-          <span>{performance.discount_rate || "0%"}</span>
-        </div>
-      </div>
-    </div>
+        <Stack sx={{ borderTop: 1, borderColor: "divider", pt: 1.5 }}>
+          <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", fontSize: 12, fontWeight: 600, color: "text.secondary" }}>
+            <Typography component="span" sx={{ fontSize: "inherit", fontWeight: "inherit", color: "inherit" }}>Avg Basket Value</Typography>
+            <Typography component="span" sx={{ fontSize: "inherit", fontWeight: "inherit", color: "success.main" }}>
+              {formatCurrency(performance.avg_basket_value)}
+            </Typography>
+          </Stack>
+          <Stack direction="row" sx={{ mt: 0.5, alignItems: "center", justifyContent: "space-between", fontSize: 12, color: "text.secondary" }}>
+            <Typography component="span" sx={{ fontSize: "inherit", color: "inherit" }}>Discount Rate</Typography>
+            <Typography component="span" sx={{ fontSize: "inherit", color: "inherit" }}>{performance.discount_rate || "0%"}</Typography>
+          </Stack>
+        </Stack>
+      </Stack>
+    </Box>
   );
 }

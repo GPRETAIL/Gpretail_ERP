@@ -1,32 +1,47 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Compass, ArrowRight } from "lucide-react";
+import { alpha } from "@mui/material/styles";
+import { Box, ButtonBase, Stack, Typography } from "@mui/material";
 
 export default function AnalyticalLaunchpad({ quickLinks = [] }) {
   const navigate = useNavigate();
 
   return (
-    <div className="h-full rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-800">
-      <div className="mb-4 flex items-center gap-2">
-        <Compass className="h-4 w-4 text-blue-600" />
-        <h3 className="text-sm font-bold text-slate-800 dark:text-gray-200">Analytics Launchpad</h3>
-      </div>
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+    <Box sx={{ height: "100%", borderRadius: "10.5px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", p: 2.5, boxShadow: 1 }}>
+      <Stack direction="row" spacing={1} sx={{ mb: 2, alignItems: "center" }}>
+        <Box sx={{ color: "primary.main", display: "inline-flex" }}>
+          <Compass className="h-4 w-4" />
+        </Box>
+        <Typography component="h3" sx={{ fontSize: 13, fontWeight: 700, color: "text.primary" }}>Analytics Launchpad</Typography>
+      </Stack>
+      <Box sx={{ display: "grid", gap: 1, gridTemplateColumns: { xs: "repeat(1, minmax(0, 1fr))", sm: "repeat(2, minmax(0, 1fr))" } }}>
         {quickLinks.map((link) => (
-          <button
+          <ButtonBase
             key={link.path}
-            type="button"
             onClick={() => navigate(link.path)}
-            className="group flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 px-3 py-2.5 text-left transition hover:border-blue-300 hover:bg-blue-50 dark:border-gray-700 dark:bg-gray-700/50 dark:hover:bg-blue-950/30"
+            className="group"
+            sx={{
+              justifyContent: "space-between", borderRadius: "7px", border: "1px solid", borderColor: "divider",
+              bgcolor: "action.hover", px: 1.5, py: 1.25, textAlign: "left",
+              "&:hover": { borderColor: "primary.light", bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08) },
+            }}
           >
-            <div>
-              <div className="text-xs font-semibold text-slate-800 dark:text-gray-200">{link.label}</div>
-              <div className="text-[11px] text-slate-500 dark:text-gray-400">{link.description}</div>
-            </div>
-            <ArrowRight className="h-4 w-4 text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-blue-600" />
-          </button>
+            <Box>
+              <Typography sx={{ fontSize: 12, fontWeight: 600, color: "text.primary" }}>{link.label}</Typography>
+              <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>{link.description}</Typography>
+            </Box>
+            <Box
+              sx={{
+                color: "text.disabled", display: "inline-flex", transition: "transform 0.2s, color 0.2s",
+                ".group:hover &": { transform: "translateX(2px)", color: "primary.main" },
+              }}
+            >
+              <ArrowRight className="h-4 w-4" />
+            </Box>
+          </ButtonBase>
         ))}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }

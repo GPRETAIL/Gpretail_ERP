@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
+import { Box, Button, Stack, Typography } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import api from "../api/axios";
 import DashboardGrid from "./dashboard/DashboardGrid";
 import {
@@ -14,12 +16,12 @@ import SettingsBreakdown from "./dashboard/settings/SettingsBreakdown";
 import SettingsRecentBackupsTable from "./dashboard/settings/SettingsRecentBackupsTable";
 
 const QUICK_ACTIONS = [
-  { label: "User Access", path: "/settings/user-access", color: "bg-blue-600 hover:bg-blue-700 text-white" },
-  { label: "Backup Center", path: "/settings/backup", color: "bg-emerald-600 hover:bg-emerald-700 text-white" },
-  { label: "Company Settings", path: "/settings/company", color: "bg-indigo-600 hover:bg-indigo-700 text-white" },
-  { label: "Configure Local Server", path: "/settings/configure-local-server", color: "bg-amber-600 hover:bg-amber-700 text-white" },
-  { label: "HR Configuration", path: "/hrms/hr-configuration", color: "bg-purple-600 hover:bg-purple-700 text-white" },
-  { label: "Branding", path: "/settings/branding", color: "bg-slate-700 hover:bg-slate-800 text-white" },
+  { label: "User Access", path: "/settings/user-access", bg: "primary.main", hoverBg: "primary.dark" },
+  { label: "Backup Center", path: "/settings/backup", bg: "success.main", hoverBg: "success.dark" },
+  { label: "Company Settings", path: "/settings/company", bg: "#4f46e5", hoverBg: "#4338ca" },
+  { label: "Configure Local Server", path: "/settings/configure-local-server", bg: "warning.main", hoverBg: "warning.dark" },
+  { label: "HR Configuration", path: "/hrms/hr-configuration", bg: "#9333ea", hoverBg: "#7e22ce" },
+  { label: "Themes", path: "/settings/themes", bg: "#334155", hoverBg: "#1e293b" },
 ];
 
 export default function SettingsDashboardTabPane({ active, companyId, privacyMode }) {
@@ -116,41 +118,49 @@ export default function SettingsDashboardTabPane({ active, companyId, privacyMod
 
   if (error) {
     return (
-      <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <AlertTriangle className="h-5 w-5 text-red-600" />
-          <span>{error}</span>
-        </div>
-        <button
-          onClick={fetchData}
-          className="rounded bg-red-600 px-3 py-1 text-xs font-semibold text-white hover:bg-red-700"
-        >
+      <Stack
+        direction="row"
+        sx={{
+          alignItems: "center", justifyContent: "space-between",
+          borderRadius: "10.5px", border: "1px solid", borderColor: "error.main",
+          bgcolor: (theme) => alpha(theme.palette.error.main, theme.palette.mode === "dark" ? 0.16 : 0.08),
+          p: 2, fontSize: 14,
+        }}
+      >
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+          <Box sx={{ color: "error.main", display: "inline-flex" }}>
+            <AlertTriangle className="h-5 w-5" />
+          </Box>
+          <Typography sx={{ fontSize: 14, color: "error.dark" }}>{error}</Typography>
+        </Stack>
+        <Button size="small" variant="contained" color="error" onClick={fetchData}>
           Retry
-        </button>
-      </div>
+        </Button>
+      </Stack>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <Stack spacing={3}>
       {/* Quick Workflows Bar -- a toolbar, not a data widget, so it stays fixed above the grid */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3 dark:border-gray-800">
-        <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-gray-400">
+      <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap", borderBottom: 1, borderColor: "divider", pb: 1.5, rowGap: 1 }}>
+        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "text.secondary" }}>
           Quick Actions:
-        </span>
+        </Typography>
         {QUICK_ACTIONS.map((action) => (
-          <button
+          <Button
             key={action.label}
-            type="button"
+            variant="contained"
+            size="small"
             onClick={() => navigate(action.path)}
-            className={`rounded-md px-2.5 py-1 text-xs font-medium shadow-sm transition ${action.color}`}
+            sx={{ borderRadius: "5.25px", fontSize: 12, fontWeight: 500, boxShadow: 1, bgcolor: action.bg, "&:hover": { bgcolor: action.hoverBg } }}
           >
             {action.label}
-          </button>
+          </Button>
         ))}
-      </div>
+      </Stack>
 
       <DashboardGrid tabKey="settings" widgets={widgets} />
-    </div>
+    </Stack>
   );
 }

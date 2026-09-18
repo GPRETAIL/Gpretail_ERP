@@ -1,5 +1,6 @@
 // Shared formatting + color-map helpers for Dashboard tab widgets. Consolidates what was
 // previously copy-pasted (with minor drift) across each XxxDashboardTabPane.jsx file.
+import { alpha } from "@mui/material/styles";
 
 export const formatCurrency = (val) => {
   const num = Number(val || 0);
@@ -12,15 +13,22 @@ export const formatCurrency = (val) => {
 
 export const wholeNumber = (val) => Number(val || 0).toLocaleString("en-IN");
 
-// Action-Required / data-quality banner tiles share this severity -> Tailwind class mapping
-// across every tab (red = critical, amber = warning, blue = informational).
-export const SEVERITY_TILE_CLASSES = {
-  critical:
-    "border-red-200 bg-red-50/80 hover:bg-red-100 dark:border-red-900/50 dark:bg-red-950/30",
-  warning:
-    "border-amber-200 bg-amber-50/80 hover:bg-amber-100 dark:border-amber-900/50 dark:bg-amber-950/30",
-  info: "border-blue-200 bg-blue-50/80 hover:bg-blue-100 dark:border-blue-900/50 dark:bg-blue-950/30",
+// Action-Required / data-quality banner tiles share this severity -> sx mapping across every tab
+// (red = critical, amber = warning, blue = informational). alpha-tinted background + a themed
+// border, matching each module's own ActionRequiredBanner outer card treatment.
+const SEVERITY_TILE_TOKEN = {
+  critical: "error",
+  warning: "warning",
+  info: "info",
 };
 
-export const severityTileClass = (severity) =>
-  SEVERITY_TILE_CLASSES[severity] || SEVERITY_TILE_CLASSES.info;
+export const severityTileSx = (severity) => {
+  const token = SEVERITY_TILE_TOKEN[severity] || SEVERITY_TILE_TOKEN.info;
+  return {
+    borderColor: `${token}.main`,
+    bgcolor: (theme) => alpha(theme.palette[token].main, theme.palette.mode === "dark" ? 0.16 : 0.08),
+    "&:hover": {
+      bgcolor: (theme) => alpha(theme.palette[token].main, theme.palette.mode === "dark" ? 0.24 : 0.14),
+    },
+  };
+};

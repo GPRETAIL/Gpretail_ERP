@@ -1,78 +1,123 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { ShieldAlert } from "lucide-react";
+import { Box, Button, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 
 export default function WarehouseLowStockTable({ alerts = [] }) {
   const navigate = useNavigate();
 
   return (
-    <div className="h-full rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-800">
-      <div className="mb-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <ShieldAlert className="h-5 w-5 text-amber-600" />
-          <h3 className="text-sm font-bold text-slate-800 dark:text-gray-200">Low Stock & Reorder Level Alerts</h3>
-        </div>
-        <button
+    <Box
+      sx={{
+        height: "100%", borderRadius: "10.5px", border: "1px solid", borderColor: "divider",
+        bgcolor: "background.paper", p: 2.5, boxShadow: 1,
+      }}
+    >
+      <Stack direction="row" sx={{ mb: 1.5, alignItems: "center", justifyContent: "space-between" }}>
+        <Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
+          <Box sx={{ color: "warning.main", display: "inline-flex" }}>
+            <ShieldAlert className="h-5 w-5" />
+          </Box>
+          <Typography component="h3" sx={{ fontSize: 13, fontWeight: 700, color: "text.primary" }}>
+            Low Stock & Reorder Level Alerts
+          </Typography>
+        </Stack>
+        <Button
+          size="small"
           onClick={() => navigate("/warehouse/stock-item?stock_filter=low_stock")}
-          className="text-xs font-semibold text-blue-600 hover:underline dark:text-blue-400"
+          sx={{ fontSize: 12, fontWeight: 600, p: 0, minWidth: "auto", "&:hover": { bgcolor: "transparent", textDecoration: "underline" } }}
         >
           Open Item Locator
-        </button>
-      </div>
+        </Button>
+      </Stack>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs">
-          <thead>
-            <tr className="border-b border-slate-100 text-[11px] font-bold uppercase text-slate-500 dark:border-gray-700 dark:text-gray-400">
-              <th className="pb-2">Product Name</th>
-              <th className="pb-2">Size / Color</th>
-              <th className="pb-2">Barcode</th>
-              <th className="pb-2">Store</th>
-              <th className="pb-2 text-right">Available</th>
-              <th className="pb-2 text-right">Reorder Level</th>
-              <th className="pb-2 text-center">Status</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-gray-700">
+      <Box sx={{ overflowX: "auto" }}>
+        <Table size="small" sx={{ "& td, & th": { border: 0, fontSize: 12 } }}>
+          <TableHead>
+            <TableRow sx={{ borderBottom: "1px solid", borderColor: "divider" }}>
+              <TableCell sx={{ pb: 1, fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
+                Product Name
+              </TableCell>
+              <TableCell sx={{ pb: 1, fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
+                Size / Color
+              </TableCell>
+              <TableCell sx={{ pb: 1, fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
+                Barcode
+              </TableCell>
+              <TableCell sx={{ pb: 1, fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
+                Store
+              </TableCell>
+              <TableCell align="right" sx={{ pb: 1, fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
+                Available
+              </TableCell>
+              <TableCell align="right" sx={{ pb: 1, fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
+                Reorder Level
+              </TableCell>
+              <TableCell align="center" sx={{ pb: 1, fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
+                Status
+              </TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
             {alerts.length > 0 ? (
               alerts.map((row) => {
                 const isOut = Number(row.current_stock || 0) <= 0;
                 return (
-                  <tr key={row.id} className="hover:bg-slate-50 dark:hover:bg-gray-700/50">
-                    <td className="py-2.5 font-medium text-slate-800 dark:text-gray-200">{row.product_name}</td>
-                    <td className="py-2.5 text-slate-600 dark:text-gray-400">
+                  <TableRow
+                    key={row.id}
+                    sx={{ borderBottom: "1px solid", borderColor: "divider", "&:hover": { bgcolor: "action.hover" }, "&:last-of-type": { borderBottom: 0 } }}
+                  >
+                    <TableCell sx={{ py: 1.25, fontWeight: 500, color: "text.primary" }}>{row.product_name}</TableCell>
+                    <TableCell sx={{ py: 1.25, color: "text.secondary" }}>
                       {row.size} / {row.color}
-                    </td>
-                    <td className="py-2.5 font-mono text-slate-500">{row.barcode}</td>
-                    <td className="py-2.5 text-slate-600 dark:text-gray-400">{row.store_name}</td>
-                    <td className="py-2.5 text-right font-mono font-bold text-slate-900 dark:text-gray-100">
+                    </TableCell>
+                    <TableCell sx={{ py: 1.25, fontFamily: "monospace", color: "text.secondary" }}>{row.barcode}</TableCell>
+                    <TableCell sx={{ py: 1.25, color: "text.secondary" }}>{row.store_name}</TableCell>
+                    <TableCell align="right" sx={{ py: 1.25, fontFamily: "monospace", fontWeight: 700, color: "text.primary" }}>
                       {Number(row.current_stock || 0).toLocaleString()}
-                    </td>
-                    <td className="py-2.5 text-right font-mono text-slate-500">{row.reorder_level || 10}</td>
-                    <td className="py-2.5 text-center">
+                    </TableCell>
+                    <TableCell align="right" sx={{ py: 1.25, fontFamily: "monospace", color: "text.secondary" }}>
+                      {row.reorder_level || 10}
+                    </TableCell>
+                    <TableCell align="center" sx={{ py: 1.25 }}>
                       {isOut ? (
-                        <span className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-bold text-red-700 dark:bg-red-900/40 dark:text-red-300">
+                        <Box
+                          component="span"
+                          sx={{
+                            display: "inline-flex", borderRadius: 1, px: 0.75, py: 0.25, fontSize: 10, fontWeight: 700,
+                            bgcolor: (theme) => alpha(theme.palette.error.main, theme.palette.mode === "dark" ? 0.24 : 0.15),
+                            color: "error.main",
+                          }}
+                        >
                           OUT OF STOCK
-                        </span>
+                        </Box>
                       ) : (
-                        <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                        <Box
+                          component="span"
+                          sx={{
+                            display: "inline-flex", borderRadius: 1, px: 0.75, py: 0.25, fontSize: 10, fontWeight: 700,
+                            bgcolor: (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.24 : 0.15),
+                            color: "warning.main",
+                          }}
+                        >
                           LOW STOCK
-                        </span>
+                        </Box>
                       )}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 );
               })
             ) : (
-              <tr>
-                <td colSpan={7} className="py-6 text-center text-slate-400">
+              <TableRow>
+                <TableCell colSpan={7} align="center" sx={{ py: 3, color: "text.disabled" }}>
                   🎉 All product stocks are healthy and above reorder levels!
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             )}
-          </tbody>
-        </table>
-      </div>
-    </div>
+          </TableBody>
+        </Table>
+      </Box>
+    </Box>
   );
 }

@@ -332,7 +332,10 @@ describe("FilterableDataTable — pagination modes", () => {
 
     expect(bodyRowTexts(container)).toHaveLength(20);
     expect(screen.getByText("Total: 97")).toBeInTheDocument();
-    expect(screen.getAllByText(/^Page \d$/)).toHaveLength(5);
+    // MUI's Select only mounts its MenuItems into a portal once opened -- unlike a native <select>,
+    // which renders every <option> into the DOM upfront.
+    fireEvent.mouseDown(screen.getByText("Page 2"));
+    expect(within(screen.getByRole("listbox")).getAllByText(/^Page \d$/)).toHaveLength(5);
   });
 });
 
@@ -414,7 +417,9 @@ describe("FilterableDataTable — server search debounce", () => {
     );
 
     fireEvent.change(screen.getByPlaceholderText("Search..."), { target: { value: "row" } });
-    fireEvent.click(screen.getByRole("button", { name: /search/i }));
+    // Anchored, not /search/i -- the inline clear button's "Clear search" aria-label also contains
+    // "search" as a substring once the field has a value, same ambiguity class as Stage A's glass-btn.
+    fireEvent.click(screen.getByRole("button", { name: /^search$/i }));
 
     expect(onServerSearch).toHaveBeenCalledWith(
       expect.objectContaining({ query: "row", immediate: true })
@@ -439,7 +444,7 @@ describe("FilterableDataTable — server search debounce", () => {
     onServerSearch.mockClear();
 
     // The inline "x" clear button only renders once the search box has a value.
-    fireEvent.click(input.parentElement.querySelector("button"));
+    fireEvent.click(screen.getByRole("button", { name: "Clear search" }));
 
     expect(onServerSearch).toHaveBeenCalledWith(
       expect.objectContaining({ query: "", immediate: true })
@@ -869,7 +874,7 @@ describe("FilterableDataTable — filter panel drawer", () => {
     { id: 2, name: "Banana", extra: "y" },
   ];
 
-  const getDrawerRoot = () => screen.getByText("Filter Panel").closest(".flex.h-full.flex-col");
+  const getDrawerRoot = () => screen.getByTestId("filter-panel-root");
 
   it("renders a filter card per column; Apply commits the draft and filters rows", () => {
     const { container } = render(
@@ -880,10 +885,13 @@ describe("FilterableDataTable — filter panel drawer", () => {
     const drawerRoot = getDrawerRoot();
 
     // A card exists for every column, not just currently-visible ones.
-    const nameCard = within(drawerRoot).getByText("Name").closest("div.rounded-md");
+    const nameCard = within(drawerRoot).getByTestId("filter-card-name");
     expect(within(drawerRoot).getByText("Extra")).toBeInTheDocument();
 
-    fireEvent.change(within(nameCard).getByDisplayValue("Contain"), { target: { value: "equal" } });
+    // MUI Select only mounts its MenuItems into a portal once opened -- open it, then pick "Equal"
+    // from the resulting listbox (rendered outside nameCard's own DOM subtree, so query via screen).
+    fireEvent.mouseDown(within(nameCard).getByText("Contain"));
+    fireEvent.click(within(screen.getByRole("listbox")).getByText("Equal"));
     fireEvent.change(within(nameCard).getByPlaceholderText("Filter Name"), {
       target: { value: "Apple" },
     });
@@ -901,7 +909,7 @@ describe("FilterableDataTable — filter panel drawer", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Filter" }));
     let drawerRoot = getDrawerRoot();
-    const nameCard = within(drawerRoot).getByText("Name").closest("div.rounded-md");
+    const nameCard = within(drawerRoot).getByTestId("filter-card-name");
     fireEvent.change(within(nameCard).getByPlaceholderText("Filter Name"), {
       target: { value: "Apple" },
     });
@@ -916,7 +924,7 @@ describe("FilterableDataTable — filter panel drawer", () => {
     // Reopening re-seeds the draft from committed state -- "Apple" should not have leaked through.
     fireEvent.click(screen.getByRole("button", { name: "Filter" }));
     drawerRoot = getDrawerRoot();
-    const reopenedNameCard = within(drawerRoot).getByText("Name").closest("div.rounded-md");
+    const reopenedNameCard = within(drawerRoot).getByTestId("filter-card-name");
     expect(within(reopenedNameCard).getByPlaceholderText("Filter Name")).toHaveValue("");
   });
 

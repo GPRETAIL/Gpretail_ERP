@@ -1,42 +1,60 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { AlertOctagon } from "lucide-react";
-import { severityTileClass } from "../../../utils/dashboardFormatters";
+import { Box, ButtonBase, Stack, Typography } from "@mui/material";
+import { alpha } from "@mui/material/styles";
+import { severityTileSx } from "../../../utils/dashboardFormatters";
 
 export default function SettingsActionRequiredBanner({ actionRequired = [], loading }) {
   const navigate = useNavigate();
 
   return (
-    <div className="h-full rounded-xl border border-amber-200 bg-amber-50/50 p-4 dark:border-amber-900/50 dark:bg-amber-950/20">
-      <div className="mb-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <AlertOctagon className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-800 dark:text-gray-200">
+    <Box
+      sx={{
+        height: "100%", borderRadius: "10.5px", border: "1px solid",
+        borderColor: "warning.main",
+        bgcolor: (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.16 : 0.08),
+        p: 2,
+      }}
+    >
+      <Stack direction="row" spacing={1} sx={{ mb: 1.5, alignItems: "center", justifyContent: "space-between" }}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+          <Box sx={{ color: "warning.main", display: "inline-flex" }}>
+            <AlertOctagon className="h-5 w-5" />
+          </Box>
+          <Typography component="h2" sx={{ fontSize: 13, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
             Action Required (Administrative Housekeeping)
-          </h2>
-        </div>
-        <span className="text-xs font-medium text-slate-500 dark:text-gray-400">
+          </Typography>
+        </Stack>
+        <Typography sx={{ fontSize: 12, fontWeight: 500, color: "text.secondary" }}>
           Click any card to open the filtered workflow
-        </span>
-      </div>
+        </Typography>
+      </Stack>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      <Box
+        sx={{
+          display: "grid", gap: 1.5,
+          gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", sm: "repeat(3, minmax(0, 1fr))", lg: "repeat(6, minmax(0, 1fr))" },
+        }}
+      >
         {actionRequired.map((item) => (
-          <button
+          <ButtonBase
             key={item.key}
-            type="button"
             onClick={() => navigate(`${item.route}?${item.filter_param}`)}
-            className={`flex flex-col items-start justify-between rounded-lg border p-3 text-left transition hover:scale-[1.02] ${severityTileClass(
-              item.severity
-            )}`}
+            sx={{
+              display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "space-between",
+              borderRadius: "8.75px", border: "1px solid", p: 1.5, textAlign: "left",
+              transition: "transform 0.15s ease", "&:hover": { transform: "scale(1.02)" },
+              ...severityTileSx(item.severity),
+            }}
           >
-            <span className="text-xl font-extrabold text-slate-900 dark:text-gray-100">
+            <Typography sx={{ fontSize: 17.5, fontWeight: 800, color: "text.primary" }}>
               {loading ? "..." : item.count}
-            </span>
-            <span className="mt-1 text-xs font-semibold text-slate-700 dark:text-gray-300">{item.label}</span>
-          </button>
+            </Typography>
+            <Typography sx={{ mt: 0.5, fontSize: 12, fontWeight: 600, color: "text.secondary" }}>{item.label}</Typography>
+          </ButtonBase>
         ))}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }

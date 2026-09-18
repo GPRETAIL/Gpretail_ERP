@@ -1,5 +1,7 @@
 import React from "react";
 import { LayoutGrid } from "lucide-react";
+import { Box, Stack, Typography } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import { wholeNumber } from "../../../utils/dashboardFormatters";
 
 const BREAKDOWN_COLORS = {
@@ -11,39 +13,47 @@ const BREAKDOWN_COLORS = {
   backups: "slate",
 };
 
-const COLOR_CLASSES = {
-  blue: "border-blue-200 bg-blue-50/80 dark:border-blue-900/50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400",
-  indigo:
-    "border-indigo-200 bg-indigo-50/80 dark:border-indigo-900/50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400",
-  purple:
-    "border-purple-200 bg-purple-50/80 dark:border-purple-900/50 dark:bg-purple-950/30 text-purple-600 dark:text-purple-400",
-  emerald:
-    "border-emerald-200 bg-emerald-50/80 dark:border-emerald-900/50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400",
-  amber:
-    "border-amber-200 bg-amber-50/80 dark:border-amber-900/50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400",
-  slate: "border-slate-200 bg-slate-50/80 dark:border-gray-700 dark:bg-gray-700/40 text-slate-600 dark:text-gray-400",
+// blue/emerald/amber map onto real theme tokens; indigo/purple are decorative, non-semantic
+// accents kept as literal hex; slate is the neutral/no-color tile (no tint).
+const LITERAL_COLORS = { indigo: "#6366f1", purple: "#9333ea" };
+const colorSx = (color) => {
+  if (LITERAL_COLORS[color]) {
+    const hex = LITERAL_COLORS[color];
+    return { borderColor: hex, color: hex, bgcolor: (theme) => alpha(hex, theme.palette.mode === "dark" ? 0.16 : 0.08) };
+  }
+  if (color === "slate") {
+    return { borderColor: "divider", color: "text.secondary", bgcolor: "action.hover" };
+  }
+  const token = { blue: "primary", emerald: "success", amber: "warning" }[color];
+  return {
+    borderColor: `${token}.main`,
+    color: `${token}.main`,
+    bgcolor: (theme) => alpha(theme.palette[token].main, theme.palette.mode === "dark" ? 0.16 : 0.08),
+  };
 };
 
 export default function SettingsBreakdown({ breakdown = {}, loading }) {
   return (
-    <div className="h-full rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-800">
-      <div className="mb-4 flex items-center gap-2">
-        <LayoutGrid className="h-5 w-5 text-blue-600" />
-        <h3 className="text-sm font-bold text-slate-800 dark:text-gray-200">System Overview</h3>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
+    <Box sx={{ height: "100%", borderRadius: "10.5px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", p: 2.5, boxShadow: 1 }}>
+      <Stack direction="row" spacing={1} sx={{ mb: 2, alignItems: "center" }}>
+        <Box sx={{ color: "primary.main", display: "inline-flex" }}>
+          <LayoutGrid className="h-5 w-5" />
+        </Box>
+        <Typography component="h3" sx={{ fontSize: 13, fontWeight: 700, color: "text.primary" }}>System Overview</Typography>
+      </Stack>
+      <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 1.5 }}>
         {Object.entries(breakdown).map(([key, tile]) => (
-          <div
+          <Box
             key={key}
-            className={`flex flex-col items-start rounded-lg border p-3 ${COLOR_CLASSES[BREAKDOWN_COLORS[key] || "slate"]}`}
+            sx={{ display: "flex", flexDirection: "column", alignItems: "flex-start", borderRadius: "7px", border: "1px solid", p: 1.5, ...colorSx(BREAKDOWN_COLORS[key] || "slate") }}
           >
-            <span className="text-lg font-extrabold text-slate-900 dark:text-gray-100">
+            <Typography sx={{ fontSize: 15.75, fontWeight: 800, color: "text.primary" }}>
               {loading ? "..." : wholeNumber(tile.count)}
-            </span>
-            <span className="text-xs font-semibold">{tile.label}</span>
-          </div>
+            </Typography>
+            <Typography sx={{ fontSize: 12, fontWeight: 600, color: "inherit" }}>{tile.label}</Typography>
+          </Box>
         ))}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }

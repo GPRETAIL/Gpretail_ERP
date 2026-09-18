@@ -1,86 +1,96 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Users, UserCog, Store as StoreIcon, DatabaseBackup } from "lucide-react";
+import { Box, ButtonBase, Stack, Typography } from "@mui/material";
 import { wholeNumber } from "../../../utils/dashboardFormatters";
 
 // Four separate widgets (not one bundled row) so DashboardGrid can drag/resize each KPI card
 // independently in the layout customizer, same split as the Overview tab's KPI row.
-const blurClass = (privacyMode) => (privacyMode ? "blur-sm select-none" : "");
+const blurSx = (privacyMode) => (privacyMode ? { filter: "blur(4px)", userSelect: "none" } : {});
+
+const cardSx = (hoverColor) => ({
+  display: "block", width: "100%", height: "100%", textAlign: "left", cursor: "pointer",
+  borderRadius: "10.5px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper",
+  p: 2, boxShadow: 1, transition: "border-color 0.15s ease, box-shadow 0.15s ease",
+  "&:hover": { borderColor: hoverColor, boxShadow: 2 },
+});
 
 export function UsersCard({ summary = {}, loading, privacyMode }) {
   const navigate = useNavigate();
   return (
-    <div
-      onClick={() => navigate("/settings/user-access")}
-      className="group h-full cursor-pointer rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-blue-300 hover:shadow-md dark:border-gray-800 dark:bg-gray-800"
-    >
-      <div className="flex items-center justify-between text-slate-500 dark:text-gray-400">
-        <span className="text-xs font-bold uppercase tracking-wider">Users</span>
-        <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-      </div>
-      <div className={`mt-2 text-2xl font-extrabold text-slate-900 dark:text-gray-100 ${blurClass(privacyMode)}`}>
+    <ButtonBase onClick={() => navigate("/settings/user-access")} sx={cardSx("primary.main")}>
+      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
+        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Users</Typography>
+        <Box sx={{ color: "primary.main", display: "inline-flex" }}>
+          <Users className="h-5 w-5" />
+        </Box>
+      </Stack>
+      <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
         {loading ? "..." : wholeNumber(summary.total_users)}
-      </div>
-      <div className={`mt-1 text-xs text-slate-500 dark:text-gray-400 ${blurClass(privacyMode)}`}>Active: {wholeNumber(summary.active_users)}</div>
-    </div>
+      </Typography>
+      <Typography sx={{ mt: 0.5, fontSize: 11, color: "text.secondary", ...blurSx(privacyMode) }}>
+        Active: {wholeNumber(summary.active_users)}
+      </Typography>
+    </ButtonBase>
   );
 }
 
 export function SettingsEmployeesCard({ summary = {}, loading, privacyMode }) {
   const navigate = useNavigate();
   return (
-    <div
-      onClick={() => navigate("/hrms/employee")}
-      className="group h-full cursor-pointer rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-indigo-300 hover:shadow-md dark:border-gray-800 dark:bg-gray-800"
-    >
-      <div className="flex items-center justify-between text-slate-500 dark:text-gray-400">
-        <span className="text-xs font-bold uppercase tracking-wider">Employees</span>
-        <UserCog className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-      </div>
-      <div className={`mt-2 text-2xl font-extrabold text-slate-900 dark:text-gray-100 ${blurClass(privacyMode)}`}>
+    <ButtonBase onClick={() => navigate("/hrms/employee")} sx={cardSx("#a5b4fc")}>
+      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
+        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Employees</Typography>
+        <Box sx={{ color: "#6366f1", display: "inline-flex" }}>
+          <UserCog className="h-5 w-5" />
+        </Box>
+      </Stack>
+      <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
         {loading ? "..." : wholeNumber(summary.total_employees)}
-      </div>
-      <div className={`mt-1 text-xs text-slate-500 dark:text-gray-400 ${blurClass(privacyMode)}`}>
+      </Typography>
+      <Typography sx={{ mt: 0.5, fontSize: 11, color: "text.secondary", ...blurSx(privacyMode) }}>
         Active: {wholeNumber(summary.active_employees)}
-      </div>
-    </div>
+      </Typography>
+    </ButtonBase>
   );
 }
 
 export function SettingsStoresCard({ summary = {}, loading, privacyMode }) {
   const navigate = useNavigate();
   return (
-    <div
-      onClick={() => navigate("/settings/configure-local-server")}
-      className="group h-full cursor-pointer rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-emerald-300 hover:shadow-md dark:border-gray-800 dark:bg-gray-800"
-    >
-      <div className="flex items-center justify-between text-slate-500 dark:text-gray-400">
-        <span className="text-xs font-bold uppercase tracking-wider">Stores</span>
-        <StoreIcon className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-      </div>
-      <div className={`mt-2 text-2xl font-extrabold text-slate-900 dark:text-gray-100 ${blurClass(privacyMode)}`}>
+    <ButtonBase onClick={() => navigate("/settings/configure-local-server")} sx={cardSx("success.main")}>
+      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
+        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Stores</Typography>
+        <Box sx={{ color: "success.main", display: "inline-flex" }}>
+          <StoreIcon className="h-5 w-5" />
+        </Box>
+      </Stack>
+      <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
         {loading ? "..." : wholeNumber(summary.total_stores)}
-      </div>
-      <div className={`mt-1 text-xs text-slate-500 dark:text-gray-400 ${blurClass(privacyMode)}`}>Active: {wholeNumber(summary.active_stores)}</div>
-    </div>
+      </Typography>
+      <Typography sx={{ mt: 0.5, fontSize: 11, color: "text.secondary", ...blurSx(privacyMode) }}>
+        Active: {wholeNumber(summary.active_stores)}
+      </Typography>
+    </ButtonBase>
   );
 }
 
 export function LastBackupCard({ summary = {}, loading, privacyMode }) {
   const navigate = useNavigate();
   return (
-    <div
-      onClick={() => navigate("/settings/backup")}
-      className="group h-full cursor-pointer rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-amber-300 hover:shadow-md dark:border-gray-800 dark:bg-gray-800"
-    >
-      <div className="flex items-center justify-between text-slate-500 dark:text-gray-400">
-        <span className="text-xs font-bold uppercase tracking-wider">Last Backup</span>
-        <DatabaseBackup className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-      </div>
-      <div className={`mt-2 text-lg font-extrabold text-slate-900 dark:text-gray-100 ${blurClass(privacyMode)}`}>
+    <ButtonBase onClick={() => navigate("/settings/backup")} sx={cardSx("warning.main")}>
+      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
+        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Last Backup</Typography>
+        <Box sx={{ color: "warning.main", display: "inline-flex" }}>
+          <DatabaseBackup className="h-5 w-5" />
+        </Box>
+      </Stack>
+      <Typography sx={{ mt: 1, fontSize: 15.75, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
         {loading ? "..." : summary.last_backup_at ? new Date(summary.last_backup_at).toLocaleDateString("en-IN") : "Never"}
-      </div>
-      <div className={`mt-1 text-xs text-slate-500 dark:text-gray-400 ${blurClass(privacyMode)}`}>{summary.last_backup_size || "-"}</div>
-    </div>
+      </Typography>
+      <Typography sx={{ mt: 0.5, fontSize: 11, color: "text.secondary", ...blurSx(privacyMode) }}>
+        {summary.last_backup_size || "-"}
+      </Typography>
+    </ButtonBase>
   );
 }

@@ -29,8 +29,20 @@ import {
   DialogContent,
   DialogActions,
   Button,
+  ButtonBase,
   Typography,
   Box,
+  Stack,
+  Alert,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Select,
+  Checkbox,
+  FormControlLabel,
 } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -551,14 +563,25 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
               </IconButton>
             )}
             {(!sidebarExpanded || isMobile) ? (
-              <span className="text-base font-extrabold tracking-tight font-sans select-none flex items-center">
-                <span className="bg-gradient-to-r from-blue-600 via-sky-500 to-cyan-400 bg-clip-text text-transparent">
+              <Typography
+                component="span"
+                sx={{ fontSize: 16, fontWeight: 800, letterSpacing: "-0.02em", display: "flex", alignItems: "center", userSelect: "none" }}
+              >
+                <Box
+                  component="span"
+                  sx={{
+                    background: "linear-gradient(to right, #2563eb, #0ea5e9, #22d3ee)",
+                    backgroundClip: "text",
+                    WebkitBackgroundClip: "text",
+                    color: "transparent",
+                  }}
+                >
                   Vyn
-                </span>
-                <span className="text-slate-800 dark:text-white">
+                </Box>
+                <Box component="span" sx={{ color: "text.primary" }}>
                   erix
-                </span>
-              </span>
+                </Box>
+              </Typography>
             ) : null}
           </Box>
 
@@ -652,21 +675,26 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
             </Menu>
 
             {/* USER DROPDOWN */}
-            <button
+            <ButtonBase
               onClick={(event) => setAnchorEl(event.currentTarget)}
-              className="flex items-center space-x-2 p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+              sx={{
+                display: "flex", alignItems: "center", gap: 1, p: 0.5, borderRadius: 2,
+                transition: "background-color 0.15s ease",
+                "&:hover": { bgcolor: "action.hover" },
+              }}
             >
-              <img
-                className="w-7 h-7 rounded-full object-cover border border-gray-300 dark:border-gray-600"
+              <Box
+                component="img"
                 src={displayImage}
                 alt={userName}
                 onError={handleImageError}
                 referrerPolicy="no-referrer"
+                sx={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover", border: "1px solid", borderColor: "divider" }}
               />
-              <span className="text-sm font-medium hidden sm:inline text-gray-700 dark:text-gray-300">
+              <Typography sx={{ fontSize: 13, fontWeight: 500, color: "text.secondary", display: { xs: "none", sm: "inline" } }}>
                 {userName}
-              </span>
-            </button>
+              </Typography>
+            </ButtonBase>
 
             <Menu
               anchorEl={anchorEl}
@@ -788,28 +816,28 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
 
         <DialogContent dividers>
           {!sessionConnected ? (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900/60 dark:bg-amber-900/20 dark:text-amber-200">
+            <Alert severity="warning" sx={{ borderRadius: 1.5 }}>
               Printer connector is not connected on this machine. Run the connector and connect it first.
-            </div>
+            </Alert>
           ) : selectedPrinterNames.length === 0 ? (
-            <div className="rounded-lg border border-gray-200 bg-gray-50 dark:bg-gray-700 px-4 py-3 text-sm text-gray-600 dark:text-gray-400 dark:border-gray-700">
+            <Alert severity="info" sx={{ borderRadius: 1.5 }}>
               No printers are selected in the connector yet. Run `run.bat` and choose printers first.
-            </div>
+            </Alert>
           ) : availableSelfAssignmentPrinters.length === 0 ? (
-            <div className="rounded-lg border border-gray-200 bg-gray-50 dark:bg-gray-700 px-4 py-3 text-sm text-gray-600 dark:text-gray-400 dark:border-gray-700">
+            <Alert severity="info" sx={{ borderRadius: 1.5 }}>
               No connector printers are available for your user right now.
-            </div>
+            </Alert>
           ) : (
-            <div className="overflow-auto rounded-lg border border-gray-200 dark:border-gray-700">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-                  <tr>
-                    <th className="px-3 py-2 text-left border-b border-gray-200 dark:border-gray-700">Printer Name</th>
-                    <th className="px-3 py-2 text-left border-b border-gray-200 dark:border-gray-700">Function</th>
-                    <th className="px-3 py-2 text-left border-b border-gray-200 dark:border-gray-700">Assign</th>
-                  </tr>
-                </thead>
-                <tbody>
+            <TableContainer sx={{ border: 1, borderColor: "divider", borderRadius: 1.5 }}>
+              <Table size="small">
+                <TableHead>
+                  <TableRow sx={{ bgcolor: "action.hover" }}>
+                    <TableCell sx={{ fontWeight: 600 }}>Printer Name</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Function</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Assign</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
                   {availableSelfAssignmentPrinters.map(({ name }) => {
                     const draft = printerAssignments[name] || {
                       printer_name: name,
@@ -817,42 +845,42 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
                       checked: false,
                     };
                     return (
-                      <tr key={name} className="border-b border-gray-100 dark:border-gray-700 last:border-b-0">
-                        <td className="px-3 py-3 text-gray-800 dark:text-gray-100">{name}</td>
-                        <td className="px-3 py-3">
-                          <select
+                      <TableRow key={name}>
+                        <TableCell>{name}</TableCell>
+                        <TableCell>
+                          <Select
+                            size="small"
                             value={draft.printer_function}
-                            onChange={(event) =>
-                              handlePrinterFunctionChange(name, event.target.value)
-                            }
-                            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                            onChange={(event) => handlePrinterFunctionChange(name, event.target.value)}
+                            displayEmpty
+                            fullWidth
                           >
                             {PRINTER_FUNCTION_OPTIONS.map((option) => (
-                              <option key={option.value || "blank"} value={option.value}>
+                              <MenuItem key={option.value || "blank"} value={option.value}>
                                 {option.label}
-                              </option>
+                              </MenuItem>
                             ))}
-                          </select>
-                        </td>
-                        <td className="px-3 py-3">
-                          <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                            <input
-                              type="checkbox"
-                              checked={Boolean(draft.checked)}
-                              onChange={(event) =>
-                                handlePrinterAssignmentToggle(name, event.target.checked)
-                              }
-                              className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
-                            />
-                            Assigned
-                          </label>
-                        </td>
-                      </tr>
+                          </Select>
+                        </TableCell>
+                        <TableCell>
+                          <FormControlLabel
+                            sx={{ m: 0 }}
+                            control={
+                              <Checkbox
+                                size="small"
+                                checked={Boolean(draft.checked)}
+                                onChange={(event) => handlePrinterAssignmentToggle(name, event.target.checked)}
+                              />
+                            }
+                            label={<Typography sx={{ fontSize: 13 }}>Assigned</Typography>}
+                          />
+                        </TableCell>
+                      </TableRow>
                     );
                   })}
-                </tbody>
-              </table>
-            </div>
+                </TableBody>
+              </Table>
+            </TableContainer>
           )}
         </DialogContent>
 
@@ -879,7 +907,9 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
         <DialogTitle sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 1.5 }}>
           <Box>
             <Typography variant="subtitle1" fontWeight={600} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <BuildingStorefrontIcon className="w-5 h-5 text-blue-600" />
+              <Box sx={{ color: "primary.main", display: "inline-flex" }}>
+                <BuildingStorefrontIcon className="w-5 h-5" />
+              </Box>
               Switch Active Store Scope
             </Typography>
             <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.5 }}>
@@ -893,44 +923,44 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
 
         <DialogContent dividers>
           {loadingStores ? (
-            <div className="rounded-lg border border-gray-200 bg-gray-50 dark:bg-gray-700 px-4 py-3 text-sm text-gray-600 dark:text-gray-400 dark:border-gray-700">
+            <Alert severity="info" sx={{ borderRadius: 1.5 }}>
               Loading available stores...
-            </div>
+            </Alert>
           ) : (
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Active Store Location
-              </label>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
+            <Stack spacing={1}>
+              <Typography sx={{ fontSize: 13, fontWeight: 600 }}>Active Store Location</Typography>
+              <Typography sx={{ fontSize: 11.5, color: "text.secondary" }}>
                 Pick exactly one store to create/edit data there. All Stores or multiple stores
                 together only let you view combined data across them.
-              </p>
-              <div className="max-h-64 space-y-1 overflow-y-auto rounded-lg border border-gray-200 p-2 dark:border-gray-700">
-                <label className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50 dark:text-gray-100">
-                  <input
-                    type="checkbox"
-                    checked={selectedStoreIds.has(ALL_STORES_ID)}
-                    onChange={() => toggleStoreSelection(ALL_STORES_ID)}
-                    className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
-                  />
-                  All Stores
-                </label>
-                {storeOptions.map((option) => (
-                  <label
-                    key={option.value}
-                    className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50 dark:text-gray-100"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedStoreIds.has(option.value)}
-                      onChange={() => toggleStoreSelection(option.value)}
-                      className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+              </Typography>
+              <Box sx={{ maxHeight: 256, overflowY: "auto", border: 1, borderColor: "divider", borderRadius: 1.5, p: 1 }}>
+                <FormControlLabel
+                  sx={{ display: "flex", mx: 0, borderRadius: 1, px: 1, py: 0.5, "&:hover": { bgcolor: "action.hover" } }}
+                  control={
+                    <Checkbox
+                      size="small"
+                      checked={selectedStoreIds.has(ALL_STORES_ID)}
+                      onChange={() => toggleStoreSelection(ALL_STORES_ID)}
                     />
-                    {option.label}
-                  </label>
+                  }
+                  label={<Typography sx={{ fontSize: 13 }}>All Stores</Typography>}
+                />
+                {storeOptions.map((option) => (
+                  <FormControlLabel
+                    key={option.value}
+                    sx={{ display: "flex", mx: 0, borderRadius: 1, px: 1, py: 0.5, "&:hover": { bgcolor: "action.hover" } }}
+                    control={
+                      <Checkbox
+                        size="small"
+                        checked={selectedStoreIds.has(option.value)}
+                        onChange={() => toggleStoreSelection(option.value)}
+                      />
+                    }
+                    label={<Typography sx={{ fontSize: 13 }}>{option.label}</Typography>}
+                  />
                 ))}
-              </div>
-            </div>
+              </Box>
+            </Stack>
           )}
         </DialogContent>
 

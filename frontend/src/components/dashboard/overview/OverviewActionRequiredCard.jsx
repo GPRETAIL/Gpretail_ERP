@@ -1,7 +1,10 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { AlertOctagon } from "lucide-react";
+import { Box, ButtonBase, Stack, Typography } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import api from "../../../api/axios";
+import { severityTileSx } from "../../../utils/dashboardFormatters";
 
 // Types whose underlying condition represents something already gone wrong (a variance found, a
 // limit already breached, a run that already failed) rather than something merely approaching a
@@ -35,55 +38,73 @@ export default function OverviewActionRequiredCard({ items = [], loading, onItem
   };
 
   return (
-    <div className="h-full rounded-xl border border-amber-200 bg-amber-50/50 p-4 dark:border-amber-900/50 dark:bg-amber-950/20">
-      <div className="mb-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <AlertOctagon className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-800 dark:text-gray-200">
+    <Box
+      sx={{
+        height: "100%", borderRadius: "10.5px", border: "1px solid",
+        borderColor: "warning.main",
+        bgcolor: (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.16 : 0.08),
+        p: 2,
+      }}
+    >
+      <Stack direction="row" spacing={1} sx={{ mb: 1.5, alignItems: "center", justifyContent: "space-between" }}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+          <Box sx={{ color: "warning.main", display: "inline-flex" }}>
+            <AlertOctagon className="h-5 w-5" />
+          </Box>
+          <Typography component="h2" sx={{ fontSize: 13, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
             Action Required (All Modules)
-          </h2>
-        </div>
-        <span className="text-xs font-medium text-slate-500 dark:text-gray-400">
+          </Typography>
+        </Stack>
+        <Typography sx={{ fontSize: 12, fontWeight: 500, color: "text.secondary" }}>
           Click any item to open it
-        </span>
-      </div>
+        </Typography>
+      </Stack>
 
       {loading ? (
-        <div className="flex h-[100px] items-center justify-center text-sm text-slate-500 dark:text-gray-400">
-          Loading...
-        </div>
+        <Box sx={{ display: "flex", height: 100, alignItems: "center", justifyContent: "center" }}>
+          <Typography sx={{ fontSize: 14, color: "text.secondary" }}>Loading...</Typography>
+        </Box>
       ) : items.length === 0 ? (
-        <div className="flex h-[100px] items-center justify-center text-sm text-slate-500 dark:text-gray-400">
-          Nothing needs attention right now.
-        </div>
+        <Box sx={{ display: "flex", height: 100, alignItems: "center", justifyContent: "center" }}>
+          <Typography sx={{ fontSize: 14, color: "text.secondary" }}>Nothing needs attention right now.</Typography>
+        </Box>
       ) : (
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        <Box sx={{ display: "grid", gap: 1, gridTemplateColumns: { xs: "1fr", sm: "repeat(2, minmax(0, 1fr))", lg: "repeat(4, minmax(0, 1fr))" } }}>
           {items.map((item) => {
             const critical = CRITICAL_TYPE_PATTERN.test(item.type || "");
             return (
-              <button
+              <ButtonBase
                 key={item.id}
-                type="button"
                 onClick={() => handleClick(item)}
-                className={`flex flex-col items-start gap-0.5 rounded-lg border p-3 text-left transition hover:scale-[1.02] ${
-                  critical
-                    ? "border-red-200 bg-red-50/80 hover:bg-red-100 dark:border-red-900/50 dark:bg-red-950/30"
-                    : "border-amber-200 bg-amber-50/80 hover:bg-amber-100 dark:border-amber-900/50 dark:bg-amber-950/30"
-                }`}
+                sx={{
+                  display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 0.25,
+                  borderRadius: "8.75px", border: "1px solid", p: 1.5, textAlign: "left",
+                  transition: "transform 0.15s ease", "&:hover": { transform: "scale(1.02)" },
+                  ...severityTileSx(critical ? "critical" : "warning"),
+                }}
               >
-                <span className="flex w-full items-center justify-between gap-2">
-                  <span className="text-xs font-semibold text-slate-800 dark:text-gray-200">{item.title}</span>
-                  {!item.read_at && <span className="h-2 w-2 shrink-0 rounded-full bg-red-500" />}
-                </span>
-                <span className="line-clamp-2 text-[11px] text-slate-600 dark:text-gray-400">{item.message}</span>
-                <span className="mt-auto pt-1 text-[10px] text-slate-400 dark:text-gray-500">
+                <Stack direction="row" sx={{ width: "100%", alignItems: "center", justifyContent: "space-between", gap: 1 }}>
+                  <Typography sx={{ fontSize: 12, fontWeight: 600, color: "text.primary" }}>{item.title}</Typography>
+                  {!item.read_at && (
+                    <Box sx={{ width: 8, height: 8, flexShrink: 0, borderRadius: "50%", bgcolor: "error.main" }} />
+                  )}
+                </Stack>
+                <Typography
+                  sx={{
+                    fontSize: 11, color: "text.secondary", display: "-webkit-box",
+                    WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
+                  }}
+                >
+                  {item.message}
+                </Typography>
+                <Typography sx={{ mt: "auto", pt: 0.5, fontSize: 10, color: "text.disabled" }}>
                   {timeAgo(item.created_at)}
-                </span>
-              </button>
+                </Typography>
+              </ButtonBase>
             );
           })}
-        </div>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }

@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
+import { Box, Button, Stack, Typography } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import api from "../api/axios";
 import DashboardGrid from "./dashboard/DashboardGrid";
 import {
@@ -16,14 +18,14 @@ import WarehouseIncomingShipmentsTable from "./dashboard/warehouse/WarehouseInco
 import WarehouseLowStockTable from "./dashboard/warehouse/WarehouseLowStockTable";
 
 const QUICK_ACTIONS = [
-  { label: "+ Direct Purchase", path: "/warehouse/direct-purchase", color: "bg-blue-600 hover:bg-blue-700 text-white" },
-  { label: "+ Inventory Entry", path: "/warehouse/inventory-entry", color: "bg-indigo-600 hover:bg-indigo-700 text-white" },
-  { label: "+ Create GRN", path: "/warehouse/receive-goods", color: "bg-emerald-600 hover:bg-emerald-700 text-white" },
-  { label: "+ Stock Outward", path: "/warehouse/stock-outward", color: "bg-purple-600 hover:bg-purple-700 text-white" },
-  { label: "+ Transport Entry", path: "/warehouse/transport-entry", color: "bg-sky-600 hover:bg-sky-700 text-white" },
-  { label: "+ Physical Stock", path: "/warehouse/physical-stock", color: "bg-amber-600 hover:bg-amber-700 text-white" },
-  { label: "+ Purchase Return", path: "/warehouse/purchase-return", color: "bg-rose-600 hover:bg-rose-700 text-white" },
-  { label: "+ Generate Barcode", path: "/warehouse/barcode", color: "bg-slate-700 hover:bg-slate-800 text-white" },
+  { label: "+ Direct Purchase", path: "/warehouse/direct-purchase", bg: "#2563eb", hoverBg: "#1d4ed8" },
+  { label: "+ Inventory Entry", path: "/warehouse/inventory-entry", bg: "#4f46e5", hoverBg: "#4338ca" },
+  { label: "+ Create GRN", path: "/warehouse/receive-goods", bg: "#059669", hoverBg: "#047857" },
+  { label: "+ Stock Outward", path: "/warehouse/stock-outward", bg: "#9333ea", hoverBg: "#7e22ce" },
+  { label: "+ Transport Entry", path: "/warehouse/transport-entry", bg: "#0284c7", hoverBg: "#0369a1" },
+  { label: "+ Physical Stock", path: "/warehouse/physical-stock", bg: "#d97706", hoverBg: "#b45309" },
+  { label: "+ Purchase Return", path: "/warehouse/purchase-return", bg: "#e11d48", hoverBg: "#be123c" },
+  { label: "+ Generate Barcode", path: "/warehouse/barcode", bg: "#334155", hoverBg: "#1e293b" },
 ];
 
 export default function WarehouseDashboardTabPane({ active, fromDate, toDate, companyId, privacyMode }) {
@@ -139,41 +141,60 @@ export default function WarehouseDashboardTabPane({ active, fromDate, toDate, co
 
   if (error) {
     return (
-      <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <AlertTriangle className="h-5 w-5 text-red-600" />
-          <span>{error}</span>
-        </div>
-        <button
+      <Stack
+        direction="row"
+        sx={{
+          alignItems: "center", justifyContent: "space-between", borderRadius: "10.5px", border: "1px solid",
+          borderColor: "error.main", bgcolor: (theme) => alpha(theme.palette.error.main, theme.palette.mode === "dark" ? 0.16 : 0.08),
+          p: 2, fontSize: 13, color: "error.main",
+        }}
+      >
+        <Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
+          <Box sx={{ color: "error.main", display: "inline-flex" }}>
+            <AlertTriangle className="h-5 w-5" />
+          </Box>
+          <Typography sx={{ fontSize: 13, color: "error.main" }}>{error}</Typography>
+        </Stack>
+        <Button
           onClick={fetchData}
-          className="rounded bg-red-600 px-3 py-1 text-xs font-semibold text-white hover:bg-red-700"
+          variant="contained"
+          color="error"
+          size="small"
+          sx={{ borderRadius: 1, fontSize: 12, fontWeight: 600 }}
         >
           Retry
-        </button>
-      </div>
+        </Button>
+      </Stack>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
       {/* Quick Workflows Bar -- a toolbar, not a data widget, so it stays fixed above the grid */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3 dark:border-gray-800">
-        <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-gray-400">
+      <Stack
+        direction="row"
+        sx={{ flexWrap: "wrap", alignItems: "center", gap: 1, borderBottom: "1px solid", borderColor: "divider", pb: 1.5 }}
+      >
+        <Typography sx={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "text.secondary" }}>
           Quick Actions:
-        </span>
+        </Typography>
         {QUICK_ACTIONS.map((action) => (
-          <button
+          <Button
             key={action.label}
-            type="button"
             onClick={() => navigate(action.path)}
-            className={`rounded-md px-2.5 py-1 text-xs font-medium shadow-sm transition ${action.color}`}
+            variant="contained"
+            size="small"
+            sx={{
+              borderRadius: "5.25px", px: 1.25, py: 0.5, fontSize: 12, fontWeight: 500, boxShadow: 1,
+              bgcolor: action.bg, color: "#fff", "&:hover": { bgcolor: action.hoverBg, boxShadow: 1 },
+            }}
           >
             {action.label}
-          </button>
+          </Button>
         ))}
-      </div>
+      </Stack>
 
       <DashboardGrid tabKey="warehouse" widgets={widgets} />
-    </div>
+    </Box>
   );
 }

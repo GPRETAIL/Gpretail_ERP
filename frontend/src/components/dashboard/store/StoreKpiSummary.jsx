@@ -1,76 +1,97 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Store as StoreIcon, Boxes, Users, BarChart3 } from "lucide-react";
+import { Box, ButtonBase, Stack, Typography } from "@mui/material";
 import { formatCurrency, wholeNumber } from "../../../utils/dashboardFormatters";
 
 // Four separate widgets (not one bundled row) so DashboardGrid can drag/resize each KPI card
 // independently in the layout customizer, same split as the Overview tab's KPI row.
-const blurClass = (privacyMode) => (privacyMode ? "blur-sm select-none" : "");
+const blurSx = (privacyMode) => (privacyMode ? { filter: "blur(4px)", userSelect: "none" } : {});
+
+const staticCardSx = {
+  height: "100%", borderRadius: "10.5px", border: "1px solid", borderColor: "divider",
+  bgcolor: "background.paper", p: 2, boxShadow: 1,
+};
+
+const cardSx = (hoverColor) => ({
+  display: "block", width: "100%", textAlign: "left", cursor: "pointer",
+  transition: "border-color 0.15s ease, box-shadow 0.15s ease",
+  "&:hover": { borderColor: hoverColor, boxShadow: 2 },
+  ...staticCardSx,
+});
 
 export function StoresCard({ summary = {}, loading, privacyMode }) {
   const navigate = useNavigate();
   return (
-    <div
-      onClick={() => navigate("/settings/configure-local-server")}
-      className="group h-full cursor-pointer rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-blue-300 hover:shadow-md dark:border-gray-800 dark:bg-gray-800"
-    >
-      <div className="flex items-center justify-between text-slate-500 dark:text-gray-400">
-        <span className="text-xs font-bold uppercase tracking-wider">Stores</span>
-        <StoreIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-      </div>
-      <div className={`mt-2 text-2xl font-extrabold text-slate-900 dark:text-gray-100 ${blurClass(privacyMode)}`}>
+    <ButtonBase onClick={() => navigate("/settings/configure-local-server")} sx={cardSx("primary.main")}>
+      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
+        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Stores</Typography>
+        <Box sx={{ color: "primary.main", display: "inline-flex" }}>
+          <StoreIcon className="h-5 w-5" />
+        </Box>
+      </Stack>
+      <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
         {loading ? "..." : wholeNumber(summary.total_stores)}
-      </div>
-      <div className={`mt-1 text-xs text-slate-500 dark:text-gray-400 ${blurClass(privacyMode)}`}>Active: {wholeNumber(summary.active_stores)}</div>
-    </div>
+      </Typography>
+      <Typography sx={{ mt: 0.5, fontSize: 11, color: "text.secondary", ...blurSx(privacyMode) }}>
+        Active: {wholeNumber(summary.active_stores)}
+      </Typography>
+    </ButtonBase>
   );
 }
 
 export function ConsolidatedSalesCard({ summary = {}, loading, privacyMode }) {
   return (
-    <div className="group h-full rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-800">
-      <div className="flex items-center justify-between text-slate-500 dark:text-gray-400">
-        <span className="text-xs font-bold uppercase tracking-wider">Consolidated Sales</span>
-        <BarChart3 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-      </div>
-      <div className={`mt-2 text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 ${blurClass(privacyMode)}`}>
+    <Box sx={staticCardSx}>
+      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
+        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          Consolidated Sales
+        </Typography>
+        <Box sx={{ color: "success.main", display: "inline-flex" }}>
+          <BarChart3 className="h-5 w-5" />
+        </Box>
+      </Stack>
+      <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "success.main", ...blurSx(privacyMode) }}>
         {loading ? "..." : formatCurrency(summary.consolidated_sales_range)}
-      </div>
-      <div className="mt-1 text-xs text-slate-500 dark:text-gray-400">Across all visible stores</div>
-    </div>
+      </Typography>
+      <Typography sx={{ mt: 0.5, fontSize: 11, color: "text.secondary" }}>Across all visible stores</Typography>
+    </Box>
   );
 }
 
 export function ConsolidatedStockValueCard({ summary = {}, loading, privacyMode }) {
   return (
-    <div className="group h-full rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-800">
-      <div className="flex items-center justify-between text-slate-500 dark:text-gray-400">
-        <span className="text-xs font-bold uppercase tracking-wider">Consolidated Stock Value</span>
-        <Boxes className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-      </div>
-      <div className={`mt-2 text-2xl font-extrabold text-slate-900 dark:text-gray-100 ${blurClass(privacyMode)}`}>
+    <Box sx={staticCardSx}>
+      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
+        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          Consolidated Stock Value
+        </Typography>
+        <Box sx={{ color: "#9333ea", display: "inline-flex" }}>
+          <Boxes className="h-5 w-5" />
+        </Box>
+      </Stack>
+      <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
         {loading ? "..." : formatCurrency(summary.consolidated_stock_value)}
-      </div>
-      <div className="mt-1 text-xs text-slate-500 dark:text-gray-400">At retail price</div>
-    </div>
+      </Typography>
+      <Typography sx={{ mt: 0.5, fontSize: 11, color: "text.secondary" }}>At retail price</Typography>
+    </Box>
   );
 }
 
 export function ActiveStaffCard({ summary = {}, loading, privacyMode }) {
   const navigate = useNavigate();
   return (
-    <div
-      onClick={() => navigate("/hrms/employee")}
-      className="group h-full cursor-pointer rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-amber-300 hover:shadow-md dark:border-gray-800 dark:bg-gray-800"
-    >
-      <div className="flex items-center justify-between text-slate-500 dark:text-gray-400">
-        <span className="text-xs font-bold uppercase tracking-wider">Active Staff</span>
-        <Users className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-      </div>
-      <div className={`mt-2 text-2xl font-extrabold text-slate-900 dark:text-gray-100 ${blurClass(privacyMode)}`}>
+    <ButtonBase onClick={() => navigate("/hrms/employee")} sx={cardSx("warning.main")}>
+      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
+        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Active Staff</Typography>
+        <Box sx={{ color: "warning.main", display: "inline-flex" }}>
+          <Users className="h-5 w-5" />
+        </Box>
+      </Stack>
+      <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
         {loading ? "..." : wholeNumber(summary.total_active_staff)}
-      </div>
-      <div className="mt-1 text-xs text-slate-500 dark:text-gray-400">Across all stores</div>
-    </div>
+      </Typography>
+      <Typography sx={{ mt: 0.5, fontSize: 11, color: "text.secondary" }}>Across all stores</Typography>
+    </ButtonBase>
   );
 }

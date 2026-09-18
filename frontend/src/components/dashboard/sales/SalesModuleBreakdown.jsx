@@ -1,6 +1,8 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { LayoutGrid, ShoppingCart, RotateCcw, Repeat, CreditCard, Undo2 } from "lucide-react";
+import { Box, ButtonBase, Stack, Typography } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import { formatCurrency } from "../../../utils/dashboardFormatters";
 
 const TILES = [
@@ -11,46 +13,60 @@ const TILES = [
   { key: "refunds", label: "Refunds", icon: Undo2, color: "slate", route: "/sales/pos-sales-return" },
 ];
 
-const COLOR_CLASSES = {
-  blue: "border-blue-200 bg-blue-50/80 dark:border-blue-900/50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400",
-  rose: "border-rose-200 bg-rose-50/80 dark:border-rose-900/50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400",
-  purple:
-    "border-purple-200 bg-purple-50/80 dark:border-purple-900/50 dark:bg-purple-950/30 text-purple-600 dark:text-purple-400",
-  amber:
-    "border-amber-200 bg-amber-50/80 dark:border-amber-900/50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400",
-  slate: "border-slate-200 bg-slate-50/80 dark:border-gray-700 dark:bg-gray-700/40 text-slate-600 dark:text-gray-400",
+// blue/rose/amber map onto real theme tokens (primary/error/warning); purple is a decorative,
+// non-semantic accent kept as a literal hex; slate is the neutral/no-color tile, using divider +
+// text.secondary + a plain hover tint rather than any brand/status color.
+const colorSx = (color) => {
+  if (color === "purple") {
+    return { borderColor: "#d8b4fe", color: "#9333ea", bgcolor: (theme) => alpha("#9333ea", theme.palette.mode === "dark" ? 0.16 : 0.08) };
+  }
+  if (color === "slate") {
+    return { borderColor: "divider", color: "text.secondary", bgcolor: "action.hover" };
+  }
+  const token = { blue: "primary", rose: "error", amber: "warning" }[color];
+  return {
+    borderColor: `${token}.main`,
+    color: `${token}.main`,
+    bgcolor: (theme) => alpha(theme.palette[token].main, theme.palette.mode === "dark" ? 0.16 : 0.08),
+  };
 };
 
 export default function SalesModuleBreakdown({ transactionBreakdown = {}, loading }) {
   const navigate = useNavigate();
 
   return (
-    <div className="h-full rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-800">
-      <div className="mb-4 flex items-center gap-2">
-        <LayoutGrid className="h-5 w-5 text-blue-600" />
-        <h3 className="text-sm font-bold text-slate-800 dark:text-gray-200">Sales Module Breakdown</h3>
-      </div>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+    <Box sx={{ height: "100%", borderRadius: "10.5px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", p: 2.5, boxShadow: 1 }}>
+      <Stack direction="row" spacing={1} sx={{ mb: 2, alignItems: "center" }}>
+        <Box sx={{ color: "primary.main", display: "inline-flex" }}>
+          <LayoutGrid className="h-5 w-5" />
+        </Box>
+        <Typography component="h3" sx={{ fontSize: 13, fontWeight: 700, color: "text.primary" }}>Sales Module Breakdown</Typography>
+      </Stack>
+      <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", sm: "repeat(3, minmax(0, 1fr))", lg: "repeat(5, minmax(0, 1fr))" } }}>
         {TILES.map((tile) => {
           const stats = transactionBreakdown[tile.key] || { count: 0, amount: 0 };
           const Icon = tile.icon;
           return (
-            <button
+            <ButtonBase
               key={tile.key}
-              type="button"
               onClick={() => navigate(tile.route)}
-              className={`flex flex-col items-start rounded-lg border p-3 text-left transition hover:scale-[1.02] ${COLOR_CLASSES[tile.color]}`}
+              sx={{
+                display: "flex", flexDirection: "column", alignItems: "flex-start",
+                borderRadius: "7px", border: "1px solid", p: 1.5, textAlign: "left",
+                transition: "transform 0.15s ease", "&:hover": { transform: "scale(1.02)" },
+                ...colorSx(tile.color),
+              }}
             >
-              <Icon className="h-4 w-4" />
-              <span className="mt-2 text-lg font-extrabold text-slate-900 dark:text-gray-100">
+              <Icon className="h-4 w-4" style={{ color: "inherit" }} />
+              <Typography sx={{ mt: 1, fontSize: 15.75, fontWeight: 800, color: "text.primary" }}>
                 {loading ? "..." : formatCurrency(stats.amount)}
-              </span>
-              <span className="text-xs font-semibold">{tile.label}</span>
-              <span className="text-[11px] text-slate-500 dark:text-gray-400">{stats.count} txns</span>
-            </button>
+              </Typography>
+              <Typography sx={{ fontSize: 12, fontWeight: 600, color: "inherit" }}>{tile.label}</Typography>
+              <Typography sx={{ fontSize: 11, color: "text.secondary" }}>{stats.count} txns</Typography>
+            </ButtonBase>
           );
         })}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }

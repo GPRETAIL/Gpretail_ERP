@@ -9,7 +9,7 @@ import { handleEnterKeyNavigation } from "../utils/enterToNextField";
 import { usePrintContext } from "../context/PrintContext";
 import { useSyncStatus } from "../context/SyncStatusContext";
 import { Printer, Store, Server, Cloud, X, Loader2, CheckCircle2, AlertCircle, Upload, Download } from "lucide-react";
-import { Chip } from "@mui/material";
+import { Box, ButtonBase, Chip, Stack, Typography } from "@mui/material";
 import SubscriptionDuePopup from "./SubscriptionDuePopup";
 import useSubscriptionStatus from "../hooks/useSubscriptionStatus";
 import useStoreNameMap, { resolveStoreName } from "../hooks/useStoreNameMap";
@@ -83,7 +83,7 @@ const PrintStatusFooter = () => {
   }, [activeActivity, clearRecentActivity, footerTransfer, navigateActiveTab]);
 
   return (
-    <div className="shrink-0 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
+    <Box sx={{ flexShrink: 0, borderTop: 1, borderColor: "divider", bgcolor: "background.default" }}>
       <PrintQueueTray
         open={expanded}
         onClose={() => setExpanded(false)}
@@ -96,64 +96,61 @@ const PrintStatusFooter = () => {
       />
 
       {/* Main footer bar */}
-      <div className="flex justify-between items-center px-3 md:px-6 lg:px-8 py-1 text-[10px] md:text-xs text-gray-600 dark:text-gray-400">
-        <span>© Vynerix Pvt Ltd.</span>
+      <Stack
+        direction="row"
+        sx={{
+          justifyContent: "space-between", alignItems: "center",
+          px: { xs: 1.5, md: 3, lg: 4 }, py: 0.5,
+          fontSize: { xs: 10, md: 12 }, color: "text.secondary",
+        }}
+      >
+        <Typography component="span" sx={{ fontSize: "inherit" }}>© Vynerix Pvt Ltd.</Typography>
 
-        <div className="flex items-center gap-3">
+        <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
           {footerTransfer ? (
-            <button
-              type="button"
+            <ButtonBase
               onClick={handleOpenTransferScreen}
-              className="flex items-center gap-1.5 min-w-0 max-w-[360px] hover:opacity-90"
               title={footerTransfer.path ? "Open related screen" : footerTransfer.statusMessage || footerTransfer.label}
+              sx={{
+                display: "flex", alignItems: "center", gap: 0.75, minWidth: 0, maxWidth: 360,
+                fontSize: "inherit", "&:hover": { opacity: 0.9 },
+                color: activeActivity ? "primary.main" : recentActivity?.status === "success" ? "success.main" : "error.main",
+              }}
             >
               {activeActivity ? (
-                <Loader2 className="w-3 h-3 text-blue-500 animate-spin shrink-0" />
+                <Loader2 className="w-3 h-3 animate-spin" style={{ flexShrink: 0 }} />
               ) : recentActivity?.status === "success" ? (
-                <CheckCircle2 className="w-3 h-3 text-green-500 shrink-0" />
+                <CheckCircle2 className="w-3 h-3" style={{ flexShrink: 0 }} />
               ) : (
-                <AlertCircle className="w-3 h-3 text-red-500 shrink-0" />
+                <AlertCircle className="w-3 h-3" style={{ flexShrink: 0 }} />
               )}
-              <TransferStatusIcon
-                className={`w-3 h-3 shrink-0 ${
-                  activeActivity
-                    ? "text-blue-500"
-                    : recentActivity?.status === "success"
-                      ? "text-green-500"
-                      : "text-red-500"
-                }`}
-              />
-              <span
-                className={`truncate ${
-                  activeActivity
-                    ? "text-blue-600 dark:text-blue-400 font-medium"
-                    : recentActivity?.status === "success"
-                      ? "text-green-600 dark:text-green-400"
-                      : "text-red-600 dark:text-red-400"
-                }`}
+              <TransferStatusIcon className="w-3 h-3" style={{ flexShrink: 0 }} />
+              <Typography
+                component="span"
+                noWrap
+                sx={{ fontSize: "inherit", fontWeight: activeActivity ? 600 : 400, color: "inherit" }}
               >
                 {activeActivity
                   ? `${activeActivity.type === TYPE.IMPORT ? "Import" : "Export"} ${activeActivity.progressPercent}%${activeActivity.statusMessage ? ` - ${activeActivity.statusMessage}` : ""}`
                   : `${recentActivity?.type === TYPE.IMPORT ? "Import" : "Export"} ${recentActivity?.status === "success" ? "completed" : "failed"}${recentActivity?.statusMessage ? ` - ${recentActivity.statusMessage}` : ""}`}
-              </span>
-            </button>
+              </Typography>
+            </ButtonBase>
           ) : null}
 
           {canSwitchStore ? (
-            <button
-              type="button"
+            <ButtonBase
               onClick={() => window.dispatchEvent(new CustomEvent("vx:open-store-switch"))}
-              className="flex items-center gap-1.5 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
               title="Switch store"
+              sx={{ display: "flex", alignItems: "center", gap: 0.75, fontSize: "inherit", color: "inherit", "&:hover": { color: "text.primary" } }}
             >
-              <Store className="w-3 h-3 text-gray-400 dark:text-gray-500" />
-              <span>{activeStoreLabel}</span>
-            </button>
+              <Store className="w-3 h-3" style={{ color: "inherit", opacity: 0.7 }} />
+              <Typography component="span" sx={{ fontSize: "inherit", color: "inherit" }}>{activeStoreLabel}</Typography>
+            </ButtonBase>
           ) : (
-            <span className="flex items-center gap-1.5" title="Active store context">
-              <Store className="w-3 h-3 text-gray-400 dark:text-gray-500" />
-              <span>{activeStoreLabel}</span>
-            </span>
+            <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }} title="Active store context">
+              <Store className="w-3 h-3" style={{ opacity: 0.7 }} />
+              <Typography component="span" sx={{ fontSize: "inherit" }}>{activeStoreLabel}</Typography>
+            </Stack>
           )}
 
           {subscription?.onTrial ? (
@@ -184,77 +181,90 @@ const PrintStatusFooter = () => {
             />
           ) : null}
 
-          <button
-            type="button"
+          <ButtonBase
             onClick={() => setExpanded((p) => !p)}
-            className="flex items-center gap-1.5 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+            sx={{
+              display: "flex", alignItems: "center", gap: 0.75, fontSize: "inherit", color: "inherit",
+              "&:hover": { color: "text.primary" },
+            }}
           >
             {hasActiveJobs ? (
               <>
-                <Loader2 className="w-3 h-3 text-blue-500 animate-spin" />
-                <span className="text-blue-600 dark:text-blue-400 font-medium">
+                <Loader2 className="w-3 h-3 animate-spin" style={{ color: "inherit" }} />
+                <Typography component="span" sx={{ fontSize: "inherit", fontWeight: 600, color: "primary.main" }}>
                   {currentJob
                     ? currentJob.totalCopies > 1
                       ? `Printing: ${getPrintJobLabel(currentJob)} — Copy ${currentJob.currentCopy}/${currentJob.totalCopies}`
                       : `Printing: ${getPrintJobLabel(currentJob)}`
                     : "Printing..."}
-                </span>
+                </Typography>
               </>
             ) : connected ? (
               <>
-                <Printer className="w-3 h-3 text-green-500" />
-                <span className="text-green-600 dark:text-green-400">
+                <Box sx={{ color: "success.main", display: "inline-flex" }}>
+                  <Printer className="w-3 h-3" />
+                </Box>
+                <Typography component="span" sx={{ fontSize: "inherit", color: "success.main" }}>
                   Print Service
-                </span>
+                </Typography>
               </>
             ) : (
               <>
-                <Printer className="w-3 h-3 text-gray-400 dark:text-gray-500" />
-                <span>Print Service (Offline)</span>
+                <Printer className="w-3 h-3" style={{ opacity: 0.6 }} />
+                <Typography component="span" sx={{ fontSize: "inherit" }}>Print Service (Offline)</Typography>
               </>
             )}
-          </button>
+          </ButtonBase>
 
           {syncStatus.enabled ? (
-            <button
-              type="button"
+            <ButtonBase
               onClick={() => navigateActiveTab("/settings/configure-local-server")}
-              className="flex items-center gap-1.5 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
               title={
                 syncStatus.target === "local"
                   ? "Using this store's local server"
                   : "Local server unreachable — failed over to cloud"
               }
+              sx={{
+                display: "flex", alignItems: "center", gap: 0.75, fontSize: "inherit", color: "inherit",
+                "&:hover": { color: "text.primary" },
+              }}
             >
               {syncStatus.target === "local" ? (
                 <>
-                  <Server className="w-3 h-3 text-green-500" />
-                  <span className="text-green-600 dark:text-green-400">Local Server</span>
+                  <Box sx={{ color: "success.main", display: "inline-flex" }}>
+                    <Server className="w-3 h-3" />
+                  </Box>
+                  <Typography component="span" sx={{ fontSize: "inherit", color: "success.main" }}>Local Server</Typography>
                 </>
               ) : (
                 <>
-                  <Cloud className="w-3 h-3 text-amber-500" />
-                  <span className="text-amber-600 dark:text-amber-400">Cloud (Local Down)</span>
+                  <Box sx={{ color: "warning.main", display: "inline-flex" }}>
+                    <Cloud className="w-3 h-3" />
+                  </Box>
+                  <Typography component="span" sx={{ fontSize: "inherit", color: "warning.main" }}>Cloud (Local Down)</Typography>
                 </>
               )}
               {(syncStatus.outboxPending > 0 || syncStatus.outboxFailed > 0) && (
-                <span
-                  className={`rounded-full px-1.5 text-[10px] font-semibold ${
-                    syncStatus.outboxFailed > 0
-                      ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
-                      : "bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-200"
-                  }`}
+                <Box
+                  component="span"
+                  sx={{
+                    borderRadius: 10, px: 0.75, fontSize: 10, fontWeight: 600,
+                    bgcolor: syncStatus.outboxFailed > 0 ? "error.light" : "action.selected",
+                    color: syncStatus.outboxFailed > 0 ? "error.dark" : "text.secondary",
+                  }}
                 >
                   {syncStatus.outboxFailed > 0 ? syncStatus.outboxFailed : syncStatus.outboxPending}
-                </span>
+                </Box>
               )}
-            </button>
+            </ButtonBase>
           ) : null}
 
-          <span>Customer Care <b>+91 123456789</b></span>
-        </div>
-      </div>
-    </div>
+          <Typography component="span" sx={{ fontSize: "inherit" }}>
+            Customer Care <b>+91 123456789</b>
+          </Typography>
+        </Stack>
+      </Stack>
+    </Box>
   );
 };
 
@@ -280,6 +290,11 @@ const MainLayout = () => {
 
   const closeMobileSidebar = useCallback(() => setMobileOpen(false), []);
 
+  // The shell below (mobile sidebar's fixed/translate-x slide-in, the backdrop, the flex/h-screen
+  // scaffolding) is left as plain Tailwind markup rather than converted to MUI -- pure layout and
+  // transition mechanics with no card/button/color semantics to gain from the swap, and real
+  // regression risk in the sliding-drawer z-index/transition behavior for near-zero visible benefit.
+  // Same scope call as FilterableDataTable's native Search button in Stage B2.
   return (
     <TransferActivityProvider>
       <TabProvider>

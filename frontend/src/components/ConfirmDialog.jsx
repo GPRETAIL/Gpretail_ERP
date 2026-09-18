@@ -1,4 +1,5 @@
 import { Trash2 } from "lucide-react";
+import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack, Typography } from "@mui/material";
 
 /**
  * ConfirmDialog — a lightweight confirmation modal matching the app's Tailwind style.
@@ -20,49 +21,33 @@ const ConfirmDialog = ({
   onConfirm,
   onCancel,
   danger = true,
-}) => {
-  if (!open) return null;
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-      onClick={onCancel}
-    >
-      <div
-        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 w-full max-w-sm mx-4"
-        onClick={(e) => e.stopPropagation()}
+}) => (
+  <Dialog open={open} onClose={onCancel} maxWidth="xs" fullWidth>
+    <DialogTitle sx={{ py: 1.5 }}>
+      <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+        {danger && (
+          <Box sx={{ color: "error.main", display: "inline-flex", flexShrink: 0 }}>
+            <Trash2 className="h-4 w-4" />
+          </Box>
+        )}
+        <Typography sx={{ fontSize: 13, fontWeight: 700 }}>{title}</Typography>
+      </Stack>
+    </DialogTitle>
+    <DialogContent sx={{ py: 1.5 }}>
+      <Typography sx={{ fontSize: 11.5, color: "text.secondary", lineHeight: 1.6 }}>{message}</Typography>
+    </DialogContent>
+    <DialogActions sx={{ px: 2, py: 1.5 }}>
+      <Button className="glass-btn glass-btn-secondary" onClick={onCancel}>
+        Cancel
+      </Button>
+      <Button
+        className={`glass-btn ${danger ? "glass-btn-danger" : "glass-btn-primary"}`}
+        onClick={onConfirm}
       >
-        {/* Header */}
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 dark:border-gray-700">
-          {danger && <Trash2 className="w-4 h-4 text-red-500 dark:text-red-400 shrink-0" />}
-          <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-100">{title}</h2>
-        </div>
-
-        {/* Body */}
-        <div className="px-4 py-3">
-          <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">{message}</p>
-        </div>
-
-        {/* Footer */}
-        <div className="flex justify-end gap-2 px-4 py-3 border-t border-gray-100 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-700/60 backdrop-blur-sm rounded-b-lg">
-          <button
-            onClick={onCancel}
-            className="glass-btn glass-btn-secondary px-3 py-1.5 text-xs"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            className={`glass-btn px-3 py-1.5 text-xs ${
-              danger ? "glass-btn-danger" : "glass-btn-primary"
-            }`}
-          >
-            {confirmLabel}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
+        {confirmLabel}
+      </Button>
+    </DialogActions>
+  </Dialog>
+);
 
 export default ConfirmDialog;

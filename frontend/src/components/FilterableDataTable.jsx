@@ -17,6 +17,7 @@ import {
   Loader2,
 } from "lucide-react";
 import {
+  Box,
   Button,
   Checkbox,
   Dialog,
@@ -28,14 +29,19 @@ import {
   Menu,
   MenuItem,
   Popover,
+  Select,
   Skeleton,
+  Stack,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
+  TextField,
+  Typography,
 } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import ExportBottomSheet from "./ExportBottomSheet";
 import { fetchTablePreference, saveTablePreference } from "../utils/tablePreferences";
@@ -1876,18 +1882,16 @@ export default function FilterableDataTable({
     return /date|dob|birth|marriage/.test(lower);
   }, [searchField, columns]);
 
-  const tableViewportClass = fillHeight
-    ? `${fixedHeight ? "max-h-[433px] " : ""}flex-1 min-h-0 lg:max-h-none`
-    : "";
+  // fillHeight: the table grows to fill whatever vertical space its parent gives it (flex:1,
+  // min-height:0 so it can still shrink/scroll within that space) instead of only being as tall as
+  // its own rows -- otherwise a near-empty result set leaves the pagination footer stranded right
+  // under the last row instead of pinned to the bottom of the container, same as every other state.
+  const tableViewportSx = fillHeight
+    ? { flex: 1, minHeight: 0, ...(fixedHeight ? { maxHeight: { xs: "433px", lg: "none" } } : {}) }
+    : {};
   const tableViewportStyle = !fillHeight && fixedHeight
     ? { maxHeight: `${FIXED_TABLE_HEIGHT}px` }
     : undefined;
-  const controlRowClass = compact
-    ? "mb-1 flex flex-wrap items-center gap-1.5"
-    : "mb-2 flex flex-wrap gap-2";
-  const topFieldClass = compact
-    ? "h-8 rounded-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 text-[11px] dark:text-gray-100 dark:placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-    : "rounded-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 py-1 text-[11px] xl:text-xs dark:text-gray-100 dark:placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500";
   const compactActionClass = compact ? "h-8 px-2.5 text-[11px]" : "";
   // MUI's `stickyHeader` (Table prop, active whenever fixedHeight is true -- the default) forces an
   // OPAQUE background on every .MuiTableCell-stickyHeader from the ambient theme, so sticky content
@@ -1905,67 +1909,78 @@ export default function FilterableDataTable({
   const bodyCellYClass = compact ? "py-0 leading-none" : "py-2 xl:py-2.5";
   const bodyRowClass = compact ? "h-8" : "";
   const tableTextClass = compact ? "text-[10px] xl:text-[11px] leading-tight" : "text-xs xl:text-sm";
-  // Row-count/page-size info now lives on its own line -- the actual page controls (Prev/Next,
-  // page selector, or Load More) got their own full-width row below it instead of sharing this
-  // line's right-hand corner, so they read as a distinct "footer action bar" under the last table
-  // row. Right-aligned (not centered) to match where Prev/Next sat before this split.
-  const paginationRowClass = compact
-    ? "mt-0.5 flex h-8 items-center gap-2 text-[8px] text-gray-700 dark:text-gray-300"
-    : "mt-0 flex h-7 items-center gap-2 text-[10px] text-gray-700 dark:text-gray-300";
-  const paginationControlsBarClass = compact
-    ? "flex w-full items-center justify-end gap-2 border-t border-gray-200 dark:border-gray-700 py-1.5"
-    : "flex w-full items-center justify-end gap-2 border-t border-gray-200 dark:border-gray-700 py-2";
-  const paginationControlClass = compact
-    ? "compact-pagination-select h-[26px] rounded-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-1 text-[7px] leading-tight dark:text-gray-100"
-    : "h-7 rounded-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-1.5 text-[10px] dark:text-gray-100";
-  const paginationButtonClass = compact
-    ? "compact-pagination-button flex h-[26px] items-center justify-center gap-1 rounded-sm border border-gray-300 dark:border-gray-600 px-3 text-[9px] font-medium disabled:cursor-not-allowed disabled:opacity-50 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50"
-    : "flex h-8 items-center justify-center gap-1 rounded-sm border border-gray-300 dark:border-gray-600 px-4 text-xs font-medium disabled:cursor-not-allowed disabled:opacity-50 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50";
-  const loadMoreButtonClass = compact
-    ? "inline-flex items-center gap-1.5 rounded-sm border border-gray-300 dark:border-gray-600 px-4 py-1 text-[9px] font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 disabled:cursor-not-allowed disabled:opacity-50"
-    : "inline-flex items-center gap-1.5 rounded-md border border-gray-300 dark:border-gray-600 px-5 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 disabled:cursor-not-allowed disabled:opacity-50";
+  const paginationTextSx = { fontSize: compact ? 8 : 10, color: "text.secondary" };
+  // Non-compact originally used h-7/h-8 (Tailwind rem-based, not the compact mode's literal h-[26px])
+  // -- at this app's 14px root that's 24.5px/28px, not the 16px-root values those names might suggest.
+  const paginationControlSx = { height: compact ? 26 : 24.5, fontSize: compact ? 7 : 10 };
+  const paginationButtonSx = { height: compact ? 26 : 28, minWidth: compact ? 32 : 40, fontSize: compact ? 9 : 12 };
+  const loadMoreButtonSx = { fontSize: compact ? 9 : 12, px: compact ? 2 : 2.5, py: compact ? 0.5 : 0.75 };
   const resolvedSearchButtonClassName = compact
     ? `${searchButtonClassName} ${compactActionClass}`
     : searchButtonClassName;
 
+  // Every field/button in the toolbar row shared one exact height before this conversion (all keyed
+  // off the same topFieldClass/compactActionClass strings) -- MUI's Select/TextField/Button don't
+  // default to matching heights at the same `size`, so it's pinned explicitly here to keep the row
+  // visually unified instead of the fields/buttons drifting a few px out of alignment with each other.
+  // This app's root font-size is 14px (not the usual 16px browser default -- verified live), so
+  // Tailwind's h-8 (2rem) is 28px here, not 32px. Matches the native Search button's own h-8 exactly.
+  const toolbarFieldHeight = compact ? 28 : 24;
+  const toolbarFieldSx = { height: toolbarFieldHeight, fontSize: compact ? 11 : 12 };
+
   return (
-    <div className={fillHeight ? "flex flex-1 min-h-0 flex-col" : ""}>
-      <div className={controlRowClass}>
-        <select
+    <Box sx={fillHeight ? { display: "flex", flex: 1, minHeight: 0, flexDirection: "column" } : undefined}>
+      <Stack
+        direction="row"
+        spacing={compact ? 0.75 : 1}
+        sx={{ mb: compact ? 1 : 2, flexWrap: "wrap", alignItems: "center", rowGap: compact ? 0.75 : 1 }}
+      >
+        <Select
+          size="small"
           value={searchField}
           onChange={(e) => setSearchField(e.target.value)}
-          className={`w-44 ${topFieldClass}`}
+          sx={{ width: 176, ...toolbarFieldSx, "& .MuiSelect-select": { display: "flex", alignItems: "center", height: "100% !important", boxSizing: "border-box" } }}
         >
-          <option value="all">All Fields</option>
+          <MenuItem value="all">All Fields</MenuItem>
           {columns.map((column) => (
-            <option key={column.key} value={column.key}>
+            <MenuItem key={column.key} value={column.key}>
               {column.label}
-            </option>
+            </MenuItem>
           ))}
-        </select>
-        <div className="flex-1 relative">
-          <input
+        </Select>
+        <Box sx={{ flex: 1, position: "relative", minWidth: 160 }}>
+          <TextField
+            size="small"
+            fullWidth
             type={isSearchFieldDate ? "date" : "text"}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={searchPlaceholder}
-            className={`w-full pr-7 ${topFieldClass}`}
+            sx={{
+              "& .MuiInputBase-root": { height: toolbarFieldHeight, boxSizing: "border-box" },
+              "& .MuiInputBase-input": { fontSize: compact ? 11 : 12, pr: searchQuery ? 3.5 : 1.5 },
+            }}
           />
           {searchQuery && (
-            <button
-              type="button"
+            <IconButton
+              size="small"
+              aria-label="Clear search"
               onClick={() => {
                 setSearchQuery("");
                 if (enableServerSearch) {
                   runImmediateServerSearch("", searchField, hasActiveColumnFilters);
                 }
               }}
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+              sx={{ position: "absolute", right: 2, top: "50%", transform: "translateY(-50%)", color: "text.disabled" }}
             >
               <X className="w-3.5 h-3.5" />
-            </button>
+            </IconButton>
           )}
-        </div>
+        </Box>
+        {/* Kept as a native <button>, not a MUI Button -- searchButtonClassName is a public prop 27
+            other pages rely on with a plain hardcoded className (only 15 pass .glass-btn); swapping
+            the element risks the same MUI-base-style-wins-the-cascade fight Stage A found and fixed
+            for .glass-btn specifically, but unverified for the other 27 pages' arbitrary classNames. */}
         <button
           onClick={() => {
             if (enableServerSearch) {
@@ -1981,46 +1996,48 @@ export default function FilterableDataTable({
         >
           <Search className="w-3 h-3 mr-1" /> Search
         </button>
-        <button
-          type="button"
+        <Button
+          size="small"
+          variant="outlined"
+          color={hasActiveColumnFilters ? "primary" : "inherit"}
           onClick={() => openFilterPanel()}
-          className={`inline-flex items-center rounded-sm border transition ${compactActionClass || "px-2.5 py-1 text-[11px] xl:text-xs"} ${
-            hasActiveColumnFilters
-              ? "border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50"
-              : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700/50"
-          }`}
+          startIcon={<Filter className="h-3.5 w-3.5" />}
+          sx={toolbarFieldSx}
         >
-          <Filter className="mr-1 h-3.5 w-3.5" />
           Filter
           {hasActiveColumnFilters && (
-            <span className="ml-1 rounded-full bg-blue-600 px-1.5 py-0.5 text-[10px] font-medium text-white">
+            <Box component="span" sx={{ ml: 0.75, borderRadius: 10, bgcolor: "primary.main", color: "primary.contrastText", px: 0.75, fontSize: 10, fontWeight: 500 }}>
               {Object.values(columnFilters).filter((filter) => isFilterStateActive(filter)).length}
-            </span>
+            </Box>
           )}
-        </button>
+        </Button>
         {excludedRowFilterCount > 0 && (
-          <button
-            type="button"
+          <Button
+            size="small"
+            variant="outlined"
+            color="error"
             onClick={() => clearRowValueFilterMode("exclude")}
-            className={`inline-flex items-center rounded-sm border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 dark:border-red-800 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 ${compactActionClass || "px-2.5 py-1 text-[11px] xl:text-xs"}`}
+            sx={toolbarFieldSx}
           >
             Clear Filter Out
-            <span className="ml-1 rounded-full bg-red-600 px-1.5 py-0.5 text-[10px] font-medium text-white">
+            <Box component="span" sx={{ ml: 0.75, borderRadius: 10, bgcolor: "error.main", color: "error.contrastText", px: 0.75, fontSize: 10, fontWeight: 500 }}>
               {excludedRowFilterCount}
-            </span>
-          </button>
+            </Box>
+          </Button>
         )}
         {includedRowFilterCount > 0 && (
-          <button
-            type="button"
+          <Button
+            size="small"
+            variant="outlined"
+            color="success"
             onClick={() => clearRowValueFilterMode("include")}
-            className={`inline-flex items-center rounded-sm border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50 ${compactActionClass || "px-2.5 py-1 text-[11px] xl:text-xs"}`}
+            sx={toolbarFieldSx}
           >
             Clear Show Matching
-            <span className="ml-1 rounded-full bg-emerald-600 px-1.5 py-0.5 text-[10px] font-medium text-white">
+            <Box component="span" sx={{ ml: 0.75, borderRadius: 10, bgcolor: "success.main", color: "success.contrastText", px: 0.75, fontSize: 10, fontWeight: 500 }}>
               {includedRowFilterCount}
-            </span>
-          </button>
+            </Box>
+          </Button>
         )}
         {showExport && (
           <ExportBottomSheet
@@ -2037,43 +2054,56 @@ export default function FilterableDataTable({
             rowKey={rowKey}
           />
         )}
-      </div>
+      </Stack>
 
       {/* Bulk action bar */}
       {enableSelection && selectedRows.length > 0 && (
-        <div className={`flex items-center gap-2 rounded-sm border border-blue-200 bg-blue-50 px-2.5 text-[11px] dark:border-blue-800 dark:bg-blue-900/30 ${compact ? "mb-1.5 py-1" : "mb-2 py-1.5"}`}>
-          <span className="font-medium text-blue-700 dark:text-blue-400">
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{
+            alignItems: "center", borderRadius: "1.75px", border: "1px solid", borderColor: "primary.main",
+            bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08),
+            px: 1.25, fontSize: 11, mb: compact ? 1.5 : 2, py: compact ? 0.5 : 0.75,
+          }}
+        >
+          <Typography sx={{ fontSize: 11, fontWeight: 500, color: "primary.main" }}>
             {selectedRows.length} row{selectedRows.length > 1 ? "s" : ""} selected
-          </span>
+          </Typography>
           {onBulkDelete && (
-            <button
-              type="button"
+            <Button
+              size="small"
+              variant="contained"
+              color="error"
+              startIcon={<Trash2 className="w-3 h-3" />}
               onClick={() => onBulkDelete(selectedRows)}
-              className="flex items-center gap-1 rounded-sm bg-red-500 px-2.5 py-1 text-[11px] text-white hover:bg-red-600 xl:text-xs"
+              sx={{ fontSize: 11 }}
             >
-              <Trash2 className="w-3 h-3" /> Delete Selected
-            </button>
+              Delete Selected
+            </Button>
           )}
-          <button
-            type="button"
-            onClick={() => onSelectionChange([])}
-            className="rounded-sm border border-gray-300 px-2.5 py-1 text-[11px] text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700/50"
-          >
+          <Button size="small" variant="outlined" color="inherit" onClick={() => onSelectionChange([])} sx={{ fontSize: 11 }}>
             Clear Selection
-          </button>
-        </div>
+          </Button>
+        </Stack>
       )}
 
       <TableContainer
         ref={tableContainerRef}
-        className={`border border-gray-200 dark:border-gray-700 rounded-sm overflow-auto bg-white text-gray-700 dark:bg-gray-800 dark:text-gray-300 ${compact ? "compact-data-table" : ""} ${tableViewportClass}`}
+        className={compact ? "compact-data-table" : ""}
+        sx={{
+          border: "1px solid", borderColor: "divider", borderRadius: "1.75px", overflow: "auto",
+          bgcolor: "background.paper", color: "text.secondary",
+          ...tableViewportSx,
+        }}
         style={tableViewportStyle}
       >
         <Table
           stickyHeader={fixedHeight}
-          className={`w-full min-w-max bg-white ${tableTextClass} text-gray-700 dark:bg-gray-800 dark:text-gray-300`}
+          className={tableTextClass}
+          sx={{ width: "100%", minWidth: "max-content", bgcolor: "background.paper", color: "text.secondary" }}
         >
-          <TableHead className="bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+          <TableHead sx={{ bgcolor: (theme) => (theme.palette.mode === "dark" ? "#374151" : "#f3f4f6"), color: "text.secondary" }}>
             <TableRow>
               <TableCell
                 ref={leadingHeaderRef}
@@ -2502,19 +2532,19 @@ export default function FilterableDataTable({
             },
           }}
         >
-          <div className="border-b border-gray-100 px-3 py-2 dark:border-gray-700">
-            <div className="text-[11px] font-semibold text-gray-700 dark:text-gray-300">{rowContextMenu.label}</div>
-            <div className="truncate text-[11px] text-gray-500 dark:text-gray-400">{rowContextMenu.displayValue}</div>
-          </div>
+          <Box sx={{ borderBottom: 1, borderColor: "divider", px: 1.5, py: 1 }}>
+            <Typography sx={{ fontSize: 11, fontWeight: 600 }}>{rowContextMenu.label}</Typography>
+            <Typography noWrap sx={{ fontSize: 11, color: "text.secondary" }}>{rowContextMenu.displayValue}</Typography>
+          </Box>
           <MenuItem
             onClick={() => applyRowValueFilter("exclude", rowContextMenu.columnKey, rowContextMenu.rawValue)}
-            className="text-xs"
+            sx={{ fontSize: 12 }}
           >
             Filter Out
           </MenuItem>
           <MenuItem
             onClick={() => applyRowValueFilter("include", rowContextMenu.columnKey, rowContextMenu.rawValue)}
-            className="text-xs"
+            sx={{ fontSize: 12 }}
           >
             Show Matching
           </MenuItem>
@@ -2540,18 +2570,18 @@ export default function FilterableDataTable({
           },
         }}
       >
-          <div className="flex h-full flex-col">
-              <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 dark:border-gray-700">
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">Filter Panel</h3>
-                  <p className="text-[11px] text-gray-500 dark:text-gray-400">Apply filters on multiple columns</p>
-                </div>
+          <Box data-testid="filter-panel-root" sx={{ display: "flex", height: "100%", flexDirection: "column" }}>
+              <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", px: 2, py: 1.5 }}>
+                <Box>
+                  <Typography sx={{ fontSize: 14, fontWeight: 600 }}>Filter Panel</Typography>
+                  <Typography sx={{ fontSize: 11, color: "text.secondary" }}>Apply filters on multiple columns</Typography>
+                </Box>
                 <IconButton size="small" onClick={() => setShowFilterPanel(false)}>
                   <X className="h-4 w-4" />
                 </IconButton>
-              </div>
+              </Stack>
 
-              <div className="flex items-center gap-2 border-b border-gray-100 px-4 py-2 dark:border-gray-700">
+              <Stack direction="row" spacing={1} sx={{ alignItems: "center", borderBottom: 1, borderColor: "divider", px: 2, py: 1 }}>
                 <Button
                   size="small"
                   onClick={() => {
@@ -2561,77 +2591,81 @@ export default function FilterableDataTable({
                 >
                   Clear All
                 </Button>
-                <span className="text-[11px] text-gray-300 dark:text-gray-600">|</span>
-                <span className="text-[11px] text-gray-500 dark:text-gray-400">
+                <Typography component="span" sx={{ fontSize: 11, color: "text.disabled" }}>|</Typography>
+                <Typography component="span" sx={{ fontSize: 11, color: "text.secondary" }}>
                   Active: {Object.values(draftColumnFilters).filter((filter) => isFilterStateActive(filter)).length}
-                </span>
-              </div>
+                </Typography>
+              </Stack>
 
-              <div className="flex-1 overflow-y-auto px-4 py-3">
-                <div className="space-y-3">
+              <Box sx={{ flex: 1, overflowY: "auto", px: 2, py: 1.5 }}>
+                <Stack spacing={1.5}>
                   {columns.map((column) => {
                     const draftFilter = getDraftColumnFilter(column.key);
                     const isActive = isFilterStateActive(draftFilter);
 
                     return (
-                      <div
+                      <Box
                         key={column.key}
+                        data-testid={`filter-card-${column.key}`}
                         ref={(node) => {
                           filterPanelFieldRefs.current[column.key] = node;
                         }}
-                        className={`rounded-md border px-3 py-3 ${
-                          filterPanelFocusKey === column.key
-                            ? "border-blue-300 bg-blue-50/60 dark:border-blue-700 dark:bg-blue-900/20"
+                        sx={{
+                          borderRadius: "5.25px", border: "1px solid", px: 1.5, py: 1.5,
+                          borderColor: filterPanelFocusKey === column.key
+                            ? "primary.main"
+                            : isActive ? "warning.main" : "divider",
+                          bgcolor: filterPanelFocusKey === column.key
+                            ? (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.06)
                             : isActive
-                              ? "border-amber-200 bg-amber-50/60 dark:border-amber-700 dark:bg-amber-900/20"
-                              : "border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800"
-                        }`}
+                              ? (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.16 : 0.06)
+                              : "background.paper",
+                        }}
                       >
-                        <div className="mb-2 flex items-center justify-between gap-2">
-                          <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{column.label}</span>
+                        <Stack direction="row" spacing={1} sx={{ mb: 1, alignItems: "center", justifyContent: "space-between" }}>
+                          <Typography sx={{ fontSize: 12, fontWeight: 500 }}>{column.label}</Typography>
                           {isActive && (
-                            <button
-                              type="button"
-                              onClick={() => clearDraftColumnFilter(column.key)}
-                              className="text-[11px] text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                            >
+                            <Button size="small" color="inherit" onClick={() => clearDraftColumnFilter(column.key)} sx={{ fontSize: 11, minWidth: 0, p: 0 }}>
                               Clear
-                            </button>
+                            </Button>
                           )}
-                        </div>
-                        <div className="space-y-2">
-                          <select
+                        </Stack>
+                        <Stack spacing={1}>
+                          <Select
+                            size="small"
+                            fullWidth
                             value={draftFilter.operator}
                             onChange={(event) =>
                               setDraftColumnFilter(column.key, { operator: event.target.value })
                             }
-                            className="block w-full rounded-sm border border-gray-300 bg-white p-1.5 text-xs text-gray-700 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300"
+                            sx={{ fontSize: 12 }}
                           >
                             {FILTER_OPERATORS.map((op) => (
-                              <option key={op.value} value={op.value}>
+                              <MenuItem key={op.value} value={op.value}>
                                 {op.label}
-                              </option>
+                              </MenuItem>
                             ))}
-                          </select>
+                          </Select>
                           {!INPUT_FREE_OPERATORS.has(draftFilter.operator) && (
-                            <input
-                              type="text"
+                            <TextField
+                              size="small"
+                              fullWidth
                               value={draftFilter.value}
                               onChange={(event) =>
                                 setDraftColumnFilter(column.key, { value: event.target.value })
                               }
                               placeholder={`Filter ${column.label}`}
-                              className="block w-full rounded-sm border border-gray-300 p-1.5 text-xs text-gray-700 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300"
+                              sx={{ "& .MuiInputBase-input": { fontSize: 12 } }}
                             />
                           )}
-                        </div>
-                      </div>
+                        </Stack>
+                      </Box>
                     );
                   })}
-                </div>
-              </div>
+                </Stack>
+              </Box>
 
-              <div className="flex items-center justify-end gap-2 border-t border-gray-200 px-4 py-3 dark:border-gray-700">
+              <Stack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "flex-end", borderTop: 1, borderColor: "divider", px: 2, py: 1.5 }}>
                 <Button size="small" variant="outlined" onClick={() => setShowFilterPanel(false)}>
                   Cancel
                 </Button>
@@ -2642,101 +2676,110 @@ export default function FilterableDataTable({
                 >
                   Apply
                 </Button>
-              </div>
-          </div>
+              </Stack>
+          </Box>
       </Drawer>
 
       {canPaginate && (
         <>
-          <div className={paginationRowClass}>
-            <span>Rows showing</span>
-            <select
-              value={safeLimit}
-              onChange={(e) => onLimitChange(Number(e.target.value))}
-              className={paginationControlClass}
-            >
-              {[20, 50, 60, 100, 150].map((size) => (
-                <option key={size} value={size}>
-                  {size}
-                </option>
-              ))}
-            </select>
-            <span className="text-gray-500 dark:text-gray-400">
-              {isServerGrouped
-                ? `${computedTotalRows.toLocaleString()} groups · ${(groupSummaryState.meta?.total_matching_rows ?? 0).toLocaleString()} rows total`
-                : isCursorMode
-                  ? (pagination?.estimated_total
-                      ? `Total: ~${Number(pagination.estimated_total).toLocaleString()}`
-                      : `Showing ${rows.length} rows`)
-                  : `Total: ${computedTotalRows}`}
-            </span>
-          </div>
-
-          {/* Full-width, centered footer action bar under the last row -- Load More (or
-              Prev/page/Next) used to be squeezed into the corner of the row-count line above. */}
-          <div className={paginationControlsBarClass}>
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{ width: "100%", alignItems: "center", justifyContent: "space-between", borderTop: 1, borderColor: "divider", py: compact ? 0.75 : 1, flexWrap: "wrap", rowGap: 0.5 }}
+          >
+            <Stack direction="row" spacing={1} sx={{ alignItems: "center", ...paginationTextSx }}>
+              <Typography component="span" sx={paginationTextSx}>Rows showing</Typography>
+              <Select
+                value={safeLimit}
+                onChange={(e) => onLimitChange(Number(e.target.value))}
+                className={compact ? "compact-pagination-select" : ""}
+                sx={paginationControlSx}
+              >
+                {[20, 50, 60, 100, 150].map((size) => (
+                  <MenuItem key={size} value={size}>
+                    {size}
+                  </MenuItem>
+                ))}
+              </Select>
+              <Typography component="span" sx={paginationTextSx}>
+                {isServerGrouped
+                  ? `${computedTotalRows.toLocaleString()} groups · ${(groupSummaryState.meta?.total_matching_rows ?? 0).toLocaleString()} rows total`
+                  : isCursorMode
+                    ? (pagination?.estimated_total
+                        ? `Total: ~${Number(pagination.estimated_total).toLocaleString()}`
+                        : `Showing ${rows.length} rows`)
+                    : `Total: ${computedTotalRows}`}
+              </Typography>
+            </Stack>
+            <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
             {isAppendCursorMode ? (
-              <button
-                type="button"
+              <Button
+                variant="outlined"
+                color="inherit"
                 onClick={handleNextPage}
                 disabled={!hasNext || loading}
-                className={loadMoreButtonClass}
+                startIcon={loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                sx={loadMoreButtonSx}
               >
-                {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
                 {hasNext ? "Load More" : "No more results"}
-              </button>
+              </Button>
             ) : (
               <>
-                <button
-                  type="button"
+                <IconButton
+                  size="small"
                   onClick={handlePrevPage}
                   disabled={!hasPrev}
-                  className={paginationButtonClass}
                   title="Previous"
+                  className={compact ? "compact-pagination-button" : ""}
+                  sx={{ ...paginationButtonSx, border: "1px solid", borderColor: "divider", borderRadius: "1.75px" }}
                 >
                   {"<"}
-                </button>
+                </IconButton>
                 {isServerGrouped ? (
-                  <select
+                  <Select
                     value={currentPage}
                     onChange={(e) => setGroupSummaryState((prev) => ({ ...prev, page: Number(e.target.value) }))}
-                    className={paginationControlClass}
+                    className={compact ? "compact-pagination-select" : ""}
+                    sx={paginationControlSx}
                   >
                     {pageOptions.map((p) => (
-                      <option key={p} value={p}>
+                      <MenuItem key={p} value={p}>
                         Page {p}
-                      </option>
+                      </MenuItem>
                     ))}
-                  </select>
+                  </Select>
                 ) : isCursorMode ? (
-                  <span className="px-1.5 text-[9px] text-gray-500 dark:text-gray-400 font-medium select-none">
+                  <Typography component="span" sx={{ px: 0.75, fontSize: 9, color: "text.secondary", fontWeight: 500, userSelect: "none" }}>
                     Continuous
-                  </span>
+                  </Typography>
                 ) : (
-                  <select
+                  <Select
                     value={currentPage}
                     onChange={(e) => onPageChange(Number(e.target.value))}
-                    className={paginationControlClass}
+                    className={compact ? "compact-pagination-select" : ""}
+                    sx={paginationControlSx}
                   >
                     {pageOptions.map((p) => (
-                      <option key={p} value={p}>
+                      <MenuItem key={p} value={p}>
                         Page {p}
-                      </option>
+                      </MenuItem>
                     ))}
-                  </select>
+                  </Select>
                 )}
-                <button
-                  type="button"
+                <IconButton
+                  size="small"
                   onClick={handleNextPage}
                   disabled={!hasNext}
-                  className={paginationButtonClass}
                   title="Next"
+                  className={compact ? "compact-pagination-button" : ""}
+                  sx={{ ...paginationButtonSx, border: "1px solid", borderColor: "divider", borderRadius: "1.75px" }}
                 >
                   {">"}
-                </button>
+                </IconButton>
               </>
             )}
-          </div>
+            </Stack>
+          </Stack>
         </>
       )}
 
@@ -2756,29 +2799,28 @@ export default function FilterableDataTable({
         }}
       >
             {/* Header */}
-            <DialogTitle className="flex items-center justify-between px-5 py-3 border-b dark:border-gray-700">
-              <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">Personalize List Columns</span>
+            <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", px: 2.5, py: 1.5 }}>
+              <Typography sx={{ fontSize: 14, fontWeight: 600 }}>Personalize List Columns</Typography>
               <IconButton size="small" onClick={() => setShowColumnDialog(false)}>
                 <X className="w-4 h-4" />
               </IconButton>
             </DialogTitle>
 
             {/* Body — dual list */}
-            <DialogContent className="px-5 py-4 flex items-stretch gap-3" style={{ minHeight: 320 }}>
+            <DialogContent sx={{ display: "flex", alignItems: "stretch", gap: 1.5, px: 2.5, py: 2, minHeight: 320 }}>
               {/* Available list */}
-              <div className="flex-1 flex flex-col">
-                <span className="text-xs font-semibold text-gray-700 mb-1.5 dark:text-gray-300">Available</span>
-                <div
-                  className="flex-1 border border-gray-300 rounded-sm overflow-auto bg-white dark:border-gray-600 dark:bg-gray-900"
-                  style={{ maxHeight: 280 }}
+              <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
+                <Typography sx={{ fontSize: 12, fontWeight: 600, mb: 0.75 }}>Available</Typography>
+                <Box
+                  sx={{ flex: 1, border: "1px solid", borderColor: "divider", borderRadius: "1.75px", overflow: "auto", bgcolor: "background.paper", maxHeight: 280 }}
                   onDragOver={onListItemDragOver}
                   onDrop={onAvailableListDrop}
                 >
                   {draftAvailableColumns.length === 0 ? (
-                    <div className="text-xs text-gray-400 p-3 text-center dark:text-gray-500">All columns selected</div>
+                    <Typography sx={{ fontSize: 12, color: "text.disabled", p: 1.5, textAlign: "center" }}>All columns selected</Typography>
                   ) : (
                     draftAvailableColumns.map((col) => (
-                      <div
+                      <Box
                         key={col.key}
                         draggable
                         onDragStart={(e) => onListItemDragStart(e, col.key, "available")}
@@ -2792,75 +2834,76 @@ export default function FilterableDataTable({
                           setDraftSelectedOrder((prev) => [...prev, col.key]);
                           setAvailableHighlight(null);
                         }}
-                        className={`flex items-center gap-1.5 px-2 py-1.5 text-xs cursor-grab active:cursor-grabbing select-none border-b border-gray-100 last:border-b-0 dark:border-gray-700 ${
-                          availableHighlight === col.key
-                            ? "bg-blue-600 text-white"
-                            : "text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50"
-                        }`}
+                        sx={{
+                          display: "flex", alignItems: "center", gap: 0.75, px: 1, py: 0.75, fontSize: 12,
+                          cursor: "grab", userSelect: "none", borderBottom: 1, borderColor: "divider",
+                          "&:last-of-type": { borderBottom: 0 },
+                          ...(availableHighlight === col.key
+                            ? { bgcolor: "primary.main", color: "primary.contrastText" }
+                            : { color: "text.secondary", "&:hover": { bgcolor: "action.hover" } }),
+                        }}
                       >
                         <GripVertical
-                          className={`w-3 h-3 shrink-0 ${
-                            availableHighlight === col.key ? "text-white/70" : "text-gray-400 dark:text-gray-500"
-                          }`}
+                          className="w-3 h-3 shrink-0"
+                          style={{ color: availableHighlight === col.key ? "inherit" : undefined, opacity: availableHighlight === col.key ? 0.7 : undefined }}
                         />
                         {col.label}
-                      </div>
+                      </Box>
                     ))
                   )}
-                </div>
-              </div>
+                </Box>
+              </Box>
 
               {/* Transfer buttons */}
-              <div className="flex flex-col items-center justify-center gap-2">
-                <button
-                  type="button"
+              <Stack sx={{ alignItems: "center", justifyContent: "center" }} spacing={1}>
+                <IconButton
+                  size="small"
                   title="Move to selected"
                   onClick={handleMoveToSelected}
                   disabled={!availableHighlight}
-                  className="p-1.5 border border-gray-300 rounded-sm hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed dark:border-gray-600 dark:hover:bg-gray-700"
+                  sx={{ border: "1px solid", borderColor: "divider", borderRadius: "1.75px" }}
                 >
-                  <ChevronRight className="w-4 h-4 text-gray-700 dark:text-gray-300" />
-                </button>
-                <button
-                  type="button"
+                  <ChevronRight className="w-4 h-4" />
+                </IconButton>
+                <IconButton
+                  size="small"
                   title="Move all to selected"
                   onClick={handleMoveAllToSelected}
                   disabled={draftAvailableColumns.length === 0}
-                  className="p-1.5 border border-gray-300 rounded-sm hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed dark:border-gray-600 dark:hover:bg-gray-700"
+                  sx={{ border: "1px solid", borderColor: "divider", borderRadius: "1.75px" }}
                 >
-                  <ChevronsRight className="w-4 h-4 text-gray-700 dark:text-gray-300" />
-                </button>
-                <button
-                  type="button"
+                  <ChevronsRight className="w-4 h-4" />
+                </IconButton>
+                <IconButton
+                  size="small"
                   title="Move to available"
                   onClick={handleMoveToAvailable}
                   disabled={!selectedHighlight || draftVisibleColumns.length <= 1}
-                  className="p-1.5 border border-gray-300 rounded-sm hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed dark:border-gray-600 dark:hover:bg-gray-700"
+                  sx={{ border: "1px solid", borderColor: "divider", borderRadius: "1.75px" }}
                 >
-                  <ChevronLeft className="w-4 h-4 text-gray-700 dark:text-gray-300" />
-                </button>
-                <button
-                  type="button"
+                  <ChevronLeft className="w-4 h-4" />
+                </IconButton>
+                <IconButton
+                  size="small"
                   title="Move all to available"
                   onClick={handleMoveAllToAvailable}
                   disabled={draftVisibleColumns.length <= 1}
-                  className="p-1.5 border border-gray-300 rounded-sm hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed dark:border-gray-600 dark:hover:bg-gray-700"
+                  sx={{ border: "1px solid", borderColor: "divider", borderRadius: "1.75px" }}
                 >
-                  <ChevronsLeft className="w-4 h-4 text-gray-700 dark:text-gray-300" />
-                </button>
-              </div>
+                  <ChevronsLeft className="w-4 h-4" />
+                </IconButton>
+              </Stack>
 
               {/* Selected list */}
-              <div className="flex-1 flex flex-col">
-                <span className="text-xs font-semibold text-gray-700 mb-1.5 dark:text-gray-300">Selected</span>
-                <div
-                  className="flex-1 border border-gray-300 rounded-sm overflow-auto bg-white dark:border-gray-600 dark:bg-gray-900"
-                  style={{ maxHeight: 280 }}
+              <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
+                <Typography sx={{ fontSize: 12, fontWeight: 600, mb: 0.75 }}>Selected</Typography>
+                <Box
+                  sx={{ flex: 1, border: "1px solid", borderColor: "divider", borderRadius: "1.75px", overflow: "auto", bgcolor: "background.paper", maxHeight: 280 }}
                   onDragOver={onListItemDragOver}
                   onDrop={onSelectedListDrop}
                 >
                   {draftSelectedColumns.map((col) => (
-                    <div
+                    <Box
                       key={col.key}
                       draggable
                       onDragStart={(e) => onListItemDragStart(e, col.key, "selected")}
@@ -2879,39 +2922,41 @@ export default function FilterableDataTable({
                         setDraftSelectedOrder((prev) => prev.filter((k) => k !== col.key));
                         setSelectedHighlight(null);
                       }}
-                      className={`flex items-center gap-1.5 px-2 py-1.5 text-xs cursor-grab active:cursor-grabbing select-none border-b border-gray-100 last:border-b-0 dark:border-gray-700 ${
-                        selectedHighlight === col.key
-                          ? "bg-blue-600 text-white"
-                          : "text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50"
-                      }`}
+                      sx={{
+                        display: "flex", alignItems: "center", gap: 0.75, px: 1, py: 0.75, fontSize: 12,
+                        cursor: "grab", userSelect: "none", borderBottom: 1, borderColor: "divider",
+                        "&:last-of-type": { borderBottom: 0 },
+                        ...(selectedHighlight === col.key
+                          ? { bgcolor: "primary.main", color: "primary.contrastText" }
+                          : { color: "text.secondary", "&:hover": { bgcolor: "action.hover" } }),
+                      }}
                     >
                       <GripVertical
-                        className={`w-3 h-3 shrink-0 ${
-                          selectedHighlight === col.key ? "text-white/70" : "text-gray-400 dark:text-gray-500"
-                        }`}
+                        className="w-3 h-3 shrink-0"
+                        style={{ color: selectedHighlight === col.key ? "inherit" : undefined, opacity: selectedHighlight === col.key ? 0.7 : undefined }}
                       />
                       {col.label}
-                    </div>
+                    </Box>
                   ))}
-                </div>
-              </div>
+                </Box>
+              </Box>
 
               {/* Reorder buttons */}
-              <div className="flex flex-col items-center justify-center gap-2">
-                <button
-                  type="button"
+              <Stack sx={{ alignItems: "center", justifyContent: "center" }} spacing={1}>
+                <IconButton
+                  size="small"
                   title="Move up"
                   onClick={handleMoveSelectedUp}
                   disabled={
                     !selectedHighlight ||
                     draftSelectedOrder.indexOf(selectedHighlight) <= 0
                   }
-                  className="p-1.5 border border-gray-300 rounded-sm hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed dark:border-gray-600 dark:hover:bg-gray-700"
+                  sx={{ border: "1px solid", borderColor: "divider", borderRadius: "1.75px" }}
                 >
-                  <ChevronUp className="w-4 h-4 text-gray-700 dark:text-gray-300" />
-                </button>
-                <button
-                  type="button"
+                  <ChevronUp className="w-4 h-4" />
+                </IconButton>
+                <IconButton
+                  size="small"
                   title="Move down"
                   onClick={handleMoveSelectedDown}
                   disabled={
@@ -2919,15 +2964,15 @@ export default function FilterableDataTable({
                     draftSelectedOrder.indexOf(selectedHighlight) >=
                       draftSelectedOrder.length - 1
                   }
-                  className="p-1.5 border border-gray-300 rounded-sm hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed dark:border-gray-600 dark:hover:bg-gray-700"
+                  sx={{ border: "1px solid", borderColor: "divider", borderRadius: "1.75px" }}
                 >
-                  <ChevronDown className="w-4 h-4 text-gray-700 dark:text-gray-300" />
-                </button>
-              </div>
+                  <ChevronDown className="w-4 h-4" />
+                </IconButton>
+              </Stack>
             </DialogContent>
 
             {/* Footer */}
-            <DialogActions className="px-5 py-3 border-t flex items-center justify-between dark:border-gray-700">
+            <DialogActions sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: 1, borderColor: "divider", px: 2.5, py: 1.5 }}>
               <Button
                 size="small"
                 variant="outlined"
@@ -2936,7 +2981,7 @@ export default function FilterableDataTable({
               >
                 Reset to column defaults
               </Button>
-              <div className="flex items-center gap-2">
+              <Stack direction="row" spacing={1}>
                 <Button size="small" variant="outlined" onClick={() => setShowColumnDialog(false)}>
                   Cancel
                 </Button>
@@ -2948,9 +2993,9 @@ export default function FilterableDataTable({
                 >
                   {savingColumnPrefs ? "Applying..." : "OK"}
                 </Button>
-              </div>
+              </Stack>
             </DialogActions>
       </Dialog>
-    </div>
+    </Box>
   );
 }

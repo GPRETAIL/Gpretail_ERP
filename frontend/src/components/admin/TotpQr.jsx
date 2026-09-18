@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import { Copy, Check } from "lucide-react";
+import { Box, Button, Stack, Typography } from "@mui/material";
 
 // Renders the authenticator QR for a TOTP enrollment (from an otpauth:// URI) plus the Base32 secret
 // as a copy-able manual-entry fallback. Shared by the login-time enrollment step and the Security
@@ -38,37 +39,52 @@ const TotpQr = ({ otpauthUri, secret }) => {
   };
 
   return (
-    <div className="flex flex-col items-center gap-3">
+    <Stack spacing={1.5} sx={{ alignItems: "center" }}>
       {dataUrl ? (
-        <img
+        <Box
+          component="img"
           src={dataUrl}
           alt="Authenticator QR code"
-          className="h-44 w-44 rounded-lg border border-slate-200 bg-white dark:bg-gray-800 p-1"
+          sx={{ height: 176, width: 176, borderRadius: 1.5, border: "1px solid", borderColor: "divider", bgcolor: "background.paper", p: 0.5 }}
         />
       ) : (
-        <div className="flex h-44 w-44 items-center justify-center rounded-lg border border-dashed border-slate-300 text-xs text-slate-400">
-          Generating QR…
-        </div>
+        <Box
+          sx={{
+            height: 176, width: 176, display: "flex", alignItems: "center", justifyContent: "center",
+            borderRadius: 1.5, border: "1px dashed", borderColor: "divider",
+          }}
+        >
+          <Typography sx={{ fontSize: 12, color: "text.secondary" }}>Generating QR…</Typography>
+        </Box>
       )}
-      <div className="w-full">
-        <p className="mb-1 text-center text-xs text-slate-500">
+      <Box sx={{ width: "100%" }}>
+        <Typography sx={{ mb: 1, textAlign: "center", fontSize: 12, color: "text.secondary" }}>
           Scan with Google Authenticator, Authy, or 1Password — or enter this key manually:
-        </p>
-        <div className="flex items-center gap-2">
-          <code className="flex-1 truncate rounded-md bg-slate-100 px-2.5 py-1.5 text-center font-mono text-xs tracking-wider text-slate-700">
-            {secret}
-          </code>
-          <button
-            type="button"
-            onClick={copySecret}
-            className="inline-flex items-center gap-1 rounded-md border border-slate-300 px-2 py-1.5 text-xs text-slate-600 hover:bg-slate-50"
+        </Typography>
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+          <Box
+            component="code"
+            sx={{
+              flex: 1, minWidth: 0, borderRadius: 1, bgcolor: "action.hover", px: 1.5, py: 1,
+              textAlign: "center", fontFamily: "monospace", fontSize: 12, letterSpacing: 1,
+              color: "text.primary", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+            }}
           >
-            {copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
+            {secret}
+          </Box>
+          <Button
+            size="small"
+            variant="outlined"
+            color="inherit"
+            onClick={copySecret}
+            startIcon={copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+            sx={{ fontSize: 12, color: copied ? "success.main" : "text.secondary", borderColor: copied ? "success.main" : "divider" }}
+          >
             {copied ? "Copied" : "Copy"}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </Stack>
+      </Box>
+    </Stack>
   );
 };
 
