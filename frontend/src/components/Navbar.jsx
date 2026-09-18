@@ -11,6 +11,8 @@ import {
   PrinterIcon,
   XMarkIcon,
   DevicePhoneMobileIcon,
+  ArrowsPointingOutIcon,
+  ArrowsPointingInIcon,
 } from "@heroicons/react/24/outline";
 import {
   AppBar,
@@ -101,6 +103,24 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
   // one default store.
   const hasMultipleStores = Array.isArray(user?.company_ids) && user.company_ids.length > 1;
   const canSwitchStore = isSuperAdmin || hasMultipleStores;
+
+  // Tracks the real browser fullscreen state (not just "did we click the button") so the icon
+  // stays correct if the user exits with Esc or a browser control instead of clicking it again.
+  const [isFullscreen, setIsFullscreen] = useState(() => Boolean(document.fullscreenElement));
+  useEffect(() => {
+    const onFullscreenChange = () => setIsFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", onFullscreenChange);
+  }, []);
+  const toggleFullscreen = () => {
+    if (document.fullscreenElement) {
+      document.exitFullscreen?.();
+    } else {
+      document.documentElement.requestFullscreen?.().catch(() => {
+        toast.error("Fullscreen isn't available in this browser/tab.");
+      });
+    }
+  };
 
   const handleLogout = async () => {
     await dispatch(logoutUser());
@@ -550,6 +570,19 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
               sx={{ color: "text.secondary" }}
             >
               <span className="text-base">{theme === "dark" ? "☀️" : "🌙"}</span>
+            </IconButton>
+
+            <IconButton
+              size="small"
+              onClick={toggleFullscreen}
+              title={isFullscreen ? "Exit full screen" : "Full screen"}
+              sx={{ color: "text.secondary" }}
+            >
+              {isFullscreen ? (
+                <ArrowsPointingInIcon className="w-5 h-5" />
+              ) : (
+                <ArrowsPointingOutIcon className="w-5 h-5" />
+              )}
             </IconButton>
 
             {!isOwner ? (

@@ -1905,15 +1905,25 @@ export default function FilterableDataTable({
   const bodyCellYClass = compact ? "py-0 leading-none" : "py-2 xl:py-2.5";
   const bodyRowClass = compact ? "h-8" : "";
   const tableTextClass = compact ? "text-[10px] xl:text-[11px] leading-tight" : "text-xs xl:text-sm";
+  // Row-count/page-size info now lives on its own line -- the actual page controls (Prev/Next,
+  // page selector, or Load More) got their own full-width centered row below it instead of
+  // sharing this line's right-hand corner, so they read as a distinct "footer action bar" under
+  // the last table row rather than small controls squeezed in next to the row count.
   const paginationRowClass = compact
-    ? "mt-0.5 flex h-8 items-center justify-between text-[8px] text-gray-700 dark:text-gray-300"
-    : "mt-0 flex h-7 items-center justify-between text-[10px] text-gray-700 dark:text-gray-300";
+    ? "mt-0.5 flex h-8 items-center gap-2 text-[8px] text-gray-700 dark:text-gray-300"
+    : "mt-0 flex h-7 items-center gap-2 text-[10px] text-gray-700 dark:text-gray-300";
+  const paginationControlsBarClass = compact
+    ? "flex w-full items-center justify-center gap-2 border-t border-gray-200 dark:border-gray-700 py-1.5"
+    : "flex w-full items-center justify-center gap-2 border-t border-gray-200 dark:border-gray-700 py-2";
   const paginationControlClass = compact
     ? "compact-pagination-select h-[26px] rounded-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-1 text-[7px] leading-tight dark:text-gray-100"
     : "h-7 rounded-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-1.5 text-[10px] dark:text-gray-100";
   const paginationButtonClass = compact
-    ? "compact-pagination-button flex h-[24px] w-[24px] items-center justify-center rounded-sm border border-gray-300 dark:border-gray-600 text-[8px] disabled:cursor-not-allowed disabled:opacity-50 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50"
-    : "flex h-7 w-7 items-center justify-center rounded-sm border border-gray-300 dark:border-gray-600 text-[10px] disabled:cursor-not-allowed disabled:opacity-50 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50";
+    ? "compact-pagination-button flex h-[26px] items-center justify-center gap-1 rounded-sm border border-gray-300 dark:border-gray-600 px-3 text-[9px] font-medium disabled:cursor-not-allowed disabled:opacity-50 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50"
+    : "flex h-8 items-center justify-center gap-1 rounded-sm border border-gray-300 dark:border-gray-600 px-4 text-xs font-medium disabled:cursor-not-allowed disabled:opacity-50 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50";
+  const loadMoreButtonClass = compact
+    ? "inline-flex items-center gap-1.5 rounded-sm border border-gray-300 dark:border-gray-600 px-4 py-1 text-[9px] font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 disabled:cursor-not-allowed disabled:opacity-50"
+    : "inline-flex items-center gap-1.5 rounded-md border border-gray-300 dark:border-gray-600 px-5 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 disabled:cursor-not-allowed disabled:opacity-50";
   const resolvedSearchButtonClassName = compact
     ? `${searchButtonClassName} ${compactActionClass}`
     : searchButtonClassName;
@@ -2637,8 +2647,8 @@ export default function FilterableDataTable({
       </Drawer>
 
       {canPaginate && (
-        <div className={paginationRowClass}>
-          <div className="flex items-center gap-2">
+        <>
+          <div className={paginationRowClass}>
             <span>Rows showing</span>
             <select
               value={safeLimit}
@@ -2662,13 +2672,15 @@ export default function FilterableDataTable({
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
+          {/* Full-width, centered footer action bar under the last row -- Load More (or
+              Prev/page/Next) used to be squeezed into the corner of the row-count line above. */}
+          <div className={paginationControlsBarClass}>
             {isAppendCursorMode ? (
               <button
                 type="button"
                 onClick={handleNextPage}
                 disabled={!hasNext || loading}
-                className="inline-flex items-center gap-1.5 rounded-sm border border-gray-300 dark:border-gray-600 px-3 py-1 text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 disabled:cursor-not-allowed disabled:opacity-50"
+                className={loadMoreButtonClass}
               >
                 {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
                 {hasNext ? "Load More" : "No more results"}
@@ -2725,7 +2737,7 @@ export default function FilterableDataTable({
               </>
             )}
           </div>
-        </div>
+        </>
       )}
 
       <Dialog

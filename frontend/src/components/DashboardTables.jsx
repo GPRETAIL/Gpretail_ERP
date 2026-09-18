@@ -31,9 +31,10 @@ const methodDotClass = {
   slate: "bg-slate-500",
 };
 
-export const DailySalesSummaryTable = ({ table, loading }) => {
+export const DailySalesSummaryTable = ({ table, loading, privacyMode }) => {
   const rows = table?.rows || [];
   const totals = table?.totals || { count: 0, quantity: 0, value: 0 };
+  const blurClass = privacyMode ? "blur-sm select-none" : "";
 
   return (
     <div className={tableCardClass}>
@@ -60,9 +61,9 @@ export const DailySalesSummaryTable = ({ table, loading }) => {
                   <tr key={`${row.company}-${row.location}`} className="border-b border-slate-100 dark:border-gray-700">
                     <td className="py-2 pr-3 text-slate-800 dark:text-gray-200">{row.company}</td>
                     <td className="py-2 pr-3 text-slate-700 dark:text-gray-300">{row.location}</td>
-                    <td className="py-2 pr-3 text-right text-slate-800 dark:text-gray-200">{formatWholeAmount(row.count)}</td>
-                    <td className="py-2 pr-3 text-right text-slate-800 dark:text-gray-200">{formatQuantity(row.quantity)}</td>
-                    <td className={`py-2 text-right font-medium ${amountClass(row.value)}`}>
+                    <td className={`py-2 pr-3 text-right text-slate-800 dark:text-gray-200 ${blurClass}`}>{formatWholeAmount(row.count)}</td>
+                    <td className={`py-2 pr-3 text-right text-slate-800 dark:text-gray-200 ${blurClass}`}>{formatQuantity(row.quantity)}</td>
+                    <td className={`py-2 text-right font-medium ${amountClass(row.value)} ${blurClass}`}>
                       {formatCurrency(row.value)}
                     </td>
                   </tr>
@@ -83,9 +84,9 @@ export const DailySalesSummaryTable = ({ table, loading }) => {
                   <td className="pt-3 pb-1 pr-3" colSpan={2}>
                     Total
                   </td>
-                  <td className="pt-3 pb-1 pr-3 text-right">{formatWholeAmount(totals.count)}</td>
-                  <td className="pt-3 pb-1 pr-3 text-right">{formatQuantity(totals.quantity)}</td>
-                  <td className={`pt-3 pb-1 text-right ${amountClass(totals.value)}`}>{formatCurrency(totals.value)}</td>
+                  <td className={`pt-3 pb-1 pr-3 text-right ${blurClass}`}>{formatWholeAmount(totals.count)}</td>
+                  <td className={`pt-3 pb-1 pr-3 text-right ${blurClass}`}>{formatQuantity(totals.quantity)}</td>
+                  <td className={`pt-3 pb-1 text-right ${amountClass(totals.value)} ${blurClass}`}>{formatCurrency(totals.value)}</td>
                 </tr>
               </tfoot>
             ) : null}
@@ -96,11 +97,12 @@ export const DailySalesSummaryTable = ({ table, loading }) => {
   );
 };
 
-const SettlementDetailsTable = ({ table, loading }) => {
+const SettlementDetailsTable = ({ table, loading, privacyMode }) => {
   const columns = table?.columns || [];
   const rows = table?.rows || [];
   const columnTotals = table?.columnTotals || {};
   const grandTotal = table?.grandTotal || 0;
+  const blurClass = privacyMode ? "blur-sm select-none" : "";
 
   return (
     <div className={`${tableCardClass} min-w-0 flex flex-col`}>
@@ -138,12 +140,12 @@ const SettlementDetailsTable = ({ table, loading }) => {
                     {columns.map((column) => (
                       <td
                         key={`${row.key}-${column.key}`}
-                        className={`py-2 px-3 text-right ${amountClass(row.values?.[column.key])}`}
+                        className={`py-2 px-3 text-right ${amountClass(row.values?.[column.key])} ${blurClass}`}
                       >
                         {formatCurrency(row.values?.[column.key])}
                       </td>
                     ))}
-                    <td className={`py-2 pl-3 text-right font-medium ${amountClass(row.total)}`}>
+                    <td className={`py-2 pl-3 text-right font-medium ${amountClass(row.total)} ${blurClass}`}>
                       {formatCurrency(row.total)}
                     </td>
                   </tr>
@@ -168,12 +170,12 @@ const SettlementDetailsTable = ({ table, loading }) => {
                   {columns.map((column) => (
                     <td
                       key={`total-${column.key}`}
-                      className={`pt-3 pb-1 px-3 text-right ${amountClass(columnTotals[column.key])}`}
+                      className={`pt-3 pb-1 px-3 text-right ${amountClass(columnTotals[column.key])} ${blurClass}`}
                     >
                       {formatCurrency(columnTotals[column.key])}
                     </td>
                   ))}
-                  <td className={`pt-3 pb-1 pl-3 text-right ${amountClass(grandTotal)}`}>{formatCurrency(grandTotal)}</td>
+                  <td className={`pt-3 pb-1 pl-3 text-right ${amountClass(grandTotal)} ${blurClass}`}>{formatCurrency(grandTotal)}</td>
                 </tr>
               </tfoot>
             ) : null}
@@ -184,10 +186,10 @@ const SettlementDetailsTable = ({ table, loading }) => {
   );
 };
 
-const DashboardTables = ({ tables, loading }) => (
+const DashboardTables = ({ tables, loading, privacyMode }) => (
   <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
-    <DailySalesSummaryTable table={tables?.dailySalesSummary} loading={loading} />
-    <SettlementDetailsTable table={tables?.settlementDetails} loading={loading} />
+    <DailySalesSummaryTable table={tables?.dailySalesSummary} loading={loading} privacyMode={privacyMode} />
+    <SettlementDetailsTable table={tables?.settlementDetails} loading={loading} privacyMode={privacyMode} />
   </div>
 );
 

@@ -3,7 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
 import api from "../api/axios";
 import DashboardGrid from "./dashboard/DashboardGrid";
-import CrmKpiSummary from "./dashboard/crm/CrmKpiSummary";
+import {
+  TotalCustomersCard,
+  CustomerOrdersCard,
+  CustomerReceivablesCard,
+  LoyaltyPointsCard,
+} from "./dashboard/crm/CrmKpiSummary";
 import CrmActionRequiredBanner from "./dashboard/crm/CrmActionRequiredBanner";
 import CrmSegmentationBreakdown from "./dashboard/crm/CrmSegmentationBreakdown";
 import CrmGrowthChart from "./dashboard/crm/CrmGrowthChart";
@@ -15,12 +20,12 @@ const QUICK_ACTIONS = [
   { label: "+ New Customer", path: "/crm/customer", color: "bg-blue-600 hover:bg-blue-700 text-white" },
   { label: "+ New Customer Order", path: "/crm/customer-orders/new", color: "bg-indigo-600 hover:bg-indigo-700 text-white" },
   { label: "Customer Orders List", path: "/crm/customer-orders", color: "bg-purple-600 hover:bg-purple-700 text-white" },
-  { label: "Loyalty Management", path: "/crm/loyalty", color: "bg-amber-600 hover:bg-amber-700 text-white" },
+  { label: "Loyalty Management", path: "/crm/loyalty-management", color: "bg-amber-600 hover:bg-amber-700 text-white" },
   { label: "Bill & Receipts Print", path: "/crm/bill-print", color: "bg-emerald-600 hover:bg-emerald-700 text-white" },
   { label: "Customer 360 Profiles", path: "/crm/customer", color: "bg-slate-700 hover:bg-slate-800 text-white" },
 ];
 
-export default function CrmDashboardTabPane({ active, fromDate, toDate, companyId }) {
+export default function CrmDashboardTabPane({ active, fromDate, toDate, companyId, privacyMode }) {
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -66,11 +71,32 @@ export default function CrmDashboardTabPane({ active, fromDate, toDate, companyI
   const widgets = useMemo(
     () => [
       {
-        key: "kpi-summary",
-        title: "KPI Summary",
-        component: CrmKpiSummary,
-        props: { summary, loading },
-        defaultLayout: { x: 0, y: 0, w: 12, h: 2, minW: 6, minH: 2 },
+        key: "kpi-total-customers",
+        title: "Total Customers",
+        component: TotalCustomersCard,
+        props: { summary, loading, privacyMode },
+        defaultLayout: { x: 0, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
+      },
+      {
+        key: "kpi-customer-orders",
+        title: "Customer Orders",
+        component: CustomerOrdersCard,
+        props: { summary, loading, privacyMode },
+        defaultLayout: { x: 3, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
+      },
+      {
+        key: "kpi-customer-receivables",
+        title: "Customer Receivables",
+        component: CustomerReceivablesCard,
+        props: { summary, loading, privacyMode },
+        defaultLayout: { x: 6, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
+      },
+      {
+        key: "kpi-loyalty-points",
+        title: "Loyalty Points",
+        component: LoyaltyPointsCard,
+        props: { summary, loading, privacyMode },
+        defaultLayout: { x: 9, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
       },
       {
         key: "action-required",
@@ -115,7 +141,7 @@ export default function CrmDashboardTabPane({ active, fromDate, toDate, companyI
         defaultLayout: { x: 6, y: 10, w: 6, h: 4, minW: 3, minH: 3 },
       },
     ],
-    [summary, loading, actionRequired, segmentation, performance, timelineChart, upcomingEvents, topCustomers, recentOrders]
+    [summary, loading, actionRequired, segmentation, performance, timelineChart, upcomingEvents, topCustomers, recentOrders, privacyMode]
   );
 
   if (error) {

@@ -11,9 +11,10 @@ const formatWholeAmount = (value) =>
 
 const formatCurrency = (value) => `₹${formatWholeAmount(value)}`;
 
-const LeaderboardCard = ({ table, defaultTitle, loading, icon: Icon, emptyMessage }) => {
+const LeaderboardCard = ({ table, defaultTitle, loading, icon: Icon, emptyMessage, privacyMode }) => {
   const rows = table?.rows || [];
   const title = table?.title || defaultTitle || "Summary";
+  const blurClass = privacyMode ? "blur-sm select-none" : "";
 
   return (
     <div className={cardClass}>
@@ -40,10 +41,10 @@ const LeaderboardCard = ({ table, defaultTitle, loading, icon: Icon, emptyMessag
                 rows.map((row) => (
                   <tr key={row.name} className="border-b border-slate-100 dark:border-gray-700">
                     <td className="px-2 py-2 text-slate-800 dark:text-gray-200">{row.name}</td>
-                    <td className="px-2 py-2 text-center font-medium text-emerald-600 dark:text-emerald-400">
+                    <td className={`px-2 py-2 text-center font-medium text-emerald-600 dark:text-emerald-400 ${blurClass}`}>
                       {formatWholeAmount(row.saleQty)}
                     </td>
-                    <td className="px-2 py-2 text-right font-medium text-blue-600 dark:text-blue-400">{formatCurrency(row.value)}</td>
+                    <td className={`px-2 py-2 text-right font-medium text-blue-600 dark:text-blue-400 ${blurClass}`}>{formatCurrency(row.value)}</td>
                   </tr>
                 ))
               ) : (
@@ -61,7 +62,7 @@ const LeaderboardCard = ({ table, defaultTitle, loading, icon: Icon, emptyMessag
   );
 };
 
-const DashboardHighlightCards = ({ tables, loading }) => (
+const DashboardHighlightCards = ({ tables, loading, privacyMode }) => (
   <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
     <LeaderboardCard
       table={tables?.fastMovingSection || tables?.topSellingItems}
@@ -69,6 +70,7 @@ const DashboardHighlightCards = ({ tables, loading }) => (
       loading={loading}
       icon={Package}
       emptyMessage="No product sales in this range"
+      privacyMode={privacyMode}
     />
     <LeaderboardCard
       table={tables?.salesPersonOfTheDay || tables?.topCustomers}
@@ -76,6 +78,7 @@ const DashboardHighlightCards = ({ tables, loading }) => (
       loading={loading}
       icon={Users}
       emptyMessage="No salesman sales in this range"
+      privacyMode={privacyMode}
     />
   </div>
 );

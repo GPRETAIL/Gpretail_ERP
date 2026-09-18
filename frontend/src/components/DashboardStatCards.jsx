@@ -20,26 +20,33 @@ export const TrendBadge = ({ trend }) => {
   );
 };
 
-export const MetricCard = ({ eyebrow, title, value, valueSubheading, subtitle, trend }) => (
-  <div className="flex h-full min-h-[118px] flex-col rounded-md border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2">
-    <p className="text-[11px] leading-tight text-slate-500 dark:text-gray-400">{eyebrow}</p>
-    {title ? <p className="mt-0.5 text-xs leading-tight font-medium text-slate-700 dark:text-gray-300">{title}</p> : null}
-    <p className="mt-0.5 text-base leading-tight font-semibold text-slate-900 dark:text-gray-100">{value}</p>
-    {valueSubheading ? (
-      <p className="mt-0.5 text-[11px] leading-tight text-slate-600 dark:text-gray-400">{valueSubheading}</p>
-    ) : null}
-    <div className="mt-auto space-y-0.5">
-      <p className="min-h-[14px] text-[11px] leading-tight text-slate-600 dark:text-gray-400">{subtitle || " "}</p>
-      <div className="min-h-[16px]">
-        {trend ? (
-          <TrendBadge trend={trend} />
-        ) : (
-          <p className="text-[10px] leading-tight invisible">0% from last month</p>
-        )}
+export const MetricCard = ({ eyebrow, title, value, valueSubheading, subtitle, trend, privacyMode }) => {
+  // Only the figures blur -- eyebrow/title labels stay legible so the card is still
+  // identifiable at a glance, just with the actual numbers hidden for screen-sharing.
+  const blurClass = privacyMode ? "blur-sm select-none" : "";
+  return (
+    <div className="flex h-full min-h-[118px] flex-col rounded-md border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2">
+      <p className="text-[11px] leading-tight text-slate-500 dark:text-gray-400">{eyebrow}</p>
+      {title ? <p className="mt-0.5 text-xs leading-tight font-medium text-slate-700 dark:text-gray-300">{title}</p> : null}
+      <p className={`mt-0.5 text-base leading-tight font-semibold text-slate-900 dark:text-gray-100 ${blurClass}`}>{value}</p>
+      {valueSubheading ? (
+        <p className="mt-0.5 text-[11px] leading-tight text-slate-600 dark:text-gray-400">{valueSubheading}</p>
+      ) : null}
+      <div className="mt-auto space-y-0.5">
+        <p className={`min-h-[14px] text-[11px] leading-tight text-slate-600 dark:text-gray-400 ${blurClass}`}>
+          {subtitle || " "}
+        </p>
+        <div className="min-h-[16px]">
+          {trend ? (
+            <TrendBadge trend={trend} />
+          ) : (
+            <p className="text-[10px] leading-tight invisible">0% from last month</p>
+          )}
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 // A row of MetricCards driven by a plain {label, value}[] list -- what every module tab's
 // dashboard-summary endpoint reduces to once formatted. Kept deliberately dumb (no fetching, no

@@ -10,7 +10,7 @@ const formatMoney = (value) =>
 // Four separate widgets (not one bundled grid) so DashboardGrid can drag/resize each KPI card
 // independently in the Overview tab's layout customizer, instead of moving the whole row at once.
 
-export function TotalBillsCard({ totalBills = {}, loading }) {
+export function TotalBillsCard({ totalBills = {}, loading, privacyMode }) {
   return (
     <MetricCard
       eyebrow="Total Bills"
@@ -18,38 +18,42 @@ export function TotalBillsCard({ totalBills = {}, loading }) {
       value={loading ? "..." : formatMoney(totalBills.amount)}
       subtitle={loading ? "..." : `${totalBills.count || 0} Bills (${totalBills.unsettledCount || 0} UNSETTLED)`}
       trend={totalBills.trend}
+      privacyMode={privacyMode}
     />
   );
 }
 
-export function SettlementCard({ settlements = {}, loading }) {
+export function SettlementCard({ settlements = {}, loading, privacyMode }) {
   return (
     <MetricCard
       eyebrow="Settlement"
       title="Total settlement amount"
       value={loading ? "..." : formatMoney(settlements.amount)}
       trend={settlements.trend}
+      privacyMode={privacyMode}
     />
   );
 }
 
-export function EmployeesCard({ employees = {}, loading }) {
+export function EmployeesCard({ employees = {}, loading, privacyMode }) {
   return (
     <MetricCard
       eyebrow="Employees"
       value={loading ? "..." : `${employees.present || 0}/${employees.total || 0}`}
       valueSubheading="Present / total"
+      privacyMode={privacyMode}
     />
   );
 }
 
-export function StockValueCard({ stockValue = {}, loading }) {
+export function StockValueCard({ stockValue = {}, loading, privacyMode }) {
   return (
     <MetricCard
       eyebrow="Stock value"
       title="Total stock value"
       value={loading ? "..." : formatMoney(stockValue.amount)}
       trend={stockValue.trend}
+      privacyMode={privacyMode}
     />
   );
 }

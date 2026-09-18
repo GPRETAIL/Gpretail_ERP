@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { RefreshCw, LayoutGrid, Check, RotateCcw } from "lucide-react";
+import { RefreshCw, LayoutGrid, Check, RotateCcw, Eye, EyeOff } from "lucide-react";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import api from "../api/axios";
@@ -49,6 +49,13 @@ const Dashboard = () => {
     includeAll: isSuperAdmin,
     allLabel: "All Store",
   });
+
+  // Blurs currency/quantity figures across the dashboard for screen-sharing -- persisted so it
+  // survives a reload instead of silently re-exposing numbers the user deliberately hid.
+  const [privacyMode, setPrivacyMode] = useState(() => localStorage.getItem("dashboardPrivacyMode") === "true");
+  useEffect(() => {
+    localStorage.setItem("dashboardPrivacyMode", String(privacyMode));
+  }, [privacyMode]);
 
   const [fromDate, setFromDate] = useState(() => formatYmd(startOfMonth(new Date())));
   const [toDate, setToDate] = useState(() => formatYmd(new Date()));
@@ -143,35 +150,35 @@ const Dashboard = () => {
         key: "kpi-total-bills",
         title: "Total Bills",
         component: TotalBillsCard,
-        props: { totalBills, loading },
+        props: { totalBills, loading, privacyMode },
         defaultLayout: { x: 0, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
       },
       {
         key: "kpi-settlement",
         title: "Settlement",
         component: SettlementCard,
-        props: { settlements, loading },
+        props: { settlements, loading, privacyMode },
         defaultLayout: { x: 3, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
       },
       {
         key: "kpi-employees",
         title: "Employees",
         component: EmployeesCard,
-        props: { employees, loading },
+        props: { employees, loading, privacyMode },
         defaultLayout: { x: 6, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
       },
       {
         key: "kpi-stock-value",
         title: "Stock value",
         component: StockValueCard,
-        props: { stockValue, loading },
+        props: { stockValue, loading, privacyMode },
         defaultLayout: { x: 9, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
       },
       {
         key: "charts",
         title: "Charts",
         component: DashboardCharts,
-        props: { charts, loading },
+        props: { charts, loading, privacyMode },
         // h:4 matches DashboardCharts' actual min-h-[320px] card height (h*72 + (h-1)*16 = 336px)
         // instead of the old h:5 (424px), which left ~104px of dead space below the chart cards.
         defaultLayout: { x: 0, y: 2, w: 12, h: 4, minW: 6, minH: 3 },
@@ -180,7 +187,7 @@ const Dashboard = () => {
         key: "tables",
         title: "Tables",
         component: DashboardTables,
-        props: { tables, loading },
+        props: { tables, loading, privacyMode },
         // DashboardTables' cards are a fixed 320px (min-h and max-h both 320px), so h:4 (336px)
         // fits them with ~16px to spare instead of the old h:6 (512px), which left ~192px of
         // empty space inside this widget's box -- the largest single contributor to the grid's
@@ -191,11 +198,11 @@ const Dashboard = () => {
         key: "highlights",
         title: "Highlights",
         component: DashboardHighlightCards,
-        props: { tables, loading },
+        props: { tables, loading, privacyMode },
         defaultLayout: { x: 0, y: 10, w: 12, h: 4, minW: 6, minH: 3 },
       },
     ],
-    [totalBills, settlements, employees, stockValue, loading, charts, tables]
+    [totalBills, settlements, employees, stockValue, loading, charts, tables, privacyMode]
   );
 
   return (
@@ -216,6 +223,20 @@ const Dashboard = () => {
           >
             {editMode ? <Check className="h-4 w-4" /> : <LayoutGrid className="h-4 w-4" />}
             {editMode ? "Done Customizing" : "Customize Layout"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setPrivacyMode((prev) => !prev)}
+            className={`inline-flex h-10 items-center gap-2 rounded-sm border px-3 text-sm transition-colors ${
+              privacyMode
+                ? "border-indigo-600 bg-indigo-600 text-white hover:bg-indigo-700"
+                : "border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-slate-700 dark:text-gray-200 hover:bg-slate-50 dark:hover:bg-gray-700"
+            }`}
+            aria-label="Toggle privacy mode (blur amounts)"
+            title="Blur bill amounts, stock value, and other figures"
+          >
+            {privacyMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            Privacy
           </button>
           {editMode && (
             <button
@@ -318,6 +339,7 @@ const Dashboard = () => {
             active={openedTabs.has("store")}
             fromDate={fromDate}
             toDate={toDate}
+            privacyMode={privacyMode}
           />
         </div>
       )}
@@ -329,6 +351,7 @@ const Dashboard = () => {
             fromDate={fromDate}
             toDate={toDate}
             companyId={companyId}
+            privacyMode={privacyMode}
           />
         </div>
       )}
@@ -340,6 +363,7 @@ const Dashboard = () => {
             fromDate={fromDate}
             toDate={toDate}
             companyId={companyId}
+            privacyMode={privacyMode}
           />
         </div>
       )}
@@ -351,6 +375,7 @@ const Dashboard = () => {
             fromDate={fromDate}
             toDate={toDate}
             companyId={companyId}
+            privacyMode={privacyMode}
           />
         </div>
       )}
@@ -362,6 +387,7 @@ const Dashboard = () => {
             fromDate={fromDate}
             toDate={toDate}
             companyId={companyId}
+            privacyMode={privacyMode}
           />
         </div>
       )}
@@ -371,6 +397,7 @@ const Dashboard = () => {
           <MastersDashboardTabPane
             active={openedTabs.has("masters")}
             companyId={companyId}
+            privacyMode={privacyMode}
           />
         </div>
       )}
@@ -380,6 +407,7 @@ const Dashboard = () => {
           <SettingsDashboardTabPane
             active={openedTabs.has("settings")}
             companyId={companyId}
+            privacyMode={privacyMode}
           />
         </div>
       )}
@@ -391,6 +419,7 @@ const Dashboard = () => {
             fromDate={fromDate}
             toDate={toDate}
             companyId={companyId}
+            privacyMode={privacyMode}
           />
         </div>
       )}

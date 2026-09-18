@@ -3,7 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
 import api from "../api/axios";
 import DashboardGrid from "./dashboard/DashboardGrid";
-import MastersKpiSummary from "./dashboard/masters/MastersKpiSummary";
+import {
+  TotalProductsCard,
+  BrandsCategoriesCard,
+  SuppliersCard,
+  DataQualityGapsCard,
+} from "./dashboard/masters/MastersKpiSummary";
 import MastersActionRequiredBanner from "./dashboard/masters/MastersActionRequiredBanner";
 import MastersBreakdown from "./dashboard/masters/MastersBreakdown";
 import MastersCategoryChart from "./dashboard/masters/MastersCategoryChart";
@@ -18,7 +23,7 @@ const QUICK_ACTIONS = [
   { label: "Item Barcode", path: "/warehouse/barcode", color: "bg-amber-600 hover:bg-amber-700 text-white" },
 ];
 
-export default function MastersDashboardTabPane({ active, companyId }) {
+export default function MastersDashboardTabPane({ active, companyId, privacyMode }) {
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -59,11 +64,32 @@ export default function MastersDashboardTabPane({ active, companyId }) {
   const widgets = useMemo(
     () => [
       {
-        key: "kpi-summary",
-        title: "KPI Summary",
-        component: MastersKpiSummary,
-        props: { summary, loading },
-        defaultLayout: { x: 0, y: 0, w: 12, h: 2, minW: 6, minH: 2 },
+        key: "kpi-total-products",
+        title: "Total Products",
+        component: TotalProductsCard,
+        props: { summary, loading, privacyMode },
+        defaultLayout: { x: 0, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
+      },
+      {
+        key: "kpi-brands-categories",
+        title: "Brands & Categories",
+        component: BrandsCategoriesCard,
+        props: { summary, loading, privacyMode },
+        defaultLayout: { x: 3, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
+      },
+      {
+        key: "kpi-suppliers",
+        title: "Suppliers",
+        component: SuppliersCard,
+        props: { summary, loading, privacyMode },
+        defaultLayout: { x: 6, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
+      },
+      {
+        key: "kpi-data-quality-gaps",
+        title: "Data Quality Gaps",
+        component: DataQualityGapsCard,
+        props: { summary, loading, privacyMode },
+        defaultLayout: { x: 9, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
       },
       {
         key: "action-required",
@@ -94,7 +120,7 @@ export default function MastersDashboardTabPane({ active, companyId }) {
         defaultLayout: { x: 4, y: 7, w: 8, h: 4, minW: 4, minH: 3 },
       },
     ],
-    [summary, loading, actionRequired, breakdown, categoryChart, recentProducts]
+    [summary, loading, actionRequired, breakdown, categoryChart, recentProducts, privacyMode]
   );
 
   if (error) {

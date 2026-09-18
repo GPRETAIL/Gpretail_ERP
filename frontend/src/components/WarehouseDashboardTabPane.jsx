@@ -3,7 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
 import api from "../api/axios";
 import DashboardGrid from "./dashboard/DashboardGrid";
-import WarehouseKpiSummary from "./dashboard/warehouse/WarehouseKpiSummary";
+import {
+  TotalStockUnitsCard,
+  TotalStockValueCard,
+  IncomingGoodsCard,
+  StockOutwardCard,
+} from "./dashboard/warehouse/WarehouseKpiSummary";
 import WarehouseActionRequiredBanner from "./dashboard/warehouse/WarehouseActionRequiredBanner";
 import WarehouseSellingModeBreakdown from "./dashboard/warehouse/WarehouseSellingModeBreakdown";
 import WarehouseStockMovementChart from "./dashboard/warehouse/WarehouseStockMovementChart";
@@ -21,7 +26,7 @@ const QUICK_ACTIONS = [
   { label: "+ Generate Barcode", path: "/warehouse/barcode", color: "bg-slate-700 hover:bg-slate-800 text-white" },
 ];
 
-export default function WarehouseDashboardTabPane({ active, fromDate, toDate, companyId }) {
+export default function WarehouseDashboardTabPane({ active, fromDate, toDate, companyId, privacyMode }) {
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -66,11 +71,32 @@ export default function WarehouseDashboardTabPane({ active, fromDate, toDate, co
   const widgets = useMemo(
     () => [
       {
-        key: "kpi-summary",
-        title: "KPI Summary",
-        component: WarehouseKpiSummary,
-        props: { summary, loading },
-        defaultLayout: { x: 0, y: 0, w: 12, h: 2, minW: 6, minH: 2 },
+        key: "kpi-total-stock-units",
+        title: "Total Stock Units",
+        component: TotalStockUnitsCard,
+        props: { summary, loading, privacyMode },
+        defaultLayout: { x: 0, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
+      },
+      {
+        key: "kpi-total-stock-value",
+        title: "Total Stock Value",
+        component: TotalStockValueCard,
+        props: { summary, loading, privacyMode },
+        defaultLayout: { x: 3, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
+      },
+      {
+        key: "kpi-incoming-goods",
+        title: "Incoming Goods",
+        component: IncomingGoodsCard,
+        props: { summary, loading, privacyMode },
+        defaultLayout: { x: 6, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
+      },
+      {
+        key: "kpi-stock-outward",
+        title: "Stock Outward",
+        component: StockOutwardCard,
+        props: { summary, loading, privacyMode },
+        defaultLayout: { x: 9, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
       },
       {
         key: "action-required",
@@ -108,7 +134,7 @@ export default function WarehouseDashboardTabPane({ active, fromDate, toDate, co
         defaultLayout: { x: 0, y: 10, w: 12, h: 4, minW: 6, minH: 3 },
       },
     ],
-    [summary, loading, actionRequired, inventory, performance, stockMovementChart, incoming, alerts]
+    [summary, loading, actionRequired, inventory, performance, stockMovementChart, incoming, alerts, privacyMode]
   );
 
   if (error) {

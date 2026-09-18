@@ -3,8 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
 import api from "../api/axios";
 import DashboardGrid from "./dashboard/DashboardGrid";
-import SalesKpiSummary from "./dashboard/sales/SalesKpiSummary";
-import SalesSecondaryKpi from "./dashboard/sales/SalesSecondaryKpi";
+import { TodaysSalesCard, NetSalesCard, ReturnsCard, CreditPendingCard } from "./dashboard/sales/SalesKpiSummary";
+import { MonthlySalesCard, TotalInvoicesCard, ProductsSoldCard } from "./dashboard/sales/SalesSecondaryKpi";
 import SalesActionRequiredBanner from "./dashboard/sales/SalesActionRequiredBanner";
 import SalesModuleBreakdown from "./dashboard/sales/SalesModuleBreakdown";
 import SalesPaymentBreakdown from "./dashboard/sales/SalesPaymentBreakdown";
@@ -23,7 +23,7 @@ const QUICK_ACTIONS = [
   { label: "Settlement", path: "/sales/settlement", color: "bg-slate-700 hover:bg-slate-800 text-white" },
 ];
 
-export default function SalesDashboardTabPane({ active, fromDate, toDate, companyId }) {
+export default function SalesDashboardTabPane({ active, fromDate, toDate, companyId, privacyMode }) {
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -70,18 +70,53 @@ export default function SalesDashboardTabPane({ active, fromDate, toDate, compan
   const widgets = useMemo(
     () => [
       {
-        key: "kpi-summary",
-        title: "KPI Summary",
-        component: SalesKpiSummary,
-        props: { summary, performance, loading },
-        defaultLayout: { x: 0, y: 0, w: 12, h: 2, minW: 6, minH: 2 },
+        key: "kpi-todays-sales",
+        title: "Today's Sales",
+        component: TodaysSalesCard,
+        props: { summary, loading, privacyMode },
+        defaultLayout: { x: 0, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
       },
       {
-        key: "secondary-kpi",
-        title: "Monthly / Invoices / Products",
-        component: SalesSecondaryKpi,
-        props: { summary, loading },
-        defaultLayout: { x: 0, y: 2, w: 12, h: 2, minW: 6, minH: 2 },
+        key: "kpi-net-sales",
+        title: "Net Sales (Period)",
+        component: NetSalesCard,
+        props: { summary, loading, privacyMode },
+        defaultLayout: { x: 3, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
+      },
+      {
+        key: "kpi-returns",
+        title: "Returns (Period)",
+        component: ReturnsCard,
+        props: { summary, performance, loading, privacyMode },
+        defaultLayout: { x: 6, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
+      },
+      {
+        key: "kpi-credit-pending",
+        title: "Credit Pending",
+        component: CreditPendingCard,
+        props: { summary, performance, loading, privacyMode },
+        defaultLayout: { x: 9, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
+      },
+      {
+        key: "kpi-monthly-sales",
+        title: "Monthly Sales",
+        component: MonthlySalesCard,
+        props: { summary, loading, privacyMode },
+        defaultLayout: { x: 0, y: 2, w: 4, h: 2, minW: 2, minH: 2 },
+      },
+      {
+        key: "kpi-total-invoices",
+        title: "Total Invoices",
+        component: TotalInvoicesCard,
+        props: { summary, loading, privacyMode },
+        defaultLayout: { x: 4, y: 2, w: 4, h: 2, minW: 2, minH: 2 },
+      },
+      {
+        key: "kpi-products-sold",
+        title: "Products Sold",
+        component: ProductsSoldCard,
+        props: { summary, loading, privacyMode },
+        defaultLayout: { x: 8, y: 2, w: 4, h: 2, minW: 2, minH: 2 },
       },
       {
         key: "action-required",
@@ -144,6 +179,7 @@ export default function SalesDashboardTabPane({ active, fromDate, toDate, compan
       topProducts,
       topSalesPersons,
       recentSales,
+      privacyMode,
     ]
   );
 

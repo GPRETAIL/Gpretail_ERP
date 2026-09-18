@@ -2,12 +2,17 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { AlertTriangle } from "lucide-react";
 import api from "../api/axios";
 import DashboardGrid from "./dashboard/DashboardGrid";
-import AnalyticalKpiSummary from "./dashboard/analytical/AnalyticalKpiSummary";
+import {
+  ProductsWithStockCard,
+  BrandsTrackedCard,
+  CategoriesTrackedCard,
+  SuppliersWithPurchasesCard,
+} from "./dashboard/analytical/AnalyticalKpiSummary";
 import AnalyticalDataQualityBanner from "./dashboard/analytical/AnalyticalDataQualityBanner";
 import AnalyticalInsightsPanel from "./dashboard/analytical/AnalyticalInsightsPanel";
 import AnalyticalLaunchpad from "./dashboard/analytical/AnalyticalLaunchpad";
 
-export default function AnalyticalDashboardTabPane({ active, fromDate, toDate, companyId }) {
+export default function AnalyticalDashboardTabPane({ active, fromDate, toDate, companyId, privacyMode }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -48,11 +53,32 @@ export default function AnalyticalDashboardTabPane({ active, fromDate, toDate, c
   const widgets = useMemo(
     () => [
       {
-        key: "kpi-summary",
-        title: "KPI Summary",
-        component: AnalyticalKpiSummary,
-        props: { summary, loading },
-        defaultLayout: { x: 0, y: 0, w: 12, h: 2, minW: 6, minH: 2 },
+        key: "kpi-products-with-stock",
+        title: "Products With Stock",
+        component: ProductsWithStockCard,
+        props: { summary, loading, privacyMode },
+        defaultLayout: { x: 0, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
+      },
+      {
+        key: "kpi-brands-tracked",
+        title: "Brands Tracked",
+        component: BrandsTrackedCard,
+        props: { summary, loading, privacyMode },
+        defaultLayout: { x: 3, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
+      },
+      {
+        key: "kpi-categories-tracked",
+        title: "Categories Tracked",
+        component: CategoriesTrackedCard,
+        props: { summary, loading, privacyMode },
+        defaultLayout: { x: 6, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
+      },
+      {
+        key: "kpi-suppliers-with-purchases",
+        title: "Suppliers With Purchases",
+        component: SuppliersWithPurchasesCard,
+        props: { summary, loading, privacyMode },
+        defaultLayout: { x: 9, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
       },
       {
         key: "data-quality",
@@ -76,7 +102,7 @@ export default function AnalyticalDashboardTabPane({ active, fromDate, toDate, c
         defaultLayout: { x: 4, y: 4, w: 8, h: 4, minW: 4, minH: 3 },
       },
     ],
-    [summary, loading, dataQuality, insights, quickLinks]
+    [summary, loading, dataQuality, insights, quickLinks, privacyMode]
   );
 
   if (error) {

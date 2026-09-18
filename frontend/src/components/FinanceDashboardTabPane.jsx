@@ -3,7 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
 import api from "../api/axios";
 import DashboardGrid from "./dashboard/DashboardGrid";
-import FinanceKpiSummary from "./dashboard/finance/FinanceKpiSummary";
+import {
+  PayablesOutstandingCard,
+  ReceivablesOutstandingCard,
+  PurchaseValueCard,
+  NetPositionCard,
+} from "./dashboard/finance/FinanceKpiSummary";
 import FinanceActionRequiredBanner from "./dashboard/finance/FinanceActionRequiredBanner";
 import FinanceBreakdown from "./dashboard/finance/FinanceBreakdown";
 import FinanceTrendChart from "./dashboard/finance/FinanceTrendChart";
@@ -18,7 +23,7 @@ const QUICK_ACTIONS = [
   { label: "Settlement", path: "/sales/settlement", color: "bg-emerald-600 hover:bg-emerald-700 text-white" },
 ];
 
-export default function FinanceDashboardTabPane({ active, fromDate, toDate, companyId }) {
+export default function FinanceDashboardTabPane({ active, fromDate, toDate, companyId, privacyMode }) {
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -62,11 +67,32 @@ export default function FinanceDashboardTabPane({ active, fromDate, toDate, comp
   const widgets = useMemo(
     () => [
       {
-        key: "kpi-summary",
-        title: "KPI Summary",
-        component: FinanceKpiSummary,
-        props: { summary, loading },
-        defaultLayout: { x: 0, y: 0, w: 12, h: 2, minW: 6, minH: 2 },
+        key: "kpi-payables-outstanding",
+        title: "Payables Outstanding",
+        component: PayablesOutstandingCard,
+        props: { summary, loading, privacyMode },
+        defaultLayout: { x: 0, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
+      },
+      {
+        key: "kpi-receivables-outstanding",
+        title: "Receivables Outstanding",
+        component: ReceivablesOutstandingCard,
+        props: { summary, loading, privacyMode },
+        defaultLayout: { x: 3, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
+      },
+      {
+        key: "kpi-purchase-value",
+        title: "Purchase Value",
+        component: PurchaseValueCard,
+        props: { summary, loading, privacyMode },
+        defaultLayout: { x: 6, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
+      },
+      {
+        key: "kpi-net-position",
+        title: "Net Position",
+        component: NetPositionCard,
+        props: { summary, loading, privacyMode },
+        defaultLayout: { x: 9, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
       },
       {
         key: "action-required",
@@ -104,7 +130,7 @@ export default function FinanceDashboardTabPane({ active, fromDate, toDate, comp
         defaultLayout: { x: 0, y: 11, w: 12, h: 4, minW: 6, minH: 3 },
       },
     ],
-    [summary, loading, actionRequired, breakdown, trendChart, topPayables, recentPayments]
+    [summary, loading, actionRequired, breakdown, trendChart, topPayables, recentPayments, privacyMode]
   );
 
   if (error) {

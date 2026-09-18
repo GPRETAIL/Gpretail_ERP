@@ -100,7 +100,7 @@ const buildHourlySalesPoints = (points = []) => {
   };
 };
 
-const HourlySalesChart = ({ chart, loading }) => {
+const HourlySalesChart = ({ chart, loading, privacyMode }) => {
   const points = chart?.points || [];
   const { rows, salesScale } = buildHourlySalesPoints(points);
   const salesAxisLabel = buildAxisLabel("Sales", salesScale);
@@ -127,6 +127,10 @@ const HourlySalesChart = ({ chart, loading }) => {
       {loading ? (
         <div className="h-[260px] flex items-center justify-center text-sm text-slate-500 dark:text-gray-400">Loading chart...</div>
       ) : (
+        // Recharts renders to SVG, so individual figures (bars, axis ticks) can't be blurred
+        // separately from the axis lines/grid without a much more invasive per-tick rewrite --
+        // blurring the whole plot area is the practical way to hide the numbers here.
+        <div className={privacyMode ? "blur-sm select-none" : ""}>
         <ResponsiveContainer width="100%" height={260}>
           <ComposedChart data={rows} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
             <defs>
@@ -167,12 +171,13 @@ const HourlySalesChart = ({ chart, loading }) => {
             />
           </ComposedChart>
         </ResponsiveContainer>
+        </div>
       )}
     </div>
   );
 };
 
-const DailyTrendChart = ({ chart, loading }) => {
+const DailyTrendChart = ({ chart, loading, privacyMode }) => {
   const points = chart?.points || [];
   const { rows, salesScale, unitsScale } = buildDailyTrendPoints(points);
   const salesAxisLabel = buildAxisLabel("Sales", salesScale);
@@ -199,6 +204,7 @@ const DailyTrendChart = ({ chart, loading }) => {
       {loading ? (
         <div className="h-[260px] flex items-center justify-center text-sm text-slate-500 dark:text-gray-400">Loading chart...</div>
       ) : (
+        <div className={privacyMode ? "blur-sm select-none" : ""}>
         <ResponsiveContainer width="100%" height={260}>
           <ComposedChart data={rows} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
             <CartesianGrid stroke={gridStroke} vertical={false} />
@@ -244,15 +250,16 @@ const DailyTrendChart = ({ chart, loading }) => {
             />
           </ComposedChart>
         </ResponsiveContainer>
+        </div>
       )}
     </div>
   );
 };
 
-const DashboardCharts = ({ charts, loading }) => (
+const DashboardCharts = ({ charts, loading, privacyMode }) => (
   <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
-    <HourlySalesChart chart={charts?.hourlySales} loading={loading} />
-    <DailyTrendChart chart={charts?.dailyTrend} loading={loading} />
+    <HourlySalesChart chart={charts?.hourlySales} loading={loading} privacyMode={privacyMode} />
+    <DailyTrendChart chart={charts?.dailyTrend} loading={loading} privacyMode={privacyMode} />
   </div>
 );
 

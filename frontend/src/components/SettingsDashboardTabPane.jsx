@@ -3,7 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
 import api from "../api/axios";
 import DashboardGrid from "./dashboard/DashboardGrid";
-import SettingsKpiSummary from "./dashboard/settings/SettingsKpiSummary";
+import {
+  UsersCard,
+  SettingsEmployeesCard,
+  SettingsStoresCard,
+  LastBackupCard,
+} from "./dashboard/settings/SettingsKpiSummary";
 import SettingsActionRequiredBanner from "./dashboard/settings/SettingsActionRequiredBanner";
 import SettingsBreakdown from "./dashboard/settings/SettingsBreakdown";
 import SettingsRecentBackupsTable from "./dashboard/settings/SettingsRecentBackupsTable";
@@ -17,7 +22,7 @@ const QUICK_ACTIONS = [
   { label: "Branding", path: "/settings/branding", color: "bg-slate-700 hover:bg-slate-800 text-white" },
 ];
 
-export default function SettingsDashboardTabPane({ active, companyId }) {
+export default function SettingsDashboardTabPane({ active, companyId, privacyMode }) {
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -57,11 +62,32 @@ export default function SettingsDashboardTabPane({ active, companyId }) {
   const widgets = useMemo(
     () => [
       {
-        key: "kpi-summary",
-        title: "KPI Summary",
-        component: SettingsKpiSummary,
-        props: { summary, loading },
-        defaultLayout: { x: 0, y: 0, w: 12, h: 2, minW: 6, minH: 2 },
+        key: "kpi-users",
+        title: "Users",
+        component: UsersCard,
+        props: { summary, loading, privacyMode },
+        defaultLayout: { x: 0, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
+      },
+      {
+        key: "kpi-employees",
+        title: "Employees",
+        component: SettingsEmployeesCard,
+        props: { summary, loading, privacyMode },
+        defaultLayout: { x: 3, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
+      },
+      {
+        key: "kpi-stores",
+        title: "Stores",
+        component: SettingsStoresCard,
+        props: { summary, loading, privacyMode },
+        defaultLayout: { x: 6, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
+      },
+      {
+        key: "kpi-last-backup",
+        title: "Last Backup",
+        component: LastBackupCard,
+        props: { summary, loading, privacyMode },
+        defaultLayout: { x: 9, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
       },
       {
         key: "action-required",
@@ -85,7 +111,7 @@ export default function SettingsDashboardTabPane({ active, companyId }) {
         defaultLayout: { x: 4, y: 4, w: 8, h: 4, minW: 4, minH: 3 },
       },
     ],
-    [summary, loading, actionRequired, breakdown, recentBackups]
+    [summary, loading, actionRequired, breakdown, recentBackups, privacyMode]
   );
 
   if (error) {
