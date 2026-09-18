@@ -96,7 +96,7 @@ class SettingsDashboardService
                 'count'        => $backupStale ? 1 : 0,
                 'severity'     => 'critical',
                 'color'        => 'red',
-                'route'        => '/settings/backup-center',
+                'route'        => '/settings/backup',
                 'filter_param' => 'filter=overdue',
             ],
             [
@@ -105,7 +105,7 @@ class SettingsDashboardService
                 'count'        => $failedBackups,
                 'severity'     => 'warning',
                 'color'        => 'orange',
-                'route'        => '/settings/backup-center',
+                'route'        => '/settings/backup',
                 'filter_param' => 'status=failed',
             ],
             [
