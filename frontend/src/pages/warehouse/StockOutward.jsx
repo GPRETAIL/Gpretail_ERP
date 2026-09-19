@@ -2,39 +2,33 @@ import React, { useState } from "react";
 import { ArrowLeft, Search, Save, Plus, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import useCompanyOptions from "../../utils/useCompanyOptions";
+import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, alpha } from "@mui/material";
 
 // --- Custom Components for Reusability ---
 
-const FormField = ({
-  label,
-  type = "text",
-  isDate = false,
-  isSelect = false,
-  isRequired = false,
-  options = [],
-  className = "",
-}) => (
-  <div className={`text-sm ${className}`}>
-    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">
-      {isRequired && <span className="text-red-500 dark:text-red-400 mr-0.5">*</span>}
+const FormField = ({ label, type = "text", isDate = false, isSelect = false, isRequired = false, options = [], sx }) => (
+  <Box sx={{ fontSize: 12.25, ...sx }}>
+    <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary", mb: 0.25 }}>
+      {isRequired && (
+        <Box component="span" sx={{ color: "error.main", mr: 0.25 }}>
+          *
+        </Box>
+      )}
       {label}
-    </label>
+    </Typography>
     {isSelect ? (
-      <select className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-2 py-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500">
-        <option value="">Select...</option>
+      <TextField select size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
+        <MenuItem value="">Select...</MenuItem>
         {options.map((opt, index) => (
-          <option key={index} value={opt}>
+          <MenuItem key={index} value={opt}>
             {opt}
-          </option>
+          </MenuItem>
         ))}
-      </select>
+      </TextField>
     ) : (
-      <input
-        type={isDate ? "date" : type}
-        className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm px-2 py-1.5 text-sm focus:ring-1 focus:ring-blue-500"
-      />
+      <TextField type={isDate ? "date" : type} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }} />
     )}
-  </div>
+  </Box>
 );
 
 // --- Main Component ---
@@ -64,391 +58,350 @@ const StockOutward = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
+    <Box sx={{ minHeight: "100vh", bgcolor: "background.default", display: "flex", flexDirection: "column" }}>
       {/* --- Header & Action Bar --- */}
-      <div className="flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm sticky top-0 z-10">
-        <div className="flex items-center">
-          <button
-            onClick={handleBackClick}
-            className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 mr-3 p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
-            aria-label="Back"
-          >
+      <Stack
+        direction="row"
+        sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1.5, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1, position: "sticky", top: 0, zIndex: 10 }}
+      >
+        <Stack direction="row" sx={{ alignItems: "center" }}>
+          <IconButton onClick={handleBackClick} aria-label="Back" sx={{ mr: 1.5, color: "text.secondary" }}>
             <ArrowLeft className="w-4 h-4" />
-          </button>
-          <h1 className="text-sm font-semibold text-gray-800 dark:text-gray-100">
+          </IconButton>
+          <Typography component="h1" sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>
             Warehouse / Stock Outward
-          </h1>
-        </div>
-        <div className="flex space-x-2 text-sm">
-          <span className="text-sm font-medium text-green-600 dark:text-green-400 self-center">
+          </Typography>
+        </Stack>
+        <Stack direction="row" spacing={1} sx={{ fontSize: 12.25 }}>
+          <Typography sx={{ fontSize: 12.25, fontWeight: 500, color: "success.main", alignSelf: "center" }}>
             Last Saved
-          </span>
-          <button
-            onClick={handleSaveClick}
-            className="glass-btn glass-btn-success flex items-center"
-          >
-            <Save className="w-4 h-4 mr-1" /> New
-          </button>
-          <button
-            onClick={handleSaveClick}
-            className="glass-btn glass-btn-success flex items-center"
-          >
-            <Save className="w-4 h-4 mr-1" /> Save
-          </button>
-          <button
-            className="glass-btn glass-btn-primary flex items-center"
-            onClick={handleSearch}
-          >
-            <Search className="w-4 h-4 mr-1" /> Search
-          </button>
-        </div>
-      </div>
+          </Typography>
+          <Button onClick={handleSaveClick} className="glass-btn glass-btn-success" startIcon={<Save className="w-4 h-4" />}>
+            New
+          </Button>
+          <Button onClick={handleSaveClick} className="glass-btn glass-btn-success" startIcon={<Save className="w-4 h-4" />}>
+            Save
+          </Button>
+          <Button onClick={handleSearch} className="glass-btn glass-btn-primary" startIcon={<Search className="w-4 h-4" />}>
+            Search
+          </Button>
+        </Stack>
+      </Stack>
 
       {/* --- Main Content Area (Form & Grids) --- */}
-      <div className="flex-1 p-4 overflow-y-auto">
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md border border-gray-300 dark:border-gray-600 mb-4">
+      <Box sx={{ flex: 1, p: 2, overflowY: "auto" }}>
+        <Box sx={{ bgcolor: "background.paper", p: 2, borderRadius: "7px", boxShadow: 3, border: "1px solid", borderColor: "divider", mb: 2 }}>
           {/* Top Header Row - Two Columns */}
-          <div className="grid grid-cols-2 gap-x-8 gap-y-3">
+          <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", columnGap: 4, rowGap: 1.5 }}>
             {/* Left Column Fields */}
-            <div className="grid grid-cols-4 gap-3">
-              <div className="col-span-1">
+            <Box sx={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 1.5 }}>
+              <Box sx={{ gridColumn: "span 1" }}>
                 <FormField label="* Date" isDate isRequired />
-              </div>
-              <div className="col-span-3 flex space-x-2">
-                <div className="flex-1">
+              </Box>
+              <Stack direction="row" spacing={1} sx={{ gridColumn: "span 3" }}>
+                <Box sx={{ flex: 1 }}>
                   <FormField label="Code" />
-                </div>
-                <button className="glass-btn glass-btn-primary self-end">
+                </Box>
+                <IconButton className="glass-btn glass-btn-primary" sx={{ alignSelf: "flex-end" }}>
                   <Search className="w-4 h-4" />
-                </button>
-              </div>
+                </IconButton>
+              </Stack>
 
-              <div className="col-span-4">
+              <Box sx={{ gridColumn: "span 4" }}>
                 <FormField
                   label="* From Company"
                   isSelect
                   isRequired
                   options={companyOptions.map((row) => row.label)}
                 />
-              </div>
+              </Box>
 
-              <div className="col-span-4">
+              <Box sx={{ gridColumn: "span 4" }}>
                 <FormField label="Date" isDate />
-              </div>
+              </Box>
 
-              <div className="col-span-4">
+              <Box sx={{ gridColumn: "span 4" }}>
                 <FormField
                   label="Source"
                   isSelect
                   isRequired
                   options={["Pending", "Approved"]}
                 />
-              </div>
+              </Box>
 
-              <div className="col-span-4">
-                <div className="flex items-center space-x-2">
-                  <div className="flex-1">
-                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">
+              <Box sx={{ gridColumn: "span 4" }}>
+                <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary", mb: 0.25 }}>
                       supplier
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="supplier"
-                      className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm px-2 py-1.5 text-sm"
-                    />
-                  </div>
-                  <button
-                    onClick={handleSearch}
-                    className="glass-btn glass-btn-primary self-end"
-                  >
+                    </Typography>
+                    <TextField placeholder="supplier" size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }} />
+                  </Box>
+                  <IconButton onClick={handleSearch} className="glass-btn glass-btn-primary" sx={{ alignSelf: "flex-end" }}>
                     <Search className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={handleSearch}
-                    className="glass-btn glass-btn-danger self-end"
-                  >
+                  </IconButton>
+                  <IconButton onClick={handleSearch} className="glass-btn glass-btn-danger" sx={{ alignSelf: "flex-end" }}>
                     <X className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
+                  </IconButton>
+                </Stack>
+              </Box>
+            </Box>
 
             {/* Right Column Fields */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2">
+            <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1.5 }}>
+              <Box sx={{ gridColumn: "span 2" }}>
                 <FormField
                   label="* Packed By"
                   isSelect
                   isRequired
                   options={["Employee 1", "Employee 2"]}
                 />
-              </div>
-              <div className="col-span-2">
+              </Box>
+              <Box sx={{ gridColumn: "span 2" }}>
                 <FormField
                   label="* From Location"
                   isSelect
                   isRequired
                   options={["Location A", "Location B"]}
                 />
-              </div>
-              <div className="col-span-2">
+              </Box>
+              <Box sx={{ gridColumn: "span 2" }}>
                 <FormField
                   label="* To Location"
                   isSelect
                   isRequired
                   options={["Location X", "Location Y"]}
                 />
-              </div>
-              <div className="col-span-2 flex items-center space-x-3">
-                <input
-                  type="checkbox"
-                  className="rounded border-gray-300 dark:border-gray-600 text-blue-600"
-                />
-                <div className="flex-1">
+              </Box>
+              <Stack direction="row" spacing={1.5} sx={{ gridColumn: "span 2", alignItems: "center" }}>
+                <Box component="input" type="checkbox" sx={{ borderRadius: "1.75px" }} />
+                <Box sx={{ flex: 1 }}>
                   <FormField label="Barcode" />
-                </div>
-                <button className="glass-btn glass-btn-primary self-end">
+                </Box>
+                <IconButton className="glass-btn glass-btn-primary" sx={{ alignSelf: "flex-end" }}>
                   <Plus className="w-4 h-4" />
-                </button>
-                <button className="glass-btn glass-btn-danger self-end">
+                </IconButton>
+                <IconButton className="glass-btn glass-btn-danger" sx={{ alignSelf: "flex-end" }}>
                   <X className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+                </IconButton>
+              </Stack>
+            </Box>
+          </Box>
+        </Box>
 
         {/* --- Dual Grids Section --- */}
-        <div className="grid grid-cols-2 gap-4">
+        <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 2 }}>
           {/* LEFT GRID: Source/Pending Items */}
-          <div className="w-full">
-            <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
+          <Box sx={{ width: "100%" }}>
+            <Typography component="h3" sx={{ fontSize: 15.75, fontWeight: 600, color: "text.secondary", mb: 1 }}>
               Source Items ({sourceItems.length})
-            </h3>
-            <div className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm overflow-hidden">
+            </Typography>
+            <Box sx={{ bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "7px", boxShadow: 1, overflow: "hidden" }}>
               {/* Grid Header Row */}
-              <div className="flex border-b border-gray-200 dark:border-gray-700 bg-blue-50 dark:bg-blue-900/30 text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                <div className="p-2 w-[80px]">Barcode</div>
-                <div className="p-2 w-[120px]">Name</div>
-                <div className="p-2 w-[50px] text-center">Size</div>
-                <div className="p-2 flex-1">Supplier</div>
-                <div className="p-2 w-[60px]">LR.Ref</div>
-                <div className="p-2 w-[50px] text-right">Cost</div>
-                <div className="p-2 w-[50px] text-center">Qty</div>
-                <div className="p-2 w-[50px] text-center">Action</div>
-              </div>
+              <Stack
+                direction="row"
+                sx={(theme) => ({
+                  borderBottom: 1,
+                  borderColor: "divider",
+                  bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08),
+                  fontSize: 10.5,
+                  fontWeight: 600,
+                  color: "text.secondary",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                })}
+              >
+                <Box sx={{ p: 1, width: 80 }}>Barcode</Box>
+                <Box sx={{ p: 1, width: 120 }}>Name</Box>
+                <Box sx={{ p: 1, width: 50, textAlign: "center" }}>Size</Box>
+                <Box sx={{ p: 1, flex: 1 }}>Supplier</Box>
+                <Box sx={{ p: 1, width: 60 }}>LR.Ref</Box>
+                <Box sx={{ p: 1, width: 50, textAlign: "right" }}>Cost</Box>
+                <Box sx={{ p: 1, width: 50, textAlign: "center" }}>Qty</Box>
+                <Box sx={{ p: 1, width: 50, textAlign: "center" }}>Action</Box>
+              </Stack>
 
               {/* Input/Filter Row */}
-              <div className="flex items-center text-sm bg-gray-100 dark:bg-gray-700 p-0.5 border-b border-gray-200 dark:border-gray-700">
-                <div className="w-[80px] p-0.5">
-                  <input
-                    type="text"
-                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-sm p-1 text-xs focus:ring-1"
-                  />
-                </div>
-                <div className="w-[120px] p-0.5">
-                  <input
-                    type="text"
-                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-sm p-1 text-xs focus:ring-1"
-                  />
-                </div>
-                <div className="w-[50px] p-0.5">
-                  <input
-                    type="text"
-                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-sm p-1 text-xs focus:ring-1"
-                  />
-                </div>
-                <div className="flex-1 p-0.5">
-                  <input
-                    type="text"
-                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-sm p-1 text-xs focus:ring-1"
-                  />
-                </div>
-                <div className="w-[60px] p-0.5">
-                  <input
-                    type="text"
-                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-sm p-1 text-xs focus:ring-1"
-                  />
-                </div>
-                <div className="w-[50px] p-0.5">
-                  <input
-                    type="text"
-                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-sm p-1 text-xs focus:ring-1"
-                  />
-                </div>
-                <div className="w-[50px] p-0.5">
-                  <input
-                    type="text"
-                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-sm p-1 text-xs focus:ring-1"
-                  />
-                </div>
-                <div className="w-[50px] p-0.5"></div>
-              </div>
+              <Stack direction="row" sx={{ alignItems: "center", fontSize: 12.25, bgcolor: "action.hover", p: 0.25, borderBottom: 1, borderColor: "divider" }}>
+                <Box sx={{ width: 80, p: 0.25 }}>
+                  <TextField size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 10.5, p: 0.5 } }} />
+                </Box>
+                <Box sx={{ width: 120, p: 0.25 }}>
+                  <TextField size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 10.5, p: 0.5 } }} />
+                </Box>
+                <Box sx={{ width: 50, p: 0.25 }}>
+                  <TextField size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 10.5, p: 0.5 } }} />
+                </Box>
+                <Box sx={{ flex: 1, p: 0.25 }}>
+                  <TextField size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 10.5, p: 0.5 } }} />
+                </Box>
+                <Box sx={{ width: 60, p: 0.25 }}>
+                  <TextField size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 10.5, p: 0.5 } }} />
+                </Box>
+                <Box sx={{ width: 50, p: 0.25 }}>
+                  <TextField size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 10.5, p: 0.5 } }} />
+                </Box>
+                <Box sx={{ width: 50, p: 0.25 }}>
+                  <TextField size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 10.5, p: 0.5 } }} />
+                </Box>
+                <Box sx={{ width: 50, p: 0.25 }}></Box>
+              </Stack>
 
               {/* Data Rows */}
-              <div className="min-h-[40vh] overflow-y-auto">
+              <Box sx={{ minHeight: "40vh", overflowY: "auto" }}>
                 {sourceItems.length === 0 ? (
-                  <div className="text-center p-8 text-gray-500 dark:text-gray-400">
+                  <Box sx={{ textAlign: "center", p: 4, color: "text.secondary" }}>
                     No items pending for outward processing.
-                  </div>
+                  </Box>
                 ) : (
                   sourceItems.map((item, index) => (
-                    <div
+                    <Stack
                       key={index}
-                      className="flex items-center text-sm text-gray-800 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700"
+                      direction="row"
+                      sx={{ alignItems: "center", fontSize: 12.25, color: "text.primary", "&:hover": { bgcolor: "action.hover" }, borderBottom: 1, borderColor: "divider" }}
                     >
-                      <div className="p-2 w-[80px] font-mono text-xs">
+                      <Box sx={{ p: 1, width: 80, fontFamily: "monospace", fontSize: 10.5 }}>
                         {item.barcode}
-                      </div>
-                      <div className="p-2 w-[120px]">{item.name}</div>
-                      <div className="p-2 w-[50px] text-center">
+                      </Box>
+                      <Box sx={{ p: 1, width: 120 }}>{item.name}</Box>
+                      <Box sx={{ p: 1, width: 50, textAlign: "center" }}>
                         {item.size}
-                      </div>
-                      <div className="p-2 flex-1 text-xs">{item.supplier}</div>
-                      <div className="p-2 w-[60px] text-xs">{item.lrRef}</div>
-                      <div className="p-2 w-[50px] text-right">
+                      </Box>
+                      <Box sx={{ p: 1, flex: 1, fontSize: 10.5 }}>{item.supplier}</Box>
+                      <Box sx={{ p: 1, width: 60, fontSize: 10.5 }}>{item.lrRef}</Box>
+                      <Box sx={{ p: 1, width: 50, textAlign: "right" }}>
                         {item.cost.toFixed(2)}
-                      </div>
-                      <div className="p-2 w-[50px] text-center">{item.qty}</div>
-                      <div className="p-2 w-[50px] text-center">
-                        <button
+                      </Box>
+                      <Box sx={{ p: 1, width: 50, textAlign: "center" }}>{item.qty}</Box>
+                      <Box sx={{ p: 1, width: 50, textAlign: "center" }}>
+                        <IconButton
                           onClick={() => handleAddItemToAccepted(item)}
-                          className="text-green-500 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 p-1"
+                          size="small"
+                          sx={{ color: "success.main", p: 0.5 }}
                         >
                           <Plus className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
+                        </IconButton>
+                      </Box>
+                    </Stack>
                   ))
                 )}
-              </div>
-              <div className="p-2 text-xs text-gray-600 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
+              </Box>
+              <Box sx={{ p: 1, fontSize: 10.5, color: "text.secondary", borderTop: 1, borderColor: "divider", bgcolor: "action.hover" }}>
                 Showing all {sourceItems.length} rows
-              </div>
-            </div>
-          </div>
+              </Box>
+            </Box>
+          </Box>
 
           {/* RIGHT GRID: Accepted/Stock Outward Items */}
-          <div className="w-full">
-            <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
+          <Box sx={{ width: "100%" }}>
+            <Typography component="h3" sx={{ fontSize: 15.75, fontWeight: 600, color: "text.secondary", mb: 1 }}>
               Accepted Items ({acceptedItems.length})
-            </h3>
-            <div className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm overflow-hidden">
+            </Typography>
+            <Box sx={{ bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "7px", boxShadow: 1, overflow: "hidden" }}>
               {/* Grid Header Row */}
-              <div className="flex border-b border-gray-200 dark:border-gray-700 bg-blue-50 dark:bg-blue-900/30 text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                <div className="p-2 w-[80px]">Barcode</div>
-                <div className="p-2 w-[120px]">Name</div>
-                <div className="p-2 w-[50px] text-center">Size</div>
-                <div className="p-2 flex-1">Supplier</div>
-                <div className="p-2 w-[60px]">LR.Ref</div>
-                <div className="p-2 w-[50px] text-right">Cost</div>
-                <div className="p-2 w-[50px] text-center">Qty</div>
-                <div className="p-2 w-[50px] text-center font-bold">
+              <Stack
+                direction="row"
+                sx={(theme) => ({
+                  borderBottom: 1,
+                  borderColor: "divider",
+                  bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08),
+                  fontSize: 10.5,
+                  fontWeight: 600,
+                  color: "text.secondary",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                })}
+              >
+                <Box sx={{ p: 1, width: 80 }}>Barcode</Box>
+                <Box sx={{ p: 1, width: 120 }}>Name</Box>
+                <Box sx={{ p: 1, width: 50, textAlign: "center" }}>Size</Box>
+                <Box sx={{ p: 1, flex: 1 }}>Supplier</Box>
+                <Box sx={{ p: 1, width: 60 }}>LR.Ref</Box>
+                <Box sx={{ p: 1, width: 50, textAlign: "right" }}>Cost</Box>
+                <Box sx={{ p: 1, width: 50, textAlign: "center" }}>Qty</Box>
+                <Box sx={{ p: 1, width: 50, textAlign: "center", fontWeight: 700 }}>
                   Accepted
-                </div>
-              </div>
+                </Box>
+              </Stack>
 
               {/* Input/Filter Row */}
-              <div className="flex items-center text-sm bg-gray-100 dark:bg-gray-700 p-0.5 border-b border-gray-200 dark:border-gray-700">
+              <Stack direction="row" sx={{ alignItems: "center", fontSize: 12.25, bgcolor: "action.hover", p: 0.25, borderBottom: 1, borderColor: "divider" }}>
                 {/* Identical input row to the left grid, except for the last column */}
-                <div className="w-[80px] p-0.5">
-                  <input
-                    type="text"
-                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-sm p-1 text-xs focus:ring-1"
-                  />
-                </div>
-                <div className="w-[120px] p-0.5">
-                  <input
-                    type="text"
-                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-sm p-1 text-xs focus:ring-1"
-                  />
-                </div>
-                <div className="w-[50px] p-0.5">
-                  <input
-                    type="text"
-                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-sm p-1 text-xs focus:ring-1"
-                  />
-                </div>
-                <div className="flex-1 p-0.5">
-                  <input
-                    type="text"
-                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-sm p-1 text-xs focus:ring-1"
-                  />
-                </div>
-                <div className="w-[60px] p-0.5">
-                  <input
-                    type="text"
-                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-sm p-1 text-xs focus:ring-1"
-                  />
-                </div>
-                <div className="w-[50px] p-0.5">
-                  <input
-                    type="text"
-                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-sm p-1 text-xs focus:ring-1"
-                  />
-                </div>
-                <div className="w-[50px] p-0.5">
-                  <input
-                    type="text"
-                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-sm p-1 text-xs focus:ring-1"
-                  />
-                </div>
-                <div className="w-[50px] p-0.5"></div>
-              </div>
+                <Box sx={{ width: 80, p: 0.25 }}>
+                  <TextField size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 10.5, p: 0.5 } }} />
+                </Box>
+                <Box sx={{ width: 120, p: 0.25 }}>
+                  <TextField size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 10.5, p: 0.5 } }} />
+                </Box>
+                <Box sx={{ width: 50, p: 0.25 }}>
+                  <TextField size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 10.5, p: 0.5 } }} />
+                </Box>
+                <Box sx={{ flex: 1, p: 0.25 }}>
+                  <TextField size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 10.5, p: 0.5 } }} />
+                </Box>
+                <Box sx={{ width: 60, p: 0.25 }}>
+                  <TextField size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 10.5, p: 0.5 } }} />
+                </Box>
+                <Box sx={{ width: 50, p: 0.25 }}>
+                  <TextField size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 10.5, p: 0.5 } }} />
+                </Box>
+                <Box sx={{ width: 50, p: 0.25 }}>
+                  <TextField size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 10.5, p: 0.5 } }} />
+                </Box>
+                <Box sx={{ width: 50, p: 0.25 }}></Box>
+              </Stack>
 
               {/* Data Rows */}
-              <div className="min-h-[40vh] overflow-y-auto">
+              <Box sx={{ minHeight: "40vh", overflowY: "auto" }}>
                 {acceptedItems.length === 0 ? (
-                  <div className="text-center p-8 text-gray-500 dark:text-gray-400">
+                  <Box sx={{ textAlign: "center", p: 4, color: "text.secondary" }}>
                     Items accepted for dispatch will appear here.
-                  </div>
+                  </Box>
                 ) : (
                   acceptedItems.map((item, index) => (
-                    <div
+                    <Stack
                       key={index}
-                      className="flex items-center text-sm text-gray-800 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700"
+                      direction="row"
+                      sx={{ alignItems: "center", fontSize: 12.25, color: "text.primary", "&:hover": { bgcolor: "action.hover" }, borderBottom: 1, borderColor: "divider" }}
                     >
-                      <div className="p-2 w-[80px] font-mono text-xs">
+                      <Box sx={{ p: 1, width: 80, fontFamily: "monospace", fontSize: 10.5 }}>
                         {item.barcode}
-                      </div>
-                      <div className="p-2 w-[120px]">{item.name}</div>
-                      <div className="p-2 w-[50px] text-center">
+                      </Box>
+                      <Box sx={{ p: 1, width: 120 }}>{item.name}</Box>
+                      <Box sx={{ p: 1, width: 50, textAlign: "center" }}>
                         {item.size}
-                      </div>
-                      <div className="p-2 flex-1 text-xs">{item.supplier}</div>
-                      <div className="p-2 w-[60px] text-xs">{item.lrRef}</div>
-                      <div className="p-2 w-[50px] text-right">
+                      </Box>
+                      <Box sx={{ p: 1, flex: 1, fontSize: 10.5 }}>{item.supplier}</Box>
+                      <Box sx={{ p: 1, width: 60, fontSize: 10.5 }}>{item.lrRef}</Box>
+                      <Box sx={{ p: 1, width: 50, textAlign: "right" }}>
                         {item.cost.toFixed(2)}
-                      </div>
-                      <div className="p-2 w-[50px] text-center">{item.qty}</div>
-                      <div className="p-2 w-[50px] text-center text-green-600 dark:text-green-400 font-bold">
+                      </Box>
+                      <Box sx={{ p: 1, width: 50, textAlign: "center" }}>{item.qty}</Box>
+                      <Box sx={{ p: 1, width: 50, textAlign: "center", color: "success.main", fontWeight: 700 }}>
                         Yes
-                      </div>
-                    </div>
+                      </Box>
+                    </Stack>
                   ))
                 )}
-              </div>
-              <div className="p-2 text-xs text-gray-600 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
+              </Box>
+              <Box sx={{ p: 1, fontSize: 10.5, color: "text.secondary", borderTop: 1, borderColor: "divider", bgcolor: "action.hover" }}>
                 Showing all {acceptedItems.length} rows
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+              </Box>
+            </Box>
+          </Box>
+        </Box>
+      </Box>
 
       {/* --- Global Footer Bar --- */}
-      <div className="flex justify-end space-x-3 p-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 sticky bottom-0 z-10">
-        <button
-          onClick={handleSaveClick}
-          className="glass-btn glass-btn-success flex items-center"
-        >
+      <Stack direction="row" spacing={1.5} sx={{ justifyContent: "flex-end", p: 1.5, bgcolor: "background.paper", borderTop: 1, borderColor: "divider", position: "sticky", bottom: 0, zIndex: 10 }}>
+        <Button onClick={handleSaveClick} className="glass-btn glass-btn-success">
           Save & Exit
-        </button>
-        <button className="glass-btn glass-btn-secondary flex items-center">
+        </Button>
+        <Button className="glass-btn glass-btn-secondary">
           Clear
-        </button>
-      </div>
-    </div>
+        </Button>
+      </Stack>
+    </Box>
   );
 };
 

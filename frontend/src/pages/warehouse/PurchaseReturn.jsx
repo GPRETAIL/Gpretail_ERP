@@ -7,109 +7,70 @@ import Toast from "../../components/Toast";
 import PageSkeleton from "../../components/PageSkeleton";
 import AsyncSearchSelect from "../../components/AsyncSearchSelect";
 import { usePrintContext } from "../../context/PrintContext";
+import { Box, Stack, Typography, TextField as MuiTextField, MenuItem, Button, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
 
-const SelectField = ({
-  label,
-  name,
-  value,
-  onChange,
-  options,
-  className = "",
-  inline = false,
-  labelClassName = "",
-  fieldClassName = "",
-}) => (
-  <div className={`${inline ? "flex items-center gap-2" : ""} ${className}`}>
-    <label
-      className={`${inline ? "w-28 shrink-0 text-xs font-medium text-gray-700 dark:text-gray-300" : "block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"} ${labelClassName}`}
-    >
+const SelectField = ({ label, name, value, onChange, options, inline = false, sx }) => (
+  <Box sx={{ display: inline ? "flex" : "block", alignItems: inline ? "center" : undefined, gap: inline ? 1 : undefined, ...sx }}>
+    <Typography component="label" sx={inline ? { width: 112, flexShrink: 0, fontSize: 12.25, fontWeight: 500, color: "text.secondary" } : { display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
       {label}
-    </label>
-    <select
-      name={name}
-      value={value}
-      onChange={onChange}
-      className={`${inline ? "flex-1" : "w-full"} border border-gray-300 dark:border-gray-600 rounded-sm p-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 ${fieldClassName}`}
-    >
-      <option value="">Select</option>
+    </Typography>
+    <MuiTextField select name={name} value={value} onChange={onChange} size="small" fullWidth sx={{ flex: inline ? 1 : undefined, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
+      <MenuItem value="">Select</MenuItem>
       {options.map((opt) => (
-        <option key={opt.value} value={opt.value}>
+        <MenuItem key={opt.value} value={opt.value}>
           {opt.label}
-        </option>
+        </MenuItem>
       ))}
-    </select>
-  </div>
+    </MuiTextField>
+  </Box>
 );
 
-const TextField = ({
-  label,
-  name,
-  value,
-  onChange,
-  type = "text",
-  className = "",
-  placeholder = "",
-  onKeyDown,
-  inline = false,
-  labelClassName = "",
-  fieldClassName = "",
-}) => (
-  <div className={`${inline ? "flex items-center gap-2" : ""} ${className}`}>
-    <label
-      className={`${inline ? "w-28 shrink-0 text-xs font-medium text-gray-700 dark:text-gray-300" : "block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"} ${labelClassName}`}
-    >
+const TextField = ({ label, name, value, onChange, type = "text", placeholder = "", onKeyDown, inline = false, sx }) => (
+  <Box sx={{ display: inline ? "flex" : "block", alignItems: inline ? "center" : undefined, gap: inline ? 1 : undefined, ...sx }}>
+    <Typography component="label" sx={inline ? { width: 112, flexShrink: 0, fontSize: 12.25, fontWeight: 500, color: "text.secondary" } : { display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
       {label}
-    </label>
-    <input
+    </Typography>
+    <MuiTextField
       type={type}
       name={name}
       value={value}
       onChange={onChange}
       onKeyDown={onKeyDown}
       placeholder={placeholder}
-      className={`${inline ? "flex-1" : "w-full"} border border-gray-300 dark:border-gray-600 rounded-sm p-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 ${fieldClassName}`}
+      size="small"
+      fullWidth
+      sx={{ flex: inline ? 1 : undefined, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
     />
-  </div>
+  </Box>
 );
 
-const InlineTextField = ({
-  label,
-  name,
-  value,
-  onChange,
-  type = "text",
-  placeholder = "",
-  className = "",
-  inputClassName = "",
-  labelClassName = "",
-}) => (
-  <div className={`flex items-center gap-2 ${className}`}>
-    <label className={`w-24 shrink-0 text-xs font-medium text-gray-700 dark:text-gray-300 ${labelClassName}`}>{label}</label>
-    <input
+const InlineTextField = ({ label, name, value, onChange, type = "text", placeholder = "", maxWidth }) => (
+  <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+    <Typography component="label" sx={{ width: 96, flexShrink: 0, fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>{label}</Typography>
+    <MuiTextField
       type={type}
       name={name}
       value={value}
       onChange={onChange}
       placeholder={placeholder}
-      className={`w-full border border-gray-300 dark:border-gray-600 rounded-sm px-2 py-1 text-xs bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 ${inputClassName}`}
+      size="small"
+      fullWidth
+      sx={{ maxWidth, "& .MuiInputBase-input": { fontSize: 10.5, py: 0.5 } }}
     />
-  </div>
+  </Stack>
 );
 
-const STOCK_TABLE_COLUMNS = [
-  "w-[132px]",
-  "w-[84px]",
-  "w-[132px]",
-  "w-[88px]",
-  "w-[62px]",
-  "w-[72px]",
-  "w-[74px]",
-  "w-[66px]",
-  "w-[82px]",
-  "w-[78px]",
-  "w-[88px]",
-  "w-[46px]",
-];
+const STOCK_TABLE_WIDTHS = [132, 84, 132, 88, 62, 72, 74, 66, 82, 78, 88, 46];
+
+const gridInputSx = { "& .MuiInputBase-input": { fontSize: 11, py: 0.5, px: 0.75 } };
+const GridCellInput = ({ align = "center", sx, ...props }) => (
+  <MuiTextField
+    size="small"
+    fullWidth
+    sx={{ ...gridInputSx, "& .MuiInputBase-input": { ...gridInputSx["& .MuiInputBase-input"], textAlign: align }, ...sx }}
+    {...props}
+  />
+);
 
 const STOCK_TABLE_FILTER_FIELDS = {
   barcode: "",
@@ -926,55 +887,40 @@ const PurchaseReturn = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
-      <div className="flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-800 border-b dark:border-gray-700 shadow-sm">
-        <div className="flex items-center">
-          <button
+    <Box sx={{ minHeight: "100vh", bgcolor: "background.default", display: "flex", flexDirection: "column" }}>
+      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1.5, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
+        <Stack direction="row" sx={{ alignItems: "center" }}>
+          <Button
             onClick={() => navigate(-1)}
-            className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 mr-3 p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
             aria-label="Back"
+            sx={{ minWidth: "auto", mr: 1.5, p: 0.5, color: "text.secondary" }}
           >
             <ArrowLeft className="w-4 h-4" />
-          </button>
-          <h1 className="text-sm font-semibold flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => navigate("/warehouse")}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
-            >
+          </Button>
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: 12.25, fontWeight: 600 }}>
+            <Button type="button" variant="text" onClick={() => navigate("/warehouse")} sx={{ minWidth: "auto", p: 0, fontSize: 12.25, fontWeight: 600 }}>
               Warehouse
-            </button>
-            <span className="text-gray-400 dark:text-gray-500">/</span>
-            <span className="text-gray-800 dark:text-gray-100">Purchase Return</span>
-          </h1>
-        </div>
-        <div className="flex space-x-2 text-sm">
-          <button
-            onClick={() => saveReturn(false)}
-            disabled={saving}
-            className="glass-btn glass-btn-success flex items-center disabled:opacity-60"
-          >
-            <Save className="w-4 h-4 mr-1" /> Return & Save
-          </button>
-          <button
-            onClick={() => saveReturn(true)}
-            disabled={saving}
-            className="glass-btn glass-btn-primary flex items-center disabled:opacity-60"
-          >
+            </Button>
+            <Box component="span" sx={{ color: "text.disabled" }}>/</Box>
+            <Box component="span" sx={{ color: "text.primary" }}>Purchase Return</Box>
+          </Stack>
+        </Stack>
+        <Stack direction="row" spacing={1} sx={{ fontSize: 12.25 }}>
+          <Button onClick={() => saveReturn(false)} disabled={saving} className="glass-btn glass-btn-success" startIcon={<Save className="w-4 h-4" />} sx={{ opacity: saving ? 0.6 : 1 }}>
+            Return & Save
+          </Button>
+          <Button onClick={() => saveReturn(true)} disabled={saving} className="glass-btn glass-btn-primary" sx={{ opacity: saving ? 0.6 : 1 }}>
             Save & Print
-          </button>
-          <button
-            className="glass-btn glass-btn-primary flex items-center"
-            onClick={() => navigate("/warehouse/purchase-return/search")}
-          >
-            <Search className="w-4 h-4 mr-1" /> Search
-          </button>
-        </div>
-      </div>
+          </Button>
+          <Button className="glass-btn glass-btn-primary" onClick={() => navigate("/warehouse/purchase-return/search")} startIcon={<Search className="w-4 h-4" />}>
+            Search
+          </Button>
+        </Stack>
+      </Stack>
 
-      <div className="flex-1 p-4 overflow-y-auto flex gap-2">
-        <div className="w-[25%] space-y-4">
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md border border-gray-300 dark:border-gray-700 space-y-3">
+      <Stack direction="row" spacing={1} sx={{ flex: 1, p: 2, overflowY: "auto" }}>
+        <Stack spacing={2} sx={{ width: "25%" }}>
+          <Stack spacing={1.5} sx={{ bgcolor: "background.paper", p: 2, borderRadius: "7px", boxShadow: 3, border: "1px solid", borderColor: "divider" }}>
             <TextField
               label="Date"
               name="date"
@@ -1022,7 +968,7 @@ const PurchaseReturn = () => {
                   inline
                 />
 
-                <div className="flex items-center gap-2">
+                <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
                   <TextField
                     label="BAR CODE"
                     name="barcodeSearch"
@@ -1035,24 +981,25 @@ const PurchaseReturn = () => {
                       }
                     }}
                     placeholder="Scan or write barcode"
-                    className="flex-1"
                     inline
+                    sx={{ flex: 1 }}
                   />
-                  <button
+                  <Button
                     type="button"
                     onClick={handleSearchStock}
                     disabled={searchingStock}
-                    className="glass-btn glass-btn-primary disabled:opacity-60"
+                    className="glass-btn glass-btn-primary"
+                    sx={{ opacity: searchingStock ? 0.6 : 1, fontSize: 12.25 }}
                   >
                     {searchingStock ? "Searching..." : "Search"}
-                  </button>
-                </div>
+                  </Button>
+                </Stack>
 
                 {isSupplierMode ? (
                   <>
-                    <div className="flex items-center gap-2">
-                      <label className="w-28 shrink-0 text-xs font-medium text-gray-700 dark:text-gray-300">Supplier</label>
-                      <div className="flex-1">
+                    <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                      <Typography component="label" sx={{ width: 112, flexShrink: 0, fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Supplier</Typography>
+                      <Box sx={{ flex: 1 }}>
                         <AsyncSearchSelect
                           name="supplierId"
                           value={header.supplierId}
@@ -1062,8 +1009,8 @@ const PurchaseReturn = () => {
                           placeholder="Select"
                           searchPlaceholder="Search suppliers..."
                         />
-                      </div>
-                    </div>
+                      </Box>
+                    </Stack>
 
                     <SelectField
                       label="Supplier Company"
@@ -1083,9 +1030,9 @@ const PurchaseReturn = () => {
                       inline
                     />
 
-                    <div className="flex items-center gap-2">
-                      <label className="w-28 shrink-0 text-xs font-medium text-gray-700 dark:text-gray-300">Agent</label>
-                      <div className="flex-1">
+                    <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                      <Typography component="label" sx={{ width: 112, flexShrink: 0, fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Agent</Typography>
+                      <Box sx={{ flex: 1 }}>
                         <AsyncSearchSelect
                           name="agentId"
                           value={header.agentId}
@@ -1095,14 +1042,14 @@ const PurchaseReturn = () => {
                           placeholder="Select"
                           searchPlaceholder="Search agents..."
                         />
-                      </div>
-                    </div>
+                      </Box>
+                    </Stack>
                   </>
                 ) : null}
               </>
             ) : (
               <>
-                <div className="flex items-center gap-2">
+                <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
                   <TextField
                     label="Invoice No"
                     name="invoiceSearch"
@@ -1115,20 +1062,21 @@ const PurchaseReturn = () => {
                       }
                     }}
                     placeholder="Search invoice no"
-                    className="flex-1"
                     inline
+                    sx={{ flex: 1 }}
                   />
-                  <button
+                  <Button
                     type="button"
                     onClick={handleSearchStock}
                     disabled={searchingStock}
-                    className="glass-btn glass-btn-primary disabled:opacity-60"
+                    className="glass-btn glass-btn-primary"
+                    sx={{ opacity: searchingStock ? 0.6 : 1, fontSize: 12.25 }}
                   >
                     {searchingStock ? "Searching..." : "Search"}
-                  </button>
-                </div>
+                  </Button>
+                </Stack>
 
-                <div className="flex items-center gap-2">
+                <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
                   <TextField
                     label="Entry No"
                     name="entrySearch"
@@ -1141,18 +1089,19 @@ const PurchaseReturn = () => {
                       }
                     }}
                     placeholder="Search entry no"
-                    className="flex-1"
                     inline
+                    sx={{ flex: 1 }}
                   />
-                  <button
+                  <Button
                     type="button"
                     onClick={handleSearchStock}
                     disabled={searchingStock}
-                    className="glass-btn glass-btn-primary disabled:opacity-60"
+                    className="glass-btn glass-btn-primary"
+                    sx={{ opacity: searchingStock ? 0.6 : 1, fontSize: 12.25 }}
                   >
                     {searchingStock ? "Searching..." : "Search"}
-                  </button>
-                </div>
+                  </Button>
+                </Stack>
 
                 <SelectField
                   label="Discount"
@@ -1163,7 +1112,7 @@ const PurchaseReturn = () => {
                   inline
                 />
 
-                <div className="flex items-center gap-2">
+                <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
                   <TextField
                     label="Value"
                     name="discountValue"
@@ -1176,182 +1125,117 @@ const PurchaseReturn = () => {
                       }
                     }}
                     placeholder="Enter value"
-                    className="flex-1"
                     inline
+                    sx={{ flex: 1 }}
                   />
-                  <button
+                  <Button
                     type="button"
                     onClick={handleDiscountApply}
                     className="glass-btn glass-btn-success"
+                    sx={{ fontSize: 12.25 }}
                   >
                     Apply
-                  </button>
-                </div>
+                  </Button>
+                </Stack>
               </>
             )}
-          </div>
+          </Stack>
 
           {isReturnDebitNote ? (
-            <div className="bg-white dark:bg-gray-800 h-[300px] p-4 rounded-lg shadow-md border border-gray-300 dark:border-gray-700 flex flex-col">
-              <div className="grid grid-cols-[1.4fr_90px_80px] gap-3 text-[11px] font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide border-b dark:border-gray-700 pb-2 shrink-0">
-                <div>Supplier</div>
-                <div>Interstate</div>
-                <div className="text-right">Qty</div>
-              </div>
-              <div className="mt-2 flex-1 overflow-y-auto pr-1">
+            <Box sx={{ bgcolor: "background.paper", height: 300, p: 2, borderRadius: "7px", boxShadow: 3, border: "1px solid", borderColor: "divider", display: "flex", flexDirection: "column" }}>
+              <Box sx={{ display: "grid", gridTemplateColumns: "1.4fr 90px 80px", gap: 1.5, fontSize: 10.5, fontWeight: 600, color: "text.secondary", textTransform: "uppercase", letterSpacing: "0.05em", borderBottom: 1, borderColor: "divider", pb: 1, flexShrink: 0 }}>
+                <Box>Supplier</Box>
+                <Box>Interstate</Box>
+                <Box sx={{ textAlign: "right" }}>Qty</Box>
+              </Box>
+              <Box sx={{ mt: 1, flex: 1, overflowY: "auto", pr: 0.5 }}>
                 {supplierSummaries.length === 0 ? (
-                  <div className="py-6 text-sm text-center text-gray-500 dark:text-gray-400">
+                  <Box sx={{ py: 3, fontSize: 12.25, textAlign: "center", color: "text.secondary" }}>
                     Search a barcode to view supplier details.
-                  </div>
+                  </Box>
                 ) : (
                   supplierSummaries.map((row, index) => (
-                    <div
+                    <Box
                       key={`${row.supplier}-${row.interstate}-${index}`}
-                      className="grid grid-cols-[1.4fr_90px_80px] gap-3 items-center py-2 text-sm border-b border-gray-100 dark:border-gray-700/50 last:border-b-0"
+                      sx={{ display: "grid", gridTemplateColumns: "1.4fr 90px 80px", gap: 1.5, alignItems: "center", py: 1, fontSize: 12.25, borderBottom: 1, borderColor: "divider", "&:last-of-type": { borderBottom: 0 } }}
                     >
-                      <div className="font-medium text-gray-800 dark:text-gray-100 truncate">{row.supplier}</div>
-                      <div className="text-gray-700 dark:text-gray-300">{row.interstate}</div>
-                      <div className="text-right font-medium text-gray-800 dark:text-gray-100">{row.qty}</div>
-                    </div>
+                      <Box sx={{ fontWeight: 500, color: "text.primary", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.supplier}</Box>
+                      <Box sx={{ color: "text.secondary" }}>{row.interstate}</Box>
+                      <Box sx={{ textAlign: "right", fontWeight: 500, color: "text.primary" }}>{row.qty}</Box>
+                    </Box>
                   ))
                 )}
-              </div>
-            </div>
+              </Box>
+            </Box>
           ) : null}
-        </div>
+        </Stack>
 
-        <div className="w-[75%] flex flex-col">
-          <div className="flex-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm overflow-auto">
-            <div className="min-w-[1046px]">
-              <table className="w-full border-collapse table-fixed">
+        <Box sx={{ width: "75%", display: "flex", flexDirection: "column" }}>
+          <Box sx={{ flex: 1, bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "7px", boxShadow: 1, overflow: "auto" }}>
+            <Box sx={{ minWidth: 1046 }}>
+              <Table sx={{ tableLayout: "fixed" }}>
                 <colgroup>
-                  {STOCK_TABLE_COLUMNS.map((widthClass, index) => (
-                    <col key={`stock-head-col-${index}`} className={widthClass} />
+                  {STOCK_TABLE_WIDTHS.map((width, index) => (
+                    <col key={`stock-head-col-${index}`} style={{ width }} />
                   ))}
                 </colgroup>
-                <thead className="bg-blue-50 dark:bg-blue-900/30 text-[11px] font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
-                  <tr>
-                    <th className="p-2 border-b border-r border-gray-300 dark:border-gray-700 text-left">Barcode</th>
-                    <th className="p-2 border-b border-r border-gray-300 dark:border-gray-700 text-left">Inv No</th>
-                    <th className="p-2 border-b border-r border-gray-300 dark:border-gray-700 text-left">Product</th>
-                    <th className="p-2 border-b border-r border-gray-300 dark:border-gray-700 text-left">Design</th>
-                    <th className="p-2 border-b border-r border-gray-300 dark:border-gray-700 text-center">Qty</th>
-                    <th className="p-2 border-b border-r border-gray-300 dark:border-gray-700 text-right">Rate</th>
-                    <th className="p-2 border-b border-r border-gray-300 dark:border-gray-700 text-center">Discount %</th>
-                    <th className="p-2 border-b border-r border-gray-300 dark:border-gray-700 text-center">Tax %</th>
-                    <th className="p-2 border-b border-r border-gray-300 dark:border-gray-700 text-right">Discount</th>
-                    <th className="p-2 border-b border-r border-gray-300 dark:border-gray-700 text-right">Tax</th>
-                    <th className="p-2 border-b border-r border-gray-300 dark:border-gray-700 text-right">Amount</th>
-                    <th className="p-2 border-b border-gray-300 dark:border-gray-700 text-center">Action</th>
-                  </tr>
-                  <tr className="bg-white dark:bg-gray-800">
-                    <th className="p-1.5 border-b border-r border-gray-200 dark:border-gray-700">
-                      <input
-                        name="barcode"
-                        value={stockTableFilters.barcode}
-                        onChange={handleStockTableFilterChange}
-                        placeholder="Barcode"
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-1.5 py-1 text-[11px] font-normal bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-100"
-                      />
-                    </th>
-                    <th className="p-1.5 border-b border-r border-gray-200 dark:border-gray-700">
-                      <input
-                        name="invoiceNo"
-                        value={stockTableFilters.invoiceNo}
-                        onChange={handleStockTableFilterChange}
-                        placeholder="Inv No"
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-1.5 py-1 text-[11px] font-normal bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-100"
-                      />
-                    </th>
-                    <th className="p-1.5 border-b border-r border-gray-200 dark:border-gray-700">
-                      <input
-                        name="productName"
-                        value={stockTableFilters.productName}
-                        onChange={handleStockTableFilterChange}
-                        placeholder="Product"
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-1.5 py-1 text-[11px] font-normal bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-100"
-                      />
-                    </th>
-                    <th className="p-1.5 border-b border-r border-gray-200 dark:border-gray-700">
-                      <input
-                        name="designNo"
-                        value={stockTableFilters.designNo}
-                        onChange={handleStockTableFilterChange}
-                        placeholder="Design"
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-1.5 py-1 text-[11px] font-normal bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-100"
-                      />
-                    </th>
-                    <th className="p-1.5 border-b border-r border-gray-200 dark:border-gray-700">
-                      <input
-                        name="qty"
-                        value={stockTableFilters.qty}
-                        onChange={handleStockTableFilterChange}
-                        placeholder="Qty"
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-1.5 py-1 text-[11px] font-normal bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-100 text-center"
-                      />
-                    </th>
-                    <th className="p-1.5 border-b border-r border-gray-200 dark:border-gray-700">
-                      <input
-                        name="rate"
-                        value={stockTableFilters.rate}
-                        onChange={handleStockTableFilterChange}
-                        placeholder="Rate"
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-1.5 py-1 text-[11px] font-normal bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-100 text-right"
-                      />
-                    </th>
-                    <th className="p-1.5 border-b border-r border-gray-200 dark:border-gray-700">
-                      <input
-                        name="discountPerc"
-                        value={stockTableFilters.discountPerc}
-                        onChange={handleStockTableFilterChange}
-                        placeholder="Dis %"
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-1.5 py-1 text-[11px] font-normal bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-100 text-center"
-                      />
-                    </th>
-                    <th className="p-1.5 border-b border-r border-gray-200 dark:border-gray-700">
-                      <input
-                        name="taxPerc"
-                        value={stockTableFilters.taxPerc}
-                        onChange={handleStockTableFilterChange}
-                        placeholder="Tax %"
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-1.5 py-1 text-[11px] font-normal bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-100 text-center"
-                      />
-                    </th>
-                    <th className="p-1.5 border-b border-r border-gray-200 dark:border-gray-700">
-                      <input
-                        name="discount"
-                        value={stockTableFilters.discount}
-                        onChange={handleStockTableFilterChange}
-                        placeholder="Discount"
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-1.5 py-1 text-[11px] font-normal bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-100 text-right"
-                      />
-                    </th>
-                    <th className="p-1.5 border-b border-r border-gray-200 dark:border-gray-700">
-                      <input
-                        name="tax"
-                        value={stockTableFilters.tax}
-                        onChange={handleStockTableFilterChange}
-                        placeholder="Tax"
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-1.5 py-1 text-[11px] font-normal bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-100 text-right"
-                      />
-                    </th>
-                    <th className="p-1.5 border-b border-r border-gray-200 dark:border-gray-700">
-                      <input
-                        name="amount"
-                        value={stockTableFilters.amount}
-                        onChange={handleStockTableFilterChange}
-                        placeholder="Amount"
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-1.5 py-1 text-[11px] font-normal bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-100 text-right"
-                      />
-                    </th>
-                    <th className="p-1.5 border-b border-gray-200 dark:border-gray-700" />
-                  </tr>
-                </thead>
-              </table>
+                <TableHead sx={(theme) => ({ bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08), fontSize: 10.5, fontWeight: 600, color: "text.secondary", textTransform: "uppercase" })}>
+                  <TableRow>
+                    <TableCell sx={{ border: "1px solid", borderColor: "divider", textAlign: "left" }}>Barcode</TableCell>
+                    <TableCell sx={{ border: "1px solid", borderColor: "divider", textAlign: "left" }}>Inv No</TableCell>
+                    <TableCell sx={{ border: "1px solid", borderColor: "divider", textAlign: "left" }}>Product</TableCell>
+                    <TableCell sx={{ border: "1px solid", borderColor: "divider", textAlign: "left" }}>Design</TableCell>
+                    <TableCell sx={{ border: "1px solid", borderColor: "divider", textAlign: "center" }}>Qty</TableCell>
+                    <TableCell sx={{ border: "1px solid", borderColor: "divider", textAlign: "right" }}>Rate</TableCell>
+                    <TableCell sx={{ border: "1px solid", borderColor: "divider", textAlign: "center" }}>Discount %</TableCell>
+                    <TableCell sx={{ border: "1px solid", borderColor: "divider", textAlign: "center" }}>Tax %</TableCell>
+                    <TableCell sx={{ border: "1px solid", borderColor: "divider", textAlign: "right" }}>Discount</TableCell>
+                    <TableCell sx={{ border: "1px solid", borderColor: "divider", textAlign: "right" }}>Tax</TableCell>
+                    <TableCell sx={{ border: "1px solid", borderColor: "divider", textAlign: "right" }}>Amount</TableCell>
+                    <TableCell sx={{ border: "1px solid", borderColor: "divider", textAlign: "center" }}>Action</TableCell>
+                  </TableRow>
+                  <TableRow sx={{ bgcolor: "background.paper" }}>
+                    <TableCell sx={{ border: "1px solid", borderColor: "divider", p: 0.5 }}>
+                      <GridCellInput align="left" name="barcode" value={stockTableFilters.barcode} onChange={handleStockTableFilterChange} placeholder="Barcode" />
+                    </TableCell>
+                    <TableCell sx={{ border: "1px solid", borderColor: "divider", p: 0.5 }}>
+                      <GridCellInput align="left" name="invoiceNo" value={stockTableFilters.invoiceNo} onChange={handleStockTableFilterChange} placeholder="Inv No" />
+                    </TableCell>
+                    <TableCell sx={{ border: "1px solid", borderColor: "divider", p: 0.5 }}>
+                      <GridCellInput align="left" name="productName" value={stockTableFilters.productName} onChange={handleStockTableFilterChange} placeholder="Product" />
+                    </TableCell>
+                    <TableCell sx={{ border: "1px solid", borderColor: "divider", p: 0.5 }}>
+                      <GridCellInput align="left" name="designNo" value={stockTableFilters.designNo} onChange={handleStockTableFilterChange} placeholder="Design" />
+                    </TableCell>
+                    <TableCell sx={{ border: "1px solid", borderColor: "divider", p: 0.5 }}>
+                      <GridCellInput name="qty" value={stockTableFilters.qty} onChange={handleStockTableFilterChange} placeholder="Qty" />
+                    </TableCell>
+                    <TableCell sx={{ border: "1px solid", borderColor: "divider", p: 0.5 }}>
+                      <GridCellInput align="right" name="rate" value={stockTableFilters.rate} onChange={handleStockTableFilterChange} placeholder="Rate" />
+                    </TableCell>
+                    <TableCell sx={{ border: "1px solid", borderColor: "divider", p: 0.5 }}>
+                      <GridCellInput name="discountPerc" value={stockTableFilters.discountPerc} onChange={handleStockTableFilterChange} placeholder="Dis %" />
+                    </TableCell>
+                    <TableCell sx={{ border: "1px solid", borderColor: "divider", p: 0.5 }}>
+                      <GridCellInput name="taxPerc" value={stockTableFilters.taxPerc} onChange={handleStockTableFilterChange} placeholder="Tax %" />
+                    </TableCell>
+                    <TableCell sx={{ border: "1px solid", borderColor: "divider", p: 0.5 }}>
+                      <GridCellInput align="right" name="discount" value={stockTableFilters.discount} onChange={handleStockTableFilterChange} placeholder="Discount" />
+                    </TableCell>
+                    <TableCell sx={{ border: "1px solid", borderColor: "divider", p: 0.5 }}>
+                      <GridCellInput align="right" name="tax" value={stockTableFilters.tax} onChange={handleStockTableFilterChange} placeholder="Tax" />
+                    </TableCell>
+                    <TableCell sx={{ border: "1px solid", borderColor: "divider", p: 0.5 }}>
+                      <GridCellInput align="right" name="amount" value={stockTableFilters.amount} onChange={handleStockTableFilterChange} placeholder="Amount" />
+                    </TableCell>
+                    <TableCell sx={{ border: "1px solid", borderColor: "divider" }} />
+                  </TableRow>
+                </TableHead>
+              </Table>
 
-              <div className="h-[600px] overflow-y-auto">
+              <Box sx={{ height: 600, overflowY: "auto" }}>
                 {filteredGridRows.length === 0 ? (
-                  <div className="h-full flex items-center justify-center text-center p-8 text-gray-500 dark:text-gray-400">
+                  <Box sx={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", p: 4, color: "text.secondary" }}>
                     {gridRows.length === 0
                       ? hasSearched
                       ? "No stock rows found for this search."
@@ -1359,129 +1243,122 @@ const PurchaseReturn = () => {
                       ? "Search by barcode to load return rows."
                       : "Search by Invoice No or Entry No to load return rows."
                       : "No rows match the current table filters."}
-                  </div>
+                  </Box>
                 ) : (
-                  <table className="w-full border-collapse table-fixed">
+                  <Table sx={{ tableLayout: "fixed" }}>
                     <colgroup>
-                      {STOCK_TABLE_COLUMNS.map((widthClass, index) => (
-                        <col key={`stock-body-col-${index}`} className={widthClass} />
+                      {STOCK_TABLE_WIDTHS.map((width, index) => (
+                        <col key={`stock-body-col-${index}`} style={{ width }} />
                       ))}
                     </colgroup>
-                    <tbody>
+                    <TableBody>
                       {filteredGridRows.map((row) => {
                         const calculated = getRowAmounts(row);
 
                         return (
-                          <tr
+                          <TableRow
                             key={row.id}
-                            className="text-[12px] border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                            sx={{ fontSize: 12.25, borderBottom: 1, borderColor: "divider", "&:hover": { bgcolor: "action.hover" } }}
                           >
-                            <td className="px-2 py-1.5 text-[11px] font-mono truncate border-r border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-100">
+                            <TableCell sx={{ px: 1, py: 0.75, fontSize: 11, fontFamily: "monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", borderRight: "1px solid", borderColor: "divider", color: "text.primary" }}>
                               {row.barcode}
-                            </td>
-                            <td className="px-2 py-1.5 text-[11px] truncate border-r border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-100">
+                            </TableCell>
+                            <TableCell sx={{ px: 1, py: 0.75, fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", borderRight: "1px solid", borderColor: "divider", color: "text.primary" }}>
                               {row.invoiceNo}
-                            </td>
-                            <td className="px-2 py-1.5 truncate border-r border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-100">
+                            </TableCell>
+                            <TableCell sx={{ px: 1, py: 0.75, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", borderRight: "1px solid", borderColor: "divider", color: "text.primary" }}>
                               {row.productName}
-                            </td>
-                            <td className="px-2 py-1.5 truncate border-r border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-100">
+                            </TableCell>
+                            <TableCell sx={{ px: 1, py: 0.75, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", borderRight: "1px solid", borderColor: "divider", color: "text.primary" }}>
                               {row.designNo}
-                            </td>
-                            <td className="px-2 py-1.5 text-center border-r border-gray-200 dark:border-gray-700">
-                              <input
+                            </TableCell>
+                            <TableCell sx={{ px: 1, py: 0.75, borderRight: "1px solid", borderColor: "divider" }}>
+                              <GridCellInput
                                 type="number"
-                                min="0"
-                                max={Math.max(0, toInt(row.availableQty ?? row.stock, 0))}
+                                slotProps={{ htmlInput: { min: 0, max: Math.max(0, toInt(row.availableQty ?? row.stock, 0)) } }}
                                 value={toInt(row.stock, 0)}
                                 onChange={(event) => handleRowValueChange(row.id, "stock", event.target.value)}
-                                className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-1.5 py-1 text-[11px] text-center bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                               />
-                            </td>
-                            <td className="px-2 py-1.5 text-right border-r border-gray-200 dark:border-gray-700">
-                              <input
+                            </TableCell>
+                            <TableCell sx={{ px: 1, py: 0.75, borderRight: "1px solid", borderColor: "divider" }}>
+                              <GridCellInput
+                                align="right"
                                 type="number"
-                                min="0"
-                                step="0.01"
+                                slotProps={{ htmlInput: { min: 0, step: "0.01" } }}
                                 value={toNumber(row.rate, 0)}
                                 onChange={(event) => handleRowValueChange(row.id, "rate", event.target.value)}
-                                className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-1.5 py-1 text-[11px] text-right bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                               />
-                            </td>
-                            <td className="px-2 py-1.5 text-center border-r border-gray-200 dark:border-gray-700">
-                              <input
+                            </TableCell>
+                            <TableCell sx={{ px: 1, py: 0.75, borderRight: "1px solid", borderColor: "divider" }}>
+                              <GridCellInput
                                 type="number"
-                                min="0"
-                                step="0.01"
+                                slotProps={{ htmlInput: { min: 0, step: "0.01" } }}
                                 value={toNumber(row.discountPerc, 0)}
                                 onChange={(event) => handleRowValueChange(row.id, "discountPerc", event.target.value)}
-                                className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-1.5 py-1 text-[11px] text-center bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                               />
-                            </td>
-                            <td className="px-2 py-1.5 text-center border-r border-gray-200 dark:border-gray-700">
-                              <input
+                            </TableCell>
+                            <TableCell sx={{ px: 1, py: 0.75, borderRight: "1px solid", borderColor: "divider" }}>
+                              <GridCellInput
                                 type="number"
-                                min="0"
-                                step="0.01"
+                                slotProps={{ htmlInput: { min: 0, step: "0.01" } }}
                                 value={toNumber(row.taxPerc, 0)}
                                 onChange={(event) => handleRowValueChange(row.id, "taxPerc", event.target.value)}
-                                className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-1.5 py-1 text-[11px] text-center bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                               />
-                            </td>
-                            <td className="px-2 py-1.5 text-right border-r border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-100">
+                            </TableCell>
+                            <TableCell sx={{ px: 1, py: 0.75, textAlign: "right", borderRight: "1px solid", borderColor: "divider", color: "text.primary" }}>
                               {calculated.discount.toFixed(2)}
-                            </td>
-                            <td className="px-2 py-1.5 text-right border-r border-gray-200 dark:border-gray-700">
-                              <input
+                            </TableCell>
+                            <TableCell sx={{ px: 1, py: 0.75, borderRight: "1px solid", borderColor: "divider" }}>
+                              <GridCellInput
+                                align="right"
                                 type="number"
-                                min="0"
-                                step="0.01"
+                                slotProps={{ htmlInput: { min: 0, step: "0.01" } }}
                                 value={toNumber(row.taxAmount, 0)}
                                 onChange={(event) => handleRowValueChange(row.id, "taxAmount", event.target.value)}
-                                className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-1.5 py-1 text-[11px] text-right bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                               />
-                            </td>
-                            <td className="px-2 py-1.5 text-right border-r border-gray-200 dark:border-gray-700 font-medium text-gray-800 dark:text-gray-100">
+                            </TableCell>
+                            <TableCell sx={{ px: 1, py: 0.75, textAlign: "right", fontWeight: 500, borderRight: "1px solid", borderColor: "divider", color: "text.primary" }}>
                               {calculated.amount.toFixed(2)}
-                            </td>
-                            <td className="px-2 py-1.5">
-                              <div className="flex items-center justify-center">
-                                <button
+                            </TableCell>
+                            <TableCell sx={{ px: 1, py: 0.75 }}>
+                              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                <Box
+                                  component="button"
                                   type="button"
                                   onClick={(event) => {
                                     event.stopPropagation();
                                     handleRemoveRow(row.id);
                                   }}
-                                  className="text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300"
                                   aria-label={`Remove ${row.barcode}`}
+                                  sx={{ color: "error.main", border: 0, bgcolor: "transparent", cursor: "pointer", display: "flex", "&:hover": { color: "error.dark" } }}
                                 >
                                   <Trash2 className="h-3.5 w-3.5" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
+                                </Box>
+                              </Box>
+                            </TableCell>
+                          </TableRow>
                         );
                       })}
-                    </tbody>
-                  </table>
+                    </TableBody>
+                  </Table>
                 )}
-              </div>
-            </div>
-          </div>
+              </Box>
+            </Box>
+          </Box>
 
-          <div className="mt-2 bg-white dark:bg-gray-800 p-2.5 rounded-lg shadow-md border border-gray-300 dark:border-gray-700 grid grid-cols-[0.95fr_0.8fr_0.95fr] gap-3">
-            <div className="space-y-2">
+          <Box sx={{ mt: 1, bgcolor: "background.paper", p: 1.5, borderRadius: "7px", boxShadow: 3, border: "1px solid", borderColor: "divider", display: "grid", gridTemplateColumns: "0.95fr 0.8fr 0.95fr", gap: 1.5 }}>
+            <Stack spacing={1}>
               <InlineTextField
                 label="Packing Price"
                 name="packingPrice"
                 type="number"
                 value={header.packingPrice}
                 onChange={handleHeaderChange}
-                inputClassName="max-w-[120px]"
+                maxWidth={120}
               />
-              <div className="flex items-center gap-2">
-                <label className="w-24 shrink-0 text-xs font-medium text-gray-700 dark:text-gray-300">Tax</label>
-                <div className="max-w-[180px] w-full">
+              <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                <Typography component="label" sx={{ width: 96, flexShrink: 0, fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Tax</Typography>
+                <Box sx={{ maxWidth: 180, width: "100%" }}>
                   <AsyncSearchSelect
                     name="taxId"
                     value={header.taxId}
@@ -1491,59 +1368,59 @@ const PurchaseReturn = () => {
                     placeholder="Select"
                     searchPlaceholder="Search taxes..."
                   />
-                </div>
-              </div>
+                </Box>
+              </Stack>
               <InlineTextField
                 label="Remarks"
                 name="remarks"
                 value={header.remarks}
                 onChange={handleHeaderChange}
-                inputClassName="max-w-[220px]"
+                maxWidth={220}
               />
-            </div>
+            </Stack>
 
-            <div className="space-y-1 pt-0">
-              <div className="flex justify-between text-[13px]">
-                <span className="text-gray-600 dark:text-gray-300">Amount</span>
-                <span className="font-medium text-gray-800 dark:text-gray-100">{tableTotals.amount.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-[13px]">
-                <span className="text-gray-600 dark:text-gray-300">Discount</span>
-                <span className="font-medium text-gray-800 dark:text-gray-100">{tableTotals.discount.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-[13px]">
-                <span className="text-gray-600 dark:text-gray-300">Tax</span>
-                <span className="font-medium text-gray-800 dark:text-gray-100">{tableTotals.tax.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-[13px]">
-                <span className="text-gray-600 dark:text-gray-300">Freight Tax</span>
-                <span className="font-medium text-gray-800 dark:text-gray-100">{tableTotals.freightTax.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-[13px]">
-                <span className="text-gray-600 dark:text-gray-300">Total</span>
-                <span className="font-semibold text-red-600 dark:text-red-400">{tableTotals.total.toFixed(2)}</span>
-              </div>
-              <div className="text-[11px] text-gray-500 dark:text-gray-400 pt-1.5 border-t dark:border-gray-700">
+            <Stack spacing={0.5}>
+              <Stack direction="row" sx={{ justifyContent: "space-between", fontSize: 13 }}>
+                <Box component="span" sx={{ color: "text.secondary" }}>Amount</Box>
+                <Box component="span" sx={{ fontWeight: 500, color: "text.primary" }}>{tableTotals.amount.toFixed(2)}</Box>
+              </Stack>
+              <Stack direction="row" sx={{ justifyContent: "space-between", fontSize: 13 }}>
+                <Box component="span" sx={{ color: "text.secondary" }}>Discount</Box>
+                <Box component="span" sx={{ fontWeight: 500, color: "text.primary" }}>{tableTotals.discount.toFixed(2)}</Box>
+              </Stack>
+              <Stack direction="row" sx={{ justifyContent: "space-between", fontSize: 13 }}>
+                <Box component="span" sx={{ color: "text.secondary" }}>Tax</Box>
+                <Box component="span" sx={{ fontWeight: 500, color: "text.primary" }}>{tableTotals.tax.toFixed(2)}</Box>
+              </Stack>
+              <Stack direction="row" sx={{ justifyContent: "space-between", fontSize: 13 }}>
+                <Box component="span" sx={{ color: "text.secondary" }}>Freight Tax</Box>
+                <Box component="span" sx={{ fontWeight: 500, color: "text.primary" }}>{tableTotals.freightTax.toFixed(2)}</Box>
+              </Stack>
+              <Stack direction="row" sx={{ justifyContent: "space-between", fontSize: 13 }}>
+                <Box component="span" sx={{ color: "text.secondary" }}>Total</Box>
+                <Box component="span" sx={{ fontWeight: 600, color: "error.main" }}>{tableTotals.total.toFixed(2)}</Box>
+              </Stack>
+              <Box sx={{ fontSize: 11, color: "text.secondary", pt: 0.75, borderTop: 1, borderColor: "divider" }}>
                 Note: Freight Tax is calculated from Packing Price and selected Tax %.
-              </div>
-            </div>
+              </Box>
+            </Stack>
 
-            <div className="space-y-2">
-              <div className="flex justify-between text-[13px]">
-                <span className="text-gray-600 dark:text-gray-300">Total Qty</span>
-                <span className="font-medium text-gray-800 dark:text-gray-100">{tableTotals.totalQty}</span>
-              </div>
-              <div className="flex justify-between text-[13px]">
-                <span className="text-gray-600 dark:text-gray-300">Total Piece</span>
-                <span className="font-medium text-gray-800 dark:text-gray-100">{tableTotals.totalPiece}</span>
-              </div>
-              <div className="flex justify-between text-[13px]">
-                <span className="text-gray-600 dark:text-gray-300">Gross</span>
-                <span className="font-medium text-gray-800 dark:text-gray-100">{tableTotals.gross.toFixed(2)}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <label className="w-24 shrink-0 text-xs font-medium text-gray-700 dark:text-gray-300">Transport</label>
-                <div className="max-w-[180px] w-full">
+            <Stack spacing={1}>
+              <Stack direction="row" sx={{ justifyContent: "space-between", fontSize: 13 }}>
+                <Box component="span" sx={{ color: "text.secondary" }}>Total Qty</Box>
+                <Box component="span" sx={{ fontWeight: 500, color: "text.primary" }}>{tableTotals.totalQty}</Box>
+              </Stack>
+              <Stack direction="row" sx={{ justifyContent: "space-between", fontSize: 13 }}>
+                <Box component="span" sx={{ color: "text.secondary" }}>Total Piece</Box>
+                <Box component="span" sx={{ fontWeight: 500, color: "text.primary" }}>{tableTotals.totalPiece}</Box>
+              </Stack>
+              <Stack direction="row" sx={{ justifyContent: "space-between", fontSize: 13 }}>
+                <Box component="span" sx={{ color: "text.secondary" }}>Gross</Box>
+                <Box component="span" sx={{ fontWeight: 500, color: "text.primary" }}>{tableTotals.gross.toFixed(2)}</Box>
+              </Stack>
+              <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                <Typography component="label" sx={{ width: 96, flexShrink: 0, fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Transport</Typography>
+                <Box sx={{ maxWidth: 180, width: "100%" }}>
                   <AsyncSearchSelect
                     name="transportId"
                     value={header.transportId}
@@ -1553,14 +1430,14 @@ const PurchaseReturn = () => {
                     placeholder="Select"
                     searchPlaceholder="Search transports..."
                   />
-                </div>
-              </div>
+                </Box>
+              </Stack>
               <InlineTextField
                 label="LR No"
                 name="lrNo"
                 value={header.lrNo}
                 onChange={handleHeaderChange}
-                inputClassName="max-w-[140px]"
+                maxWidth={140}
               />
               <InlineTextField
                 label="Date"
@@ -1568,12 +1445,12 @@ const PurchaseReturn = () => {
                 type="date"
                 value={header.lrDate}
                 onChange={handleHeaderChange}
-                inputClassName="max-w-[160px]"
+                maxWidth={160}
               />
-            </div>
-          </div>
-        </div>
-      </div>
+            </Stack>
+          </Box>
+        </Box>
+      </Stack>
 
       <Toast
         open={toast.open}
@@ -1581,7 +1458,7 @@ const PurchaseReturn = () => {
         message={toast.message}
         onClose={() => setToast((prev) => ({ ...prev, open: false }))}
       />
-    </div>
+    </Box>
   );
 };
 

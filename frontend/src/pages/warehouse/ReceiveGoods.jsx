@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { ArrowLeft, Search, User } from "lucide-react";
+import { Box, Stack, Typography, TextField, IconButton, alpha } from "@mui/material";
 
 const ReceiveGoods = () => {
   const [packageCode, setPackageCode] = useState("");
@@ -45,89 +46,142 @@ const ReceiveGoods = () => {
   };
 
   // Determine message styling
-  const statusClasses = {
-    info: "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400",
-    success: "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400",
-    error: "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400",
+  const statusToneSx = {
+    info: (theme) => ({
+      bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.1),
+      color: "primary.main",
+    }),
+    success: (theme) => ({
+      bgcolor: alpha(theme.palette.success.main, theme.palette.mode === "dark" ? 0.16 : 0.1),
+      color: "success.main",
+    }),
+    error: (theme) => ({
+      bgcolor: alpha(theme.palette.error.main, theme.palette.mode === "dark" ? 0.16 : 0.1),
+      color: "error.main",
+    }),
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
+    <Box sx={{ minHeight: "100vh", bgcolor: "background.default", display: "flex", flexDirection: "column" }}>
       {/* --- Header --- */}
-      <div className="flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm sticky top-0 z-10">
-        <div className="flex items-center">
-          <button
-            onClick={handleBackClick}
-            className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 mr-3 p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
-            aria-label="Back"
-          >
+      <Stack
+        direction="row"
+        sx={{
+          alignItems: "center",
+          justifyContent: "space-between",
+          px: 2,
+          py: 1.5,
+          bgcolor: "background.paper",
+          borderBottom: 1,
+          borderColor: "divider",
+          boxShadow: 1,
+          position: "sticky",
+          top: 0,
+          zIndex: 10,
+        }}
+      >
+        <Stack direction="row" sx={{ alignItems: "center" }}>
+          <IconButton onClick={handleBackClick} aria-label="Back" sx={{ mr: 1.5, color: "text.secondary" }}>
             <ArrowLeft className="w-4 h-4" />
-          </button>
-          <h1 className="text-sm font-semibold text-gray-800 dark:text-gray-100">
+          </IconButton>
+          <Typography component="h1" sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>
             Warehouse / Receive Goods
-          </h1>
-        </div>
-        <div className="flex items-center space-x-2 text-sm text-gray-700 dark:text-gray-300">
+          </Typography>
+        </Stack>
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center", fontSize: 12.25, color: "text.secondary" }}>
           <User className="w-5 h-5" />
-          <span className="font-medium">User: Admin</span>
-        </div>
-      </div>
+          <Typography component="span" sx={{ fontSize: 12.25, fontWeight: 500 }}>
+            User: Admin
+          </Typography>
+        </Stack>
+      </Stack>
 
       {/* --- Main Content Area (Input/Search) --- */}
-      <div className="flex-1 p-8">
-        <div className="w-full max-w-2xl mx-auto bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl border border-gray-300 dark:border-gray-600">
-          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+      <Box sx={{ flex: 1, p: 4 }}>
+        <Box
+          sx={{
+            width: "100%",
+            maxWidth: 672,
+            mx: "auto",
+            bgcolor: "background.paper",
+            p: 3,
+            borderRadius: "7px",
+            boxShadow: 4,
+            border: "1px solid",
+            borderColor: "divider",
+          }}
+        >
+          <Typography component="label" sx={{ display: "block", fontSize: 12.25, fontWeight: 600, color: "text.secondary", mb: 1 }}>
             Package code
-          </label>
-          <div className="flex">
-            <input
-              type="text"
+          </Typography>
+          <Stack direction="row">
+            <TextField
               value={packageCode}
               onChange={handleCodeChange}
               onKeyDown={(e) => e.key === "Enter" && handleSearch()}
               placeholder="Scan or enter package code..."
-              className="flex-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-l-md px-4 py-2 text-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               autoFocus
+              fullWidth
+              sx={{
+                "& .MuiOutlinedInput-root": { borderRadius: 0, borderTopLeftRadius: "5.25px", borderBottomLeftRadius: "5.25px" },
+                "& .MuiInputBase-input": { fontSize: 17.5, py: 1 },
+              }}
             />
-            <button
+            <IconButton
               onClick={handleSearch}
-              className="glass-btn glass-btn-primary flex items-center justify-center rounded-r-md"
+              className="glass-btn glass-btn-primary"
               aria-label="Search Package Code"
+              sx={{ borderRadius: 0, borderTopRightRadius: "5.25px", borderBottomRightRadius: "5.25px" }}
             >
               <Search className="w-5 h-5" />
-            </button>
-          </div>
+            </IconButton>
+          </Stack>
 
           {/* Status Message Area */}
-          <div
-            className={`mt-6 p-4 rounded-md font-medium ${
-              statusClasses[statusMessage.type]
-            }`}
+          <Box
+            sx={[
+              { mt: 3, p: 2, borderRadius: "5.25px", fontWeight: 500 },
+              statusToneSx[statusMessage.type],
+            ]}
           >
             {statusMessage.message}
-          </div>
+          </Box>
 
           {/* Placeholder for scanned item details to appear below */}
-          <div className="mt-8 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <h3 className="text-md font-semibold text-gray-800 dark:text-gray-100">
+          <Box sx={{ mt: 4, pt: 2, borderTop: 1, borderColor: "divider" }}>
+            <Typography component="h3" sx={{ fontSize: 14, fontWeight: 600, color: "text.primary" }}>
               Scanned Item Details:
-            </h3>
-            <ul className="text-sm text-gray-600 dark:text-gray-400 mt-2 space-y-1">
+            </Typography>
+            <Stack component="ul" spacing={0.5} sx={{ fontSize: 12.25, color: "text.secondary", mt: 1, pl: 2.5 }}>
               <li>**Invoice No:** (Appears after successful scan)</li>
               <li>**Supplier:** (Appears after successful scan)</li>
               <li>**Total Pieces:** (Appears after successful scan)</li>
-            </ul>
-          </div>
-        </div>
-      </div>
+            </Stack>
+          </Box>
+        </Box>
+      </Box>
 
       {/* --- Global Footer Bar --- */}
-      <div className="fixed bottom-0 w-full flex justify-end space-x-3 p-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-10">
-        <span className="text-xs text-gray-600 dark:text-gray-400 self-center">
+      <Stack
+        direction="row"
+        spacing={1.5}
+        sx={{
+          position: "fixed",
+          bottom: 0,
+          width: "100%",
+          justifyContent: "flex-end",
+          p: 1.5,
+          bgcolor: "background.paper",
+          borderTop: 1,
+          borderColor: "divider",
+          zIndex: 10,
+        }}
+      >
+        <Typography component="span" sx={{ fontSize: 10.5, color: "text.secondary", alignSelf: "center" }}>
           Customer Care **+91 93840 30115 / 6 / 7**
-        </span>
-      </div>
-    </div>
+        </Typography>
+      </Stack>
+    </Box>
   );
 };
 

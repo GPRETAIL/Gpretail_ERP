@@ -8,6 +8,7 @@ import FilterableDataTable from "../../components/FilterableDataTable";
 import { createGroupFetchers } from "../../utils/serverGrouping";
 import ExportBottomSheet from "../../components/ExportBottomSheet";
 import UploadImportButton from "../../components/UploadImportButton";
+import { Box, Stack, IconButton, Button } from "@mui/material";
 
 // Matches config('pagination.resources.purchase_invoices.groupable_columns') on the backend
 // (the /invoices route is backed by PurchaseInvoiceController, which pages the
@@ -110,19 +111,19 @@ const InvoiceSearchPage = () => {
         key: "bundles",
         label: "Bundles",
         valueGetter: (row) => Number(row.bundles || 0),
-        render: (value) => <div className="text-right">{Number(value || 0)}</div>,
+        render: (value) => <Box sx={{ textAlign: "right" }}>{Number(value || 0)}</Box>,
       },
       {
         key: "tax_charges",
         label: "Tax",
         valueGetter: (row) => Number(row.tax_charges || 0),
-        render: (value) => <div className="text-right">{Number(value || 0).toFixed(2)}</div>,
+        render: (value) => <Box sx={{ textAlign: "right" }}>{Number(value || 0).toFixed(2)}</Box>,
       },
       {
         key: "net_amount",
         label: "Net Amount",
         valueGetter: (row) => Number(row.net_amount || 0),
-        render: (value) => <div className="text-right">{Number(value || 0).toFixed(2)}</div>,
+        render: (value) => <Box sx={{ textAlign: "right" }}>{Number(value || 0).toFixed(2)}</Box>,
       },
     ],
     []
@@ -260,31 +261,25 @@ const InvoiceSearchPage = () => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 master-responsive">
-      <div className="flex items-center justify-between px-4 py-2 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
-        <div className="flex items-center">
-          <button
-            className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 mr-3"
-            aria-label="Back"
-            onClick={() => navigate("/warehouse/invoice")}
-          >
+    <Box sx={{ height: "100%", display: "flex", flexDirection: "column", bgcolor: "background.default", color: "text.primary" }} className="master-responsive">
+      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
+        <Stack direction="row" sx={{ alignItems: "center" }}>
+          <IconButton onClick={() => navigate("/warehouse/invoice")} aria-label="Back" sx={{ mr: 1.5, color: "text.secondary" }}>
             <ArrowLeft className="w-4 h-4" />
-          </button>
-          <h1 className="text-sm font-semibold flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => navigate("/warehouse")}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
-            >
+          </IconButton>
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: 12.25, fontWeight: 600 }}>
+            <Button type="button" variant="text" onClick={() => navigate("/warehouse")} sx={{ minWidth: "auto", p: 0, fontSize: 12.25, fontWeight: 600 }}>
               Warehouse
-            </button>
-            <span className="text-gray-500 dark:text-gray-400">/</span>
-            <span className="text-blue-800 dark:text-blue-400">Invoice Search</span>
-            <span className="text-sm font-normal text-gray-500 dark:text-gray-400 ml-2">| {results.length} Results</span>
-          </h1>
-        </div>
+            </Button>
+            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
+            <Box component="span" sx={{ color: "primary.main" }}>Invoice Search</Box>
+            <Box component="span" sx={{ fontSize: 12.25, fontWeight: 400, color: "text.secondary", ml: 1 }}>
+              | {results.length} Results
+            </Box>
+          </Stack>
+        </Stack>
 
-        <div className="flex items-center gap-2">
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           <UploadImportButton
             endpoint="/invoices/bulk"
             fieldConfig={INVOICE_IMPORT_CONFIG}
@@ -306,11 +301,11 @@ const InvoiceSearchPage = () => {
             fileName="invoice_search"
             buttonClassName="topbar-action-btn topbar-action-export"
           />
-        </div>
-      </div>
+        </Stack>
+      </Stack>
 
-      <div className="p-4 flex-1 min-h-0">
-        <div className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-sm p-3 h-full flex flex-col min-h-0">
+      <Box sx={{ p: 2, flex: 1, minHeight: 0 }}>
+        <Box sx={{ bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "1.75px", p: 1.5, height: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}>
           <FilterableDataTable
             rows={results}
             columns={tableColumns}
@@ -346,29 +341,31 @@ const InvoiceSearchPage = () => {
             onRowClick={(invoice) => openInvoiceEditor(invoice)}
             fillHeight
             renderActions={(invoice, { selectedCount } = {}) => (
-              <div className="flex items-center justify-center gap-2">
-                <button
+              <Stack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "center" }}>
+                <IconButton
                   type="button"
                   onClick={() => openInvoiceEditor(invoice)}
                   title="Edit"
                   disabled={selectedCount > 1}
-                  className="glass-btn glass-btn-primary rounded p-1.5"
+                  className="glass-btn glass-btn-primary"
+                  sx={{ borderRadius: "3.5px", p: 0.75 }}
                 >
                   <Pencil className="w-3.5 h-3.5" />
-                </button>
-                <button
+                </IconButton>
+                <IconButton
                   type="button"
                   onClick={(e) => handleDeleteClick(e, invoice)}
-                  className="glass-btn glass-btn-danger rounded p-1.5"
+                  className="glass-btn glass-btn-danger"
                   title="Delete"
+                  sx={{ borderRadius: "3.5px", p: 0.75 }}
                 >
                   <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
+                </IconButton>
+              </Stack>
             )}
           />
-        </div>
-      </div>
+        </Box>
+      </Box>
 
       <Toast
         open={toast.open}
@@ -392,7 +389,7 @@ const InvoiceSearchPage = () => {
         onConfirm={handleBulkDeleteConfirmed}
         onCancel={() => setBulkConfirm({ open: false, keys: [] })}
       />
-    </div>
+    </Box>
   );
 };
 

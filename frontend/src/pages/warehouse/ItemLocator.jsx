@@ -6,6 +6,9 @@ import Toast from "../../components/Toast";
 import FilterableDataTable from "../../components/FilterableDataTable";
 import ExportBottomSheet from "../../components/ExportBottomSheet";
 import PageSkeleton from "../../components/PageSkeleton";
+import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, Radio } from "@mui/material";
+
+const filterRowSx = { display: "grid", gridTemplateColumns: "160px minmax(0, 1fr)", alignItems: "center", gap: 1 };
 
 const normalize = (val) => String(val ?? "").trim().toLowerCase();
 const toNum = (val) => {
@@ -115,7 +118,11 @@ const ItemLocator = () => {
       {
         key: "barcode",
         label: "Barcode",
-        render: (value) => <span className="font-mono text-[11px]">{value || "-"}</span>,
+        render: (value) => (
+          <Box component="span" sx={{ fontFamily: "monospace", fontSize: 11 }}>
+            {value || "-"}
+          </Box>
+        ),
       },
       { key: "batch", label: "Batch" },
       { key: "source", label: "Source" },
@@ -139,27 +146,27 @@ const ItemLocator = () => {
       {
         key: "qty",
         label: "Qty",
-        render: (value) => <div className="text-right">{toNum(value)}</div>,
+        render: (value) => <Box sx={{ textAlign: "right" }}>{toNum(value)}</Box>,
       },
       {
         key: "stock",
         label: "Stock",
-        render: (value) => <div className="text-right">{toNum(value)}</div>,
+        render: (value) => <Box sx={{ textAlign: "right" }}>{toNum(value)}</Box>,
       },
       {
         key: "cost",
         label: "Cost",
-        render: (value) => <div className="text-right">{toNum(value).toFixed(2)}</div>,
+        render: (value) => <Box sx={{ textAlign: "right" }}>{toNum(value).toFixed(2)}</Box>,
       },
       {
         key: "sale",
         label: "Sale",
-        render: (value) => <div className="text-right">{toNum(value).toFixed(2)}</div>,
+        render: (value) => <Box sx={{ textAlign: "right" }}>{toNum(value).toFixed(2)}</Box>,
       },
       {
         key: "net",
         label: "Net",
-        render: (value) => <div className="text-right">{toNum(value).toFixed(2)}</div>,
+        render: (value) => <Box sx={{ textAlign: "right" }}>{toNum(value).toFixed(2)}</Box>,
       },
     ],
     []
@@ -383,28 +390,20 @@ const ItemLocator = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
-      <div className="flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-800 border-b dark:border-gray-700 shadow-sm">
-        <div className="flex items-center">
-          <button
-            onClick={() => navigate(-1)}
-            className="text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100 mr-3 p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
-            aria-label="Back"
-          >
+    <Box sx={{ minHeight: "100vh", bgcolor: "background.default" }}>
+      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1.5, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
+        <Stack direction="row" sx={{ alignItems: "center" }}>
+          <IconButton onClick={() => navigate(-1)} aria-label="Back" sx={{ mr: 1.5, color: "text.secondary" }}>
             <ArrowLeft className="w-4 h-4" />
-          </button>
-          <h1 className="text-sm font-semibold flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => navigate("/warehouse")}
-              className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline"
-            >
+          </IconButton>
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: 12.25, fontWeight: 600 }}>
+            <Button type="button" variant="text" onClick={() => navigate("/warehouse")} sx={{ minWidth: "auto", p: 0, fontSize: 12.25, fontWeight: 600 }}>
               Warehouse
-            </button>
-            <span className="text-gray-400 dark:text-gray-500">/</span>
-            <span className="text-gray-800 dark:text-gray-100">Item Locator</span>
-          </h1>
-        </div>
+            </Button>
+            <Box component="span" sx={{ color: "text.disabled" }}>/</Box>
+            <Box component="span" sx={{ color: "text.primary" }}>Item Locator</Box>
+          </Stack>
+        </Stack>
         <ExportBottomSheet
           columns={itemLocatorColumns}
           rows={rows}
@@ -415,312 +414,281 @@ const ItemLocator = () => {
           fileName="item_locator"
           buttonClassName="topbar-action-btn topbar-action-export"
         />
-      </div>
+      </Stack>
 
-      <div className="p-4 space-y-3">
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md border border-gray-300 dark:border-gray-600">
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <div className="text-sm font-semibold text-gray-800 dark:text-gray-100">Search Filters</div>
-            <button
+      <Stack spacing={1.5} sx={{ p: 2 }}>
+        <Box sx={{ bgcolor: "background.paper", p: 2, borderRadius: "7px", boxShadow: 3, border: "1px solid", borderColor: "divider" }}>
+          <Stack direction="row" spacing={1.5} sx={{ mb: 1.5, alignItems: "center", justifyContent: "space-between" }}>
+            <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Search Filters</Typography>
+            <Button
               type="button"
               onClick={() => setFiltersCollapsed((prev) => !prev)}
-              className="inline-flex items-center gap-1 rounded border border-gray-300 dark:border-gray-600 px-2 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+              variant="outlined"
+              color="inherit"
+              size="small"
+              startIcon={filtersCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+              sx={{ borderRadius: "3.5px", fontSize: 10.5, fontWeight: 500 }}
             >
-              {filtersCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
               {filtersCollapsed ? "Expand" : "Collapse"}
-            </button>
-          </div>
+            </Button>
+          </Stack>
 
           {!filtersCollapsed && (
-            <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-            <div className="space-y-3">
-              <div className="grid grid-cols-[160px_minmax(0,1fr)] items-center gap-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Mode</label>
-                <div className="flex flex-wrap items-center gap-4">
+            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", xl: "repeat(2, 1fr)" }, gap: 2 }}>
+            <Stack spacing={1.5}>
+              <Box sx={filterRowSx}>
+                <Typography sx={{ fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Mode</Typography>
+                <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap", alignItems: "center" }}>
                   {modeOptions.map((option) => (
-                    <label key={option.value} className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                      <input
-                        type="radio"
+                    <Stack key={option.value} component="label" direction="row" spacing={0.75} sx={{ alignItems: "center", fontSize: 12.25, color: "text.secondary" }}>
+                      <Radio
                         name="locator-mode"
                         checked={filters.mode === option.value}
                         onChange={() => updateFilter("mode", option.value)}
-                        className="h-4 w-4 border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                        size="small"
+                        sx={{ p: 0.5 }}
                       />
-                      <span>{option.label}</span>
-                    </label>
+                      <Box component="span">{option.label}</Box>
+                    </Stack>
                   ))}
-                </div>
-              </div>
+                </Stack>
+              </Box>
 
-              <div className="grid grid-cols-[160px_minmax(0,1fr)] items-center gap-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Barcode</label>
-                <div className="flex gap-2">
-                  <input
+              <Box sx={filterRowSx}>
+                <Typography sx={{ fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Barcode</Typography>
+                <Stack direction="row" spacing={1}>
+                  <TextField
                     value={filters.barcode}
                     onChange={(e) => updateFilter("barcode", e.target.value)}
                     onKeyDown={handleFilterKeyDown}
-                    className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-2.5 py-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500"
+                    size="small"
+                    fullWidth
+                    sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
                   />
-                  <button
-                    onClick={onSearch}
-                    disabled={searching}
-                    className="glass-btn glass-btn-primary min-w-[72px] inline-flex items-center justify-center disabled:opacity-60"
-                  >
+                  <Button onClick={onSearch} disabled={searching} className="glass-btn glass-btn-primary" sx={{ minWidth: 72, opacity: searching ? 0.6 : 1 }}>
                     Go
-                  </button>
-                </div>
-              </div>
+                  </Button>
+                </Stack>
+              </Box>
 
-              <div className="grid grid-cols-[160px_minmax(0,1fr)] items-center gap-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Product</label>
-                <select
-                  value={filters.product}
-                  onChange={(e) => updateFilter("product", e.target.value)}
-                  className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-2.5 py-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500"
-                >
-                  <option value="">Select product</option>
+              <Box sx={filterRowSx}>
+                <Typography sx={{ fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Product</Typography>
+                <TextField select value={filters.product} onChange={(e) => updateFilter("product", e.target.value)} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
+                  <MenuItem value="">Select product</MenuItem>
                   {dropdownOptions.product.map((option) => (
-                    <option key={option.value} value={option.value}>
+                    <MenuItem key={option.value} value={option.value}>
                       {option.label}
-                    </option>
+                    </MenuItem>
                   ))}
-                </select>
-              </div>
+                </TextField>
+              </Box>
 
-              <div className="grid grid-cols-[160px_minmax(0,1fr)] items-center gap-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Style</label>
-                <select
-                  value={filters.style}
-                  onChange={(e) => updateFilter("style", e.target.value)}
-                  className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-2.5 py-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500"
-                >
-                  <option value="">Select style</option>
+              <Box sx={filterRowSx}>
+                <Typography sx={{ fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Style</Typography>
+                <TextField select value={filters.style} onChange={(e) => updateFilter("style", e.target.value)} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
+                  <MenuItem value="">Select style</MenuItem>
                   {dropdownOptions.style.map((option) => (
-                    <option key={option.value} value={option.value}>
+                    <MenuItem key={option.value} value={option.value}>
                       {option.label}
-                    </option>
+                    </MenuItem>
                   ))}
-                </select>
-              </div>
+                </TextField>
+              </Box>
 
-              <div className="grid grid-cols-[160px_minmax(0,1fr)] items-center gap-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Size</label>
-                <select
-                  value={filters.size}
-                  onChange={(e) => updateFilter("size", e.target.value)}
-                  className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-2.5 py-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500"
-                >
-                  <option value="">Select size</option>
+              <Box sx={filterRowSx}>
+                <Typography sx={{ fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Size</Typography>
+                <TextField select value={filters.size} onChange={(e) => updateFilter("size", e.target.value)} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
+                  <MenuItem value="">Select size</MenuItem>
                   {dropdownOptions.size.map((option) => (
-                    <option key={option.value} value={option.value}>
+                    <MenuItem key={option.value} value={option.value}>
                       {option.label}
-                    </option>
+                    </MenuItem>
                   ))}
-                </select>
-              </div>
+                </TextField>
+              </Box>
 
-              <div className="grid grid-cols-[160px_minmax(0,1fr)] items-center gap-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Supplier</label>
-                <select
-                  value={filters.supplier}
-                  onChange={(e) => updateFilter("supplier", e.target.value)}
-                  className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-2.5 py-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500"
-                >
-                  <option value="">Select supplier</option>
+              <Box sx={filterRowSx}>
+                <Typography sx={{ fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Supplier</Typography>
+                <TextField select value={filters.supplier} onChange={(e) => updateFilter("supplier", e.target.value)} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
+                  <MenuItem value="">Select supplier</MenuItem>
                   {dropdownOptions.supplier.map((option) => (
-                    <option key={option.value} value={option.value}>
+                    <MenuItem key={option.value} value={option.value}>
                       {option.label}
-                    </option>
+                    </MenuItem>
                   ))}
-                </select>
-              </div>
-            </div>
+                </TextField>
+              </Box>
+            </Stack>
 
-            <div className="space-y-3">
-              <div className="grid grid-cols-[160px_minmax(0,1fr)] items-center gap-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Customer Mobile No</label>
-                <input
+            <Stack spacing={1.5}>
+              <Box sx={filterRowSx}>
+                <Typography sx={{ fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Customer Mobile No</Typography>
+                <TextField
                   value={filters.customerMobile}
                   onChange={(e) => updateFilter("customerMobile", e.target.value)}
                   onKeyDown={handleFilterKeyDown}
-                  className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-2.5 py-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500"
+                  size="small"
+                  fullWidth
+                  sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
                 />
-              </div>
+              </Box>
 
-              <div className="grid grid-cols-[160px_minmax(0,1fr)] items-center gap-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Bill No/Date</label>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  <input
+              <Box sx={filterRowSx}>
+                <Typography sx={{ fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Bill No/Date</Typography>
+                <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)" }, gap: 1 }}>
+                  <TextField
                     value={filters.billNo}
                     onChange={(e) => updateFilter("billNo", e.target.value)}
                     onKeyDown={handleFilterKeyDown}
                     placeholder="Bill no"
-                    className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-2.5 py-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500"
+                    size="small"
+                    fullWidth
+                    sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
                   />
-                  <input
+                  <TextField
                     type="date"
                     value={filters.billDate}
                     onChange={(e) => updateFilter("billDate", e.target.value)}
-                    className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-2.5 py-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500"
+                    size="small"
+                    fullWidth
+                    sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
                   />
-                </div>
-              </div>
+                </Box>
+              </Box>
 
-              <div className="grid grid-cols-[160px_minmax(0,1fr)] items-center gap-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Bill Value Range / Price Range</label>
-                <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
-                  <input
+              <Box sx={filterRowSx}>
+                <Typography sx={{ fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Bill Value Range / Price Range</Typography>
+                <Box sx={{ display: "grid", gridTemplateColumns: { xs: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" }, gap: 1 }}>
+                  <TextField
                     value={filters.billValueMin}
                     onChange={(e) => updateFilter("billValueMin", e.target.value)}
                     onKeyDown={handleFilterKeyDown}
                     placeholder="Bill min"
-                    className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-2.5 py-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500"
+                    size="small"
+                    fullWidth
+                    sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
                   />
-                  <input
+                  <TextField
                     value={filters.billValueMax}
                     onChange={(e) => updateFilter("billValueMax", e.target.value)}
                     onKeyDown={handleFilterKeyDown}
                     placeholder="Bill max"
-                    className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-2.5 py-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500"
+                    size="small"
+                    fullWidth
+                    sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
                   />
-                  <input
+                  <TextField
                     value={filters.priceMin}
                     onChange={(e) => updateFilter("priceMin", e.target.value)}
                     onKeyDown={handleFilterKeyDown}
                     placeholder="Price min"
-                    className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-2.5 py-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500"
+                    size="small"
+                    fullWidth
+                    sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
                   />
-                  <input
+                  <TextField
                     value={filters.priceMax}
                     onChange={(e) => updateFilter("priceMax", e.target.value)}
                     onKeyDown={handleFilterKeyDown}
                     placeholder="Price max"
-                    className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-2.5 py-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500"
+                    size="small"
+                    fullWidth
+                    sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
                   />
-                </div>
-              </div>
+                </Box>
+              </Box>
 
-              <div className="grid grid-cols-[160px_minmax(0,1fr)] items-center gap-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Brand / Design</label>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  <select
-                    value={filters.brand}
-                    onChange={(e) => updateFilter("brand", e.target.value)}
-                    className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-2.5 py-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500"
-                  >
-                    <option value="">Select brand</option>
+              <Box sx={filterRowSx}>
+                <Typography sx={{ fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Brand / Design</Typography>
+                <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)" }, gap: 1 }}>
+                  <TextField select value={filters.brand} onChange={(e) => updateFilter("brand", e.target.value)} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
+                    <MenuItem value="">Select brand</MenuItem>
                     {dropdownOptions.brand.map((option) => (
-                      <option key={option.value} value={option.value}>
+                      <MenuItem key={option.value} value={option.value}>
                         {option.label}
-                      </option>
+                      </MenuItem>
                     ))}
-                  </select>
-                  <select
-                    value={filters.design}
-                    onChange={(e) => updateFilter("design", e.target.value)}
-                    className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-2.5 py-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500"
-                  >
-                    <option value="">Select design</option>
+                  </TextField>
+                  <TextField select value={filters.design} onChange={(e) => updateFilter("design", e.target.value)} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
+                    <MenuItem value="">Select design</MenuItem>
                     {dropdownOptions.design.map((option) => (
-                      <option key={option.value} value={option.value}>
+                      <MenuItem key={option.value} value={option.value}>
                         {option.label}
-                      </option>
+                      </MenuItem>
                     ))}
-                  </select>
-                </div>
-              </div>
+                  </TextField>
+                </Box>
+              </Box>
 
-              <div className="grid grid-cols-[160px_minmax(0,1fr)] items-center gap-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Pattern/Color</label>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  <select
-                    value={filters.pattern}
-                    onChange={(e) => updateFilter("pattern", e.target.value)}
-                    className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-2.5 py-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500"
-                  >
-                    <option value="">Select pattern</option>
+              <Box sx={filterRowSx}>
+                <Typography sx={{ fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Pattern/Color</Typography>
+                <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)" }, gap: 1 }}>
+                  <TextField select value={filters.pattern} onChange={(e) => updateFilter("pattern", e.target.value)} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
+                    <MenuItem value="">Select pattern</MenuItem>
                     {dropdownOptions.pattern.map((option) => (
-                      <option key={option.value} value={option.value}>
+                      <MenuItem key={option.value} value={option.value}>
                         {option.label}
-                      </option>
+                      </MenuItem>
                     ))}
-                  </select>
-                  <select
-                    value={filters.color}
-                    onChange={(e) => updateFilter("color", e.target.value)}
-                    className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-2.5 py-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500"
-                  >
-                    <option value="">Select color</option>
+                  </TextField>
+                  <TextField select value={filters.color} onChange={(e) => updateFilter("color", e.target.value)} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
+                    <MenuItem value="">Select color</MenuItem>
                     {dropdownOptions.color.map((option) => (
-                      <option key={option.value} value={option.value}>
+                      <MenuItem key={option.value} value={option.value}>
                         {option.label}
-                      </option>
+                      </MenuItem>
                     ))}
-                  </select>
-                </div>
-              </div>
+                  </TextField>
+                </Box>
+              </Box>
 
-              <div className="grid grid-cols-[160px_minmax(0,1fr)] items-center gap-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Material/Type</label>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  <select
-                    value={filters.material}
-                    onChange={(e) => updateFilter("material", e.target.value)}
-                    className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-2.5 py-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500"
-                  >
-                    <option value="">Select material</option>
+              <Box sx={filterRowSx}>
+                <Typography sx={{ fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Material/Type</Typography>
+                <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)" }, gap: 1 }}>
+                  <TextField select value={filters.material} onChange={(e) => updateFilter("material", e.target.value)} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
+                    <MenuItem value="">Select material</MenuItem>
                     {dropdownOptions.material.map((option) => (
-                      <option key={option.value} value={option.value}>
+                      <MenuItem key={option.value} value={option.value}>
                         {option.label}
-                      </option>
+                      </MenuItem>
                     ))}
-                  </select>
-                  <select
-                    value={filters.type}
-                    onChange={(e) => updateFilter("type", e.target.value)}
-                    className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-2.5 py-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500"
-                  >
-                    <option value="">Select type</option>
+                  </TextField>
+                  <TextField select value={filters.type} onChange={(e) => updateFilter("type", e.target.value)} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
+                    <MenuItem value="">Select type</MenuItem>
                     {dropdownOptions.type.map((option) => (
-                      <option key={option.value} value={option.value}>
+                      <MenuItem key={option.value} value={option.value}>
                         {option.label}
-                      </option>
+                      </MenuItem>
                     ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-            </div>
+                  </TextField>
+                </Box>
+              </Box>
+            </Stack>
+            </Box>
           )}
 
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            <button
-              onClick={onSearch}
-              disabled={searching}
-              className="glass-btn glass-btn-primary inline-flex items-center justify-center disabled:opacity-60"
-            >
-              <Search className="w-4 h-4 mr-1" /> Search
-            </button>
-            <button
-              onClick={onClear}
-              disabled={searching}
-              className="glass-btn glass-btn-secondary disabled:opacity-60"
-            >
+          <Stack direction="row" spacing={1} sx={{ mt: 2, flexWrap: "wrap", alignItems: "center" }}>
+            <Button onClick={onSearch} disabled={searching} className="glass-btn glass-btn-primary" startIcon={<Search className="w-4 h-4" />} sx={{ opacity: searching ? 0.6 : 1 }}>
+              Search
+            </Button>
+            <Button onClick={onClear} disabled={searching} className="glass-btn glass-btn-secondary" sx={{ opacity: searching ? 0.6 : 1 }}>
               Clear
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={onRefreshAndSearch}
               disabled={searching}
-              className="text-xs px-3 py-2 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-60"
+              variant="outlined"
+              color="inherit"
+              sx={{ borderRadius: "3.5px", fontSize: 10.5, px: 1.5, py: 1, opacity: searching ? 0.6 : 1 }}
             >
               Refresh
-            </button>
-          </div>
-        </div>
-      </div>
+            </Button>
+          </Stack>
+        </Box>
+      </Stack>
 
-      <div className="p-4 pt-0">
-        <div className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm overflow-hidden p-3">
+      <Box sx={{ p: 2, pt: 0 }}>
+        <Box sx={{ bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "7px", boxShadow: 1, overflow: "hidden", p: 1.5 }}>
           <FilterableDataTable
             rows={rows}
             columns={itemLocatorColumns}
@@ -745,8 +713,8 @@ const ItemLocator = () => {
             paginationMode="client"
             enableVirtualization
           />
-        </div>
-      </div>
+        </Box>
+      </Box>
 
       <Toast
         open={toast.open}
@@ -754,7 +722,7 @@ const ItemLocator = () => {
         message={toast.message}
         onClose={() => setToast((prev) => ({ ...prev, open: false }))}
       />
-    </div>
+    </Box>
   );
 };
 

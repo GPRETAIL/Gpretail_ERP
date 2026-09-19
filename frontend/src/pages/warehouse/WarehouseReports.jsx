@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import api from "../../api/axios";
 import FilterableDataTable from "../../components/FilterableDataTable";
+import { Box, Stack, Typography, IconButton, Button, alpha } from "@mui/material";
 
 const formatDate = (dateStr) => {
   if (!dateStr) return "-";
@@ -269,19 +270,19 @@ const invoiceReportColumns = [
     key: "bundles",
     label: "Bundles",
     valueGetter: (row) => Number(row.bundles || 0),
-    render: (value) => <div className="text-right">{Number(value || 0)}</div>,
+    render: (value) => <Box sx={{ textAlign: "right" }}>{Number(value || 0)}</Box>,
   },
   {
     key: "tax_charges",
     label: "Tax",
     valueGetter: (row) => Number(row.tax_charges || 0),
-    render: (value) => <div className="text-right">{Number(value || 0).toFixed(2)}</div>,
+    render: (value) => <Box sx={{ textAlign: "right" }}>{Number(value || 0).toFixed(2)}</Box>,
   },
   {
     key: "net_amount",
     label: "Net Amount",
     valueGetter: (row) => Number(row.net_amount || 0),
-    render: (value) => <div className="text-right">{Number(value || 0).toFixed(2)}</div>,
+    render: (value) => <Box sx={{ textAlign: "right" }}>{Number(value || 0).toFixed(2)}</Box>,
   },
 ];
 
@@ -297,27 +298,27 @@ const invoiceDetailColumns = [
   {
     key: "amount_on",
     label: "Amount On",
-    render: (value) => <div className="text-right">{toNumber(value).toFixed(2)}</div>,
+    render: (value) => <Box sx={{ textAlign: "right" }}>{toNumber(value).toFixed(2)}</Box>,
   },
   {
     key: "dis_perc",
     label: "Discount %",
-    render: (value) => <div className="text-right">{toNumber(value).toFixed(2)}</div>,
+    render: (value) => <Box sx={{ textAlign: "right" }}>{toNumber(value).toFixed(2)}</Box>,
   },
   {
     key: "tax_perc",
     label: "Tax %",
-    render: (value) => <div className="text-right">{toNumber(value).toFixed(2)}</div>,
+    render: (value) => <Box sx={{ textAlign: "right" }}>{toNumber(value).toFixed(2)}</Box>,
   },
   {
     key: "tax_value",
     label: "Tax Value",
-    render: (value) => <div className="text-right">{toNumber(value).toFixed(2)}</div>,
+    render: (value) => <Box sx={{ textAlign: "right" }}>{toNumber(value).toFixed(2)}</Box>,
   },
   {
     key: "net_amount",
     label: "Net Amount",
-    render: (value) => <div className="text-right">{toNumber(value).toFixed(2)}</div>,
+    render: (value) => <Box sx={{ textAlign: "right" }}>{toNumber(value).toFixed(2)}</Box>,
   },
 ];
 
@@ -356,13 +357,13 @@ const whEntryReportColumns = [
     key: "item_value",
     label: "Item Value",
     valueGetter: (row) => Number(row.item_value || 0),
-    render: (value) => <div className="text-right">{Number(value || 0).toFixed(2)}</div>,
+    render: (value) => <Box sx={{ textAlign: "right" }}>{Number(value || 0).toFixed(2)}</Box>,
   },
   {
     key: "total",
     label: "Total",
     valueGetter: (row) => Number(row.total || 0),
-    render: (value) => <div className="text-right">{Number(value || 0).toFixed(2)}</div>,
+    render: (value) => <Box sx={{ textAlign: "right" }}>{Number(value || 0).toFixed(2)}</Box>,
   },
   {
     key: "created_at",
@@ -415,25 +416,25 @@ const purchaseReportColumns = [
     key: "bundles",
     label: "Bundles",
     valueGetter: (row) => Number(row.bundles || 0),
-    render: (value) => <div className="text-right">{Number(value || 0)}</div>,
+    render: (value) => <Box sx={{ textAlign: "right" }}>{Number(value || 0)}</Box>,
   },
   {
     key: "gross",
     label: "Gross",
     valueGetter: (row) => getDirectPurchaseItemSummary(row).gross,
-    render: (value) => <div className="text-right">{toNumber(value).toFixed(2)}</div>,
+    render: (value) => <Box sx={{ textAlign: "right" }}>{toNumber(value).toFixed(2)}</Box>,
   },
   {
     key: "tax",
     label: "Tax",
     valueGetter: (row) => getDirectPurchaseItemSummary(row).tax,
-    render: (value) => <div className="text-right">{toNumber(value).toFixed(2)}</div>,
+    render: (value) => <Box sx={{ textAlign: "right" }}>{toNumber(value).toFixed(2)}</Box>,
   },
   {
     key: "total",
     label: "Total",
     valueGetter: (row) => getDirectPurchaseItemSummary(row).total,
-    render: (value) => <div className="text-right">{toNumber(value).toFixed(2)}</div>,
+    render: (value) => <Box sx={{ textAlign: "right" }}>{toNumber(value).toFixed(2)}</Box>,
   },
   {
     key: "created_at",
@@ -457,27 +458,27 @@ const purchaseItemColumns = [
   {
     key: "qty",
     label: "Qty",
-    render: (value) => <div className="text-right">{toNumber(value)}</div>,
+    render: (value) => <Box sx={{ textAlign: "right" }}>{toNumber(value)}</Box>,
   },
   {
     key: "cost",
     label: "Cost",
-    render: (value) => <div className="text-right">{toNumber(value).toFixed(2)}</div>,
+    render: (value) => <Box sx={{ textAlign: "right" }}>{toNumber(value).toFixed(2)}</Box>,
   },
   {
     key: "discount",
     label: "Discount",
-    render: (value) => <div className="text-right">{toNumber(value).toFixed(2)}</div>,
+    render: (value) => <Box sx={{ textAlign: "right" }}>{toNumber(value).toFixed(2)}</Box>,
   },
   {
     key: "price",
     label: "Price",
-    render: (value) => <div className="text-right">{toNumber(value).toFixed(2)}</div>,
+    render: (value) => <Box sx={{ textAlign: "right" }}>{toNumber(value).toFixed(2)}</Box>,
   },
   {
     key: "amount",
     label: "Amount",
-    render: (value) => <div className="text-right">{toNumber(value).toFixed(2)}</div>,
+    render: (value) => <Box sx={{ textAlign: "right" }}>{toNumber(value).toFixed(2)}</Box>,
   },
 ];
 
@@ -493,12 +494,12 @@ const purchaseHsnColumns = [
   {
     key: "qty",
     label: "Qty",
-    render: (value) => <div className="text-right">{toNumber(value)}</div>,
+    render: (value) => <Box sx={{ textAlign: "right" }}>{toNumber(value)}</Box>,
   },
   {
     key: "amount",
     label: "Amount",
-    render: (value) => <div className="text-right">{toNumber(value).toFixed(2)}</div>,
+    render: (value) => <Box sx={{ textAlign: "right" }}>{toNumber(value).toFixed(2)}</Box>,
   },
 ];
 
@@ -534,13 +535,13 @@ const purchaseReturnColumns = [
     key: "total_qty",
     label: "Qty",
     valueGetter: (row) => Number(row.total_qty || 0),
-    render: (value) => <div className="text-right">{Number(value || 0)}</div>,
+    render: (value) => <Box sx={{ textAlign: "right" }}>{Number(value || 0)}</Box>,
   },
   {
     key: "total_amount",
     label: "Amount",
     valueGetter: (row) => toNumber(row.total_amount),
-    render: (value) => <div className="text-right">{toNumber(value).toFixed(2)}</div>,
+    render: (value) => <Box sx={{ textAlign: "right" }}>{toNumber(value).toFixed(2)}</Box>,
   },
 ];
 
@@ -548,7 +549,7 @@ const stockReportColumns = [
   {
     key: "barcode",
     label: "Barcode",
-    render: (value) => <span className="font-mono text-[11px]">{value || "-"}</span>,
+    render: (value) => <Box component="span" sx={{ fontFamily: "monospace", fontSize: 11 }}>{value || "-"}</Box>,
   },
   { key: "batch", label: "Batch" },
   { key: "company", label: "Company" },
@@ -564,27 +565,27 @@ const stockReportColumns = [
   {
     key: "qty",
     label: "Qty",
-    render: (value) => <div className="text-right">{Number(value || 0)}</div>,
+    render: (value) => <Box sx={{ textAlign: "right" }}>{Number(value || 0)}</Box>,
   },
   {
     key: "stock",
     label: "Stock",
-    render: (value) => <div className="text-right">{Number(value || 0)}</div>,
+    render: (value) => <Box sx={{ textAlign: "right" }}>{Number(value || 0)}</Box>,
   },
   {
     key: "cost",
     label: "Cost",
-    render: (value) => <div className="text-right">{toNumber(value).toFixed(2)}</div>,
+    render: (value) => <Box sx={{ textAlign: "right" }}>{toNumber(value).toFixed(2)}</Box>,
   },
   {
     key: "net",
     label: "Net",
-    render: (value) => <div className="text-right">{toNumber(value).toFixed(2)}</div>,
+    render: (value) => <Box sx={{ textAlign: "right" }}>{toNumber(value).toFixed(2)}</Box>,
   },
   {
     key: "sale",
     label: "Sale",
-    render: (value) => <div className="text-right">{toNumber(value).toFixed(2)}</div>,
+    render: (value) => <Box sx={{ textAlign: "right" }}>{toNumber(value).toFixed(2)}</Box>,
   },
 ];
 
@@ -601,7 +602,7 @@ const warehouseStockAnalysisColumns = [
   {
     key: "barcode",
     label: "Barcode",
-    render: (value) => <span className="font-mono text-[11px]">{value || "-"}</span>,
+    render: (value) => <Box component="span" sx={{ fontFamily: "monospace", fontSize: 11 }}>{value || "-"}</Box>,
   },
   { key: "product", label: "Product" },
   { key: "brand", label: "Brand" },
@@ -610,22 +611,22 @@ const warehouseStockAnalysisColumns = [
   {
     key: "qty",
     label: "Qty",
-    render: (value) => <div className="text-right">{Number(value || 0)}</div>,
+    render: (value) => <Box sx={{ textAlign: "right" }}>{Number(value || 0)}</Box>,
   },
   {
     key: "cost",
     label: "Cost",
-    render: (value) => <div className="text-right">{toNumber(value).toFixed(2)}</div>,
+    render: (value) => <Box sx={{ textAlign: "right" }}>{toNumber(value).toFixed(2)}</Box>,
   },
   {
     key: "net",
     label: "Net",
-    render: (value) => <div className="text-right">{toNumber(value).toFixed(2)}</div>,
+    render: (value) => <Box sx={{ textAlign: "right" }}>{toNumber(value).toFixed(2)}</Box>,
   },
   {
     key: "sale",
     label: "Sale",
-    render: (value) => <div className="text-right">{toNumber(value).toFixed(2)}</div>,
+    render: (value) => <Box sx={{ textAlign: "right" }}>{toNumber(value).toFixed(2)}</Box>,
   },
 ];
 
@@ -633,7 +634,7 @@ const stockTransactionColumns = [
   {
     key: "barcode",
     label: "Barcode",
-    render: (value) => <span className="font-mono text-[11px]">{value || "-"}</span>,
+    render: (value) => <Box component="span" sx={{ fontFamily: "monospace", fontSize: 11 }}>{value || "-"}</Box>,
   },
   { key: "source", label: "Source" },
   { key: "company", label: "Company" },
@@ -644,22 +645,22 @@ const stockTransactionColumns = [
   {
     key: "qty",
     label: "Qty",
-    render: (value) => <div className="text-right">{toNumber(value)}</div>,
+    render: (value) => <Box sx={{ textAlign: "right" }}>{toNumber(value)}</Box>,
   },
   {
     key: "cost",
     label: "Cost",
-    render: (value) => <div className="text-right">{toNumber(value).toFixed(2)}</div>,
+    render: (value) => <Box sx={{ textAlign: "right" }}>{toNumber(value).toFixed(2)}</Box>,
   },
   {
     key: "sale",
     label: "Sale",
-    render: (value) => <div className="text-right">{toNumber(value).toFixed(2)}</div>,
+    render: (value) => <Box sx={{ textAlign: "right" }}>{toNumber(value).toFixed(2)}</Box>,
   },
   {
     key: "net",
     label: "Net",
-    render: (value) => <div className="text-right">{toNumber(value).toFixed(2)}</div>,
+    render: (value) => <Box sx={{ textAlign: "right" }}>{toNumber(value).toFixed(2)}</Box>,
   },
 ];
 
@@ -667,7 +668,7 @@ const productMasterColumns = [
   {
     key: "barcode",
     label: "Barcode",
-    render: (value) => <span className="font-mono text-[11px]">{value || "-"}</span>,
+    render: (value) => <Box component="span" sx={{ fontFamily: "monospace", fontSize: 11 }}>{value || "-"}</Box>,
   },
   { key: "product", label: "Product" },
   { key: "brand", label: "Brand" },
@@ -1028,131 +1029,128 @@ const WarehouseReports = () => {
     const title = group.displayCount ? `${group.title} (${group.displayCount})` : group.title;
 
     return (
-      <div
+      <Box
         key={group.key}
-        className="overflow-hidden rounded-md border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800"
+        sx={{ overflow: "hidden", borderRadius: "3.5px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", boxShadow: 1 }}
       >
-        <button
+        <Stack
+          component="button"
           type="button"
+          direction="row"
           onClick={() => toggleGroup(group.key)}
-          className="flex w-full items-center justify-between gap-4 border-l-4 border-l-blue-500 bg-gray-100 px-4 py-3 text-left transition hover:bg-gray-200 dark:border-l-blue-400 dark:bg-gray-700 dark:hover:bg-gray-600"
+          sx={{ width: "100%", alignItems: "center", justifyContent: "space-between", gap: 2, borderLeft: "4px solid", borderLeftColor: "primary.main", bgcolor: "action.hover", px: 2, py: 1.5, textAlign: "left", cursor: "pointer", "&:hover": { bgcolor: "action.selected" } }}
         >
-          <span className="text-sm font-bold uppercase tracking-wide text-slate-700 md:text-[15px] dark:text-gray-300">
+          <Typography component="span" sx={{ fontSize: { xs: 12.25, md: 15.75 }, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "text.secondary" }}>
             {title}
-          </span>
-          <span className="text-xl font-semibold leading-none text-slate-500 dark:text-gray-400">
+          </Typography>
+          <Typography component="span" sx={{ fontSize: 17.5, fontWeight: 600, lineHeight: 1, color: "text.disabled" }}>
             {expanded ? "−" : "+"}
-          </span>
-        </button>
+          </Typography>
+        </Stack>
 
         {expanded ? (
-          <div className="bg-white px-4 py-3 dark:bg-gray-800">
-            <div className="space-y-1.5">
+          <Box sx={{ bgcolor: "background.paper", px: 2, py: 1.5 }}>
+            <Stack spacing={0.75}>
               {group.items.map((item) => {
                 const active = selectedReportKey === item.key;
                 const implemented = Boolean(REPORT_DATA_SOURCES[item.key]);
                 return (
-                  <button
+                  <Stack
                     key={item.key}
+                    component="button"
                     type="button"
+                    direction="row"
+                    spacing={1.5}
                     onClick={() => handleSelectReport(group.key, item.key)}
                     disabled={!implemented}
-                    className={`flex w-full items-start gap-3 rounded-md px-2 py-1.5 text-left transition ${
-                      implemented
-                        ? active
-                          ? "bg-blue-50 dark:bg-indigo-900/30"
-                          : "hover:bg-gray-50 dark:hover:bg-gray-700"
-                        : "cursor-not-allowed opacity-55"
-                    }`}
+                    sx={(theme) => ({
+                      width: "100%",
+                      alignItems: "flex-start",
+                      borderRadius: "3.5px",
+                      px: 1,
+                      py: 0.75,
+                      textAlign: "left",
+                      border: 0,
+                      bgcolor: implemented && active ? alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08) : "transparent",
+                      cursor: implemented ? "pointer" : "not-allowed",
+                      opacity: implemented ? 1 : 0.55,
+                      "&:hover": implemented ? { bgcolor: active ? undefined : "action.hover" } : undefined,
+                    })}
                   >
-                    <span className={`pt-0.5 text-xs font-bold ${implemented ? "text-blue-600 dark:text-blue-400" : "text-gray-400 dark:text-gray-500"}`}>
+                    <Typography component="span" sx={{ pt: 0.25, fontSize: 10.5, fontWeight: 700, color: implemented ? "primary.main" : "text.disabled" }}>
                       ◈
-                    </span>
-                    <span
-                      className={`text-sm font-semibold underline decoration-gray-300 underline-offset-4 md:text-[15px] dark:decoration-gray-600 ${
-                        implemented
-                          ? active
-                            ? "text-blue-700 dark:text-blue-400"
-                            : "text-blue-600 dark:text-blue-400"
-                          : "text-gray-500 dark:text-gray-400"
-                      }`}
+                    </Typography>
+                    <Typography
+                      component="span"
+                      sx={{
+                        fontSize: { xs: 12.25, md: 15.75 },
+                        fontWeight: 600,
+                        textDecoration: "underline",
+                        textDecorationColor: "divider",
+                        textUnderlineOffset: "4px",
+                        color: implemented ? "primary.main" : "text.secondary",
+                      }}
                     >
                       {item.title}
                       {!implemented ? " (Not available yet)" : ""}
-                    </span>
-                  </button>
+                    </Typography>
+                  </Stack>
                 );
               })}
-            </div>
-          </div>
+            </Stack>
+          </Box>
         ) : null}
-      </div>
+      </Box>
     );
   };
 
   return (
-    <div className="min-h-full bg-gray-100 text-gray-800 flex flex-col dark:bg-gray-900 dark:text-gray-100">
-      <div className="flex items-center justify-between border-b bg-white px-4 py-2 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => navigate("/warehouse")}
-            className="text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100"
-            aria-label="Back to warehouse"
-          >
+    <Box sx={{ minHeight: "100%", bgcolor: "background.default", color: "text.primary", display: "flex", flexDirection: "column" }}>
+      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", bgcolor: "background.paper", px: 2, py: 1, boxShadow: 1 }}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+          <IconButton onClick={() => navigate("/warehouse")} aria-label="Back to warehouse" sx={{ color: "text.secondary" }}>
             <ArrowLeft className="h-4 w-4" />
-          </button>
-          <h1 className="flex items-center gap-1 text-sm font-semibold md:text-base">
+          </IconButton>
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: { xs: 12.25, md: 14 }, fontWeight: 600 }}>
             {selectedReport ? (
               <>
-                <button
-                  type="button"
-                  onClick={() => navigate("/warehouse")}
-                  className="text-blue-600 hover:text-blue-700 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
-                >
+                <Button type="button" variant="text" onClick={() => navigate("/warehouse")} sx={{ minWidth: "auto", p: 0, fontSize: "inherit", fontWeight: 600 }}>
                   Warehouse
-                </button>
-                <span className="text-gray-500 dark:text-gray-400">/</span>
-                <button
-                  type="button"
-                  onClick={() => setSelectedReportKey("")}
-                  className="text-blue-600 hover:text-blue-700 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
-                >
+                </Button>
+                <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
+                <Button type="button" variant="text" onClick={() => setSelectedReportKey("")} sx={{ minWidth: "auto", p: 0, fontSize: "inherit", fontWeight: 600 }}>
                   Reports
-                </button>
-                <span className="text-gray-500 dark:text-gray-400">/</span>
-                <span className="text-gray-700 dark:text-gray-300">{selectedReport.title}</span>
+                </Button>
+                <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
+                <Box component="span" sx={{ color: "text.secondary" }}>{selectedReport.title}</Box>
               </>
             ) : (
               <>
-                <button
-                  type="button"
-                  onClick={() => navigate("/warehouse")}
-                  className="text-blue-600 hover:text-blue-700 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
-                >
+                <Button type="button" variant="text" onClick={() => navigate("/warehouse")} sx={{ minWidth: "auto", p: 0, fontSize: "inherit", fontWeight: 600 }}>
                   Warehouse
-                </button>
-                <span className="text-gray-500 dark:text-gray-400">/</span>
-                <span>Reports</span>
+                </Button>
+                <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
+                <Box component="span">Reports</Box>
               </>
             )}
-          </h1>
-        </div>
+          </Stack>
+        </Stack>
 
         {selectedReport ? (
-          <div className="hidden text-xs text-gray-500 md:block dark:text-gray-400">
+          <Box sx={{ display: { xs: "none", md: "block" }, fontSize: 10.5, color: "text.secondary" }}>
             {reportLoading ? "Loading report..." : `${reportRows.length} row(s)`}
-          </div>
+          </Box>
         ) : null}
-      </div>
+      </Stack>
 
-      <div className="flex-1 min-h-0 overflow-auto p-4">
+      <Box sx={{ flex: 1, minHeight: 0, overflow: "auto", p: 2 }}>
         {selectedReport ? (
-          <div className="rounded-lg border border-gray-200 bg-white p-3 shadow-sm md:p-4 dark:border-gray-700 dark:bg-gray-800">
-            <div className="mb-2 border-b border-gray-100 pb-2 dark:border-gray-700">
-              <div className="text-sm font-semibold text-gray-900 md:text-base dark:text-gray-100">
+          <Box sx={{ borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", boxShadow: 1, p: { xs: 1.5, md: 2 } }}>
+            <Box sx={{ mb: 1, borderBottom: 1, borderColor: "divider", pb: 1 }}>
+              <Typography sx={{ fontSize: { xs: 12.25, md: 14 }, fontWeight: 600, color: "text.primary" }}>
                 {selectedReport.title}
-              </div>
-            </div>
+              </Typography>
+            </Box>
 
             <FilterableDataTable
               rows={reportRows}
@@ -1183,30 +1181,30 @@ const WarehouseReports = () => {
               }}
               paginationMode="client"
             />
-          </div>
+          </Box>
         ) : (
-          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm md:p-5 dark:border-gray-700 dark:bg-gray-800">
-            <div className="mb-4 border-b border-gray-100 pb-3 dark:border-gray-700">
-              <div className="text-base font-semibold text-gray-900 md:text-lg dark:text-gray-100">
+          <Box sx={{ borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", boxShadow: 1, p: { xs: 2, md: 2.5 } }}>
+            <Box sx={{ mb: 2, borderBottom: 1, borderColor: "divider", pb: 1.5 }}>
+              <Typography sx={{ fontSize: { xs: 14, md: 15.75 }, fontWeight: 600, color: "text.primary" }}>
                 Warehouse Report Center
-              </div>
-              <div className="text-xs text-gray-500 md:text-sm dark:text-gray-400">
+              </Typography>
+              <Typography sx={{ fontSize: { xs: 10.5, md: 12.25 }, color: "text.secondary" }}>
                 Open a report group and choose a report. Implemented warehouse modules will load
                 live data here.
-              </div>
-            </div>
+              </Typography>
+            </Box>
 
-            <div className="grid gap-5 xl:grid-cols-2">
+            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", xl: "repeat(2, 1fr)" }, gap: 2.5 }}>
               {REPORT_GRID_COLUMNS.map((columnGroup, index) => (
-                <div key={`column_${index}`} className="space-y-5">
+                <Stack key={`column_${index}`} spacing={2.5}>
                   {columnGroup.map((groupKey) => renderGroupCard(groupLookup[groupKey]))}
-                </div>
+                </Stack>
               ))}
-            </div>
-          </div>
+            </Box>
+          </Box>
         )}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 };
 

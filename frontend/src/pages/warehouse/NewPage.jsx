@@ -13,12 +13,13 @@ import {
   X,
 } from "lucide-react";
 import api from "../../api/axios";
+import { Box, Stack, Typography, IconButton, Button, TextField, MenuItem, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
 
 const ACCEPTED_TYPES = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
 const MAX_FILE_SIZE = 1 * 1024 * 1024;
-
-const processButtonClass =
-  "inline-flex w-full min-h-12 items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-md shadow-indigo-500/20 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const INDIGO = "#6366f1";
+const INDIGO_HOVER = "#4f46e5";
+const visuallyHiddenSx = { position: "absolute", width: 1, height: 1, padding: 0, margin: -1, overflow: "hidden", clip: "rect(0, 0, 0, 0)", whiteSpace: "nowrap", border: 0 };
 
 const NewPage = () => {
   const navigate = useNavigate();
@@ -206,153 +207,252 @@ const NewPage = () => {
   const hasResult = Boolean(result?.invoice);
 
   return (
-    <section className="min-h-full bg-gray-50 dark:bg-gray-900 p-4 md:p-6 pb-8 space-y-5">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="flex items-center gap-3 min-w-0">
-          <button
+    <Box component="section" sx={{ minHeight: "100%", bgcolor: "background.default", p: { xs: 2, md: 3 }, pb: 4 }}>
+      <Stack direction={{ xs: "column", md: "row" }} spacing={2} sx={{ alignItems: { md: "center" }, justifyContent: { md: "space-between" }, mb: 2.5 }}>
+        <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", minWidth: 0 }}>
+          <IconButton
             type="button"
             onClick={() => navigate("/warehouse")}
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
             aria-label="Back to Warehouse"
+            sx={{ height: 36, width: 36, flexShrink: 0, border: "1px solid", borderColor: "divider", borderRadius: "7px", bgcolor: "background.paper", color: "text.secondary" }}
           >
             <ArrowLeft className="w-4 h-4" />
-          </button>
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-indigo-500 shrink-0" />
-              <h1 className="text-xl md:text-2xl font-semibold text-gray-900 dark:text-white">Invoice AI</h1>
-            </div>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Upload, extract, review and create a warehouse purchase invoice.</p>
-          </div>
-        </div>
+          </IconButton>
+          <Box sx={{ minWidth: 0 }}>
+            <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+              <Sparkles className="w-5 h-5" style={{ color: INDIGO, flexShrink: 0 }} />
+              <Typography component="h1" sx={{ fontSize: { xs: 17.5, md: 21 }, fontWeight: 600, color: "text.primary" }}>Invoice AI</Typography>
+            </Stack>
+            <Typography sx={{ mt: 0.5, fontSize: 12.25, color: "text.secondary" }}>Upload, extract, review and create a warehouse purchase invoice.</Typography>
+          </Box>
+        </Stack>
 
-        <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs dark:border-gray-700 dark:bg-gray-800 ${hasResult ? "text-emerald-600" : "text-gray-500"}`}>
+        <Stack
+          direction="row"
+          spacing={0.75}
+          sx={{ flexShrink: 0, alignItems: "center", borderRadius: 999, border: "1px solid", borderColor: "divider", bgcolor: "background.paper", px: 1.5, py: 0.75, fontSize: 10.5, color: hasResult ? "success.main" : "text.secondary" }}
+        >
           {hasResult ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5" />}
-          {hasResult ? "OCR completed" : "OCR API ready"}
-        </span>
-      </div>
+          <Box component="span">{hasResult ? "OCR completed" : "OCR API ready"}</Box>
+        </Stack>
+      </Stack>
 
-      <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
-          <div className="border-b border-gray-200 px-5 py-4 dark:border-gray-700">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              <div className="min-w-0">
-                <h2 className="font-semibold text-gray-900 dark:text-white">Invoice Document</h2>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">PDF, JPG, PNG or WEBP · Maximum 1 MB on free OCR tier</p>
-              </div>
-              <div className="flex w-full flex-col gap-2 sm:flex-row lg:w-auto lg:shrink-0">
+      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", xl: "minmax(0, 1fr) 360px" }, alignItems: "start", gap: 2.5 }}>
+        <Box sx={{ overflow: "hidden", borderRadius: "10.5px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", boxShadow: 1 }}>
+          <Box sx={{ borderBottom: 1, borderColor: "divider", px: 2.5, py: 2 }}>
+            <Stack direction={{ xs: "column", lg: "row" }} spacing={1.5} sx={{ lg: { alignItems: "center", justifyContent: "space-between" } }}>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography component="h2" sx={{ fontWeight: 600, color: "text.primary" }}>Invoice Document</Typography>
+                <Typography sx={{ mt: 0.5, fontSize: 12.25, color: "text.secondary" }}>PDF, JPG, PNG or WEBP · Maximum 1 MB on free OCR tier</Typography>
+              </Box>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ width: { xs: "100%", lg: "auto" }, flexShrink: 0 }}>
                 {file && (
-                  <button
+                  <Button
                     type="button"
                     onClick={clearFile}
-                    className="inline-flex min-h-10 items-center justify-center rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
+                    variant="outlined"
+                    color="inherit"
+                    sx={{ minHeight: 40, borderRadius: "7px", fontSize: 12.25, fontWeight: 500 }}
                   >
                     Clear
-                  </button>
+                  </Button>
                 )}
                 {file && !hasResult && (
-                  <button type="button" onClick={processInvoice} disabled={processing} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60">
-                    {processing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                  <Button
+                    type="button"
+                    onClick={processInvoice}
+                    disabled={processing}
+                    startIcon={processing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                    sx={{ minHeight: 40, borderRadius: "7px", fontSize: 12.25, fontWeight: 600, bgcolor: INDIGO, color: "#fff", boxShadow: 1, "&:hover": { bgcolor: INDIGO_HOVER } }}
+                  >
                     {processing ? "Processing..." : "Process Invoice with OCR"}
-                  </button>
+                  </Button>
                 )}
-              </div>
-            </div>
+              </Stack>
+            </Stack>
 
             {file && !hasResult && (
-              <div className="mt-3 rounded-xl border border-indigo-100 bg-indigo-50/70 p-3 dark:border-indigo-900/50 dark:bg-indigo-950/20">
-                <button type="button" onClick={processInvoice} disabled={processing} className={processButtonClass}>
-                  {processing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+              <Box sx={(theme) => ({ mt: 1.5, borderRadius: "10.5px", border: "1px solid", borderColor: alpha(INDIGO, theme.palette.mode === "dark" ? 0.4 : 0.2), bgcolor: alpha(INDIGO, theme.palette.mode === "dark" ? 0.12 : 0.06), p: 1.5 })}>
+                <Button
+                  type="button"
+                  onClick={processInvoice}
+                  disabled={processing}
+                  fullWidth
+                  startIcon={processing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+                  sx={{ minHeight: 48, borderRadius: "7px", fontSize: 12.25, fontWeight: 600, bgcolor: INDIGO, color: "#fff", boxShadow: 2, "&:hover": { bgcolor: INDIGO_HOVER } }}
+                >
                   {processing ? "Processing invoice..." : "Process Invoice with OCR"}
-                </button>
-              </div>
+                </Button>
+              </Box>
             )}
-          </div>
+          </Box>
 
-          <div className="p-5">
+          <Box sx={{ p: 2.5 }}>
             {!file ? (
-              <label
+              <Box
+                component="label"
                 htmlFor="warehouse-new-page-file"
                 onDragOver={(event) => { event.preventDefault(); setDragging(true); }}
                 onDragLeave={() => setDragging(false)}
                 onDrop={(event) => { event.preventDefault(); setDragging(false); selectFile(event.dataTransfer.files?.[0]); }}
-                className={`flex min-h-[300px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed transition ${dragging ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30" : "border-gray-300 dark:border-gray-600 hover:border-indigo-400"}`}
+                sx={(theme) => ({
+                  display: "flex",
+                  minHeight: 300,
+                  cursor: "pointer",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: "10.5px",
+                  border: "2px dashed",
+                  borderColor: dragging ? INDIGO : "divider",
+                  bgcolor: dragging ? alpha(INDIGO, theme.palette.mode === "dark" ? 0.16 : 0.06) : "transparent",
+                  transition: "all 0.15s",
+                  "&:hover": { borderColor: dragging ? INDIGO : alpha(INDIGO, 0.5) },
+                })}
               >
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 dark:bg-indigo-950/40"><UploadCloud className="w-7 h-7 text-indigo-500" /></div>
-                <p className="mt-5 text-sm font-semibold text-gray-800 dark:text-gray-100">Drop invoice here or browse files</p>
-                <span className="mt-5 inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white">Choose File</span>
-                <input id="warehouse-new-page-file" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp" className="sr-only" onChange={(event) => selectFile(event.target.files?.[0])} />
-              </label>
+                <Box sx={{ display: "flex", height: 56, width: 56, alignItems: "center", justifyContent: "center", borderRadius: "10.5px", bgcolor: (theme) => alpha(INDIGO, theme.palette.mode === "dark" ? 0.2 : 0.08) }}>
+                  <UploadCloud className="w-7 h-7" style={{ color: INDIGO }} />
+                </Box>
+                <Typography sx={{ mt: 2.5, fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Drop invoice here or browse files</Typography>
+                <Box component="span" sx={{ mt: 2.5, display: "inline-flex", alignItems: "center", borderRadius: "7px", bgcolor: INDIGO, px: 2, py: 1, fontSize: 12.25, fontWeight: 500, color: "#fff" }}>Choose File</Box>
+                <Box component="input" id="warehouse-new-page-file" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp" onChange={(event) => selectFile(event.target.files?.[0])} sx={visuallyHiddenSx} />
+              </Box>
             ) : (
-              <div className="overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700">
-                <div className="flex items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/50">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-950/40">{isImage ? <ImageIcon className="w-4 h-4 text-indigo-500" /> : <FileText className="w-4 h-4 text-indigo-500" />}</div>
-                    <div className="min-w-0"><p className="truncate text-sm font-medium text-gray-900 dark:text-white">{file.name}</p><p className="text-xs text-gray-500 dark:text-gray-400">{(file.size / 1024 / 1024).toFixed(2)} MB</p></div>
-                  </div>
-                  <button type="button" onClick={clearFile} className="shrink-0 rounded-lg p-2 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700" aria-label="Remove file"><X className="w-4 h-4" /></button>
-                </div>
+              <Box sx={{ overflow: "hidden", borderRadius: "10.5px", border: "1px solid", borderColor: "divider" }}>
+                <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", bgcolor: "action.hover", px: 2, py: 1.5 }}>
+                  <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", minWidth: 0 }}>
+                    <Box sx={{ display: "flex", height: 36, width: 36, flexShrink: 0, alignItems: "center", justifyContent: "center", borderRadius: "7px", bgcolor: (theme) => alpha(INDIGO, theme.palette.mode === "dark" ? 0.2 : 0.08) }}>
+                      {isImage ? <ImageIcon className="w-4 h-4" style={{ color: INDIGO }} /> : <FileText className="w-4 h-4" style={{ color: INDIGO }} />}
+                    </Box>
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography sx={{ fontSize: 12.25, fontWeight: 500, color: "text.primary", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{file.name}</Typography>
+                      <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>{(file.size / 1024 / 1024).toFixed(2)} MB</Typography>
+                    </Box>
+                  </Stack>
+                  <IconButton type="button" onClick={clearFile} aria-label="Remove file" sx={{ flexShrink: 0, color: "text.secondary" }}>
+                    <X className="w-4 h-4" />
+                  </IconButton>
+                </Stack>
 
                 {isImage ? (
-                  <div className="flex min-h-[260px] max-h-[520px] items-center justify-center bg-gray-100 p-5 dark:bg-gray-950">
-                    <img src={previewUrl} alt="Selected invoice preview" className="max-h-[480px] max-w-full rounded-lg object-contain shadow-sm" />
-                  </div>
+                  <Box sx={{ display: "flex", minHeight: 260, maxHeight: 520, alignItems: "center", justifyContent: "center", bgcolor: "action.hover", p: 2.5 }}>
+                    <Box component="img" src={previewUrl} alt="Selected invoice preview" sx={{ maxHeight: 480, maxWidth: "100%", borderRadius: "7px", objectFit: "contain", boxShadow: 1 }} />
+                  </Box>
                 ) : (
-                  <div className="flex min-h-[260px] flex-col items-center justify-center bg-gray-50 text-center dark:bg-gray-900/50"><FileText className="w-12 h-12 text-gray-400" /><p className="mt-3 text-sm font-medium text-gray-700 dark:text-gray-200">PDF ready for OCR</p></div>
+                  <Box sx={{ display: "flex", minHeight: 260, flexDirection: "column", alignItems: "center", justifyContent: "center", bgcolor: "action.hover", textAlign: "center" }}>
+                    <FileText className="w-12 h-12" style={{ color: "#9ca3af" }} />
+                    <Typography sx={{ mt: 1.5, fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>PDF ready for OCR</Typography>
+                  </Box>
                 )}
-              </div>
+              </Box>
             )}
 
             {hasResult && (
-              <div className="mt-5 space-y-5">
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+              <Stack spacing={2.5} sx={{ mt: 2.5 }}>
+                <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(3, 1fr)" }, gap: 1.5 }}>
                   <Field label="Supplier" value={result.invoice.supplier?.name} />
                   <Field label="GSTIN" value={result.invoice.supplier?.gstin} />
                   <Field label="Invoice No." value={result.invoice.invoice?.number} />
                   <Field label="Invoice Date" value={result.invoice.invoice?.date} />
                   <Field label="Subtotal" value={result.invoice.totals?.subtotal} />
                   <Field label="Grand Total" value={result.invoice.totals?.grand_total} />
-                </div>
+                </Box>
 
-                <div className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700">
-                  <div className="flex items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/50"><h3 className="text-sm font-semibold text-gray-900 dark:text-white">Supplier & Product Mapping</h3><span className="text-xs text-gray-500">Required before posting</span></div>
-                  <div className="space-y-4 p-4">
-                    <div><label className="text-xs font-medium text-gray-600 dark:text-gray-300">Supplier</label><select value={supplierId} onChange={(e) => setSupplierId(e.target.value)} className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-900"><option value="">Select supplier</option>{supplierOptions.map((supplier) => <option key={supplier.id} value={supplier.id}>{supplier.name}</option>)}</select></div>
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full text-sm">
-                        <thead><tr className="border-b border-gray-200 text-left text-xs text-gray-500 dark:border-gray-700"><th className="py-2 pr-3">OCR Description</th><th className="py-2 pr-3">Qty</th><th className="py-2 pr-3">Rate</th><th className="py-2 pr-3">Product</th></tr></thead>
-                        <tbody>
+                <Box sx={{ overflow: "hidden", borderRadius: "7px", border: "1px solid", borderColor: "divider" }}>
+                  <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", bgcolor: "action.hover", px: 2, py: 1.5 }}>
+                    <Typography component="h3" sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Supplier & Product Mapping</Typography>
+                    <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>Required before posting</Typography>
+                  </Stack>
+                  <Stack spacing={2} sx={{ p: 2 }}>
+                    <Box>
+                      <Typography component="label" sx={{ fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>Supplier</Typography>
+                      <TextField select value={supplierId} onChange={(e) => setSupplierId(e.target.value)} size="small" fullWidth sx={{ mt: 0.5 }}>
+                        <MenuItem value="">Select supplier</MenuItem>
+                        {supplierOptions.map((supplier) => (
+                          <MenuItem key={supplier.id} value={supplier.id}>{supplier.name}</MenuItem>
+                        ))}
+                      </TextField>
+                    </Box>
+                    <Box sx={{ overflowX: "auto" }}>
+                      <Table size="small" sx={{ fontSize: 12.25 }}>
+                        <TableHead>
+                          <TableRow>
+                            <TableCell sx={{ fontSize: 10.5, color: "text.secondary", py: 1 }}>OCR Description</TableCell>
+                            <TableCell sx={{ fontSize: 10.5, color: "text.secondary", py: 1 }}>Qty</TableCell>
+                            <TableCell sx={{ fontSize: 10.5, color: "text.secondary", py: 1 }}>Rate</TableCell>
+                            <TableCell sx={{ fontSize: 10.5, color: "text.secondary", py: 1 }}>Product</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
                           {(result.invoice.items || []).map((item, index) => (
-                            <tr key={index} className="border-b border-gray-100 last:border-0 dark:border-gray-700">
-                              <td className="min-w-[220px] py-3 pr-3"><input value={item.description || ""} onChange={(e) => updateItem(index, "description", e.target.value)} className="w-full rounded-md border border-gray-200 bg-white px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-900" /></td>
-                              <td className="py-3 pr-3"><input type="number" value={item.quantity ?? ""} onChange={(e) => updateItem(index, "quantity", e.target.value)} className="w-20 rounded-md border border-gray-200 bg-white px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-900" /></td>
-                              <td className="py-3 pr-3"><input type="number" value={item.rate ?? ""} onChange={(e) => updateItem(index, "rate", e.target.value)} className="w-24 rounded-md border border-gray-200 bg-white px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-900" /></td>
-                              <td className="min-w-[240px] py-3"><select value={selectedProducts[index] || ""} onChange={(e) => setSelectedProducts((current) => ({ ...current, [index]: e.target.value }))} className="w-full rounded-md border border-gray-200 bg-white px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-900"><option value="">Select product</option>{(productOptions[index] || []).map((product) => <option key={product.id} value={product.id}>{product.name}{product.code ? ` (${product.code})` : ""}</option>)}</select></td>
-                            </tr>
+                            <TableRow key={index}>
+                              <TableCell sx={{ minWidth: 220, py: 1.5 }}>
+                                <TextField value={item.description || ""} onChange={(e) => updateItem(index, "description", e.target.value)} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }} />
+                              </TableCell>
+                              <TableCell sx={{ py: 1.5 }}>
+                                <TextField type="number" value={item.quantity ?? ""} onChange={(e) => updateItem(index, "quantity", e.target.value)} size="small" sx={{ width: 80, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }} />
+                              </TableCell>
+                              <TableCell sx={{ py: 1.5 }}>
+                                <TextField type="number" value={item.rate ?? ""} onChange={(e) => updateItem(index, "rate", e.target.value)} size="small" sx={{ width: 96, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }} />
+                              </TableCell>
+                              <TableCell sx={{ minWidth: 240, py: 1.5 }}>
+                                <TextField
+                                  select
+                                  value={selectedProducts[index] || ""}
+                                  onChange={(e) => setSelectedProducts((current) => ({ ...current, [index]: e.target.value }))}
+                                  size="small"
+                                  fullWidth
+                                  sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
+                                >
+                                  <MenuItem value="">Select product</MenuItem>
+                                  {(productOptions[index] || []).map((product) => (
+                                    <MenuItem key={product.id} value={product.id}>
+                                      {product.name}{product.code ? ` (${product.code})` : ""}
+                                    </MenuItem>
+                                  ))}
+                                </TextField>
+                              </TableCell>
+                            </TableRow>
                           ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
+                        </TableBody>
+                      </Table>
+                    </Box>
+                  </Stack>
+                </Box>
 
-                <div className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900/50 md:flex-row md:items-center md:justify-between">
-                  <div className="text-xs text-gray-500">OCR provider: <strong>OCR.space</strong> · Validation: <strong>{result.validation?.status || "review_required"}</strong></div>
-                  <button type="button" onClick={savePurchaseInvoice} disabled={saving} className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60">{saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}{saving ? "Creating..." : "Create Purchase Invoice"}</button>
-                </div>
-              </div>
+                <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} sx={{ md: { alignItems: "center", justifyContent: "space-between" }, borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "action.hover", p: 2 }}>
+                  <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>
+                    OCR provider: <Box component="strong">OCR.space</Box> · Validation: <Box component="strong">{result.validation?.status || "review_required"}</Box>
+                  </Typography>
+                  <Button
+                    type="button"
+                    onClick={savePurchaseInvoice}
+                    disabled={saving}
+                    startIcon={saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    sx={{ borderRadius: "7px", fontSize: 12.25, fontWeight: 600, px: 2.5, py: 1.25, bgcolor: "success.main", color: "success.contrastText", "&:hover": { bgcolor: "success.dark" } }}
+                  >
+                    {saving ? "Creating..." : "Create Purchase Invoice"}
+                  </Button>
+                </Stack>
+              </Stack>
             )}
 
             {error && (
-              <div className="mt-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300"><Info className="mt-0.5 w-4 h-4 shrink-0" /><span>{error}</span></div>
+              <Stack direction="row" spacing={1} sx={(theme) => ({ mt: 2, alignItems: "flex-start", borderRadius: "7px", border: "1px solid", borderColor: alpha(theme.palette.error.main, 0.3), bgcolor: alpha(theme.palette.error.main, theme.palette.mode === "dark" ? 0.16 : 0.08), px: 1.5, py: 1.25, fontSize: 12.25, color: "error.main" })}>
+                <Info className="w-4 h-4" style={{ marginTop: 2, flexShrink: 0 }} />
+                <Box component="span">{error}</Box>
+              </Stack>
             )}
-          </div>
-        </div>
+          </Box>
+        </Box>
 
-        <aside className="space-y-5">
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-            <div className="flex items-center gap-2"><Sparkles className="w-4 h-4 text-indigo-500" /><h2 className="font-semibold text-gray-900 dark:text-white">Processing Pipeline</h2></div>
-            <div className="mt-5 space-y-4">
+        <Stack component="aside" spacing={2.5}>
+          <Box sx={{ borderRadius: "10.5px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", p: 2.5, boxShadow: 1 }}>
+            <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+              <Sparkles className="w-4 h-4" style={{ color: INDIGO }} />
+              <Typography component="h2" sx={{ fontWeight: 600, color: "text.primary" }}>Processing Pipeline</Typography>
+            </Stack>
+            <Stack spacing={2} sx={{ mt: 2.5 }}>
               {[
                 ["01", "Upload", "React → Laravel"],
                 ["02", "OCR.space", "Hosted OCR extracts invoice text and table rows"],
@@ -360,25 +460,58 @@ const NewPage = () => {
                 ["04", "Review", "Supplier and product mapping"],
                 ["05", "Purchase Invoice", "Laravel writes MariaDB and stock"],
               ].map(([number, title, description], index, rows) => (
-                <div key={number} className="flex gap-3"><div className="flex flex-col items-center"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-50 text-[11px] font-semibold text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-300">{number}</span>{index < rows.length - 1 && <span className="mt-1 min-h-5 w-px flex-1 bg-gray-200 dark:bg-gray-700" />}</div><div className="pb-2"><p className="text-sm font-medium text-gray-800 dark:text-gray-100">{title}</p><p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{description}</p></div></div>
+                <Stack key={number} direction="row" spacing={1.5}>
+                  <Stack sx={{ alignItems: "center" }}>
+                    <Box
+                      component="span"
+                      sx={(theme) => ({
+                        display: "flex",
+                        height: 28,
+                        width: 28,
+                        alignItems: "center",
+                        justifyContent: "center",
+                        borderRadius: "50%",
+                        bgcolor: alpha(INDIGO, theme.palette.mode === "dark" ? 0.2 : 0.08),
+                        fontSize: 11,
+                        fontWeight: 600,
+                        color: theme.palette.mode === "dark" ? "#a5b4fc" : INDIGO_HOVER,
+                      })}
+                    >
+                      {number}
+                    </Box>
+                    {index < rows.length - 1 && <Box component="span" sx={{ mt: 0.5, minHeight: 20, width: "1px", flex: 1, bgcolor: "divider" }} />}
+                  </Stack>
+                  <Box sx={{ pb: 1 }}>
+                    <Typography sx={{ fontSize: 12.25, fontWeight: 500, color: "text.primary" }}>{title}</Typography>
+                    <Typography sx={{ mt: 0.25, fontSize: 10.5, color: "text.secondary" }}>{description}</Typography>
+                  </Box>
+                </Stack>
               ))}
-            </div>
-          </div>
+            </Stack>
+          </Box>
 
-          <div className="rounded-2xl border border-indigo-100 bg-indigo-50/70 p-5 dark:border-indigo-900/50 dark:bg-indigo-950/20">
-            <div className="flex items-start gap-3"><CheckCircle2 className="mt-0.5 w-5 h-5 shrink-0 text-indigo-600 dark:text-indigo-400" /><div><p className="text-sm font-semibold text-indigo-900 dark:text-indigo-200">Hostinger-compatible architecture</p><p className="mt-1.5 text-xs leading-5 text-indigo-800/80 dark:text-indigo-300/80">Hostinger runs React, Laravel and MariaDB. Laravel calls the hosted OCR API; no VPS, Docker or Python runtime is required.</p></div></div>
-          </div>
-        </aside>
-      </div>
-    </section>
+          <Box sx={(theme) => ({ borderRadius: "10.5px", border: "1px solid", borderColor: alpha(INDIGO, theme.palette.mode === "dark" ? 0.4 : 0.2), bgcolor: alpha(INDIGO, theme.palette.mode === "dark" ? 0.12 : 0.06), p: 2.5 })}>
+            <Stack direction="row" spacing={1.5} sx={{ alignItems: "flex-start" }}>
+              <CheckCircle2 className="w-5 h-5" style={{ marginTop: 2, flexShrink: 0, color: INDIGO_HOVER }} />
+              <Box>
+                <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: (theme) => (theme.palette.mode === "dark" ? "#c7d2fe" : "#312e81") }}>Hostinger-compatible architecture</Typography>
+                <Typography sx={{ mt: 0.75, fontSize: 10.5, lineHeight: 1.6, color: (theme) => alpha(theme.palette.mode === "dark" ? "#c7d2fe" : "#3730a3", 0.8) }}>
+                  Hostinger runs React, Laravel and MariaDB. Laravel calls the hosted OCR API; no VPS, Docker or Python runtime is required.
+                </Typography>
+              </Box>
+            </Stack>
+          </Box>
+        </Stack>
+      </Box>
+    </Box>
   );
 };
 
 const Field = ({ label, value }) => (
-  <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-900/50">
-    <p className="text-[11px] uppercase tracking-wide text-gray-500">{label}</p>
-    <p className="mt-1 truncate text-sm font-medium text-gray-900 dark:text-white">{value || "—"}</p>
-  </div>
+  <Box sx={{ borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "action.hover", p: 1.5 }}>
+    <Typography sx={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em", color: "text.secondary" }}>{label}</Typography>
+    <Typography sx={{ mt: 0.5, fontSize: 12.25, fontWeight: 500, color: "text.primary", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{value || "—"}</Typography>
+  </Box>
 );
 
 export default NewPage;

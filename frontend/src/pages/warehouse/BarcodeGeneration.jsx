@@ -26,6 +26,22 @@ import {
   fetchWarehouseBarcodeCustomization,
   splitWarehouseLabelFieldsForCenter,
 } from "../../utils/warehouseBarcodeCustomization";
+import {
+  Box,
+  Stack,
+  Typography,
+  TextField,
+  MenuItem,
+  IconButton,
+  Button,
+  Checkbox,
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+  alpha,
+} from "@mui/material";
 
 /* ── Resizable column hook ─────────────────────────────────────── */
 const useResizableColumns = (initialWidths) => {
@@ -1781,39 +1797,41 @@ const BarcodePreviewModal = ({
   const sheetWidthMm = metrics.labelWidthMm * metrics.labelsPerRow;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/50 p-4">
-      <div className="flex h-[min(90vh,900px)] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white dark:bg-gray-800 shadow-2xl">
-        <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 px-5 py-4">
-          <div>
-            <div className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Barcode Preview</div>
-            <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">{title}</div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
+    <Box sx={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", bgcolor: "rgba(15,23,42,0.5)", p: 2 }}>
+      <Stack sx={{ height: "min(90vh, 900px)", width: "100%", maxWidth: 1152, overflow: "hidden", borderRadius: "14px", bgcolor: "background.paper", boxShadow: 12 }}>
+        <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", px: 2.5, py: 2 }}>
+          <Box>
+            <Typography sx={{ fontSize: 10.5, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Barcode Preview</Typography>
+            <Typography sx={{ fontSize: 15.75, fontWeight: 600, color: "text.primary" }}>{title}</Typography>
+          </Box>
+          <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+            <Button
               type="button"
               onClick={onPrint}
               disabled={labels.length === 0 || qrLoading}
-              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+              variant="contained"
+              startIcon={<Printer className="h-4 w-4" />}
+              sx={{ borderRadius: "7px", textTransform: "none", fontSize: 12.25, fontWeight: 500 }}
             >
-              <Printer className="h-4 w-4" />
               Print
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               onClick={onClose}
-              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-700 dark:text-gray-300"
+              variant="outlined"
+              startIcon={<X className="h-4 w-4" />}
+              sx={{ borderRadius: "7px", textTransform: "none", fontSize: 12.25, color: "text.secondary", borderColor: "divider" }}
             >
-              <X className="h-4 w-4" />
               Close
-            </button>
-          </div>
-        </div>
+            </Button>
+          </Stack>
+        </Stack>
 
-        <div className="flex-1 overflow-auto bg-slate-100 dark:bg-gray-900/40 p-5">
+        <Box sx={{ flex: 1, overflow: "auto", bgcolor: "action.hover", p: 2.5 }}>
           {labels.length === 0 ? (
-            <div className="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400">
+            <Box sx={{ display: "flex", height: "100%", alignItems: "center", justifyContent: "center", fontSize: 12.25, color: "text.secondary" }}>
               No generated barcodes available for preview.
-            </div>
+            </Box>
           ) : (
             <div className="overflow-x-auto">
               <div
@@ -1837,9 +1855,9 @@ const BarcodePreviewModal = ({
               </div>
             </div>
           )}
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Stack>
+    </Box>
   );
 };
 
@@ -2761,192 +2779,207 @@ const BarcodeGeneration = () => {
   }
 
   const renderSelectField = (label, field, options) => (
-    <div>
-      <label className="block text-[10px] font-medium text-gray-600 dark:text-gray-400 mb-1">{label}</label>
-      <select
+    <Box>
+      <Typography component="label" sx={{ display: "block", fontSize: 9, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>{label}</Typography>
+      <TextField
+        select
         value={editForm[field] || ""}
         onChange={(e) => handleEditorChange(field, e.target.value)}
-        className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1.5 text-xs bg-white dark:bg-gray-700 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+        size="small"
+        fullWidth
+        sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.75 } }}
       >
-        <option value="">Select</option>
+        <MenuItem value="">Select</MenuItem>
         {options.map((option) => (
-          <option key={option.value} value={option.value}>
+          <MenuItem key={option.value} value={option.value}>
             {option.label}
-          </option>
+          </MenuItem>
         ))}
-      </select>
-    </div>
+      </TextField>
+    </Box>
   );
 
   const renderInputField = (label, field, type = "text") => (
-    <div>
-      <label className="block text-[10px] font-medium text-gray-600 dark:text-gray-400 mb-1">{label}</label>
-      <input
+    <Box>
+      <Typography component="label" sx={{ display: "block", fontSize: 9, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>{label}</Typography>
+      <TextField
         type={type}
         value={editForm[field] || ""}
         onChange={(e) => handleEditorChange(field, e.target.value)}
-        className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1.5 text-xs bg-white dark:bg-gray-700 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+        size="small"
+        fullWidth
+        sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.75 } }}
       />
-    </div>
+    </Box>
   );
 
   return (
-    <div className="h-screen overflow-hidden bg-gray-100 dark:bg-gray-900 flex flex-col">
-      <div className="flex items-center justify-between px-4 py-2.5 bg-white dark:bg-gray-800 border-b dark:border-gray-700 shadow-sm">
-        <div className="flex items-center">
-          <button
+    <Box sx={{ height: "100vh", overflow: "hidden", bgcolor: "background.default", display: "flex", flexDirection: "column" }}>
+      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1.25, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
+        <Stack direction="row" sx={{ alignItems: "center" }}>
+          <IconButton
             onClick={() => navigate(-1)}
-            className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 mr-3 p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+            sx={{ color: "text.secondary", mr: 1.5 }}
           >
             <ArrowLeft className="w-4 h-4" />
-          </button>
-          <h1 className="text-sm font-semibold flex items-center gap-1">
-            <button
+          </IconButton>
+          <Typography component="h1" sx={{ fontSize: 12.25, fontWeight: 600, display: "flex", alignItems: "center", gap: 0.5 }}>
+            <Button
               type="button"
               onClick={() => navigate("/warehouse")}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
+              sx={{ color: "primary.main", textTransform: "none", minWidth: "auto", p: 0, "&:hover": { textDecoration: "underline", bgcolor: "transparent" } }}
             >
               Warehouse
-            </button>
-            <span className="text-gray-400 dark:text-gray-500">/</span>
-            <span className="text-gray-800 dark:text-gray-100">Barcode Generation</span>
-          </h1>
-        </div>
-        <div className="flex items-center gap-2 text-sm">
-          <button
+            </Button>
+            <Box component="span" sx={{ color: "text.disabled" }}>/</Box>
+            <Box component="span" sx={{ color: "text.primary" }}>Barcode Generation</Box>
+          </Typography>
+        </Stack>
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center", fontSize: 12.25 }}>
+          <Button
             type="button"
             onClick={() => navigate("/warehouse/customisation")}
-            className="glass-btn flex items-center"
+            className="glass-btn"
+            sx={{ display: "flex", alignItems: "center" }}
           >
             Customisation
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={openPreview}
             disabled={!canPreviewBarcodes || qrLoading}
-            className="glass-btn glass-btn-primary flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+            className="glass-btn glass-btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+            sx={{ display: "flex", alignItems: "center" }}
           >
             <Eye className="w-4 h-4 mr-1" /> Preview Barcode
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleDirectPrint}
             disabled={!canPreviewBarcodes || qrLoading || directPrinting}
             title="Print the already-generated barcodes for the checked/active item without opening the preview"
-            className="glass-btn glass-btn-primary flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+            className="glass-btn glass-btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+            sx={{ display: "flex", alignItems: "center" }}
           >
             <Printer className="w-4 h-4 mr-1" /> {directPrinting ? "Printing..." : "Print"}
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleSave}
             disabled={saving || allItems.length === 0}
-            className="glass-btn glass-btn-success flex items-center disabled:opacity-50"
+            className="glass-btn glass-btn-success disabled:opacity-50"
+            sx={{ display: "flex", alignItems: "center" }}
           >
             <Save className="w-4 h-4 mr-1" /> Save
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleGenerate}
             disabled={saving}
-            className="glass-btn glass-btn-primary flex items-center disabled:opacity-50"
+            className="glass-btn glass-btn-primary disabled:opacity-50"
+            sx={{ display: "flex", alignItems: "center" }}
           >
             {saving ? "Generating..." : "Generate Barcodes"}
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => navigate("/warehouse/barcode/search")}
-            className="glass-btn glass-btn-primary flex items-center"
+            className="glass-btn glass-btn-primary"
+            sx={{ display: "flex", alignItems: "center" }}
           >
             <Search className="w-4 h-4 mr-1" /> Search
-          </button>
-        </div>
-      </div>
+          </Button>
+        </Stack>
+      </Stack>
 
-      <div className="flex-1 min-h-0 overflow-hidden p-4 flex gap-4">
-        <div className="w-[300px] min-h-0 flex-shrink-0">
-          <div className="bg-white dark:bg-gray-800 h-full overflow-y-auto p-4 rounded-lg shadow-sm border border-gray-300 dark:border-gray-600 space-y-4 text-sm">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between gap-3 rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2">
-                <div className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase">Supplier</div>
-                <div className="text-right text-sm font-bold text-blue-700 dark:text-blue-400 truncate">{summary.supplier}</div>
-              </div>
+      <Stack direction="row" sx={{ flex: 1, minHeight: 0, overflow: "hidden", p: 2, gap: 2 }}>
+        <Box sx={{ width: 300, minHeight: 0, flexShrink: 0 }}>
+          <Stack spacing={2} sx={{ bgcolor: "background.paper", height: "100%", overflowY: "auto", p: 2, borderRadius: "7px", boxShadow: 1, border: "1px solid", borderColor: "divider", fontSize: 12.25 }}>
+            <Stack spacing={1}>
+              <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 1.5, borderRadius: "3.5px", border: "1px solid", borderColor: "divider", px: 1.5, py: 1 }}>
+                <Typography sx={{ fontSize: 11, fontWeight: 600, color: "text.secondary", textTransform: "uppercase" }}>Supplier</Typography>
+                <Typography sx={{ textAlign: "right", fontSize: 12.25, fontWeight: 700, color: "primary.main", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{summary.supplier}</Typography>
+              </Stack>
 
-              <div className="flex items-center justify-between gap-3 rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2">
-                <div className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase">Company</div>
-                <div className="text-right text-sm font-bold text-blue-700 dark:text-blue-400 truncate">{summary.company}</div>
-              </div>
+              <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 1.5, borderRadius: "3.5px", border: "1px solid", borderColor: "divider", px: 1.5, py: 1 }}>
+                <Typography sx={{ fontSize: 11, fontWeight: 600, color: "text.secondary", textTransform: "uppercase" }}>Company</Typography>
+                <Typography sx={{ textAlign: "right", fontSize: 12.25, fontWeight: 700, color: "primary.main", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{summary.company}</Typography>
+              </Stack>
 
-              <div className="flex items-center justify-between gap-3 rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2">
-                <div className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase">Pieces</div>
-                <div className="text-right text-sm font-bold text-red-600 dark:text-red-400">
+              <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 1.5, borderRadius: "3.5px", border: "1px solid", borderColor: "divider", px: 1.5, py: 1 }}>
+                <Typography sx={{ fontSize: 11, fontWeight: 600, color: "text.secondary", textTransform: "uppercase" }}>Pieces</Typography>
+                <Typography sx={{ textAlign: "right", fontSize: 12.25, fontWeight: 700, color: "error.main" }}>
                   {selectedPieces} / {summary.totalPieces || allItems.reduce((sum, item) => sum + item.qty, 0)}
-                </div>
-              </div>
+                </Typography>
+              </Stack>
 
-              <div className="flex items-center justify-between gap-3 rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2">
-                <div className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase">Invoice No</div>
-                <div className="text-right text-sm font-medium text-blue-700 dark:text-blue-400 truncate">{summary.invoiceNo}</div>
-              </div>
+              <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 1.5, borderRadius: "3.5px", border: "1px solid", borderColor: "divider", px: 1.5, py: 1 }}>
+                <Typography sx={{ fontSize: 11, fontWeight: 600, color: "text.secondary", textTransform: "uppercase" }}>Invoice No</Typography>
+                <Typography sx={{ textAlign: "right", fontSize: 12.25, fontWeight: 500, color: "primary.main", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{summary.invoiceNo}</Typography>
+              </Stack>
 
-              <div className="flex items-center justify-between gap-3 rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2">
-                <div className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase">LR No</div>
-                <div className="text-right text-sm font-medium text-blue-700 dark:text-blue-400 truncate">{summary.lrNo}</div>
-              </div>
-            </div>
+              <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 1.5, borderRadius: "3.5px", border: "1px solid", borderColor: "divider", px: 1.5, py: 1 }}>
+                <Typography sx={{ fontSize: 11, fontWeight: 600, color: "text.secondary", textTransform: "uppercase" }}>LR No</Typography>
+                <Typography sx={{ textAlign: "right", fontSize: 12.25, fontWeight: 500, color: "primary.main", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{summary.lrNo}</Typography>
+              </Stack>
+            </Stack>
 
-            <div>
-              <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Barcode Status</div>
-              <div className="flex items-center gap-2 text-xs">
-                <span className="inline-block px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full font-medium">
+            <Box>
+              <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.secondary", textTransform: "uppercase", mb: 0.5 }}>Barcode Status</Typography>
+              <Stack direction="row" spacing={1} sx={{ alignItems: "center", fontSize: 12.25 }}>
+                <Box component="span" sx={{ display: "inline-block", px: 1, py: 0.25, bgcolor: (theme) => alpha(theme.palette.success.main, theme.palette.mode === "dark" ? 0.16 : 0.08), color: "success.main", borderRadius: 999, fontWeight: 500 }}>
                   {generatedIds.size} Generated
-                </span>
-                <span className="inline-block px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-full font-medium">
+                </Box>
+                <Box component="span" sx={{ display: "inline-block", px: 1, py: 0.25, bgcolor: (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.16 : 0.08), color: "warning.main", borderRadius: 999, fontWeight: 500 }}>
                   {allItems.length - generatedIds.size} Pending
-                </span>
-              </div>
-            </div>
+                </Box>
+              </Stack>
+            </Box>
 
-            <button
+            <Button
               onClick={handleGenerate}
               disabled={saving || (selectedItems.length === 0 && !allItemsHaveBarcodes)}
-              className="glass-btn glass-btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+              className="glass-btn glass-btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              fullWidth
             >
               {saving ? "Generating..." : `Generate Barcodes (${selectedItems.length})`}
-            </button>
+            </Button>
 
-            <button
+            <Button
               onClick={handleSave}
               disabled={saving || allItems.length === 0}
-              className="glass-btn glass-btn-success w-full disabled:opacity-50 disabled:cursor-not-allowed"
+              className="glass-btn glass-btn-success disabled:opacity-50 disabled:cursor-not-allowed"
+              fullWidth
             >
               <Save className="w-4 h-4 inline mr-1" /> Save
-            </button>
+            </Button>
 
-            <button
+            <Button
               onClick={openPreview}
               disabled={!canPreviewBarcodes || qrLoading}
-              className="glass-btn glass-btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+              className="glass-btn glass-btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              fullWidth
             >
               <Eye className="w-4 h-4 inline mr-1" /> Preview Barcode
-            </button>
+            </Button>
 
-            <button
+            <Button
               onClick={handleDirectPrint}
               disabled={!canPreviewBarcodes || qrLoading || directPrinting}
-              className="glass-btn glass-btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+              className="glass-btn glass-btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              fullWidth
             >
               <Printer className="w-4 h-4 inline mr-1" /> {directPrinting ? "Printing..." : "Print"}
-            </button>
+            </Button>
 
             {activeItem ? (
-              <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <div className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase">Row Editor</div>
-                    <div className="text-xs font-semibold text-gray-800 dark:text-gray-100">{activeItem.productName}</div>
-                  </div>
-                  <span className="text-[10px] text-gray-500 dark:text-gray-400">Row #{allItems.findIndex((item) => item.sourceItemId === activeItem.sourceItemId) + 1}</span>
-                </div>
+              <Box sx={{ borderTop: 1, borderColor: "divider", pt: 2 }}>
+                <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", mb: 1.5 }}>
+                  <Box>
+                    <Typography sx={{ fontSize: 9, fontWeight: 600, color: "text.secondary", textTransform: "uppercase" }}>Row Editor</Typography>
+                    <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>{activeItem.productName}</Typography>
+                  </Box>
+                  <Typography sx={{ fontSize: 9, color: "text.secondary" }}>Row #{allItems.findIndex((item) => item.sourceItemId === activeItem.sourceItemId) + 1}</Typography>
+                </Stack>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[10px] font-medium text-gray-600 dark:text-gray-400 mb-1">Product</label>
+                <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1.5 }}>
+                  <Box>
+                    <Typography component="label" sx={{ display: "block", fontSize: 9, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>Product</Typography>
                     <AsyncSearchSelect
                       name="productId"
                       value={editForm.productId || ""}
@@ -2956,9 +2989,9 @@ const BarcodeGeneration = () => {
                       placeholder="Select"
                       searchPlaceholder="Search products..."
                     />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-medium text-gray-600 dark:text-gray-400 mb-1">Brand Name</label>
+                  </Box>
+                  <Box>
+                    <Typography component="label" sx={{ display: "block", fontSize: 9, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>Brand Name</Typography>
                     <AsyncSearchSelect
                       name="brandId"
                       value={editForm.brandId || ""}
@@ -2968,7 +3001,7 @@ const BarcodeGeneration = () => {
                       placeholder="Select"
                       searchPlaceholder="Search brands..."
                     />
-                  </div>
+                  </Box>
                   {renderInputField("Size", "size")}
                   {renderSelectField("Style", "styleId", editorOptions.styles)}
                   {renderInputField("Design", "designNo")}
@@ -2980,221 +3013,245 @@ const BarcodeGeneration = () => {
                   {renderSelectField("Color", "colorId", editorOptions.colors)}
                   {renderInputField("MRP", "mrp", "number")}
                   {renderInputField("Discount", "discountPerc", "number")}
-                  <div className="flex items-end text-[10px] text-gray-500 dark:text-gray-400">
+                  <Box sx={{ display: "flex", alignItems: "flex-end", fontSize: 9, color: "text.secondary" }}>
                     Final: {calcFinalPrice(editForm.mrp, editForm.discountPerc).toFixed(2)}
-                  </div>
-                </div>
+                  </Box>
+                </Box>
 
-                <button
+                <Button
                   onClick={handleRowUpdate}
                   disabled={updatingRow}
-                  className="glass-btn glass-btn-primary w-full mt-4 disabled:opacity-50"
+                  className="glass-btn glass-btn-primary disabled:opacity-50"
+                  fullWidth
+                  sx={{ mt: 2 }}
                 >
                   {updatingRow ? "Updating..." : "Update"}
-                </button>
-              </div>
+                </Button>
+              </Box>
             ) : null}
-          </div>
-        </div>
+          </Stack>
+        </Box>
 
-        <div className="flex-1 min-w-0 min-h-0">
-          <div className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm overflow-hidden h-full flex flex-col">
-            <div className="overflow-x-auto flex-1 min-h-0">
-              <table className="w-full border-collapse text-xs" style={{ tableLayout: "fixed", minWidth: colWidths.reduce((s, w) => s + w, 0) }}>
+        <Box sx={{ flex: 1, minWidth: 0, minHeight: 0 }}>
+          <Stack sx={{ bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "7px", boxShadow: 1, overflow: "hidden", height: "100%" }}>
+            <Box sx={{ overflowX: "auto", flex: 1, minHeight: 0 }}>
+              <Table sx={{ width: "100%", borderCollapse: "collapse", fontSize: 12.25, tableLayout: "fixed", minWidth: colWidths.reduce((s, w) => s + w, 0) }}>
                 <colgroup>
                   {colWidths.map((w, i) => (
                     <col key={i} style={{ width: w }} />
                   ))}
                 </colgroup>
-                <thead className="bg-blue-50 dark:bg-blue-900/30 text-[10px] font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide sticky top-0 z-10">
-                  <tr>
+                <TableHead sx={{ bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08), fontSize: 9, fontWeight: 600, color: "text.secondary", textTransform: "uppercase", letterSpacing: 0.5, position: "sticky", top: 0, zIndex: 10 }}>
+                  <TableRow>
                     {columns.map((col, i) => (
-                      <th
+                      <TableCell
                         key={i}
-                        className="relative border-r border-b border-gray-300 dark:border-gray-700 p-2 select-none"
-                        style={{ textAlign: col.align }}
+                        sx={{ position: "relative", borderRight: 1, borderBottom: 1, borderColor: "divider", p: 1, userSelect: "none", textAlign: col.align }}
                       >
                         {i === 0 ? (
-                          <input
-                            type="checkbox"
+                          <Checkbox
+                            size="small"
                             checked={allChecked}
                             onChange={handleToggleAll}
-                            className="rounded border-gray-300 dark:border-gray-600 text-blue-600"
+                            sx={{ p: 0 }}
                           />
                         ) : (
                           col.label
                         )}
-                        <div
+                        <Box
                           onMouseDown={(e) => onColResize(i, e)}
-                          className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-blue-300 dark:hover:bg-blue-700 active:bg-blue-400 dark:active:bg-blue-600"
-                          style={{ zIndex: 1 }}
+                          sx={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 6, cursor: "col-resize", zIndex: 1, "&:hover": { bgcolor: (theme) => alpha(theme.palette.primary.main, 0.3) }, "&:active": { bgcolor: (theme) => alpha(theme.palette.primary.main, 0.4) } }}
                         />
-                      </th>
+                      </TableCell>
                     ))}
-                  </tr>
-                  <tr className="bg-sky-50 dark:bg-sky-900/20 border-t border-gray-300 dark:border-gray-700 normal-case tracking-normal">
-                    <th className="border-r border-b border-gray-300 dark:border-gray-700 p-1.5"></th>
-                    <th className="border-r border-b border-gray-300 dark:border-gray-700 p-1.5"></th>
-                    <th className="border-r border-b border-gray-300 dark:border-gray-700 p-1.5">
-                      <input
+                  </TableRow>
+                  <TableRow sx={{ bgcolor: (theme) => alpha(theme.palette.info.main, theme.palette.mode === "dark" ? 0.12 : 0.06), borderTop: 1, borderColor: "divider", textTransform: "none", letterSpacing: "normal" }}>
+                    <TableCell sx={{ borderRight: 1, borderBottom: 1, borderColor: "divider", p: 0.75 }}></TableCell>
+                    <TableCell sx={{ borderRight: 1, borderBottom: 1, borderColor: "divider", p: 0.75 }}></TableCell>
+                    <TableCell sx={{ borderRight: 1, borderBottom: 1, borderColor: "divider", p: 0.75 }}>
+                      <TextField
                         type="text"
                         value={itemFilterDraft.productName}
                         onChange={(event) => handleItemFilterDraftChange("productName", event.target.value)}
                         onKeyDown={handleItemFilterKeyDown}
                         placeholder="Search product"
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-xs font-normal bg-white dark:bg-gray-700 dark:text-gray-100"
+                        size="small"
+                        fullWidth
+                        sx={{ "& .MuiInputBase-input": { fontSize: 12.25, fontWeight: 400, py: 0.5 } }}
                       />
-                    </th>
-                    <th className="border-r border-b border-gray-300 dark:border-gray-700 p-1.5">
-                      <input
+                    </TableCell>
+                    <TableCell sx={{ borderRight: 1, borderBottom: 1, borderColor: "divider", p: 0.75 }}>
+                      <TextField
                         type="text"
                         value={itemFilterDraft.barcode}
                         onChange={(event) => handleItemFilterDraftChange("barcode", event.target.value)}
                         onKeyDown={handleItemFilterKeyDown}
                         placeholder="Search barcode"
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-xs font-normal bg-white dark:bg-gray-700 dark:text-gray-100"
+                        size="small"
+                        fullWidth
+                        sx={{ "& .MuiInputBase-input": { fontSize: 12.25, fontWeight: 400, py: 0.5 } }}
                       />
-                    </th>
-                    <th className="border-r border-b border-gray-300 dark:border-gray-700 p-1.5">
-                      <input
+                    </TableCell>
+                    <TableCell sx={{ borderRight: 1, borderBottom: 1, borderColor: "divider", p: 0.75 }}>
+                      <TextField
                         type="text"
                         value={itemFilterDraft.size}
                         onChange={(event) => handleItemFilterDraftChange("size", event.target.value)}
                         onKeyDown={handleItemFilterKeyDown}
                         placeholder="Search size"
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded px-1 py-1 text-xs font-normal bg-white dark:bg-gray-700 dark:text-gray-100"
+                        size="small"
+                        fullWidth
+                        sx={{ "& .MuiInputBase-input": { fontSize: 12.25, fontWeight: 400, py: 0.5 } }}
                       />
-                    </th>
-                    <th className="border-r border-b border-gray-300 dark:border-gray-700 p-1.5">
-                      <input
+                    </TableCell>
+                    <TableCell sx={{ borderRight: 1, borderBottom: 1, borderColor: "divider", p: 0.75 }}>
+                      <TextField
                         type="text"
                         value={itemFilterDraft.designNo}
                         onChange={(event) => handleItemFilterDraftChange("designNo", event.target.value)}
                         onKeyDown={handleItemFilterKeyDown}
                         placeholder="Search design"
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded px-1 py-1 text-xs font-normal bg-white dark:bg-gray-700 dark:text-gray-100"
+                        size="small"
+                        fullWidth
+                        sx={{ "& .MuiInputBase-input": { fontSize: 12.25, fontWeight: 400, py: 0.5 } }}
                       />
-                    </th>
-                    <th className="border-r border-b border-gray-300 dark:border-gray-700 p-1.5">
-                      <input
+                    </TableCell>
+                    <TableCell sx={{ borderRight: 1, borderBottom: 1, borderColor: "divider", p: 0.75 }}>
+                      <TextField
                         type="text"
                         value={itemFilterDraft.qty}
                         onChange={(event) => handleItemFilterDraftChange("qty", event.target.value)}
                         onKeyDown={handleItemFilterKeyDown}
                         placeholder="Qty"
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded px-1 py-1 text-xs text-right font-normal bg-white dark:bg-gray-700 dark:text-gray-100"
+                        size="small"
+                        fullWidth
+                        sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, fontWeight: 400, py: 0.5 } }}
                       />
-                    </th>
-                    <th className="border-r border-b border-gray-300 dark:border-gray-700 p-1.5">
-                      <input
+                    </TableCell>
+                    <TableCell sx={{ borderRight: 1, borderBottom: 1, borderColor: "divider", p: 0.75 }}>
+                      <TextField
                         type="text"
                         value={itemFilterDraft.cost}
                         onChange={(event) => handleItemFilterDraftChange("cost", event.target.value)}
                         onKeyDown={handleItemFilterKeyDown}
                         placeholder="Cost"
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded px-1 py-1 text-xs text-right font-normal bg-white dark:bg-gray-700 dark:text-gray-100"
+                        size="small"
+                        fullWidth
+                        sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, fontWeight: 400, py: 0.5 } }}
                       />
-                    </th>
-                    <th className="border-r border-b border-gray-300 dark:border-gray-700 p-1.5">
-                      <input
+                    </TableCell>
+                    <TableCell sx={{ borderRight: 1, borderBottom: 1, borderColor: "divider", p: 0.75 }}>
+                      <TextField
                         type="text"
                         value={itemFilterDraft.marginPerc}
                         onChange={(event) => handleItemFilterDraftChange("marginPerc", event.target.value)}
                         onKeyDown={handleItemFilterKeyDown}
                         placeholder="Margin"
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded px-1 py-1 text-xs text-right font-normal bg-white dark:bg-gray-700 dark:text-gray-100"
+                        size="small"
+                        fullWidth
+                        sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, fontWeight: 400, py: 0.5 } }}
                       />
-                    </th>
-                    <th className="border-r border-b border-gray-300 dark:border-gray-700 p-1.5">
-                      <input
+                    </TableCell>
+                    <TableCell sx={{ borderRight: 1, borderBottom: 1, borderColor: "divider", p: 0.75 }}>
+                      <TextField
                         type="text"
                         value={itemFilterDraft.sellingPrice}
                         onChange={(event) => handleItemFilterDraftChange("sellingPrice", event.target.value)}
                         onKeyDown={handleItemFilterKeyDown}
                         placeholder="Sale"
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded px-1 py-1 text-xs text-right font-normal bg-white dark:bg-gray-700 dark:text-gray-100"
+                        size="small"
+                        fullWidth
+                        sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, fontWeight: 400, py: 0.5 } }}
                       />
-                    </th>
-                    <th className="border-r border-b border-gray-300 dark:border-gray-700 p-1.5">
-                      <input
+                    </TableCell>
+                    <TableCell sx={{ borderRight: 1, borderBottom: 1, borderColor: "divider", p: 0.75 }}>
+                      <TextField
                         type="text"
                         value={itemFilterDraft.mrp}
                         onChange={(event) => handleItemFilterDraftChange("mrp", event.target.value)}
                         onKeyDown={handleItemFilterKeyDown}
                         placeholder="MRP"
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded px-1 py-1 text-xs text-right font-normal bg-white dark:bg-gray-700 dark:text-gray-100"
+                        size="small"
+                        fullWidth
+                        sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, fontWeight: 400, py: 0.5 } }}
                       />
-                    </th>
-                    <th className="border-r border-b border-gray-300 dark:border-gray-700 p-1.5">
-                      <input
+                    </TableCell>
+                    <TableCell sx={{ borderRight: 1, borderBottom: 1, borderColor: "divider", p: 0.75 }}>
+                      <TextField
                         type="text"
                         value={itemFilterDraft.discountPerc}
                         onChange={(event) => handleItemFilterDraftChange("discountPerc", event.target.value)}
                         onKeyDown={handleItemFilterKeyDown}
                         placeholder="Dis%"
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded px-1 py-1 text-xs text-right font-normal bg-white dark:bg-gray-700 dark:text-gray-100"
+                        size="small"
+                        fullWidth
+                        sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, fontWeight: 400, py: 0.5 } }}
                       />
-                    </th>
-                    <th className="border-r border-b border-gray-300 dark:border-gray-700 p-1.5">
-                      <input
+                    </TableCell>
+                    <TableCell sx={{ borderRight: 1, borderBottom: 1, borderColor: "divider", p: 0.75 }}>
+                      <TextField
                         type="text"
                         value={itemFilterDraft.finalPrice}
                         onChange={(event) => handleItemFilterDraftChange("finalPrice", event.target.value)}
                         onKeyDown={handleItemFilterKeyDown}
                         placeholder="Final"
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded px-1 py-1 text-xs text-right font-normal bg-white dark:bg-gray-700 dark:text-gray-100"
+                        size="small"
+                        fullWidth
+                        sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, fontWeight: 400, py: 0.5 } }}
                       />
-                    </th>
-                    <th className="border-r border-b border-gray-300 dark:border-gray-700 p-1.5">
-                      <input
+                    </TableCell>
+                    <TableCell sx={{ borderRight: 1, borderBottom: 1, borderColor: "divider", p: 0.75 }}>
+                      <TextField
                         type="text"
                         value={itemFilterDraft.status}
                         onChange={(event) => handleItemFilterDraftChange("status", event.target.value)}
                         onKeyDown={handleItemFilterKeyDown}
                         placeholder="Status"
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded px-1 py-1 text-xs text-center font-normal bg-white dark:bg-gray-700 dark:text-gray-100"
+                        size="small"
+                        fullWidth
+                        sx={{ "& .MuiInputBase-input": { textAlign: "center", fontSize: 12.25, fontWeight: 400, py: 0.5 } }}
                       />
-                    </th>
-                  </tr>
-                </thead>
+                    </TableCell>
+                  </TableRow>
+                </TableHead>
 
-                <tbody>
+                <TableBody>
                   {!transportEntryId && !directPurchaseId ? (
-                    <tr>
-                      <td colSpan={columns.length} className="text-center py-16 text-gray-400 dark:text-gray-500 text-sm">
+                    <TableRow>
+                      <TableCell colSpan={columns.length} sx={{ textAlign: "center", py: 8, color: "text.disabled", fontSize: 12.25 }}>
                         Open this page from the warehouse workflow to generate barcodes.
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ) : allItems.length === 0 ? (
-                    <tr>
-                      <td colSpan={columns.length} className="text-center py-16 text-gray-400 dark:text-gray-500 text-sm">
+                    <TableRow>
+                      <TableCell colSpan={columns.length} sx={{ textAlign: "center", py: 8, color: "text.disabled", fontSize: 12.25 }}>
                         {isDirectPurchaseFlow
                           ? "No direct purchase items found for barcode generation."
                           : "No inventory items found for this transport entry. Add products first."}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ) : filteredItems.length === 0 ? (
-                    <tr>
-                      <td colSpan={columns.length} className="text-center py-16 text-gray-400 dark:text-gray-500 text-sm">
+                    <TableRow>
+                      <TableCell colSpan={columns.length} sx={{ textAlign: "center", py: 8, color: "text.disabled", fontSize: 12.25 }}>
                         No matching items found.
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ) : (
                     filteredItems.map((item) => {
                       const isGenerated = isGeneratedItem(generatedIds, item.sourceItemId);
                       const isActive = activeEditorId === item.sourceItemId;
                       const rowCells = [
-                        <input
-                          type="checkbox"
+                        <Checkbox
+                          size="small"
                           checked={!!checked[item.sourceItemId]}
                           onClick={(event) => event.stopPropagation()}
                           onChange={() => handleToggle(item)}
                           disabled={isGenerated}
-                          className="rounded border-gray-300 dark:border-gray-600 text-blue-600 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                          sx={{ p: 0, cursor: "pointer" }}
                         />,
                         allItems.findIndex((row) => row.sourceItemId === item.sourceItemId) + 1,
-                        <span className="font-medium truncate block text-gray-800 dark:text-gray-100">{item.productName}</span>,
-                        <span className="text-xs truncate block text-gray-700 dark:text-gray-300">{barcodeForItem(barcodeMap, item.sourceItemId)}</span>,
+                        <Box component="span" sx={{ fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block", color: "text.primary" }}>{item.productName}</Box>,
+                        <Box component="span" sx={{ fontSize: 12.25, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block", color: "text.secondary" }}>{barcodeForItem(barcodeMap, item.sourceItemId)}</Box>,
                         item.size,
                         item.designNo,
                         item.qty,
@@ -3205,45 +3262,55 @@ const BarcodeGeneration = () => {
                         `${item.discountPerc}%`,
                         item.finalPrice.toFixed(2),
                         isGenerated ? (
-                          <span className="inline-block px-2 py-0.5 text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full">Done</span>
+                          <Box component="span" sx={{ display: "inline-block", px: 1, py: 0.25, fontSize: 12.25, fontWeight: 500, bgcolor: (theme) => alpha(theme.palette.success.main, theme.palette.mode === "dark" ? 0.16 : 0.08), color: "success.main", borderRadius: 999 }}>Done</Box>
                         ) : (
-                          <span className="inline-block px-2 py-0.5 text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-full">Pending</span>
+                          <Box component="span" sx={{ display: "inline-block", px: 1, py: 0.25, fontSize: 12.25, fontWeight: 500, bgcolor: (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.16 : 0.08), color: "warning.main", borderRadius: 999 }}>Pending</Box>
                         ),
                       ];
                       return (
-                        <tr
+                        <TableRow
                           key={item.sourceItemId}
-                          className={`border-b border-gray-200 dark:border-gray-700 cursor-pointer ${isActive ? "bg-blue-100/70 dark:bg-blue-900/40" : checked[item.sourceItemId] ? "bg-blue-50/40 dark:bg-blue-900/20" : "hover:bg-gray-50 dark:hover:bg-gray-700/50"} ${isGenerated ? "opacity-75" : ""}`}
                           onClick={() => {
                             handleRowClick(item);
                           }}
+                          sx={{
+                            borderBottom: 1,
+                            borderColor: "divider",
+                            cursor: "pointer",
+                            opacity: isGenerated ? 0.75 : 1,
+                            bgcolor: isActive
+                              ? (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.24 : 0.14)
+                              : checked[item.sourceItemId]
+                              ? (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.12 : 0.06)
+                              : "transparent",
+                            "&:hover": { bgcolor: isActive || checked[item.sourceItemId] ? undefined : "action.hover" },
+                          }}
                         >
                           {rowCells.map((cell, ci) => (
-                            <td
+                            <TableCell
                               key={ci}
-                              className="px-1.5 py-1.5 border-r border-gray-200 dark:border-gray-700 overflow-hidden text-ellipsis whitespace-nowrap text-gray-700 dark:text-gray-300"
-                              style={{ textAlign: columns[ci].align }}
+                              sx={{ px: 0.75, py: 0.75, borderRight: 1, borderColor: "divider", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "text.secondary", textAlign: columns[ci].align }}
                             >
                               {cell}
-                            </td>
+                            </TableCell>
                           ))}
-                        </tr>
+                        </TableRow>
                       );
                     })
                   )}
-                </tbody>
-              </table>
-            </div>
+                </TableBody>
+              </Table>
+            </Box>
 
-            <div className="flex justify-between items-center p-2 text-xs text-gray-600 dark:text-gray-400 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
-              <span>
+            <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", p: 1, fontSize: 12.25, color: "text.secondary", borderTop: 1, borderColor: "divider", bgcolor: "action.hover" }}>
+              <Box component="span">
                 {selectedItems.length} of {allItems.length} items selected for generation
-              </span>
-              <span>Total: {allItems.length} items</span>
-            </div>
-          </div>
-        </div>
-      </div>
+              </Box>
+              <Box component="span">Total: {allItems.length} items</Box>
+            </Stack>
+          </Stack>
+        </Box>
+      </Stack>
 
       <BarcodePreviewModal
         open={previewOpen}
@@ -3263,7 +3330,7 @@ const BarcodeGeneration = () => {
         message={toast.message}
         onClose={() => setToast((prev) => ({ ...prev, open: false }))}
       />
-    </div>
+    </Box>
   );
 };
 

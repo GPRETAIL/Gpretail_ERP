@@ -24,6 +24,7 @@ import api from "../../api/axios";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import SearchableSelect from "../../components/SearchableSelect";
 import Toast from "../../components/Toast";
+import { Box, Stack, Typography, IconButton, Button, alpha } from "@mui/material";
 
 // Workflow steps in order
 const WORKFLOW_STEPS = [
@@ -61,27 +62,39 @@ const STATUS_LABELS = {
   pending: "Pending",
 };
 
-const STATUS_COLORS = {
-  lr_entry: "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400",
-  issue_generated: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400",
-  receipt_generated: "bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400",
-  invoice_generated: "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400",
-  product_added: "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400",
-  barcode_generated: "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300",
-  completed: "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400",
-  cancelled: "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400",
+const PURPLE = "#9333ea";
+const CYAN = "#0891b2";
+
+// Semantic status -> MUI palette key ("purple"/"cyan" are literal-hex decorative accents, not MUI palette keys).
+const STATUS_TONE = {
+  lr_entry: "primary",
+  issue_generated: "warning",
+  receipt_generated: "cyan",
+  invoice_generated: "success",
+  product_added: "purple",
+  barcode_generated: "neutral",
+  completed: "success",
+  cancelled: "error",
+};
+
+const statusChipSx = (status) => (theme) => {
+  const tone = STATUS_TONE[status] || "neutral";
+  if (tone === "purple") return { bgcolor: alpha(PURPLE, theme.palette.mode === "dark" ? 0.16 : 0.1), color: PURPLE };
+  if (tone === "cyan") return { bgcolor: alpha(CYAN, theme.palette.mode === "dark" ? 0.16 : 0.1), color: CYAN };
+  if (tone === "neutral") return { bgcolor: "action.hover", color: "text.secondary" };
+  return { bgcolor: alpha(theme.palette[tone].main, theme.palette.mode === "dark" ? 0.16 : 0.1), color: `${tone}.main` };
 };
 
 const STATUS_ICON_MAP = {
-  lr_entry: { icon: Truck, colorClass: "text-blue-600 dark:text-blue-400", title: "LR No" },
-  issue_generated: { icon: FileText, colorClass: "text-amber-600 dark:text-amber-400", title: "Issue" },
-  receipt_generated: { icon: Package, colorClass: "text-cyan-600 dark:text-cyan-400", title: "Receipt" },
-  invoice_generated: { icon: FileText, colorClass: "text-green-600 dark:text-green-400", title: "Invoice" },
-  product_added: { icon: Package, colorClass: "text-purple-600 dark:text-purple-400", title: "Product Added" },
-  barcode_generated: { icon: Barcode, colorClass: "text-orange-500 dark:text-orange-400", title: "Barcode Generated" },
-  pending: { icon: Barcode, colorClass: "text-orange-500 dark:text-orange-400", title: "Barcode Generated" },
-  completed: { icon: Barcode, colorClass: "text-orange-500 dark:text-orange-400", title: "Barcode Generated" },
-  cancelled: { icon: Truck, colorClass: "text-blue-600 dark:text-blue-400", title: "LR No" },
+  lr_entry: { icon: Truck, color: "primary.main", title: "LR No" },
+  issue_generated: { icon: FileText, color: "warning.main", title: "Issue" },
+  receipt_generated: { icon: Package, color: CYAN, title: "Receipt" },
+  invoice_generated: { icon: FileText, color: "success.main", title: "Invoice" },
+  product_added: { icon: Package, color: PURPLE, title: "Product Added" },
+  barcode_generated: { icon: Barcode, color: "warning.main", title: "Barcode Generated" },
+  pending: { icon: Barcode, color: "warning.main", title: "Barcode Generated" },
+  completed: { icon: Barcode, color: "warning.main", title: "Barcode Generated" },
+  cancelled: { icon: Truck, color: "primary.main", title: "LR No" },
 };
 
 const RAW_INITIAL_COLUMNS = [
@@ -1040,7 +1053,7 @@ const WarehouseDashboard = () => {
   }, [activeFilterColumn]);
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100">
+    <Box sx={{ minHeight: "100vh", bgcolor: "background.default", color: "text.primary" }}>
       <ConfirmDialog
         open={deleteConfirm.open}
         message={
@@ -1052,55 +1065,48 @@ const WarehouseDashboard = () => {
         onCancel={() => setDeleteConfirm({ open: false, entry: null })}
       />
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2 bg-white dark:bg-gray-800 border-b dark:border-gray-700 shadow-sm">
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={handleBackClick}
-            className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
-            type="button"
-            aria-label="Back to warehouse module"
-          >
+      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+          <IconButton onClick={handleBackClick} type="button" aria-label="Back to warehouse module" sx={{ color: "text.secondary" }}>
             <ArrowLeft className="h-4 w-4" />
-          </button>
-          <h1 className="text-sm font-semibold flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => navigate("/warehouse")}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
-            >
+          </IconButton>
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: 12.25, fontWeight: 600 }}>
+            <Button type="button" variant="text" onClick={() => navigate("/warehouse")} sx={{ minWidth: "auto", p: 0, fontSize: 12.25, fontWeight: 600 }}>
               Warehouse
-            </button>
-            <span className="text-gray-400 dark:text-gray-500">/</span>
-            <span className="text-gray-800 dark:text-gray-100">Dashboard</span>
-          </h1>
-        </div>
-        <div className="flex items-center gap-2">
+            </Button>
+            <Box component="span" sx={{ color: "text.disabled" }}>/</Box>
+            <Box component="span" sx={{ color: "text.primary" }}>Dashboard</Box>
+          </Stack>
+        </Stack>
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           {selectedEntry && selectedEntry.status === "barcode_generated" && (
             <>
-              <button
+              <Button
                 onClick={() => handleStatusUpdate(selectedEntry.id, "completed")}
                 disabled={statusUpdatingId === selectedEntry.id}
-                className="glass-btn glass-btn-success px-3 py-1 text-xs disabled:cursor-not-allowed disabled:opacity-60"
+                className="glass-btn glass-btn-success"
+                sx={{ px: 1.5, py: 0.5, fontSize: 10.5, opacity: statusUpdatingId === selectedEntry.id ? 0.6 : 1 }}
               >
                 Complete
-              </button>
+              </Button>
               {selectedEntry.entry_source === "transport_entry" && (
-                <button
+                <Button
                   onClick={() => handleStatusUpdate(selectedEntry.id, "cancelled")}
                   disabled={statusUpdatingId === selectedEntry.id}
-                  className="glass-btn glass-btn-danger px-3 py-1 text-xs disabled:cursor-not-allowed disabled:opacity-60"
+                  className="glass-btn glass-btn-danger"
+                  sx={{ px: 1.5, py: 0.5, fontSize: 10.5, opacity: statusUpdatingId === selectedEntry.id ? 0.6 : 1 }}
                 >
                   Cancel
-                </button>
+                </Button>
               )}
             </>
           )}
-          <span className="text-sm text-gray-500 dark:text-gray-400">{entries.length} entries</span>
-        </div>
-      </div>
+          <Typography sx={{ fontSize: 12.25, color: "text.secondary" }}>{entries.length} entries</Typography>
+        </Stack>
+      </Stack>
 
       {/* Workflow Action Bar */}
-      <div className="flex items-center gap-3 px-4 py-3 bg-white dark:bg-gray-800 border-b dark:border-gray-700">
+      <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", px: 2, py: 1.5, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider" }}>
         {workflowSteps.map((step, index) => {
           const isLREntry = index === 0;
           // Once barcodes are generated, the "next step" pointer moves past this step entirely (or
@@ -1115,56 +1121,86 @@ const WarehouseDashboard = () => {
           const isEnabled = isLREntry || step.key === nextStepKey || isBarcodeRevisit;
           const Icon = step.icon;
           return (
-            <button
+            <Button
               key={step.key}
               disabled={!isEnabled}
               onClick={() => isEnabled && handleWorkflowClick(index)}
-              className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded transition ${isEnabled
-                  ? "bg-blue-600 text-white hover:bg-blue-700 shadow-sm"
-                  : "bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed border border-gray-200 dark:border-gray-600"
-                }`}
+              startIcon={<Icon className="w-4 h-4" />}
+              sx={{
+                borderRadius: "3.5px",
+                px: 2,
+                py: 1,
+                fontSize: 12.25,
+                fontWeight: 500,
+                ...(isEnabled
+                  ? { bgcolor: "primary.main", color: "primary.contrastText", boxShadow: 1, "&:hover": { bgcolor: "primary.dark" } }
+                  : { bgcolor: "action.hover", color: "text.disabled", border: "1px solid", borderColor: "divider", "&.Mui-disabled": { color: "text.disabled" } }),
+              }}
             >
-              <Icon className="w-4 h-4" />
               {step.label}
-            </button>
+            </Button>
           );
         })}
 
         {selectedEntry && (
-          <span className="ml-auto text-xs text-gray-500 dark:text-gray-400">
-            Selected: <strong>#{selectedEntry.lr_entry_no || selectedEntry.invoice_no || selectedEntry.id}</strong> —{" "}
+          <Typography sx={{ ml: "auto", fontSize: 10.5, color: "text.secondary" }}>
+            Selected: <Box component="strong">#{selectedEntry.lr_entry_no || selectedEntry.invoice_no || selectedEntry.id}</Box> —{" "}
             {STATUS_LABELS[selectedEntry.status] || selectedEntry.status}
-          </span>
+          </Typography>
         )}
-      </div>
+      </Stack>
 
       {/* Table */}
-      <div className="p-4 overflow-x-auto">
+      <Box sx={{ p: 2, overflowX: "auto" }}>
         {/* Tabs + Search */}
-        <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-wrap items-center gap-2">
+        <Stack direction={{ xs: "column", lg: "row" }} spacing={1.5} sx={{ mb: 1.5, lg: { alignItems: "center", justifyContent: "space-between" } }}>
+          <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", alignItems: "center" }}>
             {STATUS_TABS.map((tab) => {
               const active = activeTab === tab.key;
               return (
-                <button
+                <Stack
                   key={tab.key}
+                  component="button"
+                  direction="row"
+                  spacing={0.5}
                   onClick={() => setActiveTab(tab.key)}
-                  className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition ${active
-                      ? "border-blue-600 dark:border-blue-500 bg-blue-600 dark:bg-blue-600 text-white"
-                      : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                    }`}
+                  sx={{
+                    alignItems: "center",
+                    borderRadius: 999,
+                    border: "1px solid",
+                    borderColor: active ? "primary.main" : "divider",
+                    bgcolor: active ? "primary.main" : "background.paper",
+                    color: active ? "primary.contrastText" : "text.secondary",
+                    px: 1.5,
+                    py: 0.5,
+                    fontSize: 10.5,
+                    fontWeight: 500,
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                    "&:hover": { bgcolor: active ? "primary.dark" : "action.hover" },
+                  }}
                 >
-                  {tab.label}
-                  <span className={`rounded-full px-1.5 py-0.5 text-[10px] ${active ? "bg-blue-500" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"}`}>
+                  <Box component="span">{tab.label}</Box>
+                  <Box
+                    component="span"
+                    sx={{
+                      borderRadius: 999,
+                      px: 0.75,
+                      py: 0.25,
+                      fontSize: 9,
+                      bgcolor: active ? "primary.dark" : "action.hover",
+                      color: active ? "primary.contrastText" : "text.secondary",
+                    }}
+                  >
                     {getTabCount(tab.key)}
-                  </span>
-                </button>
+                  </Box>
+                </Stack>
               );
             })}
-          </div>
+          </Stack>
 
-          <div className="flex w-full items-center gap-2 lg:w-auto">
-            <div className="w-40 lg:w-44">
+          <Stack direction="row" spacing={1} sx={{ width: { xs: "100%", lg: "auto" }, alignItems: "center" }}>
+            <Box sx={{ width: { xs: 160, lg: 176 } }}>
               <SearchableSelect
                 name="searchField"
                 value={searchField}
@@ -1173,33 +1209,50 @@ const WarehouseDashboard = () => {
                 placeholder="Search By"
                 showEmptyOption={false}
               />
-            </div>
-            <input
+            </Box>
+            <Box
+              component="input"
               type="text"
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               placeholder="Search..."
-              className="w-full rounded-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-2 py-1 text-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500 lg:w-56"
+              sx={{
+                width: { xs: "100%", lg: 224 },
+                borderRadius: "1.75px",
+                border: "1px solid",
+                borderColor: "divider",
+                bgcolor: "background.paper",
+                color: "text.primary",
+                px: 1,
+                py: 0.5,
+                fontSize: 10.5,
+                outline: "none",
+                "&:focus": { borderColor: "primary.main" },
+              }}
             />
-          </div>
-        </div>
+          </Stack>
+        </Stack>
 
-        <div className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-sm min-w-max relative">
+        <Box sx={{ bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "1.75px", minWidth: "max-content", position: "relative" }}>
           {/* Header */}
-          <div className="flex bg-blue-50 dark:bg-gray-700 text-xs font-semibold text-gray-700 dark:text-gray-200 border-b dark:border-gray-700 select-none">
-            <div className="p-2 w-[50px] text-center border-r border-gray-300 dark:border-gray-600 flex-shrink-0 flex items-center justify-center gap-1">
-              <span className="text-[10px] leading-none">Select</span>
-              <button
+          <Stack
+            direction="row"
+            sx={(theme) => ({ bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08), fontSize: 10.5, fontWeight: 600, color: "text.secondary", borderBottom: 1, borderColor: "divider", userSelect: "none" })}
+          >
+            <Stack direction="row" spacing={0.5} sx={{ p: 1, width: 50, textAlign: "center", borderRight: 1, borderColor: "divider", flexShrink: 0, alignItems: "center", justifyContent: "center" }}>
+              <Box component="span" sx={{ fontSize: 9, lineHeight: 1 }}>Select</Box>
+              <Box
+                component="button"
                 type="button"
                 title="Personalize List Columns"
                 onClick={handleOpenColumnDialog}
-                className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition"
+                sx={{ color: "text.secondary", border: 0, bgcolor: "transparent", cursor: "pointer", display: "flex", transition: "color 0.15s", "&:hover": { color: "primary.main" } }}
               >
                 <Settings2 className="w-3.5 h-3.5" />
-              </button>
-            </div>
+              </Box>
+            </Stack>
             {visibleColumns.map((col) => (
-              <div
+              <Box
                 key={col.key}
                 draggable
                 onDragStart={(e) => onDragStart(e, col.key)}
@@ -1208,160 +1261,166 @@ const WarehouseDashboard = () => {
                 onDragEnter={(e) => onDragEnter(e, col.key)}
                 onDragLeave={onDragLeave}
                 onDrop={onDrop}
-                className="relative p-2 border-r border-gray-300 dark:border-gray-600 overflow-hidden cursor-grab active:cursor-grabbing"
+                sx={{ position: "relative", p: 1, borderRight: 1, borderColor: "divider", overflow: "hidden", cursor: "grab", "&:active": { cursor: "grabbing" } }}
                 style={{ width: col.width, minWidth: col.width, flexShrink: 0 }}
               >
-                <div className="flex items-center justify-between gap-1 pr-2">
-                  <span className="flex items-center gap-1 whitespace-nowrap">
-                    <GripVertical className="w-3 h-3 text-gray-400 dark:text-gray-500 shrink-0" />
+                <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 0.5, pr: 1 }}>
+                  <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", whiteSpace: "nowrap" }}>
+                    <GripVertical className="w-3 h-3 shrink-0" style={{ color: "#9ca3af" }} />
                     {col.label}
-                  </span>
-                  <div className="flex items-center gap-1">
-                    <button
+                  </Stack>
+                  <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+                    <Box
+                      component="button"
                       type="button"
                       title={`Sort ${col.label}`}
                       onClick={() => toggleSort(col.key)}
-                      className={`flex flex-col items-center leading-none ${sortColumn === col.key ? "text-blue-600 dark:text-blue-400" : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
-                        }`}
+                      sx={{ display: "flex", flexDirection: "column", alignItems: "center", lineHeight: 1, border: 0, bgcolor: "transparent", cursor: "pointer", color: sortColumn === col.key ? "primary.main" : "text.disabled", "&:hover": { color: sortColumn === col.key ? "primary.main" : "text.secondary" } }}
                     >
                       <ChevronUp
-                        className={`w-3 h-3 -mb-1 ${sortColumn === col.key && sortDirection === "asc"
-                            ? "text-blue-600 dark:text-blue-400"
-                            : "text-gray-300 dark:text-gray-600"
-                          }`}
+                        className="w-3 h-3 -mb-1"
+                        style={{ color: sortColumn === col.key && sortDirection === "asc" ? undefined : "#d1d5db" }}
                       />
                       <ChevronDown
-                        className={`w-3 h-3 ${sortColumn === col.key && sortDirection === "desc"
-                            ? "text-blue-600 dark:text-blue-400"
-                            : "text-gray-300 dark:text-gray-600"
-                          }`}
+                        className="w-3 h-3"
+                        style={{ color: sortColumn === col.key && sortDirection === "desc" ? undefined : "#d1d5db" }}
                       />
-                    </button>
-                    <button
+                    </Box>
+                    <Box
+                      component="button"
                       type="button"
                       title={`Filter ${col.label}`}
                       onClick={(event) => toggleColumnFilterPopup(col.key, event.currentTarget)}
-                      className={`${isFilterActive(col.key)
-                          ? "text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
-                          : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-                        }`}
+                      sx={{ border: 0, bgcolor: "transparent", cursor: "pointer", display: "flex", color: isFilterActive(col.key) ? "primary.main" : "text.secondary", "&:hover": { color: isFilterActive(col.key) ? "primary.dark" : "text.primary" } }}
                     >
                       <Filter className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
+                    </Box>
+                  </Stack>
+                </Stack>
                 {/* Resize handle */}
-                <div
-                  className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-400 dark:hover:bg-blue-500 transition-colors"
+                <Box
                   onMouseDown={(e) => handleResizeStart(e, col.key)}
+                  sx={{ position: "absolute", top: 0, right: 0, width: 4, height: "100%", cursor: "col-resize", transition: "background-color 0.15s", "&:hover": { bgcolor: "primary.light" } }}
                 />
 
                 {activeFilterColumn === col.key && (
-                  <div
+                  <Box
                     ref={filterPopupRef}
-                    className="fixed z-[120] w-56 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg p-2"
+                    sx={{ position: "fixed", zIndex: 120, width: 224, bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "3.5px", boxShadow: 4, p: 1 }}
                     style={{ top: `${filterPopupPos.top}px`, left: `${filterPopupPos.left}px` }}
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-[11px] font-semibold text-gray-700 dark:text-gray-200">{col.label}</span>
-                      <button
+                    <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", mb: 1 }}>
+                      <Box component="span" sx={{ fontSize: 11, fontWeight: 600, color: "text.secondary" }}>{col.label}</Box>
+                      <Box
+                        component="button"
                         type="button"
                         onClick={() => setActiveFilterColumn(null)}
-                        className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+                        sx={{ color: "text.disabled", border: 0, bgcolor: "transparent", cursor: "pointer", display: "flex", "&:hover": { color: "text.secondary" } }}
                       >
                         <X className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      <select
+                      </Box>
+                    </Stack>
+                    <Stack spacing={1}>
+                      <Box
+                        component="select"
                         value={getColumnFilter(col.key).operator}
                         onChange={(e) => setColumnFilter(col.key, { operator: e.target.value })}
-                        className="block w-full border border-gray-300 dark:border-gray-600 rounded-sm p-1 text-[11px] bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                        sx={{ display: "block", width: "100%", border: "1px solid", borderColor: "divider", borderRadius: "1.75px", p: 0.5, fontSize: 11, bgcolor: "background.paper", color: "text.primary" }}
                       >
                         {FILTER_OPERATORS.map((operator) => (
                           <option key={operator.value} value={operator.value}>
                             {operator.label}
                           </option>
                         ))}
-                      </select>
+                      </Box>
                       {!INPUT_FREE_OPERATORS.has(getColumnFilter(col.key).operator) && (
-                        <input
+                        <Box
+                          component="input"
                           type="text"
                           value={getColumnFilter(col.key).value}
                           onChange={(e) => setColumnFilter(col.key, { value: e.target.value })}
                           placeholder="Enter filter value"
-                          className="block w-full border border-gray-300 dark:border-gray-600 rounded-sm p-1 text-[11px] bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                          sx={{ display: "block", width: "100%", border: "1px solid", borderColor: "divider", borderRadius: "1.75px", p: 0.5, fontSize: 11, bgcolor: "background.paper", color: "text.primary" }}
                         />
                       )}
-                    </div>
-                    <button
+                    </Stack>
+                    <Box
+                      component="button"
                       type="button"
                       onClick={() => clearColumnFilter(col.key)}
-                      className="mt-2 text-[11px] text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                      sx={{ mt: 1, fontSize: 11, color: "primary.main", border: 0, bgcolor: "transparent", cursor: "pointer", "&:hover": { color: "primary.dark" } }}
                     >
                       Clear
-                    </button>
-                  </div>
+                    </Box>
+                  </Box>
                 )}
-              </div>
+              </Box>
             ))}
-            <div className="p-2 w-[220px] text-center border-r border-gray-300 dark:border-gray-600 flex-shrink-0">
+            <Box sx={{ p: 1, width: 220, textAlign: "center", borderRight: 1, borderColor: "divider", flexShrink: 0 }}>
               Action
-            </div>
-          </div>
+            </Box>
+          </Stack>
 
           {/* Body */}
-          <div className="max-h-[65vh] overflow-y-auto">
+          <Box sx={{ maxHeight: "65vh", overflowY: "auto" }}>
             {loading ? (
               Array.from({ length: 8 }).map((_, rowIdx) => (
-                <div key={rowIdx} className="flex border-b border-gray-100 dark:border-gray-700 animate-pulse">
-                  <div className="p-2 w-[50px] flex-shrink-0 border-r border-gray-100 dark:border-gray-700 flex items-center justify-center">
-                    <div className="w-4 h-4 bg-gray-200 dark:bg-gray-700 rounded" />
-                  </div>
+                <Stack key={rowIdx} direction="row" className="animate-pulse" sx={{ borderBottom: 1, borderColor: "divider" }}>
+                  <Box sx={{ p: 1, width: 50, flexShrink: 0, borderRight: 1, borderColor: "divider", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Box sx={{ width: 16, height: 16, bgcolor: "action.hover", borderRadius: "1.75px" }} />
+                  </Box>
                   {visibleColumns.map((col) => (
-                    <div
+                    <Box
                       key={col.key}
-                      className="p-2 border-r border-gray-100 dark:border-gray-700"
+                      sx={{ p: 1, borderRight: 1, borderColor: "divider" }}
                       style={{ width: col.width, minWidth: col.width, flexShrink: 0 }}
                     >
-                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded" style={{ width: `${55 + (rowIdx * 7 + col.width) % 35}%` }} />
-                    </div>
+                      <Box sx={{ height: 16, bgcolor: "action.hover", borderRadius: "1.75px" }} style={{ width: `${55 + (rowIdx * 7 + col.width) % 35}%` }} />
+                    </Box>
                   ))}
-                  <div className="p-2 w-[220px] flex-shrink-0 flex items-center gap-2">
+                  <Stack direction="row" spacing={1} sx={{ p: 1, width: 220, flexShrink: 0, alignItems: "center" }}>
                     {Array.from({ length: 4 }).map((_, i) => (
-                      <div key={i} className="h-7 w-16 bg-gray-200 dark:bg-gray-700 rounded" />
+                      <Box key={i} sx={{ height: 28, width: 64, bgcolor: "action.hover", borderRadius: "1.75px" }} />
                     ))}
-                  </div>
-                </div>
+                  </Stack>
+                </Stack>
               ))
             ) : paginatedEntries.length === 0 ? (
-              <div className="text-center p-8 text-gray-500 dark:text-gray-400">
+              <Box sx={{ textAlign: "center", p: 4, color: "text.secondary" }}>
                 No entries found for current filters.
-              </div>
+              </Box>
             ) : (
               paginatedEntries.map((entry) => {
                 const isSelected = selectedRowKey === entry.dashboardKey;
                 const isCompletedEntry = String(entry.status || "").trim().toLowerCase() === "completed";
                 return (
-                  <div
+                  <Stack
                     key={entry.dashboardKey}
-                    className={`flex border-b border-gray-100 dark:border-gray-700 text-sm cursor-pointer transition-colors ${isSelected ? "bg-blue-50 dark:bg-blue-900/20" : "hover:bg-gray-50 dark:hover:bg-gray-700"
-                      }`}
+                    direction="row"
                     onClick={() => handleRowSelect(entry.dashboardKey)}
+                    sx={{ borderBottom: 1, borderColor: "divider", fontSize: 12.25, cursor: "pointer", transition: "background-color 0.15s", bgcolor: isSelected ? (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08) : "transparent", "&:hover": { bgcolor: isSelected ? undefined : "action.hover" } }}
                   >
-                    <div className="p-2 w-[50px] text-center flex-shrink-0 border-r border-gray-100 dark:border-gray-700 flex items-center justify-center">
-                      <input
+                    <Box sx={{ p: 1, width: 50, textAlign: "center", flexShrink: 0, borderRight: 1, borderColor: "divider", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Box
+                        component="input"
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => handleRowSelect(entry.dashboardKey)}
                         onClick={(e) => e.stopPropagation()}
-                        className="w-4 h-4 accent-blue-600"
+                        sx={{ width: 16, height: 16, accentColor: "primary.main" }}
                       />
-                    </div>
+                    </Box>
                     {visibleColumns.map((col) => (
-                      <div
+                      <Box
                         key={col.key}
-                        className={`p-2 border-r border-gray-100 dark:border-gray-700 ${col.key === "files" || col.key === "workflow_icons" ? "" : "truncate"}`}
+                        sx={{
+                          p: 1,
+                          borderRight: 1,
+                          borderColor: "divider",
+                          ...(col.key === "files" || col.key === "workflow_icons"
+                            ? {}
+                            : { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }),
+                        }}
                         style={{ width: col.width, minWidth: col.width, flexShrink: 0 }}
                       >
                         {col.key === "workflow_icons" ? (
@@ -1369,30 +1428,31 @@ const WarehouseDashboard = () => {
                             const iconConfig = STATUS_ICON_MAP[entry.status] || STATUS_ICON_MAP.lr_entry;
                             const IconComp = iconConfig.icon;
                             return (
-                              <div className="flex items-center justify-start pl-1">
-                                <IconComp className={`w-4 h-4 ${iconConfig.colorClass}`} title={iconConfig.title} />
-                              </div>
+                              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "flex-start", pl: 0.5 }}>
+                                <Box component={IconComp} title={iconConfig.title} sx={{ width: 16, height: 16, color: iconConfig.color }} />
+                              </Box>
                             );
                           })()
                         ) : col.key === "status" ? (
-                          <span
-                            className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[entry.status] || "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
-                              }`}
+                          <Box
+                            component="span"
+                            sx={[{ display: "inline-block", px: 1, py: 0.25, borderRadius: 999, fontSize: 12.25, fontWeight: 500 }, statusChipSx(entry.status)]}
                           >
                             {STATUS_LABELS[entry.status] || entry.status || "-"}
-                          </span>
+                          </Box>
                         ) : col.key === "files" ? (
                           (() => {
                             const attachments = Array.isArray(entry.attachments) ? entry.attachments : [];
-                            if (attachments.length === 0) return <span className="text-gray-400 dark:text-gray-500">-</span>;
+                            if (attachments.length === 0) return <Box component="span" sx={{ color: "text.disabled" }}>-</Box>;
                             const previewItems = attachments.slice(0, 2);
                             const remaining = attachments.length - previewItems.length;
                             return (
-                              <div className="flex flex-wrap items-center gap-1">
+                              <Stack direction="row" spacing={0.5} sx={{ flexWrap: "wrap", alignItems: "center" }}>
                                 {previewItems.map((attachment) => {
                                   const url = resolveAttachmentUrl(attachment);
                                   return (
-                                    <a
+                                    <Box
+                                      component="a"
                                       key={attachment.id || attachment.file_name}
                                       href={url || "#"}
                                       target="_blank"
@@ -1401,37 +1461,49 @@ const WarehouseDashboard = () => {
                                         e.stopPropagation();
                                         if (!url) e.preventDefault();
                                       }}
-                                      className="inline-flex max-w-[95px] items-center rounded bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 text-[10px] text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50"
                                       title={attachment.file_name || "Attachment"}
+                                      sx={(theme) => ({
+                                        display: "inline-flex",
+                                        maxWidth: 95,
+                                        alignItems: "center",
+                                        borderRadius: "3.5px",
+                                        bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08),
+                                        px: 0.75,
+                                        py: 0.25,
+                                        fontSize: 9,
+                                        color: "primary.main",
+                                        "&:hover": { bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.24 : 0.14) },
+                                      })}
                                     >
-                                      <span className="truncate">{attachment.file_name || "File"}</span>
-                                    </a>
+                                      <Box component="span" sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{attachment.file_name || "File"}</Box>
+                                    </Box>
                                   );
                                 })}
                                 {remaining > 0 && (
-                                  <span className="text-[10px] text-gray-500 dark:text-gray-400">+{remaining} more</span>
+                                  <Box component="span" sx={{ fontSize: 9, color: "text.secondary" }}>+{remaining} more</Box>
                                 )}
-                              </div>
+                              </Stack>
                             );
                           })()
                         ) : (
                           getCellValue(entry, col.key)
                         )}
-                      </div>
+                      </Box>
                     ))}
-                    <div className="p-2 w-[220px] flex-shrink-0 border-r border-gray-100 dark:border-gray-700">
-                      <div className="flex items-center justify-center gap-2">
-                        <button
+                    <Box sx={{ p: 1, width: 220, flexShrink: 0, borderRight: 1, borderColor: "divider" }}>
+                      <Stack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "center" }}>
+                        <IconButton
                           title="View"
                           onClick={(e) => {
                             e.stopPropagation();
                             getEntryNavigation(entry, "view");
                           }}
-                          className="glass-btn glass-btn-primary rounded p-1.5"
+                          className="glass-btn glass-btn-primary"
+                          sx={{ borderRadius: "3.5px", p: 0.75 }}
                         >
                           <Eye className="w-3.5 h-3.5" />
-                        </button>
-                        <button
+                        </IconButton>
+                        <IconButton
                           title="Edit"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -1439,114 +1511,121 @@ const WarehouseDashboard = () => {
                             getEntryNavigation(entry, "edit");
                           }}
                           disabled={isCompletedEntry}
-                          className="glass-btn glass-btn-primary rounded p-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="glass-btn glass-btn-primary"
+                          sx={{ borderRadius: "3.5px", p: 0.75 }}
                         >
                           <Pencil className="w-3.5 h-3.5" />
-                        </button>
-                        <button
+                        </IconButton>
+                        <IconButton
                           title="Delete"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleDelete(entry);
                           }}
                           disabled={deletingId === entry.dashboardKey}
-                          className="glass-btn glass-btn-danger rounded p-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="glass-btn glass-btn-danger"
+                          sx={{ borderRadius: "3.5px", p: 0.75 }}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                        </IconButton>
+                      </Stack>
+                    </Box>
+                  </Stack>
                 );
               })
             )}
-          </div>
+          </Box>
 
           {/* Footer — Pagination */}
-          <div className="flex items-center justify-between px-3 py-2 text-xs text-gray-600 dark:text-gray-300 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
-            <span>Total: {totalRows}</span>
+          <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 1.5, py: 1, fontSize: 10.5, color: "text.secondary", borderTop: 1, borderColor: "divider", bgcolor: "action.hover" }}>
+            <Box component="span">Total: {totalRows}</Box>
 
-            <div className="flex items-center gap-3">
+            <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
               {/* Rows per page */}
-              <div className="flex items-center gap-1">
-                <span>Rows</span>
-                <select
+              <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+                <Box component="span">Rows</Box>
+                <Box
+                  component="select"
                   value={limit}
                   onChange={(e) => {
                     setLimit(Number(e.target.value));
                     setPage(1);
                   }}
-                  className="border border-gray-300 dark:border-gray-600 rounded-sm px-1 py-0.5 text-xs bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                  sx={{ border: "1px solid", borderColor: "divider", borderRadius: "1.75px", px: 0.5, py: 0.25, fontSize: 10.5, bgcolor: "background.paper", color: "text.primary" }}
                 >
                   {[20, 60, 100, 150].map((v) => (
                     <option key={v} value={v}>{v}</option>
                   ))}
-                </select>
-              </div>
+                </Box>
+              </Stack>
 
               {/* Page navigation */}
-              <div className="flex items-center gap-1">
-                <button
+              <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+                <Box
+                  component="button"
                   type="button"
                   disabled={currentPage <= 1}
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed"
+                  sx={{ p: 0.25, borderRadius: "1.75px", border: 0, bgcolor: "transparent", cursor: "pointer", display: "flex", "&:hover": { bgcolor: "action.selected" }, "&:disabled": { opacity: 0.4, cursor: "not-allowed" } }}
                 >
                   <ChevronLeft className="w-4 h-4" />
-                </button>
-                <select
+                </Box>
+                <Box
+                  component="select"
                   value={currentPage}
                   onChange={(e) => setPage(Number(e.target.value))}
-                  className="border border-gray-300 dark:border-gray-600 rounded-sm px-1 py-0.5 text-xs bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                  sx={{ border: "1px solid", borderColor: "divider", borderRadius: "1.75px", px: 0.5, py: 0.25, fontSize: 10.5, bgcolor: "background.paper", color: "text.primary" }}
                 >
                   {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
                     <option key={p} value={p}>{p}</option>
                   ))}
-                </select>
-                <span>of {totalPages}</span>
-                <button
+                </Box>
+                <Box component="span">of {totalPages}</Box>
+                <Box
+                  component="button"
                   type="button"
                   disabled={currentPage >= totalPages}
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed"
+                  sx={{ p: 0.25, borderRadius: "1.75px", border: 0, bgcolor: "transparent", cursor: "pointer", display: "flex", "&:hover": { bgcolor: "action.selected" }, "&:disabled": { opacity: 0.4, cursor: "not-allowed" } }}
                 >
                   <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+                </Box>
+              </Stack>
+            </Stack>
+          </Stack>
+        </Box>
+      </Box>
 
       {showColumnDialog && (
-        <div
-          className="fixed inset-0 z-40 bg-black/30 flex items-center justify-center p-4"
+        <Box
+          sx={{ position: "fixed", inset: 0, zIndex: 40, bgcolor: "rgba(0,0,0,0.3)", display: "flex", alignItems: "center", justifyContent: "center", p: 2 }}
           onClick={() => setShowColumnDialog(false)}
         >
-          <div
-            className="w-full max-w-3xl bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700"
+          <Box
+            sx={{ width: "100%", maxWidth: 768, bgcolor: "background.paper", borderRadius: "7px", boxShadow: 6, border: "1px solid", borderColor: "divider" }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-5 py-3 border-b dark:border-gray-700">
-              <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">Personalize List Columns</h3>
-              <button
+            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2.5, py: 1.5, borderBottom: 1, borderColor: "divider" }}>
+              <Typography component="h3" sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Personalize List Columns</Typography>
+              <Box
+                component="button"
                 type="button"
-                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                 onClick={() => setShowColumnDialog(false)}
+                sx={{ color: "text.secondary", border: 0, bgcolor: "transparent", cursor: "pointer", display: "flex", "&:hover": { color: "text.primary" } }}
               >
                 <X className="w-4 h-4" />
-              </button>
-            </div>
+              </Box>
+            </Stack>
 
-            <div className="px-5 py-4 flex items-stretch gap-3" style={{ minHeight: 320 }}>
-              <div className="flex-1 flex flex-col">
-                <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Available</span>
-                <div className="flex-1 border border-gray-300 dark:border-gray-600 rounded-sm overflow-auto bg-white dark:bg-gray-800" style={{ maxHeight: 280 }}>
+            <Stack direction="row" spacing={1.5} sx={{ px: 2.5, py: 2, alignItems: "stretch" }} style={{ minHeight: 320 }}>
+              <Stack sx={{ flex: 1 }}>
+                <Typography component="span" sx={{ fontSize: 10.5, fontWeight: 600, color: "text.secondary", mb: 0.75 }}>Available</Typography>
+                <Box sx={{ flex: 1, border: "1px solid", borderColor: "divider", borderRadius: "1.75px", overflow: "auto", bgcolor: "background.paper" }} style={{ maxHeight: 280 }}>
                   {draftAvailableColumns.length === 0 ? (
-                    <div className="text-xs text-gray-400 dark:text-gray-500 p-3 text-center">All columns selected</div>
+                    <Box sx={{ fontSize: 10.5, color: "text.disabled", p: 1.5, textAlign: "center" }}>All columns selected</Box>
                   ) : (
                     draftAvailableColumns.map((column) => (
-                      <div
+                      <Box
                         key={column.key}
                         onClick={() => {
                           setAvailableHighlight(column.key);
@@ -1557,62 +1636,75 @@ const WarehouseDashboard = () => {
                           setDraftSelectedOrder((prev) => [...prev, column.key]);
                           setAvailableHighlight(null);
                         }}
-                        className={`px-3 py-1.5 text-xs cursor-pointer select-none border-b border-gray-100 dark:border-gray-700 last:border-b-0 ${availableHighlight === column.key
-                            ? "bg-blue-600 text-white"
-                            : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                          }`}
+                        sx={{
+                          px: 1.5,
+                          py: 0.75,
+                          fontSize: 10.5,
+                          cursor: "pointer",
+                          userSelect: "none",
+                          borderBottom: 1,
+                          borderColor: "divider",
+                          "&:last-of-type": { borderBottom: 0 },
+                          bgcolor: availableHighlight === column.key ? "primary.main" : "transparent",
+                          color: availableHighlight === column.key ? "primary.contrastText" : "text.secondary",
+                          "&:hover": { bgcolor: availableHighlight === column.key ? "primary.main" : "action.hover" },
+                        }}
                       >
                         {column.label}
-                      </div>
+                      </Box>
                     ))
                   )}
-                </div>
-              </div>
+                </Box>
+              </Stack>
 
-              <div className="flex flex-col items-center justify-center gap-2">
-                <button
+              <Stack sx={{ alignItems: "center", justifyContent: "center" }} spacing={1}>
+                <Box
+                  component="button"
                   type="button"
                   title="Move to selected"
                   onClick={handleMoveToSelected}
                   disabled={!availableHighlight}
-                  className="p-1.5 border border-gray-300 dark:border-gray-600 rounded-sm hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                  sx={{ p: 0.75, border: "1px solid", borderColor: "divider", borderRadius: "1.75px", bgcolor: "transparent", color: "text.secondary", cursor: "pointer", display: "flex", "&:hover": { bgcolor: "action.hover" }, "&:disabled": { opacity: 0.4, cursor: "not-allowed" } }}
                 >
-                  <ChevronRight className="w-4 h-4 text-gray-700 dark:text-gray-300" />
-                </button>
-                <button
+                  <ChevronRight className="w-4 h-4" />
+                </Box>
+                <Box
+                  component="button"
                   type="button"
                   title="Move all to selected"
                   onClick={handleMoveAllToSelected}
                   disabled={draftAvailableColumns.length === 0}
-                  className="p-1.5 border border-gray-300 dark:border-gray-600 rounded-sm hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                  sx={{ p: 0.75, border: "1px solid", borderColor: "divider", borderRadius: "1.75px", bgcolor: "transparent", color: "text.secondary", cursor: "pointer", display: "flex", "&:hover": { bgcolor: "action.hover" }, "&:disabled": { opacity: 0.4, cursor: "not-allowed" } }}
                 >
-                  <ChevronsRight className="w-4 h-4 text-gray-700 dark:text-gray-300" />
-                </button>
-                <button
+                  <ChevronsRight className="w-4 h-4" />
+                </Box>
+                <Box
+                  component="button"
                   type="button"
                   title="Move to available"
                   onClick={handleMoveToAvailable}
                   disabled={!selectedHighlight || draftVisibleColumns.length <= 1}
-                  className="p-1.5 border border-gray-300 dark:border-gray-600 rounded-sm hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                  sx={{ p: 0.75, border: "1px solid", borderColor: "divider", borderRadius: "1.75px", bgcolor: "transparent", color: "text.secondary", cursor: "pointer", display: "flex", "&:hover": { bgcolor: "action.hover" }, "&:disabled": { opacity: 0.4, cursor: "not-allowed" } }}
                 >
-                  <ChevronLeft className="w-4 h-4 text-gray-700 dark:text-gray-300" />
-                </button>
-                <button
+                  <ChevronLeft className="w-4 h-4" />
+                </Box>
+                <Box
+                  component="button"
                   type="button"
                   title="Move all to available"
                   onClick={handleMoveAllToAvailable}
                   disabled={draftVisibleColumns.length <= 1}
-                  className="p-1.5 border border-gray-300 dark:border-gray-600 rounded-sm hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                  sx={{ p: 0.75, border: "1px solid", borderColor: "divider", borderRadius: "1.75px", bgcolor: "transparent", color: "text.secondary", cursor: "pointer", display: "flex", "&:hover": { bgcolor: "action.hover" }, "&:disabled": { opacity: 0.4, cursor: "not-allowed" } }}
                 >
-                  <ChevronsLeft className="w-4 h-4 text-gray-700 dark:text-gray-300" />
-                </button>
-              </div>
+                  <ChevronsLeft className="w-4 h-4" />
+                </Box>
+              </Stack>
 
-              <div className="flex-1 flex flex-col">
-                <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Selected</span>
-                <div className="flex-1 border border-gray-300 dark:border-gray-600 rounded-sm overflow-auto bg-white dark:bg-gray-800" style={{ maxHeight: 280 }}>
+              <Stack sx={{ flex: 1 }}>
+                <Typography component="span" sx={{ fontSize: 10.5, fontWeight: 600, color: "text.secondary", mb: 0.75 }}>Selected</Typography>
+                <Box sx={{ flex: 1, border: "1px solid", borderColor: "divider", borderRadius: "1.75px", overflow: "auto", bgcolor: "background.paper" }} style={{ maxHeight: 280 }}>
                   {draftSelectedColumns.map((column) => (
-                    <div
+                    <Box
                       key={column.key}
                       onClick={() => {
                         setSelectedHighlight(column.key);
@@ -1624,28 +1716,39 @@ const WarehouseDashboard = () => {
                         setDraftSelectedOrder((prev) => prev.filter((key) => key !== column.key));
                         setSelectedHighlight(null);
                       }}
-                      className={`px-3 py-1.5 text-xs cursor-pointer select-none border-b border-gray-100 dark:border-gray-700 last:border-b-0 ${selectedHighlight === column.key
-                          ? "bg-blue-600 text-white"
-                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                        }`}
+                      sx={{
+                        px: 1.5,
+                        py: 0.75,
+                        fontSize: 10.5,
+                        cursor: "pointer",
+                        userSelect: "none",
+                        borderBottom: 1,
+                        borderColor: "divider",
+                        "&:last-of-type": { borderBottom: 0 },
+                        bgcolor: selectedHighlight === column.key ? "primary.main" : "transparent",
+                        color: selectedHighlight === column.key ? "primary.contrastText" : "text.secondary",
+                        "&:hover": { bgcolor: selectedHighlight === column.key ? "primary.main" : "action.hover" },
+                      }}
                     >
                       {column.label}
-                    </div>
+                    </Box>
                   ))}
-                </div>
-              </div>
+                </Box>
+              </Stack>
 
-              <div className="flex flex-col items-center justify-center gap-2">
-                <button
+              <Stack sx={{ alignItems: "center", justifyContent: "center" }} spacing={1}>
+                <Box
+                  component="button"
                   type="button"
                   title="Move up"
                   onClick={handleMoveSelectedUp}
                   disabled={!selectedHighlight || draftSelectedOrder.indexOf(selectedHighlight) <= 0}
-                  className="p-1.5 border border-gray-300 dark:border-gray-600 rounded-sm hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                  sx={{ p: 0.75, border: "1px solid", borderColor: "divider", borderRadius: "1.75px", bgcolor: "transparent", color: "text.secondary", cursor: "pointer", display: "flex", "&:hover": { bgcolor: "action.hover" }, "&:disabled": { opacity: 0.4, cursor: "not-allowed" } }}
                 >
-                  <ChevronUp className="w-4 h-4 text-gray-700 dark:text-gray-300" />
-                </button>
-                <button
+                  <ChevronUp className="w-4 h-4" />
+                </Box>
+                <Box
+                  component="button"
                   type="button"
                   title="Move down"
                   onClick={handleMoveSelectedDown}
@@ -1653,40 +1756,42 @@ const WarehouseDashboard = () => {
                     !selectedHighlight ||
                     draftSelectedOrder.indexOf(selectedHighlight) >= draftSelectedOrder.length - 1
                   }
-                  className="p-1.5 border border-gray-300 dark:border-gray-600 rounded-sm hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                  sx={{ p: 0.75, border: "1px solid", borderColor: "divider", borderRadius: "1.75px", bgcolor: "transparent", color: "text.secondary", cursor: "pointer", display: "flex", "&:hover": { bgcolor: "action.hover" }, "&:disabled": { opacity: 0.4, cursor: "not-allowed" } }}
                 >
-                  <ChevronDown className="w-4 h-4 text-gray-700 dark:text-gray-300" />
-                </button>
-              </div>
-            </div>
+                  <ChevronDown className="w-4 h-4" />
+                </Box>
+              </Stack>
+            </Stack>
 
-            <div className="px-5 py-3 border-t dark:border-gray-700 flex items-center justify-between">
-              <button
+            <Stack direction="row" sx={{ px: 2.5, py: 1.5, borderTop: 1, borderColor: "divider", alignItems: "center", justifyContent: "space-between" }}>
+              <Button
                 type="button"
                 onClick={handleResetColumnDefaults}
                 className="glass-btn glass-btn-secondary"
               >
                 Reset to column defaults
-              </button>
-              <div className="flex items-center gap-2">
-                <button
+              </Button>
+              <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                <Button
                   type="button"
                   onClick={() => setShowColumnDialog(false)}
-                  className="px-4 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                  variant="outlined"
+                  color="inherit"
+                  sx={{ px: 2, py: 0.75, fontSize: 10.5, borderRadius: "1.75px" }}
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   onClick={handleApplyColumns}
                   className="glass-btn glass-btn-primary"
                 >
                   OK
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+                </Button>
+              </Stack>
+            </Stack>
+          </Box>
+        </Box>
       )}
 
       <Toast
@@ -1695,7 +1800,7 @@ const WarehouseDashboard = () => {
         message={toast.message}
         onClose={() => setToast((prev) => ({ ...prev, open: false }))}
       />
-    </div>
+    </Box>
   );
 };
 

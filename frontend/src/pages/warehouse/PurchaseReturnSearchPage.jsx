@@ -8,6 +8,7 @@ import FilterableDataTable from "../../components/FilterableDataTable";
 import { createGroupFetchers } from "../../utils/serverGrouping";
 import ExportBottomSheet from "../../components/ExportBottomSheet";
 import { usePrintContext } from "../../context/PrintContext";
+import { Box, Stack, IconButton, Button } from "@mui/material";
 
 // Matches config('pagination.resources.purchase_returns.groupable_columns') on the backend.
 const { onFetchGroupSummaries: fetchPurchaseReturnGroupSummaries, onFetchGroupRows: fetchPurchaseReturnGroupRows } =
@@ -73,13 +74,13 @@ const PurchaseReturnSearchPage = () => {
         key: "total_qty",
         label: "Qty",
         valueGetter: (row) => Number(row.total_qty || 0),
-        render: (value) => <div className="text-right">{Number(value || 0)}</div>,
+        render: (value) => <Box sx={{ textAlign: "right" }}>{Number(value || 0)}</Box>,
       },
       {
         key: "total_amount",
         label: "Amount",
         valueGetter: (row) => toNumber(row.total_amount),
-        render: (value) => <div className="text-right">{toNumber(value).toFixed(2)}</div>,
+        render: (value) => <Box sx={{ textAlign: "right" }}>{toNumber(value).toFixed(2)}</Box>,
       },
     ],
     []
@@ -186,34 +187,26 @@ const PurchaseReturnSearchPage = () => {
   }, []);
 
   return (
-    <div className="h-full bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 flex flex-col master-responsive">
+    <Box sx={{ height: "100%", bgcolor: "background.default", color: "text.primary", display: "flex", flexDirection: "column" }} className="master-responsive">
       <ConfirmDialog
         open={bulkConfirm.open}
         message={`Are you sure you want to delete ${bulkConfirm.keys.length} selected record(s)? This action cannot be undone.`}
         onConfirm={handleBulkDeleteConfirmed}
         onCancel={() => setBulkConfirm({ open: false, keys: [] })}
       />
-      <div className="flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
-        <div className="flex items-center">
-          <button
-            className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 mr-3 p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
-            aria-label="Back"
-            onClick={() => navigate("/warehouse/purchase-return")}
-          >
+      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1.5, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
+        <Stack direction="row" sx={{ alignItems: "center" }}>
+          <IconButton onClick={() => navigate("/warehouse/purchase-return")} aria-label="Back" sx={{ mr: 1.5, color: "text.secondary" }}>
             <ArrowLeft className="w-4 h-4" />
-          </button>
-          <h1 className="text-sm font-semibold flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => navigate("/warehouse")}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
-            >
+          </IconButton>
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: 12.25, fontWeight: 600 }}>
+            <Button type="button" variant="text" onClick={() => navigate("/warehouse")} sx={{ minWidth: "auto", p: 0, fontSize: 12.25, fontWeight: 600 }}>
               Warehouse
-            </button>
-            <span className="text-gray-500 dark:text-gray-400">/</span>
-            <span>Purchase Return Search</span>
-          </h1>
-        </div>
+            </Button>
+            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
+            <Box component="span">Purchase Return Search</Box>
+          </Stack>
+        </Stack>
 
         <ExportBottomSheet
           columns={columns}
@@ -226,10 +219,10 @@ const PurchaseReturnSearchPage = () => {
           fileName="purchase_return_search"
           buttonClassName="topbar-action-btn topbar-action-export"
         />
-      </div>
+      </Stack>
 
-      <div className="flex-1 p-4 min-h-0">
-        <div className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-sm p-3 h-full flex flex-col min-h-0">
+      <Box sx={{ flex: 1, p: 2, minHeight: 0 }}>
+        <Box sx={{ bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "1.75px", p: 1.5, height: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}>
           <FilterableDataTable
             rows={results}
             columns={columns}
@@ -262,28 +255,30 @@ const PurchaseReturnSearchPage = () => {
             onSelectionChange={setSelectedRows}
             onBulkDelete={handleBulkDelete}
             renderActions={(entry, { selectedCount } = {}) => (
-              <div className="flex items-center justify-center gap-2">
-                <button
+              <Stack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "center" }}>
+                <IconButton
                   type="button"
                   onClick={() => navigate(`/warehouse/purchase-return?edit=${entry.id}`)}
                   title="Edit"
                   disabled={selectedCount > 1}
-                  className="glass-btn glass-btn-primary rounded p-1.5"
+                  className="glass-btn glass-btn-primary"
+                  sx={{ borderRadius: "3.5px", p: 0.75 }}
                 >
                   <Pencil className="w-3.5 h-3.5" />
-                </button>
-                <button
+                </IconButton>
+                <Button
                   type="button"
+                  variant="text"
                   onClick={() => handlePrint(entry)}
-                  className="text-blue-600 dark:text-blue-400 hover:underline"
+                  sx={{ minWidth: "auto", p: 0, fontSize: 12.25, "&:hover": { textDecoration: "underline" } }}
                 >
                   Print
-                </button>
-              </div>
+                </Button>
+              </Stack>
             )}
           />
-        </div>
-      </div>
+        </Box>
+      </Box>
 
       <Toast
         open={toast.open}
@@ -291,7 +286,7 @@ const PurchaseReturnSearchPage = () => {
         message={toast.message}
         onClose={() => setToast((prev) => ({ ...prev, open: false }))}
       />
-    </div>
+    </Box>
   );
 };
 

@@ -7,6 +7,7 @@ import ConfirmDialog from "../../components/ConfirmDialog";
 import PageSkeleton from "../../components/PageSkeleton";
 import AsyncSearchSelect from "../../components/AsyncSearchSelect";
 import { buildSizeSelectOptions } from "../../utils/sizeSelectOptions";
+import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, Checkbox, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
 
 // ─── Reusable sub-components (defined OUTSIDE to prevent focus loss) ────────
 
@@ -158,55 +159,54 @@ const AttrSelect = ({
 
   if (!searchable) {
     return (
-      <div className={stacked ? "mb-1.5" : "flex items-center gap-2 mb-2"}>
-        <label
-          className={
-            stacked
-              ? "block text-[11px] font-medium text-gray-700 dark:text-gray-300 mb-1"
-              : "w-28 text-xs font-medium text-gray-700 dark:text-gray-300 flex-shrink-0"
-          }
+      <Box sx={stacked ? { mb: 1.5 } : { display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+        <Typography
+          component="label"
+          sx={stacked
+            ? { display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }
+            : { width: 112, fontSize: 12.25, fontWeight: 500, color: "text.secondary", flexShrink: 0 }}
         >
-          {required && <span className="text-red-500 dark:text-red-400">* </span>}
+          {required && <Box component="span" sx={{ color: "error.main" }}>* </Box>}
           {label}
-        </label>
-        <select
+        </Typography>
+        <TextField
+          select
           name={name}
           value={value}
           onChange={onChange}
-          className={`border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-xs bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${
-            stacked ? "w-full" : "flex-1"
-          }`}
+          size="small"
+          sx={{ ...(stacked ? { width: "100%" } : { flex: 1 }), "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
         >
-          <option value="">Select...</option>
+          <MenuItem value="">Select...</MenuItem>
           {options.map((opt) => (
-            <option key={opt.id} value={opt.id}>
+            <MenuItem key={opt.id} value={opt.id}>
               {getOptionLabel(opt)}
-            </option>
+            </MenuItem>
           ))}
-        </select>
-      </div>
+        </TextField>
+      </Box>
     );
   }
 
   return (
-    <div
+    <Box
       ref={containerRef}
       data-enter-ignore="true"
-      className={stacked ? "mb-1.5" : "flex items-center gap-2 mb-2"}
+      sx={stacked ? { mb: 1.5 } : { display: "flex", alignItems: "center", gap: 1, mb: 2 }}
     >
-      <label
-        className={
-          stacked
-            ? "block text-[11px] font-medium text-gray-700 dark:text-gray-300 mb-1"
-            : "w-28 text-xs font-medium text-gray-700 dark:text-gray-300 flex-shrink-0"
-        }
+      <Typography
+        component="label"
+        sx={stacked
+          ? { display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }
+          : { width: 112, fontSize: 12.25, fontWeight: 500, color: "text.secondary", flexShrink: 0 }}
       >
-        {required && <span className="text-red-500 dark:text-red-400">* </span>}
+        {required && <Box component="span" sx={{ color: "error.main" }}>* </Box>}
         {label}
-      </label>
+      </Typography>
 
-      <div className={stacked ? "w-full relative" : "flex-1 relative"}>
-        <button
+      <Box sx={stacked ? { width: "100%", position: "relative" } : { flex: 1, position: "relative" }}>
+        <Box
+          component="button"
           ref={triggerRef}
           type="button"
           data-searchable-select-trigger="true"
@@ -219,58 +219,63 @@ const AttrSelect = ({
               setHighlightedIndex(-1);
             }
           }}
-          className="w-full border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-xs bg-white dark:bg-gray-700 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-left flex items-center justify-between"
+          sx={{ width: "100%", border: "1px solid", borderColor: "divider", borderRadius: "3.5px", px: 1, py: 0.5, fontSize: 12.25, bgcolor: "background.paper", textAlign: "left", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }}
         >
-          <span className={selectedLabel ? "text-gray-800 dark:text-gray-100 truncate" : "text-gray-400 dark:text-gray-500 truncate"}>
+          <Box component="span" sx={{ color: selectedLabel ? "text.primary" : "text.disabled", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {selectedLabel || "Select..."}
-          </span>
-          <ChevronDown className={`w-3.5 h-3.5 text-gray-400 dark:text-gray-500 transition-transform ${open ? "rotate-180" : ""}`} />
-        </button>
+          </Box>
+          <ChevronDown className="w-3.5 h-3.5" style={{ color: "#9ca3af", transition: "transform 0.15s", transform: open ? "rotate(180deg)" : undefined }} />
+        </Box>
 
         {open && (
-          <div className="absolute z-50 left-0 top-full mt-0.5 w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded shadow-lg">
-            <div className="p-1 border-b border-gray-200 dark:border-gray-700 flex items-center gap-1">
-              <Search className="w-3 h-3 text-gray-400 dark:text-gray-500 shrink-0" />
-              <input
+          <Box sx={{ position: "absolute", zIndex: 50, left: 0, top: "100%", mt: 0.25, width: "100%", bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "3.5px", boxShadow: 4 }}>
+            <Stack direction="row" spacing={0.5} sx={{ p: 0.5, borderBottom: 1, borderColor: "divider", alignItems: "center" }}>
+              <Search className="w-3 h-3 shrink-0" style={{ color: "#9ca3af" }} />
+              <Box
+                component="input"
                 autoFocus
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onKeyDown={handleSearchKeyDown}
                 placeholder={searchPlaceholder}
-                className="w-full text-xs outline-none bg-transparent text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500"
+                sx={{ width: "100%", fontSize: 12.25, outline: "none", bgcolor: "transparent", color: "text.secondary", border: 0 }}
               />
-            </div>
+            </Stack>
 
-            <ul ref={listRef} className="max-h-52 overflow-y-auto">
-              <li
+            <Box component="ul" ref={listRef} sx={{ maxHeight: 208, overflowY: "auto", m: 0, p: 0, listStyle: "none" }}>
+              <Box
+                component="li"
                 onClick={() => selectValue("")}
-                className={`px-2 py-1 text-xs text-gray-500 dark:text-gray-400 cursor-pointer ${
-                  highlightedIndex === 0 ? "bg-blue-100 dark:bg-blue-900/30" : "hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                }`}
+                sx={{ px: 1, py: 0.5, fontSize: 12.25, color: "text.secondary", cursor: "pointer", bgcolor: highlightedIndex === 0 ? (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08) : "transparent", "&:hover": { bgcolor: highlightedIndex === 0 ? undefined : "action.hover" } }}
               >
                 Select...
-              </li>
+              </Box>
               {visibleOptions.map((opt, idx) => (
-                <li
+                <Box
+                  component="li"
                   key={opt.id}
                   onClick={() => selectValue(opt.id)}
-                  className={`px-2 py-1 text-xs cursor-pointer ${
-                    highlightedIndex === idx + 1
-                      ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-medium"
+                  sx={(theme) => ({
+                    px: 1,
+                    py: 0.5,
+                    fontSize: 12.25,
+                    cursor: "pointer",
+                    ...(highlightedIndex === idx + 1
+                      ? { bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08), color: "primary.main", fontWeight: 500 }
                       : String(opt.id) === String(value)
-                      ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 font-medium"
-                      : "text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                  }`}
+                      ? { bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.12 : 0.06), color: "primary.main", fontWeight: 500 }
+                      : { color: "text.secondary", "&:hover": { bgcolor: "action.hover" } }),
+                  })}
                 >
                   {getOptionLabel(opt)}
-                </li>
+                </Box>
               ))}
-            </ul>
-          </div>
+            </Box>
+          </Box>
         )}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 };
 
@@ -283,28 +288,25 @@ const AttrText = ({
   required = false,
   stacked = false,
 }) => (
-  <div className={stacked ? "mb-1.5" : "flex items-center gap-2 mb-2"}>
-    <label
-      className={
-        stacked
-          ? "block text-[11px] font-medium text-gray-700 dark:text-gray-300 mb-1"
-          : "w-28 text-xs font-medium text-gray-700 dark:text-gray-300 flex-shrink-0"
-      }
+  <Box sx={stacked ? { mb: 1.5 } : { display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+    <Typography
+      component="label"
+      sx={stacked
+        ? { display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }
+        : { width: 112, fontSize: 12.25, fontWeight: 500, color: "text.secondary", flexShrink: 0 }}
     >
-      {required && <span className="text-red-500 dark:text-red-400">* </span>}
+      {required && <Box component="span" sx={{ color: "error.main" }}>* </Box>}
       {label}
-    </label>
-    <input
-      type="text"
+    </Typography>
+    <TextField
       name={name}
       value={value}
       onChange={onChange}
       placeholder={placeholder}
-      className={`border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${
-        stacked ? "w-full" : "flex-1"
-      }`}
+      size="small"
+      sx={{ ...(stacked ? { width: "100%" } : { flex: 1 }), "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
     />
-  </div>
+  </Box>
 );
 
 // ─── Searchable Size Select (for item entry row) ────────────────────────────
@@ -444,8 +446,9 @@ const SearchableSizeSelect = ({ value, onChange, sizes, sizeGroups, onJump }) =>
   let optionIndex = 0;
 
   return (
-    <div ref={containerRef} data-enter-ignore="true" className="relative z-[140] w-full">
-      <button
+    <Box ref={containerRef} data-enter-ignore="true" sx={{ position: "relative", zIndex: 140, width: "100%" }}>
+      <Box
+        component="button"
         ref={triggerRef}
         type="button"
         data-searchable-select-trigger="true"
@@ -458,69 +461,74 @@ const SearchableSizeSelect = ({ value, onChange, sizes, sizeGroups, onJump }) =>
             setHighlightedIndex(-1);
           }
         }}
-        className="w-full border border-gray-300 dark:border-gray-600 rounded px-1 py-1 text-xs bg-white dark:bg-gray-700 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-left flex items-center justify-between"
+        sx={{ width: "100%", border: "1px solid", borderColor: "divider", borderRadius: "3.5px", px: 0.5, py: 0.5, fontSize: 12.25, bgcolor: "background.paper", textAlign: "left", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }}
       >
-        <span className={selectedLabel ? "text-gray-800 dark:text-gray-100 truncate" : "text-gray-400 dark:text-gray-500 truncate"}>
+        <Box component="span" sx={{ color: selectedLabel ? "text.primary" : "text.disabled", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {selectedLabel || "Size..."}
-        </span>
-        <ChevronDown className={`w-3 h-3 text-gray-400 dark:text-gray-500 transition-transform ${open ? "rotate-180" : ""}`} />
-      </button>
+        </Box>
+        <ChevronDown className="w-3 h-3" style={{ color: "#9ca3af", transition: "transform 0.15s", transform: open ? "rotate(180deg)" : undefined }} />
+      </Box>
 
       {open && (
-        <div className="absolute z-[160] left-0 top-full mt-0.5 w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded shadow-lg min-w-[160px]">
-          <div className="p-1 border-b border-gray-200 dark:border-gray-700 flex items-center gap-1">
-            <Search className="w-3 h-3 text-gray-400 dark:text-gray-500 shrink-0" />
-            <input
+        <Box sx={{ position: "absolute", zIndex: 160, left: 0, top: "100%", mt: 0.25, width: "100%", bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "3.5px", boxShadow: 4, minWidth: 160 }}>
+          <Stack direction="row" spacing={0.5} sx={{ p: 0.5, borderBottom: 1, borderColor: "divider", alignItems: "center" }}>
+            <Search className="w-3 h-3 shrink-0" style={{ color: "#9ca3af" }} />
+            <Box
+              component="input"
               autoFocus
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               onKeyDown={handleSearchKeyDown}
               placeholder="Search size..."
-              className="w-full text-xs outline-none bg-transparent text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500"
+              sx={{ width: "100%", fontSize: 12.25, outline: "none", bgcolor: "transparent", color: "text.secondary", border: 0 }}
             />
-          </div>
+          </Stack>
 
-          <ul ref={listRef} className="max-h-52 overflow-y-auto">
-            <li
+          <Box component="ul" ref={listRef} sx={{ maxHeight: 208, overflowY: "auto", m: 0, p: 0, listStyle: "none" }}>
+            <Box
+              component="li"
               onClick={() => selectOption("")}
-              className={`px-2 py-1 text-xs text-gray-500 dark:text-gray-400 cursor-pointer ${
-                highlightedIndex === 0 ? "bg-blue-100 dark:bg-blue-900/30" : "hover:bg-blue-50 dark:hover:bg-blue-900/20"
-              }`}
+              sx={{ px: 1, py: 0.5, fontSize: 12.25, color: "text.secondary", cursor: "pointer", bgcolor: highlightedIndex === 0 ? (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08) : "transparent", "&:hover": { bgcolor: highlightedIndex === 0 ? undefined : "action.hover" } }}
             >
               Size...
-            </li>
+            </Box>
             {groupedDisplay.map((item) => {
               if (item.type === "header") {
                 return (
-                  <li key={`hdr-${item.label}`} className="px-2 py-0.5 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase bg-gray-50 dark:bg-gray-700 select-none">
+                  <Box component="li" key={`hdr-${item.label}`} sx={{ px: 1, py: 0.25, fontSize: 9, fontWeight: 600, color: "text.disabled", textTransform: "uppercase", bgcolor: "action.hover", userSelect: "none" }}>
                     {item.label}
-                  </li>
+                  </Box>
                 );
               }
               const thisIndex = ++optionIndex;
               return (
-                <li
+                <Box
+                  component="li"
                   key={item.key}
                   onClick={() => selectOption(item.value)}
-                  className={`px-2 py-1 text-xs cursor-pointer ${
-                    highlightedIndex === thisIndex
-                      ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-medium"
+                  sx={(theme) => ({
+                    px: 1,
+                    py: 0.5,
+                    fontSize: 12.25,
+                    cursor: "pointer",
+                    ...(highlightedIndex === thisIndex
+                      ? { bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08), color: "primary.main", fontWeight: 500 }
                       : item.value === value
-                      ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 font-medium"
+                      ? { bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.12 : 0.06), color: "primary.main", fontWeight: 500 }
                       : item.value === "__jump__"
-                      ? "text-blue-600 dark:text-blue-400 font-medium hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                      : "text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                  }`}
+                      ? { color: "primary.main", fontWeight: 500, "&:hover": { bgcolor: "action.hover" } }
+                      : { color: "text.secondary", "&:hover": { bgcolor: "action.hover" } }),
+                  })}
                 >
                   {item.label}
-                </li>
+                </Box>
               );
             })}
-          </ul>
-        </div>
+          </Box>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 };
 
@@ -579,124 +587,134 @@ const JumpSizeDialog = ({ open, onClose, onApply, defaultQty }) => {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={handleClose}>
-      <div
-        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 w-full max-w-md mx-4"
+    <Box sx={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", bgcolor: "rgba(0,0,0,0.4)" }} onClick={handleClose}>
+      <Box
+        sx={{ bgcolor: "background.paper", borderRadius: "7px", boxShadow: 8, border: "1px solid", borderColor: "divider", width: "100%", maxWidth: 448, mx: 2 }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700">
-          <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-100">Size Detail (Jump)</h2>
-          <button onClick={handleClose} className="glass-btn glass-btn-secondary">
+        <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1.5, borderBottom: 1, borderColor: "divider" }}>
+          <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Size Detail (Jump)</Typography>
+          <Button onClick={handleClose} className="glass-btn glass-btn-secondary">
             <X className="w-4 h-4" />
-          </button>
-        </div>
+          </Button>
+        </Stack>
 
-        <div className="px-4 py-3 space-y-3">
+        <Stack spacing={1.5} sx={{ px: 2, py: 1.5 }}>
           {/* Input Row: Start - Increment - End */}
-          <div className="flex gap-2">
-            <div className="flex-1">
-              <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Start</label>
-              <input
+          <Stack direction="row" spacing={1}>
+            <Box sx={{ flex: 1 }}>
+              <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>Start</Typography>
+              <TextField
                 type="number"
                 value={start}
                 onChange={(e) => setStart(e.target.value)}
-                className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded px-2 py-1.5 text-sm focus:ring-1 focus:ring-blue-500"
+                size="small"
+                fullWidth
                 placeholder="e.g. 10"
+                sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
               />
-            </div>
-            <div className="flex items-end pb-1 text-gray-400 dark:text-gray-500 font-bold">-</div>
-            <div className="flex-1">
-              <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Increment</label>
-              <input
+            </Box>
+            <Box sx={{ display: "flex", alignItems: "flex-end", pb: 0.5, color: "text.disabled", fontWeight: 700 }}>-</Box>
+            <Box sx={{ flex: 1 }}>
+              <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>Increment</Typography>
+              <TextField
                 type="number"
                 value={increment}
                 onChange={(e) => setIncrement(e.target.value)}
-                className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded px-2 py-1.5 text-sm focus:ring-1 focus:ring-blue-500"
+                size="small"
+                fullWidth
                 placeholder="e.g. 2"
+                sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
               />
-            </div>
-            <div className="flex items-end pb-1 text-gray-400 dark:text-gray-500 font-bold">-</div>
-            <div className="flex-1">
-              <label className="text-xs font-medium text-gray-600 dark:text-gray-400">End</label>
-              <input
+            </Box>
+            <Box sx={{ display: "flex", alignItems: "flex-end", pb: 0.5, color: "text.disabled", fontWeight: 700 }}>-</Box>
+            <Box sx={{ flex: 1 }}>
+              <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>End</Typography>
+              <TextField
                 type="number"
                 value={end}
                 onChange={(e) => setEnd(e.target.value)}
-                className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded px-2 py-1.5 text-sm focus:ring-1 focus:ring-blue-500"
+                size="small"
+                fullWidth
                 placeholder="e.g. 26"
+                sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
               />
-            </div>
-          </div>
+            </Box>
+          </Stack>
 
           {/* Quantity */}
-          <div className="flex gap-2 items-end">
-            <div className="w-24">
-              <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Quantity</label>
-              <input
+          <Stack direction="row" spacing={1} sx={{ alignItems: "flex-end" }}>
+            <Box sx={{ width: 96 }}>
+              <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>Quantity</Typography>
+              <TextField
                 type="number"
                 value={qty}
                 onChange={(e) => setQty(e.target.value)}
-                className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded px-2 py-1.5 text-sm focus:ring-1 focus:ring-blue-500"
+                size="small"
+                fullWidth
                 placeholder="1"
+                sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
               />
-            </div>
-            <button
+            </Box>
+            <Button
               onClick={handleGenerate}
               className="glass-btn glass-btn-primary"
             >
               Generate
-            </button>
-          </div>
+            </Button>
+          </Stack>
 
           {/* Generated Sizes Table */}
           {generatedSizes.length > 0 && (
-            <div className="border border-gray-300 dark:border-gray-600 rounded max-h-52 overflow-y-auto">
-              <div className="flex bg-blue-50 dark:bg-blue-900/30 text-xs font-semibold text-gray-700 dark:text-gray-300 border-b dark:border-gray-700 sticky top-0">
-                <div className="p-2 w-16 border-r dark:border-gray-700 text-center">S.No</div>
-                <div className="p-2 flex-1 border-r dark:border-gray-700">Size</div>
-                <div className="p-2 w-20 border-r dark:border-gray-700 text-center">Qty</div>
-                <div className="p-2 w-16 text-center">Action</div>
-              </div>
+            <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: "3.5px", maxHeight: 208, overflowY: "auto" }}>
+              <Stack direction="row" sx={{ bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08), fontSize: 10.5, fontWeight: 600, color: "text.secondary", borderBottom: 1, borderColor: "divider", position: "sticky", top: 0 }}>
+                <Box sx={{ p: 1, width: 64, borderRight: 1, borderColor: "divider", textAlign: "center" }}>S.No</Box>
+                <Box sx={{ p: 1, flex: 1, borderRight: 1, borderColor: "divider" }}>Size</Box>
+                <Box sx={{ p: 1, width: 80, borderRight: 1, borderColor: "divider", textAlign: "center" }}>Qty</Box>
+                <Box sx={{ p: 1, width: 64, textAlign: "center" }}>Action</Box>
+              </Stack>
               {generatedSizes.map((item, idx) => (
-                <div key={idx} className="flex text-sm border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                  <div className="p-2 w-16 border-r dark:border-gray-700 text-center text-xs text-gray-800 dark:text-gray-100">{idx + 1}</div>
-                  <div className="p-2 flex-1 border-r dark:border-gray-700 font-medium text-gray-800 dark:text-gray-100">{item.size}</div>
-                  <div className="p-2 w-20 border-r dark:border-gray-700 text-center">
-                    <input
+                <Stack key={idx} direction="row" sx={{ fontSize: 12.25, borderBottom: 1, borderColor: "divider", "&:hover": { bgcolor: "action.hover" } }}>
+                  <Box sx={{ p: 1, width: 64, borderRight: 1, borderColor: "divider", textAlign: "center", fontSize: 10.5, color: "text.primary" }}>{idx + 1}</Box>
+                  <Box sx={{ p: 1, flex: 1, borderRight: 1, borderColor: "divider", fontWeight: 500, color: "text.primary" }}>{item.size}</Box>
+                  <Box sx={{ p: 1, width: 80, borderRight: 1, borderColor: "divider", textAlign: "center" }}>
+                    <TextField
                       type="number"
                       value={item.qty}
                       onChange={(e) => handleQtyChange(idx, e.target.value)}
-                      className="w-full text-center border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded px-1 py-0.5 text-xs"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { textAlign: "center", fontSize: 10.5, py: 0.25 } }}
                     />
-                  </div>
-                  <div className="p-2 w-16 text-center">
-                    <button onClick={() => handleRemove(idx)} className="glass-btn glass-btn-danger">
+                  </Box>
+                  <Box sx={{ p: 1, width: 64, textAlign: "center" }}>
+                    <Button onClick={() => handleRemove(idx)} className="glass-btn glass-btn-danger">
                       <X className="w-3.5 h-3.5 inline" />
-                    </button>
-                  </div>
-                </div>
+                    </Button>
+                  </Box>
+                </Stack>
               ))}
-            </div>
+            </Box>
           )}
-        </div>
+        </Stack>
 
-        <div className="flex justify-end gap-2 px-4 py-3 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 rounded-b-lg">
-          <button
+        <Stack direction="row" spacing={1} sx={{ justifyContent: "flex-end", px: 2, py: 1.5, borderTop: 1, borderColor: "divider", bgcolor: "action.hover", borderBottomLeftRadius: "7px", borderBottomRightRadius: "7px" }}>
+          <Button
             onClick={handleClose}
             className="glass-btn glass-btn-secondary"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleApply}
             disabled={generatedSizes.length === 0}
             className="glass-btn glass-btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Apply Sizes
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </Stack>
+      </Box>
+    </Box>
   );
 };
 
@@ -1651,76 +1669,80 @@ const InventoryEntry = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
+    <Box sx={{ minHeight: "100vh", bgcolor: "background.default", display: "flex", flexDirection: "column" }}>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2.5 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
-        <div className="flex items-center space-x-2">
-          <button
+      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1.25, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+          <IconButton
             onClick={() => navigate(-1)}
-            className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+            sx={{ color: "text.secondary" }}
             type="button"
             aria-label="Back to previous page"
           >
             <ArrowLeft className="h-4 w-4" />
-          </button>
-          <h1 className="text-sm font-semibold flex items-center gap-1">
-            <button
+          </IconButton>
+          <Typography component="h1" sx={{ fontSize: 12.25, fontWeight: 600, display: "flex", alignItems: "center", gap: 0.5 }}>
+            <Button
               type="button"
               onClick={() => navigate("/warehouse")}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
+              sx={{ color: "primary.main", textTransform: "none", minWidth: "auto", p: 0, "&:hover": { textDecoration: "underline", bgcolor: "transparent" } }}
             >
               Warehouse
-            </button>
-            <span className="text-gray-400 dark:text-gray-500">/</span>
-            <span className="text-gray-800 dark:text-gray-100">{isViewMode ? "View Inventory Entry" : "Inventory Entry"}</span>
-          </h1>
-        </div>
-        <div className="flex items-center gap-2 text-sm">
+            </Button>
+            <Box component="span" sx={{ color: "text.disabled" }}>/</Box>
+            <Box component="span" sx={{ color: "text.primary" }}>{isViewMode ? "View Inventory Entry" : "Inventory Entry"}</Box>
+          </Typography>
+        </Stack>
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center", fontSize: 12.25 }}>
           {!isViewMode && (
             <>
-              <button
+              <Button
                 onClick={handleSave}
-                className="glass-btn glass-btn-success flex items-center"
+                className="glass-btn glass-btn-success"
+                sx={{ display: "flex", alignItems: "center" }}
               >
                 <Save className="w-4 h-4 mr-1" /> Save
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleSaveAndNext}
-                className="glass-btn glass-btn-primary flex items-center"
+                className="glass-btn glass-btn-primary"
+                sx={{ display: "flex", alignItems: "center" }}
               >
                 Save & Next
-              </button>
+              </Button>
             </>
           )}
-          <button
+          <Button
             onClick={() => navigate("/warehouse/inventory-entry/search")}
-            className="glass-btn glass-btn-primary flex items-center"
+            className="glass-btn glass-btn-primary"
+            sx={{ display: "flex", alignItems: "center" }}
           >
             <Search className="w-4 h-4 mr-1" /> Search
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => navigate("/warehouse")}
-            className="glass-btn glass-btn-secondary flex items-center"
+            className="glass-btn glass-btn-secondary"
+            sx={{ display: "flex", alignItems: "center" }}
           >
             <ArrowLeft className="w-4 h-4 mr-1" /> Back
-          </button>
-        </div>
-      </div>
+          </Button>
+        </Stack>
+      </Stack>
 
       {/* Main Content */}
-      <div className="flex-1 p-4 overflow-y-auto">
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm flex min-h-[calc(100vh-120px)]">
+      <Box sx={{ flex: 1, p: 2, overflowY: "auto" }}>
+        <Stack direction="row" sx={{ bgcolor: "background.paper", borderRadius: "7px", border: "1px solid", borderColor: "divider", boxShadow: 1, minHeight: "calc(100vh - 120px)" }}>
           {/* LEFT SECTION: Product Attributes */}
-          <div className="w-[420px] flex-shrink-0 p-3 border-r border-gray-200 dark:border-gray-700 overflow-y-auto">
-            <h2 className="text-sm font-bold text-gray-800 dark:text-gray-100 border-b border-gray-200 dark:border-gray-700 pb-2 mb-3 uppercase tracking-wide">
+          <Box sx={{ width: 420, flexShrink: 0, p: 1.5, borderRight: 1, borderColor: "divider", overflowY: "auto" }}>
+            <Typography component="h2" sx={{ fontSize: 12.25, fontWeight: 700, color: "text.primary", borderBottom: 1, borderColor: "divider", pb: 1, mb: 1.5, textTransform: "uppercase", letterSpacing: 0.5 }}>
               Product Attributes
-            </h2>
+            </Typography>
 
-            <div className="grid grid-cols-2 gap-x-3 gap-y-1">
-              <div className="mb-1.5">
-                <label className="block text-[11px] font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  <span className="text-red-500 dark:text-red-400">* </span>Product
-                </label>
+            <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", columnGap: 1.5, rowGap: 0.5 }}>
+              <Box sx={{ mb: 0.75 }}>
+                <Typography component="label" sx={{ display: "block", fontSize: 11, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
+                  <Box component="span" sx={{ color: "error.main" }}>* </Box>Product
+                </Typography>
                 <AsyncSearchSelect
                   name="productId"
                   value={attrs.productId}
@@ -1729,11 +1751,11 @@ const InventoryEntry = () => {
                   onAsyncSearch={handleAsyncProductSearch}
                   searchPlaceholder="Search product..."
                 />
-              </div>
-              <div className="mb-1.5">
-                <label className="block text-[11px] font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  {mandatoryFields.has("brandId") && <span className="text-red-500 dark:text-red-400">* </span>}Brand
-                </label>
+              </Box>
+              <Box sx={{ mb: 0.75 }}>
+                <Typography component="label" sx={{ display: "block", fontSize: 11, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
+                  {mandatoryFields.has("brandId") && <Box component="span" sx={{ color: "error.main" }}>* </Box>}Brand
+                </Typography>
                 <AsyncSearchSelect
                   name="brandId"
                   value={attrs.brandId}
@@ -1742,11 +1764,11 @@ const InventoryEntry = () => {
                   onAsyncSearch={handleAsyncBrandSearch}
                   searchPlaceholder="Search brand..."
                 />
-              </div>
+              </Box>
               {marginMin !== null || marginMax !== null ? (
-                <div className="col-span-2 text-[11px] text-gray-500 dark:text-gray-400 -mt-1 mb-1">
+                <Box sx={{ gridColumn: "span 2", fontSize: 11, color: "text.secondary", mt: -0.5, mb: 0.5 }}>
                   Margin: {marginMin ?? "—"}% - {marginMax ?? "—"}%
-                </div>
+                </Box>
               ) : null}
               <AttrText label="HSN Code" name="hsnCode" value={attrs.hsnCode} onChange={handleAttrChange} placeholder="Enter HSN" stacked />
               <AttrSelect label="Pattern" name="patternId" value={attrs.patternId} onChange={handleAttrChange} options={patterns} required={mandatoryFields.has("patternId")} stacked searchable searchPlaceholder="Search pattern..." />
@@ -1756,8 +1778,8 @@ const InventoryEntry = () => {
               <AttrSelect label="Type" name="typeId" value={attrs.typeId} onChange={handleAttrChange} options={types} required={mandatoryFields.has("typeId")} stacked searchable searchPlaceholder="Search type..." />
               <AttrSelect label="Material" name="materialId" value={attrs.materialId} onChange={handleAttrChange} options={materials} required={mandatoryFields.has("materialId")} stacked searchable searchPlaceholder="Search material..." />
               <AttrSelect label="Color" name="colorId" value={attrs.colorId} onChange={handleAttrChange} options={colors} required={mandatoryFields.has("colorId")} stacked searchable searchPlaceholder="Search color..." />
-              <div className="mb-1.5">
-                <label className="block text-[11px] font-medium text-gray-700 dark:text-gray-300 mb-1">Tax</label>
+              <Box sx={{ mb: 0.75 }}>
+                <Typography component="label" sx={{ display: "block", fontSize: 11, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>Tax</Typography>
                 <AsyncSearchSelect
                   name="taxId"
                   value={attrs.taxId}
@@ -1766,17 +1788,17 @@ const InventoryEntry = () => {
                   onAsyncSearch={handleAsyncTaxSearch}
                   searchPlaceholder="Search tax..."
                 />
-              </div>
-            </div>
+              </Box>
+            </Box>
 
             {/* Dynamic mandatory/visible fields from product configuration */}
             {visibleDynamicFields.size > 0 && (
               <>
-                <hr className="my-2 border-gray-200 dark:border-gray-700" />
-                <h3 className="text-[11px] font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide mb-1">
+                <Box component="hr" sx={{ my: 1, border: 0, borderTop: 1, borderColor: "divider" }} />
+                <Typography component="h3" sx={{ fontSize: 11, fontWeight: 600, color: "text.secondary", textTransform: "uppercase", letterSpacing: 0.5, mb: 0.5 }}>
                   Configured Attributes
-                </h3>
-                <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+                </Typography>
+                <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", columnGap: 1.5, rowGap: 0.5 }}>
                   {Object.entries(ATTR_FIELD_MAP)
                     .filter(([, m]) => m.dynamic && visibleDynamicFields.has(m.field))
                     .map(([, m]) => (
@@ -1791,121 +1813,122 @@ const InventoryEntry = () => {
                         stacked
                       />
                     ))}
-                </div>
+                </Box>
               </>
             )}
 
-            <hr className="my-2 border-gray-200 dark:border-gray-700" />
+            <Box component="hr" sx={{ my: 1, border: 0, borderTop: 1, borderColor: "divider" }} />
 
-            <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+            <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", columnGap: 1.5, rowGap: 0.5 }}>
               <AttrText label="Buying Price" name="buyingPrice" value={attrs.buyingPrice} onChange={handleAttrChange} placeholder="0.00" stacked />
               <AttrText label="Exp.Margin" name="expMargin" value={attrs.expMargin} onChange={handleAttrChange} placeholder="0.00" stacked />
               <AttrText label="P.Tax" name="pTax" value={attrs.pTax} onChange={handleAttrChange} placeholder="0.00" stacked />
               <AttrText label="S.Tax" name="sTax" value={attrs.sTax} onChange={handleAttrChange} placeholder="0.00" stacked />
               <AttrText label="Discount %" name="discount" value={attrs.discount} onChange={handleAttrChange} placeholder="0" stacked />
-            </div>
-          </div>
+            </Box>
+          </Box>
 
           {/* RIGHT SECTION: Item Entry Grid */}
-          <div className="flex-1 p-2 min-w-0">
+          <Box sx={{ flex: 1, p: 1, minWidth: 0 }}>
             {/* Supplier / Item Value / Total Bar */}
-            <div className="mb-2 overflow-hidden rounded border border-gray-300 dark:border-gray-700 bg-blue-50 dark:bg-blue-900/30">
-              <div className="flex items-stretch">
-                <div className="flex-1 grid grid-cols-1 gap-px bg-gray-300 dark:bg-gray-700 md:grid-cols-3">
-                  <div className="flex items-center justify-between gap-2 bg-blue-50 dark:bg-blue-900/30 px-2.5 py-1.5">
-                    <span className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">Supplier</span>
-                    <span className="text-xs font-bold text-gray-800 dark:text-gray-100 text-right">
+            <Box sx={{ mb: 1, overflow: "hidden", borderRadius: "3.5px", border: "1px solid", borderColor: "divider", bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08) }}>
+              <Stack direction="row" sx={{ alignItems: "stretch" }}>
+                <Box sx={{ flex: 1, display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(3, 1fr)" }, gap: "1px", bgcolor: "divider" }}>
+                  <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 1, bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08), px: 1.25, py: 0.75 }}>
+                    <Typography sx={{ fontSize: 12.25, fontWeight: 600, textTransform: "uppercase", color: "text.secondary" }}>Supplier</Typography>
+                    <Typography sx={{ fontSize: 12.25, fontWeight: 700, color: "text.primary", textAlign: "right" }}>
                       {hasTransportEntry ? (
                         supplierName || "-"
                       ) : (
-                        <span className="text-red-500 dark:text-red-400 font-normal">No transport entry linked</span>
+                        <Box component="span" sx={{ color: "error.main", fontWeight: 400 }}>No transport entry linked</Box>
                       )}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between gap-2 bg-blue-50 dark:bg-blue-900/30 px-2.5 py-1.5">
-                    <span className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">Item Value</span>
-                    <span className="text-xs font-bold text-blue-700 dark:text-blue-400">
+                    </Typography>
+                  </Stack>
+                  <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 1, bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08), px: 1.25, py: 0.75 }}>
+                    <Typography sx={{ fontSize: 12.25, fontWeight: 600, textTransform: "uppercase", color: "text.secondary" }}>Item Value</Typography>
+                    <Typography sx={{ fontSize: 12.25, fontWeight: 700, color: "primary.main" }}>
                       {formatMoney(itemValue || computedTotals.taxable)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between gap-2 bg-blue-50 dark:bg-blue-900/30 px-2.5 py-1.5">
-                    <span className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">Total</span>
-                    <span className="text-xs font-bold text-blue-700 dark:text-blue-400">
+                    </Typography>
+                  </Stack>
+                  <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 1, bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08), px: 1.25, py: 0.75 }}>
+                    <Typography sx={{ fontSize: 12.25, fontWeight: 600, textTransform: "uppercase", color: "text.secondary" }}>Total</Typography>
+                    <Typography sx={{ fontSize: 12.25, fontWeight: 700, color: "primary.main" }}>
                       {formatMoney(totalValue || rowsTotal)}
-                    </span>
-                  </div>
-                </div>
-                <button
+                    </Typography>
+                  </Stack>
+                </Box>
+                <Box
+                  component="button"
                   type="button"
                   onClick={() => setSummaryExpanded((prev) => !prev)}
-                  className="flex w-10 shrink-0 items-center justify-center border-l border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 transition hover:bg-gray-50 dark:hover:bg-gray-700"
+                  sx={{ display: "flex", width: 40, flexShrink: 0, alignItems: "center", justifyContent: "center", borderLeft: 1, borderColor: "divider", bgcolor: "background.paper", color: "text.secondary", transition: "background-color 0.15s", cursor: "pointer", "&:hover": { bgcolor: "action.hover" } }}
                   aria-expanded={summaryExpanded}
                   aria-label={summaryExpanded ? "Collapse inventory linked details" : "Expand inventory linked details"}
                   title={summaryExpanded ? "Collapse details" : "Expand details"}
                 >
-                  <ChevronDown className={`h-4 w-4 transition-transform ${summaryExpanded ? "rotate-180" : ""}`} />
-                </button>
-              </div>
+                  <ChevronDown className="h-4 w-4" style={{ transition: "transform 0.15s", transform: summaryExpanded ? "rotate(180deg)" : undefined }} />
+                </Box>
+              </Stack>
 
               {summaryExpanded && (
-                <div className="border-t border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 p-2.5">
-                  <div className="grid gap-3 xl:grid-cols-[330px_minmax(0,1fr)]">
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-                      <div>
-                        <div className="text-[11px] font-bold uppercase text-gray-700 dark:text-gray-300">INV.NO</div>
-                        <div className="text-xs text-gray-800 dark:text-gray-100">{invoiceSummary?.invoice_no || "-"}</div>
-                      </div>
-                      <div>
-                        <div className="text-[11px] font-bold uppercase text-gray-700 dark:text-gray-300">Date</div>
-                        <div className="text-xs text-gray-800 dark:text-gray-100">{formatDisplayDate(invoiceSummary?.invoice_date)}</div>
-                      </div>
-                      <div>
-                        <div className="text-[11px] font-bold uppercase text-gray-700 dark:text-gray-300">LR NO</div>
-                        <div className="text-xs text-gray-800 dark:text-gray-100">{transportSummary?.lr_no || "-"}</div>
-                      </div>
-                      <div>
-                        <div className="text-[11px] font-bold uppercase text-gray-700 dark:text-gray-300">Entry No</div>
-                        <div className="text-xs text-gray-800 dark:text-gray-100">{transportSummary?.lr_entry_no || "-"}</div>
-                      </div>
-                      <div>
-                        <div className="text-[11px] font-bold uppercase text-gray-700 dark:text-gray-300">Bundles</div>
-                        <div className="text-xs text-gray-800 dark:text-gray-100">
+                <Box sx={{ borderTop: 1, borderColor: "divider", bgcolor: "background.paper", p: 1.25 }}>
+                  <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { xl: "330px minmax(0,1fr)" } }}>
+                    <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", columnGap: 2, rowGap: 0.75 }}>
+                      <Box>
+                        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>INV.NO</Typography>
+                        <Typography sx={{ fontSize: 12.25, color: "text.primary" }}>{invoiceSummary?.invoice_no || "-"}</Typography>
+                      </Box>
+                      <Box>
+                        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>Date</Typography>
+                        <Typography sx={{ fontSize: 12.25, color: "text.primary" }}>{formatDisplayDate(invoiceSummary?.invoice_date)}</Typography>
+                      </Box>
+                      <Box>
+                        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>LR NO</Typography>
+                        <Typography sx={{ fontSize: 12.25, color: "text.primary" }}>{transportSummary?.lr_no || "-"}</Typography>
+                      </Box>
+                      <Box>
+                        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>Entry No</Typography>
+                        <Typography sx={{ fontSize: 12.25, color: "text.primary" }}>{transportSummary?.lr_entry_no || "-"}</Typography>
+                      </Box>
+                      <Box>
+                        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>Bundles</Typography>
+                        <Typography sx={{ fontSize: 12.25, color: "text.primary" }}>
                           {invoiceSummary?.bundles ?? transportSummary?.no_of_bundles ?? "-"}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-[11px] font-bold uppercase text-gray-700 dark:text-gray-300">Pieces</div>
-                        <div className="text-xs text-gray-800 dark:text-gray-100">
+                        </Typography>
+                      </Box>
+                      <Box>
+                        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>Pieces</Typography>
+                        <Typography sx={{ fontSize: 12.25, color: "text.primary" }}>
                           {invoiceSummary?.pieces ?? transportSummary?.no_of_pieces ?? "-"}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-[11px] font-bold uppercase text-gray-700 dark:text-gray-300">Freight</div>
-                        <div className="text-xs text-gray-800 dark:text-gray-100">
+                        </Typography>
+                      </Box>
+                      <Box>
+                        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>Freight</Typography>
+                        <Typography sx={{ fontSize: 12.25, color: "text.primary" }}>
                           {formatMoney(invoiceSummary?.lr_expense ?? transportSummary?.freight_charge_amount ?? 0)}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-[11px] font-bold uppercase text-gray-700 dark:text-gray-300">Loading</div>
-                        <div className="text-xs text-gray-800 dark:text-gray-100">
+                        </Typography>
+                      </Box>
+                      <Box>
+                        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>Loading</Typography>
+                        <Typography sx={{ fontSize: 12.25, color: "text.primary" }}>
                           {formatMoney(transportSummary?.loading_charge_amount ?? 0)}
-                        </div>
-                      </div>
-                    </div>
+                        </Typography>
+                      </Box>
+                    </Box>
 
-                    <div className="overflow-x-auto rounded border border-gray-300 dark:border-gray-700">
-                      <table className="min-w-full text-xs">
-                        <thead className="bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-                          <tr>
-                            <th className="border-b border-gray-300 dark:border-gray-700 px-2 py-1.5 text-left font-bold">Type</th>
-                            <th className="border-b border-gray-300 dark:border-gray-700 px-2 py-1.5 text-left font-bold">Tax %</th>
-                            <th className="border-b border-gray-300 dark:border-gray-700 px-2 py-1.5 text-right font-bold">Amount</th>
-                            <th className="border-b border-gray-300 dark:border-gray-700 px-2 py-1.5 text-right font-bold">Discnt</th>
-                            <th className="border-b border-gray-300 dark:border-gray-700 px-2 py-1.5 text-right font-bold">Tax</th>
-                            <th className="border-b border-gray-300 dark:border-gray-700 px-2 py-1.5 text-right font-bold">Total</th>
-                          </tr>
-                        </thead>
-                        <tbody>
+                    <Box sx={{ overflowX: "auto", borderRadius: "3.5px", border: "1px solid", borderColor: "divider" }}>
+                      <Table size="small" sx={{ minWidth: "100%", fontSize: 12.25 }}>
+                        <TableHead sx={{ bgcolor: "action.hover" }}>
+                          <TableRow>
+                            <TableCell sx={{ borderBottom: 1, borderColor: "divider", px: 1, py: 0.75, textAlign: "left", fontWeight: 700, fontSize: 12.25 }}>Type</TableCell>
+                            <TableCell sx={{ borderBottom: 1, borderColor: "divider", px: 1, py: 0.75, textAlign: "left", fontWeight: 700, fontSize: 12.25 }}>Tax %</TableCell>
+                            <TableCell sx={{ borderBottom: 1, borderColor: "divider", px: 1, py: 0.75, textAlign: "right", fontWeight: 700, fontSize: 12.25 }}>Amount</TableCell>
+                            <TableCell sx={{ borderBottom: 1, borderColor: "divider", px: 1, py: 0.75, textAlign: "right", fontWeight: 700, fontSize: 12.25 }}>Discnt</TableCell>
+                            <TableCell sx={{ borderBottom: 1, borderColor: "divider", px: 1, py: 0.75, textAlign: "right", fontWeight: 700, fontSize: 12.25 }}>Tax</TableCell>
+                            <TableCell sx={{ borderBottom: 1, borderColor: "divider", px: 1, py: 0.75, textAlign: "right", fontWeight: 700, fontSize: 12.25 }}>Total</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
                           {invoiceSummary?.items?.length ? (
                             invoiceSummary.items.map((row) => {
                               const amountOn = Number(row.amount_on) || 0;
@@ -1916,64 +1939,66 @@ const InventoryEntry = () => {
                               const totalAmount = Number(row.net_amount) || amountOn - discountAmount + taxAmount;
 
                               return (
-                                <tr key={row.id} className="text-gray-800 dark:text-gray-100">
-                                  <td className="border-b border-gray-200 dark:border-gray-700 px-2 py-1.5">{row.type || "-"}</td>
-                                  <td className="border-b border-gray-200 dark:border-gray-700 px-2 py-1.5">{taxPerc.toFixed(2)}%</td>
-                                  <td className="border-b border-gray-200 dark:border-gray-700 px-2 py-1.5 text-right">{formatMoney(amountOn)}</td>
-                                  <td className="border-b border-gray-200 dark:border-gray-700 px-2 py-1.5 text-right">
+                                <TableRow key={row.id} sx={{ color: "text.primary" }}>
+                                  <TableCell sx={{ borderBottom: 1, borderColor: "divider", px: 1, py: 0.75, fontSize: 12.25 }}>{row.type || "-"}</TableCell>
+                                  <TableCell sx={{ borderBottom: 1, borderColor: "divider", px: 1, py: 0.75, fontSize: 12.25 }}>{taxPerc.toFixed(2)}%</TableCell>
+                                  <TableCell sx={{ borderBottom: 1, borderColor: "divider", px: 1, py: 0.75, textAlign: "right", fontSize: 12.25 }}>{formatMoney(amountOn)}</TableCell>
+                                  <TableCell sx={{ borderBottom: 1, borderColor: "divider", px: 1, py: 0.75, textAlign: "right", fontSize: 12.25 }}>
                                     {`${formatMoney(discountAmount)}@${discountPerc.toFixed(2)}%`}
-                                  </td>
-                                  <td className="border-b border-gray-200 dark:border-gray-700 px-2 py-1.5 text-right">{formatMoney(taxAmount)}</td>
-                                  <td className="border-b border-gray-200 dark:border-gray-700 px-2 py-1.5 text-right">{formatMoney(totalAmount)}</td>
-                                </tr>
+                                  </TableCell>
+                                  <TableCell sx={{ borderBottom: 1, borderColor: "divider", px: 1, py: 0.75, textAlign: "right", fontSize: 12.25 }}>{formatMoney(taxAmount)}</TableCell>
+                                  <TableCell sx={{ borderBottom: 1, borderColor: "divider", px: 1, py: 0.75, textAlign: "right", fontSize: 12.25 }}>{formatMoney(totalAmount)}</TableCell>
+                                </TableRow>
                               );
                             })
                           ) : (
-                            <tr>
-                              <td colSpan={6} className="px-3 py-4 text-center text-xs text-gray-400 dark:text-gray-500">
+                            <TableRow>
+                              <TableCell colSpan={6} sx={{ px: 1.5, py: 2, textAlign: "center", fontSize: 12.25, color: "text.disabled" }}>
                                 No invoice detail found.
-                              </td>
-                            </tr>
+                              </TableCell>
+                            </TableRow>
                           )}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
+                        </TableBody>
+                      </Table>
+                    </Box>
+                  </Box>
+                </Box>
               )}
-            </div>
+            </Box>
 
-            <div className="overflow-visible mb-2 relative z-40">
-              <div className="min-w-0">
+            <Box sx={{ overflow: "visible", mb: 1, position: "relative", zIndex: 40 }}>
+              <Box sx={{ minWidth: 0 }}>
                 {/* Entry Row Header Labels — widths match table columns */}
-                <div className="text-[11px] font-semibold text-red-700 dark:text-red-400 flex items-center mb-0.5">
-                  <div className="px-1 py-0.5 w-10 shrink-0 text-center">S.No</div>
-                  <div className="px-1 py-0.5 w-20 shrink-0">Size</div>
-                  <div className="px-1 py-0.5 w-20 shrink-0">Design No</div>
-                  <div className="px-1 py-0.5 w-16 shrink-0"></div>
-                  <div className="px-1 py-0.5 w-12 shrink-0 text-right">Qty</div>
-                  <div className="px-1 py-0.5 w-20 shrink-0 text-right">Cost</div>
-                  <div className="px-1 py-0.5 w-14 shrink-0"></div>
-                  <div className="px-1 py-0.5 w-16 shrink-0 text-right">Mrgn%</div>
-                  <div className="px-1 py-0.5 w-16 shrink-0 text-right">Sale</div>
-                  <div className="px-1 py-0.5 w-16 shrink-0 text-right">MRP</div>
-                  <div className="px-1 py-0.5 w-14 shrink-0 text-right">Dis%</div>
-                  <div className="px-1 py-0.5 w-16 shrink-0 text-right">Final</div>
-                  <div className="px-1 py-0.5 w-20 shrink-0"></div>
-                  <div className="px-1 py-0.5 w-16 shrink-0"></div>
-                </div>
+                <Stack direction="row" sx={{ fontSize: 11, fontWeight: 600, color: "error.main", alignItems: "center", mb: 0.25 }}>
+                  <Box sx={{ px: 0.5, py: 0.25, width: 40, flexShrink: 0, textAlign: "center" }}>S.No</Box>
+                  <Box sx={{ px: 0.5, py: 0.25, width: 80, flexShrink: 0 }}>Size</Box>
+                  <Box sx={{ px: 0.5, py: 0.25, width: 80, flexShrink: 0 }}>Design No</Box>
+                  <Box sx={{ px: 0.5, py: 0.25, width: 64, flexShrink: 0 }} />
+                  <Box sx={{ px: 0.5, py: 0.25, width: 48, flexShrink: 0, textAlign: "right" }}>Qty</Box>
+                  <Box sx={{ px: 0.5, py: 0.25, width: 80, flexShrink: 0, textAlign: "right" }}>Cost</Box>
+                  <Box sx={{ px: 0.5, py: 0.25, width: 56, flexShrink: 0 }} />
+                  <Box sx={{ px: 0.5, py: 0.25, width: 64, flexShrink: 0, textAlign: "right" }}>Mrgn%</Box>
+                  <Box sx={{ px: 0.5, py: 0.25, width: 64, flexShrink: 0, textAlign: "right" }}>Sale</Box>
+                  <Box sx={{ px: 0.5, py: 0.25, width: 64, flexShrink: 0, textAlign: "right" }}>MRP</Box>
+                  <Box sx={{ px: 0.5, py: 0.25, width: 56, flexShrink: 0, textAlign: "right" }}>Dis%</Box>
+                  <Box sx={{ px: 0.5, py: 0.25, width: 64, flexShrink: 0, textAlign: "right" }}>Final</Box>
+                  <Box sx={{ px: 0.5, py: 0.25, width: 80, flexShrink: 0 }} />
+                  <Box sx={{ px: 0.5, py: 0.25, width: 64, flexShrink: 0 }} />
+                </Stack>
 
                 {/* Entry Row — widths match table columns */}
-                <div className="flex items-center bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded px-1 py-0.5">
-                  <div className="p-0.5 w-10 shrink-0">
-                    <input
+                <Stack direction="row" sx={{ alignItems: "center", bgcolor: "action.hover", border: "1px solid", borderColor: "divider", borderRadius: "3.5px", px: 0.5, py: 0.25 }}>
+                  <Box sx={{ p: 0.25, width: 40, flexShrink: 0 }}>
+                    <TextField
                       type="text"
                       value={currentItem.sNo}
-                      readOnly
-                      className="w-full text-center border border-gray-300 dark:border-gray-600 rounded px-1 py-0.5 text-xs bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      slotProps={{ input: { readOnly: true } }}
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { textAlign: "center", fontSize: 12.25, py: 0.25 } }}
                     />
-                  </div>
-                  <div className="p-0.5 w-20 shrink-0">
+                  </Box>
+                  <Box sx={{ p: 0.25, width: 80, flexShrink: 0 }}>
                     <SearchableSizeSelect
                       value={currentItem.size}
                       onChange={handleSizeChange}
@@ -1981,87 +2006,103 @@ const InventoryEntry = () => {
                       sizeGroups={sizeGroups}
                       onJump={() => setJumpOpen(true)}
                     />
-                  </div>
-                  <div className="p-0.5 w-20 shrink-0">
-                    <input
+                  </Box>
+                  <Box sx={{ p: 0.25, width: 80, flexShrink: 0 }}>
+                    <TextField
                       type="text"
                       name="designNo"
                       value={currentItem.designNo}
                       onChange={handleItemChange}
                       placeholder="Design No"
-                      className="w-full border border-gray-300 dark:border-gray-600 rounded px-1 py-0.5 text-xs bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.25 } }}
                     />
-                  </div>
-                  <div className="p-0.5 w-16 shrink-0"></div>
-                  <div className="p-0.5 w-12 shrink-0">
-                    <input
+                  </Box>
+                  <Box sx={{ p: 0.25, width: 64, flexShrink: 0 }} />
+                  <Box sx={{ p: 0.25, width: 48, flexShrink: 0 }}>
+                    <TextField
                       type="number"
                       name="qty"
                       value={currentItem.qty}
                       onChange={handleItemChange}
                       placeholder="0"
-                      readOnly={Boolean(currentItem.jumpSizes?.length)}
-                      className={`w-full text-right border border-gray-300 dark:border-gray-600 rounded px-1 py-0.5 text-xs ${currentItem.jumpSizes?.length ? "bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400" : "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"}`}
+                      slotProps={{ input: { readOnly: Boolean(currentItem.jumpSizes?.length) } }}
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, py: 0.25 }, ...(currentItem.jumpSizes?.length ? { "& .MuiInputBase-root": { bgcolor: "action.hover" }, "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, py: 0.25, color: "text.disabled" } } : {}) }}
                     />
-                  </div>
-                  <div className="p-0.5 w-20 shrink-0">
-                    <input
+                  </Box>
+                  <Box sx={{ p: 0.25, width: 80, flexShrink: 0 }}>
+                    <TextField
                       type="number"
                       name="cost"
                       value={currentItem.cost}
                       onChange={handleItemChange}
                       placeholder="0.00"
-                      className="w-full text-right border border-gray-300 dark:border-gray-600 rounded px-1 py-0.5 text-xs bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, py: 0.25 } }}
                     />
-                  </div>
-                  <div className="p-0.5 w-14 shrink-0"></div>
-                  <div className="p-0.5 w-16 shrink-0">
-                    <input
+                  </Box>
+                  <Box sx={{ p: 0.25, width: 56, flexShrink: 0 }} />
+                  <Box sx={{ p: 0.25, width: 64, flexShrink: 0 }}>
+                    <TextField
                       type="number"
                       name="marginPerc"
                       value={currentItem.marginPerc}
                       onChange={handleItemChange}
                       placeholder="0"
-                      className="w-full text-right border border-gray-300 dark:border-gray-600 rounded px-1 py-0.5 text-xs bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, py: 0.25 } }}
                     />
-                  </div>
-                  <div className="p-0.5 w-16 shrink-0">
-                    <input
+                  </Box>
+                  <Box sx={{ p: 0.25, width: 64, flexShrink: 0 }}>
+                    <TextField
                       type="text"
                       value={currentItem.sellingPrice || ""}
-                      readOnly
-                      className="w-full text-right border border-gray-300 dark:border-gray-600 rounded px-1 py-0.5 text-xs bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400"
+                      slotProps={{ input: { readOnly: true } }}
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-root": { bgcolor: "action.hover" }, "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, py: 0.25, color: "text.disabled" } }}
                     />
-                  </div>
-                  <div className="p-0.5 w-16 shrink-0">
-                    <input
+                  </Box>
+                  <Box sx={{ p: 0.25, width: 64, flexShrink: 0 }}>
+                    <TextField
                       type="text"
                       value={currentItem.mrp || ""}
-                      readOnly
-                      className="w-full text-right border border-gray-300 dark:border-gray-600 rounded px-1 py-0.5 text-xs bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400"
+                      slotProps={{ input: { readOnly: true } }}
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-root": { bgcolor: "action.hover" }, "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, py: 0.25, color: "text.disabled" } }}
                     />
-                  </div>
-                  <div className="p-0.5 w-14 shrink-0">
-                    <input
+                  </Box>
+                  <Box sx={{ p: 0.25, width: 56, flexShrink: 0 }}>
+                    <TextField
                       type="number"
                       name="discountPerc"
                       value={currentItem.discountPerc}
                       onChange={handleItemChange}
                       placeholder="0"
-                      className="w-full text-right border border-gray-300 dark:border-gray-600 rounded px-1 py-0.5 text-xs bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, py: 0.25 } }}
                     />
-                  </div>
-                  <div className="p-0.5 w-16 shrink-0">
-                    <input
+                  </Box>
+                  <Box sx={{ p: 0.25, width: 64, flexShrink: 0 }}>
+                    <TextField
                       type="text"
                       value={currentItem.finalPrice || ""}
-                      readOnly
-                      className="w-full text-right border border-gray-300 dark:border-gray-600 rounded px-1 py-0.5 text-xs bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400"
+                      slotProps={{ input: { readOnly: true } }}
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-root": { bgcolor: "action.hover" }, "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, py: 0.25, color: "text.disabled" } }}
                     />
-                  </div>
-                  <div className="p-0.5 w-20 shrink-0"></div>
-                  <div className="p-0.5 w-16 shrink-0 flex items-center justify-center">
-                    <button
+                  </Box>
+                  <Box sx={{ p: 0.25, width: 80, flexShrink: 0 }} />
+                  <Box sx={{ p: 0.25, width: 64, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Button
                       onClick={handleAddItem}
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
@@ -2070,228 +2111,265 @@ const InventoryEntry = () => {
                           handleAddItem();
                         }
                       }}
-                      className="glass-btn w-7 h-7 flex items-center justify-center"
+                      className="glass-btn"
+                      sx={{ width: 28, height: 28, minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center" }}
                       title={editIndex !== null ? "Update Item" : "Add Item"}
                     >
                       <Plus className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
+                    </Button>
+                  </Box>
+                </Stack>
+              </Box>
+            </Box>
 
             {/* Items Table */}
-            <div className="relative z-0">
-              <div className="overflow-hidden rounded-t border border-b-0 border-gray-300 dark:border-gray-700">
-                <div className="flex bg-blue-100 dark:bg-blue-900/30 text-[11px] font-semibold text-gray-700 dark:text-gray-300 border-b dark:border-gray-700">
-                  <div className="px-2 py-1.5 w-10 border-r dark:border-gray-700 text-center">S.No</div>
-                  <div className="px-2 py-1.5 w-20 border-r dark:border-gray-700">Size</div>
-                  <div className="px-2 py-1.5 w-20 border-r dark:border-gray-700">Design</div>
-                  <div className="px-2 py-1.5 w-16 border-r dark:border-gray-700">HSN</div>
-                  <div className="px-2 py-1.5 w-12 border-r dark:border-gray-700 text-right">Qty</div>
-                  <div className="px-2 py-1.5 w-20 border-r dark:border-gray-700 text-right">Cost</div>
-                  <div className="px-2 py-1.5 w-14 border-r dark:border-gray-700 text-right">P.Dis</div>
-                  <div className="px-2 py-1.5 w-16 border-r dark:border-gray-700 text-right">Mrgn%</div>
-                  <div className="px-2 py-1.5 w-16 border-r dark:border-gray-700 text-right">Sale</div>
-                  <div className="px-2 py-1.5 w-16 border-r dark:border-gray-700 text-right">MRP</div>
-                  <div className="px-2 py-1.5 w-14 border-r dark:border-gray-700 text-right">Dis%</div>
-                  <div className="px-2 py-1.5 w-16 border-r dark:border-gray-700 text-right">Final</div>
-                  <div className="px-2 py-1.5 w-20 border-r dark:border-gray-700 text-right">Amount</div>
-                  <div className="px-2 py-1.5 w-16 text-center">Actions</div>
-                </div>
+            <Box sx={{ position: "relative", zIndex: 0 }}>
+              <Box sx={{ overflow: "hidden", borderRadius: "3.5px 3.5px 0 0", border: "1px solid", borderBottom: 0, borderColor: "divider" }}>
+                <Stack direction="row" sx={{ bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08), fontSize: 11, fontWeight: 600, color: "text.secondary", borderBottom: 1, borderColor: "divider" }}>
+                  <Box sx={{ px: 1, py: 0.75, width: 40, borderRight: 1, borderColor: "divider", textAlign: "center" }}>S.No</Box>
+                  <Box sx={{ px: 1, py: 0.75, width: 80, borderRight: 1, borderColor: "divider" }}>Size</Box>
+                  <Box sx={{ px: 1, py: 0.75, width: 80, borderRight: 1, borderColor: "divider" }}>Design</Box>
+                  <Box sx={{ px: 1, py: 0.75, width: 64, borderRight: 1, borderColor: "divider" }}>HSN</Box>
+                  <Box sx={{ px: 1, py: 0.75, width: 48, borderRight: 1, borderColor: "divider", textAlign: "right" }}>Qty</Box>
+                  <Box sx={{ px: 1, py: 0.75, width: 80, borderRight: 1, borderColor: "divider", textAlign: "right" }}>Cost</Box>
+                  <Box sx={{ px: 1, py: 0.75, width: 56, borderRight: 1, borderColor: "divider", textAlign: "right" }}>P.Dis</Box>
+                  <Box sx={{ px: 1, py: 0.75, width: 64, borderRight: 1, borderColor: "divider", textAlign: "right" }}>Mrgn%</Box>
+                  <Box sx={{ px: 1, py: 0.75, width: 64, borderRight: 1, borderColor: "divider", textAlign: "right" }}>Sale</Box>
+                  <Box sx={{ px: 1, py: 0.75, width: 64, borderRight: 1, borderColor: "divider", textAlign: "right" }}>MRP</Box>
+                  <Box sx={{ px: 1, py: 0.75, width: 56, borderRight: 1, borderColor: "divider", textAlign: "right" }}>Dis%</Box>
+                  <Box sx={{ px: 1, py: 0.75, width: 64, borderRight: 1, borderColor: "divider", textAlign: "right" }}>Final</Box>
+                  <Box sx={{ px: 1, py: 0.75, width: 80, borderRight: 1, borderColor: "divider", textAlign: "right" }}>Amount</Box>
+                  <Box sx={{ px: 1, py: 0.75, width: 64, textAlign: "center" }}>Actions</Box>
+                </Stack>
 
-                <div className="flex bg-sky-50 dark:bg-sky-900/20 border-b dark:border-gray-700">
-                  <div className="px-2 py-1 w-10 border-r dark:border-gray-700"></div>
-                  <div className="px-2 py-1 w-20 border-r dark:border-gray-700">
-                    <input
+                <Stack direction="row" sx={{ bgcolor: (theme) => alpha(theme.palette.info.main, theme.palette.mode === "dark" ? 0.12 : 0.06), borderBottom: 1, borderColor: "divider" }}>
+                  <Box sx={{ px: 1, py: 0.5, width: 40, borderRight: 1, borderColor: "divider" }} />
+                  <Box sx={{ px: 1, py: 0.5, width: 80, borderRight: 1, borderColor: "divider" }}>
+                    <TextField
                       type="text"
                       value={itemFilters.size}
                       onChange={(event) => handleItemFilterChange("size", event.target.value)}
                       placeholder="Search size"
-                      className="w-full border border-gray-300 dark:border-gray-600 rounded px-1 py-0.5 text-xs bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.25 } }}
                     />
-                  </div>
-                  <div className="px-2 py-1 w-20 border-r dark:border-gray-700">
-                    <input
+                  </Box>
+                  <Box sx={{ px: 1, py: 0.5, width: 80, borderRight: 1, borderColor: "divider" }}>
+                    <TextField
                       type="text"
                       value={itemFilters.designNo}
                       onChange={(event) => handleItemFilterChange("designNo", event.target.value)}
                       placeholder="Search design"
-                      className="w-full border border-gray-300 dark:border-gray-600 rounded px-1 py-0.5 text-xs bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.25 } }}
                     />
-                  </div>
-                  <div className="px-2 py-1 w-16 border-r dark:border-gray-700">
-                    <input
+                  </Box>
+                  <Box sx={{ px: 1, py: 0.5, width: 64, borderRight: 1, borderColor: "divider" }}>
+                    <TextField
                       type="text"
                       value={itemFilters.hsnCode}
                       onChange={(event) => handleItemFilterChange("hsnCode", event.target.value)}
                       placeholder="HSN"
-                      className="w-full border border-gray-300 dark:border-gray-600 rounded px-1 py-0.5 text-xs bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.25 } }}
                     />
-                  </div>
-                  <div className="px-2 py-1 w-12 border-r dark:border-gray-700">
-                    <input
+                  </Box>
+                  <Box sx={{ px: 1, py: 0.5, width: 48, borderRight: 1, borderColor: "divider" }}>
+                    <TextField
                       type="text"
                       value={itemFilters.qty}
                       onChange={(event) => handleItemFilterChange("qty", event.target.value)}
                       placeholder="Qty"
-                      className="w-full border border-gray-300 dark:border-gray-600 rounded px-1 py-0.5 text-xs text-right bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, py: 0.25 } }}
                     />
-                  </div>
-                  <div className="px-2 py-1 w-20 border-r dark:border-gray-700">
-                    <input
+                  </Box>
+                  <Box sx={{ px: 1, py: 0.5, width: 80, borderRight: 1, borderColor: "divider" }}>
+                    <TextField
                       type="text"
                       value={itemFilters.cost}
                       onChange={(event) => handleItemFilterChange("cost", event.target.value)}
                       placeholder="Cost"
-                      className="w-full border border-gray-300 dark:border-gray-600 rounded px-1 py-0.5 text-xs text-right bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, py: 0.25 } }}
                     />
-                  </div>
-                  <div className="px-2 py-1 w-14 border-r dark:border-gray-700">
-                    <input
+                  </Box>
+                  <Box sx={{ px: 1, py: 0.5, width: 56, borderRight: 1, borderColor: "divider" }}>
+                    <TextField
                       type="text"
                       value={itemFilters.pDis}
                       onChange={(event) => handleItemFilterChange("pDis", event.target.value)}
                       placeholder="P.Dis"
-                      className="w-full border border-gray-300 dark:border-gray-600 rounded px-1 py-0.5 text-xs text-right bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, py: 0.25 } }}
                     />
-                  </div>
-                  <div className="px-2 py-1 w-16 border-r dark:border-gray-700">
-                    <input
+                  </Box>
+                  <Box sx={{ px: 1, py: 0.5, width: 64, borderRight: 1, borderColor: "divider" }}>
+                    <TextField
                       type="text"
                       value={itemFilters.marginPerc}
                       onChange={(event) => handleItemFilterChange("marginPerc", event.target.value)}
                       placeholder="Margin"
-                      className="w-full border border-gray-300 dark:border-gray-600 rounded px-1 py-0.5 text-xs text-right bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, py: 0.25 } }}
                     />
-                  </div>
-                  <div className="px-2 py-1 w-16 border-r dark:border-gray-700">
-                    <input
+                  </Box>
+                  <Box sx={{ px: 1, py: 0.5, width: 64, borderRight: 1, borderColor: "divider" }}>
+                    <TextField
                       type="text"
                       value={itemFilters.sellingPrice}
                       onChange={(event) => handleItemFilterChange("sellingPrice", event.target.value)}
                       placeholder="Sale"
-                      className="w-full border border-gray-300 dark:border-gray-600 rounded px-1 py-0.5 text-xs text-right bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, py: 0.25 } }}
                     />
-                  </div>
-                  <div className="px-2 py-1 w-16 border-r dark:border-gray-700">
-                    <input
+                  </Box>
+                  <Box sx={{ px: 1, py: 0.5, width: 64, borderRight: 1, borderColor: "divider" }}>
+                    <TextField
                       type="text"
                       value={itemFilters.mrp}
                       onChange={(event) => handleItemFilterChange("mrp", event.target.value)}
                       placeholder="MRP"
-                      className="w-full border border-gray-300 dark:border-gray-600 rounded px-1 py-0.5 text-xs text-right bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, py: 0.25 } }}
                     />
-                  </div>
-                  <div className="px-2 py-1 w-14 border-r dark:border-gray-700">
-                    <input
+                  </Box>
+                  <Box sx={{ px: 1, py: 0.5, width: 56, borderRight: 1, borderColor: "divider" }}>
+                    <TextField
                       type="text"
                       value={itemFilters.discountPerc}
                       onChange={(event) => handleItemFilterChange("discountPerc", event.target.value)}
                       placeholder="Dis%"
-                      className="w-full border border-gray-300 dark:border-gray-600 rounded px-1 py-0.5 text-xs text-right bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, py: 0.25 } }}
                     />
-                  </div>
-                  <div className="px-2 py-1 w-16 border-r dark:border-gray-700">
-                    <input
+                  </Box>
+                  <Box sx={{ px: 1, py: 0.5, width: 64, borderRight: 1, borderColor: "divider" }}>
+                    <TextField
                       type="text"
                       value={itemFilters.finalPrice}
                       onChange={(event) => handleItemFilterChange("finalPrice", event.target.value)}
                       placeholder="Final"
-                      className="w-full border border-gray-300 dark:border-gray-600 rounded px-1 py-0.5 text-xs text-right bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, py: 0.25 } }}
                     />
-                  </div>
-                  <div className="px-2 py-1 w-20 border-r dark:border-gray-700">
-                    <input
+                  </Box>
+                  <Box sx={{ px: 1, py: 0.5, width: 80, borderRight: 1, borderColor: "divider" }}>
+                    <TextField
                       type="text"
                       value={itemFilters.amount}
                       onChange={(event) => handleItemFilterChange("amount", event.target.value)}
                       placeholder="Amount"
-                      className="w-full border border-gray-300 dark:border-gray-600 rounded px-1 py-0.5 text-xs text-right bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, py: 0.25 } }}
                     />
-                  </div>
-                  <div className="px-2 py-1 w-16 flex items-center justify-center text-[10px] text-gray-500 dark:text-gray-400">
+                  </Box>
+                  <Box sx={{ px: 1, py: 0.5, width: 64, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "text.secondary" }}>
                     Search
-                  </div>
-                </div>
-              </div>
+                  </Box>
+                </Stack>
+              </Box>
 
-              <div className="h-[340px] overflow-y-auto border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800" style={{ scrollbarGutter: "stable" }}>
+              <Box sx={{ height: 340, overflowY: "auto", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", scrollbarGutter: "stable" }}>
                 {filteredItems.length === 0 ? (
-                  <div className="flex h-full items-center justify-center px-4 text-center text-xs text-gray-400 dark:text-gray-500">
+                  <Box sx={{ display: "flex", height: "100%", alignItems: "center", justifyContent: "center", px: 2, textAlign: "center", fontSize: 12.25, color: "text.disabled" }}>
                     {items.length === 0
                       ? hasTransportEntry
                         ? "No items added yet. Use the entry row above to add items."
                         : "Open this page from the warehouse workflow to add inventory items."
                       : "No items match the current search."}
-                  </div>
+                  </Box>
                 ) : (
                   filteredItems.map(({ item, index }) => (
-                    <div
+                    <Stack
                       key={item.id}
-                      className={`flex text-xs text-gray-800 dark:text-gray-100 border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 ${editIndex === index ? "bg-blue-50 dark:bg-blue-900/20" : ""}`}
+                      direction="row"
+                      sx={{
+                        fontSize: 12.25,
+                        color: "text.primary",
+                        borderBottom: 1,
+                        borderColor: "divider",
+                        "&:hover": { bgcolor: "action.hover" },
+                        ...(editIndex === index ? { bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08) } : {}),
+                      }}
                     >
-                      <div className="px-2 py-1.5 w-10 border-r dark:border-gray-700 text-center">{item.sNo}</div>
-                      <div className="px-2 py-1.5 w-20 border-r dark:border-gray-700 truncate">{item.size || "-"}</div>
-                      <div className="px-2 py-1.5 w-20 border-r dark:border-gray-700 truncate">{item.designNo || "-"}</div>
-                      <div className="px-2 py-1.5 w-16 border-r dark:border-gray-700 truncate">{item.hsnCode || attrs.hsnCode || "-"}</div>
-                      <div className="px-2 py-1.5 w-12 border-r dark:border-gray-700 text-right">{item.qty}</div>
-                      <div className="px-2 py-1.5 w-20 border-r dark:border-gray-700 text-right">{formatMoney(item.cost)}</div>
-                      <div className="px-2 py-1.5 w-14 border-r dark:border-gray-700 text-right">{formatMoney(item.pDis)}</div>
-                      <div className="px-2 py-1.5 w-16 border-r dark:border-gray-700 text-right">{item.marginPerc || 0}%</div>
-                      <div className="px-2 py-1.5 w-16 border-r dark:border-gray-700 text-right">{formatMoney(item.sellingPrice)}</div>
-                      <div className="px-2 py-1.5 w-16 border-r dark:border-gray-700 text-right">{formatMoney(item.mrp)}</div>
-                      <div className="px-2 py-1.5 w-14 border-r dark:border-gray-700 text-right">{item.discountPerc || 0}%</div>
-                      <div className="px-2 py-1.5 w-16 border-r dark:border-gray-700 text-right">{formatMoney(item.finalPrice)}</div>
-                      <div className="px-2 py-1.5 w-20 border-r dark:border-gray-700 text-right font-medium">{formatMoney(item.amount)}</div>
-                      <div className="px-2 py-1.5 w-16 flex items-center justify-center gap-1">
-                        <button
+                      <Box sx={{ px: 1, py: 0.75, width: 40, borderRight: 1, borderColor: "divider", textAlign: "center" }}>{item.sNo}</Box>
+                      <Box sx={{ px: 1, py: 0.75, width: 80, borderRight: 1, borderColor: "divider", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.size || "-"}</Box>
+                      <Box sx={{ px: 1, py: 0.75, width: 80, borderRight: 1, borderColor: "divider", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.designNo || "-"}</Box>
+                      <Box sx={{ px: 1, py: 0.75, width: 64, borderRight: 1, borderColor: "divider", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.hsnCode || attrs.hsnCode || "-"}</Box>
+                      <Box sx={{ px: 1, py: 0.75, width: 48, borderRight: 1, borderColor: "divider", textAlign: "right" }}>{item.qty}</Box>
+                      <Box sx={{ px: 1, py: 0.75, width: 80, borderRight: 1, borderColor: "divider", textAlign: "right" }}>{formatMoney(item.cost)}</Box>
+                      <Box sx={{ px: 1, py: 0.75, width: 56, borderRight: 1, borderColor: "divider", textAlign: "right" }}>{formatMoney(item.pDis)}</Box>
+                      <Box sx={{ px: 1, py: 0.75, width: 64, borderRight: 1, borderColor: "divider", textAlign: "right" }}>{item.marginPerc || 0}%</Box>
+                      <Box sx={{ px: 1, py: 0.75, width: 64, borderRight: 1, borderColor: "divider", textAlign: "right" }}>{formatMoney(item.sellingPrice)}</Box>
+                      <Box sx={{ px: 1, py: 0.75, width: 64, borderRight: 1, borderColor: "divider", textAlign: "right" }}>{formatMoney(item.mrp)}</Box>
+                      <Box sx={{ px: 1, py: 0.75, width: 56, borderRight: 1, borderColor: "divider", textAlign: "right" }}>{item.discountPerc || 0}%</Box>
+                      <Box sx={{ px: 1, py: 0.75, width: 64, borderRight: 1, borderColor: "divider", textAlign: "right" }}>{formatMoney(item.finalPrice)}</Box>
+                      <Box sx={{ px: 1, py: 0.75, width: 80, borderRight: 1, borderColor: "divider", textAlign: "right", fontWeight: 500 }}>{formatMoney(item.amount)}</Box>
+                      <Stack direction="row" spacing={0.5} sx={{ px: 1, py: 0.75, width: 64, alignItems: "center", justifyContent: "center" }}>
+                        <IconButton
                           onClick={() => handleEditItem(index)}
-                          className="text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition"
+                          size="small"
+                          sx={{ color: "primary.main", p: 0.25 }}
                           title="Edit"
                         >
                           <Pencil className="w-3 h-3" />
-                        </button>
-                        <button
+                        </IconButton>
+                        <IconButton
                           onClick={() => handleRemoveItem(index)}
-                          className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition"
+                          size="small"
+                          sx={{ color: "error.main", p: 0.25 }}
                           title="Delete"
                         >
                           <Trash2 className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </div>
+                        </IconButton>
+                      </Stack>
+                    </Stack>
                   ))
                 )}
-              </div>
+              </Box>
 
-            </div>
+            </Box>
 
-            <div className="mt-2 flex items-center justify-between gap-3 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-xs font-bold">
-              <div className="flex flex-wrap items-center gap-4">
-                <span className="text-red-800 dark:text-red-300">TOTAL <span className="ml-1 text-green-700 dark:text-green-400">{formatMoney(rowsTotal)}</span></span>
-                <span className="text-red-800 dark:text-red-300">Taxable <span className="ml-1 text-orange-600 dark:text-orange-400">{formatMoney(computedTotals.taxable)}</span></span>
-                <span className="text-red-800 dark:text-red-300">Tax <span className="ml-1 text-rose-500 dark:text-rose-400">{formatMoney(taxAmount)}</span></span>
-                <span className="text-red-800 dark:text-red-300">Discount <span className="ml-1 text-rose-500 dark:text-rose-400">{formatMoney(computedTotals.discount)}</span></span>
-                <span className="text-red-800 dark:text-red-300">Qty <span className="ml-1 text-red-600 dark:text-red-400">{formatMoney(computedTotals.qty)}</span></span>
-              </div>
+            <Stack direction="row" sx={{ mt: 1, alignItems: "center", justifyContent: "space-between", gap: 1.5, borderRadius: "3.5px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", px: 1.5, py: 1, fontSize: 12.25, fontWeight: 700 }}>
+              <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap", alignItems: "center" }}>
+                <Box component="span" sx={{ color: "error.dark" }}>TOTAL <Box component="span" sx={{ ml: 0.5, color: "success.main" }}>{formatMoney(rowsTotal)}</Box></Box>
+                <Box component="span" sx={{ color: "error.dark" }}>Taxable <Box component="span" sx={{ ml: 0.5, color: "warning.main" }}>{formatMoney(computedTotals.taxable)}</Box></Box>
+                <Box component="span" sx={{ color: "error.dark" }}>Tax <Box component="span" sx={{ ml: 0.5, color: "error.light" }}>{formatMoney(taxAmount)}</Box></Box>
+                <Box component="span" sx={{ color: "error.dark" }}>Discount <Box component="span" sx={{ ml: 0.5, color: "error.light" }}>{formatMoney(computedTotals.discount)}</Box></Box>
+                <Box component="span" sx={{ color: "error.dark" }}>Qty <Box component="span" sx={{ ml: 0.5, color: "error.main" }}>{formatMoney(computedTotals.qty)}</Box></Box>
+              </Stack>
 
-              <select
+              <TextField
+                select
                 name="invoiceWorkflowStatus"
                 value={attrs.invoiceWorkflowStatus}
                 onChange={handleAttrChange}
-                className="min-w-[210px] rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2.5 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300"
+                size="small"
+                sx={{ minWidth: 210, "& .MuiInputBase-input": { fontSize: 12.25, fontWeight: 500, py: 0.75 } }}
               >
                 {WORKFLOW_STATUS_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
+                  <MenuItem key={option.value} value={option.value}>
                     {option.label}
-                  </option>
+                  </MenuItem>
                 ))}
-              </select>
-            </div>
-          </div>
-        </div>
-      </div>
+              </TextField>
+            </Stack>
+          </Box>
+        </Stack>
+      </Box>
 
       {/* Jump Size Dialog */}
       <JumpSizeDialog
@@ -2318,7 +2396,7 @@ const InventoryEntry = () => {
         message={toast.message}
         onClose={() => setToast((prev) => ({ ...prev, open: false }))}
       />
-    </div>
+    </Box>
   );
 };
 

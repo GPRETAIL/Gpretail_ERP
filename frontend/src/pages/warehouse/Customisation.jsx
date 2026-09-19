@@ -33,24 +33,16 @@ import {
   WAREHOUSE_PRINT_MODE_OPTIONS,
   WAREHOUSE_LABEL_FORMAT_OPTIONS,
 } from "../../utils/warehouseBarcodeCustomization";
+import { Box, Stack, Typography, TextField, MenuItem, Button, Radio, Switch, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
 
-const fieldLabelClass = "mb-1 block text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400";
-const fontControlFieldClass = "flex flex-col gap-1";
-const fontControlLabelSlotClass = "flex min-h-10 items-end";
-const fontControlLabelClass =
-  "block w-full text-xs font-bold uppercase leading-tight tracking-wide text-gray-500 dark:text-gray-400";
-const fontControlInputClass =
-  "h-12 w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 text-sm text-gray-800 dark:text-gray-100 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
-const baseCardClass = "rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm";
-const TABLE_HEAD_CLASS = "bg-[#165da8] px-3 py-3 text-left text-sm font-semibold text-white";
-const TABLE_CELL_CLASS = "border border-gray-200 dark:border-gray-700 px-3 py-3 align-middle text-sm text-slate-700 dark:text-slate-300";
-const TABLE_INPUT_CLASS =
-  "w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-800 dark:text-gray-100 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
+const settingsCardSx = { borderRadius: "10.5px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", boxShadow: 1, p: 2.5 };
+const settingsFieldLabelSx = { display: "block", mb: 0.5, fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "text.secondary" };
+const mmFieldSx = { "& .MuiInputBase-input": { fontSize: 12.25, py: 1.25 } };
 
 const RadioCell = ({ name, checked, onChange }) => (
-  <label className="flex items-center justify-center">
-    <input type="radio" name={name} checked={checked} onChange={onChange} className="h-4 w-4" />
-  </label>
+  <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+    <Radio name={name} checked={checked} onChange={onChange} size="small" />
+  </Box>
 );
 
 const WarehouseFieldTable = ({
@@ -59,75 +51,79 @@ const WarehouseFieldTable = ({
   onPositionChange,
   onPriorityChange,
 }) => (
-  <div className={`${baseCardClass} overflow-hidden`}>
-    <div className="border-b border-gray-200 dark:border-gray-700 px-5 py-4">
-      <div className="text-xl font-semibold text-slate-800 dark:text-slate-100">Fields</div>
-    </div>
-    <div className="overflow-x-auto">
-      <table className="min-w-full border-collapse">
-        <thead>
-          <tr>
-            <th className={TABLE_HEAD_CLASS}>Title</th>
-            <th className={TABLE_HEAD_CLASS}>Position</th>
-            <th className={`${TABLE_HEAD_CLASS} w-28`}>Priority</th>
-            <th className={`${TABLE_HEAD_CLASS} w-24 text-center`}>Hide</th>
-            <th className={`${TABLE_HEAD_CLASS} w-24 text-center`}>Show</th>
-          </tr>
-        </thead>
-        <tbody>
+  <Box sx={{ borderRadius: "10.5px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", boxShadow: 1, overflow: "hidden" }}>
+    <Box sx={{ borderBottom: 1, borderColor: "divider", px: 2.5, py: 2 }}>
+      <Typography sx={{ fontSize: 17.5, fontWeight: 600, color: "text.primary" }}>Fields</Typography>
+    </Box>
+    <Box sx={{ overflowX: "auto" }}>
+      <Table>
+        <TableHead>
+          <TableRow>
+            <TableCell sx={{ bgcolor: "#165da8", fontSize: 12.25, fontWeight: 600, color: "#fff" }}>Title</TableCell>
+            <TableCell sx={{ bgcolor: "#165da8", fontSize: 12.25, fontWeight: 600, color: "#fff" }}>Position</TableCell>
+            <TableCell sx={{ bgcolor: "#165da8", fontSize: 12.25, fontWeight: 600, color: "#fff", width: 112 }}>Priority</TableCell>
+            <TableCell sx={{ bgcolor: "#165da8", fontSize: 12.25, fontWeight: 600, color: "#fff", width: 96, textAlign: "center" }}>Hide</TableCell>
+            <TableCell sx={{ bgcolor: "#165da8", fontSize: 12.25, fontWeight: 600, color: "#fff", width: 96, textAlign: "center" }}>Show</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
           {rows.map((row, index) => (
-            <tr key={row.key} className={index % 2 === 0 ? "bg-gray-50/80 dark:bg-gray-700/40" : "bg-white dark:bg-gray-800"}>
-              <td className={TABLE_CELL_CLASS}>{row.label}</td>
-              <td className={TABLE_CELL_CLASS}>
+            <TableRow key={row.key} sx={{ bgcolor: index % 2 === 0 ? "action.hover" : "background.paper" }}>
+              <TableCell sx={{ border: "1px solid", borderColor: "divider", fontSize: 12.25, color: "text.secondary" }}>{row.label}</TableCell>
+              <TableCell sx={{ border: "1px solid", borderColor: "divider" }}>
                 {row.hasPosition ? (
-                  <select
+                  <TextField
+                    select
                     value={row.position}
                     onChange={(event) => onPositionChange(row.key, event.target.value)}
-                    className={TABLE_INPUT_CLASS}
+                    size="small"
+                    fullWidth
+                    sx={{ "& .MuiInputBase-input": { fontSize: 12.25 } }}
                   >
                     {WAREHOUSE_BARCODE_POSITION_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
+                      <MenuItem key={option.value} value={option.value}>
                         {option.label.toLowerCase()}
-                      </option>
+                      </MenuItem>
                     ))}
-                  </select>
+                  </TextField>
                 ) : (
-                  <div className="h-10 rounded-lg bg-gray-100 dark:bg-gray-700" />
+                  <Box sx={{ height: 40, borderRadius: "7px", bgcolor: "action.hover" }} />
                 )}
-              </td>
-              <td className={TABLE_CELL_CLASS}>
+              </TableCell>
+              <TableCell sx={{ border: "1px solid", borderColor: "divider" }}>
                 {row.hasPriority ? (
-                  <input
-                    type="text"
-                    inputMode="numeric"
+                  <TextField
+                    slotProps={{ htmlInput: { inputMode: "numeric" } }}
                     value={row.priority ?? ""}
                     onChange={(event) => onPriorityChange(row.key, event.target.value)}
-                    className={TABLE_INPUT_CLASS}
+                    size="small"
+                    fullWidth
+                    sx={{ "& .MuiInputBase-input": { fontSize: 12.25 } }}
                   />
                 ) : (
-                  <div className="h-10 rounded-lg bg-gray-100 dark:bg-gray-700" />
+                  <Box sx={{ height: 40, borderRadius: "7px", bgcolor: "action.hover" }} />
                 )}
-              </td>
-              <td className={TABLE_CELL_CLASS}>
+              </TableCell>
+              <TableCell sx={{ border: "1px solid", borderColor: "divider" }}>
                 <RadioCell
                   name={`warehouse-field-${row.key}`}
                   checked={!row.visible}
                   onChange={() => onToggleVisible(row.key, false)}
                 />
-              </td>
-              <td className={TABLE_CELL_CLASS}>
+              </TableCell>
+              <TableCell sx={{ border: "1px solid", borderColor: "divider" }}>
                 <RadioCell
                   name={`warehouse-field-${row.key}`}
                   checked={row.visible}
                   onChange={() => onToggleVisible(row.key, true)}
                 />
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
-    </div>
-  </div>
+        </TableBody>
+      </Table>
+    </Box>
+  </Box>
 );
 
 const previewLabels = [
@@ -167,31 +163,30 @@ const previewLabels = [
 ];
 
 const ToggleCard = ({ label, hint, checked, onChange }) => (
-  <label className="flex cursor-pointer items-start justify-between gap-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/40 px-4 py-3 transition hover:border-blue-300 hover:bg-blue-50/40 dark:hover:bg-blue-900/20">
-    <div className="min-w-0">
-      <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">{label}</div>
-      <div className="mt-1 text-xs leading-5 text-gray-500 dark:text-gray-400">{hint}</div>
-    </div>
-    <div className="pt-0.5">
-      <span
-        className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
-          checked ? "bg-blue-600" : "bg-gray-300 dark:bg-gray-600"
-        }`}
-      >
-        <input
-          type="checkbox"
-          checked={checked}
-          onChange={(event) => onChange(event.target.checked)}
-          className="peer sr-only"
-        />
-        <span
-          className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${
-            checked ? "translate-x-5" : "translate-x-1"
-          }`}
-        />
-      </span>
-    </div>
-  </label>
+  <Stack
+    component="label"
+    direction="row"
+    spacing={2}
+    sx={{
+      cursor: "pointer",
+      alignItems: "flex-start",
+      justifyContent: "space-between",
+      borderRadius: "10.5px",
+      border: "1px solid",
+      borderColor: "divider",
+      bgcolor: "action.hover",
+      px: 2,
+      py: 1.5,
+      transition: "all 0.15s",
+      "&:hover": { borderColor: "primary.light", bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.12 : 0.06) },
+    }}
+  >
+    <Box sx={{ minWidth: 0 }}>
+      <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>{label}</Typography>
+      <Typography sx={{ mt: 0.5, fontSize: 10.5, lineHeight: 1.6, color: "text.secondary" }}>{hint}</Typography>
+    </Box>
+    <Switch checked={checked} onChange={(event) => onChange(event.target.checked)} sx={{ mt: -0.5 }} />
+  </Stack>
 );
 
 const StickerFieldsBlock = ({ fields, metrics, textStyle, settings }) => {
@@ -620,374 +615,402 @@ export default function WarehouseCustomisation() {
   };
 
   return (
-    <div className="min-h-full bg-gray-100 dark:bg-gray-900 px-4 py-4 text-gray-800 dark:text-gray-100">
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_460px]">
-        <div className="space-y-4">
+    <Box sx={{ minHeight: "100%", bgcolor: "background.default", px: 2, py: 2, color: "text.primary" }}>
+      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", xl: "minmax(0, 1fr) 460px" }, gap: 2 }}>
+        <Stack spacing={2}>
           {/* Sticky so the whole header - title, description, and Save/Reset - stays reachable
               while scrolling through the settings below, instead of scrolling away with them. */}
-          <div className="sticky top-0 z-20 rounded-xl border border-gray-200 bg-white/95 px-5 py-5 shadow-sm backdrop-blur dark:border-gray-700 dark:bg-gray-800/95">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <div className="text-xl font-semibold text-gray-900 dark:text-gray-100">Warehouse Customisation</div>
-                <div className="mt-1 max-w-2xl text-sm leading-6 text-gray-500 dark:text-gray-400">
+          <Box sx={{ position: "sticky", top: 0, zIndex: 20, borderRadius: "10.5px", border: "1px solid", borderColor: "divider", bgcolor: (theme) => alpha(theme.palette.background.paper, 0.95), px: 2.5, py: 2.5, boxShadow: 1, backdropFilter: "blur(8px)" }}>
+            <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between" }}>
+              <Box>
+                <Typography sx={{ fontSize: 17.5, fontWeight: 600, color: "text.primary" }}>Warehouse Customisation</Typography>
+                <Typography sx={{ mt: 0.5, maxWidth: 640, fontSize: 12.25, lineHeight: 1.6, color: "text.secondary" }}>
                   Control barcode sticker layout for warehouse label preview and print.
-                </div>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
+                </Typography>
+              </Box>
+              <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", alignItems: "center" }}>
                 {companyOptions && companyOptions.length > 1 && (
-                  <select
-                    value={companyId}
-                    onChange={(e) => setCompanyId(e.target.value)}
-                    className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-800 dark:text-gray-100"
-                  >
+                  <TextField select value={companyId} onChange={(e) => setCompanyId(e.target.value)} size="small" sx={{ "& .MuiInputBase-input": { fontSize: 12.25 } }}>
                     {companyOptions.map((c) => (
-                      <option key={c.value} value={c.value}>
+                      <MenuItem key={c.value} value={c.value}>
                         {c.label}
-                      </option>
+                      </MenuItem>
                     ))}
-                  </select>
+                  </TextField>
                 )}
-                <button
+                <Button
                   type="button"
                   onClick={handleReset}
-                  className="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 transition hover:bg-gray-50 dark:hover:bg-gray-600"
+                  variant="outlined"
+                  color="inherit"
+                  startIcon={<RotateCcw className="h-4 w-4" />}
+                  sx={{ borderRadius: "7px", fontSize: 12.25, fontWeight: 500 }}
                 >
-                  <RotateCcw className="h-4 w-4" />
                   Reset to default
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   onClick={handleSave}
                   disabled={saving || loading}
-                  className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-60"
+                  startIcon={<Save className="h-4 w-4" />}
+                  sx={{ borderRadius: "7px", fontSize: 12.25, fontWeight: 500, opacity: saving || loading ? 0.6 : 1 }}
                 >
-                  <Save className="h-4 w-4" />
                   {saving ? "Saving..." : "Save"}
-                </button>
-              </div>
-            </div>
-          </div>
+                </Button>
+              </Stack>
+            </Stack>
+          </Box>
 
-          <div className={`${baseCardClass} p-5`}>
-            <label className={fieldLabelClass}>Use Barcode Or Code</label>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <button
+          <Box sx={{ borderRadius: "10.5px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", boxShadow: 1, p: 2.5 }}>
+            <Typography component="label" sx={{ display: "block", mb: 0.5, fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "text.secondary" }}>Use Barcode Or Code</Typography>
+            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)" }, gap: 1.5 }}>
+              <Box
+                component="button"
                 type="button"
                 onClick={() => updateSetting({ codeType: "barcode" })}
-                className={`rounded-xl border px-4 py-3 text-left transition ${
-                  settings.codeType === "barcode"
-                    ? "border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 shadow-sm"
-                    : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:border-blue-300 hover:bg-blue-50/40 dark:hover:bg-blue-900/20"
-                }`}
+                sx={(theme) => ({
+                  borderRadius: "10.5px",
+                  border: "1px solid",
+                  borderColor: settings.codeType === "barcode" ? "primary.main" : "divider",
+                  bgcolor: settings.codeType === "barcode" ? alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08) : "background.paper",
+                  color: settings.codeType === "barcode" ? "primary.main" : "text.secondary",
+                  boxShadow: settings.codeType === "barcode" ? 1 : 0,
+                  px: 2, py: 1.5, textAlign: "left", cursor: "pointer", transition: "all 0.15s",
+                  "&:hover": { borderColor: settings.codeType === "barcode" ? "primary.main" : "primary.light" },
+                })}
               >
-                <div className="text-sm font-semibold">Barcode</div>
-                <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">Default sticker code style</div>
-              </button>
-              <button
+                <Typography sx={{ fontSize: 12.25, fontWeight: 600 }}>Barcode</Typography>
+                <Typography sx={{ mt: 0.5, fontSize: 10.5, color: "text.secondary" }}>Default sticker code style</Typography>
+              </Box>
+              <Box
+                component="button"
                 type="button"
                 onClick={() => updateSetting({ codeType: "code" })}
-                className={`rounded-xl border px-4 py-3 text-left transition ${
-                  settings.codeType === "code"
-                    ? "border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 shadow-sm"
-                    : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:border-blue-300 hover:bg-blue-50/40 dark:hover:bg-blue-900/20"
-                }`}
+                sx={(theme) => ({
+                  borderRadius: "10.5px",
+                  border: "1px solid",
+                  borderColor: settings.codeType === "code" ? "primary.main" : "divider",
+                  bgcolor: settings.codeType === "code" ? alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08) : "background.paper",
+                  color: settings.codeType === "code" ? "primary.main" : "text.secondary",
+                  boxShadow: settings.codeType === "code" ? 1 : 0,
+                  px: 2, py: 1.5, textAlign: "left", cursor: "pointer", transition: "all 0.15s",
+                  "&:hover": { borderColor: settings.codeType === "code" ? "primary.main" : "primary.light" },
+                })}
               >
-                <div className="text-sm font-semibold">Code</div>
-                <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">QR-style sticker code</div>
-              </button>
-            </div>
-            <div className="mt-4 max-w-xs">
-              <label htmlFor="warehouse-code-position" className={fieldLabelClass}>
+                <Typography sx={{ fontSize: 12.25, fontWeight: 600 }}>Code</Typography>
+                <Typography sx={{ mt: 0.5, fontSize: 10.5, color: "text.secondary" }}>QR-style sticker code</Typography>
+              </Box>
+            </Box>
+            <Box sx={{ mt: 2, maxWidth: 320 }}>
+              <Typography component="label" htmlFor="warehouse-code-position" sx={{ display: "block", mb: 0.5, fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "text.secondary" }}>
                 Barcode / QR position
-              </label>
-              <select
+              </Typography>
+              <TextField
+                select
                 id="warehouse-code-position"
                 value={settings.codePosition || "left"}
                 onChange={(event) => updateSetting({ codePosition: event.target.value })}
-                className="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-3 text-sm text-gray-800 dark:text-gray-100 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                fullWidth
+                sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 1.25 } }}
               >
                 {WAREHOUSE_BARCODE_POSITION_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
+                  <MenuItem key={option.value} value={option.value}>
                     {option.label}
-                  </option>
+                  </MenuItem>
                 ))}
-              </select>
-            </div>
-          </div>
+              </TextField>
+            </Box>
+          </Box>
 
-          <div className={`${baseCardClass} p-5`}>
-            <label className={fieldLabelClass}>Printing Mode (Direct / Silent vs Browser Default)</label>
-            <p className="mb-3 max-w-3xl text-sm leading-6 text-gray-500 dark:text-gray-400">
+          <Box sx={settingsCardSx}>
+            <Typography component="label" sx={settingsFieldLabelSx}>Printing Mode (Direct / Silent vs Browser Default)</Typography>
+            <Typography sx={{ mb: 1.5, maxWidth: 640, fontSize: 12.25, lineHeight: 1.6, color: "text.secondary" }}>
               Choose whether barcode stickers print directly to your thermal printer in the background (no popup) or open the browser print preview dialog.
-            </p>
-            <div className="grid gap-3 sm:grid-cols-2">
+            </Typography>
+            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)" }, gap: 1.5 }}>
               {WAREHOUSE_PRINT_MODE_OPTIONS.map((option) => (
-                <label
+                <Stack
                   key={option.value}
-                  className={`flex cursor-pointer flex-col justify-between rounded-xl border p-4 transition ${
-                    settings.printMode === option.value
-                      ? "border-blue-600 bg-blue-50/70 shadow-sm dark:border-blue-500 dark:bg-blue-900/30"
-                      : "border-gray-300 bg-white hover:border-gray-400 dark:border-gray-600 dark:bg-gray-800 dark:hover:border-gray-500"
-                  }`}
+                  component="label"
+                  sx={(theme) => ({
+                    cursor: "pointer",
+                    justifyContent: "space-between",
+                    borderRadius: "10.5px",
+                    border: "1px solid",
+                    borderColor: settings.printMode === option.value ? "primary.main" : "divider",
+                    bgcolor: settings.printMode === option.value ? alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.06) : "background.paper",
+                    boxShadow: settings.printMode === option.value ? 1 : 0,
+                    p: 2,
+                    transition: "all 0.15s",
+                    "&:hover": { borderColor: settings.printMode === option.value ? "primary.main" : "text.disabled" },
+                  })}
                 >
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="radio"
+                  <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+                    <Radio
                       name="warehouse-print-mode"
                       value={option.value}
                       checked={settings.printMode === option.value}
                       onChange={() => updateSetting({ printMode: option.value })}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500"
+                      size="small"
                     />
-                    <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                    <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>
                       {option.label}
-                    </span>
-                  </div>
-                  <p className="mt-2 text-xs leading-5 text-gray-600 dark:text-gray-400">
+                    </Typography>
+                  </Stack>
+                  <Typography sx={{ mt: 1, fontSize: 10.5, lineHeight: 1.6, color: "text.secondary" }}>
                     {option.description}
-                  </p>
-                </label>
+                  </Typography>
+                </Stack>
               ))}
-            </div>
-          </div>
+            </Box>
+          </Box>
 
-          <div className={`${baseCardClass} p-5`}>
-            <label className={fieldLabelClass}>Barcode and QR Code Format</label>
-            <p className="mb-3 max-w-3xl text-sm leading-6 text-gray-500 dark:text-gray-400">
+          <Box sx={settingsCardSx}>
+            <Typography component="label" sx={settingsFieldLabelSx}>Barcode and QR Code Format</Typography>
+            <Typography sx={{ mb: 1.5, maxWidth: 640, fontSize: 12.25, lineHeight: 1.6, color: "text.secondary" }}>
               Choose the overall look of the printed receipt -- border and divider style, spacing, and how the header and total are emphasised. Applies to the preview on the right and every Barcode print.
-            </p>
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+            </Typography>
+            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", xl: "repeat(5, 1fr)" }, gap: 1.5 }}>
               {WAREHOUSE_LABEL_FORMAT_OPTIONS.map((option) => (
-                <label
+                <Stack
                   key={option.value}
-                  className={`flex cursor-pointer flex-col gap-1 rounded-lg border px-4 py-3 text-sm ${
-                    settings.labelFormat === option.value
-                      ? "border-blue-600 bg-blue-50 text-blue-700 dark:border-blue-500 dark:bg-blue-900/30 dark:text-blue-400"
-                      : "border-gray-300 bg-white text-gray-700 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300"
-                  }`}
+                  component="label"
+                  spacing={0.5}
+                  sx={{
+                    cursor: "pointer",
+                    borderRadius: "7px",
+                    border: "1px solid",
+                    borderColor: settings.labelFormat === option.value ? "primary.main" : "divider",
+                    bgcolor: settings.labelFormat === option.value ? (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08) : "background.paper",
+                    color: settings.labelFormat === option.value ? "primary.main" : "text.secondary",
+                    px: 2, py: 1.5, fontSize: 12.25,
+                  }}
                 >
-                  <span className="flex items-center gap-2 font-medium">
-                    <input
-                      type="radio"
+                  <Stack direction="row" spacing={1} sx={{ alignItems: "center", fontWeight: 500 }}>
+                    <Radio
                       name="warehouse-label-format"
                       value={option.value}
                       checked={settings.labelFormat === option.value}
                       onChange={() => updateSetting({ labelFormat: option.value })}
-                      className="h-4 w-4"
+                      size="small"
+                      sx={{ p: 0 }}
                     />
-                    {option.label}
-                  </span>
-                  <span className="text-xs leading-5 text-gray-500 dark:text-gray-400">{option.description}</span>
-                </label>
+                    <Box component="span">{option.label}</Box>
+                  </Stack>
+                  <Typography sx={{ fontSize: 10.5, lineHeight: 1.6, color: "text.secondary" }}>{option.description}</Typography>
+                </Stack>
               ))}
-            </div>
-          </div>
+            </Box>
+          </Box>
 
-          <div className={`${baseCardClass} p-5`}>
-            <label className={fieldLabelClass}>Code Size In Mm</label>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <label htmlFor="warehouse-barcode-size" className={fieldLabelClass}>
+          <Box sx={settingsCardSx}>
+            <Typography component="label" sx={settingsFieldLabelSx}>Code Size In Mm</Typography>
+            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)" }, gap: 1.5 }}>
+              <Box>
+                <Typography component="label" htmlFor="warehouse-barcode-size" sx={settingsFieldLabelSx}>
                   Barcode size
-                </label>
-                <input
+                </Typography>
+                <TextField
                   id="warehouse-barcode-size"
                   type="number"
-                  step="0.1"
+                  slotProps={{ htmlInput: { step: "0.1" } }}
                   value={settings.barcodeSizeMm}
                   onChange={(event) => updateSetting({ barcodeSizeMm: event.target.value })}
-                  className="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-3 text-sm text-gray-800 dark:text-gray-100 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  fullWidth
+                  sx={mmFieldSx}
                 />
-              </div>
-              <div>
-                <label htmlFor="warehouse-qr-code-size" className={fieldLabelClass}>
+              </Box>
+              <Box>
+                <Typography component="label" htmlFor="warehouse-qr-code-size" sx={settingsFieldLabelSx}>
                   QR code size
-                </label>
-                <input
+                </Typography>
+                <TextField
                   id="warehouse-qr-code-size"
                   type="number"
-                  step="0.1"
+                  slotProps={{ htmlInput: { step: "0.1" } }}
                   value={settings.qrCodeSizeMm}
                   onChange={(event) => updateSetting({ qrCodeSizeMm: event.target.value })}
-                  className="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-3 text-sm text-gray-800 dark:text-gray-100 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  fullWidth
+                  sx={mmFieldSx}
                 />
-              </div>
-            </div>
-          </div>
+              </Box>
+            </Box>
+          </Box>
 
-          <div className={`${baseCardClass} p-5`}>
-            <label className={fieldLabelClass}>Sticker Size In Mm</label>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <div>
-                <label htmlFor="warehouse-label-width" className={fieldLabelClass}>
+          <Box sx={settingsCardSx}>
+            <Typography component="label" sx={settingsFieldLabelSx}>Sticker Size In Mm</Typography>
+            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" }, gap: 1.5 }}>
+              <Box>
+                <Typography component="label" htmlFor="warehouse-label-width" sx={settingsFieldLabelSx}>
                   Width
-                </label>
-                <input
+                </Typography>
+                <TextField
                   id="warehouse-label-width"
                   type="number"
-                  step="0.1"
+                  slotProps={{ htmlInput: { step: "0.1" } }}
                   value={settings.labelWidthMm}
                   onChange={(event) => updateSetting({ labelWidthMm: event.target.value })}
-                  className="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-3 text-sm text-gray-800 dark:text-gray-100 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  fullWidth
+                  sx={mmFieldSx}
                 />
-              </div>
-              <div>
-                <label htmlFor="warehouse-label-height" className={fieldLabelClass}>
+              </Box>
+              <Box>
+                <Typography component="label" htmlFor="warehouse-label-height" sx={settingsFieldLabelSx}>
                   Height
-                </label>
-                <input
+                </Typography>
+                <TextField
                   id="warehouse-label-height"
                   type="number"
-                  step="0.1"
+                  slotProps={{ htmlInput: { step: "0.1" } }}
                   value={settings.labelHeightMm}
                   onChange={(event) => updateSetting({ labelHeightMm: event.target.value })}
-                  className="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-3 text-sm text-gray-800 dark:text-gray-100 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  fullWidth
+                  sx={mmFieldSx}
                 />
-              </div>
-              <div>
-                <label htmlFor="warehouse-label-top-band" className={fieldLabelClass}>
+              </Box>
+              <Box>
+                <Typography component="label" htmlFor="warehouse-label-top-band" sx={settingsFieldLabelSx}>
                   Top Space
-                </label>
-                <input
+                </Typography>
+                <TextField
                   id="warehouse-label-top-band"
                   type="number"
-                  min="0"
-                  max="30"
-                  step="0.1"
+                  slotProps={{ htmlInput: { min: "0", max: "30", step: "0.1" } }}
                   value={settings.topBandHeightMm}
                   onChange={(event) => updateSetting({ topBandHeightMm: event.target.value })}
-                  className="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-3 text-sm text-gray-800 dark:text-gray-100 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  fullWidth
+                  sx={mmFieldSx}
                 />
-              </div>
-              <div>
-                <label htmlFor="warehouse-labels-per-row" className={fieldLabelClass}>
+              </Box>
+              <Box>
+                <Typography component="label" htmlFor="warehouse-labels-per-row" sx={settingsFieldLabelSx}>
                   Stickers Per Row
-                </label>
-                <select
+                </Typography>
+                <TextField
+                  select
                   id="warehouse-labels-per-row"
                   value={settings.labelsPerRow}
                   onChange={(event) => updateSetting({ labelsPerRow: event.target.value })}
-                  className="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-3 text-sm text-gray-800 dark:text-gray-100 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  fullWidth
+                  sx={mmFieldSx}
                 >
-                  <option value="1">1 per row</option>
-                  <option value="2">2 per row</option>
-                  <option value="3">3 per row</option>
-                </select>
-              </div>
-            </div>
-          </div>
+                  <MenuItem value="1">1 per row</MenuItem>
+                  <MenuItem value="2">2 per row</MenuItem>
+                  <MenuItem value="3">3 per row</MenuItem>
+                </TextField>
+              </Box>
+            </Box>
+          </Box>
 
-          <div className={`${baseCardClass} p-5`}>
-            <label className={fieldLabelClass}>Print Position (mm)</label>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+          <Box sx={settingsCardSx}>
+            <Typography component="label" sx={settingsFieldLabelSx}>Print Position (mm)</Typography>
+            <Typography sx={{ fontSize: 10.5, color: "text.secondary", mb: 1.5 }}>
               Shifts where content lands on the physical label without changing its layout - use this to
               compensate for your printer's own print-head/gap-sensor offset. Negative values shift up/left.
-            </p>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <div>
-                <label htmlFor="warehouse-margin-top" className={fieldLabelClass}>
+            </Typography>
+            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" }, gap: 1.5 }}>
+              <Box>
+                <Typography component="label" htmlFor="warehouse-margin-top" sx={settingsFieldLabelSx}>
                   Margin Top
-                </label>
-                <input
+                </Typography>
+                <TextField
                   id="warehouse-margin-top"
                   type="number"
-                  min="-10"
-                  max="10"
-                  step="0.1"
+                  slotProps={{ htmlInput: { min: "-10", max: "10", step: "0.1" } }}
                   value={settings.printMarginTopMm}
                   onChange={(event) => updateSetting({ printMarginTopMm: event.target.value })}
-                  className="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-3 text-sm text-gray-800 dark:text-gray-100 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  fullWidth
+                  sx={mmFieldSx}
                 />
-              </div>
-              <div>
-                <label htmlFor="warehouse-margin-bottom" className={fieldLabelClass}>
+              </Box>
+              <Box>
+                <Typography component="label" htmlFor="warehouse-margin-bottom" sx={settingsFieldLabelSx}>
                   Margin Bottom
-                </label>
-                <input
+                </Typography>
+                <TextField
                   id="warehouse-margin-bottom"
                   type="number"
-                  min="-10"
-                  max="10"
-                  step="0.1"
+                  slotProps={{ htmlInput: { min: "-10", max: "10", step: "0.1" } }}
                   value={settings.printMarginBottomMm}
                   onChange={(event) => updateSetting({ printMarginBottomMm: event.target.value })}
-                  className="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-3 text-sm text-gray-800 dark:text-gray-100 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  fullWidth
+                  sx={mmFieldSx}
                 />
-              </div>
-              <div>
-                <label htmlFor="warehouse-margin-left" className={fieldLabelClass}>
+              </Box>
+              <Box>
+                <Typography component="label" htmlFor="warehouse-margin-left" sx={settingsFieldLabelSx}>
                   Margin Left
-                </label>
-                <input
+                </Typography>
+                <TextField
                   id="warehouse-margin-left"
                   type="number"
-                  min="-10"
-                  max="10"
-                  step="0.1"
+                  slotProps={{ htmlInput: { min: "-10", max: "10", step: "0.1" } }}
                   value={settings.printMarginLeftMm}
                   onChange={(event) => updateSetting({ printMarginLeftMm: event.target.value })}
-                  className="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-3 text-sm text-gray-800 dark:text-gray-100 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  fullWidth
+                  sx={mmFieldSx}
                 />
-              </div>
-              <div>
-                <label htmlFor="warehouse-margin-right" className={fieldLabelClass}>
+              </Box>
+              <Box>
+                <Typography component="label" htmlFor="warehouse-margin-right" sx={settingsFieldLabelSx}>
                   Margin Right
-                </label>
-                <input
+                </Typography>
+                <TextField
                   id="warehouse-margin-right"
                   type="number"
-                  min="-10"
-                  max="10"
-                  step="0.1"
+                  slotProps={{ htmlInput: { min: "-10", max: "10", step: "0.1" } }}
                   value={settings.printMarginRightMm}
                   onChange={(event) => updateSetting({ printMarginRightMm: event.target.value })}
-                  className="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-3 text-sm text-gray-800 dark:text-gray-100 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  fullWidth
+                  sx={mmFieldSx}
                 />
-              </div>
-            </div>
-          </div>
+              </Box>
+            </Box>
+          </Box>
 
-          <div className={`${baseCardClass} p-5`}>
-            <label className={fieldLabelClass}>Font</label>
-            <div className="grid gap-x-3 gap-y-2 sm:grid-cols-2 lg:grid-cols-4">
+          <Box sx={settingsCardSx}>
+            <Typography component="label" sx={settingsFieldLabelSx}>Font</Typography>
+            <Box sx={{ display: "grid", columnGap: 1.5, rowGap: 1, gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" } }}>
               {WAREHOUSE_FONT_SIZE_CONTROLS.map((control) => (
-                <div key={control.key} className={fontControlFieldClass}>
-                  <div className={fontControlLabelSlotClass}>
-                    <label htmlFor={`warehouse-${control.key}`} className={fontControlLabelClass}>
+                <Box key={control.key} sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                  <Box sx={{ display: "flex", minHeight: 40, alignItems: "flex-end" }}>
+                    <Typography component="label" htmlFor={`warehouse-${control.key}`} sx={{ ...settingsFieldLabelSx, mb: 0 }}>
                       {control.label}
-                    </label>
-                  </div>
-                  <input
+                    </Typography>
+                  </Box>
+                  <TextField
                     id={`warehouse-${control.key}`}
                     type="number"
                     value={settings[control.key]}
                     onChange={(event) => updateSetting({ [control.key]: event.target.value })}
-                    className={fontControlInputClass}
+                    fullWidth
+                    sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 1.5 } }}
                   />
-                </div>
+                </Box>
               ))}
-              <div className={fontControlFieldClass}>
-                <div className={fontControlLabelSlotClass}>
-                  <label htmlFor="warehouse-font-family" className={fontControlLabelClass}>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                <Box sx={{ display: "flex", minHeight: 40, alignItems: "flex-end" }}>
+                  <Typography component="label" htmlFor="warehouse-font-family" sx={{ ...settingsFieldLabelSx, mb: 0 }}>
                     Font Style
-                  </label>
-                </div>
-                <select
+                  </Typography>
+                </Box>
+                <TextField
+                  select
                   id="warehouse-font-family"
                   value={settings.fontFamily}
                   onChange={(event) => updateSetting({ fontFamily: event.target.value })}
-                  className={fontControlInputClass}
-                  style={{ fontFamily: metrics.textStyle.fontFamily }}
+                  fullWidth
+                  sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 1.5, fontFamily: metrics.textStyle.fontFamily } }}
                 >
                   {WAREHOUSE_FONT_FAMILY_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
+                    <MenuItem key={option.value} value={option.value}>
                       {option.label}
-                    </option>
+                    </MenuItem>
                   ))}
-                </select>
-              </div>
-            </div>
-            <div className="mt-3 space-y-3">
+                </TextField>
+              </Box>
+            </Box>
+            <Stack spacing={1.5} sx={{ mt: 1.5 }}>
               <ToggleCard
                 label="Bold"
                 hint="Apply bold styling to sticker text."
@@ -1012,8 +1035,8 @@ export default function WarehouseCustomisation() {
                 checked={settings.mrpStrikeOut}
                 onChange={(checked) => updateSetting({ mrpStrikeOut: checked })}
               />
-            </div>
-          </div>
+            </Stack>
+          </Box>
 
           <WarehouseFieldTable
             rows={labelFieldRows}
@@ -1022,58 +1045,61 @@ export default function WarehouseCustomisation() {
             onPriorityChange={(key, priority) => updateLabelField(key, { priority })}
           />
 
-          <div className={`${baseCardClass} p-5`}>
-            <label htmlFor="warehouse-barcode-note" className={fieldLabelClass}>
+          <Box sx={settingsCardSx}>
+            <Typography component="label" htmlFor="warehouse-barcode-note" sx={settingsFieldLabelSx}>
               Note
-            </label>
-            <textarea
+            </Typography>
+            <TextField
               id="warehouse-barcode-note"
               value={settings.note}
               onChange={(event) => updateSetting({ note: event.target.value })}
+              multiline
               rows={3}
-              className="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-3 text-sm leading-6 text-gray-800 dark:text-gray-100 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              fullWidth
               placeholder="No note"
+              sx={{ "& .MuiInputBase-input": { fontSize: 12.25, lineHeight: 1.6 } }}
             />
-          </div>
+          </Box>
 
           {hasUnsavedChanges ? (
-            <div className="rounded-xl border border-amber-200 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
+            <Box sx={(theme) => ({ borderRadius: "10.5px", border: "1px solid", borderColor: alpha(theme.palette.warning.main, 0.4), bgcolor: alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.16 : 0.1), px: 2, py: 1.5, fontSize: 12.25, color: "warning.main" })}>
               You have unsaved changes in warehouse customisation.
-            </div>
+            </Box>
           ) : null}
-        </div>
+        </Stack>
 
-        <div className="xl:sticky xl:top-4 xl:self-start">
-          <div className={`${baseCardClass} overflow-hidden`}>
-            <div className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 px-4 py-3">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">Sticker Preview</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
+        <Box sx={{ position: { xl: "sticky" }, top: { xl: 16 }, alignSelf: { xl: "flex-start" } }}>
+          <Box sx={{ borderRadius: "10.5px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", boxShadow: 1, overflow: "hidden" }}>
+            <Box sx={{ borderBottom: 1, borderColor: "divider", bgcolor: "action.hover", px: 2, py: 1.5 }}>
+              <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", justifyContent: "space-between" }}>
+                <Box>
+                  <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Sticker Preview</Typography>
+                  <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>
                     {settings.labelWidthMm}mm x {settings.labelHeightMm}mm label preview
-                  </div>
-                </div>
-                <Eye className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-              </div>
-            </div>
+                  </Typography>
+                </Box>
+                <Eye className="h-4 w-4" style={{ color: "#9ca3af" }} />
+              </Stack>
+            </Box>
 
-            <div className="space-y-3 bg-[#eef2f7] dark:bg-gray-900/40 p-4">
-              <div className="text-xs font-medium text-gray-500 dark:text-gray-400">Single sticker</div>
-              <div className="overflow-x-auto">
-                <div className="w-fit bg-white">
+            <Stack spacing={1.5} sx={{ bgcolor: "#eef2f7", p: 2 }}>
+              <Typography sx={{ fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>Single sticker</Typography>
+              <Box sx={{ overflowX: "auto" }}>
+                <Box sx={{ width: "fit-content", bgcolor: "#fff" }}>
                   <StickerCard
                     label={previewLabels[0]}
                     settings={settings}
                     storeName={selectedStoreName}
                     qrSrc={qrSources[previewLabels[0].key] || ""}
                   />
-                </div>
-              </div>
-              <div className="text-xs font-medium text-gray-500 dark:text-gray-400">Sheet preview</div>
-              <div className="overflow-x-auto">
-                <div
-                  className="grid bg-white"
-                  style={{
+                </Box>
+              </Box>
+              <Typography sx={{ fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>Sheet preview</Typography>
+              <Box sx={{ overflowX: "auto" }}>
+                <Box
+                  sx={{
+                    display: "grid",
+                    bgcolor: "#fff",
                     width: `${metrics.labelWidthMm * metrics.labelsPerRow}mm`,
                     gridTemplateColumns: `repeat(${metrics.labelsPerRow}, ${metrics.labelWidthMm}mm)`,
                     columnGap: "0mm",
@@ -1089,12 +1115,12 @@ export default function WarehouseCustomisation() {
                       qrSrc={qrSources[label.key] || ""}
                     />
                   ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+                </Box>
+              </Box>
+            </Stack>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
   );
 }

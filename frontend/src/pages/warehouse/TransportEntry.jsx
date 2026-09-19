@@ -8,11 +8,12 @@ import SearchableSelect from "../../components/SearchableSelect";
 import AsyncSearchSelect from "../../components/AsyncSearchSelect";
 import PageSkeleton from "../../components/PageSkeleton";
 import { getMasterLookups } from "../../utils/lookupCache";
+import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, Checkbox, alpha } from "@mui/material";
 
-const TRANSPORT_LABEL_CLASS = "block text-[11px] font-medium text-gray-700 dark:text-gray-300";
-const TRANSPORT_CONTROL_CLASS = "mt-0.5 h-8 w-full rounded-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 dark:placeholder-gray-500 px-2 py-0.5 text-[11px] focus:border-blue-500 focus:ring-1 focus:ring-blue-500";
 const TRANSPORT_SEARCHABLE_TRIGGER_CLASS = "h-8 px-2 py-0.5 text-[11px]";
 const TRANSPORT_SEARCHABLE_INPUT_CLASS = "text-[11px]";
+const transportLabelSx = { display: "block", fontSize: 11, fontWeight: 500, color: "text.secondary" };
+const transportControlSx = { mt: 0.25, "& .MuiInputBase-input": { fontSize: 11, py: 0.5 } };
 
 const TextInput = ({
   label,
@@ -23,22 +24,22 @@ const TextInput = ({
   placeholder = "",
   disabled = false,
 }) => (
-  <div>
-    <label className={TRANSPORT_LABEL_CLASS}>
-      {required && <span className="text-red-500 dark:text-red-400">* </span>}
+  <Box>
+    <Typography component="label" sx={transportLabelSx}>
+      {required && <Box component="span" sx={{ color: "error.main" }}>* </Box>}
       {label}
-    </label>
-    <input
+    </Typography>
+    <TextField
       type={type}
       value={value}
       onChange={onChange}
       placeholder={placeholder}
       disabled={disabled}
-      className={`${TRANSPORT_CONTROL_CLASS} ${
-        disabled ? "bg-gray-100 dark:bg-gray-800 cursor-not-allowed" : ""
-      }`}
+      size="small"
+      fullWidth
+      sx={{ ...transportControlSx, "& .MuiOutlinedInput-root": disabled ? { bgcolor: "action.hover" } : undefined }}
     />
-  </div>
+  </Box>
 );
 
 const CheckboxTextInput = ({
@@ -52,53 +53,66 @@ const CheckboxTextInput = ({
   placeholder = "",
   disabled = false,
 }) => (
-  <div>
-    <label className={TRANSPORT_LABEL_CLASS}>{label}</label>
-    <div className="relative mt-0.5">
-      <div className={`flex h-8 items-center rounded-sm border border-gray-300 dark:border-gray-600 ${disabled ? "bg-gray-100 dark:bg-gray-800" : "bg-white dark:bg-gray-700"}`}>
-        <input
-          id={id}
-          name={name}
-          type="checkbox"
-          checked={checked}
-          onChange={onToggle}
-          disabled={disabled}
-          className="ml-2 h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-500 text-blue-600"
-        />
-        <input
-          type="number"
-          value={value}
-          onChange={onChange}
-          placeholder={placeholder}
-          disabled={disabled || !checked}
-          className={`min-w-0 h-full flex-1 rounded-r-sm border-l border-gray-200 dark:border-gray-700 px-2 py-0 text-[11px] focus:outline-none ${
-            disabled || !checked ? "cursor-not-allowed bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500" : "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-          }`}
-        />
-      </div>
-    </div>
-  </div>
+  <Box>
+    <Typography component="label" sx={transportLabelSx}>{label}</Typography>
+    <Stack
+      direction="row"
+      sx={{ position: "relative", mt: 0.25, alignItems: "center", height: 32, borderRadius: "1.75px", border: "1px solid", borderColor: "divider", bgcolor: disabled ? "action.hover" : "background.paper" }}
+    >
+      <Checkbox
+        id={id}
+        name={name}
+        checked={checked}
+        onChange={onToggle}
+        disabled={disabled}
+        size="small"
+        sx={{ ml: 0.5, p: 0.5 }}
+      />
+      <Box
+        component="input"
+        type="number"
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        disabled={disabled || !checked}
+        sx={{
+          minWidth: 0,
+          height: "100%",
+          flex: 1,
+          borderRadius: 0,
+          borderLeft: "1px solid",
+          borderColor: "divider",
+          border: 0,
+          borderLeftWidth: "1px",
+          borderLeftStyle: "solid",
+          px: 1,
+          py: 0,
+          fontSize: 11,
+          outline: "none",
+          bgcolor: disabled || !checked ? "action.hover" : "transparent",
+          color: disabled || !checked ? "text.disabled" : "text.primary",
+          cursor: disabled || !checked ? "not-allowed" : "text",
+        }}
+      />
+    </Stack>
+  </Box>
 );
 
 const SelectInput = ({ label, required = false, options, value, onChange }) => (
-  <div>
-    <label className={TRANSPORT_LABEL_CLASS}>
-      {required && <span className="text-red-500 dark:text-red-400">* </span>}
+  <Box>
+    <Typography component="label" sx={transportLabelSx}>
+      {required && <Box component="span" sx={{ color: "error.main" }}>* </Box>}
       {label}
-    </label>
-    <select
-      value={value}
-      onChange={onChange}
-      className={`${TRANSPORT_CONTROL_CLASS} bg-white dark:bg-gray-700`}
-    >
-      <option value="">{`Select ${label}`}</option>
+    </Typography>
+    <TextField select value={value} onChange={onChange} size="small" fullWidth sx={transportControlSx}>
+      <MenuItem value="">{`Select ${label}`}</MenuItem>
       {options.map((option, index) => (
-        <option key={option.value || index} value={option.value ?? option.label}>
+        <MenuItem key={option.value || index} value={option.value ?? option.label}>
           {option.label}
-        </option>
+        </MenuItem>
       ))}
-    </select>
-  </div>
+    </TextField>
+  </Box>
 );
 
 const toAbsoluteUrl = (value) => {
@@ -671,81 +685,58 @@ const TransportEntry = () => {
   }
 
   return (
-    <div className="h-full flex flex-col bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 master-responsive">
+    <Box sx={{ height: "100%", display: "flex", flexDirection: "column", bgcolor: "background.default", color: "text.primary" }} className="master-responsive">
       {/* Header */}
-      <div className="flex items-center justify-between border-b dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-1.5 shadow-sm">
-        <div className="flex items-center space-x-2">
-          <button
-            className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
-            onClick={handleBackClick}
-            type="button"
-            aria-label="Back to warehouse module"
-          >
+      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", bgcolor: "background.paper", px: 1.5, py: 0.75, boxShadow: 1 }}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+          <IconButton onClick={handleBackClick} type="button" aria-label="Back to warehouse module" sx={{ color: "text.secondary" }}>
             <ArrowLeft className="w-4 h-4" />
-          </button>
-          <h1 className="text-sm font-semibold flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => navigate("/warehouse")}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
-            >
+          </IconButton>
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: 12.25, fontWeight: 600 }}>
+            <Button type="button" variant="text" onClick={() => navigate("/warehouse")} sx={{ minWidth: "auto", p: 0, fontSize: 12.25, fontWeight: 600 }}>
               Warehouse
-            </button>
-            <span className="text-gray-500 dark:text-gray-400">/</span>
-            <span className="text-gray-900 dark:text-gray-100">
+            </Button>
+            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
+            <Box component="span" sx={{ color: "text.primary" }}>
               Transport Entry{isViewMode ? " (View)" : paramMode === "edit" ? " (Edit)" : ""}
-            </span>
-          </h1>
-        </div>
-        <div className="flex flex-wrap items-center justify-end gap-1.5 text-xs font-medium text-gray-700 dark:text-gray-300">
-          <button
-            className="topbar-action-btn topbar-action-new text-xs"
-            onClick={handleNew}
-          >
-            <PlusCircle className="mr-1 h-3.5 w-3.5" /> New
-          </button>
+            </Box>
+          </Stack>
+        </Stack>
+        <Stack direction="row" spacing={0.75} sx={{ flexWrap: "wrap", alignItems: "center", justifyContent: "flex-end", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>
+          <Button className="topbar-action-btn topbar-action-new" onClick={handleNew} startIcon={<PlusCircle className="h-3.5 w-3.5" />} sx={{ fontSize: 10.5 }}>
+            New
+          </Button>
           {!isViewMode && (
             <>
-              <span>|</span>
-              <button
-                className="glass-btn glass-btn-primary flex items-center text-xs"
-                onClick={handleSaveAndNext}
-                disabled={saving}
-              >
-                <Save className="mr-1 h-3.5 w-3.5" /> Save & Next
-              </button>
-              <span>|</span>
-              <button
-                className="glass-btn glass-btn-success flex items-center text-xs"
-                onClick={handleSave}
-                disabled={saving}
-              >
-                <Save className="mr-1 h-3.5 w-3.5" /> {saving ? "Saving..." : "Save"}
-              </button>
+              <Box component="span">|</Box>
+              <Button className="glass-btn glass-btn-primary" onClick={handleSaveAndNext} disabled={saving} startIcon={<Save className="h-3.5 w-3.5" />} sx={{ fontSize: 10.5 }}>
+                Save & Next
+              </Button>
+              <Box component="span">|</Box>
+              <Button className="glass-btn glass-btn-success" onClick={handleSave} disabled={saving} startIcon={<Save className="h-3.5 w-3.5" />} sx={{ fontSize: 10.5 }}>
+                {saving ? "Saving..." : "Save"}
+              </Button>
             </>
           )}
-          <span>|</span>
-          <button
-            className="glass-btn glass-btn-primary flex items-center text-xs"
-            onClick={handleSearchClick}
-          >
-            <Search className="mr-1 h-3.5 w-3.5" /> Search
-          </button>
-        </div>
-      </div>
+          <Box component="span">|</Box>
+          <Button className="glass-btn glass-btn-primary" onClick={handleSearchClick} startIcon={<Search className="h-3.5 w-3.5" />} sx={{ fontSize: 10.5 }}>
+            Search
+          </Button>
+        </Stack>
+      </Stack>
 
       {/* Main Form */}
-      <div className="flex-1 min-h-0 p-3">
-        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg border border-gray-200 dark:border-gray-700 h-full overflow-y-auto">
-          <div className="grid grid-cols-12 gap-2.5 p-2.5">
+      <Box sx={{ flex: 1, minHeight: 0, p: 1.5 }}>
+        <Box sx={{ bgcolor: "background.paper", boxShadow: 3, borderRadius: "7px", border: "1px solid", borderColor: "divider", height: "100%", overflowY: "auto" }}>
+          <Box sx={{ display: "grid", gridTemplateColumns: "repeat(12, 1fr)", gap: 1.25, p: 1.25 }}>
             {/* === Column 1 (Left) === */}
-            <div className="col-span-12 space-y-2.5 lg:col-span-3">
+            <Stack spacing={1.25} sx={{ gridColumn: { xs: "span 12", lg: "span 3" } }}>
               {/* Company dropdown from DB */}
-              <div>
-                <label className={TRANSPORT_LABEL_CLASS}>
-                  <span className="text-red-500 dark:text-red-400">* </span>Company
-                </label>
-                <div className="mt-0.5">
+              <Box>
+                <Typography component="label" sx={transportLabelSx}>
+                  <Box component="span" sx={{ color: "error.main" }}>* </Box>Company
+                </Typography>
+                <Box sx={{ mt: 0.25 }}>
                   <SearchableSelect
                     name="companyId"
                     options={companies.map((c) => ({ label: c.name, value: String(c.id) }))}
@@ -755,16 +746,16 @@ const TransportEntry = () => {
                     triggerClassName={TRANSPORT_SEARCHABLE_TRIGGER_CLASS}
                     searchInputClassName={TRANSPORT_SEARCHABLE_INPUT_CLASS}
                   />
-                </div>
-              </div>
+                </Box>
+              </Box>
 
               {/* LR Mode / No - two fields side by side */}
-              <div className="grid grid-cols-2 gap-2.5">
-                <div ref={lrModeRef}>
-                  <label className={TRANSPORT_LABEL_CLASS}>
-                    <span className="text-red-500 dark:text-red-400">* </span>LR Mode
-                  </label>
-                  <div className="mt-0.5">
+              <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1.25 }}>
+                <Box ref={lrModeRef}>
+                  <Typography component="label" sx={transportLabelSx}>
+                    <Box component="span" sx={{ color: "error.main" }}>* </Box>LR Mode
+                  </Typography>
+                  <Box sx={{ mt: 0.25 }}>
                     <SearchableSelect
                       name="lrMode"
                       options={lrModeOptions}
@@ -774,19 +765,19 @@ const TransportEntry = () => {
                       triggerClassName={TRANSPORT_SEARCHABLE_TRIGGER_CLASS}
                       searchInputClassName={TRANSPORT_SEARCHABLE_INPUT_CLASS}
                     />
-                  </div>
-                </div>
-                <div ref={lrNoRef}>
+                  </Box>
+                </Box>
+                <Box ref={lrNoRef}>
                   <TextInput
                     label="LR No"
                     value={formData.lrNo}
                     onChange={handleFieldChange("lrNo")}
                     placeholder="Enter LR No"
                   />
-                </div>
-              </div>
+                </Box>
+              </Box>
 
-              <div className="grid grid-cols-2 gap-2.5">
+              <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1.25 }}>
                 <TextInput
                   label="LR Date"
                   required
@@ -800,14 +791,14 @@ const TransportEntry = () => {
                   value={formData.receivedDate}
                   onChange={handleFieldChange("receivedDate")}
                 />
-              </div>
+              </Box>
 
               {/* Supplier dropdown from DB */}
-              <div ref={supplierRef}>
-                <label className={TRANSPORT_LABEL_CLASS}>
-                  <span className="text-red-500 dark:text-red-400">* </span>Supplier
-                </label>
-                <div className="mt-0.5">
+              <Box ref={supplierRef}>
+                <Typography component="label" sx={transportLabelSx}>
+                  <Box component="span" sx={{ color: "error.main" }}>* </Box>Supplier
+                </Typography>
+                <Box sx={{ mt: 0.25 }}>
                   <AsyncSearchSelect
                     name="supplierId"
                     options={suppliers}
@@ -817,16 +808,16 @@ const TransportEntry = () => {
                     placeholder="Select Supplier"
                     searchPlaceholder="Search supplier..."
                   />
-                </div>
-              </div>
+                </Box>
+              </Box>
 
               {/* Agent / Commission - two fields */}
-              <div className="grid grid-cols-2 gap-2.5">
-                <div ref={agentRef}>
-                  <label className={TRANSPORT_LABEL_CLASS}>
-                    <span className="text-red-500 dark:text-red-400">* </span>Agent
-                  </label>
-                  <div className="mt-0.5">
+              <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1.25 }}>
+                <Box ref={agentRef}>
+                  <Typography component="label" sx={transportLabelSx}>
+                    <Box component="span" sx={{ color: "error.main" }}>* </Box>Agent
+                  </Typography>
+                  <Box sx={{ mt: 0.25 }}>
                     <AsyncSearchSelect
                       name="agentId"
                       options={agents}
@@ -836,22 +827,22 @@ const TransportEntry = () => {
                       placeholder="Select Agent"
                       searchPlaceholder="Search agent..."
                     />
-                  </div>
-                </div>
-                <div ref={commissionRef}>
+                  </Box>
+                </Box>
+                <Box ref={commissionRef}>
                   <TextInput
                     label="Commission"
                     value={formData.commission}
                     onChange={handleFieldChange("commission")}
                     placeholder="Enter commission"
                   />
-                </div>
-              </div>
+                </Box>
+              </Box>
 
               {/* Transport dropdown from DB */}
-              <div ref={transportRef}>
-                <label className={TRANSPORT_LABEL_CLASS}>Transport</label>
-                <div className="mt-0.5">
+              <Box ref={transportRef}>
+                <Typography component="label" sx={transportLabelSx}>Transport</Typography>
+                <Box sx={{ mt: 0.25 }}>
                   <AsyncSearchSelect
                     name="transportId"
                     options={transports}
@@ -861,13 +852,13 @@ const TransportEntry = () => {
                     placeholder="Select Transport"
                     searchPlaceholder="Search transport..."
                   />
-                </div>
-              </div>
+                </Box>
+              </Box>
 
               {/* City dropdowns from DB (cfg_city) */}
-              <div ref={fromCityRef}>
-                <label className={TRANSPORT_LABEL_CLASS}>From City</label>
-                <div className="mt-0.5">
+              <Box ref={fromCityRef}>
+                <Typography component="label" sx={transportLabelSx}>From City</Typography>
+                <Box sx={{ mt: 0.25 }}>
                   <SearchableSelect
                     name="fromCityId"
                     options={cities.map((c) => ({ label: c.name, value: String(c.id) }))}
@@ -877,11 +868,11 @@ const TransportEntry = () => {
                     triggerClassName={TRANSPORT_SEARCHABLE_TRIGGER_CLASS}
                     searchInputClassName={TRANSPORT_SEARCHABLE_INPUT_CLASS}
                   />
-                </div>
-              </div>
-              <div ref={receivingCityRef}>
-                <label className={TRANSPORT_LABEL_CLASS}>Receiving City</label>
-                <div className="mt-0.5">
+                </Box>
+              </Box>
+              <Box ref={receivingCityRef}>
+                <Typography component="label" sx={transportLabelSx}>Receiving City</Typography>
+                <Box sx={{ mt: 0.25 }}>
                   <SearchableSelect
                     name="receivingCityId"
                     options={cities.map((c) => ({ label: c.name, value: String(c.id) }))}
@@ -891,57 +882,57 @@ const TransportEntry = () => {
                     triggerClassName={TRANSPORT_SEARCHABLE_TRIGGER_CLASS}
                     searchInputClassName={TRANSPORT_SEARCHABLE_INPUT_CLASS}
                   />
-                </div>
-              </div>
+                </Box>
+              </Box>
 
               {String(formData.lrNo || "").trim() && (
-                <div className="rounded-md border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 px-3 py-2">
+                <Box sx={(theme) => ({ borderRadius: "5.25px", border: "1px solid", borderColor: alpha(theme.palette.warning.main, 0.4), bgcolor: alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.16 : 0.1), px: 1.5, py: 1 })}>
                   {duplicateLrLoading ? (
-                    <div className="text-[11px] text-amber-900 dark:text-amber-300">Checking duplicate LR entries...</div>
+                    <Box sx={{ fontSize: 11, color: "warning.main" }}>Checking duplicate LR entries...</Box>
                   ) : duplicateLrEntries.length > 0 ? (
-                    <div className="space-y-2">
-                      <div className="text-[11px] font-semibold text-amber-900 dark:text-amber-300">
+                    <Stack spacing={1}>
+                      <Box sx={{ fontSize: 11, fontWeight: 600, color: "warning.main" }}>
                         {duplicateLrEntries.length} Duplicate LR {duplicateLrEntries.length === 1 ? "Entry" : "Entries"} Found
-                      </div>
+                      </Box>
                       {duplicateLrEntries.map((entry) => (
-                        <div
+                        <Box
                           key={entry.id}
-                          className="rounded border border-amber-200 dark:border-amber-800 bg-white dark:bg-gray-800 px-2.5 py-2 text-[11px] text-gray-700 dark:text-gray-300"
+                          sx={(theme) => ({ borderRadius: "3.5px", border: "1px solid", borderColor: alpha(theme.palette.warning.main, 0.3), bgcolor: "background.paper", px: 1.25, py: 1, fontSize: 11, color: "text.secondary" })}
                         >
-                          <div className="grid grid-cols-[88px_1fr] gap-x-3 gap-y-1">
-                            <div className="font-medium text-gray-600 dark:text-gray-400">LR Info</div>
-                            <div>
+                          <Box sx={{ display: "grid", gridTemplateColumns: "88px 1fr", columnGap: 1.5, rowGap: 0.5 }}>
+                            <Box sx={{ fontWeight: 500, color: "text.secondary" }}>LR Info</Box>
+                            <Box>
                               Date : {formatDisplayDate(entry.lr_date)} , Entry No : {entry.lr_entry_no || "-"}
-                            </div>
-                            <div className="font-medium text-gray-600 dark:text-gray-400">Invoice</div>
-                            <div>
+                            </Box>
+                            <Box sx={{ fontWeight: 500, color: "text.secondary" }}>Invoice</Box>
+                            <Box>
                               Date : {formatDisplayDate(entry.invoice?.invoice_date)} , Invoice No : {entry.invoice?.invoice_no || "-"}
-                            </div>
-                            <div className="font-medium text-gray-600 dark:text-gray-400">Entered By</div>
-                            <div>{entry.entered_by || "-"}</div>
-                          </div>
-                        </div>
+                            </Box>
+                            <Box sx={{ fontWeight: 500, color: "text.secondary" }}>Entered By</Box>
+                            <Box>{entry.entered_by || "-"}</Box>
+                          </Box>
+                        </Box>
                       ))}
-                    </div>
+                    </Stack>
                   ) : null}
-                </div>
+                </Box>
               )}
-            </div>
+            </Stack>
 
             {/* === Column 2 (Left-Center) === */}
-            <div className="col-span-12 space-y-2.5 border-gray-100 dark:border-gray-700 px-2.5 lg:col-span-3 lg:border-l">
-              <div ref={autoTransferRef}>
+            <Stack spacing={1.25} sx={{ gridColumn: { xs: "span 12", lg: "span 3" }, borderColor: "divider", px: 1.25, borderLeft: { lg: "1px solid" }, borderLeftColor: { lg: "divider" } }}>
+              <Box ref={autoTransferRef}>
                 <TextInput
                   label="Auto Transfer Location"
                   value={formData.autoTransferLocation}
                   onChange={handleFieldChange("autoTransferLocation")}
                   placeholder="Enter location"
                 />
-              </div>
+              </Box>
 
-              <div>
-                <label className={TRANSPORT_LABEL_CLASS}>Purchase Manager</label>
-                <div className="mt-0.5">
+              <Box>
+                <Typography component="label" sx={transportLabelSx}>Purchase Manager</Typography>
+                <Box sx={{ mt: 0.25 }}>
                   <AsyncSearchSelect
                     name="purchaseManager"
                     options={purchaseManagerOptions}
@@ -951,8 +942,8 @@ const TransportEntry = () => {
                     placeholder="Select Purchase Manager"
                     searchPlaceholder="Search employees..."
                   />
-                </div>
-              </div>
+                </Box>
+              </Box>
 
               <TextInput
                 label="Stock Holding Period (days)"
@@ -961,7 +952,7 @@ const TransportEntry = () => {
                 onChange={handleFieldChange("stockHoldingPeriod")}
               />
 
-              <div className="grid grid-cols-2 gap-x-2.5 gap-y-1.5 border-t border-gray-100 dark:border-gray-700 pt-1.5">
+              <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", columnGap: 1.25, rowGap: 0.75, borderTop: 1, borderColor: "divider", pt: 0.75 }}>
                 <TextInput
                   label="No Of Bundles"
                   required
@@ -1006,11 +997,11 @@ const TransportEntry = () => {
                   value={formData.chargedWeight}
                   onChange={handleFieldChange("chargedWeight")}
                 />
-              </div>
-            </div>
+              </Box>
+            </Stack>
 
             {/* === Column 3 (Middle) === */}
-            <div className="col-span-12 space-y-2.5 border-gray-100 dark:border-gray-700 px-2.5 lg:col-span-3 lg:border-l">
+            <Stack spacing={1.25} sx={{ gridColumn: { xs: "span 12", lg: "span 3" }, borderColor: "divider", px: 1.25, borderLeft: { lg: "1px solid" }, borderLeftColor: { lg: "divider" } }}>
               <TextInput
                 label="LR Entry Date"
                 required
@@ -1061,14 +1052,14 @@ const TransportEntry = () => {
               />
 
               {/* File Attachments */}
-              <div className="pt-2">
-                <h3 className="mb-1.5 text-xs font-semibold text-gray-800 dark:text-gray-100">
+              <Box sx={{ pt: 1 }}>
+                <Typography component="h3" sx={{ mb: 0.75, fontSize: 10.5, fontWeight: 600, color: "text.primary" }}>
                   File Attachments
-                </h3>
-                <div className="grid grid-cols-2 gap-2.5">
-                  <div>
-                    <label className={TRANSPORT_LABEL_CLASS}>Type</label>
-                    <div className="mt-0.5">
+                </Typography>
+                <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1.25 }}>
+                  <Box>
+                    <Typography component="label" sx={transportLabelSx}>Type</Typography>
+                    <Box sx={{ mt: 0.25 }}>
                       <SearchableSelect
                         name="fileType"
                         options={fileTypeOptions}
@@ -1078,82 +1069,87 @@ const TransportEntry = () => {
                         triggerClassName={TRANSPORT_SEARCHABLE_TRIGGER_CLASS}
                         searchInputClassName={TRANSPORT_SEARCHABLE_INPUT_CLASS}
                       />
-                    </div>
-                  </div>
-                  <div className="self-end pt-5">
-                    <label
+                    </Box>
+                  </Box>
+                  <Box sx={{ alignSelf: "flex-end", pt: 2.5 }}>
+                    <Box
+                      component="label"
                       htmlFor="fileUpload"
-                      className="flex cursor-pointer items-center justify-center rounded-sm bg-green-500 px-3 py-1 text-[11px] text-white transition hover:bg-green-600"
+                      sx={{ display: "flex", cursor: "pointer", alignItems: "center", justifyContent: "center", borderRadius: "1.75px", bgcolor: "#22c55e", px: 1.5, py: 0.5, fontSize: 11, color: "#fff", transition: "background-color 0.15s", "&:hover": { bgcolor: "#16a34a" } }}
                     >
                       <Upload className="mr-1 h-3.5 w-3.5" /> Upload Files
-                    </label>
-                    <input
+                    </Box>
+                    <Box
+                      component="input"
                       id="fileUpload"
                       type="file"
                       multiple
                       accept="image/*,.pdf"
-                      className="hidden"
                       onChange={handleFileUpload}
+                      sx={{ display: "none" }}
                     />
-                  </div>
-                </div>
+                  </Box>
+                </Box>
 
-                <div className="mt-4 border border-gray-300 dark:border-gray-600 rounded-sm">
-                  <div className="flex bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600 text-xs font-semibold text-gray-600 dark:text-gray-300">
-                    <div className="w-1/3 px-3 py-1">Type</div>
-                    <div className="w-1/3 px-3 py-1">File Name</div>
-                    <div className="w-1/3 px-3 py-1">Action</div>
-                  </div>
+                <Box sx={{ mt: 2, border: "1px solid", borderColor: "divider", borderRadius: "1.75px" }}>
+                  <Stack direction="row" sx={{ bgcolor: "action.hover", borderBottom: 1, borderColor: "divider", fontSize: 10.5, fontWeight: 600, color: "text.secondary" }}>
+                    <Box sx={{ width: "33.33%", px: 1.5, py: 0.5 }}>Type</Box>
+                    <Box sx={{ width: "33.33%", px: 1.5, py: 0.5 }}>File Name</Box>
+                    <Box sx={{ width: "33.33%", px: 1.5, py: 0.5 }}>Action</Box>
+                  </Stack>
                   {attachments.length === 0 ? (
-                    <div className="text-gray-500 dark:text-gray-400 text-xs italic p-3">
+                    <Box sx={{ color: "text.secondary", fontSize: 10.5, fontStyle: "italic", p: 1.5 }}>
                       No files uploaded
-                    </div>
+                    </Box>
                   ) : (
                     attachments.map((att) => (
-                      <div
+                      <Stack
                         key={att.id}
-                        className="flex items-center border-b dark:border-gray-700 last:border-b-0 text-xs"
+                        direction="row"
+                        sx={{ alignItems: "center", borderBottom: 1, borderColor: "divider", fontSize: 10.5, "&:last-of-type": { borderBottom: 0 } }}
                       >
-                        <div className="w-1/3 px-3 py-2">
+                        <Box sx={{ width: "33.33%", px: 1.5, py: 1 }}>
                           {att.file_type || "Other"}
-                        </div>
-                        <div className="w-1/3 px-3 py-2 truncate">
+                        </Box>
+                        <Box sx={{ width: "33.33%", px: 1.5, py: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {att.file_name}
-                        </div>
-                        <div className="w-1/3 px-3 py-2">
-                          <div className="flex items-center gap-2">
-                            <button
+                        </Box>
+                        <Box sx={{ width: "33.33%", px: 1.5, py: 1 }}>
+                          <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                            <IconButton
                               type="button"
                               title="View file"
                               onClick={() => handleViewAttachment(att)}
-                              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                              size="small"
+                              sx={{ color: "primary.main", p: 0.25 }}
                             >
                               <Eye className="w-3.5 h-3.5" />
-                            </button>
-                            <button
+                            </IconButton>
+                            <IconButton
                               type="button"
                               title="Delete file"
                               onClick={() => handleDeleteAttachment(att)}
-                              className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                              size="small"
+                              sx={{ color: "error.main", p: 0.25 }}
                             >
                               <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
+                            </IconButton>
+                          </Stack>
+                        </Box>
+                      </Stack>
                     ))
                   )}
-                  <div className="flex justify-end p-2 bg-gray-50 dark:bg-gray-700 border-t dark:border-gray-600">
-                    <span className="text-[11px] font-semibold text-gray-800 dark:text-gray-100">
+                  <Stack direction="row" sx={{ justifyContent: "flex-end", p: 1, bgcolor: "action.hover", borderTop: 1, borderColor: "divider" }}>
+                    <Box component="span" sx={{ fontSize: 11, fontWeight: 600, color: "text.primary" }}>
                       {attachments.length} file(s)
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
+                    </Box>
+                  </Stack>
+                </Box>
+              </Box>
+            </Stack>
 
             {/* === Column 4 (Right) === */}
-            <div className="col-span-12 space-y-2.5 border-gray-100 dark:border-gray-700 pl-2.5 lg:col-span-3 lg:border-l">
+            <Stack spacing={1.25} sx={{ gridColumn: { xs: "span 12", lg: "span 3" }, borderColor: "divider", pl: 1.25, borderLeft: { lg: "1px solid" }, borderLeftColor: { lg: "divider" } }}>
               {/* LR Entry No - disabled, auto-generated */}
               <TextInput
                 label="LR Entry No"
@@ -1161,11 +1157,11 @@ const TransportEntry = () => {
                 disabled
                 onChange={() => {}}
               />
-              <div>
-                <label className={TRANSPORT_LABEL_CLASS}>
-                  <span className="text-red-500 dark:text-red-400">* </span>Pay Mode
-                </label>
-                <div className="mt-0.5">
+              <Box>
+                <Typography component="label" sx={transportLabelSx}>
+                  <Box component="span" sx={{ color: "error.main" }}>* </Box>Pay Mode
+                </Typography>
+                <Box sx={{ mt: 0.25 }}>
                   <SearchableSelect
                     name="payMode"
                     options={payModeOptions}
@@ -1175,16 +1171,16 @@ const TransportEntry = () => {
                     triggerClassName={TRANSPORT_SEARCHABLE_TRIGGER_CLASS}
                     searchInputClassName={TRANSPORT_SEARCHABLE_INPUT_CLASS}
                   />
-                </div>
-              </div>
-              <div ref={devDateRef}>
+                </Box>
+              </Box>
+              <Box ref={devDateRef}>
                 <TextInput
                   label="Dev Date"
                   type="date"
                   value={formData.devDate}
                   onChange={handleFieldChange("devDate")}
                 />
-              </div>
+              </Box>
               <TextInput
                 label="Slip Date"
                 type="date"
@@ -1210,11 +1206,10 @@ const TransportEntry = () => {
                 value={formData.section}
                 onChange={handleFieldChange("section")}
               />
-            </div>
-          </div>
-        </div>
-      </div>
-
+            </Stack>
+          </Box>
+        </Box>
+      </Box>
 
       {/* Toast Notification */}
       <Toast
@@ -1233,7 +1228,7 @@ const TransportEntry = () => {
         }}
         onCancel={() => setConfirmDialog({ open: false, onConfirm: null })}
       />
-    </div>
+    </Box>
   );
 };
 

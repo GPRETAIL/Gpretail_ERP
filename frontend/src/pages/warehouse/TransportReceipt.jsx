@@ -5,6 +5,9 @@ import api from "../../api/axios";
 import Toast from "../../components/Toast";
 import PageSkeleton from "../../components/PageSkeleton";
 import AsyncSearchSelect from "../../components/AsyncSearchSelect";
+import { Box, Stack, Typography, TextField, IconButton, Button, Checkbox, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
+
+const SKY = "#0284c7";
 
 const today = new Date().toISOString().split("T")[0];
 
@@ -270,101 +273,69 @@ const TransportReceipt = () => {
 
   if (!transportEntryId || !transportEntry) {
     return (
-      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-6">
-        <div className="rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 text-sm text-gray-600 dark:text-gray-400">
+      <Box sx={{ minHeight: "100vh", bgcolor: "background.default", p: 3 }}>
+        <Box sx={{ borderRadius: "3.5px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", p: 3, fontSize: 12.25, color: "text.secondary" }}>
           Open this page from a lorry transport entry.
-        </div>
-      </div>
+        </Box>
+      </Box>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
-      <div className="flex items-center justify-between px-4 py-2.5 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => navigate(-1)}
-            className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
-            type="button"
-            aria-label="Back"
-          >
+    <Box sx={{ minHeight: "100vh", bgcolor: "background.default", display: "flex", flexDirection: "column" }}>
+      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1.25, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+          <IconButton onClick={() => navigate(-1)} aria-label="Back" sx={{ color: "text.secondary" }}>
             <ArrowLeft className="w-4 h-4" />
-          </button>
-          <h1 className="text-sm font-semibold flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => navigate("/warehouse")}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
-            >
+          </IconButton>
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: 12.25, fontWeight: 600 }}>
+            <Button type="button" variant="text" onClick={() => navigate("/warehouse")} sx={{ minWidth: "auto", p: 0, fontSize: 12.25, fontWeight: 600 }}>
               Warehouse
-            </button>
-            <span className="text-gray-400 dark:text-gray-500">/</span>
-            <span className="text-gray-800 dark:text-gray-100">Transport Receipt</span>
-          </h1>
-        </div>
-        <div className="flex items-center gap-2 text-sm">
-          <button
-            onClick={() => persistReceipt(false)}
-            disabled={saving}
-            className="glass-btn glass-btn-success flex items-center disabled:opacity-50"
-          >
-            <Save className="w-4 h-4 mr-1" />
+            </Button>
+            <Box component="span" sx={{ color: "text.disabled" }}>/</Box>
+            <Box component="span" sx={{ color: "text.primary" }}>Transport Receipt</Box>
+          </Stack>
+        </Stack>
+        <Stack direction="row" spacing={1} sx={{ fontSize: 12.25 }}>
+          <Button onClick={() => persistReceipt(false)} disabled={saving} className="glass-btn glass-btn-success" startIcon={<Save className="w-4 h-4" />} sx={{ opacity: saving ? 0.5 : 1 }}>
             {saving ? "Saving..." : "Save"}
-          </button>
-          <button
-            onClick={() => persistReceipt(true)}
-            disabled={saving}
-            className="glass-btn glass-btn-primary flex items-center disabled:opacity-50"
-          >
-            <Save className="w-4 h-4 mr-1" />
+          </Button>
+          <Button onClick={() => persistReceipt(true)} disabled={saving} className="glass-btn glass-btn-primary" startIcon={<Save className="w-4 h-4" />} sx={{ opacity: saving ? 0.5 : 1 }}>
             Save & Next
-          </button>
-          <button
-            onClick={() => navigate("/warehouse/transport-issue/search")}
-            className="glass-btn glass-btn-primary flex items-center"
-          >
-            <Search className="w-4 h-4 mr-1" />
+          </Button>
+          <Button onClick={() => navigate("/warehouse/transport-issue/search")} className="glass-btn glass-btn-primary" startIcon={<Search className="w-4 h-4" />}>
             Search
-          </button>
-        </div>
-      </div>
+          </Button>
+        </Stack>
+      </Stack>
 
-      <div className="flex-1 p-4 flex gap-4 overflow-hidden">
-        <div className="w-[30rem] max-w-[34%] min-w-[300px] bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm p-4 overflow-y-auto">
-          <div className="space-y-4 text-sm">
-            <div>
-              <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Booking Office</div>
-              <div className="mt-1 text-2xl font-semibold text-red-500 dark:text-red-400">{form.bookingOffice}</div>
-            </div>
+      <Stack direction="row" spacing={2} sx={{ flex: 1, p: 2, overflow: "hidden" }}>
+        <Box sx={{ width: "30rem", maxWidth: "34%", minWidth: 300, bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "7px", boxShadow: 1, p: 2, overflowY: "auto" }}>
+          <Stack spacing={2} sx={{ fontSize: 12.25 }}>
+            <Box>
+              <Typography sx={{ fontSize: 10.5, fontWeight: 600, color: "text.secondary", textTransform: "uppercase" }}>Booking Office</Typography>
+              <Typography sx={{ mt: 0.5, fontSize: 21, fontWeight: 600, color: "error.main" }}>{form.bookingOffice}</Typography>
+            </Box>
 
-            <div className="grid grid-cols-2 gap-4">
-              <label className="block">
-                <span className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Receipt Number</span>
-                <input
-                  value={form.receiptNumber}
-                  readOnly
-                  className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-2 py-2 text-sm bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                />
-              </label>
-              <label className="block">
-                <span className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Received On</span>
-                <input
-                  type="date"
-                  value={form.receivedOn}
-                  onChange={(e) => handleFieldChange("receivedOn", e.target.value)}
-                  className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-2 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                />
-              </label>
-            </div>
+            <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 2 }}>
+              <Box component="label" sx={{ display: "block" }}>
+                <Typography component="span" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>Receipt Number</Typography>
+                <TextField value={form.receiptNumber} slotProps={{ input: { readOnly: true } }} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25 }, "& .MuiOutlinedInput-root": { bgcolor: "action.hover" } }} />
+              </Box>
+              <Box component="label" sx={{ display: "block" }}>
+                <Typography component="span" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>Received On</Typography>
+                <TextField type="date" value={form.receivedOn} onChange={(e) => handleFieldChange("receivedOn", e.target.value)} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25 } }} />
+              </Box>
+            </Box>
 
-            <div className="grid grid-cols-2 gap-4">
+            <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 2 }}>
               <Metric label="Issue Date" value={form.issueDate ? formatDate(form.issueDate) : "-"} />
               <Metric label="Issue No" value={form.issueNumber || "-"} />
-            </div>
+            </Box>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Received By</label>
+            <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 2 }}>
+              <Box>
+                <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>Received By</Typography>
                 <AsyncSearchSelect
                   name="receivedById"
                   value={form.receivedById}
@@ -374,38 +345,29 @@ const TransportReceipt = () => {
                   placeholder="Employee"
                   searchPlaceholder="Search employees..."
                 />
-              </div>
+              </Box>
               <Metric label="Company" value={form.companyName} />
-            </div>
+            </Box>
 
-            <div className="grid grid-cols-2 gap-4">
-              <label className="block">
-                <span className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Security Inward No</span>
-                <input
-                  value={form.securityInwardNo}
-                  onChange={(e) => handleFieldChange("securityInwardNo", e.target.value)}
-                  className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-2 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                />
-              </label>
-              <label className="block">
-                <span className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Security Inward Date</span>
-                <input
-                  type="date"
-                  value={form.securityInwardDate}
-                  onChange={(e) => handleFieldChange("securityInwardDate", e.target.value)}
-                  className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-2 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                />
-              </label>
-            </div>
+            <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 2 }}>
+              <Box component="label" sx={{ display: "block" }}>
+                <Typography component="span" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>Security Inward No</Typography>
+                <TextField value={form.securityInwardNo} onChange={(e) => handleFieldChange("securityInwardNo", e.target.value)} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25 } }} />
+              </Box>
+              <Box component="label" sx={{ display: "block" }}>
+                <Typography component="span" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>Security Inward Date</Typography>
+                <TextField type="date" value={form.securityInwardDate} onChange={(e) => handleFieldChange("securityInwardDate", e.target.value)} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25 } }} />
+              </Box>
+            </Box>
 
-            <div className="grid grid-cols-2 gap-3">
+            <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1.5 }}>
               <EditableMetric label="Bundles" value={form.bundles} onChange={(value) => handleFieldChange("bundles", value)} />
               <EditableMetric label="Boxes" value={form.boxes} onChange={(value) => handleFieldChange("boxes", value)} />
               <EditableMetric label="Weight" value={form.weight} onChange={(value) => handleFieldChange("weight", value)} />
               <EditableMetric label="Freight" value={form.freight} onChange={(value) => handleFieldChange("freight", value)} />
-            </div>
+            </Box>
 
-            <div className="space-y-3 rounded border border-gray-200 dark:border-gray-700 p-3">
+            <Stack spacing={1.5} sx={{ borderRadius: "3.5px", border: "1px solid", borderColor: "divider", p: 1.5 }}>
               <ChargeRow
                 label="Loading Charge"
                 amount={form.loadingChargeAmount}
@@ -420,57 +382,61 @@ const TransportReceipt = () => {
                 onAmountChange={(value) => handleFieldChange("freightChargeAmount", value)}
                 onPaidChange={(checked) => handleFieldChange("freightChargePaid", checked)}
               />
-              <label className="block">
-                <span className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Other Charges</span>
-                <input
+              <Box component="label" sx={{ display: "block" }}>
+                <Typography component="span" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>Other Charges</Typography>
+                <TextField
                   type="number"
-                  step="0.01"
+                  slotProps={{ htmlInput: { step: "0.01" } }}
                   value={form.otherCharges}
                   onChange={(e) => handleFieldChange("otherCharges", e.target.value)}
-                  className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-2 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-right"
+                  size="small"
+                  fullWidth
+                  sx={{ "& .MuiInputBase-input": { fontSize: 12.25, textAlign: "right" } }}
                 />
-              </label>
+              </Box>
               <Metric label="Total Charges" value={toCurrency(form.totalCharges)} />
-            </div>
-          </div>
-        </div>
+            </Stack>
+          </Stack>
+        </Box>
 
-        <div className="flex-1 min-w-0 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm overflow-hidden flex flex-col">
-          <div className="overflow-auto">
-            <table className="w-full border-collapse text-sm min-w-[1050px]">
-              <thead>
-                <tr className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+        <Box sx={{ flex: 1, minWidth: 0, bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "7px", boxShadow: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+          <Box sx={{ overflow: "auto" }}>
+            <Table sx={{ minWidth: 1050 }}>
+              <TableHead>
+                <TableRow sx={{ bgcolor: "action.hover" }}>
                   {columns.map((column) => (
-                    <th
+                    <TableCell
                       key={column.key}
-                      className={`border border-gray-300 dark:border-gray-600 px-2 py-2 text-xs font-semibold ${column.align === "right" ? "text-right" : "text-left"}`}
+                      sx={{ border: "1px solid", borderColor: "divider", fontSize: 10.5, fontWeight: 600, color: "text.secondary", textAlign: column.align === "right" ? "right" : "left" }}
                     >
                       {column.label}
-                    </th>
+                    </TableCell>
                   ))}
-                </tr>
-                <tr className="bg-sky-100 dark:bg-sky-900/30">
+                </TableRow>
+                <TableRow sx={(theme) => ({ bgcolor: alpha(SKY, theme.palette.mode === "dark" ? 0.16 : 0.1) })}>
                   {columns.map((column) => (
-                    <th key={column.key} className="border border-gray-300 dark:border-gray-600 px-1 py-1">
-                      <input
+                    <TableCell key={column.key} sx={{ border: "1px solid", borderColor: "divider", p: 0.5 }}>
+                      <TextField
                         value={filters[column.key] || ""}
                         onChange={(e) => setFilters((prev) => ({ ...prev, [column.key]: e.target.value }))}
-                        className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm px-1.5 py-1 text-xs"
+                        size="small"
+                        fullWidth
+                        sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.5, px: 1 } }}
                       />
-                    </th>
+                    </TableCell>
                   ))}
-                </tr>
-              </thead>
-              <tbody>
+                </TableRow>
+              </TableHead>
+              <TableBody>
                 {filteredRows.length === 0 ? (
-                  <tr>
-                    <td colSpan={columns.length} className="px-4 py-12 text-center text-gray-400 dark:text-gray-500">
+                  <TableRow>
+                    <TableCell colSpan={columns.length} sx={{ px: 2, py: 6, textAlign: "center", color: "text.disabled" }}>
                       No receipt rows found.
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : (
                   filteredRows.map((row) => (
-                    <tr key={row.transportEntryId} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 text-gray-800 dark:text-gray-100">
+                    <TableRow key={row.transportEntryId} sx={{ "&:hover": { bgcolor: "action.hover" }, color: "text.primary" }}>
                       {columns.map((column) => {
                         const value =
                           column.key === "lrDate"
@@ -479,22 +445,22 @@ const TransportReceipt = () => {
                               ? toNumber(row[column.key]).toFixed(2)
                               : row[column.key];
                         return (
-                          <td
+                          <TableCell
                             key={column.key}
-                            className={`border border-gray-200 dark:border-gray-700 px-2 py-2 ${column.align === "right" ? "text-right" : ""}`}
+                            sx={{ border: "1px solid", borderColor: "divider", fontSize: 12.25, textAlign: column.align === "right" ? "right" : "left" }}
                           >
                             {value}
-                          </td>
+                          </TableCell>
                         );
                       })}
-                    </tr>
+                    </TableRow>
                   ))
                 )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
+              </TableBody>
+            </Table>
+          </Box>
+        </Box>
+      </Stack>
 
       <Toast
         open={toast.open}
@@ -502,57 +468,57 @@ const TransportReceipt = () => {
         message={toast.message}
         onClose={() => setToast((prev) => ({ ...prev, open: false }))}
       />
-    </div>
+    </Box>
   );
 };
 
 const Metric = ({ label, value }) => (
-  <div>
-    <div className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</div>
-    <input
-      readOnly
-      value={value}
-      className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-2 py-2 text-sm bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-    />
-  </div>
+  <Box>
+    <Typography sx={{ fontSize: 10.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>{label}</Typography>
+    <TextField value={value} slotProps={{ input: { readOnly: true } }} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25 }, "& .MuiOutlinedInput-root": { bgcolor: "action.hover" } }} />
+  </Box>
 );
 
 const EditableMetric = ({ label, value, onChange }) => (
-  <label className="block">
-    <span className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</span>
-    <input
+  <Box component="label" sx={{ display: "block" }}>
+    <Typography component="span" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>{label}</Typography>
+    <TextField
       type="number"
-      step="0.01"
+      slotProps={{ htmlInput: { step: "0.01" } }}
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-2 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-right"
+      size="small"
+      fullWidth
+      sx={{ "& .MuiInputBase-input": { fontSize: 12.25, textAlign: "right" } }}
     />
-  </label>
+  </Box>
 );
 
 const ChargeRow = ({ label, amount, paid, onAmountChange, onPaidChange }) => (
-  <div className="grid grid-cols-[1fr_120px_72px] items-end gap-3">
-    <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{label}</span>
-    <label className="block">
-      <span className="block text-[11px] text-gray-500 dark:text-gray-400 mb-1">Amount</span>
-      <input
+  <Box sx={{ display: "grid", gridTemplateColumns: "1fr 120px 72px", alignItems: "flex-end", gap: 1.5 }}>
+    <Typography component="span" sx={{ fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>{label}</Typography>
+    <Box component="label" sx={{ display: "block" }}>
+      <Typography component="span" sx={{ display: "block", fontSize: 9, color: "text.secondary", mb: 0.5 }}>Amount</Typography>
+      <TextField
         type="number"
-        step="0.01"
+        slotProps={{ htmlInput: { step: "0.01" } }}
         value={amount}
         onChange={(e) => onAmountChange(e.target.value)}
-        className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-2 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-right"
+        size="small"
+        fullWidth
+        sx={{ "& .MuiInputBase-input": { fontSize: 12.25, textAlign: "right" } }}
       />
-    </label>
-    <label className="flex items-center gap-2 pb-2 text-xs font-medium text-gray-700 dark:text-gray-300">
-      <input
-        type="checkbox"
+    </Box>
+    <Stack component="label" direction="row" spacing={0.75} sx={{ alignItems: "center", pb: 1, fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>
+      <Checkbox
         checked={paid}
         onChange={(e) => onPaidChange(e.target.checked)}
-        className="h-4 w-4 accent-blue-600"
+        size="small"
+        sx={{ p: 0 }}
       />
       Paid
-    </label>
-  </div>
+    </Stack>
+  </Box>
 );
 
 export default TransportReceipt;

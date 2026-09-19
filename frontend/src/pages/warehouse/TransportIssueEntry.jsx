@@ -5,6 +5,10 @@ import api from "../../api/axios";
 import Toast from "../../components/Toast";
 import PageSkeleton from "../../components/PageSkeleton";
 import AsyncSearchSelect from "../../components/AsyncSearchSelect";
+import { Box, Stack, Typography, TextField, IconButton, Button, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
+
+const SKY = "#0284c7";
+const SKY_HOVER = "#0369a1";
 
 const today = new Date().toISOString().split("T")[0];
 
@@ -248,94 +252,67 @@ const TransportIssueEntry = () => {
 
   if (!transportEntryId || !transportEntry) {
     return (
-      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-6">
-        <div className="rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 text-sm text-gray-600 dark:text-gray-400">
+      <Box sx={{ minHeight: "100vh", bgcolor: "background.default", p: 3 }}>
+        <Box sx={{ borderRadius: "3.5px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", p: 3, fontSize: 12.25, color: "text.secondary" }}>
           Open this page from a lorry transport entry.
-        </div>
-      </div>
+        </Box>
+      </Box>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
-      <div className="flex items-center justify-between px-4 py-2.5 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => navigate(-1)}
-            className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
-            type="button"
-            aria-label="Back"
-          >
+    <Box sx={{ minHeight: "100vh", bgcolor: "background.default", display: "flex", flexDirection: "column" }}>
+      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1.25, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+          <IconButton onClick={() => navigate(-1)} aria-label="Back" sx={{ color: "text.secondary" }}>
             <ArrowLeft className="w-4 h-4" />
-          </button>
-          <h1 className="text-sm font-semibold flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => navigate("/warehouse")}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
-            >
+          </IconButton>
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: 12.25, fontWeight: 600 }}>
+            <Button type="button" variant="text" onClick={() => navigate("/warehouse")} sx={{ minWidth: "auto", p: 0, fontSize: 12.25, fontWeight: 600 }}>
               Warehouse
-            </button>
-            <span className="text-gray-400 dark:text-gray-500">/</span>
-            <span className="text-gray-800 dark:text-gray-100">Transport Issue</span>
-          </h1>
-        </div>
-        <div className="flex items-center gap-2 text-sm">
-          <button
-            onClick={() => persistIssue(false)}
-            disabled={saving}
-            className="glass-btn glass-btn-success flex items-center disabled:opacity-50"
-          >
-            <Save className="w-4 h-4 mr-1" />
+            </Button>
+            <Box component="span" sx={{ color: "text.disabled" }}>/</Box>
+            <Box component="span" sx={{ color: "text.primary" }}>Transport Issue</Box>
+          </Stack>
+        </Stack>
+        <Stack direction="row" spacing={1} sx={{ fontSize: 12.25 }}>
+          <Button onClick={() => persistIssue(false)} disabled={saving} className="glass-btn glass-btn-success" startIcon={<Save className="w-4 h-4" />} sx={{ opacity: saving ? 0.5 : 1 }}>
             {saving ? "Saving..." : "Save"}
-          </button>
-          <button
-            onClick={() => persistIssue(true)}
-            disabled={saving}
-            className="glass-btn glass-btn-primary flex items-center disabled:opacity-50"
-          >
-            <Save className="w-4 h-4 mr-1" />
+          </Button>
+          <Button onClick={() => persistIssue(true)} disabled={saving} className="glass-btn glass-btn-primary" startIcon={<Save className="w-4 h-4" />} sx={{ opacity: saving ? 0.5 : 1 }}>
             Save & Next
-          </button>
-          <button
-            onClick={() => navigate("/warehouse/transport-issue/search")}
-            className="glass-btn glass-btn-primary flex items-center"
-          >
-            <Search className="w-4 h-4 mr-1" />
+          </Button>
+          <Button onClick={() => navigate("/warehouse/transport-issue/search")} className="glass-btn glass-btn-primary" startIcon={<Search className="w-4 h-4" />}>
             Search
-          </button>
-        </div>
-      </div>
+          </Button>
+        </Stack>
+      </Stack>
 
-      <div className="flex-1 p-4 flex gap-4 overflow-hidden">
-        <div className="w-[34rem] max-w-[36%] min-w-[320px] bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm p-4 overflow-y-auto">
-          <div className="space-y-4 text-sm">
-            <div>
-              <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Booking Office</div>
-              <div className="mt-1 text-2xl font-semibold text-red-500 dark:text-red-400">{form.bookingOffice}</div>
-            </div>
+      <Stack direction="row" spacing={2} sx={{ flex: 1, p: 2, overflow: "hidden" }}>
+        <Box sx={{ width: "34rem", maxWidth: "36%", minWidth: 320, bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "7px", boxShadow: 1, p: 2, overflowY: "auto" }}>
+          <Stack spacing={2} sx={{ fontSize: 12.25 }}>
+            <Box>
+              <Typography sx={{ fontSize: 10.5, fontWeight: 600, color: "text.secondary", textTransform: "uppercase" }}>Booking Office</Typography>
+              <Typography sx={{ mt: 0.5, fontSize: 21, fontWeight: 600, color: "error.main" }}>{form.bookingOffice}</Typography>
+            </Box>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Company</div>
-                <div className="mt-1 text-2xl font-semibold text-red-500 dark:text-red-400">{form.companyName}</div>
-              </div>
-              <label className="block">
-                <span className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  <span className="text-red-500 dark:text-red-400">*</span> Issue Number
-                </span>
-                <input
-                  value={form.issueNumber}
-                  readOnly
-                  className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-2 py-2 text-sm bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                />
-              </label>
-            </div>
+            <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 2 }}>
+              <Box>
+                <Typography sx={{ fontSize: 10.5, fontWeight: 600, color: "text.secondary", textTransform: "uppercase" }}>Company</Typography>
+                <Typography sx={{ mt: 0.5, fontSize: 21, fontWeight: 600, color: "error.main" }}>{form.companyName}</Typography>
+              </Box>
+              <Box component="label" sx={{ display: "block" }}>
+                <Typography component="span" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
+                  <Box component="span" sx={{ color: "error.main" }}>*</Box> Issue Number
+                </Typography>
+                <TextField value={form.issueNumber} slotProps={{ input: { readOnly: true } }} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25 }, "& .MuiOutlinedInput-root": { bgcolor: "action.hover" } }} />
+              </Box>
+            </Box>
 
-            <div>
-              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                <span className="text-red-500 dark:text-red-400">*</span> Collected By
-              </label>
+            <Box>
+              <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
+                <Box component="span" sx={{ color: "error.main" }}>*</Box> Collected By
+              </Typography>
               <AsyncSearchSelect
                 name="collectedById"
                 value={form.collectedById}
@@ -345,121 +322,129 @@ const TransportIssueEntry = () => {
                 placeholder="Employee"
                 searchPlaceholder="Search employees..."
               />
-            </div>
+            </Box>
 
-            <div>
-              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                <span className="text-red-500 dark:text-red-400">*</span> Issue Date
-              </label>
-              <input
+            <Box>
+              <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
+                <Box component="span" sx={{ color: "error.main" }}>*</Box> Issue Date
+              </Typography>
+              <TextField
                 type="date"
                 value={form.issueDate}
                 onChange={(e) => handleFieldChange("issueDate", e.target.value)}
-                className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-2 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500"
+                size="small"
+                fullWidth
+                sx={{ "& .MuiInputBase-input": { fontSize: 12.25 } }}
               />
-            </div>
+            </Box>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">From Location</div>
-                <div className="mt-1 text-2xl font-semibold text-red-500 dark:text-red-400">{form.fromLocation}</div>
-              </div>
-              <div>
-                <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Receiving Location</div>
-                <div className="mt-1 text-2xl font-semibold text-red-500 dark:text-red-400">{form.receivingLocation}</div>
-              </div>
-            </div>
+            <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 2 }}>
+              <Box>
+                <Typography sx={{ fontSize: 10.5, fontWeight: 600, color: "text.secondary", textTransform: "uppercase" }}>From Location</Typography>
+                <Typography sx={{ mt: 0.5, fontSize: 21, fontWeight: 600, color: "error.main" }}>{form.fromLocation}</Typography>
+              </Box>
+              <Box>
+                <Typography sx={{ fontSize: 10.5, fontWeight: 600, color: "text.secondary", textTransform: "uppercase" }}>Receiving Location</Typography>
+                <Typography sx={{ mt: 0.5, fontSize: 21, fontWeight: 600, color: "error.main" }}>{form.receivingLocation}</Typography>
+              </Box>
+            </Box>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  <span className="text-red-500 dark:text-red-400">*</span> LR Number
-                </label>
-                <div className="flex">
-                  <input
+            <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 2 }}>
+              <Box>
+                <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
+                  <Box component="span" sx={{ color: "error.main" }}>*</Box> LR Number
+                </Typography>
+                <Stack direction="row">
+                  <TextField
                     value={form.lrNumber}
                     onChange={(e) => handleFieldChange("lrNumber", e.target.value)}
-                    className="w-full border border-gray-300 dark:border-gray-600 rounded-l-sm px-2 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500"
+                    size="small"
+                    fullWidth
+                    sx={{ "& .MuiInputBase-input": { fontSize: 12.25 }, "& .MuiOutlinedInput-root": { borderTopRightRadius: 0, borderBottomRightRadius: 0 } }}
                   />
-                  <button
+                  <IconButton
                     type="button"
                     onClick={() => ensureCurrentRowAdded("lr")}
-                    className="px-3 py-2 bg-sky-600 text-white rounded-r-sm hover:bg-sky-700"
+                    sx={{ px: 1.5, py: 1, bgcolor: SKY, color: "#fff", borderRadius: 0, borderTopRightRadius: "1.75px", borderBottomRightRadius: "1.75px", "&:hover": { bgcolor: SKY_HOVER } }}
                   >
                     <Plus className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  <span className="text-red-500 dark:text-red-400">*</span> Entry Number
-                </label>
-                <div className="flex">
-                  <input
+                  </IconButton>
+                </Stack>
+              </Box>
+              <Box>
+                <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
+                  <Box component="span" sx={{ color: "error.main" }}>*</Box> Entry Number
+                </Typography>
+                <Stack direction="row">
+                  <TextField
                     value={form.entryNumber}
                     onChange={(e) => handleFieldChange("entryNumber", e.target.value)}
-                    className="w-full border border-gray-300 dark:border-gray-600 rounded-l-sm px-2 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500"
+                    size="small"
+                    fullWidth
+                    sx={{ "& .MuiInputBase-input": { fontSize: 12.25 }, "& .MuiOutlinedInput-root": { borderTopRightRadius: 0, borderBottomRightRadius: 0 } }}
                   />
-                  <button
+                  <IconButton
                     type="button"
                     onClick={() => ensureCurrentRowAdded("entry")}
-                    className="px-3 py-2 bg-sky-600 text-white rounded-r-sm hover:bg-sky-700"
+                    sx={{ px: 1.5, py: 1, bgcolor: SKY, color: "#fff", borderRadius: 0, borderTopRightRadius: "1.75px", borderBottomRightRadius: "1.75px", "&:hover": { bgcolor: SKY_HOVER } }}
                   >
                     <Plus className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
+                  </IconButton>
+                </Stack>
+              </Box>
+            </Box>
 
-            <div className="grid grid-cols-3 gap-3">
+            <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1.5 }}>
               <Metric label="No Of Bundles" value={form.noOfBundles} />
               <Metric label="No Of Boxes" value={form.noOfBoxes} />
               <Metric label="No Of Pieces" value={form.noOfPieces} />
               <Metric label="Fright Charge" value={form.freightCharge} />
               <Metric label="Weight" value={form.weight} />
               <Metric label="Count" value={issueItems.length} />
-            </div>
-          </div>
-        </div>
+            </Box>
+          </Stack>
+        </Box>
 
-        <div className="flex-1 min-w-0 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm overflow-hidden flex flex-col">
-          <div className="overflow-auto">
-            <table className="w-full border-collapse text-sm min-w-[1050px]">
-              <thead>
-                <tr className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+        <Box sx={{ flex: 1, minWidth: 0, bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "7px", boxShadow: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+          <Box sx={{ overflow: "auto" }}>
+            <Table sx={{ minWidth: 1050 }}>
+              <TableHead>
+                <TableRow sx={{ bgcolor: "action.hover" }}>
                   {columns.map((column) => (
-                    <th
+                    <TableCell
                       key={column.key}
-                      className={`border border-gray-300 dark:border-gray-600 px-2 py-2 text-xs font-semibold ${column.align === "right" ? "text-right" : "text-left"}`}
+                      sx={{ border: "1px solid", borderColor: "divider", fontSize: 10.5, fontWeight: 600, color: "text.secondary", textAlign: column.align === "right" ? "right" : "left" }}
                     >
                       {column.label}
-                    </th>
+                    </TableCell>
                   ))}
-                  <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 text-xs font-semibold text-center">Action</th>
-                </tr>
-                <tr className="bg-sky-100 dark:bg-sky-900/30">
+                  <TableCell sx={{ border: "1px solid", borderColor: "divider", fontSize: 10.5, fontWeight: 600, color: "text.secondary", textAlign: "center" }}>Action</TableCell>
+                </TableRow>
+                <TableRow sx={(theme) => ({ bgcolor: alpha(SKY, theme.palette.mode === "dark" ? 0.16 : 0.1) })}>
                   {columns.map((column) => (
-                    <th key={column.key} className="border border-gray-300 dark:border-gray-600 px-1 py-1">
-                      <input
+                    <TableCell key={column.key} sx={{ border: "1px solid", borderColor: "divider", p: 0.5 }}>
+                      <TextField
                         value={filters[column.key] || ""}
                         onChange={(e) => setFilters((prev) => ({ ...prev, [column.key]: e.target.value }))}
-                        className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm px-1.5 py-1 text-xs"
+                        size="small"
+                        fullWidth
+                        sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.5, px: 1 } }}
                       />
-                    </th>
+                    </TableCell>
                   ))}
-                  <th className="border border-gray-300 dark:border-gray-600 px-2 py-1" />
-                </tr>
-              </thead>
-              <tbody>
+                  <TableCell sx={{ border: "1px solid", borderColor: "divider" }} />
+                </TableRow>
+              </TableHead>
+              <TableBody>
                 {filteredRows.length === 0 ? (
-                  <tr>
-                    <td colSpan={columns.length + 1} className="px-4 py-12 text-center text-gray-400 dark:text-gray-500">
+                  <TableRow>
+                    <TableCell colSpan={columns.length + 1} sx={{ px: 2, py: 6, textAlign: "center", color: "text.disabled" }}>
                       No issue rows found.
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : (
                   filteredRows.map((row) => (
-                    <tr key={row.transportEntryId} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 text-gray-800 dark:text-gray-100">
+                    <TableRow key={row.transportEntryId} sx={{ "&:hover": { bgcolor: "action.hover" }, color: "text.primary" }}>
                       {columns.map((column) => {
                         const value =
                           column.key === "lrDate"
@@ -468,31 +453,31 @@ const TransportIssueEntry = () => {
                               ? toNumber(row[column.key]).toFixed(2)
                               : row[column.key];
                         return (
-                          <td
+                          <TableCell
                             key={column.key}
-                            className={`border border-gray-200 dark:border-gray-700 px-2 py-2 ${column.align === "right" ? "text-right" : ""}`}
+                            sx={{ border: "1px solid", borderColor: "divider", fontSize: 12.25, textAlign: column.align === "right" ? "right" : "left" }}
                           >
                             {value}
-                          </td>
+                          </TableCell>
                         );
                       })}
-                      <td className="border border-gray-200 dark:border-gray-700 px-2 py-2 text-center">
-                        <button
+                      <TableCell sx={{ border: "1px solid", borderColor: "divider", textAlign: "center" }}>
+                        <Button
                           type="button"
                           onClick={() => handleRemoveRow(row.transportEntryId)}
-                          className="rounded bg-sky-600 px-3 py-1 text-xs text-white hover:bg-sky-700"
+                          sx={{ borderRadius: "3.5px", bgcolor: SKY, color: "#fff", fontSize: 10.5, px: 1.5, py: 0.5, minWidth: "auto", "&:hover": { bgcolor: SKY_HOVER } }}
                         >
                           Remove
-                        </button>
-                      </td>
-                    </tr>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
                   ))
                 )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
+              </TableBody>
+            </Table>
+          </Box>
+        </Box>
+      </Stack>
 
       <Toast
         open={toast.open}
@@ -500,19 +485,15 @@ const TransportIssueEntry = () => {
         message={toast.message}
         onClose={() => setToast((prev) => ({ ...prev, open: false }))}
       />
-    </div>
+    </Box>
   );
 };
 
 const Metric = ({ label, value }) => (
-  <div>
-    <div className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</div>
-    <input
-      readOnly
-      value={value}
-      className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-2 py-2 text-sm bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-    />
-  </div>
+  <Box>
+    <Typography sx={{ fontSize: 10.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>{label}</Typography>
+    <TextField value={value} slotProps={{ input: { readOnly: true } }} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25 }, "& .MuiOutlinedInput-root": { bgcolor: "action.hover" } }} />
+  </Box>
 );
 
 export default TransportIssueEntry;

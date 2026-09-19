@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { ArrowLeft, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import useCompanyOptions from "../../utils/useCompanyOptions";
+import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, alpha } from "@mui/material";
 
 // Mock data structure for the list
 const mockEntries = [
@@ -80,210 +81,207 @@ const Intray = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100">
+    <Box sx={{ minHeight: "100vh", bgcolor: "background.default", color: "text.primary" }}>
       {/* --- Header Section --- */}
-      <div className="flex items-center px-4 py-2 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
-        <button
-          className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 mr-3"
-          aria-label="Back"
-          onClick={handleBackClick}
-        >
+      <Stack direction="row" sx={{ alignItems: "center", px: 2, py: 1, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
+        <IconButton aria-label="Back" onClick={handleBackClick} sx={{ mr: 1.5, color: "text.secondary" }}>
           <ArrowLeft className="w-4 h-4" />
-        </button>
-        <h1 className="text-sm font-semibold">
+        </IconButton>
+        <Typography component="h1" sx={{ fontSize: 12.25, fontWeight: 600 }}>
           Intray
-          <span className="text-sm font-normal text-gray-500 dark:text-gray-400 ml-2">
+          <Box component="span" sx={{ fontSize: 12.25, fontWeight: 400, color: "text.secondary", ml: 1 }}>
             | {entries.length} Entries
-          </span>
-        </h1>
-      </div>
+          </Box>
+        </Typography>
+      </Stack>
 
       {/* --- Filters Section --- */}
-      <div className="p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-end space-x-4">
+      <Box sx={{ p: 2, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider" }}>
+        <Stack direction="row" spacing={2} sx={{ alignItems: "flex-end" }}>
           {/* Type Filter */}
-          <div className="flex-1 max-w-[200px]">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <Box sx={{ flex: 1, maxWidth: 200 }}>
+            <Typography component="label" sx={{ display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>
               Type
-            </label>
-            <select
-              name="type"
-              value={filters.type}
-              onChange={handleFilterChange}
-              className="w-full border border-gray-300 dark:border-gray-600 rounded-sm p-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-            >
+            </Typography>
+            <TextField select name="type" value={filters.type} onChange={handleFilterChange} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
               {typeOptions.map((option) => (
-                <option key={option.value} value={option.value}>
+                <MenuItem key={option.value} value={option.value}>
                   {option.label}
-                </option>
+                </MenuItem>
               ))}
-            </select>
-          </div>
+            </TextField>
+          </Box>
 
           {/* Company Filter */}
-          <div className="flex-1 max-w-[200px]">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <Box sx={{ flex: 1, maxWidth: 200 }}>
+            <Typography component="label" sx={{ display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>
               Company
-            </label>
-            <select
-              name="company"
-              value={filters.company}
-              onChange={handleFilterChange}
-              className="w-full border border-gray-300 dark:border-gray-600 rounded-sm p-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-            >
+            </Typography>
+            <TextField select name="company" value={filters.company} onChange={handleFilterChange} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
               {companyOptions.map((option) => (
-                <option key={option.value} value={option.value}>
+                <MenuItem key={option.value} value={option.value}>
                   {option.label}
-                </option>
+                </MenuItem>
               ))}
-            </select>
-          </div>
+            </TextField>
+          </Box>
 
           {/* Status Filter */}
-          <div className="flex-1 max-w-[200px]">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <Box sx={{ flex: 1, maxWidth: 200 }}>
+            <Typography component="label" sx={{ display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>
               Status
-            </label>
-            <select
-              name="status"
-              value={filters.status}
-              onChange={handleFilterChange}
-              className="w-full border border-gray-300 dark:border-gray-600 rounded-sm p-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-            >
+            </Typography>
+            <TextField select name="status" value={filters.status} onChange={handleFilterChange} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
               {statusOptions.map((option) => (
-                <option key={option.value} value={option.value}>
+                <MenuItem key={option.value} value={option.value}>
                   {option.label}
-                </option>
+                </MenuItem>
               ))}
-            </select>
-          </div>
+            </TextField>
+          </Box>
 
           {/* Date Filter (as date range or single date) */}
-          <div className="flex-1 max-w-[200px]">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <Box sx={{ flex: 1, maxWidth: 200 }}>
+            <Typography component="label" sx={{ display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>
               Date
-            </label>
-            <input
-              type="date"
-              name="date"
-              value={filters.date}
-              onChange={handleFilterChange}
-              className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm p-1.5 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
+            </Typography>
+            <TextField type="date" name="date" value={filters.date} onChange={handleFilterChange} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }} />
+          </Box>
 
           {/* Search Button */}
-          <button
-            onClick={handleSearch}
-            className="glass-btn glass-btn-primary flex items-center justify-center"
-          >
-            <Search className="w-4 h-4 mr-1" /> Search
-          </button>
-        </div>
-      </div>
+          <Button onClick={handleSearch} className="glass-btn glass-btn-primary" startIcon={<Search className="w-4 h-4" />}>
+            Search
+          </Button>
+        </Stack>
+      </Box>
 
       {/* --- Results Table --- */}
-      <div className="p-4 overflow-x-auto">
-        <div className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-sm">
+      <Box sx={{ p: 2, overflowX: "auto" }}>
+        <Box sx={{ bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "1.75px" }}>
           {/* Table Header Row (Blue background) */}
-          <div className="flex border-b border-gray-200 dark:border-gray-700 bg-blue-50 dark:bg-blue-900/30 text-xs font-semibold text-gray-700 dark:text-gray-300">
+          <Stack
+            direction="row"
+            sx={(theme) => ({
+              borderBottom: 1,
+              borderColor: "divider",
+              bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08),
+              fontSize: 10.5,
+              fontWeight: 600,
+              color: "text.secondary",
+            })}
+          >
             {/* These input-style placeholders in the image suggest inline column filtering */}
-            <input
+            <Box
+              component="input"
               type="text"
               placeholder="Date"
-              className="p-2 border-r border-gray-300 dark:border-gray-600 w-1/12 bg-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none"
+              sx={{ p: 1, borderRight: 1, borderColor: "divider", width: "8.33%", bgcolor: "transparent", color: "text.primary", border: 0, borderRadius: 0, outline: "none", fontSize: "inherit" }}
             />
-            <input
+            <Box
+              component="input"
               type="text"
               placeholder="Type"
-              className="p-2 border-r border-gray-300 dark:border-gray-600 w-1/12 bg-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none"
+              sx={{ p: 1, borderRight: 1, borderColor: "divider", width: "8.33%", bgcolor: "transparent", color: "text.primary", border: 0, borderRadius: 0, outline: "none", fontSize: "inherit" }}
             />
-            <input
+            <Box
+              component="input"
               type="text"
               placeholder="Description"
-              className="p-2 border-r border-gray-300 dark:border-gray-600 flex-grow bg-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none"
+              sx={{ p: 1, borderRight: 1, borderColor: "divider", flexGrow: 1, bgcolor: "transparent", color: "text.primary", border: 0, borderRadius: 0, outline: "none", fontSize: "inherit" }}
             />
-            <input
+            <Box
+              component="input"
               type="text"
               placeholder="Created By"
-              className="p-2 border-r border-gray-300 dark:border-gray-600 w-2/12 bg-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none"
+              sx={{ p: 1, borderRight: 1, borderColor: "divider", width: "16.66%", bgcolor: "transparent", color: "text.primary", border: 0, borderRadius: 0, outline: "none", fontSize: "inherit" }}
             />
-            <input
+            <Box
+              component="input"
               type="text"
               placeholder="Action By"
-              className="p-2 border-r border-gray-300 dark:border-gray-600 w-2/12 bg-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none"
+              sx={{ p: 1, borderRight: 1, borderColor: "divider", width: "16.66%", bgcolor: "transparent", color: "text.primary", border: 0, borderRadius: 0, outline: "none", fontSize: "inherit" }}
             />
-            <input
+            <Box
+              component="input"
               type="text"
               placeholder="Status"
-              className="p-2 border-r border-gray-300 dark:border-gray-600 w-1/12 bg-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none"
+              sx={{ p: 1, borderRight: 1, borderColor: "divider", width: "8.33%", bgcolor: "transparent", color: "text.primary", border: 0, borderRadius: 0, outline: "none", fontSize: "inherit" }}
             />
-            <div className="p-2 w-1/12 bg-blue-100 dark:bg-blue-900/50 text-center">Action</div>
-          </div>
+            <Box
+              sx={(theme) => ({
+                p: 1,
+                width: "8.33%",
+                textAlign: "center",
+                bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.24 : 0.14),
+              })}
+            >
+              Action
+            </Box>
+          </Stack>
 
           {/* Table Data (Main Content) */}
-          <div className="min-h-[50vh] overflow-y-auto">
+          <Box sx={{ minHeight: "50vh", overflowY: "auto" }}>
             {entries.length === 0 ? (
-              <div className="text-center p-8 text-gray-500 dark:text-gray-400">
-                Showing all 0 rows
-              </div>
+              <Box sx={{ textAlign: "center", p: 4, color: "text.secondary" }}>Showing all 0 rows</Box>
             ) : (
               entries.map((entry, index) => (
-                <div
+                <Stack
                   key={index}
-                  className="flex border-b border-gray-200 dark:border-gray-700 text-sm hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
+                  direction="row"
+                  sx={{ borderBottom: 1, borderColor: "divider", fontSize: 12.25, cursor: "pointer", "&:hover": { bgcolor: "action.hover" } }}
                 >
-                  <div className="p-2 border-r border-gray-200 dark:border-gray-700 w-1/12">{entry.date}</div>
-                  <div className="p-2 border-r border-gray-200 dark:border-gray-700 w-1/12">{entry.type}</div>
-                  <div className="p-2 border-r border-gray-200 dark:border-gray-700 flex-grow">
-                    {entry.description}
-                  </div>
-                  <div className="p-2 border-r border-gray-200 dark:border-gray-700 w-2/12">{entry.createdBy}</div>
-                  <div className="p-2 border-r border-gray-200 dark:border-gray-700 w-2/12">{entry.actionBy}</div>
-                  <div className="p-2 border-r border-gray-200 dark:border-gray-700 w-1/12">{entry.status}</div>
-                  <div className="p-2 w-1/12 text-center text-blue-600 dark:text-blue-400 hover:underline">
+                  <Box sx={{ p: 1, borderRight: 1, borderColor: "divider", width: "8.33%" }}>{entry.date}</Box>
+                  <Box sx={{ p: 1, borderRight: 1, borderColor: "divider", width: "8.33%" }}>{entry.type}</Box>
+                  <Box sx={{ p: 1, borderRight: 1, borderColor: "divider", flexGrow: 1 }}>{entry.description}</Box>
+                  <Box sx={{ p: 1, borderRight: 1, borderColor: "divider", width: "16.66%" }}>{entry.createdBy}</Box>
+                  <Box sx={{ p: 1, borderRight: 1, borderColor: "divider", width: "16.66%" }}>{entry.actionBy}</Box>
+                  <Box sx={{ p: 1, borderRight: 1, borderColor: "divider", width: "8.33%" }}>{entry.status}</Box>
+                  <Box sx={{ p: 1, width: "8.33%", textAlign: "center", color: "primary.main", "&:hover": { textDecoration: "underline" } }}>
                     View
-                  </div>
-                </div>
+                  </Box>
+                </Stack>
               ))
             )}
-          </div>
+          </Box>
 
           {/* Footer Bar of the Table */}
-          <div className="flex justify-between items-center p-2 text-xs text-gray-600 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
-            <div className="flex items-center space-x-2">
-              <input type="checkbox" className="w-3 h-3" />
-              <input type="checkbox" className="w-3 h-3" />
-              <input type="checkbox" className="w-3 h-3" />
-              <span>Showing all {entries.length} rows</span>
-            </div>
-            <div className="flex items-center space-x-2">
+          <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", p: 1, fontSize: 10.5, color: "text.secondary", borderTop: 1, borderColor: "divider", bgcolor: "action.hover" }}>
+            <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+              <Box component="input" type="checkbox" sx={{ width: 12, height: 12 }} />
+              <Box component="input" type="checkbox" sx={{ width: 12, height: 12 }} />
+              <Box component="input" type="checkbox" sx={{ width: 12, height: 12 }} />
+              <Box component="span">Showing all {entries.length} rows</Box>
+            </Stack>
+            <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
               {/* Pagination controls would go here */}
-              <button className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
+              <Box component="button" sx={{ color: "text.disabled", "&:hover": { color: "text.secondary" }, border: 0, bgcolor: "transparent", cursor: "pointer" }}>
                 {"<"}
-              </button>
-              <span className="font-semibold">1</span>
-              <button className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
+              </Box>
+              <Box component="span" sx={{ fontWeight: 600 }}>1</Box>
+              <Box component="button" sx={{ color: "text.disabled", "&:hover": { color: "text.secondary" }, border: 0, bgcolor: "transparent", cursor: "pointer" }}>
                 {">"}
-              </button>
-              <div className="border-l border-gray-200 dark:border-gray-700 pl-2 ml-2 text-gray-400 dark:text-gray-500">
-                <div className="w-4 h-4 border border-gray-400 dark:border-gray-600"></div>{" "}
+              </Box>
+              <Box sx={{ borderLeft: 1, borderColor: "divider", pl: 1, ml: 1, color: "text.disabled" }}>
+                <Box sx={{ width: 16, height: 16, border: "1px solid", borderColor: "divider" }}></Box>
                 {/* Scrollbar Placeholder */}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+              </Box>
+            </Stack>
+          </Stack>
+        </Box>
+      </Box>
 
       {/* --- Footer License/Contact Bar --- */}
-      <div className="fixed bottom-0 w-full flex justify-between items-center px-4 py-1 text-xs text-gray-600 dark:text-gray-400 border-t border-gray-300 dark:border-gray-700 bg-gray-200 dark:bg-gray-800">
-        <span className="font-mono">
+      <Stack
+        direction="row"
+        sx={{ position: "fixed", bottom: 0, width: "100%", justifyContent: "space-between", alignItems: "center", px: 2, py: 0.5, fontSize: 10.5, color: "text.secondary", borderTop: 1, borderColor: "divider", bgcolor: "action.hover" }}
+      >
+        <Box component="span" sx={{ fontFamily: "monospace" }}>
           License : 4J2A3G-SGND8T-L6A7EM-9CH16V @ **STORE SOFT SOLUTION PVT
           LTD.**
-        </span>
-        <span>Customer Care **+91 93840 30115 / 6 / 7**</span>
-      </div>
-    </div>
+        </Box>
+        <Box component="span">Customer Care **+91 93840 30115 / 6 / 7**</Box>
+      </Stack>
+    </Box>
   );
 };
 

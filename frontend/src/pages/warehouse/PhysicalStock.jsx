@@ -5,6 +5,7 @@ import api from "../../api/axios";
 import Toast from "../../components/Toast";
 import FilterableDataTable from "../../components/FilterableDataTable";
 import ExportBottomSheet from "../../components/ExportBottomSheet";
+import { Box, Stack, Typography, IconButton, Button } from "@mui/material";
 
 const toFixed2 = (value) => Number(value || 0).toFixed(2);
 
@@ -30,7 +31,11 @@ const PhysicalStock = () => {
       {
         key: "barcode",
         label: "Barcode",
-        render: (value) => <span className="font-mono text-[11px]">{value || "-"}</span>,
+        render: (value) => (
+          <Box component="span" sx={{ fontFamily: "monospace", fontSize: 11 }}>
+            {value || "-"}
+          </Box>
+        ),
       },
       { key: "batch", label: "Batch" },
       { key: "company", label: "Company" },
@@ -50,27 +55,27 @@ const PhysicalStock = () => {
       {
         key: "qty",
         label: "Qty",
-        render: (value) => <div className="text-right">{Number(value || 0)}</div>,
+        render: (value) => <Box sx={{ textAlign: "right" }}>{Number(value || 0)}</Box>,
       },
       {
         key: "stock",
         label: "Stock",
-        render: (value) => <div className="text-right">{Number(value || 0)}</div>,
+        render: (value) => <Box sx={{ textAlign: "right" }}>{Number(value || 0)}</Box>,
       },
       {
         key: "cost",
         label: "Cost",
-        render: (value) => <div className="text-right">{toFixed2(value)}</div>,
+        render: (value) => <Box sx={{ textAlign: "right" }}>{toFixed2(value)}</Box>,
       },
       {
         key: "net",
         label: "Net",
-        render: (value) => <div className="text-right">{toFixed2(value)}</div>,
+        render: (value) => <Box sx={{ textAlign: "right" }}>{toFixed2(value)}</Box>,
       },
       {
         key: "sale",
         label: "Sale",
-        render: (value) => <div className="text-right">{toFixed2(value)}</div>,
+        render: (value) => <Box sx={{ textAlign: "right" }}>{toFixed2(value)}</Box>,
       },
     ],
     []
@@ -180,28 +185,20 @@ const PhysicalStock = () => {
   );
 
   return (
-    <div className="h-full flex flex-col bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 master-responsive">
-      <div className="flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
-        <div className="flex items-center">
-          <button
-            onClick={() => navigate(-1)}
-            className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 mr-3 p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
-            aria-label="Back"
-          >
+    <Box sx={{ height: "100%", display: "flex", flexDirection: "column", bgcolor: "background.default", color: "text.primary" }} className="master-responsive">
+      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1.5, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
+        <Stack direction="row" sx={{ alignItems: "center" }}>
+          <IconButton onClick={() => navigate(-1)} aria-label="Back" sx={{ mr: 1.5, color: "text.secondary" }}>
             <ArrowLeft className="w-4 h-4" />
-          </button>
-          <h1 className="text-sm font-semibold flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => navigate("/warehouse")}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
-            >
+          </IconButton>
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: 12.25, fontWeight: 600 }}>
+            <Button type="button" variant="text" onClick={() => navigate("/warehouse")} sx={{ minWidth: "auto", p: 0, fontSize: 12.25, fontWeight: 600 }}>
               Warehouse
-            </button>
-            <span className="text-gray-500 dark:text-gray-400">/</span>
-            <span>Physical Stock</span>
-          </h1>
-        </div>
+            </Button>
+            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
+            <Box component="span">Physical Stock</Box>
+          </Stack>
+        </Stack>
 
         <ExportBottomSheet
           columns={stockTableColumns}
@@ -213,30 +210,34 @@ const PhysicalStock = () => {
           fileName="physical_stock"
           buttonClassName="topbar-action-btn topbar-action-export"
         />
-      </div>
+      </Stack>
 
-      <div className="p-4 space-y-3">
-        <div className="flex flex-wrap items-center gap-6 text-sm font-semibold bg-white dark:bg-gray-800 p-3 rounded-lg shadow-md border border-gray-300 dark:border-gray-600">
-          <div className="text-gray-700 dark:text-gray-300">
-            Rows: <span className="text-blue-600 dark:text-blue-400">{stats.rows}</span>
-          </div>
-          <div className="text-gray-700 dark:text-gray-300">
-            Total Qty: <span className="text-purple-600 dark:text-purple-400">{stats.qty}</span>
-          </div>
-          <div className="text-gray-700 dark:text-gray-300">
-            Total Cost: <span className="text-orange-600 dark:text-orange-400">{stats.cost.toFixed(2)}</span>
-          </div>
-          <div className="text-gray-700 dark:text-gray-300">
-            Total Net: <span className="text-green-600 dark:text-green-400">{stats.net.toFixed(2)}</span>
-          </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">
+      <Box sx={{ p: 2 }}>
+        <Stack
+          direction="row"
+          spacing={3}
+          sx={{ flexWrap: "wrap", alignItems: "center", fontSize: 12.25, fontWeight: 600, bgcolor: "background.paper", p: 1.5, borderRadius: "7px", boxShadow: 3, border: "1px solid", borderColor: "divider" }}
+        >
+          <Box sx={{ color: "text.secondary" }}>
+            Rows: <Box component="span" sx={{ color: "primary.main" }}>{stats.rows}</Box>
+          </Box>
+          <Box sx={{ color: "text.secondary" }}>
+            Total Qty: <Box component="span" sx={{ color: "#9333ea" }}>{stats.qty}</Box>
+          </Box>
+          <Box sx={{ color: "text.secondary" }}>
+            Total Cost: <Box component="span" sx={{ color: "warning.main" }}>{stats.cost.toFixed(2)}</Box>
+          </Box>
+          <Box sx={{ color: "text.secondary" }}>
+            Total Net: <Box component="span" sx={{ color: "success.main" }}>{stats.net.toFixed(2)}</Box>
+          </Box>
+          <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>
             Source: Completed transport entries and direct purchases.
-          </div>
-        </div>
-      </div>
+          </Typography>
+        </Stack>
+      </Box>
 
-      <div className="flex-1 p-4 pt-0 min-h-0">
-        <div className="h-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm overflow-hidden flex flex-col p-3 min-h-0">
+      <Box sx={{ flex: 1, p: 2, pt: 0, minHeight: 0 }}>
+        <Box sx={{ height: "100%", bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "7px", boxShadow: 1, overflow: "hidden", display: "flex", flexDirection: "column", p: 1.5, minHeight: 0 }}>
           <FilterableDataTable
             rows={rawStockRows}
             columns={stockTableColumns}
@@ -264,8 +265,8 @@ const PhysicalStock = () => {
             fillHeight
             enableVirtualization
           />
-        </div>
-      </div>
+        </Box>
+      </Box>
 
       <Toast
         open={toast.open}
@@ -273,7 +274,7 @@ const PhysicalStock = () => {
         message={toast.message}
         onClose={() => setToast((prev) => ({ ...prev, open: false }))}
       />
-    </div>
+    </Box>
   );
 };
 

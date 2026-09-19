@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 import Toast from "../../components/Toast";
 import FilterableDataTable from "../../components/FilterableDataTable";
+import { Box, Stack, Typography, IconButton, Button } from "@mui/material";
 
 const formatDate = (value) => {
   if (!value) return "-";
@@ -174,32 +175,24 @@ const BarcodeSearchPage = () => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 master-responsive">
-      <div className="flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
-        <div className="flex items-center">
-          <button
-            className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 mr-3 p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
-            onClick={() => navigate("/warehouse")}
-            aria-label="Back"
-          >
+    <Box sx={{ height: "100%", display: "flex", flexDirection: "column", bgcolor: "background.default", color: "text.primary" }} className="master-responsive">
+      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1.5, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
+        <Stack direction="row" sx={{ alignItems: "center" }}>
+          <IconButton onClick={() => navigate("/warehouse")} aria-label="Back" sx={{ mr: 1.5, color: "text.secondary" }}>
             <ArrowLeft className="w-4 h-4" />
-          </button>
-          <h1 className="text-sm font-semibold flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => navigate("/warehouse")}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
-            >
+          </IconButton>
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: 12.25, fontWeight: 600 }}>
+            <Button type="button" variant="text" onClick={() => navigate("/warehouse")} sx={{ minWidth: "auto", p: 0, fontSize: 12.25, fontWeight: 600 }}>
               Warehouse
-            </button>
-            <span className="text-gray-500 dark:text-gray-400">/</span>
-            <span>Barcode Search</span>
-          </h1>
-        </div>
-      </div>
+            </Button>
+            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
+            <Box component="span">Barcode Search</Box>
+          </Stack>
+        </Stack>
+      </Stack>
 
-      <div className="p-4 flex-1 min-h-0">
-        <div className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-sm p-3 h-full flex flex-col min-h-0">
+      <Box sx={{ p: 2, flex: 1, minHeight: 0 }}>
+        <Box sx={{ bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "1.75px", p: 1.5, height: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}>
           <FilterableDataTable
             rows={results}
             columns={columns}
@@ -226,21 +219,22 @@ const BarcodeSearchPage = () => {
             paginationMode={isAllMode ? "client" : "server"}
             fillHeight
             renderActions={(row) => (
-              <div className="flex items-center justify-center">
-                <button
+              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <IconButton
                   type="button"
                   onClick={() => handleReprint(row)}
                   title={row.direct_purchase_id ? "Reprint this barcode" : "Not linked to a direct purchase"}
                   disabled={!row.direct_purchase_id}
-                  className="glass-btn glass-btn-primary rounded p-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="glass-btn glass-btn-primary"
+                  sx={{ borderRadius: "3.5px", p: 0.75 }}
                 >
                   <Printer className="w-3.5 h-3.5" />
-                </button>
-              </div>
+                </IconButton>
+              </Box>
             )}
           />
-        </div>
-      </div>
+        </Box>
+      </Box>
 
       <Toast
         open={toast.open}
@@ -248,7 +242,7 @@ const BarcodeSearchPage = () => {
         message={toast.message}
         onClose={() => setToast((prev) => ({ ...prev, open: false }))}
       />
-    </div>
+    </Box>
   );
 };
 

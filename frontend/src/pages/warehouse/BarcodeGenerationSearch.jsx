@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { ArrowLeft, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import useCompanyOptions from "../../utils/useCompanyOptions";
+import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, alpha } from "@mui/material";
 
 // Mock Data for Intray results
 const mockIntrayResults = [
@@ -32,30 +33,20 @@ const mockIntrayResults = [
 ];
 
 // Reusable SelectInput helper component (simplified)
-const SelectInput = ({
-  label,
-  options,
-  value,
-  onChange,
-  name,
-  className = "",
-}) => (
-  <div className={`flex-1 min-w-0 ${className}`}>
-    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">{label}</label>
-    <select
-      name={name}
-      value={value}
-      onChange={onChange}
-      className="w-full border border-gray-300 dark:border-gray-600 rounded-sm p-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-    >
-      <option value="ALL">ALL</option>
+const SelectInput = ({ label, options, value, onChange, name, sx }) => (
+  <Box sx={{ flex: 1, minWidth: 0, maxWidth: 150, ...sx }}>
+    <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>
+      {label}
+    </Typography>
+    <TextField select name={name} value={value} onChange={onChange} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
+      <MenuItem value="ALL">ALL</MenuItem>
       {options.map((option, index) => (
-        <option key={index} value={option.value || option.label}>
+        <MenuItem key={index} value={option.value || option.label}>
           {option.label}
-        </option>
+        </MenuItem>
       ))}
-    </select>
-  </div>
+    </TextField>
+  </Box>
 );
 
 const BarcodeGenerationSearch = () => {
@@ -126,29 +117,28 @@ const BarcodeGenerationSearch = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
+    <Box sx={{ minHeight: "100vh", bgcolor: "background.default", display: "flex", flexDirection: "column" }}>
       {/* --- Header Section --- */}
-      <div className="flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm sticky top-0 z-10">
-        <div className="flex items-center">
-          <button
-            className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 mr-3 p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
-            aria-label="Back"
-            onClick={() => navigate(-1)} // Navigate back from Intray
-          >
+      <Stack
+        direction="row"
+        sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1.5, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1, position: "sticky", top: 0, zIndex: 10 }}
+      >
+        <Stack direction="row" sx={{ alignItems: "center" }}>
+          <IconButton onClick={() => navigate(-1)} aria-label="Back" sx={{ mr: 1.5, color: "text.secondary" }}>
             <ArrowLeft className="w-4 h-4" />
-          </button>
-          <h1 className="text-sm font-semibold text-gray-800 dark:text-gray-100">
+          </IconButton>
+          <Typography component="h1" sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>
             Intray
-            <span className="text-sm font-normal text-gray-500 dark:text-gray-400 ml-2">
+            <Box component="span" sx={{ fontSize: 12.25, fontWeight: 400, color: "text.secondary", ml: 1 }}>
               | {results.length} Entries
-            </span>
-          </h1>
-        </div>
-      </div>
+            </Box>
+          </Typography>
+        </Stack>
+      </Stack>
 
       {/* --- Main Filter Row --- */}
-      <div className="p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex flex-wrap items-end gap-3">
+      <Box sx={{ p: 2, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider" }}>
+        <Stack direction="row" spacing={1.5} sx={{ flexWrap: "wrap", alignItems: "flex-end" }}>
           {/* Type Filter */}
           <SelectInput
             label="Type"
@@ -156,7 +146,6 @@ const BarcodeGenerationSearch = () => {
             options={typeOptions}
             value={filters.type}
             onChange={handleFilterChange}
-            className="max-w-[150px]"
           />
 
           {/* Company Filter */}
@@ -166,7 +155,6 @@ const BarcodeGenerationSearch = () => {
             options={companyOptions}
             value={filters.company}
             onChange={handleFilterChange}
-            className="max-w-[150px]"
           />
 
           {/* Status Filter */}
@@ -176,149 +164,121 @@ const BarcodeGenerationSearch = () => {
             options={statusOptions}
             value={filters.status}
             onChange={handleFilterChange}
-            className="max-w-[150px]"
           />
 
           {/* Date Filter */}
-          <div className="flex-1 max-w-[150px]">
-            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">
+          <Box sx={{ flex: 1, maxWidth: 150 }}>
+            <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>
               Date
-            </label>
-            <input
-              type="date"
-              name="date"
-              value={filters.date}
-              onChange={handleFilterChange}
-              className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm p-1.5 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
+            </Typography>
+            <TextField type="date" name="date" value={filters.date} onChange={handleFilterChange} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }} />
+          </Box>
 
           {/* Search Button */}
-          <button
-            onClick={handleSearch}
-            className="glass-btn glass-btn-primary flex items-center justify-center h-[34px]"
-          >
-            <Search className="w-4 h-4 mr-1" /> Search
-          </button>
-        </div>
+          <Button onClick={handleSearch} className="glass-btn glass-btn-primary" startIcon={<Search className="w-4 h-4" />} sx={{ height: 34 }}>
+            Search
+          </Button>
+        </Stack>
 
         {/* --- In-Column Search/Header Row --- */}
-        <div className="mt-4 flex space-x-2 text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-          <div className="w-[100px]">Date</div>
-          <div className="w-[150px]">Type</div>
-          <div className="flex-grow">Description</div>
-          <div className="w-[120px]">Created By</div>
-          <div className="w-[120px]">Action By</div>
-          <div className="w-[100px]">Status</div>
-          <div className="w-[80px]">Action</div>
-        </div>
-        <div className="flex space-x-2 text-sm mt-0.5">
-          <input
-            type="text"
-            placeholder=""
-            className="w-[100px] border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm p-1 focus:ring-1 focus:ring-blue-500"
-          />
-          <input
-            type="text"
-            placeholder=""
-            className="w-[150px] border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm p-1 focus:ring-1 focus:ring-blue-500"
-          />
-          <input
-            type="text"
-            placeholder=""
+        <Stack direction="row" spacing={1} sx={{ mt: 2, fontSize: 10.5, fontWeight: 600, color: "text.secondary", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          <Box sx={{ width: 100 }}>Date</Box>
+          <Box sx={{ width: 150 }}>Type</Box>
+          <Box sx={{ flexGrow: 1 }}>Description</Box>
+          <Box sx={{ width: 120 }}>Created By</Box>
+          <Box sx={{ width: 120 }}>Action By</Box>
+          <Box sx={{ width: 100 }}>Status</Box>
+          <Box sx={{ width: 80 }}>Action</Box>
+        </Stack>
+        <Stack direction="row" spacing={1} sx={{ fontSize: 12.25, mt: 0.5 }}>
+          <TextField size="small" sx={{ width: 100, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.5 } }} />
+          <TextField size="small" sx={{ width: 150, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.5 } }} />
+          <TextField
             name="descriptionSearch"
             value={filters.descriptionSearch}
             onChange={handleFilterChange}
-            className="flex-grow border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm p-1 focus:ring-1 focus:ring-blue-500"
+            size="small"
+            fullWidth
+            sx={{ flexGrow: 1, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.5 } }}
           />
-          <input
-            type="text"
-            placeholder=""
+          <TextField
             name="createdBySearch"
             value={filters.createdBySearch}
             onChange={handleFilterChange}
-            className="w-[120px] border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm p-1 focus:ring-1 focus:ring-blue-500"
+            size="small"
+            sx={{ width: 120, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.5 } }}
           />
-          <input
-            type="text"
-            placeholder=""
-            className="w-[120px] border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm p-1 focus:ring-1 focus:ring-blue-500"
-          />
-          <input
-            type="text"
-            placeholder=""
-            className="w-[100px] border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm p-1 focus:ring-1 focus:ring-blue-500"
-          />
-          <div className="w-[80px] bg-blue-200 dark:bg-blue-900/50 border border-blue-300 dark:border-blue-700 rounded-sm h-8"></div>
-        </div>
-      </div>
+          <TextField size="small" sx={{ width: 120, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.5 } }} />
+          <TextField size="small" sx={{ width: 100, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.5 } }} />
+          <Box
+            sx={(theme) => ({
+              width: 80,
+              height: 32,
+              bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.24 : 0.14),
+              border: "1px solid",
+              borderColor: alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.4 : 0.3),
+              borderRadius: "1.75px",
+            })}
+          ></Box>
+        </Stack>
+      </Box>
 
       {/* --- Results Table --- */}
-      <div className="p-4 overflow-x-auto">
-        <div className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-sm">
+      <Box sx={{ p: 2, overflowX: "auto" }}>
+        <Box sx={{ bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "1.75px" }}>
           {/* Table Data (Main Content) */}
-          <div className="min-h-[50vh] overflow-y-auto">
+          <Box sx={{ minHeight: "50vh", overflowY: "auto" }}>
             {results.length === 0 ? (
-              <div className="text-center p-8 text-gray-500 dark:text-gray-400">
+              <Box sx={{ textAlign: "center", p: 4, color: "text.secondary" }}>
                 No entries found matching your criteria.
-              </div>
+              </Box>
             ) : (
               results.map((entry, index) => (
-                <div
+                <Stack
                   key={index}
-                  className="flex border-b border-gray-200 dark:border-gray-700 text-sm text-gray-800 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
-                  onClick={() =>
-                    handleEntryClick(
-                      entry.type,
-                      entry.description.split(" - ")[0]
-                    )
-                  }
+                  direction="row"
+                  onClick={() => handleEntryClick(entry.type, entry.description.split(" - ")[0])}
+                  sx={{ borderBottom: 1, borderColor: "divider", fontSize: 12.25, color: "text.primary", cursor: "pointer", "&:hover": { bgcolor: "action.hover" } }}
                 >
-                  <div className="p-2 w-[100px]">{entry.date}</div>
-                  <div className="p-2 w-[150px] font-medium text-blue-700 dark:text-blue-400">
+                  <Box sx={{ p: 1, width: 100 }}>{entry.date}</Box>
+                  <Box sx={{ p: 1, width: 150, fontWeight: 500, color: "primary.main" }}>
                     {entry.type}
-                  </div>
-                  <div className="p-2 flex-grow">{entry.description}</div>
-                  <div className="p-2 w-[120px]">{entry.createdBy}</div>
-                  <div className="p-2 w-[120px]">{entry.actionBy}</div>
-                  <div className="p-2 w-[100px]">{entry.status}</div>
-                  <div className="p-2 w-[80px] text-center text-blue-600 dark:text-blue-400 hover:underline">
+                  </Box>
+                  <Box sx={{ p: 1, flexGrow: 1 }}>{entry.description}</Box>
+                  <Box sx={{ p: 1, width: 120 }}>{entry.createdBy}</Box>
+                  <Box sx={{ p: 1, width: 120 }}>{entry.actionBy}</Box>
+                  <Box sx={{ p: 1, width: 100 }}>{entry.status}</Box>
+                  <Box sx={{ p: 1, width: 80, textAlign: "center", color: "primary.main", "&:hover": { textDecoration: "underline" } }}>
                     View
-                  </div>
-                </div>
+                  </Box>
+                </Stack>
               ))
             )}
-          </div>
+          </Box>
 
           {/* Footer Bar of the Table (Showing row count) */}
-          <div className="flex justify-between items-center p-2 text-xs text-gray-600 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                className="rounded border-gray-300 dark:border-gray-600 text-blue-600"
-              />
-              <input
-                type="checkbox"
-                className="rounded border-gray-300 dark:border-gray-600 text-blue-600"
-              />
-              <input
-                type="checkbox"
-                className="rounded border-gray-300 dark:border-gray-600 text-blue-600"
-              />
-            </div>
-            <span>Showing all {results.length} rows</span>
-          </div>
-        </div>
-      </div>
+          <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", p: 1, fontSize: 10.5, color: "text.secondary", borderTop: 1, borderColor: "divider", bgcolor: "action.hover" }}>
+            <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+              <Box component="input" type="checkbox" sx={{ borderRadius: "1.75px" }} />
+              <Box component="input" type="checkbox" sx={{ borderRadius: "1.75px" }} />
+              <Box component="input" type="checkbox" sx={{ borderRadius: "1.75px" }} />
+            </Stack>
+            <Box component="span">Showing all {results.length} rows</Box>
+          </Stack>
+        </Box>
+      </Box>
 
       {/* --- Footer License/Contact Bar (Matching image_ffcc42.png) --- */}
-      <div className="fixed bottom-0 w-full flex justify-between items-center px-4 py-1 text-xs text-gray-600 dark:text-gray-400 border-t border-gray-300 dark:border-gray-700 bg-gray-200 dark:bg-gray-800">
-        <span className="font-mono">
+      <Stack
+        direction="row"
+        sx={{ position: "fixed", bottom: 0, width: "100%", justifyContent: "space-between", alignItems: "center", px: 2, py: 0.5, fontSize: 10.5, color: "text.secondary", borderTop: 1, borderColor: "divider", bgcolor: "action.hover" }}
+      >
+        <Box component="span" sx={{ fontFamily: "monospace" }}>
           License: 432A3G-SGND8T-L6ATEM-9GHI6V @ STORE SOFT SOLUTION PVT LTD.
-        </span>
-        <span>Customer Care **+91 93840 30115 / 6 / 7**</span>
-      </div>
-    </div>
+        </Box>
+        <Box component="span">Customer Care **+91 93840 30115 / 6 / 7**</Box>
+      </Stack>
+    </Box>
   );
 };
 
