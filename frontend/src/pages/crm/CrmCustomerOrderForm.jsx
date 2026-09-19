@@ -2,10 +2,17 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { ArrowLeft, PlusCircle, Printer, Save, Search, Trash2, X } from "lucide-react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
+import { alpha } from "@mui/material/styles";
+import { Box, Button, Checkbox, IconButton, Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from "@mui/material";
 import api from "../../api/axios";
 import SearchableSelect from "../../components/SearchableSelect";
 import AsyncSearchSelect from "../../components/AsyncSearchSelect";
 import { usePrintContext } from "../../context/PrintContext";
+
+// The whole form is pinned to a single compact 10px baseline (was `text-[10px]` on the root
+// plus per-element arbitrary overrides) -- applied explicitly per TextField since MUI's own
+// input font-size doesn't inherit from an ancestor's fontSize the way a plain <input> would.
+const compactFieldSx = { "& .MuiInputBase-input": { fontSize: 10, padding: "4px 6px" } };
 
 const PAYMENT_MODES = ["Inter bank transfer", "Cheque/DD", "Cash", "Card", "UPI"];
 
@@ -86,10 +93,10 @@ const initialCustomerDialog = {
 };
 
 const InputLabel = ({ text, required = false }) => (
-  <label className="text-[10px] font-semibold text-gray-700 dark:text-gray-300 mb-0.5 block leading-tight">
-    {required && <span className="text-red-500 dark:text-red-400 mr-0.5">*</span>}
+  <Typography component="label" sx={{ fontSize: 10, fontWeight: 600, color: "text.secondary", mb: 0.25, display: "block", lineHeight: 1.2 }}>
+    {required && <Box component="span" sx={{ mr: 0.25, color: "error.main" }}>*</Box>}
     {text}
-  </label>
+  </Typography>
 );
 
 const CrmCustomerOrderForm = () => {
@@ -786,64 +793,56 @@ const CrmCustomerOrderForm = () => {
 
   if (loadingMasters || loadingSource) {
     return (
-      <div className="h-[calc(100vh-20px)] bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 p-2">
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow p-4 text-center text-gray-500 dark:text-gray-400 text-[11px]">
+      <Box sx={{ height: "calc(100vh - 20px)", bgcolor: "background.default", color: "text.primary", p: 1 }}>
+        <Box sx={{ bgcolor: "background.paper", borderRadius: "7px", border: "1px solid", borderColor: "divider", boxShadow: 1, p: 2, textAlign: "center", color: "text.secondary", fontSize: 11 }}>
           Loading customer order setup...
-        </div>
-      </div>
+        </Box>
+      </Box>
     );
   }
 
   return (
-    <div
+    <Box
       ref={formRootRef}
       onKeyDown={handleEnterToNextField}
-      className="h-full min-h-0 bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 overflow-hidden flex flex-col text-[10px] [&_input]:text-[10px] [&_select]:text-[10px] [&_textarea]:text-[10px] [&_button]:text-[10px]"
+      sx={{ height: "100%", minHeight: 0, bgcolor: "background.default", color: "text.primary", overflow: "hidden", display: "flex", flexDirection: "column", fontSize: 10 }}
     >
-      <div className="flex justify-between items-center px-4 py-1 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
-        <div className="flex items-center space-x-2">
-          <button className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200" onClick={() => navigate(-1)}>
+      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 0.5, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+          <IconButton size="small" onClick={() => navigate(-1)} sx={{ color: "text.secondary" }}>
             <ArrowLeft className="w-4 h-4" />
-          </button>
-          <h1 className="text-sm font-semibold flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => navigate("/crm")}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
-            >
+          </IconButton>
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: 13, fontWeight: 600 }}>
+            <Button type="button" variant="text" onClick={() => navigate("/crm")} sx={{ minWidth: "auto", p: 0, fontSize: 13, fontWeight: 600 }}>
               CRM
-            </button>
-            <span className="text-gray-500 dark:text-gray-400">/</span>
-            <button
-              type="button"
-              onClick={() => navigate("/crm/customer-orders")}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
-            >
+            </Button>
+            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
+            <Button type="button" variant="text" onClick={() => navigate("/crm/customer-orders")} sx={{ minWidth: "auto", p: 0, fontSize: 13, fontWeight: 600 }}>
               Customer Orders
-            </button>
-            <span className="text-gray-500 dark:text-gray-400">/</span>
-            <span>New</span>
-          </h1>
-        </div>
+            </Button>
+            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
+            <Box component="span">New</Box>
+          </Stack>
+        </Stack>
 
-        <div className="flex items-center gap-3 text-[10px] font-medium text-gray-700 dark:text-gray-300">
-          <span className="text-gray-600 dark:text-gray-400">Order No: <b>{orderNo}</b></span>
-          <button
-            className="glass-btn glass-btn-success flex items-center disabled:opacity-50"
+        <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", fontSize: "inherit", fontWeight: 500, color: "text.secondary" }}>
+          <Box component="span" sx={{ color: "text.secondary" }}>Order No: <Box component="b">{orderNo}</Box></Box>
+          <Button
+            className="glass-btn glass-btn-success flex items-center"
             onClick={handleSave}
             disabled={saving}
           >
             <Save className="w-3 h-3 mr-1" /> {saving ? "Saving..." : "Save"}
-          </button>
-        </div>
-      </div>
+          </Button>
+        </Stack>
+      </Stack>
 
-      <div className="flex-1 min-h-0 p-2 overflow-hidden">
-        <div className="h-full grid grid-cols-3 gap-2">
-          <div className="min-h-0 flex flex-col gap-2">
-            <div className="bg-white dark:bg-gray-800 shadow rounded-lg px-3 py-2 border border-gray-200 dark:border-gray-700 shrink-0">
-              <div className="grid grid-cols-2 gap-2">
-                <div>
+      <Box sx={{ flex: 1, minHeight: 0, p: 1, overflow: "hidden" }}>
+        <Box sx={{ height: "100%", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1 }}>
+          <Stack spacing={1} sx={{ minHeight: 0 }}>
+            <Box sx={{ bgcolor: "background.paper", boxShadow: 1, borderRadius: "7px", px: 1.5, py: 1, border: "1px solid", borderColor: "divider", flexShrink: 0 }}>
+              <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1 }}>
+                <Box>
                   <InputLabel text="Company" required />
                   <SearchableSelect
                     name="companyId"
@@ -852,8 +851,8 @@ const CrmCustomerOrderForm = () => {
                     options={options.companies}
                     placeholder="Select"
                   />
-                </div>
-                <div>
+                </Box>
+                <Box>
                   <InputLabel text="Location" required />
                   <SearchableSelect
                     name="locationId"
@@ -862,11 +861,14 @@ const CrmCustomerOrderForm = () => {
                     options={options.locations}
                     placeholder="Select"
                   />
-                </div>
-                <div>
+                </Box>
+                <Box>
                   <InputLabel text="Order Date" required />
-                  <input
+                  <TextField
                     type="date"
+                    size="small"
+                    fullWidth
+                    sx={compactFieldSx}
                     value={form.orderDate}
                     onChange={(e) => {
                       updateForm("orderDate", e.target.value);
@@ -874,71 +876,79 @@ const CrmCustomerOrderForm = () => {
                         setPaymentDraft((prev) => ({ ...prev, date: `${e.target.value}T00:00` }));
                       }
                     }}
-                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm px-1.5 py-1"
                   />
-                </div>
-                <div>
+                </Box>
+                <Box>
                   <InputLabel text="Delivery Date" />
-                  <input
+                  <TextField
                     type="date"
+                    size="small"
+                    fullWidth
+                    sx={compactFieldSx}
                     value={form.deliveryDate}
                     onChange={(e) => updateForm("deliveryDate", e.target.value)}
-                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm px-1.5 py-1"
                   />
-                </div>
-              </div>
-            </div>
+                </Box>
+              </Box>
+            </Box>
 
-            <div className="bg-white dark:bg-gray-800 shadow rounded-lg px-3 py-2 border border-gray-200 dark:border-gray-700 shrink-0">
-              <h2 className="text-xs font-bold mb-2 text-gray-800 dark:text-gray-100">Customer</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 items-end">
-                <div>
+            <Box sx={{ bgcolor: "background.paper", boxShadow: 1, borderRadius: "7px", px: 1.5, py: 1, border: "1px solid", borderColor: "divider", flexShrink: 0 }}>
+              <Typography component="h2" sx={{ fontSize: 10.5, fontWeight: 700, color: "text.primary", mb: 1 }}>Customer</Typography>
+              <Box sx={{ display: "grid", gap: 1, gridTemplateColumns: { md: "repeat(2, 1fr)" }, alignItems: "end" }}>
+                <Box>
                   <InputLabel text="Mobile No" required />
-                  <div className="flex items-center gap-1">
-                    <input
+                  <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+                    <TextField
                       type="text"
+                      size="small"
+                      fullWidth
+                      sx={compactFieldSx}
                       value={form.customerMobile}
                       onChange={(e) => onManualCustomerMobileChange(e.target.value)}
-                      className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm px-1.5 py-1"
                       placeholder="Enter mobile no"
                     />
-                    <button
-                      type="button"
+                    <IconButton
+                      size="small"
                       onClick={openCustomerDialog}
-                      className="p-1.5 border border-gray-300 dark:border-gray-600 rounded-sm hover:bg-gray-50 dark:hover:bg-gray-700/50"
                       title="Search customer"
+                      sx={{ border: "1px solid", borderColor: "divider", borderRadius: "4px", color: "primary.main" }}
                     >
-                      <Search className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                    </button>
-                  </div>
-                </div>
-                <div>
+                      <Search className="w-3.5 h-3.5" />
+                    </IconButton>
+                  </Stack>
+                </Box>
+                <Box>
                   <InputLabel text="Name" />
-                  <input
+                  <TextField
                     type="text"
+                    size="small"
+                    fullWidth
+                    sx={compactFieldSx}
                     value={form.customerName}
                     onChange={(e) => {
                       updateForm("customerName", e.target.value);
                       if (!form.customerId) setCustomerSelectionMode("manual-mobile");
                     }}
-                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm px-1.5 py-1"
                     placeholder="Customer name"
                   />
-                </div>
-                <div>
+                </Box>
+                <Box>
                   <InputLabel text="Address" />
-                  <textarea
+                  <TextField
+                    multiline
+                    rows={3}
+                    size="small"
+                    fullWidth
+                    sx={compactFieldSx}
                     value={form.customerAddress}
                     onChange={(e) => {
                       updateForm("customerAddress", e.target.value);
                       if (!form.customerId) setCustomerSelectionMode("manual-mobile");
                     }}
-                    rows={3}
-                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm px-1.5 py-1"
                     placeholder="Address"
                   />
-                </div>
-                <div>
+                </Box>
+                <Box>
                   <InputLabel text="City" />
                   <SearchableSelect
                     name="cityId"
@@ -947,99 +957,105 @@ const CrmCustomerOrderForm = () => {
                     options={options.cities}
                     placeholder="Select"
                   />
-                </div>
-              </div>
-            </div>
+                </Box>
+              </Box>
+            </Box>
 
-            <div className="bg-white dark:bg-gray-800 shadow rounded-lg px-3 py-2 border border-gray-200 dark:border-gray-700 min-h-0 flex flex-col">
-              <h2 className="text-xs font-bold mb-2 text-gray-800 dark:text-gray-100">Communication</h2>
-              <div className="grid grid-cols-3 gap-2 items-end">
-                <div>
+            <Stack sx={{ bgcolor: "background.paper", boxShadow: 1, borderRadius: "7px", px: 1.5, py: 1, border: "1px solid", borderColor: "divider", minHeight: 0 }}>
+              <Typography component="h2" sx={{ fontSize: 10.5, fontWeight: 700, color: "text.primary", mb: 1 }}>Communication</Typography>
+              <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, alignItems: "end" }}>
+                <Box>
                   <InputLabel text="Date" />
-                  <input
+                  <TextField
                     type="date"
+                    size="small"
+                    fullWidth
+                    sx={compactFieldSx}
                     value={form.communicationDate}
                     onChange={(e) => updateForm("communicationDate", e.target.value)}
-                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm px-1.5 py-1"
                   />
-                </div>
-                <div>
+                </Box>
+                <Box>
                   <InputLabel text="Contact Person" />
-                  <input
+                  <TextField
                     type="text"
+                    size="small"
+                    fullWidth
+                    sx={compactFieldSx}
                     value={form.communicationPerson}
                     onChange={(e) => updateForm("communicationPerson", e.target.value)}
-                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm px-1.5 py-1"
                     placeholder="Person"
                   />
-                </div>
-                <div>
+                </Box>
+                <Box>
                   <InputLabel text="Message" />
-                  <div className="flex items-center gap-1">
-                    <input
+                  <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+                    <TextField
                       type="text"
+                      size="small"
+                      fullWidth
+                      sx={compactFieldSx}
                       value={form.communicationMessage}
                       onChange={(e) => updateForm("communicationMessage", e.target.value)}
-                      className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm px-1.5 py-1"
                       placeholder="Message"
                     />
-                    <button
-                      type="button"
+                    <IconButton
+                      size="small"
                       onClick={addCommunication}
-                      className="p-1.5 border border-gray-300 dark:border-gray-600 rounded-sm hover:bg-gray-50 dark:hover:bg-gray-700/50"
                       title="Add communication"
+                      sx={{ border: "1px solid", borderColor: "divider", borderRadius: "4px", color: "success.main" }}
                     >
-                      <PlusCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
-                    </button>
-                  </div>
-                </div>
-              </div>
+                      <PlusCircle className="w-4 h-4" />
+                    </IconButton>
+                  </Stack>
+                </Box>
+              </Box>
 
-              <div className="mt-2 border border-gray-200 dark:border-gray-700 rounded-sm overflow-auto flex-1 min-h-0">
-                <table className="w-full text-xs">
-                  <thead className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 sticky top-0">
-                    <tr>
-                      <th className="px-2 py-1.5 text-left">Date</th>
-                      <th className="px-2 py-1.5 text-left">Person</th>
-                      <th className="px-2 py-1.5 text-left">Note</th>
-                      <th className="px-2 py-1.5 text-center w-16">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+              <Box sx={{ mt: 1, border: "1px solid", borderColor: "divider", borderRadius: "4px", overflow: "auto", flex: 1, minHeight: 0 }}>
+                <Table size="small" sx={{ width: "100%", "& th, & td": { fontSize: 12.25 } }}>
+                  <TableHead sx={{ bgcolor: "action.hover", position: "sticky", top: 0 }}>
+                    <TableRow>
+                      <TableCell sx={{ px: 1, py: 0.75 }}>Date</TableCell>
+                      <TableCell sx={{ px: 1, py: 0.75 }}>Person</TableCell>
+                      <TableCell sx={{ px: 1, py: 0.75 }}>Note</TableCell>
+                      <TableCell align="center" sx={{ px: 1, py: 0.75, width: 64 }}>Action</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
                     {communications.length === 0 ? (
-                      <tr>
-                        <td colSpan={4} className="px-2 py-2 text-center text-gray-500 dark:text-gray-400">No communication entries</td>
-                      </tr>
+                      <TableRow>
+                        <TableCell colSpan={4} align="center" sx={{ px: 1, py: 1, color: "text.secondary" }}>No communication entries</TableCell>
+                      </TableRow>
                     ) : (
                       communications.map((row) => (
-                        <tr key={row.id} className="border-t border-gray-200 dark:border-gray-700">
-                          <td className="px-2 py-1.5">{row.date || "--"}</td>
-                          <td className="px-2 py-1.5">{row.person || "--"}</td>
-                          <td className="px-2 py-1.5">{row.note || "--"}</td>
-                          <td className="px-2 py-1.5 text-center">
-                            <button
-                              type="button"
+                        <TableRow key={row.id} sx={{ borderTop: "1px solid", borderColor: "divider" }}>
+                          <TableCell sx={{ px: 1, py: 0.75 }}>{row.date || "--"}</TableCell>
+                          <TableCell sx={{ px: 1, py: 0.75 }}>{row.person || "--"}</TableCell>
+                          <TableCell sx={{ px: 1, py: 0.75 }}>{row.note || "--"}</TableCell>
+                          <TableCell align="center" sx={{ px: 1, py: 0.75 }}>
+                            <IconButton
+                              size="small"
                               onClick={() => removeCommunication(row.id)}
-                              className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
                               title="Delete"
+                              sx={{ color: "error.main" }}
                             >
-                              <Trash2 className="w-3.5 h-3.5 inline" />
-                            </button>
-                          </td>
-                        </tr>
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
                       ))
                     )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
+                  </TableBody>
+                </Table>
+              </Box>
+            </Stack>
+          </Stack>
 
-          <div className="min-h-0 flex flex-col gap-2">
-            <div className="bg-white dark:bg-gray-800 shadow rounded-lg px-3 py-2 border border-gray-200 dark:border-gray-700 min-h-0 flex flex-col">
-              <h2 className="text-xs font-bold mb-2 text-gray-800 dark:text-gray-100">Items</h2>
-              <div className="grid grid-cols-3 gap-2 items-end">
-                <div>
+          <Stack sx={{ minHeight: 0 }}>
+            <Stack sx={{ bgcolor: "background.paper", boxShadow: 1, borderRadius: "7px", px: 1.5, py: 1, border: "1px solid", borderColor: "divider", minHeight: 0 }}>
+              <Typography component="h2" sx={{ fontSize: 10.5, fontWeight: 700, color: "text.primary", mb: 1 }}>Items</Typography>
+              <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, alignItems: "end" }}>
+                <Box>
                   <InputLabel text="Supplier" />
                   <AsyncSearchSelect
                     name="supplierId"
@@ -1049,9 +1065,9 @@ const CrmCustomerOrderForm = () => {
                     onAsyncSearch={handleAsyncSupplierSearch}
                     placeholder="Select"
                   />
-                </div>
+                </Box>
 
-                <div>
+                <Box>
                   <InputLabel text="Product" required />
                   <AsyncSearchSelect
                     name="itemProductId"
@@ -1061,9 +1077,9 @@ const CrmCustomerOrderForm = () => {
                     onAsyncSearch={handleAsyncProductSearch}
                     placeholder="Select"
                   />
-                </div>
+                </Box>
 
-                <div>
+                <Box>
                   <InputLabel text="Brand" />
                   <AsyncSearchSelect
                     name="itemBrandId"
@@ -1073,9 +1089,9 @@ const CrmCustomerOrderForm = () => {
                     onAsyncSearch={handleAsyncBrandSearch}
                     placeholder="Select"
                   />
-                </div>
+                </Box>
 
-                <div>
+                <Box>
                   <InputLabel text="Style" />
                   <SearchableSelect
                     name="itemStyleId"
@@ -1084,9 +1100,9 @@ const CrmCustomerOrderForm = () => {
                     options={options.styles}
                     placeholder="Select"
                   />
-                </div>
+                </Box>
 
-                <div>
+                <Box>
                   <InputLabel text="Size" />
                   <SearchableSelect
                     name="itemSizeId"
@@ -1095,9 +1111,9 @@ const CrmCustomerOrderForm = () => {
                     options={options.sizes}
                     placeholder="Select"
                   />
-                </div>
+                </Box>
 
-                <div>
+                <Box>
                   <InputLabel text="Colour" />
                   <SearchableSelect
                     name="itemColourId"
@@ -1106,110 +1122,116 @@ const CrmCustomerOrderForm = () => {
                     options={options.colours}
                     placeholder="Select"
                   />
-                </div>
+                </Box>
 
-                <div>
+                <Box>
                   <InputLabel text="Design No" />
-                  <input
+                  <TextField
                     type="text"
+                    size="small"
+                    fullWidth
+                    sx={compactFieldSx}
                     value={itemDraft.designNo}
                     onChange={(e) => setItemDraft((prev) => ({ ...prev, designNo: e.target.value }))}
-                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm px-1.5 py-1"
                     placeholder="Design"
                   />
-                </div>
+                </Box>
 
-                <div>
+                <Box>
                   <InputLabel text="Price" required />
-                  <input
+                  <TextField
                     type="number"
+                    size="small"
+                    fullWidth
+                    sx={compactFieldSx}
                     value={itemDraft.price}
                     onChange={(e) => setItemDraft((prev) => ({ ...prev, price: e.target.value }))}
-                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm px-1.5 py-1"
                     placeholder="0.00"
                   />
-                </div>
+                </Box>
 
-                <div>
+                <Box>
                   <InputLabel text="Qty" required />
-                  <div className="flex items-center gap-1">
-                    <input
+                  <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+                    <TextField
                       type="number"
+                      size="small"
+                      fullWidth
+                      sx={compactFieldSx}
                       value={itemDraft.qty}
                       onChange={(e) => setItemDraft((prev) => ({ ...prev, qty: e.target.value }))}
-                      className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm px-1.5 py-1"
                       placeholder="0"
                     />
-                    <button
-                      type="button"
+                    <IconButton
+                      size="small"
                       onClick={addItem}
-                      className="p-1.5 border border-gray-300 dark:border-gray-600 rounded-sm hover:bg-gray-50 dark:hover:bg-gray-700/50"
                       title="Add item"
+                      sx={{ border: "1px solid", borderColor: "divider", borderRadius: "4px", color: "success.main" }}
                     >
-                      <PlusCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
-                    </button>
-                  </div>
-                </div>
-              </div>
+                      <PlusCircle className="w-4 h-4" />
+                    </IconButton>
+                  </Stack>
+                </Box>
+              </Box>
 
-              <div className="mt-2 border border-gray-200 dark:border-gray-700 rounded-sm overflow-auto flex-1 min-h-0">
-                <table className="w-full text-xs min-w-[840px]">
-                  <thead className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 sticky top-0">
-                    <tr>
-                      <th className="px-2 py-1.5 text-left">Product</th>
-                      <th className="px-2 py-1.5 text-left">Brand</th>
-                      <th className="px-2 py-1.5 text-left">Style</th>
-                      <th className="px-2 py-1.5 text-left">Size</th>
-                      <th className="px-2 py-1.5 text-left">Colour</th>
-                      <th className="px-2 py-1.5 text-left">Design</th>
-                      <th className="px-2 py-1.5 text-right">Price</th>
-                      <th className="px-2 py-1.5 text-right">Qty</th>
-                      <th className="px-2 py-1.5 text-right">Amount</th>
-                      <th className="px-2 py-1.5 text-center w-16">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+              <Box sx={{ mt: 1, border: "1px solid", borderColor: "divider", borderRadius: "4px", overflow: "auto", flex: 1, minHeight: 0 }}>
+                <Table size="small" sx={{ width: "100%", minWidth: 840, "& th, & td": { fontSize: 12.25 } }}>
+                  <TableHead sx={{ bgcolor: "action.hover", position: "sticky", top: 0 }}>
+                    <TableRow>
+                      <TableCell sx={{ px: 1, py: 0.75 }}>Product</TableCell>
+                      <TableCell sx={{ px: 1, py: 0.75 }}>Brand</TableCell>
+                      <TableCell sx={{ px: 1, py: 0.75 }}>Style</TableCell>
+                      <TableCell sx={{ px: 1, py: 0.75 }}>Size</TableCell>
+                      <TableCell sx={{ px: 1, py: 0.75 }}>Colour</TableCell>
+                      <TableCell sx={{ px: 1, py: 0.75 }}>Design</TableCell>
+                      <TableCell align="right" sx={{ px: 1, py: 0.75 }}>Price</TableCell>
+                      <TableCell align="right" sx={{ px: 1, py: 0.75 }}>Qty</TableCell>
+                      <TableCell align="right" sx={{ px: 1, py: 0.75 }}>Amount</TableCell>
+                      <TableCell align="center" sx={{ px: 1, py: 0.75, width: 64 }}>Action</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
                     {items.length === 0 ? (
-                      <tr>
-                        <td colSpan={10} className="px-2 py-2 text-center text-gray-500 dark:text-gray-400">No items added</td>
-                      </tr>
+                      <TableRow>
+                        <TableCell colSpan={10} align="center" sx={{ px: 1, py: 1, color: "text.secondary" }}>No items added</TableCell>
+                      </TableRow>
                     ) : (
                       items.map((row) => (
-                        <tr key={row.id} className="border-t border-gray-200 dark:border-gray-700">
-                          <td className="px-2 py-1.5">{row.productName || "--"}</td>
-                          <td className="px-2 py-1.5">{row.brandName || "--"}</td>
-                          <td className="px-2 py-1.5">{row.styleName || "--"}</td>
-                          <td className="px-2 py-1.5">{row.sizeName || "--"}</td>
-                          <td className="px-2 py-1.5">{row.colourName || "--"}</td>
-                          <td className="px-2 py-1.5">{row.designNo || "--"}</td>
-                          <td className="px-2 py-1.5 text-right">{formatMoney(row.price)}</td>
-                          <td className="px-2 py-1.5 text-right">{Number(row.qty || 0).toFixed(3)}</td>
-                          <td className="px-2 py-1.5 text-right">{formatMoney(row.amount)}</td>
-                          <td className="px-2 py-1.5 text-center">
-                            <button
-                              type="button"
+                        <TableRow key={row.id} sx={{ borderTop: "1px solid", borderColor: "divider" }}>
+                          <TableCell sx={{ px: 1, py: 0.75 }}>{row.productName || "--"}</TableCell>
+                          <TableCell sx={{ px: 1, py: 0.75 }}>{row.brandName || "--"}</TableCell>
+                          <TableCell sx={{ px: 1, py: 0.75 }}>{row.styleName || "--"}</TableCell>
+                          <TableCell sx={{ px: 1, py: 0.75 }}>{row.sizeName || "--"}</TableCell>
+                          <TableCell sx={{ px: 1, py: 0.75 }}>{row.colourName || "--"}</TableCell>
+                          <TableCell sx={{ px: 1, py: 0.75 }}>{row.designNo || "--"}</TableCell>
+                          <TableCell align="right" sx={{ px: 1, py: 0.75 }}>{formatMoney(row.price)}</TableCell>
+                          <TableCell align="right" sx={{ px: 1, py: 0.75 }}>{Number(row.qty || 0).toFixed(3)}</TableCell>
+                          <TableCell align="right" sx={{ px: 1, py: 0.75 }}>{formatMoney(row.amount)}</TableCell>
+                          <TableCell align="center" sx={{ px: 1, py: 0.75 }}>
+                            <IconButton
+                              size="small"
                               onClick={() => removeItem(row.id)}
-                              className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
                               title="Delete"
+                              sx={{ color: "error.main" }}
                             >
-                              <Trash2 className="w-3.5 h-3.5 inline" />
-                            </button>
-                          </td>
-                        </tr>
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
                       ))
                     )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
+                  </TableBody>
+                </Table>
+              </Box>
+            </Stack>
+          </Stack>
 
-          <div className="min-h-0 flex flex-col gap-2">
-            <div className="bg-white dark:bg-gray-800 shadow rounded-lg px-3 py-2 border border-gray-200 dark:border-gray-700 min-h-0 flex flex-col">
-              <h2 className="text-xs font-bold mb-2 text-gray-800 dark:text-gray-100">Payment Info</h2>
+          <Stack sx={{ minHeight: 0 }}>
+            <Stack sx={{ bgcolor: "background.paper", boxShadow: 1, borderRadius: "7px", px: 1.5, py: 1, border: "1px solid", borderColor: "divider", minHeight: 0 }}>
+              <Typography component="h2" sx={{ fontSize: 10.5, fontWeight: 700, color: "text.primary", mb: 1 }}>Payment Info</Typography>
 
-              <div className="grid grid-cols-3 gap-2">
-                <div>
+              <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1 }}>
+                <Box>
                   <InputLabel text="Counter" />
                   <SearchableSelect
                     name="counterId"
@@ -1218,9 +1240,9 @@ const CrmCustomerOrderForm = () => {
                     options={options.counters}
                     placeholder="Select"
                   />
-                </div>
+                </Box>
 
-                <div>
+                <Box>
                   <InputLabel text="Received By" />
                   <AsyncSearchSelect
                     name="receivedById"
@@ -1230,41 +1252,43 @@ const CrmCustomerOrderForm = () => {
                     onAsyncSearch={handleAsyncEmployeeSearch}
                     placeholder="Select"
                   />
-                </div>
+                </Box>
 
-                <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-sm px-2 py-1.5">
-                  <div className="text-gray-500 dark:text-gray-400">Total Qty</div>
-                  <div className="font-semibold text-gray-800 dark:text-gray-100">{Number(itemTotals.totalQty).toFixed(3)}</div>
-                </div>
+                <Box sx={{ bgcolor: "action.hover", border: "1px solid", borderColor: "divider", borderRadius: "4px", px: 1, py: 0.75 }}>
+                  <Box sx={{ color: "text.secondary" }}>Total Qty</Box>
+                  <Box sx={{ fontWeight: 600, color: "text.primary" }}>{Number(itemTotals.totalQty).toFixed(3)}</Box>
+                </Box>
 
-                <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-sm px-2 py-1.5">
-                  <div className="text-gray-500 dark:text-gray-400">Total Amt</div>
-                  <div className="font-semibold text-gray-800 dark:text-gray-100">{formatMoney(itemTotals.totalAmount)}</div>
-                </div>
+                <Box sx={{ bgcolor: "action.hover", border: "1px solid", borderColor: "divider", borderRadius: "4px", px: 1, py: 0.75 }}>
+                  <Box sx={{ color: "text.secondary" }}>Total Amt</Box>
+                  <Box sx={{ fontWeight: 600, color: "text.primary" }}>{formatMoney(itemTotals.totalAmount)}</Box>
+                </Box>
 
-                <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-sm px-2 py-1.5">
-                  <div className="text-gray-500 dark:text-gray-400">Paid</div>
-                  <div className="font-semibold text-green-700 dark:text-green-400">{formatMoney(paidAmount)}</div>
-                </div>
+                <Box sx={{ bgcolor: "action.hover", border: "1px solid", borderColor: "divider", borderRadius: "4px", px: 1, py: 0.75 }}>
+                  <Box sx={{ color: "text.secondary" }}>Paid</Box>
+                  <Box sx={{ fontWeight: 600, color: "success.main" }}>{formatMoney(paidAmount)}</Box>
+                </Box>
 
-                <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-sm px-2 py-1.5">
-                  <div className="text-gray-500 dark:text-gray-400">Balance</div>
-                  <div className={`font-semibold ${balanceAmount <= 0 ? "text-blue-700 dark:text-blue-400" : "text-red-700 dark:text-red-400"}`}>
+                <Box sx={{ bgcolor: "action.hover", border: "1px solid", borderColor: "divider", borderRadius: "4px", px: 1, py: 0.75 }}>
+                  <Box sx={{ color: "text.secondary" }}>Balance</Box>
+                  <Box sx={{ fontWeight: 600, color: balanceAmount <= 0 ? "primary.main" : "error.main" }}>
                     {formatMoney(balanceAmount)}
-                  </div>
-                </div>
+                  </Box>
+                </Box>
 
-                <div>
+                <Box>
                   <InputLabel text={`Date (${form.orderDate || "-"})`} />
-                  <input
+                  <TextField
                     type="datetime-local"
+                    size="small"
+                    fullWidth
+                    sx={compactFieldSx}
                     value={paymentDraft.date}
                     onChange={(e) => setPaymentDraft((prev) => ({ ...prev, date: e.target.value }))}
-                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm px-1.5 py-1"
                   />
-                </div>
+                </Box>
 
-                <div>
+                <Box>
                   <InputLabel text="Payment Mode" />
                   <SearchableSelect
                     name="paymentMode"
@@ -1273,9 +1297,9 @@ const CrmCustomerOrderForm = () => {
                     options={paymentModeOptions}
                     placeholder="Select"
                   />
-                </div>
+                </Box>
 
-                <div>
+                <Box>
                   <InputLabel text="Bank" />
                   <SearchableSelect
                     name="bankId"
@@ -1284,186 +1308,202 @@ const CrmCustomerOrderForm = () => {
                     options={options.banks}
                     placeholder="Select"
                   />
-                </div>
+                </Box>
 
-                <div>
+                <Box>
                   <InputLabel text="Bank Date" />
-                  <input
+                  <TextField
                     type="date"
+                    size="small"
+                    fullWidth
+                    sx={compactFieldSx}
                     value={paymentDraft.bankDate}
                     onChange={(e) => setPaymentDraft((prev) => ({ ...prev, bankDate: e.target.value }))}
-                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm px-1.5 py-1"
                   />
-                </div>
+                </Box>
 
-                <div>
+                <Box>
                   <InputLabel text="Amount" required />
-                  <input
+                  <TextField
                     type="number"
+                    size="small"
+                    fullWidth
+                    sx={compactFieldSx}
                     value={paymentDraft.amount}
                     onChange={(e) => setPaymentDraft((prev) => ({ ...prev, amount: e.target.value }))}
-                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm px-1.5 py-1"
                     placeholder="0.00"
                   />
-                </div>
+                </Box>
 
-                <div>
+                <Box>
                   <InputLabel text="Remarks" />
-                  <div className="flex items-center gap-1">
-                    <input
+                  <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+                    <TextField
                       type="text"
+                      size="small"
+                      fullWidth
+                      sx={compactFieldSx}
                       value={paymentDraft.remarks}
                       onChange={(e) => setPaymentDraft((prev) => ({ ...prev, remarks: e.target.value }))}
-                      className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm px-1.5 py-1"
                       placeholder="Remarks"
                     />
-                    <button
-                      type="button"
+                    <IconButton
+                      size="small"
                       onClick={addPayment}
-                      className="p-1.5 border border-gray-300 dark:border-gray-600 rounded-sm hover:bg-gray-50 dark:hover:bg-gray-700/50"
                       title="Add payment"
+                      sx={{ border: "1px solid", borderColor: "divider", borderRadius: "4px", color: "success.main" }}
                     >
-                      <PlusCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
-                    </button>
-                  </div>
-                </div>
-              </div>
+                      <PlusCircle className="w-4 h-4" />
+                    </IconButton>
+                  </Stack>
+                </Box>
+              </Box>
 
-              <div className="mt-2 border border-gray-200 dark:border-gray-700 rounded-sm overflow-auto flex-1 min-h-0">
-                <table className="w-full text-xs min-w-[700px]">
-                  <thead className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 sticky top-0">
-                    <tr>
-                      <th className="px-2 py-1.5 text-left">Date</th>
-                      <th className="px-2 py-1.5 text-right">Amount</th>
-                      <th className="px-2 py-1.5 text-left">Cashier</th>
-                      <th className="px-2 py-1.5 text-left">Mode</th>
-                      <th className="px-2 py-1.5 text-center">Print</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+              <Box sx={{ mt: 1, border: "1px solid", borderColor: "divider", borderRadius: "4px", overflow: "auto", flex: 1, minHeight: 0 }}>
+                <Table size="small" sx={{ width: "100%", minWidth: 700, "& th, & td": { fontSize: 12.25 } }}>
+                  <TableHead sx={{ bgcolor: "action.hover", position: "sticky", top: 0 }}>
+                    <TableRow>
+                      <TableCell sx={{ px: 1, py: 0.75 }}>Date</TableCell>
+                      <TableCell align="right" sx={{ px: 1, py: 0.75 }}>Amount</TableCell>
+                      <TableCell sx={{ px: 1, py: 0.75 }}>Cashier</TableCell>
+                      <TableCell sx={{ px: 1, py: 0.75 }}>Mode</TableCell>
+                      <TableCell align="center" sx={{ px: 1, py: 0.75 }}>Print</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
                     {payments.length === 0 ? (
-                      <tr>
-                        <td colSpan={5} className="px-2 py-2 text-center text-gray-500 dark:text-gray-400">No payment entries</td>
-                      </tr>
+                      <TableRow>
+                        <TableCell colSpan={5} align="center" sx={{ px: 1, py: 1, color: "text.secondary" }}>No payment entries</TableCell>
+                      </TableRow>
                     ) : (
                       payments.map((row) => (
-                        <tr key={row.id} className="border-t border-gray-200 dark:border-gray-700">
-                          <td className="px-2 py-1.5">{row.date || "--"}</td>
-                          <td className="px-2 py-1.5 text-right">{formatMoney(row.amount)}</td>
-                          <td className="px-2 py-1.5">{row.cashier || "--"}</td>
-                          <td className="px-2 py-1.5">{row.paymentMode || "--"}</td>
-                          <td className="px-2 py-1.5 text-center">
-                            <button
-                              type="button"
+                        <TableRow key={row.id} sx={{ borderTop: "1px solid", borderColor: "divider" }}>
+                          <TableCell sx={{ px: 1, py: 0.75 }}>{row.date || "--"}</TableCell>
+                          <TableCell align="right" sx={{ px: 1, py: 0.75 }}>{formatMoney(row.amount)}</TableCell>
+                          <TableCell sx={{ px: 1, py: 0.75 }}>{row.cashier || "--"}</TableCell>
+                          <TableCell sx={{ px: 1, py: 0.75 }}>{row.paymentMode || "--"}</TableCell>
+                          <TableCell align="center" sx={{ px: 1, py: 0.75 }}>
+                            <IconButton
+                              size="small"
                               onClick={() => removePayment(row.id)}
-                              className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 mr-2"
                               title="Delete"
+                              sx={{ color: "error.main", mr: 0.5 }}
                             >
-                              <Trash2 className="w-3.5 h-3.5 inline" />
-                            </button>
-                            <button
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </IconButton>
+                            <Button
                               type="button"
                               onClick={() => printPaymentSlip(row)}
                               className="glass-btn glass-btn-primary"
                               title="Print"
+                              sx={{ minWidth: "auto", p: 0.5 }}
                             >
-                              <Printer className="w-3.5 h-3.5 inline" />
-                            </button>
-                          </td>
-                        </tr>
+                              <Printer className="w-3.5 h-3.5" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
                       ))
                     )}
-                  </tbody>
-                </table>
-              </div>
+                  </TableBody>
+                </Table>
+              </Box>
 
-              <div className="mt-2">
+              <Box sx={{ mt: 1 }}>
                 <InputLabel text="Order Remarks" />
-                <input
+                <TextField
                   type="text"
+                  size="small"
+                  fullWidth
+                  sx={compactFieldSx}
                   value={form.remarks}
                   onChange={(e) => updateForm("remarks", e.target.value)}
-                  className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm px-1.5 py-1"
                   placeholder="Additional remarks"
                 />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+              </Box>
+            </Stack>
+          </Stack>
+        </Box>
+      </Box>
 
       {customerDialog.open && (
-        <div className="fixed inset-0 z-[120] bg-black/30 flex items-center justify-center p-4">
-          <div className="w-full max-w-4xl bg-white dark:bg-gray-800 rounded-md shadow-xl border border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">Search / Select Customer</h3>
-              <button type="button" onClick={closeCustomerDialog} className="glass-btn glass-btn-secondary">
+        <Box sx={{ position: "fixed", inset: 0, zIndex: 120, bgcolor: "rgba(0,0,0,0.3)", display: "flex", alignItems: "center", justifyContent: "center", p: 2 }}>
+          <Box sx={{ width: "100%", maxWidth: 896, bgcolor: "background.paper", borderRadius: "5.25px", boxShadow: 8, border: "1px solid", borderColor: "divider" }}>
+            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1 }}>
+              <Typography component="h3" sx={{ fontSize: 13, fontWeight: 600, color: "text.primary" }}>Search / Select Customer</Typography>
+              <Button type="button" onClick={closeCustomerDialog} className="glass-btn glass-btn-secondary">
                 <X className="w-4 h-4" />
-              </button>
-            </div>
+              </Button>
+            </Stack>
 
-            <div className="p-4 space-y-3">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
-                <div>
+            <Stack spacing={1.5} sx={{ p: 2 }}>
+              <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { md: "repeat(4, 1fr)" }, alignItems: "end" }}>
+                <Box>
                   <InputLabel text="Name" />
-                  <input
+                  <TextField
                     type="text"
+                    size="small"
+                    fullWidth
+                    sx={{ "& .MuiInputBase-input": { fontSize: 12.25 } }}
                     value={customerDialog.name}
                     onChange={(e) => setCustomerDialog((prev) => ({ ...prev, name: e.target.value }))}
-                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm px-2 py-1.5 text-xs"
                   />
-                </div>
-                <div>
+                </Box>
+                <Box>
                   <InputLabel text="Contact No" />
-                  <input
+                  <TextField
                     type="text"
+                    size="small"
+                    fullWidth
+                    sx={{ "& .MuiInputBase-input": { fontSize: 12.25 } }}
                     value={customerDialog.contactNo}
                     onChange={(e) => setCustomerDialog((prev) => ({ ...prev, contactNo: e.target.value }))}
-                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm px-2 py-1.5 text-xs"
                   />
-                </div>
-                <div>
+                </Box>
+                <Box>
                   <InputLabel text="Area" />
-                  <input
+                  <TextField
                     type="text"
+                    size="small"
+                    fullWidth
+                    sx={{ "& .MuiInputBase-input": { fontSize: 12.25 } }}
                     value={customerDialog.area}
                     onChange={(e) => setCustomerDialog((prev) => ({ ...prev, area: e.target.value }))}
-                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm px-2 py-1.5 text-xs"
                   />
-                </div>
-                <div>
-                  <button
+                </Box>
+                <Box>
+                  <Button
                     type="button"
                     onClick={searchCustomers}
-                    className="glass-btn glass-btn-primary w-full disabled:opacity-50"
+                    className="glass-btn glass-btn-primary"
+                    fullWidth
                     disabled={customerDialog.loading}
                   >
                     {customerDialog.loading ? "Searching..." : "Search"}
-                  </button>
-                </div>
-              </div>
+                  </Button>
+                </Box>
+              </Box>
 
-              <div className="border border-gray-200 dark:border-gray-700 rounded-sm max-h-72 overflow-auto">
-                <table className="w-full text-xs">
-                  <thead className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 sticky top-0">
-                    <tr>
-                      <th className="px-2 py-1.5 w-10" />
-                      <th className="px-2 py-1.5 text-left">Name</th>
-                      <th className="px-2 py-1.5 text-left">Area</th>
-                      <th className="px-2 py-1.5 text-left">Mobile</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+              <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: "4px", maxHeight: 288, overflow: "auto" }}>
+                <Table size="small" sx={{ width: "100%", "& th, & td": { fontSize: 12.25 } }}>
+                  <TableHead sx={{ bgcolor: "action.hover", position: "sticky", top: 0 }}>
+                    <TableRow>
+                      <TableCell sx={{ px: 1, py: 0.75, width: 40 }} />
+                      <TableCell sx={{ px: 1, py: 0.75 }}>Name</TableCell>
+                      <TableCell sx={{ px: 1, py: 0.75 }}>Area</TableCell>
+                      <TableCell sx={{ px: 1, py: 0.75 }}>Mobile</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
                     {customerDialog.rows.length === 0 ? (
-                      <tr>
-                        <td colSpan={4} className="px-2 py-3 text-center text-gray-500 dark:text-gray-400">No matched customers</td>
-                      </tr>
+                      <TableRow>
+                        <TableCell colSpan={4} align="center" sx={{ px: 1, py: 1.5, color: "text.secondary" }}>No matched customers</TableCell>
+                      </TableRow>
                     ) : (
                       customerDialog.rows.map((row) => (
-                        <tr key={row.id} className="border-t border-gray-200 dark:border-gray-700">
-                          <td className="px-2 py-1.5 text-center">
-                            <input
-                              type="checkbox"
+                        <TableRow key={row.id} sx={{ borderTop: "1px solid", borderColor: "divider" }}>
+                          <TableCell align="center" sx={{ px: 1, py: 0.75 }}>
+                            <Checkbox
+                              size="small"
                               checked={String(customerDialog.selectedId) === String(row.id)}
                               onChange={() =>
                                 setCustomerDialog((prev) => ({
@@ -1471,41 +1511,40 @@ const CrmCustomerOrderForm = () => {
                                   selectedId: String(prev.selectedId) === String(row.id) ? "" : String(row.id),
                                 }))
                               }
-                              className="w-3.5 h-3.5 accent-blue-600 dark:accent-blue-400"
+                              sx={{ p: 0 }}
                             />
-                          </td>
-                          <td className="px-2 py-1.5">{row.name || "--"}</td>
-                          <td className="px-2 py-1.5">{row.area || "--"}</td>
-                          <td className="px-2 py-1.5">{row.mobile || "--"}</td>
-                        </tr>
+                          </TableCell>
+                          <TableCell sx={{ px: 1, py: 0.75 }}>{row.name || "--"}</TableCell>
+                          <TableCell sx={{ px: 1, py: 0.75 }}>{row.area || "--"}</TableCell>
+                          <TableCell sx={{ px: 1, py: 0.75 }}>{row.mobile || "--"}</TableCell>
+                        </TableRow>
                       ))
                     )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+                  </TableBody>
+                </Table>
+              </Box>
+            </Stack>
 
-            <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-2">
-              <button
+            <Stack direction="row" spacing={1} sx={{ justifyContent: "flex-end", px: 2, py: 1.5, borderTop: 1, borderColor: "divider" }}>
+              <Button
                 type="button"
                 onClick={createCustomerFromDialog}
                 className="glass-btn glass-btn-success"
               >
                 Create
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={selectCustomerFromDialog}
                 className="glass-btn glass-btn-primary"
               >
                 Select
-              </button>
-            </div>
-          </div>
-        </div>
+              </Button>
+            </Stack>
+          </Box>
+        </Box>
       )}
-
-    </div>
+    </Box>
   );
 };
 

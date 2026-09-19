@@ -61,7 +61,10 @@ describe("ProtectedLayoutRouteRenderer catch-all", () => {
   it("renders ComingSoon (not a blank bounce) for an unbuilt/mistyped path", async () => {
     renderAtPath("/finance/definitely-not-a-real-page");
 
-    expect(await screen.findByText("Coming soon")).toBeInTheDocument();
+    // This file's own import cost is heavy by design (every registered page module loads, per the
+    // top-of-file comment) -- findByText's default 1000ms wait has been observed timing out under
+    // full-suite parallel load (passes standalone every time), so give it real margin here.
+    expect(await screen.findByText("Coming soon", {}, { timeout: 5000 })).toBeInTheDocument();
     expect(await screen.findByText("/finance/definitely-not-a-real-page")).toBeInTheDocument();
     expect(await screen.findByRole("link", { name: /Back to Dashboard/i })).toBeInTheDocument();
   });

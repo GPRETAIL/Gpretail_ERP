@@ -1,43 +1,40 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
+import { Box, Checkbox, MenuItem, Stack, TextField, Typography } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 
 // Small presentational form primitives shared by the User Access page (UserAccess.jsx)
 // and the Store Groups management drawer (StoreGroupsDrawer.jsx). Extracted from
 // UserAccess.jsx so both can render the same look/behavior without duplicating markup.
 
+// Label stays a separate column to the left of the field (not MUI's own floating label) --
+// this two-column layout is the established look across every UserAccess/StoreGroups form.
+const fieldLabelSx = { width: "33.333%", fontSize: 12.25, fontWeight: 500, color: "text.secondary" };
+
 export const TextInput = ({ label, value, onChange, type = "text", required = false }) => (
-  <div className="flex items-center">
-    <label className="w-1/3 text-sm font-medium text-gray-700 dark:text-gray-300">
-      {required ? <span className="mr-1 text-red-500">*</span> : null}
+  <Stack direction="row" sx={{ alignItems: "center" }}>
+    <Typography component="label" sx={fieldLabelSx}>
+      {required ? <Box component="span" sx={{ mr: 0.5, color: "error.main" }}>*</Box> : null}
       {label}
-    </label>
-    <input
-      type={type}
-      value={value}
-      onChange={onChange}
-      className="ml-3 min-w-0 flex-1 rounded-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 p-1.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-    />
-  </div>
+    </Typography>
+    <TextField type={type} value={value} onChange={onChange} size="small" fullWidth sx={{ ml: 1.5 }} />
+  </Stack>
 );
 
 export const SelectInput = ({ label, value, onChange, options = [], required = false }) => (
-  <div className="flex items-center">
-    <label className="w-1/3 text-sm font-medium text-gray-700 dark:text-gray-300">
-      {required ? <span className="mr-1 text-red-500">*</span> : null}
+  <Stack direction="row" sx={{ alignItems: "center" }}>
+    <Typography component="label" sx={fieldLabelSx}>
+      {required ? <Box component="span" sx={{ mr: 0.5, color: "error.main" }}>*</Box> : null}
       {label}
-    </label>
-    <select
-      value={value}
-      onChange={onChange}
-      className="ml-3 min-w-0 flex-1 rounded-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-gray-100 p-1.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-    >
+    </Typography>
+    <TextField select value={value} onChange={onChange} size="small" fullWidth sx={{ ml: 1.5 }}>
       {options.map((option) => (
-        <option key={option.value} value={option.value} disabled={!!option.disabled}>
+        <MenuItem key={option.value} value={option.value} disabled={!!option.disabled}>
           {option.label}
-        </option>
+        </MenuItem>
       ))}
-    </select>
-  </div>
+    </TextField>
+  </Stack>
 );
 
 export const MultiSelectInput = ({
@@ -75,57 +72,76 @@ export const MultiSelectInput = ({
   };
 
   return (
-    <div className="flex items-start">
-      <label className="w-1/3 pt-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-        {required ? <span className="mr-1 text-red-500">*</span> : null}
+    <Stack direction="row" sx={{ alignItems: "flex-start" }}>
+      <Typography component="label" sx={{ ...fieldLabelSx, pt: 1 }}>
+        {required ? <Box component="span" sx={{ mr: 0.5, color: "error.main" }}>*</Box> : null}
         {label}
-      </label>
-      <div className="relative ml-3 flex-1" ref={wrapperRef}>
-        <button
+      </Typography>
+      <Box sx={{ position: "relative", ml: 1.5, flex: 1 }} ref={wrapperRef}>
+        <Box
+          component="button"
           type="button"
           onClick={() => setIsOpen((prev) => !prev)}
-          className="flex min-h-[40px] w-full items-center justify-between rounded-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-left text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+          sx={{
+            display: "flex", minHeight: 40, width: "100%", alignItems: "center", justifyContent: "space-between",
+            borderRadius: "4px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper",
+            px: 1.5, py: 1, textAlign: "left", fontSize: 12.25, fontFamily: "inherit", cursor: "pointer",
+            "&:focus": { borderColor: "primary.main", outline: "none" },
+          }}
         >
-          <span className={selectedLabels.length ? "text-gray-800 dark:text-gray-100" : "text-gray-500 dark:text-gray-400"}>
+          <Box component="span" sx={{ color: selectedLabels.length ? "text.primary" : "text.disabled" }}>
             {selectedLabels.length ? selectedLabels.join(", ") : placeholder}
-          </span>
-          <ChevronDown className={`h-4 w-4 text-gray-500 dark:text-gray-400 transition-transform ${isOpen ? "rotate-180" : ""}`} />
-        </button>
+          </Box>
+          <Box sx={{ color: "text.secondary", display: "inline-flex", transition: "transform 0.2s", transform: isOpen ? "rotate(180deg)" : "none" }}>
+            <ChevronDown className="h-4 w-4" />
+          </Box>
+        </Box>
 
         {isOpen ? (
-          <div className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg">
+          <Box
+            sx={{
+              position: "absolute", zIndex: 20, mt: 0.5, maxHeight: 224, width: "100%", overflow: "auto",
+              borderRadius: "4px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", boxShadow: 4,
+            }}
+          >
             {options.map((option) => {
               const checked = selectedSet.has(String(option.value));
               return (
-                <label
+                <Stack
                   key={option.value}
-                  className="flex cursor-pointer items-center gap-2 border-b border-gray-100 dark:border-gray-700 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                  component="label"
+                  direction="row"
+                  spacing={1}
+                  sx={{
+                    alignItems: "center", cursor: "pointer", borderBottom: "1px solid", borderColor: "divider",
+                    px: 1.5, py: 1, fontSize: 12.25, color: "text.secondary",
+                    "&:hover": { bgcolor: "action.hover" }, "&:last-of-type": { borderBottom: 0 },
+                  }}
                 >
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => toggleOption(option.value)}
-                    className="h-4 w-4"
-                  />
-                  <span>{option.label}</span>
-                </label>
+                  <Checkbox checked={checked} onChange={() => toggleOption(option.value)} size="small" sx={{ p: 0 }} />
+                  <Box component="span">{option.label}</Box>
+                </Stack>
               );
             })}
-          </div>
+          </Box>
         ) : null}
 
         {selectedLabels.length ? (
-          <div className="mt-2 flex flex-wrap gap-1.5">
+          <Stack direction="row" spacing={0.75} sx={{ mt: 1, flexWrap: "wrap", rowGap: 0.75 }}>
             {selectedLabels.map((selectedLabel) => (
-              <span key={selectedLabel} className="rounded-full bg-blue-50 dark:bg-blue-900/30 px-2 py-1 text-xs font-medium text-blue-700 dark:text-blue-400">
+              <Box
+                key={selectedLabel}
+                component="span"
+                sx={{ borderRadius: "50px", bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.24 : 0.08), px: 1, py: 0.5, fontSize: 10.5, fontWeight: 500, color: "primary.main" }}
+              >
                 {selectedLabel}
-              </span>
+              </Box>
             ))}
-          </div>
+          </Stack>
         ) : null}
 
-        {helperText ? <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{helperText}</p> : null}
-      </div>
-    </div>
+        {helperText ? <Typography sx={{ mt: 0.5, fontSize: 10.5, color: "text.secondary" }}>{helperText}</Typography> : null}
+      </Box>
+    </Stack>
   );
 };

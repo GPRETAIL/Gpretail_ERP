@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
 import { CheckCircle2, Download, RefreshCw, Save, Unplug } from "lucide-react";
 import { toast } from "react-toastify";
+import { alpha } from "@mui/material/styles";
+import { Box, Button, MenuItem, Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from "@mui/material";
 import api from "../../api/axios";
 import { usePrintContext } from "../../context/PrintContext";
 import {
@@ -258,76 +260,83 @@ export default function PrintingConfiguration() {
     }
   };
 
+  const cardSx = { bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "5.25px", boxShadow: 1 };
+  const innerBoxSx = { ...cardSx, p: 1.5 };
+
   return (
-    <div className="space-y-3 pb-20">
-      <div className="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-sm">
-        <h1 className="text-sm font-semibold dark:text-gray-200">
+    <Stack spacing={1.5} sx={{ pb: 10 }}>
+      <Box sx={{ ...cardSx, px: 1.5, py: 1 }}>
+        <Typography component="h1" sx={{ fontSize: 13, fontWeight: 600, color: "text.primary" }}>
           Settings / Printing Configuration
-        </h1>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+        </Typography>
+        <Typography sx={{ fontSize: 10.5, color: "text.secondary", mt: 0.25 }}>
           Printing is managed by the local printer connector. You can select multiple printers in the connector terminal and route them here by function and user.
-        </p>
-      </div>
+        </Typography>
+      </Box>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-sm p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-100">
+      <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { xs: "1fr", xl: "repeat(2, 1fr)" } }}>
+        <Box sx={{ ...cardSx, p: 2 }}>
+          <Stack direction="row" sx={{ alignItems: "flex-start", justifyContent: "space-between", gap: 1.5 }}>
+            <Box>
+              <Typography component="h2" sx={{ fontSize: 13, fontWeight: 600, color: "text.primary" }}>
                 Connector Status
-              </h2>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              </Typography>
+              <Typography sx={{ fontSize: 10.5, color: "text.secondary", mt: 0.5 }}>
                 Company: {authUser?.company_name || "Unknown"} • Device: {deviceId}
-              </p>
-            </div>
+              </Typography>
+            </Box>
             {sessionConnected ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-[11px] font-medium text-green-700 dark:bg-green-900/20 dark:text-green-300">
+              <Stack
+                direction="row"
+                spacing={0.5}
+                sx={{ alignItems: "center", borderRadius: "50px", bgcolor: (theme) => alpha(theme.palette.success.main, theme.palette.mode === "dark" ? 0.2 : 0.1), px: 1.25, py: 0.5, fontSize: 11, fontWeight: 500, color: "success.main" }}
+              >
                 <CheckCircle2 className="h-3.5 w-3.5" />
-                Connected
-              </span>
+                <Box component="span">Connected</Box>
+              </Stack>
             ) : (
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-medium text-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
+              <Box sx={{ borderRadius: "50px", bgcolor: (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.2 : 0.1), px: 1.25, py: 0.5, fontSize: 11, fontWeight: 500, color: "warning.main" }}>
                 Offline
-              </span>
+              </Box>
             )}
-          </div>
+          </Stack>
 
-          <div className="mt-4 space-y-3">
-            <div className="rounded-md border border-gray-200 dark:border-gray-700 p-3 text-xs text-gray-600 dark:text-gray-400">
-              <div><b>Connector:</b> {printer?.name || "ERP Printer Connector"}</div>
-              <div><b>Service URL:</b> {printer?.url || DEFAULT_PRINTER_SERVICE_URL}</div>
-              <div><b>Detected on this machine:</b> {checkingService ? "Checking..." : servicePresent ? "Yes" : "No"}</div>
-              <div><b>Configured printer:</b> {selectedPrinterName || "Not reported"}</div>
-              <div><b>Configured printers:</b> {selectedPrinterNames.length ? selectedPrinterNames.join(", ") : "Not reported"}</div>
-              <div><b>Configured transport:</b> {selectedTransport}</div>
+          <Stack spacing={1.5} sx={{ mt: 2 }}>
+            <Box sx={{ ...innerBoxSx, fontSize: 10.5, color: "text.secondary" }}>
+              <Box><Box component="b">Connector:</Box> {printer?.name || "ERP Printer Connector"}</Box>
+              <Box><Box component="b">Service URL:</Box> {printer?.url || DEFAULT_PRINTER_SERVICE_URL}</Box>
+              <Box><Box component="b">Detected on this machine:</Box> {checkingService ? "Checking..." : servicePresent ? "Yes" : "No"}</Box>
+              <Box><Box component="b">Configured printer:</Box> {selectedPrinterName || "Not reported"}</Box>
+              <Box><Box component="b">Configured printers:</Box> {selectedPrinterNames.length ? selectedPrinterNames.join(", ") : "Not reported"}</Box>
+              <Box><Box component="b">Configured transport:</Box> {selectedTransport}</Box>
               {selectedBluetoothDeviceName ? (
-                <div><b>Saved Bluetooth device:</b> {selectedBluetoothDeviceName}</div>
+                <Box><Box component="b">Saved Bluetooth device:</Box> {selectedBluetoothDeviceName}</Box>
               ) : null}
-              <div><b>Available printers:</b> {printersForTable.length}</div>
-            </div>
+              <Box><Box component="b">Available printers:</Box> {printersForTable.length}</Box>
+            </Box>
 
-            <div className="flex flex-wrap gap-2">
+            <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", rowGap: 1 }}>
               {sessionConnected ? (
-                <button
+                <Button
                   type="button"
                   onClick={handleDisconnect}
                   className="glass-btn glass-btn-danger inline-flex items-center"
                 >
                   <Unplug className="w-4 h-4 mr-1" />
                   Disconnect
-                </button>
+                </Button>
               ) : (
-                <button
+                <Button
                   type="button"
                   onClick={handleConnectService}
                   disabled={connecting}
                   className="glass-btn glass-btn-primary inline-flex items-center"
                 >
                   {connecting ? "Connecting..." : "Connect Service"}
-                </button>
+                </Button>
               )}
 
-              <button
+              <Button
                 type="button"
                 onClick={handleDownloadInstaller}
                 disabled={downloadingInstaller}
@@ -335,9 +344,9 @@ export default function PrintingConfiguration() {
               >
                 <Download className="w-4 h-4 mr-1.5" />
                 {downloadingInstaller ? "Downloading..." : "Download Connector"}
-              </button>
+              </Button>
 
-              <button
+              <Button
                 type="button"
                 onClick={() => {
                   handleRefreshInstallerMeta();
@@ -347,69 +356,69 @@ export default function PrintingConfiguration() {
               >
                 <RefreshCw className="w-4 h-4 mr-1.5" />
                 Refresh
-              </button>
-            </div>
+              </Button>
+            </Stack>
 
             {installerMeta && (
-              <div className="rounded-md border border-gray-200 dark:border-gray-700 p-3 text-xs text-gray-600 dark:text-gray-400">
-                <div><b>Package:</b> {installerMeta.fileName}</div>
-                <div><b>Type:</b> {installerMeta.type}</div>
-                <div><b>Hint:</b> {installerMeta.installHint}</div>
-              </div>
+              <Box sx={{ ...innerBoxSx, fontSize: 10.5, color: "text.secondary" }}>
+                <Box><Box component="b">Package:</Box> {installerMeta.fileName}</Box>
+                <Box><Box component="b">Type:</Box> {installerMeta.type}</Box>
+                <Box><Box component="b">Hint:</Box> {installerMeta.installHint}</Box>
+              </Box>
             )}
-          </div>
-        </div>
+          </Stack>
+        </Box>
 
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-sm p-4">
-          <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-100">
+        <Box sx={{ ...cardSx, p: 2 }}>
+          <Typography component="h2" sx={{ fontSize: 13, fontWeight: 600, color: "text.primary" }}>
             How It Works
-          </h2>
-          <div className="mt-4 space-y-3 text-sm text-gray-600 dark:text-gray-400">
-            <div className="rounded-md border border-gray-200 dark:border-gray-700 p-3">
-              <b>1. Download and extract the connector package.</b>
-              <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          </Typography>
+          <Stack spacing={1.5} sx={{ mt: 2, fontSize: 12.25, color: "text.secondary" }}>
+            <Box sx={innerBoxSx}>
+              <Box component="b">1. Download and extract the connector package.</Box>
+              <Typography sx={{ mt: 0.5, fontSize: 10.5, color: "text.secondary" }}>
                 Use the download button on the left. The package is served from your deployed ERP backend.
-              </div>
-            </div>
-            <div className="rounded-md border border-gray-200 dark:border-gray-700 p-3">
-              <b>2. Run `run.bat` on Windows or `run.sh` on macOS.</b>
-              <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              </Typography>
+            </Box>
+            <Box sx={innerBoxSx}>
+              <Box component="b">2. Run `run.bat` on Windows or `run.sh` on macOS.</Box>
+              <Typography sx={{ mt: 0.5, fontSize: 10.5, color: "text.secondary" }}>
                 The terminal lists all printers currently visible to the operating system, including paired Bluetooth printers.
-              </div>
-            </div>
-            <div className="rounded-md border border-gray-200 dark:border-gray-700 p-3">
-              <b>3. Select one or more printers in terminal.</b>
-              <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              </Typography>
+            </Box>
+            <Box sx={innerBoxSx}>
+              <Box component="b">3. Select one or more printers in terminal.</Box>
+              <Typography sx={{ mt: 0.5, fontSize: 10.5, color: "text.secondary" }}>
                 You can enter values like `1,2,3`. The selected printers are saved locally by the connector, then this page routes them by function and user.
-              </div>
-            </div>
-            <div className="rounded-md border border-gray-200 dark:border-gray-700 p-3">
-              <b>4. The connector auto-starts on system login.</b>
-              <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              </Typography>
+            </Box>
+            <Box sx={innerBoxSx}>
+              <Box component="b">4. The connector auto-starts on system login.</Box>
+              <Typography sx={{ mt: 0.5, fontSize: 10.5, color: "text.secondary" }}>
                 If the saved printer is available, printing goes there automatically. If the connector is offline, ERP falls back to normal browser printing.
-              </div>
-            </div>
-            <div className="rounded-md border border-gray-200 dark:border-gray-700 p-3">
-              <b>5. To change printer later, run the connector script again.</b>
-              <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              </Typography>
+            </Box>
+            <Box sx={innerBoxSx}>
+              <Box component="b">5. To change printer later, run the connector script again.</Box>
+              <Typography sx={{ mt: 0.5, fontSize: 10.5, color: "text.secondary" }}>
                 Use `run.bat configure` or `./run.sh configure`. That is where printer reassignment happens.
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+              </Typography>
+            </Box>
+          </Stack>
+        </Box>
+      </Box>
 
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-sm overflow-auto">
-        <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-start justify-between gap-3">
-          <div>
-            <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-100">
+      <Box sx={{ ...cardSx, overflow: "auto" }}>
+        <Stack direction="row" sx={{ alignItems: "flex-start", justifyContent: "space-between", gap: 1.5, borderBottom: 1, borderColor: "divider", px: 2, py: 1.5 }}>
+          <Box>
+            <Typography component="h2" sx={{ fontSize: 13, fontWeight: 600, color: "text.primary" }}>
               Connector Printers
-            </h2>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+            </Typography>
+            <Typography sx={{ fontSize: 10.5, color: "text.secondary", mt: 0.25 }}>
               This table shows printers reported by the currently connected local printer connector.
-            </p>
-          </div>
-          <button
+            </Typography>
+          </Box>
+          <Button
             type="button"
             onClick={handleSaveRouting}
             disabled={!sessionConnected || savingRouting}
@@ -417,34 +426,34 @@ export default function PrintingConfiguration() {
           >
             <Save className="w-4 h-4 mr-1.5" />
             {savingRouting ? "Saving..." : "Save Routing"}
-          </button>
-        </div>
+          </Button>
+        </Stack>
 
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-            <tr>
-              <th className="text-left px-3 py-2 border-b dark:border-gray-600">Printer</th>
-              <th className="text-left px-3 py-2 border-b dark:border-gray-600">Type</th>
-              <th className="text-left px-3 py-2 border-b dark:border-gray-600">Default</th>
-              <th className="text-left px-3 py-2 border-b dark:border-gray-600">Selected In Connector</th>
-              <th className="text-left px-3 py-2 border-b dark:border-gray-600">Printer Function</th>
-              <th className="text-left px-3 py-2 border-b dark:border-gray-600">User</th>
-              <th className="text-left px-3 py-2 border-b dark:border-gray-600">Status</th>
-            </tr>
-          </thead>
-          <tbody>
+        <Table size="small" sx={{ "& th, & td": { fontSize: 12.25 } }}>
+          <TableHead sx={{ bgcolor: "action.hover" }}>
+            <TableRow>
+              <TableCell sx={{ borderColor: "divider", color: "text.secondary" }}>Printer</TableCell>
+              <TableCell sx={{ borderColor: "divider", color: "text.secondary" }}>Type</TableCell>
+              <TableCell sx={{ borderColor: "divider", color: "text.secondary" }}>Default</TableCell>
+              <TableCell sx={{ borderColor: "divider", color: "text.secondary" }}>Selected In Connector</TableCell>
+              <TableCell sx={{ borderColor: "divider", color: "text.secondary" }}>Printer Function</TableCell>
+              <TableCell sx={{ borderColor: "divider", color: "text.secondary" }}>User</TableCell>
+              <TableCell sx={{ borderColor: "divider", color: "text.secondary" }}>Status</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
             {!sessionConnected ? (
-              <tr>
-                <td className="px-3 py-3 text-gray-500 dark:text-gray-400" colSpan={7}>
+              <TableRow>
+                <TableCell sx={{ color: "text.secondary" }} colSpan={7}>
                   Connector is not connected. Download and run the connector package first, then connect it here.
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ) : printersForTable.length === 0 ? (
-              <tr>
-                <td className="px-3 py-3 text-gray-500 dark:text-gray-400" colSpan={7}>
+              <TableRow>
+                <TableCell sx={{ color: "text.secondary" }} colSpan={7}>
                   Connector is connected, but it did not report any printers.
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ) : (
               printersForTable.map((printerRow, index) => {
                 const name =
@@ -467,47 +476,51 @@ export default function PrintingConfiguration() {
                 const route = getRouteForPrinter(name);
 
                 return (
-                  <tr
+                  <TableRow
                     key={`${name}-${index}`}
-                    className={isSelected ? "bg-blue-50/70 dark:bg-blue-900/10" : ""}
+                    sx={isSelected ? { bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.1 : 0.05) } : undefined}
                   >
-                    <td className="px-3 py-2 border-b dark:border-gray-600 font-medium text-gray-800 dark:text-gray-100">
+                    <TableCell sx={{ borderColor: "divider", fontWeight: 500, color: "text.primary" }}>
                       {name || "-"}
-                    </td>
-                    <td className="px-3 py-2 border-b dark:border-gray-600 text-gray-600 dark:text-gray-400 capitalize">
+                    </TableCell>
+                    <TableCell sx={{ borderColor: "divider", color: "text.secondary", textTransform: "capitalize" }}>
                       {String(type || "Local").replace(/_/g, " ")}
-                    </td>
-                    <td className="px-3 py-2 border-b dark:border-gray-600">
+                    </TableCell>
+                    <TableCell sx={{ borderColor: "divider" }}>
                       {isDefault ? (
-                        <span className="text-green-700 dark:text-green-400 font-medium text-xs">Yes</span>
+                        <Box component="span" sx={{ color: "success.main", fontWeight: 500, fontSize: 10.5 }}>Yes</Box>
                       ) : (
                         "No"
                       )}
-                    </td>
-                    <td className="px-3 py-2 border-b dark:border-gray-600">
+                    </TableCell>
+                    <TableCell sx={{ borderColor: "divider" }}>
                       {isSelected ? (
-                        <span className="text-blue-700 dark:text-blue-400 font-medium text-xs">Yes</span>
+                        <Box component="span" sx={{ color: "primary.main", fontWeight: 500, fontSize: 10.5 }}>Yes</Box>
                       ) : (
                         "No"
                       )}
-                    </td>
-                    <td className="px-3 py-2 border-b dark:border-gray-600">
-                      <select
+                    </TableCell>
+                    <TableCell sx={{ borderColor: "divider" }}>
+                      <TextField
+                        select
+                        size="small"
                         value={route?.printer_function || ""}
                         onChange={(event) =>
                           handleRouteChange(name, { printer_function: event.target.value })
                         }
-                        className="w-full rounded border border-gray-300 dark:border-gray-600 px-2 py-1 text-xs disabled:bg-gray-100 disabled:text-gray-400"
+                        sx={{ minWidth: 120 }}
                       >
                         {PRINTER_FUNCTION_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
+                          <MenuItem key={option.value} value={option.value}>
                             {option.label}
-                          </option>
+                          </MenuItem>
                         ))}
-                      </select>
-                    </td>
-                    <td className="px-3 py-2 border-b dark:border-gray-600">
-                      <select
+                      </TextField>
+                    </TableCell>
+                    <TableCell sx={{ borderColor: "divider" }}>
+                      <TextField
+                        select
+                        size="small"
                         value={route?.user_id || ""}
                         onChange={(event) => {
                           const selectedUser = users.find(
@@ -518,39 +531,39 @@ export default function PrintingConfiguration() {
                             user_name: selectedUser?.name || selectedUser?.email || "",
                           });
                         }}
-                        className="w-full rounded border border-gray-300 dark:border-gray-600 px-2 py-1 text-xs disabled:bg-gray-100 disabled:text-gray-400"
+                        sx={{ minWidth: 120 }}
                       >
-                        <option value="">Any user</option>
+                        <MenuItem value="">Any user</MenuItem>
                         {users.map((user) => (
-                          <option key={user.id} value={user.id}>
+                          <MenuItem key={user.id} value={user.id}>
                             {user.name || user.email}
-                          </option>
+                          </MenuItem>
                         ))}
-                      </select>
-                    </td>
-                    <td className="px-3 py-2 border-b dark:border-gray-600">
+                      </TextField>
+                    </TableCell>
+                    <TableCell sx={{ borderColor: "divider" }}>
                       {isOffline ? (
-                        <span className="text-red-700 dark:text-red-400 font-medium text-xs">Offline</span>
+                        <Box component="span" sx={{ color: "error.main", fontWeight: 500, fontSize: 10.5 }}>Offline</Box>
                       ) : !canPrint ? (
-                        <span className="text-amber-700 dark:text-amber-400 font-medium text-xs">
+                        <Box component="span" sx={{ color: "warning.main", fontWeight: 500, fontSize: 10.5 }}>
                           Discoverable Only
-                        </span>
+                        </Box>
                       ) : (
-                        <span className="text-green-700 dark:text-green-400 font-medium text-xs">Available</span>
+                        <Box component="span" sx={{ color: "success.main", fontWeight: 500, fontSize: 10.5 }}>Available</Box>
                       )}
                       {statusReason ? (
-                        <div className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                        <Typography sx={{ mt: 0.5, fontSize: 11, color: "text.secondary" }}>
                           {statusReason}
-                        </div>
+                        </Typography>
                       ) : null}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 );
               })
             )}
-          </tbody>
-        </table>
-      </div>
-    </div>
+          </TableBody>
+        </Table>
+      </Box>
+    </Stack>
   );
 }

@@ -1,9 +1,20 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { UserGroupIcon } from "@heroicons/react/24/outline";
+import { alpha } from "@mui/material/styles";
+import { Box, ButtonBase, Typography } from "@mui/material";
 
-const subCardClass =
-  "flex items-center gap-2 rounded-lg bg-white dark:bg-gray-800 px-3 py-2 shadow-sm transition-all duration-200 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:shadow-md group min-h-[48px]";
+// indigo has no MUI semantic token equivalent -- kept as literal hex, matching the rest of this
+// migration's convention for non-semantic accent colors.
+const INDIGO = "#6366f1";
+const INDIGO_HOVER = "#4f46e5";
+
+const hoverCardSx = {
+  bgcolor: "background.paper",
+  boxShadow: 1,
+  transition: "background-color 0.2s, box-shadow 0.2s",
+  "&:hover": { bgcolor: (theme) => alpha(INDIGO, theme.palette.mode === "dark" ? 0.16 : 0.08), boxShadow: 2 },
+};
 
 const UserAccessHome = () => {
   const items = [
@@ -12,23 +23,38 @@ const UserAccessHome = () => {
   ];
 
   return (
-    <section className="p-6">
-      <div className="mb-6 grid auto-rows-max content-start gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-        <Link to="/modules" className="flex min-h-[72px] items-center gap-3 rounded-xl bg-white dark:bg-gray-800 p-4 shadow-md transition-all duration-200 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:shadow-lg group">
-          <UserGroupIcon className="h-6 w-6 text-indigo-500 dark:text-indigo-400 transition group-hover:text-indigo-600 dark:group-hover:text-indigo-300" />
-          <span className="font-medium text-gray-800 dark:text-gray-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-300">User Access</span>
-        </Link>
-      </div>
+    <Box component="section" sx={{ p: 3 }}>
+      <Box sx={{ mb: 3, display: "grid", gap: 2.25, gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(3, 1fr)", lg: "repeat(4, 1fr)" } }}>
+        <ButtonBase
+          component={Link}
+          to="/modules"
+          className="group"
+          sx={{ minHeight: 72, alignItems: "center", justifyContent: "flex-start", gap: 1.5, borderRadius: "10.5px", p: 2, ...hoverCardSx }}
+        >
+          <Box sx={{ color: INDIGO, display: "inline-flex", ".group:hover &": { color: INDIGO_HOVER } }}>
+            <UserGroupIcon className="h-6 w-6" />
+          </Box>
+          <Typography sx={{ fontWeight: 500, color: "text.primary", ".group:hover &": { color: INDIGO_HOVER } }}>User Access</Typography>
+        </ButtonBase>
+      </Box>
 
-      <div className="grid auto-rows-max content-start gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+      <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { xs: "repeat(2, 1fr)", sm: "repeat(3, 1fr)", md: "repeat(4, 1fr)", lg: "repeat(5, 1fr)" } }}>
         {items.map((item) => (
-          <Link key={item.path} to={item.path} className={subCardClass}>
-            <item.icon className="h-4 w-4 shrink-0 text-indigo-500 dark:text-indigo-400 transition group-hover:text-indigo-600 dark:group-hover:text-indigo-300" />
-            <span className="text-sm font-medium text-gray-800 dark:text-gray-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-300">{item.name}</span>
-          </Link>
+          <ButtonBase
+            key={item.path}
+            component={Link}
+            to={item.path}
+            className="group"
+            sx={{ minHeight: 48, justifyContent: "flex-start", gap: 1, borderRadius: "7px", px: 1.5, py: 1, ...hoverCardSx }}
+          >
+            <Box sx={{ color: INDIGO, display: "inline-flex", flexShrink: 0, ".group:hover &": { color: INDIGO_HOVER } }}>
+              <item.icon className="h-4 w-4" />
+            </Box>
+            <Typography sx={{ fontSize: 12.25, fontWeight: 500, color: "text.primary", ".group:hover &": { color: INDIGO_HOVER } }}>{item.name}</Typography>
+          </ButtonBase>
         ))}
-      </div>
-    </section>
+      </Box>
+    </Box>
   );
 };
 

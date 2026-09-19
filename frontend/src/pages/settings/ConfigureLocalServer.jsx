@@ -12,40 +12,20 @@ import {
   WifiOff,
 } from "lucide-react";
 import { toast } from "react-toastify";
+import { alpha } from "@mui/material/styles";
+import { Box, Button, Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from "@mui/material";
 import api from "../../api/axios";
 
-const inputClass =
-  "w-full border border-gray-300 dark:border-gray-600 rounded-sm p-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-200 focus:ring-1 focus:ring-blue-500 focus:border-blue-500";
-
-const cardClass =
-  "rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm";
+const cardSx = { borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", boxShadow: 1 };
 
 const toStatusTone = (config = {}) => {
   if (config.connector_status === "online") {
-    return {
-      label: "Online",
-      icon: CheckCircle2,
-      textClass: "text-green-600 dark:text-green-400",
-      bgClass: "bg-green-50 dark:bg-green-950/40",
-      borderClass: "border-green-200 dark:border-green-800",
-    };
+    return { label: "Online", icon: CheckCircle2, token: "success" };
   }
   if (config.connector_last_seen_at) {
-    return {
-      label: "Seen, currently offline",
-      icon: AlertCircle,
-      textClass: "text-amber-600 dark:text-amber-400",
-      bgClass: "bg-amber-50 dark:bg-amber-950/40",
-      borderClass: "border-amber-200 dark:border-amber-800",
-    };
+    return { label: "Seen, currently offline", icon: AlertCircle, token: "warning" };
   }
-  return {
-    label: "Not connected",
-    icon: WifiOff,
-    textClass: "text-gray-600 dark:text-gray-300",
-    bgClass: "bg-gray-50 dark:bg-gray-800",
-    borderClass: "border-gray-200 dark:border-gray-700",
-  };
+  return { label: "Not connected", icon: WifiOff, token: null };
 };
 
 const formatDateTime = (value) => {
@@ -215,10 +195,10 @@ export default function ConfigureLocalServer() {
 
   if (loading) {
     return (
-      <div className="p-6 flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
+      <Stack direction="row" spacing={1.5} sx={{ p: 3, alignItems: "center", fontSize: 12.25, color: "text.secondary" }}>
         <Loader2 className="w-4 h-4 animate-spin" />
-        <span>Loading local server configuration...</span>
-      </div>
+        <Box component="span">Loading local server configuration...</Box>
+      </Stack>
     );
   }
 
@@ -226,304 +206,322 @@ export default function ConfigureLocalServer() {
   const StatusIcon = tone.icon;
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
-      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-        <div>
-          <h1 className="text-xl md:text-2xl font-semibold text-gray-900 dark:text-gray-100">
+    <Stack spacing={3} sx={{ p: { xs: 2, md: 3 } }}>
+      <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} sx={{ alignItems: { md: "flex-start" }, justifyContent: { md: "space-between" } }}>
+        <Box>
+          <Typography component="h1" sx={{ fontSize: { xs: 17.5, md: 21 }, fontWeight: 600, color: "text.primary" }}>
             Configure Local Server
-          </h1>
-          <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+          </Typography>
+          <Typography sx={{ mt: 0.5, fontSize: 12.25, color: "text.secondary" }}>
             Save this store's local server address so devices can use it when available and automatically fail over to the cloud if it goes down.
-          </p>
-        </div>
+          </Typography>
+        </Box>
 
-        <button
+        <Button
           type="button"
           onClick={() => loadConfig({ silent: true })}
           disabled={refreshing}
-          className="inline-flex items-center justify-center gap-2 rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-60"
+          variant="outlined"
+          color="inherit"
+          startIcon={refreshing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+          sx={{ fontSize: 12.25, whiteSpace: "nowrap" }}
         >
-          {refreshing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
           Refresh Status
-        </button>
-      </div>
+        </Button>
+      </Stack>
 
-      <div className={`rounded-lg border px-4 py-3 ${tone.borderClass} ${tone.bgClass}`}>
-        <div className={`flex items-center gap-2 text-sm font-medium ${tone.textClass}`}>
+      <Box
+        sx={{
+          borderRadius: "7px", border: "1px solid", px: 2, py: 1.5,
+          ...(tone.token
+            ? { borderColor: `${tone.token}.main`, bgcolor: (theme) => alpha(theme.palette[tone.token].main, theme.palette.mode === "dark" ? 0.16 : 0.08) }
+            : { borderColor: "divider", bgcolor: "action.hover" }),
+        }}
+      >
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center", fontSize: 12.25, fontWeight: 500, color: tone.token ? `${tone.token}.main` : "text.secondary" }}>
           <StatusIcon className="w-4 h-4" />
-          <span>{tone.label}</span>
-        </div>
-        <div className="mt-2 grid gap-3 text-sm text-gray-700 dark:text-gray-300 md:grid-cols-3">
-          <div>
-            <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Tenant Key</div>
-            <div className="mt-1 font-medium break-all">{config?.tenant_key || "Not assigned"}</div>
-          </div>
-          <div>
-            <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Connector Status</div>
-            <div className="mt-1 font-medium">{config?.connector_status || "Not started"}</div>
-          </div>
-          <div>
-            <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Last Seen</div>
-            <div className="mt-1 font-medium">{formatDateTime(config?.connector_last_seen_at)}</div>
-          </div>
-        </div>
-      </div>
+          <Box component="span">{tone.label}</Box>
+        </Stack>
+        <Box sx={{ mt: 1, display: "grid", gap: 1.5, gridTemplateColumns: { md: "repeat(3, 1fr)" }, fontSize: 12.25, color: "text.secondary" }}>
+          <Box>
+            <Box sx={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Tenant Key</Box>
+            <Box sx={{ mt: 0.5, fontWeight: 500, wordBreak: "break-all", color: "text.primary" }}>{config?.tenant_key || "Not assigned"}</Box>
+          </Box>
+          <Box>
+            <Box sx={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Connector Status</Box>
+            <Box sx={{ mt: 0.5, fontWeight: 500, color: "text.primary" }}>{config?.connector_status || "Not started"}</Box>
+          </Box>
+          <Box>
+            <Box sx={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Last Seen</Box>
+            <Box sx={{ mt: 0.5, fontWeight: 500, color: "text.primary" }}>{formatDateTime(config?.connector_last_seen_at)}</Box>
+          </Box>
+        </Box>
+      </Box>
 
-      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-        <section className={`${cardClass} p-4 md:p-5`}>
-          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Local Server Address</h2>
-          <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+      <Box sx={{ display: "grid", gap: 3, gridTemplateColumns: { xl: "1.1fr 0.9fr" } }}>
+        <Box component="section" sx={{ ...cardSx, p: { xs: 2, md: 2.5 } }}>
+          <Typography component="h2" sx={{ fontSize: 14, fontWeight: 600, color: "text.primary" }}>Local Server Address</Typography>
+          <Typography sx={{ mt: 0.5, fontSize: 12.25, color: "text.secondary" }}>
             This store's on-prem install runs the same application as the cloud. Enter the address other devices on this network use to reach it, then save.
-          </p>
+          </Typography>
 
-          <div className="mt-4 space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+          <Stack spacing={2} sx={{ mt: 2 }}>
+            <Box>
+              <Typography component="label" sx={{ display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary", mb: 0.75 }}>
                 Local Server URL
-              </label>
-              <input
+              </Typography>
+              <TextField
                 type="text"
+                size="small"
+                fullWidth
                 value={localServerUrl}
                 onChange={(e) => setLocalServerUrl(e.target.value)}
                 placeholder="http://192.168.1.25:8000"
-                className={inputClass}
               />
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              <Typography sx={{ mt: 0.5, fontSize: 10.5, color: "text.secondary" }}>
                 The LAN address of this store's local server, e.g. http://192.168.1.25:8000. Leave blank to disable local-server failover for this store.
-              </p>
-            </div>
+              </Typography>
+            </Box>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+            <Box>
+              <Typography component="label" sx={{ display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary", mb: 0.75 }}>
                 Cloud Server URL
-              </label>
-              <input
+              </Typography>
+              <TextField
                 type="text"
+                size="small"
+                fullWidth
                 value={cloudServerUrl}
                 onChange={(e) => setCloudServerUrl(e.target.value)}
                 placeholder={config?.effective_cloud_server_url || "https://yourcompany.gpsoftware.in"}
-                className={inputClass}
               />
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              <Typography sx={{ mt: 0.5, fontSize: 10.5, color: "text.secondary" }}>
                 Where devices fail over to when the local server above is unreachable. Leave blank to use the
                 platform default ({config?.effective_cloud_server_url || "not set"}).
-              </p>
-            </div>
+              </Typography>
+            </Box>
 
-            <div className="flex flex-col gap-3 md:flex-row">
-              <button
+            <Stack direction={{ xs: "column", md: "row" }} spacing={1.5}>
+              <Button
                 type="button"
                 onClick={handleSave}
                 disabled={saving}
-                className="inline-flex items-center justify-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
+                variant="contained"
+                color="success"
+                startIcon={saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               >
-                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                 Save URLs
-              </button>
+              </Button>
 
-              <button
+              <Button
                 type="button"
                 onClick={handleTest}
                 disabled={testing}
-                className="inline-flex items-center justify-center gap-2 rounded-md border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-60"
+                variant="outlined"
+                color="inherit"
+                startIcon={testing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wifi className="w-4 h-4" />}
               >
-                {testing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wifi className="w-4 h-4" />}
                 Test Local
-              </button>
+              </Button>
 
-              <button
+              <Button
                 type="button"
                 onClick={handleTestCloud}
                 disabled={testingCloud}
-                className="inline-flex items-center justify-center gap-2 rounded-md border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-60"
+                variant="outlined"
+                color="inherit"
+                startIcon={testingCloud ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wifi className="w-4 h-4" />}
               >
-                {testingCloud ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wifi className="w-4 h-4" />}
                 Test Cloud
-              </button>
-            </div>
-          </div>
-        </section>
+              </Button>
+            </Stack>
+          </Stack>
+        </Box>
 
-        <section className={`${cardClass} p-4 md:p-5`}>
-          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">How It Works</h2>
-          <div className="mt-4 space-y-4 text-sm text-gray-700 dark:text-gray-300">
-            <div className="flex gap-3">
-              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-semibold text-white">1</div>
-              <div>Save this store's local server address above, then use Test Connection to confirm the cloud can reach it.</div>
-            </div>
-            <div className="flex gap-3">
-              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-semibold text-white">2</div>
-              <div>From then on, every device automatically checks the local server first and uses it when reachable — no separate login or URL to remember.</div>
-            </div>
-            <div className="flex gap-3">
-              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-semibold text-white">3</div>
-              <div>If the local server goes down, devices switch to this cloud URL automatically so the store can keep working, and switch back the moment local is healthy again.</div>
-            </div>
-          </div>
+        <Box component="section" sx={{ ...cardSx, p: { xs: 2, md: 2.5 } }}>
+          <Typography component="h2" sx={{ fontSize: 14, fontWeight: 600, color: "text.primary" }}>How It Works</Typography>
+          <Stack spacing={2} sx={{ mt: 2, fontSize: 12.25, color: "text.secondary" }}>
+            <Stack direction="row" spacing={1.5}>
+              <Box sx={{ display: "flex", flexShrink: 0, height: 21, width: 21, alignItems: "center", justifyContent: "center", borderRadius: "50%", bgcolor: "primary.main", fontSize: 10.5, fontWeight: 600, color: "primary.contrastText" }}>1</Box>
+              <Box>Save this store's local server address above, then use Test Connection to confirm the cloud can reach it.</Box>
+            </Stack>
+            <Stack direction="row" spacing={1.5}>
+              <Box sx={{ display: "flex", flexShrink: 0, height: 21, width: 21, alignItems: "center", justifyContent: "center", borderRadius: "50%", bgcolor: "primary.main", fontSize: 10.5, fontWeight: 600, color: "primary.contrastText" }}>2</Box>
+              <Box>From then on, every device automatically checks the local server first and uses it when reachable — no separate login or URL to remember.</Box>
+            </Stack>
+            <Stack direction="row" spacing={1.5}>
+              <Box sx={{ display: "flex", flexShrink: 0, height: 21, width: 21, alignItems: "center", justifyContent: "center", borderRadius: "50%", bgcolor: "primary.main", fontSize: 10.5, fontWeight: 600, color: "primary.contrastText" }}>3</Box>
+              <Box>If the local server goes down, devices switch to this cloud URL automatically so the store can keep working, and switch back the moment local is healthy again.</Box>
+            </Stack>
+          </Stack>
 
-          <div className="mt-5 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
+          <Box
+            sx={{
+              mt: 2.5, borderRadius: "5.25px", border: "1px solid", borderColor: "warning.main",
+              bgcolor: (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.16 : 0.08),
+              p: 1.5, fontSize: 12.25, color: "warning.dark",
+            }}
+          >
             Documents created directly on the cloud during an outage (e.g. invoice numbers) are marked with a "C" so they're easy to identify once local is back.
-          </div>
-        </section>
-      </div>
+          </Box>
+        </Box>
+      </Box>
 
       {nodes.length > 0 && (
-        <section className={`${cardClass} p-4 md:p-5`}>
-          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">All Stores — Sync Health</h2>
-          <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+        <Box component="section" sx={{ ...cardSx, p: { xs: 2, md: 2.5 } }}>
+          <Typography component="h2" sx={{ fontSize: 14, fontWeight: 600, color: "text.primary" }}>All Stores — Sync Health</Typography>
+          <Typography sx={{ mt: 0.5, fontSize: 12.25, color: "text.secondary" }}>
             Every store with local-server failover configured, and whether its local install has checked in recently.
-          </p>
+          </Typography>
 
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                  <th className="py-2 pr-4"></th>
-                  <th className="py-2 pr-4">Store</th>
-                  <th className="py-2 pr-4">Status</th>
-                  <th className="py-2 pr-4">Last Heartbeat</th>
-                  <th className="py-2 pr-4">Last Catch-up</th>
-                  <th className="py-2 pr-4">Outbox</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+          <Box sx={{ mt: 2, overflowX: "auto" }}>
+            <Table size="small" sx={{ "& th, & td": { fontSize: 12.25 } }}>
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ width: 24, borderColor: "divider" }} />
+                  <TableCell sx={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary", borderColor: "divider" }}>Store</TableCell>
+                  <TableCell sx={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary", borderColor: "divider" }}>Status</TableCell>
+                  <TableCell sx={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary", borderColor: "divider" }}>Last Heartbeat</TableCell>
+                  <TableCell sx={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary", borderColor: "divider" }}>Last Catch-up</TableCell>
+                  <TableCell sx={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary", borderColor: "divider" }}>Outbox</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
                 {nodes.map((node) => {
                   const nodeTone = node.is_stale
-                    ? { label: "Stale", textClass: "text-amber-600 dark:text-amber-400", Icon: AlertCircle }
+                    ? { label: "Stale", token: "warning", Icon: AlertCircle }
                     : node.local_healthy
-                      ? { label: "Healthy", textClass: "text-green-600 dark:text-green-400", Icon: CheckCircle2 }
-                      : { label: "Offline", textClass: "text-gray-500 dark:text-gray-400", Icon: WifiOff };
+                      ? { label: "Healthy", token: "success", Icon: CheckCircle2 }
+                      : { label: "Offline", token: null, Icon: WifiOff };
                   const NodeIcon = nodeTone.Icon;
                   const hasBacklog = (node.outbox_pending || 0) > 0 || (node.outbox_failed || 0) > 0;
                   const isExpanded = expandedStoreId === node.store_id;
 
                   return (
                     <Fragment key={node.store_id}>
-                      <tr
-                        className={hasBacklog ? "cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/60" : ""}
+                      <TableRow
+                        hover={hasBacklog}
+                        sx={hasBacklog ? { cursor: "pointer" } : undefined}
                         onClick={hasBacklog ? () => toggleExpand(node.store_id) : undefined}
                       >
-                        <td className="py-2 pl-1 w-6 text-gray-400 dark:text-gray-500">
+                        <TableCell sx={{ borderColor: "divider", color: "text.disabled" }}>
                           {hasBacklog ? (
                             isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />
                           ) : null}
-                        </td>
-                        <td className="py-2 pr-4 text-gray-900 dark:text-gray-100">
+                        </TableCell>
+                        <TableCell sx={{ borderColor: "divider", color: "text.primary" }}>
                           {node.store_name || `Store #${node.store_id}`}
                           {node.store_code ? (
-                            <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">({node.store_code})</span>
+                            <Box component="span" sx={{ ml: 0.5, fontSize: 10.5, color: "text.secondary" }}>({node.store_code})</Box>
                           ) : null}
-                        </td>
-                        <td className={`py-2 pr-4 font-medium ${nodeTone.textClass}`}>
-                          <span className="inline-flex items-center gap-1.5">
+                        </TableCell>
+                        <TableCell sx={{ borderColor: "divider", fontWeight: 500, color: nodeTone.token ? `${nodeTone.token}.main` : "text.secondary" }}>
+                          <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
                             <NodeIcon className="w-3.5 h-3.5" />
-                            {nodeTone.label}
-                          </span>
-                        </td>
-                        <td className="py-2 pr-4 text-gray-700 dark:text-gray-300">{formatDateTime(node.last_heartbeat_at)}</td>
-                        <td className="py-2 pr-4 text-gray-700 dark:text-gray-300">{formatDateTime(node.last_catch_up_at)}</td>
-                        <td className="py-2 pr-4">
+                            <Box component="span">{nodeTone.label}</Box>
+                          </Stack>
+                        </TableCell>
+                        <TableCell sx={{ borderColor: "divider", color: "text.secondary" }}>{formatDateTime(node.last_heartbeat_at)}</TableCell>
+                        <TableCell sx={{ borderColor: "divider", color: "text.secondary" }}>{formatDateTime(node.last_catch_up_at)}</TableCell>
+                        <TableCell sx={{ borderColor: "divider" }}>
                           {node.outbox_pending > 0 && (
-                            <span className="mr-2 text-gray-600 dark:text-gray-300">{node.outbox_pending} pending</span>
+                            <Box component="span" sx={{ mr: 1, color: "text.secondary" }}>{node.outbox_pending} pending</Box>
                           )}
                           {node.outbox_failed > 0 && (
-                            <span className="font-medium text-red-600 dark:text-red-400">{node.outbox_failed} failed</span>
+                            <Box component="span" sx={{ fontWeight: 500, color: "error.main" }}>{node.outbox_failed} failed</Box>
                           )}
-                          {!hasBacklog && <span className="text-gray-400 dark:text-gray-500">Clear</span>}
-                        </td>
-                      </tr>
+                          {!hasBacklog && <Box component="span" sx={{ color: "text.disabled" }}>Clear</Box>}
+                        </TableCell>
+                      </TableRow>
                       {isExpanded && (
-                        <tr>
-                          <td colSpan={6} className="bg-gray-50 dark:bg-gray-800/40 px-3 py-3">
-                            <div className="flex items-center justify-between mb-2">
-                              <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                        <TableRow>
+                          <TableCell colSpan={6} sx={{ bgcolor: "action.hover", px: 1.5, py: 1.5, borderColor: "divider" }}>
+                            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", mb: 1 }}>
+                              <Typography component="h3" sx={{ fontSize: 10.5, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>
                                 Queued writes for this store
-                              </h3>
+                              </Typography>
                               {node.outbox_failed > 0 && (
-                                <button
+                                <Button
                                   type="button"
                                   onClick={() => handleRetryAll(node.store_id)}
                                   disabled={retryingAllStoreId === node.store_id}
-                                  className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 dark:border-gray-600 px-2.5 py-1 text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-60"
+                                  variant="outlined"
+                                  color="inherit"
+                                  size="small"
+                                  startIcon={retryingAllStoreId === node.store_id ? <Loader2 className="w-3 h-3 animate-spin" /> : <RotateCcw className="w-3 h-3" />}
+                                  sx={{ fontSize: 11 }}
                                 >
-                                  {retryingAllStoreId === node.store_id ? (
-                                    <Loader2 className="w-3 h-3 animate-spin" />
-                                  ) : (
-                                    <RotateCcw className="w-3 h-3" />
-                                  )}
                                   Retry All Failed
-                                </button>
+                                </Button>
                               )}
-                            </div>
+                            </Stack>
 
                             {outboxLoading ? (
-                              <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 py-2">
+                              <Stack direction="row" spacing={1} sx={{ alignItems: "center", fontSize: 10.5, color: "text.secondary", py: 1 }}>
                                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                Loading...
-                              </div>
+                                <Box component="span">Loading...</Box>
+                              </Stack>
                             ) : outboxEvents.length === 0 ? (
-                              <div className="text-xs text-gray-500 dark:text-gray-400 py-2">No queued events.</div>
+                              <Typography sx={{ fontSize: 10.5, color: "text.secondary", py: 1 }}>No queued events.</Typography>
                             ) : (
-                              <div className="space-y-1.5">
+                              <Stack spacing={0.75}>
                                 {outboxEvents.map((event) => (
-                                  <div
+                                  <Stack
                                     key={event.id}
-                                    className="flex items-start justify-between gap-3 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-2.5 py-2 text-xs"
+                                    direction="row"
+                                    sx={{ alignItems: "flex-start", justifyContent: "space-between", gap: 1.5, borderRadius: "4px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", px: 1.25, py: 1, fontSize: 10.5 }}
                                   >
-                                    <div className="min-w-0">
-                                      <div className="flex items-center gap-2">
-                                        <span
-                                          className={`font-medium ${
-                                            event.status === "failed"
-                                              ? "text-red-600 dark:text-red-400"
-                                              : event.status === "acked"
-                                                ? "text-green-600 dark:text-green-400"
-                                                : "text-gray-600 dark:text-gray-300"
-                                          }`}
+                                    <Box sx={{ minWidth: 0 }}>
+                                      <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                                        <Box
+                                          component="span"
+                                          sx={{
+                                            fontWeight: 500,
+                                            color: event.status === "failed" ? "error.main" : event.status === "acked" ? "success.main" : "text.secondary",
+                                          }}
                                         >
                                           {event.status}
-                                        </span>
-                                        <span className="text-gray-500 dark:text-gray-400">{event.method}</span>
-                                        <span className="text-gray-700 dark:text-gray-300 truncate">{event.path}</span>
+                                        </Box>
+                                        <Box component="span" sx={{ color: "text.secondary" }}>{event.method}</Box>
+                                        <Box component="span" sx={{ color: "text.secondary", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{event.path}</Box>
                                         {event.attempts > 0 && (
-                                          <span className="text-gray-400 dark:text-gray-500">({event.attempts} attempt{event.attempts === 1 ? "" : "s"})</span>
+                                          <Box component="span" sx={{ color: "text.disabled" }}>({event.attempts} attempt{event.attempts === 1 ? "" : "s"})</Box>
                                         )}
-                                      </div>
+                                      </Stack>
                                       {event.last_error && (
-                                        <div className="mt-1 text-red-500 dark:text-red-400 break-all">{event.last_error}</div>
+                                        <Box sx={{ mt: 0.5, color: "error.light", wordBreak: "break-all" }}>{event.last_error}</Box>
                                       )}
-                                      <div className="mt-1 text-gray-400 dark:text-gray-500">{formatDateTime(event.created_at)}</div>
-                                    </div>
+                                      <Box sx={{ mt: 0.5, color: "text.disabled" }}>{formatDateTime(event.created_at)}</Box>
+                                    </Box>
                                     {event.status === "failed" && (
-                                      <button
+                                      <Button
                                         type="button"
                                         onClick={() => handleRetryEvent(event.id, node.store_id)}
                                         disabled={retryingId === event.id}
-                                        className="shrink-0 inline-flex items-center gap-1 rounded border border-gray-300 dark:border-gray-600 px-2 py-1 text-[11px] font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-60"
+                                        variant="outlined"
+                                        color="inherit"
+                                        size="small"
+                                        startIcon={retryingId === event.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <RotateCcw className="w-3 h-3" />}
+                                        sx={{ flexShrink: 0, fontSize: 11 }}
                                       >
-                                        {retryingId === event.id ? (
-                                          <Loader2 className="w-3 h-3 animate-spin" />
-                                        ) : (
-                                          <RotateCcw className="w-3 h-3" />
-                                        )}
                                         Retry
-                                      </button>
+                                      </Button>
                                     )}
-                                  </div>
+                                  </Stack>
                                 ))}
-                              </div>
+                              </Stack>
                             )}
-                          </td>
-                        </tr>
+                          </TableCell>
+                        </TableRow>
                       )}
                     </Fragment>
                   );
                 })}
-              </tbody>
-            </table>
-          </div>
-        </section>
+              </TableBody>
+            </Table>
+          </Box>
+        </Box>
       )}
-    </div>
+    </Stack>
   );
 }

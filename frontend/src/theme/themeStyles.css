@@ -1,0 +1,51 @@
+/*
+ * Reaches the app's Tailwind-styled surfaces with the theme_style a tenant picked on the Themes
+ * page (createTenantTheme/STYLE_COMPONENTS in themeRegistry.js handles the MUI-driven half).
+ * TenantThemeProvider sets <html data-theme-style="..">, the same way ThemeProvider.jsx (dark
+ * mode) sets <html class="dark"> -- these two attributes combine below exactly like Tailwind's
+ * own `dark:` variant already combines with everything else on the page.
+ *
+ * Targets the app's one consistent card convention ("rounded-xl border" / "rounded-md border",
+ * used by every dashboard widget, chart, table and leaderboard card) rather than bare utility
+ * classes like .bg-white, so this can't bleed onto an unrelated small element that happens to
+ * share a utility class. !important wins deterministically over Tailwind's own utilities of equal
+ * specificity regardless of stylesheet import order, which is the only way to make a general
+ * "restyle these cards" rule robust against exactly which color/border utility a given card
+ * happens to use.
+ */
+
+:root[data-theme-style="apple"] .rounded-xl.border,
+:root[data-theme-style="apple"] .rounded-md.border {
+  border-radius: 18px !important;
+  border-color: rgba(15, 23, 42, 0.06) !important;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.06),
+    0 1px 2px rgba(0, 0, 0, 0.04);
+  transition:
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+
+:root.dark[data-theme-style="apple"] .rounded-xl.border,
+:root.dark[data-theme-style="apple"] .rounded-md.border {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.4),
+    0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+:root[data-theme-style="glass"] .rounded-xl.border,
+:root[data-theme-style="glass"] .rounded-md.border {
+  background-color: rgba(255, 255, 255, 0.6) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  box-shadow: 0 8px 32px rgba(15, 23, 42, 0.08);
+}
+
+:root.dark[data-theme-style="glass"] .rounded-xl.border,
+:root.dark[data-theme-style="glass"] .rounded-md.border {
+  background-color: rgba(31, 41, 55, 0.55) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+}

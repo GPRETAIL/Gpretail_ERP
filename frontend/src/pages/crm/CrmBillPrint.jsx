@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { ArrowLeft, ChevronDown, Printer } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { Box, Button, IconButton, Stack, Typography } from "@mui/material";
 import api from "../../api/axios";
 import FilterableDataTable from "../../components/FilterableDataTable";
 import { createGroupFetchers } from "../../utils/serverGrouping";
@@ -443,29 +444,25 @@ const CrmBillPrint = () => {
   const visibleColumns = useMemo(() => BILL_COLUMNS, []);
 
   return (
-    <div className="min-h-[70vh] bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100">
-      <div className="flex justify-between items-center px-4 py-1 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
-        <div className="flex items-center space-x-2">
-          <button className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200" onClick={() => navigate(-1)}>
+    <Box sx={{ minHeight: "70vh", bgcolor: "background.default", color: "text.primary" }}>
+      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 0.5, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+          <IconButton size="small" onClick={() => navigate(-1)} sx={{ color: "text.secondary" }}>
             <ArrowLeft className="w-4 h-4" />
-          </button>
-          <h1 className="text-sm font-semibold flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => navigate("/crm")}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
-            >
+          </IconButton>
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: 13, fontWeight: 600 }}>
+            <Button type="button" variant="text" onClick={() => navigate("/crm")} sx={{ minWidth: "auto", p: 0, fontSize: 13, fontWeight: 600 }}>
               CRM
-            </button>
-            <span className="text-gray-500 dark:text-gray-400">/</span>
-            <span>Bill Print</span>
-          </h1>
-        </div>
-      </div>
+            </Button>
+            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
+            <Box component="span">Bill Print</Box>
+          </Stack>
+        </Stack>
+      </Stack>
 
-      <div className="p-3 pb-16">
-        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-5 border border-gray-200 dark:border-gray-700">
-          <h2 className="text-lg font-bold mb-3">Bill Print Search</h2>
+      <Box sx={{ p: 1.5, pb: 8 }}>
+        <Stack sx={{ bgcolor: "background.paper", boxShadow: 3, borderRadius: "7px", p: 2.5, border: "1px solid", borderColor: "divider" }}>
+          <Typography sx={{ fontSize: 15.75, fontWeight: 700, mb: 1.5 }}>Bill Print Search</Typography>
           <FilterableDataTable
             rows={rows}
             columns={visibleColumns}
@@ -527,10 +524,10 @@ const CrmBillPrint = () => {
               );
             }}
             renderActions={(row) => (
-              <div className="relative" data-bill-print-menu>
-                <button
+              <Box sx={{ position: "relative" }} data-bill-print-menu>
+                <Button
                   type="button"
-                  className="glass-btn glass-btn-primary inline-flex items-center gap-1 disabled:opacity-50"
+                  className="glass-btn glass-btn-primary inline-flex items-center gap-1"
                   onClick={(e) => {
                     const rect = e.currentTarget.getBoundingClientRect();
                     const menuWidth = 128;
@@ -549,38 +546,50 @@ const CrmBillPrint = () => {
                   <Printer className="w-3.5 h-3.5" />
                   Print
                   <ChevronDown className="w-3 h-3" />
-                </button>
-              </div>
+                </Button>
+              </Box>
             )}
             actionsLabel="Action"
             exportFileName="crm_bill_print"
           />
           {openPrintMenu && (
-            <div
+            <Box
               data-bill-print-menu
-              className="fixed z-[1300] min-w-[120px] rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 py-1 shadow-lg"
-              style={{ top: `${openPrintMenu.top}px`, left: `${openPrintMenu.left}px` }}
+              sx={{
+                position: "fixed", zIndex: 1300, minWidth: 120, borderRadius: "4px", border: "1px solid",
+                borderColor: "divider", bgcolor: "background.paper", py: 0.5, boxShadow: 4,
+                top: `${openPrintMenu.top}px`, left: `${openPrintMenu.left}px`,
+              }}
             >
-              <button
+              <Box
+                component="button"
                 type="button"
-                className="block w-full px-3 py-1 text-left text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                 onClick={() => handlePrint(openPrintMenu.row, "invoice")}
+                sx={{
+                  display: "block", width: "100%", px: 1.5, py: 0.5, textAlign: "left", fontSize: 10.5,
+                  color: "text.secondary", border: 0, bgcolor: "transparent", cursor: "pointer", fontFamily: "inherit",
+                  "&:hover": { bgcolor: "action.hover" },
+                }}
               >
                 Invoice
-              </button>
-              <button
+              </Box>
+              <Box
+                component="button"
                 type="button"
-                className="block w-full px-3 py-1 text-left text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                 onClick={() => handlePrint(openPrintMenu.row, "receipt")}
+                sx={{
+                  display: "block", width: "100%", px: 1.5, py: 0.5, textAlign: "left", fontSize: 10.5,
+                  color: "text.secondary", border: 0, bgcolor: "transparent", cursor: "pointer", fontFamily: "inherit",
+                  "&:hover": { bgcolor: "action.hover" },
+                }}
               >
                 Receipt
-              </button>
-            </div>
+              </Box>
+            </Box>
           )}
-        </div>
-      </div>
-
-    </div>
+        </Stack>
+      </Box>
+    </Box>
   );
 };
 

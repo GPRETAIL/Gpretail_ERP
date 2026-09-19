@@ -18,15 +18,24 @@ import {
 } from "lucide-react";
 import { toast } from "react-toastify";
 import { useSelector } from "react-redux";
+import { alpha } from "@mui/material/styles";
+import {
+  Box,
+  Button,
+  Checkbox,
+  FormControlLabel,
+  MenuItem,
+  Stack,
+  TextField,
+  Typography,
+} from "@mui/material";
 import api from "../../api/axios";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import FilterableDataTable from "../../components/FilterableDataTable";
 import PageSkeleton from "../../components/PageSkeleton";
 
-const inputClass =
-  "w-full rounded-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-gray-100 p-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500";
-
-const cardClass = "rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-lg";
+const fieldSx = { "& .MuiInputBase-input": { fontSize: 12.25 } };
+const cardSx = { borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", boxShadow: 3, p: 2 };
 
 const storageModeOptions = [
   { value: "local", label: "Local Storage" },
@@ -112,9 +121,6 @@ const toObject = (value) => {
   const parsed = parseJsonLike(value);
   return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
 };
-
-const statCardClass =
-  "rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-md";
 
 const createDefaultCreateForm = () => ({
   backupType: "full",
@@ -247,41 +253,60 @@ const MultiSelectInput = ({
   };
 
   return (
-    <div className="space-y-1.5">
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{label}</label>
-      <div className="relative" ref={wrapperRef}>
-        <button
+    <Stack spacing={0.5}>
+      <Typography component="label" sx={{ display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>{label}</Typography>
+      <Box sx={{ position: "relative" }} ref={wrapperRef}>
+        <Box
+          component="button"
           type="button"
           onClick={() => !disabled && setIsOpen((prev) => !prev)}
-          className={`flex min-h-[40px] w-full items-center justify-between rounded-sm border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 ${
-            disabled ? "cursor-not-allowed bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400" : "bg-white dark:bg-gray-700"
-          }`}
           disabled={disabled}
+          sx={{
+            display: "flex", minHeight: 40, width: "100%", alignItems: "center", justifyContent: "space-between",
+            borderRadius: "4px", border: "1px solid", borderColor: "divider", px: 1.5, py: 1, textAlign: "left",
+            fontSize: 12.25, fontFamily: "inherit", cursor: disabled ? "not-allowed" : "pointer",
+            bgcolor: disabled ? "action.hover" : "background.paper", color: disabled ? "text.disabled" : "text.primary",
+            "&:focus": { borderColor: "primary.main", outline: "none" },
+          }}
         >
-          <span className={selectedLabels.length ? "text-gray-800 dark:text-gray-100" : "text-gray-500 dark:text-gray-400"}>
+          <Box component="span" sx={{ color: selectedLabels.length ? "text.primary" : "text.disabled" }}>
             {selectedLabels.length ? selectedLabels.join(", ") : placeholder}
-          </span>
-          <Search className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-        </button>
+          </Box>
+          <Box sx={{ color: "text.disabled", display: "inline-flex" }}>
+            <Search className="h-4 w-4" />
+          </Box>
+        </Box>
         {isOpen ? (
-          <div className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg">
+          <Box
+            sx={{
+              position: "absolute", zIndex: 20, mt: 0.5, maxHeight: 224, width: "100%", overflow: "auto",
+              borderRadius: "4px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", boxShadow: 4,
+            }}
+          >
             {options.map((option) => {
               const checked = selectedSet.has(String(option.value));
               return (
-                <label
+                <Stack
                   key={option.value}
-                  className="flex cursor-pointer items-center gap-2 border-b border-gray-100 dark:border-gray-700 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                  component="label"
+                  direction="row"
+                  spacing={1}
+                  sx={{
+                    alignItems: "center", cursor: "pointer", borderBottom: "1px solid", borderColor: "divider",
+                    px: 1.5, py: 1, fontSize: 12.25, color: "text.secondary",
+                    "&:hover": { bgcolor: "action.hover" }, "&:last-of-type": { borderBottom: 0 },
+                  }}
                 >
-                  <input type="checkbox" checked={checked} onChange={() => toggle(option.value)} className="h-4 w-4" />
-                  <span>{option.label}</span>
-                </label>
+                  <Checkbox checked={checked} onChange={() => toggle(option.value)} size="small" sx={{ p: 0 }} />
+                  <Box component="span">{option.label}</Box>
+                </Stack>
               );
             })}
-          </div>
+          </Box>
         ) : null}
-      </div>
-      {helperText ? <p className="text-xs text-gray-500 dark:text-gray-400">{helperText}</p> : null}
-    </div>
+      </Box>
+      {helperText ? <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>{helperText}</Typography> : null}
+    </Stack>
   );
 };
 
@@ -776,7 +801,7 @@ export default function BackupCenter() {
   }
 
   return (
-    <div className="master-responsive flex h-full flex-col bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100">
+    <Box className="master-responsive" sx={{ display: "flex", height: "100%", flexDirection: "column", bgcolor: "background.default", color: "text.primary" }}>
       <ConfirmDialog
         open={deleteDialog.open}
         title="Delete Backup"
@@ -786,99 +811,103 @@ export default function BackupCenter() {
         onCancel={() => setDeleteDialog({ open: false, row: null })}
       />
 
-      <div className="border-b dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 shadow-sm">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h1 className="text-sm font-semibold text-gray-800 dark:text-gray-100">Settings / Backup Center</h1>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+      <Box sx={{ borderBottom: 1, borderColor: "divider", bgcolor: "background.paper", px: 2, py: 1.5, boxShadow: 1 }}>
+        <Stack direction={{ xs: "column", lg: "row" }} spacing={1.5} sx={{ alignItems: { lg: "center" }, justifyContent: { lg: "space-between" } }}>
+          <Box>
+            <Typography component="h1" sx={{ fontSize: 13, fontWeight: 600, color: "text.primary" }}>Settings / Backup Center</Typography>
+            <Typography sx={{ mt: 0.5, fontSize: 12.25, color: "text.secondary" }}>
               Full, incremental and module-wise backups with restore, import, scheduling, retention and audit history.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="min-w-[220px]">
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Current Scope</label>
-              <div className={`${inputClass} bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300`}>{selectedScopeLabel}</div>
-            </div>
-            <button type="button" className="glass-btn glass-btn-primary flex items-center" onClick={() => loadOverview(selectedCompanyId)}>
+            </Typography>
+          </Box>
+          <Stack direction="row" spacing={1.5} sx={{ flexWrap: "wrap", alignItems: "center" }}>
+            <Box sx={{ minWidth: 220 }}>
+              <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 10.5, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Current Scope</Typography>
+              <Box sx={{ borderRadius: "4px", border: "1px solid", borderColor: "divider", bgcolor: "action.hover", color: "text.secondary", p: 1, fontSize: 12.25 }}>{selectedScopeLabel}</Box>
+            </Box>
+            <Button type="button" className="glass-btn glass-btn-primary flex items-center" onClick={() => loadOverview(selectedCompanyId)}>
               <Search className="mr-1 h-4 w-4" /> Refresh
-            </button>
-          </div>
-        </div>
-      </div>
+            </Button>
+          </Stack>
+        </Stack>
+      </Box>
 
-      <div className="flex-1 space-y-6 p-4">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <div className={statCardClass}>
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Last Backup</p>
-                <p className="mt-2 text-lg font-bold text-gray-800 dark:text-gray-100">{toText(overview.stats?.last_backup_status, "Never").replace(/\b\w/g, (char) => char.toUpperCase())}</p>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{toDateTime(overview.stats?.last_backup_at)}</p>
-              </div>
-              <CheckCircle2 className="h-8 w-8 text-emerald-500" />
-            </div>
-          </div>
-          <div className={statCardClass}>
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Next Schedule</p>
-                <p className="mt-2 text-lg font-bold text-gray-800 dark:text-gray-100">{toDateTime(overview.stats?.next_scheduled_backup)}</p>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Automatic scheduler</p>
-              </div>
-              <Clock3 className="h-8 w-8 text-blue-500" />
-            </div>
-          </div>
-          <div className={statCardClass}>
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Storage Usage</p>
-                <p className="mt-2 text-lg font-bold text-gray-800 dark:text-gray-100">{overview.stats?.storage_usage?.total_label || "0 B"}</p>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+      <Stack spacing={3} sx={{ flex: 1, p: 2 }}>
+        <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", md: "repeat(2, 1fr)", xl: "repeat(4, 1fr)" } }}>
+          <Box sx={{ ...cardSx, borderRadius: "10.5px" }}>
+            <Stack direction="row" sx={{ alignItems: "flex-start", justifyContent: "space-between" }}>
+              <Box>
+                <Typography sx={{ fontSize: 10.5, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Last Backup</Typography>
+                <Typography sx={{ mt: 1, fontSize: 15.75, fontWeight: 700, color: "text.primary" }}>{toText(overview.stats?.last_backup_status, "Never").replace(/\b\w/g, (char) => char.toUpperCase())}</Typography>
+                <Typography sx={{ mt: 0.5, fontSize: 10.5, color: "text.secondary" }}>{toDateTime(overview.stats?.last_backup_at)}</Typography>
+              </Box>
+              <Box sx={{ color: "success.main", display: "inline-flex" }}>
+                <CheckCircle2 className="h-8 w-8" />
+              </Box>
+            </Stack>
+          </Box>
+          <Box sx={{ ...cardSx, borderRadius: "10.5px" }}>
+            <Stack direction="row" sx={{ alignItems: "flex-start", justifyContent: "space-between" }}>
+              <Box>
+                <Typography sx={{ fontSize: 10.5, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Next Schedule</Typography>
+                <Typography sx={{ mt: 1, fontSize: 15.75, fontWeight: 700, color: "text.primary" }}>{toDateTime(overview.stats?.next_scheduled_backup)}</Typography>
+                <Typography sx={{ mt: 0.5, fontSize: 10.5, color: "text.secondary" }}>Automatic scheduler</Typography>
+              </Box>
+              <Box sx={{ color: "primary.main", display: "inline-flex" }}>
+                <Clock3 className="h-8 w-8" />
+              </Box>
+            </Stack>
+          </Box>
+          <Box sx={{ ...cardSx, borderRadius: "10.5px" }}>
+            <Stack direction="row" sx={{ alignItems: "flex-start", justifyContent: "space-between" }}>
+              <Box>
+                <Typography sx={{ fontSize: 10.5, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Storage Usage</Typography>
+                <Typography sx={{ mt: 1, fontSize: 15.75, fontWeight: 700, color: "text.primary" }}>{overview.stats?.storage_usage?.total_label || "0 B"}</Typography>
+                <Typography sx={{ mt: 0.5, fontSize: 10.5, color: "text.secondary" }}>
                   Local {overview.stats?.storage_usage?.local_label || "0 B"} / Cloud {overview.stats?.storage_usage?.cloud_label || "0 B"}
-                </p>
-              </div>
-              <HardDrive className="h-8 w-8 text-amber-500" />
-            </div>
-          </div>
-          <div className={statCardClass}>
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">History</p>
-                <p className="mt-2 text-lg font-bold text-gray-800 dark:text-gray-100">{overview.stats?.total_backups || 0} backups</p>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                </Typography>
+              </Box>
+              <Box sx={{ color: "warning.main", display: "inline-flex" }}>
+                <HardDrive className="h-8 w-8" />
+              </Box>
+            </Stack>
+          </Box>
+          <Box sx={{ ...cardSx, borderRadius: "10.5px" }}>
+            <Stack direction="row" sx={{ alignItems: "flex-start", justifyContent: "space-between" }}>
+              <Box>
+                <Typography sx={{ fontSize: 10.5, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>History</Typography>
+                <Typography sx={{ mt: 1, fontSize: 15.75, fontWeight: 700, color: "text.primary" }}>{overview.stats?.total_backups || 0} backups</Typography>
+                <Typography sx={{ mt: 0.5, fontSize: 10.5, color: "text.secondary" }}>
                   {overview.stats?.success_count || 0} success / {overview.stats?.failed_count || 0} failed
-                </p>
-              </div>
-              <History className="h-8 w-8 text-indigo-500" />
-            </div>
-          </div>
-        </div>
+                </Typography>
+              </Box>
+              <Box sx={{ color: "#6366f1", display: "inline-flex" }}>
+                <History className="h-8 w-8" />
+              </Box>
+            </Stack>
+          </Box>
+        </Box>
 
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-          <div className={cardClass + " xl:col-span-1"}>
-            <div className="mb-4 flex items-center justify-between border-b dark:border-gray-700 pb-2">
-              <div>
-                <h2 className="text-base font-bold text-gray-800 dark:text-gray-100">Create Backup</h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Run full, incremental or module-wise backups for the selected store scope.</p>
-              </div>
-              <Archive className="h-5 w-5 text-blue-500" />
-            </div>
+        <Box sx={{ display: "grid", gap: 3, gridTemplateColumns: { xl: "repeat(3, 1fr)" } }}>
+          <Box sx={cardSx}>
+            <Stack direction="row" sx={{ mb: 2, alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", pb: 1 }}>
+              <Box>
+                <Typography component="h2" sx={{ fontSize: 14, fontWeight: 700, color: "text.primary" }}>Create Backup</Typography>
+                <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>Run full, incremental or module-wise backups for the selected store scope.</Typography>
+              </Box>
+              <Box sx={{ color: "primary.main", display: "inline-flex" }}>
+                <Archive className="h-5 w-5" />
+              </Box>
+            </Stack>
 
-            <div className="space-y-3">
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Backup Type</label>
-                <select
-                  value={createForm.backupType}
-                  onChange={(event) => setCreateForm((prev) => ({ ...prev, backupType: event.target.value }))}
-                  className={inputClass}
-                >
+            <Stack spacing={1.5}>
+              <Box>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Backup Type</Typography>
+                <TextField select size="small" fullWidth sx={fieldSx} value={createForm.backupType} onChange={(event) => setCreateForm((prev) => ({ ...prev, backupType: event.target.value }))}>
                   {backupTypeOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
+                    <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
                   ))}
-                </select>
-              </div>
+                </TextField>
+              </Box>
 
               {createForm.backupType === "module" ? (
                 <MultiSelectInput
@@ -891,371 +920,404 @@ export default function BackupCenter() {
                 />
               ) : null}
 
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Backup Scope</label>
+              <Box>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Backup Scope</Typography>
                 {isSuperAdmin ? (
-                  <select
-                    value={selectedCompanyId}
-                    onChange={(event) => setSelectedCompanyId(event.target.value)}
-                    className={inputClass}
-                  >
-                    <option value="">All Stores</option>
+                  <TextField select size="small" fullWidth sx={fieldSx} value={selectedCompanyId} onChange={(event) => setSelectedCompanyId(event.target.value)}>
+                    <MenuItem value="">All Stores</MenuItem>
                     {companyOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
+                      <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
                     ))}
-                  </select>
+                  </TextField>
                 ) : (
-                  <div className={`${inputClass} bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300`}>{currentStoreLabel}</div>
+                  <Box sx={{ borderRadius: "4px", border: "1px solid", borderColor: "divider", bgcolor: "action.hover", color: "text.secondary", p: 1, fontSize: 12.25 }}>{currentStoreLabel}</Box>
                 )}
-              </div>
+              </Box>
 
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Storage Mode</label>
-                <select
-                  value={createForm.storageMode}
-                  onChange={(event) => setCreateForm((prev) => ({ ...prev, storageMode: event.target.value }))}
-                  className={inputClass}
-                >
+              <Box>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Storage Mode</Typography>
+                <TextField select size="small" fullWidth sx={fieldSx} value={createForm.storageMode} onChange={(event) => setCreateForm((prev) => ({ ...prev, storageMode: event.target.value }))}>
                   {storageModeOptions.map((option) => {
                     const needsCloud = option.value === "cloud" || option.value === "hybrid";
                     const isDisabled = needsCloud && !settingsForm.cloudConfigured;
                     return (
-                      <option key={option.value} value={option.value} disabled={isDisabled}>
+                      <MenuItem key={option.value} value={option.value} disabled={isDisabled}>
                         {option.label}{isDisabled ? " (configure OCI in Settings first)" : ""}
-                      </option>
+                      </MenuItem>
                     );
                   })}
-                </select>
+                </TextField>
                 {settingsForm.cloudConfigured ? (
-                  <p className="mt-1 text-xs text-green-600 dark:text-green-400">✓ OCI Object Storage is configured for this store.</p>
+                  <Typography sx={{ mt: 0.5, fontSize: 10.5, color: "success.main" }}>✓ OCI Object Storage is configured for this store.</Typography>
                 ) : (
-                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Cloud options require OCI credentials saved in Storage Settings.</p>
+                  <Typography sx={{ mt: 0.5, fontSize: 10.5, color: "text.secondary" }}>Cloud options require OCI credentials saved in Storage Settings.</Typography>
                 )}
-              </div>
+              </Box>
 
               {createFormIncludesUsers && !createForm.encryptionEnabled ? (
-                <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-md p-2">
+                <Typography
+                  sx={{
+                    fontSize: 10.5, color: "warning.dark", bgcolor: (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.2 : 0.08),
+                    border: "1px solid", borderColor: "warning.main", borderRadius: "5.25px", p: 1,
+                  }}
+                >
                   This backup includes the Users table (login accounts with password hashes). Encryption is required to include it.
-                </p>
+                </Typography>
               ) : null}
 
-              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                <input
-                  type="checkbox"
-                  checked={createForm.encryptionEnabled}
-                  onChange={(event) => setCreateForm((prev) => ({ ...prev, encryptionEnabled: event.target.checked }))}
-                  className="h-4 w-4"
-                />
-                Enable backup encryption
-              </label>
+              <FormControlLabel
+                sx={{ ml: 0, "& .MuiFormControlLabel-label": { fontSize: 12.25, color: "text.secondary" } }}
+                control={
+                  <Checkbox
+                    size="small"
+                    checked={createForm.encryptionEnabled}
+                    onChange={(event) => setCreateForm((prev) => ({ ...prev, encryptionEnabled: event.target.checked }))}
+                  />
+                }
+                label="Enable backup encryption"
+              />
 
               {createForm.encryptionEnabled ? (
                 <>
-                  <div>
-                    <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Encryption Password</label>
-                    <input
+                  <Box>
+                    <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Encryption Password</Typography>
+                    <TextField
                       type="password"
+                      size="small"
+                      fullWidth
+                      sx={fieldSx}
                       value={createForm.encryptionPassword}
                       onChange={(event) => setCreateForm((prev) => ({ ...prev, encryptionPassword: event.target.value }))}
-                      className={inputClass}
                     />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Password Hint</label>
-                    <input
+                  </Box>
+                  <Box>
+                    <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Password Hint</Typography>
+                    <TextField
+                      size="small"
+                      fullWidth
+                      sx={fieldSx}
                       value={createForm.restorePasswordHint}
                       onChange={(event) => setCreateForm((prev) => ({ ...prev, restorePasswordHint: event.target.value }))}
-                      className={inputClass}
                     />
-                  </div>
+                  </Box>
                 </>
               ) : null}
 
-              <div className="rounded-md border border-blue-100 dark:border-blue-900 bg-blue-50 dark:bg-blue-900/30 p-3 text-xs text-blue-700 dark:text-blue-400">
+              <Typography
+                sx={{
+                  borderRadius: "5.25px", border: "1px solid", borderColor: "primary.main",
+                  bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.2 : 0.08),
+                  p: 1.5, fontSize: 10.5, color: "primary.dark",
+                }}
+              >
                 Local storage writes to the system backup folder, cloud storage writes to the server backup folder, and hybrid writes to both.
-              </div>
+              </Typography>
 
-              <button
+              <Button
                 type="button"
-                className="glass-btn glass-btn-success flex items-center disabled:opacity-70"
+                className="glass-btn glass-btn-success flex items-center"
                 onClick={handleCreateBackup}
                 disabled={creatingBackup}
               >
                 <Play className="mr-1 h-4 w-4" />
                 {creatingBackup ? `Backing up… ${formatElapsed(createElapsedMs)}` : "Run Backup"}
-              </button>
+              </Button>
               {creatingBackup ? (
-                <p className="text-xs text-amber-600 dark:text-amber-400">
+                <Typography sx={{ fontSize: 10.5, color: "warning.main" }}>
                   Please don&apos;t close this window or navigate away until the backup finishes.
-                </p>
+                </Typography>
               ) : null}
-            </div>
-          </div>
+            </Stack>
+          </Box>
 
-          <div
+          <Box
             ref={restoreCardRef}
-            className={`${cardClass} xl:col-span-1 ${restoreCardHighlighted ? "ring-2 ring-blue-400 ring-offset-2" : ""}`}
+            sx={{ ...cardSx, ...(restoreCardHighlighted ? { boxShadow: (theme) => `0 0 0 2px ${theme.palette.primary.light}` } : {}) }}
           >
-            <div className="mb-4 flex items-center justify-between border-b dark:border-gray-700 pb-2">
-              <div>
-                <h2 className="text-base font-bold text-gray-800 dark:text-gray-100">Storage, Schedule & Retention</h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Automatic backups, retention windows and cleanup policy for the selected store scope.</p>
-              </div>
-              <Cloud className="h-5 w-5 text-indigo-500" />
-            </div>
+            <Stack direction="row" sx={{ mb: 2, alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", pb: 1 }}>
+              <Box>
+                <Typography component="h2" sx={{ fontSize: 14, fontWeight: 700, color: "text.primary" }}>Storage, Schedule & Retention</Typography>
+                <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>Automatic backups, retention windows and cleanup policy for the selected store scope.</Typography>
+              </Box>
+              <Box sx={{ color: "#6366f1", display: "inline-flex" }}>
+                <Cloud className="h-5 w-5" />
+              </Box>
+            </Stack>
 
-            <div className="space-y-3">
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Default Storage</label>
-                <select
-                  value={settingsForm.storageMode}
-                  onChange={(event) => setSettingsForm((prev) => ({ ...prev, storageMode: event.target.value }))}
-                  className={inputClass}
-                >
+            <Stack spacing={1.5}>
+              <Box>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Default Storage</Typography>
+                <TextField select size="small" fullWidth sx={fieldSx} value={settingsForm.storageMode} onChange={(event) => setSettingsForm((prev) => ({ ...prev, storageMode: event.target.value }))}>
                   {storageModeOptions.map((option) => {
                     const needsCloud = option.value === "cloud" || option.value === "hybrid";
                     const isDisabled = needsCloud && !settingsForm.cloudConfigured;
                     return (
-                      <option key={option.value} value={option.value} disabled={isDisabled}>
+                      <MenuItem key={option.value} value={option.value} disabled={isDisabled}>
                         {option.label}{isDisabled ? " (configure OCI below first)" : ""}
-                      </option>
+                      </MenuItem>
                     );
                   })}
-                </select>
-              </div>
+                </TextField>
+              </Box>
 
               {/* Oracle Cloud Infrastructure (OCI) Credentials */}
-              <div className="rounded-lg border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/20 p-3 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-indigo-800 dark:text-indigo-200">☁ Oracle Cloud (OCI) Object Storage</p>
-                  </div>
+              <Stack
+                spacing={1.5}
+                sx={{
+                  borderRadius: "7px", border: "1px solid", borderColor: "#6366f1",
+                  bgcolor: (theme) => alpha("#6366f1", theme.palette.mode === "dark" ? 0.16 : 0.08), p: 1.5,
+                }}
+              >
+                <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between" }}>
+                  <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "#6366f1" }}>☁ Oracle Cloud (OCI) Object Storage</Typography>
                   {settingsForm.cloudConfigured ? (
-                    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">✓ Configured</span>
+                    <Box component="span" sx={{ fontSize: 10.5, fontWeight: 500, px: 1, py: 0.25, borderRadius: "50px", bgcolor: (theme) => alpha(theme.palette.success.main, theme.palette.mode === "dark" ? 0.24 : 0.15), color: "success.main" }}>✓ Configured</Box>
                   ) : (
-                    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">Not configured</span>
+                    <Box component="span" sx={{ fontSize: 10.5, fontWeight: 500, px: 1, py: 0.25, borderRadius: "50px", bgcolor: "action.selected", color: "text.secondary" }}>Not configured</Box>
                   )}
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <input
+                </Stack>
+                <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1 }}>
+                  <TextField
+                    size="small"
+                    fullWidth
+                    sx={fieldSx}
                     placeholder="Object Storage Namespace"
                     value={settingsForm.ociNamespace}
                     onChange={(event) => setSettingsForm((prev) => ({ ...prev, ociNamespace: event.target.value }))}
-                    className={inputClass}
                   />
-                  <input
+                  <TextField
+                    size="small"
+                    fullWidth
+                    sx={fieldSx}
                     placeholder="Region (e.g. ap-mumbai-1, us-ashburn-1)"
                     value={settingsForm.ociRegion}
                     onChange={(event) => setSettingsForm((prev) => ({ ...prev, ociRegion: event.target.value }))}
-                    className={inputClass}
                   />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <input
+                </Box>
+                <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1 }}>
+                  <TextField
+                    size="small"
+                    fullWidth
+                    sx={fieldSx}
                     placeholder="Customer Secret Key (Access Key)"
                     value={settingsForm.ociAccessKeyId}
                     onChange={(event) => setSettingsForm((prev) => ({ ...prev, ociAccessKeyId: event.target.value }))}
-                    className={inputClass}
                   />
-                  <input
+                  <TextField
                     type="password"
+                    size="small"
+                    fullWidth
+                    sx={fieldSx}
                     placeholder="Secret Key"
                     value={settingsForm.ociSecretAccessKey}
                     onChange={(event) => setSettingsForm((prev) => ({ ...prev, ociSecretAccessKey: event.target.value }))}
-                    className={inputClass}
                     autoComplete="new-password"
                   />
-                </div>
-                <input
+                </Box>
+                <TextField
+                  size="small"
+                  fullWidth
+                  sx={fieldSx}
                   placeholder="Bucket Name (e.g. gpretail-backups)"
                   value={settingsForm.ociBucket}
                   onChange={(event) => setSettingsForm((prev) => ({ ...prev, ociBucket: event.target.value }))}
-                  className={inputClass}
                 />
-                <div className="flex items-center gap-3">
-                  <button
+                <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+                  <Button
                     type="button"
+                    variant="contained"
+                    size="small"
                     onClick={handleTestCloudConnection}
                     disabled={cloudTestStatus === "testing"}
-                    className="flex items-center gap-1.5 rounded-sm bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
+                    startIcon={<Cloud className="h-3.5 w-3.5" />}
+                    sx={{ fontSize: 11, bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
                   >
-                    <Cloud className="h-3.5 w-3.5" />
                     {cloudTestStatus === "testing" ? "Testing..." : "Test Connection"}
-                  </button>
+                  </Button>
                   {cloudTestStatus === "ok" && (
-                    <span className="text-xs text-green-600 dark:text-green-400 font-medium">✓ {cloudTestMessage}</span>
+                    <Box component="span" sx={{ fontSize: 10.5, fontWeight: 500, color: "success.main" }}>✓ {cloudTestMessage}</Box>
                   )}
                   {cloudTestStatus === "fail" && (
-                    <span className="text-xs text-red-600 dark:text-red-400">{cloudTestMessage}</span>
+                    <Box component="span" sx={{ fontSize: 10.5, color: "error.main" }}>{cloudTestMessage}</Box>
                   )}
-                </div>
-                <label className="flex items-center gap-2 text-sm text-indigo-800 dark:text-indigo-200">
-                  <input
-                    type="checkbox"
-                    checked={!!settingsForm.cloudStorageEnabled}
-                    onChange={(event) => setSettingsForm((prev) => ({ ...prev, cloudStorageEnabled: event.target.checked }))}
-                    className="h-4 w-4"
+                </Stack>
+                <FormControlLabel
+                  sx={{ ml: 0, "& .MuiFormControlLabel-label": { fontSize: 12.25, color: "#6366f1" } }}
+                  control={
+                    <Checkbox
+                      size="small"
+                      checked={!!settingsForm.cloudStorageEnabled}
+                      onChange={(event) => setSettingsForm((prev) => ({ ...prev, cloudStorageEnabled: event.target.checked }))}
+                    />
+                  }
+                  label="Enable cloud storage for scheduled backups"
+                />
+              </Stack>
+
+              <FormControlLabel
+                sx={{ ml: 0, "& .MuiFormControlLabel-label": { fontSize: 12.25, color: "text.secondary" } }}
+                control={
+                  <Checkbox
+                    size="small"
+                    checked={!!settingsForm.localStorageEnabled}
+                    onChange={(event) => setSettingsForm((prev) => ({ ...prev, localStorageEnabled: event.target.checked }))}
                   />
-                  Enable cloud storage for scheduled backups
-                </label>
-              </div>
-
-              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                <input
-                  type="checkbox"
-                  checked={!!settingsForm.localStorageEnabled}
-                  onChange={(event) => setSettingsForm((prev) => ({ ...prev, localStorageEnabled: event.target.checked }))}
-                  className="h-4 w-4"
-                />
-                Enable local storage for scheduled backups
-              </label>
-              <p className="-mt-3 text-xs text-gray-500 dark:text-gray-400">
+                }
+                label="Enable local storage for scheduled backups"
+              />
+              <Typography sx={{ mt: -1, fontSize: 10.5, color: "text.secondary" }}>
                 Enabling both stores a copy in each location (Hybrid). Cloud storage requires the OCI credentials above to be configured; scheduled backups fall back to local storage automatically if they are not.
-              </p>
+              </Typography>
 
-              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                <input
-                  type="checkbox"
-                  checked={!!settingsForm.encryptionEnabled}
-                  onChange={(event) => setSettingsForm((prev) => ({ ...prev, encryptionEnabled: event.target.checked }))}
-                  className="h-4 w-4"
-                />
-                Default encryption
-              </label>
+              <FormControlLabel
+                sx={{ ml: 0, "& .MuiFormControlLabel-label": { fontSize: 12.25, color: "text.secondary" } }}
+                control={
+                  <Checkbox
+                    size="small"
+                    checked={!!settingsForm.encryptionEnabled}
+                    onChange={(event) => setSettingsForm((prev) => ({ ...prev, encryptionEnabled: event.target.checked }))}
+                  />
+                }
+                label="Default encryption"
+              />
 
               {settingsForm.encryptionEnabled ? (
                 <>
-                  <input
+                  <TextField
                     type="password"
+                    size="small"
+                    fullWidth
+                    sx={fieldSx}
                     placeholder="Default encryption password"
                     value={settingsForm.encryptionPassword}
                     onChange={(event) => setSettingsForm((prev) => ({ ...prev, encryptionPassword: event.target.value }))}
-                    className={inputClass}
                   />
-                  <input
+                  <TextField
+                    size="small"
+                    fullWidth
+                    sx={fieldSx}
                     placeholder="Restore password hint"
                     value={settingsForm.restorePasswordHint}
                     onChange={(event) => setSettingsForm((prev) => ({ ...prev, restorePasswordHint: event.target.value }))}
-                    className={inputClass}
                   />
                 </>
               ) : null}
 
-              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                <input
-                  type="checkbox"
-                  checked={!!settingsForm.scheduleEnabled}
-                  onChange={(event) => setSettingsForm((prev) => ({ ...prev, scheduleEnabled: event.target.checked }))}
-                  className="h-4 w-4"
-                />
-                Enable automatic backup scheduling
-              </label>
+              <FormControlLabel
+                sx={{ ml: 0, "& .MuiFormControlLabel-label": { fontSize: 12.25, color: "text.secondary" } }}
+                control={
+                  <Checkbox
+                    size="small"
+                    checked={!!settingsForm.scheduleEnabled}
+                    onChange={(event) => setSettingsForm((prev) => ({ ...prev, scheduleEnabled: event.target.checked }))}
+                  />
+                }
+                label="Enable automatic backup scheduling"
+              />
 
               {settingsForm.scheduleEnabled ? (
                 settingsForm.lastScheduledAt ? (
-                  <div className="rounded-lg border border-green-300 bg-green-50 p-3 text-xs text-green-800 dark:border-green-800 dark:bg-green-900/30 dark:text-green-200">
+                  <Typography
+                    sx={{
+                      borderRadius: "7px", border: "1px solid", borderColor: "success.main",
+                      bgcolor: (theme) => alpha(theme.palette.success.main, theme.palette.mode === "dark" ? 0.2 : 0.08),
+                      p: 1.5, fontSize: 10.5, color: "success.dark",
+                    }}
+                  >
                     ✓ Scheduled backups are actively running — last one completed {toDateTime(settingsForm.lastScheduledAt)}. Your external trigger is working.
-                  </div>
+                  </Typography>
                 ) : (
-                  <div className={`rounded-lg border p-3 text-xs ${
-                    overview.cronSecretConfigured
-                      ? "border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-200"
-                      : "border-red-300 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-900/30 dark:text-red-200"
-                  }`}>
+                  <Typography
+                    sx={{
+                      borderRadius: "7px", border: "1px solid", p: 1.5, fontSize: 10.5,
+                      ...(overview.cronSecretConfigured
+                        ? { borderColor: "warning.main", bgcolor: (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.2 : 0.08), color: "warning.dark" }
+                        : { borderColor: "error.main", bgcolor: (theme) => alpha(theme.palette.error.main, theme.palette.mode === "dark" ? 0.2 : 0.08), color: "error.dark" }),
+                    }}
+                  >
                     {overview.cronSecretConfigured
                       ? "⚠ The server is ready (BACKUP_CRON_SECRET is set), but no scheduled run has completed yet. Double-check your external trigger (cron-job.org etc.) is actually calling the URL below with the correct token."
                       : "⚠ BACKUP_CRON_SECRET is not configured on this server yet. The trigger URL below will be rejected (403) no matter what token is used until it's set."}
-                  </div>
+                  </Typography>
                 )
               ) : null}
 
               {settingsForm.scheduleEnabled ? (
-                <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs text-blue-800 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-200">
+                <Box
+                  sx={{
+                    borderRadius: "7px", border: "1px solid", borderColor: "primary.main",
+                    bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.2 : 0.08),
+                    p: 1.5, fontSize: 10.5, color: "primary.dark",
+                  }}
+                >
                   This server has no background job runner, so scheduled backups need an
                   external trigger to actually run. Set up a free service like{" "}
-                  <span className="font-semibold">cron-job.org</span>, or your hosting
+                  <Box component="span" sx={{ fontWeight: 600 }}>cron-job.org</Box>, or your hosting
                   panel&apos;s cron jobs, to periodically call:
-                  <div className="mt-1 rounded bg-white/60 p-2 font-mono dark:bg-black/20 break-all">
+                  <Box sx={{ mt: 0.5, borderRadius: 1, bgcolor: "action.hover", p: 1, fontFamily: "monospace", wordBreak: "break-all" }}>
                     GET {(import.meta.env.VITE_API_BASE_URL || "/api").replace(/\/api$/, "")}/api/backups/scheduled-run?token=YOUR_SECRET
-                  </div>
+                  </Box>
                   Get the real secret value from the server&apos;s{" "}
-                  <span className="font-mono">BACKUP_CRON_SECRET</span> environment
+                  <Box component="span" sx={{ fontFamily: "monospace" }}>BACKUP_CRON_SECRET</Box> environment
                   variable — it is never shown here.
                   {settingsForm.encryptionEnabled && (settingsForm.encryptionPassword || settingsForm.scheduledEncryptionConfigured) ? (
-                    <p className="mt-2 pt-2 border-t border-blue-200 dark:border-blue-800 text-green-700 dark:text-green-400">
+                    <Typography sx={{ mt: 1, pt: 1, borderTop: 1, borderColor: "primary.main", color: "success.main", fontSize: "inherit" }}>
                       ✓ A password is saved above, so scheduled backups will run encrypted and include the Users table. The password is stored encrypted at rest on the server - this protects the backup file if it leaks or gets stolen separately, but not against someone who fully compromises this server.
-                    </p>
+                    </Typography>
                   ) : (
-                    <p className="mt-2 pt-2 border-t border-blue-200 dark:border-blue-800">
+                    <Typography sx={{ mt: 1, pt: 1, borderTop: 1, borderColor: "primary.main", fontSize: "inherit" }}>
                       Scheduled backups will run unencrypted (no password saved above), so the
                       Users table is skipped automatically to avoid storing password hashes
                       unencrypted. Enable &quot;Default encryption&quot; and save a password
                       above to include it in scheduled runs too.
-                    </p>
+                    </Typography>
                   )}
-                </div>
+                </Box>
               ) : null}
 
               {settingsForm.scheduleEnabled ? (
                 <>
-                  <div className="grid grid-cols-2 gap-3">
-                    <select
-                      value={settingsForm.scheduleFrequency}
-                      onChange={(event) => setSettingsForm((prev) => ({ ...prev, scheduleFrequency: event.target.value }))}
-                      className={inputClass}
-                    >
+                  <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1.5 }}>
+                    <TextField select size="small" fullWidth sx={fieldSx} value={settingsForm.scheduleFrequency} onChange={(event) => setSettingsForm((prev) => ({ ...prev, scheduleFrequency: event.target.value }))}>
                       {scheduleFrequencyOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
+                        <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
                       ))}
-                    </select>
-                    <input
+                    </TextField>
+                    <TextField
                       type="time"
+                      size="small"
+                      fullWidth
+                      sx={fieldSx}
                       value={settingsForm.scheduleTime}
                       onChange={(event) => setSettingsForm((prev) => ({ ...prev, scheduleTime: event.target.value }))}
-                      className={inputClass}
                     />
-                  </div>
+                  </Box>
 
                   {settingsForm.scheduleFrequency === "weekly" ? (
-                    <select
-                      value={settingsForm.scheduleDayOfWeek}
-                      onChange={(event) => setSettingsForm((prev) => ({ ...prev, scheduleDayOfWeek: Number(event.target.value) }))}
-                      className={inputClass}
-                    >
+                    <TextField select size="small" fullWidth sx={fieldSx} value={settingsForm.scheduleDayOfWeek} onChange={(event) => setSettingsForm((prev) => ({ ...prev, scheduleDayOfWeek: Number(event.target.value) }))}>
                       {weekDayOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
+                        <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
                       ))}
-                    </select>
+                    </TextField>
                   ) : null}
 
                   {settingsForm.scheduleFrequency === "monthly" ? (
-                    <input
+                    <TextField
                       type="number"
-                      min="1"
-                      max="28"
+                      size="small"
+                      fullWidth
+                      sx={fieldSx}
+                      slotProps={{ htmlInput: { min: 1, max: 28 } }}
                       value={settingsForm.scheduleDayOfMonth}
                       onChange={(event) => setSettingsForm((prev) => ({ ...prev, scheduleDayOfMonth: Number(event.target.value) }))}
-                      className={inputClass}
                     />
                   ) : null}
 
-                  <select
-                    value={settingsForm.scheduleBackupType}
-                    onChange={(event) => setSettingsForm((prev) => ({ ...prev, scheduleBackupType: event.target.value }))}
-                    className={inputClass}
-                  >
+                  <TextField select size="small" fullWidth sx={fieldSx} value={settingsForm.scheduleBackupType} onChange={(event) => setSettingsForm((prev) => ({ ...prev, scheduleBackupType: event.target.value }))}>
                     {backupTypeOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
+                      <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
                     ))}
-                  </select>
+                  </TextField>
 
                   {settingsForm.scheduleBackupType === "module" ? (
                     <MultiSelectInput
@@ -1270,14 +1332,14 @@ export default function BackupCenter() {
                 </>
               ) : null}
 
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <Box>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>
                   Retention (how many old scheduled backups to keep)
-                </label>
-                <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
+                </Typography>
+                <Typography sx={{ mb: 1, fontSize: 10.5, color: "text.secondary" }}>
                   Only the box matching your Schedule Frequency above is actually used right now - it&apos;s highlighted below. The other two are just saved for whenever you switch frequency later.
-                </p>
-                <div className="grid grid-cols-3 gap-3">
+                </Typography>
+                <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1.5 }}>
                   {[
                     { key: "retentionDaily", label: "Daily backups to keep", freq: "daily" },
                     { key: "retentionWeekly", label: "Weekly backups to keep", freq: "weekly" },
@@ -1285,63 +1347,80 @@ export default function BackupCenter() {
                   ].map(({ key, label, freq }) => {
                     const active = settingsForm.scheduleFrequency === freq;
                     return (
-                      <div
+                      <Box
                         key={key}
-                        className={`rounded-md border p-2 ${
-                          active
-                            ? "border-blue-400 bg-blue-50 dark:border-blue-600 dark:bg-blue-900/20"
-                            : "border-gray-200 dark:border-gray-700"
-                        }`}
+                        sx={{
+                          borderRadius: "5.25px", border: "1px solid", p: 1,
+                          ...(active
+                            ? { borderColor: "primary.main", bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08) }
+                            : { borderColor: "divider" }),
+                        }}
                       >
-                        <label className={`mb-1 block text-xs font-medium ${active ? "text-blue-700 dark:text-blue-300" : "text-gray-500 dark:text-gray-400"}`}>
+                        <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 10.5, fontWeight: 500, color: active ? "primary.main" : "text.secondary" }}>
                           {label}
                           {active ? " (active)" : ""}
-                        </label>
-                        <input
+                        </Typography>
+                        <TextField
                           type="number"
-                          min="1"
+                          size="small"
+                          fullWidth
+                          sx={fieldSx}
+                          slotProps={{ htmlInput: { min: 1 } }}
                           value={settingsForm[key]}
                           onChange={(event) => setSettingsForm((prev) => ({ ...prev, [key]: Number(event.target.value) }))}
-                          className={inputClass}
                         />
-                      </div>
+                      </Box>
                     );
                   })}
-                </div>
-              </div>
+                </Box>
+              </Box>
 
-              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                <input
-                  type="checkbox"
-                  checked={!!settingsForm.autoCleanupEnabled}
-                  onChange={(event) => setSettingsForm((prev) => ({ ...prev, autoCleanupEnabled: event.target.checked }))}
-                  className="h-4 w-4"
-                />
-                Auto cleanup old scheduled backups
-              </label>
+              <FormControlLabel
+                sx={{ ml: 0, "& .MuiFormControlLabel-label": { fontSize: 12.25, color: "text.secondary" } }}
+                control={
+                  <Checkbox
+                    size="small"
+                    checked={!!settingsForm.autoCleanupEnabled}
+                    onChange={(event) => setSettingsForm((prev) => ({ ...prev, autoCleanupEnabled: event.target.checked }))}
+                  />
+                }
+                label="Auto cleanup old scheduled backups"
+              />
 
-              <button type="button" className="glass-btn glass-btn-success flex items-center" onClick={handleSaveSettings}>
+              <Button type="button" className="glass-btn glass-btn-success flex items-center" onClick={handleSaveSettings}>
                 <Save className="mr-1 h-4 w-4" /> Save Settings
-              </button>
-            </div>
-          </div>
+              </Button>
+            </Stack>
+          </Box>
 
-          <div className={`${cardClass} xl:col-span-1`}>
-            <div className="mb-4 flex items-center justify-between border-b dark:border-gray-700 pb-2">
-              <div>
-                <h2 className="text-base font-bold text-gray-800 dark:text-gray-100">Restore & Import</h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Restore a saved version or import backups from another system.</p>
-              </div>
-              <Shield className="h-5 w-5 text-emerald-500" />
-            </div>
+          <Box sx={cardSx}>
+            <Stack direction="row" sx={{ mb: 2, alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", pb: 1 }}>
+              <Box>
+                <Typography component="h2" sx={{ fontSize: 14, fontWeight: 700, color: "text.primary" }}>Restore & Import</Typography>
+                <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>Restore a saved version or import backups from another system.</Typography>
+              </Box>
+              <Box sx={{ color: "success.main", display: "inline-flex" }}>
+                <Shield className="h-5 w-5" />
+              </Box>
+            </Stack>
 
-            <div className="space-y-3">
-              <div className="rounded-md border border-amber-100 dark:border-amber-900 bg-amber-50 dark:bg-amber-900/30 p-3 text-xs text-amber-700 dark:text-amber-400">
-                Click the restore icon in Backup History to select a backup here, then press <span className="font-semibold">Run Restore</span>.
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Selected Backup</label>
-                <select
+            <Stack spacing={1.5}>
+              <Typography
+                sx={{
+                  borderRadius: "5.25px", border: "1px solid", borderColor: "warning.main",
+                  bgcolor: (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.2 : 0.08),
+                  p: 1.5, fontSize: 10.5, color: "warning.dark",
+                }}
+              >
+                Click the restore icon in Backup History to select a backup here, then press <Box component="span" sx={{ fontWeight: 600 }}>Run Restore</Box>.
+              </Typography>
+              <Box>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Selected Backup</Typography>
+                <TextField
+                  select
+                  size="small"
+                  fullWidth
+                  sx={fieldSx}
                   value={restoreForm.backupId}
                   onChange={(event) => {
                     const nextBackup = (overview.backups || []).find((row) => String(row.id) === String(event.target.value));
@@ -1351,34 +1430,27 @@ export default function BackupCenter() {
                       moduleNames: nextBackup?.backup_type === "module" ? nextBackup.module_names || [] : [],
                     }));
                   }}
-                  className={inputClass}
                 >
-                  <option value="">Select backup</option>
+                  <MenuItem value="">Select backup</MenuItem>
                   {(overview.backups || []).map((row) => (
-                    <option key={row.id} value={row.id}>
+                    <MenuItem key={row.id} value={row.id}>
                       #{row.id} {row.file_name || row.backup_type}
-                    </option>
+                    </MenuItem>
                   ))}
-                </select>
+                </TextField>
                 {restoreForm.backupId ? (
-                  <p className="mt-1 text-xs font-medium text-green-700 dark:text-green-400">Backup #{restoreForm.backupId} is selected for restore.</p>
+                  <Typography sx={{ mt: 0.5, fontSize: 10.5, fontWeight: 500, color: "success.main" }}>Backup #{restoreForm.backupId} is selected for restore.</Typography>
                 ) : null}
-              </div>
+              </Box>
 
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Restore Type</label>
-                <select
-                  value={restoreForm.restoreType}
-                  onChange={(event) => setRestoreForm((prev) => ({ ...prev, restoreType: event.target.value }))}
-                  className={inputClass}
-                >
+              <Box>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Restore Type</Typography>
+                <TextField select size="small" fullWidth sx={fieldSx} value={restoreForm.restoreType} onChange={(event) => setRestoreForm((prev) => ({ ...prev, restoreType: event.target.value }))}>
                   {restoreTypeOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
+                    <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
                   ))}
-                </select>
-              </div>
+                </TextField>
+              </Box>
 
               <MultiSelectInput
                 label="Restore Modules"
@@ -1394,149 +1466,149 @@ export default function BackupCenter() {
                 disabled={restoreModuleLocked}
               />
 
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Restore Into Store</label>
-                <select
-                  value={restoreForm.targetCompanyId}
-                  onChange={(event) => setRestoreForm((prev) => ({ ...prev, targetCompanyId: event.target.value }))}
-                  className={inputClass}
-                >
-                  <option value="">Original store(s) from backup</option>
+              <Box>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Restore Into Store</Typography>
+                <TextField select size="small" fullWidth sx={fieldSx} value={restoreForm.targetCompanyId} onChange={(event) => setRestoreForm((prev) => ({ ...prev, targetCompanyId: event.target.value }))}>
+                  <MenuItem value="">Original store(s) from backup</MenuItem>
                   {companyOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
+                    <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
                   ))}
-                </select>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  Leave this on <span className="font-medium">Original store(s) from backup</span> to restore rows back to the same store saved inside the backup file.
-                </p>
-              </div>
+                </TextField>
+                <Typography sx={{ mt: 0.5, fontSize: 10.5, color: "text.secondary" }}>
+                  Leave this on <Box component="span" sx={{ fontWeight: 500 }}>Original store(s) from backup</Box> to restore rows back to the same store saved inside the backup file.
+                </Typography>
+              </Box>
 
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
-                <div className="relative">
-                  <input
-                    type="password"
-                    value={restoreForm.password}
-                    onChange={(event) => setRestoreForm((prev) => ({ ...prev, password: event.target.value }))}
-                    className={`${inputClass} pr-10`}
-                    placeholder="Needed for encrypted backups"
-                  />
-                  <KeyRound className="pointer-events-none absolute right-3 top-2.5 h-4 w-4 text-gray-400 dark:text-gray-500" />
-                </div>
-              </div>
+              <Box>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Password</Typography>
+                <TextField
+                  type="password"
+                  size="small"
+                  fullWidth
+                  sx={fieldSx}
+                  value={restoreForm.password}
+                  onChange={(event) => setRestoreForm((prev) => ({ ...prev, password: event.target.value }))}
+                  placeholder="Needed for encrypted backups"
+                  slotProps={{
+                    input: {
+                      endAdornment: (
+                        <Box sx={{ color: "text.disabled", display: "inline-flex" }}>
+                          <KeyRound className="h-4 w-4" />
+                        </Box>
+                      ),
+                    },
+                  }}
+                />
+              </Box>
 
-              <button
+              <Button
                 type="button"
-                className="glass-btn glass-btn-danger flex items-center disabled:opacity-70"
+                className="glass-btn glass-btn-danger flex items-center"
                 onClick={handleRestore}
                 disabled={restoring}
               >
                 <RotateCcw className="mr-1 h-4 w-4" />
                 {restoring ? `Restoring… ${formatElapsed(restoreElapsedMs)}` : "Run Restore"}
-              </button>
+              </Button>
               {restoring ? (
-                <p className="text-xs text-amber-600 dark:text-amber-400">
+                <Typography sx={{ fontSize: 10.5, color: "warning.main" }}>
                   Please don&apos;t close this window or navigate away until the restore finishes. Larger restores can take a while.
-                </p>
+                </Typography>
               ) : null}
 
-              <div className="border-t dark:border-gray-700 pt-3 space-y-3">
-                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Import Backup File</label>
-                <input
+              <Stack spacing={1.5} sx={{ borderTop: 1, borderColor: "divider", pt: 1.5 }}>
+                <Typography component="label" sx={{ display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Import Backup File</Typography>
+                <Box
+                  component="input"
                   type="file"
                   ref={importFileInputRef}
                   onChange={(event) => setImportFile(event.target.files?.[0] || null)}
-                  className={inputClass}
+                  sx={{ fontSize: 12.25, color: "text.secondary" }}
                 />
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Import Password</label>
-                  <div className="relative">
-                    <input
-                      type="password"
-                      value={importPassword}
-                      onChange={(event) => setImportPassword(event.target.value)}
-                      className={`${inputClass} pr-10`}
-                      placeholder="Only required for encrypted backup files"
-                    />
-                    <KeyRound className="pointer-events-none absolute right-3 top-2.5 h-4 w-4 text-gray-400 dark:text-gray-500" />
-                  </div>
-                </div>
-                <button type="button" className="glass-btn glass-btn-primary flex items-center" onClick={handleImport}>
+                <Box>
+                  <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Import Password</Typography>
+                  <TextField
+                    type="password"
+                    size="small"
+                    fullWidth
+                    sx={fieldSx}
+                    value={importPassword}
+                    onChange={(event) => setImportPassword(event.target.value)}
+                    placeholder="Only required for encrypted backup files"
+                    slotProps={{
+                      input: {
+                        endAdornment: (
+                          <Box sx={{ color: "text.disabled", display: "inline-flex" }}>
+                            <KeyRound className="h-4 w-4" />
+                          </Box>
+                        ),
+                      },
+                    }}
+                  />
+                </Box>
+                <Button type="button" className="glass-btn glass-btn-primary flex items-center" onClick={handleImport}>
                   <Upload className="mr-1 h-4 w-4" /> Import Backup
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+                </Button>
+              </Stack>
+            </Stack>
+          </Box>
+        </Box>
 
-        <div className={cardClass}>
-          <div className="mb-4 flex items-center justify-between">
-            <div>
-              <h2 className="text-base font-bold text-gray-800 dark:text-gray-100">Backup History</h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Track created by, time, size, status, storage target, store and module scope.</p>
-            </div>
-            <button
+        <Box sx={cardSx}>
+          <Stack direction="row" sx={{ mb: 2, alignItems: "center", justifyContent: "space-between" }}>
+            <Box>
+              <Typography component="h2" sx={{ fontSize: 14, fontWeight: 700, color: "text.primary" }}>Backup History</Typography>
+              <Typography sx={{ fontSize: 12.25, color: "text.secondary" }}>Track created by, time, size, status, storage target, store and module scope.</Typography>
+            </Box>
+            <Button
               type="button"
-              className="glass-btn glass-btn-secondary flex items-center shrink-0"
+              className="glass-btn glass-btn-secondary flex items-center"
+              sx={{ flexShrink: 0 }}
               onClick={() => {
                 setBackupHistoryLimit(Math.max(filteredBackups.length, DEFAULT_HISTORY_LIMIT));
                 setBackupHistoryPage(1);
               }}
             >
               View All
-            </button>
-          </div>
+            </Button>
+          </Stack>
 
-          <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
-            <select
-              value={historyFilters.status}
-              onChange={(event) => setHistoryFilters((prev) => ({ ...prev, status: event.target.value }))}
-              className={inputClass}
-            >
-              <option value="">All Statuses</option>
-              <option value="success">Success</option>
-              <option value="failed">Failed</option>
-              <option value="running">Running</option>
-            </select>
-            <select
-              value={historyFilters.module}
-              onChange={(event) => setHistoryFilters((prev) => ({ ...prev, module: event.target.value }))}
-              className={inputClass}
-            >
-              <option value="">All Modules</option>
+          <Box sx={{ mb: 2, display: "grid", gap: 1.5, gridTemplateColumns: { xs: "1fr", md: "repeat(2, 1fr)", xl: "repeat(5, 1fr)" } }}>
+            <TextField select size="small" fullWidth sx={fieldSx} value={historyFilters.status} onChange={(event) => setHistoryFilters((prev) => ({ ...prev, status: event.target.value }))}>
+              <MenuItem value="">All Statuses</MenuItem>
+              <MenuItem value="success">Success</MenuItem>
+              <MenuItem value="failed">Failed</MenuItem>
+              <MenuItem value="running">Running</MenuItem>
+            </TextField>
+            <TextField select size="small" fullWidth sx={fieldSx} value={historyFilters.module} onChange={(event) => setHistoryFilters((prev) => ({ ...prev, module: event.target.value }))}>
+              <MenuItem value="">All Modules</MenuItem>
               {moduleOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
+                <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
               ))}
-            </select>
-            <select
-              value={historyFilters.branchCompanyId}
-              onChange={(event) => setHistoryFilters((prev) => ({ ...prev, branchCompanyId: event.target.value }))}
-              className={inputClass}
-            >
-              <option value="">All Stores</option>
+            </TextField>
+            <TextField select size="small" fullWidth sx={fieldSx} value={historyFilters.branchCompanyId} onChange={(event) => setHistoryFilters((prev) => ({ ...prev, branchCompanyId: event.target.value }))}>
+              <MenuItem value="">All Stores</MenuItem>
               {companyOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
+                <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
               ))}
-            </select>
-            <input
+            </TextField>
+            <TextField
               type="date"
+              size="small"
+              fullWidth
+              sx={fieldSx}
               value={historyFilters.dateFrom}
               onChange={(event) => setHistoryFilters((prev) => ({ ...prev, dateFrom: event.target.value }))}
-              className={inputClass}
             />
-            <input
+            <TextField
               type="date"
+              size="small"
+              fullWidth
+              sx={fieldSx}
               value={historyFilters.dateTo}
               onChange={(event) => setHistoryFilters((prev) => ({ ...prev, dateTo: event.target.value }))}
-              className={inputClass}
             />
-          </div>
+          </Box>
 
           <FilterableDataTable
             rows={filteredBackups}
@@ -1557,42 +1629,43 @@ export default function BackupCenter() {
               setBackupHistoryPage(1);
             }}
             renderActions={(row) => (
-              <div className="flex items-center gap-2">
-                <button type="button" className="glass-btn glass-btn-primary rounded p-1.5" onClick={() => handleDownload(row)} title="Download">
+              <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                <Button type="button" className="glass-btn glass-btn-primary rounded p-1.5" sx={{ minWidth: "auto" }} onClick={() => handleDownload(row)} title="Download">
                   <Download className="h-3.5 w-3.5" />
-                </button>
-                <button type="button" className="glass-btn glass-btn-secondary rounded p-1.5" onClick={() => handleDownloadLogs(row)} title="Logs">
+                </Button>
+                <Button type="button" className="glass-btn glass-btn-secondary rounded p-1.5" sx={{ minWidth: "auto" }} onClick={() => handleDownloadLogs(row)} title="Logs">
                   <Archive className="h-3.5 w-3.5" />
-                </button>
-                <button type="button" className="glass-btn glass-btn-success rounded p-1.5" onClick={() => selectBackupForRestore(row)} title="Restore">
+                </Button>
+                <Button type="button" className="glass-btn glass-btn-success rounded p-1.5" sx={{ minWidth: "auto" }} onClick={() => selectBackupForRestore(row)} title="Restore">
                   <RotateCcw className="h-3.5 w-3.5" />
-                </button>
-                <button type="button" className="glass-btn glass-btn-danger rounded p-1.5" onClick={() => handleDeleteBackup(row)} title="Delete">
+                </Button>
+                <Button type="button" className="glass-btn glass-btn-danger rounded p-1.5" sx={{ minWidth: "auto" }} onClick={() => handleDeleteBackup(row)} title="Delete">
                   <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              </div>
+                </Button>
+              </Stack>
             )}
             searchButtonClassName="glass-btn glass-btn-primary flex items-center disabled:opacity-50"
           />
-        </div>
+        </Box>
 
-        <div className={cardClass}>
-          <div className="mb-4 flex items-center justify-between">
-            <div>
-              <h2 className="text-base font-bold text-gray-800 dark:text-gray-100">Restore History</h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Audit trail of restore operations, status and affected rows.</p>
-            </div>
-            <button
+        <Box sx={cardSx}>
+          <Stack direction="row" sx={{ mb: 2, alignItems: "center", justifyContent: "space-between" }}>
+            <Box>
+              <Typography component="h2" sx={{ fontSize: 14, fontWeight: 700, color: "text.primary" }}>Restore History</Typography>
+              <Typography sx={{ fontSize: 12.25, color: "text.secondary" }}>Audit trail of restore operations, status and affected rows.</Typography>
+            </Box>
+            <Button
               type="button"
-              className="glass-btn glass-btn-secondary flex items-center shrink-0"
+              className="glass-btn glass-btn-secondary flex items-center"
+              sx={{ flexShrink: 0 }}
               onClick={() => {
                 setRestoreHistoryLimit(Math.max((overview.restores || []).length, DEFAULT_HISTORY_LIMIT));
                 setRestoreHistoryPage(1);
               }}
             >
               View All
-            </button>
-          </div>
+            </Button>
+          </Stack>
           <FilterableDataTable
             rows={overview.restores || []}
             columns={restoreColumns}
@@ -1613,8 +1686,8 @@ export default function BackupCenter() {
             }}
             searchButtonClassName="glass-btn glass-btn-primary flex items-center disabled:opacity-50"
           />
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Stack>
+    </Box>
   );
 }

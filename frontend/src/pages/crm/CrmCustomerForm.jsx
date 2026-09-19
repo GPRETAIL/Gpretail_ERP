@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { ArrowLeft, Save } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
+import { Box, Button, Checkbox, FormControlLabel, IconButton, MenuItem, Stack, TextField, Typography } from "@mui/material";
 import api from "../../api/axios";
 
 const CUSTOMER_TYPES = [
@@ -21,57 +22,51 @@ const SUPPLY_TYPES = [
   "Deemed Export",
 ];
 
+const fieldLabelSx = { width: "50%", fontSize: 12.25, fontWeight: 500, color: "text.secondary", flexShrink: 0 };
+const fieldSx = { "& .MuiInputBase-input": { fontSize: 12.25 } };
+
 const TextInput = ({ label, name, required = false, value, onChange, placeholder = "", type = "text", disabled = false }) => (
-  <div className="flex items-center w-full min-w-0">
-    <label className="w-1/2 text-sm font-medium text-gray-700 dark:text-gray-300 shrink-0">
-      {required && <span className="text-red-500 dark:text-red-400 mr-1">*</span>}
+  <Stack direction="row" sx={{ alignItems: "center", width: "100%", minWidth: 0 }}>
+    <Typography component="label" sx={fieldLabelSx}>
+      {required && <Box component="span" sx={{ mr: 0.5, color: "error.main" }}>*</Box>}
       {label}
-    </label>
-    <input
+    </Typography>
+    <TextField
       type={type}
       name={name}
       value={value}
       onChange={onChange}
       placeholder={placeholder}
       disabled={disabled}
-      className="flex-1 min-w-0 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm p-1.5 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ml-3 disabled:bg-gray-100 dark:disabled:bg-gray-800"
+      size="small"
+      fullWidth
+      sx={{ ml: 1.5, ...fieldSx }}
     />
-  </div>
+  </Stack>
 );
 
 const SelectInput = ({ label, name, required = false, options = [], value, onChange }) => (
-  <div className="flex items-center w-full min-w-0">
-    <label className="w-1/2 text-sm font-medium text-gray-700 dark:text-gray-300 shrink-0">
-      {required && <span className="text-red-500 dark:text-red-400 mr-1">*</span>}
+  <Stack direction="row" sx={{ alignItems: "center", width: "100%", minWidth: 0 }}>
+    <Typography component="label" sx={fieldLabelSx}>
+      {required && <Box component="span" sx={{ mr: 0.5, color: "error.main" }}>*</Box>}
       {label}
-    </label>
-    <select
-      name={name}
-      value={value}
-      onChange={onChange}
-      className="flex-1 min-w-0 border border-gray-300 dark:border-gray-600 rounded-sm p-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ml-3"
-    >
-      <option value="">Select</option>
+    </Typography>
+    <TextField select name={name} value={value} onChange={onChange} size="small" fullWidth sx={{ ml: 1.5, ...fieldSx }}>
+      <MenuItem value="">Select</MenuItem>
       {options.map((o, i) => (
-        <option key={i} value={o.value ?? o.label}>
+        <MenuItem key={i} value={o.value ?? o.label}>
           {o.label}
-        </option>
+        </MenuItem>
       ))}
-    </select>
-  </div>
+    </TextField>
+  </Stack>
 );
 
 const CheckboxInput = ({ label, name, checked, onChange }) => (
-  <div className="flex items-center w-full min-w-0">
-    <label className="w-1/2 text-sm font-medium text-gray-700 dark:text-gray-300 shrink-0">{label}</label>
-    <input
-      type="checkbox"
-      name={name}
-      checked={checked}
-      onChange={onChange}
-      className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-blue-500 ml-3"
-    />
-  </div>
+  <Stack direction="row" sx={{ alignItems: "center", width: "100%", minWidth: 0 }}>
+    <Typography component="label" sx={fieldLabelSx}>{label}</Typography>
+    <Checkbox name={name} checked={checked} onChange={onChange} size="small" sx={{ ml: 1.5, p: 0 }} />
+  </Stack>
 );
 
 const blankForm = {
@@ -246,49 +241,41 @@ const CrmCustomerForm = () => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 master-responsive">
-      <div className="flex justify-between items-center px-4 py-2 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm shrink-0">
-        <div className="flex items-center space-x-2">
-          <button className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200" onClick={() => navigate(-1)}>
+    <Box className="master-responsive" sx={{ display: "flex", flexDirection: "column", height: "100%", bgcolor: "background.default", color: "text.primary" }}>
+      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1, flexShrink: 0 }}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+          <IconButton size="small" onClick={() => navigate(-1)} sx={{ color: "text.secondary" }}>
             <ArrowLeft className="w-4 h-4" />
-          </button>
-          <h1 className="text-sm font-semibold flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => navigate("/crm")}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
-            >
+          </IconButton>
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: 13, fontWeight: 600 }}>
+            <Button type="button" variant="text" onClick={() => navigate("/crm")} sx={{ minWidth: "auto", p: 0, fontSize: 13, fontWeight: 600 }}>
               CRM
-            </button>
-            <span className="text-gray-500 dark:text-gray-400">/</span>
-            <button
-              type="button"
-              onClick={() => navigate("/crm/customer")}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
-            >
+            </Button>
+            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
+            <Button type="button" variant="text" onClick={() => navigate("/crm/customer")} sx={{ minWidth: "auto", p: 0, fontSize: 13, fontWeight: 600 }}>
               Customer
-            </button>
-            <span className="text-gray-500 dark:text-gray-400">/</span>
-            <span>{isEdit ? "Edit" : "New"}</span>
-          </h1>
-        </div>
-        <div className="flex items-center space-x-3 text-xs font-medium text-gray-700 dark:text-gray-300">
-          <button
-            className="glass-btn glass-btn-success flex items-center disabled:opacity-50"
+            </Button>
+            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
+            <Box component="span">{isEdit ? "Edit" : "New"}</Box>
+          </Stack>
+        </Stack>
+        <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>
+          <Button
+            className="glass-btn glass-btn-success flex items-center"
             onClick={handleSave}
             disabled={saving || loadingRecord}
           >
             <Save className="w-3 h-3 mr-1" /> {saving ? "Saving..." : "Save"}
-          </button>
-        </div>
-      </div>
+          </Button>
+        </Stack>
+      </Stack>
 
-      <div className="flex-1 p-4 min-h-0">
-        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg border border-gray-200 dark:border-gray-700 w-full h-full flex flex-col min-h-0 overflow-auto px-5 py-4">
+      <Box sx={{ flex: 1, p: 2, minHeight: 0 }}>
+        <Stack sx={{ bgcolor: "background.paper", boxShadow: 3, borderRadius: "7px", border: "1px solid", borderColor: "divider", width: "100%", height: "100%", minHeight: 0, overflow: "auto", px: 2.5, py: 2 }}>
           {loadingRecord ? (
-            <div className="text-center py-8 text-gray-500 dark:text-gray-400">Loading...</div>
+            <Typography sx={{ textAlign: "center", py: 4, color: "text.secondary" }}>Loading...</Typography>
           ) : (
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-x-8 gap-y-3 w-full">
+            <Box sx={{ display: "grid", gap: "12px 32px", gridTemplateColumns: { xl: "repeat(3, 1fr)" }, width: "100%" }}>
               {/* Row 1 */}
               <SelectInput
                 label="Customer Type"
@@ -329,7 +316,7 @@ const CrmCustomerForm = () => {
               {formData.married ? (
                 <TextInput label="Marriage Date" name="marriageDate" type="date" value={formData.marriageDate} onChange={handleChange} />
               ) : (
-                <div />
+                <Box />
               )}
 
               {/* Row 5 */}
@@ -352,16 +339,16 @@ const CrmCustomerForm = () => {
               <TextInput label="TAN / PAN" name="tanPan" value={formData.tanPan} onChange={handleChange} />
               <CheckboxInput label="Support Credit" name="supportCredit" checked={formData.supportCredit} onChange={handleChange} />
               {formData.supportCredit ? (
-                <div className="flex items-center gap-2">
-                  <div className="flex-1">
+                <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                  <Box sx={{ flex: 1 }}>
                     <TextInput label="Days" name="creditDays" value={formData.creditDays} onChange={handleChange} />
-                  </div>
-                  <div className="flex-1">
+                  </Box>
+                  <Box sx={{ flex: 1 }}>
                     <TextInput label="Amount" name="creditAmount" value={formData.creditAmount} onChange={handleChange} />
-                  </div>
-                </div>
+                  </Box>
+                </Stack>
               ) : (
-                <div />
+                <Box />
               )}
 
               {/* Row 8 - Address */}
@@ -383,12 +370,11 @@ const CrmCustomerForm = () => {
               <TextInput label="Account No / IFSC" name="accountNoIfsc" value={formData.accountNoIfsc} onChange={handleChange} />
               <CheckboxInput label="Disable Loyalty" name="disableLoyalty" checked={formData.disableLoyalty} onChange={handleChange} />
               <CheckboxInput label="Active" name="active" checked={formData.active} onChange={handleChange} />
-            </div>
+            </Box>
           )}
-        </div>
-      </div>
-
-    </div>
+        </Stack>
+      </Box>
+    </Box>
   );
 };
 

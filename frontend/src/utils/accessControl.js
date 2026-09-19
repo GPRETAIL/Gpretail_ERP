@@ -169,8 +169,11 @@ export const canAccessPath = (pathname, user) => {
   if (path.startsWith("/user-access")) return canAccessUserAccess(user);
 
   if (path.startsWith("/settings/company")) return cap.isSuperAdmin;
-  if (path.startsWith("/settings/branding")) return cap.isSuperAdmin;
-  if (path.startsWith("/settings/configure-local-server")) return cap.isAdmin;
+  // /settings/branding redirects to /settings/themes (RedirectPreservingQuery in
+  // protectedLayoutRoutes.jsx) -- both must gate identically, or an old bookmarked link 302s into
+  // a second bounce once ProtectedRoute re-checks the destination path.
+  if (path.startsWith("/settings/branding") || path.startsWith("/settings/themes")) return cap.isSuperAdmin;
+  if (path.startsWith("/settings/configure-local-server")) return cap.canSettings;
   if (path.startsWith("/settings")) return cap.canSettings;
   if (cap.canAll) return true;
 
@@ -236,8 +239,7 @@ export const getVisibleNavItems = (items, user) => {
       const subItems = (item.subItems || []).filter((subItem) => {
         const subPath = String(subItem.path || "").toLowerCase();
         if (subPath === "/settings/company") return cap.isSuperAdmin;
-        if (subPath === "/settings/branding") return cap.isSuperAdmin;
-        if (subPath === "/settings/configure-local-server") return cap.isAdmin;
+        if (subPath === "/settings/themes") return cap.isSuperAdmin;
         return cap.canSettings;
       });
 

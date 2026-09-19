@@ -3,6 +3,8 @@ import { useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, LogOut, Pencil, PlusCircle, Save, Search, Store, Trash2 } from "lucide-react";
 import { toast } from "react-toastify";
+import { alpha } from "@mui/material/styles";
+import { Box, Button, Checkbox, FormControlLabel, IconButton, Stack, Typography } from "@mui/material";
 import api from "../../api/axios";
 import FilterableDataTable from "../../components/FilterableDataTable";
 import PermissionMatrix from "../../components/PermissionMatrix";
@@ -597,74 +599,74 @@ const UserAccess = () => {
 
   if (!canManage) {
     return (
-      <div className="p-4 md:p-6">
-        <h1 className="text-xl font-bold text-gray-800 dark:text-gray-100">User and Access</h1>
-        <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">You do not have permission to view this page.</p>
-      </div>
+      <Box sx={{ p: { xs: 2, md: 3 } }}>
+        <Typography component="h1" sx={{ fontSize: 17.5, fontWeight: 700, color: "text.primary" }}>User and Access</Typography>
+        <Typography sx={{ mt: 1, fontSize: 12.25, color: "text.secondary" }}>You do not have permission to view this page.</Typography>
+      </Box>
     );
   }
 
   return (
-    <div className="master-responsive flex h-full flex-col bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100">
-      <div className="flex items-center justify-between border-b dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2 shadow-sm">
-        <div className="flex items-center space-x-2">
-          <button onClick={handleBackClick} className="text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100" type="button" aria-label="Back">
+    <Box className="master-responsive" sx={{ display: "flex", height: "100%", flexDirection: "column", bgcolor: "background.default", color: "text.primary" }}>
+      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", bgcolor: "background.paper", px: 2, py: 1, boxShadow: 1 }}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+          <IconButton size="small" onClick={handleBackClick} sx={{ color: "text.secondary" }} aria-label="Back">
             <ArrowLeft className="h-4 w-4" />
-          </button>
-          <h1 className="flex items-center gap-1 text-sm font-semibold">
-            <button type="button" onClick={() => navigate("/user-access")} className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline">
+          </IconButton>
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: 13, fontWeight: 600 }}>
+            <Button type="button" variant="text" onClick={() => navigate("/user-access")} sx={{ minWidth: "auto", p: 0, fontSize: 13, fontWeight: 600 }}>
               User Access
-            </button>
-            <span className="text-gray-500 dark:text-gray-400">/</span>
-            <span>{entityTitle}</span>
-          </h1>
-        </div>
+            </Button>
+            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
+            <Box component="span">{entityTitle}</Box>
+          </Stack>
+        </Stack>
 
-        <div className="flex items-center space-x-3 text-sm font-medium text-gray-700 dark:text-gray-300">
-          <button className="topbar-action-btn topbar-action-new" onClick={handleNew} type="button">
+        <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>
+          <Button className="topbar-action-btn topbar-action-new" onClick={handleNew} type="button">
             <PlusCircle className="mr-1 h-4 w-4" /> New
-          </button>
-          <span>|</span>
+          </Button>
+          <Box component="span">|</Box>
           {!showSearchPage ? (
             <>
-              <button
+              <Button
                 type="button"
-                className="glass-btn glass-btn-success flex items-center disabled:opacity-50"
+                className="glass-btn glass-btn-success flex items-center"
                 onClick={activeTab === "user" ? handleSaveUser : handleSaveGroup}
                 disabled={saving}
               >
                 <Save className="mr-1 h-4 w-4" /> {saving ? "Saving..." : "Save"}
-              </button>
-              <span>|</span>
+              </Button>
+              <Box component="span">|</Box>
             </>
           ) : null}
-          <button type="button" className="glass-btn glass-btn-primary flex items-center" onClick={handleSearchClick}>
+          <Button type="button" className="glass-btn glass-btn-primary flex items-center" onClick={handleSearchClick}>
             <Search className="mr-1 h-4 w-4" /> Search
-          </button>
-        </div>
-      </div>
+          </Button>
+        </Stack>
+      </Stack>
 
-      <div className="min-h-0 flex-1 p-4">
+      <Box sx={{ minHeight: 0, flex: 1, p: 2 }}>
         {showSearchPage ? (
-          <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-lg">
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <h2 className="text-base font-bold text-gray-800 dark:text-gray-100">{listTitle}</h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+          <Box sx={{ borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", boxShadow: 3, p: 2 }}>
+            <Stack direction="row" sx={{ mb: 2, alignItems: "center", justifyContent: "space-between" }}>
+              <Box>
+                <Typography component="h2" sx={{ fontSize: 14, fontWeight: 700, color: "text.primary" }}>{listTitle}</Typography>
+                <Typography sx={{ fontSize: 12.25, color: "text.secondary" }}>
                   {activeTab === "user" ? "Manage user accounts and assigned company access." : "Manage reusable page-access groups."}
-                </p>
-              </div>
+                </Typography>
+              </Box>
               {isSuperAdmin ? (
-                <button
+                <Button
                   type="button"
                   onClick={() => setShowStoreGroupsDrawer(true)}
                   className="glass-btn glass-btn-secondary flex items-center"
                   title="Group your stores together to assign store access in bulk"
                 >
                   <Store className="mr-1 h-4 w-4" /> Store Groups (which stores)
-                </button>
+                </Button>
               ) : null}
-            </div>
+            </Stack>
 
             <FilterableDataTable
               rows={activeTab === "user" ? users : groups}
@@ -675,45 +677,48 @@ const UserAccess = () => {
               showExport={false}
               tablePreferenceKey={activeTab === "user" ? "user-access-users" : "user-access-groups"}
               renderActions={(row) => (
-                <div className="flex items-center gap-2">
-                  <button
+                <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                  <Button
                     type="button"
                     onClick={() => (activeTab === "user" ? handleEditUser(row) : handleEditGroup(row))}
                     className="glass-btn glass-btn-primary rounded p-1.5"
                     title="Edit"
+                    sx={{ minWidth: "auto" }}
                   >
                     <Pencil className="h-3.5 w-3.5" />
-                  </button>
+                  </Button>
                   {activeTab === "user" && String(row.role || "").toLowerCase() === "admin" ? null : (
-                    <button
+                    <Button
                       type="button"
                       onClick={() => (activeTab === "user" ? handleDeleteUser(row) : handleDeleteGroup(row))}
                       className="glass-btn glass-btn-danger rounded p-1.5"
                       title="Delete"
+                      sx={{ minWidth: "auto" }}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
-                    </button>
+                    </Button>
                   )}
                   {activeTab === "user" && row.login_status === "logged_in" ? (
-                    <button
+                    <Button
                       type="button"
                       onClick={() => handleForceLogout(row)}
                       className="glass-btn glass-btn-secondary rounded p-1.5"
                       title="Logout"
+                      sx={{ minWidth: "auto" }}
                     >
                       <LogOut className="h-3.5 w-3.5" />
-                    </button>
+                    </Button>
                   ) : null}
-                </div>
+                </Stack>
               )}
               searchButtonClassName="glass-btn glass-btn-primary flex items-center disabled:opacity-50"
             />
-          </div>
+          </Box>
         ) : (
-          <div className="h-full overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-lg">
-            <div className="grid h-full min-h-0 grid-cols-12 gap-6">
-              <div className="col-span-12 min-h-0 space-y-4 overflow-auto pr-4 lg:col-span-4">
-                <h2 className="border-b dark:border-gray-700 pb-2 text-base font-bold text-gray-800 dark:text-gray-100">{activeTab === "user" ? (editingUserId ? "Edit User" : "Create User") : editingGroupId ? "Edit Group" : "Create Group"}</h2>
+          <Box sx={{ height: "100%", overflow: "hidden", borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", boxShadow: 3, p: 2 }}>
+            <Box sx={{ display: "grid", height: "100%", minHeight: 0, gridTemplateColumns: "repeat(12, 1fr)", gap: 3 }}>
+              <Stack spacing={2} sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, minHeight: 0, overflow: "auto", pr: 2 }}>
+                <Typography component="h2" sx={{ borderBottom: 1, borderColor: "divider", pb: 1, fontSize: 14, fontWeight: 700, color: "text.primary" }}>{activeTab === "user" ? (editingUserId ? "Edit User" : "Create User") : editingGroupId ? "Edit Group" : "Create Group"}</Typography>
 
                 {activeTab === "user" ? (
                   <>
@@ -735,43 +740,52 @@ const UserAccess = () => {
                           helperText="Use Ctrl/Cmd to select multiple companies."
                         />
                         {selectedStoresDifferInModules ? (
-                          <p className="ml-[33%] rounded-sm border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/30 px-2 py-1.5 text-xs text-amber-700 dark:text-amber-400">
+                          <Typography
+                            sx={{
+                              ml: "33%", borderRadius: "4px", border: "1px solid", borderColor: "warning.main",
+                              bgcolor: (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.2 : 0.08),
+                              px: 1, py: 0.75, fontSize: 10.5, color: "warning.dark",
+                            }}
+                          >
                             These stores don’t offer the same modules — the grid below shows only modules common to all of
                             them. To give different access per store, create a separate user for each store.
-                          </p>
+                          </Typography>
                         ) : null}
                       </>
                     ) : (
-                      <div className="flex items-center">
-                        <label className="w-1/3 text-sm font-medium text-gray-700 dark:text-gray-300">Company</label>
-                        <div className="ml-3 flex-1 rounded-sm border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 dark:text-gray-100 p-1.5 text-sm">{selectedCompanyName}</div>
-                      </div>
+                      <Stack direction="row" sx={{ alignItems: "center" }}>
+                        <Typography component="label" sx={{ width: "33.333%", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Company</Typography>
+                        <Box sx={{ ml: 1.5, flex: 1, borderRadius: "4px", border: "1px solid", borderColor: "divider", bgcolor: "action.hover", color: "text.primary", p: 1, fontSize: 12.25 }}>{selectedCompanyName}</Box>
+                      </Stack>
                     )}
 
                     {editingStoreAdmin ? (
-                      <div className="col-span-12 space-y-2 rounded-md border border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-900/30 p-3">
-                        <p className="text-sm font-semibold text-sky-900 dark:text-sky-100">
+                      <Stack spacing={1} sx={{ gridColumn: "span 12", borderRadius: "5.25px", border: "1px solid", borderColor: "info.main", bgcolor: (theme) => alpha(theme.palette.info.main, theme.palette.mode === "dark" ? 0.2 : 0.08), p: 1.5 }}>
+                        <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "info.dark" }}>
                           Store admin — {userForm.name || userForm.email}
-                        </p>
-                        <p className="text-xs text-sky-800 dark:text-sky-200">
+                        </Typography>
+                        <Typography sx={{ fontSize: 10.5, color: "info.dark" }}>
                           This account was created with its store, so its name, sign-in details and store
                           cannot be changed here. It is already limited to this store and to the modules the
                           store subscribes to — below you choose what it may do inside them.
-                        </p>
-                        <label className="flex items-center gap-2 pt-1 text-sm font-medium text-sky-900 dark:text-sky-100">
-                          <input
-                            type="checkbox"
-                            checked={storeAdminFullAccess}
-                            onChange={(event) => toggleStoreAdminFullAccess(event.target.checked)}
-                          />
-                          Full access to this store
-                        </label>
-                        <p className="text-xs text-sky-700 dark:text-sky-300">
+                        </Typography>
+                        <FormControlLabel
+                          sx={{ ml: 0, pt: 0.5, "& .MuiFormControlLabel-label": { fontSize: 12.25, fontWeight: 600, color: "info.dark" } }}
+                          control={
+                            <Checkbox
+                              size="small"
+                              checked={storeAdminFullAccess}
+                              onChange={(event) => toggleStoreAdminFullAccess(event.target.checked)}
+                            />
+                          }
+                          label="Full access to this store"
+                        />
+                        <Typography sx={{ fontSize: 10.5, color: "info.dark" }}>
                           {storeAdminFullAccess
                             ? "Covers every page, including ones added in future updates. Uncheck to choose page by page."
                             : "Set page by page below. Re-check to go back to covering every page automatically."}
-                        </p>
-                      </div>
+                        </Typography>
+                      </Stack>
                     ) : (
                       <>
                         <TextInput label="Name" value={userForm.name} onChange={(event) => setUserForm((prev) => ({ ...prev, name: event.target.value }))} />
@@ -825,9 +839,9 @@ const UserAccess = () => {
                 ) : (
                   <TextInput label="Name" required value={groupForm.name} onChange={(event) => setGroupForm((prev) => ({ ...prev, name: event.target.value }))} />
                 )}
-              </div>
+              </Stack>
 
-              <div className="col-span-12 min-h-0 border-gray-100 dark:border-gray-700 lg:col-span-8 lg:border-l lg:pl-4">
+              <Box sx={{ gridColumn: { xs: "span 12", lg: "span 8" }, minHeight: 0, borderColor: "divider", borderLeft: { lg: 1 }, pl: { lg: 2 } }}>
                 <PermissionMatrix
                   permissions={
                     activeTab === "user"
@@ -839,11 +853,11 @@ const UserAccess = () => {
                   onToggleAction={activeTab === "user" ? updateUserPermission : updateGroupPermission}
                   onToggleSectionAction={activeTab === "user" ? updateUserSectionPermission : updateGroupSectionPermission}
                 />
-              </div>
-            </div>
-          </div>
+              </Box>
+            </Box>
+          </Box>
         )}
-      </div>
+      </Box>
 
       {isSuperAdmin ? (
         <StoreGroupsDrawer
@@ -857,7 +871,7 @@ const UserAccess = () => {
           onDelete={handleDeleteStoreGroup}
         />
       ) : null}
-    </div>
+    </Box>
   );
 };
 

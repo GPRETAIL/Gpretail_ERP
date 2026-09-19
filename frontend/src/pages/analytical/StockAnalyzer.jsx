@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { MagnifyingGlassIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { alpha } from "@mui/material/styles";
+import { Box, Button, IconButton, Stack, TextField, Typography } from "@mui/material";
 import api from "../../api/axios";
 import StoreFilterSelect from "../../components/StoreFilterSelect";
 import FilterableDataTable from "../../components/FilterableDataTable";
@@ -72,14 +74,13 @@ const fmtInt = (val) => {
   return n.toLocaleString("en-IN");
 };
 
-const numericCell = (val, extraClass = "") => (
-  <span className={`block text-right tabular-nums ${extraClass}`}>{val}</span>
+const numericCell = (val, sx = {}) => (
+  <Box component="span" sx={{ display: "block", textAlign: "right", fontVariantNumeric: "tabular-nums", ...sx }}>{val}</Box>
 );
 
 const percentCell = (val) => {
   const n = Number(val);
-  const cls = n >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400";
-  return numericCell(`${fmt(val)}%`, `font-medium ${cls}`);
+  return numericCell(`${fmt(val)}%`, { fontWeight: 500, color: n >= 0 ? "success.main" : "error.main" });
 };
 
 const StockAnalyzer = () => {
@@ -137,104 +138,123 @@ const StockAnalyzer = () => {
   ], [activeLabel]);
 
   return (
-    <div className="h-full flex flex-col bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100">
-      <div className="flex justify-between items-center px-4 py-2 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={handleBackClick}
-            className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
-            aria-label="Back to analytical"
-          >
+    <Box sx={{ height: "100%", display: "flex", flexDirection: "column", bgcolor: "background.default", color: "text.primary" }}>
+      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+          <IconButton size="small" onClick={handleBackClick} sx={{ color: "text.secondary" }} aria-label="Back to analytical">
             <ArrowLeft className="w-4 h-4" />
-          </button>
-          <h1 className="text-sm font-semibold flex items-center gap-1">
-            <button
-              type="button"
-              onClick={handleBackClick}
-              className="text-blue-600 hover:text-blue-700 hover:underline"
-            >
+          </IconButton>
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: 13, fontWeight: 600 }}>
+            <Button type="button" variant="text" onClick={handleBackClick} sx={{ minWidth: "auto", p: 0, fontSize: 13, fontWeight: 600 }}>
               Analytical
-            </button>
-            <span className="text-gray-500 dark:text-gray-400">/</span>
-            <span>360° Stock Analyzer</span>
-          </h1>
-        </div>
-      </div>
+            </Button>
+            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
+            <Box component="span">360° Stock Analyzer</Box>
+          </Stack>
+        </Stack>
+      </Stack>
 
-      <div className="flex-1 min-h-0 flex gap-4 p-4">
+      <Stack direction="row" spacing={2} sx={{ flex: 1, minHeight: 0, p: 2 }}>
         {/* ─── LEFT PANEL: Field selector ──────────────────────────────────── */}
-        <div className="w-64 flex-shrink-0 flex flex-col min-h-0 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
-          <div className="px-3 py-2.5 border-b border-gray-200 dark:border-gray-700">
-            <div className="mb-2">
+        <Stack
+          sx={{
+            width: 224, flexShrink: 0, minHeight: 0, bgcolor: "background.paper", borderRadius: "7px",
+            border: "1px solid", borderColor: "divider", boxShadow: 1,
+          }}
+        >
+          <Box sx={{ px: 1.5, py: 1.25, borderBottom: 1, borderColor: "divider" }}>
+            <Box sx={{ mb: 1 }}>
               <StoreFilterSelect value={storeFilter} onChange={setStoreFilter} />
-            </div>
-            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">
+            </Box>
+            <Typography component="h3" sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary", mb: 1 }}>
               Analysis Fields
-            </h3>
-            <div className="relative">
-              <MagnifyingGlassIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                value={fieldSearch}
-                onChange={(e) => setFieldSearch(e.target.value)}
-                placeholder="Search fields..."
-                className="w-full pl-8 pr-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-md
-                  bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200
-                  placeholder-gray-400 dark:placeholder-gray-500
-                  focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              />
-            </div>
-          </div>
-          <div className="flex-1 min-h-0 overflow-y-auto py-1">
+            </Typography>
+            <TextField
+              type="text"
+              size="small"
+              fullWidth
+              value={fieldSearch}
+              onChange={(e) => setFieldSearch(e.target.value)}
+              placeholder="Search fields..."
+              sx={{ "& .MuiInputBase-input": { fontSize: 10.5 } }}
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <Box sx={{ color: "text.disabled", display: "inline-flex", mr: 0.5 }}>
+                      <MagnifyingGlassIcon className="w-4 h-4" />
+                    </Box>
+                  ),
+                },
+              }}
+            />
+          </Box>
+          <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", py: 0.5 }}>
             {visibleFields.map((f) => (
-              <button
+              <Box
+                component="button"
                 key={f.key}
                 onClick={() => handleFieldClick(f.key)}
-                className={`w-full text-left px-3 py-1.5 text-xs font-medium transition-colors
-                  ${
-                    activeField === f.key
-                      ? "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border-l-2 border-indigo-500"
-                      : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 border-l-2 border-transparent"
-                  }`}
+                sx={{
+                  display: "block", width: "100%", textAlign: "left", px: 1.5, py: 0.75, fontSize: 10.5, fontWeight: 500,
+                  border: 0, borderLeft: "2px solid", cursor: "pointer", fontFamily: "inherit", bgcolor: "transparent",
+                  ...(activeField === f.key
+                    ? { borderLeftColor: "#6366f1", color: "#6366f1", bgcolor: (theme) => alpha("#6366f1", theme.palette.mode === "dark" ? 0.2 : 0.08) }
+                    : { borderLeftColor: "transparent", color: "text.secondary", "&:hover": { bgcolor: "action.hover" } }),
+                }}
               >
                 {f.label}
-              </button>
+              </Box>
             ))}
-          </div>
-        </div>
+          </Box>
+        </Stack>
 
         {/* ─── RIGHT PANEL: Grid ───────────────────────────────────────────── */}
-        <div className="flex-1 min-w-0 flex flex-col min-h-0 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm px-3 pt-3 pb-0.5">
-          <div className="flex items-center justify-between mb-1.5">
-            <div>
-              <h2 className="text-base font-bold">360° Stock Analyzer</h2>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                Grouped by: <span className="font-medium text-indigo-600 dark:text-indigo-400">{activeLabel}</span>
+        <Stack
+          sx={{
+            flex: 1, minWidth: 0, minHeight: 0, bgcolor: "background.paper", borderRadius: "7px",
+            border: "1px solid", borderColor: "divider", boxShadow: 1, px: 1.5, pt: 1.5, pb: 0.25,
+          }}
+        >
+          <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", mb: 0.75 }}>
+            <Box>
+              <Typography component="h2" sx={{ fontSize: 14, fontWeight: 700, color: "text.primary" }}>360° Stock Analyzer</Typography>
+              <Typography sx={{ fontSize: 10.5, color: "text.secondary", mt: 0.25 }}>
+                Grouped by: <Box component="span" sx={{ fontWeight: 500, color: "#6366f1" }}>{activeLabel}</Box>
                 {" "}— {data.length} record{data.length !== 1 ? "s" : ""}
-              </p>
-            </div>
-            <button
+              </Typography>
+            </Box>
+            <Button
               onClick={() => fetchData(activeField)}
               disabled={loading}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md
-                bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400
-                hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors disabled:opacity-50"
+              startIcon={<ArrowPathIcon className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />}
+              sx={{
+                fontSize: 12.25, fontWeight: 500, borderRadius: "5.25px", color: "#6366f1",
+                bgcolor: (theme) => alpha("#6366f1", theme.palette.mode === "dark" ? 0.2 : 0.08),
+                "&:hover": { bgcolor: (theme) => alpha("#6366f1", theme.palette.mode === "dark" ? 0.3 : 0.16) },
+              }}
             >
-              <ArrowPathIcon className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
               Refresh
-            </button>
-          </div>
+            </Button>
+          </Stack>
 
           {totals && !notice && (
-            <div className="mb-1.5 flex flex-wrap gap-x-6 gap-y-1 px-3 py-2 text-xs bg-gray-50 dark:bg-gray-700/40 border border-gray-200 dark:border-gray-700 rounded-md font-semibold text-gray-700 dark:text-gray-200">
-              <span>TOTAL</span>
-              <span>Qty: {fmtInt(totals.qty)}</span>
-              <span>Cost Price: {fmt(totals.cost_price)}</span>
-              <span>Sale Price: {fmt(totals.sale_price)}</span>
-              <span className="text-green-700 dark:text-green-400">Margin: {fmt(totals.margin_perc)}%</span>
-              <span className="text-green-700 dark:text-green-400">Mark Up: {fmt(totals.markup_perc)}%</span>
-              <span className="text-orange-700 dark:text-orange-400">Mark DN: {fmt(totals.markdown_perc)}%</span>
-            </div>
+            <Stack
+              direction="row"
+              spacing={3}
+              sx={{
+                mb: 0.75, flexWrap: "wrap", rowGap: 0.5, px: 1.5, py: 1, fontSize: 10.5,
+                bgcolor: "action.hover", border: "1px solid", borderColor: "divider", borderRadius: "5.25px",
+                fontWeight: 600, color: "text.primary",
+              }}
+            >
+              <Box component="span">TOTAL</Box>
+              <Box component="span">Qty: {fmtInt(totals.qty)}</Box>
+              <Box component="span">Cost Price: {fmt(totals.cost_price)}</Box>
+              <Box component="span">Sale Price: {fmt(totals.sale_price)}</Box>
+              <Box component="span" sx={{ color: "success.main" }}>Margin: {fmt(totals.margin_perc)}%</Box>
+              <Box component="span" sx={{ color: "success.main" }}>Mark Up: {fmt(totals.markup_perc)}%</Box>
+              <Box component="span" sx={{ color: "warning.main" }}>Mark DN: {fmt(totals.markdown_perc)}%</Box>
+            </Stack>
           )}
 
           <FilterableDataTable
@@ -255,9 +275,9 @@ const StockAnalyzer = () => {
             fillHeight
             compact
           />
-        </div>
-      </div>
-    </div>
+        </Stack>
+      </Stack>
+    </Box>
   );
 };
 

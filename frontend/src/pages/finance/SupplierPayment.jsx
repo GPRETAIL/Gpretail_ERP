@@ -87,11 +87,12 @@ const PENDING_TABLE_COLUMNS = [
     key: "days",
     label: "Days",
     render: (value) => (
-      <span className={`font-medium ${
-        Number(value) > 90 ? "text-red-600 dark:text-red-400" : Number(value) > 30 ? "text-orange-600 dark:text-orange-400" : "text-gray-700 dark:text-gray-300"
-      }`}>
+      <Box
+        component="span"
+        sx={{ fontWeight: 500, color: Number(value) > 90 ? "error.main" : Number(value) > 30 ? "warning.main" : "text.secondary" }}
+      >
         {value}
-      </span>
+      </Box>
     ),
   },
   {
@@ -100,8 +101,8 @@ const PENDING_TABLE_COLUMNS = [
     render: (value) => `${value}%`,
   },
   { key: "total", label: "Total", aggregate: "sum", render: (value) => fmt(value) },
-  { key: "paid", label: "Paid", aggregate: "sum", render: (value) => <span className="text-green-600">{fmt(value)}</span> },
-  { key: "balance", label: "Balance", aggregate: "sum", render: (value) => <span className="font-medium text-red-600 dark:text-red-400">{fmt(value)}</span> },
+  { key: "paid", label: "Paid", aggregate: "sum", render: (value) => <Box component="span" sx={{ color: "success.main" }}>{fmt(value)}</Box> },
+  { key: "balance", label: "Balance", aggregate: "sum", render: (value) => <Box component="span" sx={{ fontWeight: 500, color: "error.main" }}>{fmt(value)}</Box> },
   {
     key: "status",
     label: "Status",
@@ -111,7 +112,7 @@ const PENDING_TABLE_COLUMNS = [
       return <StatusChip label={status.label} tone={status.tone} />;
     },
   },
-  { key: "amount", label: "Amount", aggregate: "sum", render: (value) => <span className="font-medium">{fmt(value)}</span> },
+  { key: "amount", label: "Amount", aggregate: "sum", render: (value) => <Box component="span" sx={{ fontWeight: 500 }}>{fmt(value)}</Box> },
 ];
 const HISTORY_TABLE_COLUMNS = PENDING_TABLE_COLUMNS.filter((column) => column.key !== "amount");
 
@@ -133,10 +134,7 @@ const SupplierPayment = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { theme: appTheme } = useAppTheme();
   const brand = useSelector((state) => state.auth.user?.brand);
-  const muiTheme = useMemo(
-    () => createNamedTheme("finance", appTheme, brand?.primary_color ? { primary: { main: brand.primary_color } } : {}),
-    [appTheme, brand]
-  );
+  const muiTheme = useMemo(() => createNamedTheme("finance", appTheme, brand), [appTheme, brand]);
 
   // ─── Screen state: "search", "detail", or "payment" ──────────────────────
   const [screen, setScreen] = useState("search");
@@ -562,9 +560,9 @@ const SupplierPayment = () => {
                 buttonClassName="topbar-action-btn topbar-action-export"
               />
             ) : (
-              <button type="button" className="glass-btn glass-btn-primary flex items-center" onClick={openSearchPage}>
+              <Button type="button" className="glass-btn glass-btn-primary flex items-center" onClick={openSearchPage}>
                 <Search className="w-4 h-4 mr-1" /> Search
-              </button>
+              </Button>
             )}
           </Box>
         </Box>
@@ -652,14 +650,15 @@ const SupplierPayment = () => {
                   </Stack>
                 </Box>
                 <Box sx={{ borderTop: 1, borderColor: "divider", px: 1.5, py: 1.5 }}>
-                  <button
+                  <Button
                     onClick={() => handleSearch({ page: 1 })}
                     disabled={loading}
-                    className="glass-btn glass-btn-primary inline-flex w-full items-center justify-center gap-2 disabled:opacity-50"
+                    fullWidth
+                    className="glass-btn glass-btn-primary inline-flex items-center justify-center gap-2 disabled:opacity-50"
                   >
                     <MagnifyingGlassIcon className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
                     Search Pendings
-                  </button>
+                  </Button>
                 </Box>
               </Card>
 
@@ -686,9 +685,13 @@ const SupplierPayment = () => {
                     </Typography>
                   </Box>
                   {selectedIds.size > 0 && (
-                    <button onClick={handleAddPayment} className="glass-btn glass-btn-success inline-flex items-center gap-1.5 self-start sm:self-auto">
+                    <Button
+                      onClick={handleAddPayment}
+                      className="glass-btn glass-btn-success inline-flex items-center gap-1.5"
+                      sx={{ alignSelf: { xs: "flex-start", sm: "auto" } }}
+                    >
                       Add Payment
-                    </button>
+                    </Button>
                   )}
                 </Stack>
                 <Box sx={{ display: "flex", flex: 1, minHeight: 0, minWidth: 0, flexDirection: "column", p: { xs: 1.5, sm: 2 } }}>

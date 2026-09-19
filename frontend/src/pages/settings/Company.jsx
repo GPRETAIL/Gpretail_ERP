@@ -1,6 +1,22 @@
 import React, { useEffect, useState } from "react";
 import { LogOut, PlusCircle, RefreshCw, Save, Search, Trash2 } from "lucide-react";
 import { toast } from "react-toastify";
+import { alpha } from "@mui/material/styles";
+import {
+  Box,
+  Button,
+  Checkbox,
+  FormControlLabel,
+  MenuItem,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  TextField,
+  Typography,
+} from "@mui/material";
 import api from "../../api/axios";
 
 const REQUIRED_FIELDS = ["code", "name", "regName", "contactPerson", "contactNo"];
@@ -82,23 +98,15 @@ const resolveAssetUrl = (path) => {
   return path;
 };
 
-const InputField = ({ label, required = false, children, className = "" }) => (
-  <div className={className}>
-    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-      {required && <span className="text-red-500 mr-1">*</span>}
+const InputField = ({ label, required = false, children, sx }) => (
+  <Box sx={sx}>
+    <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
+      {required && <Box component="span" sx={{ mr: 0.5, color: "error.main" }}>*</Box>}
       {label}
-    </label>
+    </Typography>
     {children}
-  </div>
+  </Box>
 );
-
-const textInputClass =
-  "w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-sm p-1.5 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500";
-
-// Master-data-of-record fields on a VX-Admin-provisioned store: view-only here, editable only from
-// the platform admin portal (see the "vx_admin_managed" banner below Code/Name in the edit form).
-const lockedInputClass =
-  "w-full border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-sm p-1.5 text-sm cursor-not-allowed";
 
 const CompanySettings = () => {
   const [form, setForm] = useState(emptyForm);
@@ -462,73 +470,79 @@ const CompanySettings = () => {
     }
   };
 
+  const cardSx = { bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "5.25px", boxShadow: 1 };
+  const fieldSx = { "& .MuiInputBase-input": { fontSize: 12.25 } };
+
   if (loading) {
-    return <div className="text-sm text-gray-600 dark:text-gray-300">Loading company setup...</div>;
+    return <Typography sx={{ fontSize: 12.25, color: "text.secondary" }}>Loading company setup...</Typography>;
   }
 
   return (
-    <div className="space-y-3 pb-20">
-      <div className="flex justify-between items-center px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-sm">
-        <h1 className="text-sm font-semibold text-gray-800 dark:text-gray-100">Settings / Company</h1>
-        <div className="flex items-center gap-3 text-sm">
-          <button
+    <Stack spacing={1.5} sx={{ pb: 10 }}>
+      <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", ...cardSx, px: 1.5, py: 1 }}>
+        <Typography component="h1" sx={{ fontSize: 13, fontWeight: 600, color: "text.primary" }}>Settings / Company</Typography>
+        <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", fontSize: 12.25 }}>
+          <Button
             type="button"
-            className="inline-flex items-center text-slate-600 dark:text-slate-300 hover:text-slate-800 dark:hover:text-slate-100 disabled:opacity-50"
+            variant="text"
+            color="inherit"
             onClick={handleSyncFromAdmin}
             disabled={syncing}
             title="Pull the latest subscription, limits and login password from VX-Admin"
+            startIcon={<RefreshCw className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} />}
+            sx={{ fontSize: 12.25, color: "text.secondary" }}
           >
-            <RefreshCw className={`w-4 h-4 mr-1 ${syncing ? "animate-spin" : ""}`} />
             {syncing ? "Syncing…" : "Sync from VX-Admin"}
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className="inline-flex items-center text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+            variant="text"
             onClick={handleNew}
+            startIcon={<PlusCircle className="w-4 h-4" />}
+            sx={{ fontSize: 12.25 }}
           >
-            <PlusCircle className="w-4 h-4 mr-1" />
             New
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className="glass-btn glass-btn-success inline-flex items-center disabled:opacity-50"
+            className="glass-btn glass-btn-success inline-flex items-center"
             onClick={handleSave}
             disabled={saving || showSearchPage}
           >
             <Save className="w-4 h-4 mr-1" />
             {saving ? "Saving..." : "Save"}
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             className="glass-btn glass-btn-primary inline-flex items-center"
             onClick={handleOpenSearch}
           >
             <Search className="w-4 h-4 mr-1" />
             Search
-          </button>
-        </div>
-      </div>
+          </Button>
+        </Stack>
+      </Stack>
 
       {(overview.stores.length > 0 || overview.warehouses.length > 0) && (
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-sm p-3">
-          <h2 className="text-sm font-semibold mb-2 text-gray-800 dark:text-gray-100">
-            Stores &amp; Warehouses <span className="text-xs font-normal text-gray-400 dark:text-gray-500">(synced from VX-Admin)</span>
-          </h2>
+        <Box sx={{ ...cardSx, p: 1.5 }}>
+          <Typography component="h2" sx={{ fontSize: 13, fontWeight: 600, color: "text.primary", mb: 1 }}>
+            Stores &amp; Warehouses <Box component="span" sx={{ fontSize: 10.5, fontWeight: 400, color: "text.disabled" }}>(synced from VX-Admin)</Box>
+          </Typography>
           {/* One table rather than two side-by-side lists: a warehouse is a location under the same
               company as the stores, so it belongs in the same list distinguished by Store Type.
               Split columns made them look like unrelated things and hid warehouses entirely from
               anyone scanning the stores column. */}
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[520px] text-sm">
-              <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                  <th className="px-2 py-1.5 font-semibold">Name</th>
-                  <th className="px-2 py-1.5 font-semibold">Store Type</th>
-                  <th className="px-2 py-1.5 font-semibold">Tagged To</th>
-                  <th className="px-2 py-1.5 font-semibold">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+          <Box sx={{ overflowX: "auto" }}>
+            <Table size="small" sx={{ minWidth: 520, "& th, & td": { fontSize: 12.25 } }}>
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ borderColor: "divider", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Name</TableCell>
+                  <TableCell sx={{ borderColor: "divider", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Store Type</TableCell>
+                  <TableCell sx={{ borderColor: "divider", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Tagged To</TableCell>
+                  <TableCell sx={{ borderColor: "divider", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Status</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
                 {[
                   ...overview.stores.map((s) => ({ ...s, __type: "Store" })),
                   ...overview.warehouses.map((w) => ({ ...w, __type: "Warehouse" })),
@@ -538,466 +552,416 @@ const CompanySettings = () => {
                     : [];
                   const isWarehouse = row.__type === "Warehouse";
                   return (
-                    <tr key={`${row.__type}-${row.code || i}`}>
-                      <td className="px-2 py-1.5 text-gray-700 dark:text-gray-300">{row.name || row.code}</td>
-                      <td className="px-2 py-1.5">
-                        <span
-                          className={`rounded px-1.5 py-0.5 text-[11px] ${
-                            isWarehouse
-                              ? "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300"
-                              : "bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300"
-                          }`}
+                    <TableRow key={`${row.__type}-${row.code || i}`}>
+                      <TableCell sx={{ borderColor: "divider", color: "text.secondary" }}>{row.name || row.code}</TableCell>
+                      <TableCell sx={{ borderColor: "divider" }}>
+                        <Box
+                          component="span"
+                          sx={{
+                            borderRadius: 1, px: 0.75, py: 0.25, fontSize: 11,
+                            ...(isWarehouse
+                              ? { color: "#6366f1", bgcolor: (theme) => alpha("#6366f1", theme.palette.mode === "dark" ? 0.2 : 0.1) }
+                              : { color: "info.main", bgcolor: (theme) => alpha(theme.palette.info.main, theme.palette.mode === "dark" ? 0.2 : 0.1) }),
+                          }}
                         >
                           {row.__type}
-                        </span>
-                      </td>
-                      <td className="px-2 py-1.5 text-xs text-gray-500 dark:text-gray-400">
+                        </Box>
+                      </TableCell>
+                      <TableCell sx={{ borderColor: "divider", fontSize: 10.5, color: "text.secondary" }}>
                         {isWarehouse
                           ? (tags.length > 0 ? tags.join(", ") : "Not tagged to any store")
                           : "—"}
-                      </td>
-                      <td className="px-2 py-1.5">
-                        <span className={`rounded px-1.5 py-0.5 text-[11px] ${row.status === "active" ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400" : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"}`}>{row.status}</span>
-                      </td>
-                    </tr>
+                      </TableCell>
+                      <TableCell sx={{ borderColor: "divider" }}>
+                        <Box
+                          component="span"
+                          sx={{
+                            borderRadius: 1, px: 0.75, py: 0.25, fontSize: 11,
+                            ...(row.status === "active"
+                              ? { color: "success.main", bgcolor: (theme) => alpha(theme.palette.success.main, theme.palette.mode === "dark" ? 0.2 : 0.1) }
+                              : { color: "text.secondary", bgcolor: "action.hover" }),
+                          }}
+                        >
+                          {row.status}
+                        </Box>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
-              </tbody>
-            </table>
-          </div>
-        </div>
+              </TableBody>
+            </Table>
+          </Box>
+        </Box>
       )}
 
       {showSearchPage ? (
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-sm p-3 space-y-3">
-          <div className="flex items-center gap-2">
-            <input
+        <Stack spacing={1.5} sx={{ ...cardSx, p: 1.5 }}>
+          <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+            <TextField
               type="text"
+              size="small"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by code or name"
-              className={`${textInputClass} max-w-md`}
+              sx={{ maxWidth: 420, ...fieldSx }}
             />
-            <button
-              type="button"
-              onClick={() => loadSearchResults(searchQuery)}
-              className="px-3 py-1.5 text-sm rounded-sm border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
-            >
+            <Button type="button" variant="outlined" color="inherit" onClick={() => loadSearchResults(searchQuery)} sx={{ fontSize: 12.25 }}>
               Refresh
-            </button>
-          </div>
+            </Button>
+          </Stack>
 
-          <div className="border border-gray-200 dark:border-gray-700 rounded-sm overflow-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200">
-                <tr>
-                  <th className="text-left px-2 py-2 border-b dark:border-gray-700">Code</th>
-                  <th className="text-left px-2 py-2 border-b dark:border-gray-700">Name</th>
-                  <th className="text-left px-2 py-2 border-b dark:border-gray-700">Reg. Name</th>
-                  <th className="text-left px-2 py-2 border-b dark:border-gray-700">Contact Person</th>
-                  <th className="text-left px-2 py-2 border-b dark:border-gray-700">Contact No</th>
-                  <th className="text-left px-2 py-2 border-b dark:border-gray-700">Active</th>
-                  <th className="text-left px-2 py-2 border-b dark:border-gray-700">Logged</th>
-                  <th className="text-left px-2 py-2 border-b dark:border-gray-700">Action</th>
-                </tr>
-              </thead>
-              <tbody>
+          <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: "4px", overflow: "auto" }}>
+            <Table size="small" sx={{ "& th, & td": { fontSize: 12.25 } }}>
+              <TableHead sx={{ bgcolor: "action.hover" }}>
+                <TableRow>
+                  <TableCell sx={{ borderColor: "divider", color: "text.secondary" }}>Code</TableCell>
+                  <TableCell sx={{ borderColor: "divider", color: "text.secondary" }}>Name</TableCell>
+                  <TableCell sx={{ borderColor: "divider", color: "text.secondary" }}>Reg. Name</TableCell>
+                  <TableCell sx={{ borderColor: "divider", color: "text.secondary" }}>Contact Person</TableCell>
+                  <TableCell sx={{ borderColor: "divider", color: "text.secondary" }}>Contact No</TableCell>
+                  <TableCell sx={{ borderColor: "divider", color: "text.secondary" }}>Active</TableCell>
+                  <TableCell sx={{ borderColor: "divider", color: "text.secondary" }}>Logged</TableCell>
+                  <TableCell sx={{ borderColor: "divider", color: "text.secondary" }}>Action</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
                 {searchLoading ? (
-                  <tr>
-                    <td className="px-2 py-3 text-gray-500 dark:text-gray-400" colSpan={8}>
+                  <TableRow>
+                    <TableCell sx={{ borderColor: "divider", color: "text.secondary" }} colSpan={8}>
                       Loading companies...
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : searchResults.length === 0 ? (
-                  <tr>
-                    <td className="px-2 py-3 text-gray-500 dark:text-gray-400" colSpan={8}>
+                  <TableRow>
+                    <TableCell sx={{ borderColor: "divider", color: "text.secondary" }} colSpan={8}>
                       No companies found.
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : (
                   searchResults.map((row) => (
-                    <tr key={row.id} className="odd:bg-white dark:odd:bg-gray-800 even:bg-gray-50 dark:even:bg-gray-700/40 text-gray-700 dark:text-gray-300">
-                      <td className="px-2 py-2 border-b dark:border-gray-700">{row.code || "-"}</td>
-                      <td className="px-2 py-2 border-b dark:border-gray-700">{row.name || "-"}</td>
-                      <td className="px-2 py-2 border-b dark:border-gray-700">{row.reg_name || "-"}</td>
-                      <td className="px-2 py-2 border-b dark:border-gray-700">{row.contact_person || "-"}</td>
-                      <td className="px-2 py-2 border-b dark:border-gray-700">{row.contact_no || "-"}</td>
-                      <td className="px-2 py-2 border-b dark:border-gray-700">{row.is_active ? "Yes" : "No"}</td>
-                      <td className="px-2 py-2 border-b dark:border-gray-700 capitalize">{row.admin_user?.login_status === "logged_in" ? "Logged in" : "Logged out"}</td>
-                      <td className="px-2 py-2 border-b dark:border-gray-700">
-                        <div className="flex items-center gap-3">
-                          <button
+                    <TableRow key={row.id} sx={{ color: "text.secondary", "&:nth-of-type(even)": { bgcolor: "action.hover" } }}>
+                      <TableCell sx={{ borderColor: "divider" }}>{row.code || "-"}</TableCell>
+                      <TableCell sx={{ borderColor: "divider" }}>{row.name || "-"}</TableCell>
+                      <TableCell sx={{ borderColor: "divider" }}>{row.reg_name || "-"}</TableCell>
+                      <TableCell sx={{ borderColor: "divider" }}>{row.contact_person || "-"}</TableCell>
+                      <TableCell sx={{ borderColor: "divider" }}>{row.contact_no || "-"}</TableCell>
+                      <TableCell sx={{ borderColor: "divider" }}>{row.is_active ? "Yes" : "No"}</TableCell>
+                      <TableCell sx={{ borderColor: "divider", textTransform: "capitalize" }}>{row.admin_user?.login_status === "logged_in" ? "Logged in" : "Logged out"}</TableCell>
+                      <TableCell sx={{ borderColor: "divider" }}>
+                        <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+                          <Button
                             type="button"
+                            variant="text"
                             onClick={() => handleSelectCompany(row.id)}
-                            className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                            sx={{ minWidth: "auto", p: 0, fontSize: 12.25 }}
                           >
                             Open
-                          </button>
-                          <button
+                          </Button>
+                          <Box
+                            component="button"
                             type="button"
                             onClick={() => handleDeleteCompany(row)}
-                            className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
                             title="Delete company"
+                            sx={{ display: "inline-flex", border: 0, bgcolor: "transparent", p: 0, cursor: "pointer", color: "error.main" }}
                           >
                             <Trash2 className="w-4 h-4" />
-                          </button>
+                          </Box>
                           {row.admin_user?.login_status === "logged_in" ? (
-                            <button
+                            <Box
+                              component="button"
                               type="button"
                               onClick={() => handleForceLogout(row)}
-                              className="text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300"
                               title="Logout company admin"
+                              sx={{ display: "inline-flex", border: 0, bgcolor: "transparent", p: 0, cursor: "pointer", color: "warning.main" }}
                             >
                               <LogOut className="w-4 h-4" />
-                            </button>
+                            </Box>
                           ) : null}
-                        </div>
-                      </td>
-                    </tr>
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
                   ))
                 )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+              </TableBody>
+            </Table>
+          </Box>
+        </Stack>
       ) : (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-sm p-3">
+        <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xl: "repeat(2, 1fr)" } }}>
+          <Box sx={{ ...cardSx, p: 1.5 }}>
             {form.vxAdminManaged ? (
-              <p className="mb-3 text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 rounded-sm px-2 py-1.5">
+              <Typography
+                sx={{
+                  mb: 1.5, fontSize: 10.5, color: "primary.main", bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.2 : 0.08),
+                  border: "1px solid", borderColor: "primary.main", borderRadius: "4px", px: 1, py: 0.75,
+                }}
+              >
                 Name, Reg. Name, Contact Person, Contact No, GST No, City, PIN Code and State are set by your
                 platform administrator (VX-Admin) for this store — view only here. To change one, reach out to
                 VX-Admin.
-              </p>
+              </Typography>
             ) : null}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { md: "repeat(2, 1fr)" } }}>
               <InputField label="Code" required>
-                <input value={form.code} onChange={setField("code")} className={textInputClass} />
+                <TextField size="small" fullWidth sx={fieldSx} value={form.code} onChange={setField("code")} />
               </InputField>
               <InputField label="Name" required>
-                <input
-                  value={form.name}
-                  onChange={setField("name")}
-                  disabled={form.vxAdminManaged}
-                  className={form.vxAdminManaged ? lockedInputClass : textInputClass}
-                />
+                <TextField size="small" fullWidth sx={fieldSx} value={form.name} onChange={setField("name")} disabled={form.vxAdminManaged} />
               </InputField>
 
               <InputField label="Reg. Name" required>
-                <input
-                  value={form.regName}
-                  onChange={setField("regName")}
-                  disabled={form.vxAdminManaged}
-                  className={form.vxAdminManaged ? lockedInputClass : textInputClass}
-                />
+                <TextField size="small" fullWidth sx={fieldSx} value={form.regName} onChange={setField("regName")} disabled={form.vxAdminManaged} />
               </InputField>
               <InputField label="Contact Person" required>
-                <input
-                  value={form.contactPerson}
-                  onChange={setField("contactPerson")}
-                  disabled={form.vxAdminManaged}
-                  className={form.vxAdminManaged ? lockedInputClass : textInputClass}
-                />
+                <TextField size="small" fullWidth sx={fieldSx} value={form.contactPerson} onChange={setField("contactPerson")} disabled={form.vxAdminManaged} />
               </InputField>
 
               <InputField label="Contact No" required>
-                <input
-                  value={form.contactNo}
-                  onChange={setField("contactNo")}
-                  disabled={form.vxAdminManaged}
-                  className={form.vxAdminManaged ? lockedInputClass : textInputClass}
-                />
+                <TextField size="small" fullWidth sx={fieldSx} value={form.contactNo} onChange={setField("contactNo")} disabled={form.vxAdminManaged} />
               </InputField>
               <InputField label="Admin Name">
-                <input value={form.adminName} onChange={setField("adminName")} className={textInputClass} />
+                <TextField size="small" fullWidth sx={fieldSx} value={form.adminName} onChange={setField("adminName")} />
               </InputField>
               <InputField label="Admin Email">
-                <input value={form.adminEmail} onChange={setField("adminEmail")} className={textInputClass} />
+                <TextField size="small" fullWidth sx={fieldSx} value={form.adminEmail} onChange={setField("adminEmail")} />
               </InputField>
               <InputField label="Admin Password">
-                <input type="password" value={form.adminPassword} onChange={setField("adminPassword")} className={textInputClass} />
+                <TextField type="password" size="small" fullWidth sx={fieldSx} value={form.adminPassword} onChange={setField("adminPassword")} />
               </InputField>
               <InputField label="Email ID">
-                <input value={form.emailId} onChange={setField("emailId")} className={textInputClass} />
+                <TextField size="small" fullWidth sx={fieldSx} value={form.emailId} onChange={setField("emailId")} />
               </InputField>
 
-              <InputField label="Store Access Level" className="md:col-span-2">
-                <select value={form.accessLevel} onChange={setField("accessLevel")} className={textInputClass}>
-                  <option value="full">Full Access — all subscribed modules</option>
-                  <option value="core">Core Only — Sales / Purchase / Store / Masters</option>
-                  <option value="custom">Custom — choose modules</option>
-                </select>
+              <InputField label="Store Access Level" sx={{ gridColumn: { md: "span 2" } }}>
+                <TextField select size="small" fullWidth sx={fieldSx} value={form.accessLevel} onChange={setField("accessLevel")}>
+                  <MenuItem value="full">Full Access — all subscribed modules</MenuItem>
+                  <MenuItem value="core">Core Only — Sales / Purchase / Store / Masters</MenuItem>
+                  <MenuItem value="custom">Custom — choose modules</MenuItem>
+                </TextField>
                 {form.accessLevel === "custom" ? (
-                  <div className="mt-2 grid grid-cols-2 gap-1.5 rounded-sm border border-gray-200 dark:border-gray-700 p-2">
+                  <Box sx={{ mt: 1, display: "grid", gap: 0.75, gridTemplateColumns: "repeat(2, 1fr)", border: "1px solid", borderColor: "divider", borderRadius: "4px", p: 1 }}>
                     {MODULE_SECTIONS.map((section) => {
                       const checked = (form.accessModules || []).includes(section.slug);
                       return (
-                        <label key={section.slug} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={(e) =>
-                              setForm((prev) => {
-                                const set = new Set(prev.accessModules || []);
-                                if (e.target.checked) set.add(section.slug);
-                                else set.delete(section.slug);
-                                return { ...prev, accessModules: [...set] };
-                              })
-                            }
-                          />
-                          {section.label}
-                        </label>
+                        <FormControlLabel
+                          key={section.slug}
+                          sx={{ ml: 0, "& .MuiFormControlLabel-label": { fontSize: 12.25, color: "text.secondary" } }}
+                          control={
+                            <Checkbox
+                              size="small"
+                              checked={checked}
+                              onChange={(e) =>
+                                setForm((prev) => {
+                                  const set = new Set(prev.accessModules || []);
+                                  if (e.target.checked) set.add(section.slug);
+                                  else set.delete(section.slug);
+                                  return { ...prev, accessModules: [...set] };
+                                })
+                              }
+                            />
+                          }
+                          label={section.label}
+                        />
                       );
                     })}
-                  </div>
+                  </Box>
                 ) : (
-                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  <Typography sx={{ mt: 0.5, fontSize: 10.5, color: "text.secondary" }}>
                     {form.accessLevel === "core"
                       ? "Core = Sales, Warehouse/Purchase, Masters (+ Dashboard). No Finance, Analytical, CRM, Store or Settings."
                       : "This store gets every module included in the subscription."}
-                  </p>
+                  </Typography>
                 )}
               </InputField>
 
-              <InputField label="Address" className="md:col-span-2">
-                <textarea
-                  value={form.address}
-                  onChange={setField("address")}
-                  rows={2}
-                  className={textInputClass}
-                />
+              <InputField label="Address" sx={{ gridColumn: { md: "span 2" } }}>
+                <TextField multiline rows={2} size="small" fullWidth sx={fieldSx} value={form.address} onChange={setField("address")} />
               </InputField>
 
               <InputField label="City">
-                <select
-                  value={form.cityId}
-                  onChange={setField("cityId")}
-                  disabled={form.vxAdminManaged}
-                  className={form.vxAdminManaged ? lockedInputClass : textInputClass}
-                >
-                  <option value="">Select City</option>
+                <TextField select size="small" fullWidth sx={fieldSx} value={form.cityId} onChange={setField("cityId")} disabled={form.vxAdminManaged}>
+                  <MenuItem value="">Select City</MenuItem>
                   {cityOptions.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
+                    <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
                   ))}
-                </select>
+                </TextField>
               </InputField>
               <InputField label="PIN Code">
-                <input
-                  value={form.pinCode}
-                  onChange={setField("pinCode")}
-                  disabled={form.vxAdminManaged}
-                  className={form.vxAdminManaged ? lockedInputClass : textInputClass}
-                />
+                <TextField size="small" fullWidth sx={fieldSx} value={form.pinCode} onChange={setField("pinCode")} disabled={form.vxAdminManaged} />
               </InputField>
 
               <InputField label="State">
-                <select
-                  value={form.stateId}
-                  onChange={setField("stateId")}
-                  disabled={form.vxAdminManaged}
-                  className={form.vxAdminManaged ? lockedInputClass : textInputClass}
-                >
-                  <option value="">Select State</option>
+                <TextField select size="small" fullWidth sx={fieldSx} value={form.stateId} onChange={setField("stateId")} disabled={form.vxAdminManaged}>
+                  <MenuItem value="">Select State</MenuItem>
                   {stateOptions.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
+                    <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
                   ))}
-                </select>
+                </TextField>
               </InputField>
               <InputField label="Country">
-                <select value={form.countryId} onChange={setField("countryId")} className={textInputClass}>
-                  <option value="">Select Country</option>
+                <TextField select size="small" fullWidth sx={fieldSx} value={form.countryId} onChange={setField("countryId")}>
+                  <MenuItem value="">Select Country</MenuItem>
                   {countryOptions.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
+                    <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
                   ))}
-                </select>
+                </TextField>
               </InputField>
 
               <InputField label="Internal VendorMargin">
-                <input
-                  type="number"
-                  value={form.internalVendorMargin}
-                  onChange={setField("internalVendorMargin")}
-                  className={textInputClass}
-                />
+                <TextField type="number" size="small" fullWidth sx={fieldSx} value={form.internalVendorMargin} onChange={setField("internalVendorMargin")} />
               </InputField>
-              <div className="grid grid-cols-2 gap-2 items-end">
-                <label className="inline-flex items-center text-sm text-gray-700 dark:text-gray-300 gap-2">
-                  <input
-                    type="checkbox"
-                    checked={form.asSupplier}
-                    onChange={setField("asSupplier")}
-                    className="h-4 w-4"
-                  />
-                  As Supplier
-                </label>
-                <label className="inline-flex items-center text-sm text-gray-700 dark:text-gray-300 gap-2">
-                  <input
-                    type="checkbox"
-                    checked={form.asCustomer}
-                    onChange={setField("asCustomer")}
-                    className="h-4 w-4"
-                  />
-                  As Customer
-                </label>
-              </div>
+              <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1, alignItems: "end" }}>
+                <FormControlLabel
+                  sx={{ ml: 0, "& .MuiFormControlLabel-label": { fontSize: 12.25, color: "text.secondary" } }}
+                  control={<Checkbox size="small" checked={form.asSupplier} onChange={setField("asSupplier")} />}
+                  label="As Supplier"
+                />
+                <FormControlLabel
+                  sx={{ ml: 0, "& .MuiFormControlLabel-label": { fontSize: 12.25, color: "text.secondary" } }}
+                  control={<Checkbox size="small" checked={form.asCustomer} onChange={setField("asCustomer")} />}
+                  label="As Customer"
+                />
+              </Box>
 
               <InputField label="GST No">
-                <input
-                  value={form.gstNo}
-                  onChange={setField("gstNo")}
-                  disabled={form.vxAdminManaged}
-                  className={form.vxAdminManaged ? lockedInputClass : textInputClass}
-                />
+                <TextField size="small" fullWidth sx={fieldSx} value={form.gstNo} onChange={setField("gstNo")} disabled={form.vxAdminManaged} />
               </InputField>
               <InputField label="GST Username">
-                <input value={form.gstUsername} onChange={setField("gstUsername")} className={textInputClass} />
+                <TextField size="small" fullWidth sx={fieldSx} value={form.gstUsername} onChange={setField("gstUsername")} />
               </InputField>
 
               <InputField label="EInvoice Username">
-                <input
-                  value={form.einvoiceUsername}
-                  onChange={setField("einvoiceUsername")}
-                  className={textInputClass}
-                />
+                <TextField size="small" fullWidth sx={fieldSx} value={form.einvoiceUsername} onChange={setField("einvoiceUsername")} />
               </InputField>
               <InputField label="EInvoice Password">
-                <input
-                  type="password"
-                  value={form.einvoicePassword}
-                  onChange={setField("einvoicePassword")}
-                  className={textInputClass}
-                />
+                <TextField type="password" size="small" fullWidth sx={fieldSx} value={form.einvoicePassword} onChange={setField("einvoicePassword")} />
               </InputField>
 
               <InputField label="GST Access Key">
-                <input value={form.gstAccessKey} onChange={setField("gstAccessKey")} className={textInputClass} />
+                <TextField size="small" fullWidth sx={fieldSx} value={form.gstAccessKey} onChange={setField("gstAccessKey")} />
               </InputField>
               <InputField label="PF/ESI No">
-                <input value={form.pfEsiNo} onChange={setField("pfEsiNo")} className={textInputClass} />
+                <TextField size="small" fullWidth sx={fieldSx} value={form.pfEsiNo} onChange={setField("pfEsiNo")} />
               </InputField>
 
               <InputField label="TAN/PAN">
-                <input value={form.tanPan} onChange={setField("tanPan")} className={textInputClass} />
+                <TextField size="small" fullWidth sx={fieldSx} value={form.tanPan} onChange={setField("tanPan")} />
               </InputField>
               <InputField label="Bank A/C Name">
-                <input value={form.bankAccountName} onChange={setField("bankAccountName")} className={textInputClass} />
+                <TextField size="small" fullWidth sx={fieldSx} value={form.bankAccountName} onChange={setField("bankAccountName")} />
               </InputField>
 
               <InputField label="Account No">
-                <input value={form.accountNo} onChange={setField("accountNo")} className={textInputClass} />
+                <TextField size="small" fullWidth sx={fieldSx} value={form.accountNo} onChange={setField("accountNo")} />
               </InputField>
               <InputField label="IFSC">
-                <input value={form.ifsc} onChange={setField("ifsc")} className={textInputClass} />
+                <TextField size="small" fullWidth sx={fieldSx} value={form.ifsc} onChange={setField("ifsc")} />
               </InputField>
 
               <InputField label="Website">
-                <input value={form.website} onChange={setField("website")} className={textInputClass} />
+                <TextField size="small" fullWidth sx={fieldSx} value={form.website} onChange={setField("website")} />
               </InputField>
               <InputField label="Active">
-                <label className="inline-flex items-center text-sm text-gray-700 dark:text-gray-300 gap-2 h-[34px]">
-                  <input type="checkbox" checked={form.active} onChange={setField("active")} className="h-4 w-4" />
-                  Is Active
-                </label>
+                <FormControlLabel
+                  sx={{ ml: 0, height: 34, "& .MuiFormControlLabel-label": { fontSize: 12.25, color: "text.secondary" } }}
+                  control={<Checkbox size="small" checked={form.active} onChange={setField("active")} />}
+                  label="Is Active"
+                />
               </InputField>
 
-              <InputField label="Logo" className="md:col-span-2">
-                <input type="file" accept="image/*" onChange={handleLogoChange} className={textInputClass} />
+              <InputField label="Logo" sx={{ gridColumn: { md: "span 2" } }}>
+                <Box component="input" type="file" accept="image/*" onChange={handleLogoChange} sx={{ fontSize: 12.25, color: "text.secondary" }} />
                 {logoPreview && (
-                  <img
+                  <Box
+                    component="img"
                     src={logoPreview}
                     alt="Company logo"
-                    className="mt-2 h-16 w-16 object-contain border border-gray-200 dark:border-gray-600 dark:bg-white rounded"
+                    sx={{ mt: 1, height: 64, width: 64, objectFit: "contain", border: "1px solid", borderColor: "divider", bgcolor: "common.white", borderRadius: 1 }}
                   />
                 )}
               </InputField>
-            </div>
-          </div>
+            </Box>
+          </Box>
 
-          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-sm p-3">
-            <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-3">Printer Configuration</h2>
+          <Box sx={{ ...cardSx, p: 1.5 }}>
+            <Typography component="h2" sx={{ fontSize: 14, fontWeight: 600, color: "text.primary", mb: 1.5 }}>Printer Configuration</Typography>
 
-            <div className="grid grid-cols-1 md:grid-cols-6 gap-2 items-end">
+            <Box sx={{ display: "grid", gap: 1, gridTemplateColumns: { md: "repeat(6, 1fr)" }, alignItems: "end" }}>
               <InputField label="Location">
-                <input value={printerRow.location} onChange={setPrinterField("location")} className={textInputClass} />
+                <TextField size="small" fullWidth sx={fieldSx} value={printerRow.location} onChange={setPrinterField("location")} />
               </InputField>
               <InputField label="Server">
-                <input value={printerRow.server} onChange={setPrinterField("server")} className={textInputClass} />
+                <TextField size="small" fullWidth sx={fieldSx} value={printerRow.server} onChange={setPrinterField("server")} />
               </InputField>
               <InputField label="IP">
-                <input value={printerRow.ip} onChange={setPrinterField("ip")} className={textInputClass} />
+                <TextField size="small" fullWidth sx={fieldSx} value={printerRow.ip} onChange={setPrinterField("ip")} />
               </InputField>
               <InputField label="Port">
-                <input value={printerRow.port} onChange={setPrinterField("port")} className={textInputClass} />
+                <TextField size="small" fullWidth sx={fieldSx} value={printerRow.port} onChange={setPrinterField("port")} />
               </InputField>
               <InputField label="Type">
-                <select value={printerRow.type} onChange={setPrinterField("type")} className={textInputClass}>
+                <TextField select size="small" fullWidth sx={fieldSx} value={printerRow.type} onChange={setPrinterField("type")}>
                   {PRINTER_TYPE_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
+                    <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
                   ))}
-                </select>
+                </TextField>
               </InputField>
-              <button
+              <Button
                 type="button"
                 onClick={handleAddPrinter}
-                className="glass-btn glass-btn-primary h-[34px] inline-flex items-center justify-center"
+                className="glass-btn glass-btn-primary inline-flex items-center justify-center"
+                sx={{ height: 34 }}
               >
                 Add
-              </button>
-            </div>
+              </Button>
+            </Box>
 
-            <div className="mt-3 border border-gray-200 dark:border-gray-700 rounded-sm min-h-[260px] max-h-[520px] overflow-auto">
+            <Box sx={{ mt: 1.5, border: "1px solid", borderColor: "divider", borderRadius: "4px", minHeight: 260, maxHeight: 520, overflow: "auto" }}>
               {printerConfigurations.length === 0 ? (
-                <div className="text-sm text-gray-500 dark:text-gray-400 p-3">No printer configuration added yet.</div>
+                <Typography sx={{ fontSize: 12.25, color: "text.secondary", p: 1.5 }}>No printer configuration added yet.</Typography>
               ) : (
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200">
-                    <tr>
-                      <th className="text-left px-2 py-2 border-b dark:border-gray-700">Location</th>
-                      <th className="text-left px-2 py-2 border-b dark:border-gray-700">Server</th>
-                      <th className="text-left px-2 py-2 border-b dark:border-gray-700">IP</th>
-                      <th className="text-left px-2 py-2 border-b dark:border-gray-700">Port</th>
-                      <th className="text-left px-2 py-2 border-b dark:border-gray-700">Type</th>
-                      <th className="text-left px-2 py-2 border-b dark:border-gray-700 w-14">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                <Table size="small" sx={{ "& th, & td": { fontSize: 12.25 } }}>
+                  <TableHead sx={{ bgcolor: "action.hover" }}>
+                    <TableRow>
+                      <TableCell sx={{ borderColor: "divider", color: "text.secondary" }}>Location</TableCell>
+                      <TableCell sx={{ borderColor: "divider", color: "text.secondary" }}>Server</TableCell>
+                      <TableCell sx={{ borderColor: "divider", color: "text.secondary" }}>IP</TableCell>
+                      <TableCell sx={{ borderColor: "divider", color: "text.secondary" }}>Port</TableCell>
+                      <TableCell sx={{ borderColor: "divider", color: "text.secondary" }}>Type</TableCell>
+                      <TableCell sx={{ borderColor: "divider", color: "text.secondary", width: 56 }}>Action</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
                     {printerConfigurations.map((row, idx) => (
-                      <tr key={`${row.location}-${row.ip}-${idx}`} className="odd:bg-white dark:odd:bg-gray-800 even:bg-gray-50 dark:even:bg-gray-700/40 text-gray-700 dark:text-gray-300">
-                        <td className="px-2 py-2 border-b dark:border-gray-700">{row.location}</td>
-                        <td className="px-2 py-2 border-b dark:border-gray-700">{row.server}</td>
-                        <td className="px-2 py-2 border-b dark:border-gray-700">{row.ip}</td>
-                        <td className="px-2 py-2 border-b dark:border-gray-700">{row.port}</td>
-                        <td className="px-2 py-2 border-b dark:border-gray-700">
+                      <TableRow key={`${row.location}-${row.ip}-${idx}`} sx={{ color: "text.secondary", "&:nth-of-type(even)": { bgcolor: "action.hover" } }}>
+                        <TableCell sx={{ borderColor: "divider" }}>{row.location}</TableCell>
+                        <TableCell sx={{ borderColor: "divider" }}>{row.server}</TableCell>
+                        <TableCell sx={{ borderColor: "divider" }}>{row.ip}</TableCell>
+                        <TableCell sx={{ borderColor: "divider" }}>{row.port}</TableCell>
+                        <TableCell sx={{ borderColor: "divider" }}>
                           {PRINTER_TYPE_OPTIONS.find((x) => x.value === row.type)?.label || row.type}
-                        </td>
-                        <td className="px-2 py-2 border-b dark:border-gray-700">
-                          <button
+                        </TableCell>
+                        <TableCell sx={{ borderColor: "divider" }}>
+                          <Button
                             type="button"
                             onClick={() => removePrinter(idx)}
                             className="glass-btn glass-btn-danger"
                             title="Remove"
+                            sx={{ minWidth: "auto" }}
                           >
                             <Trash2 className="w-4 h-4" />
-                          </button>
-                        </td>
-                      </tr>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               )}
-            </div>
-          </div>
-        </div>
+            </Box>
+          </Box>
+        </Box>
       )}
-    </div>
+    </Stack>
   );
 };
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ArrowLeft, PlusCircle, Save, Store, Trash2, Pencil, X } from "lucide-react";
 import { toast } from "react-toastify";
+import { Box, Button, Drawer, IconButton, Stack, Typography } from "@mui/material";
 import FilterableDataTable from "../../components/FilterableDataTable";
 import { TextInput, MultiSelectInput } from "./userAccessFormControls";
 
@@ -39,8 +40,6 @@ const StoreGroupsDrawer = ({
     setEditingId(null);
     setForm(createEmptyForm());
   }, [open]);
-
-  if (!open) return null;
 
   const handleNew = () => {
     setEditingId(null);
@@ -96,127 +95,123 @@ const StoreGroupsDrawer = ({
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/40" onClick={onClose}>
-      <div
-        className="flex h-full w-full max-w-2xl flex-col bg-white dark:bg-gray-800 shadow-xl"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="flex items-center justify-between border-b dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3">
-          <div className="flex items-center gap-2">
-            {view === "form" ? (
-              <button
-                type="button"
-                onClick={() => setView("list")}
-                className="text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100"
-                aria-label="Back to store groups"
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </button>
-            ) : (
-              <Store className="h-4 w-4 text-gray-600 dark:text-gray-300" />
-            )}
-            <div>
-              <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-100">
-                {view === "list" ? "Store Groups (which stores)" : editingId ? "Edit Store Group" : "New Store Group"}
-              </h2>
-              {view === "list" ? (
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Group your own stores together, then assign the group to a user so they can access every
-                  store in it at once. This is separate from Access Groups, which control what a user can do.
-                </p>
-              ) : null}
-            </div>
-          </div>
-          <button type="button" onClick={onClose} className="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-100" aria-label="Close">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div className="min-h-0 flex-1 overflow-auto p-4">
-          {view === "list" ? (
-            <>
-              <div className="mb-3 flex justify-end">
-                <button
-                  type="button"
-                  onClick={handleNew}
-                  className="glass-btn glass-btn-primary flex items-center"
-                >
-                  <PlusCircle className="mr-1 h-4 w-4" /> New Store Group
-                </button>
-              </div>
-              <FilterableDataTable
-                rows={groups}
-                columns={columns}
-                loading={loading}
-                emptyText="No store groups yet. Create one to assign multiple stores to a user at once."
-                searchPlaceholder="Search store groups..."
-                showExport={false}
-                tablePreferenceKey="user-access-store-groups"
-                renderActions={(row) => (
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleEdit(row)}
-                      className="glass-btn glass-btn-primary rounded p-1.5"
-                      title="Edit"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(row)}
-                      className="glass-btn glass-btn-danger rounded p-1.5"
-                      title="Delete"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                )}
-                searchButtonClassName="glass-btn glass-btn-primary flex items-center disabled:opacity-50"
-              />
-            </>
+    <Drawer anchor="right" open={open} onClose={onClose} PaperProps={{ sx: { width: "100%", maxWidth: 588, display: "flex", flexDirection: "column" } }}>
+      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", bgcolor: "background.paper", px: 2, py: 1.5 }}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+          {view === "form" ? (
+            <IconButton size="small" onClick={() => setView("list")} sx={{ color: "text.secondary" }} aria-label="Back to store groups">
+              <ArrowLeft className="h-4 w-4" />
+            </IconButton>
           ) : (
-            <div className="space-y-4">
-              <TextInput
-                label="Name"
-                required
-                value={form.name}
-                onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
-              />
-              <MultiSelectInput
-                label="Stores"
-                required
-                value={form.storeCompanyIds}
-                onChange={(nextIds) => setForm((prev) => ({ ...prev, storeCompanyIds: nextIds }))}
-                options={storeOptions}
-                placeholder="Select stores"
-                helperText="Pick one or more of your own stores to include in this group."
-              />
-            </div>
+            <Box sx={{ color: "text.secondary", display: "inline-flex" }}>
+              <Store className="h-4 w-4" />
+            </Box>
           )}
-        </div>
+          <Box>
+            <Typography component="h2" sx={{ fontSize: 13, fontWeight: 600, color: "text.primary" }}>
+              {view === "list" ? "Store Groups (which stores)" : editingId ? "Edit Store Group" : "New Store Group"}
+            </Typography>
+            {view === "list" ? (
+              <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>
+                Group your own stores together, then assign the group to a user so they can access every
+                store in it at once. This is separate from Access Groups, which control what a user can do.
+              </Typography>
+            ) : null}
+          </Box>
+        </Stack>
+        <IconButton size="small" onClick={onClose} sx={{ color: "text.secondary" }} aria-label="Close">
+          <X className="h-4 w-4" />
+        </IconButton>
+      </Stack>
 
-        {view === "form" ? (
-          <div className="flex justify-end gap-2 border-t dark:border-gray-700 bg-gray-50/60 dark:bg-gray-700/40 px-4 py-3">
-            <button
-              type="button"
-              onClick={() => setView("list")}
-              className="glass-btn glass-btn-secondary px-3 py-1.5 text-sm"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={saving}
-              className="glass-btn glass-btn-success flex items-center px-3 py-1.5 text-sm disabled:opacity-50"
-            >
-              <Save className="mr-1 h-4 w-4" /> {saving ? "Saving..." : "Save"}
-            </button>
-          </div>
-        ) : null}
-      </div>
-    </div>
+      <Box sx={{ minHeight: 0, flex: 1, overflow: "auto", p: 2 }}>
+        {view === "list" ? (
+          <>
+            <Box sx={{ mb: 1.5, display: "flex", justifyContent: "flex-end" }}>
+              <Button
+                type="button"
+                onClick={handleNew}
+                className="glass-btn glass-btn-primary flex items-center"
+              >
+                <PlusCircle className="mr-1 h-4 w-4" /> New Store Group
+              </Button>
+            </Box>
+            <FilterableDataTable
+              rows={groups}
+              columns={columns}
+              loading={loading}
+              emptyText="No store groups yet. Create one to assign multiple stores to a user at once."
+              searchPlaceholder="Search store groups..."
+              showExport={false}
+              tablePreferenceKey="user-access-store-groups"
+              renderActions={(row) => (
+                <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                  <Button
+                    type="button"
+                    onClick={() => handleEdit(row)}
+                    className="glass-btn glass-btn-primary rounded p-1.5"
+                    title="Edit"
+                    sx={{ minWidth: "auto" }}
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={() => handleDelete(row)}
+                    className="glass-btn glass-btn-danger rounded p-1.5"
+                    title="Delete"
+                    sx={{ minWidth: "auto" }}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </Stack>
+              )}
+              searchButtonClassName="glass-btn glass-btn-primary flex items-center disabled:opacity-50"
+            />
+          </>
+        ) : (
+          <Stack spacing={2}>
+            <TextInput
+              label="Name"
+              required
+              value={form.name}
+              onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
+            />
+            <MultiSelectInput
+              label="Stores"
+              required
+              value={form.storeCompanyIds}
+              onChange={(nextIds) => setForm((prev) => ({ ...prev, storeCompanyIds: nextIds }))}
+              options={storeOptions}
+              placeholder="Select stores"
+              helperText="Pick one or more of your own stores to include in this group."
+            />
+          </Stack>
+        )}
+      </Box>
+
+      {view === "form" ? (
+        <Stack direction="row" spacing={1} sx={{ justifyContent: "flex-end", borderTop: 1, borderColor: "divider", bgcolor: "action.hover", px: 2, py: 1.5 }}>
+          <Button
+            type="button"
+            onClick={() => setView("list")}
+            className="glass-btn glass-btn-secondary"
+            sx={{ fontSize: 12.25 }}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            onClick={handleSave}
+            disabled={saving}
+            className="glass-btn glass-btn-success flex items-center"
+            sx={{ fontSize: 12.25 }}
+          >
+            <Save className="mr-1 h-4 w-4" /> {saving ? "Saving..." : "Save"}
+          </Button>
+        </Stack>
+      ) : null}
+    </Drawer>
   );
 };
 

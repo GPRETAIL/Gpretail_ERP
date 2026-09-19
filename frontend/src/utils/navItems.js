@@ -562,7 +562,7 @@ export const navItems = [
     icon: Cog6ToothIcon,
     subItems: [
       { name: "Company", path: "/settings/company", icon: StarIcon },
-      { name: "Branding", path: "/settings/branding", icon: SwatchIcon },
+      { name: "Themes", path: "/settings/themes", icon: SwatchIcon },
       {
         name: "Configure Local Server",
         path: "/settings/configure-local-server",

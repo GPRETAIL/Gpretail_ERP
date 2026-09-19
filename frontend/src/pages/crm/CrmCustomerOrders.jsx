@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Copy, Pencil, PlusCircle, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { Box, Button, IconButton, Stack, Typography } from "@mui/material";
 import api from "../../api/axios";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import FilterableDataTable from "../../components/FilterableDataTable";
@@ -198,7 +199,7 @@ const CrmCustomerOrders = () => {
   const visibleColumns = useMemo(() => ORDER_COLUMNS, []);
 
   return (
-    <div className="min-h-[70vh] bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100">
+    <Box sx={{ minHeight: "70vh", bgcolor: "background.default", color: "text.primary" }}>
       <ConfirmDialog
         open={confirm.open}
         message={`Are you sure you want to delete "${confirm.name}"? This action cannot be undone.`}
@@ -212,43 +213,36 @@ const CrmCustomerOrders = () => {
         onCancel={() => setBulkConfirm({ open: false, keys: [] })}
       />
 
-      <div className="flex justify-between items-center px-4 py-1 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
-        <div className="flex items-center space-x-2">
-          <button className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200" onClick={() => navigate(-1)}>
+      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 0.5, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+          <IconButton size="small" onClick={() => navigate(-1)} sx={{ color: "text.secondary" }}>
             <ArrowLeft className="w-4 h-4" />
-          </button>
-          <h1 className="text-sm font-semibold flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => navigate("/crm")}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
-            >
+          </IconButton>
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: 13, fontWeight: 600 }}>
+            <Button type="button" variant="text" onClick={() => navigate("/crm")} sx={{ minWidth: "auto", p: 0, fontSize: 13, fontWeight: 600 }}>
               CRM
-            </button>
-            <span className="text-gray-500 dark:text-gray-400">/</span>
-            <span>Customer Orders</span>
-          </h1>
-        </div>
+            </Button>
+            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
+            <Box component="span">Customer Orders</Box>
+          </Stack>
+        </Stack>
 
-        <div className="flex items-center space-x-3 text-xs font-medium text-gray-700 dark:text-gray-300">
-          <button
-            onClick={() => navigate("/crm/customer-orders/new")}
-            className="topbar-action-btn topbar-action-new"
-          >
+        <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>
+          <Button onClick={() => navigate("/crm/customer-orders/new")} className="topbar-action-btn topbar-action-new">
             <PlusCircle className="w-3 h-3 mr-1" /> New
-          </button>
-          <span>|</span>
+          </Button>
+          <Box component="span">|</Box>
           <UploadImportButton
             endpoint="/customer-orders/bulk"
             fieldConfig={ORDER_IMPORT_CONFIG}
             onDone={() => fetchOrders()}
           />
-        </div>
-      </div>
+        </Stack>
+      </Stack>
 
-      <div className="p-3 pb-16">
-        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-5 border border-gray-200 dark:border-gray-700">
-          <h2 className="text-lg font-bold mb-3">Customer Order Search</h2>
+      <Box sx={{ p: 1.5, pb: 8 }}>
+        <Stack sx={{ bgcolor: "background.paper", boxShadow: 3, borderRadius: "7px", p: 2.5, border: "1px solid", borderColor: "divider" }}>
+          <Typography sx={{ fontSize: 15.75, fontWeight: 700, mb: 1.5 }}>Customer Order Search</Typography>
           <FilterableDataTable
             rows={orders}
             columns={visibleColumns}
@@ -313,8 +307,8 @@ const CrmCustomerOrders = () => {
             }}
             onRowClick={(row) => navigate(`/crm/customer-orders/${row.id}`)}
             renderActions={(row, { selectedCount } = {}) => (
-              <div className="flex items-center gap-2">
-                <button
+              <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                <Button
                   onClick={(e) => {
                     e.stopPropagation();
                     navigate(`/crm/customer-orders/${row.id}`);
@@ -322,10 +316,11 @@ const CrmCustomerOrders = () => {
                   title="Edit"
                   disabled={selectedCount > 1}
                   className="glass-btn glass-btn-primary rounded p-1.5"
+                  sx={{ minWidth: "auto" }}
                 >
                   <Pencil className="w-3.5 h-3.5" />
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={(e) => {
                     e.stopPropagation();
                     navigate(`/crm/customer-orders/new?copy=${row.id}`);
@@ -333,26 +328,27 @@ const CrmCustomerOrders = () => {
                   title="Duplicate"
                   disabled={selectedCount > 1}
                   className="glass-btn rounded p-1.5"
+                  sx={{ minWidth: "auto" }}
                 >
                   <Copy className="w-3.5 h-3.5" />
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={(e) => {
                     e.stopPropagation();
                     setConfirm({ open: true, id: row.id, name: row.orderNo });
                   }}
                   title="Delete"
                   className="glass-btn glass-btn-danger rounded p-1.5"
+                  sx={{ minWidth: "auto" }}
                 >
                   <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
+                </Button>
+              </Stack>
             )}
           />
-        </div>
-      </div>
-
-    </div>
+        </Stack>
+      </Box>
+    </Box>
   );
 };
 

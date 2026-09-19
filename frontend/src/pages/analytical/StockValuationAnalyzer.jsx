@@ -2,16 +2,15 @@ import React, { useState, useEffect, useCallback } from "react";
 import { ArrowPathIcon } from "@heroicons/react/24/outline";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { alpha } from "@mui/material/styles";
+import { Box, Button, IconButton, MenuItem, Stack, TextField, Typography } from "@mui/material";
 import api from "../../api/axios";
 import StoreFilterSelect from "../../components/StoreFilterSelect";
 import PivotTable from "../../components/PivotTable";
 import { toast } from "react-toastify";
 
-const selectClass =
-  "w-full px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-md " +
-  "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 " +
-  "focus:outline-none focus:ring-1 focus:ring-indigo-500";
-const labelClass = "block text-[11px] font-medium text-gray-600 dark:text-gray-300 mb-1";
+const fieldSx = { "& .MuiInputBase-input": { fontSize: 10.5 } };
+const labelSx = { display: "block", fontSize: 11, fontWeight: 500, color: "text.secondary", mb: 0.5 };
 
 const DIMENSION_OPTIONS = [
   { value: "store", label: "Store" },
@@ -69,71 +68,79 @@ const StockValuationAnalyzer = () => {
   const sameDimension = rowBy === columnBy;
 
   return (
-    <div className="h-full flex flex-col bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100">
-      <div className="flex justify-between items-center px-4 py-2 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
-        <div className="flex items-center space-x-2">
-          <button onClick={handleBackClick} className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200" aria-label="Back to analytical">
+    <Box sx={{ height: "100%", display: "flex", flexDirection: "column", bgcolor: "background.default", color: "text.primary" }}>
+      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+          <IconButton size="small" onClick={handleBackClick} sx={{ color: "text.secondary" }} aria-label="Back to analytical">
             <ArrowLeft className="w-4 h-4" />
-          </button>
-          <h1 className="text-sm font-semibold flex items-center gap-1">
-            <button type="button" onClick={handleBackClick} className="text-blue-600 hover:text-blue-700 hover:underline">
+          </IconButton>
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: 13, fontWeight: 600 }}>
+            <Button type="button" variant="text" onClick={handleBackClick} sx={{ minWidth: "auto", p: 0, fontSize: 13, fontWeight: 600 }}>
               Analytical
-            </button>
-            <span className="text-gray-500 dark:text-gray-400">/</span>
-            <span>Stock Marker Analyzer</span>
-          </h1>
-        </div>
-      </div>
+            </Button>
+            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
+            <Box component="span">Stock Marker Analyzer</Box>
+          </Stack>
+        </Stack>
+      </Stack>
 
-      <div className="flex-1 min-h-0 flex gap-4 p-4">
+      <Stack direction="row" spacing={2} sx={{ flex: 1, minHeight: 0, p: 2 }}>
         {/* ─── LEFT PANEL: Pivot controls ───────────────────────────────── */}
-        <div className="w-64 flex-shrink-0 flex flex-col min-h-0 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm px-3 py-2.5 space-y-3 overflow-y-auto">
-          <div>
-            <label className={labelClass}>Store Filter</label>
+        <Stack
+          spacing={1.5}
+          sx={{
+            width: 224, flexShrink: 0, minHeight: 0, bgcolor: "background.paper", borderRadius: "7px",
+            border: "1px solid", borderColor: "divider", boxShadow: 1, px: 1.5, py: 1.25, overflowY: "auto",
+          }}
+        >
+          <Box>
+            <Typography component="label" sx={labelSx}>Store Filter</Typography>
             <StoreFilterSelect value={storeFilter} onChange={setStoreFilter} />
-          </div>
-          <div>
-            <label className={labelClass}>Rows</label>
-            <select className={selectClass} value={rowBy} onChange={(e) => setRowBy(e.target.value)}>
+          </Box>
+          <Box>
+            <Typography component="label" sx={labelSx}>Rows</Typography>
+            <TextField select size="small" fullWidth sx={fieldSx} value={rowBy} onChange={(e) => setRowBy(e.target.value)}>
               {DIMENSION_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
+                <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
               ))}
-            </select>
-          </div>
-          <div>
-            <label className={labelClass}>Columns</label>
-            <select className={selectClass} value={columnBy} onChange={(e) => setColumnBy(e.target.value)}>
+            </TextField>
+          </Box>
+          <Box>
+            <Typography component="label" sx={labelSx}>Columns</Typography>
+            <TextField select size="small" fullWidth sx={fieldSx} value={columnBy} onChange={(e) => setColumnBy(e.target.value)}>
               {DIMENSION_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
+                <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
               ))}
-            </select>
+            </TextField>
             {sameDimension && (
-              <p className="text-[11px] text-red-600 dark:text-red-400 mt-1">Rows and columns must differ.</p>
+              <Typography sx={{ fontSize: 11, color: "error.main", mt: 0.5 }}>Rows and columns must differ.</Typography>
             )}
-          </div>
-          <div>
-            <label className={labelClass}>Measure</label>
-            <select className={selectClass} value={measure} onChange={(e) => setMeasure(e.target.value)}>
+          </Box>
+          <Box>
+            <Typography component="label" sx={labelSx}>Measure</Typography>
+            <TextField select size="small" fullWidth sx={fieldSx} value={measure} onChange={(e) => setMeasure(e.target.value)}>
               {MEASURE_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
+                <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
               ))}
-            </select>
-          </div>
-          <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed pt-2 border-t border-gray-100 dark:border-gray-700">
+            </TextField>
+          </Box>
+          <Typography sx={{ fontSize: 11, color: "text.secondary", lineHeight: 1.6, pt: 1, borderTop: 1, borderColor: "divider" }}>
             Current on-hand stock, valued at cost and retail price. A point-in-time
             snapshot -- no date range applies.
-          </p>
-          <button
+          </Typography>
+          <Button
             onClick={fetchData}
             disabled={loading || sameDimension}
-            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md
-              bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400
-              hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors disabled:opacity-50"
+            startIcon={<ArrowPathIcon className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />}
+            sx={{
+              fontSize: 12.25, fontWeight: 500, borderRadius: "5.25px", color: "#6366f1",
+              bgcolor: (theme) => alpha("#6366f1", theme.palette.mode === "dark" ? 0.2 : 0.08),
+              "&:hover": { bgcolor: (theme) => alpha("#6366f1", theme.palette.mode === "dark" ? 0.3 : 0.16) },
+            }}
           >
-            <ArrowPathIcon className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
             Refresh
-          </button>
-        </div>
+          </Button>
+        </Stack>
 
         {/* ─── RIGHT PANEL: Pivot grid ──────────────────────────────────── */}
         <PivotTable
@@ -150,8 +157,8 @@ const StockValuationAnalyzer = () => {
           emptyText={sameDimension ? "Pick two different dimensions for rows and columns" : undefined}
           exportFileName="stock-valuation-pivot"
         />
-      </div>
-    </div>
+      </Stack>
+    </Box>
   );
 };
 

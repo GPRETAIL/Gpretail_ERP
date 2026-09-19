@@ -35,7 +35,7 @@ const Item = lazy(() => import("../pages/master/Item"));
 const ProductAttributes = lazy(() => import("../pages/master/ProductAttributes"));
 const AddAttributePage = lazy(() => import("../pages/master/AddAttributePage"));
 const CompanySettings = lazy(() => import("../pages/settings/Company"));
-const Branding = lazy(() => import("../pages/settings/Branding"));
+const Themes = lazy(() => import("../pages/settings/Themes"));
 const ConfigureLocalServer = lazy(() => import("../pages/settings/ConfigureLocalServer"));
 const PrintingConfiguration = lazy(() => import("../pages/settings/PrintingConfiguration"));
 const BackupCenter = lazy(() => import("../pages/settings/BackupCenter"));
@@ -124,7 +124,9 @@ export const protectedLayoutRoutes = [
   { path: "/profile", render: () => <Profile /> },
   { path: "/dashboard", render: () => <Dashboard /> },
   { path: "/settings/company", render: () => <CompanySettings /> },
-  { path: "/settings/branding", render: () => <Branding /> },
+  { path: "/settings/themes", render: () => <Themes /> },
+  // Renamed from Branding -- keeps old bookmarks/links working, same pattern as the HRMS move above.
+  { path: "/settings/branding", render: () => <RedirectPreservingQuery to="/settings/themes" /> },
   { path: "/settings/configure-local-server", render: () => <ConfigureLocalServer /> },
   { path: "/settings/printing-configuration", render: () => <PrintingConfiguration /> },
   { path: "/settings/backup", render: () => <BackupCenter /> },
