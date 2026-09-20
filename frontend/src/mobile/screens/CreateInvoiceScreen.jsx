@@ -17,6 +17,7 @@ import {
   Check,
   Building,
 } from "lucide-react";
+import { Box, Typography } from "@mui/material";
 import { BrowserMultiFormatReader } from "@zxing/browser";
 import api from "../../api/axios";
 import { saveDraft, addToSyncQueue, getCachedData, setCachedData } from "../offline/db";
@@ -476,265 +477,284 @@ export default function CreateInvoiceScreen({ onBack }) {
   // Return step 1: Billing & Barcode scanning
   if (step === "billing") {
     return (
-      <div className="flex flex-col h-[calc(100vh-64px)] relative overflow-hidden bg-slate-900">
-        
+      <Box sx={{ display: "flex", flexDirection: "column", height: "calc(100vh - 64px)", position: "relative", overflow: "hidden", bgcolor: "#0f172a" }}>
+
         {/* Alerts Block */}
         {errorMsg && (
-          <div className="absolute top-2 left-2 right-2 z-50 p-2.5 rounded-xl bg-rose-500 text-white text-xs font-bold text-center animate-bounce shadow-md">
+          <Box className="animate-bounce" sx={{ position: "absolute", top: 8, left: 8, right: 8, zIndex: 50, p: 1.25, borderRadius: "12px", bgcolor: "#f43f5e", color: "#fff", fontSize: 12, fontWeight: 700, textAlign: "center", boxShadow: 2 }}>
             {errorMsg}
-          </div>
+          </Box>
         )}
         {successMsg && (
-          <div className="absolute top-2 left-2 right-2 z-50 p-2.5 rounded-xl bg-emerald-500 text-white text-xs font-bold text-center animate-pulse shadow-md">
+          <Box className="animate-pulse" sx={{ position: "absolute", top: 8, left: 8, right: 8, zIndex: 50, p: 1.25, borderRadius: "12px", bgcolor: "#10b981", color: "#fff", fontSize: 12, fontWeight: 700, textAlign: "center", boxShadow: 2 }}>
             {successMsg}
-          </div>
+          </Box>
         )}
 
         {/* ─── SCANNER VIEW (TOP 40%) ─── */}
-        <div
-          className="relative w-full overflow-hidden bg-black shrink-0"
-          style={{ flexBasis: "calc((100vh - 64px) * 0.4)" }}
+        <Box
+          sx={{ position: "relative", width: "100%", overflow: "hidden", bgcolor: "#000", flexShrink: 0, flexBasis: "calc((100vh - 64px) * 0.4)" }}
         >
-          
+
           {/* Header Action Bar */}
-          <div className="absolute top-3 left-3 right-3 z-30 flex items-center justify-between">
-            <button
+          <Box sx={{ position: "absolute", top: 12, left: 12, right: 12, zIndex: 30, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <Box
+              component="button"
               type="button"
               onClick={onBack}
-              className="w-9 h-9 rounded-full bg-black/40 border border-white/20 text-white flex items-center justify-center active:scale-90 transition-all"
+              sx={{ width: 36, height: 36, borderRadius: "50%", bgcolor: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.15s", "&:active": { transform: "scale(0.9)" } }}
             >
               <ChevronLeft size={20} />
-            </button>
-            <div className="flex items-center gap-2">
-              <button
+            </Box>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Box
+                component="button"
                 type="button"
                 onClick={handleToggleTorch}
-                className={`w-9 h-9 rounded-full border text-white flex items-center justify-center active:scale-90 transition-all ${
-                  torchOn ? "bg-amber-500 border-amber-500" : "bg-black/40 border-white/20"
-                }`}
+                sx={{
+                  width: 36, height: 36, borderRadius: "50%", border: "1px solid", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
+                  transition: "all 0.15s", "&:active": { transform: "scale(0.9)" },
+                  bgcolor: torchOn ? "#f59e0b" : "rgba(0,0,0,0.4)",
+                  borderColor: torchOn ? "#f59e0b" : "rgba(255,255,255,0.2)",
+                }}
               >
                 {torchOn ? <Zap size={18} /> : <ZapOff size={18} />}
-              </button>
-              <button
+              </Box>
+              <Box
+                component="button"
                 type="button"
                 onClick={() => setCameraOn(!cameraOn)}
-                className={`w-9 h-9 rounded-full border text-white flex items-center justify-center active:scale-90 transition-all ${
-                  cameraOn ? "bg-black/40 border-white/20" : "bg-rose-500 border-rose-500"
-                }`}
+                sx={{
+                  width: 36, height: 36, borderRadius: "50%", border: "1px solid", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
+                  transition: "all 0.15s", "&:active": { transform: "scale(0.9)" },
+                  bgcolor: cameraOn ? "rgba(0,0,0,0.4)" : "#f43f5e",
+                  borderColor: cameraOn ? "rgba(255,255,255,0.2)" : "#f43f5e",
+                }}
               >
                 {cameraOn ? <Camera size={18} /> : <CameraOff size={18} />}
-              </button>
-            </div>
-          </div>
+              </Box>
+            </Box>
+          </Box>
 
           {/* Camera Video Stream */}
           {cameraOn ? (
-            <video
+            <Box
+              component="video"
               ref={videoRef}
-              className="absolute inset-0 w-full h-full object-cover"
               playsInline
               muted
+              sx={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
             />
           ) : (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-800 text-center px-4">
-              <CameraOff size={32} className="text-slate-500 mb-2" />
-              <h4 className="text-xs font-bold text-slate-350">Camera is turned off</h4>
-              <p className="text-[10px] text-slate-500 mt-1">Turn on camera or use search below to add items.</p>
-            </div>
+            <Box sx={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", bgcolor: "#1e293b", textAlign: "center", px: 2 }}>
+              <CameraOff size={32} style={{ color: "#64748b", marginBottom: 8 }} />
+              <Typography component="h4" sx={{ fontSize: 12, fontWeight: 700 }}>Camera is turned off</Typography>
+              <Typography component="p" sx={{ fontSize: 10, color: "#94a3b8", mt: 0.5 }}>Turn on camera or use search below to add items.</Typography>
+            </Box>
           )}
 
           {/* Green Corner Scanner Bounding Box */}
           {cameraOn && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-[180px] h-[180px] border border-white/10 rounded-2xl relative">
+            <Box sx={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Box sx={{ width: 180, height: 180, border: "1px solid rgba(255,255,255,0.1)", borderRadius: "16px", position: "relative" }}>
                 {/* 4 neon green corners */}
-                <div className="absolute top-0 left-0 w-5 h-5 border-t-4 border-l-4 border-emerald-400 rounded-tl-lg" />
-                <div className="absolute top-0 right-0 w-5 h-5 border-t-4 border-r-4 border-emerald-400 rounded-tr-lg" />
-                <div className="absolute bottom-0 left-0 w-5 h-5 border-b-4 border-l-4 border-emerald-400 rounded-bl-lg" />
-                <div className="absolute bottom-0 right-0 w-5 h-5 border-b-4 border-r-4 border-emerald-400 rounded-br-lg" />
-              </div>
-            </div>
+                <Box sx={{ position: "absolute", top: 0, left: 0, width: 20, height: 20, borderTop: "4px solid #34d399", borderLeft: "4px solid #34d399", borderTopLeftRadius: "8px" }} />
+                <Box sx={{ position: "absolute", top: 0, right: 0, width: 20, height: 20, borderTop: "4px solid #34d399", borderRight: "4px solid #34d399", borderTopRightRadius: "8px" }} />
+                <Box sx={{ position: "absolute", bottom: 0, left: 0, width: 20, height: 20, borderBottom: "4px solid #34d399", borderLeft: "4px solid #34d399", borderBottomLeftRadius: "8px" }} />
+                <Box sx={{ position: "absolute", bottom: 0, right: 0, width: 20, height: 20, borderBottom: "4px solid #34d399", borderRight: "4px solid #34d399", borderBottomRightRadius: "8px" }} />
+              </Box>
+            </Box>
           )}
-        </div>
+        </Box>
 
         {/* ─── BOTTOM PANEL (BOTTOM 60%) ─── */}
-        <div className="flex-1 bg-white rounded-t-3xl shadow-2xl flex flex-col overflow-hidden relative">
-          
+        <Box sx={{ flex: 1, bgcolor: "#fff", borderTopLeftRadius: "24px", borderTopRightRadius: "24px", boxShadow: 24, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative" }}>
+
           {/* Drag Handle Style Bar */}
-          <div className="w-12 h-1 bg-slate-200 rounded-full mx-auto my-3 shrink-0" />
+          <Box sx={{ width: 48, height: 4, bgcolor: "#e2e8f0", borderRadius: "999px", mx: "auto", my: 1.5, flexShrink: 0 }} />
 
           {/* Search/Lookup Row */}
-          <div className="px-4 pb-2 relative shrink-0">
-            <div className="flex items-center gap-2 bg-slate-100 border border-slate-200/80 px-3 py-2 rounded-2xl">
-              <Search size={16} className="text-slate-400" />
-              <input
+          <Box sx={{ px: 2, pb: 1, position: "relative", flexShrink: 0 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1, bgcolor: "#f1f5f9", border: "1px solid rgba(226,232,240,0.8)", px: 1.5, py: 1, borderRadius: "16px" }}>
+              <Search size={16} style={{ color: "#94a3b8" }} />
+              <Box
+                component="input"
                 type="text"
                 placeholder="Search catalog or barcode..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-transparent text-xs text-slate-800 outline-none font-bold"
+                sx={{ width: "100%", bgcolor: "transparent", fontSize: 12, color: "#1e293b", outline: "none", fontWeight: 700 }}
               />
-            </div>
+            </Box>
 
             {/* Filtered Search Results Box */}
             {searchQuery.trim() !== "" && (
-              <div className="absolute left-4 right-4 top-full mt-1 bg-white border border-slate-200 shadow-xl rounded-2xl max-h-[160px] overflow-y-auto z-40 divide-y divide-slate-100">
+              <Box sx={{ position: "absolute", left: 16, right: 16, top: "100%", mt: 0.5, bgcolor: "#fff", border: "1px solid #e2e8f0", boxShadow: 8, borderRadius: "16px", maxHeight: 160, overflowY: "auto", zIndex: 40, "& > *:not(:first-of-type)": { borderTop: "1px solid #f1f5f9" } }}>
                 {filteredCatalog.length > 0 ? (
                   filteredCatalog.map((prod) => (
-                    <div
+                    <Box
                       key={prod.id}
                       onClick={() => handleSearchSelect(prod)}
-                      className="p-3 text-xs font-bold text-slate-700 active:bg-slate-50 cursor-pointer flex items-center justify-between"
+                      sx={{ p: 1.5, fontSize: 12, fontWeight: 700, color: "#334155", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", "&:active": { bgcolor: "#f8fafc" } }}
                     >
-                      <div>
-                        <span>{prod.productName || prod.name}</span>
-                        <span className="text-[10px] text-slate-400 block font-mono">{prod.productCode || prod.sku}</span>
-                      </div>
-                      <span className="text-indigo-600">{money(prod.selling_price)}</span>
-                    </div>
+                      <Box>
+                        <Box component="span">{prod.productName || prod.name}</Box>
+                        <Box component="span" sx={{ fontSize: 10, color: "#94a3b8", display: "block", fontFamily: "monospace" }}>{prod.productCode || prod.sku}</Box>
+                      </Box>
+                      <Box component="span" sx={{ color: "#4f46e5" }}>{money(prod.selling_price)}</Box>
+                    </Box>
                   ))
                 ) : (
-                  <div className="p-3 text-center text-xs text-slate-400">No items found</div>
+                  <Box sx={{ p: 1.5, textAlign: "center", fontSize: 12, color: "#94a3b8" }}>No items found</Box>
                 )}
-              </div>
+              </Box>
             )}
-          </div>
+          </Box>
 
           {/* Title and Summary Header */}
-          <div className="px-4 py-2 border-b border-slate-100 flex items-center justify-between shrink-0">
-            <div>
-              <h3 className="text-xs font-extrabold text-slate-900 m-0 uppercase tracking-wide">Scanned Items</h3>
-              <p className="text-[10px] text-slate-400 m-0 font-bold">{totalItemsCount} items total</p>
-            </div>
-            <div className="text-right">
-              <span className="text-[9px] font-bold text-slate-400 block tracking-wider uppercase">Subtotal</span>
-              <span className="text-sm font-black text-indigo-600">{money(subtotal)}</span>
-            </div>
-          </div>
+          <Box sx={{ px: 2, py: 1, borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+            <Box>
+              <Typography component="h3" sx={{ fontSize: 12, fontWeight: 800, color: "#0f172a", m: 0, textTransform: "uppercase", letterSpacing: "0.02em" }}>Scanned Items</Typography>
+              <Typography component="p" sx={{ fontSize: 10, color: "#94a3b8", m: 0, fontWeight: 700 }}>{totalItemsCount} items total</Typography>
+            </Box>
+            <Box sx={{ textAlign: "right" }}>
+              <Typography component="span" sx={{ fontSize: 9, fontWeight: 700, color: "#94a3b8", display: "block", letterSpacing: "0.05em", textTransform: "uppercase" }}>Subtotal</Typography>
+              <Typography component="span" sx={{ fontSize: 14, fontWeight: 900, color: "#4f46e5" }}>{money(subtotal)}</Typography>
+            </Box>
+          </Box>
 
           {/* Cart Items List */}
-          <div className="flex-1 overflow-y-auto px-4 py-2 pb-24">
+          <Box sx={{ flex: 1, overflowY: "auto", px: 2, py: 1, pb: 12 }}>
             {cartItems.length > 0 ? (
-              <div className="space-y-2.5">
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 1.25 }}>
                 {cartItems.map((item) => {
                   const name = item.product.productName || item.product.name;
                   const rate = Number(item.product.selling_price || 0);
                   return (
-                    <div key={item.product.id} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200/80 rounded-2xl shadow-xs">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm">
+                    <Box key={item.product.id} sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", p: 1.5, bgcolor: "#f8fafc", border: "1px solid rgba(226,232,240,0.8)", borderRadius: "16px", boxShadow: "0 1px 2px 0 rgba(0,0,0,0.03)" }}>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                        <Box sx={{ width: 36, height: 36, borderRadius: "12px", bgcolor: "#eef2ff", color: "#4f46e5", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14 }}>
                           {name.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <h4 className="text-xs font-black text-slate-800 m-0 leading-tight">{name}</h4>
-                          <span className="text-[10px] text-slate-400 block font-bold mt-0.5">{money(rate)}</span>
-                        </div>
-                      </div>
+                        </Box>
+                        <Box>
+                          <Typography component="h4" sx={{ fontSize: 12, fontWeight: 900, color: "#1e293b", m: 0, lineHeight: 1.25 }}>{name}</Typography>
+                          <Typography component="span" sx={{ fontSize: 10, color: "#94a3b8", display: "block", fontWeight: 700, mt: 0.25 }}>{money(rate)}</Typography>
+                        </Box>
+                      </Box>
 
-                      <div className="flex items-center gap-3">
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
                         {/* Decrement */}
-                        <button
+                        <Box
+                          component="button"
                           type="button"
                           onClick={() => updateQty(item.product.id, -1)}
-                          className="w-7 h-7 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-600 active:bg-slate-100"
+                          sx={{ width: 28, height: 28, borderRadius: "8px", bgcolor: "#fff", border: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "center", color: "#475569", "&:active": { bgcolor: "#f1f5f9" } }}
                         >
                           <Minus size={14} />
-                        </button>
-                        <span className="text-xs font-black text-slate-800 w-4 text-center">{item.quantity}</span>
+                        </Box>
+                        <Typography component="span" sx={{ fontSize: 12, fontWeight: 900, color: "#1e293b", width: 16, textAlign: "center" }}>{item.quantity}</Typography>
                         {/* Increment */}
-                        <button
+                        <Box
+                          component="button"
                           type="button"
                           onClick={() => updateQty(item.product.id, 1)}
-                          className="w-7 h-7 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-600 active:bg-slate-100"
+                          sx={{ width: 28, height: 28, borderRadius: "8px", bgcolor: "#fff", border: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "center", color: "#475569", "&:active": { bgcolor: "#f1f5f9" } }}
                         >
                           <Plus size={14} />
-                        </button>
+                        </Box>
                         {/* Remove */}
-                        <button
+                        <Box
+                          component="button"
                           type="button"
                           onClick={() => removeItem(item.product.id)}
-                          className="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center active:bg-rose-100 ml-1"
+                          sx={{ width: 28, height: 28, borderRadius: "8px", bgcolor: "#fff1f2", color: "#e11d48", display: "flex", alignItems: "center", justifyContent: "center", ml: 0.5, "&:active": { bgcolor: "#ffe4e6" } }}
                         >
                           <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </div>
+                        </Box>
+                      </Box>
+                    </Box>
                   );
                 })}
-              </div>
+              </Box>
             ) : (
-              <div className="flex flex-col items-center justify-center h-full text-center py-10">
-                <div className="w-16 h-16 rounded-full bg-slate-50 border border-slate-200/80 flex items-center justify-center text-slate-350 mb-3 shadow-inner">
+              <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", textAlign: "center", py: 5 }}>
+                <Box sx={{ width: 64, height: 64, borderRadius: "50%", bgcolor: "#f8fafc", border: "1px solid rgba(226,232,240,0.8)", display: "flex", alignItems: "center", justifyContent: "center", mb: 1.5, boxShadow: "inset 0 2px 4px 0 rgba(0,0,0,0.06)" }}>
                   <ShoppingBasket size={30} />
-                </div>
-                <h4 className="text-xs font-bold text-slate-700 m-0">Bill List is Empty</h4>
-                <p className="text-[10px] text-slate-400 max-w-[200px] mx-auto mt-1">
+                </Box>
+                <Typography component="h4" sx={{ fontSize: 12, fontWeight: 700, color: "#334155", m: 0 }}>Bill List is Empty</Typography>
+                <Typography component="p" sx={{ fontSize: 10, color: "#94a3b8", maxWidth: 200, mx: "auto", mt: 0.5 }}>
                   Scanned products will show up here. Use the camera reader above to begin.
-                </p>
-              </div>
+                </Typography>
+              </Box>
             )}
-          </div>
+          </Box>
 
           {/* Sticky Checkout Review Action */}
-          <div className="absolute bottom-0 left-0 right-0 p-4 bg-white/95 border-t border-slate-100 z-10">
-            <button
+          <Box sx={{ position: "absolute", bottom: 0, left: 0, right: 0, p: 2, bgcolor: "rgba(255,255,255,0.95)", borderTop: "1px solid #f1f5f9", zIndex: 10 }}>
+            <Box
+              component="button"
               type="button"
               disabled={cartItems.length === 0}
               onClick={() => setStep("checkout")}
-              className={`w-full py-3.5 rounded-2xl flex items-center justify-between px-5 text-white font-extrabold text-xs shadow-md transition-all active:scale-98 ${
-                cartItems.length === 0
-                  ? "bg-slate-300 shadow-none cursor-not-allowed"
-                  : "bg-indigo-600 shadow-indigo-600/20"
-              }`}
+              sx={{
+                width: "100%", py: 1.75, borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "space-between", px: 2.5,
+                color: "#fff", fontWeight: 800, fontSize: 12, transition: "all 0.15s", "&:active": { transform: "scale(0.98)" },
+                bgcolor: cartItems.length === 0 ? "#cbd5e1" : "#4f46e5",
+                boxShadow: cartItems.length === 0 ? "none" : "0 4px 6px -1px rgba(79,70,229,0.2)",
+                cursor: cartItems.length === 0 ? "not-allowed" : "pointer",
+              }}
             >
-              <span>REVIEW BILL ({totalItemsCount})</span>
-              <span className="text-sm font-black">{money(total)}</span>
-            </button>
-          </div>
-        </div>
-      </div>
+              <Box component="span">REVIEW BILL ({totalItemsCount})</Box>
+              <Box component="span" sx={{ fontSize: 14, fontWeight: 900 }}>{money(total)}</Box>
+            </Box>
+          </Box>
+        </Box>
+      </Box>
     );
   }
 
   // Return step 2: Checkout, Receipt, UPI scan & pay
   return (
-    <div className="space-y-4 pb-12">
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 2, pb: 6 }}>
       {successMsg && (
-        <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
+        <Box sx={{ p: 1.5, borderRadius: "12px", bgcolor: "#ecfdf5", border: "1px solid #a7f3d0", color: "#065f46", fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 1 }}>
           <Check size={16} />
-          <span>{successMsg}</span>
-        </div>
+          <Box component="span">{successMsg}</Box>
+        </Box>
       )}
 
       {/* Header Info */}
-      <div className="flex items-center gap-3">
-        <button
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+        <Box
+          component="button"
           type="button"
           onClick={() => setStep("billing")}
-          className="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center active:scale-95 transition-all"
+          sx={{ width: 32, height: 32, borderRadius: "12px", bgcolor: "#f1f5f9", color: "#334155", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.15s", "&:active": { transform: "scale(0.95)" } }}
         >
           <ChevronLeft size={16} />
-        </button>
-        <div>
-          <h3 className="text-sm font-black text-slate-900 m-0">Checkout Summary</h3>
-          <p className="text-[10px] text-slate-400 m-0 font-bold">Review payment details & print</p>
-        </div>
-      </div>
+        </Box>
+        <Box>
+          <Typography component="h3" sx={{ fontSize: 14, fontWeight: 900, color: "#0f172a", m: 0 }}>Checkout Summary</Typography>
+          <Typography component="p" sx={{ fontSize: 10, color: "#94a3b8", m: 0, fontWeight: 700 }}>Review payment details & print</Typography>
+        </Box>
+      </Box>
 
       {/* Customer Selector */}
-      <div className="vx-card">
-        <label className="text-xs font-semibold text-slate-700 block mb-1">
+      <Box className="vx-card">
+        <Typography component="label" sx={{ fontSize: 12, fontWeight: 600, color: "#334155", display: "block", mb: 0.5 }}>
           Select Customer
-        </label>
-        <input
+        </Typography>
+        <Box
+          component="input"
           type="text"
           value={customerSearchTerm}
           onChange={(e) => setCustomerSearchTerm(e.target.value)}
           placeholder={customerSearching ? "Searching..." : "Search customer by name or phone..."}
-          className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 outline-none mb-1.5"
+          sx={{ width: "100%", bgcolor: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "12px", p: 1.25, fontSize: 12, color: "#1e293b", outline: "none", mb: 0.75 }}
         />
-        <select
-          className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 outline-none font-bold"
+        <Box
+          component="select"
+          sx={{ width: "100%", bgcolor: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "12px", p: 1.25, fontSize: 12, color: "#1e293b", outline: "none", fontWeight: 700 }}
           value={selectedCustomer}
           onChange={(e) => setSelectedCustomer(e.target.value)}
         >
@@ -744,108 +764,124 @@ export default function CreateInvoiceScreen({ onBack }) {
               {c.name}
             </option>
           ))}
-        </select>
-      </div>
+        </Box>
+      </Box>
 
       {/* Receipt Details Table */}
-      <div className="vx-card overflow-hidden !p-0 border border-slate-200/80">
-        <table className="w-full text-xs text-slate-700 border-collapse">
-          <thead>
-            <tr className="bg-slate-50 border-b border-slate-200">
-              <th className="p-3 text-left font-black uppercase text-[10px] text-slate-400">Product Name</th>
-              <th className="p-3 text-right font-black uppercase text-[10px] text-slate-400">Rate</th>
-              <th className="p-3 text-right font-black uppercase text-[10px] text-slate-400">Total</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
+      <Box className="vx-card overflow-hidden !p-0 border border-slate-200/80">
+        <Box component="table" sx={{ width: "100%", fontSize: 12, color: "#334155", borderCollapse: "collapse" }}>
+          <Box component="thead">
+            <Box component="tr" sx={{ bgcolor: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
+              <Box component="th" sx={{ p: 1.5, textAlign: "left", fontWeight: 800, textTransform: "uppercase", fontSize: 10, color: "#94a3b8" }}>Product Name</Box>
+              <Box component="th" sx={{ p: 1.5, textAlign: "right", fontWeight: 800, textTransform: "uppercase", fontSize: 10, color: "#94a3b8" }}>Rate</Box>
+              <Box component="th" sx={{ p: 1.5, textAlign: "right", fontWeight: 800, textTransform: "uppercase", fontSize: 10, color: "#94a3b8" }}>Total</Box>
+            </Box>
+          </Box>
+          <Box component="tbody" sx={{ "& > *:not(:first-of-type)": { borderTop: "1px solid #f1f5f9" } }}>
             {cartItems.map((item) => {
               const name = item.product.productName || item.product.name;
               const rate = Number(item.product.selling_price || 0);
               return (
-                <tr key={item.product.id}>
-                  <td className="p-3 font-bold text-slate-800">
+                <Box component="tr" key={item.product.id}>
+                  <Box component="td" sx={{ p: 1.5, fontWeight: 700, color: "#1e293b" }}>
                     {item.quantity} x {name}
-                  </td>
-                  <td className="p-3 text-right text-slate-400 font-bold">{money(rate)}</td>
-                  <td className="p-3 text-right text-slate-800 font-extrabold">{money(item.quantity * rate)}</td>
-                </tr>
+                  </Box>
+                  <Box component="td" sx={{ p: 1.5, textAlign: "right", color: "#94a3b8", fontWeight: 700 }}>{money(rate)}</Box>
+                  <Box component="td" sx={{ p: 1.5, textAlign: "right", color: "#1e293b", fontWeight: 800 }}>{money(item.quantity * rate)}</Box>
+                </Box>
               );
             })}
-          </tbody>
-        </table>
+          </Box>
+        </Box>
 
         {/* Summary Block */}
-        <div className="p-4 bg-slate-50/50 border-t border-slate-200 space-y-1.5 text-xs">
-          <div className="flex justify-between text-slate-500 font-bold">
-            <span>Subtotal</span>
-            <span>{money(subtotal)}</span>
-          </div>
-          <div className="flex justify-between text-slate-500 font-bold">
-            <span>CGST (9%)</span>
-            <span>{money(cgst)}</span>
-          </div>
-          <div className="flex justify-between text-slate-500 font-bold">
-            <span>SGST (9%)</span>
-            <span>{money(sgst)}</span>
-          </div>
-          <div className="flex justify-between text-sm font-black text-slate-900 pt-2 border-t border-slate-200">
-            <span>GRAND TOTAL</span>
-            <span>{money(total)}</span>
-          </div>
-        </div>
-      </div>
+        <Box sx={{ p: 2, bgcolor: "rgba(248,250,252,0.5)", borderTop: "1px solid #e2e8f0", display: "flex", flexDirection: "column", gap: 0.75, fontSize: 12 }}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", color: "#64748b", fontWeight: 700 }}>
+            <Box component="span">Subtotal</Box>
+            <Box component="span">{money(subtotal)}</Box>
+          </Box>
+          <Box sx={{ display: "flex", justifyContent: "space-between", color: "#64748b", fontWeight: 700 }}>
+            <Box component="span">CGST (9%)</Box>
+            <Box component="span">{money(cgst)}</Box>
+          </Box>
+          <Box sx={{ display: "flex", justifyContent: "space-between", color: "#64748b", fontWeight: 700 }}>
+            <Box component="span">SGST (9%)</Box>
+            <Box component="span">{money(sgst)}</Box>
+          </Box>
+          <Box sx={{ display: "flex", justifyContent: "space-between", fontSize: 14, fontWeight: 900, color: "#0f172a", pt: 1, borderTop: "1px solid #e2e8f0" }}>
+            <Box component="span">GRAND TOTAL</Box>
+            <Box component="span">{money(total)}</Box>
+          </Box>
+        </Box>
+      </Box>
 
       {/* Scan to Pay QR Code */}
-      <div className="vx-card text-center p-5 flex flex-col items-center border border-slate-200/80">
-        <div className="flex items-center gap-1.5 mb-3">
-          <QrCode size={16} className="text-indigo-600" />
-          <h4 className="text-xs font-black text-slate-900 m-0">Scan to Pay</h4>
-        </div>
-        <div className="p-2 rounded-2xl bg-white border border-slate-200 shadow-sm inline-block">
-          <img
+      <Box className="vx-card text-center p-5 flex flex-col items-center border border-slate-200/80">
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 1.5 }}>
+          <QrCode size={16} style={{ color: "#4f46e5" }} />
+          <Typography component="h4" sx={{ fontSize: 12, fontWeight: 900, color: "#0f172a", m: 0 }}>Scan to Pay</Typography>
+        </Box>
+        <Box sx={{ p: 1, borderRadius: "16px", bgcolor: "#fff", border: "1px solid #e2e8f0", boxShadow: 1, display: "inline-block" }}>
+          <Box
+            component="img"
             src={qrCodeImgSrc}
             alt="UPI QR Code"
-            className="w-[180px] h-[180px]"
+            sx={{ width: 180, height: 180 }}
           />
-        </div>
-        <p className="text-[10px] text-slate-400 font-bold mt-2.5">
+        </Box>
+        <Typography component="p" sx={{ fontSize: 10, color: "#94a3b8", fontWeight: 700, mt: 1.25 }}>
           Scan using GPay, PhonePe, Paytm, or any BHIM UPI app
-        </p>
-      </div>
+        </Typography>
+      </Box>
 
       {/* Action Buttons */}
-      <div className="space-y-2">
-        <div className="flex gap-2">
-          <button
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+        <Box sx={{ display: "flex", gap: 1 }}>
+          <Box
+            component="button"
             type="button"
             disabled={saving || printing || sharing}
             onClick={handlePrint}
-            className="flex-1 py-3 bg-white border border-slate-200 text-slate-700 rounded-2xl font-black text-xs flex items-center justify-center gap-2 hover:bg-slate-50 active:scale-98 transition-all disabled:opacity-60"
+            sx={{
+              flex: 1, py: 1.5, bgcolor: "#fff", border: "1px solid #e2e8f0", color: "#334155", borderRadius: "16px", fontWeight: 800, fontSize: 12,
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 1, transition: "all 0.15s",
+              "&:hover": { bgcolor: "#f8fafc" }, "&:active": { transform: "scale(0.98)" }, "&:disabled": { opacity: 0.6 },
+            }}
           >
             <Printer size={16} /> {printing ? "Printing..." : "Print"}
-          </button>
+          </Box>
 
           {canShare && (
-            <button
+            <Box
+              component="button"
               type="button"
               disabled={saving || printing || sharing}
               onClick={handleShare}
-              className="flex-1 py-3 bg-white border border-slate-200 text-slate-700 rounded-2xl font-black text-xs flex items-center justify-center gap-2 hover:bg-slate-50 active:scale-98 transition-all disabled:opacity-60"
+              sx={{
+                flex: 1, py: 1.5, bgcolor: "#fff", border: "1px solid #e2e8f0", color: "#334155", borderRadius: "16px", fontWeight: 800, fontSize: 12,
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 1, transition: "all 0.15s",
+                "&:hover": { bgcolor: "#f8fafc" }, "&:active": { transform: "scale(0.98)" }, "&:disabled": { opacity: 0.6 },
+              }}
             >
               <Share2 size={16} /> {sharing ? "Sharing..." : "Share"}
-            </button>
+            </Box>
           )}
-        </div>
+        </Box>
 
-        <button
+        <Box
+          component="button"
           type="button"
           disabled={saving || printing || sharing}
           onClick={handleSave}
-          className="w-full py-3.5 bg-indigo-600 text-white rounded-2xl font-black text-xs flex items-center justify-center gap-2 shadow-md shadow-indigo-600/10 hover:bg-indigo-700 active:scale-98 transition-all disabled:opacity-60"
+          sx={{
+            width: "100%", py: 1.75, bgcolor: "#4f46e5", color: "#fff", borderRadius: "16px", fontWeight: 800, fontSize: 12,
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 1, boxShadow: "0 4px 6px -1px rgba(79,70,229,0.1)", transition: "all 0.15s",
+            "&:hover": { bgcolor: "#4338ca" }, "&:active": { transform: "scale(0.98)" }, "&:disabled": { opacity: 0.6 },
+          }}
         >
           {saving ? "Creating Invoice..." : "Complete & Save Invoice"}
-        </button>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   );
 }
