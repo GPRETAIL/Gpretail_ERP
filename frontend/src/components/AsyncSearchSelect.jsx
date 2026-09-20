@@ -261,7 +261,7 @@ const AsyncSearchSelect = ({ name, value, onChange, options, onAsyncSearch, plac
               }}
             />
             {isSearching && (
-              <Box component="span" className="animate-pulse" sx={{ fontSize: 10, color: "#3b82f6", fontWeight: 500, flexShrink: 0, px: 0.5 }}>Searching...</Box>
+              <Box component="span" sx={{ fontSize: 10, color: "#3b82f6", fontWeight: 500, flexShrink: 0, px: 0.5, animation: "app-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite" }}>Searching...</Box>
             )}
           </Box>
           <Box component="ul" ref={listRef} sx={{ maxHeight: 208, overflowY: "auto" }}>

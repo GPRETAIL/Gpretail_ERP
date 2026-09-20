@@ -21,19 +21,19 @@ const JobRow = ({ job, STATUS, onCancel, onRetry }) => (
     <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 1 }}>
       <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1, minWidth: 0 }}>
         {job.status === STATUS.PRINTING && (
-          <Loader2 size={14} className="animate-spin" style={{ color: "#3b82f6", marginTop: 2, flexShrink: 0 }} />
+          <Loader2 size={14} style={{ color: "#3b82f6", marginTop: 2, flexShrink: 0, animation: "app-spin 1s linear infinite" }} />
         )}
         {job.status === STATUS.QUEUED && (
-          <Printer size={14} style={{flexShrink: 0}} style={{ color: "inherit", opacity: 0.5, marginTop: 2 }} />
+          <Printer size={14} style={{ color: "inherit", opacity: 0.5, marginTop: 2, flexShrink: 0 }} />
         )}
         {job.status === STATUS.DONE && (
-          <CheckCircle2 size={14} style={{flexShrink: 0}} style={{ color: "#22c55e", marginTop: 2 }} />
+          <CheckCircle2 size={14} style={{ color: "#22c55e", marginTop: 2, flexShrink: 0 }} />
         )}
         {job.status === STATUS.FAILED && (
-          <AlertCircle size={14} style={{flexShrink: 0}} style={{ color: "#ef4444", marginTop: 2 }} />
+          <AlertCircle size={14} style={{ color: "#ef4444", marginTop: 2, flexShrink: 0 }} />
         )}
         {job.status === STATUS.CANCELLED && (
-          <X size={14} style={{flexShrink: 0}} style={{ color: "inherit", opacity: 0.5, marginTop: 2 }} />
+          <X size={14} style={{ color: "inherit", opacity: 0.5, marginTop: 2, flexShrink: 0 }} />
         )}
         <Box sx={{ minWidth: 0 }}>
           <Typography sx={{ fontSize: 12, fontWeight: 500, color: "text.primary", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>

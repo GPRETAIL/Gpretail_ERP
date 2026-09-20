@@ -2738,7 +2738,7 @@ export default function FilterableDataTable({
                 color="inherit"
                 onClick={handleNextPage}
                 disabled={!hasNext || loading}
-                startIcon={loading ? <Loader2 size={14} className="animate-spin" /> : null}
+                startIcon={loading ? <Loader2 size={14} style={{ animation: "app-spin 1s linear infinite" }} /> : null}
                 sx={loadMoreButtonSx}
               >
                 {hasNext ? "Load More" : "No more results"}
