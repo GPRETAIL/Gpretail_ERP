@@ -159,7 +159,7 @@ export default function PwaInstallPrompt() {
             bgcolor: "#059669", color: "#fff", boxShadow: "0 25px 50px -12px rgba(6,78,59,0.4)",
           }}
         >
-          <CheckCircle2 className="h-6 w-6 shrink-0 animate-bounce" style={{ color: "#fff" }} />
+          <CheckCircle2 size={24} style={{ color: "#fff", flexShrink: 0, animation: "app-bounce 1s infinite" }} />
           <Box sx={{ flex: 1 }}>
             <Typography component="h4" sx={{ fontWeight: 700, fontSize: 14 }}>App Installed Successfully!</Typography>
             <Typography sx={{ fontSize: 12, color: "#d1fae5" }}>
@@ -219,7 +219,7 @@ export default function PwaInstallPrompt() {
             "&:hover": { bgcolor: "#1e293b", color: "#fff" },
           }}
         >
-          <X className="h-4 w-4" />
+          <X size={16} />
         </IconButton>
 
         {!showIosGuide ? (
@@ -235,9 +235,9 @@ export default function PwaInstallPrompt() {
                   boxShadow: "0 4px 6px -1px rgba(99,102,241,0.3)",
                 }}
               >
-                <Smartphone className="h-6 w-6" style={{ color: "#fff" }} />
+                <Smartphone size={24} style={{ color: "#fff" }} />
                 <Box component="span" sx={{ position: "absolute", top: -4, right: -4, display: "flex", height: 14, width: 14 }}>
-                  <Box component="span" className="animate-ping" sx={{ position: "absolute", display: "inline-flex", height: "100%", width: "100%", borderRadius: "50%", bgcolor: "#34d399", opacity: 0.75 }} />
+                  <Box component="span" sx={{ position: "absolute", display: "inline-flex", height: "100%", width: "100%", borderRadius: "50%", bgcolor: "#34d399", opacity: 0.75, animation: "app-ping 1s cubic-bezier(0, 0, 0.2, 1) infinite" }} />
                   <Box component="span" sx={{ position: "relative", display: "inline-flex", height: 14, width: 14, borderRadius: "50%", bgcolor: "#10b981" }} />
                 </Box>
               </Box>
@@ -249,7 +249,7 @@ export default function PwaInstallPrompt() {
                     Mobile App
                   </Typography>
                   <Typography component="span" sx={{ display: "flex", alignItems: "center", gap: 0.5, fontSize: 11, fontWeight: 500, color: "#34d399" }}>
-                    <Sparkles className="h-3 w-3" /> Fast & Offline
+                    <Sparkles size={12} /> Fast & Offline
                   </Typography>
                 </Box>
                 <Typography component="h3" sx={{ mt: 0.25, fontSize: 14, fontWeight: 700, color: "#fff", letterSpacing: "-0.025em" }}>
@@ -265,7 +265,7 @@ export default function PwaInstallPrompt() {
             <Box sx={{ display: "flex", alignItems: "center", gap: 1, pt: 0.5 }}>
               <Button
                 onClick={handleInstallClick}
-                startIcon={<Download className="h-4 w-4" />}
+                startIcon={<Download size={16} />}
                 sx={{
                   flex: 1, borderRadius: "12px", px: 2, py: 1.25, fontSize: 12, fontWeight: 700,
                   color: "#fff", textTransform: "none",
@@ -295,7 +295,7 @@ export default function PwaInstallPrompt() {
           <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, pr: 2 }}>
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <Box sx={{ display: "flex", height: 32, width: 32, alignItems: "center", justifyContent: "center", borderRadius: "8px", bgcolor: "rgba(99,102,241,0.2)", color: "#818cf8" }}>
-                <Smartphone className="h-4 w-4" />
+                <Smartphone size={16} />
               </Box>
               <Box>
                 <Typography component="h4" sx={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>
@@ -314,7 +314,7 @@ export default function PwaInstallPrompt() {
                 </Box>
                 <Box component="span">
                   {isIos ? (
-                    <>Tap the <Box component="strong" sx={{ color: "#a5b4fc", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 0.5 }}><Share2 className="h-3.5 w-3.5" style={{ display: "inline" }} /> Share</Box> button in Safari's bottom bar.</>
+                    <>Tap the <Box component="strong" sx={{ color: "#a5b4fc", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 0.5 }}><Share2 size={14} style={{ display: "inline" }} /> Share</Box> button in Safari's bottom bar.</>
                   ) : isMobile ? (
                     <>Tap the browser menu <Box component="strong" sx={{ color: "#a5b4fc", fontWeight: 600 }}>⋮ (three dots)</Box> in the top right corner.</>
                   ) : (
@@ -328,9 +328,9 @@ export default function PwaInstallPrompt() {
                 </Box>
                 <Box component="span">
                   {isMobile ? (
-                    <>Scroll down & select <Box component="strong" sx={{ color: "#a5b4fc", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 0.5 }}><PlusSquare className="h-3.5 w-3.5" style={{ display: "inline" }} /> Add to Home Screen / Install App</Box>.</>
+                    <>Scroll down & select <Box component="strong" sx={{ color: "#a5b4fc", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 0.5 }}><PlusSquare size={14} style={{ display: "inline" }} /> Add to Home Screen / Install App</Box>.</>
                   ) : (
-                    <>Click <Box component="strong" sx={{ color: "#a5b4fc", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 0.5 }}><PlusSquare className="h-3.5 w-3.5" style={{ display: "inline" }} /> Install Vynerix ERP...</Box></>
+                    <>Click <Box component="strong" sx={{ color: "#a5b4fc", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 0.5 }}><PlusSquare size={14} style={{ display: "inline" }} /> Install Vynerix ERP...</Box></>
                   )}
                 </Box>
               </Box>
@@ -346,7 +346,7 @@ export default function PwaInstallPrompt() {
 
             <Button
               onClick={handleDismiss}
-              endIcon={<ArrowRight className="h-3.5 w-3.5" />}
+              endIcon={<ArrowRight size={14} />}
               sx={{
                 mt: 0.5, width: "100%", borderRadius: "12px", bgcolor: "#1e293b", py: 1, fontSize: 12,
                 fontWeight: 600, color: "#cbd5e1", textTransform: "none",

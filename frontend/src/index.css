@@ -35,6 +35,33 @@ main > .p-6 {
   100% { background-position: 200% center; }
 }
 
+/* ── Shared animation keyframes (Tailwind-independent) ──
+   Hand-written equivalents of Tailwind's animate-spin/pulse/bounce/in utilities,
+   applied via a plain `animation` CSS property (sx or style prop) instead of a
+   Tailwind className, so they keep working once tailwindcss itself is removed.
+   Timings/easings match Tailwind's own defaults exactly. */
+@keyframes app-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes app-pulse {
+  50% { opacity: 0.5; }
+}
+@keyframes app-bounce {
+  0%, 100% { transform: translateY(-25%); animation-timing-function: cubic-bezier(0.8, 0, 1, 1); }
+  50% { transform: translateY(0); animation-timing-function: cubic-bezier(0, 0, 0.2, 1); }
+}
+@keyframes app-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes app-slide-in-from-bottom {
+  from { transform: translateY(16px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes app-ping {
+  75%, 100% { transform: scale(2); opacity: 0; }
+}
+
 /* ── Liquid Glass Base Button ──
    Neutral frosted glass by default (like Apple iOS liquid glass).
    Color tint only appears on hover via the variant classes.

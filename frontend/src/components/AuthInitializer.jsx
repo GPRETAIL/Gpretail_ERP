@@ -40,8 +40,7 @@ const AuthInitializer = ({ children }) => {
     return (
       <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", bgcolor: "#0f172a" }}>
         <Box
-          className="animate-spin"
-          sx={{ width: 32, height: 32, border: "2px solid #818cf8", borderTopColor: "transparent", borderRadius: "50%" }}
+          sx={{ width: 32, height: 32, border: "2px solid #818cf8", borderTopColor: "transparent", borderRadius: "50%", animation: "app-spin 1s linear infinite" }}
         />
       </Box>
     );

@@ -107,13 +107,13 @@ const ActivationGate = ({ children }) => {
     return (
       <Box sx={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", bgcolor: "#f1f5f9", px: 2 }}>
         <Box sx={{ width: "100%", maxWidth: 384, borderRadius: 3, border: "1px solid #e2e8f0", bgcolor: "background.paper", p: 4, textAlign: "center", boxShadow: 4 }}>
-          <ServerCrash className="mx-auto h-10 w-10" style={{ color: "#94a3b8" }} />
+          <ServerCrash size={40} style={{ color: "#94a3b8" }} />
           <Typography component="h1" sx={{ mt: 1.5, fontSize: 18, fontWeight: 700, color: "#0f172a" }}>Cannot verify activation</Typography>
           <Typography sx={{ mt: 0.5, fontSize: 14, color: "#64748b" }}>The system could not be reached. Please try again.</Typography>
           <Button
             type="button"
             onClick={() => { setPhase("loading"); check(); }}
-            startIcon={<RefreshCw className="h-4 w-4" />}
+            startIcon={<RefreshCw size={16} />}
             sx={{ mt: 2.5, bgcolor: "#3a6ea5", fontWeight: 600, textTransform: "none", color: "#fff", "&:hover": { bgcolor: "#345f8f" }, borderRadius: 2 }}
           >
             Retry
@@ -125,7 +125,7 @@ const ActivationGate = ({ children }) => {
 
   return (
     <Box sx={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", bgcolor: "#f1f5f9" }}>
-      <Loader2 className="h-8 w-8 animate-spin" style={{ color: "#3a6ea5" }} />
+      <Loader2 size={32} style={{ animation: "app-spin 1s linear infinite", color: "#3a6ea5" }} />
     </Box>
   );
 };
