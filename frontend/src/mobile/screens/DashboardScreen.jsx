@@ -16,6 +16,7 @@ import {
   Search,
   ChevronDown,
 } from "lucide-react";
+import { Box, Typography } from "@mui/material";
 import api from "../../api/axios";
 import { setCachedData, getCachedData, getSyncQueue } from "../offline/db";
 import useDashboardRealtime from "../../hooks/useDashboardRealtime";
@@ -32,11 +33,11 @@ const money = (n) =>
 // the invoice/purchase date itself), so "days remaining" can't be shown
 // honestly - it would imply a due date that was never set. This shows how
 // long the bill has been outstanding instead, color-coded for urgency.
-const daysOutstandingClass = (days) => {
+const daysOutstandingColor = (days) => {
   const d = Number(days || 0);
-  if (d > 30) return "text-rose-600";
-  if (d > 15) return "text-amber-600";
-  return "text-slate-500";
+  if (d > 30) return "#e11d48";
+  if (d > 15) return "#d97706";
+  return "#64748b";
 };
 
 const formatYmd = (date) => {
@@ -252,505 +253,543 @@ export default function DashboardScreen({ onNavigate, onOpenSearch, onOpenSyncCe
 
   const fastMovingRows = tables.fastMovingSection?.rows || [];
   return (
-    <div className="space-y-3.5 pb-8">
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 1.75, pb: 4 }}>
       {/* ─── 0. Global Search Entry ─── */}
       {onOpenSearch && (
-        <button
+        <Box
+          component="button"
           type="button"
           onClick={onOpenSearch}
-          className="w-full flex items-center gap-2 bg-white border border-slate-200/80 px-3.5 py-2.5 rounded-2xl shadow-xs text-left active:scale-98 transition-all"
+          sx={{
+            width: "100%", display: "flex", alignItems: "center", gap: 1, bgcolor: "#fff", border: "1px solid rgba(226,232,240,0.8)",
+            px: 1.75, py: 1.25, borderRadius: "16px", boxShadow: "0 1px 2px 0 rgba(0,0,0,0.03)", textAlign: "left", transition: "all 0.15s",
+            "&:active": { transform: "scale(0.98)" },
+          }}
         >
-          <Search size={15} className="text-slate-400 shrink-0" />
-          <span className="text-xs font-semibold text-slate-400">
+          <Search size={15} style={{ color: "#94a3b8", flexShrink: 0 }} />
+          <Typography component="span" sx={{ fontSize: 12, fontWeight: 600, color: "#94a3b8" }}>
             Search products, customers, invoices...
-          </span>
-        </button>
+          </Typography>
+        </Box>
       )}
 
       {/* ─── 1. Store Header & Date Filter Strip (Zoho / Quanto style) ─── */}
-      <div className="flex items-center justify-between gap-2 pt-1">
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1, pt: 0.5 }}>
         {canSwitchStore ? (
-          <button
+          <Box
+            component="button"
             type="button"
             onClick={() => setBranchModalOpen(true)}
-            className="flex items-center gap-1.5 bg-white border border-slate-200/80 px-2.5 py-1.5 rounded-2xl shadow-xs active:scale-95 transition-all"
+            sx={{ display: "flex", alignItems: "center", gap: 0.75, bgcolor: "#fff", border: "1px solid rgba(226,232,240,0.8)", px: 1.25, py: 0.75, borderRadius: "16px", boxShadow: "0 1px 2px 0 rgba(0,0,0,0.03)", transition: "all 0.15s", "&:active": { transform: "scale(0.95)" } }}
           >
-            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-            <span className="text-[11px] font-black text-slate-800 tracking-tight truncate max-w-[140px]">
+            <Box component="span" className="animate-pulse" sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "#10b981", flexShrink: 0 }} />
+            <Typography component="span" sx={{ fontSize: 11, fontWeight: 900, color: "#1e293b", letterSpacing: "-0.01em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 140 }}>
               {branchLabel}
-            </span>
-            <ChevronDown size={12} className="text-slate-400 shrink-0" />
-          </button>
+            </Typography>
+            <ChevronDown size={12} style={{ color: "#94a3b8", flexShrink: 0 }} />
+          </Box>
         ) : (
-          <div className="flex items-center gap-1.5 bg-white border border-slate-200/80 px-2.5 py-1.5 rounded-2xl shadow-xs">
-            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-            <span className="text-[11px] font-black text-slate-800 tracking-tight truncate max-w-[160px]">
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, bgcolor: "#fff", border: "1px solid rgba(226,232,240,0.8)", px: 1.25, py: 0.75, borderRadius: "16px", boxShadow: "0 1px 2px 0 rgba(0,0,0,0.03)" }}>
+            <Box component="span" className="animate-pulse" sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "#10b981", flexShrink: 0 }} />
+            <Typography component="span" sx={{ fontSize: 11, fontWeight: 900, color: "#1e293b", letterSpacing: "-0.01em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 160 }}>
               {branchLabel}
-            </span>
-          </div>
+            </Typography>
+          </Box>
         )}
 
         {/* Date Filter Pills */}
-        <div className="flex items-center gap-0.5 bg-slate-200/70 p-1 rounded-2xl">
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.25, bgcolor: "rgba(226,232,240,0.7)", p: 0.5, borderRadius: "16px" }}>
           {[
             { id: "today", label: "Today" },
             { id: "yesterday", label: "Y'day" },
             { id: "week", label: "Week" },
             { id: "month", label: "Month" },
           ].map((tab) => (
-            <button
+            <Box
+              component="button"
               key={tab.id}
               type="button"
               onClick={() => setDateRange(tab.id)}
-              className={`px-2 py-0.5 text-[10.5px] font-bold rounded-xl transition-all ${
-                dateRange === tab.id
-                  ? "bg-white text-indigo-600 shadow-sm"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
+              sx={{
+                px: 1, py: 0.25, fontSize: 10.5, fontWeight: 700, borderRadius: "12px", transition: "all 0.15s",
+                bgcolor: dateRange === tab.id ? "#fff" : "transparent",
+                color: dateRange === tab.id ? "#4f46e5" : "#475569",
+                boxShadow: dateRange === tab.id ? 1 : "none",
+              }}
             >
               {tab.label}
-            </button>
+            </Box>
           ))}
-        </div>
-      </div>
+        </Box>
+      </Box>
 
       {/* ─── 2. 1-Tap Quick Action Bar (Vyapar / Khatabook / GOFRUGAL) ─── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "8px" }}>
-        <button
+      <Box style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "8px" }}>
+        <Box
+          component="button"
           type="button"
           onClick={() => onNavigate("create_invoice")}
-          className="flex flex-col items-center justify-center p-2 rounded-2xl bg-indigo-600 text-white shadow-md shadow-indigo-600/20 active:scale-95 transition-all text-center"
+          sx={{
+            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", p: 1, borderRadius: "16px",
+            bgcolor: "#4f46e5", color: "#fff", boxShadow: "0 4px 6px -1px rgba(79,70,229,0.2)", transition: "all 0.15s", textAlign: "center",
+            "&:active": { transform: "scale(0.95)" },
+          }}
         >
-          <Plus size={16} className="mb-0.5" />
-          <span className="text-[10.5px] font-bold leading-tight">New Sale</span>
-        </button>
+          <Plus size={16} style={{ marginBottom: 2 }} />
+          <Typography component="span" sx={{ fontSize: 10.5, fontWeight: 700, lineHeight: 1.25 }}>New Sale</Typography>
+        </Box>
 
-        <button
+        <Box
+          component="button"
           type="button"
           onClick={() => onNavigate("purchase")}
-          className="flex flex-col items-center justify-center p-2 rounded-2xl bg-white border border-slate-200/90 text-slate-800 shadow-xs hover:bg-slate-50 active:scale-95 transition-all text-center"
+          sx={{
+            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", p: 1, borderRadius: "16px",
+            bgcolor: "#fff", border: "1px solid rgba(226,232,240,0.9)", color: "#1e293b", boxShadow: "0 1px 2px 0 rgba(0,0,0,0.03)", transition: "all 0.15s", textAlign: "center",
+            "&:hover": { bgcolor: "#f8fafc" }, "&:active": { transform: "scale(0.95)" },
+          }}
         >
-          <ShoppingBag size={16} className="mb-0.5 text-indigo-600" />
-          <span className="text-[10.5px] font-bold leading-tight">Purchase</span>
-        </button>
+          <ShoppingBag size={16} style={{ marginBottom: 2, color: "#4f46e5" }} />
+          <Typography component="span" sx={{ fontSize: 10.5, fontWeight: 700, lineHeight: 1.25 }}>Purchase</Typography>
+        </Box>
 
-        <button
+        <Box
+          component="button"
           type="button"
           onClick={() => onNavigate("inventory")}
-          className="flex flex-col items-center justify-center p-2 rounded-2xl bg-white border border-slate-200/90 text-slate-800 shadow-xs hover:bg-slate-50 active:scale-95 transition-all text-center"
+          sx={{
+            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", p: 1, borderRadius: "16px",
+            bgcolor: "#fff", border: "1px solid rgba(226,232,240,0.9)", color: "#1e293b", boxShadow: "0 1px 2px 0 rgba(0,0,0,0.03)", transition: "all 0.15s", textAlign: "center",
+            "&:hover": { bgcolor: "#f8fafc" }, "&:active": { transform: "scale(0.95)" },
+          }}
         >
-          <Package size={16} className="mb-0.5 text-purple-600" />
-          <span className="text-[10.5px] font-bold leading-tight">Stock</span>
-        </button>
+          <Package size={16} style={{ marginBottom: 2, color: "#9333ea" }} />
+          <Typography component="span" sx={{ fontSize: 10.5, fontWeight: 700, lineHeight: 1.25 }}>Stock</Typography>
+        </Box>
 
-        <button
+        <Box
+          component="button"
           type="button"
           onClick={() => onNavigate("reports")}
-          className="flex flex-col items-center justify-center p-2 rounded-2xl bg-white border border-slate-200/90 text-slate-800 shadow-xs hover:bg-slate-50 active:scale-95 transition-all text-center"
+          sx={{
+            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", p: 1, borderRadius: "16px",
+            bgcolor: "#fff", border: "1px solid rgba(226,232,240,0.9)", color: "#1e293b", boxShadow: "0 1px 2px 0 rgba(0,0,0,0.03)", transition: "all 0.15s", textAlign: "center",
+            "&:hover": { bgcolor: "#f8fafc" }, "&:active": { transform: "scale(0.95)" },
+          }}
         >
-          <FileText size={16} className="mb-0.5 text-emerald-600" />
-          <span className="text-[10.5px] font-bold leading-tight">Reports</span>
-        </button>
-      </div>
+          <FileText size={16} style={{ marginBottom: 2, color: "#059669" }} />
+          <Typography component="span" sx={{ fontSize: 10.5, fontWeight: 700, lineHeight: 1.25 }}>Reports</Typography>
+        </Box>
+      </Box>
 
       {/* ─── Needs Attention (Actionable alerts) ─── */}
-      <div className="p-3.5 rounded-2xl bg-white border border-slate-200/80 shadow-xs">
-        <div className="flex items-center justify-between mb-2.5">
-          <div className="flex items-center gap-1.5">
-            <AlertTriangle size={15} className="text-amber-500 animate-pulse" />
-            <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-wider m-0">
+      <Box sx={{ p: 1.75, borderRadius: "16px", bgcolor: "#fff", border: "1px solid rgba(226,232,240,0.8)", boxShadow: "0 1px 2px 0 rgba(0,0,0,0.03)" }}>
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1.25 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+            <AlertTriangle size={15} className="animate-pulse" style={{ color: "#f59e0b" }} />
+            <Typography component="h4" sx={{ fontSize: 11, fontWeight: 900, color: "#0f172a", textTransform: "uppercase", letterSpacing: "0.05em", m: 0 }}>
               Needs Attention
-            </h4>
-          </div>
-          <span className="text-[9.5px] font-bold text-slate-400">Action Required</span>
-        </div>
+            </Typography>
+          </Box>
+          <Typography component="span" sx={{ fontSize: 9.5, fontWeight: 700, color: "#94a3b8" }}>Action Required</Typography>
+        </Box>
 
-        <div className="space-y-2">
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
           {/* Item 1: Low Stock Products */}
-          <div
+          <Box
             onClick={() => onNavigate("inventory")}
-            className="flex items-center justify-between p-2.5 rounded-xl bg-red-50/50 border border-red-100/80 active:scale-98 transition-all cursor-pointer"
+            sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", p: 1.25, borderRadius: "12px", bgcolor: "rgba(254,242,242,0.5)", border: "1px solid rgba(254,226,226,0.8)", cursor: "pointer", transition: "all 0.15s", "&:active": { transform: "scale(0.98)" } }}
           >
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-red-500" />
-              <span className="text-[11.5px] font-bold text-slate-700">
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Box component="span" sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "#ef4444" }} />
+              <Typography component="span" sx={{ fontSize: 11.5, fontWeight: 700, color: "#334155" }}>
                 {attentionData?.low_stock ?? 0} Products Low Stock
-              </span>
-            </div>
-            <ChevronRight size={14} className="text-slate-400" />
-          </div>
+              </Typography>
+            </Box>
+            <ChevronRight size={14} style={{ color: "#94a3b8" }} />
+          </Box>
 
           {/* Item 2: Pending Approvals */}
-          <div
+          <Box
             onClick={() => onNavigate("approvals")}
-            className="flex items-center justify-between p-2.5 rounded-xl bg-blue-50/50 border border-blue-100/80 active:scale-98 transition-all cursor-pointer"
+            sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", p: 1.25, borderRadius: "12px", bgcolor: "rgba(239,246,255,0.5)", border: "1px solid rgba(219,234,254,0.8)", cursor: "pointer", transition: "all 0.15s", "&:active": { transform: "scale(0.98)" } }}
           >
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-blue-500" />
-              <span className="text-[11.5px] font-bold text-slate-700">
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Box component="span" sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "#3b82f6" }} />
+              <Typography component="span" sx={{ fontSize: 11.5, fontWeight: 700, color: "#334155" }}>
                 {attentionData?.pending_approvals ?? 0} Pending Approvals
-              </span>
-            </div>
-            <ChevronRight size={14} className="text-slate-400" />
-          </div>
+              </Typography>
+            </Box>
+            <ChevronRight size={14} style={{ color: "#94a3b8" }} />
+          </Box>
 
           {/* Item 3: Purchase Bills Due */}
-          <div
+          <Box
             onClick={() => onNavigate("purchase")}
-            className="flex items-center justify-between p-2.5 rounded-xl bg-amber-50/50 border border-amber-100/80 active:scale-98 transition-all cursor-pointer"
+            sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", p: 1.25, borderRadius: "12px", bgcolor: "rgba(255,251,235,0.5)", border: "1px solid rgba(254,243,199,0.8)", cursor: "pointer", transition: "all 0.15s", "&:active": { transform: "scale(0.98)" } }}
           >
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-amber-500" />
-              <span className="text-[11.5px] font-bold text-slate-700">
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Box component="span" sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "#f59e0b" }} />
+              <Typography component="span" sx={{ fontSize: 11.5, fontWeight: 700, color: "#334155" }}>
                 {attentionData?.overdue_payables ?? 0} Purchase Bills Due
-              </span>
-            </div>
-            <ChevronRight size={14} className="text-slate-400" />
-          </div>
+              </Typography>
+            </Box>
+            <ChevronRight size={14} style={{ color: "#94a3b8" }} />
+          </Box>
 
           {/* Item 4: Employees on Leave */}
-          <div
+          <Box
             onClick={() => onNavigate("attendance")}
-            className="flex items-center justify-between p-2.5 rounded-xl bg-violet-50/50 border border-violet-100/80 active:scale-98 transition-all cursor-pointer"
+            sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", p: 1.25, borderRadius: "12px", bgcolor: "rgba(245,243,255,0.5)", border: "1px solid rgba(237,233,254,0.8)", cursor: "pointer", transition: "all 0.15s", "&:active": { transform: "scale(0.98)" } }}
           >
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-violet-500" />
-              <span className="text-[11.5px] font-bold text-slate-700">
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Box component="span" sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "#8b5cf6" }} />
+              <Typography component="span" sx={{ fontSize: 11.5, fontWeight: 700, color: "#334155" }}>
                 {attentionData?.employees_on_leave ?? 0} Employees on Leave
-              </span>
-            </div>
-            <ChevronRight size={14} className="text-slate-400" />
-          </div>
+              </Typography>
+            </Box>
+            <ChevronRight size={14} style={{ color: "#94a3b8" }} />
+          </Box>
 
           {/* Item 5: Unsynced Offline Changes - only shown when there's something
               actually waiting, since most sessions never queue anything.
               Opens the Sync Center to inspect/retry/discard queued items. */}
           {pendingSyncCount > 0 && (
-            <div
+            <Box
               onClick={() => onOpenSyncCenter && onOpenSyncCenter()}
-              className={`flex items-center justify-between p-2.5 rounded-xl bg-cyan-50/50 border border-cyan-100/80 ${
-                onOpenSyncCenter ? "cursor-pointer active:scale-98 transition-all" : ""
-              }`}
+              sx={{
+                display: "flex", alignItems: "center", justifyContent: "space-between", p: 1.25, borderRadius: "12px",
+                bgcolor: "rgba(236,254,255,0.5)", border: "1px solid rgba(207,250,254,0.8)",
+                cursor: onOpenSyncCenter ? "pointer" : "default",
+                transition: onOpenSyncCenter ? "all 0.15s" : "none",
+                "&:active": onOpenSyncCenter ? { transform: "scale(0.98)" } : {},
+              }}
             >
-              <div className="flex items-center gap-2">
-                <RefreshCw size={11} className="text-cyan-600 shrink-0" />
-                <span className="text-[11.5px] font-bold text-slate-700">
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <RefreshCw size={11} style={{ color: "#0891b2", flexShrink: 0 }} />
+                <Typography component="span" sx={{ fontSize: 11.5, fontWeight: 700, color: "#334155" }}>
                   {pendingSyncCount} Unsynced Change{pendingSyncCount === 1 ? "" : "s"} Waiting to Sync
-                </span>
-              </div>
-              {onOpenSyncCenter && <ChevronRight size={14} className="text-slate-400" />}
-            </div>
+                </Typography>
+              </Box>
+              {onOpenSyncCenter && <ChevronRight size={14} style={{ color: "#94a3b8" }} />}
+            </Box>
           )}
-        </div>
-      </div>
+        </Box>
+      </Box>
 
       {/* ─── 3. Primary KPI Cards ─── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "10px" }}>
+      <Box style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "10px" }}>
 
         {/* CARD 1: Sales Today */}
-        <div
+        <Box
           onClick={() => onNavigate("sales")}
-          className="p-3 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-white to-white border border-emerald-200/80 shadow-xs active:scale-98 transition-all cursor-pointer flex flex-col justify-between"
+          sx={{
+            p: 1.5, borderRadius: "16px", backgroundImage: "linear-gradient(to bottom right, rgba(16,185,129,0.1), #fff, #fff)",
+            border: "1px solid rgba(167,243,208,0.8)", boxShadow: "0 1px 2px 0 rgba(0,0,0,0.03)", cursor: "pointer", transition: "all 0.15s",
+            display: "flex", flexDirection: "column", justifyContent: "space-between", "&:active": { transform: "scale(0.98)" },
+          }}
         >
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700">
+          <Box>
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 0.5 }}>
+              <Typography component="span" sx={{ fontSize: 10, fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.05em", color: "#047857" }}>
                 Sales Today
-              </span>
-              <div className="w-5 h-5 rounded-md bg-emerald-100 text-emerald-700 flex items-center justify-center">
+              </Typography>
+              <Box sx={{ width: 20, height: 20, borderRadius: "6px", bgcolor: "#d1fae5", color: "#047857", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <TrendingUp size={12} />
-              </div>
-            </div>
+              </Box>
+            </Box>
 
-            <div className="text-[14px] font-black text-slate-900 tracking-tight leading-snug">
+            <Typography sx={{ fontSize: 14, fontWeight: 900, color: "#0f172a", letterSpacing: "-0.01em", lineHeight: 1.375 }}>
               {hasBillsData ? money(totalBillsAmount) : "—"}
-            </div>
-          </div>
+            </Typography>
+          </Box>
 
           {/* Sub-Quantities */}
-          <div className="mt-2 pt-1.5 border-t border-emerald-100/70 flex items-center justify-between text-[9.5px] text-slate-600 font-semibold">
-            <span>{totalBillsCount} Bills ({unsettledCount} unsettled)</span>
+          <Box sx={{ mt: 1, pt: 0.75, borderTop: "1px solid rgba(209,250,229,0.7)", display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 9.5, color: "#475569", fontWeight: 600 }}>
+            <Box component="span">{totalBillsCount} Bills ({unsettledCount} unsettled)</Box>
             {billsTrend != null && (
-              <span
-                className={`font-bold ${
-                  billsTrendDirection === "down" ? "text-rose-600" : "text-emerald-600"
-                }`}
-              >
+              <Box component="span" sx={{ fontWeight: 700, color: billsTrendDirection === "down" ? "#e11d48" : "#059669" }}>
                 {billsTrendDirection === "down" ? "↓" : "↑"}
                 {billsTrend}%
-              </span>
+              </Box>
             )}
-          </div>
-        </div>
+          </Box>
+        </Box>
 
         {/* CARD 2: Purchase Today */}
-        <div
+        <Box
           onClick={() => onNavigate("purchase")}
-          className="p-3 rounded-2xl bg-gradient-to-br from-blue-500/10 via-white to-white border border-blue-200/80 shadow-xs active:scale-98 transition-all cursor-pointer flex flex-col justify-between"
+          sx={{
+            p: 1.5, borderRadius: "16px", backgroundImage: "linear-gradient(to bottom right, rgba(59,130,246,0.1), #fff, #fff)",
+            border: "1px solid rgba(191,219,254,0.8)", boxShadow: "0 1px 2px 0 rgba(0,0,0,0.03)", cursor: "pointer", transition: "all 0.15s",
+            display: "flex", flexDirection: "column", justifyContent: "space-between", "&:active": { transform: "scale(0.98)" },
+          }}
         >
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] font-black uppercase tracking-wider text-blue-700">
+          <Box>
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 0.5 }}>
+              <Typography component="span" sx={{ fontSize: 10, fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.05em", color: "#1d4ed8" }}>
                 Purchase Today
-              </span>
-              <div className="w-5 h-5 rounded-md bg-blue-100 text-blue-700 flex items-center justify-center">
+              </Typography>
+              <Box sx={{ width: 20, height: 20, borderRadius: "6px", bgcolor: "#dbeafe", color: "#1d4ed8", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <ShoppingBag size={12} />
-              </div>
-            </div>
+              </Box>
+            </Box>
 
-            <div className="text-[14px] font-black text-slate-900 tracking-tight leading-snug">
+            <Typography sx={{ fontSize: 14, fontWeight: 900, color: "#0f172a", letterSpacing: "-0.01em", lineHeight: 1.375 }}>
               {hasPurchasesData ? money(purchasesAmount) : "—"}
-            </div>
-          </div>
+            </Typography>
+          </Box>
 
-          <div className="mt-2 pt-1.5 border-t border-blue-100/70 flex items-center justify-between text-[9.5px] text-slate-600 font-semibold">
-            <span>{purchasesCount} Bills</span>
+          <Box sx={{ mt: 1, pt: 0.75, borderTop: "1px solid rgba(219,234,254,0.7)", display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 9.5, color: "#475569", fontWeight: 600 }}>
+            <Box component="span">{purchasesCount} Bills</Box>
             {purchasesTrend != null && (
-              <span
-                className={`font-bold ${
-                  purchasesTrendDirection === "down" ? "text-rose-600" : "text-emerald-600"
-                }`}
-              >
+              <Box component="span" sx={{ fontWeight: 700, color: purchasesTrendDirection === "down" ? "#e11d48" : "#059669" }}>
                 {purchasesTrendDirection === "down" ? "↓" : "↑"}
                 {purchasesTrend}%
-              </span>
+              </Box>
             )}
-          </div>
-        </div>
+          </Box>
+        </Box>
 
         {/* CARD 3: Returns */}
-        <div
+        <Box
           onClick={() => onNavigate("returns")}
-          className="p-3 rounded-2xl bg-gradient-to-br from-rose-500/10 via-white to-white border border-rose-200/80 shadow-xs active:scale-98 transition-all cursor-pointer flex flex-col justify-between"
+          sx={{
+            p: 1.5, borderRadius: "16px", backgroundImage: "linear-gradient(to bottom right, rgba(244,63,94,0.1), #fff, #fff)",
+            border: "1px solid rgba(254,205,211,0.8)", boxShadow: "0 1px 2px 0 rgba(0,0,0,0.03)", cursor: "pointer", transition: "all 0.15s",
+            display: "flex", flexDirection: "column", justifyContent: "space-between", "&:active": { transform: "scale(0.98)" },
+          }}
         >
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] font-black uppercase tracking-wider text-rose-700">
+          <Box>
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 0.5 }}>
+              <Typography component="span" sx={{ fontSize: 10, fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.05em", color: "#be123c" }}>
                 Returns
-              </span>
-              <div className="w-5 h-5 rounded-md bg-rose-100 text-rose-700 flex items-center justify-center">
+              </Typography>
+              <Box sx={{ width: 20, height: 20, borderRadius: "6px", bgcolor: "#ffe4e6", color: "#be123c", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <RotateCcw size={12} />
-              </div>
-            </div>
+              </Box>
+            </Box>
 
-            <div className="text-[14px] font-black text-slate-900 tracking-tight leading-snug">
+            <Typography sx={{ fontSize: 14, fontWeight: 900, color: "#0f172a", letterSpacing: "-0.01em", lineHeight: 1.375 }}>
               {hasReturnsData ? money(returnsAmount) : "—"}
-            </div>
-          </div>
+            </Typography>
+          </Box>
 
-          <div className="mt-2 pt-1.5 border-t border-rose-100/70 flex items-center justify-between text-[9.5px] text-slate-600 font-semibold">
-            <span>{returnsCount} Returns</span>
+          <Box sx={{ mt: 1, pt: 0.75, borderTop: "1px solid rgba(255,228,230,0.7)", display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 9.5, color: "#475569", fontWeight: 600 }}>
+            <Box component="span">{returnsCount} Returns</Box>
             {returnsTrend != null && (
-              <span
-                className={`font-bold ${
-                  returnsTrendDirection === "down" ? "text-emerald-600" : "text-rose-600"
-                }`}
-              >
+              <Box component="span" sx={{ fontWeight: 700, color: returnsTrendDirection === "down" ? "#059669" : "#e11d48" }}>
                 {returnsTrendDirection === "down" ? "↓" : "↑"}
                 {returnsTrend}%
-              </span>
+              </Box>
             )}
-          </div>
-        </div>
+          </Box>
+        </Box>
 
         {/* CARD 4: Purchase Return */}
-        <div
+        <Box
           onClick={() => onNavigate("purchase")}
-          className="p-3 rounded-2xl bg-gradient-to-br from-orange-500/10 via-white to-white border border-orange-200/80 shadow-xs active:scale-98 transition-all cursor-pointer flex flex-col justify-between"
+          sx={{
+            p: 1.5, borderRadius: "16px", backgroundImage: "linear-gradient(to bottom right, rgba(249,115,22,0.1), #fff, #fff)",
+            border: "1px solid rgba(254,215,170,0.8)", boxShadow: "0 1px 2px 0 rgba(0,0,0,0.03)", cursor: "pointer", transition: "all 0.15s",
+            display: "flex", flexDirection: "column", justifyContent: "space-between", "&:active": { transform: "scale(0.98)" },
+          }}
         >
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] font-black uppercase tracking-wider text-orange-700">
+          <Box>
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 0.5 }}>
+              <Typography component="span" sx={{ fontSize: 10, fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.05em", color: "#c2410c" }}>
                 Purchase Return
-              </span>
-              <div className="w-5 h-5 rounded-md bg-orange-100 text-orange-700 flex items-center justify-center">
+              </Typography>
+              <Box sx={{ width: 20, height: 20, borderRadius: "6px", bgcolor: "#ffedd5", color: "#c2410c", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <Undo2 size={12} />
-              </div>
-            </div>
+              </Box>
+            </Box>
 
-            <div className="text-[14px] font-black text-slate-900 tracking-tight leading-snug">
+            <Typography sx={{ fontSize: 14, fontWeight: 900, color: "#0f172a", letterSpacing: "-0.01em", lineHeight: 1.375 }}>
               {hasPurchaseReturnsData ? money(purchaseReturnsAmount) : "—"}
-            </div>
-          </div>
+            </Typography>
+          </Box>
 
-          <div className="mt-2 pt-1.5 border-t border-orange-100/70 flex items-center justify-between text-[9.5px] text-slate-600 font-semibold">
-            <span>{purchaseReturnsCount} Returns</span>
+          <Box sx={{ mt: 1, pt: 0.75, borderTop: "1px solid rgba(255,237,213,0.7)", display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 9.5, color: "#475569", fontWeight: 600 }}>
+            <Box component="span">{purchaseReturnsCount} Returns</Box>
             {purchaseReturnsTrend != null && (
-              <span
-                className={`font-bold ${
-                  purchaseReturnsTrendDirection === "down" ? "text-emerald-600" : "text-rose-600"
-                }`}
-              >
+              <Box component="span" sx={{ fontWeight: 700, color: purchaseReturnsTrendDirection === "down" ? "#059669" : "#e11d48" }}>
                 {purchaseReturnsTrendDirection === "down" ? "↓" : "↑"}
                 {purchaseReturnsTrend}%
-              </span>
+              </Box>
             )}
-          </div>
-        </div>
+          </Box>
+        </Box>
 
         {/* CARD 5: Stock value */}
-        <div
+        <Box
           onClick={() => onNavigate("inventory")}
-          className="p-3 rounded-2xl bg-gradient-to-br from-purple-500/10 via-white to-white border border-purple-200/80 shadow-xs active:scale-98 transition-all cursor-pointer flex flex-col justify-between"
+          sx={{
+            p: 1.5, borderRadius: "16px", backgroundImage: "linear-gradient(to bottom right, rgba(168,85,247,0.1), #fff, #fff)",
+            border: "1px solid rgba(233,213,255,0.8)", boxShadow: "0 1px 2px 0 rgba(0,0,0,0.03)", cursor: "pointer", transition: "all 0.15s",
+            display: "flex", flexDirection: "column", justifyContent: "space-between", "&:active": { transform: "scale(0.98)" },
+          }}
         >
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] font-black uppercase tracking-wider text-purple-700">
+          <Box>
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 0.5 }}>
+              <Typography component="span" sx={{ fontSize: 10, fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.05em", color: "#7e22ce" }}>
                 Stock value
-              </span>
-              <div className="w-5 h-5 rounded-md bg-purple-100 text-purple-700 flex items-center justify-center">
+              </Typography>
+              <Box sx={{ width: 20, height: 20, borderRadius: "6px", bgcolor: "#f3e8ff", color: "#7e22ce", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <Package size={12} />
-              </div>
-            </div>
+              </Box>
+            </Box>
 
-            <div className="text-[14px] font-black text-slate-900 tracking-tight leading-snug">
+            <Typography sx={{ fontSize: 14, fontWeight: 900, color: "#0f172a", letterSpacing: "-0.01em", lineHeight: 1.375 }}>
               {hasStockData ? money(totalStockVal) : "—"}
-            </div>
-          </div>
+            </Typography>
+          </Box>
 
-          <div className="mt-2 pt-1.5 border-t border-purple-100/70 flex items-center justify-end text-[9.5px] text-slate-600 font-semibold">
+          <Box sx={{ mt: 1, pt: 0.75, borderTop: "1px solid rgba(243,232,255,0.7)", display: "flex", alignItems: "center", justifyContent: "flex-end", fontSize: 9.5, color: "#475569", fontWeight: 600 }}>
             {stockTrend != null && (
-              <span
-                className={`font-bold ${
-                  stockTrendDirection === "down" ? "text-rose-600" : "text-emerald-600"
-                }`}
-              >
+              <Box component="span" sx={{ fontWeight: 700, color: stockTrendDirection === "down" ? "#e11d48" : "#059669" }}>
                 {stockTrendDirection === "down" ? "↓" : "↑"}
                 {stockTrend}%
-              </span>
+              </Box>
             )}
-          </div>
-        </div>
+          </Box>
+        </Box>
 
         {/* CARD 6: Employees (Present / Total) */}
-        <div className="p-3 rounded-2xl bg-gradient-to-br from-cyan-500/10 via-white to-white border border-cyan-200/80 shadow-xs flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] font-black uppercase tracking-wider text-cyan-700">
+        <Box
+          sx={{
+            p: 1.5, borderRadius: "16px", backgroundImage: "linear-gradient(to bottom right, rgba(6,182,212,0.1), #fff, #fff)",
+            border: "1px solid rgba(165,243,252,0.8)", boxShadow: "0 1px 2px 0 rgba(0,0,0,0.03)",
+            display: "flex", flexDirection: "column", justifyContent: "space-between",
+          }}
+        >
+          <Box>
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 0.5 }}>
+              <Typography component="span" sx={{ fontSize: 10, fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.05em", color: "#0e7490" }}>
                 Employees
-              </span>
-              <div className="w-5 h-5 rounded-md bg-cyan-100 text-cyan-700 flex items-center justify-center">
+              </Typography>
+              <Box sx={{ width: 20, height: 20, borderRadius: "6px", bgcolor: "#cffafe", color: "#0e7490", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <Users size={12} />
-              </div>
-            </div>
+              </Box>
+            </Box>
 
-            <div className="text-[14px] font-black text-slate-900 tracking-tight leading-snug">
+            <Typography sx={{ fontSize: 14, fontWeight: 900, color: "#0f172a", letterSpacing: "-0.01em", lineHeight: 1.375 }}>
               {hasEmployeeData ? `${employeesPresent}/${employeesTotal}` : "—"}
-            </div>
-          </div>
+            </Typography>
+          </Box>
 
-          <div className="mt-2 pt-1.5 border-t border-cyan-100/70 text-[9.5px] text-slate-600 font-semibold">
+          <Box sx={{ mt: 1, pt: 0.75, borderTop: "1px solid rgba(207,250,254,0.7)", fontSize: 9.5, color: "#475569", fontWeight: 600 }}>
             Present / total
-          </div>
-        </div>
-      </div>
+          </Box>
+        </Box>
+      </Box>
 
       {/* ─── Supplier Pending Dues (real data: GET /supplier-payments/pending) ─── */}
-      <div className="p-3.5 rounded-2xl bg-white border border-slate-200/80 shadow-xs">
-        <div
+      <Box sx={{ p: 1.75, borderRadius: "16px", bgcolor: "#fff", border: "1px solid rgba(226,232,240,0.8)", boxShadow: "0 1px 2px 0 rgba(0,0,0,0.03)" }}>
+        <Box
           onClick={() => onNavigate("supplier_dues")}
-          className="flex items-center justify-between cursor-pointer active:scale-98 transition-all"
+          sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", transition: "all 0.15s", "&:active": { transform: "scale(0.98)" } }}
         >
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+            <Box sx={{ width: 36, height: 36, borderRadius: "12px", bgcolor: "#fffbeb", color: "#d97706", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <Wallet size={16} />
-            </div>
-            <div>
-              <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-wider m-0">
+            </Box>
+            <Box>
+              <Typography component="h4" sx={{ fontSize: 11, fontWeight: 900, color: "#0f172a", textTransform: "uppercase", letterSpacing: "0.05em", m: 0 }}>
                 Supplier Dues
-              </h4>
-              <p className="text-[9.5px] text-slate-500 font-semibold m-0 mt-0.5">
+              </Typography>
+              <Typography component="p" sx={{ fontSize: 9.5, color: "#64748b", fontWeight: 600, m: 0, mt: 0.25 }}>
                 {hasDuesData ? `${duesCount} bill${duesCount === 1 ? "" : "s"} pending` : "—"}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="text-[13px] font-black text-amber-700">
+              </Typography>
+            </Box>
+          </Box>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+            <Typography component="span" sx={{ fontSize: 13, fontWeight: 900, color: "#b45309" }}>
               {hasDuesData ? money(duesAmount) : "—"}
-            </span>
-            <ChevronRight size={14} className="text-slate-400" />
-          </div>
-        </div>
+            </Typography>
+            <ChevronRight size={14} style={{ color: "#94a3b8" }} />
+          </Box>
+        </Box>
 
         {duesRows.length > 0 && (
-          <div className="mt-2.5 pt-2.5 border-t border-slate-100 space-y-1.5">
-            <div className="flex items-center justify-between gap-2 text-[9px] font-black text-slate-400 uppercase tracking-wider">
-              <span className="flex-1">Supplier Name</span>
-              <span className="shrink-0 text-center" style={{ minWidth: "56px" }}>Overdue Days</span>
-              <span className="shrink-0 text-right" style={{ minWidth: "60px" }}>Value</span>
-            </div>
+          <Box sx={{ mt: 1.25, pt: 1.25, borderTop: "1px solid #f1f5f9", display: "flex", flexDirection: "column", gap: 0.75 }}>
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1, fontSize: 9, fontWeight: 900, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              <Box component="span" sx={{ flex: 1 }}>Supplier Name</Box>
+              <Box component="span" sx={{ flexShrink: 0, textAlign: "center", minWidth: "56px" }}>Overdue Days</Box>
+              <Box component="span" sx={{ flexShrink: 0, textAlign: "right", minWidth: "60px" }}>Value</Box>
+            </Box>
             {duesRows.slice(0, 5).map((row) => (
-              <div
+              <Box
                 key={`${row.invoice_type}-${row.id}`}
                 onClick={() => onNavigate("supplier_dues")}
-                className="flex items-center justify-between text-[10.5px] cursor-pointer gap-2"
+                sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 10.5, cursor: "pointer", gap: 1 }}
               >
-                <span className="font-semibold text-slate-700 truncate flex-1">
+                <Box component="span" sx={{ fontWeight: 600, color: "#334155", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
                   {row.supplier_name} · {row.invoice_no}
-                </span>
-                <span
-                  className={`font-bold shrink-0 text-center ${daysOutstandingClass(row.days)}`}
-                  style={{ minWidth: "56px" }}
+                </Box>
+                <Box
+                  component="span"
+                  sx={{ fontWeight: 700, flexShrink: 0, textAlign: "center", minWidth: "56px", color: daysOutstandingColor(row.days) }}
                 >
                   {row.days}d
-                </span>
-                <span className="font-black text-amber-700 shrink-0 text-right" style={{ minWidth: "60px" }}>
+                </Box>
+                <Box component="span" sx={{ fontWeight: 900, color: "#b45309", flexShrink: 0, textAlign: "right", minWidth: "60px" }}>
                   {money(row.balance_due)}
-                </span>
-              </div>
+                </Box>
+              </Box>
             ))}
-          </div>
+          </Box>
         )}
-      </div>
+      </Box>
 
       {/* ─── Fast Moving Products (real data: tables.fastMovingSection) ─── */}
-      <div className="p-3.5 rounded-2xl bg-white border border-slate-200/80 shadow-xs">
-        <div
+      <Box sx={{ p: 1.75, borderRadius: "16px", bgcolor: "#fff", border: "1px solid rgba(226,232,240,0.8)", boxShadow: "0 1px 2px 0 rgba(0,0,0,0.03)" }}>
+        <Box
           onClick={() => onNavigate("fast_moving")}
-          className="flex items-center justify-between mb-2.5 cursor-pointer active:scale-98 transition-all"
+          sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1.25, cursor: "pointer", transition: "all 0.15s", "&:active": { transform: "scale(0.98)" } }}
         >
-          <div className="flex items-center gap-1.5">
-            <Sparkles size={15} className="text-amber-500" />
-            <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-wider m-0">
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+            <Sparkles size={15} style={{ color: "#f59e0b" }} />
+            <Typography component="h4" sx={{ fontSize: 11, fontWeight: 900, color: "#0f172a", textTransform: "uppercase", letterSpacing: "0.05em", m: 0 }}>
               Fast Moving Products
-            </h4>
-          </div>
-          <ChevronRight size={14} className="text-slate-400" />
-        </div>
+            </Typography>
+          </Box>
+          <ChevronRight size={14} style={{ color: "#94a3b8" }} />
+        </Box>
 
         {fastMovingRows.length > 0 ? (
-          <div className="space-y-1.5">
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
             {fastMovingRows.slice(0, 5).map((item, idx) => (
-              <div
+              <Box
                 key={idx}
                 onClick={() => onNavigate("fast_moving")}
-                className="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-100 cursor-pointer"
+                sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", p: 1, borderRadius: "12px", bgcolor: "#f8fafc", border: "1px solid #f1f5f9", cursor: "pointer" }}
               >
-                <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <span className="w-5 h-5 rounded-md bg-indigo-100 text-indigo-700 font-black text-[10px] flex items-center justify-center shrink-0">
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 0, flex: 1 }}>
+                  <Box component="span" sx={{ width: 20, height: 20, borderRadius: "6px", bgcolor: "#e0e7ff", color: "#4338ca", fontWeight: 900, fontSize: 10, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     {idx + 1}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[11.5px] font-bold text-slate-900 truncate m-0 leading-tight">
+                  </Box>
+                  <Box sx={{ minWidth: 0, flex: 1 }}>
+                    <Typography component="p" sx={{ fontSize: 11.5, fontWeight: 700, color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", m: 0, lineHeight: 1.25 }}>
                       {item.name}
-                    </p>
-                    <p className="text-[9.5px] font-semibold text-slate-500 m-0 mt-0.5">
-                      Sold: <strong className="text-emerald-600">{Number(item.saleQty).toLocaleString("en-IN")} Pcs</strong>
-                    </p>
-                  </div>
-                </div>
-                <div className="text-right pl-2 shrink-0">
-                  <p className="text-[11.5px] font-black text-slate-900 m-0">{money(item.value)}</p>
-                </div>
-              </div>
+                    </Typography>
+                    <Typography component="p" sx={{ fontSize: 9.5, fontWeight: 600, color: "#64748b", m: 0, mt: 0.25 }}>
+                      Sold: <Box component="strong" sx={{ color: "#059669" }}>{Number(item.saleQty).toLocaleString("en-IN")} Pcs</Box>
+                    </Typography>
+                  </Box>
+                </Box>
+                <Box sx={{ textAlign: "right", pl: 1, flexShrink: 0 }}>
+                  <Typography component="p" sx={{ fontSize: 11.5, fontWeight: 900, color: "#0f172a", m: 0 }}>{money(item.value)}</Typography>
+                </Box>
+              </Box>
             ))}
-          </div>
+          </Box>
         ) : (
-          <p className="text-[10.5px] text-center text-slate-400 py-3">No product sales in this range</p>
+          <Typography component="p" sx={{ fontSize: 10.5, textAlign: "center", color: "#94a3b8", py: 1.5 }}>No product sales in this range</Typography>
         )}
-      </div>
+      </Box>
 
       <BranchSelectorModal isOpen={branchModalOpen} onClose={() => setBranchModalOpen(false)} />
-    </div>
+    </Box>
   );
 }
