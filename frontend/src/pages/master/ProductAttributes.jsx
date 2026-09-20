@@ -221,7 +221,6 @@ const ProductAttributes = () => {
                     endpoint={ip.endpoint}
                     fieldConfig={ip.fieldConfig}
                     transform={ip.transform}
-                    className="text-xs font-medium"
                     onDone={handleSearch}
                   />
                 </>
