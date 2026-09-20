@@ -181,7 +181,7 @@ const StockAnalyzer = () => {
                 input: {
                   startAdornment: (
                     <Box sx={{ color: "text.disabled", display: "inline-flex", mr: 0.5 }}>
-                      <MagnifyingGlassIcon size={16} />
+                      <MagnifyingGlassIcon style={{ width: 16, height: 16 }} />
                     </Box>
                   ),
                 },

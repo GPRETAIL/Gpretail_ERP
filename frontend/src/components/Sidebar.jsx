@@ -219,9 +219,9 @@ const Sidebar = ({ isExpanded, toggleSidebar, isMobile = false, onNavigate }) =>
             sx={{ color: "text.secondary", "&:hover": { color: "text.primary" } }}
           >
             {isMobile ? (
-              <XMarkIcon size={20} />
+              <XMarkIcon style={{ width: 20, height: 20 }} />
             ) : (
-              <ChevronLeftIcon size={20} />
+              <ChevronLeftIcon style={{ width: 20, height: 20 }} />
             )}
           </IconButton>
         )}

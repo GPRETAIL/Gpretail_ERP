@@ -112,7 +112,7 @@ const NavItem = ({
           sx={itemSx(isOpen)}
         >
           <Box sx={{ display: "flex", alignItems: "center" }}>
-            <Icon size={24} />
+            <Icon style={{ width: 24, height: 24 }} />
             <Typography
               component="span"
               sx={{
@@ -130,7 +130,7 @@ const NavItem = ({
       ) : (
         <Box onClick={handleClick} sx={itemSx(isOpen)}>
           <Box sx={{ display: "flex", alignItems: "center" }}>
-            <Icon size={24} />
+            <Icon style={{ width: 24, height: 24 }} />
             <Typography
               component="span"
               sx={{
@@ -147,8 +147,9 @@ const NavItem = ({
 
           {subItems && isExpanded && (
             <ChevronRightIcon
-              size={16}
               style={{
+                width: 16,
+                height: 16,
                 transition: "transform 0.2s",
                 transform: isOpen ? "rotate(90deg)" : "none",
                 color: isOpen ? "#4f46e5" : "inherit",
