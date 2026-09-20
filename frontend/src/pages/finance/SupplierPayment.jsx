@@ -402,7 +402,7 @@ const SupplierPayment = () => {
   const handleSelectionChange = useCallback((keys) => {
     setSelectedIds(new Set(keys));
   }, []);
-  const searchableTriggerCls = "w-full rounded-md border-gray-300 dark:border-gray-600 px-3 py-2 text-xs sm:text-sm";
+  const searchableTriggerSx = { width: "100%", borderRadius: "5px", px: 1.5, py: 1, fontSize: { xs: 10.5, sm: 12.25 } };
   const searchableOptions = useMemo(() => ({
     companies: [{ value: "", label: "All Companies" }, ...companies.map((c) => ({ value: String(c.id), label: c.name }))],
     locations: [{ value: "", label: "All Locations" }, ...locations.map((l) => ({ value: l.name, label: l.name }))],
@@ -584,7 +584,7 @@ const SupplierPayment = () => {
                         options={searchableOptions.companies}
                         onChange={(e) => setCompanyId(e.target.value)}
                         placeholder="All Companies"
-                        triggerClassName={searchableTriggerCls}
+                        triggerSx={searchableTriggerSx}
                         showEmptyOption={false}
                         portalDropdown
                       />
@@ -597,7 +597,7 @@ const SupplierPayment = () => {
                         options={searchableOptions.locations}
                         onChange={(e) => setLocation(e.target.value)}
                         placeholder="All Locations"
-                        triggerClassName={searchableTriggerCls}
+                        triggerSx={searchableTriggerSx}
                         showEmptyOption={false}
                         portalDropdown
                       />
@@ -629,7 +629,7 @@ const SupplierPayment = () => {
                         options={searchableOptions.cities}
                         onChange={(e) => setCityId(e.target.value)}
                         placeholder="All Cities"
-                        triggerClassName={searchableTriggerCls}
+                        triggerSx={searchableTriggerSx}
                         showEmptyOption={false}
                         portalDropdown
                       />
@@ -642,7 +642,7 @@ const SupplierPayment = () => {
                         options={searchableOptions.sections}
                         onChange={(e) => setSection(e.target.value)}
                         placeholder="All Sections"
-                        triggerClassName={searchableTriggerCls}
+                        triggerSx={searchableTriggerSx}
                         showEmptyOption={false}
                         portalDropdown
                       />

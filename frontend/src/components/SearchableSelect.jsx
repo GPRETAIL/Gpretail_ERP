@@ -1,6 +1,8 @@
 import { ChevronDown, Search, X } from "lucide-react";
 import { createPortal } from "react-dom";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Box } from "@mui/material";
+import { useTheme, alpha } from "@mui/material/styles";
 
 /**
  * SearchableSelect — drop-in replacement for a plain <select>.
@@ -15,6 +17,8 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
  *   required         {boolean}
  *   placeholder      {string}
  *   portalDropdown   {boolean} — render menu in document.body with fixed position (use inside overflow-hidden modals)
+ *   triggerSx        {object} — sx overrides merged onto the trigger button's base sx
+ *   searchInputSx    {object} — sx overrides merged onto the search input's base sx
  */
 const SearchableSelect = ({
   label,
@@ -26,11 +30,13 @@ const SearchableSelect = ({
   placeholder,
   showEmptyOption = true,
   creatable = false,
-  triggerClassName = "",
-  searchInputClassName = "",
+  triggerSx = {},
+  searchInputSx = {},
   portalDropdown = false,
   openOnFocus = false,
 }) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [highlightIndex, setHighlightIndex] = useState(-1);
@@ -251,97 +257,114 @@ const SearchableSelect = ({
   const listMaxStyle =
     portalDropdown && dropdownPlacement?.maxHeight != null
       ? { maxHeight: dropdownPlacement.maxHeight }
-      : undefined;
-  const listClass = portalDropdown ? "overflow-y-auto" : "max-h-52 overflow-y-auto";
+      : { maxHeight: 208 };
+
+  const highlightBg = alpha(theme.palette.primary.main, isDark ? 0.16 : 0.08);
+  const hoverBg = alpha(theme.palette.primary.main, 0.04);
+  const activeText = isDark ? "#818cf8" : "#4f46e5";
+  const createText = isDark ? "#4ade80" : "#16a34a";
+  const createHoverBg = alpha(theme.palette.success.main, isDark ? 0.16 : 0.06);
 
   const dropdownPanel = (
     <>
-      <div className="p-1 border-b border-gray-200 dark:border-gray-700 flex items-center gap-1">
-        <Search className="w-3 h-3 text-gray-400 dark:text-gray-500 shrink-0" />
-        <input
+      <Box sx={{ p: 0.5, borderBottom: "1px solid", borderColor: "divider", display: "flex", alignItems: "center", gap: 0.5 }}>
+        <Search size={12} style={{ color: isDark ? "#64748b" : "#9ca3af", flexShrink: 0 }} />
+        <Box
+          component="input"
           autoFocus
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           onKeyDown={handleKeyboardNavigation}
           placeholder="Search..."
-          className={`flex-1 text-xs outline-none bg-transparent text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500 ${searchInputClassName}`}
+          sx={{
+            flex: 1, fontSize: 10.5, outline: "none", bgcolor: "transparent", color: "text.secondary",
+            "&::placeholder": { color: "text.disabled" },
+            ...searchInputSx,
+          }}
         />
-      </div>
+      </Box>
 
-      <ul className={listClass} style={listMaxStyle}>
+      <Box component="ul" sx={{ overflowY: "auto", ...listMaxStyle }}>
         {showEmptyOption && (
-          <li
+          <Box
+            component="li"
             onClick={() => select("")}
-            className="px-2 py-1 text-xs text-gray-400 dark:text-gray-500 hover:bg-blue-50 dark:hover:bg-indigo-900/30 hover:text-blue-600 dark:hover:text-indigo-400 cursor-pointer"
+            sx={{ px: 1, py: 0.5, fontSize: 10.5, color: "text.disabled", cursor: "pointer", "&:hover": { bgcolor: hoverBg, color: activeText } }}
           >
             — None —
-          </li>
+          </Box>
         )}
         {creatable && search.trim() && !normalizedOptions.some((o) => (o.label || "").toLowerCase() === search.trim().toLowerCase()) && (
-          <li
+          <Box
+            component="li"
             onClick={() => select(search.trim())}
-            className="px-2 py-1 text-xs cursor-pointer hover:bg-green-50 dark:hover:bg-green-900/30 hover:text-green-700 dark:hover:text-green-400 text-green-600 dark:text-green-400 font-medium border-b border-gray-100 dark:border-gray-700"
+            sx={{ px: 1, py: 0.5, fontSize: 10.5, cursor: "pointer", color: createText, fontWeight: 500, borderBottom: "1px solid", borderColor: "divider", "&:hover": { bgcolor: createHoverBg } }}
           >
             + Create "{search.trim()}"
-          </li>
+          </Box>
         )}
         {filtered.length === 0 && !creatable ? (
-          <li className="px-2 py-1 text-xs text-gray-400 dark:text-gray-500 italic">No results</li>
+          <Box component="li" sx={{ px: 1, py: 0.5, fontSize: 10.5, color: "text.disabled", fontStyle: "italic" }}>No results</Box>
         ) : filtered.length === 0 ? null : (
           filtered.map((o, idx) => {
             if (!hasSearch && o.divider) {
-              return <li key={`divider-${idx}`} className="my-0.5 border-t border-gray-200 dark:border-gray-700" />;
+              return <Box component="li" key={`divider-${idx}`} sx={{ my: 0.25, borderTop: "1px solid", borderColor: "divider" }} />;
             }
             if (!hasSearch && o.disabled) {
               return (
-                <li
+                <Box
+                  component="li"
                   key={`group-${idx}-${o.label}`}
-                  className="px-2 py-1 text-[10px] font-bold tracking-wide text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 uppercase"
+                  sx={{ px: 1, py: 0.5, fontSize: 10, fontWeight: 700, letterSpacing: "0.03em", color: "text.secondary", bgcolor: "action.hover", textTransform: "uppercase" }}
                 >
                   {o.label}
-                </li>
+                </Box>
               );
             }
             const optionIndex = selectableOptions.findIndex((opt) => opt.value === o.value);
+            const isSelected = o.value === value;
+            const isHighlighted = optionIndex === highlightIndex;
             return (
-              <li
+              <Box
+                component="li"
                 key={o.value}
                 onClick={() => select(o.value)}
                 onMouseEnter={() => {
                   keyboardSelectionArmedRef.current = true;
                   setHighlightIndex(optionIndex);
                 }}
-                className={`px-2 py-1 text-xs cursor-pointer hover:bg-blue-50 dark:hover:bg-indigo-900/30 hover:text-blue-600 dark:hover:text-indigo-400 ${
-                  o.value === value
-                    ? "bg-blue-100 dark:bg-indigo-900/30 text-blue-700 dark:text-indigo-400 font-medium"
-                    : optionIndex === highlightIndex
-                      ? "bg-blue-50 dark:bg-indigo-900/30 text-blue-700 dark:text-indigo-400"
-                      : "text-gray-700 dark:text-gray-300"
-                }`}
+                sx={{
+                  px: 1, py: 0.5, fontSize: 10.5, cursor: "pointer",
+                  bgcolor: isSelected || isHighlighted ? highlightBg : "transparent",
+                  color: isSelected || isHighlighted ? activeText : "text.secondary",
+                  fontWeight: isSelected ? 500 : 400,
+                  "&:hover": { bgcolor: highlightBg, color: activeText },
+                }}
               >
                 {o.label}
-              </li>
+              </Box>
             );
           })
         )}
-      </ul>
+      </Box>
     </>
   );
 
   const portalReady = portalDropdown && open && dropdownPlacement;
 
   return (
-    <div className="flex items-center w-full" ref={containerRef} data-enter-ignore="true">
+    <Box sx={{ display: "flex", alignItems: "center", width: "100%" }} ref={containerRef} data-enter-ignore="true">
       {label && (
-        <label className="w-2/5 text-xs font-medium text-gray-700 dark:text-gray-300 text-right pr-3 shrink-0">
-          {required && <span className="text-red-500 dark:text-red-400 mr-1">*</span>}
+        <Box component="label" sx={{ width: "40%", fontSize: 10.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5, flexShrink: 0 }}>
+          {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}
           {label}
-        </label>
+        </Box>
       )}
 
-      <div className="flex-1 relative">
-        <button
+      <Box sx={{ flex: 1, position: "relative" }}>
+        <Box
+          component="button"
           ref={triggerRef}
           type="button"
           data-searchable-select-trigger="true"
@@ -356,35 +379,40 @@ const SearchableSelect = ({
             setOpen(true);
           }}
           onKeyDown={handleKeyboardNavigation}
-          className={`w-full flex items-center justify-between border border-gray-300 dark:border-gray-600 rounded-sm px-1.5 py-1 text-xs bg-white dark:bg-gray-800 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-left ${triggerClassName}`}
+          sx={{
+            width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+            border: "1px solid", borderColor: "divider", borderRadius: "2px", px: 0.75, py: 0.5,
+            fontSize: 10.5, bgcolor: "background.paper", textAlign: "left",
+            "&:focus": { outline: "none", borderColor: "#3b82f6", boxShadow: "0 0 0 1px #3b82f6" },
+            ...triggerSx,
+          }}
         >
-          <span className={selectedLabel ? "text-gray-800 dark:text-gray-100 truncate" : "text-gray-400 dark:text-gray-500 truncate"}>
+          <Box component="span" sx={{ color: selectedLabel ? "text.primary" : "text.disabled", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {selectedLabel || placeholder || `Select ${label || ""}`}
-          </span>
-          <span className="flex items-center shrink-0 ml-1 gap-0.5">
+          </Box>
+          <Box component="span" sx={{ display: "flex", alignItems: "center", flexShrink: 0, ml: 0.5, gap: 0.25 }}>
             {value && (
               <X
-                className="w-2.5 h-2.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+                size={10}
+                style={{ color: isDark ? "#64748b" : "#9ca3af" }}
                 onClick={clear}
               />
             )}
-            <ChevronDown
-              className={`w-3 h-3 text-gray-400 dark:text-gray-500 transition-transform ${open ? "rotate-180" : ""}`}
-            />
-          </span>
-        </button>
+            <ChevronDown size={12} style={{ color: isDark ? "#64748b" : "#9ca3af", transition: "transform 0.15s", transform: open ? "rotate(180deg)" : "none" }} />
+          </Box>
+        </Box>
 
         {open && !portalDropdown && (
-          <div className="absolute z-50 left-0 top-full mt-0.5 w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-sm shadow-lg">
+          <Box sx={{ position: "absolute", zIndex: 50, left: 0, top: "100%", mt: 0.25, width: "100%", bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "2px", boxShadow: 4 }}>
             {dropdownPanel}
-          </div>
+          </Box>
         )}
 
         {portalReady &&
           createPortal(
-            <div
+            <Box
               ref={dropdownPortalRef}
-              className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-sm shadow-xl overflow-hidden"
+              sx={{ bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "2px", boxShadow: 8, overflow: "hidden" }}
               style={{
                 position: "fixed",
                 top: dropdownPlacement.top,
@@ -394,11 +422,11 @@ const SearchableSelect = ({
               }}
             >
               {dropdownPanel}
-            </div>,
+            </Box>,
             document.body
           )}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 };
 

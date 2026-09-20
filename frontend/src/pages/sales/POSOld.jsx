@@ -3196,8 +3196,8 @@ const POSOld = () => {
                     showEmptyOption
                     portalDropdown
                     openOnFocus
-                    triggerClassName="px-3 py-2 text-sm rounded-md min-h-[38px]"
-                    searchInputClassName="text-sm"
+                    triggerSx={{ px: 1.5, py: 1, fontSize: 12.25, borderRadius: "5px", minHeight: "38px" }}
+                    searchInputSx={{ fontSize: 12.25 }}
                   />
                 </Box>
               </Box>

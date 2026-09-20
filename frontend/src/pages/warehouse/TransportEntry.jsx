@@ -10,8 +10,8 @@ import PageSkeleton from "../../components/PageSkeleton";
 import { getMasterLookups } from "../../utils/lookupCache";
 import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, Checkbox, alpha } from "@mui/material";
 
-const TRANSPORT_SEARCHABLE_TRIGGER_CLASS = "h-8 px-2 py-0.5 text-[11px]";
-const TRANSPORT_SEARCHABLE_INPUT_CLASS = "text-[11px]";
+const TRANSPORT_SEARCHABLE_TRIGGER_SX = { height: 32, px: 1, py: 0.25, fontSize: 11 };
+const TRANSPORT_SEARCHABLE_INPUT_SX = { fontSize: 11 };
 const transportLabelSx = { display: "block", fontSize: 11, fontWeight: 500, color: "text.secondary" };
 const transportControlSx = { mt: 0.25, "& .MuiInputBase-input": { fontSize: 11, py: 0.5 } };
 
@@ -743,8 +743,8 @@ const TransportEntry = () => {
                     value={String(formData.companyId)}
                     onChange={(e) => { handleFieldChange("companyId")(e); focusRef(lrModeRef); }}
                     placeholder="Select Company"
-                    triggerClassName={TRANSPORT_SEARCHABLE_TRIGGER_CLASS}
-                    searchInputClassName={TRANSPORT_SEARCHABLE_INPUT_CLASS}
+                    triggerSx={TRANSPORT_SEARCHABLE_TRIGGER_SX}
+                    searchInputSx={TRANSPORT_SEARCHABLE_INPUT_SX}
                   />
                 </Box>
               </Box>
@@ -762,8 +762,8 @@ const TransportEntry = () => {
                       value={formData.lrMode}
                       onChange={(e) => { handleFieldChange("lrMode")(e); focusRef(lrNoRef); }}
                       placeholder="Select LR Mode"
-                      triggerClassName={TRANSPORT_SEARCHABLE_TRIGGER_CLASS}
-                      searchInputClassName={TRANSPORT_SEARCHABLE_INPUT_CLASS}
+                      triggerSx={TRANSPORT_SEARCHABLE_TRIGGER_SX}
+                      searchInputSx={TRANSPORT_SEARCHABLE_INPUT_SX}
                     />
                   </Box>
                 </Box>
@@ -865,8 +865,8 @@ const TransportEntry = () => {
                     value={String(formData.fromCityId)}
                     onChange={(e) => { handleFieldChange("fromCityId")(e); focusRef(receivingCityRef); }}
                     placeholder="Select From City"
-                    triggerClassName={TRANSPORT_SEARCHABLE_TRIGGER_CLASS}
-                    searchInputClassName={TRANSPORT_SEARCHABLE_INPUT_CLASS}
+                    triggerSx={TRANSPORT_SEARCHABLE_TRIGGER_SX}
+                    searchInputSx={TRANSPORT_SEARCHABLE_INPUT_SX}
                   />
                 </Box>
               </Box>
@@ -879,8 +879,8 @@ const TransportEntry = () => {
                     value={String(formData.receivingCityId)}
                     onChange={(e) => { handleFieldChange("receivingCityId")(e); focusRef(autoTransferRef); }}
                     placeholder="Select Receiving City"
-                    triggerClassName={TRANSPORT_SEARCHABLE_TRIGGER_CLASS}
-                    searchInputClassName={TRANSPORT_SEARCHABLE_INPUT_CLASS}
+                    triggerSx={TRANSPORT_SEARCHABLE_TRIGGER_SX}
+                    searchInputSx={TRANSPORT_SEARCHABLE_INPUT_SX}
                   />
                 </Box>
               </Box>
@@ -1066,8 +1066,8 @@ const TransportEntry = () => {
                         value={formData.fileType}
                         onChange={handleFieldChange("fileType")}
                         placeholder="Select Type"
-                        triggerClassName={TRANSPORT_SEARCHABLE_TRIGGER_CLASS}
-                        searchInputClassName={TRANSPORT_SEARCHABLE_INPUT_CLASS}
+                        triggerSx={TRANSPORT_SEARCHABLE_TRIGGER_SX}
+                        searchInputSx={TRANSPORT_SEARCHABLE_INPUT_SX}
                       />
                     </Box>
                   </Box>
@@ -1168,8 +1168,8 @@ const TransportEntry = () => {
                     value={formData.payMode}
                     onChange={(e) => { handleFieldChange("payMode")(e); focusRef(devDateRef); }}
                     placeholder="Select Pay Mode"
-                    triggerClassName={TRANSPORT_SEARCHABLE_TRIGGER_CLASS}
-                    searchInputClassName={TRANSPORT_SEARCHABLE_INPUT_CLASS}
+                    triggerSx={TRANSPORT_SEARCHABLE_TRIGGER_SX}
+                    searchInputSx={TRANSPORT_SEARCHABLE_INPUT_SX}
                   />
                 </Box>
               </Box>

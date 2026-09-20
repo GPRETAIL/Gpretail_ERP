@@ -1,4 +1,23 @@
+import { Box } from "@mui/material";
 import AsyncSearchSelect from "./AsyncSearchSelect";
+
+const focusRingSx = {
+  outline: "none",
+  "&:focus": { borderColor: "#3b82f6", boxShadow: "0 0 0 1px #3b82f6" },
+};
+
+const fieldBaseSx = (disabled) => ({
+  border: "1px solid",
+  borderColor: "divider",
+  borderRadius: "2px",
+  p: 0.5,
+  fontSize: 10.5,
+  bgcolor: disabled ? "action.disabledBackground" : "background.paper",
+  color: "text.primary",
+  cursor: disabled ? "not-allowed" : "auto",
+  opacity: disabled ? 0.7 : 1,
+  ...focusRingSx,
+});
 
 const TextInput = ({
   label,
@@ -10,32 +29,21 @@ const TextInput = ({
   placeholder = "",
   disabled = false,
 }) => (
-  <div className="flex items-center">
-    <label
-      className="w-2/5 text-xs font-medium 
-      // 👇 Dark mode text color for label
-      text-gray-700 dark:text-gray-300 text-right pr-3"
-    >
-      {required && <span className="text-red-500 mr-1">*</span>} {label}
-    </label>
-    <input
+  <Box sx={{ display: "flex", alignItems: "center" }}>
+    <Box component="label" sx={{ width: "40%", fontSize: 10.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
+      {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>} {label}
+    </Box>
+    <Box
+      component="input"
       type={type}
       name={name}
       value={value}
       onChange={onChange}
       placeholder={placeholder}
       disabled={disabled}
-      className={`flex-1 border 
-      border-gray-300 dark:border-gray-600 rounded-sm p-1 text-xs 
-      bg-white dark:bg-gray-700 dark:text-gray-200 
-      focus:ring-1 focus:ring-blue-500 focus:border-blue-500
-      ${
-        disabled
-          ? "bg-gray-100 dark:bg-gray-800 cursor-not-allowed opacity-70"
-          : ""
-      }`}
+      sx={{ flex: 1, ...fieldBaseSx(disabled) }}
     />
-  </div>
+  </Box>
 );
 const SelectInput = ({
   label,
@@ -46,29 +54,17 @@ const SelectInput = ({
   onChange,
   disabled = false,
 }) => (
-  <div className="flex items-center">
-    <label
-      className="w-2/5 text-xs font-medium 
-      text-gray-700 dark:text-gray-300 text-right pr-3"
-    >
-      {required && <span className="text-red-500 mr-1">*</span>} {label}
-    </label>
-    <select
+  <Box sx={{ display: "flex", alignItems: "center" }}>
+    <Box component="label" sx={{ width: "40%", fontSize: 10.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
+      {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>} {label}
+    </Box>
+    <Box
+      component="select"
       name={name}
       value={value}
       onChange={onChange}
       disabled={disabled}
-      className={`flex-1  
-       border
-      border-gray-300 dark:border-gray-600 rounded-sm p-1 text-xs 
-
-      bg-white dark:bg-gray-700 dark:text-gray-200
-      focus:ring-1 focus:ring-blue-500 focus:border-blue-500
-      ${
-        disabled
-          ? "bg-gray-100 dark:bg-gray-800 cursor-not-allowed opacity-70"
-          : ""
-      }`}
+      sx={{ flex: 1, ...fieldBaseSx(disabled) }}
     >
       <option value="">Select {label}</option>
       {(options || []).map((option, index) => (
@@ -76,8 +72,8 @@ const SelectInput = ({
           {option.label}
         </option>
       ))}
-    </select>
-  </div>
+    </Box>
+  </Box>
 );
 const CheckboxInput = ({
   label,
@@ -86,24 +82,23 @@ const CheckboxInput = ({
   onChange,
   disabled = false,
 }) => (
-  <div className="flex items-center">
-    <label
-      className="w-2/5 text-xs font-medium 
-      text-gray-700 dark:text-gray-300 text-right pr-3"
-    >
+  <Box sx={{ display: "flex", alignItems: "center" }}>
+    <Box component="label" sx={{ width: "40%", fontSize: 10.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
       {label}
-    </label>
-    <input
+    </Box>
+    <Box
+      component="input"
       type="checkbox"
       name={name}
       checked={checked}
       disabled={disabled}
       onChange={onChange}
-      className={`w-3 h-3 text-blue-600 
-      border-gray-300 dark:border-gray-500 rounded focus:ring-1 focus:ring-blue-500 
-      ${disabled ? "cursor-not-allowed opacity-70" : ""}`}
+      sx={{
+        width: 12, height: 12, accentColor: "#2563eb", borderColor: "divider", borderRadius: "2px",
+        cursor: disabled ? "not-allowed" : "auto", opacity: disabled ? 0.7 : 1, ...focusRingSx,
+      }}
     />
-  </div>
+  </Box>
 );
 const CheckboxSelectInput = ({
   label,
@@ -115,40 +110,31 @@ const CheckboxSelectInput = ({
   onChange,
   disabled = false,
 }) => (
-  <div className="flex items-center">
-    <label
-      className="w-2/5 text-xs font-medium 
-      text-gray-700 dark:text-gray-300 text-right pr-3"
-    >
+  <Box sx={{ display: "flex", alignItems: "center" }}>
+    <Box component="label" sx={{ width: "40%", fontSize: 10.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
       {label}
-    </label>
-    <div className="flex-1 flex items-center gap-3">
-      <input
+    </Box>
+    <Box sx={{ flex: 1, display: "flex", alignItems: "center", gap: 1.5 }}>
+      <Box
+        component="input"
         type="checkbox"
         name={checkName}
         checked={checkValue}
         onChange={onChange}
         disabled={disabled}
-        className={`w-3 h-3 text-blue-600 
-        border-gray-300 dark:border-gray-500 rounded focus:ring-1 focus:ring-blue-500 
-        ${disabled ? "cursor-not-allowed opacity-70" : ""}`}
+        sx={{
+          width: 12, height: 12, accentColor: "#2563eb", borderColor: "divider", borderRadius: "2px",
+          cursor: disabled ? "not-allowed" : "auto", opacity: disabled ? 0.7 : 1, ...focusRingSx,
+        }}
       />
 
-      <select
+      <Box
+        component="select"
         name={selectName}
         value={selectValue}
         onChange={onChange}
         disabled={!checkValue || disabled}
-        className={`flex-1 border 
-        border-gray-300 dark:border-gray-600 rounded-sm p-1 text-xs 
-        // 👇 Dark mode select background and text color
-        bg-white dark:bg-gray-700 dark:text-gray-200
-        focus:ring-1 focus:ring-blue-500 focus:border-blue-500
-        ${
-          !checkValue || disabled
-            ? "bg-gray-100 dark:bg-gray-800 cursor-not-allowed opacity-70"
-            : ""
-        }`}
+        sx={{ flex: 1, ...fieldBaseSx(!checkValue || disabled) }}
       >
         <option value="">Select</option>
         {options.map((option, index) => (
@@ -156,9 +142,9 @@ const CheckboxSelectInput = ({
             {option.label}
           </option>
         ))}
-      </select>
-    </div>
-  </div>
+      </Box>
+    </Box>
+  </Box>
 );
 const DualTextInput = ({
   label,
@@ -169,52 +155,33 @@ const DualTextInput = ({
   onChange,
   disabled = false,
 }) => (
-  <div className="flex items-center">
-    <label
-      className="w-2/5 text-xs font-medium 
-      text-gray-700 dark:text-gray-300 text-right pr-3"
-    >
+  <Box sx={{ display: "flex", alignItems: "center" }}>
+    <Box component="label" sx={{ width: "40%", fontSize: 10.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
       {label}
-    </label>
-    <div className="flex-1 flex items-center gap-2">
-      <input
+    </Box>
+    <Box sx={{ flex: 1, display: "flex", alignItems: "center", gap: 1 }}>
+      <Box
+        component="input"
         type="number"
         name={name1}
         value={value1}
         onChange={onChange}
         placeholder="Min"
         disabled={disabled}
-        className={`w-1/2 border 
-        border-gray-300 dark:border-gray-600 rounded-sm p-1 text-xs 
-        // 👇 Dark mode input background and text color
-        bg-white dark:bg-gray-700 dark:text-gray-200
-        focus:ring-1 focus:ring-blue-500 focus:border-blue-500
-        ${
-          disabled
-            ? "bg-gray-100 dark:bg-gray-800 cursor-not-allowed opacity-70"
-            : ""
-        }`}
+        sx={{ width: "50%", ...fieldBaseSx(disabled) }}
       />
-      <input
+      <Box
+        component="input"
         type="number"
         name={name2}
         value={value2}
         onChange={onChange}
         placeholder="Max"
         disabled={disabled}
-        className={`w-1/2 border 
-        border-gray-300 dark:border-gray-600 rounded-sm p-1 text-xs 
-        // 👇 Dark mode input background and text color
-        bg-white dark:bg-gray-700 dark:text-gray-200
-        focus:ring-1 focus:ring-blue-500 focus:border-blue-500
-        ${
-          disabled
-            ? "bg-gray-100 dark:bg-gray-800 cursor-not-allowed opacity-70"
-            : ""
-        }`}
+        sx={{ width: "50%", ...fieldBaseSx(disabled) }}
       />
-    </div>
-  </div>
+    </Box>
+  </Box>
 );
 
 /**
@@ -233,14 +200,11 @@ const AsyncSelectInput = ({
   onAsyncSearch,
   disabled = false,
 }) => (
-  <div className="flex items-center">
-    <label
-      className="w-2/5 text-xs font-medium
-      text-gray-700 dark:text-gray-300 text-right pr-3"
-    >
-      {required && <span className="text-red-500 mr-1">*</span>} {label}
-    </label>
-    <div className="flex-1">
+  <Box sx={{ display: "flex", alignItems: "center" }}>
+    <Box component="label" sx={{ width: "40%", fontSize: 10.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
+      {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>} {label}
+    </Box>
+    <Box sx={{ flex: 1 }}>
       <AsyncSearchSelect
         name={name}
         value={value}
@@ -251,8 +215,8 @@ const AsyncSelectInput = ({
         placeholder={`Select ${label}`}
         searchPlaceholder={`Search ${String(label || "").toLowerCase()}...`}
       />
-    </div>
-  </div>
+    </Box>
+  </Box>
 );
 
 export {

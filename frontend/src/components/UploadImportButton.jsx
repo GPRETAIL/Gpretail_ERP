@@ -8,7 +8,7 @@
  *                              required:   [formFieldName, ...]
  *                              boolFields: [formFieldName, ...]
  *   transform    {function} — (mappedRow) => dbRow  (converts form-field names → DB shape)
- *   className    {string}   — extra Tailwind classes on the button
+ *   className    {string}   — extra classes on the button
  *   onDone       {function} — called after a successful import (optional)
  */
 
@@ -17,6 +17,8 @@ import { Upload, X } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
 import * as XLSX from "xlsx";
+import { Box, Typography } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import api from "../api/axios";
 import { useTransferActivity } from "../context/TransferActivityContext";
 
@@ -30,6 +32,8 @@ export default function UploadImportButton({
   className = "",
   onDone,
 }) {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
   const inputRef = useRef(null);
   const [open, setOpen] = useState(false);
   const location = useLocation();
@@ -184,72 +188,81 @@ export default function UploadImportButton({
     }
   };
 
+  const linkBlue = isDark ? "#60a5fa" : "#2563eb";
+  const linkBlueHover = isDark ? "#93c5fd" : "#1d4ed8";
+
   return (
     <>
-      <input
+      <Box
+        component="input"
         ref={inputRef}
         type="file"
         accept=".xlsx,.csv"
-        className="hidden"
+        sx={{ display: "none" }}
         onChange={handleFile}
       />
-      <button
+      <Box
+        component="button"
         type="button"
         onClick={() => setOpen(true)}
         className={`topbar-action-btn topbar-action-upload ${className}`}
       >
-        <Upload className="w-3 h-3 mr-1" /> Upload
-      </button>
+        <Upload size={12} style={{ marginRight: 4 }} /> Upload
+      </Box>
 
       {open && (
-        <div
-          className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4"
+        <Box
+          sx={{ position: "fixed", inset: 0, zIndex: 50, bgcolor: "rgba(0,0,0,0.3)", display: "flex", alignItems: "center", justifyContent: "center", p: 2 }}
           onClick={() => setOpen(false)}
         >
-          <div
-            className="w-full max-w-md bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-xl"
+          <Box
+            sx={{ width: "100%", maxWidth: 448, bgcolor: "background.paper", borderRadius: "8px", border: "1px solid", borderColor: "divider", boxShadow: 8 }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-4 py-3 border-b dark:border-gray-700">
-              <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">Upload Excel File</h3>
-              <button
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", px: 2, py: 1.5, borderBottom: "1px solid", borderColor: "divider" }}>
+              <Typography component="h3" sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Upload Excel File</Typography>
+              <Box
+                component="button"
                 type="button"
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
                 onClick={() => setOpen(false)}
+                sx={{ color: "text.secondary", "&:hover": { color: "text.primary" } }}
               >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="px-4 py-4">
-              <button
+                <X size={16} />
+              </Box>
+            </Box>
+            <Box sx={{ px: 2, py: 2 }}>
+              <Box
+                component="button"
                 type="button"
                 onClick={downloadSample}
-                className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium underline"
+                sx={{ fontSize: 12.25, fontWeight: 500, textDecoration: "underline", color: linkBlue, "&:hover": { color: linkBlueHover } }}
               >
                 Download Sample
-              </button>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+              </Box>
+              <Typography component="p" sx={{ fontSize: 10.5, color: "text.secondary", mt: 1 }}>
                 Download the sample, fill it, then upload the file.
-              </p>
-            </div>
-            <div className="px-4 py-3 border-t dark:border-gray-700 flex justify-end gap-2">
-              <button
+              </Typography>
+            </Box>
+            <Box sx={{ px: 2, py: 1.5, borderTop: "1px solid", borderColor: "divider", display: "flex", justifyContent: "flex-end", gap: 1 }}>
+              <Box
+                component="button"
                 type="button"
                 onClick={() => setOpen(false)}
-                className="px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                sx={{ px: 1.5, py: 0.75, fontSize: 10.5, border: "1px solid", borderColor: "divider", borderRadius: "2px", color: "text.secondary", "&:hover": { bgcolor: "action.hover" } }}
               >
                 Cancel
-              </button>
-              <button
+              </Box>
+              <Box
+                component="button"
                 type="button"
                 onClick={() => inputRef.current?.click()}
-                className="px-3 py-1.5 text-xs bg-blue-500 text-white rounded-sm hover:bg-blue-600"
+                sx={{ px: 1.5, py: 0.75, fontSize: 10.5, bgcolor: "#3b82f6", color: "#fff", borderRadius: "2px", "&:hover": { bgcolor: "#2563eb" } }}
               >
                 Choose File
-              </button>
-            </div>
-          </div>
-        </div>
+              </Box>
+            </Box>
+          </Box>
+        </Box>
       )}
     </>
   );

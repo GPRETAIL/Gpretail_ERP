@@ -1,5 +1,7 @@
 import { ChevronDown, Search } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Box } from "@mui/material";
+import { useTheme, alpha } from "@mui/material/styles";
 
 /**
  * Dropdown select with a search box that debounce-fetches from the server via `onAsyncSearch`,
@@ -14,6 +16,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
  * get a client-side (best-effort, broadened) match.
  */
 const AsyncSearchSelect = ({ name, value, onChange, options, onAsyncSearch, placeholder = "Select...", searchPlaceholder = "Search...", disabled = false }) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
   const containerRef = useRef(null);
   const triggerRef = useRef(null);
   const listRef = useRef(null);
@@ -216,43 +220,87 @@ const AsyncSearchSelect = ({ name, value, onChange, options, onAsyncSearch, plac
     }
   };
 
+  const highlightBg = alpha(theme.palette.primary.main, isDark ? 0.16 : 0.08);
+  const selectedText = isDark ? "#60a5fa" : "#1d4ed8";
+
   return (
-    <div ref={containerRef} data-enter-ignore="true" className="relative w-full">
-      <button ref={triggerRef} type="button" data-searchable-select-trigger="true"
+    <Box ref={containerRef} data-enter-ignore="true" sx={{ position: "relative", width: "100%" }}>
+      <Box
+        component="button"
+        ref={triggerRef}
+        type="button"
+        data-searchable-select-trigger="true"
         disabled={disabled}
         onClick={() => { if (disabled) return; keyboardSelectionArmedRef.current = false; setOpen((p) => !p); setHighlightedIndex(-1); }}
         onKeyDown={(e) => { if (disabled) return; handleTriggerKeyDown(e); }}
-        className={`w-full border border-gray-300 dark:border-gray-600 rounded-sm px-1 py-1 text-xs bg-white dark:bg-gray-700 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-left flex items-center justify-between ${disabled ? "opacity-60 cursor-not-allowed" : ""}`}
+        sx={{
+          width: "100%", border: "1px solid", borderColor: "divider", borderRadius: "2px", px: 0.5, py: 0.5,
+          fontSize: 10.5, bgcolor: "background.paper", textAlign: "left", display: "flex", alignItems: "center",
+          justifyContent: "space-between", opacity: disabled ? 0.6 : 1, cursor: disabled ? "not-allowed" : "pointer",
+          "&:focus": { outline: "none", borderColor: "#3b82f6", boxShadow: "0 0 0 1px #3b82f6" },
+        }}
       >
-        <span className={selectedLabel ? "text-gray-800 dark:text-gray-100 truncate text-xs" : "text-gray-400 dark:text-gray-500 truncate text-xs"}>{selectedLabel || placeholder}</span>
-        <ChevronDown className={`w-3 h-3 text-gray-400 dark:text-gray-500 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
-      </button>
+        <Box component="span" sx={{ color: selectedLabel ? "text.primary" : "text.disabled", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 10.5 }}>{selectedLabel || placeholder}</Box>
+        <ChevronDown size={12} style={{ color: isDark ? "#64748b" : "#9ca3af", flexShrink: 0, transition: "transform 0.15s", transform: open ? "rotate(180deg)" : "none" }} />
+      </Box>
       {open && !disabled && (
-        <div className="absolute z-50 left-0 top-full mt-0.5 w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded shadow-lg min-w-[160px]">
-          <div className="p-1 border-b border-gray-200 dark:border-gray-700 flex items-center gap-1">
-            <Search className="w-3 h-3 text-gray-400 dark:text-gray-500 shrink-0" />
-            <input autoFocus type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} onKeyDown={handleKeyDown}
-              placeholder={searchPlaceholder} className="w-full text-xs outline-none bg-transparent text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500" />
+        <Box sx={{ position: "absolute", zIndex: 50, left: 0, top: "100%", mt: 0.25, width: "100%", bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "4px", boxShadow: 4, minWidth: 160 }}>
+          <Box sx={{ p: 0.5, borderBottom: "1px solid", borderColor: "divider", display: "flex", alignItems: "center", gap: 0.5 }}>
+            <Search size={12} style={{ color: isDark ? "#64748b" : "#9ca3af", flexShrink: 0 }} />
+            <Box
+              component="input"
+              autoFocus
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={searchPlaceholder}
+              sx={{
+                width: "100%", fontSize: 10.5, outline: "none", bgcolor: "transparent", color: "text.secondary",
+                "&::placeholder": { color: "text.disabled" },
+              }}
+            />
             {isSearching && (
-              <span className="text-[10px] text-blue-500 font-medium shrink-0 animate-pulse px-1">Searching...</span>
+              <Box component="span" className="animate-pulse" sx={{ fontSize: 10, color: "#3b82f6", fontWeight: 500, flexShrink: 0, px: 0.5 }}>Searching...</Box>
             )}
-          </div>
-          <ul ref={listRef} className="max-h-52 overflow-y-auto">
-            <li onClick={() => selectVal("")} className={`px-2 py-1 text-xs text-gray-500 dark:text-gray-400 cursor-pointer ${highlightedIndex === 0 ? "bg-blue-100 dark:bg-blue-900/30" : "hover:bg-blue-50 dark:hover:bg-blue-900/20"}`}>{placeholder}</li>
-            {finalOptions.map((opt, idx) => (
-              <li key={getId(opt)} onClick={() => selectVal(getId(opt))}
-                className={`px-2 py-1 text-xs cursor-pointer ${highlightedIndex === idx + 1 ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-medium" : getId(opt) === String(value) ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 font-medium" : "text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20"}`}
-              >{getLabel(opt)}</li>
-            ))}
-          </ul>
+          </Box>
+          <Box component="ul" ref={listRef} sx={{ maxHeight: 208, overflowY: "auto" }}>
+            <Box
+              component="li"
+              onClick={() => selectVal("")}
+              sx={{
+                px: 1, py: 0.5, fontSize: 10.5, color: "text.secondary", cursor: "pointer",
+                bgcolor: highlightedIndex === 0 ? highlightBg : "transparent",
+                "&:hover": highlightedIndex === 0 ? {} : { bgcolor: alpha(theme.palette.primary.main, 0.04) },
+              }}
+            >{placeholder}</Box>
+            {finalOptions.map((opt, idx) => {
+              const isHighlighted = highlightedIndex === idx + 1;
+              const isSelected = getId(opt) === String(value);
+              return (
+                <Box
+                  component="li"
+                  key={getId(opt)}
+                  onClick={() => selectVal(getId(opt))}
+                  sx={{
+                    px: 1, py: 0.5, fontSize: 10.5, cursor: "pointer",
+                    bgcolor: isHighlighted || isSelected ? highlightBg : "transparent",
+                    color: isHighlighted || isSelected ? selectedText : "text.secondary",
+                    fontWeight: isHighlighted || isSelected ? 500 : 400,
+                    "&:hover": isHighlighted || isSelected ? {} : { bgcolor: alpha(theme.palette.primary.main, 0.04) },
+                  }}
+                >{getLabel(opt)}</Box>
+              );
+            })}
+          </Box>
           {filtered.length > 100 && (
-            <div className="px-2 py-0.5 text-[10px] text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-700/50 text-center border-t border-gray-100 dark:border-gray-700">
+            <Box sx={{ px: 1, py: 0.25, fontSize: 10, color: "text.disabled", bgcolor: alpha(theme.palette.text.primary, 0.02), textAlign: "center", borderTop: "1px solid", borderColor: "divider" }}>
               Showing top 100 of {filtered.length} (type to narrow)
-            </div>
+            </Box>
           )}
-        </div>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 };
 
