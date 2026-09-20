@@ -102,11 +102,18 @@ export default function DashboardGrid({ tabKey, widgets }) {
           <Box
             key={w.key}
             sx={{
-              borderRadius: "10.5px", border: "1px solid", bgcolor: "background.paper",
+              borderRadius: "10.5px",
               overflow: "hidden",
               ...(editMode
-                ? { borderColor: "primary.main", boxShadow: 2 }
-                : { borderColor: "divider" }),
+                ? { border: "1px solid", borderColor: "primary.main", bgcolor: "background.paper", boxShadow: 2 }
+                : tabKey === "overview"
+                  // Overview's own widgets each already draw their own card border/background
+                  // (MetricCard, the chart/table/leaderboard cards, Action Required) -- giving the
+                  // tile a second one too showed as two close concentric outlines around every
+                  // card instead of one clean border. Every other tab's widgets don't all draw
+                  // their own chrome the same way, so this stays scoped to Overview only.
+                  ? {}
+                  : { border: "1px solid", borderColor: "divider", bgcolor: "background.paper" }),
             }}
           >
             {editMode && (
