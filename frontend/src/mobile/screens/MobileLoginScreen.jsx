@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useDispatch } from "react-redux";
-import { Lock, User, LogIn, AlertCircle, Sparkles, ShieldCheck } from "lucide-react";
+import { Lock, User, LogIn, AlertCircle, ShieldCheck } from "lucide-react";
+import { Box, Typography } from "@mui/material";
 import { loginUser } from "../../features/authSlice";
 
 /**
@@ -54,130 +55,167 @@ export default function MobileLoginScreen({ onLoginSuccess }) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col justify-between">
+    <Box sx={{ minHeight: "100vh", bgcolor: "#f8fafc", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
       {/* Top Royal Blue Header */}
-      <div className="bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-800 pt-12 pb-16 px-6 rounded-b-[36px] text-white text-center shadow-xl shadow-indigo-950/20 relative overflow-hidden">
+      <Box sx={{
+        backgroundImage: "linear-gradient(to bottom right, #4f46e5, #4338ca, #6b21a8)",
+        pt: 6, pb: 8, px: 3, borderBottomLeftRadius: "36px", borderBottomRightRadius: "36px",
+        color: "#fff", textAlign: "center", boxShadow: "0 20px 25px -5px rgba(30,20,60,0.2)", position: "relative", overflow: "hidden",
+      }}>
         {/* Decorative background glow circles */}
-        <div className="pointer-events-none absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/10 blur-2xl" />
-        <div className="pointer-events-none absolute -bottom-10 -left-10 w-40 h-40 rounded-full bg-purple-500/20 blur-2xl" />
+        <Box sx={{ pointerEvents: "none", position: "absolute", top: -40, right: -40, width: 160, height: 160, borderRadius: "50%", bgcolor: "rgba(255,255,255,0.1)", filter: "blur(40px)" }} />
+        <Box sx={{ pointerEvents: "none", position: "absolute", bottom: -40, left: -40, width: 160, height: 160, borderRadius: "50%", bgcolor: "rgba(168,85,247,0.2)", filter: "blur(40px)" }} />
 
         {/* Centered Layered Logo Box */}
-        <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-md border border-white/40 shadow-xl mb-3">
-          <svg viewBox="0 0 100 100" className="w-10 h-10 fill-white drop-shadow" aria-hidden>
+        <Box sx={{
+          display: "inline-flex", height: 64, width: 64, alignItems: "center", justifyContent: "center", borderRadius: "16px",
+          bgcolor: "rgba(255,255,255,0.2)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.4)",
+          boxShadow: 8, mb: 1.5,
+        }}>
+          <Box component="svg" viewBox="0 0 100 100" sx={{ width: 40, height: 40, fill: "#fff", filter: "drop-shadow(0 4px 3px rgba(0,0,0,0.15))" }} aria-hidden>
             <path d="M18 20 L38 20 L50 64 L62 20 L82 20 L59 86 L41 86 Z" />
-          </svg>
-        </div>
+          </Box>
+        </Box>
 
-        <h1 className="text-2xl font-black tracking-tight text-white m-0">
-          Vynerix <span className="text-indigo-200">ERP</span>
-        </h1>
-        <p className="text-xs text-indigo-100/80 mt-1 font-medium tracking-wide">
+        <Typography component="h1" sx={{ fontSize: 24, fontWeight: 900, letterSpacing: "-0.02em", color: "#fff", m: 0 }}>
+          Vynerix <Box component="span" sx={{ color: "#c7d2fe" }}>ERP</Box>
+        </Typography>
+        <Typography component="p" sx={{ fontSize: 12, color: "rgba(224,231,255,0.8)", mt: 0.5, fontWeight: 500, letterSpacing: "0.02em" }}>
           Smart. Secure. Simplified.
-        </p>
-      </div>
+        </Typography>
+      </Box>
 
       {/* Floating Login Card */}
-      <div className="relative -mt-10 px-5 flex-1 flex flex-col justify-start max-w-[440px] mx-auto w-full">
-        <div className="bg-white rounded-3xl p-6 shadow-xl shadow-slate-900/5 border border-slate-100">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-lg font-black text-slate-900 m-0">Sign In</h2>
-              <p className="text-xs text-slate-500 mt-0.5 font-medium">
+      <Box sx={{ position: "relative", mt: -5, px: 2.5, flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-start", maxWidth: 440, mx: "auto", width: "100%" }}>
+        <Box sx={{ bgcolor: "#fff", borderRadius: "24px", p: 3, boxShadow: "0 20px 25px -5px rgba(15,23,41,0.05)", border: "1px solid #f1f5f9" }}>
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
+            <Box>
+              <Typography component="h2" sx={{ fontSize: 18, fontWeight: 900, color: "#0f172a", m: 0 }}>Sign In</Typography>
+              <Typography component="p" sx={{ fontSize: 12, color: "#64748b", mt: 0.25, fontWeight: 500 }}>
                 Enter your credentials to continue
-              </p>
-            </div>
-            <div className="h-8 w-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center">
+              </Typography>
+            </Box>
+            <Box sx={{ height: 32, width: 32, borderRadius: "50%", bgcolor: "#eef2ff", color: "#4f46e5", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <ShieldCheck size={18} />
-            </div>
-          </div>
+            </Box>
+          </Box>
 
           {error && (
-            <div className="mb-4 flex items-center gap-2 rounded-xl bg-rose-50 border border-rose-200 p-3 text-xs font-bold text-rose-700">
-              <AlertCircle size={16} className="shrink-0" />
-              <span>{error}</span>
-            </div>
+            <Box sx={{ mb: 2, display: "flex", alignItems: "center", gap: 1, borderRadius: "12px", bgcolor: "#fff1f2", border: "1px solid #fecdd3", p: 1.5, fontSize: 12, fontWeight: 700, color: "#be123c" }}>
+              <AlertCircle size={16} style={{ flexShrink: 0 }} />
+              <Box component="span">{error}</Box>
+            </Box>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
+          <Box component="form" onSubmit={handleSubmit} sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <Box>
+              <Typography component="label" sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "#64748b", display: "block", mb: 0.5 }}>
                 Username
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+              </Typography>
+              <Box sx={{ position: "relative" }}>
+                <Box sx={{ position: "absolute", inset: "0 auto 0 0", pl: 1.75, display: "flex", alignItems: "center", pointerEvents: "none", color: "#94a3b8", height: "100%" }}>
                   <User size={17} />
-                </div>
-                <input
+                </Box>
+                <Box
+                  component="input"
                   type="text"
                   autoCapitalize="none"
                   autoCorrect="off"
                   placeholder="admin"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full bg-slate-50/80 border border-slate-200 rounded-xl py-3 pl-10 pr-3 text-xs font-semibold text-slate-900 placeholder:text-slate-400 outline-none focus:border-indigo-600 focus:bg-white transition-all shadow-sm"
                   required
+                  sx={{
+                    width: "100%", bgcolor: "rgba(248,250,252,0.8)", border: "1px solid #e2e8f0", borderRadius: "12px",
+                    py: 1.5, pl: 5, pr: 1.5, fontSize: 12, fontWeight: 600, color: "#0f172a", outline: "none",
+                    boxShadow: 1, transition: "all 0.15s",
+                    "&::placeholder": { color: "#94a3b8" },
+                    "&:focus": { borderColor: "#4f46e5", bgcolor: "#fff" },
+                  }}
                 />
-              </div>
-            </div>
+              </Box>
+            </Box>
 
-            <div>
-              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
+            <Box>
+              <Typography component="label" sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "#64748b", display: "block", mb: 0.5 }}>
                 Password
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+              </Typography>
+              <Box sx={{ position: "relative" }}>
+                <Box sx={{ position: "absolute", inset: "0 auto 0 0", pl: 1.75, display: "flex", alignItems: "center", pointerEvents: "none", color: "#94a3b8", height: "100%" }}>
                   <Lock size={17} />
-                </div>
-                <input
+                </Box>
+                <Box
+                  component="input"
                   type="password"
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-slate-50/80 border border-slate-200 rounded-xl py-3 pl-10 pr-3 text-xs font-semibold text-slate-900 placeholder:text-slate-400 outline-none focus:border-indigo-600 focus:bg-white transition-all shadow-sm"
                   required
+                  sx={{
+                    width: "100%", bgcolor: "rgba(248,250,252,0.8)", border: "1px solid #e2e8f0", borderRadius: "12px",
+                    py: 1.5, pl: 5, pr: 1.5, fontSize: 12, fontWeight: 600, color: "#0f172a", outline: "none",
+                    boxShadow: 1, transition: "all 0.15s",
+                    "&::placeholder": { color: "#94a3b8" },
+                    "&:focus": { borderColor: "#4f46e5", bgcolor: "#fff" },
+                  }}
                 />
-              </div>
-            </div>
+              </Box>
+            </Box>
 
-            <button
+            <Box
+              component="button"
               type="submit"
               disabled={loading}
-              className="w-full mt-2 py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-600 to-purple-600 text-xs font-bold text-white shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/45 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              sx={{
+                width: "100%", mt: 1, py: 1.75, borderRadius: "12px",
+                backgroundImage: "linear-gradient(to right, #4f46e5, #4f46e5, #9333ea)",
+                fontSize: 12, fontWeight: 700, color: "#fff",
+                boxShadow: "0 10px 15px -3px rgba(99,102,241,0.3)", transition: "all 0.15s",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 1,
+                "&:hover": { boxShadow: "0 10px 15px -3px rgba(99,102,241,0.45)" },
+                "&:active": { transform: "scale(0.98)" },
+                "&:disabled": { opacity: 0.5 },
+              }}
             >
               {loading ? (
-                <span>Signing In...</span>
+                <Box component="span">Signing In...</Box>
               ) : (
                 <>
                   <LogIn size={16} />
-                  <span>Sign In to Mobile ERP</span>
+                  <Box component="span">Sign In to Mobile ERP</Box>
                 </>
               )}
-            </button>
-          </form>
+            </Box>
+          </Box>
 
           {/* Quick Demo Fill Buttons for instant testing */}
-          <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-center gap-2">
-            <span className="text-[11px] text-slate-400 font-medium">Quick Fill:</span>
-            <button
+          <Box sx={{ mt: 2, pt: 2, borderTop: "1px solid #f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", gap: 1 }}>
+            <Typography component="span" sx={{ fontSize: 11, color: "#94a3b8", fontWeight: 500 }}>Quick Fill:</Typography>
+            <Box
+              component="button"
               type="button"
               onClick={() => handleQuickDemo("admin", "password")}
-              className="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-600 text-[11px] font-bold hover:bg-indigo-100 transition-colors"
+              sx={{
+                px: 1.25, py: 0.5, borderRadius: "8px", bgcolor: "#eef2ff", color: "#4f46e5", fontSize: 11, fontWeight: 700,
+                transition: "background-color 0.15s", "&:hover": { bgcolor: "#e0e7ff" },
+              }}
             >
               admin / password
-            </button>
-          </div>
-        </div>
-      </div>
+            </Box>
+          </Box>
+        </Box>
+      </Box>
 
       {/* Bottom Footer */}
-      <div className="py-6 text-center text-xs">
-        <a
+      <Box sx={{ py: 3, textAlign: "center", fontSize: 12 }}>
+        <Box
+          component="a"
           href="/dashboard"
-          className="font-bold text-indigo-600 hover:text-indigo-700"
+          sx={{ fontWeight: 700, color: "#4f46e5", "&:hover": { color: "#4338ca" } }}
         >
           Switch to Desktop Web View →
-        </a>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   );
 }
