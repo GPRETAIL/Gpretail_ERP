@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Fingerprint } from "lucide-react";
+import { Box, Typography } from "@mui/material";
 import PinKeypad from "./PinKeypad";
 import useHaptics from "../hooks/useHaptics";
 
@@ -82,58 +83,68 @@ export default function AppLockScreen({ appLock, biometrics, onForgotPin }) {
   const handleBackspace = () => setPin((prev) => prev.slice(0, -1));
 
   return (
-    <div className="vx-splash-screen" style={{ zIndex: 10000 }}>
-      <div className="vx-splash-content" style={{ width: "100%" }}>
-        <div
+    <Box className="vx-splash-screen" style={{ zIndex: 10000 }}>
+      <Box className="vx-splash-content" style={{ width: "100%" }}>
+        <Box
           className="vx-splash-logo-card"
           style={{ width: 64, height: 64, marginBottom: 18 }}
         >
-          <svg viewBox="0 0 100 100" className="w-9 h-9 fill-white" aria-hidden>
+          <svg viewBox="0 0 100 100" style={{ width: 36, height: 36, fill: "#fff" }} aria-hidden>
             <path d="M18 20 L38 20 L50 64 L62 20 L82 20 L59 86 L41 86 Z" />
           </svg>
-        </div>
+        </Box>
 
-        <h1 className="vx-splash-brand-name" style={{ fontSize: 22 }}>
+        <Typography component="h1" className="vx-splash-brand-name" style={{ fontSize: 22 }}>
           Enter PIN
-        </h1>
-        <p className="vx-splash-tagline">
+        </Typography>
+        <Typography component="p" className="vx-splash-tagline">
           {countdown > 0
             ? `Too many attempts. Try again in ${countdown}s`
             : "Unlock Vynerix ERP to continue"}
-        </p>
+        </Typography>
 
-        <div className={`flex items-center gap-3 my-8 ${shake ? "vx-pin-shake" : ""}`}>
+        <Box className={`flex items-center gap-3 my-8 ${shake ? "vx-pin-shake" : ""}`}>
           {[0, 1, 2, 3].map((i) => (
-            <span
+            <Box
+              component="span"
               key={i}
-              className="w-3.5 h-3.5 rounded-full border border-white/60"
+              sx={{ width: 14, height: 14, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.6)" }}
               style={{ background: i < pin.length ? "#ffffff" : "transparent" }}
             />
           ))}
-        </div>
+        </Box>
 
         {biometrics?.isEnabled && (
-          <button
+          <Box
+            component="button"
             type="button"
             onClick={tryBiometric}
             disabled={biometricBusy}
             aria-label="Unlock with fingerprint or face"
-            className="mb-6 w-16 h-16 rounded-full bg-white/10 border border-white/25 flex items-center justify-center active:scale-95 transition-all disabled:opacity-50"
+            sx={{
+              mb: 3, width: 64, height: 64, borderRadius: "50%", bgcolor: "rgba(255,255,255,0.1)",
+              border: "1px solid rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center",
+              transition: "all 0.15s", "&:active": { transform: "scale(0.95)" }, "&:disabled": { opacity: 0.5 },
+            }}
           >
-            <Fingerprint size={30} className="text-white" />
-          </button>
+            <Fingerprint size={30} style={{ color: "#fff" }} />
+          </Box>
         )}
 
         <PinKeypad onDigit={handleDigit} onBackspace={handleBackspace} disabled={countdown > 0} />
 
-        <button
+        <Box
+          component="button"
           type="button"
           onClick={onForgotPin}
-          className="mt-8 text-xs font-semibold text-white/70 underline underline-offset-2"
+          sx={{
+            mt: 4, fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.7)",
+            textDecoration: "underline", textUnderlineOffset: "2px", border: 0, bgcolor: "transparent",
+          }}
         >
           Forgot PIN? Sign in again
-        </button>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   );
 }

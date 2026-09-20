@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { ArrowLeft, Bell } from "lucide-react";
+import { Box } from "@mui/material";
 import api from "../../api/axios";
 import { getStoredNotifications } from "../offline/db";
 
@@ -61,35 +62,37 @@ export default function MobileHeader({
   const initial = (userName || "U").charAt(0).toUpperCase();
 
   return (
-    <header className="vx-ws-topbar">
+    <Box component="header" className="vx-ws-topbar">
       {/* Left: Back button, or the Vynerix brand mark on screens with nothing to go back to */}
-      <div className="vx-ws-side vx-ws-side-left">
+      <Box className="vx-ws-side vx-ws-side-left">
         {canGoBack ? (
-          <button
+          <Box
+            component="button"
             type="button"
             className="vx-ws-icon"
             onClick={onBack}
             aria-label="Go back"
           >
             <ArrowLeft size={20} />
-          </button>
+          </Box>
         ) : (
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-600 to-purple-700 flex items-center justify-center shrink-0">
-            <svg viewBox="0 0 100 100" className="w-4 h-4 fill-white" aria-hidden>
+          <Box sx={{ width: 32, height: 32, borderRadius: "8px", backgroundImage: "linear-gradient(to bottom right, #4f46e5, #6d28d9)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <svg viewBox="0 0 100 100" style={{ width: 16, height: 16, fill: "#fff" }} aria-hidden>
               <path d="M18 20 L38 20 L50 64 L62 20 L82 20 L59 86 L41 86 Z" />
             </svg>
-          </div>
+          </Box>
         )}
-      </div>
+      </Box>
 
       {/* Center: Title */}
-      <div className="vx-page-title-center flex-1 text-center font-bold text-base text-slate-900">
+      <Box className="vx-page-title-center flex-1 text-center font-bold text-base text-slate-900">
         {title}
-      </div>
+      </Box>
 
       {/* Right: Bell + User Avatar Button (theme toggle lives in the profile sheet now) */}
-      <div className="vx-ws-side vx-ws-side-right flex items-center gap-1.5">
-        <button
+      <Box className="vx-ws-side vx-ws-side-right flex items-center gap-1.5">
+        <Box
+          component="button"
           type="button"
           onClick={onOpenNotifications}
           className="vx-ws-icon relative"
@@ -97,21 +100,29 @@ export default function MobileHeader({
         >
           <Bell size={19} />
           {unreadCount > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center px-1">
+            <Box
+              component="span"
+              sx={{
+                position: "absolute", top: -2, right: -2, minWidth: 16, height: 16, borderRadius: "50%",
+                bgcolor: "#ef4444", color: "#fff", fontSize: 9, fontWeight: 700, display: "flex",
+                alignItems: "center", justifyContent: "center", px: 0.5,
+              }}
+            >
               {unreadCount > 99 ? "99+" : unreadCount}
-            </span>
+            </Box>
           )}
-        </button>
+        </Box>
 
-        <button
+        <Box
+          component="button"
           type="button"
           onClick={onOpenUserMenu}
           className="vx-avatar cursor-pointer hover:ring-2 hover:ring-indigo-400 active:scale-95 transition-all"
           aria-label="User Profile"
         >
           {initial}
-        </button>
-      </div>
-    </header>
+        </Box>
+      </Box>
+    </Box>
   );
 }

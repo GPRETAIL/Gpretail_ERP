@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { RefreshCw } from "lucide-react";
+import { Box, Typography } from "@mui/material";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { logoutUser } from "../features/authSlice";
@@ -259,20 +260,20 @@ export default function VynerixMobileApp() {
   // match and shrink the splash wordmark before the real app shell mounts.
   if (!ready) {
     return (
-      <div className={workspaceClass} style={workspaceStyle}>
+      <Box className={workspaceClass} style={workspaceStyle}>
         <Splash progress={progress} />
         <PrivacyScreen visible={appLock.isHidden} />
-      </div>
+      </Box>
     );
   }
 
   // If not authenticated after splash, show dedicated mobile login
   if (!isAuthenticated) {
     return (
-      <div className={`${workspaceClass} min-h-screen bg-slate-50`} style={workspaceStyle}>
+      <Box className={workspaceClass} sx={{ minHeight: "100vh", bgcolor: "#f8fafc" }} style={workspaceStyle}>
         <MobileLoginScreen onLoginSuccess={() => setPage("dashboard")} />
         <PrivacyScreen visible={appLock.isHidden} />
-      </div>
+      </Box>
     );
   }
 
@@ -281,10 +282,10 @@ export default function VynerixMobileApp() {
   // the configured auto-lock duration. Skipped entirely if no PIN is set.
   if (appLock.isPinSet && appLock.isLocked) {
     return (
-      <div className={workspaceClass} style={workspaceStyle}>
+      <Box className={workspaceClass} style={workspaceStyle}>
         <AppLockScreen appLock={appLock} biometrics={biometrics} onForgotPin={handleForgotPin} />
         <PrivacyScreen visible={appLock.isHidden} />
-      </div>
+      </Box>
     );
   }
 
@@ -294,7 +295,7 @@ export default function VynerixMobileApp() {
   const canGoBack = !ROOT_SCREENS.has(page);
 
   return (
-    <div className={workspaceClass} style={workspaceStyle}>
+    <Box className={workspaceClass} style={workspaceStyle}>
       {/* Mobile Header */}
       <MobileHeader
         title={TITLES[page] || "Vynerix ERP"}
@@ -337,8 +338,8 @@ export default function VynerixMobileApp() {
 
       {/* Pull-to-Refresh Indicator */}
       {(pullDistance > 0 || isRefreshing) && (
-        <div
-          className="flex items-center justify-center overflow-hidden transition-[height,opacity]"
+        <Box
+          sx={{ display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", transition: "height 0.2s, opacity 0.2s" }}
           style={{
             height: isRefreshing ? 40 : pullDistance,
             opacity: Math.min((isRefreshing ? threshold : pullDistance) / threshold, 1),
@@ -346,18 +347,17 @@ export default function VynerixMobileApp() {
         >
           <RefreshCw
             size={18}
-            className={`text-indigo-600 ${isRefreshing ? "animate-spin" : ""}`}
-            style={
-              isRefreshing
-                ? undefined
-                : { transform: `rotate(${Math.min(pullDistance / threshold, 1) * 360}deg)` }
-            }
+            className={isRefreshing ? "animate-spin" : ""}
+            style={{
+              color: "#4f46e5",
+              ...(isRefreshing ? {} : { transform: `rotate(${Math.min(pullDistance / threshold, 1) * 360}deg)` }),
+            }}
           />
-        </div>
+        </Box>
       )}
 
       {/* Main Content Area */}
-      <main className="vx-ws-main" style={{ paddingBottom: 80 }}>
+      <Box component="main" className="vx-ws-main" style={{ paddingBottom: 80 }}>
         {page === "dashboard" && (
           <DashboardScreen
             onNavigate={navigateTo}
@@ -430,20 +430,26 @@ export default function VynerixMobileApp() {
         )}
 
         {page === "approvals" && <ApprovalsScreen />}
-      </main>
+      </Box>
 
       {/* "Press back again to exit" -- shown for 2s after a back press at
           the root screen with nothing left to go back to in-app. */}
       {showExitToast && (
-        <div className="fixed bottom-[80px] left-1/2 -translate-x-1/2 z-[60] px-4 py-2.5 rounded-full bg-slate-900/90 text-white text-xs font-semibold shadow-lg backdrop-blur-sm animate-in fade-in slide-in-from-bottom-3 duration-200 whitespace-nowrap">
+        <Typography
+          sx={{
+            position: "fixed", bottom: "80px", left: "50%", transform: "translateX(-50%)", zIndex: 60,
+            px: 2, py: 1.25, borderRadius: "999px", bgcolor: "rgba(15,23,42,0.9)", color: "#fff",
+            fontSize: 12, fontWeight: 600, boxShadow: 6, backdropFilter: "blur(4px)", whiteSpace: "nowrap",
+          }}
+        >
           Press back again to exit
-        </div>
+        </Typography>
       )}
 
       {/* Bottom Navigation */}
       <BottomNav activePage={page} onNavigate={navigateTo} authUser={authUser} />
 
       <PrivacyScreen visible={appLock.isHidden} />
-    </div>
+    </Box>
   );
 }

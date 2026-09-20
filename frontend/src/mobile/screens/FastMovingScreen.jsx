@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { Box, Typography } from "@mui/material";
 import api from "../../api/axios";
 import { SkeletonTransList } from "../components/SkeletonCards";
 
@@ -39,40 +40,50 @@ export default function FastMovingScreen() {
   }, [load]);
 
   return (
-    <div>
+    <Box>
       {loading ? (
         <SkeletonTransList count={5} />
       ) : rows.length === 0 ? (
-        <div className="vx-card text-center py-8">
-          <p className="text-sm text-slate-400">No product sales this month</p>
-        </div>
+        <Box className="vx-card text-center py-8">
+          <Typography sx={{ fontSize: 14, color: "#94a3b8" }}>No product sales this month</Typography>
+        </Box>
       ) : (
-        <div className="space-y-1.5">
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
           {rows.map((item, idx) => (
-            <div
+            <Box
               key={idx}
-              className="flex items-center justify-between p-3 rounded-2xl bg-white border border-slate-200/80 shadow-xs"
+              sx={{
+                display: "flex", alignItems: "center", justifyContent: "space-between", p: 1.5,
+                borderRadius: "16px", bgcolor: "#fff", border: "1px solid rgba(226,232,240,0.8)",
+                boxShadow: "0 1px 2px 0 rgba(0,0,0,0.05)",
+              }}
             >
-              <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                <span className="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 font-black text-[11px] flex items-center justify-center shrink-0">
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, minWidth: 0, flex: 1 }}>
+                <Box
+                  component="span"
+                  sx={{
+                    width: 28, height: 28, borderRadius: "8px", bgcolor: "#e0e7ff", color: "#4338ca",
+                    fontWeight: 900, fontSize: 11, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                  }}
+                >
                   {idx + 1}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[12.5px] font-bold text-slate-900 truncate m-0 leading-tight">
+                </Box>
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", m: 0, lineHeight: 1.2 }}>
                     {item.name}
-                  </p>
-                  <p className="text-[10px] font-semibold text-slate-500 m-0 mt-0.5">
-                    Sold: <strong className="text-emerald-600">{Number(item.saleQty).toLocaleString("en-IN")} Pcs</strong>
-                  </p>
-                </div>
-              </div>
-              <div className="text-right pl-2 shrink-0">
-                <p className="text-[12.5px] font-black text-slate-900 m-0">{money(item.value)}</p>
-              </div>
-            </div>
+                  </Typography>
+                  <Typography sx={{ fontSize: 10, fontWeight: 600, color: "#64748b", m: 0, mt: 0.25 }}>
+                    Sold: <Box component="strong" sx={{ color: "#059669" }}>{Number(item.saleQty).toLocaleString("en-IN")} Pcs</Box>
+                  </Typography>
+                </Box>
+              </Box>
+              <Box sx={{ textAlign: "right", pl: 1, flexShrink: 0 }}>
+                <Typography sx={{ fontSize: 12.5, fontWeight: 900, color: "#0f172a", m: 0 }}>{money(item.value)}</Typography>
+              </Box>
+            </Box>
           ))}
-        </div>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }
