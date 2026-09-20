@@ -1,7 +1,25 @@
 /* eslint-disable no-unused-vars */
 import { ChevronRightIcon } from "@heroicons/react/24/outline";
 import { useEffect, useRef, useState } from "react";
+import { Box, ButtonBase, Typography } from "@mui/material";
 import { useTabs } from "../context/TabContext";
+
+const itemSx = (isOpen) => ({
+  display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%",
+  p: 1, borderRadius: 2, cursor: "pointer", transition: "all 0.15s", textAlign: "left",
+  bgcolor: isOpen
+    ? (theme) => (theme.palette.mode === "dark" ? "rgba(49,46,129,0.4)" : "#eef2ff")
+    : "transparent",
+  ...(isOpen
+    ? { color: (theme) => (theme.palette.mode === "dark" ? "#818cf8" : "#4f46e5") }
+    : {
+        color: (theme) => (theme.palette.mode === "dark" ? "#d1d5db" : "#374151"),
+        "&:hover": {
+          bgcolor: (theme) => (theme.palette.mode === "dark" ? "#1f2937" : "#eef2ff"),
+          color: (theme) => (theme.palette.mode === "dark" ? "#818cf8" : "#4f46e5"),
+        },
+      }),
+});
 
 const NavItem = ({
   icon: Icon,
@@ -81,144 +99,133 @@ const NavItem = ({
   // --------------------------------------------------------
 
   return (
-    <li className="relative" ref={itemRef}>
+    <Box component="li" sx={{ position: "relative", listStyle: "none" }} ref={itemRef}>
       {/* Main menu item */}
       {isDirectLink ? (
-        <button
+        <ButtonBase
           type="button"
           onClick={() => {
             setActiveMenu(null);
             navigateActiveTab(path);
             onNavigate?.();
           }}
-          className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all duration-15
-            ${
-              isOpen
-                ? "bg-indigo-50 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400"
-                : "text-gray-700 dark:text-gray-300 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-gray-800 dark:hover:text-indigo-400"
-            }
-          `}
+          sx={itemSx(isOpen)}
         >
-          <div className="flex items-center">
+          <Box sx={{ display: "flex", alignItems: "center" }}>
             <Icon className="w-6 h-6" />
-            <span
-              className={`font-medium whitespace-nowrap transition-all duration-30 ${
-                isExpanded ? "opacity-100 ml-3" : "opacity-0 w-0 overflow-hidden"
-              }`}
+            <Typography
+              component="span"
+              sx={{
+                fontWeight: 500, whiteSpace: "nowrap", transition: "all 0.3s",
+                opacity: isExpanded ? 1 : 0,
+                ml: isExpanded ? 1.5 : 0,
+                width: isExpanded ? "auto" : 0,
+                overflow: "hidden",
+              }}
             >
               {name}
-            </span>
-          </div>
-        </button>
+            </Typography>
+          </Box>
+        </ButtonBase>
       ) : (
-        <div
-          onClick={handleClick}
-          className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all duration-15
-            ${
-              isOpen
-                ? // Active/Open State
-                  // Light: bg-indigo-50 text-indigo-600
-                  // Dark: bg-indigo-900/40 text-indigo-400
-                  "bg-indigo-50 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400"
-                : // Default State
-                  // Light: text-gray-700 hover:bg-indigo-50 hover:text-indigo-600
-                  // Dark: text-gray-300 hover:bg-gray-800 hover:text-indigo-400
-                  "text-gray-700 dark:text-gray-300 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-gray-800 dark:hover:text-indigo-400"
-            }
-          `}
-        >
-          <div className="flex items-center">
+        <Box onClick={handleClick} sx={itemSx(isOpen)}>
+          <Box sx={{ display: "flex", alignItems: "center" }}>
             <Icon className="w-6 h-6" />
-            <span
-              className={`font-medium whitespace-nowrap transition-all duration-30 ${
-                isExpanded ? "opacity-100 ml-3" : "opacity-0 w-0 overflow-hidden"
-              }`}
+            <Typography
+              component="span"
+              sx={{
+                fontWeight: 500, whiteSpace: "nowrap", transition: "all 0.3s",
+                opacity: isExpanded ? 1 : 0,
+                ml: isExpanded ? 1.5 : 0,
+                width: isExpanded ? "auto" : 0,
+                overflow: "hidden",
+              }}
             >
               {name}
-            </span>
-          </div>
+            </Typography>
+          </Box>
 
           {subItems && isExpanded && (
             <ChevronRightIcon
-              className={`w-4 h-4 transition-transform ${
-                // Chevron icon colors
-                // Light: text-gray-400
-                // Dark: dark:text-gray-500
-                isOpen
-                  ? "rotate-90 text-indigo-600 dark:text-indigo-400" // Active state
-                  : "text-gray-400 dark:text-gray-500" // Default state
-              }`}
+              className="w-4 h-4"
+              style={{
+                transition: "transform 0.2s",
+                transform: isOpen ? "rotate(90deg)" : "none",
+                color: isOpen ? "#4f46e5" : "inherit",
+                opacity: isOpen ? 1 : 0.6,
+              }}
             />
           )}
-        </div>
+        </Box>
       )}
 
       {/* Submenu (Floating Menu when collapsed) */}
       {subItems && isOpen && (
-        <ul
+        <Box
+          component="ul"
           ref={submenuRef}
           style={submenuStyle}
-          className={`
-            fixed 
-              bg-white dark:bg-gray-800
-         
-           shadow-lg border border-gray-100 dark:border-gray-700
-            
-            rounded-lg 
-            p-2 space-y-1 z-50 w-52 
-            transform transition-all duration-20
-            ${
-              isOpen
-                ? "opacity-100 translate-x-0"
-                : "opacity-0 -translate-x-2 pointer-events-none"
-            }
-          `}
+          sx={{
+            position: "fixed", bgcolor: "background.paper", boxShadow: 4,
+            border: "1px solid", borderColor: "divider", borderRadius: 2,
+            p: 1, display: "flex", flexDirection: "column", gap: 0.5, zIndex: 50, width: 208,
+            listStyle: "none", m: 0,
+            transition: "all 0.2s",
+            opacity: isOpen ? 1 : 0,
+            transform: isOpen ? "translateX(0)" : "translateX(-8px)",
+            pointerEvents: isOpen ? "auto" : "none",
+          }}
         >
           {/* 🔹 Parent element (included at the top) */}
           {path && (
-            <li key={`${name}-parent`}>
-              <button
+            <Box component="li" key={`${name}-parent`} sx={{ listStyle: "none" }}>
+              <ButtonBase
                 type="button"
                 onClick={() => {
                   setActiveMenu(null);
                   navigateActiveTab(path);
                   onNavigate?.();
                 }}
-                className="block px-3 py-1.5 text-sm font-medium
-                    text-indigo-600 bg-indigo-50 hover:bg-indigo-100
-                   dark:text-indigo-400
-
-                   dark:bg-indigo-900/40 dark:hover:bg-indigo-900/60
-                  rounded-md w-full text-left"
+                sx={{
+                  display: "block", px: 1.5, py: 0.75, fontSize: 14, fontWeight: 500,
+                  color: (theme) => (theme.palette.mode === "dark" ? "#818cf8" : "#4f46e5"),
+                  bgcolor: (theme) => (theme.palette.mode === "dark" ? "rgba(49,46,129,0.4)" : "#eef2ff"),
+                  "&:hover": { bgcolor: (theme) => (theme.palette.mode === "dark" ? "rgba(49,46,129,0.6)" : "#e0e7ff") },
+                  borderRadius: 1.5, width: "100%", textAlign: "left",
+                }}
               >
                 {name}
-              </button>
-            </li>
+              </ButtonBase>
+            </Box>
           )}
 
           {/* 🔹 Submenu items */}
           {subItems.map((sub) => (
-            <li key={sub.name}>
-              <button
+            <Box component="li" key={sub.name} sx={{ listStyle: "none" }}>
+              <ButtonBase
                 type="button"
                 onClick={() => {
                   setActiveMenu(null);
                   navigateActiveTab(sub.path);
                   onNavigate?.();
                 }}
-                className="block px-3 py-1.5 text-sm
-                  dark:hover:bg-gray-700 dark:hover:text-indigo-400
-                  text-gray-700 dark:text-gray-300
-                  hover:bg-indigo-50 hover:text-indigo-600
-                  rounded-md w-full text-left"
+                sx={{
+                  display: "block", px: 1.5, py: 0.75, fontSize: 14,
+                  color: (theme) => (theme.palette.mode === "dark" ? "#d1d5db" : "#374151"),
+                  "&:hover": {
+                    bgcolor: (theme) => (theme.palette.mode === "dark" ? "#374151" : "#eef2ff"),
+                    color: (theme) => (theme.palette.mode === "dark" ? "#818cf8" : "#4f46e5"),
+                  },
+                  borderRadius: 1.5, width: "100%", textAlign: "left",
+                }}
               >
                 {sub.name}
-              </button>
-            </li>
+              </ButtonBase>
+            </Box>
           ))}
-        </ul>
+        </Box>
       )}
-    </li>
+    </Box>
   );
 };
 
