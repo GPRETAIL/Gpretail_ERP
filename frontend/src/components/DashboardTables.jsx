@@ -1,6 +1,7 @@
 import React from "react";
+import { Box, Table, TableBody, TableCell, TableFooter, TableHead, TableRow, Typography } from "@mui/material";
 
-const tableCardClass = "rounded-md border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 min-h-[320px]";
+const tableCardSx = { borderRadius: "5.25px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", p: 1.5 };
 
 const formatWholeAmount = (value) =>
   Number(value || 0).toLocaleString("en-IN", {
@@ -17,180 +18,169 @@ const formatCurrency = (value) => {
   return `₹${formatted}`;
 };
 
-const amountClass = (value) => (Number(value || 0) < 0 ? "text-rose-600 dark:text-rose-400" : "text-teal-700 dark:text-teal-400");
+const amountColor = (value) =>
+  Number(value || 0) < 0 ? "error.main" : (theme) => (theme.palette.mode === "dark" ? "#2dd4bf" : "#0f766e");
 
-const methodDotClass = {
-  emerald: "bg-emerald-500",
-  blue: "bg-blue-500",
-  violet: "bg-purple-500",
-  purple: "bg-purple-500",
-  amber: "bg-amber-500",
-  orange: "bg-amber-500",
-  rose: "bg-red-500",
-  red: "bg-red-500",
-  slate: "bg-slate-500",
+const methodDotColor = {
+  emerald: "success.main",
+  blue: "info.main",
+  violet: "#8b5cf6",
+  purple: "#8b5cf6",
+  amber: "warning.main",
+  orange: "warning.main",
+  rose: "error.main",
+  red: "error.main",
+  slate: "text.disabled",
 };
 
 export const DailySalesSummaryTable = ({ table, loading, privacyMode }) => {
   const rows = table?.rows || [];
   const totals = table?.totals || { count: 0, quantity: 0, value: 0 };
-  const blurClass = privacyMode ? "blur-sm select-none" : "";
+  const blurSx = privacyMode ? { filter: "blur(4px)", userSelect: "none" } : {};
 
   return (
-    <div className={tableCardClass}>
-      <div className="mb-3">
-        <h2 className="text-sm font-semibold text-slate-900 dark:text-gray-100">{table?.title || "Daily Sales Summary"}</h2>
-      </div>
+    <Box sx={tableCardSx}>
+      <Box sx={{ mb: 1 }}>
+        <Typography component="h2" sx={{ fontSize: 14, fontWeight: 600, color: "text.primary" }}>{table?.title || "Daily Sales Summary"}</Typography>
+      </Box>
       {loading ? (
-        <div className="h-[320px] flex items-center justify-center text-sm text-slate-500 dark:text-gray-400">Loading table...</div>
+        <Box sx={{ height: 320, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "text.secondary" }}>Loading table...</Box>
       ) : (
-        <div className="dashboard-card-scroll max-h-[320px] overflow-y-auto overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="sticky top-0 z-10 border-b border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-left text-xs text-slate-500 dark:text-gray-400">
-                <th className="pb-2 pr-3 font-medium">Company</th>
-                <th className="pb-2 pr-3 font-medium">Location</th>
-                <th className="pb-2 pr-3 text-right font-medium">Count</th>
-                <th className="pb-2 pr-3 text-right font-medium">Quantity</th>
-                <th className="pb-2 text-right font-medium">Value</th>
-              </tr>
-            </thead>
-            <tbody>
+        <Box sx={{ overflowX: "auto" }}>
+          <Table size="small" sx={{ "& .MuiTableCell-root": { py: 0.5 }, "& tbody tr:last-child td": { borderBottom: 0 } }}>
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ fontSize: 12, color: "text.secondary" }}>Company</TableCell>
+                <TableCell sx={{ fontSize: 12, color: "text.secondary" }}>Location</TableCell>
+                <TableCell align="right" sx={{ fontSize: 12, color: "text.secondary" }}>Count</TableCell>
+                <TableCell align="right" sx={{ fontSize: 12, color: "text.secondary" }}>Quantity</TableCell>
+                <TableCell align="right" sx={{ fontSize: 12, color: "text.secondary" }}>Value</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
               {rows.length ? (
                 rows.map((row) => (
-                  <tr key={`${row.company}-${row.location}`} className="border-b border-slate-100 dark:border-gray-700">
-                    <td className="py-2 pr-3 text-slate-800 dark:text-gray-200">{row.company}</td>
-                    <td className="py-2 pr-3 text-slate-700 dark:text-gray-300">{row.location}</td>
-                    <td className={`py-2 pr-3 text-right text-slate-800 dark:text-gray-200 ${blurClass}`}>{formatWholeAmount(row.count)}</td>
-                    <td className={`py-2 pr-3 text-right text-slate-800 dark:text-gray-200 ${blurClass}`}>{formatQuantity(row.quantity)}</td>
-                    <td className={`py-2 text-right font-medium ${amountClass(row.value)} ${blurClass}`}>
+                  <TableRow key={`${row.company}-${row.location}`}>
+                    <TableCell sx={{ color: "text.primary" }}>{row.company}</TableCell>
+                    <TableCell sx={{ color: "text.secondary" }}>{row.location}</TableCell>
+                    <TableCell align="right" sx={{ color: "text.primary", ...blurSx }}>{formatWholeAmount(row.count)}</TableCell>
+                    <TableCell align="right" sx={{ color: "text.primary", ...blurSx }}>{formatQuantity(row.quantity)}</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 500, color: amountColor(row.value), ...blurSx }}>
                       {formatCurrency(row.value)}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))
               ) : (
-                <tr>
-                  <td colSpan={5} className="py-8 text-center text-sm text-slate-500 dark:text-gray-400">
+                <TableRow>
+                  <TableCell colSpan={5} align="center" sx={{ py: 4, fontSize: 14, color: "text.secondary" }}>
                     No sales in this range
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               )}
-            </tbody>
+            </TableBody>
             {rows.length ? (
-              <tfoot>
-                {/* sticky bottom-0: the Total row must never require scrolling past the body rows
-                    to see -- that's the whole point of a total. */}
-                <tr className="sticky bottom-0 z-10 border-t-2 border-indigo-500 bg-white dark:bg-gray-800 text-sm font-semibold text-slate-900 dark:text-gray-100">
-                  <td className="pt-3 pb-1 pr-3" colSpan={2}>
-                    Total
-                  </td>
-                  <td className={`pt-3 pb-1 pr-3 text-right ${blurClass}`}>{formatWholeAmount(totals.count)}</td>
-                  <td className={`pt-3 pb-1 pr-3 text-right ${blurClass}`}>{formatQuantity(totals.quantity)}</td>
-                  <td className={`pt-3 pb-1 text-right ${amountClass(totals.value)} ${blurClass}`}>{formatCurrency(totals.value)}</td>
-                </tr>
-              </tfoot>
+              <TableFooter>
+                <TableRow sx={{ "& td": { borderTop: 2, borderTopColor: "#6366f1", fontWeight: 600 } }}>
+                  <TableCell colSpan={2} sx={{ color: "text.primary" }}>Total</TableCell>
+                  <TableCell align="right" sx={{ color: "text.primary", ...blurSx }}>{formatWholeAmount(totals.count)}</TableCell>
+                  <TableCell align="right" sx={{ color: "text.primary", ...blurSx }}>{formatQuantity(totals.quantity)}</TableCell>
+                  <TableCell align="right" sx={{ color: amountColor(totals.value), ...blurSx }}>{formatCurrency(totals.value)}</TableCell>
+                </TableRow>
+              </TableFooter>
             ) : null}
-          </table>
-        </div>
+          </Table>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 };
 
-const SettlementDetailsTable = ({ table, loading, privacyMode }) => {
+export const SettlementDetailsTable = ({ table, loading, privacyMode }) => {
   const columns = table?.columns || [];
   const rows = table?.rows || [];
   const columnTotals = table?.columnTotals || {};
   const grandTotal = table?.grandTotal || 0;
-  const blurClass = privacyMode ? "blur-sm select-none" : "";
+  const blurSx = privacyMode ? { filter: "blur(4px)", userSelect: "none" } : {};
 
   return (
-    <div className={`${tableCardClass} min-w-0 flex flex-col`}>
-      <div className="mb-3">
-        <h2 className="text-sm font-semibold text-slate-900 dark:text-gray-100">{table?.title || "Settlement Details"}</h2>
-      </div>
+    <Box sx={{ ...tableCardSx, minWidth: 0 }}>
+      <Box sx={{ mb: 1 }}>
+        <Typography component="h2" sx={{ fontSize: 14, fontWeight: 600, color: "text.primary" }}>{table?.title || "Settlement Details"}</Typography>
+      </Box>
       {loading ? (
-        <div className="h-[320px] flex items-center justify-center text-sm text-slate-500 dark:text-gray-400">Loading table...</div>
+        <Box sx={{ height: 320, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "text.secondary" }}>Loading table...</Box>
       ) : (
-        <div className="dashboard-card-scroll max-h-[320px] overflow-x-auto overflow-y-auto w-full">
-          <table className="w-full min-w-max text-sm">
-            <thead>
-              <tr className="sticky top-0 z-10 border-b border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-left text-xs text-slate-500 dark:text-gray-400">
-                <th className="pb-2 pr-3 font-medium min-w-[130px]">Method</th>
+        <Box sx={{ overflowX: "auto", width: "100%" }}>
+          <Table size="small" sx={{ width: "100%", minWidth: "max-content", "& .MuiTableCell-root": { py: 0.5 }, "& tbody tr:last-child td": { borderBottom: 0 } }}>
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ fontSize: 12, color: "text.secondary", minWidth: 130 }}>Method</TableCell>
                 {columns.map((column) => (
-                  <th key={column.key} className="pb-2 px-3 text-right font-medium min-w-[110px]">
+                  <TableCell key={column.key} align="right" sx={{ fontSize: 12, color: "text.secondary", minWidth: 110 }}>
                     {column.label}
-                  </th>
+                  </TableCell>
                 ))}
-                <th className="pb-2 pl-3 text-right font-medium min-w-[110px]">Total</th>
-              </tr>
-            </thead>
-            <tbody>
+                <TableCell align="right" sx={{ fontSize: 12, color: "text.secondary", minWidth: 110 }}>Total</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
               {rows.length && columns.length ? (
                 rows.map((row) => (
-                  <tr key={row.key} className="border-b border-slate-100 dark:border-gray-700 hover:bg-slate-50/50 dark:hover:bg-gray-750/50">
-                    <td className="py-2 pr-3 text-slate-800 dark:text-gray-200">
-                      <span className="inline-flex items-center gap-2">
-                        <span
-                          className={`h-2.5 w-2.5 rounded-full shrink-0 ${methodDotClass[row.color] || "bg-slate-400"}`}
-                        />
+                  <TableRow key={row.key} sx={{ "&:hover": { bgcolor: "action.hover" } }}>
+                    <TableCell sx={{ color: "text.primary" }}>
+                      <Box sx={{ display: "inline-flex", alignItems: "center", gap: 1 }}>
+                        <Box sx={{ height: 10, width: 10, flexShrink: 0, borderRadius: "50%", bgcolor: methodDotColor[row.color] || "text.disabled" }} />
                         {row.label}
-                      </span>
-                    </td>
+                      </Box>
+                    </TableCell>
                     {columns.map((column) => (
-                      <td
+                      <TableCell
                         key={`${row.key}-${column.key}`}
-                        className={`py-2 px-3 text-right ${amountClass(row.values?.[column.key])} ${blurClass}`}
+                        align="right"
+                        sx={{ color: amountColor(row.values?.[column.key]), ...blurSx }}
                       >
                         {formatCurrency(row.values?.[column.key])}
-                      </td>
+                      </TableCell>
                     ))}
-                    <td className={`py-2 pl-3 text-right font-medium ${amountClass(row.total)} ${blurClass}`}>
+                    <TableCell align="right" sx={{ fontWeight: 500, color: amountColor(row.total), ...blurSx }}>
                       {formatCurrency(row.total)}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))
               ) : (
-                <tr>
-                  <td colSpan={Math.max(columns.length + 2, 2)} className="py-8 text-center text-sm text-slate-500 dark:text-gray-400">
+                <TableRow>
+                  <TableCell colSpan={Math.max(columns.length + 2, 2)} align="center" sx={{ py: 4, fontSize: 14, color: "text.secondary" }}>
                     No settlements in this range
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               )}
-            </tbody>
+            </TableBody>
             {rows.length && columns.length ? (
-              <tfoot>
-                <tr className="sticky bottom-0 z-10 border-t-2 border-indigo-500 bg-white dark:bg-gray-800 text-sm font-semibold text-slate-900 dark:text-gray-100">
-                  <td className="pt-3 pb-1 pr-3">
-                    <span className="inline-flex items-center gap-2">
-                      <span className="h-2.5 w-2.5 rounded-full bg-blue-600 shrink-0" />
+              <TableFooter>
+                <TableRow sx={{ "& td": { borderTop: 2, borderTopColor: "#6366f1", fontWeight: 600 } }}>
+                  <TableCell sx={{ color: "text.primary" }}>
+                    <Box sx={{ display: "inline-flex", alignItems: "center", gap: 1 }}>
+                      <Box sx={{ height: 10, width: 10, flexShrink: 0, borderRadius: "50%", bgcolor: "#2563eb" }} />
                       Total
-                    </span>
-                  </td>
+                    </Box>
+                  </TableCell>
                   {columns.map((column) => (
-                    <td
+                    <TableCell
                       key={`total-${column.key}`}
-                      className={`pt-3 pb-1 px-3 text-right ${amountClass(columnTotals[column.key])} ${blurClass}`}
+                      align="right"
+                      sx={{ color: amountColor(columnTotals[column.key]), ...blurSx }}
                     >
                       {formatCurrency(columnTotals[column.key])}
-                    </td>
+                    </TableCell>
                   ))}
-                  <td className={`pt-3 pb-1 pl-3 text-right ${amountClass(grandTotal)} ${blurClass}`}>{formatCurrency(grandTotal)}</td>
-                </tr>
-              </tfoot>
+                  <TableCell align="right" sx={{ color: amountColor(grandTotal), ...blurSx }}>{formatCurrency(grandTotal)}</TableCell>
+                </TableRow>
+              </TableFooter>
             ) : null}
-          </table>
-        </div>
+          </Table>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 };
 
-const DashboardTables = ({ tables, loading, privacyMode }) => (
-  <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
-    <DailySalesSummaryTable table={tables?.dailySalesSummary} loading={loading} privacyMode={privacyMode} />
-    <SettlementDetailsTable table={tables?.settlementDetails} loading={loading} privacyMode={privacyMode} />
-  </div>
-);
-
-export default DashboardTables;

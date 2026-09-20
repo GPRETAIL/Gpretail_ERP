@@ -18,11 +18,23 @@ const COLS = { lg: 12, md: 12, sm: 6, xs: 1 };
  * so an uncustomized Dashboard looks exactly like it did before this feature existed.
  *
  * widgets: [{ key, title, component: Component, props, defaultLayout: {x,y,w,h,minW,minH} }]
- * fitContent: when true, a tile never clips or inner-scrolls its content -- it renders at full
- * height and the page scrolls instead. Off by default so every other tab keeps today's fixed-box
- * behavior; only Overview opts in.
+ *
+ * Every tile clips and inner-scrolls its own content instead of growing past its grid row --
+ * react-grid-layout positions siblings absolutely by their fixed layout height, so a tile that's
+ * allowed to render taller than its own box doesn't push the row below it down, it just visually
+ * overlaps it. (This used to be togglable via a "fitContent" prop that opted Overview out of
+ * clipping "so the page scrolls instead" -- removed after that caused exactly this overlap on any
+ * tile whose content (a long Action Required list, a wide table) exceeded its row height.)
+ *
+ * A content-driven auto-height mode (ResizeObserver measuring each tile's real scrollHeight and
+ * feeding that back into its own layout h) was tried here and reverted -- react-grid-layout
+ * animates a tile's height/transform on layout change, and the observer kept catching those
+ * mid-transition sizes, ratcheting every tile in a row up to the same inflated height instead of
+ * settling. Widget-level sizing (each widget choosing a smaller h for its own empty/sparse state,
+ * per its own row/content-count knowledge -- see Dashboard.jsx's overviewWidgets) is the safer
+ * place to solve "don't leave dead space under sparse content", not this shared grid component.
  */
-export default function DashboardGrid({ tabKey, widgets, fitContent = false }) {
+export default function DashboardGrid({ tabKey, widgets }) {
   const { layouts, editMode, saveLayout } = useDashboardLayout();
   const savedLayout = layouts?.[tabKey];
 
@@ -91,7 +103,7 @@ export default function DashboardGrid({ tabKey, widgets, fitContent = false }) {
             key={w.key}
             sx={{
               borderRadius: "10.5px", border: "1px solid", bgcolor: "background.paper",
-              overflow: fitContent ? "visible" : "hidden",
+              overflow: "hidden",
               ...(editMode
                 ? { borderColor: "primary.main", boxShadow: 2 }
                 : { borderColor: "divider" }),
@@ -127,7 +139,7 @@ export default function DashboardGrid({ tabKey, widgets, fitContent = false }) {
                 </IconButton>
               </Box>
             )}
-            <Box sx={fitContent ? { p: 0.25 } : { height: "100%", overflow: "auto", p: 0.25 }}>
+            <Box sx={{ height: "100%", overflow: "auto", p: 0.25 }}>
               <w.component {...(w.props || {})} />
             </Box>
           </Box>

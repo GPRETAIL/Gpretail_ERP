@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { RefreshCw, LayoutGrid, Check, RotateCcw, Eye, EyeOff } from "lucide-react";
+import { RefreshCw, LayoutGrid, Check, RotateCcw, Eye, EyeOff, Package, Users } from "lucide-react";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import api from "../api/axios";
-import DashboardCharts from "../components/DashboardCharts";
-import DashboardHighlightCards from "../components/DashboardHighlightCards";
-import DashboardTables from "../components/DashboardTables";
+import { HourlySalesChart, DailyTrendChart } from "../components/DashboardCharts";
+import { LeaderboardCard } from "../components/DashboardHighlightCards";
+import { DailySalesSummaryTable, SettlementDetailsTable } from "../components/DashboardTables";
 import DashboardGrid from "../components/dashboard/DashboardGrid";
 import {
   TotalBillsCard,
@@ -27,6 +27,7 @@ import useDashboardRealtime from "../hooks/useDashboardRealtime";
 import { DASHBOARD_PAGES } from "../utils/dashboardModuleTabs";
 import { USER_ROLE, canAccessPath } from "../utils/accessControl";
 import { DashboardLayoutProvider, useDashboardLayout } from "../context/DashboardLayoutContext";
+import { Box, Button, MenuItem, Stack, Tab, Tabs, TextField, Typography } from "@mui/material";
 
 const formatYmd = (date) => {
   const year = date.getFullYear();
@@ -177,6 +178,19 @@ const Dashboard = () => {
   const employees = metrics?.employees || {};
   const stockValue = metrics?.stockValue || {};
 
+  // A row's two side-by-side widgets must share one h: react-grid-layout compacts each column
+  // independently, so if only one of a pair shrank to fit its own sparser content, the item below
+  // *that* column alone would get pulled up while its partner in the other column didn't move,
+  // breaking the left/right pairing. Sizing both off whichever one actually has content keeps
+  // sparse demo data from leaving a tall dead gap without risking that misalignment.
+  const dailySalesHasRows = (tables?.dailySalesSummary?.rows || []).length > 0;
+  const settlementHasData = (tables?.settlementDetails?.columns || []).length > 0 && (tables?.settlementDetails?.rows || []).length > 0;
+  const tablesRowH = dailySalesHasRows || settlementHasData ? 4 : 3;
+
+  const fastMovingHasRows = (tables?.fastMovingSection?.rows || tables?.topSellingItems?.rows || []).length > 0;
+  const salesPersonHasRows = (tables?.salesPersonOfTheDay?.rows || tables?.topCustomers?.rows || []).length > 0;
+  const leaderboardsRowH = fastMovingHasRows || salesPersonHasRows ? 4 : 3;
+
   const overviewWidgets = useMemo(
     () => [
       // Each KPI card is its own grid item (not one bundled "KPI Summary" row) so it can be
@@ -216,187 +230,237 @@ const Dashboard = () => {
         props: { items: actionRequiredItems, loading: actionRequiredLoading, onItemHandled: handleActionRequiredItem },
         // Every other module tab places its own Action Required banner right after its KPI row
         // (y:0 h:2) at the same h:2 -- matched here so Overview's shifts everything below it down
-        // by exactly the same 2 units those tabs already budget for it.
+        // by exactly the same 2 units those tabs already budget for it. The widget itself is
+        // omitted entirely (see below) when there's nothing to show, instead of rendering an
+        // empty h:2 box, so this stays sized for the common 1-row case rather than padded for
+        // the rare 2-row (5-8 item) one -- that rarer case gets an internal scrollbar instead.
         defaultLayout: { x: 0, y: 2, w: 12, h: 2, minW: 6, minH: 2 },
       },
+      // Charts/tables/highlights used to be 3 bundled two-card widgets, which meant the two
+      // cards inside each (e.g. Sales Graph and Business Trend) could only be dragged, resized,
+      // or hidden together. Split into one grid item per card -- so each is independently
+      // draggable/removable like every KPI card already is, matching the pattern every other
+      // tab's dashboard (Crm/Finance/Sales/...) already uses.
       {
-        key: "charts",
-        title: "Charts",
-        component: DashboardCharts,
-        props: { charts, loading, privacyMode },
-        // h:4 matches DashboardCharts' actual min-h-[320px] card height (h*72 + (h-1)*16 = 336px)
-        // instead of the old h:5 (424px), which left ~104px of dead space below the chart cards.
-        defaultLayout: { x: 0, y: 4, w: 12, h: 4, minW: 6, minH: 3 },
+        key: "chart-hourly-sales",
+        title: "Sales Graph (Hourly)",
+        component: HourlySalesChart,
+        props: { chart: charts?.hourlySales, loading, privacyMode },
+        defaultLayout: { x: 0, y: 4, w: 6, h: 4, minW: 4, minH: 3 },
       },
       {
-        key: "tables",
-        title: "Tables",
-        component: DashboardTables,
-        props: { tables, loading, privacyMode },
-        // DashboardTables' cards are a fixed 320px (min-h and max-h both 320px), so h:4 (336px)
-        // fits them with ~16px to spare instead of the old h:6 (512px), which left ~192px of
-        // empty space inside this widget's box -- the largest single contributor to the grid's
-        // "extra space at the bottom" the Tables/Highlights row pair produced.
-        defaultLayout: { x: 0, y: 8, w: 12, h: 4, minW: 6, minH: 4 },
+        key: "chart-daily-trend",
+        title: "Business Trend (Daily)",
+        component: DailyTrendChart,
+        props: { chart: charts?.dailyTrend, loading, privacyMode },
+        defaultLayout: { x: 6, y: 4, w: 6, h: 4, minW: 4, minH: 3 },
       },
       {
-        key: "highlights",
-        title: "Highlights",
-        component: DashboardHighlightCards,
-        props: { tables, loading, privacyMode },
-        defaultLayout: { x: 0, y: 12, w: 12, h: 4, minW: 6, minH: 3 },
+        key: "table-daily-sales-summary",
+        title: "Daily Sales Summary",
+        component: DailySalesSummaryTable,
+        props: { table: tables?.dailySalesSummary, loading, privacyMode },
+        defaultLayout: { x: 0, y: 8, w: 6, h: tablesRowH, minW: 4, minH: 3 },
       },
-    ],
+      {
+        key: "table-settlement-details",
+        title: "Settlement Details",
+        component: SettlementDetailsTable,
+        props: { table: tables?.settlementDetails, loading, privacyMode },
+        defaultLayout: { x: 6, y: 8, w: 6, h: tablesRowH, minW: 4, minH: 3 },
+      },
+      {
+        key: "highlight-fast-moving-products",
+        title: "Fast Moving Products",
+        component: LeaderboardCard,
+        props: {
+          table: tables?.fastMovingSection || tables?.topSellingItems,
+          defaultTitle: "Fast Moving Products",
+          icon: Package,
+          emptyMessage: "No product sales in this range",
+          loading,
+          privacyMode,
+        },
+        defaultLayout: { x: 0, y: 8 + tablesRowH, w: 6, h: leaderboardsRowH, minW: 4, minH: 3 },
+      },
+      {
+        key: "highlight-sales-person-of-the-day",
+        title: "Sales Person of the Day",
+        component: LeaderboardCard,
+        props: {
+          table: tables?.salesPersonOfTheDay || tables?.topCustomers,
+          defaultTitle: "Sales Person of the Day",
+          icon: Users,
+          emptyMessage: "No salesman sales in this range",
+          loading,
+          privacyMode,
+        },
+        defaultLayout: { x: 6, y: 8 + tablesRowH, w: 6, h: leaderboardsRowH, minW: 4, minH: 3 },
+      },
+    ].filter((widget) => {
+      // Skip Action Required entirely once we know it's empty, instead of rendering an empty
+      // h:2 box -- while it's still loading, keep it (it briefly shows a "Loading..." state
+      // rather than popping in after the fetch resolves).
+      if (widget.key !== "action-required") return true;
+      return actionRequiredLoading || actionRequiredItems.length > 0;
+    }),
     [
       totalBills, settlements, employees, stockValue, loading, charts, tables, privacyMode,
-      actionRequiredItems, actionRequiredLoading, handleActionRequiredItem,
+      actionRequiredItems, actionRequiredLoading, handleActionRequiredItem, tablesRowH, leaderboardsRowH,
     ]
   );
 
   return (
-    <div className="h-full min-h-0 overflow-y-auto bg-gray-50 dark:bg-gray-900">
-      <div className="w-full min-w-0 space-y-6 px-5 py-4">
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-gray-100">Dashboard</h1>
-        <div className="flex items-center gap-2">
-          <button
+    <Box sx={{ height: "100%", minHeight: 0, overflowY: "auto", bgcolor: "background.default" }}>
+      <Stack spacing={3} sx={{ width: "100%", minWidth: 0, px: 2.5, py: 2 }}>
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1.5, flexWrap: "wrap" }}>
+        <Typography variant="h5" component="h1" sx={{ fontWeight: 700, color: "text.primary" }}>
+          Dashboard
+        </Typography>
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap" }}>
+          <Button
             type="button"
             onClick={() => setEditMode((prev) => !prev)}
-            className={`inline-flex h-10 items-center gap-2 rounded-sm border px-3 text-sm transition-colors ${
-              editMode
-                ? "border-indigo-600 bg-indigo-600 text-white hover:bg-indigo-700"
-                : "border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-slate-700 dark:text-gray-200 hover:bg-slate-50 dark:hover:bg-gray-700"
-            }`}
+            variant={editMode ? "contained" : "outlined"}
+            startIcon={editMode ? <Check className="h-4 w-4" /> : <LayoutGrid className="h-4 w-4" />}
             aria-label="Toggle dashboard layout customization"
+            sx={editMode
+              ? { bgcolor: "#4f46e5", borderColor: "#4f46e5", textTransform: "none", "&:hover": { bgcolor: "#4338ca", borderColor: "#4338ca" } }
+              : { textTransform: "none", borderColor: "divider", color: "text.secondary" }}
           >
-            {editMode ? <Check className="h-4 w-4" /> : <LayoutGrid className="h-4 w-4" />}
             {editMode ? "Done Customizing" : "Customize Layout"}
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={() => setPrivacyMode((prev) => !prev)}
-            className={`inline-flex h-10 items-center gap-2 rounded-sm border px-3 text-sm transition-colors ${
-              privacyMode
-                ? "border-indigo-600 bg-indigo-600 text-white hover:bg-indigo-700"
-                : "border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-slate-700 dark:text-gray-200 hover:bg-slate-50 dark:hover:bg-gray-700"
-            }`}
+            variant={privacyMode ? "contained" : "outlined"}
+            startIcon={privacyMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             aria-label="Toggle privacy mode (blur amounts)"
             title="Blur bill amounts, stock value, and other figures"
+            sx={privacyMode
+              ? { bgcolor: "#4f46e5", borderColor: "#4f46e5", textTransform: "none", "&:hover": { bgcolor: "#4338ca", borderColor: "#4338ca" } }
+              : { textTransform: "none", borderColor: "divider", color: "text.secondary" }}
           >
-            {privacyMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             Privacy
-          </button>
+          </Button>
           {editMode && (
-            <button
+            <Button
               type="button"
               onClick={() => resetLayout(activeTab)}
-              className="inline-flex h-10 items-center gap-2 rounded-sm border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 text-sm text-slate-700 dark:text-gray-200 hover:bg-slate-50 dark:hover:bg-gray-700"
+              variant="outlined"
+              startIcon={<RotateCcw className="h-4 w-4" />}
               aria-label="Reset this tab's layout to default"
               title="Reset this tab's layout to default"
+              sx={{ textTransform: "none", borderColor: "divider", color: "text.secondary" }}
             >
-              <RotateCcw className="h-4 w-4" />
               Reset Layout
-            </button>
+            </Button>
           )}
-          <button
+          <Button
             type="button"
             onClick={() => {
               loadDashboard();
               loadActionRequired();
             }}
             disabled={loading}
-            className="inline-flex h-10 items-center gap-2 rounded-sm border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 text-sm text-slate-700 dark:text-gray-200 hover:bg-slate-50 dark:hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-60"
+            variant="outlined"
+            startIcon={<RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />}
             aria-label="Refresh dashboard"
+            sx={{ textTransform: "none", borderColor: "divider", color: "text.secondary" }}
           >
-            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             Refresh
-          </button>
-        </div>
-      </div>
+          </Button>
+        </Stack>
+      </Box>
 
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-          <div>
-            <label className="block text-xs font-medium text-slate-600 dark:text-gray-400 mb-1">From</label>
-            <input
-              type="date"
-              value={fromDate}
-              onChange={(event) => setFromDate(event.target.value)}
-              className="h-10 min-w-[160px] rounded-sm border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-slate-900 dark:text-gray-100 px-3 text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-600 dark:text-gray-400 mb-1">To</label>
-            <input
-              type="date"
-              value={toDate}
-              onChange={(event) => setToDate(event.target.value)}
-              className="h-10 min-w-[160px] rounded-sm border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-slate-900 dark:text-gray-100 px-3 text-sm"
-            />
-          </div>
-        </div>
+      <Stack spacing={1.5} sx={{ flexDirection: { xs: "column", lg: "row" }, alignItems: { lg: "flex-end" }, justifyContent: { lg: "space-between" } }}>
+        <Stack spacing={1.5} sx={{ flexDirection: { xs: "column", sm: "row" }, alignItems: { sm: "flex-end" } }}>
+          <TextField
+            type="date"
+            label="From"
+            size="small"
+            value={fromDate}
+            onChange={(event) => setFromDate(event.target.value)}
+            sx={{ minWidth: 160 }}
+            slotProps={{ inputLabel: { shrink: true } }}
+          />
+          <TextField
+            type="date"
+            label="To"
+            size="small"
+            value={toDate}
+            onChange={(event) => setToDate(event.target.value)}
+            sx={{ minWidth: 160 }}
+            slotProps={{ inputLabel: { shrink: true } }}
+          />
+        </Stack>
 
-        <div className="w-full lg:w-72">
-          <label className="block text-xs font-medium text-slate-600 dark:text-gray-400 mb-1">Company</label>
+        <Box sx={{ width: "100%", maxWidth: { lg: 288 } }}>
           {isSuperAdmin ? (
-            <select
+            <TextField
+              select
+              label="Company"
+              size="small"
+              fullWidth
               value={companyId}
               onChange={(event) => setCompanyId(event.target.value)}
-              className="h-10 w-full rounded-sm border border-slate-300 dark:border-gray-600 px-3 text-sm bg-white dark:bg-gray-800 text-slate-900 dark:text-gray-100"
+              slotProps={{ inputLabel: { shrink: true } }}
             >
               {companyOptions.map((row) => (
-                <option key={row.value || "all"} value={row.value}>
+                <MenuItem key={row.value || "all"} value={row.value}>
                   {row.label}
-                </option>
+                </MenuItem>
               ))}
-            </select>
+            </TextField>
           ) : (
-            <div className="h-10 flex items-center rounded-sm border border-slate-300 dark:border-gray-600 px-3 text-sm bg-slate-50 dark:bg-gray-800 text-slate-700 dark:text-gray-300">
-              {lockedCompanyLabel}
-            </div>
+            <TextField
+              label="Company"
+              size="small"
+              fullWidth
+              value={lockedCompanyLabel}
+              slotProps={{ input: { readOnly: true }, inputLabel: { shrink: true } }}
+            />
           )}
-        </div>
-      </div>
+        </Box>
+      </Stack>
 
-      <div className="border-b border-slate-200 dark:border-gray-700">
-        <div className="flex flex-wrap gap-1">
-          {visibleTabs.map((tab) => {
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id)}
-                className={`border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
-                  isActive
-                    ? "border-indigo-600 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400"
-                    : "border-transparent text-slate-500 dark:text-gray-400 hover:text-slate-700 dark:hover:text-gray-200"
-                }`}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+        <Tabs
+          value={activeTab}
+          onChange={(event, value) => setActiveTab(value)}
+          variant="scrollable"
+          scrollButtons="auto"
+          allowScrollButtonsMobile
+          sx={{
+            minHeight: 40,
+            "& .MuiTab-root": { textTransform: "none", fontWeight: 500, fontSize: 14, minHeight: 40, color: "text.secondary" },
+            "& .Mui-selected": { color: "#4f46e5 !important" },
+            "& .MuiTabs-indicator": { bgcolor: "#4f46e5" },
+          }}
+        >
+          {visibleTabs.map((tab) => (
+            <Tab key={tab.id} value={tab.id} label={tab.label} />
+          ))}
+        </Tabs>
+      </Box>
 
-      <div className={activeTab === "overview" ? "space-y-6" : "hidden"}>
+      <Box sx={{ display: activeTab === "overview" ? "block" : "none" }}>
         <DashboardGrid tabKey="overview" widgets={overviewWidgets} />
-      </div>
+      </Box>
 
       {openedTabs.has("store") && (
-        <div className={activeTab === "store" ? "" : "hidden"}>
+        <Box sx={{ display: activeTab === "store" ? "block" : "none" }}>
           <StoreDashboardTabPane
             active={openedTabs.has("store")}
             fromDate={fromDate}
             toDate={toDate}
             privacyMode={privacyMode}
           />
-        </div>
+        </Box>
       )}
 
       {openedTabs.has("warehouse") && (
-        <div className={activeTab === "warehouse" ? "" : "hidden"}>
+        <Box sx={{ display: activeTab === "warehouse" ? "block" : "none" }}>
           <WarehouseDashboardTabPane
             active={openedTabs.has("warehouse")}
             fromDate={fromDate}
@@ -404,11 +468,11 @@ const Dashboard = () => {
             companyId={companyId}
             privacyMode={privacyMode}
           />
-        </div>
+        </Box>
       )}
 
       {openedTabs.has("crm") && (
-        <div className={activeTab === "crm" ? "" : "hidden"}>
+        <Box sx={{ display: activeTab === "crm" ? "block" : "none" }}>
           <CrmDashboardTabPane
             active={openedTabs.has("crm")}
             fromDate={fromDate}
@@ -416,11 +480,11 @@ const Dashboard = () => {
             companyId={companyId}
             privacyMode={privacyMode}
           />
-        </div>
+        </Box>
       )}
 
       {openedTabs.has("sales") && (
-        <div className={activeTab === "sales" ? "" : "hidden"}>
+        <Box sx={{ display: activeTab === "sales" ? "block" : "none" }}>
           <SalesDashboardTabPane
             active={openedTabs.has("sales")}
             fromDate={fromDate}
@@ -428,11 +492,11 @@ const Dashboard = () => {
             companyId={companyId}
             privacyMode={privacyMode}
           />
-        </div>
+        </Box>
       )}
 
       {openedTabs.has("finance") && (
-        <div className={activeTab === "finance" ? "" : "hidden"}>
+        <Box sx={{ display: activeTab === "finance" ? "block" : "none" }}>
           <FinanceDashboardTabPane
             active={openedTabs.has("finance")}
             fromDate={fromDate}
@@ -440,31 +504,31 @@ const Dashboard = () => {
             companyId={companyId}
             privacyMode={privacyMode}
           />
-        </div>
+        </Box>
       )}
 
       {openedTabs.has("masters") && (
-        <div className={activeTab === "masters" ? "" : "hidden"}>
+        <Box sx={{ display: activeTab === "masters" ? "block" : "none" }}>
           <MastersDashboardTabPane
             active={openedTabs.has("masters")}
             companyId={companyId}
             privacyMode={privacyMode}
           />
-        </div>
+        </Box>
       )}
 
       {openedTabs.has("settings") && (
-        <div className={activeTab === "settings" ? "" : "hidden"}>
+        <Box sx={{ display: activeTab === "settings" ? "block" : "none" }}>
           <SettingsDashboardTabPane
             active={openedTabs.has("settings")}
             companyId={companyId}
             privacyMode={privacyMode}
           />
-        </div>
+        </Box>
       )}
 
       {openedTabs.has("analytical") && (
-        <div className={activeTab === "analytical" ? "" : "hidden"}>
+        <Box sx={{ display: activeTab === "analytical" ? "block" : "none" }}>
           <AnalyticalDashboardTabPane
             active={openedTabs.has("analytical")}
             fromDate={fromDate}
@@ -472,10 +536,10 @@ const Dashboard = () => {
             companyId={companyId}
             privacyMode={privacyMode}
           />
-        </div>
+        </Box>
       )}
-      </div>
-    </div>
+      </Stack>
+    </Box>
   );
 };
 

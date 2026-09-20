@@ -1,7 +1,7 @@
 import React from "react";
-import { Package, Users } from "lucide-react";
+import { Box, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
 
-const cardClass = "rounded-md border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 min-h-[320px]";
+const cardSx = { borderRadius: "5.25px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", p: 2 };
 
 const formatWholeAmount = (value) =>
   Number(value || 0).toLocaleString("en-IN", {
@@ -11,76 +11,54 @@ const formatWholeAmount = (value) =>
 
 const formatCurrency = (value) => `₹${formatWholeAmount(value)}`;
 
-const LeaderboardCard = ({ table, defaultTitle, loading, icon: Icon, emptyMessage, privacyMode }) => {
+export const LeaderboardCard = ({ table, defaultTitle, loading, icon: Icon, emptyMessage, privacyMode }) => {
   const rows = table?.rows || [];
   const title = table?.title || defaultTitle || "Summary";
-  const blurClass = privacyMode ? "blur-sm select-none" : "";
+  const blurSx = privacyMode ? { filter: "blur(4px)", userSelect: "none" } : {};
 
   return (
-    <div className={cardClass}>
-      <div className="mb-3 flex items-center gap-2">
-        <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 dark:bg-gray-700 text-slate-500 dark:text-gray-400">
+    <Box sx={cardSx}>
+      <Box sx={{ mb: 1.5, display: "flex", alignItems: "center", gap: 1 }}>
+        <Box sx={{ display: "inline-flex", height: 32, width: 32, alignItems: "center", justifyContent: "center", borderRadius: "50%", bgcolor: "action.hover", color: "text.secondary" }}>
           <Icon className="h-4 w-4" />
-        </span>
-        <h2 className="text-sm font-semibold text-slate-900 dark:text-gray-100">{title}</h2>
-      </div>
+        </Box>
+        <Typography component="h2" sx={{ fontSize: 14, fontWeight: 600, color: "text.primary" }}>{title}</Typography>
+      </Box>
       {loading ? (
-        <div className="h-[260px] flex items-center justify-center text-sm text-slate-500 dark:text-gray-400">Loading...</div>
+        <Box sx={{ height: 260, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "text.secondary" }}>Loading...</Box>
       ) : (
-        <div className="dashboard-card-scroll max-h-[260px] overflow-y-auto overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="sticky top-0 z-10 border-b border-slate-200 dark:border-gray-600 bg-slate-50 dark:bg-gray-700 text-left text-xs text-slate-500 dark:text-gray-400">
-                <th className="px-2 py-2 font-medium">Name</th>
-                <th className="px-2 py-2 text-center font-medium">Sale Qty</th>
-                <th className="px-2 py-2 text-right font-medium">Value</th>
-              </tr>
-            </thead>
-            <tbody>
+        <Box sx={{ overflowX: "auto" }}>
+          <Table size="small" sx={{ "& tbody tr:last-child td": { borderBottom: 0 } }}>
+            <TableHead>
+              <TableRow sx={{ bgcolor: "action.hover" }}>
+                <TableCell sx={{ fontSize: 12, color: "text.secondary" }}>Name</TableCell>
+                <TableCell align="center" sx={{ fontSize: 12, color: "text.secondary" }}>Sale Qty</TableCell>
+                <TableCell align="right" sx={{ fontSize: 12, color: "text.secondary" }}>Value</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
               {rows.length ? (
                 rows.map((row) => (
-                  <tr key={row.name} className="border-b border-slate-100 dark:border-gray-700">
-                    <td className="px-2 py-2 text-slate-800 dark:text-gray-200">{row.name}</td>
-                    <td className={`px-2 py-2 text-center font-medium text-emerald-600 dark:text-emerald-400 ${blurClass}`}>
+                  <TableRow key={row.name}>
+                    <TableCell sx={{ color: "text.primary" }}>{row.name}</TableCell>
+                    <TableCell align="center" sx={{ fontWeight: 500, color: "success.main", ...blurSx }}>
                       {formatWholeAmount(row.saleQty)}
-                    </td>
-                    <td className={`px-2 py-2 text-right font-medium text-blue-600 dark:text-blue-400 ${blurClass}`}>{formatCurrency(row.value)}</td>
-                  </tr>
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 500, color: "info.main", ...blurSx }}>{formatCurrency(row.value)}</TableCell>
+                  </TableRow>
                 ))
               ) : (
-                <tr>
-                  <td colSpan={3} className="px-2 py-8 text-center text-sm text-slate-500 dark:text-gray-400">
+                <TableRow>
+                  <TableCell colSpan={3} align="center" sx={{ py: 4, fontSize: 14, color: "text.secondary" }}>
                     {emptyMessage}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               )}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+          </Table>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 };
 
-const DashboardHighlightCards = ({ tables, loading, privacyMode }) => (
-  <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
-    <LeaderboardCard
-      table={tables?.fastMovingSection || tables?.topSellingItems}
-      defaultTitle="Fast Moving Products"
-      loading={loading}
-      icon={Package}
-      emptyMessage="No product sales in this range"
-      privacyMode={privacyMode}
-    />
-    <LeaderboardCard
-      table={tables?.salesPersonOfTheDay || tables?.topCustomers}
-      defaultTitle="Sales Person of the Day"
-      loading={loading}
-      icon={Users}
-      emptyMessage="No salesman sales in this range"
-      privacyMode={privacyMode}
-    />
-  </div>
-);
-
-export default DashboardHighlightCards;

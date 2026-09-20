@@ -10,9 +10,10 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { Box, Typography } from "@mui/material";
 import { useTheme } from "../features/theme-context";
 
-const chartCardClass = "rounded-md border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 min-h-[320px]";
+const chartCardSx = { borderRadius: "5.25px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", p: 1.5 };
 
 const DISPLAY_SCALES = [
   { threshold: 10000000, divisor: 10000000, label: "Crores" },
@@ -100,7 +101,7 @@ const buildHourlySalesPoints = (points = []) => {
   };
 };
 
-const HourlySalesChart = ({ chart, loading, privacyMode }) => {
+export const HourlySalesChart = ({ chart, loading, privacyMode }) => {
   const points = chart?.points || [];
   const { rows, salesScale } = buildHourlySalesPoints(points);
   const salesAxisLabel = buildAxisLabel("Sales", salesScale);
@@ -117,20 +118,20 @@ const HourlySalesChart = ({ chart, loading, privacyMode }) => {
     : undefined;
 
   return (
-    <div className={chartCardClass}>
-      <div className="mb-3">
-        <h2 className="text-sm font-semibold text-slate-900 dark:text-gray-100">{chart?.title || "Sales Graph (Hourly)"}</h2>
-        <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">
+    <Box sx={chartCardSx}>
+      <Box sx={{ mb: 1 }}>
+        <Typography component="h2" sx={{ fontSize: 14, fontWeight: 600, color: "text.primary" }}>{chart?.title || "Sales Graph (Hourly)"}</Typography>
+        <Typography sx={{ fontSize: 12, color: "text.secondary", mt: 0.25 }}>
           {chart?.subtitle || "Today's sales performance by hour"}
-        </p>
-      </div>
+        </Typography>
+      </Box>
       {loading ? (
-        <div className="h-[260px] flex items-center justify-center text-sm text-slate-500 dark:text-gray-400">Loading chart...</div>
+        <Box sx={{ height: 260, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "text.secondary" }}>Loading chart...</Box>
       ) : (
         // Recharts renders to SVG, so individual figures (bars, axis ticks) can't be blurred
         // separately from the axis lines/grid without a much more invasive per-tick rewrite --
         // blurring the whole plot area is the practical way to hide the numbers here.
-        <div className={privacyMode ? "blur-sm select-none" : ""}>
+        <Box sx={privacyMode ? { filter: "blur(4px)", userSelect: "none" } : {}}>
         <ResponsiveContainer width="100%" height={260}>
           <ComposedChart data={rows} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
             <defs>
@@ -171,13 +172,13 @@ const HourlySalesChart = ({ chart, loading, privacyMode }) => {
             />
           </ComposedChart>
         </ResponsiveContainer>
-        </div>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 };
 
-const DailyTrendChart = ({ chart, loading, privacyMode }) => {
+export const DailyTrendChart = ({ chart, loading, privacyMode }) => {
   const points = chart?.points || [];
   const { rows, salesScale, unitsScale } = buildDailyTrendPoints(points);
   const salesAxisLabel = buildAxisLabel("Sales", salesScale);
@@ -194,17 +195,17 @@ const DailyTrendChart = ({ chart, loading, privacyMode }) => {
     : undefined;
 
   return (
-    <div className={chartCardClass}>
-      <div className="mb-3">
-        <h2 className="text-sm font-semibold text-slate-900 dark:text-gray-100">{chart?.title || "Business Trend (Daily)"}</h2>
-        <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">
+    <Box sx={chartCardSx}>
+      <Box sx={{ mb: 1 }}>
+        <Typography component="h2" sx={{ fontSize: 14, fontWeight: 600, color: "text.primary" }}>{chart?.title || "Business Trend (Daily)"}</Typography>
+        <Typography sx={{ fontSize: 12, color: "text.secondary", mt: 0.25 }}>
           {chart?.subtitle || "Sales value and units over the last 10 days"}
-        </p>
-      </div>
+        </Typography>
+      </Box>
       {loading ? (
-        <div className="h-[260px] flex items-center justify-center text-sm text-slate-500 dark:text-gray-400">Loading chart...</div>
+        <Box sx={{ height: 260, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "text.secondary" }}>Loading chart...</Box>
       ) : (
-        <div className={privacyMode ? "blur-sm select-none" : ""}>
+        <Box sx={privacyMode ? { filter: "blur(4px)", userSelect: "none" } : {}}>
         <ResponsiveContainer width="100%" height={260}>
           <ComposedChart data={rows} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
             <CartesianGrid stroke={gridStroke} vertical={false} />
@@ -250,17 +251,9 @@ const DailyTrendChart = ({ chart, loading, privacyMode }) => {
             />
           </ComposedChart>
         </ResponsiveContainer>
-        </div>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 };
 
-const DashboardCharts = ({ charts, loading, privacyMode }) => (
-  <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
-    <HourlySalesChart chart={charts?.hourlySales} loading={loading} privacyMode={privacyMode} />
-    <DailyTrendChart chart={charts?.dailyTrend} loading={loading} privacyMode={privacyMode} />
-  </div>
-);
-
-export default DashboardCharts;
