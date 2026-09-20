@@ -83,18 +83,18 @@ export default function ApprovalsScreen() {
       {loading ? (
         <SkeletonTransList count={4} />
       ) : rows.length === 0 ? (
-        <Box className="vx-card text-center py-8">
+        <Box className="vx-card" sx={{ textAlign: "center" }}>
           <Typography component="p" sx={{ fontSize: 14, color: "#94a3b8" }}>No pending approvals</Typography>
         </Box>
       ) : (
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1.25 }}>
           {rows.map((row) => (
-            <Box key={row.id} className="vx-trans-card !flex-col !items-stretch !gap-2">
+            <Box key={row.id} className="vx-trans-card" sx={{ flexDirection: "column", alignItems: "stretch", gap: "0.5rem" }}>
               <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
                 <Box className="vx-trans-left">
                   <Box component="span" className="vx-trans-id">{row.approval_no}</Box>
                   <Box component="span" className="vx-trans-meta">{row.customer?.name || "Walking customer"}</Box>
-                  <Box component="span" className="vx-trans-meta text-[10px]">
+                  <Box component="span" className="vx-trans-meta">
                     {formatDate(row.approval_date)}
                     {row.valid_until ? ` · Valid till ${formatDate(row.valid_until)}` : ""}
                   </Box>

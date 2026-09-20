@@ -200,7 +200,7 @@ export default function PurchaseScreen({ onNavigate }) {
       {loading ? (
         <SkeletonTransList count={4} />
       ) : filtered.length === 0 ? (
-        <Box className="vx-card text-center py-8">
+        <Box className="vx-card" sx={{ textAlign: "center" }}>
           <Typography component="p" sx={{ fontSize: 14, color: "#94a3b8" }}>No purchase bills found</Typography>
         </Box>
       ) : (
@@ -217,7 +217,7 @@ export default function PurchaseScreen({ onNavigate }) {
                 <Box className="vx-trans-left">
                   <Box component="span" className="vx-trans-id">{id}</Box>
                   <Box component="span" className="vx-trans-meta">{supplier}</Box>
-                  <Box component="span" className="vx-trans-meta text-[10px]">{date}</Box>
+                  <Box component="span" className="vx-trans-meta">{date}</Box>
                 </Box>
                 <Box className="vx-trans-right">
                   <Box component="span" className="vx-trans-amount">{money(amount)}</Box>

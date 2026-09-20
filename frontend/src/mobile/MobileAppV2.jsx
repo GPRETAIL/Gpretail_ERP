@@ -347,10 +347,9 @@ export default function VynerixMobileApp() {
         >
           <RefreshCw
             size={18}
-            className={isRefreshing ? "animate-spin" : ""}
             style={{
               color: "#4f46e5",
-              ...(isRefreshing ? {} : { transform: `rotate(${Math.min(pullDistance / threshold, 1) * 360}deg)` }),
+              ...(isRefreshing ? { animation: "app-spin 1s linear infinite" } : { transform: `rotate(${Math.min(pullDistance / threshold, 1) * 360}deg)` }),
             }}
           />
         </Box>

@@ -69,12 +69,10 @@ export default function SyncCenterModal({ isOpen, onClose }) {
 
   return (
     <Box
-      className="animate-in fade-in duration-150"
-      sx={{ position: "fixed", inset: 0, zIndex: 87, display: "flex", flexDirection: "column", justifyContent: "flex-end", bgcolor: "rgba(15,23,42,0.6)", backdropFilter: "blur(4px)" }}
+      sx={{ position: "fixed", inset: 0, zIndex: 87, display: "flex", flexDirection: "column", justifyContent: "flex-end", bgcolor: "rgba(15,23,42,0.6)", backdropFilter: "blur(4px)", animation: "app-fade-in 0.15s ease-out" }}
     >
       <Box
-        className="animate-in slide-in-from-bottom duration-200"
-        sx={{ width: "100%", maxWidth: 480, mx: "auto", bgcolor: "#fff", borderTopLeftRadius: "24px", borderTopRightRadius: "24px", boxShadow: 24, display: "flex", flexDirection: "column", maxHeight: "80vh", overflow: "hidden" }}
+        sx={{ width: "100%", maxWidth: 480, mx: "auto", bgcolor: "#fff", borderTopLeftRadius: "24px", borderTopRightRadius: "24px", boxShadow: 24, display: "flex", flexDirection: "column", maxHeight: "80vh", overflow: "hidden", animation: "app-slide-in-from-bottom 0.2s ease-out" }}
       >
         <Box sx={{ p: 2, borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
           <Box>
@@ -135,7 +133,7 @@ export default function SyncCenterModal({ isOpen, onClose }) {
                   display: "flex", alignItems: "center", justifyContent: "center", gap: 0.75, "&:disabled": { opacity: 0.5 },
                 }}
               >
-                <RefreshCw size={14} className={retrying ? "animate-spin" : ""} />
+                <RefreshCw size={14} style={retrying ? { animation: "app-spin 1s linear infinite" } : undefined} />
                 {retrying ? "Syncing..." : "Retry Now"}
               </Box>
             ) : (

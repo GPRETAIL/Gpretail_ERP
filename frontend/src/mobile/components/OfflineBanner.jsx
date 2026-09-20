@@ -20,14 +20,14 @@ export default function OfflineBanner({ isOnline, wasOffline }) {
     >
       {isOnline ? (
         <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 1, width: "100%", textAlign: "center" }}>
-          <CheckCircle2 size={15} className="text-emerald-700 animate-bounce shrink-0" />
+          <CheckCircle2 size={15} style={{ color: "#047857", animation: "app-bounce 1s infinite", flexShrink: 0 }} />
           <Box component="span">
             <Box component="strong">Back Online:</Box> Workspace synchronized with latest records
           </Box>
         </Box>
       ) : (
         <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 1, width: "100%", textAlign: "center" }}>
-          <WifiOff size={15} className="text-amber-800 animate-pulse shrink-0" />
+          <WifiOff size={15} style={{ color: "#92400e", animation: "app-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite", flexShrink: 0 }} />
           <Box component="span">
             <Box component="strong">Offline Mode:</Box> Viewing cached data. Sync will resume automatically.
           </Box>

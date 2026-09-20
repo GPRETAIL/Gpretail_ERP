@@ -102,7 +102,7 @@ export default function PwaUpdateBanner() {
             border: 0, transition: "all 0.15s", "&:hover": { bgcolor: "#eef2ff" }, "&:active": { transform: "scale(0.95)" },
           }}
         >
-          <RefreshCw size={12} className="animate-spin" />
+          <RefreshCw size={12} style={{ animation: "app-spin 1s linear infinite" }} />
           <Box component="span">Update Now</Box>
         </Box>
       </Box>

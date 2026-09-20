@@ -86,13 +86,11 @@ export default function UserProfileModal({
 
   return (
     <Box
-      className="animate-in fade-in duration-200"
-      sx={{ position: "fixed", inset: 0, zIndex: 70, display: "flex", flexDirection: "column", justifyContent: "flex-end", bgcolor: "rgba(15,23,42,0.6)", backdropFilter: "blur(4px)" }}
+      sx={{ position: "fixed", inset: 0, zIndex: 70, display: "flex", flexDirection: "column", justifyContent: "flex-end", bgcolor: "rgba(15,23,42,0.6)", backdropFilter: "blur(4px)", animation: "app-fade-in 0.2s ease-out" }}
     >
       {/* Drawer Card */}
       <Box
-        className="animate-in slide-in-from-bottom duration-300"
-        sx={{ width: "100%", maxWidth: 480, mx: "auto", bgcolor: "#fff", borderTopLeftRadius: "24px", borderTopRightRadius: "24px", boxShadow: 24, display: "flex", flexDirection: "column", maxHeight: "90vh", overflow: "hidden" }}
+        sx={{ width: "100%", maxWidth: 480, mx: "auto", bgcolor: "#fff", borderTopLeftRadius: "24px", borderTopRightRadius: "24px", boxShadow: 24, display: "flex", flexDirection: "column", maxHeight: "90vh", overflow: "hidden", animation: "app-slide-in-from-bottom 0.3s ease-out" }}
       >
         {/* Header with Profile Hero */}
         <Box sx={{ position: "relative", backgroundImage: "linear-gradient(to bottom right, #4f46e5, #4338ca, #1e40af)", p: 2.5, color: "#fff" }}>
@@ -163,7 +161,7 @@ export default function UserProfileModal({
           >
             {syncing ? (
               <>
-                <RefreshCw size={12} className="animate-spin" />
+                <RefreshCw size={12} style={{ animation: "app-spin 1s linear infinite" }} />
                 <Box component="span">Syncing...</Box>
               </>
             ) : syncSuccess ? (

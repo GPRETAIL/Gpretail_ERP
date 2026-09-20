@@ -137,7 +137,7 @@ export default function PurchaseSummaryScreen() {
       </Box>
 
       {loading ? (
-        <Box className="vx-card text-center py-10">
+        <Box className="vx-card" sx={{ textAlign: "center" }}>
           <Typography component="p" sx={{ fontSize: 14, color: "#94a3b8" }}>Loading…</Typography>
         </Box>
       ) : (
@@ -160,7 +160,7 @@ function BreakdownView({ type, bills }) {
 
 function EmptyState({ message }) {
   return (
-    <Box className="vx-card text-center py-8">
+    <Box className="vx-card" sx={{ textAlign: "center" }}>
       <Typography component="p" sx={{ fontSize: 14, color: "#94a3b8" }}>{message}</Typography>
     </Box>
   );

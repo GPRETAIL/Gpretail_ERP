@@ -481,12 +481,12 @@ export default function CreateInvoiceScreen({ onBack }) {
 
         {/* Alerts Block */}
         {errorMsg && (
-          <Box className="animate-bounce" sx={{ position: "absolute", top: 8, left: 8, right: 8, zIndex: 50, p: 1.25, borderRadius: "12px", bgcolor: "#f43f5e", color: "#fff", fontSize: 12, fontWeight: 700, textAlign: "center", boxShadow: 2 }}>
+          <Box sx={{ position: "absolute", top: 8, left: 8, right: 8, zIndex: 50, p: 1.25, borderRadius: "12px", bgcolor: "#f43f5e", color: "#fff", fontSize: 12, fontWeight: 700, textAlign: "center", boxShadow: 2, animation: "app-bounce 1s infinite" }}>
             {errorMsg}
           </Box>
         )}
         {successMsg && (
-          <Box className="animate-pulse" sx={{ position: "absolute", top: 8, left: 8, right: 8, zIndex: 50, p: 1.25, borderRadius: "12px", bgcolor: "#10b981", color: "#fff", fontSize: 12, fontWeight: 700, textAlign: "center", boxShadow: 2 }}>
+          <Box sx={{ position: "absolute", top: 8, left: 8, right: 8, zIndex: 50, p: 1.25, borderRadius: "12px", bgcolor: "#10b981", color: "#fff", fontSize: 12, fontWeight: 700, textAlign: "center", boxShadow: 2, animation: "app-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite" }}>
             {successMsg}
           </Box>
         )}
@@ -768,7 +768,7 @@ export default function CreateInvoiceScreen({ onBack }) {
       </Box>
 
       {/* Receipt Details Table */}
-      <Box className="vx-card overflow-hidden !p-0 border border-slate-200/80">
+      <Box className="vx-card" sx={{ overflow: "hidden", padding: 0 }}>
         <Box component="table" sx={{ width: "100%", fontSize: 12, color: "#334155", borderCollapse: "collapse" }}>
           <Box component="thead">
             <Box component="tr" sx={{ bgcolor: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
@@ -816,7 +816,7 @@ export default function CreateInvoiceScreen({ onBack }) {
       </Box>
 
       {/* Scan to Pay QR Code */}
-      <Box className="vx-card text-center p-5 flex flex-col items-center border border-slate-200/80">
+      <Box className="vx-card" sx={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 1.5 }}>
           <QrCode size={16} style={{ color: "#4f46e5" }} />
           <Typography component="h4" sx={{ fontSize: 12, fontWeight: 900, color: "#0f172a", m: 0 }}>Scan to Pay</Typography>

@@ -89,7 +89,7 @@ export default function SupplierDuesScreen() {
       {loading ? (
         <SkeletonTransList count={4} />
       ) : rows.length === 0 ? (
-        <Box className="vx-card text-center py-8">
+        <Box className="vx-card" sx={{ textAlign: "center" }}>
           <Typography component="p" sx={{ fontSize: 14, color: "#94a3b8" }}>No pending supplier dues</Typography>
         </Box>
       ) : (
@@ -101,7 +101,7 @@ export default function SupplierDuesScreen() {
                 <Box className="vx-trans-left">
                   <Box component="span" className="vx-trans-id">{row.invoice_no}</Box>
                   <Box component="span" className="vx-trans-meta">{row.supplier_name}</Box>
-                  <Box component="span" className="vx-trans-meta text-[10px]">{formatDate(row.invoice_date)}</Box>
+                  <Box component="span" className="vx-trans-meta">{formatDate(row.invoice_date)}</Box>
                 </Box>
                 <Box className="vx-trans-right">
                   <Typography component="span" sx={{ fontSize: 9.5, fontWeight: 700, px: 0.75, py: 0.25, borderRadius: "6px", mb: 0.5, bgcolor: colors.bg, color: colors.text }}>

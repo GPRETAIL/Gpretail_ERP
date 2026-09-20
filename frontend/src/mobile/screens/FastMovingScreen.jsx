@@ -44,7 +44,7 @@ export default function FastMovingScreen() {
       {loading ? (
         <SkeletonTransList count={5} />
       ) : rows.length === 0 ? (
-        <Box className="vx-card text-center py-8">
+        <Box className="vx-card" sx={{ textAlign: "center" }}>
           <Typography sx={{ fontSize: 14, color: "#94a3b8" }}>No product sales this month</Typography>
         </Box>
       ) : (

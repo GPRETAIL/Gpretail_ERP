@@ -67,13 +67,11 @@ export default function NotificationsModal({ isOpen, onClose }) {
 
   return (
     <Box
-      className="animate-in fade-in duration-200"
-      sx={{ position: "fixed", inset: 0, zIndex: 70, display: "flex", flexDirection: "column", justifyContent: "flex-end", bgcolor: "rgba(15,23,42,0.6)", backdropFilter: "blur(4px)" }}
+      sx={{ position: "fixed", inset: 0, zIndex: 70, display: "flex", flexDirection: "column", justifyContent: "flex-end", bgcolor: "rgba(15,23,42,0.6)", backdropFilter: "blur(4px)", animation: "app-fade-in 0.2s ease-out" }}
     >
       {/* Modal Card */}
       <Box
-        className="animate-in slide-in-from-bottom duration-300"
-        sx={{ width: "100%", maxWidth: 480, mx: "auto", bgcolor: "#fff", borderTopLeftRadius: "24px", borderTopRightRadius: "24px", boxShadow: 24, display: "flex", flexDirection: "column", maxHeight: "85vh", overflow: "hidden" }}
+        sx={{ width: "100%", maxWidth: 480, mx: "auto", bgcolor: "#fff", borderTopLeftRadius: "24px", borderTopRightRadius: "24px", boxShadow: 24, display: "flex", flexDirection: "column", maxHeight: "85vh", overflow: "hidden", animation: "app-slide-in-from-bottom 0.3s ease-out" }}
       >
         {/* Header */}
         <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", px: 2.5, py: 2, borderBottom: "1px solid #f1f5f9", bgcolor: "rgba(248,250,252,0.5)" }}>

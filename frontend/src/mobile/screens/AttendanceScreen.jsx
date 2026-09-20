@@ -114,7 +114,7 @@ export default function AttendanceScreen() {
       {loading ? (
         <SkeletonTransList count={4} />
       ) : rows.length === 0 ? (
-        <Box className="vx-card text-center py-8">
+        <Box className="vx-card" sx={{ textAlign: "center" }}>
           <Typography component="p" sx={{ fontSize: 14, color: "#94a3b8" }}>No active employees found</Typography>
         </Box>
       ) : (
@@ -199,12 +199,10 @@ export default function AttendanceScreen() {
 
       {settingsOpen && (
         <Box
-          className="animate-in fade-in duration-150"
-          sx={{ position: "fixed", inset: 0, zIndex: 80, display: "flex", flexDirection: "column", justifyContent: "flex-end", bgcolor: "rgba(15,23,42,0.6)", backdropFilter: "blur(4px)" }}
+          sx={{ position: "fixed", inset: 0, zIndex: 80, display: "flex", flexDirection: "column", justifyContent: "flex-end", bgcolor: "rgba(15,23,42,0.6)", backdropFilter: "blur(4px)", animation: "app-fade-in 0.15s ease-out" }}
         >
           <Box
-            className="animate-in slide-in-from-bottom duration-200"
-            sx={{ width: "100%", maxWidth: 480, mx: "auto", bgcolor: "#fff", borderTopLeftRadius: "24px", borderTopRightRadius: "24px", boxShadow: 24, display: "flex", flexDirection: "column", maxHeight: "85vh", overflow: "hidden" }}
+            sx={{ width: "100%", maxWidth: 480, mx: "auto", bgcolor: "#fff", borderTopLeftRadius: "24px", borderTopRightRadius: "24px", boxShadow: 24, display: "flex", flexDirection: "column", maxHeight: "85vh", overflow: "hidden", animation: "app-slide-in-from-bottom 0.2s ease-out" }}
           >
             <Box sx={{ p: 2, borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <Typography component="h3" sx={{ fontSize: 14, fontWeight: 900, color: "#0f172a" }}>Shift Timing</Typography>

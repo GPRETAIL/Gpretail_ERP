@@ -282,7 +282,7 @@ export default function DashboardScreen({ onNavigate, onOpenSearch, onOpenSyncCe
             onClick={() => setBranchModalOpen(true)}
             sx={{ display: "flex", alignItems: "center", gap: 0.75, bgcolor: "#fff", border: "1px solid rgba(226,232,240,0.8)", px: 1.25, py: 0.75, borderRadius: "16px", boxShadow: "0 1px 2px 0 rgba(0,0,0,0.03)", transition: "all 0.15s", "&:active": { transform: "scale(0.95)" } }}
           >
-            <Box component="span" className="animate-pulse" sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "#10b981", flexShrink: 0 }} />
+            <Box component="span" sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "#10b981", flexShrink: 0, animation: "app-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite" }} />
             <Typography component="span" sx={{ fontSize: 11, fontWeight: 900, color: "#1e293b", letterSpacing: "-0.01em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 140 }}>
               {branchLabel}
             </Typography>
@@ -290,7 +290,7 @@ export default function DashboardScreen({ onNavigate, onOpenSearch, onOpenSyncCe
           </Box>
         ) : (
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, bgcolor: "#fff", border: "1px solid rgba(226,232,240,0.8)", px: 1.25, py: 0.75, borderRadius: "16px", boxShadow: "0 1px 2px 0 rgba(0,0,0,0.03)" }}>
-            <Box component="span" className="animate-pulse" sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "#10b981", flexShrink: 0 }} />
+            <Box component="span" sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "#10b981", flexShrink: 0, animation: "app-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite" }} />
             <Typography component="span" sx={{ fontSize: 11, fontWeight: 900, color: "#1e293b", letterSpacing: "-0.01em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 160 }}>
               {branchLabel}
             </Typography>
@@ -386,7 +386,7 @@ export default function DashboardScreen({ onNavigate, onOpenSearch, onOpenSyncCe
       <Box sx={{ p: 1.75, borderRadius: "16px", bgcolor: "#fff", border: "1px solid rgba(226,232,240,0.8)", boxShadow: "0 1px 2px 0 rgba(0,0,0,0.03)" }}>
         <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1.25 }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-            <AlertTriangle size={15} className="animate-pulse" style={{ color: "#f59e0b" }} />
+            <AlertTriangle size={15} style={{ color: "#f59e0b", animation: "app-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite" }} />
             <Typography component="h4" sx={{ fontSize: 11, fontWeight: 900, color: "#0f172a", textTransform: "uppercase", letterSpacing: "0.05em", m: 0 }}>
               Needs Attention
             </Typography>

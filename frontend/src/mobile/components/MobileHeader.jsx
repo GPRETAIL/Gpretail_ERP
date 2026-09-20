@@ -85,12 +85,12 @@ export default function MobileHeader({
       </Box>
 
       {/* Center: Title */}
-      <Box className="vx-page-title-center flex-1 text-center font-bold text-base text-slate-900">
+      <Box className="vx-page-title-center" sx={{ flex: 1, textAlign: "center", fontSize: "1rem" }}>
         {title}
       </Box>
 
       {/* Right: Bell + User Avatar Button (theme toggle lives in the profile sheet now) */}
-      <Box className="vx-ws-side vx-ws-side-right flex items-center gap-1.5">
+      <Box className="vx-ws-side vx-ws-side-right" sx={{ gap: "0.375rem" }}>
         <Box
           component="button"
           type="button"

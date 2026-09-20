@@ -83,15 +83,15 @@ export default function InventoryScreen({ onNavigate, onSelectProduct }) {
           </Box>
           <Box className="vx-kpi-card">
             <Box component="span" className="vx-kpi-label">Low Stock</Box>
-            <Box component="span" className="vx-kpi-val text-amber-600">{Number(lowStock).toLocaleString("en-IN")}</Box>
+            <Box component="span" className="vx-kpi-val">{Number(lowStock).toLocaleString("en-IN")}</Box>
           </Box>
           <Box className="vx-kpi-card">
             <Box component="span" className="vx-kpi-label">Out of Stock</Box>
-            <Box component="span" className="vx-kpi-val text-rose-600">{Number(outOfStock).toLocaleString("en-IN")}</Box>
+            <Box component="span" className="vx-kpi-val">{Number(outOfStock).toLocaleString("en-IN")}</Box>
           </Box>
           <Box className="vx-kpi-card">
             <Box component="span" className="vx-kpi-label">Total Selling Price</Box>
-            <Box component="span" className="vx-kpi-val text-xs sm:text-base">{money(totalSellingPrice)}</Box>
+            <Box component="span" className="vx-kpi-val" sx={{ fontSize: { xs: "0.75rem", sm: "1rem" } }}>{money(totalSellingPrice)}</Box>
           </Box>
         </Box>
       )}
@@ -101,7 +101,7 @@ export default function InventoryScreen({ onNavigate, onSelectProduct }) {
         <Box className="vx-kpis-grid" style={{ marginTop: "-4px" }}>
           <Box className="vx-kpi-card">
             <Box component="span" className="vx-kpi-label">Total Purchase Price</Box>
-            <Box component="span" className="vx-kpi-val text-xs sm:text-base">{money(totalPurchasePrice)}</Box>
+            <Box component="span" className="vx-kpi-val" sx={{ fontSize: { xs: "0.75rem", sm: "1rem" } }}>{money(totalPurchasePrice)}</Box>
           </Box>
           <Box className="vx-kpi-card">
             <Box component="span" className="vx-kpi-label">Margin</Box>

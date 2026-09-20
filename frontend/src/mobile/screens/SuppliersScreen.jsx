@@ -79,7 +79,7 @@ export default function SuppliersScreen({ onNavigate }) {
       {loading ? (
         <SkeletonTransList count={4} />
       ) : suppliers.length === 0 ? (
-        <Box className="vx-card text-center py-8">
+        <Box className="vx-card" sx={{ textAlign: "center" }}>
           <Typography component="p" sx={{ fontSize: 14, color: "#94a3b8" }}>No suppliers found</Typography>
         </Box>
       ) : (
@@ -93,13 +93,13 @@ export default function SuppliersScreen({ onNavigate }) {
                   {s.company_name && s.company_name !== s.name && (
                     <Box component="span" className="vx-trans-meta">{s.company_name}</Box>
                   )}
-                  <Box component="span" className="vx-trans-meta text-[10px]">
+                  <Box component="span" className="vx-trans-meta">
                     {[s.city, s.gstin].filter(Boolean).join(" · ") || "—"}
                   </Box>
                 </Box>
                 <Box className="vx-trans-right">
                   {dues > 0 && (
-                    <Box component="span" className="vx-trans-amount text-amber-700">{money(dues)} due</Box>
+                    <Box component="span" className="vx-trans-amount">{money(dues)} due</Box>
                   )}
                   {s.phone && (
                     <Box

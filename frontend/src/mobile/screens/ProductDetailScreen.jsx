@@ -32,7 +32,7 @@ export default function ProductDetailScreen({ product, onBack }) {
 
   if (loading || !p) {
     return (
-      <Box className="vx-card text-center py-12">
+      <Box className="vx-card" sx={{ textAlign: "center" }}>
         <Typography component="p" sx={{ fontSize: 14, color: "#94a3b8" }}>Loading product details...</Typography>
       </Box>
     );
@@ -51,7 +51,7 @@ export default function ProductDetailScreen({ product, onBack }) {
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2, pb: 6 }}>
       {/* Product Image Card */}
-      <Box className="vx-card text-center p-6 flex flex-col items-center">
+      <Box className="vx-card" sx={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
         <Box sx={{ width: 128, height: 128, borderRadius: "16px", bgcolor: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 48, mb: 1.5, boxShadow: "inset 0 2px 4px 0 rgba(0,0,0,0.06)", fontWeight: 700, color: "#4f46e5" }}>
           {initial}
         </Box>
@@ -60,7 +60,7 @@ export default function ProductDetailScreen({ product, onBack }) {
       </Box>
 
       {/* Attributes List Card */}
-      <Box className="vx-card divide-y divide-slate-100 text-xs">
+      <Box className="vx-card" sx={{ fontSize: "0.75rem" }}>
         <Box sx={{ display: "flex", justifyContent: "space-between", py: 1.25 }}>
           <Typography component="span" sx={{ color: "#64748b" }}>Selling Price</Typography>
           <Box component="strong" sx={{ color: "#0f172a", fontWeight: 700 }}>{money(sellingPrice)}</Box>

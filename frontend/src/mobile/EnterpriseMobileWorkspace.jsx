@@ -206,7 +206,7 @@ export default function EnterpriseMobileWorkspace() {
           </Box>
         )}
 
-        <Box className="vx-page-title-center flex-1 text-center font-bold text-base text-slate-900">
+        <Box className="vx-page-title-center" sx={{ flex: 1, textAlign: "center", fontSize: "1rem" }}>
           {getHeaderTitle()}
         </Box>
 
@@ -719,7 +719,7 @@ function SalesInvoicesScreen({ filter, setFilter, search, setSearch, onAdd }) {
             <Box className="vx-trans-left">
               <Box component="span" className="vx-trans-id">{inv.id}</Box>
               <Box component="span" className="vx-trans-meta">{inv.customer}</Box>
-              <Box component="span" className="vx-trans-meta text-[10px]">{inv.date}</Box>
+              <Box component="span" className="vx-trans-meta">{inv.date}</Box>
             </Box>
             <Box className="vx-trans-right">
               <Box component="span" className="vx-trans-amount">{money(inv.amount)}</Box>
@@ -897,7 +897,7 @@ function PurchaseBillsScreen({ filter, setFilter, search, setSearch, onAdd }) {
             <Box className="vx-trans-left">
               <Box component="span" className="vx-trans-id">{bill.id}</Box>
               <Box component="span" className="vx-trans-meta">{bill.supplier}</Box>
-              <Box component="span" className="vx-trans-meta text-[10px]">{bill.date}</Box>
+              <Box component="span" className="vx-trans-meta">{bill.date}</Box>
             </Box>
             <Box className="vx-trans-right">
               <Box component="span" className="vx-trans-amount">{money(bill.amount)}</Box>
@@ -936,17 +936,17 @@ function InventorySummaryScreen({ onSelectProduct }) {
 
         <Box className="vx-kpi-card">
           <Box component="span" className="vx-kpi-label">Low Stock</Box>
-          <Box component="span" className="vx-kpi-val text-amber-600">32</Box>
+          <Box component="span" className="vx-kpi-val">32</Box>
         </Box>
 
         <Box className="vx-kpi-card">
           <Box component="span" className="vx-kpi-label">Out of Stock</Box>
-          <Box component="span" className="vx-kpi-val text-rose-600">8</Box>
+          <Box component="span" className="vx-kpi-val">8</Box>
         </Box>
 
         <Box className="vx-kpi-card">
           <Box component="span" className="vx-kpi-label">Total Value</Box>
-          <Box component="span" className="vx-kpi-val text-xs sm:text-base">₹ 45,80,000</Box>
+          <Box component="span" className="vx-kpi-val" sx={{ fontSize: { xs: "0.75rem", sm: "1rem" } }}>₹ 45,80,000</Box>
         </Box>
       </Box>
 
@@ -1072,7 +1072,7 @@ function ProductDetailsScreen({ product, onBack }) {
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2, pb: 6 }}>
       {/* Product Image Card */}
-      <Box className="vx-card text-center p-6 flex flex-col items-center">
+      <Box className="vx-card" sx={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
         <Box sx={{ width: 128, height: 128, borderRadius: "16px", bgcolor: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 48, mb: 1.5, boxShadow: "inset 0 2px 4px 0 rgba(0,0,0,0.06)" }}>
           👟
         </Box>
@@ -1081,7 +1081,7 @@ function ProductDetailsScreen({ product, onBack }) {
       </Box>
 
       {/* Attributes List Card */}
-      <Box className="vx-card divide-y divide-slate-100 text-xs">
+      <Box className="vx-card" sx={{ fontSize: "0.75rem" }}>
         <Box sx={{ display: "flex", justifyContent: "space-between", py: 1.25 }}>
           <Box component="span" sx={{ color: "#64748b" }}>Selling Price</Box>
           <Box component="strong" sx={{ color: "#0f172a", fontWeight: 700 }}>{money(p.price)}</Box>

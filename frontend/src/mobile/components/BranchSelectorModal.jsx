@@ -52,12 +52,10 @@ export default function BranchSelectorModal({ isOpen, onClose }) {
 
   return (
     <Box
-      className="animate-in fade-in duration-150"
-      sx={{ position: "fixed", inset: 0, zIndex: 86, display: "flex", flexDirection: "column", justifyContent: "flex-end", bgcolor: "rgba(15,23,42,0.6)", backdropFilter: "blur(4px)" }}
+      sx={{ position: "fixed", inset: 0, zIndex: 86, display: "flex", flexDirection: "column", justifyContent: "flex-end", bgcolor: "rgba(15,23,42,0.6)", backdropFilter: "blur(4px)", animation: "app-fade-in 0.15s ease-out" }}
     >
       <Box
-        className="animate-in slide-in-from-bottom duration-200"
-        sx={{ width: "100%", maxWidth: 480, mx: "auto", bgcolor: "#fff", borderTopLeftRadius: "24px", borderTopRightRadius: "24px", boxShadow: 24, display: "flex", flexDirection: "column", maxHeight: "75vh", overflow: "hidden" }}
+        sx={{ width: "100%", maxWidth: 480, mx: "auto", bgcolor: "#fff", borderTopLeftRadius: "24px", borderTopRightRadius: "24px", boxShadow: 24, display: "flex", flexDirection: "column", maxHeight: "75vh", overflow: "hidden", animation: "app-slide-in-from-bottom 0.2s ease-out" }}
       >
         <Box sx={{ p: 2, borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
           <Typography component="h3" sx={{ fontSize: 14, fontWeight: 900, color: "#0f172a" }}>Switch Store</Typography>
