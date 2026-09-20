@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { ChevronDown } from "lucide-react";
+import { Box, Typography } from "@mui/material";
 import api from "../../api/axios";
 
 const money = (n) =>
@@ -80,62 +81,69 @@ export default function PurchaseSummaryScreen() {
   const activeLabel = BREAKDOWN_TYPES.find((b) => b.id === breakdownType)?.label;
 
   return (
-    <div className="space-y-3">
-      <div className="relative">
-        <button
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+      <Box sx={{ position: "relative" }}>
+        <Box
+          component="button"
           type="button"
           onClick={() => setShowPicker((v) => !v)}
-          className="w-full flex items-center justify-between p-3 rounded-2xl bg-white border border-slate-200/80 shadow-xs"
+          sx={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", p: 1.5, borderRadius: "16px", bgcolor: "#fff", border: "1px solid rgba(226,232,240,0.8)", boxShadow: "0 1px 2px 0 rgba(0,0,0,0.03)" }}
         >
-          <span className="text-[12px] font-black text-slate-900">{activeLabel}</span>
-          <ChevronDown size={16} className="text-slate-400 shrink-0" />
-        </button>
+          <Typography component="span" sx={{ fontSize: 12, fontWeight: 900, color: "#0f172a" }}>{activeLabel}</Typography>
+          <ChevronDown size={16} style={{ color: "#94a3b8", flexShrink: 0 }} />
+        </Box>
 
         {showPicker && (
-          <div className="absolute left-0 right-0 top-full mt-1.5 z-30 bg-white border border-slate-200 shadow-xl rounded-2xl p-1.5 max-h-[300px] overflow-y-auto">
+          <Box sx={{ position: "absolute", left: 0, right: 0, top: "100%", mt: 0.75, zIndex: 30, bgcolor: "#fff", border: "1px solid #e2e8f0", boxShadow: 8, borderRadius: "16px", p: 0.75, maxHeight: 300, overflowY: "auto" }}>
             {BREAKDOWN_TYPES.map((b) => (
-              <button
+              <Box
+                component="button"
                 key={b.id}
                 type="button"
                 onClick={() => {
                   setBreakdownType(b.id);
                   setShowPicker(false);
                 }}
-                className={`w-full text-left px-3 py-2.5 text-[11.5px] font-bold rounded-xl transition-all ${
-                  breakdownType === b.id ? "bg-indigo-50 text-indigo-600" : "text-slate-600 hover:bg-slate-50"
-                }`}
+                sx={{
+                  width: "100%", textAlign: "left", px: 1.5, py: 1.25, fontSize: 11.5, fontWeight: 700, borderRadius: "12px", transition: "all 0.15s",
+                  bgcolor: breakdownType === b.id ? "#eef2ff" : "transparent",
+                  color: breakdownType === b.id ? "#4f46e5" : "#475569",
+                  "&:hover": breakdownType === b.id ? {} : { bgcolor: "#f8fafc" },
+                }}
               >
                 {b.label}
-              </button>
+              </Box>
             ))}
-          </div>
+          </Box>
         )}
-      </div>
+      </Box>
 
-      <div className="flex items-center gap-2">
-        <input
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <Box
+          component="input"
           type="date"
           value={fromDate}
           onChange={(e) => setFromDate(e.target.value)}
-          className="flex-1 p-2.5 rounded-xl bg-white border border-slate-200/80 text-[11.5px] font-bold text-slate-700"
+          sx={{ flex: 1, p: 1.25, borderRadius: "12px", bgcolor: "#fff", border: "1px solid rgba(226,232,240,0.8)", fontSize: 11.5, fontWeight: 700, color: "#334155" }}
         />
-        <span className="text-[10px] text-slate-400 font-bold">to</span>
-        <input
+        <Typography component="span" sx={{ fontSize: 10, color: "#94a3b8", fontWeight: 700 }}>to</Typography>
+        <Box
+          component="input"
           type="date"
           value={toDate}
           onChange={(e) => setToDate(e.target.value)}
-          className="flex-1 p-2.5 rounded-xl bg-white border border-slate-200/80 text-[11.5px] font-bold text-slate-700"
+          sx={{ flex: 1, p: 1.25, borderRadius: "12px", bgcolor: "#fff", border: "1px solid rgba(226,232,240,0.8)", fontSize: 11.5, fontWeight: 700, color: "#334155" }}
         />
-      </div>
+      </Box>
 
       {loading ? (
-        <div className="vx-card text-center py-10">
-          <p className="text-sm text-slate-400">Loading…</p>
-        </div>
+        <Box className="vx-card text-center py-10">
+          <Typography component="p" sx={{ fontSize: 14, color: "#94a3b8" }}>Loading…</Typography>
+        </Box>
       ) : (
         <BreakdownView type={breakdownType} bills={bills} />
       )}
-    </div>
+    </Box>
   );
 }
 
@@ -152,9 +160,9 @@ function BreakdownView({ type, bills }) {
 
 function EmptyState({ message }) {
   return (
-    <div className="vx-card text-center py-8">
-      <p className="text-sm text-slate-400">{message}</p>
-    </div>
+    <Box className="vx-card text-center py-8">
+      <Typography component="p" sx={{ fontSize: 14, color: "#94a3b8" }}>{message}</Typography>
+    </Box>
   );
 }
 
@@ -184,23 +192,23 @@ function SupplierView({ bills }) {
   const total = rows.reduce((s, r) => s + r.amount, 0);
 
   return (
-    <div className="p-3.5 rounded-2xl bg-white border border-slate-200/80 shadow-xs">
-      <div className="space-y-1.5">
+    <Box sx={{ p: 1.75, borderRadius: "16px", bgcolor: "#fff", border: "1px solid rgba(226,232,240,0.8)", boxShadow: "0 1px 2px 0 rgba(0,0,0,0.03)" }}>
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
         {rows.map((row) => (
-          <div key={row.supplier} className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-            <div>
-              <p className="text-[11.5px] font-bold text-slate-900 m-0">{row.supplier}</p>
-              <p className="text-[9.5px] text-slate-500 font-semibold m-0 mt-0.5">{row.count} bills</p>
-            </div>
-            <span className="text-[12px] font-black text-slate-900">{money(row.amount)}</span>
-          </div>
+          <Box key={row.supplier} sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", p: 1.25, borderRadius: "12px", bgcolor: "#f8fafc", border: "1px solid #f1f5f9" }}>
+            <Box>
+              <Typography component="p" sx={{ fontSize: 11.5, fontWeight: 700, color: "#0f172a", m: 0 }}>{row.supplier}</Typography>
+              <Typography component="p" sx={{ fontSize: 9.5, color: "#64748b", fontWeight: 600, m: 0, mt: 0.25 }}>{row.count} bills</Typography>
+            </Box>
+            <Typography component="span" sx={{ fontSize: 12, fontWeight: 900, color: "#0f172a" }}>{money(row.amount)}</Typography>
+          </Box>
         ))}
-        <div className="flex items-center justify-between pt-2 mt-1 border-t border-slate-200">
-          <span className="text-[11px] font-black text-slate-900 uppercase">Total</span>
-          <span className="text-[12.5px] font-black text-indigo-600">{money(total)}</span>
-        </div>
-      </div>
-    </div>
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", pt: 1, mt: 0.5, borderTop: "1px solid #e2e8f0" }}>
+          <Typography component="span" sx={{ fontSize: 11, fontWeight: 900, color: "#0f172a", textTransform: "uppercase" }}>Total</Typography>
+          <Typography component="span" sx={{ fontSize: 12.5, fontWeight: 900, color: "#4f46e5" }}>{money(total)}</Typography>
+        </Box>
+      </Box>
+    </Box>
   );
 }
 
@@ -220,17 +228,17 @@ function DateSummaryView({ bills }) {
   if (!grouped.length) return <EmptyState message="No purchases in this range" />;
 
   return (
-    <div className="space-y-1.5">
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
       {grouped.map((row) => (
-        <div key={row.date} className="flex items-center justify-between p-3 rounded-2xl bg-white border border-slate-200/80 shadow-xs">
-          <div>
-            <p className="text-[12px] font-bold text-slate-900 m-0">{formatDate(row.date)}</p>
-            <p className="text-[9.5px] text-slate-500 font-semibold m-0 mt-0.5">{row.count} bills</p>
-          </div>
-          <span className="text-[12.5px] font-black text-slate-900">{money(row.amount)}</span>
-        </div>
+        <Box key={row.date} sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", p: 1.5, borderRadius: "16px", bgcolor: "#fff", border: "1px solid rgba(226,232,240,0.8)", boxShadow: "0 1px 2px 0 rgba(0,0,0,0.03)" }}>
+          <Box>
+            <Typography component="p" sx={{ fontSize: 12, fontWeight: 700, color: "#0f172a", m: 0 }}>{formatDate(row.date)}</Typography>
+            <Typography component="p" sx={{ fontSize: 9.5, color: "#64748b", fontWeight: 600, m: 0, mt: 0.25 }}>{row.count} bills</Typography>
+          </Box>
+          <Typography component="span" sx={{ fontSize: 12.5, fontWeight: 900, color: "#0f172a" }}>{money(row.amount)}</Typography>
+        </Box>
       ))}
-    </div>
+    </Box>
   );
 }
 
@@ -245,42 +253,42 @@ function BillListView({ bills, mode }) {
   }
 
   return (
-    <div className="space-y-1.5">
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
       {rows.map((b) => (
-        <div key={`${b._source}-${b.id}`} className="p-3 rounded-2xl bg-white border border-slate-200/80 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[12px] font-black text-slate-900">{billNo(b)}</span>
-            <span className="text-[12.5px] font-black text-slate-900">{money(billAmount(b))}</span>
-          </div>
-          <div className="flex items-center justify-between mt-1">
-            <span className="text-[10px] text-slate-500 font-semibold">
+        <Box key={`${b._source}-${b.id}`} sx={{ p: 1.5, borderRadius: "16px", bgcolor: "#fff", border: "1px solid rgba(226,232,240,0.8)", boxShadow: "0 1px 2px 0 rgba(0,0,0,0.03)" }}>
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <Typography component="span" sx={{ fontSize: 12, fontWeight: 900, color: "#0f172a" }}>{billNo(b)}</Typography>
+            <Typography component="span" sx={{ fontSize: 12.5, fontWeight: 900, color: "#0f172a" }}>{money(billAmount(b))}</Typography>
+          </Box>
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mt: 0.5 }}>
+            <Typography component="span" sx={{ fontSize: 10, color: "#64748b", fontWeight: 600 }}>
               {billSupplier(b)} · {formatDate(billDate(b))}
-            </span>
-          </div>
+            </Typography>
+          </Box>
 
           {mode === "gst" && (
-            <div className="flex items-center justify-between mt-1.5 pt-1.5 border-t border-slate-100 text-[9.5px] font-semibold text-slate-500">
-              <span>Taxable: {money(billAmount(b) - Number(b.tax_amount || 0))}</span>
-              <span>GST: {money(b.tax_amount)}</span>
-            </div>
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mt: 0.75, pt: 0.75, borderTop: "1px solid #f1f5f9", fontSize: 9.5, fontWeight: 600, color: "#64748b" }}>
+              <Box component="span">Taxable: {money(billAmount(b) - Number(b.tax_amount || 0))}</Box>
+              <Box component="span">GST: {money(b.tax_amount)}</Box>
+            </Box>
           )}
 
           {mode === "tax" && (
-            <div className="flex items-center justify-between mt-1.5 pt-1.5 border-t border-slate-100 text-[9.5px] font-semibold text-slate-500">
-              <span>CGST: {money(Number(b.tax_amount || 0) / 2)}</span>
-              <span>SGST: {money(Number(b.tax_amount || 0) / 2)}</span>
-            </div>
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mt: 0.75, pt: 0.75, borderTop: "1px solid #f1f5f9", fontSize: 9.5, fontWeight: 600, color: "#64748b" }}>
+              <Box component="span">CGST: {money(Number(b.tax_amount || 0) / 2)}</Box>
+              <Box component="span">SGST: {money(Number(b.tax_amount || 0) / 2)}</Box>
+            </Box>
           )}
 
           {mode === "discount" && (
-            <div className="flex items-center justify-between mt-1.5 pt-1.5 border-t border-slate-100 text-[9.5px] font-semibold text-rose-600">
-              <span>Discount</span>
-              <span>-{money(b.discount_amount)}</span>
-            </div>
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mt: 0.75, pt: 0.75, borderTop: "1px solid #f1f5f9", fontSize: 9.5, fontWeight: 600, color: "#e11d48" }}>
+              <Box component="span">Discount</Box>
+              <Box component="span">-{money(b.discount_amount)}</Box>
+            </Box>
           )}
-        </div>
+        </Box>
       ))}
-    </div>
+    </Box>
   );
 }
 
@@ -310,18 +318,18 @@ function BillDetailView({ bills }) {
   if (!rows.length) return <EmptyState message="No bill items in this range" />;
 
   return (
-    <div className="space-y-1.5">
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
       {rows.map((row) => (
-        <div key={row.key} className="flex items-center justify-between p-2.5 rounded-xl bg-white border border-slate-200/80 shadow-xs">
-          <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-bold text-slate-900 truncate m-0">{row.productName}</p>
-            <p className="text-[9.5px] text-slate-500 font-semibold m-0 mt-0.5">
+        <Box key={row.key} sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", p: 1.25, borderRadius: "12px", bgcolor: "#fff", border: "1px solid rgba(226,232,240,0.8)", boxShadow: "0 1px 2px 0 rgba(0,0,0,0.03)" }}>
+          <Box sx={{ minWidth: 0, flex: 1 }}>
+            <Typography component="p" sx={{ fontSize: 11, fontWeight: 700, color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", m: 0 }}>{row.productName}</Typography>
+            <Typography component="p" sx={{ fontSize: 9.5, color: "#64748b", fontWeight: 600, m: 0, mt: 0.25 }}>
               {row.billNo} · {row.qty} × {money(row.rate)}
-            </p>
-          </div>
-          <span className="text-[11.5px] font-black text-slate-900 pl-2 shrink-0">{money(row.lineTotal)}</span>
-        </div>
+            </Typography>
+          </Box>
+          <Typography component="span" sx={{ fontSize: 11.5, fontWeight: 900, color: "#0f172a", pl: 1, flexShrink: 0 }}>{money(row.lineTotal)}</Typography>
+        </Box>
       ))}
-    </div>
+    </Box>
   );
 }
