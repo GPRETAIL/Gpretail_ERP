@@ -14,13 +14,14 @@ import {
   Moon,
   Sun,
 } from "lucide-react";
+import { Box, Typography } from "@mui/material";
 import { getSyncQueue, getDrafts } from "../offline/db";
 import { processSyncQueue } from "../offline/syncManager";
 import { useTheme } from "../../features/theme-context";
 
 /**
  * Mobile User Profile Drawer & Quick Action Sheet
- * 
+ *
  * Opened by tapping the User Avatar button next to Notification Bell in the header.
  */
 export default function UserProfileModal({
@@ -84,213 +85,235 @@ export default function UserProfileModal({
   const initial = displayName.charAt(0).toUpperCase();
 
   return (
-    <div className="fixed inset-0 z-[70] flex flex-col justify-end bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+    <Box
+      className="animate-in fade-in duration-200"
+      sx={{ position: "fixed", inset: 0, zIndex: 70, display: "flex", flexDirection: "column", justifyContent: "flex-end", bgcolor: "rgba(15,23,42,0.6)", backdropFilter: "blur(4px)" }}
+    >
       {/* Drawer Card */}
-      <div className="w-full max-w-[480px] mx-auto bg-white rounded-t-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in slide-in-from-bottom duration-300">
-        
+      <Box
+        className="animate-in slide-in-from-bottom duration-300"
+        sx={{ width: "100%", maxWidth: 480, mx: "auto", bgcolor: "#fff", borderTopLeftRadius: "24px", borderTopRightRadius: "24px", boxShadow: 24, display: "flex", flexDirection: "column", maxHeight: "90vh", overflow: "hidden" }}
+      >
         {/* Header with Profile Hero */}
-        <div className="relative bg-gradient-to-br from-indigo-600 via-indigo-700 to-blue-800 p-5 text-white">
-          <button
+        <Box sx={{ position: "relative", backgroundImage: "linear-gradient(to bottom right, #4f46e5, #4338ca, #1e40af)", p: 2.5, color: "#fff" }}>
+          <Box
+            component="button"
             type="button"
             onClick={onClose}
-            className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition-colors"
+            sx={{ position: "absolute", top: 16, right: 16, width: 32, height: 32, borderRadius: "50%", bgcolor: "rgba(255,255,255,0.2)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", transition: "background-color 0.15s", "&:hover": { bgcolor: "rgba(255,255,255,0.3)" } }}
             aria-label="Close user menu"
           >
             <X size={18} />
-          </button>
+          </Box>
 
-          <div className="flex items-center gap-3.5 mt-1">
-            <div className="w-14 h-14 rounded-2xl bg-white text-indigo-700 font-black text-2xl flex items-center justify-center shadow-lg ring-4 ring-white/20 shrink-0">
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.75, mt: 0.5 }}>
+            <Box sx={{ width: 56, height: 56, borderRadius: "16px", bgcolor: "#fff", color: "#4338ca", fontWeight: 900, fontSize: 24, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: 8, outline: "4px solid rgba(255,255,255,0.2)", flexShrink: 0 }}>
               {initial}
-            </div>
+            </Box>
 
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <h3 className="text-lg font-black text-white truncate leading-tight">
+            <Box sx={{ minWidth: 0, flex: 1 }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Typography component="h3" sx={{ fontSize: 18, fontWeight: 900, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", lineHeight: 1.25 }}>
                   {displayName}
-                </h3>
-                <span className="bg-indigo-500/50 border border-white/20 text-[10px] font-bold px-2 py-0.5 rounded-full text-indigo-100 uppercase tracking-wide shrink-0">
+                </Typography>
+                <Typography component="span" sx={{ bgcolor: "rgba(99,102,241,0.5)", border: "1px solid rgba(255,255,255,0.2)", fontSize: 10, fontWeight: 700, px: 1, py: 0.25, borderRadius: "999px", color: "#e0e7ff", textTransform: "uppercase", letterSpacing: "0.02em", flexShrink: 0 }}>
                   {displayRole}
-                </span>
-              </div>
-              <p className="text-xs text-indigo-200 truncate mt-0.5">
+                </Typography>
+              </Box>
+              <Typography component="p" sx={{ fontSize: 12, color: "#c7d2fe", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", mt: 0.25 }}>
                 {displayEmail}
-              </p>
-              <div className="flex items-center gap-1 mt-1 text-[11px] text-indigo-200 font-medium">
-                <Building size={12} className="shrink-0" />
-                <span className="truncate">
+              </Typography>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 0.5, fontSize: 11, color: "#c7d2fe", fontWeight: 500 }}>
+                <Building size={12} style={{ flexShrink: 0 }} />
+                <Box component="span" sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {displayBranch}
                   {displayCounter ? ` — ${displayCounter}` : ""}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
+                </Box>
+              </Box>
+            </Box>
+          </Box>
+        </Box>
 
         {/* Sync & Offline Status Pill */}
-        <div className="mx-4 mt-3 p-3 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+        <Box sx={{ mx: 2, mt: 1.5, p: 1.5, borderRadius: "16px", bgcolor: "#f8fafc", border: "1px solid rgba(226,232,240,0.8)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+            <Box sx={{ width: 32, height: 32, borderRadius: "12px", bgcolor: "#eef2ff", color: "#4f46e5", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <Database size={16} />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-slate-800 leading-tight">
+            </Box>
+            <Box>
+              <Typography component="p" sx={{ fontSize: 12, fontWeight: 700, color: "#1e293b", lineHeight: 1.25 }}>
                 Offline Database
-              </p>
-              <p className="text-[11px] text-slate-500">
+              </Typography>
+              <Typography component="p" sx={{ fontSize: 11, color: "#64748b" }}>
                 {draftsCount} local drafts • {syncCount} pending sync
-              </p>
-            </div>
-          </div>
+              </Typography>
+            </Box>
+          </Box>
 
-          <button
+          <Box
+            component="button"
             type="button"
             onClick={handleManualSync}
             disabled={syncing || !navigator.onLine}
-            className="flex items-center gap-1.5 bg-indigo-600 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow hover:bg-indigo-700 disabled:opacity-50 active:scale-95 transition-all shrink-0"
+            sx={{
+              display: "flex", alignItems: "center", gap: 0.75, bgcolor: "#4f46e5", color: "#fff", fontSize: 12, fontWeight: 700,
+              px: 1.5, py: 0.75, borderRadius: "12px", boxShadow: 1, transition: "all 0.15s", flexShrink: 0,
+              "&:hover": { bgcolor: "#4338ca" }, "&:disabled": { opacity: 0.5 }, "&:active": { transform: "scale(0.95)" },
+            }}
           >
             {syncing ? (
               <>
                 <RefreshCw size={12} className="animate-spin" />
-                <span>Syncing...</span>
+                <Box component="span">Syncing...</Box>
               </>
             ) : syncSuccess ? (
               <>
-                <CheckCircle2 size={12} className="text-emerald-300" />
-                <span>Synced</span>
+                <CheckCircle2 size={12} style={{ color: "#6ee7b7" }} />
+                <Box component="span">Synced</Box>
               </>
             ) : (
               <>
                 <RefreshCw size={12} />
-                <span>Sync Now</span>
+                <Box component="span">Sync Now</Box>
               </>
             )}
-          </button>
-        </div>
+          </Box>
+        </Box>
 
         {/* Action Menu List */}
-        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-1.5">
+        <Box sx={{ flex: 1, overflowY: "auto", px: 2, py: 1.5, display: "flex", flexDirection: "column", gap: 0.75 }}>
           {/* Theme Toggle -- moved out of the top header bar so the header's
               icon cluster is small enough to leave room for a truly
               centered page title without truncating it. */}
-          <button
+          <Box
+            component="button"
             type="button"
             onClick={() => setTheme(isDark ? "light" : "dark")}
-            className="w-full flex items-center justify-between p-3 rounded-2xl hover:bg-slate-50 border border-transparent hover:border-slate-200 text-left transition-all"
+            sx={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", p: 1.5, borderRadius: "16px", border: "1px solid transparent", textAlign: "left", transition: "all 0.15s", "&:hover": { bgcolor: "#f8fafc", borderColor: "#e2e8f0" } }}
           >
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+              <Box sx={{ width: 36, height: 36, borderRadius: "12px", bgcolor: "#fffbeb", color: "#d97706", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 {isDark ? <Sun size={18} /> : <Moon size={18} />}
-              </div>
-              <div>
-                <h4 className="text-xs font-bold text-slate-900 leading-tight">
+              </Box>
+              <Box>
+                <Typography component="h4" sx={{ fontSize: 12, fontWeight: 700, color: "#0f172a", lineHeight: 1.25 }}>
                   {isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
-                </h4>
-                <p className="text-[11px] text-slate-500">
+                </Typography>
+                <Typography component="p" sx={{ fontSize: 11, color: "#64748b" }}>
                   Toggle the app's color theme
-                </p>
-              </div>
-            </div>
-            <div
-              className={`w-10 h-6 rounded-full flex items-center px-0.5 transition-colors shrink-0 ${
-                isDark ? "bg-indigo-600 justify-end" : "bg-slate-200 justify-start"
-              }`}
+                </Typography>
+              </Box>
+            </Box>
+            <Box
+              sx={{
+                width: 40, height: 24, borderRadius: "999px", display: "flex", alignItems: "center", px: 0.25, transition: "background-color 0.15s", flexShrink: 0,
+                bgcolor: isDark ? "#4f46e5" : "#e2e8f0",
+                justifyContent: isDark ? "flex-end" : "flex-start",
+              }}
             >
-              <div className="w-5 h-5 rounded-full bg-white shadow" />
-            </div>
-          </button>
+              <Box sx={{ width: 20, height: 20, borderRadius: "50%", bgcolor: "#fff", boxShadow: 1 }} />
+            </Box>
+          </Box>
 
           {/* Business / Branch Settings */}
-          <button
+          <Box
+            component="button"
             type="button"
             onClick={() => {
               onClose();
               onNavigate("settings");
             }}
-            className="w-full flex items-center justify-between p-3 rounded-2xl hover:bg-slate-50 border border-transparent hover:border-slate-200 text-left transition-all"
+            sx={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", p: 1.5, borderRadius: "16px", border: "1px solid transparent", textAlign: "left", transition: "all 0.15s", "&:hover": { bgcolor: "#f8fafc", borderColor: "#e2e8f0" } }}
           >
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+              <Box sx={{ width: 36, height: 36, borderRadius: "12px", bgcolor: "#eff6ff", color: "#2563eb", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <Settings size={18} />
-              </div>
-              <div>
-                <h4 className="text-xs font-bold text-slate-900 leading-tight">
+              </Box>
+              <Box>
+                <Typography component="h4" sx={{ fontSize: 12, fontWeight: 700, color: "#0f172a", lineHeight: 1.25 }}>
                   Business & POS Settings
-                </h4>
-                <p className="text-[11px] text-slate-500">
+                </Typography>
+                <Typography component="p" sx={{ fontSize: 11, color: "#64748b" }}>
                   Printers, tax rules & store profile
-                </p>
-              </div>
-            </div>
-            <ChevronRight size={16} className="text-slate-400" />
-          </button>
+                </Typography>
+              </Box>
+            </Box>
+            <ChevronRight size={16} style={{ color: "#94a3b8" }} />
+          </Box>
 
           {/* Quick Reports */}
-          <button
+          <Box
+            component="button"
             type="button"
             onClick={() => {
               onClose();
               onNavigate("reports");
             }}
-            className="w-full flex items-center justify-between p-3 rounded-2xl hover:bg-slate-50 border border-transparent hover:border-slate-200 text-left transition-all"
+            sx={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", p: 1.5, borderRadius: "16px", border: "1px solid transparent", textAlign: "left", transition: "all 0.15s", "&:hover": { bgcolor: "#f8fafc", borderColor: "#e2e8f0" } }}
           >
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+              <Box sx={{ width: 36, height: 36, borderRadius: "12px", bgcolor: "#faf5ff", color: "#9333ea", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <Shield size={18} />
-              </div>
-              <div>
-                <h4 className="text-xs font-bold text-slate-900 leading-tight">
+              </Box>
+              <Box>
+                <Typography component="h4" sx={{ fontSize: 12, fontWeight: 700, color: "#0f172a", lineHeight: 1.25 }}>
                   Security & Access Permissions
-                </h4>
-                <p className="text-[11px] text-slate-500">
+                </Typography>
+                <Typography component="p" sx={{ fontSize: 11, color: "#64748b" }}>
                   Role-based POS terminal privileges
-                </p>
-              </div>
-            </div>
-            <ChevronRight size={16} className="text-slate-400" />
-          </button>
+                </Typography>
+              </Box>
+            </Box>
+            <ChevronRight size={16} style={{ color: "#94a3b8" }} />
+          </Box>
 
           {/* Install PWA App */}
-          <button
+          <Box
+            component="button"
             type="button"
             onClick={() => {
               onClose();
               if (onTriggerPwa) onTriggerPwa();
             }}
-            className="w-full flex items-center justify-between p-3 rounded-2xl hover:bg-slate-50 border border-transparent hover:border-slate-200 text-left transition-all"
+            sx={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", p: 1.5, borderRadius: "16px", border: "1px solid transparent", textAlign: "left", transition: "all 0.15s", "&:hover": { bgcolor: "#f8fafc", borderColor: "#e2e8f0" } }}
           >
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+              <Box sx={{ width: 36, height: 36, borderRadius: "12px", bgcolor: "#ecfdf5", color: "#059669", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <Download size={18} />
-              </div>
-              <div>
-                <h4 className="text-xs font-bold text-slate-900 leading-tight">
+              </Box>
+              <Box>
+                <Typography component="h4" sx={{ fontSize: 12, fontWeight: 700, color: "#0f172a", lineHeight: 1.25 }}>
                   Install Vynerix App
-                </h4>
-                <p className="text-[11px] text-slate-500">
+                </Typography>
+                <Typography component="p" sx={{ fontSize: 11, color: "#64748b" }}>
                   Add to home screen for fullscreen mode
-                </p>
-              </div>
-            </div>
-            <ChevronRight size={16} className="text-slate-400" />
-          </button>
-        </div>
+                </Typography>
+              </Box>
+            </Box>
+            <ChevronRight size={16} style={{ color: "#94a3b8" }} />
+          </Box>
+        </Box>
 
         {/* Footer with Logout */}
-        <div className="p-4 border-t border-slate-100 bg-slate-50">
-          <button
+        <Box sx={{ p: 2, borderTop: "1px solid #f1f5f9", bgcolor: "#f8fafc" }}>
+          <Box
+            component="button"
             type="button"
             onClick={() => {
               onClose();
               if (onLogout) onLogout();
             }}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 text-xs font-extrabold border border-red-200 shadow-sm active:scale-98 transition-all"
+            sx={{
+              width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 1, py: 1.5, borderRadius: "12px",
+              bgcolor: "#fef2f2", color: "#dc2626", fontSize: 12, fontWeight: 800, border: "1px solid #fecaca", boxShadow: 1,
+              transition: "all 0.15s", "&:hover": { bgcolor: "#fee2e2" }, "&:active": { transform: "scale(0.98)" },
+            }}
           >
             <LogOut size={16} />
-            <span>Sign Out from Mobile</span>
-          </button>
-        </div>
-      </div>
-    </div>
+            <Box component="span">Sign Out from Mobile</Box>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
   );
 }
