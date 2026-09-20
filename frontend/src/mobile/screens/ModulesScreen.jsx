@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import {
   ShoppingCart,
   ClipboardList,
-  Box,
+  Box as BoxIcon,
   Package,
   Users,
   Store,
@@ -11,6 +11,7 @@ import {
   Settings,
   UserCheck,
 } from "lucide-react";
+import { Box, Typography } from "@mui/material";
 import api from "../../api/axios";
 import { isRestrictedRole } from "../utils/rolePermissions";
 
@@ -24,7 +25,7 @@ const money = (n) =>
 const MODULE_TILES = [
   { key: "sales", name: "Sales", icon: ShoppingCart, bg: "bg-indigo-600" },
   { key: "purchase", name: "Purchase", icon: ClipboardList, bg: "bg-sky-500" },
-  { key: "inventory", name: "Inventory", icon: Box, bg: "bg-amber-500" },
+  { key: "inventory", name: "Inventory", icon: BoxIcon, bg: "bg-amber-500" },
   { key: "inventory", name: "Products", icon: Package, bg: "bg-emerald-500" },
   { key: "customers", name: "Customers", icon: Users, bg: "bg-blue-500" },
   { key: "suppliers", name: "Suppliers", icon: Store, bg: "bg-cyan-600" },
@@ -61,39 +62,40 @@ export default function ModulesScreen({ onNavigate, authUser }) {
   }, []);
 
   return (
-    <div className="space-y-4">
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
       {/* 3x3 Grid */}
-      <div className="vx-modules-grid">
+      <Box className="vx-modules-grid">
         {tiles.map((tile, i) => {
           const Icon = tile.icon;
           return (
-            <button
+            <Box
+              component="button"
               key={i}
               type="button"
               className="vx-module-tile"
               onClick={() => onNavigate(tile.key)}
             >
-              <div className={`vx-module-icon-box ${tile.bg}`}>
+              <Box className={`vx-module-icon-box ${tile.bg}`}>
                 <Icon size={22} />
-              </div>
-              <span className="vx-module-name">{tile.name}</span>
-            </button>
+              </Box>
+              <Box component="span" className="vx-module-name">{tile.name}</Box>
+            </Box>
           );
         })}
-      </div>
+      </Box>
 
       {/* Recent Activities */}
-      <div className="vx-card">
-        <h3 className="vx-card-title mb-3">Recent Activities</h3>
-        <div className="divide-y divide-slate-100">
+      <Box className="vx-card">
+        <Typography component="h3" className="vx-card-title" sx={{ mb: 1.5 }}>Recent Activities</Typography>
+        <Box sx={{ "& > *:not(:first-of-type)": { borderTop: "1px solid #f1f5f9" } }}>
           {activities.length > 0 ? (
             activities.map((item, i) => (
-              <div key={i} className="flex items-center justify-between py-2.5">
-                <div>
-                  <h4 className="text-xs font-bold text-slate-800 m-0">
+              <Box key={i} sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", py: 1.25 }}>
+                <Box>
+                  <Typography component="h4" sx={{ fontSize: 12, fontWeight: 700, color: "#1e293b", m: 0 }}>
                     {item.title || item.message || item.data?.message || `Activity ${i + 1}`}
-                  </h4>
-                  <p className="text-[11px] text-slate-400 m-0">
+                  </Typography>
+                  <Typography component="p" sx={{ fontSize: 11, color: "#94a3b8", m: 0 }}>
                     {item.created_at
                       ? new Date(item.created_at).toLocaleDateString("en-IN", {
                           day: "numeric",
@@ -101,22 +103,22 @@ export default function ModulesScreen({ onNavigate, authUser }) {
                           year: "numeric",
                         })
                       : ""}
-                  </p>
-                </div>
+                  </Typography>
+                </Box>
                 {item.data?.amount && (
-                  <strong className="text-xs font-extrabold text-slate-900">
+                  <Box component="strong" sx={{ fontSize: 12, fontWeight: 800, color: "#0f172a" }}>
                     {money(item.data.amount)}
-                  </strong>
+                  </Box>
                 )}
-              </div>
+              </Box>
             ))
           ) : (
-            <p className="text-xs text-slate-400 py-4 text-center">
+            <Typography component="p" sx={{ fontSize: 12, color: "#94a3b8", py: 2, textAlign: "center" }}>
               No recent activities
-            </p>
+            </Typography>
           )}
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   );
 }

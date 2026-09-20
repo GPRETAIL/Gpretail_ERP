@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { X, Check, Store } from "lucide-react";
+import { Box, Typography } from "@mui/material";
 import api from "../../api/axios";
 
 /**
@@ -50,51 +51,62 @@ export default function BranchSelectorModal({ isOpen, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[86] flex flex-col justify-end bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="w-full max-w-[480px] mx-auto bg-white rounded-t-3xl shadow-2xl flex flex-col max-h-[75vh] overflow-hidden animate-in slide-in-from-bottom duration-200">
-        <div className="p-4 border-b border-slate-100 flex items-center justify-between shrink-0">
-          <h3 className="text-sm font-black text-slate-900">Switch Store</h3>
-          <button type="button" onClick={onClose} className="p-1.5 text-slate-500" aria-label="Close">
+    <Box
+      className="animate-in fade-in duration-150"
+      sx={{ position: "fixed", inset: 0, zIndex: 86, display: "flex", flexDirection: "column", justifyContent: "flex-end", bgcolor: "rgba(15,23,42,0.6)", backdropFilter: "blur(4px)" }}
+    >
+      <Box
+        className="animate-in slide-in-from-bottom duration-200"
+        sx={{ width: "100%", maxWidth: 480, mx: "auto", bgcolor: "#fff", borderTopLeftRadius: "24px", borderTopRightRadius: "24px", boxShadow: 24, display: "flex", flexDirection: "column", maxHeight: "75vh", overflow: "hidden" }}
+      >
+        <Box sx={{ p: 2, borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+          <Typography component="h3" sx={{ fontSize: 14, fontWeight: 900, color: "#0f172a" }}>Switch Store</Typography>
+          <Box component="button" type="button" onClick={onClose} sx={{ p: 0.75, color: "#64748b" }} aria-label="Close">
             <X size={20} />
-          </button>
-        </div>
+          </Box>
+        </Box>
 
-        <div className="p-3 overflow-y-auto flex-1 space-y-1.5">
+        <Box sx={{ p: 1.5, overflowY: "auto", flex: 1, display: "flex", flexDirection: "column", gap: 0.75 }}>
           {loading ? (
-            <p className="text-center text-xs text-slate-400 py-8">Loading stores...</p>
+            <Typography component="p" sx={{ textAlign: "center", fontSize: 12, color: "#94a3b8", py: 4 }}>Loading stores...</Typography>
           ) : stores.length === 0 ? (
-            <p className="text-center text-xs text-slate-400 py-8">No stores found</p>
+            <Typography component="p" sx={{ textAlign: "center", fontSize: 12, color: "#94a3b8", py: 4 }}>No stores found</Typography>
           ) : (
             stores.map((s) => (
-              <button
+              <Box
+                component="button"
                 key={s.id}
                 type="button"
                 onClick={() => setSelectedId(s.id)}
-                className={`w-full flex items-center justify-between p-3 rounded-2xl border transition-all ${
-                  selectedId === s.id ? "bg-indigo-50 border-indigo-200" : "bg-slate-50 border-slate-200/80"
-                }`}
+                sx={{
+                  width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", p: 1.5,
+                  borderRadius: "16px", border: "1px solid", transition: "all 0.15s",
+                  bgcolor: selectedId === s.id ? "#eef2ff" : "#f8fafc",
+                  borderColor: selectedId === s.id ? "#c7d2fe" : "rgba(226,232,240,0.8)",
+                }}
               >
-                <div className="flex items-center gap-2 min-w-0">
-                  <Store size={14} className="text-slate-400 shrink-0" />
-                  <span className="text-xs font-bold text-slate-800 truncate">{s.name}</span>
-                </div>
-                {selectedId === s.id && <Check size={16} className="text-indigo-600 shrink-0" />}
-              </button>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 0 }}>
+                  <Store size={14} style={{ color: "#94a3b8", flexShrink: 0 }} />
+                  <Typography component="span" sx={{ fontSize: 12, fontWeight: 700, color: "#1e293b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.name}</Typography>
+                </Box>
+                {selectedId === s.id && <Check size={16} style={{ color: "#4f46e5", flexShrink: 0 }} />}
+              </Box>
             ))
           )}
-        </div>
+        </Box>
 
-        <div className="p-4 border-t border-slate-100 shrink-0">
-          <button
+        <Box sx={{ p: 2, borderTop: "1px solid #f1f5f9", flexShrink: 0 }}>
+          <Box
+            component="button"
             type="button"
             onClick={handleSave}
             disabled={loading || !selectedId}
-            className="w-full py-3 rounded-xl bg-indigo-600 text-white text-xs font-bold disabled:opacity-50"
+            sx={{ width: "100%", py: 1.5, borderRadius: "12px", bgcolor: "#4f46e5", color: "#fff", fontSize: 12, fontWeight: 700, "&:disabled": { opacity: 0.5 } }}
           >
             Switch Store
-          </button>
-        </div>
-      </div>
-    </div>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
   );
 }

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Search, Phone, Wallet } from "lucide-react";
+import { Box, Typography } from "@mui/material";
 import api from "../../api/axios";
 import { SkeletonTransList } from "../components/SkeletonCards";
 
@@ -49,19 +50,21 @@ export default function SuppliersScreen({ onNavigate }) {
   }, [load]);
 
   return (
-    <div>
+    <Box>
       {/* Search & Supplier Dues shortcut */}
-      <div className="vx-search-row">
-        <div className="vx-search-input-wrap">
+      <Box className="vx-search-row">
+        <Box className="vx-search-input-wrap">
           <Search size={16} className="text-slate-400" />
-          <input
+          <Box
+            component="input"
             type="text"
             placeholder="Search suppliers..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-        </div>
-        <button
+        </Box>
+        <Box
+          component="button"
           type="button"
           className="vx-filter-btn"
           aria-label="Supplier Dues"
@@ -69,50 +72,51 @@ export default function SuppliersScreen({ onNavigate }) {
           onClick={() => onNavigate && onNavigate("supplier_dues")}
         >
           <Wallet size={17} />
-        </button>
-      </div>
+        </Box>
+      </Box>
 
       {/* Suppliers List */}
       {loading ? (
         <SkeletonTransList count={4} />
       ) : suppliers.length === 0 ? (
-        <div className="vx-card text-center py-8">
-          <p className="text-sm text-slate-400">No suppliers found</p>
-        </div>
+        <Box className="vx-card text-center py-8">
+          <Typography component="p" sx={{ fontSize: 14, color: "#94a3b8" }}>No suppliers found</Typography>
+        </Box>
       ) : (
-        <div>
+        <Box>
           {suppliers.map((s) => {
             const dues = Number(s.current_balance || 0);
             return (
-              <div key={s.id} className="vx-trans-card">
-                <div className="vx-trans-left">
-                  <span className="vx-trans-id">{s.name}</span>
+              <Box key={s.id} className="vx-trans-card">
+                <Box className="vx-trans-left">
+                  <Box component="span" className="vx-trans-id">{s.name}</Box>
                   {s.company_name && s.company_name !== s.name && (
-                    <span className="vx-trans-meta">{s.company_name}</span>
+                    <Box component="span" className="vx-trans-meta">{s.company_name}</Box>
                   )}
-                  <span className="vx-trans-meta text-[10px]">
+                  <Box component="span" className="vx-trans-meta text-[10px]">
                     {[s.city, s.gstin].filter(Boolean).join(" · ") || "—"}
-                  </span>
-                </div>
-                <div className="vx-trans-right">
+                  </Box>
+                </Box>
+                <Box className="vx-trans-right">
                   {dues > 0 && (
-                    <span className="vx-trans-amount text-amber-700">{money(dues)} due</span>
+                    <Box component="span" className="vx-trans-amount text-amber-700">{money(dues)} due</Box>
                   )}
                   {s.phone && (
-                    <a
+                    <Box
+                      component="a"
                       href={`tel:${s.phone}`}
                       onClick={(e) => e.stopPropagation()}
-                      className="mt-1 flex items-center gap-1 text-[10.5px] font-bold text-indigo-600"
+                      sx={{ mt: 0.5, display: "flex", alignItems: "center", gap: 0.5, fontSize: 10.5, fontWeight: 700, color: "#4f46e5" }}
                     >
                       <Phone size={11} /> {s.phone}
-                    </a>
+                    </Box>
                   )}
-                </div>
-              </div>
+                </Box>
+              </Box>
             );
           })}
-        </div>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }

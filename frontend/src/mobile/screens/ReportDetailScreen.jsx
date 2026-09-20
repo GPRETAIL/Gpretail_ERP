@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { TrendingUp, FileText, Wallet, AlertTriangle } from "lucide-react";
+import { Box, Typography } from "@mui/material";
 import api from "../../api/axios";
 
 const money = (n) =>
@@ -47,9 +48,9 @@ const REPORT_CONFIG = {
 };
 
 const COLOR_CLASSES = {
-  emerald: { bg: "bg-emerald-50", text: "text-emerald-700", icon: "bg-emerald-100" },
-  purple: { bg: "bg-purple-50", text: "text-purple-700", icon: "bg-purple-100" },
-  cyan: { bg: "bg-cyan-50", text: "text-cyan-700", icon: "bg-cyan-100" },
+  emerald: { bg: "#ecfdf5", text: "#047857", icon: "#d1fae5" },
+  purple: { bg: "#faf5ff", text: "#7e22ce", icon: "#f3e8ff" },
+  cyan: { bg: "#ecfeff", text: "#0e7490", icon: "#cffafe" },
 };
 
 export default function ReportDetailScreen({ reportType }) {
@@ -109,74 +110,72 @@ export default function ReportDetailScreen({ reportType }) {
   const itemsMissingCost = metric?.itemsMissingCost ?? 0;
 
   return (
-    <div className="space-y-3.5 pb-8">
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 1.75, pb: 4 }}>
       {/* Date Filter Pills - hidden for Receivables, which is an all-time balance, not range-based */}
       {reportType !== "receivables" && (
-        <div className="flex items-center gap-0.5 bg-slate-200/70 p-1 rounded-2xl w-fit">
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.25, bgcolor: "rgba(226,232,240,0.7)", p: 0.5, borderRadius: "16px", width: "fit-content" }}>
           {[
             { id: "today", label: "Today" },
             { id: "week", label: "Week" },
             { id: "month", label: "Month" },
             { id: "year", label: "Year" },
           ].map((tab) => (
-            <button
+            <Box
+              component="button"
               key={tab.id}
               type="button"
               onClick={() => setDateRange(tab.id)}
-              className={`px-2.5 py-1 text-[10.5px] font-bold rounded-xl transition-all ${
-                dateRange === tab.id
-                  ? "bg-white text-indigo-600 shadow-sm"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
+              sx={{
+                px: 1.25, py: 0.5, fontSize: 10.5, fontWeight: 700, borderRadius: "12px", transition: "all 0.15s",
+                bgcolor: dateRange === tab.id ? "#fff" : "transparent",
+                color: dateRange === tab.id ? "#4f46e5" : "#475569",
+                boxShadow: dateRange === tab.id ? 1 : "none",
+              }}
             >
               {tab.label}
-            </button>
+            </Box>
           ))}
-        </div>
+        </Box>
       )}
 
       {/* Headline Card */}
-      <div className={`p-5 rounded-2xl ${colors.bg} border border-slate-200/60`}>
-        <div className="flex items-center gap-2 mb-3">
-          <div className={`w-9 h-9 rounded-xl ${colors.icon} ${colors.text} flex items-center justify-center`}>
+      <Box sx={{ p: 2.5, borderRadius: "16px", bgcolor: colors.bg, border: "1px solid rgba(226,232,240,0.6)" }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
+          <Box sx={{ width: 36, height: 36, borderRadius: "12px", bgcolor: colors.icon, color: colors.text, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <Icon size={18} />
-          </div>
-          <span className="text-[11px] font-black uppercase tracking-wider text-slate-500">
+          </Box>
+          <Typography component="span" sx={{ fontSize: 11, fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.05em", color: "#64748b" }}>
             {config.label}
-          </span>
-        </div>
+          </Typography>
+        </Box>
 
-        <div className="text-[26px] font-black text-slate-900 tracking-tight leading-snug">
+        <Typography sx={{ fontSize: 26, fontWeight: 900, color: "#0f172a", letterSpacing: "-0.01em", lineHeight: 1.375 }}>
           {loading ? "…" : hasData ? money(amount) : "—"}
-        </div>
+        </Typography>
 
         {trend != null && (
-          <div className="mt-1.5">
-            <span
-              className={`text-[11px] font-bold ${
-                trendDirection === "down" ? "text-rose-600" : "text-emerald-600"
-              }`}
-            >
+          <Box sx={{ mt: 0.75 }}>
+            <Typography component="span" sx={{ fontSize: 11, fontWeight: 700, color: trendDirection === "down" ? "#e11d48" : "#059669" }}>
               {trendDirection === "down" ? "↓" : "↑"}
               {trend}% vs previous period
-            </span>
-          </div>
+            </Typography>
+          </Box>
         )}
 
-        <p className="text-[10.5px] text-slate-500 font-medium mt-3 leading-relaxed">
+        <Typography component="p" sx={{ fontSize: 10.5, color: "#64748b", fontWeight: 500, mt: 1.5, lineHeight: 1.625 }}>
           {config.description}
-        </p>
-      </div>
+        </Typography>
+      </Box>
 
       {reportType === "profit_loss" && itemsMissingCost > 0 && (
-        <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-50 border border-amber-200/70">
-          <AlertTriangle size={15} className="text-amber-600 shrink-0 mt-0.5" />
-          <p className="text-[10.5px] text-amber-800 font-semibold leading-relaxed m-0">
+        <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1, p: 1.5, borderRadius: "12px", bgcolor: "#fffbeb", border: "1px solid rgba(253,230,138,0.7)" }}>
+          <AlertTriangle size={15} style={{ color: "#d97706", flexShrink: 0, marginTop: 2 }} />
+          <Typography component="p" sx={{ fontSize: 10.5, color: "#92400e", fontWeight: 600, lineHeight: 1.625, m: 0 }}>
             {itemsMissingCost} sold item{itemsMissingCost === 1 ? "" : "s"} in this range had no recorded
             cost price and could not be included - actual profit may be higher than shown.
-          </p>
-        </div>
+          </Typography>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }
