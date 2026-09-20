@@ -1,5 +1,6 @@
 import React from "react";
 import { Delete } from "lucide-react";
+import { Box } from "@mui/material";
 
 const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "back"];
 
@@ -9,43 +10,54 @@ const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "back"];
  * a white drawer).
  */
 export default function PinKeypad({ onDigit, onBackspace, disabled, dark = true }) {
-  const keyClass = dark
-    ? "bg-white/10 text-white active:bg-white/20"
-    : "bg-slate-100 text-slate-900 active:bg-slate-200";
-  const backClass = dark
-    ? "text-white/90 active:bg-white/10"
-    : "text-slate-600 active:bg-slate-100";
+  const keySx = dark
+    ? { bgcolor: "rgba(255,255,255,0.1)", color: "#fff", "&:active": { bgcolor: "rgba(255,255,255,0.2)" } }
+    : { bgcolor: "#f1f5f9", color: "#0f172a", "&:active": { bgcolor: "#e2e8f0" } };
+  const backSx = dark
+    ? { color: "rgba(255,255,255,0.9)", "&:active": { bgcolor: "rgba(255,255,255,0.1)" } }
+    : { color: "#475569", "&:active": { bgcolor: "#f1f5f9" } };
 
   return (
-    <div className="grid grid-cols-3 gap-3 w-full max-w-[260px] mx-auto">
+    <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1.5, width: "100%", maxWidth: 260, mx: "auto" }}>
       {KEYS.map((k, i) => {
-        if (k === "") return <div key={`gap-${i}`} />;
+        if (k === "") return <Box key={`gap-${i}`} />;
         if (k === "back") {
           return (
-            <button
+            <Box
+              component="button"
               key="back"
               type="button"
               disabled={disabled}
               onClick={onBackspace}
               aria-label="Backspace"
-              className={`h-[58px] rounded-2xl flex items-center justify-center transition-all disabled:opacity-40 ${backClass}`}
+              sx={{
+                height: "58px", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center",
+                transition: "all 0.15s", border: 0, bgcolor: "transparent",
+                "&:disabled": { opacity: 0.4 },
+                ...backSx,
+              }}
             >
               <Delete size={20} />
-            </button>
+            </Box>
           );
         }
         return (
-          <button
+          <Box
+            component="button"
             key={k}
             type="button"
             disabled={disabled}
             onClick={() => onDigit(k)}
-            className={`h-[58px] rounded-2xl text-2xl font-bold transition-all disabled:opacity-40 ${keyClass}`}
+            sx={{
+              height: "58px", borderRadius: "16px", fontSize: 24, fontWeight: 700, transition: "all 0.15s",
+              border: 0, "&:disabled": { opacity: 0.4 },
+              ...keySx,
+            }}
           >
             {k}
-          </button>
+          </Box>
         );
       })}
-    </div>
+    </Box>
   );
 }

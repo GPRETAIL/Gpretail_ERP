@@ -6,6 +6,7 @@ import {
   Package,
   Menu,
 } from "lucide-react";
+import { Box } from "@mui/material";
 import { isRestrictedRole } from "../utils/rolePermissions";
 
 const TABS = [
@@ -33,18 +34,19 @@ export default function BottomNav({ activePage, onNavigate, authUser }) {
   })();
 
   return (
-    <nav className="vx-bottom">
+    <Box component="nav" className="vx-bottom">
       {tabs.map(({ key, label, icon: Icon }) => (
-        <button
+        <Box
+          component="button"
           key={key}
           type="button"
           className={activeTab === key ? "active" : ""}
           onClick={() => onNavigate(key)}
         >
           <Icon size={20} />
-          <span>{label}</span>
-        </button>
+          <Box component="span">{label}</Box>
+        </Box>
       ))}
-    </nav>
+    </Box>
   );
 }
