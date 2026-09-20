@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Lock, ShieldCheck, Fingerprint } from "lucide-react";
+import { Box, Typography } from "@mui/material";
 import PinKeypad from "./PinKeypad";
 
 const STEP = {
@@ -120,150 +121,167 @@ export default function SecurityPinSettings({ appLock, biometrics }) {
 
   if (step === STEP.IDLE) {
     return (
-      <div className="space-y-3">
-        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center gap-3">
-          <div
-            className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-              appLock.isPinSet ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-400"
-            }`}
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+        <Box sx={{ p: 1.75, borderRadius: "16px", bgcolor: "#f8fafc", border: "1px solid rgba(226,232,240,0.8)", display: "flex", alignItems: "center", gap: 1.5 }}>
+          <Box
+            sx={{
+              width: 36, height: 36, borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+              bgcolor: appLock.isPinSet ? "#ecfdf5" : "#f1f5f9",
+              color: appLock.isPinSet ? "#059669" : "#94a3b8",
+            }}
           >
             <Lock size={16} />
-          </div>
-          <div>
-            <h4 className="text-xs font-black text-slate-900">
+          </Box>
+          <Box>
+            <Typography component="h4" sx={{ fontSize: 12, fontWeight: 900, color: "#0f172a", m: 0 }}>
               App Lock is {appLock.isPinSet ? "ON" : "OFF"}
-            </h4>
-            <p className="text-[10.5px] text-slate-500 mt-0.5">
+            </Typography>
+            <Typography component="p" sx={{ fontSize: 10.5, color: "#64748b", mt: 0.25, m: 0 }}>
               {appLock.isPinSet
                 ? "A 4-digit PIN is required to open the app."
                 : "Set a PIN to protect this device's app from casual access."}
-            </p>
-          </div>
-        </div>
+            </Typography>
+          </Box>
+        </Box>
 
         {!appLock.isPinSet ? (
-          <button
+          <Box
+            component="button"
             type="button"
             onClick={() => setStep(STEP.NEW_PIN)}
-            className="w-full py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition-all"
+            sx={{
+              width: "100%", py: 1.25, borderRadius: "12px", bgcolor: "#4f46e5", color: "#fff", fontSize: 12, fontWeight: 700,
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 0.75, transition: "all 0.15s",
+              "&:active": { transform: "scale(0.95)" },
+            }}
           >
             <ShieldCheck size={14} /> Set PIN
-          </button>
+          </Box>
         ) : (
-          <div className="space-y-2">
-            <button
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+            <Box
+              component="button"
               type="button"
               onClick={() => setStep(STEP.CURRENT_FOR_CHANGE)}
-              className="w-full py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold active:scale-95 transition-all"
+              sx={{ width: "100%", py: 1.25, borderRadius: "12px", bgcolor: "#f1f5f9", color: "#334155", fontSize: 12, fontWeight: 700, transition: "all 0.15s", "&:active": { transform: "scale(0.95)" } }}
             >
               Change PIN
-            </button>
-            <button
+            </Box>
+            <Box
+              component="button"
               type="button"
               onClick={() => setStep(STEP.CURRENT_FOR_REMOVE)}
-              className="w-full py-2.5 rounded-xl border border-rose-200 text-rose-600 text-xs font-bold active:scale-95 transition-all"
+              sx={{ width: "100%", py: 1.25, borderRadius: "12px", border: "1px solid #fecdd3", color: "#e11d48", fontSize: 12, fontWeight: 700, transition: "all 0.15s", "&:active": { transform: "scale(0.95)" } }}
             >
               Turn Off PIN Lock
-            </button>
-          </div>
+            </Box>
+          </Box>
         )}
 
         {appLock.isPinSet && biometrics?.isSupported && (
-          <div className="pt-1">
-            <button
+          <Box sx={{ pt: 0.5 }}>
+            <Box
+              component="button"
               type="button"
               onClick={handleToggleBiometric}
               disabled={biometricBusy}
-              className="w-full flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-200/80 disabled:opacity-60"
+              sx={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", p: 1.5, borderRadius: "16px", bgcolor: "#f8fafc", border: "1px solid rgba(226,232,240,0.8)", "&:disabled": { opacity: 0.6 } }}
             >
-              <div className="flex items-center gap-3">
-                <div
-                  className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                    biometrics.isEnabled ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-400"
-                  }`}
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                <Box
+                  sx={{
+                    width: 36, height: 36, borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                    bgcolor: biometrics.isEnabled ? "#ecfdf5" : "#f1f5f9",
+                    color: biometrics.isEnabled ? "#059669" : "#94a3b8",
+                  }}
                 >
                   <Fingerprint size={16} />
-                </div>
-                <div className="text-left">
-                  <h4 className="text-xs font-black text-slate-900">Fingerprint / Face Unlock</h4>
-                  <p className="text-[10.5px] text-slate-500 mt-0.5">
+                </Box>
+                <Box sx={{ textAlign: "left" }}>
+                  <Typography component="h4" sx={{ fontSize: 12, fontWeight: 900, color: "#0f172a", m: 0 }}>Fingerprint / Face Unlock</Typography>
+                  <Typography component="p" sx={{ fontSize: 10.5, color: "#64748b", mt: 0.25, m: 0 }}>
                     {biometricBusy
                       ? "Follow the prompt..."
                       : biometrics.isEnabled
                         ? "On - shown above the PIN pad"
                         : "Off - unlock faster than typing your PIN"}
-                  </p>
-                </div>
-              </div>
-              <div
-                className={`w-10 h-6 rounded-full flex items-center px-0.5 transition-colors shrink-0 ${
-                  biometrics.isEnabled ? "bg-indigo-600 justify-end" : "bg-slate-200 justify-start"
-                }`}
+                  </Typography>
+                </Box>
+              </Box>
+              <Box
+                sx={{
+                  width: 40, height: 24, borderRadius: "999px", display: "flex", alignItems: "center", px: 0.25, transition: "background-color 0.15s", flexShrink: 0,
+                  bgcolor: biometrics.isEnabled ? "#4f46e5" : "#e2e8f0",
+                  justifyContent: biometrics.isEnabled ? "flex-end" : "flex-start",
+                }}
               >
-                <div className="w-5 h-5 rounded-full bg-white shadow" />
-              </div>
-            </button>
+                <Box sx={{ width: 20, height: 20, borderRadius: "50%", bgcolor: "#fff", boxShadow: 1 }} />
+              </Box>
+            </Box>
             {biometricError && (
-              <p className="text-[10.5px] text-rose-600 font-semibold mt-1.5">{biometricError}</p>
+              <Typography component="p" sx={{ fontSize: 10.5, color: "#e11d48", fontWeight: 600, mt: 0.75 }}>{biometricError}</Typography>
             )}
-          </div>
+          </Box>
         )}
 
         {appLock.isPinSet && (
-          <div className="pt-1">
-            <label className="text-xs font-bold text-slate-500 block mb-1.5">
+          <Box sx={{ pt: 0.5 }}>
+            <Typography component="label" sx={{ fontSize: 12, fontWeight: 700, color: "#64748b", display: "block", mb: 0.75 }}>
               Auto-Lock After Background
-            </label>
-            <div className="grid grid-cols-4 gap-1.5">
+            </Typography>
+            <Box sx={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 0.75 }}>
               {[
                 { minutes: 0, label: "Instant" },
                 { minutes: 1, label: "1 min" },
                 { minutes: 5, label: "5 min" },
                 { minutes: 15, label: "15 min" },
               ].map((opt) => (
-                <button
+                <Box
+                  component="button"
                   key={opt.minutes}
                   type="button"
                   onClick={() => appLock.setAutoLockMinutes(opt.minutes)}
-                  className={`py-2 rounded-xl text-[11px] font-bold border transition-all ${
-                    appLock.autoLockMinutes === opt.minutes
-                      ? "bg-indigo-600 border-indigo-600 text-white"
-                      : "bg-slate-50 border-slate-200 text-slate-700"
-                  }`}
+                  sx={{
+                    py: 1, borderRadius: "12px", fontSize: 11, fontWeight: 700, border: "1px solid", transition: "all 0.15s",
+                    bgcolor: appLock.autoLockMinutes === opt.minutes ? "#4f46e5" : "#f8fafc",
+                    borderColor: appLock.autoLockMinutes === opt.minutes ? "#4f46e5" : "#e2e8f0",
+                    color: appLock.autoLockMinutes === opt.minutes ? "#fff" : "#334155",
+                  }}
                 >
                   {opt.label}
-                </button>
+                </Box>
               ))}
-            </div>
-            <p className="text-[10px] text-slate-400 mt-1.5">
+            </Box>
+            <Typography component="p" sx={{ fontSize: 10, color: "#94a3b8", mt: 0.75 }}>
               Re-ask for the PIN after the app has been in the background this long.
-            </p>
-          </div>
+            </Typography>
+          </Box>
         )}
-      </div>
+      </Box>
     );
   }
 
   return (
-    <div className="flex flex-col items-center py-2">
-      <p className="text-xs font-bold text-slate-700 mb-1">{TITLES[step]}</p>
-      {error && <p className="text-[11px] text-rose-600 font-semibold mb-2">{error}</p>}
-      <div className="flex items-center gap-3 my-5">
+    <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", py: 1 }}>
+      <Typography component="p" sx={{ fontSize: 12, fontWeight: 700, color: "#334155", mb: 0.5 }}>{TITLES[step]}</Typography>
+      {error && <Typography component="p" sx={{ fontSize: 11, color: "#e11d48", fontWeight: 600, mb: 1 }}>{error}</Typography>}
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, my: 2.5 }}>
         {[0, 1, 2, 3].map((i) => (
-          <span
+          <Box
+            component="span"
             key={i}
-            className="w-3.5 h-3.5 rounded-full border"
+            sx={{ width: 14, height: 14, borderRadius: "50%", border: "1px solid" }}
             style={{
               background: i < pinDraft.length ? "#4f46e5" : "transparent",
               borderColor: i < pinDraft.length ? "#4f46e5" : "#cbd5e1",
             }}
           />
         ))}
-      </div>
+      </Box>
       <PinKeypad onDigit={handleDigit} onBackspace={handleBackspace} disabled={busy} dark={false} />
-      <button type="button" onClick={reset} className="mt-5 text-xs font-semibold text-slate-400">
+      <Box component="button" type="button" onClick={reset} sx={{ mt: 2.5, fontSize: 12, fontWeight: 600, color: "#94a3b8" }}>
         Cancel
-      </button>
-    </div>
+      </Box>
+    </Box>
   );
 }

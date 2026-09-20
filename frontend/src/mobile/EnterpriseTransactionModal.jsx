@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle2, Loader2, Plus, Trash2, X } from "lucide-react";
+import { Box, Typography } from "@mui/material";
 import { mobileApi } from "./mobileApi";
 import "./transaction.css";
 
@@ -128,24 +129,132 @@ export default function EnterpriseTransactionModal({ type, record, onClose, onSa
     } finally { setSaving(false); }
   };
 
-  return <div className="vx-tx-backdrop" role="dialog" aria-modal="true"><section className="vx-tx-modal">
-    <header className="vx-tx-header"><div><small>Enterprise transaction</small><h2>{title}</h2></div><button onClick={onClose} className="vx-tx-icon" aria-label="Close"><X size={18}/></button></header>
-    {error && <div className="vx-tx-error"><AlertTriangle size={16}/><span>{error}</span></div>}
-    {success && <div className="vx-tx-success"><CheckCircle2 size={16}/> Saved successfully</div>}
-    {loadingMeta ? <div className="vx-tx-loading"><Loader2 size={20} className="spin"/> Loading master data…</div> : <>
-      <div className="vx-tx-body">
-        {type === "sales" && <label>Customer<select disabled={readonly} value={form.customerId} onChange={(e) => setField("customerId", e.target.value)}><option value="">Walk-in Customer</option>{partners.map((p)=><option key={p.id} value={p.id}>{p.name}{p.phone ? ` · ${p.phone}` : ""}</option>)}</select></label>}
-        {type === "purchase" && <div className="vx-tx-grid"><label>Supplier<select disabled={!!record} value={form.supplier_id} onChange={(e)=>setField("supplier_id",e.target.value)}><option value="">Select supplier</option>{partners.map((p)=><option key={p.id} value={p.id}>{p.name}{p.gstin ? ` · ${p.gstin}` : ""}</option>)}</select></label><label>Invoice No<input disabled={!!record} value={form.invoice_no} onChange={(e)=>setField("invoice_no",e.target.value)}/></label><label>Supplier Invoice No<input disabled={!!record} value={form.supplier_invoice_no} onChange={(e)=>setField("supplier_invoice_no",e.target.value)}/></label><label>Invoice Date<input type="date" value={form.invoice_date} onChange={(e)=>setField("invoice_date",e.target.value)}/></label></div>}
-        {type === "inventory" && <div className="vx-tx-grid"><label>Date<input type="date" value={form.entry_date} onChange={(e)=>setField("entry_date",e.target.value)}/></label><label>Operation<select disabled={!!record} value={form.type} onChange={(e)=>setField("type",e.target.value)}><option value="ADJUSTMENT">Stock Adjustment</option><option value="OPENING">Opening Stock</option><option value="COUNT">Stock Count</option></select></label><label>Status<select value={form.status} onChange={(e)=>setField("status",e.target.value)}><option value="COMPLETED">Completed</option><option value="DRAFT">Draft</option></select></label></div>}
-        <div className="vx-tx-items"><div className="vx-tx-section-head"><div><b>Items</b><small>Validate each quantity and price before posting</small></div>{!readonly && <button onClick={addItem}><Plus size={14}/> Add line</button>}</div>
-          {form.items.map((item, index) => <div className="vx-tx-line" key={index}><select disabled={readonly} value={type === "sales" ? item.productId : item.product_id} onChange={(e)=>chooseProduct(index,e.target.value)}><option value="">Select product</option>{catalog.map((p)=><option key={p.id} value={p.id}>{p.name}{p.code ? ` · ${p.code}` : ""}</option>)}</select><input disabled={readonly} type="number" min="0.001" step="0.001" value={type === "sales" ? item.qty : item.quantity} onChange={(e)=>setItem(index,type === "sales" ? {qty:e.target.value} : {quantity:e.target.value})}/>{type === "sales" ? <><input disabled={readonly} type="number" min="0" step="0.01" value={item.price} onChange={(e)=>setItem(index,{price:e.target.value})}/><input disabled={readonly} type="number" min="0" step="0.01" value={item.discount} onChange={(e)=>setItem(index,{discount:e.target.value})}/></> : type === "purchase" ? <><input disabled={!!record} type="number" min="0" step="0.01" value={item.rate} onChange={(e)=>setItem(index,{rate:e.target.value})}/><input disabled={!!record} type="number" min="0" step="0.01" value={item.tax_amount} onChange={(e)=>setItem(index,{tax_amount:e.target.value})}/></> : <input disabled={!!record} type="number" step="0.001" value={item.unit_price} onChange={(e)=>setItem(index,{unit_price:e.target.value})}/>} {!readonly && <button className="danger" onClick={()=>removeItem(index)} disabled={form.items.length===1}><Trash2 size={15}/></button>}</div>)}
-        </div>
-        {type === "purchase" && <label>Notes<textarea value={form.notes} onChange={(e)=>setField("notes",e.target.value)} rows={2}/></label>}
-        {type === "inventory" && <label>Notes<textarea value={form.notes} onChange={(e)=>setField("notes",e.target.value)} rows={2} placeholder="Reason / reference / count details"/></label>}
-        {type === "sales" && <div className="vx-tx-grid payment"><label>Payment Mode<select disabled={readonly} value={form.payment} onChange={(e)=>setField("payment",e.target.value)}><option value="CASH">Cash</option><option value="CARD">Card</option><option value="UPI">UPI</option><option value="CREDIT">Credit</option></select></label><label>Received<input disabled={readonly} type="number" min="0" step="0.01" value={form.payment === "CASH" ? form.cashAmount : form.payment === "CARD" ? form.cardAmount : form.upiAmount} onChange={(e)=>setField(form.payment === "CASH" ? "cashAmount" : form.payment === "CARD" ? "cardAmount" : "upiAmount", e.target.value)}/></label></div>}
-        <div className="vx-tx-total"><span>Subtotal <b>{money(totals.subtotal)}</b></span><span>Tax <b>{money(totals.tax)}</b></span><span>Discount <b>{money(totals.discount)}</b></span><strong>Grand Total <b>{money(totals.grand)}</b></strong>{type === "sales" && <>{totals.change > 0 && <span>Change <b>{money(totals.change)}</b></span>}{totals.balance > 0 && <span>Balance <b>{money(totals.balance)}</b></span>}</>}</div>
-      </div>
-      <footer className="vx-tx-footer"><button className="secondary" onClick={onClose}>Close</button>{!readonly && <button className="primary" disabled={saving || success} onClick={submit}>{saving ? <><Loader2 size={15} className="spin"/> Saving…</> : success ? "Saved" : record ? "Save Changes" : type === "sales" ? "Post Sale" : type === "purchase" ? "Post Purchase" : "Post Inventory"}</button>}</footer>
-    </>}
-  </section></div>;
+  return (
+    <Box className="vx-tx-backdrop" role="dialog" aria-modal="true">
+      <Box component="section" className="vx-tx-modal">
+        <Box component="header" className="vx-tx-header">
+          <Box>
+            <Box component="small">Enterprise transaction</Box>
+            <Typography component="h2">{title}</Typography>
+          </Box>
+          <Box component="button" onClick={onClose} className="vx-tx-icon" aria-label="Close"><X size={18} /></Box>
+        </Box>
+        {error && <Box className="vx-tx-error"><AlertTriangle size={16} /><Box component="span">{error}</Box></Box>}
+        {success && <Box className="vx-tx-success"><CheckCircle2 size={16} /> Saved successfully</Box>}
+        {loadingMeta ? (
+          <Box className="vx-tx-loading"><Loader2 size={20} className="spin" /> Loading master data…</Box>
+        ) : (
+          <>
+            <Box className="vx-tx-body">
+              {type === "sales" && (
+                <Box component="label">Customer
+                  <Box component="select" disabled={readonly} value={form.customerId} onChange={(e) => setField("customerId", e.target.value)}>
+                    <option value="">Walk-in Customer</option>
+                    {partners.map((p) => <option key={p.id} value={p.id}>{p.name}{p.phone ? ` · ${p.phone}` : ""}</option>)}
+                  </Box>
+                </Box>
+              )}
+              {type === "purchase" && (
+                <Box className="vx-tx-grid">
+                  <Box component="label">Supplier
+                    <Box component="select" disabled={!!record} value={form.supplier_id} onChange={(e) => setField("supplier_id", e.target.value)}>
+                      <option value="">Select supplier</option>
+                      {partners.map((p) => <option key={p.id} value={p.id}>{p.name}{p.gstin ? ` · ${p.gstin}` : ""}</option>)}
+                    </Box>
+                  </Box>
+                  <Box component="label">Invoice No<Box component="input" disabled={!!record} value={form.invoice_no} onChange={(e) => setField("invoice_no", e.target.value)} /></Box>
+                  <Box component="label">Supplier Invoice No<Box component="input" disabled={!!record} value={form.supplier_invoice_no} onChange={(e) => setField("supplier_invoice_no", e.target.value)} /></Box>
+                  <Box component="label">Invoice Date<Box component="input" type="date" value={form.invoice_date} onChange={(e) => setField("invoice_date", e.target.value)} /></Box>
+                </Box>
+              )}
+              {type === "inventory" && (
+                <Box className="vx-tx-grid">
+                  <Box component="label">Date<Box component="input" type="date" value={form.entry_date} onChange={(e) => setField("entry_date", e.target.value)} /></Box>
+                  <Box component="label">Operation
+                    <Box component="select" disabled={!!record} value={form.type} onChange={(e) => setField("type", e.target.value)}>
+                      <option value="ADJUSTMENT">Stock Adjustment</option>
+                      <option value="OPENING">Opening Stock</option>
+                      <option value="COUNT">Stock Count</option>
+                    </Box>
+                  </Box>
+                  <Box component="label">Status
+                    <Box component="select" value={form.status} onChange={(e) => setField("status", e.target.value)}>
+                      <option value="COMPLETED">Completed</option>
+                      <option value="DRAFT">Draft</option>
+                    </Box>
+                  </Box>
+                </Box>
+              )}
+              <Box className="vx-tx-items">
+                <Box className="vx-tx-section-head">
+                  <Box><Box component="b">Items</Box><Box component="small">Validate each quantity and price before posting</Box></Box>
+                  {!readonly && <Box component="button" onClick={addItem}><Plus size={14} /> Add line</Box>}
+                </Box>
+                {form.items.map((item, index) => (
+                  <Box className="vx-tx-line" key={index}>
+                    <Box component="select" disabled={readonly} value={type === "sales" ? item.productId : item.product_id} onChange={(e) => chooseProduct(index, e.target.value)}>
+                      <option value="">Select product</option>
+                      {catalog.map((p) => <option key={p.id} value={p.id}>{p.name}{p.code ? ` · ${p.code}` : ""}</option>)}
+                    </Box>
+                    <Box component="input" disabled={readonly} type="number" min="0.001" step="0.001" value={type === "sales" ? item.qty : item.quantity} onChange={(e) => setItem(index, type === "sales" ? { qty: e.target.value } : { quantity: e.target.value })} />
+                    {type === "sales" ? (
+                      <>
+                        <Box component="input" disabled={readonly} type="number" min="0" step="0.01" value={item.price} onChange={(e) => setItem(index, { price: e.target.value })} />
+                        <Box component="input" disabled={readonly} type="number" min="0" step="0.01" value={item.discount} onChange={(e) => setItem(index, { discount: e.target.value })} />
+                      </>
+                    ) : type === "purchase" ? (
+                      <>
+                        <Box component="input" disabled={!!record} type="number" min="0" step="0.01" value={item.rate} onChange={(e) => setItem(index, { rate: e.target.value })} />
+                        <Box component="input" disabled={!!record} type="number" min="0" step="0.01" value={item.tax_amount} onChange={(e) => setItem(index, { tax_amount: e.target.value })} />
+                      </>
+                    ) : (
+                      <Box component="input" disabled={!!record} type="number" step="0.001" value={item.unit_price} onChange={(e) => setItem(index, { unit_price: e.target.value })} />
+                    )}
+                    {!readonly && <Box component="button" className="danger" onClick={() => removeItem(index)} disabled={form.items.length === 1}><Trash2 size={15} /></Box>}
+                  </Box>
+                ))}
+              </Box>
+              {type === "purchase" && <Box component="label">Notes<Box component="textarea" value={form.notes} onChange={(e) => setField("notes", e.target.value)} rows={2} /></Box>}
+              {type === "inventory" && <Box component="label">Notes<Box component="textarea" value={form.notes} onChange={(e) => setField("notes", e.target.value)} rows={2} placeholder="Reason / reference / count details" /></Box>}
+              {type === "sales" && (
+                <Box className="vx-tx-grid payment">
+                  <Box component="label">Payment Mode
+                    <Box component="select" disabled={readonly} value={form.payment} onChange={(e) => setField("payment", e.target.value)}>
+                      <option value="CASH">Cash</option>
+                      <option value="CARD">Card</option>
+                      <option value="UPI">UPI</option>
+                      <option value="CREDIT">Credit</option>
+                    </Box>
+                  </Box>
+                  <Box component="label">Received
+                    <Box component="input" disabled={readonly} type="number" min="0" step="0.01" value={form.payment === "CASH" ? form.cashAmount : form.payment === "CARD" ? form.cardAmount : form.upiAmount} onChange={(e) => setField(form.payment === "CASH" ? "cashAmount" : form.payment === "CARD" ? "cardAmount" : "upiAmount", e.target.value)} />
+                  </Box>
+                </Box>
+              )}
+              <Box className="vx-tx-total">
+                <Box component="span">Subtotal <Box component="b">{money(totals.subtotal)}</Box></Box>
+                <Box component="span">Tax <Box component="b">{money(totals.tax)}</Box></Box>
+                <Box component="span">Discount <Box component="b">{money(totals.discount)}</Box></Box>
+                <Box component="strong">Grand Total <Box component="b">{money(totals.grand)}</Box></Box>
+                {type === "sales" && (
+                  <>
+                    {totals.change > 0 && <Box component="span">Change <Box component="b">{money(totals.change)}</Box></Box>}
+                    {totals.balance > 0 && <Box component="span">Balance <Box component="b">{money(totals.balance)}</Box></Box>}
+                  </>
+                )}
+              </Box>
+            </Box>
+            <Box component="footer" className="vx-tx-footer">
+              <Box component="button" className="secondary" onClick={onClose}>Close</Box>
+              {!readonly && (
+                <Box component="button" className="primary" disabled={saving || success} onClick={submit}>
+                  {saving ? <><Loader2 size={15} className="spin" /> Saving…</> : success ? "Saved" : record ? "Save Changes" : type === "sales" ? "Post Sale" : type === "purchase" ? "Post Purchase" : "Post Inventory"}
+                </Box>
+              )}
+            </Box>
+          </>
+        )}
+      </Box>
+    </Box>
+  );
 }
