@@ -9,6 +9,7 @@ import {
   CreditCard,
   ShieldCheck,
 } from "lucide-react";
+import { Box, Typography } from "@mui/material";
 import {
   getStoredNotifications,
   markNotificationAsRead,
@@ -17,6 +18,12 @@ import {
   requestNotificationPermission,
   hasNotificationPermission,
 } from "../notifications/notificationService";
+
+const NOTIF_COLORS = {
+  due: { icon: "#d97706", cardBg: "rgba(255,251,235,0.5)", cardBorder: "rgba(253,230,138,0.7)", badgeBg: "#fef3c7", badgeText: "#92400e" },
+  overdue: { icon: "#dc2626", cardBg: "rgba(254,242,242,0.5)", cardBorder: "rgba(254,202,202,0.7)", badgeBg: "#fee2e2", badgeText: "#991b1b" },
+  stock: { icon: "#2563eb", cardBg: "rgba(239,246,255,0.5)", cardBorder: "rgba(191,219,254,0.7)", badgeBg: "#dbeafe", badgeText: "#1e40af" },
+};
 
 export default function NotificationsModal({ isOpen, onClose }) {
   const [notifications, setNotifications] = useState([]);
@@ -59,135 +66,140 @@ export default function NotificationsModal({ isOpen, onClose }) {
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   return (
-    <div className="fixed inset-0 z-[70] flex flex-col justify-end bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+    <Box
+      className="animate-in fade-in duration-200"
+      sx={{ position: "fixed", inset: 0, zIndex: 70, display: "flex", flexDirection: "column", justifyContent: "flex-end", bgcolor: "rgba(15,23,42,0.6)", backdropFilter: "blur(4px)" }}
+    >
       {/* Modal Card */}
-      <div className="w-full max-w-[480px] mx-auto bg-white rounded-t-3xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden animate-in slide-in-from-bottom duration-300">
+      <Box
+        className="animate-in slide-in-from-bottom duration-300"
+        sx={{ width: "100%", maxWidth: 480, mx: "auto", bgcolor: "#fff", borderTopLeftRadius: "24px", borderTopRightRadius: "24px", boxShadow: 24, display: "flex", flexDirection: "column", maxHeight: "85vh", overflow: "hidden" }}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50/50">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", px: 2.5, py: 2, borderBottom: "1px solid #f1f5f9", bgcolor: "rgba(248,250,252,0.5)" }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+            <Box sx={{ width: 36, height: 36, borderRadius: "12px", bgcolor: "#eef2ff", color: "#4f46e5", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 }}>
               <Bell size={18} />
-            </div>
-            <div>
-              <h3 className="text-base font-black text-slate-900 leading-tight">
+            </Box>
+            <Box>
+              <Typography component="h3" sx={{ fontSize: 16, fontWeight: 900, color: "#0f172a", lineHeight: 1.25 }}>
                 Alerts & Notifications
-              </h3>
-              <p className="text-xs text-slate-500 font-medium">
+              </Typography>
+              <Typography component="p" sx={{ fontSize: 12, color: "#64748b", fontWeight: 500 }}>
                 {unreadCount > 0
                   ? `${unreadCount} unread payment & stock alerts`
                   : "All caught up"}
-              </p>
-            </div>
-          </div>
+              </Typography>
+            </Box>
+          </Box>
 
-          <button
+          <Box
+            component="button"
             type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-slate-200/70 hover:bg-slate-300 text-slate-600 flex items-center justify-center transition-colors"
+            sx={{ width: 32, height: 32, borderRadius: "50%", bgcolor: "rgba(226,232,240,0.7)", color: "#475569", display: "flex", alignItems: "center", justifyContent: "center", transition: "background-color 0.15s", "&:hover": { bgcolor: "#cbd5e1" } }}
           >
             <X size={18} />
-          </button>
-        </div>
+          </Box>
+        </Box>
 
         {/* Push Notification Banner */}
         {!hasPush && permissionState !== "denied" && (
-          <div className="mx-4 mt-3 p-3 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white flex items-center justify-between gap-3 shadow-md shadow-indigo-500/20">
-            <div className="flex items-center gap-2.5">
-              <ShieldCheck size={20} className="text-indigo-200 shrink-0" />
-              <div>
-                <p className="text-xs font-bold leading-tight">Enable Push Notifications</p>
-                <p className="text-[10px] text-indigo-100">Get supplier invoice payment alerts on time</p>
-              </div>
-            </div>
-            <button
+          <Box sx={{ mx: 2, mt: 1.5, p: 1.5, borderRadius: "16px", backgroundImage: "linear-gradient(to right, #6366f1, #9333ea)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1.5, boxShadow: "0 4px 6px -1px rgba(99,102,241,0.2)" }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+              <ShieldCheck size={20} style={{ color: "#c7d2fe", flexShrink: 0 }} />
+              <Box>
+                <Typography component="p" sx={{ fontSize: 12, fontWeight: 700, lineHeight: 1.25 }}>Enable Push Notifications</Typography>
+                <Typography component="p" sx={{ fontSize: 10, color: "#e0e7ff" }}>Get supplier invoice payment alerts on time</Typography>
+              </Box>
+            </Box>
+            <Box
+              component="button"
               type="button"
               onClick={handleEnablePush}
-              className="bg-white text-indigo-600 font-bold text-xs px-3 py-1.5 rounded-xl shadow hover:bg-indigo-50 shrink-0"
+              sx={{ bgcolor: "#fff", color: "#4f46e5", fontWeight: 700, fontSize: 12, px: 1.5, py: 0.75, borderRadius: "12px", boxShadow: 1, flexShrink: 0, "&:hover": { bgcolor: "#eef2ff" } }}
             >
               Allow
-            </button>
-          </div>
+            </Box>
+          </Box>
         )}
 
         {/* Notification List */}
-        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2.5">
+        <Box sx={{ flex: 1, overflowY: "auto", px: 2, py: 1.5, display: "flex", flexDirection: "column", gap: 1.25 }}>
           {notifications.length === 0 ? (
-            <div className="text-center py-12 text-slate-400">
-              <Bell size={36} className="mx-auto mb-2 opacity-30" />
-              <p className="text-sm font-semibold">No notifications right now</p>
-              <p className="text-xs text-slate-400 mt-0.5">
+            <Box sx={{ textAlign: "center", py: 6, color: "#94a3b8" }}>
+              <Bell size={36} style={{ margin: "0 auto 8px", opacity: 0.3 }} />
+              <Typography component="p" sx={{ fontSize: 14, fontWeight: 600 }}>No notifications right now</Typography>
+              <Typography component="p" sx={{ fontSize: 12, color: "#94a3b8", mt: 0.25 }}>
                 Supplier payment deadlines will appear here
-              </p>
-            </div>
+              </Typography>
+            </Box>
           ) : (
             notifications.map((notif) => {
               const isOverdue = notif.type === "payment_overdue";
-              const isDue = notif.type === "payment_due";
               const isStock = notif.type === "stock_alert";
 
-              let icon = <Clock size={16} className="text-amber-600" />;
-              let cardBg = "bg-amber-50/50 border-amber-200/70";
-              let badgeText = "Payment Due";
-              let badgeColor = "bg-amber-100 text-amber-800";
-
-              if (isOverdue) {
-                icon = <AlertTriangle size={16} className="text-red-600" />;
-                cardBg = "bg-red-50/50 border-red-200/70";
-                badgeText = "Overdue";
-                badgeColor = "bg-red-100 text-red-800";
-              } else if (isStock) {
-                icon = <Package size={16} className="text-blue-600" />;
-                cardBg = "bg-blue-50/50 border-blue-200/70";
-                badgeText = "Stock Alert";
-                badgeColor = "bg-blue-100 text-blue-800";
-              }
+              const colors = isOverdue ? NOTIF_COLORS.overdue : isStock ? NOTIF_COLORS.stock : NOTIF_COLORS.due;
+              const icon = isOverdue ? (
+                <AlertTriangle size={16} style={{ color: colors.icon }} />
+              ) : isStock ? (
+                <Package size={16} style={{ color: colors.icon }} />
+              ) : (
+                <Clock size={16} style={{ color: colors.icon }} />
+              );
+              const badgeText = isOverdue ? "Overdue" : isStock ? "Stock Alert" : "Payment Due";
 
               return (
-                <div
+                <Box
                   key={notif.id}
                   onClick={() => handleMarkRead(notif.id)}
-                  className={`relative p-3.5 rounded-2xl border transition-all cursor-pointer ${cardBg} ${
-                    notif.isRead ? "opacity-60 bg-white border-slate-200" : "shadow-sm"
-                  }`}
+                  sx={{
+                    position: "relative", p: 1.75, borderRadius: "16px", border: "1px solid", transition: "all 0.15s", cursor: "pointer",
+                    bgcolor: notif.isRead ? "#fff" : colors.cardBg,
+                    borderColor: notif.isRead ? "#e2e8f0" : colors.cardBorder,
+                    opacity: notif.isRead ? 0.6 : 1,
+                    boxShadow: notif.isRead ? "none" : 1,
+                  }}
                 >
-                  <div className="flex items-start gap-3">
-                    <div className="mt-0.5 shrink-0">{icon}</div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${badgeColor}`}>
+                  <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5 }}>
+                    <Box sx={{ mt: 0.25, flexShrink: 0 }}>{icon}</Box>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1, mb: 0.5 }}>
+                        <Typography component="span" sx={{ fontSize: 10, fontWeight: 700, px: 1, py: 0.25, borderRadius: "999px", bgcolor: colors.badgeBg, color: colors.badgeText }}>
                           {badgeText}
-                        </span>
+                        </Typography>
                         {notif.amount && (
-                          <span className="text-xs font-black text-slate-900">
+                          <Typography component="span" sx={{ fontSize: 12, fontWeight: 900, color: "#0f172a" }}>
                             ₹ {Number(notif.amount).toLocaleString("en-IN")}
-                          </span>
+                          </Typography>
                         )}
-                      </div>
+                      </Box>
 
-                      <h4 className="text-xs font-bold text-slate-900 leading-snug">
+                      <Typography component="h4" sx={{ fontSize: 12, fontWeight: 700, color: "#0f172a", lineHeight: 1.375 }}>
                         {notif.title}
-                      </h4>
-                      <p className="text-[11px] text-slate-600 mt-1 leading-relaxed">
+                      </Typography>
+                      <Typography component="p" sx={{ fontSize: 11, color: "#475569", mt: 0.5, lineHeight: 1.625 }}>
                         {notif.body}
-                      </p>
+                      </Typography>
 
                       {notif.supplier && (
-                        <div className="flex items-center gap-1 mt-2 text-[10px] font-semibold text-slate-500">
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 1, fontSize: 10, fontWeight: 600, color: "#64748b" }}>
                           <CreditCard size={11} />
-                          <span>Supplier: {notif.supplier}</span>
-                        </div>
+                          <Box component="span">Supplier: {notif.supplier}</Box>
+                        </Box>
                       )}
-                    </div>
-                  </div>
-                </div>
+                    </Box>
+                  </Box>
+                </Box>
               );
             })
           )}
-        </div>
+        </Box>
 
         {/* Footer */}
-        <div className="p-3 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
-          <button
+        <Box sx={{ p: 1.5, borderTop: "1px solid #f1f5f9", bgcolor: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <Box
+            component="button"
             type="button"
             onClick={async () => {
               for (const n of notifications) {
@@ -195,21 +207,22 @@ export default function NotificationsModal({ isOpen, onClose }) {
               }
               loadNotifs();
             }}
-            className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1.5 px-2 py-1"
+            sx={{ fontSize: 12, fontWeight: 700, color: "#4f46e5", display: "flex", alignItems: "center", gap: 0.75, px: 1, py: 0.5, "&:hover": { color: "#4338ca" } }}
           >
             <CheckCheck size={14} />
-            <span>Mark all as read</span>
-          </button>
+            <Box component="span">Mark all as read</Box>
+          </Box>
 
-          <button
+          <Box
+            component="button"
             type="button"
             onClick={onClose}
-            className="text-xs font-bold text-slate-600 bg-white border border-slate-200 px-4 py-1.5 rounded-xl shadow-sm hover:bg-slate-100"
+            sx={{ fontSize: 12, fontWeight: 700, color: "#475569", bgcolor: "#fff", border: "1px solid #e2e8f0", px: 2, py: 0.75, borderRadius: "12px", boxShadow: 1, "&:hover": { bgcolor: "#f1f5f9" } }}
           >
             Close
-          </button>
-        </div>
-      </div>
-    </div>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
   );
 }

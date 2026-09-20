@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Search, X, Package, Users, FileText, Store } from "lucide-react";
+import { Box, Typography } from "@mui/material";
 import api from "../../api/axios";
 
 const money = (n) =>
@@ -83,48 +84,49 @@ export default function GlobalSearchModal({ onClose, onNavigate }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[85] bg-white flex flex-col">
-      <div className="flex items-center gap-2 p-3 border-b border-slate-100 shrink-0">
-        <div className="flex-1 flex items-center gap-2 bg-slate-100 rounded-2xl px-3 py-2.5">
-          <Search size={16} className="text-slate-400 shrink-0" />
-          <input
+    <Box sx={{ position: "fixed", inset: 0, zIndex: 85, bgcolor: "#fff", display: "flex", flexDirection: "column" }}>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1, p: 1.5, borderBottom: "1px solid #f1f5f9", flexShrink: 0 }}>
+        <Box sx={{ flex: 1, display: "flex", alignItems: "center", gap: 1, bgcolor: "#f1f5f9", borderRadius: "16px", px: 1.5, py: 1.25 }}>
+          <Search size={16} style={{ color: "#94a3b8", flexShrink: 0 }} />
+          <Box
+            component="input"
             ref={inputRef}
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search products, customers, invoices, suppliers..."
-            className="flex-1 min-w-0 bg-transparent text-xs font-bold text-slate-800 outline-none"
+            sx={{ flex: 1, minWidth: 0, bgcolor: "transparent", fontSize: 12, fontWeight: 700, color: "#1e293b", outline: "none" }}
           />
-        </div>
-        <button type="button" onClick={onClose} className="p-2 text-slate-500 shrink-0" aria-label="Close search">
+        </Box>
+        <Box component="button" type="button" onClick={onClose} sx={{ p: 1, color: "#64748b", flexShrink: 0 }} aria-label="Close search">
           <X size={20} />
-        </button>
-      </div>
+        </Box>
+      </Box>
 
-      <div className="flex-1 overflow-y-auto p-3">
+      <Box sx={{ flex: 1, overflowY: "auto", p: 1.5 }}>
         {!hasQuery ? (
-          <p className="text-center text-xs text-slate-400 py-10">Type at least 2 characters to search</p>
+          <Typography component="p" sx={{ textAlign: "center", fontSize: 12, color: "#94a3b8", py: 5 }}>Type at least 2 characters to search</Typography>
         ) : loading ? (
-          <p className="text-center text-xs text-slate-400 py-10">Searching...</p>
+          <Typography component="p" sx={{ textAlign: "center", fontSize: 12, color: "#94a3b8", py: 5 }}>Searching...</Typography>
         ) : totalResults === 0 ? (
-          <p className="text-center text-xs text-slate-400 py-10">No results for &quot;{query}&quot;</p>
+          <Typography component="p" sx={{ textAlign: "center", fontSize: 12, color: "#94a3b8", py: 5 }}>No results for &quot;{query}&quot;</Typography>
         ) : (
-          <div className="space-y-4">
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
             {results.products.length > 0 && (
               <ResultSection title="Products" icon={Package} onSeeAll={() => goTo("inventory")}>
                 {results.products.map((p) => (
-                  <div
+                  <Box
                     key={p.id}
-                    className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-100"
+                    sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", p: 1.25, borderRadius: "12px", bgcolor: "#f8fafc", border: "1px solid #f1f5f9" }}
                   >
-                    <div className="min-w-0">
-                      <p className="text-xs font-bold text-slate-800 truncate">{p.name}</p>
-                      <p className="text-[10px] text-slate-400">{p.code || p.sku}</p>
-                    </div>
-                    <span className="text-xs font-black text-indigo-600 shrink-0 ml-2">
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography component="p" sx={{ fontSize: 12, fontWeight: 700, color: "#1e293b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</Typography>
+                      <Typography component="p" sx={{ fontSize: 10, color: "#94a3b8" }}>{p.code || p.sku}</Typography>
+                    </Box>
+                    <Typography component="span" sx={{ fontSize: 12, fontWeight: 900, color: "#4f46e5", flexShrink: 0, ml: 1 }}>
                       {money(p.selling_price)}
-                    </span>
-                  </div>
+                    </Typography>
+                  </Box>
                 ))}
               </ResultSection>
             )}
@@ -132,15 +134,15 @@ export default function GlobalSearchModal({ onClose, onNavigate }) {
             {results.customers.length > 0 && (
               <ResultSection title="Customers" icon={Users} onSeeAll={() => goTo("customers")}>
                 {results.customers.map((c) => (
-                  <div
+                  <Box
                     key={c.id}
-                    className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-100"
+                    sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", p: 1.25, borderRadius: "12px", bgcolor: "#f8fafc", border: "1px solid #f1f5f9" }}
                   >
-                    <div className="min-w-0">
-                      <p className="text-xs font-bold text-slate-800 truncate">{c.name}</p>
-                      <p className="text-[10px] text-slate-400">{c.phone || c.email || "—"}</p>
-                    </div>
-                  </div>
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography component="p" sx={{ fontSize: 12, fontWeight: 700, color: "#1e293b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.name}</Typography>
+                      <Typography component="p" sx={{ fontSize: 10, color: "#94a3b8" }}>{c.phone || c.email || "—"}</Typography>
+                    </Box>
+                  </Box>
                 ))}
               </ResultSection>
             )}
@@ -148,16 +150,16 @@ export default function GlobalSearchModal({ onClose, onNavigate }) {
             {results.sales.length > 0 && (
               <ResultSection title="Invoices" icon={FileText} onSeeAll={() => goTo("sales")}>
                 {results.sales.map((s) => (
-                  <div
+                  <Box
                     key={s.id}
-                    className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-100"
+                    sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", p: 1.25, borderRadius: "12px", bgcolor: "#f8fafc", border: "1px solid #f1f5f9" }}
                   >
-                    <div className="min-w-0">
-                      <p className="text-xs font-bold text-slate-800 truncate">{s.invoice_no}</p>
-                      <p className="text-[10px] text-slate-400 truncate">{s.customer?.name || "Walking customer"}</p>
-                    </div>
-                    <span className="text-xs font-black text-slate-900 shrink-0 ml-2">{money(s.grand_total)}</span>
-                  </div>
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography component="p" sx={{ fontSize: 12, fontWeight: 700, color: "#1e293b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.invoice_no}</Typography>
+                      <Typography component="p" sx={{ fontSize: 10, color: "#94a3b8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.customer?.name || "Walking customer"}</Typography>
+                    </Box>
+                    <Typography component="span" sx={{ fontSize: 12, fontWeight: 900, color: "#0f172a", flexShrink: 0, ml: 1 }}>{money(s.grand_total)}</Typography>
+                  </Box>
                 ))}
               </ResultSection>
             )}
@@ -165,38 +167,38 @@ export default function GlobalSearchModal({ onClose, onNavigate }) {
             {results.suppliers.length > 0 && (
               <ResultSection title="Suppliers" icon={Store} onSeeAll={() => goTo("suppliers")}>
                 {results.suppliers.map((s) => (
-                  <div
+                  <Box
                     key={s.id}
-                    className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-100"
+                    sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", p: 1.25, borderRadius: "12px", bgcolor: "#f8fafc", border: "1px solid #f1f5f9" }}
                   >
-                    <div className="min-w-0">
-                      <p className="text-xs font-bold text-slate-800 truncate">{s.name}</p>
-                      <p className="text-[10px] text-slate-400">{s.phone || s.gstin || "—"}</p>
-                    </div>
-                  </div>
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography component="p" sx={{ fontSize: 12, fontWeight: 700, color: "#1e293b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.name}</Typography>
+                      <Typography component="p" sx={{ fontSize: 10, color: "#94a3b8" }}>{s.phone || s.gstin || "—"}</Typography>
+                    </Box>
+                  </Box>
                 ))}
               </ResultSection>
             )}
-          </div>
+          </Box>
         )}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }
 
 function ResultSection({ title, icon: Icon, onSeeAll, children }) {
   return (
-    <div>
-      <div className="flex items-center justify-between mb-1.5 px-1">
-        <div className="flex items-center gap-1.5">
-          <Icon size={13} className="text-indigo-600" />
-          <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-wider">{title}</h4>
-        </div>
-        <button type="button" onClick={onSeeAll} className="text-[10px] font-bold text-indigo-600">
+    <Box>
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 0.75, px: 0.5 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+          <Icon size={13} style={{ color: "#4f46e5" }} />
+          <Typography component="h4" sx={{ fontSize: 10, fontWeight: 900, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>{title}</Typography>
+        </Box>
+        <Box component="button" type="button" onClick={onSeeAll} sx={{ fontSize: 10, fontWeight: 700, color: "#4f46e5" }}>
           See All
-        </button>
-      </div>
-      <div className="space-y-1.5">{children}</div>
-    </div>
+        </Box>
+      </Box>
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>{children}</Box>
+    </Box>
   );
 }
