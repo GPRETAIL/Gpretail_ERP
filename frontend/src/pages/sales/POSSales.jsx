@@ -3193,7 +3193,7 @@ const POSSales = () => {
                                 aria-label={isLineEditable ? "Lock row editing" : "Edit row"}
                                 title={isLineEditable ? "Lock row editing" : "Edit qty, price and discount"}
                               >
-                                <Pencil className="h-5 w-5" style={{ color: "#334155" }} />
+                                <Pencil size={20} style={{ color: "#334155" }} />
                               </IconButton>
                               <IconButton
                                 onClick={() => openSalesManDialog(line)}
@@ -3202,7 +3202,7 @@ const POSSales = () => {
                                 aria-label="Assign sales man"
                                 title={line.salesManId ? `Sales Man ID: ${line.salesManId}` : "Assign sales man"}
                               >
-                                <UserRound className="h-5 w-5" style={{ color: "#334155" }} />
+                                <UserRound size={20} style={{ color: "#334155" }} />
                               </IconButton>
                               <IconButton
                                 onClick={() => handleRemoveLine(line.lineId)}
@@ -3210,7 +3210,7 @@ const POSSales = () => {
                                 sx={{ height: 36, width: 36, flexShrink: 0, borderRadius: "3.5px", p: 0.75 }}
                                 aria-label="Remove line"
                               >
-                                <Trash2 className="h-5 w-5" style={{ color: "#334155" }} />
+                                <Trash2 size={20} style={{ color: "#334155" }} />
                               </IconButton>
                             </Stack>
                           )}
@@ -3384,7 +3384,7 @@ const POSSales = () => {
                           sx={{ color: "primary.main", "&:hover": { color: "primary.dark" } }}
                           title={latestPosDocument.type === "return" ? "Print last saved return" : "Print last saved bill"}
                         >
-                          <Printer className="h-4 w-4" />
+                          <Printer size={16} />
                         </IconButton>
                         <IconButton
                           type="button"
@@ -3420,7 +3420,7 @@ const POSSales = () => {
                                   : "Delete last saved bill"
                           }
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 size={16} />
                         </IconButton>
                       </Stack>
                     </Box>
@@ -3629,7 +3629,7 @@ const POSSales = () => {
                 aria-label="Close sales man dialog"
                 sx={{ color: "text.disabled", "&:hover": { color: "text.secondary" } }}
               >
-                <X className="h-4 w-4" />
+                <X size={16} />
               </IconButton>
             </Stack>
 
@@ -3697,7 +3697,7 @@ const POSSales = () => {
                 aria-label="Close quick customer dialog"
                 sx={{ color: "text.disabled", "&:hover": { color: "text.secondary" } }}
               >
-                <X className="h-4 w-4" />
+                <X size={16} />
               </IconButton>
             </Stack>
 
@@ -3970,7 +3970,7 @@ const POSSales = () => {
                 aria-label="Close discount dialog"
                 sx={{ color: "text.disabled", "&:hover": { color: "text.secondary" } }}
               >
-                <X className="h-4 w-4" />
+                <X size={16} />
               </IconButton>
             </Stack>
 
@@ -4117,7 +4117,7 @@ const POSSales = () => {
                 aria-label="Close payment dialog"
                 sx={{ color: "text.disabled", "&:hover": { color: "text.secondary" } }}
               >
-                <X className="h-4 w-4" />
+                <X size={16} />
               </IconButton>
             </Stack>
 
@@ -4283,7 +4283,7 @@ const POSSales = () => {
                 onClick={() => handleSaveSale({ shouldPrint: false })}
                 disabled={saving}
                 className="glass-btn glass-btn-success"
-                startIcon={<Save className="h-4 w-4" />}
+                startIcon={<Save size={16} />}
               >
                 {saving ? "Saving..." : "Save"}
               </Button>
@@ -4292,7 +4292,7 @@ const POSSales = () => {
                 onClick={() => handleSaveSale({ shouldPrint: true })}
                 disabled={saving}
                 className="glass-btn glass-btn-primary"
-                startIcon={<Printer className="h-4 w-4" />}
+                startIcon={<Printer size={16} />}
               >
                 {saving ? "Saving..." : "Save & Print"}
               </Button>

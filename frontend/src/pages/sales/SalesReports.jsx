@@ -2560,7 +2560,7 @@ const SalesReports = () => {
             aria-label="Back to sales"
             sx={{ color: "text.secondary", "&:hover": { color: "text.primary" } }}
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft size={16} />
           </IconButton>
           <Typography component="h1" sx={{ display: "flex", alignItems: "center", gap: 0.5, fontSize: { xs: 12.25, md: 14 }, fontWeight: 600 }}>
             {selectedReport ? (
@@ -2596,7 +2596,7 @@ const SalesReports = () => {
                   onClick={() => setSalesSummaryDrawerOpen(true)}
                   variant="outlined"
                   size="small"
-                  startIcon={<Layers className="h-3.5 w-3.5" />}
+                  startIcon={<Layers size={14} />}
                   sx={{ fontSize: 10.5, fontWeight: 600 }}
                 >
                   Summary layouts

@@ -23,7 +23,7 @@ export function TodaysSalesCard({ summary = {}, loading, privacyMode }) {
         <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
           Today's Sales
         </Typography>
-        <ShoppingCart className="h-5 w-5" style={{ color: "inherit" }} />
+        <ShoppingCart size={20} style={{ color: "inherit" }} />
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
         {loading ? "..." : formatCurrency(summary.today_sales_amount)}
@@ -48,7 +48,7 @@ export function NetSalesCard({ summary = {}, loading, privacyMode }) {
         <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
           Net Sales (Period)
         </Typography>
-        <Wallet className="h-5 w-5" style={{ color: "inherit" }} />
+        <Wallet size={20} style={{ color: "inherit" }} />
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "success.main", ...blurSx(privacyMode) }}>
         {loading ? "..." : formatCurrency(summary.net_sales_amount)}
@@ -73,7 +73,7 @@ export function ReturnsCard({ summary = {}, performance = {}, loading, privacyMo
         <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
           Returns (Period)
         </Typography>
-        <RotateCcw className="h-5 w-5" style={{ color: "inherit" }} />
+        <RotateCcw size={20} style={{ color: "inherit" }} />
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
         {loading ? "..." : formatCurrency(summary.returns_amount)}
@@ -94,7 +94,7 @@ export function CreditPendingCard({ summary = {}, performance = {}, loading, pri
         <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
           Credit Pending
         </Typography>
-        <CreditCard className="h-5 w-5" style={{ color: "inherit" }} />
+        <CreditCard size={20} style={{ color: "inherit" }} />
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "warning.main", ...blurSx(privacyMode) }}>
         {loading ? "..." : formatCurrency(summary.credit_pending_amount)}

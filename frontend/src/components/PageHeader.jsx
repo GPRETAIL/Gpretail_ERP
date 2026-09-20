@@ -23,7 +23,7 @@ const PageHeader = ({ title, onBack, actions }) => (
     <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
       {onBack && (
         <IconButton size="small" onClick={onBack} aria-label="Back" sx={{ color: "text.secondary" }}>
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft size={16} />
         </IconButton>
       )}
       <Typography component="h1" sx={{ fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 0.5 }}>

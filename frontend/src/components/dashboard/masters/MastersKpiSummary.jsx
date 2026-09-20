@@ -22,7 +22,7 @@ export function TotalProductsCard({ summary = {}, loading, privacyMode }) {
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
         <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Total Products</Typography>
         <Box sx={{ color: "primary.main", display: "inline-flex" }}>
-          <Package className="h-5 w-5" />
+          <Package size={20} />
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
@@ -43,7 +43,7 @@ export function BrandsCategoriesCard({ summary = {}, loading, privacyMode }) {
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
         <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Brands & Categories</Typography>
         <Box sx={{ color: "#6366f1", display: "inline-flex" }}>
-          <Tag className="h-5 w-5" />
+          <Tag size={20} />
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "#6366f1", ...blurSx(privacyMode) }}>
@@ -64,7 +64,7 @@ export function SuppliersCard({ summary = {}, loading, privacyMode }) {
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
         <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Suppliers</Typography>
         <Box sx={{ color: "success.main", display: "inline-flex" }}>
-          <Truck className="h-5 w-5" />
+          <Truck size={20} />
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
@@ -84,7 +84,7 @@ export function DataQualityGapsCard({ summary = {}, loading, privacyMode }) {
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
         <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Data Quality Gaps</Typography>
         <Box sx={{ color: "warning.main", display: "inline-flex" }}>
-          <FolderTree className="h-5 w-5" />
+          <FolderTree size={20} />
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "warning.main", ...blurSx(privacyMode) }}>

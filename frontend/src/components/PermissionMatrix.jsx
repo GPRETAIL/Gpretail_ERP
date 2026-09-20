@@ -33,7 +33,7 @@ const FragmentSection = ({
           aria-label={`${isExpanded ? "Collapse" : "Expand"} ${section.name}`}
           sx={{ display: "flex", width: "100%", alignItems: "center", gap: 1, justifyContent: "flex-start", textAlign: "left" }}
         >
-          {isExpanded ? <ChevronDown className="h-4 w-4" style={{ color: "inherit", opacity: 0.7 }} /> : <ChevronRight className="h-4 w-4" style={{ color: "inherit", opacity: 0.7 }} />}
+          {isExpanded ? <ChevronDown size={16} style={{ color: "inherit", opacity: 0.7 }} /> : <ChevronRight size={16} style={{ color: "inherit", opacity: 0.7 }} />}
           <Box component="span">{section.name}</Box>
         </ButtonBase>
       </TableCell>

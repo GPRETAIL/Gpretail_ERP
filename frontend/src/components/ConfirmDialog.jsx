@@ -27,7 +27,7 @@ const ConfirmDialog = ({
       <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
         {danger && (
           <Box sx={{ color: "error.main", display: "inline-flex", flexShrink: 0 }}>
-            <Trash2 className="h-4 w-4" />
+            <Trash2 size={16} />
           </Box>
         )}
         <Typography sx={{ fontSize: 13, fontWeight: 700 }}>{title}</Typography>

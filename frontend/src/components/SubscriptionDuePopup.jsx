@@ -154,7 +154,7 @@ export default function SubscriptionDuePopup() {
       }}
     >
       <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1 }}>
-        <AlertTriangle className="h-4 w-4 shrink-0" style={{ color: "inherit", marginTop: 2 }} />
+        <AlertTriangle size={16} style={{ flexShrink: 0, color: "inherit", marginTop: 2 }} />
         <Box sx={{ minWidth: 0, flex: 1 }}>
           <Typography sx={{ fontSize: 14, fontWeight: 600, color: "warning.dark" }}>
             {pushedNotice ? pushedNotice.subject : status?.onTrial ? "Trial" : "Subscription due"}
@@ -176,7 +176,7 @@ export default function SubscriptionDuePopup() {
           size="small"
           sx={{ color: "warning.dark", "&:hover": { bgcolor: (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.24 : 0.15) } }}
         >
-          <X className="h-3.5 w-3.5" />
+          <X size={14} />
         </IconButton>
       </Box>
     </Box>

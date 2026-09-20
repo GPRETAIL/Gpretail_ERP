@@ -11,7 +11,7 @@ export default function AnalyticalLaunchpad({ quickLinks = [] }) {
     <Box sx={{ height: "100%", borderRadius: "10.5px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", p: 2.5, boxShadow: 1 }}>
       <Stack direction="row" spacing={1} sx={{ mb: 2, alignItems: "center" }}>
         <Box sx={{ color: "primary.main", display: "inline-flex" }}>
-          <Compass className="h-4 w-4" />
+          <Compass size={16} />
         </Box>
         <Typography component="h3" sx={{ fontSize: 13, fontWeight: 700, color: "text.primary" }}>Analytics Launchpad</Typography>
       </Stack>
@@ -37,7 +37,7 @@ export default function AnalyticalLaunchpad({ quickLinks = [] }) {
                 ".group:hover &": { transform: "translateX(2px)", color: "primary.main" },
               }}
             >
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight size={16} />
             </Box>
           </ButtonBase>
         ))}

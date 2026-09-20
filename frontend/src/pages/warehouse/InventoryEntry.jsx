@@ -230,7 +230,7 @@ const AttrSelect = ({
         {open && (
           <Box sx={{ position: "absolute", zIndex: 50, left: 0, top: "100%", mt: 0.25, width: "100%", bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "3.5px", boxShadow: 4 }}>
             <Stack direction="row" spacing={0.5} sx={{ p: 0.5, borderBottom: 1, borderColor: "divider", alignItems: "center" }}>
-              <Search size={12} style={{flexShrink: 0}} style={{ color: "#9ca3af" }} />
+              <Search size={12} style={{ flexShrink: 0, color: "#9ca3af" }} />
               <Box
                 component="input"
                 autoFocus
@@ -472,7 +472,7 @@ const SearchableSizeSelect = ({ value, onChange, sizes, sizeGroups, onJump }) =>
       {open && (
         <Box sx={{ position: "absolute", zIndex: 160, left: 0, top: "100%", mt: 0.25, width: "100%", bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "3.5px", boxShadow: 4, minWidth: 160 }}>
           <Stack direction="row" spacing={0.5} sx={{ p: 0.5, borderBottom: 1, borderColor: "divider", alignItems: "center" }}>
-            <Search size={12} style={{flexShrink: 0}} style={{ color: "#9ca3af" }} />
+            <Search size={12} style={{ flexShrink: 0, color: "#9ca3af" }} />
             <Box
               component="input"
               autoFocus
@@ -1679,7 +1679,7 @@ const InventoryEntry = () => {
             type="button"
             aria-label="Back to previous page"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft size={16} />
           </IconButton>
           <Typography component="h1" sx={{ fontSize: 12.25, fontWeight: 600, display: "flex", alignItems: "center", gap: 0.5 }}>
             <Button
@@ -1866,7 +1866,7 @@ const InventoryEntry = () => {
                   aria-label={summaryExpanded ? "Collapse inventory linked details" : "Expand inventory linked details"}
                   title={summaryExpanded ? "Collapse details" : "Expand details"}
                 >
-                  <ChevronDown className="h-4 w-4" style={{ transition: "transform 0.15s", transform: summaryExpanded ? "rotate(180deg)" : undefined }} />
+                  <ChevronDown size={16} style={{ transition: "transform 0.15s", transform: summaryExpanded ? "rotate(180deg)" : undefined }} />
                 </Box>
               </Stack>
 

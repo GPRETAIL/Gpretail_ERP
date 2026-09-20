@@ -158,7 +158,7 @@ export default function CrmDashboardTabPane({ active, fromDate, toDate, companyI
       >
         <Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
           <Box sx={{ color: "error.main", display: "inline-flex" }}>
-            <AlertTriangle className="h-5 w-5" />
+            <AlertTriangle size={20} />
           </Box>
           <Typography sx={{ fontSize: 13, color: "error.main" }}>{error}</Typography>
         </Stack>

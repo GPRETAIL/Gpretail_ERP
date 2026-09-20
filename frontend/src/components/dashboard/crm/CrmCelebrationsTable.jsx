@@ -17,7 +17,7 @@ export default function CrmCelebrationsTable({ upcomingEvents = [] }) {
       <Stack direction="row" sx={{ mb: 1.5, alignItems: "center", justifyContent: "space-between" }}>
         <Typography component="h3" sx={{ display: "flex", alignItems: "center", gap: 1, fontSize: 13, fontWeight: 700, color: "text.primary" }}>
           <Box sx={{ color: "#f43f5e", display: "inline-flex" }}>
-            <Cake className="h-4 w-4" />
+            <Cake size={16} />
           </Box>
           Celebrations & Loyalty Engagement
         </Typography>

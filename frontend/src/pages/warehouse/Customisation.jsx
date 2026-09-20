@@ -642,7 +642,7 @@ export default function WarehouseCustomisation() {
                   onClick={handleReset}
                   variant="outlined"
                   color="inherit"
-                  startIcon={<RotateCcw className="h-4 w-4" />}
+                  startIcon={<RotateCcw size={16} />}
                   sx={{ borderRadius: "7px", fontSize: 12.25, fontWeight: 500 }}
                 >
                   Reset to default
@@ -651,7 +651,7 @@ export default function WarehouseCustomisation() {
                   type="button"
                   onClick={handleSave}
                   disabled={saving || loading}
-                  startIcon={<Save className="h-4 w-4" />}
+                  startIcon={<Save size={16} />}
                   sx={{ borderRadius: "7px", fontSize: 12.25, fontWeight: 500, opacity: saving || loading ? 0.6 : 1 }}
                 >
                   {saving ? "Saving..." : "Save"}
@@ -1077,7 +1077,7 @@ export default function WarehouseCustomisation() {
                     {settings.labelWidthMm}mm x {settings.labelHeightMm}mm label preview
                   </Typography>
                 </Box>
-                <Eye className="h-4 w-4" style={{ color: "#9ca3af" }} />
+                <Eye size={16} style={{ color: "#9ca3af" }} />
               </Stack>
             </Box>
 

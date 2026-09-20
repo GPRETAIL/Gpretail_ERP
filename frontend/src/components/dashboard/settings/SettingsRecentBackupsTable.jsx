@@ -14,7 +14,7 @@ export default function SettingsRecentBackupsTable({ recentBackups = [] }) {
       <Stack direction="row" sx={{ mb: 1.5, alignItems: "center", justifyContent: "space-between" }}>
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           <Box sx={{ color: "primary.main", display: "inline-flex" }}>
-            <History className="h-4 w-4" />
+            <History size={16} />
           </Box>
           <Typography component="h3" sx={{ fontSize: 13, fontWeight: 700, color: "text.primary" }}>Recent Backups</Typography>
         </Stack>

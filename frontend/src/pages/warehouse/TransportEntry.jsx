@@ -703,23 +703,23 @@ const TransportEntry = () => {
           </Stack>
         </Stack>
         <Stack direction="row" spacing={0.75} sx={{ flexWrap: "wrap", alignItems: "center", justifyContent: "flex-end", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>
-          <Button className="topbar-action-btn topbar-action-new" onClick={handleNew} startIcon={<PlusCircle className="h-3.5 w-3.5" />} sx={{ fontSize: 10.5 }}>
+          <Button className="topbar-action-btn topbar-action-new" onClick={handleNew} startIcon={<PlusCircle size={14} />} sx={{ fontSize: 10.5 }}>
             New
           </Button>
           {!isViewMode && (
             <>
               <Box component="span">|</Box>
-              <Button className="glass-btn glass-btn-primary" onClick={handleSaveAndNext} disabled={saving} startIcon={<Save className="h-3.5 w-3.5" />} sx={{ fontSize: 10.5 }}>
+              <Button className="glass-btn glass-btn-primary" onClick={handleSaveAndNext} disabled={saving} startIcon={<Save size={14} />} sx={{ fontSize: 10.5 }}>
                 Save & Next
               </Button>
               <Box component="span">|</Box>
-              <Button className="glass-btn glass-btn-success" onClick={handleSave} disabled={saving} startIcon={<Save className="h-3.5 w-3.5" />} sx={{ fontSize: 10.5 }}>
+              <Button className="glass-btn glass-btn-success" onClick={handleSave} disabled={saving} startIcon={<Save size={14} />} sx={{ fontSize: 10.5 }}>
                 {saving ? "Saving..." : "Save"}
               </Button>
             </>
           )}
           <Box component="span">|</Box>
-          <Button className="glass-btn glass-btn-primary" onClick={handleSearchClick} startIcon={<Search className="h-3.5 w-3.5" />} sx={{ fontSize: 10.5 }}>
+          <Button className="glass-btn glass-btn-primary" onClick={handleSearchClick} startIcon={<Search size={14} />} sx={{ fontSize: 10.5 }}>
             Search
           </Button>
         </Stack>
@@ -1077,7 +1077,7 @@ const TransportEntry = () => {
                       htmlFor="fileUpload"
                       sx={{ display: "flex", cursor: "pointer", alignItems: "center", justifyContent: "center", borderRadius: "1.75px", bgcolor: "#22c55e", px: 1.5, py: 0.5, fontSize: 11, color: "#fff", transition: "background-color 0.15s", "&:hover": { bgcolor: "#16a34a" } }}
                     >
-                      <Upload className="mr-1 h-3.5 w-3.5" /> Upload Files
+                      <Upload size={14} style={{ marginRight: 4 }} /> Upload Files
                     </Box>
                     <Box
                       component="input"

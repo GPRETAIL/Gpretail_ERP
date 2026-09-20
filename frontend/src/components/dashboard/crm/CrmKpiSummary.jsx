@@ -24,7 +24,7 @@ export function TotalCustomersCard({ summary = {}, loading, privacyMode }) {
           Total Customers
         </Typography>
         <Box sx={{ color: "primary.main", display: "inline-flex" }}>
-          <Users className="h-5 w-5" />
+          <Users size={20} />
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
@@ -47,7 +47,7 @@ export function CustomerOrdersCard({ summary = {}, loading, privacyMode }) {
           Customer Orders
         </Typography>
         <Box sx={{ color: "#4f46e5", display: "inline-flex" }}>
-          <ShoppingBag className="h-5 w-5" />
+          <ShoppingBag size={20} />
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "#4f46e5", ...blurSx(privacyMode) }}>
@@ -70,7 +70,7 @@ export function CustomerReceivablesCard({ summary = {}, loading, privacyMode }) 
           Customer Receivables
         </Typography>
         <Box sx={{ color: "warning.main", display: "inline-flex" }}>
-          <CreditCard className="h-5 w-5" />
+          <CreditCard size={20} />
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
@@ -93,7 +93,7 @@ export function LoyaltyPointsCard({ summary = {}, loading, privacyMode }) {
           Loyalty Points
         </Typography>
         <Box sx={{ color: "#9333ea", display: "inline-flex" }}>
-          <Award className="h-5 w-5" />
+          <Award size={20} />
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "#9333ea", ...blurSx(privacyMode) }}>

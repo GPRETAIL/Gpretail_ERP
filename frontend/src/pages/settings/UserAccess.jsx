@@ -611,7 +611,7 @@ const UserAccess = () => {
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", bgcolor: "background.paper", px: 2, py: 1, boxShadow: 1 }}>
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           <IconButton size="small" onClick={handleBackClick} sx={{ color: "text.secondary" }} aria-label="Back">
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft size={16} />
           </IconButton>
           <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: 13, fontWeight: 600 }}>
             <Button type="button" variant="text" onClick={() => navigate("/user-access")} sx={{ minWidth: "auto", p: 0, fontSize: 13, fontWeight: 600 }}>
@@ -624,7 +624,7 @@ const UserAccess = () => {
 
         <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>
           <Button className="topbar-action-btn topbar-action-new" onClick={handleNew} type="button">
-            <PlusCircle className="mr-1 h-4 w-4" /> New
+            <PlusCircle size={16} style={{ marginRight: 4 }} /> New
           </Button>
           <Box component="span">|</Box>
           {!showSearchPage ? (
@@ -635,13 +635,13 @@ const UserAccess = () => {
                 onClick={activeTab === "user" ? handleSaveUser : handleSaveGroup}
                 disabled={saving}
               >
-                <Save className="mr-1 h-4 w-4" /> {saving ? "Saving..." : "Save"}
+                <Save size={16} style={{ marginRight: 4 }} /> {saving ? "Saving..." : "Save"}
               </Button>
               <Box component="span">|</Box>
             </>
           ) : null}
           <Button type="button" className="glass-btn glass-btn-primary flex items-center" onClick={handleSearchClick}>
-            <Search className="mr-1 h-4 w-4" /> Search
+            <Search size={16} style={{ marginRight: 4 }} /> Search
           </Button>
         </Stack>
       </Stack>
@@ -663,7 +663,7 @@ const UserAccess = () => {
                   className="glass-btn glass-btn-secondary flex items-center"
                   title="Group your stores together to assign store access in bulk"
                 >
-                  <Store className="mr-1 h-4 w-4" /> Store Groups (which stores)
+                  <Store size={16} style={{ marginRight: 4 }} /> Store Groups (which stores)
                 </Button>
               ) : null}
             </Stack>
@@ -685,7 +685,7 @@ const UserAccess = () => {
                     title="Edit"
                     sx={{ minWidth: "auto" }}
                   >
-                    <Pencil className="h-3.5 w-3.5" />
+                    <Pencil size={14} />
                   </Button>
                   {activeTab === "user" && String(row.role || "").toLowerCase() === "admin" ? null : (
                     <Button
@@ -695,7 +695,7 @@ const UserAccess = () => {
                       title="Delete"
                       sx={{ minWidth: "auto" }}
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      <Trash2 size={14} />
                     </Button>
                   )}
                   {activeTab === "user" && row.login_status === "logged_in" ? (
@@ -706,7 +706,7 @@ const UserAccess = () => {
                       title="Logout"
                       sx={{ minWidth: "auto" }}
                     >
-                      <LogOut className="h-3.5 w-3.5" />
+                      <LogOut size={14} />
                     </Button>
                   ) : null}
                 </Stack>

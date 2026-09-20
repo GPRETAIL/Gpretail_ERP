@@ -24,7 +24,7 @@ export function TotalStockUnitsCard({ summary = {}, loading, privacyMode }) {
           Total Stock Units
         </Typography>
         <Box sx={{ color: "primary.main", display: "inline-flex" }}>
-          <Package className="h-5 w-5" />
+          <Package size={20} />
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
@@ -47,7 +47,7 @@ export function TotalStockValueCard({ summary = {}, loading, privacyMode }) {
           Total Stock Value
         </Typography>
         <Box sx={{ color: "success.main", display: "inline-flex" }}>
-          <TrendingUp className="h-5 w-5" />
+          <TrendingUp size={20} />
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "success.main", ...blurSx(privacyMode) }}>
@@ -70,7 +70,7 @@ export function IncomingGoodsCard({ summary = {}, loading, privacyMode }) {
           Incoming Goods
         </Typography>
         <Box sx={{ color: "info.main", display: "inline-flex" }}>
-          <ArrowDownRight className="h-5 w-5" />
+          <ArrowDownRight size={20} />
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
@@ -95,7 +95,7 @@ export function StockOutwardCard({ summary = {}, loading, privacyMode }) {
           Stock Outward
         </Typography>
         <Box sx={{ color: "#9333ea", display: "inline-flex" }}>
-          <ArrowUpRight className="h-5 w-5" />
+          <ArrowUpRight size={20} />
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>

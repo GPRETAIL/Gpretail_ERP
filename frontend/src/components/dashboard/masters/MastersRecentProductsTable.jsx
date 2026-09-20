@@ -12,7 +12,7 @@ export default function MastersRecentProductsTable({ recentProducts = [] }) {
       <Stack direction="row" sx={{ mb: 1.5, alignItems: "center", justifyContent: "space-between" }}>
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           <Box sx={{ color: "primary.main", display: "inline-flex" }}>
-            <Clock className="h-4 w-4" />
+            <Clock size={16} />
           </Box>
           <Typography component="h3" sx={{ fontSize: 13, fontWeight: 700, color: "text.primary" }}>Recently Added Products</Typography>
         </Stack>

@@ -8,7 +8,7 @@ export default function FinanceTrendChart({ trendChart = [] }) {
       <Stack direction="row" sx={{ mb: 2, alignItems: "center", justifyContent: "space-between" }}>
         <Typography component="h3" sx={{ display: "flex", alignItems: "center", gap: 1, fontSize: 13, fontWeight: 700, color: "text.primary" }}>
           <Box sx={{ color: "primary.main", display: "inline-flex" }}>
-            <BarChart3 className="h-4 w-4" />
+            <BarChart3 size={16} />
           </Box>
           Purchases vs Payments Timeline
         </Typography>

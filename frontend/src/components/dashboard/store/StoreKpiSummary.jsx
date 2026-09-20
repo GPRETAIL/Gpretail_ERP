@@ -27,7 +27,7 @@ export function StoresCard({ summary = {}, loading, privacyMode }) {
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
         <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Stores</Typography>
         <Box sx={{ color: "primary.main", display: "inline-flex" }}>
-          <StoreIcon className="h-5 w-5" />
+          <StoreIcon size={20} />
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
@@ -48,7 +48,7 @@ export function ConsolidatedSalesCard({ summary = {}, loading, privacyMode }) {
           Consolidated Sales
         </Typography>
         <Box sx={{ color: "success.main", display: "inline-flex" }}>
-          <BarChart3 className="h-5 w-5" />
+          <BarChart3 size={20} />
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "success.main", ...blurSx(privacyMode) }}>
@@ -67,7 +67,7 @@ export function ConsolidatedStockValueCard({ summary = {}, loading, privacyMode 
           Consolidated Stock Value
         </Typography>
         <Box sx={{ color: "#9333ea", display: "inline-flex" }}>
-          <Boxes className="h-5 w-5" />
+          <Boxes size={20} />
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
@@ -85,7 +85,7 @@ export function ActiveStaffCard({ summary = {}, loading, privacyMode }) {
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
         <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Active Staff</Typography>
         <Box sx={{ color: "warning.main", display: "inline-flex" }}>
-          <Users className="h-5 w-5" />
+          <Users size={20} />
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>

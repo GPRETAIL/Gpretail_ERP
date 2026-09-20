@@ -1332,7 +1332,7 @@ const PurchaseReturn = () => {
                                   aria-label={`Remove ${row.barcode}`}
                                   sx={{ color: "error.main", border: 0, bgcolor: "transparent", cursor: "pointer", display: "flex", "&:hover": { color: "error.dark" } }}
                                 >
-                                  <Trash2 className="h-3.5 w-3.5" />
+                                  <Trash2 size={14} />
                                 </Box>
                               </Box>
                             </TableCell>

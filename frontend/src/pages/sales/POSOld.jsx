@@ -3363,7 +3363,7 @@ const POSOld = () => {
                 aria-label="Close discount dialog"
                 sx={{ color: "text.disabled", "&:hover": { color: "text.secondary" } }}
               >
-                <X className="h-4 w-4" />
+                <X size={16} />
               </IconButton>
             </Stack>
 

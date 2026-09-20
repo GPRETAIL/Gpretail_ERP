@@ -38,7 +38,7 @@ export default function SalesModuleBreakdown({ transactionBreakdown = {}, loadin
     <Box sx={{ height: "100%", borderRadius: "10.5px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", p: 2.5, boxShadow: 1 }}>
       <Stack direction="row" spacing={1} sx={{ mb: 2, alignItems: "center" }}>
         <Box sx={{ color: "primary.main", display: "inline-flex" }}>
-          <LayoutGrid className="h-5 w-5" />
+          <LayoutGrid size={20} />
         </Box>
         <Typography component="h3" sx={{ fontSize: 13, fontWeight: 700, color: "text.primary" }}>Sales Module Breakdown</Typography>
       </Stack>
@@ -57,7 +57,7 @@ export default function SalesModuleBreakdown({ transactionBreakdown = {}, loadin
                 ...colorSx(tile.color),
               }}
             >
-              <Icon className="h-4 w-4" style={{ color: "inherit" }} />
+              <Icon style={{ width: 16, height: 16, color: "inherit" }} />
               <Typography sx={{ mt: 1, fontSize: 15.75, fontWeight: 800, color: "text.primary" }}>
                 {loading ? "..." : formatCurrency(stats.amount)}
               </Typography>

@@ -8,7 +8,7 @@ export default function FinanceTopPayables({ topPayables = [] }) {
     <Box sx={{ height: "100%", borderRadius: "10.5px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", p: 2.5, boxShadow: 1 }}>
       <Stack direction="row" spacing={1} sx={{ mb: 1.5, alignItems: "center" }}>
         <Box sx={{ color: "error.main", display: "inline-flex" }}>
-          <Building2 className="h-4 w-4" />
+          <Building2 size={16} />
         </Box>
         <Typography component="h3" sx={{ fontSize: 13, fontWeight: 700, color: "text.primary" }}>Top Outstanding Suppliers</Typography>
       </Stack>

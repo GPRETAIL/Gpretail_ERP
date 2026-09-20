@@ -9,7 +9,7 @@ export default function SalesLeaderboard({ topSalesPersons = [] }) {
     <Box sx={{ height: "100%", borderRadius: "10.5px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", p: 2.5, boxShadow: 1 }}>
       <Stack direction="row" spacing={1} sx={{ mb: 1.5, alignItems: "center" }}>
         <Box sx={{ color: "warning.main", display: "inline-flex" }}>
-          <Trophy className="h-4 w-4" />
+          <Trophy size={16} />
         </Box>
         <Typography component="h3" sx={{ fontSize: 13, fontWeight: 700, color: "text.primary" }}>Sales Person Leaderboard</Typography>
       </Stack>

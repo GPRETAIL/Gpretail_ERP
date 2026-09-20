@@ -32,7 +32,7 @@ const UserAccessHome = () => {
           sx={{ minHeight: 72, alignItems: "center", justifyContent: "flex-start", gap: 1.5, borderRadius: "10.5px", p: 2, ...hoverCardSx }}
         >
           <Box sx={{ color: INDIGO, display: "inline-flex", ".group:hover &": { color: INDIGO_HOVER } }}>
-            <UserGroupIcon className="h-6 w-6" />
+            <UserGroupIcon style={{ width: 24, height: 24 }} />
           </Box>
           <Typography sx={{ fontWeight: 500, color: "text.primary", ".group:hover &": { color: INDIGO_HOVER } }}>User Access</Typography>
         </ButtonBase>
@@ -48,7 +48,7 @@ const UserAccessHome = () => {
             sx={{ minHeight: 48, justifyContent: "flex-start", gap: 1, borderRadius: "7px", px: 1.5, py: 1, ...hoverCardSx }}
           >
             <Box sx={{ color: INDIGO, display: "inline-flex", flexShrink: 0, ".group:hover &": { color: INDIGO_HOVER } }}>
-              <item.icon className="h-4 w-4" />
+              <item.icon style={{ width: 16, height: 16 }} />
             </Box>
             <Typography sx={{ fontSize: 12.25, fontWeight: 500, color: "text.primary", ".group:hover &": { color: INDIGO_HOVER } }}>{item.name}</Typography>
           </ButtonBase>

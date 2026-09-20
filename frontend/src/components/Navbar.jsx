@@ -810,7 +810,7 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
             </Typography>
           </Box>
           <IconButton size="small" onClick={() => setPrinterDialogOpen(false)} aria-label="Close printer dialog">
-            <XMarkIcon className="h-5 w-5" />
+            <XMarkIcon style={{ width: 20, height: 20 }} />
           </IconButton>
         </DialogTitle>
 
@@ -917,7 +917,7 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
             </Typography>
           </Box>
           <IconButton size="small" onClick={() => setStoreDialogOpen(false)} aria-label="Close store dialog">
-            <XMarkIcon className="h-5 w-5" />
+            <XMarkIcon style={{ width: 20, height: 20 }} />
           </IconButton>
         </DialogTitle>
 

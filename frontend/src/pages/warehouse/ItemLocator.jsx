@@ -426,7 +426,7 @@ const ItemLocator = () => {
               variant="outlined"
               color="inherit"
               size="small"
-              startIcon={filtersCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+              startIcon={filtersCollapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
               sx={{ borderRadius: "3.5px", fontSize: 10.5, fontWeight: 500 }}
             >
               {filtersCollapsed ? "Expand" : "Collapse"}

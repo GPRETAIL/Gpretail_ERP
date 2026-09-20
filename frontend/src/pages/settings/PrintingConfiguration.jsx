@@ -291,7 +291,7 @@ export default function PrintingConfiguration() {
                 spacing={0.5}
                 sx={{ alignItems: "center", borderRadius: "50px", bgcolor: (theme) => alpha(theme.palette.success.main, theme.palette.mode === "dark" ? 0.2 : 0.1), px: 1.25, py: 0.5, fontSize: 11, fontWeight: 500, color: "success.main" }}
               >
-                <CheckCircle2 className="h-3.5 w-3.5" />
+                <CheckCircle2 size={14} />
                 <Box component="span">Connected</Box>
               </Stack>
             ) : (

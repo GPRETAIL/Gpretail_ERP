@@ -24,7 +24,7 @@ export function PayablesOutstandingCard({ summary = {}, loading, privacyMode }) 
           Payables Outstanding
         </Typography>
         <Box sx={{ color: "error.main", display: "inline-flex" }}>
-          <HandCoins className="h-5 w-5" />
+          <HandCoins size={20} />
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "error.main", ...blurSx(privacyMode) }}>
@@ -44,7 +44,7 @@ export function ReceivablesOutstandingCard({ summary = {}, loading, privacyMode 
           Receivables Outstanding
         </Typography>
         <Box sx={{ color: "primary.main", display: "inline-flex" }}>
-          <Wallet className="h-5 w-5" />
+          <Wallet size={20} />
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "primary.main", ...blurSx(privacyMode) }}>
@@ -64,7 +64,7 @@ export function PurchaseValueCard({ summary = {}, loading, privacyMode }) {
           Purchase Value (Period)
         </Typography>
         <Box sx={{ color: "#9333ea", display: "inline-flex" }}>
-          <ShoppingBag className="h-5 w-5" />
+          <ShoppingBag size={20} />
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
@@ -87,7 +87,7 @@ export function NetPositionCard({ summary = {}, loading, privacyMode }) {
           Net Position
         </Typography>
         <Box sx={{ color: "success.main", display: "inline-flex" }}>
-          <Receipt className="h-5 w-5" />
+          <Receipt size={20} />
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: positive ? "success.main" : "error.main", ...blurSx(privacyMode) }}>

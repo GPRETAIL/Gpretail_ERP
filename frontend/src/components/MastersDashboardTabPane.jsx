@@ -138,7 +138,7 @@ export default function MastersDashboardTabPane({ active, companyId, privacyMode
       >
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           <Box sx={{ color: "error.main", display: "inline-flex" }}>
-            <AlertTriangle className="h-5 w-5" />
+            <AlertTriangle size={20} />
           </Box>
           <Typography sx={{ fontSize: 14, color: "error.dark" }}>{error}</Typography>
         </Stack>

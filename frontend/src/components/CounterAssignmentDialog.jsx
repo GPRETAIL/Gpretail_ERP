@@ -93,7 +93,7 @@ export default function CounterAssignmentDialog({ open, onClose, onAssigned }) {
             </Typography>
           </Box>
           <IconButton onClick={onClose} aria-label="Close counter dialog" size="small" sx={{ color: "text.secondary" }}>
-            <XMarkIcon className="h-5 w-5" />
+            <XMarkIcon style={{ width: 20, height: 20 }} />
           </IconButton>
         </Box>
 

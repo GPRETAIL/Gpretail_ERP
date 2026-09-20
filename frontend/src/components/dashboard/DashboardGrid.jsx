@@ -121,7 +121,7 @@ export default function DashboardGrid({ tabKey, widgets }) {
                 }}
               >
                 <Box sx={{ color: "primary.main", display: "inline-flex" }}>
-                  <GripVertical className="h-3.5 w-3.5" />
+                  <GripVertical size={14} />
                 </Box>
                 <Typography
                   sx={{ flex: 1, fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "primary.dark" }}
@@ -136,7 +136,7 @@ export default function DashboardGrid({ tabKey, widgets }) {
                   title="Remove from dashboard"
                   sx={{ p: 0.25, color: "primary.main" }}
                 >
-                  <X className="h-3.5 w-3.5" />
+                  <X size={14} />
                 </IconButton>
               </Box>
             )}
@@ -156,7 +156,7 @@ export default function DashboardGrid({ tabKey, widgets }) {
             {hiddenWidgets.map((w) => (
               <Chip
                 key={w.key}
-                icon={<Plus className="h-3 w-3" />}
+                icon={<Plus size={12} />}
                 label={w.title}
                 onClick={() => showWidget(w.key)}
                 variant="outlined"

@@ -1272,7 +1272,7 @@ const SalesOnApproval = () => {
                   aria-label="Add product"
                   sx={{ height: "34px", width: "100%", minWidth: 0, p: 0 }}
                 >
-                  <PlusCircle className="h-4 w-4" />
+                  <PlusCircle size={16} />
                 </Button>
               </Box>
             </Stack>
@@ -1398,7 +1398,7 @@ const SalesOnApproval = () => {
                           sx={{ display: "inline-flex", alignItems: "center", justifyContent: "center", color: isLineEditable ? "warning.main" : "text.secondary", "&:hover": { opacity: 0.8 } }}
                           aria-label={isLineEditable ? "Lock row editing" : "Edit row"}
                         >
-                          <Pencil className="h-3.5 w-3.5" />
+                          <Pencil size={14} />
                         </Box>
                         <Box
                           component="button"
@@ -1407,7 +1407,7 @@ const SalesOnApproval = () => {
                           sx={{ display: "inline-flex", alignItems: "center", justifyContent: "center", color: line.salesManId ? "success.main" : "primary.main", "&:hover": { opacity: 0.8 } }}
                           aria-label="Assign sales man"
                         >
-                          <UserRound className="h-3.5 w-3.5" />
+                          <UserRound size={14} />
                         </Box>
                         <Box
                           component="button"
@@ -1416,7 +1416,7 @@ const SalesOnApproval = () => {
                           sx={{ display: "inline-flex", alignItems: "center", justifyContent: "center", color: "error.main", "&:hover": { opacity: 0.8 } }}
                           aria-label="Remove line"
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          <Trash2 size={14} />
                         </Box>
                       </Stack>
                           </>
@@ -1568,7 +1568,7 @@ const SalesOnApproval = () => {
                         sx={{ color: "primary.main", "&:hover": { color: "primary.dark" } }}
                         title="Open latest approval in search"
                       >
-                        <Search className="h-4 w-4" />
+                        <Search size={16} />
                       </Box>
                     </Box>
                   </Box>
@@ -1702,7 +1702,7 @@ const SalesOnApproval = () => {
                 aria-label="Close sales man dialog"
                 sx={{ color: "text.disabled", "&:hover": { color: "text.secondary" } }}
               >
-                <X className="h-4 w-4" />
+                <X size={16} />
               </IconButton>
             </Stack>
 
@@ -1769,7 +1769,7 @@ const SalesOnApproval = () => {
                 aria-label="Close quick customer dialog"
                 sx={{ color: "text.disabled", "&:hover": { color: "text.secondary" } }}
               >
-                <X className="h-4 w-4" />
+                <X size={16} />
               </IconButton>
             </Stack>
 
@@ -2042,7 +2042,7 @@ const SalesOnApproval = () => {
                 aria-label="Close discount dialog"
                 sx={{ color: "text.disabled", "&:hover": { color: "text.secondary" } }}
               >
-                <X className="h-4 w-4" />
+                <X size={16} />
               </IconButton>
             </Stack>
 

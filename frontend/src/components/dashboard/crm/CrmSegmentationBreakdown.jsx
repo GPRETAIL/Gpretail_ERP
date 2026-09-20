@@ -17,7 +17,7 @@ export default function CrmSegmentationBreakdown({ summary = {}, segmentation = 
       >
         <Typography component="h3" sx={{ display: "flex", alignItems: "center", gap: 1, fontSize: 13, fontWeight: 700, color: "text.primary" }}>
           <Box sx={{ color: "primary.main", display: "inline-flex" }}>
-            <PieChart className="h-4 w-4" />
+            <PieChart size={16} />
           </Box>
           Customer Segmentation
         </Typography>

@@ -759,7 +759,7 @@ const DealerInvoiceReturn = () => {
               sx={{ display: "inline-flex", height: 28, width: 28, minWidth: 0, alignItems: "center", justifyContent: "center" }}
               title="Add tax line"
             >
-              <PlusCircle className="h-3.5 w-3.5" />
+              <PlusCircle size={14} />
             </Button>
           </Box>
 
@@ -787,7 +787,7 @@ const DealerInvoiceReturn = () => {
                         sx={{ color: "error.main", p: 0.25 }}
                         title="Remove tax row"
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        <Trash2 size={14} />
                       </IconButton>
                     </Box>
                   </Box>
@@ -900,7 +900,7 @@ const DealerInvoiceReturn = () => {
                 sx={{ display: "inline-flex", height: 32, alignItems: "center", justifyContent: "center" }}
                 aria-label="Add product"
               >
-                <PlusCircle className="h-3.5 w-3.5" />
+                <PlusCircle size={14} />
               </Button>
             </Box>
           </Box>
@@ -1133,7 +1133,7 @@ const DealerInvoiceReturn = () => {
                           sx={{ color: "error.main", p: 0.25 }}
                           aria-label="Remove line"
                         >
-                          <Trash2 className="inline h-3.5 w-3.5" />
+                          <Trash2 size={14} />
                         </IconButton>
                       </TableCell>
                     </TableRow>

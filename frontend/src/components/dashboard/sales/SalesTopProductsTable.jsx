@@ -12,7 +12,7 @@ export default function SalesTopProductsTable({ topProducts = [] }) {
       <Stack direction="row" sx={{ mb: 1.5, alignItems: "center", justifyContent: "space-between" }}>
         <Typography component="h3" sx={{ display: "flex", alignItems: "center", gap: 1, fontSize: 13, fontWeight: 700, color: "text.primary" }}>
           <Box sx={{ color: "primary.main", display: "inline-flex" }}>
-            <Trophy className="h-4 w-4" />
+            <Trophy size={16} />
           </Box>
           Top Selling Products
         </Typography>

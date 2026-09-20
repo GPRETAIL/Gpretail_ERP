@@ -100,11 +100,11 @@ const StoreGroupsDrawer = ({
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           {view === "form" ? (
             <IconButton size="small" onClick={() => setView("list")} sx={{ color: "text.secondary" }} aria-label="Back to store groups">
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft size={16} />
             </IconButton>
           ) : (
             <Box sx={{ color: "text.secondary", display: "inline-flex" }}>
-              <Store className="h-4 w-4" />
+              <Store size={16} />
             </Box>
           )}
           <Box>
@@ -120,7 +120,7 @@ const StoreGroupsDrawer = ({
           </Box>
         </Stack>
         <IconButton size="small" onClick={onClose} sx={{ color: "text.secondary" }} aria-label="Close">
-          <X className="h-4 w-4" />
+          <X size={16} />
         </IconButton>
       </Stack>
 
@@ -133,7 +133,7 @@ const StoreGroupsDrawer = ({
                 onClick={handleNew}
                 className="glass-btn glass-btn-primary flex items-center"
               >
-                <PlusCircle className="mr-1 h-4 w-4" /> New Store Group
+                <PlusCircle size={16} style={{ marginRight: 4 }} /> New Store Group
               </Button>
             </Box>
             <FilterableDataTable
@@ -153,7 +153,7 @@ const StoreGroupsDrawer = ({
                     title="Edit"
                     sx={{ minWidth: "auto" }}
                   >
-                    <Pencil className="h-3.5 w-3.5" />
+                    <Pencil size={14} />
                   </Button>
                   <Button
                     type="button"
@@ -162,7 +162,7 @@ const StoreGroupsDrawer = ({
                     title="Delete"
                     sx={{ minWidth: "auto" }}
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
+                    <Trash2 size={14} />
                   </Button>
                 </Stack>
               )}
@@ -207,7 +207,7 @@ const StoreGroupsDrawer = ({
             className="glass-btn glass-btn-success flex items-center"
             sx={{ fontSize: 12.25 }}
           >
-            <Save className="mr-1 h-4 w-4" /> {saving ? "Saving..." : "Save"}
+            <Save size={16} style={{ marginRight: 4 }} /> {saving ? "Saving..." : "Save"}
           </Button>
         </Stack>
       ) : null}

@@ -55,7 +55,7 @@ const NotifyModal = ({ target, onClose }) => {
         <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <Typography sx={{ fontSize: 18, fontWeight: 700 }}>Notify — {target.label}</Typography>
           <IconButton size="small" onClick={onClose} aria-label="Close">
-            <X className="h-5 w-5" />
+            <X size={20} />
           </IconButton>
         </DialogTitle>
         <DialogContent>
@@ -87,7 +87,7 @@ const NotifyModal = ({ target, onClose }) => {
           <Button variant="outlined" color="inherit" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" variant="contained" disabled={sending} startIcon={<Send className="h-4 w-4" />}>
+          <Button type="submit" variant="contained" disabled={sending} startIcon={<Send size={16} />}>
             {sending ? "Sending…" : "Send"}
           </Button>
         </DialogActions>

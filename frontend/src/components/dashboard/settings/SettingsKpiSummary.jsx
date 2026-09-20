@@ -22,7 +22,7 @@ export function UsersCard({ summary = {}, loading, privacyMode }) {
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
         <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Users</Typography>
         <Box sx={{ color: "primary.main", display: "inline-flex" }}>
-          <Users className="h-5 w-5" />
+          <Users size={20} />
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
@@ -42,7 +42,7 @@ export function SettingsEmployeesCard({ summary = {}, loading, privacyMode }) {
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
         <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Employees</Typography>
         <Box sx={{ color: "#6366f1", display: "inline-flex" }}>
-          <UserCog className="h-5 w-5" />
+          <UserCog size={20} />
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
@@ -62,7 +62,7 @@ export function SettingsStoresCard({ summary = {}, loading, privacyMode }) {
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
         <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Stores</Typography>
         <Box sx={{ color: "success.main", display: "inline-flex" }}>
-          <StoreIcon className="h-5 w-5" />
+          <StoreIcon size={20} />
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
@@ -82,7 +82,7 @@ export function LastBackupCard({ summary = {}, loading, privacyMode }) {
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
         <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Last Backup</Typography>
         <Box sx={{ color: "warning.main", display: "inline-flex" }}>
-          <DatabaseBackup className="h-5 w-5" />
+          <DatabaseBackup size={20} />
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 15.75, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>

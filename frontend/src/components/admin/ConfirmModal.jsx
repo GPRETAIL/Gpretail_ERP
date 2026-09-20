@@ -54,14 +54,14 @@ const ConfirmModal = ({ config, onClose }) => {
                 color: danger ? "error.main" : "info.main",
               }}
             >
-              <AlertTriangle className="h-5 w-5" />
+              <AlertTriangle size={20} />
             </Box>
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <Typography sx={{ fontSize: 18, fontWeight: 700 }}>{config.title}</Typography>
               <Typography sx={{ fontSize: 13, color: "text.secondary", mt: 0.5 }}>{config.message}</Typography>
             </Box>
             <IconButton size="small" onClick={onClose} aria-label="Close">
-              <X className="h-5 w-5" />
+              <X size={20} />
             </IconButton>
           </Stack>
           {needsText ? (

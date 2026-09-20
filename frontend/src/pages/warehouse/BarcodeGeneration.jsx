@@ -1809,7 +1809,7 @@ const BarcodePreviewModal = ({
               onClick={onPrint}
               disabled={labels.length === 0 || qrLoading}
               variant="contained"
-              startIcon={<Printer className="h-4 w-4" />}
+              startIcon={<Printer size={16} />}
               sx={{ borderRadius: "7px", textTransform: "none", fontSize: 12.25, fontWeight: 500 }}
             >
               Print
@@ -1818,7 +1818,7 @@ const BarcodePreviewModal = ({
               type="button"
               onClick={onClose}
               variant="outlined"
-              startIcon={<X className="h-4 w-4" />}
+              startIcon={<X size={16} />}
               sx={{ borderRadius: "7px", textTransform: "none", fontSize: 12.25, color: "text.secondary", borderColor: "divider" }}
             >
               Close

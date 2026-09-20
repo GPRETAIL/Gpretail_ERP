@@ -884,7 +884,7 @@ const TouchSales = () => {
                   onClick={() => applyMobileKey("ENTER")}
                   sx={{ display: "inline-flex", alignItems: "center", borderRadius: "3.5px", borderBottom: 2, borderBottomColor: "success.main", bgcolor: (theme) => alpha(theme.palette.success.main, theme.palette.mode === "dark" ? 0.16 : 0.08), px: 1.5, py: 0.75, fontSize: 12.25, color: "text.primary" }}
                 >
-                  <CornerDownLeft className="mr-1 h-4 w-4" /> Enter
+                  <CornerDownLeft size={16} style={{ marginRight: 4 }} /> Enter
                 </Button>
               </Stack>
 
@@ -947,7 +947,7 @@ const TouchSales = () => {
                                 size="small"
                                 sx={{ border: 1, borderColor: "divider", borderRadius: "3.5px", p: 0.25 }}
                               >
-                                <Minus className="h-3 w-3" />
+                                <Minus size={12} />
                               </IconButton>
                               <Box component="span" sx={{ minWidth: 20 }}>{line.qty}</Box>
                               <IconButton
@@ -955,7 +955,7 @@ const TouchSales = () => {
                                 size="small"
                                 sx={{ border: 1, borderColor: "divider", borderRadius: "3.5px", p: 0.25 }}
                               >
-                                <Plus className="h-3 w-3" />
+                                <Plus size={12} />
                               </IconButton>
                             </Stack>
                           </TableCell>
@@ -964,7 +964,7 @@ const TouchSales = () => {
                             <Stack direction="row" spacing={0.5} sx={{ display: "inline-flex", alignItems: "center" }}>
                               <Box component="span">{formatMoney(lineFinal)}</Box>
                               <IconButton onClick={() => removeLine(line.lineId)} size="small" sx={{ color: "error.main", p: 0.25 }}>
-                                <Delete className="h-3.5 w-3.5" />
+                                <Delete size={14} />
                               </IconButton>
                             </Stack>
                           </TableCell>
@@ -1010,7 +1010,7 @@ const TouchSales = () => {
                   className="glass-btn glass-btn-success disabled:opacity-60"
                   sx={{ display: "inline-flex", alignItems: "center", justifyContent: "center" }}
                 >
-                  <Save className="mr-1 h-4 w-4" /> {saving ? "Saving..." : "Save"}
+                  <Save size={16} style={{ marginRight: 4 }} /> {saving ? "Saving..." : "Save"}
                 </Button>
                 <Button
                   onClick={() => saveTouchSale({ shouldPrint: true })}
@@ -1018,7 +1018,7 @@ const TouchSales = () => {
                   className="glass-btn glass-btn-primary disabled:opacity-60"
                   sx={{ display: "inline-flex", alignItems: "center", justifyContent: "center" }}
                 >
-                  <Printer className="mr-1 h-4 w-4" /> Save & Print
+                  <Printer size={16} style={{ marginRight: 4 }} /> Save & Print
                 </Button>
               </Box>
             </Stack>

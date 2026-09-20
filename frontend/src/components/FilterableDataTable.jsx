@@ -2022,7 +2022,7 @@ export default function FilterableDataTable({
           variant="outlined"
           color={hasActiveColumnFilters ? "primary" : "inherit"}
           onClick={() => openFilterPanel()}
-          startIcon={<Filter className="h-3.5 w-3.5" />}
+          startIcon={<Filter size={14} />}
           sx={toolbarFieldSx}
         >
           Filter
@@ -2188,11 +2188,12 @@ export default function FilterableDataTable({
                   <div className="flex items-center justify-between gap-1">
                     <div className="flex items-center gap-1">
                       {pinnedColumnKeys.includes(column.key) && (
-                        <Pin className="h-3 w-3 text-amber-600 dark:text-amber-500" />
+                        <Pin size={12} style={{ color: "#d97706" }} />
                       )}
                       {groupByColumn === column.key && (
                         <Layers
-                          className="h-3 w-3 text-blue-600 dark:text-blue-400"
+                          size={12}
+                          style={{ color: "#2563eb" }}
                           title={`Grouped by ${column.label}`}
                         />
                       )}
@@ -2346,12 +2347,12 @@ export default function FilterableDataTable({
                             size="small"
                             aria-expanded={item.expanded}
                             onClick={() => toggleGroupExpanded(item.groupKey)}
-                            className="inline-flex h-5 w-5 items-center justify-center rounded hover:bg-slate-200 dark:hover:bg-slate-700"
+                            sx={{ "&:hover": { bgcolor: "action.hover" } }}
                           >
                             {item.expanded ? (
-                              <ChevronDown className="h-3.5 w-3.5" />
+                              <ChevronDown size={14} />
                             ) : (
-                              <ChevronRight className="h-3.5 w-3.5" />
+                              <ChevronRight size={14} />
                             )}
                           </IconButton>
                           <span className="font-medium">
@@ -2506,7 +2507,7 @@ export default function FilterableDataTable({
             onClick={() => handleTogglePinColumn(headerContextMenu.columnKey)}
             className="gap-2 text-xs"
           >
-            <Pin className="h-3.5 w-3.5 text-amber-600 dark:text-amber-500" />
+            <Pin size={14} style={{ color: "#d97706" }} />
             {headerContextMenu.isPinned ? "Unpin Column" : "Pin Column"}
           </MenuItem>
           {(typeof onFetchGroupSummaries === "function" || headerContextMenu.isGrouped) && (
@@ -2518,7 +2519,7 @@ export default function FilterableDataTable({
               )}
               className="gap-2 text-xs"
             >
-              <Filter className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+              <Filter size={14} style={{ color: "#2563eb" }} />
               {headerContextMenu.isGrouped ? "Ungroup" : "Group By"}
             </MenuItem>
           )}
@@ -2526,7 +2527,7 @@ export default function FilterableDataTable({
             onClick={() => openFilterPanel(headerContextMenu.columnKey)}
             className="gap-2 text-xs"
           >
-            <Filter className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+            <Filter size={14} style={{ color: "#2563eb" }} />
             Filter
           </MenuItem>
         </Menu>
@@ -2596,7 +2597,7 @@ export default function FilterableDataTable({
                   <Typography sx={{ fontSize: 11, color: "text.secondary" }}>Apply filters on multiple columns</Typography>
                 </Box>
                 <IconButton size="small" onClick={() => setShowFilterPanel(false)}>
-                  <X className="h-4 w-4" />
+                  <X size={16} />
                 </IconButton>
               </Stack>
 
@@ -2866,8 +2867,8 @@ export default function FilterableDataTable({
                         }}
                       >
                         <GripVertical
-                          size={12} style={{flexShrink: 0}}
-                          style={{ color: availableHighlight === col.key ? "inherit" : undefined, opacity: availableHighlight === col.key ? 0.7 : undefined }}
+                          size={12}
+                          style={{ flexShrink: 0, color: availableHighlight === col.key ? "inherit" : undefined, opacity: availableHighlight === col.key ? 0.7 : undefined }}
                         />
                         {col.label}
                       </Box>
@@ -2954,8 +2955,8 @@ export default function FilterableDataTable({
                       }}
                     >
                       <GripVertical
-                        size={12} style={{flexShrink: 0}}
-                        style={{ color: selectedHighlight === col.key ? "inherit" : undefined, opacity: selectedHighlight === col.key ? 0.7 : undefined }}
+                        size={12}
+                        style={{ flexShrink: 0, color: selectedHighlight === col.key ? "inherit" : undefined, opacity: selectedHighlight === col.key ? 0.7 : undefined }}
                       />
                       {col.label}
                     </Box>

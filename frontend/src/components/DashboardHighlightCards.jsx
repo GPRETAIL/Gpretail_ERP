@@ -23,7 +23,7 @@ export const LeaderboardCard = ({ table, defaultTitle, loading, icon: Icon, empt
       <Stack direction="row" sx={{ mb: 1.5, alignItems: "center", justifyContent: "space-between" }}>
         <Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
           <Box sx={{ display: "inline-flex", height: 32, width: 32, alignItems: "center", justifyContent: "center", borderRadius: "50%", bgcolor: "action.hover", color: "text.secondary" }}>
-            <Icon className="h-4 w-4" />
+            <Icon style={{ width: 16, height: 16 }} />
           </Box>
           <Typography component="h2" sx={{ fontSize: 14, fontWeight: 600, color: "text.primary" }}>{title}</Typography>
         </Stack>

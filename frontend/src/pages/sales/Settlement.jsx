@@ -1081,7 +1081,7 @@ const Settlement = () => {
                 sx={{ color: "text.disabled" }}
                 aria-label="Close credit dialog"
               >
-                <X className="h-4 w-4" />
+                <X size={16} />
               </IconButton>
             </Stack>
 

@@ -273,7 +273,7 @@ const MultiSelectInput = ({
             {selectedLabels.length ? selectedLabels.join(", ") : placeholder}
           </Box>
           <Box sx={{ color: "text.disabled", display: "inline-flex" }}>
-            <Search className="h-4 w-4" />
+            <Search size={16} />
           </Box>
         </Box>
         {isOpen ? (
@@ -825,7 +825,7 @@ export default function BackupCenter() {
               <Box sx={{ borderRadius: "4px", border: "1px solid", borderColor: "divider", bgcolor: "action.hover", color: "text.secondary", p: 1, fontSize: 12.25 }}>{selectedScopeLabel}</Box>
             </Box>
             <Button type="button" className="glass-btn glass-btn-primary flex items-center" onClick={() => loadOverview(selectedCompanyId)}>
-              <Search className="mr-1 h-4 w-4" /> Refresh
+              <Search size={16} style={{ marginRight: 4 }} /> Refresh
             </Button>
           </Stack>
         </Stack>
@@ -841,7 +841,7 @@ export default function BackupCenter() {
                 <Typography sx={{ mt: 0.5, fontSize: 10.5, color: "text.secondary" }}>{toDateTime(overview.stats?.last_backup_at)}</Typography>
               </Box>
               <Box sx={{ color: "success.main", display: "inline-flex" }}>
-                <CheckCircle2 className="h-8 w-8" />
+                <CheckCircle2 size={32} />
               </Box>
             </Stack>
           </Box>
@@ -853,7 +853,7 @@ export default function BackupCenter() {
                 <Typography sx={{ mt: 0.5, fontSize: 10.5, color: "text.secondary" }}>Automatic scheduler</Typography>
               </Box>
               <Box sx={{ color: "primary.main", display: "inline-flex" }}>
-                <Clock3 className="h-8 w-8" />
+                <Clock3 size={32} />
               </Box>
             </Stack>
           </Box>
@@ -867,7 +867,7 @@ export default function BackupCenter() {
                 </Typography>
               </Box>
               <Box sx={{ color: "warning.main", display: "inline-flex" }}>
-                <HardDrive className="h-8 w-8" />
+                <HardDrive size={32} />
               </Box>
             </Stack>
           </Box>
@@ -881,7 +881,7 @@ export default function BackupCenter() {
                 </Typography>
               </Box>
               <Box sx={{ color: "#6366f1", display: "inline-flex" }}>
-                <History className="h-8 w-8" />
+                <History size={32} />
               </Box>
             </Stack>
           </Box>
@@ -895,7 +895,7 @@ export default function BackupCenter() {
                 <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>Run full, incremental or module-wise backups for the selected store scope.</Typography>
               </Box>
               <Box sx={{ color: "primary.main", display: "inline-flex" }}>
-                <Archive className="h-5 w-5" />
+                <Archive size={20} />
               </Box>
             </Stack>
 
@@ -1019,7 +1019,7 @@ export default function BackupCenter() {
                 onClick={handleCreateBackup}
                 disabled={creatingBackup}
               >
-                <Play className="mr-1 h-4 w-4" />
+                <Play size={16} style={{ marginRight: 4 }} />
                 {creatingBackup ? `Backing up… ${formatElapsed(createElapsedMs)}` : "Run Backup"}
               </Button>
               {creatingBackup ? (
@@ -1040,7 +1040,7 @@ export default function BackupCenter() {
                 <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>Automatic backups, retention windows and cleanup policy for the selected store scope.</Typography>
               </Box>
               <Box sx={{ color: "#6366f1", display: "inline-flex" }}>
-                <Cloud className="h-5 w-5" />
+                <Cloud size={20} />
               </Box>
             </Stack>
 
@@ -1129,7 +1129,7 @@ export default function BackupCenter() {
                     size="small"
                     onClick={handleTestCloudConnection}
                     disabled={cloudTestStatus === "testing"}
-                    startIcon={<Cloud className="h-3.5 w-3.5" />}
+                    startIcon={<Cloud size={14} />}
                     sx={{ fontSize: 11, bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
                   >
                     {cloudTestStatus === "testing" ? "Testing..." : "Test Connection"}
@@ -1388,7 +1388,7 @@ export default function BackupCenter() {
               />
 
               <Button type="button" className="glass-btn glass-btn-success flex items-center" onClick={handleSaveSettings}>
-                <Save className="mr-1 h-4 w-4" /> Save Settings
+                <Save size={16} style={{ marginRight: 4 }} /> Save Settings
               </Button>
             </Stack>
           </Box>
@@ -1400,7 +1400,7 @@ export default function BackupCenter() {
                 <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>Restore a saved version or import backups from another system.</Typography>
               </Box>
               <Box sx={{ color: "success.main", display: "inline-flex" }}>
-                <Shield className="h-5 w-5" />
+                <Shield size={20} />
               </Box>
             </Stack>
 
@@ -1493,7 +1493,7 @@ export default function BackupCenter() {
                     input: {
                       endAdornment: (
                         <Box sx={{ color: "text.disabled", display: "inline-flex" }}>
-                          <KeyRound className="h-4 w-4" />
+                          <KeyRound size={16} />
                         </Box>
                       ),
                     },
@@ -1507,7 +1507,7 @@ export default function BackupCenter() {
                 onClick={handleRestore}
                 disabled={restoring}
               >
-                <RotateCcw className="mr-1 h-4 w-4" />
+                <RotateCcw size={16} style={{ marginRight: 4 }} />
                 {restoring ? `Restoring… ${formatElapsed(restoreElapsedMs)}` : "Run Restore"}
               </Button>
               {restoring ? (
@@ -1539,7 +1539,7 @@ export default function BackupCenter() {
                       input: {
                         endAdornment: (
                           <Box sx={{ color: "text.disabled", display: "inline-flex" }}>
-                            <KeyRound className="h-4 w-4" />
+                            <KeyRound size={16} />
                           </Box>
                         ),
                       },
@@ -1547,7 +1547,7 @@ export default function BackupCenter() {
                   />
                 </Box>
                 <Button type="button" className="glass-btn glass-btn-primary flex items-center" onClick={handleImport}>
-                  <Upload className="mr-1 h-4 w-4" /> Import Backup
+                  <Upload size={16} style={{ marginRight: 4 }} /> Import Backup
                 </Button>
               </Stack>
             </Stack>
@@ -1631,16 +1631,16 @@ export default function BackupCenter() {
             renderActions={(row) => (
               <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
                 <Button type="button" className="glass-btn glass-btn-primary rounded p-1.5" sx={{ minWidth: "auto" }} onClick={() => handleDownload(row)} title="Download">
-                  <Download className="h-3.5 w-3.5" />
+                  <Download size={14} />
                 </Button>
                 <Button type="button" className="glass-btn glass-btn-secondary rounded p-1.5" sx={{ minWidth: "auto" }} onClick={() => handleDownloadLogs(row)} title="Logs">
-                  <Archive className="h-3.5 w-3.5" />
+                  <Archive size={14} />
                 </Button>
                 <Button type="button" className="glass-btn glass-btn-success rounded p-1.5" sx={{ minWidth: "auto" }} onClick={() => selectBackupForRestore(row)} title="Restore">
-                  <RotateCcw className="h-3.5 w-3.5" />
+                  <RotateCcw size={14} />
                 </Button>
                 <Button type="button" className="glass-btn glass-btn-danger rounded p-1.5" sx={{ minWidth: "auto" }} onClick={() => handleDeleteBackup(row)} title="Delete">
-                  <Trash2 className="h-3.5 w-3.5" />
+                  <Trash2 size={14} />
                 </Button>
               </Stack>
             )}

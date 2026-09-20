@@ -26,7 +26,7 @@ export function MonthlySalesCard({ summary = {}, loading, privacyMode }) {
           Monthly Sales
         </Typography>
         <Box sx={{ color: "#6366f1", display: "inline-flex" }}>
-          <CalendarDays className="h-5 w-5" />
+          <CalendarDays size={20} />
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
@@ -48,7 +48,7 @@ export function TotalInvoicesCard({ summary = {}, loading, privacyMode }) {
           Total Invoices (Period)
         </Typography>
         <Box sx={{ color: "primary.main", display: "inline-flex" }}>
-          <Receipt className="h-5 w-5" />
+          <Receipt size={20} />
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
@@ -70,7 +70,7 @@ export function ProductsSoldCard({ summary = {}, loading, privacyMode }) {
           Products Sold (Period)
         </Typography>
         <Box sx={{ color: "#9333ea", display: "inline-flex" }}>
-          <Package className="h-5 w-5" />
+          <Package size={20} />
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>

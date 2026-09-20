@@ -578,7 +578,7 @@ const ReceiptPreview = ({ companyInfo, settings }) => {
               <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Receipt Preview</Typography>
               <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>Sample tax invoice at A4 size</Typography>
             </Box>
-            <Eye className="h-4 w-4" style={{ color: "#9ca3af" }} />
+            <Eye size={16} style={{ color: "#9ca3af" }} />
           </Stack>
         </Box>
         <div className="bg-[#eef2f7] p-4 dark:bg-gray-900/40">
@@ -603,7 +603,7 @@ const ReceiptPreview = ({ companyInfo, settings }) => {
               Sample bill at {settings.receiptWidthInches || "default"} size
             </Typography>
           </Box>
-          <Eye className="h-4 w-4" style={{ color: "#9ca3af" }} />
+          <Eye size={16} style={{ color: "#9ca3af" }} />
         </Stack>
       </Box>
 
@@ -1019,7 +1019,7 @@ export default function Customisation() {
                 <Button
                   type="button"
                   onClick={handleReset}
-                  startIcon={<RotateCcw className="h-4 w-4" />}
+                  startIcon={<RotateCcw size={16} />}
                   sx={{ borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", px: 1.5, py: 1, fontSize: 12.25, fontWeight: 500, color: "text.secondary", textTransform: "none", "&:hover": { borderColor: "text.disabled" } }}
                 >
                   Reset Draft
@@ -1028,7 +1028,7 @@ export default function Customisation() {
                   type="button"
                   onClick={handleSave}
                   variant="contained"
-                  startIcon={<Save className="h-4 w-4" />}
+                  startIcon={<Save size={16} />}
                   sx={{ borderRadius: "7px", px: 1.5, py: 1, fontSize: 12.25, fontWeight: 500, textTransform: "none" }}
                 >
                   Save
@@ -1449,7 +1449,7 @@ export default function Customisation() {
                     sx={{ height: 36, width: 36, borderRadius: "7px", border: "1px solid", borderColor: "divider", color: "text.secondary" }}
                     aria-label="Decrease QR size"
                   >
-                    <Minus className="h-4 w-4" />
+                    <Minus size={16} />
                   </IconButton>
                   <Typography sx={{ minWidth: 64, textAlign: "center", fontSize: 12.25, fontWeight: 500, color: "text.primary" }}>
                     {settings.paymentQrSize}px
@@ -1461,7 +1461,7 @@ export default function Customisation() {
                     sx={{ height: 36, width: 36, borderRadius: "7px", border: "1px solid", borderColor: "divider", color: "text.secondary" }}
                     aria-label="Increase QR size"
                   >
-                    <Plus className="h-4 w-4" />
+                    <Plus size={16} />
                   </IconButton>
                   <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>
                     Recommended: {PAYMENT_QR_SIZE_MIN}-{PAYMENT_QR_SIZE_MAX}px

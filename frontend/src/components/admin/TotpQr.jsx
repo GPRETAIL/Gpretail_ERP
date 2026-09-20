@@ -77,7 +77,7 @@ const TotpQr = ({ otpauthUri, secret }) => {
             variant="outlined"
             color="inherit"
             onClick={copySecret}
-            startIcon={copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+            startIcon={copied ? <Check size={14} /> : <Copy size={14} />}
             sx={{ fontSize: 12, color: copied ? "success.main" : "text.secondary", borderColor: copied ? "success.main" : "divider" }}
           >
             {copied ? "Copied" : "Copy"}

@@ -21,7 +21,7 @@ export default function SalesPaymentBreakdown({ paymentBreakdown = [], performan
         <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", pb: 1.5 }}>
           <Typography component="h3" sx={{ display: "flex", alignItems: "center", gap: 1, fontSize: 13, fontWeight: 700, color: "text.primary" }}>
             <Box sx={{ color: "primary.main", display: "inline-flex" }}>
-              <PieChart className="h-4 w-4" />
+              <PieChart size={16} />
             </Box>
             Payment Mode Breakdown
           </Typography>

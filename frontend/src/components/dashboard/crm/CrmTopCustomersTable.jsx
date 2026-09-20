@@ -16,7 +16,7 @@ export default function CrmTopCustomersTable({ topCustomers = [] }) {
       <Stack direction="row" sx={{ mb: 1.5, alignItems: "center", justifyContent: "space-between" }}>
         <Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
           <Box sx={{ color: "primary.main", display: "inline-flex" }}>
-            <UserCheck className="h-5 w-5" />
+            <UserCheck size={20} />
           </Box>
           <Typography component="h3" sx={{ fontSize: 13, fontWeight: 700, color: "text.primary" }}>
             Top Valuable Customers

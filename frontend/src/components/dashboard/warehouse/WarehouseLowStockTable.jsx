@@ -17,7 +17,7 @@ export default function WarehouseLowStockTable({ alerts = [] }) {
       <Stack direction="row" sx={{ mb: 1.5, alignItems: "center", justifyContent: "space-between" }}>
         <Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
           <Box sx={{ color: "warning.main", display: "inline-flex" }}>
-            <ShieldAlert className="h-5 w-5" />
+            <ShieldAlert size={20} />
           </Box>
           <Typography component="h3" sx={{ fontSize: 13, fontWeight: 700, color: "text.primary" }}>
             Low Stock & Reorder Level Alerts

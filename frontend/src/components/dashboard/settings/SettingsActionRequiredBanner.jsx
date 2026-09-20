@@ -20,7 +20,7 @@ export default function SettingsActionRequiredBanner({ actionRequired = [], load
       <Stack direction="row" spacing={1} sx={{ mb: 1.5, alignItems: "center", justifyContent: "space-between" }}>
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           <Box sx={{ color: "warning.main", display: "inline-flex" }}>
-            <AlertOctagon className="h-5 w-5" />
+            <AlertOctagon size={20} />
           </Box>
           <Typography component="h2" sx={{ fontSize: 13, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
             Action Required (Administrative Housekeeping)

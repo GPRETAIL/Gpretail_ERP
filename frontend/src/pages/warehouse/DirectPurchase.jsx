@@ -761,12 +761,12 @@ const SizeSearchSelect = ({ value, onChange, sizes, sizeGroups, sellingMode }) =
         sx={{ width: "100%", border: "1px solid", borderColor: "divider", borderRadius: "3.5px", px: 0.5, py: 0.5, fontSize: 12.25, bgcolor: "background.paper", textAlign: "left", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }}
       >
         <Box component="span" sx={{ color: value ? "text.primary" : "text.disabled", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 10.5 }}>{value || "Size..."}</Box>
-        <ChevronDown size={12} style={{flexShrink: 0}} style={{ color: "#9ca3af", transition: "transform 0.15s", transform: open ? "rotate(180deg)" : undefined }} />
+        <ChevronDown size={12} style={{ flexShrink: 0, color: "#9ca3af", transition: "transform 0.15s", transform: open ? "rotate(180deg)" : undefined }} />
       </Box>
       {open && (
         <Box sx={{ position: "absolute", zIndex: 50, left: 0, top: "100%", mt: 0.25, width: "100%", bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "3.5px", boxShadow: 4, minWidth: 160 }}>
           <Stack direction="row" spacing={0.5} sx={{ p: 0.5, borderBottom: 1, borderColor: "divider", alignItems: "center" }}>
-            <Search size={12} style={{flexShrink: 0}} style={{ color: "#9ca3af" }} />
+            <Search size={12} style={{ flexShrink: 0, color: "#9ca3af" }} />
             <Box component="input" autoFocus type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} onKeyDown={handleKeyDown}
               placeholder="Search size..." sx={{ width: "100%", fontSize: 12.25, outline: "none", bgcolor: "transparent", color: "text.secondary", border: 0 }} />
           </Stack>
@@ -1211,7 +1211,7 @@ const QuickAttributeDialog = ({ open, form, saving, onClose, onChange, onSave })
         <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", px: 2, py: 1.5 }}>
           <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Add Attribute</Typography>
           <Button type="button" onClick={onClose} className="glass-btn glass-btn-secondary" sx={{ p: 0.75 }}>
-            <X className="h-4 w-4" />
+            <X size={16} />
           </Button>
         </Stack>
         <Stack spacing={1.5} sx={{ px: 2, py: 2 }}>
@@ -1278,7 +1278,7 @@ const LastSavedDialog = ({ open, loading, entry, onClose }) => {
         <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", px: 2, py: 1.5 }}>
           <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Last Saved Direct Purchase</Typography>
           <Button type="button" onClick={onClose} className="glass-btn glass-btn-secondary" sx={{ p: 0.75 }}>
-            <X className="h-4 w-4" />
+            <X size={16} />
           </Button>
         </Stack>
         <Box sx={{ flex: 1, overflowY: "auto", px: 2, py: 2 }}>
@@ -2735,7 +2735,7 @@ const DirectPurchase = () => {
               sx={{ "& .MuiInputBase-root": { bgcolor: "action.hover" }, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75, color: "text.secondary" } }}
             />
             <Button type="button" onClick={handleAddTaxLine} className="glass-btn glass-btn-primary" sx={{ p: 0.75 }} title="Add tax row">
-              <Plus className="h-3.5 w-3.5" />
+              <Plus size={14} />
             </Button>
           </Box>
 
@@ -2763,10 +2763,10 @@ const DirectPurchase = () => {
                         sx={{ p: 0.75, minWidth: 0 }}
                         title="Edit charge type"
                       >
-                        <Pencil className="h-3.5 w-3.5" />
+                        <Pencil size={14} />
                       </Button>
                       <Button type="button" onClick={() => handleRemoveTaxLine(line.id)} className="glass-btn glass-btn-danger" sx={{ p: 0.75, minWidth: 0 }} title="Remove tax row">
-                        <X className="h-3.5 w-3.5" />
+                        <X size={14} />
                       </Button>
                     </Stack>
                   </Box>
@@ -3093,7 +3093,7 @@ const DirectPurchase = () => {
                             sx={{ color: "text.secondary", "&:hover": { color: "info.main" } }}
                             title={item.size === "Cut" ? "View cut details" : "View jump size details"}
                           >
-                            <Eye className="h-5 w-5" strokeWidth={2.25} />
+                            <Eye size={20} strokeWidth={2.25} />
                           </IconButton>
                         ) : null}
                         <IconButton
@@ -3103,7 +3103,7 @@ const DirectPurchase = () => {
                           sx={{ color: "text.secondary", "&:hover": { color: "primary.main" } }}
                           title="Edit item"
                         >
-                          <Pencil className="h-5 w-5" strokeWidth={2.25} />
+                          <Pencil size={20} strokeWidth={2.25} />
                         </IconButton>
                         <IconButton
                           type="button"
@@ -3112,7 +3112,7 @@ const DirectPurchase = () => {
                           sx={{ color: "text.secondary", "&:hover": { color: "error.main" } }}
                           title="Delete item"
                         >
-                          <Trash2 className="h-5 w-5" strokeWidth={2.25} />
+                          <Trash2 size={20} strokeWidth={2.25} />
                         </IconButton>
                       </Stack>
                     </Stack>

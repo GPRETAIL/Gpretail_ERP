@@ -1613,7 +1613,7 @@ const POSReturn = () => {
                           sx={{ color: "primary.main", p: 0.25 }}
                           title={latestPosDocument.type === "sale" ? "Print last saved bill" : "Print last saved return"}
                         >
-                          <Printer className="h-4 w-4" />
+                          <Printer size={16} />
                         </IconButton>
                         <IconButton
                           type="button"
@@ -1649,7 +1649,7 @@ const POSReturn = () => {
                                   : "Cancel last saved return"
                           }
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 size={16} />
                         </IconButton>
                       </Stack>
                     </Box>

@@ -351,7 +351,7 @@ const Themes = () => {
                   <Button
                     variant="outlined"
                     color="error"
-                    startIcon={<RotateCcw className="h-4 w-4" />}
+                    startIcon={<RotateCcw size={16} />}
                     onClick={handleResetToDefault}
                     disabled={saving}
                   >
@@ -359,7 +359,7 @@ const Themes = () => {
                   </Button>
                   <Button
                     variant="contained"
-                    startIcon={<Save className="h-4 w-4" />}
+                    startIcon={<Save size={16} />}
                     onClick={handleSave}
                     disabled={saving || !primaryValid || !secondaryValid || !radiusValid || !advancedFieldsValid}
                   >
@@ -407,10 +407,10 @@ const Themes = () => {
                     >
                       <Stack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "space-between" }}>
                         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-                          <Icon className="h-4 w-4" />
+                          <Icon style={{ width: 16, height: 16 }} />
                           <Typography sx={{ fontSize: 13, fontWeight: 700 }}>{option.label}</Typography>
                         </Stack>
-                        {selected && <Check className="h-4 w-4" aria-label="Selected" />}
+                        {selected && <Check size={16} aria-label="Selected" />}
                       </Stack>
                       <Typography sx={{ fontSize: 11.5, color: "text.secondary", mt: 0.75 }}>
                         {option.description}
@@ -423,7 +423,7 @@ const Themes = () => {
 
             <Card variant="outlined" sx={{ p: 3 }}>
               <Stack direction="row" spacing={1} sx={{ alignItems: "center", mb: 0.5 }}>
-                <Type className="h-4 w-4" />
+                <Type size={16} />
                 <Typography sx={{ fontSize: 13, fontWeight: 700 }}>Font</Typography>
               </Stack>
               <Typography sx={{ fontSize: 12, color: "text.secondary", mb: 2 }}>
@@ -462,7 +462,7 @@ const Themes = () => {
                         <Typography sx={{ fontSize: 15, fontWeight: 600, fontFamily: option.stack }}>
                           {option.label}
                         </Typography>
-                        {selected && <Check className="h-4 w-4" aria-label="Selected" />}
+                        {selected && <Check size={16} aria-label="Selected" />}
                       </Stack>
                     </Box>
                   );
@@ -591,7 +591,7 @@ const Themes = () => {
                           <Button
                             size="small"
                             color="inherit"
-                            startIcon={<X className="h-3.5 w-3.5" />}
+                            startIcon={<X size={14} />}
                             onClick={handleClearAdvancedColor(field)}
                             sx={{ color: "text.secondary" }}
                           >
@@ -609,7 +609,7 @@ const Themes = () => {
               <Stack direction="row" sx={{ alignItems: "flex-start", justifyContent: "space-between", mb: 2 }}>
                 <Box>
                   <Stack direction="row" spacing={1} sx={{ alignItems: "center", mb: 0.5 }}>
-                    <Bookmark className="h-4 w-4" />
+                    <Bookmark size={16} />
                     <Typography sx={{ fontSize: 13, fontWeight: 700 }}>Saved Presets</Typography>
                   </Stack>
                   <Typography sx={{ fontSize: 12, color: "text.secondary" }}>
@@ -619,7 +619,7 @@ const Themes = () => {
                 <Button
                   size="small"
                   variant="outlined"
-                  startIcon={<PlusCircle className="h-3.5 w-3.5" />}
+                  startIcon={<PlusCircle size={14} />}
                   onClick={handleOpenSaveDialog}
                   disabled={presetBusyId !== null}
                 >
@@ -669,7 +669,7 @@ const Themes = () => {
                             disabled={presetBusyId !== null}
                             sx={{ color: "text.secondary" }}
                           >
-                            <Trash2 className="h-3.5 w-3.5" />
+                            <Trash2 size={14} />
                           </IconButton>
                         </Stack>
                       </Stack>

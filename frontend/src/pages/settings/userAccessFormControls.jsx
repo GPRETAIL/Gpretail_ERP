@@ -93,7 +93,7 @@ export const MultiSelectInput = ({
             {selectedLabels.length ? selectedLabels.join(", ") : placeholder}
           </Box>
           <Box sx={{ color: "text.secondary", display: "inline-flex", transition: "transform 0.2s", transform: isOpen ? "rotate(180deg)" : "none" }}>
-            <ChevronDown className="h-4 w-4" />
+            <ChevronDown size={16} />
           </Box>
         </Box>
 

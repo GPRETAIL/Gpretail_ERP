@@ -1266,7 +1266,7 @@ const WarehouseDashboard = () => {
               >
                 <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 0.5, pr: 1 }}>
                   <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", whiteSpace: "nowrap" }}>
-                    <GripVertical size={12} style={{flexShrink: 0}} style={{ color: "#9ca3af" }} />
+                    <GripVertical size={12} style={{ flexShrink: 0, color: "#9ca3af" }} />
                     {col.label}
                   </Stack>
                   <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>

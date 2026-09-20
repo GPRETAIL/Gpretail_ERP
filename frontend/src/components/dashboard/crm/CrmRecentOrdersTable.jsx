@@ -47,7 +47,7 @@ export default function CrmRecentOrdersTable({ recentOrders = [] }) {
       <Stack direction="row" sx={{ mb: 1.5, alignItems: "center", justifyContent: "space-between" }}>
         <Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
           <Box sx={{ color: "#4f46e5", display: "inline-flex" }}>
-            <ShoppingBag className="h-5 w-5" />
+            <ShoppingBag size={20} />
           </Box>
           <Typography component="h3" sx={{ fontSize: 13, fontWeight: 700, color: "text.primary" }}>
             Recent Customer Orders
