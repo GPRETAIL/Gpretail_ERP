@@ -560,7 +560,7 @@ const SupplierPayment = () => {
                 buttonClassName="topbar-action-btn topbar-action-export"
               />
             ) : (
-              <Button type="button" className="glass-btn glass-btn-primary flex items-center" onClick={openSearchPage}>
+              <Button type="button" className="glass-btn glass-btn-primary" onClick={openSearchPage}>
                 <Search size={16} style={{marginRight: 4}} /> Search
               </Button>
             )}
@@ -654,9 +654,9 @@ const SupplierPayment = () => {
                     onClick={() => handleSearch({ page: 1 })}
                     disabled={loading}
                     fullWidth
-                    className="glass-btn glass-btn-primary inline-flex items-center justify-center gap-2 disabled:opacity-50"
+                    className="glass-btn glass-btn-primary"
                   >
-                    <MagnifyingGlassIcon className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+                    <MagnifyingGlassIcon style={{ width: 16, height: 16, ...(loading ? { animation: "app-spin 1s linear infinite" } : {}) }} />
                     Search Pendings
                   </Button>
                 </Box>
@@ -687,7 +687,7 @@ const SupplierPayment = () => {
                   {selectedIds.size > 0 && (
                     <Button
                       onClick={handleAddPayment}
-                      className="glass-btn glass-btn-success inline-flex items-center gap-1.5"
+                      className="glass-btn glass-btn-success"
                       sx={{ alignSelf: { xs: "flex-start", sm: "auto" } }}
                     >
                       Add Payment
@@ -808,8 +808,8 @@ const SupplierPayment = () => {
                   {detailLoading ? (
                     Array.from({ length: 8 }).map((_, idx) => (
                       <Box key={idx} sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-                        <Box sx={{ height: 12, width: 96, bgcolor: "action.hover", borderRadius: 1 }} className="animate-pulse" />
-                        <Box sx={{ height: 32, bgcolor: "action.hover", borderRadius: 1 }} className="animate-pulse" />
+                        <Box sx={{ height: 12, width: 96, bgcolor: "action.hover", borderRadius: 1, animation: "app-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite" }} />
+                        <Box sx={{ height: 32, bgcolor: "action.hover", borderRadius: 1, animation: "app-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite" }} />
                       </Box>
                     ))
                   ) : detailData?.invoice ? (
@@ -930,7 +930,7 @@ const SupplierPayment = () => {
                         Array.from({ length: 8 }).map((_, i) => (
                           <TableRow key={i}>
                             <TableCell colSpan={DETAIL_COLUMNS.length + 1}>
-                              <Box sx={{ height: 14, bgcolor: "action.hover", borderRadius: 1 }} className="animate-pulse" />
+                              <Box sx={{ height: 14, bgcolor: "action.hover", borderRadius: 1, animation: "app-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite" }} />
                             </TableCell>
                           </TableRow>
                         ))

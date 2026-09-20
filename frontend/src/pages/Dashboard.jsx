@@ -319,7 +319,7 @@ const Dashboard = () => {
             type="button"
             onClick={() => setEditMode((prev) => !prev)}
             variant={editMode ? "contained" : "outlined"}
-            startIcon={editMode ? <Check className="h-4 w-4" /> : <LayoutGrid className="h-4 w-4" />}
+            startIcon={editMode ? <Check size={16} /> : <LayoutGrid size={16} />}
             aria-label="Toggle dashboard layout customization"
             sx={editMode
               ? { bgcolor: "#4f46e5", borderColor: "#4f46e5", textTransform: "none", "&:hover": { bgcolor: "#4338ca", borderColor: "#4338ca" } }
@@ -331,7 +331,7 @@ const Dashboard = () => {
             type="button"
             onClick={() => setPrivacyMode((prev) => !prev)}
             variant={privacyMode ? "contained" : "outlined"}
-            startIcon={privacyMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            startIcon={privacyMode ? <EyeOff size={16} /> : <Eye size={16} />}
             aria-label="Toggle privacy mode (blur amounts)"
             title="Blur bill amounts, stock value, and other figures"
             sx={privacyMode
@@ -345,7 +345,7 @@ const Dashboard = () => {
               type="button"
               onClick={() => resetLayout(activeTab)}
               variant="outlined"
-              startIcon={<RotateCcw className="h-4 w-4" />}
+              startIcon={<RotateCcw size={16} />}
               aria-label="Reset this tab's layout to default"
               title="Reset this tab's layout to default"
               sx={{ textTransform: "none", borderColor: "divider", color: "text.secondary" }}
@@ -361,7 +361,7 @@ const Dashboard = () => {
             }}
             disabled={loading}
             variant="outlined"
-            startIcon={<RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />}
+            startIcon={<RefreshCw size={16} style={loading ? { animation: "app-spin 1s linear infinite" } : undefined} />}
             aria-label="Refresh dashboard"
             sx={{ textTransform: "none", borderColor: "divider", color: "text.secondary" }}
           >

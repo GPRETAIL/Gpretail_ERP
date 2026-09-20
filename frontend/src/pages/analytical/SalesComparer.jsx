@@ -274,7 +274,7 @@ const SalesComparer = () => {
             <Button
               onClick={() => fetchData(activeField)}
               disabled={loading}
-              startIcon={<ArrowPathIcon className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />}
+              startIcon={<ArrowPathIcon style={{ width: 14, height: 14, ...(loading ? { animation: "app-spin 1s linear infinite" } : {}) }} />}
               sx={{
                 fontSize: 12.25, fontWeight: 500, borderRadius: "5.25px", color: "#6366f1",
                 bgcolor: (theme) => alpha("#6366f1", theme.palette.mode === "dark" ? 0.2 : 0.08),

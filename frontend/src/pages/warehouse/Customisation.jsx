@@ -305,8 +305,7 @@ const StickerCard = ({ label, settings, storeName, qrSrc = "" }) => {
           />
         ) : (
           <div
-            className="animate-pulse rounded-[1mm] bg-gray-100"
-            style={{ width: `${metrics.qrSizeMm}mm`, height: `${metrics.qrSizeMm}mm` }}
+            style={{ width: `${metrics.qrSizeMm}mm`, height: `${metrics.qrSizeMm}mm`, borderRadius: "1mm", backgroundColor: "#f3f4f6", animation: "app-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite" }}
           />
         )
       ) : (

@@ -196,7 +196,7 @@ export default function ConfigureLocalServer() {
   if (loading) {
     return (
       <Stack direction="row" spacing={1.5} sx={{ p: 3, alignItems: "center", fontSize: 12.25, color: "text.secondary" }}>
-        <Loader2 size={16} className="animate-spin" />
+        <Loader2 size={16} style={{ animation: "app-spin 1s linear infinite" }} />
         <Box component="span">Loading local server configuration...</Box>
       </Stack>
     );
@@ -223,7 +223,7 @@ export default function ConfigureLocalServer() {
           disabled={refreshing}
           variant="outlined"
           color="inherit"
-          startIcon={refreshing ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
+          startIcon={refreshing ? <Loader2 size={16} style={{ animation: "app-spin 1s linear infinite" }} /> : <RefreshCw size={16} />}
           sx={{ fontSize: 12.25, whiteSpace: "nowrap" }}
         >
           Refresh Status
@@ -308,7 +308,7 @@ export default function ConfigureLocalServer() {
                 disabled={saving}
                 variant="contained"
                 color="success"
-                startIcon={saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                startIcon={saving ? <Loader2 size={16} style={{ animation: "app-spin 1s linear infinite" }} /> : <Save size={16} />}
               >
                 Save URLs
               </Button>
@@ -319,7 +319,7 @@ export default function ConfigureLocalServer() {
                 disabled={testing}
                 variant="outlined"
                 color="inherit"
-                startIcon={testing ? <Loader2 size={16} className="animate-spin" /> : <Wifi size={16} />}
+                startIcon={testing ? <Loader2 size={16} style={{ animation: "app-spin 1s linear infinite" }} /> : <Wifi size={16} />}
               >
                 Test Local
               </Button>
@@ -330,7 +330,7 @@ export default function ConfigureLocalServer() {
                 disabled={testingCloud}
                 variant="outlined"
                 color="inherit"
-                startIcon={testingCloud ? <Loader2 size={16} className="animate-spin" /> : <Wifi size={16} />}
+                startIcon={testingCloud ? <Loader2 size={16} style={{ animation: "app-spin 1s linear infinite" }} /> : <Wifi size={16} />}
               >
                 Test Cloud
               </Button>
@@ -448,7 +448,7 @@ export default function ConfigureLocalServer() {
                                   variant="outlined"
                                   color="inherit"
                                   size="small"
-                                  startIcon={retryingAllStoreId === node.store_id ? <Loader2 size={12} className="animate-spin" /> : <RotateCcw size={12} />}
+                                  startIcon={retryingAllStoreId === node.store_id ? <Loader2 size={12} style={{ animation: "app-spin 1s linear infinite" }} /> : <RotateCcw size={12} />}
                                   sx={{ fontSize: 11 }}
                                 >
                                   Retry All Failed
@@ -458,7 +458,7 @@ export default function ConfigureLocalServer() {
 
                             {outboxLoading ? (
                               <Stack direction="row" spacing={1} sx={{ alignItems: "center", fontSize: 10.5, color: "text.secondary", py: 1 }}>
-                                <Loader2 size={14} className="animate-spin" />
+                                <Loader2 size={14} style={{ animation: "app-spin 1s linear infinite" }} />
                                 <Box component="span">Loading...</Box>
                               </Stack>
                             ) : outboxEvents.length === 0 ? (
@@ -501,7 +501,7 @@ export default function ConfigureLocalServer() {
                                         variant="outlined"
                                         color="inherit"
                                         size="small"
-                                        startIcon={retryingId === event.id ? <Loader2 size={12} className="animate-spin" /> : <RotateCcw size={12} />}
+                                        startIcon={retryingId === event.id ? <Loader2 size={12} style={{ animation: "app-spin 1s linear infinite" }} /> : <RotateCcw size={12} />}
                                         sx={{ flexShrink: 0, fontSize: 11 }}
                                       >
                                         Retry

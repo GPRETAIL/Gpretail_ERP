@@ -489,7 +489,7 @@ const CompanySettings = () => {
             onClick={handleSyncFromAdmin}
             disabled={syncing}
             title="Pull the latest subscription, limits and login password from VX-Admin"
-            startIcon={<RefreshCw className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} />}
+            startIcon={<RefreshCw size={16} style={syncing ? { animation: "app-spin 1s linear infinite" } : undefined} />}
             sx={{ fontSize: 12.25, color: "text.secondary" }}
           >
             {syncing ? "Syncing…" : "Sync from VX-Admin"}
@@ -505,7 +505,7 @@ const CompanySettings = () => {
           </Button>
           <Button
             type="button"
-            className="glass-btn glass-btn-success inline-flex items-center"
+            className="glass-btn glass-btn-success"
             onClick={handleSave}
             disabled={saving || showSearchPage}
           >
@@ -514,7 +514,7 @@ const CompanySettings = () => {
           </Button>
           <Button
             type="button"
-            className="glass-btn glass-btn-primary inline-flex items-center"
+            className="glass-btn glass-btn-primary"
             onClick={handleOpenSearch}
           >
             <Search size={16} style={{marginRight: 4}} />
@@ -909,7 +909,7 @@ const CompanySettings = () => {
               <Button
                 type="button"
                 onClick={handleAddPrinter}
-                className="glass-btn glass-btn-primary inline-flex items-center justify-center"
+                className="glass-btn glass-btn-primary"
                 sx={{ height: 34 }}
               >
                 Add

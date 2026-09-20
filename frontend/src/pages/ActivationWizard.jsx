@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { KeyRound, ShieldCheck, Loader2, CheckCircle2, Circle, Lock } from "lucide-react";
-import { Alert, Box, Card, Stack, Typography, Button, TextField } from "@mui/material";
+import { Alert, Box, Card, Stack, Typography, Button, TextField, useTheme } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 
 // Tenant activation wizard. Shown before anyone can log in, while this deployment is in
@@ -22,6 +22,8 @@ const STEPS = [
 ];
 
 const ActivationWizard = ({ onActivated }) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
   const [form, setForm] = useState({ companyId: "", clientId: "", activationCode: "" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -131,7 +133,7 @@ const ActivationWizard = ({ onActivated }) => {
         sx={{ borderColor: "divider", borderRadius: 2, width: "100%", maxWidth: 448, p: 4, boxShadow: 6 }}
       >
         <Stack direction="row" spacing={1.5} sx={{ mb: 3, alignItems: "center" }}>
-          <ShieldCheck className="h-8 w-8 text-[#3a6ea5] dark:text-[#6a9bd1]" />
+          <ShieldCheck size={32} style={{ color: isDark ? "#6a9bd1" : "#3a6ea5" }} />
           <Box>
             <Typography variant="caption" component="p" sx={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.25em", color: "text.secondary" }}>
               Vynerix
@@ -149,7 +151,7 @@ const ActivationWizard = ({ onActivated }) => {
   if (phase === "done") {
     return shell(
       <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", py: 1.5, textAlign: "center" }}>
-        <CheckCircle2 className="mb-3 h-12 w-12 text-emerald-500 dark:text-emerald-400" />
+        <CheckCircle2 size={48} style={{ marginBottom: 12, color: isDark ? "#34d399" : "#10b981" }} />
         <Typography variant="body2" sx={{ color: "text.secondary" }}>
           Your administrator account is ready. Redirecting you to sign in…
         </Typography>
@@ -197,7 +199,7 @@ const ActivationWizard = ({ onActivated }) => {
             disabled={pwBusy}
             variant="contained"
             disableElevation
-            startIcon={pwBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
+            startIcon={pwBusy ? <Loader2 size={16} style={{ animation: "app-spin 1s linear infinite" }} /> : <Lock size={16} />}
             sx={{ py: 1.25, bgcolor: "#3a6ea5", fontWeight: 600, textTransform: "none", "&:hover": { bgcolor: "#345f8f" }, borderRadius: 2 }}
           >
             {pwBusy ? "Saving…" : "Set password & continue"}
@@ -221,11 +223,11 @@ const ActivationWizard = ({ onActivated }) => {
             return (
               <Stack component="li" direction="row" key={s.key} spacing={1.5} sx={{ alignItems: "center" }}>
                 {state === "done" ? (
-                  <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-500 dark:text-emerald-400" />
+                  <CheckCircle2 size={20} style={{ flexShrink: 0, color: isDark ? "#34d399" : "#10b981" }} />
                 ) : state === "active" ? (
-                  <Loader2 className="h-5 w-5 shrink-0 animate-spin text-[#3a6ea5] dark:text-[#6a9bd1]" />
+                  <Loader2 size={20} style={{ flexShrink: 0, animation: "app-spin 1s linear infinite", color: isDark ? "#6a9bd1" : "#3a6ea5" }} />
                 ) : (
-                  <Circle className="h-5 w-5 shrink-0 text-slate-300 dark:text-gray-600" />
+                  <Circle size={20} style={{ flexShrink: 0, color: isDark ? "#4b5563" : "#cbd5e1" }} />
                 )}
                 <Typography
                   variant="body2"
@@ -242,7 +244,7 @@ const ActivationWizard = ({ onActivated }) => {
         </Stack>
         {allDone ? (
           <Stack direction="row" spacing={1} sx={{ mt: 3, alignItems: "center", borderRadius: 2, bgcolor: (theme) => alpha(theme.palette.success.main, theme.palette.mode === "dark" ? 0.16 : 0.08), px: 2, py: 1.5 }}>
-            <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500 dark:text-emerald-400" />
+            <CheckCircle2 size={16} style={{ flexShrink: 0, color: isDark ? "#34d399" : "#10b981" }} />
             <Typography variant="body2" sx={{ color: "success.dark" }}>{willSetPassword ? "Almost there — let's secure your admin account…" : "All set! Redirecting you to sign in…"}</Typography>
           </Stack>
         ) : (
@@ -288,7 +290,7 @@ const ActivationWizard = ({ onActivated }) => {
           disabled={busy}
           variant="contained"
           disableElevation
-          startIcon={busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
+          startIcon={busy ? <Loader2 size={16} style={{ animation: "app-spin 1s linear infinite" }} /> : <KeyRound size={16} />}
           sx={{ py: 1.25, bgcolor: "#3a6ea5", fontWeight: 600, textTransform: "none", "&:hover": { bgcolor: "#345f8f" }, borderRadius: 2 }}
         >
           {busy ? "Activating…" : "Activate"}

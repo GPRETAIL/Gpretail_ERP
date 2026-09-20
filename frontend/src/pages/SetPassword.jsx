@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { ShieldCheck, Loader2, CheckCircle2, Lock, KeyRound } from "lucide-react";
-import { Alert, Box, Button, Card, Stack, TextField, Typography } from "@mui/material";
+import { Alert, Box, Button, Card, Stack, TextField, Typography, useTheme } from "@mui/material";
 
 // PUBLIC self-service "Set / forgot your password?" page (/set-password), linked from the login page.
 // For a company super-admin whose account was created WITHOUT a password (or provisioned by the
@@ -11,26 +11,30 @@ import { Alert, Box, Button, Card, Stack, TextField, Typography } from "@mui/mat
 // Hoisted to module scope so the form doesn't remount (and steal focus) on every keystroke. Rendered
 // as a component (<Shell>…</Shell>) — NOT called as Shell(...), which would pass the JSX as `props`
 // and drop `children`, leaving the card body (all the form fields) blank.
-const Shell = ({ children }) => (
-  <Box sx={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", bgcolor: "background.default", px: 2 }}>
-    <Card variant="outlined" sx={{ width: "100%", maxWidth: 448, p: 4, borderRadius: 3, boxShadow: 3 }}>
-      <Stack direction="row" sx={{ alignItems: "center", gap: 1.5, mb: 3 }}>
-        <ShieldCheck className="h-8 w-8 text-[#3a6ea5] dark:text-[#6a9bd1]" />
-        <Box>
-          <Typography variant="caption" sx={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.25em", color: "text.secondary", display: "block" }}>
-            Vynerix
-          </Typography>
-          <Typography variant="h5" component="h1" sx={{ fontWeight: 700, color: "text.primary" }}>
-            Set your password
-          </Typography>
-        </Box>
-      </Stack>
-      {children}
-    </Card>
-  </Box>
-);
+const Shell = ({ children }) => {
+  const theme = useTheme();
+  return (
+    <Box sx={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", bgcolor: "background.default", px: 2 }}>
+      <Card variant="outlined" sx={{ width: "100%", maxWidth: 448, p: 4, borderRadius: 3, boxShadow: 3 }}>
+        <Stack direction="row" sx={{ alignItems: "center", gap: 1.5, mb: 3 }}>
+          <ShieldCheck size={32} style={{ color: theme.palette.mode === "dark" ? "#6a9bd1" : "#3a6ea5" }} />
+          <Box>
+            <Typography variant="caption" sx={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.25em", color: "text.secondary", display: "block" }}>
+              Vynerix
+            </Typography>
+            <Typography variant="h5" component="h1" sx={{ fontWeight: 700, color: "text.primary" }}>
+              Set your password
+            </Typography>
+          </Box>
+        </Stack>
+        {children}
+      </Card>
+    </Box>
+  );
+};
 
 const SetPassword = () => {
+  const theme = useTheme();
   const [phase, setPhase] = useState("email"); // email | password | done | nofix
   const [email, setEmail] = useState("");
   const [setupToken, setSetupToken] = useState("");
@@ -93,7 +97,7 @@ const SetPassword = () => {
     return (
       <Shell>
         <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", py: 1.5, textAlign: "center" }}>
-          <CheckCircle2 className="mb-3 h-12 w-12 text-emerald-500 dark:text-emerald-400" />
+          <CheckCircle2 size={48} style={{ marginBottom: 12, color: theme.palette.mode === "dark" ? "#34d399" : "#10b981" }} />
           <Typography variant="body2" sx={{ mb: 2, color: "text.secondary" }}>
             Your password is set. You can sign in now.
           </Typography>
@@ -163,7 +167,7 @@ const SetPassword = () => {
             type="submit"
             disabled={busy}
             variant="contained"
-            startIcon={busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
+            startIcon={busy ? <Loader2 size={16} style={{ animation: "app-spin 1s linear infinite" }} /> : <Lock size={16} />}
             sx={{
               py: 1.25,
               bgcolor: "#3a6ea5",
@@ -204,7 +208,7 @@ const SetPassword = () => {
           type="submit"
           disabled={busy}
           variant="contained"
-          startIcon={busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
+          startIcon={busy ? <Loader2 size={16} style={{ animation: "app-spin 1s linear infinite" }} /> : <KeyRound size={16} />}
           sx={{
             py: 1.25,
             bgcolor: "#3a6ea5",

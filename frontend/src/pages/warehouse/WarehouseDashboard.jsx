@@ -1068,7 +1068,7 @@ const WarehouseDashboard = () => {
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           <IconButton onClick={handleBackClick} type="button" aria-label="Back to warehouse module" sx={{ color: "text.secondary" }}>
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft size={16} />
           </IconButton>
           <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: 12.25, fontWeight: 600 }}>
             <Button type="button" variant="text" onClick={() => navigate("/warehouse")} sx={{ minWidth: "auto", p: 0, fontSize: 12.25, fontWeight: 600 }}>
@@ -1365,7 +1365,7 @@ const WarehouseDashboard = () => {
           <Box sx={{ maxHeight: "65vh", overflowY: "auto" }}>
             {loading ? (
               Array.from({ length: 8 }).map((_, rowIdx) => (
-                <Stack key={rowIdx} direction="row" className="animate-pulse" sx={{ borderBottom: 1, borderColor: "divider" }}>
+                <Stack key={rowIdx} direction="row" sx={{ borderBottom: 1, borderColor: "divider", animation: "app-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite" }}>
                   <Box sx={{ p: 1, width: 50, flexShrink: 0, borderRight: 1, borderColor: "divider", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <Box sx={{ width: 16, height: 16, bgcolor: "action.hover", borderRadius: "1.75px" }} />
                   </Box>
