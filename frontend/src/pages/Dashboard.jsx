@@ -178,18 +178,11 @@ const Dashboard = () => {
   const employees = metrics?.employees || {};
   const stockValue = metrics?.stockValue || {};
 
-  // A row's two side-by-side widgets must share one h: react-grid-layout compacts each column
-  // independently, so if only one of a pair shrank to fit its own sparser content, the item below
-  // *that* column alone would get pulled up while its partner in the other column didn't move,
-  // breaking the left/right pairing. Sizing both off whichever one actually has content keeps
-  // sparse demo data from leaving a tall dead gap without risking that misalignment.
-  const dailySalesHasRows = (tables?.dailySalesSummary?.rows || []).length > 0;
-  const settlementHasData = (tables?.settlementDetails?.columns || []).length > 0 && (tables?.settlementDetails?.rows || []).length > 0;
-  const tablesRowH = dailySalesHasRows || settlementHasData ? 4 : 3;
-
-  const fastMovingHasRows = (tables?.fastMovingSection?.rows || tables?.topSellingItems?.rows || []).length > 0;
-  const salesPersonHasRows = (tables?.salesPersonOfTheDay?.rows || tables?.topCustomers?.rows || []).length > 0;
-  const leaderboardsRowH = fastMovingHasRows || salesPersonHasRows ? 4 : 3;
+  // Every card below the KPI row -- charts, tables, leaderboards alike -- is the same height,
+  // matching Sales Graph/Business Trend/Settlement Details, so the Overview grid reads as one
+  // uniform set of cards rather than some being taller or shorter than their neighbors depending
+  // on how much data they currently have.
+  const BELOW_KPI_ROW_H = 4;
 
   const overviewWidgets = useMemo(
     () => [
@@ -260,14 +253,14 @@ const Dashboard = () => {
         title: "Daily Sales Summary",
         component: DailySalesSummaryTable,
         props: { table: tables?.dailySalesSummary, loading, privacyMode },
-        defaultLayout: { x: 0, y: 8, w: 6, h: tablesRowH, minW: 4, minH: 3 },
+        defaultLayout: { x: 0, y: 8, w: 6, h: BELOW_KPI_ROW_H, minW: 4, minH: 3 },
       },
       {
         key: "table-settlement-details",
         title: "Settlement Details",
         component: SettlementDetailsTable,
         props: { table: tables?.settlementDetails, loading, privacyMode },
-        defaultLayout: { x: 6, y: 8, w: 6, h: tablesRowH, minW: 4, minH: 3 },
+        defaultLayout: { x: 6, y: 8, w: 6, h: BELOW_KPI_ROW_H, minW: 4, minH: 3 },
       },
       {
         key: "highlight-fast-moving-products",
@@ -281,7 +274,7 @@ const Dashboard = () => {
           loading,
           privacyMode,
         },
-        defaultLayout: { x: 0, y: 8 + tablesRowH, w: 6, h: leaderboardsRowH, minW: 4, minH: 3 },
+        defaultLayout: { x: 0, y: 8 + BELOW_KPI_ROW_H, w: 6, h: BELOW_KPI_ROW_H, minW: 4, minH: 3 },
       },
       {
         key: "highlight-sales-person-of-the-day",
@@ -295,7 +288,7 @@ const Dashboard = () => {
           loading,
           privacyMode,
         },
-        defaultLayout: { x: 6, y: 8 + tablesRowH, w: 6, h: leaderboardsRowH, minW: 4, minH: 3 },
+        defaultLayout: { x: 6, y: 8 + BELOW_KPI_ROW_H, w: 6, h: BELOW_KPI_ROW_H, minW: 4, minH: 3 },
       },
     ].filter((widget) => {
       // Skip Action Required entirely once we know it's empty, instead of rendering an empty
@@ -306,7 +299,7 @@ const Dashboard = () => {
     }),
     [
       totalBills, settlements, employees, stockValue, loading, charts, tables, privacyMode,
-      actionRequiredItems, actionRequiredLoading, handleActionRequiredItem, tablesRowH, leaderboardsRowH,
+      actionRequiredItems, actionRequiredLoading, handleActionRequiredItem,
     ]
   );
 
