@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { ArrowLeft, PlusCircle, Save, Search } from "lucide-react";
+import { Box, Stack, Card, Typography, Button, TextField, MenuItem, Checkbox } from "@mui/material";
 import {
   DualTextInput,
   SelectInput,
@@ -11,6 +12,7 @@ import {
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import api from "../../api/axios";
+import PageHeader from "../../components/PageHeader";
 
 const mapTaxOption = (t) => ({
   id: String(t.id),
@@ -426,58 +428,69 @@ const ProductForm = () => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 master-responsive">
-      {/* Header (Minimized) */}
-      <div className="flex justify-between items-center px-4 py-1 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
-        <div className="flex items-center space-x-2">
-          <button
-            className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
-            onClick={() => navigate(-1)}
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </button>
-          <h1 className="text-sm font-semibold flex items-center gap-1">
-            <button
+    <Box sx={{ height: "100%", display: "flex", flexDirection: "column", bgcolor: "background.default", color: "text.primary" }}>
+      <PageHeader
+        title={
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+            <Typography
+              component="button"
               type="button"
               onClick={() => navigate("/masters")}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
+              sx={{
+                fontSize: 13,
+                fontWeight: 600,
+                color: "primary.main",
+                background: "none",
+                border: "none",
+                p: 0,
+                cursor: "pointer",
+                "&:hover": { textDecoration: "underline" },
+              }}
             >
               Master
-            </button>
-            <span className="text-gray-500 dark:text-gray-400">/</span>
-            <span>
+            </Typography>
+            <Typography sx={{ fontSize: 13, color: "text.secondary" }}>/</Typography>
+            <Typography sx={{ fontSize: 13, fontWeight: 600 }}>
               Products {isEdit ? `(Edit: ${editCode})` : ""}
-            </span>
-          </h1>
-        </div>
-        <div className="flex items-center space-x-3 text-xs font-medium text-gray-700 dark:text-gray-300">
-          <button
-            onClick={handleNew}
-            className="topbar-action-btn topbar-action-new"
-          >
-            <PlusCircle className="w-3 h-3 mr-1" /> New
-          </button>
-          <span>|</span>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="glass-btn glass-btn-success flex items-center disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            <Save className="w-3 h-3 mr-1" /> {saving ? "Saving…" : "Save"}
-          </button>
-        </div>
-      </div>
-      {/* --- END Header --- */} {/* Content */}
-      <div className="p-3 flex-1 min-h-0">
-        <div
-          className="bg-white dark:bg-gray-800 shadow-lg rounded-lg border border-gray-200 dark:border-gray-700 p-3 h-auto lg:h-full lg:min-h-0 lg:overflow-y-auto"
+            </Typography>
+          </Stack>
+        }
+        onBack={() => navigate(-1)}
+        actions={
+          <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+            <Button
+              onClick={handleNew}
+              className="topbar-action-btn topbar-action-new"
+              startIcon={<PlusCircle className="w-3 h-3" />}
+              size="small"
+            >
+              New
+            </Button>
+            <Typography sx={{ color: "text.secondary" }}>|</Typography>
+            <Button
+              onClick={handleSave}
+              disabled={saving}
+              className="glass-btn glass-btn-success"
+              startIcon={<Save className="w-3 h-3" />}
+              size="small"
+            >
+              {saving ? "Saving…" : "Save"}
+            </Button>
+          </Stack>
+        }
+      />
+
+      <Box sx={{ p: 1.5, flex: 1, minHeight: 0 }}>
+        <Card
+          variant="outlined"
+          sx={{ p: 1.5, height: { xs: "auto", lg: "100%" }, minHeight: 0, overflowY: "auto" }}
           data-enter-scope="true"
           onKeyDownCapture={handleEnterKeyNavigation}
         >
           {/* Reduced inner padding */}
-          <div className="grid grid-cols-12 gap-3">
+          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "repeat(12, 1fr)" }, gap: 1.5 }}>
             {/* Reduced gap */} {/* --- Column 1: Left --- */}
-            <div className="col-span-12 lg:col-span-4 space-y-1.5">
+            <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 0.75 }}>
               {/* Reduced vertical space */}
               <SelectInput
                 label="Product Group"
@@ -524,32 +537,35 @@ const ProductForm = () => {
                 onChange={handleChange}
               />
               {/* Discount Mode (Select + Input) */}
-              <div className="flex items-center">
-                <label className="w-2/5 text-xs font-medium text-gray-700 dark:text-gray-300 text-right pr-3">
+              <Stack direction="row" sx={{ alignItems: "center" }}>
+                <Typography component="label" sx={{ width: "40%", fontSize: 10.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
                   Discount Mode
-                </label>
-                <div className="flex-1 flex items-center gap-2">
-                  <select
+                </Typography>
+                <Stack direction="row" sx={{ flex: 1, alignItems: "center", gap: 1 }}>
+                  <TextField
+                    select
                     name="discountMode"
                     value={formData.discountMode}
                     onChange={handleChange}
-                    className="w-2/3 border border-gray-300 dark:border-gray-600 rounded-sm p-1 text-xs bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    size="small"
+                    sx={{ width: "66.66%", "& .MuiInputBase-input": { fontSize: 10.5, py: 0.5 } }}
                   >
                     {discountModeOptions.map((option, index) => (
-                      <option key={index} value={option.value || option.label}>
+                      <MenuItem key={index} value={option.value || option.label}>
                         {option.label}
-                      </option>
+                      </MenuItem>
                     ))}
-                  </select>
-                  <input
+                  </TextField>
+                  <TextField
                     type="number"
                     name="discountModeValue"
                     value={formData.discountModeValue}
                     onChange={handleChange}
-                    className="w-1/3 border border-gray-300 dark:border-gray-600 rounded-sm p-1 text-xs bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    size="small"
+                    sx={{ width: "33.33%", "& .MuiInputBase-input": { fontSize: 10.5, py: 0.5 } }}
                   />
-                </div>
-              </div>
+                </Stack>
+              </Stack>
               <SelectInput
                 label="Barcode Source"
                 name="barcodeSource"
@@ -590,9 +606,9 @@ const ProductForm = () => {
                 value={formData.section}
                 onChange={handleChange}
               />
-            </div>
+            </Box>
             {/* --- Column 2: Middle --- */}
-            <div className="col-span-12 lg:col-span-4 space-y-1.5 border-l border-r border-gray-100 dark:border-gray-700 px-3">
+            <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 0.75, borderLeft: 1, borderRight: 1, borderColor: "divider", px: 1.5 }}>
               {/* Reduced vertical space and horizontal padding */}
               <SearchableSelect
                 label="Company Type"
@@ -691,78 +707,79 @@ const ProductForm = () => {
                 checked={formData.active}
                 onChange={handleChange}
               />
-            </div>
+            </Box>
             {/* --- Column 3: Right (Attributes Table) --- */}
-            <div className="col-span-12 lg:col-span-4 pl-3">
+            <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, pl: 1.5 }}>
               {/* Reduced horizontal padding */} {/* Header with Checkbox */}
-              <div className="flex justify-between items-center mb-1.5">
+              <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", mb: 1.5 }}>
                 {/* Reduced vertical margin */}
-                <h3 className="text-xs font-semibold text-gray-800 dark:text-gray-100">
+                <Typography component="h3" sx={{ fontSize: 10.5, fontWeight: 600, color: "text.primary" }}>
                   Purchase Entry Attributes (Configure)
-                </h3>
-                <label className="flex items-center gap-1 text-[10px] text-gray-600 dark:text-gray-400 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
+                </Typography>
+                <Stack component="label" direction="row" sx={{ alignItems: "center", gap: 0.5, fontSize: 8.75, color: "text.secondary", cursor: "pointer", userSelect: "none" }}>
+                  <Checkbox
                     title="Enable Configure Mode"
                     checked={selectAllAttributes}
                     onChange={handleSelectAllAttributes}
-                    className="w-3 h-3 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-blue-500"
+                    size="small"
+                    sx={{ p: 0 }}
                   />
                   Configure
-                </label>
-              </div>
-              <div className="border border-gray-300 dark:border-gray-600 rounded-sm overflow-hidden h-[320px] md:h-[380px] xl:h-[450px] flex flex-col">
+                </Stack>
+              </Stack>
+              <Box sx={{ border: 1, borderColor: "grey.300", borderRadius: "3.5px", overflow: "hidden", height: { xs: 320, md: 380, xl: 450 }, display: "flex", flexDirection: "column" }}>
                 {/* Slight height adjustment */} {/* Table Header */}
-                <div className="flex bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 text-xs font-semibold border-b dark:border-gray-600">
-                  <div className="w-9/12 px-2 py-1">Name</div>
-                  <div className="w-1/12 px-2 py-1 text-center">Man</div>
-                  <div className="w-1/12 px-2 py-1 text-center">Show</div>
-                  <div className="w-1/12 px-2 py-1 text-center">ROL</div>
-                </div>
+                <Stack direction="row" sx={{ bgcolor: "action.hover", fontSize: 10.5, fontWeight: 600, color: "text.secondary", borderBottom: 1, borderColor: "divider" }}>
+                  <Box sx={{ width: "75%", px: 1, py: 0.5 }}>Name</Box>
+                  <Box sx={{ width: "8.33%", px: 1, py: 0.5, textAlign: "center" }}>Man</Box>
+                  <Box sx={{ width: "8.33%", px: 1, py: 0.5, textAlign: "center" }}>Show</Box>
+                  <Box sx={{ width: "8.33%", px: 1, py: 0.5, textAlign: "center" }}>ROL</Box>
+                </Stack>
                 {/* Table Body - Scrollable */}
-                <div className="flex-1 overflow-y-auto">
+                <Box sx={{ flex: 1, overflowY: "auto" }}>
                   {attributes.map((attr, index) => (
-                    <div
+                    <Stack
+                      direction="row"
                       key={attr.id}
-                      className="flex items-center border-t dark:border-gray-700 text-xs hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                      sx={{ alignItems: "center", borderTop: 1, borderColor: "divider", fontSize: 10.5, "&:hover": { bgcolor: "action.hover" } }}
                     >
-                      <div className="w-9/12 px-2 py-1">{attr.name}</div>
-                      <div className="w-1/12 px-2 py-1 flex justify-center">
-                        <input
-                          type="checkbox"
+                      <Box sx={{ width: "75%", px: 1, py: 0.5 }}>{attr.name}</Box>
+                      <Box sx={{ width: "8.33%", px: 1, py: 0.5, display: "flex", justifyContent: "center" }}>
+                        <Checkbox
                           checked={!!attr.man}
                           onChange={() => handleAttributeChange(index, "man")}
                           disabled={!selectAllAttributes}
-                          className={`w-3 h-3 rounded ${selectAllAttributes ? "text-blue-600 cursor-pointer" : "text-gray-300 dark:text-gray-600 cursor-not-allowed opacity-50"}`}
+                          size="small"
+                          sx={{ p: 0 }}
                         />
-                      </div>
-                      <div className="w-1/12 px-2 py-1 flex justify-center">
-                        <input
-                          type="checkbox"
+                      </Box>
+                      <Box sx={{ width: "8.33%", px: 1, py: 0.5, display: "flex", justifyContent: "center" }}>
+                        <Checkbox
                           checked={!!attr.show}
                           onChange={() => handleAttributeChange(index, "show")}
                           disabled={!selectAllAttributes}
-                          className={`w-3 h-3 rounded ${selectAllAttributes ? "text-blue-600 cursor-pointer" : "text-gray-300 dark:text-gray-600 cursor-not-allowed opacity-50"}`}
+                          size="small"
+                          sx={{ p: 0 }}
                         />
-                      </div>
-                      <div className="w-1/12 px-2 py-1 flex justify-center">
-                        <input
-                          type="checkbox"
+                      </Box>
+                      <Box sx={{ width: "8.33%", px: 1, py: 0.5, display: "flex", justifyContent: "center" }}>
+                        <Checkbox
                           checked={!!attr.rol}
                           onChange={() => handleAttributeChange(index, "rol")}
                           disabled={!selectAllAttributes}
-                          className={`w-3 h-3 rounded ${selectAllAttributes ? "text-blue-600 cursor-pointer" : "text-gray-300 dark:text-gray-600 cursor-not-allowed opacity-50"}`}
+                          size="small"
+                          sx={{ p: 0 }}
                         />
-                      </div>
-                    </div>
+                      </Box>
+                    </Stack>
                   ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+                </Box>
+              </Box>
+            </Box>
+          </Box>
+        </Card>
+      </Box>
+    </Box>
   );
 };
 

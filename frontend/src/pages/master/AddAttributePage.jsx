@@ -2,6 +2,8 @@ import { ArrowLeft, PlusCircle, Save, Trash2 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
+import { Box, Button, Card, Stack, Typography, TextField, MenuItem, Table, TableBody, TableRow, TableCell, IconButton } from "@mui/material";
+import PageHeader from "../../components/PageHeader";
 import {
   CheckboxInput,
   SelectInput,
@@ -445,7 +447,7 @@ const AddAttributePage = () => {
     switch (formData.productType) {
       case "MARKER":
         return (
-          <div className="col-span-12 lg:col-span-4 space-y-1.5">
+          <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 0.75 }}>
             {[
               "code",
               "name",
@@ -495,7 +497,7 @@ const AddAttributePage = () => {
               checked={formData.giftMarker}
               onChange={handleChange}
             />
-          </div>
+          </Box>
         );
 
       // -----------------------------------
@@ -504,7 +506,7 @@ const AddAttributePage = () => {
       case "SIZEGROUP":
         return (
           <>
-            <div className="col-span-12 lg:col-span-4 space-y-1.5 border-l border-r border-gray-100 dark:border-gray-700 px-3">
+            <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 0.75, borderLeft: 1, borderRight: 1, borderColor: "divider", px: 1.5 }}>
               <TextInput
                 label="Code"
                 name="code"
@@ -530,67 +532,71 @@ const AddAttributePage = () => {
                 checked={formData.enableSizeRatio}
                 onChange={handleChange}
               />
-            </div>
-            <div className="col-span-12 lg:col-span-4 space-y-1.5">
-              <div className="border rounded-sm overflow-hidden border-gray-300 dark:border-gray-600">
+            </Box>
+            <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 0.75 }}>
+              <Box sx={{ border: 1, borderColor: "grey.300", borderRadius: "3.5px", overflow: "hidden" }}>
                 {/* Header */}
-                <div className="flex bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600 p-2 text-xs font-semibold text-gray-700 dark:text-gray-300">
-                  <div className="flex-1 px-1">Size</div>
-                  <div className="w-10 px-1 text-right">Remove</div>
-                </div>
+                <Stack direction="row" sx={{ bgcolor: "action.hover", borderBottom: 1, borderColor: "divider", p: 1, fontSize: 10.5, fontWeight: 600, color: "text.secondary" }}>
+                  <Box sx={{ flex: 1, px: 0.5 }}>Size</Box>
+                  <Box sx={{ width: 40, px: 0.5, textAlign: "right" }}>Remove</Box>
+                </Stack>
 
                 {/* Input Row */}
-                <div className="flex items-center border-b dark:border-gray-700 p-2 gap-2">
-                  <select
+                <Stack direction="row" sx={{ alignItems: "center", borderBottom: 1, borderColor: "divider", p: 1, gap: 1 }}>
+                  <TextField
+                    select
                     value={selectedSizeId}
                     onChange={(e) => setSelectedSizeId(e.target.value)}
-                    className="flex-1 border border-gray-300 dark:border-gray-600 rounded-sm p-1.5 text-xs bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500"
+                    size="small"
+                    sx={{ flex: 1, "& .MuiInputBase-input": { fontSize: 10.5, py: 0.75 } }}
                   >
-                    <option value="">Select Size</option>
+                    <MenuItem value="">Select Size</MenuItem>
                     {availableSizes
                       .filter((s) => !sizeList.some((sl) => sl.id === s.id))
                       .map((s) => (
-                        <option key={s.id} value={s.id}>
+                        <MenuItem key={s.id} value={s.id}>
                           {s.size_name}
-                        </option>
+                        </MenuItem>
                       ))}
-                  </select>
-                  <button
+                  </TextField>
+                  <Button
                     type="button"
                     onClick={handleAddSize}
-                    className="glass-btn glass-btn-primary flex items-center gap-1"
+                    className="glass-btn glass-btn-primary"
+                    startIcon={<PlusCircle className="w-3 h-3" />}
                   >
-                    <PlusCircle className="w-3 h-3" /> Add
-                  </button>
-                </div>
+                    Add
+                  </Button>
+                </Stack>
 
                 {/* Size rows */}
-                <div className="text-xs">
+                <Box sx={{ fontSize: 10.5 }}>
                   {sizeList.length === 0 ? (
-                    <div className="text-gray-400 dark:text-gray-500 italic p-3 text-center">No sizes added</div>
+                    <Box sx={{ color: "text.disabled", fontStyle: "italic", p: 1.5, textAlign: "center" }}>No sizes added</Box>
                   ) : (
-                    <table className="w-full">
-                      <tbody>
+                    <Table sx={{ width: "100%" }} size="small">
+                      <TableBody>
                         {sizeList.map((s) => (
-                          <tr key={s.id} className="border-t dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                            <td className="p-2 flex-1">{s.size_name}</td>
-                            <td className="p-2 text-right">
-                              <button
+                          <TableRow key={s.id} hover>
+                            <TableCell>{s.size_name}</TableCell>
+                            <TableCell align="right">
+                              <IconButton
                                 type="button"
                                 onClick={() => handleRemoveSize(s.id)}
-                                className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition"
+                                size="small"
+                                sx={{ color: "error.main", "&:hover": { color: "error.dark" } }}
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </td>
-                          </tr>
+                              </IconButton>
+                            </TableCell>
+                          </TableRow>
                         ))}
-                      </tbody>
-                    </table>
+                      </TableBody>
+                    </Table>
                   )}
-                </div>
-              </div>
-            </div>
+                </Box>
+              </Box>
+            </Box>
           </>
         );
 
@@ -599,7 +605,7 @@ const AddAttributePage = () => {
       // -----------------------------------
       case "SIZE":
         return (
-          <div className="col-span-12 lg:col-span-4 space-y-1.5">
+          <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 0.75 }}>
             <TextInput
               label="Code"
               name="code"
@@ -671,7 +677,7 @@ const AddAttributePage = () => {
               checked={formData.isVariant}
               onChange={handleChange}
             />
-          </div>
+          </Box>
         );
 
       // -----------------------------------
@@ -679,7 +685,7 @@ const AddAttributePage = () => {
       // -----------------------------------
       case "PRICETAGS":
         return (
-          <div className="col-span-12 lg:col-span-4 space-y-1.5">
+          <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 0.75 }}>
             <TextInput
               label="Code"
               name="code"
@@ -706,11 +712,11 @@ const AddAttributePage = () => {
               onChange={handleChange}
             />
 
-            <div className="border dark:border-gray-700 p-2 text-xs bg-gray-50 dark:bg-gray-700 rounded">
-              <h4 className="font-semibold mb-1">Pricing Rules</h4>
-              <p className="text-gray-500 dark:text-gray-400">Pricing rules grid here…</p>
-            </div>
-          </div>
+            <Box sx={{ border: 1, borderColor: "divider", p: 1, fontSize: 10.5, bgcolor: "action.hover", borderRadius: "3.5px" }}>
+              <Typography component="h4" sx={{ fontWeight: 600, mb: 0.5 }}>Pricing Rules</Typography>
+              <Typography sx={{ color: "text.secondary" }}>Pricing rules grid here…</Typography>
+            </Box>
+          </Box>
         );
 
       // -----------------------------------
@@ -718,7 +724,7 @@ const AddAttributePage = () => {
       // -----------------------------------
       case "DIVISION":
         return (
-          <div className="col-span-12 lg:col-span-4 space-y-1.5">
+          <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 0.75 }}>
             <TextInput
               label="Code"
               name="code"
@@ -757,11 +763,11 @@ const AddAttributePage = () => {
               checked={formData.Costing}
               onChange={handleChange}
             />
-          </div>
+          </Box>
         );
       default:
         return (
-          <div className="col-span-12 lg:col-span-4 space-y-1.5">
+          <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 0.75 }}>
             {/* Name field — shown for every attribute */}
             <TextInput
               label="Name"
@@ -852,82 +858,85 @@ const AddAttributePage = () => {
               />
             )}
             {!formData.productType && (
-              <p className="text-sm text-gray-500 dark:text-gray-400 pt-3">
+              <Typography sx={{ fontSize: 12.25, color: "text.secondary", pt: 1.5 }}>
                 Select an attribute type to view the required fields.
-              </p>
+              </Typography>
             )}
-          </div>
+          </Box>
         );
     }
   };
 
   return (
-    <div className="min-h-[70vh] bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100">
+    <Box sx={{ minHeight: "70vh", bgcolor: "background.default", color: "text.primary" }}>
       {/* Header */}
-      <div className="flex justify-between items-center px-4 py-1 bg-white dark:bg-gray-800 border-b dark:border-gray-700 shadow-sm">
-        <div className="flex items-center space-x-2">
-          <button
-            className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
-            onClick={() => navigate(-1)}
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </button>
-          <h1 className="text-sm font-semibold flex items-center gap-1">
-            <button
+      <PageHeader
+        title={
+          <Stack direction="row" sx={{ alignItems: "center" }} spacing={0.5}>
+            <Box
+              component="button"
               type="button"
               onClick={() => navigate("/masters")}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
+              sx={{ color: "primary.main", "&:hover": { color: "primary.dark", textDecoration: "underline" } }}
             >
               Master
-            </button>
-            <span className="text-gray-500 dark:text-gray-400">/</span>
-            <button
+            </Box>
+            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
+            <Box
+              component="button"
               type="button"
               onClick={() => navigate("/masters/product-attributes")}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
+              sx={{ color: "primary.main", "&:hover": { color: "primary.dark", textDecoration: "underline" } }}
             >
               Product Attributes
-            </button>
-            <span className="text-gray-500 dark:text-gray-400">/</span>
-            <span>{editingId ? "Edit" : "Add New"}</span>
-          </h1>
-        </div>
+            </Box>
+            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
+            <Box component="span">{editingId ? "Edit" : "Add New"}</Box>
+          </Stack>
+        }
+        onBack={() => navigate(-1)}
+        actions={
+          <Stack direction="row" sx={{ alignItems: "center" }} spacing={1.5}>
+            <Button
+              variant="text"
+              onClick={handleNew}
+              className="topbar-action-btn topbar-action-new"
+              startIcon={<PlusCircle className="w-3 h-3" />}
+              size="small"
+            >
+              New
+            </Button>
 
-        <div className="flex items-center space-x-3 text-xs font-medium text-gray-700 dark:text-gray-300">
-          <button
-            onClick={handleNew}
-            className="topbar-action-btn topbar-action-new"
-          >
-            <PlusCircle className="w-3 h-3 mr-1" /> New
-          </button>
+            <Typography variant="body2" component="span" sx={{ color: "text.disabled" }}>|</Typography>
 
-          <span>|</span>
+            <Button
+              onClick={handleSave}
+              disabled={saving}
+              className="glass-btn glass-btn-success"
+              startIcon={<Save className="w-3 h-3" />}
+              size="small"
+            >
+              {saving ? "Saving…" : "Save"}
+            </Button>
 
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="glass-btn glass-btn-success flex items-center disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            <Save className="w-3 h-3 mr-1" /> {saving ? "Saving…" : "Save"}
-          </button>
+            {formData.productType && (
+              <>
+                <Typography variant="body2" component="span" sx={{ color: "text.disabled" }}>|</Typography>
+                <UploadImportButton
+                  endpoint={importEndpoint}
+                  fieldConfig={importFieldConfig}
+                  transform={importTransform}
+                  className="text-xs font-medium"
+                />
+              </>
+            )}
+          </Stack>
+        }
+      />
 
-          {formData.productType && (
-            <>
-              <span>|</span>
-              <UploadImportButton
-                endpoint={importEndpoint}
-                fieldConfig={importFieldConfig}
-                transform={importTransform}
-                className="text-xs font-medium"
-              />
-            </>
-          )}
-        </div>
-      </div>
-
-      <div className="p-3 pb-16">
-        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg border border-gray-200 dark:border-gray-700 p-3">
-          <div className="flex items-center justify-center p-4 ">
+      <Box sx={{ p: 1.5, pb: 8 }}>
+        <Card variant="outlined" sx={{ p: 1.5 }}>
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", p: 2 }}>
             <SelectInput
               label="Product Type"
               name="productType"
@@ -936,15 +945,15 @@ const AddAttributePage = () => {
               onChange={handleChange}
               disabled={!!editingId}
             />
-          </div>
+          </Box>
           {loadingRecord ? (
-            <div className="text-center py-8 text-gray-500 dark:text-gray-400">Loading...</div>
+            <Box sx={{ textAlign: "center", py: 4, color: "text.secondary" }}>Loading...</Box>
           ) : (
-            <div className="grid grid-cols-12 gap-3">{renderDynamicFields()}</div>
+            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "repeat(12, 1fr)" }, gap: 1.5 }}>{renderDynamicFields()}</Box>
           )}
-        </div>
-      </div>
-    </div>
+        </Card>
+      </Box>
+    </Box>
   );
 };
 

@@ -3,6 +3,8 @@ import { ArrowLeft, Pencil, PlusCircle, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import api from "../../api/axios";
+import { Box, Button, Card, Stack, Typography, TextField, MenuItem, IconButton, alpha } from "@mui/material";
+import PageHeader from "../../components/PageHeader";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import ExportBottomSheet from "../../components/ExportBottomSheet";
 import FilterableDataTable from "../../components/FilterableDataTable";
@@ -552,7 +554,7 @@ const Product = () => {
   }, [showBulkEditPanel, bulkBrandOptions.length]);
 
   return (
-    <div className="h-full flex flex-col bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 master-responsive">
+    <Box sx={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden", bgcolor: "background.default", color: "text.primary" }}>
       <ConfirmDialog
         open={confirm.open}
         message={`Are you sure you want to delete "${confirm.name}"? This action cannot be undone.`}
@@ -565,263 +567,314 @@ const Product = () => {
         onConfirm={handleBulkDeleteConfirmed}
         onCancel={() => setBulkConfirm({ open: false, keys: [] })}
       />
-      <div className="flex justify-between items-center px-4 py-1 bg-white dark:bg-gray-800 border-b dark:border-gray-700 shadow-sm">
-        <div className="flex items-center space-x-2">
-          <button
-            className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
-            onClick={() => navigate(-1)}
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </button>
-          <h1 className="text-sm font-semibold flex items-center gap-1">
-            <button
+      <PageHeader
+        title={
+          <Stack direction="row" sx={{ alignItems: "center" }} spacing={0.5}>
+            <Box
+              component="button"
               type="button"
               onClick={() => navigate("/masters")}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
+              sx={{ color: "primary.main", "&:hover": { color: "primary.dark", textDecoration: "underline" } }}
             >
               Master
-            </button>
-            <span className="text-gray-500 dark:text-gray-400">/</span>
-            <span>Products</span>
-          </h1>
-        </div>
-        <div className="flex items-center space-x-3 text-xs font-medium text-gray-700 dark:text-gray-300">
-          <button
-            onClick={handleNew}
-            className="topbar-action-btn topbar-action-new"
-          >
-            <PlusCircle className="w-3 h-3 mr-1" /> New
-          </button>
-          <span>|</span>
-          <UploadImportButton
-            endpoint="/products/bulk"
-            fieldConfig={PRODUCT_IMPORT_CONFIG}
-            onDone={() => {
-              if (page === 1) fetchProducts(1, limit, tableSearch);
-              else setPage(1);
-            }}
-          />
-          <span>|</span>
-          <ExportBottomSheet
-            columns={PRODUCT_COLUMNS}
-            rows={products}
-            selectedRowKeys={selectedRows}
-            rowKey="rowKey"
-            onExportRows={handleExportRows}
-            fileName="products"
-            buttonClassName="topbar-action-btn topbar-action-export"
-          />
-        </div>
-      </div>
+            </Box>
+            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
+            <Box component="span">Products</Box>
+          </Stack>
+        }
+        onBack={() => navigate(-1)}
+        actions={
+          <Stack direction="row" sx={{ alignItems: "center" }} spacing={1.5}>
+            <Button
+              variant="text"
+              onClick={handleNew}
+              className="topbar-action-btn topbar-action-new"
+              startIcon={<PlusCircle className="w-3 h-3" />}
+              size="small"
+            >
+              New
+            </Button>
+            <Typography variant="body2" component="span" sx={{ color: "text.disabled" }}>|</Typography>
+            <UploadImportButton
+              endpoint="/products/bulk"
+              fieldConfig={PRODUCT_IMPORT_CONFIG}
+              onDone={() => {
+                if (page === 1) fetchProducts(1, limit, tableSearch);
+                else setPage(1);
+              }}
+            />
+            <Typography variant="body2" component="span" sx={{ color: "text.disabled" }}>|</Typography>
+            <ExportBottomSheet
+              columns={PRODUCT_COLUMNS}
+              rows={products}
+              selectedRowKeys={selectedRows}
+              rowKey="rowKey"
+              onExportRows={handleExportRows}
+              fileName="products"
+              buttonClassName="topbar-action-btn topbar-action-export"
+            />
+          </Stack>
+        }
+      />
 
-      <div className="p-3 flex-1 min-h-0">
-        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg border border-gray-200 dark:border-gray-700 h-full flex flex-col min-h-0 px-3 pt-3 pb-0.5">
-          <h2 className="text-base font-bold mb-1.5">Product Search</h2>
-          <div className="flex flex-col lg:flex-row gap-3 flex-1 min-h-0">
+      <Box sx={{ p: 1.5, flex: 1, minHeight: 0 }}>
+        <Card
+          variant="outlined"
+          sx={{
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            minHeight: 0,
+            p: 1.5,
+            pb: 0.5,
+          }}
+        >
+          <Typography variant="h6" component="h2" sx={{ fontWeight: 700, mb: 1, fontSize: "1rem" }}>
+            Product Search
+          </Typography>
+          <Box sx={{ display: "flex", flexDirection: { xs: "column", lg: "row" }, gap: 1.5, flex: 1, minHeight: 0 }}>
             {showBulkEditPanel && (
-              <div className="lg:w-[28rem] w-full shrink-0 border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/30 rounded-md p-2.5 overflow-y-auto max-h-[420px] lg:max-h-full">
-                <h3 className="text-[11px] font-semibold text-blue-700 dark:text-blue-400 mb-2">
+              <Box sx={{ width: { xs: "100%", lg: "448px" }, flexShrink: 0, border: 1, borderColor: (theme) => alpha(theme.palette.primary.main, 0.3), bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.06), borderRadius: "5.25px", p: 1.5, overflowY: "auto", maxHeight: { xs: 420, lg: "100%" } }}>
+                <Typography component="h3" sx={{ fontSize: 11, fontWeight: 600, color: "primary.main", mb: 1 }}>
                   Bulk Edit ({selectedRows.length} selected)
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
-                  <div>
-                    <label className="block text-gray-700 dark:text-gray-300 mb-0.5">Change Brand</label>
-                    <select
+                </Typography>
+                <Box sx={{ display: "grid", gridTemplateColumns: { sm: "1fr 1fr" }, gap: 1, fontSize: 11 }}>
+                  <Box>
+                    <Typography component="label" sx={{ display: "block", color: "text.secondary", mb: 0.25 }}>Change Brand</Typography>
+                    <TextField
+                      select
                       value={bulkEditForm.brandId}
                       onChange={(e) => handleBulkFieldChange("brandId", e.target.value)}
-                      className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-1.5 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-[11px]"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { fontSize: 11, py: 0.5 } }}
                     >
-                      <option value="">Select Brand</option>
+                      <MenuItem value="">Select Brand</MenuItem>
                       {bulkBrandOptions.map((opt) => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
                       ))}
-                    </select>
-                  </div>
+                    </TextField>
+                  </Box>
 
-                  <div>
-                    <label className="block text-gray-700 dark:text-gray-300 mb-0.5">Change Purchase Tax</label>
-                    <select
+                  <Box>
+                    <Typography component="label" sx={{ display: "block", color: "text.secondary", mb: 0.25 }}>Change Purchase Tax</Typography>
+                    <TextField
+                      select
                       value={bulkEditForm.purchaseTaxId}
                       onChange={(e) => handleBulkFieldChange("purchaseTaxId", e.target.value)}
-                      className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-1.5 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-[11px]"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { fontSize: 11, py: 0.5 } }}
                     >
-                      <option value="">Select Purchase Tax</option>
+                      <MenuItem value="">Select Purchase Tax</MenuItem>
                       {bulkTaxOptions.map((opt) => (
-                        <option key={`p-${opt.value}`} value={opt.value}>{opt.label}</option>
+                        <MenuItem key={`p-${opt.value}`} value={opt.value}>{opt.label}</MenuItem>
                       ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-gray-700 dark:text-gray-300 mb-0.5">Change Sales Tax</label>
-                    <select
+                    </TextField>
+                  </Box>
+                  <Box>
+                    <Typography component="label" sx={{ display: "block", color: "text.secondary", mb: 0.25 }}>Change Sales Tax</Typography>
+                    <TextField
+                      select
                       value={bulkEditForm.salesTaxId}
                       onChange={(e) => handleBulkFieldChange("salesTaxId", e.target.value)}
-                      className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-1.5 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-[11px]"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { fontSize: 11, py: 0.5 } }}
                     >
-                      <option value="">Select Sales Tax</option>
+                      <MenuItem value="">Select Sales Tax</MenuItem>
                       {bulkTaxOptions.map((opt) => (
-                        <option key={`s-${opt.value}`} value={opt.value}>{opt.label}</option>
+                        <MenuItem key={`s-${opt.value}`} value={opt.value}>{opt.label}</MenuItem>
                       ))}
-                    </select>
-                  </div>
+                    </TextField>
+                  </Box>
 
-                  <div>
-                    <label className="block text-gray-700 dark:text-gray-300 mb-0.5">Change Selling Mode</label>
-                    <select
+                  <Box>
+                    <Typography component="label" sx={{ display: "block", color: "text.secondary", mb: 0.25 }}>Change Selling Mode</Typography>
+                    <TextField
+                      select
                       value={bulkEditForm.sellingMode}
                       onChange={(e) => handleBulkFieldChange("sellingMode", e.target.value)}
-                      className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-1.5 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-[11px]"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { fontSize: 11, py: 0.5 } }}
                     >
-                      <option value="">Select Selling Mode</option>
+                      <MenuItem value="">Select Selling Mode</MenuItem>
                       {SELLING_MODE_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
                       ))}
-                    </select>
-                  </div>
+                    </TextField>
+                  </Box>
 
-                  <div>
-                    <label className="block text-gray-700 dark:text-gray-300 mb-0.5">Change Barcode Mode</label>
-                    <select
+                  <Box>
+                    <Typography component="label" sx={{ display: "block", color: "text.secondary", mb: 0.25 }}>Change Barcode Mode</Typography>
+                    <TextField
+                      select
                       value={bulkEditForm.barcodeMode}
                       onChange={(e) => handleBulkFieldChange("barcodeMode", e.target.value)}
-                      className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-1.5 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-[11px]"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { fontSize: 11, py: 0.5 } }}
                     >
-                      <option value="">Select Barcode Mode</option>
+                      <MenuItem value="">Select Barcode Mode</MenuItem>
                       {BARCODE_MODE_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
                       ))}
-                    </select>
-                  </div>
+                    </TextField>
+                  </Box>
 
-                  <div>
-                    <label className="block text-gray-700 dark:text-gray-300 mb-0.5">Change Barcode Source</label>
-                    <select
+                  <Box>
+                    <Typography component="label" sx={{ display: "block", color: "text.secondary", mb: 0.25 }}>Change Barcode Source</Typography>
+                    <TextField
+                      select
                       value={bulkEditForm.barcodeSource}
                       onChange={(e) => handleBulkFieldChange("barcodeSource", e.target.value)}
-                      className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-1.5 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-[11px]"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { fontSize: 11, py: 0.5 } }}
                     >
-                      <option value="">Select Barcode Source</option>
+                      <MenuItem value="">Select Barcode Source</MenuItem>
                       {BARCODE_SOURCE_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
                       ))}
-                    </select>
-                  </div>
+                    </TextField>
+                  </Box>
 
-                  <div>
-                    <label className="block text-gray-700 dark:text-gray-300 mb-0.5">Change Discount Mode</label>
-                    <select
+                  <Box>
+                    <Typography component="label" sx={{ display: "block", color: "text.secondary", mb: 0.25 }}>Change Discount Mode</Typography>
+                    <TextField
+                      select
                       value={bulkEditForm.discountMode}
                       onChange={(e) => handleBulkFieldChange("discountMode", e.target.value)}
-                      className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-1.5 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-[11px]"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { fontSize: 11, py: 0.5 } }}
                     >
-                      <option value="">Select Discount Mode</option>
+                      <MenuItem value="">Select Discount Mode</MenuItem>
                       {DISCOUNT_MODE_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
                       ))}
-                    </select>
-                  </div>
+                    </TextField>
+                  </Box>
 
-                  <div>
-                    <label className="block text-gray-700 dark:text-gray-300 mb-0.5">Change Purchase Plan Mode</label>
-                    <select
+                  <Box>
+                    <Typography component="label" sx={{ display: "block", color: "text.secondary", mb: 0.25 }}>Change Purchase Plan Mode</Typography>
+                    <TextField
+                      select
                       value={bulkEditForm.purchasePlanMode}
                       onChange={(e) => handleBulkFieldChange("purchasePlanMode", e.target.value)}
-                      className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-1.5 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-[11px]"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { fontSize: 11, py: 0.5 } }}
                     >
-                      <option value="">Select Purchase Plan Mode</option>
+                      <MenuItem value="">Select Purchase Plan Mode</MenuItem>
                       {PURCHASE_PLAN_MODE_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
                       ))}
-                    </select>
-                  </div>
+                    </TextField>
+                  </Box>
 
-                  <div>
-                    <label className="block text-gray-700 dark:text-gray-300 mb-0.5">Change Expected Gender</label>
-                    <select
+                  <Box>
+                    <Typography component="label" sx={{ display: "block", color: "text.secondary", mb: 0.25 }}>Change Expected Gender</Typography>
+                    <TextField
+                      select
                       value={bulkEditForm.expectedGender}
                       onChange={(e) => handleBulkFieldChange("expectedGender", e.target.value)}
-                      className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-1.5 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-[11px]"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { fontSize: 11, py: 0.5 } }}
                     >
-                      <option value="">Select Expected Gender</option>
+                      <MenuItem value="">Select Expected Gender</MenuItem>
                       {EXPECTED_GENDER_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
                       ))}
-                    </select>
-                  </div>
+                    </TextField>
+                  </Box>
 
-                  <div>
-                    <label className="block text-gray-700 dark:text-gray-300 mb-0.5">Change Size Group</label>
-                    <select
+                  <Box>
+                    <Typography component="label" sx={{ display: "block", color: "text.secondary", mb: 0.25 }}>Change Size Group</Typography>
+                    <TextField
+                      select
                       value={bulkEditForm.sizeGroupId}
                       onChange={(e) => handleBulkFieldChange("sizeGroupId", e.target.value)}
-                      className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-1.5 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-[11px]"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { fontSize: 11, py: 0.5 } }}
                     >
-                      <option value="">Select Size Group</option>
+                      <MenuItem value="">Select Size Group</MenuItem>
                       {bulkSizeGroupOptions.map((opt) => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
                       ))}
-                    </select>
-                  </div>
+                    </TextField>
+                  </Box>
 
-                  <div>
-                    <label className="block text-gray-700 dark:text-gray-300 mb-0.5">Change Type</label>
-                    <select
+                  <Box>
+                    <Typography component="label" sx={{ display: "block", color: "text.secondary", mb: 0.25 }}>Change Type</Typography>
+                    <TextField
+                      select
                       value={bulkEditForm.type}
                       onChange={(e) => handleBulkFieldChange("type", e.target.value)}
-                      className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-1.5 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-[11px]"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { fontSize: 11, py: 0.5 } }}
                     >
-                      <option value="">Select Type</option>
+                      <MenuItem value="">Select Type</MenuItem>
                       {TYPE_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
                       ))}
-                    </select>
-                  </div>
+                    </TextField>
+                  </Box>
 
-                  <div>
-                    <label className="block text-gray-700 dark:text-gray-300 mb-0.5">Change Section</label>
-                    <input
+                  <Box>
+                    <Typography component="label" sx={{ display: "block", color: "text.secondary", mb: 0.25 }}>Change Section</Typography>
+                    <TextField
                       type="text"
                       value={bulkEditForm.section}
                       onChange={(e) => handleBulkFieldChange("section", e.target.value)}
-                      className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-1.5 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-[11px]"
                       placeholder="Section"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { fontSize: 11, py: 0.5 } }}
                     />
-                  </div>
+                  </Box>
 
-                  <div>
-                    <label className="block text-gray-700 dark:text-gray-300 mb-0.5">Change HSN</label>
-                    <input
+                  <Box>
+                    <Typography component="label" sx={{ display: "block", color: "text.secondary", mb: 0.25 }}>Change HSN</Typography>
+                    <TextField
                       type="text"
                       value={bulkEditForm.hsn}
                       onChange={(e) => handleBulkFieldChange("hsn", e.target.value)}
-                      className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-1.5 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-[11px]"
                       placeholder="HSN"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { fontSize: 11, py: 0.5 } }}
                     />
-                  </div>
-                </div>
+                  </Box>
+                </Box>
 
-                <div className="mt-2.5 flex items-center gap-2">
-                  <button
+                <Stack direction="row" sx={{ mt: 1.5, alignItems: "center", gap: 1 }}>
+                  <Button
                     type="button"
                     onClick={handleBulkUpdate}
                     disabled={bulkUpdating}
-                    className="glass-btn glass-btn-primary disabled:opacity-50"
+                    className="glass-btn glass-btn-primary"
                   >
                     {bulkUpdating ? "Updating..." : "Update Selected"}
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
                     onClick={resetBulkEditForm}
                     disabled={bulkUpdating}
-                    className="px-2.5 py-1 border border-gray-300 dark:border-gray-600 rounded-sm text-[11px] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 disabled:opacity-50"
+                    variant="outlined"
+                    sx={{ fontSize: 11, color: "text.secondary", borderColor: "grey.300" }}
                   >
                     Reset
-                  </button>
-                </div>
-              </div>
+                  </Button>
+                </Stack>
+              </Box>
             )}
 
-            <div className={`${showBulkEditPanel ? "lg:flex-[0_0_62%]" : "flex-1"} min-w-0 flex flex-col min-h-0`}>
+            <Box sx={{ flex: showBulkEditPanel ? { lg: "0 0 62%" } : 1, minWidth: 0, display: "flex", flexDirection: "column", minHeight: 0 }}>
               <FilterableDataTable
                 rows={products}
                 columns={PRODUCT_COLUMNS}
@@ -862,34 +915,36 @@ const Product = () => {
                 onRowClick={handleEdit}
                 fillHeight
                 renderActions={(product, { selectedCount } = {}) => (
-                  <div className="flex items-center gap-3">
-                    <button
+                  <Stack direction="row" sx={{ alignItems: "center", gap: 1.5 }}>
+                    <IconButton
                       type="button"
                       onClick={() => handleEdit(product)}
                       title="Edit"
                       disabled={selectedCount > 1}
-                      className="glass-btn glass-btn-primary rounded p-1.5"
+                      className="glass-btn glass-btn-primary"
+                      sx={{ borderRadius: "3.5px", p: 0.75 }}
                     >
                       <Pencil className="w-4 h-4" />
-                    </button>
-                    <button
+                    </IconButton>
+                    <IconButton
                       type="button"
                       onClick={() =>
                         setConfirm({ open: true, code: product.code, name: product.name, company_id: product.company_id })
                       }
-                      className="glass-btn glass-btn-danger rounded p-1.5"
+                      className="glass-btn glass-btn-danger"
+                      sx={{ borderRadius: "3.5px", p: 0.75 }}
                       title="Delete"
                     >
                       <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+                    </IconButton>
+                  </Stack>
                 )}
               />
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+            </Box>
+          </Box>
+        </Card>
+      </Box>
+    </Box>
   );
 };
 

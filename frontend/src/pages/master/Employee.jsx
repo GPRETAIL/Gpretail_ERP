@@ -10,6 +10,8 @@ import { createGroupFetchers } from "../../utils/serverGrouping";
 // Matches config('pagination.resources.employees.groupable_columns') on the backend.
 const { onFetchGroupSummaries: fetchEmployeeGroupSummaries, onFetchGroupRows: fetchEmployeeGroupRows } =
   createGroupFetchers("/employees", { is_active: "is_active" });
+import { Box, Button, Card, Stack, Typography, TextField, MenuItem, Checkbox, IconButton, Table, TableHead, TableBody, TableRow, TableCell } from "@mui/material";
+import PageHeader from "../../components/PageHeader";
 import ExportBottomSheet from "../../components/ExportBottomSheet";
 import UploadImportButton from "../../components/UploadImportButton";
 import { handleEnterKeyNavigation } from "../../utils/enterToNextField";
@@ -101,86 +103,83 @@ const EMPLOYEE_IMPORT_CONFIG = {
 
 // ─── Helper components (module-level to avoid re-mount on re-render) ─────────
 
-const TextInput = ({ label, name, required = false, value, onChange, placeholder = "", type = "text", disabled = false, className = "" }) => (
-  <div className={`flex items-center ${className}`}>
-    <label className={`w-[40%] ${FORM_LABEL_CLASS}`}>
-      {required && <span className="text-red-500 mr-1">*</span>}{label}
-    </label>
-    <div className="ml-1.5 flex flex-1 items-center">
-      <input type={type} name={name} value={value} onChange={onChange} placeholder={placeholder} disabled={disabled}
-        className={`flex-1 ${FORM_CONTROL_CLASS}`} />
-    </div>
-  </div>
+const TextInput = ({ label, name, required = false, value, onChange, placeholder = "", type = "text", disabled = false, sx }) => (
+  <Stack direction="row" sx={{ alignItems: "center", ...sx }}>
+    <Typography component="label" sx={{ width: "40%", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>
+      {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}{label}
+    </Typography>
+    <Stack direction="row" sx={{ ml: 0.75, flex: 1, alignItems: "center" }}>
+      <TextField type={type} name={name} value={value} onChange={onChange} placeholder={placeholder} disabled={disabled}
+        size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.5 } }} />
+    </Stack>
+  </Stack>
 );
 
-const SelectInput = ({ label, name, required = false, options = [], value, onChange, disabled = false, className = "" }) => (
-  <div className={`flex items-center ${className}`}>
-    <label className={`w-[40%] ${FORM_LABEL_CLASS}`}>
-      {required && <span className="text-red-500 mr-1">*</span>}{label}
-    </label>
-    <div className="ml-1.5 flex flex-1 items-center">
-      <select name={name} value={value} onChange={onChange} disabled={disabled}
-        className={`flex-1 ${FORM_CONTROL_CLASS}`}>
-        <option value="">Select {label}</option>
-        {options.map((o, i) => <option key={i} value={o.value ?? o.label}>{o.label}</option>)}
-      </select>
-    </div>
-  </div>
+const SelectInput = ({ label, name, required = false, options = [], value, onChange, disabled = false, sx }) => (
+  <Stack direction="row" sx={{ alignItems: "center", ...sx }}>
+    <Typography component="label" sx={{ width: "40%", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>
+      {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}{label}
+    </Typography>
+    <Stack direction="row" sx={{ ml: 0.75, flex: 1, alignItems: "center" }}>
+      <TextField select name={name} value={value} onChange={onChange} disabled={disabled}
+        size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.5 } }}>
+        <MenuItem value="">Select {label}</MenuItem>
+        {options.map((o, i) => <MenuItem key={i} value={o.value ?? o.label}>{o.label}</MenuItem>)}
+      </TextField>
+    </Stack>
+  </Stack>
 );
 
-const CheckboxInput = ({ label, name, checked, onChange, disabled = false, className = "" }) => (
-  <div className={`flex items-center ${className}`}>
-    <label className={`w-[40%] ${FORM_LABEL_CLASS}`}>{label}</label>
-    <div className="ml-1.5 flex-1">
-      <input type="checkbox" name={name} checked={checked} onChange={onChange} disabled={disabled}
-        className="h-3 w-3 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-1 focus:ring-blue-500" />
-    </div>
-  </div>
+const CheckboxInput = ({ label, name, checked, onChange, disabled = false, sx }) => (
+  <Stack direction="row" sx={{ alignItems: "center", ...sx }}>
+    <Typography component="label" sx={{ width: "40%", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>{label}</Typography>
+    <Box sx={{ ml: 0.75, flex: 1 }}>
+      <Checkbox name={name} checked={checked} onChange={onChange} disabled={disabled} size="small" sx={{ p: 0 }} />
+    </Box>
+  </Stack>
 );
 
-const CheckboxWithField = ({ label, checkName, checked, fieldName, fieldValue, onChange, fieldType = "text", fieldPlaceholder = "", className = "" }) => (
-  <div className={`flex items-center ${className}`}>
-    <label className={`w-[40%] ${FORM_LABEL_CLASS}`}>{label}</label>
-    <div className="ml-1.5 flex flex-1 items-center gap-1.5">
-      <input type="checkbox" name={checkName} checked={checked} onChange={onChange}
-        className="h-3 w-3 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-1 focus:ring-blue-500" />
-      <input type={fieldType} name={fieldName} value={fieldValue} onChange={onChange} disabled={!checked}
+const CheckboxWithField = ({ label, checkName, checked, fieldName, fieldValue, onChange, fieldType = "text", fieldPlaceholder = "", sx }) => (
+  <Stack direction="row" sx={{ alignItems: "center", ...sx }}>
+    <Typography component="label" sx={{ width: "40%", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>{label}</Typography>
+    <Stack direction="row" sx={{ ml: 0.75, flex: 1, alignItems: "center", gap: 0.75 }}>
+      <Checkbox name={checkName} checked={checked} onChange={onChange} size="small" sx={{ p: 0 }} />
+      <TextField type={fieldType} name={fieldName} value={fieldValue} onChange={onChange} disabled={!checked}
         placeholder={fieldPlaceholder}
-        className={`flex-1 ${FORM_CONTROL_CLASS}`} />
-    </div>
-  </div>
+        size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.5 } }} />
+    </Stack>
+  </Stack>
 );
 
 // Right side text input with narrower label
 const RTextInput = ({ label, name, required = false, value, onChange, placeholder = "", type = "text", disabled = false }) => (
-  <div className="flex items-center">
-    <label className={`w-[33%] pr-1 ${FORM_LABEL_CLASS}`}>
-      {required && <span className="text-red-500 mr-1">*</span>}{label}
-    </label>
-    <input type={type} name={name} value={value} onChange={onChange} placeholder={placeholder} disabled={disabled}
-      className={`w-[67%] ${FORM_CONTROL_CLASS}`} />
-  </div>
+  <Stack direction="row" sx={{ alignItems: "center" }}>
+    <Typography component="label" sx={{ width: "33%", pr: 0.5, fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>
+      {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}{label}
+    </Typography>
+    <TextField type={type} name={name} value={value} onChange={onChange} placeholder={placeholder} disabled={disabled}
+      size="small" sx={{ width: "67%", "& .MuiInputBase-input": { fontSize: 10.5, py: 0.5 } }} />
+  </Stack>
 );
 
 const RSelectInput = ({ label, name, required = false, options = [], value, onChange, disabled = false }) => (
-  <div className="flex items-center">
-    <label className={`w-[33%] pr-1 ${FORM_LABEL_CLASS}`}>
-      {required && <span className="text-red-500 mr-1">*</span>}{label}
-    </label>
-    <select name={name} value={value} onChange={onChange} disabled={disabled}
-      className={`w-[67%] ${FORM_CONTROL_CLASS}`}>
-      <option value="">Select {label}</option>
-      {options.map((o, i) => <option key={i} value={o.value ?? o.label}>{o.label}</option>)}
-    </select>
-  </div>
+  <Stack direction="row" sx={{ alignItems: "center" }}>
+    <Typography component="label" sx={{ width: "33%", pr: 0.5, fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>
+      {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}{label}
+    </Typography>
+    <TextField select name={name} value={value} onChange={onChange} disabled={disabled}
+      size="small" sx={{ width: "67%", "& .MuiInputBase-input": { fontSize: 10.5, py: 0.5 } }}>
+      <MenuItem value="">Select {label}</MenuItem>
+      {options.map((o, i) => <MenuItem key={i} value={o.value ?? o.label}>{o.label}</MenuItem>)}
+    </TextField>
+  </Stack>
 );
 
 const RCheckboxInput = ({ label, name, checked, onChange }) => (
-  <div className="flex items-center">
-    <label className={`w-[33%] pr-1 ${FORM_LABEL_CLASS}`}>{label}</label>
-    <input type="checkbox" name={name} checked={checked} onChange={onChange}
-      className="h-3 w-3 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-1 focus:ring-blue-500" />
-  </div>
+  <Stack direction="row" sx={{ alignItems: "center" }}>
+    <Typography component="label" sx={{ width: "33%", pr: 0.5, fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>{label}</Typography>
+    <Checkbox name={name} checked={checked} onChange={onChange} size="small" sx={{ p: 0 }} />
+  </Stack>
 );
 
 // ─── Static options ──────────────────────────────────────────────────────────
@@ -577,7 +576,7 @@ const Employee = () => {
   // ─── LEFT SIDE ─────────────────────────────────────────────────────────────
 
   const renderLeftSide = () => (
-    <div className="grid grid-cols-1 gap-x-3 gap-y-1.5 md:grid-cols-2">
+    <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, columnGap: 1.5, rowGap: 0.75 }}>
       <TextInput label="Employee Code" name="employee_code" value={formData.employee_code} onChange={handleChange} />
       <TextInput label="Contact No" name="contact_no" value={formData.contact_no} onChange={handleChange} />
       <TextInput label="Name" name="name" required value={formData.name} onChange={handleChange} />
@@ -594,11 +593,11 @@ const Employee = () => {
       <TextInput label="Date Of Birth" name="date_of_birth" value={formData.date_of_birth} onChange={handleChange} type="date" />
       <TextInput label="Date Of Joining" name="date_of_joining" value={formData.date_of_joining} onChange={handleChange} type="date" />
       <CheckboxWithField label="Hold Salary / Date" checkName="hold_salary" checked={formData.hold_salary}
-        fieldName="hold_salary_date" fieldValue={formData.hold_salary_date} onChange={handleChange} fieldType="date" className="md:col-span-2" />
+        fieldName="hold_salary_date" fieldValue={formData.hold_salary_date} onChange={handleChange} fieldType="date" sx={{ gridColumn: { md: "span 2" } }} />
       <CheckboxWithField label="Reason" checkName="reason_checked" checked={formData.reason_checked}
-        fieldName="reason" fieldValue={formData.reason} onChange={handleChange} fieldPlaceholder="Enter reason" className="md:col-span-2" />
+        fieldName="reason" fieldValue={formData.reason} onChange={handleChange} fieldPlaceholder="Enter reason" sx={{ gridColumn: { md: "span 2" } }} />
       <CheckboxWithField label="Allow System / UserName" checkName="allow_system" checked={formData.allow_system}
-        fieldName="system_username" fieldValue={formData.system_username} onChange={handleChange} fieldPlaceholder="Username" className="md:col-span-2" />
+        fieldName="system_username" fieldValue={formData.system_username} onChange={handleChange} fieldPlaceholder="Username" sx={{ gridColumn: { md: "span 2" } }} />
       <SelectInput label="Salary Mode" name="salary_mode" value={formData.salary_mode} onChange={handleChange} options={SALARY_MODE_OPTIONS} />
       <SelectInput label="Salary Structure" name="salary_structure_id" value={formData.salary_structure_id} onChange={handleChange} options={opts.salaryStructures} />
       <SelectInput label="Working Mode" name="working_mode" value={formData.working_mode} onChange={handleChange} options={WORKING_MODE_OPTIONS} />
@@ -608,39 +607,39 @@ const Employee = () => {
       <TextInput label="Incentive %" name="incentive_pct" value={formData.incentive_pct} onChange={handleChange} />
       <TextInput label="Referred By" name="referred_by" value={formData.referred_by} onChange={handleChange} />
       <SelectInput label="Leave Encashment" name="leave_encashment" value={formData.leave_encashment} onChange={handleChange} options={LEAVE_ENCASHMENT_OPTIONS} />
-      <div className="flex items-center pt-0.5 md:col-span-2">
-        <label className={`w-[40%] ${FORM_LABEL_CLASS}`}>OT / Beta</label>
-        <div className="ml-1.5 flex flex-1 items-center gap-3">
-          <label className="flex items-center gap-1 text-[11px] text-gray-700 dark:text-gray-300">
-            <input type="checkbox" name="e_ot" checked={formData.e_ot} onChange={handleChange} className="h-3 w-3 rounded border-gray-300 dark:border-gray-600 text-blue-600" /> E.OT
-          </label>
-          <label className="flex items-center gap-1 text-[11px] text-gray-700 dark:text-gray-300">
-            <input type="checkbox" name="m_ot" checked={formData.m_ot} onChange={handleChange} className="h-3 w-3 rounded border-gray-300 dark:border-gray-600 text-blue-600" /> M.OT
-          </label>
-          <label className="flex items-center gap-1 text-[11px] text-gray-700 dark:text-gray-300">
-            <input type="checkbox" name="beta" checked={formData.beta} onChange={handleChange} className="h-3 w-3 rounded border-gray-300 dark:border-gray-600 text-blue-600" /> Beta
-          </label>
-        </div>
-      </div>
-    </div>
+      <Stack direction="row" sx={{ alignItems: "center", pt: 0.25, gridColumn: { md: "span 2" } }}>
+        <Typography component="label" sx={{ width: "40%", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>OT / Beta</Typography>
+        <Stack direction="row" sx={{ ml: 0.75, flex: 1, alignItems: "center", gap: 1.5 }}>
+          <Stack component="label" direction="row" sx={{ alignItems: "center", gap: 0.5, fontSize: 9.625, color: "text.secondary" }}>
+            <Checkbox name="e_ot" checked={formData.e_ot} onChange={handleChange} size="small" sx={{ p: 0 }} /> E.OT
+          </Stack>
+          <Stack component="label" direction="row" sx={{ alignItems: "center", gap: 0.5, fontSize: 9.625, color: "text.secondary" }}>
+            <Checkbox name="m_ot" checked={formData.m_ot} onChange={handleChange} size="small" sx={{ p: 0 }} /> M.OT
+          </Stack>
+          <Stack component="label" direction="row" sx={{ alignItems: "center", gap: 0.5, fontSize: 9.625, color: "text.secondary" }}>
+            <Checkbox name="beta" checked={formData.beta} onChange={handleChange} size="small" sx={{ p: 0 }} /> Beta
+          </Stack>
+        </Stack>
+      </Stack>
+    </Box>
   );
 
   // ─── RIGHT SIDE TAB PANELS ─────────────────────────────────────────────────
 
   const renderPFandESI = () => (
-    <div className="space-y-3">
-      <h3 className="text-sm font-semibold text-red-600 dark:text-red-400">PF Details</h3>
+    <Stack sx={{ gap: 1.5 }}>
+      <Typography component="h3" sx={{ fontSize: 12.25, fontWeight: 600, color: "error.main" }}>PF Details</Typography>
       <RTextInput label="PF No" name="pf_no" value={formData.pf_no} onChange={handleChange} />
       <RTextInput label="PF Eligible Date" name="pf_eligible_date" value={formData.pf_eligible_date} onChange={handleChange} type="date" />
       <RTextInput label="PF UAN" name="pf_uan" value={formData.pf_uan} onChange={handleChange} />
-      <h3 className="text-sm font-semibold text-red-600 dark:text-red-400 pt-2">ESI Details</h3>
+      <Typography component="h3" sx={{ fontSize: 12.25, fontWeight: 600, color: "error.main", pt: 1 }}>ESI Details</Typography>
       <RTextInput label="ESI No" name="esi_no" value={formData.esi_no} onChange={handleChange} />
       <RTextInput label="ESI Eligible Date" name="esi_eligible_date" value={formData.esi_eligible_date} onChange={handleChange} type="date" />
-    </div>
+    </Stack>
   );
 
   const renderPersonal = () => (
-    <div className="space-y-2.5">
+    <Stack sx={{ gap: 1.25 }}>
       <RTextInput label="Father Name" name="father_name" value={formData.father_name} onChange={handleChange} />
       <RCheckboxInput label="Alive" name="father_alive" checked={formData.father_alive} onChange={handleChange} />
       <RTextInput label="Father Number" name="father_number" value={formData.father_number} onChange={handleChange} />
@@ -661,25 +660,25 @@ const Employee = () => {
       <RTextInput label="Nationality" name="nationality" value={formData.nationality} onChange={handleChange} />
       <RTextInput label="Expected Salary" name="expected_salary" value={formData.expected_salary} onChange={handleChange} />
       <RTextInput label="Expected Designation" name="expected_designation" value={formData.expected_designation} onChange={handleChange} />
-    </div>
+    </Stack>
   );
 
   const renderBank = () => (
-    <div className="space-y-3">
+    <Stack sx={{ gap: 1.5 }}>
       <RSelectInput label="Bank" name="bank_id" value={formData.bank_id} onChange={handleChange} options={opts.banks} />
       <RTextInput label="Bank Account Name" name="bank_account_name" value={formData.bank_account_name} onChange={handleChange} />
       <RTextInput label="Bank Account No" name="bank_account_no" value={formData.bank_account_no} onChange={handleChange} />
       <RTextInput label="Bank IFSC" name="bank_ifsc" value={formData.bank_ifsc} onChange={handleChange} />
-      <h3 className="text-sm font-semibold text-red-600 dark:text-red-400 pt-2">Driving License Details</h3>
+      <Typography component="h3" sx={{ fontSize: 12.25, fontWeight: 600, color: "error.main", pt: 1 }}>Driving License Details</Typography>
       <RTextInput label="License Number" name="license_number" value={formData.license_number} onChange={handleChange} />
       <RTextInput label="Issue Date" name="license_issue_date" value={formData.license_issue_date} onChange={handleChange} type="date" />
       <RTextInput label="Issue At" name="license_issue_at" value={formData.license_issue_at} onChange={handleChange} />
       <RTextInput label="Expiry On" name="license_expiry" value={formData.license_expiry} onChange={handleChange} type="date" />
-    </div>
+    </Stack>
   );
 
   const renderIDProof = () => (
-    <div className="space-y-3">
+    <Stack sx={{ gap: 1.5 }}>
       <RTextInput label="Aadhar Number" name="aadhar_number" value={formData.aadhar_number} onChange={handleChange} />
       <RTextInput label="Voter ID Number" name="voter_id" value={formData.voter_id} onChange={handleChange} />
       <RTextInput label="SmartCard Number" name="smart_card_number" value={formData.smart_card_number} onChange={handleChange} />
@@ -688,8 +687,8 @@ const Employee = () => {
       <RTextInput label="Passport Expiry Date" name="passport_expiry" value={formData.passport_expiry} onChange={handleChange} type="date" />
       <RTextInput label="NPR Number" name="npr_number" value={formData.npr_number} onChange={handleChange} />
 
-      <h3 className="text-sm font-semibold text-red-600 dark:text-red-400 pt-3">Upload Documents</h3>
-      <div className="grid grid-cols-2 gap-2 pt-1">
+      <Typography component="h3" sx={{ fontSize: 12.25, fontWeight: 600, color: "error.main", pt: 1.5 }}>Upload Documents</Typography>
+      <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, pt: 0.5 }}>
         {[
           { field: "upload_id", label: "Upload ID" },
           { field: "upload_photo", label: "Upload Photo" },
@@ -697,25 +696,28 @@ const Employee = () => {
           { field: "upload_bank_book", label: "Upload Bank A/C Book" },
           { field: "upload_signature", label: "Upload Signature" },
         ].map(({ field, label }) => (
-          <div key={field} className="flex flex-col items-center">
-            <button
+          <Stack key={field} sx={{ alignItems: "center" }}>
+            <Button
               type="button"
               onClick={() => handleFileUpload(field)}
-              className="glass-btn glass-btn-success flex items-center gap-1 w-full justify-center"
+              className="glass-btn glass-btn-success"
+              startIcon={<Upload className="w-3 h-3" />}
+              fullWidth
+              sx={{ justifyContent: "center" }}
             >
-              <Upload className="w-3 h-3" /> {label}
-            </button>
+              {label}
+            </Button>
             {formData[field] && (
-              <span className="text-xs text-green-600 dark:text-green-400 mt-1 truncate max-w-full">Uploaded</span>
+              <Typography sx={{ fontSize: 10.5, color: "success.main", mt: 0.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>Uploaded</Typography>
             )}
-          </div>
+          </Stack>
         ))}
-      </div>
-    </div>
+      </Box>
+    </Stack>
   );
 
   const renderFamily = () => (
-    <div className="space-y-3">
+    <Stack sx={{ gap: 1.5 }}>
       <RTextInput label="Name" name="name" value={familyForm.name}
         onChange={(e) => setFamilyForm((p) => ({ ...p, [e.target.name]: e.target.value }))} />
       <RSelectInput label="Gender" name="gender" value={familyForm.gender}
@@ -729,50 +731,50 @@ const Employee = () => {
         onChange={(e) => setFamilyForm((p) => ({ ...p, [e.target.name]: e.target.value }))} />
       <RTextInput label="Relation" name="relation" value={familyForm.relation}
         onChange={(e) => setFamilyForm((p) => ({ ...p, [e.target.name]: e.target.value }))} />
-      <div className="flex justify-end">
-        <button type="button" onClick={() => {
+      <Stack direction="row" sx={{ justifyContent: "flex-end" }}>
+        <Button type="button" onClick={() => {
           if (!familyForm.name.trim()) { toast.warning("Name is required"); return; }
           setFamilyList((prev) => [...prev, { ...familyForm }]);
           setFamilyForm({ name: "", gender: "", age: "", qualification: "", date_of_birth: "", relation: "" });
-        }} className="glass-btn glass-btn-primary flex items-center gap-1">
-          <PlusCircle className="w-3 h-3" /> Add
-        </button>
-      </div>
-      <div className="border border-gray-300 dark:border-gray-600 rounded-sm overflow-hidden mt-2">
-        <table className="w-full text-xs">
-          <thead className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-            <tr>
-              <th className="border-r dark:border-gray-600 px-2 py-1 text-left">Name</th>
-              <th className="border-r dark:border-gray-600 px-2 py-1 text-left">Gender</th>
-              <th className="border-r dark:border-gray-600 px-2 py-1 text-left">Age</th>
-              <th className="border-r dark:border-gray-600 px-2 py-1 text-left">Relation</th>
-              <th className="px-2 py-1 text-center w-16">Action</th>
-            </tr>
-          </thead>
-          <tbody>
+        }} className="glass-btn glass-btn-primary" startIcon={<PlusCircle className="w-3 h-3" />}>
+          Add
+        </Button>
+      </Stack>
+      <Box sx={{ border: 1, borderColor: "grey.300", borderRadius: "3.5px", overflow: "hidden", mt: 1 }}>
+        <Table sx={{ width: "100%" }} size="small">
+          <TableHead sx={{ bgcolor: "action.hover" }}>
+            <TableRow>
+              <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>Name</TableCell>
+              <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>Gender</TableCell>
+              <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>Age</TableCell>
+              <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>Relation</TableCell>
+              <TableCell align="center" sx={{ width: 64 }}>Action</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
             {familyList.length === 0 ? (
-              <tr><td colSpan="5" className="px-2 py-4 text-gray-400 dark:text-gray-500 text-center">No family members added</td></tr>
+              <TableRow><TableCell colSpan={5} sx={{ py: 2, textAlign: "center", color: "text.disabled" }}>No family members added</TableCell></TableRow>
             ) : familyList.map((item, idx) => (
-              <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                <td className="border-r dark:border-gray-700 px-2 py-1">{item.name}</td>
-                <td className="border-r dark:border-gray-700 px-2 py-1">{item.gender}</td>
-                <td className="border-r dark:border-gray-700 px-2 py-1">{item.age}</td>
-                <td className="border-r dark:border-gray-700 px-2 py-1">{item.relation}</td>
-                <td className="px-2 py-1 text-center">
-                  <button type="button" onClick={() => setFamilyList((p) => p.filter((_, i) => i !== idx))}
-                    className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"><Trash2 className="w-3 h-3" /></button>
-                </td>
-              </tr>
+              <TableRow key={idx} hover>
+                <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>{item.name}</TableCell>
+                <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>{item.gender}</TableCell>
+                <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>{item.age}</TableCell>
+                <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>{item.relation}</TableCell>
+                <TableCell align="center">
+                  <IconButton type="button" onClick={() => setFamilyList((p) => p.filter((_, i) => i !== idx))}
+                    size="small" sx={{ color: "error.main", "&:hover": { color: "error.dark" } }}><Trash2 className="w-3 h-3" /></IconButton>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+          </TableBody>
+        </Table>
+      </Box>
+    </Stack>
   );
 
   const renderAddress = () => (
-    <div className="space-y-3">
-      <h3 className="text-sm font-semibold text-red-600 dark:text-red-400">Current Address</h3>
+    <Stack sx={{ gap: 1.5 }}>
+      <Typography component="h3" sx={{ fontSize: 12.25, fontWeight: 600, color: "error.main" }}>Current Address</Typography>
       <RTextInput label="Resident No" name="curr_resident_no" value={formData.curr_resident_no} onChange={handleChange} />
       <RTextInput label="Resident Name" name="curr_resident_name" value={formData.curr_resident_name} onChange={handleChange} />
       <RTextInput label="Street" name="curr_street" value={formData.curr_street} onChange={handleChange} />
@@ -783,7 +785,7 @@ const Employee = () => {
       <RSelectInput label="State" name="curr_state_id" value={formData.curr_state_id} onChange={handleChange} options={opts.states} />
       <RTextInput label="Pincode" name="curr_pincode" value={formData.curr_pincode} onChange={handleChange} />
 
-      <h3 className="text-sm font-semibold text-red-600 dark:text-red-400 pt-3">Permanent Address</h3>
+      <Typography component="h3" sx={{ fontSize: 12.25, fontWeight: 600, color: "error.main", pt: 1.5 }}>Permanent Address</Typography>
       <RTextInput label="Resident No" name="perm_resident_no" value={formData.perm_resident_no} onChange={handleChange} />
       <RTextInput label="Resident Name" name="perm_resident_name" value={formData.perm_resident_name} onChange={handleChange} />
       <RTextInput label="Street" name="perm_street" value={formData.perm_street} onChange={handleChange} />
@@ -793,22 +795,24 @@ const Employee = () => {
       <RTextInput label="District" name="perm_district" value={formData.perm_district} onChange={handleChange} />
       <RSelectInput label="State" name="perm_state_id" value={formData.perm_state_id} onChange={handleChange} options={opts.states} />
       <RTextInput label="Pincode" name="perm_pincode" value={formData.perm_pincode} onChange={handleChange} />
-    </div>
+    </Stack>
   );
 
   const renderEducationExp = () => (
-    <div className="space-y-3">
+    <Stack sx={{ gap: 1.5 }}>
       {/* Tab selector */}
-      <div className="flex gap-2 mb-2">
-        <button type="button" onClick={() => setEduExpTab("education")}
-          className={`px-3 py-1 text-xs rounded-sm ${eduExpTab === "education" ? "bg-blue-500 text-white" : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"}`}>
+      <Stack direction="row" sx={{ gap: 1, mb: 1 }}>
+        <Button type="button" onClick={() => setEduExpTab("education")}
+          variant={eduExpTab === "education" ? "contained" : undefined}
+          sx={eduExpTab === "education" ? { fontSize: 10.5, borderRadius: "3.5px" } : { fontSize: 10.5, borderRadius: "3.5px", bgcolor: "action.hover", color: "text.secondary", "&:hover": { bgcolor: "action.selected" } }}>
           Education
-        </button>
-        <button type="button" onClick={() => setEduExpTab("experience")}
-          className={`px-3 py-1 text-xs rounded-sm ${eduExpTab === "experience" ? "bg-blue-500 text-white" : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"}`}>
+        </Button>
+        <Button type="button" onClick={() => setEduExpTab("experience")}
+          variant={eduExpTab === "experience" ? "contained" : undefined}
+          sx={eduExpTab === "experience" ? { fontSize: 10.5, borderRadius: "3.5px" } : { fontSize: 10.5, borderRadius: "3.5px", bgcolor: "action.hover", color: "text.secondary", "&:hover": { bgcolor: "action.selected" } }}>
           Experience
-        </button>
-      </div>
+        </Button>
+      </Stack>
 
       {eduExpTab === "education" ? (
         <>
@@ -824,8 +828,8 @@ const Employee = () => {
             onChange={(e) => setEducationForm((p) => ({ ...p, [e.target.name]: e.target.value }))} />
           <RTextInput label="Percentage" name="percentage" value={educationForm.percentage}
             onChange={(e) => setEducationForm((p) => ({ ...p, [e.target.name]: e.target.value }))} />
-          <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => {
+          <Stack direction="row" sx={{ justifyContent: "flex-end", gap: 1 }}>
+            <Button type="button" onClick={() => {
               if (!currentId) { toast.warning("Save employee first to upload certificate"); return; }
               const input = document.createElement("input");
               input.type = "file"; input.accept = "image/*,.pdf";
@@ -839,47 +843,47 @@ const Employee = () => {
                 } catch { toast.error("Upload failed"); }
               };
               input.click();
-            }} className="glass-btn glass-btn-success flex items-center gap-1">
-              <Upload className="w-3 h-3" /> Upload Certificate
-            </button>
-            <button type="button" onClick={() => {
+            }} className="glass-btn glass-btn-success" startIcon={<Upload className="w-3 h-3" />}>
+              Upload Certificate
+            </Button>
+            <Button type="button" onClick={() => {
               setEducationList((prev) => [...prev, { ...educationForm }]);
               setEducationForm({ qualification_type: "", name: "", institution: "", place: "", year: "", percentage: "" });
-            }} className="glass-btn glass-btn-primary flex items-center gap-1">
-              <PlusCircle className="w-3 h-3" /> Add
-            </button>
-          </div>
-          <div className="border border-gray-300 dark:border-gray-600 rounded-sm overflow-hidden mt-2">
-            <table className="w-full text-xs">
-              <thead className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-                <tr>
-                  <th className="border-r dark:border-gray-600 px-2 py-1 text-left">Type</th>
-                  <th className="border-r dark:border-gray-600 px-2 py-1 text-left">Name</th>
-                  <th className="border-r dark:border-gray-600 px-2 py-1 text-left">Institution</th>
-                  <th className="border-r dark:border-gray-600 px-2 py-1 text-left">Year</th>
-                  <th className="border-r dark:border-gray-600 px-2 py-1 text-left">%</th>
-                  <th className="px-2 py-1 text-center w-16">Action</th>
-                </tr>
-              </thead>
-              <tbody>
+            }} className="glass-btn glass-btn-primary" startIcon={<PlusCircle className="w-3 h-3" />}>
+              Add
+            </Button>
+          </Stack>
+          <Box sx={{ border: 1, borderColor: "grey.300", borderRadius: "3.5px", overflow: "hidden", mt: 1 }}>
+            <Table sx={{ width: "100%" }} size="small">
+              <TableHead sx={{ bgcolor: "action.hover" }}>
+                <TableRow>
+                  <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>Type</TableCell>
+                  <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>Name</TableCell>
+                  <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>Institution</TableCell>
+                  <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>Year</TableCell>
+                  <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>%</TableCell>
+                  <TableCell align="center" sx={{ width: 64 }}>Action</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
                 {educationList.length === 0 ? (
-                  <tr><td colSpan="6" className="px-2 py-4 text-gray-400 dark:text-gray-500 text-center">No education records</td></tr>
+                  <TableRow><TableCell colSpan={6} sx={{ py: 2, textAlign: "center", color: "text.disabled" }}>No education records</TableCell></TableRow>
                 ) : educationList.map((item, idx) => (
-                  <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                    <td className="border-r dark:border-gray-700 px-2 py-1">{item.qualification_type}</td>
-                    <td className="border-r dark:border-gray-700 px-2 py-1">{item.name}</td>
-                    <td className="border-r dark:border-gray-700 px-2 py-1">{item.institution}</td>
-                    <td className="border-r dark:border-gray-700 px-2 py-1">{item.year}</td>
-                    <td className="border-r dark:border-gray-700 px-2 py-1">{item.percentage}</td>
-                    <td className="px-2 py-1 text-center">
-                      <button type="button" onClick={() => setEducationList((p) => p.filter((_, i) => i !== idx))}
-                        className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"><Trash2 className="w-3 h-3" /></button>
-                    </td>
-                  </tr>
+                  <TableRow key={idx} hover>
+                    <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>{item.qualification_type}</TableCell>
+                    <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>{item.name}</TableCell>
+                    <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>{item.institution}</TableCell>
+                    <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>{item.year}</TableCell>
+                    <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>{item.percentage}</TableCell>
+                    <TableCell align="center">
+                      <IconButton type="button" onClick={() => setEducationList((p) => p.filter((_, i) => i !== idx))}
+                        size="small" sx={{ color: "error.main", "&:hover": { color: "error.dark" } }}><Trash2 className="w-3 h-3" /></IconButton>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
+          </Box>
         </>
       ) : (
         <>
@@ -893,8 +897,8 @@ const Employee = () => {
             onChange={(e) => setExperienceForm((p) => ({ ...p, [e.target.name]: e.target.value }))} />
           <RTextInput label="Salary" name="salary" value={experienceForm.salary}
             onChange={(e) => setExperienceForm((p) => ({ ...p, [e.target.name]: e.target.value }))} />
-          <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => {
+          <Stack direction="row" sx={{ justifyContent: "flex-end", gap: 1 }}>
+            <Button type="button" onClick={() => {
               if (!currentId) { toast.warning("Save employee first to upload certificate"); return; }
               const input = document.createElement("input");
               input.type = "file"; input.accept = "image/*,.pdf";
@@ -908,100 +912,100 @@ const Employee = () => {
                 } catch { toast.error("Upload failed"); }
               };
               input.click();
-            }} className="glass-btn glass-btn-success flex items-center gap-1">
-              <Upload className="w-3 h-3" /> Upload Certificate
-            </button>
-            <button type="button" onClick={() => {
+            }} className="glass-btn glass-btn-success" startIcon={<Upload className="w-3 h-3" />}>
+              Upload Certificate
+            </Button>
+            <Button type="button" onClick={() => {
               setExperienceList((prev) => [...prev, { ...experienceForm }]);
               setExperienceForm({ name: "", institution: "", place: "", year: "", salary: "" });
-            }} className="glass-btn glass-btn-primary flex items-center gap-1">
-              <PlusCircle className="w-3 h-3" /> Add
-            </button>
-          </div>
-          <div className="border border-gray-300 dark:border-gray-600 rounded-sm overflow-hidden mt-2">
-            <table className="w-full text-xs">
-              <thead className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-                <tr>
-                  <th className="border-r dark:border-gray-600 px-2 py-1 text-left">Name</th>
-                  <th className="border-r dark:border-gray-600 px-2 py-1 text-left">Institution</th>
-                  <th className="border-r dark:border-gray-600 px-2 py-1 text-left">Place</th>
-                  <th className="border-r dark:border-gray-600 px-2 py-1 text-left">Year</th>
-                  <th className="border-r dark:border-gray-600 px-2 py-1 text-left">Salary</th>
-                  <th className="px-2 py-1 text-center w-16">Action</th>
-                </tr>
-              </thead>
-              <tbody>
+            }} className="glass-btn glass-btn-primary" startIcon={<PlusCircle className="w-3 h-3" />}>
+              Add
+            </Button>
+          </Stack>
+          <Box sx={{ border: 1, borderColor: "grey.300", borderRadius: "3.5px", overflow: "hidden", mt: 1 }}>
+            <Table sx={{ width: "100%" }} size="small">
+              <TableHead sx={{ bgcolor: "action.hover" }}>
+                <TableRow>
+                  <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>Name</TableCell>
+                  <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>Institution</TableCell>
+                  <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>Place</TableCell>
+                  <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>Year</TableCell>
+                  <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>Salary</TableCell>
+                  <TableCell align="center" sx={{ width: 64 }}>Action</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
                 {experienceList.length === 0 ? (
-                  <tr><td colSpan="6" className="px-2 py-4 text-gray-400 dark:text-gray-500 text-center">No experience records</td></tr>
+                  <TableRow><TableCell colSpan={6} sx={{ py: 2, textAlign: "center", color: "text.disabled" }}>No experience records</TableCell></TableRow>
                 ) : experienceList.map((item, idx) => (
-                  <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                    <td className="border-r dark:border-gray-700 px-2 py-1">{item.name}</td>
-                    <td className="border-r dark:border-gray-700 px-2 py-1">{item.institution}</td>
-                    <td className="border-r dark:border-gray-700 px-2 py-1">{item.place}</td>
-                    <td className="border-r dark:border-gray-700 px-2 py-1">{item.year}</td>
-                    <td className="border-r dark:border-gray-700 px-2 py-1">{item.salary}</td>
-                    <td className="px-2 py-1 text-center">
-                      <button type="button" onClick={() => setExperienceList((p) => p.filter((_, i) => i !== idx))}
-                        className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"><Trash2 className="w-3 h-3" /></button>
-                    </td>
-                  </tr>
+                  <TableRow key={idx} hover>
+                    <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>{item.name}</TableCell>
+                    <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>{item.institution}</TableCell>
+                    <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>{item.place}</TableCell>
+                    <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>{item.year}</TableCell>
+                    <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>{item.salary}</TableCell>
+                    <TableCell align="center">
+                      <IconButton type="button" onClick={() => setExperienceList((p) => p.filter((_, i) => i !== idx))}
+                        size="small" sx={{ color: "error.main", "&:hover": { color: "error.dark" } }}><Trash2 className="w-3 h-3" /></IconButton>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
+          </Box>
         </>
       )}
-    </div>
+    </Stack>
   );
 
   const renderAdditionalInfo = () => (
-    <div className="space-y-3">
+    <Stack sx={{ gap: 1.5 }}>
       <RTextInput label="Date" name="date" value={additionalInfoForm.date} type="date"
         onChange={(e) => setAdditionalInfoForm((p) => ({ ...p, [e.target.name]: e.target.value }))} />
       <RTextInput label="Name" name="name" value={additionalInfoForm.name}
         onChange={(e) => setAdditionalInfoForm((p) => ({ ...p, [e.target.name]: e.target.value }))} />
       <RTextInput label="Value" name="value" value={additionalInfoForm.value}
         onChange={(e) => setAdditionalInfoForm((p) => ({ ...p, [e.target.name]: e.target.value }))} />
-      <div className="flex justify-end">
-        <button type="button" onClick={() => {
+      <Stack direction="row" sx={{ justifyContent: "flex-end" }}>
+        <Button type="button" onClick={() => {
           setAdditionalInfoList((prev) => [...prev, { ...additionalInfoForm }]);
           setAdditionalInfoForm({ date: "", name: "", value: "" });
-        }} className="glass-btn glass-btn-primary flex items-center gap-1">
-          <PlusCircle className="w-3 h-3" /> Add
-        </button>
-      </div>
-      <div className="border border-gray-300 dark:border-gray-600 rounded-sm overflow-hidden mt-2">
-        <table className="w-full text-xs">
-          <thead className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-            <tr>
-              <th className="border-r dark:border-gray-600 px-2 py-1 text-left">Date</th>
-              <th className="border-r dark:border-gray-600 px-2 py-1 text-left">Name</th>
-              <th className="border-r dark:border-gray-600 px-2 py-1 text-left">Value</th>
-              <th className="px-2 py-1 text-center w-16">Action</th>
-            </tr>
-          </thead>
-          <tbody>
+        }} className="glass-btn glass-btn-primary" startIcon={<PlusCircle className="w-3 h-3" />}>
+          Add
+        </Button>
+      </Stack>
+      <Box sx={{ border: 1, borderColor: "grey.300", borderRadius: "3.5px", overflow: "hidden", mt: 1 }}>
+        <Table sx={{ width: "100%" }} size="small">
+          <TableHead sx={{ bgcolor: "action.hover" }}>
+            <TableRow>
+              <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>Date</TableCell>
+              <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>Name</TableCell>
+              <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>Value</TableCell>
+              <TableCell align="center" sx={{ width: 64 }}>Action</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
             {additionalInfoList.length === 0 ? (
-              <tr><td colSpan="4" className="px-2 py-4 text-gray-400 dark:text-gray-500 text-center">No records</td></tr>
+              <TableRow><TableCell colSpan={4} sx={{ py: 2, textAlign: "center", color: "text.disabled" }}>No records</TableCell></TableRow>
             ) : additionalInfoList.map((item, idx) => (
-              <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                <td className="border-r dark:border-gray-700 px-2 py-1">{item.date}</td>
-                <td className="border-r dark:border-gray-700 px-2 py-1">{item.name}</td>
-                <td className="border-r dark:border-gray-700 px-2 py-1">{item.value}</td>
-                <td className="px-2 py-1 text-center">
-                  <button type="button" onClick={() => setAdditionalInfoList((p) => p.filter((_, i) => i !== idx))}
-                    className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"><Trash2 className="w-3 h-3" /></button>
-                </td>
-              </tr>
+              <TableRow key={idx} hover>
+                <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>{item.date}</TableCell>
+                <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>{item.name}</TableCell>
+                <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>{item.value}</TableCell>
+                <TableCell align="center">
+                  <IconButton type="button" onClick={() => setAdditionalInfoList((p) => p.filter((_, i) => i !== idx))}
+                    size="small" sx={{ color: "error.main", "&:hover": { color: "error.dark" } }}><Trash2 className="w-3 h-3" /></IconButton>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+          </TableBody>
+        </Table>
+      </Box>
+    </Stack>
   );
 
   const renderTraining = () => (
-    <div className="space-y-3">
+    <Stack sx={{ gap: 1.5 }}>
       <RTextInput label="Training Name" name="training_name" value={trainingForm.training_name}
         onChange={(e) => setTrainingForm((p) => ({ ...p, [e.target.name]: e.target.value }))} />
       <RTextInput label="Given On" name="given_on" value={trainingForm.given_on} type="date"
@@ -1014,50 +1018,50 @@ const Employee = () => {
         onChange={(e) => setTrainingForm((p) => ({ ...p, [e.target.name]: e.target.value }))} />
       <RTextInput label="Notice Period" name="notice_period" value={trainingForm.notice_period}
         onChange={(e) => setTrainingForm((p) => ({ ...p, [e.target.name]: e.target.value }))} />
-      <div className="flex justify-end">
-        <button type="button" onClick={() => {
+      <Stack direction="row" sx={{ justifyContent: "flex-end" }}>
+        <Button type="button" onClick={() => {
           setTrainingList((prev) => [...prev, { ...trainingForm }]);
           setTrainingForm({ training_name: "", given_on: "", remark: "", confirmation_date: "", completion_date: "", notice_period: "" });
-        }} className="glass-btn glass-btn-primary flex items-center gap-1">
-          <PlusCircle className="w-3 h-3" /> Add
-        </button>
-      </div>
-      <div className="border border-gray-300 dark:border-gray-600 rounded-sm overflow-hidden mt-2">
-        <table className="w-full text-xs">
-          <thead className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-            <tr>
-              <th className="border-r dark:border-gray-600 px-2 py-1 text-left">Training</th>
-              <th className="border-r dark:border-gray-600 px-2 py-1 text-left">Given On</th>
-              <th className="border-r dark:border-gray-600 px-2 py-1 text-left">Remark</th>
-              <th className="border-r dark:border-gray-600 px-2 py-1 text-left">Confirmation</th>
-              <th className="border-r dark:border-gray-600 px-2 py-1 text-left">Completion</th>
-              <th className="px-2 py-1 text-center w-16">Action</th>
-            </tr>
-          </thead>
-          <tbody>
+        }} className="glass-btn glass-btn-primary" startIcon={<PlusCircle className="w-3 h-3" />}>
+          Add
+        </Button>
+      </Stack>
+      <Box sx={{ border: 1, borderColor: "grey.300", borderRadius: "3.5px", overflow: "hidden", mt: 1 }}>
+        <Table sx={{ width: "100%" }} size="small">
+          <TableHead sx={{ bgcolor: "action.hover" }}>
+            <TableRow>
+              <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>Training</TableCell>
+              <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>Given On</TableCell>
+              <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>Remark</TableCell>
+              <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>Confirmation</TableCell>
+              <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>Completion</TableCell>
+              <TableCell align="center" sx={{ width: 64 }}>Action</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
             {trainingList.length === 0 ? (
-              <tr><td colSpan="6" className="px-2 py-4 text-gray-400 dark:text-gray-500 text-center">No training records</td></tr>
+              <TableRow><TableCell colSpan={6} sx={{ py: 2, textAlign: "center", color: "text.disabled" }}>No training records</TableCell></TableRow>
             ) : trainingList.map((item, idx) => (
-              <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                <td className="border-r dark:border-gray-700 px-2 py-1">{item.training_name}</td>
-                <td className="border-r dark:border-gray-700 px-2 py-1">{item.given_on}</td>
-                <td className="border-r dark:border-gray-700 px-2 py-1">{item.remark}</td>
-                <td className="border-r dark:border-gray-700 px-2 py-1">{item.confirmation_date}</td>
-                <td className="border-r dark:border-gray-700 px-2 py-1">{item.completion_date}</td>
-                <td className="px-2 py-1 text-center">
-                  <button type="button" onClick={() => setTrainingList((p) => p.filter((_, i) => i !== idx))}
-                    className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"><Trash2 className="w-3 h-3" /></button>
-                </td>
-              </tr>
+              <TableRow key={idx} hover>
+                <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>{item.training_name}</TableCell>
+                <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>{item.given_on}</TableCell>
+                <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>{item.remark}</TableCell>
+                <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>{item.confirmation_date}</TableCell>
+                <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>{item.completion_date}</TableCell>
+                <TableCell align="center">
+                  <IconButton type="button" onClick={() => setTrainingList((p) => p.filter((_, i) => i !== idx))}
+                    size="small" sx={{ color: "error.main", "&:hover": { color: "error.dark" } }}><Trash2 className="w-3 h-3" /></IconButton>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+          </TableBody>
+        </Table>
+      </Box>
+    </Stack>
   );
 
   const renderClassification = () => (
-    <div className="space-y-3">
+    <Stack sx={{ gap: 1.5 }}>
       <RTextInput label="Valid From" name="valid_from" value={classificationForm.valid_from} type="date"
         onChange={(e) => setClassificationForm((p) => ({ ...p, [e.target.name]: e.target.value }))} />
       <RTextInput label="Valid To" name="valid_to" value={classificationForm.valid_to} type="date"
@@ -1074,46 +1078,46 @@ const Employee = () => {
       <RSelectInput label="Floor" name="floor_id" value={classificationForm.floor_id}
         onChange={(e) => setClassificationForm((p) => ({ ...p, [e.target.name]: e.target.value }))}
         options={opts.floors} />
-      <div className="flex justify-end">
-        <button type="button" onClick={() => {
+      <Stack direction="row" sx={{ justifyContent: "flex-end" }}>
+        <Button type="button" onClick={() => {
           setClassificationList((prev) => [...prev, { ...classificationForm }]);
           setClassificationForm({ valid_from: "", valid_to: "", designation_id: "", department_id: "", section_id: "", floor_id: "" });
-        }} className="glass-btn glass-btn-primary flex items-center gap-1">
-          <PlusCircle className="w-3 h-3" /> Add
-        </button>
-      </div>
-      <div className="border border-gray-300 dark:border-gray-600 rounded-sm overflow-hidden mt-2">
-        <table className="w-full text-xs">
-          <thead className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-            <tr>
-              <th className="border-r dark:border-gray-600 px-2 py-1 text-left">From</th>
-              <th className="border-r dark:border-gray-600 px-2 py-1 text-left">To</th>
-              <th className="border-r dark:border-gray-600 px-2 py-1 text-left">Designation</th>
-              <th className="border-r dark:border-gray-600 px-2 py-1 text-left">Department</th>
-              <th className="border-r dark:border-gray-600 px-2 py-1 text-left">Section</th>
-              <th className="px-2 py-1 text-center w-16">Action</th>
-            </tr>
-          </thead>
-          <tbody>
+        }} className="glass-btn glass-btn-primary" startIcon={<PlusCircle className="w-3 h-3" />}>
+          Add
+        </Button>
+      </Stack>
+      <Box sx={{ border: 1, borderColor: "grey.300", borderRadius: "3.5px", overflow: "hidden", mt: 1 }}>
+        <Table sx={{ width: "100%" }} size="small">
+          <TableHead sx={{ bgcolor: "action.hover" }}>
+            <TableRow>
+              <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>From</TableCell>
+              <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>To</TableCell>
+              <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>Designation</TableCell>
+              <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>Department</TableCell>
+              <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>Section</TableCell>
+              <TableCell align="center" sx={{ width: 64 }}>Action</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
             {classificationList.length === 0 ? (
-              <tr><td colSpan="6" className="px-2 py-4 text-gray-400 dark:text-gray-500 text-center">No records</td></tr>
+              <TableRow><TableCell colSpan={6} sx={{ py: 2, textAlign: "center", color: "text.disabled" }}>No records</TableCell></TableRow>
             ) : classificationList.map((item, idx) => (
-              <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                <td className="border-r dark:border-gray-700 px-2 py-1">{item.valid_from}</td>
-                <td className="border-r dark:border-gray-700 px-2 py-1">{item.valid_to}</td>
-                <td className="border-r dark:border-gray-700 px-2 py-1">{opts.designations.find((d) => d.value === item.designation_id)?.label || item.designation_id}</td>
-                <td className="border-r dark:border-gray-700 px-2 py-1">{opts.departments.find((d) => d.value === item.department_id)?.label || item.department_id}</td>
-                <td className="border-r dark:border-gray-700 px-2 py-1">{opts.sections.find((d) => d.value === item.section_id)?.label || item.section_id}</td>
-                <td className="px-2 py-1 text-center">
-                  <button type="button" onClick={() => setClassificationList((p) => p.filter((_, i) => i !== idx))}
-                    className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"><Trash2 className="w-3 h-3" /></button>
-                </td>
-              </tr>
+              <TableRow key={idx} hover>
+                <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>{item.valid_from}</TableCell>
+                <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>{item.valid_to}</TableCell>
+                <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>{opts.designations.find((d) => d.value === item.designation_id)?.label || item.designation_id}</TableCell>
+                <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>{opts.departments.find((d) => d.value === item.department_id)?.label || item.department_id}</TableCell>
+                <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>{opts.sections.find((d) => d.value === item.section_id)?.label || item.section_id}</TableCell>
+                <TableCell align="center">
+                  <IconButton type="button" onClick={() => setClassificationList((p) => p.filter((_, i) => i !== idx))}
+                    size="small" sx={{ color: "error.main", "&:hover": { color: "error.dark" } }}><Trash2 className="w-3 h-3" /></IconButton>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+          </TableBody>
+        </Table>
+      </Box>
+    </Stack>
   );
 
   const renderRightPanel = () => {
@@ -1174,7 +1178,7 @@ const Employee = () => {
   // ─── SEARCH PAGE ───────────────────────────────────────────────────────────
 
   const renderSearchPage = () => (
-    <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4 border border-gray-200 dark:border-gray-700 w-full h-full flex flex-col min-h-0">
+    <Card variant="outlined" sx={{ p: 2, width: "100%", height: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}>
       <FilterableDataTable
         rows={searchResults}
         columns={employeeColumns}
@@ -1210,138 +1214,158 @@ const Employee = () => {
         onBulkDelete={handleBulkDelete}
         fillHeight
         renderActions={(row, { selectedCount } = {}) => (
-          <div className="flex items-center gap-2">
-            <button
+          <Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
+            <Button
               onClick={() => handleEdit(row.id)}
               disabled={selectedCount > 1}
-              className="glass-btn glass-btn-primary rounded p-1.5 text-xs"
+              className="glass-btn glass-btn-primary"
+              sx={{ borderRadius: "3.5px", p: 0.75, fontSize: 10.5 }}
             >
               Edit
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => {
                 setDeleteTarget(row);
                 setConfirmOpen(true);
               }}
-              className="glass-btn glass-btn-danger rounded p-1.5 text-xs"
+              className="glass-btn glass-btn-danger"
+              sx={{ borderRadius: "3.5px", p: 0.75, fontSize: 10.5 }}
             >
               Delete
-            </button>
-          </div>
+            </Button>
+          </Stack>
         )}
       />
-    </div>
+    </Card>
   );
 
   // ─── FORM PAGE ─────────────────────────────────────────────────────────────
 
   const renderForm = () => (
-    <div
-      className="bg-white dark:bg-gray-800 shadow-lg rounded-lg border border-gray-200 dark:border-gray-700 w-full h-full flex flex-col min-h-0"
+    <Card
+      variant="outlined"
+      sx={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}
       data-enter-scope="true"
       onKeyDownCapture={handleEnterKeyNavigation}
     >
-      <div className="grid grid-cols-12 gap-x-4 p-3.5 flex-1 min-h-0">
+      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "repeat(12, 1fr)" }, gap: 2, p: 1.75, flex: 1, minHeight: 0 }}>
         {/* LEFT COLUMN */}
-        <div className="col-span-12 lg:col-span-8 pr-2">
+        <Box sx={{ gridColumn: { xs: "span 12", lg: "span 8" }, pr: { lg: 1 } }}>
           {renderLeftSide()}
-        </div>
+        </Box>
 
         {/* RIGHT COLUMN */}
-        <div className="col-span-12 lg:col-span-4 overflow-y-auto pl-2 border-l border-gray-200 dark:border-gray-700 min-h-0">
+        <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, overflowY: "auto", pl: { lg: 1 }, borderLeft: { lg: 1 }, borderColor: "divider", minHeight: 0 }}>
           {/* Tab selector dropdown */}
-          <div className="mb-3">
-            <select
+          <Box sx={{ mb: 1.5 }}>
+            <TextField
+              select
               value={rightTab}
               onChange={(e) => setRightTab(e.target.value)}
-              className="w-full border border-gray-300 dark:border-gray-600 rounded-sm p-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 font-medium"
+              size="small"
+              fullWidth
+              sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75, fontWeight: 500 } }}
             >
               {RIGHT_TABS.map((tab) => (
-                <option key={tab} value={tab}>{tab}</option>
+                <MenuItem key={tab} value={tab}>{tab}</MenuItem>
               ))}
-            </select>
-          </div>
+            </TextField>
+          </Box>
           {renderRightPanel()}
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Card>
   );
 
   // ─── MAIN RENDER ───────────────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col h-full bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 master-responsive">
+    <Box sx={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden", bgcolor: "background.default", color: "text.primary" }}>
       {/* Header */}
-      <div className="flex justify-between items-center px-4 py-2 bg-white dark:bg-gray-800 border-b dark:border-gray-700 shadow-sm">
-        <div className="flex items-center space-x-2">
-          <button onClick={handleBackClick} className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200" type="button">
-            <ArrowLeft className="w-4 h-4" />
-          </button>
-          <h1 className="text-sm font-semibold flex items-center gap-1">
-            <button
+      <PageHeader
+        title={
+          <Stack direction="row" sx={{ alignItems: "center" }} spacing={0.5}>
+            <Box
+              component="button"
               type="button"
               onClick={() => navigate("/hrms")}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
+              sx={{ color: "primary.main", "&:hover": { color: "primary.dark", textDecoration: "underline" } }}
             >
               HRMS
-            </button>
-            <span className="text-gray-500 dark:text-gray-400">/</span>
-            <span>Employee</span>
-          </h1>
-        </div>
-        <div className="flex items-center space-x-3 text-sm font-medium text-gray-700 dark:text-gray-300">
-          <button className="topbar-action-btn topbar-action-new" onClick={handleNew}>
-            <PlusCircle className="w-4 h-4 mr-1" /> New
-          </button>
-          <span>|</span>
-          <UploadImportButton
-            endpoint="/employees/bulk"
-            fieldConfig={EMPLOYEE_IMPORT_CONFIG}
-            onDone={() => {
-              setShowSearchPage(true);
-              if (page === 1) handleSearch();
-              else setPage(1);
-            }}
-          />
-          {showSearchPage && (
-            <>
-              <span>|</span>
-              <ExportBottomSheet
-                columns={employeeColumns}
-                rows={searchResults}
-                selectedRowKeys={selectedRows}
-                onExportRows={async () => {
-                  const res = await api.get("/employees", { params: { all: "true" } });
-                  return res.data?.data || [];
-                }}
-                fileName="employees"
-                buttonClassName="topbar-action-btn topbar-action-export"
-              />
-            </>
-          )}
-          <span>|</span>
-          {!showSearchPage && (
-            <>
-              <button
-                className="glass-btn glass-btn-success flex items-center disabled:opacity-50"
-                onClick={handleSave} disabled={saving}
-              >
-                <Save className="w-4 h-4 mr-1" /> {saving ? "Saving..." : "Save"}
-              </button>
-              <span>|</span>
-            </>
-          )}
-          <button className="glass-btn glass-btn-primary flex items-center"
-            onClick={() => { setShowSearchPage(true); handleSearch(); }}>
-            <Search className="w-4 h-4 mr-1" /> Search
-          </button>
-        </div>
-      </div>
+            </Box>
+            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
+            <Box component="span">Employee</Box>
+          </Stack>
+        }
+        onBack={handleBackClick}
+        actions={
+          <Stack direction="row" sx={{ alignItems: "center" }} spacing={1.5}>
+            <Button
+              variant="text"
+              className="topbar-action-btn topbar-action-new"
+              onClick={handleNew}
+              startIcon={<PlusCircle className="w-4 h-4" />}
+              size="small"
+            >
+              New
+            </Button>
+            <Typography variant="body2" component="span" sx={{ color: "text.disabled" }}>|</Typography>
+            <UploadImportButton
+              endpoint="/employees/bulk"
+              fieldConfig={EMPLOYEE_IMPORT_CONFIG}
+              onDone={() => {
+                setShowSearchPage(true);
+                if (page === 1) handleSearch();
+                else setPage(1);
+              }}
+            />
+            {showSearchPage && (
+              <>
+                <Typography variant="body2" component="span" sx={{ color: "text.disabled" }}>|</Typography>
+                <ExportBottomSheet
+                  columns={employeeColumns}
+                  rows={searchResults}
+                  selectedRowKeys={selectedRows}
+                  onExportRows={async () => {
+                    const res = await api.get("/employees", { params: { all: "true" } });
+                    return res.data?.data || [];
+                  }}
+                  fileName="employees"
+                  buttonClassName="topbar-action-btn topbar-action-export"
+                />
+              </>
+            )}
+            {!showSearchPage && (
+              <>
+                <Typography variant="body2" component="span" sx={{ color: "text.disabled" }}>|</Typography>
+                <Button
+                  className="glass-btn glass-btn-success"
+                  onClick={handleSave}
+                  disabled={saving}
+                  startIcon={<Save className="w-4 h-4" />}
+                  size="small"
+                >
+                  {saving ? "Saving..." : "Save"}
+                </Button>
+              </>
+            )}
+            <Typography variant="body2" component="span" sx={{ color: "text.disabled" }}>|</Typography>
+            <Button
+              className="glass-btn glass-btn-primary"
+              onClick={() => { setShowSearchPage(true); handleSearch(); }}
+              startIcon={<Search className="w-4 h-4" />}
+              size="small"
+            >
+              Search
+            </Button>
+          </Stack>
+        }
+      />
 
       {/* Content */}
-      <div className="flex-1 p-4">
+      <Box sx={{ flex: 1, p: 1.5, minHeight: 0 }}>
         {showSearchPage ? renderSearchPage() : renderForm()}
-      </div>
+      </Box>
 
 
       {/* Confirm Dialog */}
@@ -1358,7 +1382,7 @@ const Employee = () => {
         onConfirm={handleBulkDeleteConfirmed}
         onCancel={() => setBulkConfirm({ open: false, keys: [] })}
       />
-    </div>
+    </Box>
   );
 };
 

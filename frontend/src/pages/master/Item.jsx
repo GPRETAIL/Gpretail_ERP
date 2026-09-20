@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { ArrowLeft, Pencil, PlusCircle, Save, Search, Trash2, Upload } from "lucide-react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import { Box, Button, Card, Stack, Typography, TextField, MenuItem, Checkbox, IconButton } from "@mui/material";
+import PageHeader from "../../components/PageHeader";
 import api from "../../api/axios";
 import FilterableDataTable from "../../components/FilterableDataTable";
 import { createGroupFetchers } from "../../utils/serverGrouping";
@@ -115,94 +117,92 @@ const normalizeItemRow = (item = {}) => ({
 
 // ─── Reusable field components ────────────────────────────────────────────────
 const Label = ({ text, required }) => (
-  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-    {required && <span className="text-red-500 mr-1">*</span>}
+  <Typography component="span" sx={{ fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>
+    {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}
     {text}
-  </span>
+  </Typography>
 );
 
 const Row = ({ label, required, children }) => (
-  <div className="flex items-center min-h-[28px]">
-    <div className="w-36 shrink-0">
+  <Stack direction="row" sx={{ alignItems: "center", minHeight: 28 }}>
+    <Box sx={{ width: 144, flexShrink: 0 }}>
       <Label text={label} required={required} />
-    </div>
-    <div className="flex-1">{children}</div>
-  </div>
+    </Box>
+    <Box sx={{ flex: 1 }}>{children}</Box>
+  </Stack>
 );
 
 const TInput = ({ value, onChange, disabled, placeholder = "", type = "text" }) => (
-  <input
+  <TextField
     type={type}
     value={value}
     onChange={onChange}
     disabled={disabled}
     placeholder={placeholder}
-    className={`w-full border dark:border-gray-600 rounded-sm px-2 py-1 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${
-      disabled
-        ? "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed"
-        : "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
-    }`}
+    size="small"
+    fullWidth
+    sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.5 } }}
   />
 );
 
 const TSelect = ({ value, onChange, options, disabled }) => (
-  <select
+  <TextField
+    select
     value={value}
     onChange={onChange}
     disabled={disabled}
-    className={`w-full border dark:border-gray-600 rounded-sm px-2 py-1 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${
-      disabled
-        ? "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed"
-        : "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
-    }`}
+    size="small"
+    fullWidth
+    sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.5 } }}
   >
-    <option value="">-- Select --</option>
+    <MenuItem value="">-- Select --</MenuItem>
     {options.map((o) => (
-      <option key={o.value} value={o.value}>{o.label}</option>
+      <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
     ))}
-  </select>
+  </TextField>
 );
 
 const TCheckbox = ({ label, checked, onChange }) => (
-  <label className="flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none">
-    <input
-      type="checkbox"
+  <Stack component="label" direction="row" sx={{ alignItems: "center", gap: 0.75, fontSize: 12.25, color: "text.secondary", cursor: "pointer", userSelect: "none" }}>
+    <Checkbox
       checked={checked}
       onChange={onChange}
-      className="w-4 h-4 accent-blue-600"
+      size="small"
+      sx={{ p: 0 }}
     />
     {label}
-  </label>
+  </Stack>
 );
 
 // ─── Inline checkbox row (checkbox + optional text input on the same row) ─────
 const ToggleRow = ({ label, checked, onCheck, value, onValue, placeholder = "" }) => (
-  <div className="flex items-center gap-3">
+  <Stack direction="row" sx={{ alignItems: "center", gap: 1.5 }}>
     <TCheckbox label={label} checked={checked} onChange={onCheck} />
     {checked && (
-      <input
+      <TextField
         type="text"
         value={value}
         onChange={onValue}
         placeholder={placeholder}
-        className="flex-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm px-2 py-1 text-sm focus:ring-1 focus:ring-blue-500"
+        size="small"
+        sx={{ flex: 1, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.5 } }}
       />
     )}
-  </div>
+  </Stack>
 );
 
 // ─── Pair row (label | input | label | input) in the right panel ──────────────
 const PairRow = ({ label1, val1, onChange1, label2, val2, onChange2, disabled }) => (
-  <div className="grid grid-cols-2 gap-2">
-    <div className="flex items-center gap-2">
-      <span className="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap w-24 shrink-0">{label1}</span>
+  <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1 }}>
+    <Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
+      <Typography component="span" sx={{ fontSize: 12.25, color: "text.secondary", whiteSpace: "nowrap", width: 96, flexShrink: 0 }}>{label1}</Typography>
       <TInput value={val1} onChange={onChange1} disabled={disabled} />
-    </div>
-    <div className="flex items-center gap-2">
-      <span className="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap w-28 shrink-0">{label2}</span>
+    </Stack>
+    <Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
+      <Typography component="span" sx={{ fontSize: 12.25, color: "text.secondary", whiteSpace: "nowrap", width: 112, flexShrink: 0 }}>{label2}</Typography>
       <TInput value={val2} onChange={onChange2} disabled={disabled} />
-    </div>
-  </div>
+    </Stack>
+  </Box>
 );
 
 // ─── Initial form state ────────────────────────────────────────────────────────
@@ -583,7 +583,7 @@ export default function Item() {
   // ─── Search page ─────────────────────────────────────────────────────────
   if (showSearch) {
     return (
-      <div className="h-full flex flex-col bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 master-responsive">
+      <Box sx={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden", bgcolor: "background.default", color: "text.primary" }}>
         <ConfirmDialog
           open={confirm.open}
           message={`Are you sure you want to delete "${confirm.name}"? This action cannot be undone.`}
@@ -596,48 +596,66 @@ export default function Item() {
           onConfirm={handleBulkDeleteConfirmed}
           onCancel={() => setBulkConfirm({ open: false, keys: [] })}
         />
-        {/* Header */}
-        <div className="flex justify-between items-center px-4 py-2 bg-white dark:bg-gray-800 border-b dark:border-gray-700 shadow-sm">
-          <div className="flex items-center gap-2">
-            <button onClick={() => navigate("/masters")} className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
-              <ArrowLeft className="w-4 h-4" />
-            </button>
-            <h1 className="text-sm font-semibold flex items-center gap-1">
-              <button
+        <PageHeader
+          title={
+            <Stack direction="row" sx={{ alignItems: "center" }} spacing={0.5}>
+              <Box
+                component="button"
                 type="button"
                 onClick={() => navigate("/masters")}
-                className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
+                sx={{ color: "primary.main", "&:hover": { color: "primary.dark", textDecoration: "underline" } }}
               >
                 Master
-              </button>
-              <span className="text-gray-500 dark:text-gray-400">/</span>
-              <span>Item</span>
-            </h1>
-          </div>
-          <div className="flex items-center gap-3 text-xs font-medium text-gray-700 dark:text-gray-300">
-            <button onClick={handleNew} className="topbar-action-btn topbar-action-new">
-              <PlusCircle className="w-4 h-4 mr-1" /> New
-            </button>
-            <span>|</span>
-            <UploadImportButton endpoint="/items/bulk" fieldConfig={ITEM_IMPORT_CONFIG} onDone={fetchItems} />
-            <span>|</span>
-            <ExportBottomSheet
-              columns={itemTableColumns}
-              rows={searchResults}
-              selectedRowKeys={selectedRows}
-              onExportRows={async () => {
-                const res = await api.get("/items", { params: { page: 1, limit: 100000 } });
-                return (res.data?.data || []).map(normalizeItemRow);
-              }}
-              fileName="items"
-              buttonClassName="topbar-action-btn topbar-action-export"
-            />
-          </div>
-        </div>
+              </Box>
+              <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
+              <Box component="span">Item</Box>
+            </Stack>
+          }
+          onBack={() => navigate("/masters")}
+          actions={
+            <Stack direction="row" sx={{ alignItems: "center" }} spacing={1.5}>
+              <Button
+                variant="text"
+                onClick={handleNew}
+                className="topbar-action-btn topbar-action-new"
+                startIcon={<PlusCircle className="w-4 h-4" />}
+                size="small"
+              >
+                New
+              </Button>
+              <Typography variant="body2" component="span" sx={{ color: "text.disabled" }}>|</Typography>
+              <UploadImportButton endpoint="/items/bulk" fieldConfig={ITEM_IMPORT_CONFIG} onDone={fetchItems} />
+              <Typography variant="body2" component="span" sx={{ color: "text.disabled" }}>|</Typography>
+              <ExportBottomSheet
+                columns={itemTableColumns}
+                rows={searchResults}
+                selectedRowKeys={selectedRows}
+                onExportRows={async () => {
+                  const res = await api.get("/items", { params: { page: 1, limit: 100000 } });
+                  return (res.data?.data || []).map(normalizeItemRow);
+                }}
+                fileName="items"
+                buttonClassName="topbar-action-btn topbar-action-export"
+              />
+            </Stack>
+          }
+        />
 
-        <div className="p-4 flex-1 min-h-0">
-          <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg border border-gray-200 dark:border-gray-700 h-full flex flex-col min-h-0 px-3 pt-3 pb-0.5">
-            <h2 className="text-base font-bold mb-1.5">Item Search</h2>
+        <Box sx={{ p: 1.5, flex: 1, minHeight: 0 }}>
+          <Card
+            variant="outlined"
+            sx={{
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+              minHeight: 0,
+              p: 1.5,
+              pb: 0.5,
+            }}
+          >
+            <Typography variant="h6" component="h2" sx={{ fontWeight: 700, mb: 1, fontSize: "1rem" }}>
+              Item Search
+            </Typography>
             <FilterableDataTable
               rows={searchResults}
               columns={itemTableColumns}
@@ -671,30 +689,32 @@ export default function Item() {
               onBulkDelete={handleBulkDelete}
               fillHeight
               renderActions={(row, { selectedCount } = {}) => (
-                <div className="flex items-center gap-2">
-                  <button
+                <Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
+                  <IconButton
                     type="button"
                     onClick={() => handleEdit(row)}
                     title="Edit"
                     disabled={selectedCount > 1}
-                    className="glass-btn glass-btn-primary rounded p-1.5"
+                    className="glass-btn glass-btn-primary"
+                    sx={{ borderRadius: "3.5px", p: 0.75 }}
                   >
                     <Pencil className="w-3.5 h-3.5" />
-                  </button>
-                  <button
+                  </IconButton>
+                  <IconButton
                     type="button"
                     onClick={() => setConfirm({ open: true, id: row.id, name: row.selling_name })}
                     title="Delete"
-                    className="glass-btn glass-btn-danger rounded p-1.5"
+                    className="glass-btn glass-btn-danger"
+                    sx={{ borderRadius: "3.5px", p: 0.75 }}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
+                  </IconButton>
+                </Stack>
               )}
             />
-          </div>
-        </div>
-      </div>
+          </Card>
+        </Box>
+      </Box>
     );
   }
 
@@ -702,55 +722,76 @@ export default function Item() {
   const ilp = form.item_level_pricing; // shorthand
 
   return (
-    <div className="h-full flex flex-col bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 master-responsive">
+    <Box sx={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden", bgcolor: "background.default", color: "text.primary" }}>
       {/* ── Header ── */}
-      <div className="flex justify-between items-center px-4 py-1.5 bg-white dark:bg-gray-800 border-b dark:border-gray-700 shadow-sm">
-        <div className="flex items-center gap-2">
-          <button onClick={() => setShowSearch(true)} className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
-            <ArrowLeft className="w-4 h-4" />
-          </button>
-          <h1 className="text-sm font-semibold flex items-center gap-1">
-            <button
+      <PageHeader
+        title={
+          <Stack direction="row" sx={{ alignItems: "center" }} spacing={0.5}>
+            <Box
+              component="button"
               type="button"
               onClick={() => navigate("/masters")}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
+              sx={{ color: "primary.main", "&:hover": { color: "primary.dark", textDecoration: "underline" } }}
             >
               Master
-            </button>
-            <span className="text-gray-500 dark:text-gray-400">/</span>
-            <span>Item</span>
-          </h1>
-        </div>
-        <div className="flex items-center gap-3 text-xs font-medium text-gray-700 dark:text-gray-300">
-          <button onClick={handleNew} className="topbar-action-btn topbar-action-new">
-            <PlusCircle className="w-4 h-4 mr-1" /> New
-          </button>
-          <span>|</span>
-          <UploadImportButton endpoint="/items/bulk" fieldConfig={ITEM_IMPORT_CONFIG} onDone={fetchItems} />
-          <span>|</span>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="glass-btn glass-btn-success flex items-center disabled:opacity-50"
-          >
-            <Save className="w-4 h-4 mr-1" /> {saving ? "Saving…" : "Save"}
-          </button>
-          <span>|</span>
-          <button onClick={() => setShowSearch(true)} className="glass-btn glass-btn-primary flex items-center">
-            <Search className="w-4 h-4 mr-1" /> Search
-          </button>
-        </div>
-      </div>
+            </Box>
+            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
+            <Box component="span">Item</Box>
+          </Stack>
+        }
+        onBack={() => setShowSearch(true)}
+        actions={
+          <Stack direction="row" sx={{ alignItems: "center" }} spacing={1.5}>
+            <Button
+              variant="text"
+              onClick={handleNew}
+              className="topbar-action-btn topbar-action-new"
+              startIcon={<PlusCircle className="w-4 h-4" />}
+              size="small"
+            >
+              New
+            </Button>
+            <Typography variant="body2" component="span" sx={{ color: "text.disabled" }}>|</Typography>
+            <UploadImportButton endpoint="/items/bulk" fieldConfig={ITEM_IMPORT_CONFIG} onDone={fetchItems} />
+            <Typography variant="body2" component="span" sx={{ color: "text.disabled" }}>|</Typography>
+            <Button
+              onClick={handleSave}
+              disabled={saving}
+              className="glass-btn glass-btn-success"
+              startIcon={<Save className="w-4 h-4" />}
+              size="small"
+            >
+              {saving ? "Saving…" : "Save"}
+            </Button>
+            <Typography variant="body2" component="span" sx={{ color: "text.disabled" }}>|</Typography>
+            <Button
+              onClick={() => setShowSearch(true)}
+              className="glass-btn glass-btn-primary"
+              startIcon={<Search className="w-4 h-4" />}
+              size="small"
+            >
+              Search
+            </Button>
+          </Stack>
+        }
+      />
 
       {/* ── Body: two-column grid ── */}
-      <div
-        className="p-3 grid grid-cols-1 lg:grid-cols-2 gap-3 flex-1 min-h-0"
+      <Box
+        sx={{
+          p: 1.5,
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", lg: "repeat(2, 1fr)" },
+          gap: 1.5,
+          flex: 1,
+          minHeight: 0,
+        }}
         data-enter-scope="true"
         onKeyDownCapture={handleEnterKeyNavigation}
       >
 
         {/* ════ LEFT PANEL ════ */}
-        <div className="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded shadow-sm p-3 flex flex-col gap-2 lg:h-full">
+        <Card variant="outlined" sx={{ p: 1.5, display: "flex", flexDirection: "column", gap: 1, height: { lg: "100%" } }}>
           {/* Product */}
           <Row label="Product" required>
             <AsyncSearchSelect
@@ -765,16 +806,16 @@ export default function Item() {
           </Row>
 
           {/* Item Code + Design on same row */}
-          <div className="flex items-center min-h-[28px]">
-            <div className="w-36 shrink-0">
+          <Stack direction="row" sx={{ alignItems: "center", minHeight: 28 }}>
+            <Box sx={{ width: 144, flexShrink: 0 }}>
               <Label text="Item Code" />
-            </div>
-            <div className="flex gap-2 flex-1">
+            </Box>
+            <Stack direction="row" sx={{ gap: 1, flex: 1 }}>
               <TInput value={form.item_code} onChange={set("item_code")} placeholder="Auto" />
-              <span className="flex items-center text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">Design</span>
+              <Box sx={{ display: "flex", alignItems: "center", fontSize: 10.5, color: "text.secondary", whiteSpace: "nowrap" }}>Design</Box>
               <TInput value={form.design} onChange={set("design")} />
-            </div>
-          </div>
+            </Stack>
+          </Stack>
 
           <Row label="Selling Name" required>
             <TInput value={form.selling_name} onChange={set("selling_name")} />
@@ -817,10 +858,10 @@ export default function Item() {
           <Row label="Sleeve">
             <TSelect value={form.sleeve_id} onChange={set("sleeve_id")} options={sleeves} />
           </Row>
-        </div>
+        </Card>
 
         {/* ════ RIGHT PANEL ════ */}
-        <div className="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded shadow-sm p-3 flex flex-col gap-2.5 lg:h-full">
+        <Card variant="outlined" sx={{ p: 1.5, display: "flex", flexDirection: "column", gap: 1.25, height: { lg: "100%" } }}>
 
           {/* Re-Order */}
           <PairRow
@@ -839,10 +880,10 @@ export default function Item() {
           />
 
           {/* Flags row */}
-          <div className="grid grid-cols-2 gap-2">
+          <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1 }}>
             <TCheckbox label="Item level pricing" checked={form.item_level_pricing} onChange={setCheck("item_level_pricing")} />
             <TCheckbox label="Disable PO"         checked={form.disable_po}         onChange={setCheck("disable_po")} />
-          </div>
+          </Box>
 
           {/* Pricing (greyed when item_level_pricing false) */}
           <PairRow
@@ -861,13 +902,13 @@ export default function Item() {
             disabled={!ilp}
           />
 
-          <hr className="border-gray-200 dark:border-gray-700" />
+          <Box component="hr" sx={{ borderColor: "divider" }} />
 
           {/* Show / Touch POS */}
-          <div className="grid grid-cols-2 gap-2">
+          <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1 }}>
             <TCheckbox label="Show in List" checked={form.show_in_list} onChange={setCheck("show_in_list")} />
             <TCheckbox label="Touch POS"   checked={form.touch_pos}    onChange={setCheck("touch_pos")} />
-          </div>
+          </Box>
 
           {/* Toggle rows */}
           <ToggleRow
@@ -898,28 +939,30 @@ export default function Item() {
           <TCheckbox label="Active" checked={form.active} onChange={setCheck("active")} />
 
           {/* Image upload */}
-          <div className="flex items-center gap-3 mt-1">
-            <span className="text-sm text-gray-600 dark:text-gray-400 w-12">Image</span>
-            <button
+          <Stack direction="row" sx={{ alignItems: "center", gap: 1.5, mt: 0.5 }}>
+            <Typography component="span" sx={{ fontSize: 12.25, color: "text.secondary", width: 48 }}>Image</Typography>
+            <Button
               type="button"
               onClick={() => fileRef.current?.click()}
-              className="glass-btn glass-btn-success flex items-center gap-1"
+              className="glass-btn glass-btn-success"
+              startIcon={<Upload className="w-3 h-3" />}
             >
-              <Upload className="w-3 h-3" /> Upload
-            </button>
-            <input
+              Upload
+            </Button>
+            <Box
+              component="input"
               ref={fileRef}
               type="file"
               accept="image/*"
-              className="hidden"
+              sx={{ display: "none" }}
               onChange={handleImageSelect}
             />
             {imagePreview && (
-              <img src={imagePreview} alt="preview" className="h-12 w-12 object-cover rounded border border-gray-300 dark:border-gray-600" />
+              <Box component="img" src={imagePreview} alt="preview" sx={{ height: 48, width: 48, objectFit: "cover", borderRadius: "3.5px", border: 1, borderColor: "grey.300" }} />
             )}
-          </div>
-        </div>
-      </div>
-    </div>
+          </Stack>
+        </Card>
+      </Box>
+    </Box>
   );
 }

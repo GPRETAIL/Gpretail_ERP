@@ -1,15 +1,18 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, Pencil, PlusCircle, Save, Search, Trash2 } from "lucide-react";
 import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
+import { Box, Stack, Card, Typography, Button, TextField, MenuItem, Checkbox, Table, TableBody, TableRow, TableCell, IconButton, alpha } from "@mui/material";
 import api from "../../api/axios";
 import FilterableDataTable from "../../components/FilterableDataTable";
 import { createGroupFetchers } from "../../utils/serverGrouping";
 import ExportBottomSheet from "../../components/ExportBottomSheet";
 import UploadImportButton from "../../components/UploadImportButton";
-import { useNavigate } from "react-router-dom";
 import ConfirmDialog from "../../components/ConfirmDialog";
+import PageHeader from "../../components/PageHeader";
 import { handleEnterKeyNavigation } from "../../utils/enterToNextField";
 import useStoreNameMap from "../../hooks/useStoreNameMap";
+import { normalizeFormSignature } from "../../utils/formSignature";
 
 const FILTER_DEFAULT = { operator: "contains", value: "" };
 const isColumnFilterActive = (filter) => {
@@ -55,44 +58,46 @@ const BRAND_IMPORT_CONFIG = {
 
 // ─── Helpers defined OUTSIDE component to prevent remount on render ───────────
 const TextInput = ({ label, required = false, type = "text", value, onChange, placeholder = "" }) => (
-  <div className="flex items-center">
-    <label className="w-1/3 text-sm font-medium text-gray-700 dark:text-gray-300">
-      {required && <span className="text-red-500 mr-1">*</span>}
+  <Stack direction="row" sx={{ alignItems: "center" }}>
+    <Typography component="label" sx={{ width: "33.33%", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>
+      {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}
       {label}
-    </label>
-    <input
+    </Typography>
+    <TextField
       type={type}
       value={value}
       onChange={onChange}
       placeholder={placeholder}
-      className="flex-1 border border-gray-300 dark:border-gray-600 rounded-sm p-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ml-3"
+      size="small"
+      fullWidth
+      sx={{ ml: 1.5, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
     />
-  </div>
+  </Stack>
 );
 
 const SelectInput = ({ label, required = false, options, value, onChange }) => (
-  <div className="flex items-center">
-    <label className="w-1/3 text-sm font-medium text-gray-700 dark:text-gray-300">
-      {required && <span className="text-red-500 mr-1">*</span>}
+  <Stack direction="row" sx={{ alignItems: "center" }}>
+    <Typography component="label" sx={{ width: "33.33%", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>
+      {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}
       {label}
-    </label>
-    <select
+    </Typography>
+    <TextField
+      select
       value={value}
       onChange={onChange}
-      className="flex-1 border border-gray-300 dark:border-gray-600 rounded-sm p-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ml-3"
+      size="small"
+      fullWidth
+      sx={{ ml: 1.5, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
     >
-      <option value="">{`Select ${label}`}</option>
+      <MenuItem value="">{`Select ${label}`}</MenuItem>
       {options.map((option, index) => (
-        <option key={index} value={option.value || option.label}>
+        <MenuItem key={index} value={option.value || option.label}>
           {option.label}
-        </option>
+        </MenuItem>
       ))}
-    </select>
-  </div>
+    </TextField>
+  </Stack>
 );
-// ─────────────────────────────────────────────────────────────────────────────
-
-import { normalizeFormSignature } from "../../utils/formSignature";
 
 const brandTypeOptions = [
   { label: "Premium", value: "Premium" },
@@ -103,8 +108,6 @@ const discountOptions = [
   { label: "Value", value: "Value" },
 ];
 
-// Full editable-state signature (main fields + the product-margin sub-table)
-// so an unchanged edit save reports "No changes detected".
 const buildBrandSig = (v) =>
   normalizeFormSignature({
     code: v.code,
@@ -131,155 +134,81 @@ const Brand = () => {
   const [discountType, setDiscountType] = useState("");
   const [discountValue, setDiscountValue] = useState("");
   const [isActive, setIsActive] = useState(true);
-  // Owning store — every brand belongs to one, but it is never picked here: a store user is
-  // scoped server-side, and a super admin's active store rides along on every request from the
-  // Navbar switcher. Only carried so an edit keeps the store the row is already filed under.
   const [storeId, setStoreId] = useState("");
   const [saving, setSaving] = useState(false);
-  const savingRef = useRef(false); // synchronous double-submit guard
+  const savingRef = useRef(false);
   const [currentId, setCurrentId] = useState(null);
-  const storeMap = useStoreNameMap();
   const initialFormRef = useRef({ id: null, sig: null });
 
-  // Product Margin list
+  const [products, setProducts] = useState([]);
   const [product, setProduct] = useState("");
   const [margin, setMargin] = useState("");
   const [productList, setProductList] = useState([]);
 
-  // Products dropdown (from API)
-  const [products, setProducts] = useState([]);
-
-  // Search page
   const [showSearchPage, setShowSearchPage] = useState(true);
   const [searchResults, setSearchResults] = useState([]);
-  const [searchLoading, setSearchLoading] = useState(true);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [selectedRows, setSelectedRows] = useState([]);
-  const [confirm, setConfirm] = useState({ open: false, id: null, name: "" });
-  const [bulkConfirm, setBulkConfirm] = useState({ open: false, keys: [] });
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
   const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
   const [rawPagination, setRawPagination] = useState(null);
   const [tableSearch, setTableSearch] = useState("");
   const [tableSearchField, setTableSearchField] = useState("all");
-  const [tableColumnFilters, setTableColumnFilters] = useState({});
   const [forceFetchAll, setForceFetchAll] = useState(false);
 
-  // Load products for dropdown on mount
+  const [confirm, setConfirm] = useState({ open: false, id: null, name: "" });
+  const [bulkConfirm, setBulkConfirm] = useState({ open: false, keys: [] });
+  const storeMap = useStoreNameMap();
+
   useEffect(() => {
-    api
-      .get("/products", { params: { limit: 200 } })
-      .then((res) => {
-        const rows = (res.data?.data || []).map((p) => ({
-          label: p.name,
-          value: String(p.id),
-        }));
-        setProducts(rows);
-      })
-      .catch(() => {/* silent — products dropdown is optional */});
+    const fetchProducts = async () => {
+      try {
+        const res = await api.get("/products", { params: { all: "true" } });
+        setProducts(
+          (res.data.data || []).map((p) => ({
+            value: String(p.id),
+            label: `${p.code ? `${p.code} - ` : ""}${p.name}`,
+            name: p.name,
+          }))
+        );
+      } catch (err) {
+        console.error("Failed to load products for brand margin list", err);
+      }
+    };
+    fetchProducts();
   }, []);
 
-  // Load search results when search page opens or query changes
-  useEffect(() => {
-    if (!showSearchPage) return;
-    fetchBrands();
-  }, [showSearchPage, page, limit, tableSearch, tableSearchField, tableColumnFilters, forceFetchAll]);
-
-  const fetchBrands = async (queryOverride = tableSearch, filtersOverride = tableColumnFilters, cursorToken = null) => {
-    try {
-      setSearchLoading(true);
-      const query = String(queryOverride || "").trim();
-      const activeColumnFilters = buildActiveColumnFilters(filtersOverride);
-      const hasColumnFilters = activeColumnFilters.length > 0;
-      const params = {
-        ...(cursorToken ? { cursor: cursorToken } : { page }),
-        limit,
-        search: query || undefined,
-        field: query && tableSearchField !== "all" ? tableSearchField : undefined,
-        column_filters: hasColumnFilters ? JSON.stringify(activeColumnFilters) : undefined,
-        ...(forceFetchAll ? { all: "true" } : {}),
-      };
-      const res = await api.get("/brands", { params });
-      const rows = res.data?.data || [];
-      setSearchResults(rows);
-
-      const total = Number(res.data?.total ?? res.data?.pagination?.total ?? rows.length) || 0;
-      const totalPages = Math.max(
-        Number(
-          res.data?.totalPages ??
-          res.data?.pagination?.totalPages ??
-          Math.ceil(total / Math.max(limit, 1))
-        ) || 1,
-        1
-      );
-      setPagination({ total, totalPages });
-      setRawPagination(res.data?.pagination || null);
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to load brands");
-    } finally {
-      setSearchLoading(false);
-    }
-  };
-
-  const handleBrandsNextCursor = (cursor) => fetchBrands(tableSearch, tableColumnFilters, cursor);
-  const handleBrandsPreviousCursor = (cursor) => fetchBrands(tableSearch, tableColumnFilters, cursor);
-
-  const handleServerSearch = useCallback(({ query, field, fetchAll, columnFilters }) => {
-    setTableSearch(query);
-    setTableSearchField(field || "all");
-    setTableColumnFilters(columnFilters || {});
-    const hasColumnFilters = buildActiveColumnFilters(columnFilters || {}).length > 0;
-    setForceFetchAll(!!fetchAll || hasColumnFilters);
-    setPage(1);
-  }, []);
-
-  const loadBrandProducts = async (brandId) => {
-    try {
-      const res = await api.get("/products", { params: { limit: 500 } });
-      const linked = (res.data?.data || [])
-        .filter((p) => Number(p.brand_id) === Number(brandId))
-        .map((p) => ({
-          product: String(p.id),
-          productLabel: p.name,
-          margin: p.margin_min != null ? String(p.margin_min) : "",
-        }));
-      setProductList(linked);
-      return linked;
-    } catch {
-      setProductList([]);
-      toast.error("Failed to load linked products for this brand");
-      return [];
-    }
-  };
-
-  // Add product to the margin list
   const handleAddProduct = () => {
-    if (!product || !margin)
-      return alert("Please select a product and enter a margin!");
-    if (productList.some((item) => item.product === product))
-      return alert("Product already added!");
-    const label = products.find((p) => p.value === product)?.label || product;
-    setProductList([...productList, { product, productLabel: label, margin }]);
+    if (!product || !margin) {
+      toast.warn("Please select a product and enter margin");
+      return;
+    }
+    const found = products.find((p) => p.value === product);
+    const item = {
+      product,
+      productLabel: found?.label || product,
+      margin: parseFloat(margin) || 0,
+    };
+    setProductList((prev) => [...prev, item]);
     setProduct("");
     setMargin("");
   };
 
   const handleRemoveProduct = (index) => {
-    setProductList(productList.filter((_, i) => i !== index));
-  };
-
-  const handleSearchClick = () => setShowSearchPage(true);
-  const handleBackClick = () => {
-    if (showSearchPage) {
-      navigate("/masters");
-    } else {
-      setShowSearchPage(true);
-    }
+    setProductList((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleNew = () => {
-    setCode(""); setName(""); setPrintingName(""); setMinMargin(""); setMaxMargin("");
-    setBrandType(""); setDiscountType(""); setDiscountValue(""); setIsActive(true);
+    setCode("");
+    setName("");
+    setPrintingName("");
+    setMinMargin("");
+    setMaxMargin("");
+    setBrandType("");
+    setDiscountType("");
+    setDiscountValue("");
+    setIsActive(true);
     setStoreId("");
     setProductList([]);
     setCurrentId(null);
@@ -287,47 +216,164 @@ const Brand = () => {
     setShowSearchPage(false);
   };
 
-  const handleEditFromSearch = async (row) => {
-    setCurrentId(row.id);
-    const values = {
-      code: row.code || "",
-      name: row.name || "",
-      printingName: row.printing_name || "",
-      minMargin: row.min_margin != null ? String(row.min_margin) : "",
-      maxMargin: row.max_margin != null ? String(row.max_margin) : "",
-      brandType: row.brand_type || "",
-      discountType: row.discount_type || "",
-      discountValue: row.discount_value != null ? String(row.discount_value) : "",
-      isActive: row.is_active !== false,
-      storeId: row.company_id != null ? String(row.company_id) : "",
+  const handleSave = async () => {
+    if (!name.trim()) { toast.warn("Name is required"); return; }
+    if (!printingName.trim()) { toast.warn("Printing Name is required"); return; }
+
+    const currentState = {
+      code, name, printingName, minMargin, maxMargin,
+      brandType, discountType, discountValue, isActive, storeId,
+      productList,
     };
-    setCode(values.code);
-    setName(values.name);
-    setPrintingName(values.printingName);
-    setMinMargin(values.minMargin);
-    setMaxMargin(values.maxMargin);
-    setBrandType(values.brandType);
-    setDiscountType(values.discountType);
-    setDiscountValue(values.discountValue);
-    setIsActive(values.isActive);
-    setStoreId(values.storeId);
-    const linked = await loadBrandProducts(row.id);
-    // Baseline captured after the product sub-table has loaded so a sub-table-only
-    // edit is still detected as a change.
+    if (currentId && initialFormRef.current.id === currentId
+        && buildBrandSig(currentState) === initialFormRef.current.sig) {
+      toast.info("No changes detected.");
+      return;
+    }
+    if (savingRef.current) return;
+    savingRef.current = true;
+    setSaving(true);
+
+    const product_ids = productList.map((p) => Number(p.product));
+    const product_margins = {};
+    productList.forEach((p) => {
+      product_margins[String(p.product)] = Number(p.margin);
+    });
+
+    const payload = {
+      code: code.trim() || null,
+      name: name.trim(),
+      printing_name: printingName.trim(),
+      min_margin: minMargin ? parseFloat(minMargin) : null,
+      max_margin: maxMargin ? parseFloat(maxMargin) : null,
+      brand_type: brandType || null,
+      discount_type: discountType || null,
+      discount_value: discountValue ? parseFloat(discountValue) : null,
+      is_active: isActive,
+      product_ids,
+      product_margins,
+      ...(storeId ? { company_id: Number(storeId) } : {}),
+    };
+
+    try {
+      if (currentId) {
+        await api.put(`/brands/${currentId}`, payload);
+        initialFormRef.current = { id: currentId, sig: buildBrandSig(currentState) };
+        toast.success("Brand updated successfully");
+      } else {
+        const res = await api.post("/brands", payload);
+        const newId = res.data.data.id;
+        setCurrentId(newId);
+        initialFormRef.current = { id: newId, sig: buildBrandSig(currentState) };
+        toast.success("Brand created successfully");
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Save failed");
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
+  };
+
+  const fetchBrands = async (queryOverride = tableSearch, cursorToken = null) => {
+    setSearchLoading(true);
+    try {
+      const query = String(queryOverride || "").trim();
+      const params = (query || forceFetchAll)
+        ? { all: "true", search: query || undefined, field: tableSearchField !== "all" ? tableSearchField : undefined }
+        : { ...(cursorToken ? { cursor: cursorToken } : { page }), limit };
+      const res = await api.get("/brands", { params });
+      const rows = res.data?.data || [];
+      setSearchResults(rows);
+      if (query) {
+        setPagination({ total: rows.length, totalPages: 1 });
+        setRawPagination(null);
+      } else {
+        const p = res.data?.pagination || {};
+        const total = Number(p.total ?? res.data?.total ?? rows.length) || 0;
+        const totalPages = Math.max(
+          Number(p.totalPages ?? res.data?.totalPages ?? Math.ceil(total / Math.max(limit, 1))) || 1,
+          1
+        );
+        setPagination({ total, totalPages });
+        setRawPagination(res.data?.pagination || null);
+      }
+    } catch {
+      toast.error("Failed to load brands");
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const handleBrandsNextCursor = (cursor) => fetchBrands(tableSearch, cursor);
+  const handleBrandsPreviousCursor = (cursor) => fetchBrands(tableSearch, cursor);
+
+  const handleSearchClick = () => {
+    setShowSearchPage(true);
+    fetchBrands();
+  };
+
+  useEffect(() => {
+    if (showSearchPage) fetchBrands();
+  }, [showSearchPage, page, limit, tableSearch, forceFetchAll]);
+
+  const handleServerSearch = useCallback(({ query, field, fetchAll }) => {
+    setTableSearch(query);
+    setTableSearchField(field || "all");
+    setForceFetchAll(!!fetchAll);
+    setPage(1);
+  }, []);
+
+  const handleEditFromSearch = (row) => {
+    setCurrentId(row.id);
+    setCode(row.code || "");
+    setName(row.name || "");
+    setPrintingName(row.printing_name || "");
+    setMinMargin(row.min_margin != null ? String(row.min_margin) : "");
+    setMaxMargin(row.max_margin != null ? String(row.max_margin) : "");
+    setBrandType(row.brand_type || "");
+    setDiscountType(row.discount_type || "");
+    setDiscountValue(row.discount_value != null ? String(row.discount_value) : "");
+    setIsActive(row.is_active !== false);
+    setStoreId(row.company_id != null ? String(row.company_id) : "");
+
+    const pIds = row.product_ids || [];
+    const pMargins = row.product_margins || {};
+    const loadedList = pIds.map((pid) => {
+      const found = products.find((p) => p.value === String(pid));
+      return {
+        product: String(pid),
+        productLabel: found?.label || String(pid),
+        margin: pMargins[String(pid)] ?? 0,
+      };
+    });
+    setProductList(loadedList);
     initialFormRef.current = {
       id: row.id,
-      sig: buildBrandSig({ ...values, productList: linked }),
+      sig: buildBrandSig({
+        code: row.code || "",
+        name: row.name || "",
+        printingName: row.printing_name || "",
+        minMargin: row.min_margin != null ? String(row.min_margin) : "",
+        maxMargin: row.max_margin != null ? String(row.max_margin) : "",
+        brandType: row.brand_type || "",
+        discountType: row.discount_type || "",
+        discountValue: row.discount_value != null ? String(row.discount_value) : "",
+        isActive: row.is_active !== false,
+        storeId: row.company_id != null ? String(row.company_id) : "",
+        productList: loadedList,
+      }),
     };
     setShowSearchPage(false);
   };
 
   const handleDeleteConfirmed = async () => {
-    const { id } = confirm;
+    const { id, name: delName } = confirm;
     setConfirm({ open: false, id: null, name: "" });
     try {
       await api.delete(`/brands/${id}`);
-      toast.success("Brand deleted successfully");
-      setSearchResults((prev) => prev.filter((b) => b.id !== id));
+      toast.success(`"${delName}" deleted successfully`);
+      setSearchResults((prev) => prev.filter((r) => r.id !== id));
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to delete brand");
     }
@@ -350,65 +396,18 @@ const Brand = () => {
     }
   };
 
-  const handleSave = async () => {
-    if (!code.trim() || !name.trim()) {
-      toast.error("Code and Name are required");
-      return;
-    }
-    if (currentId && initialFormRef.current.id === currentId
-        && buildBrandSig({
-          code, name, printingName, minMargin, maxMargin,
-          brandType, discountType, discountValue, isActive, storeId, productList,
-        }) === initialFormRef.current.sig) {
-      toast.info("No changes detected.");
-      return;
-    }
-    try {
-      if (savingRef.current) return;
-      savingRef.current = true;
-      setSaving(true);
-      const payload = {
-        code: code.trim(),
-        name: name.trim(),
-        printing_name: printingName.trim() || undefined,
-        min_margin: minMargin !== "" ? minMargin : undefined,
-        max_margin: maxMargin !== "" ? maxMargin : undefined,
-        brand_type: brandType || undefined,
-        discount_type: discountType || undefined,
-        discount_value: discountValue !== "" ? discountValue : undefined,
-        is_active: isActive,
-        ...(storeId ? { company_id: Number(storeId) } : {}),
-        product_ids: productList.map((item) => Number(item.product)),
-        product_margins: productList.map((item) => ({
-          product_id: Number(item.product),
-          margin: item.margin !== "" ? Number(item.margin) : null,
-        })),
-      };
-      if (currentId) {
-        await api.put(`/brands/${currentId}`, payload);
-        toast.success("Brand updated successfully");
-      } else {
-        await api.post("/brands", payload);
-        toast.success("Brand saved successfully");
-      }
-      handleNew();
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to save brand");
-    } finally {
-      savingRef.current = false;
-      setSaving(false);
-    }
-  };
-
   const brandTableColumns = [
     { key: "code", label: "Code" },
     { key: "name", label: "Name" },
     { key: "printing_name", label: "Printing Name" },
-    { key: "min_margin", label: "Min Margin" },
-    { key: "max_margin", label: "Max Margin" },
     { key: "brand_type", label: "Brand Type" },
     { key: "discount_type", label: "Discount Type" },
-    { key: "discount_value", label: "Discount Value" },
+    {
+      key: "discount_value",
+      label: "Discount Value",
+      render: (value) => (value != null ? value : "—"),
+      searchValue: (row) => row.discount_value,
+    },
     {
       key: "is_active",
       label: "Active",
@@ -429,12 +428,11 @@ const Brand = () => {
     },
   ];
 
-
   return (
-    <div className="h-full flex flex-col bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 master-responsive">
+    <Box sx={{ height: "100%", display: "flex", flexDirection: "column", bgcolor: "background.default", color: "text.primary" }}>
       <ConfirmDialog
         open={confirm.open}
-        message={`Are you sure you want to delete "${confirm.name}"? This action cannot be undone.`}
+        message={`Are you sure you want to delete brand "${confirm.name}"? This action cannot be undone.`}
         onConfirm={handleDeleteConfirmed}
         onCancel={() => setConfirm({ open: false, id: null, name: "" })}
       />
@@ -444,95 +442,106 @@ const Brand = () => {
         onConfirm={handleBulkDeleteConfirmed}
         onCancel={() => setBulkConfirm({ open: false, keys: [] })}
       />
-      {/* Header (No change needed) */}
-      <div className="flex justify-between items-center px-4 py-2 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
-        <div className="flex items-center space-x-2">
 
-            <button
-              onClick={handleBackClick}
-              className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
-              type="button"
-              aria-label="Back to Entry Form"
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </button>
-          <h1 className="text-sm font-semibold flex items-center gap-1">
-            <button
+      <PageHeader
+        title={
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+            <Typography
+              component="button"
               type="button"
               onClick={() => navigate("/masters")}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
+              sx={{
+                fontSize: 13,
+                fontWeight: 600,
+                color: "primary.main",
+                background: "none",
+                border: "none",
+                p: 0,
+                cursor: "pointer",
+                "&:hover": { textDecoration: "underline" },
+              }}
             >
               Master
-            </button>
-            <span className="text-gray-500 dark:text-gray-400">/</span>
-            <span>Brand</span>
-          </h1>
-        </div>
+            </Typography>
+            <Typography sx={{ fontSize: 13, color: "text.secondary" }}>/</Typography>
+            <Typography sx={{ fontSize: 13, fontWeight: 600 }}>Brand</Typography>
+          </Stack>
+        }
+        onBack={() => navigate(-1)}
+        actions={
+          <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+            <Button
+              onClick={handleNew}
+              className="topbar-action-btn topbar-action-new"
+              startIcon={<PlusCircle className="w-3 h-3" />}
+              size="small"
+            >
+              New
+            </Button>
+            <Typography sx={{ color: "text.secondary" }}>|</Typography>
+            <UploadImportButton
+              endpoint="/brands/bulk"
+              fieldConfig={BRAND_IMPORT_CONFIG}
+              onDone={() => {
+                setShowSearchPage(true);
+                if (page === 1) fetchBrands();
+                else setPage(1);
+              }}
+            />
+            {showSearchPage && (
+              <>
+                <Typography sx={{ color: "text.secondary" }}>|</Typography>
+                <ExportBottomSheet
+                  columns={brandTableColumns}
+                  rows={searchResults}
+                  selectedRowKeys={selectedRows}
+                  onExportRows={async () => {
+                    const res = await api.get("/brands", { params: { all: "true" } });
+                    return res.data?.data || [];
+                  }}
+                  fileName="brands"
+                  buttonClassName="topbar-action-btn topbar-action-export"
+                />
+              </>
+            )}
+            <Typography sx={{ color: "text.secondary" }}>|</Typography>
+            {!showSearchPage && (
+              <>
+                <Button
+                  className="glass-btn glass-btn-success"
+                  onClick={handleSave}
+                  disabled={saving}
+                  startIcon={<Save className="w-3 h-3" />}
+                  size="small"
+                >
+                  {saving ? "Saving..." : "Save"}
+                </Button>
+                <Typography sx={{ color: "text.secondary" }}>|</Typography>
+              </>
+            )}
+            <Button
+              className="glass-btn glass-btn-primary"
+              onClick={handleSearchClick}
+              startIcon={<Search className="w-3 h-3" />}
+              size="small"
+            >
+              Search
+            </Button>
+          </Stack>
+        }
+      />
 
-        <div className="flex items-center space-x-3 text-sm font-medium text-gray-700 dark:text-gray-300">
-          <button className="topbar-action-btn topbar-action-new" onClick={handleNew}>
-            <PlusCircle className="w-4 h-4 mr-1" /> New
-          </button>
-          <span>|</span>
-          <UploadImportButton
-            endpoint="/brands/bulk"
-            fieldConfig={BRAND_IMPORT_CONFIG}
-            onDone={() => {
-              if (page === 1) fetchBrands();
-              else setPage(1);
-            }}
-          />
-          {showSearchPage && (
-            <>
-              <span>|</span>
-              <ExportBottomSheet
-                columns={brandTableColumns}
-                rows={searchResults}
-                selectedRowKeys={selectedRows}
-                onExportRows={async () => {
-                  const res = await api.get("/brands", { params: { all: "true" } });
-                  return res.data?.data || [];
-                }}
-                fileName="brands"
-                buttonClassName="topbar-action-btn topbar-action-export"
-              />
-            </>
-          )}
-          <span>|</span>
-          {!showSearchPage && (
-            <>
-              <button
-                className="glass-btn glass-btn-success flex items-center disabled:opacity-50"
-                onClick={handleSave}
-                disabled={saving}
-              >
-                <Save className="w-4 h-4 mr-1" /> {saving ? "Saving..." : "Save"}
-              </button>
-              <span>|</span>
-            </>
-          )}
-          <button
-            className="glass-btn glass-btn-primary flex items-center"
-            onClick={handleSearchClick}
-          >
-            <Search className="w-4 h-4 mr-1" /> Search
-          </button>
-        </div>
-      </div>
-      {/* --- END Header --- */}
-
-      {/* Content */}
-      <div className="p-4 flex-1 min-h-0">
+      <Box sx={{ p: 1.5, flex: 1, minHeight: 0 }}>
         {!showSearchPage ? (
-          <div
-            className="bg-white dark:bg-gray-800 shadow-lg rounded-lg border border-gray-200 dark:border-gray-700 p-4 lg:h-full"
+          <Card
+            variant="outlined"
+            sx={{ p: 2, height: { lg: "100%" } }}
             data-enter-scope="true"
             onKeyDownCapture={handleEnterKeyNavigation}
           >
-            <div className="grid grid-cols-12 gap-6">
+            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "repeat(12, 1fr)" }, gap: 3 }}>
               {/* Left Section - Primary Details */}
-              <div className="col-span-12 lg:col-span-6 space-y-4 pr-4">
-                {/* All fields now use the horizontal TextInput/SelectInput components */}
+              <Box sx={{ gridColumn: { xs: "span 12", lg: "span 6" }, display: "flex", flexDirection: "column", gap: 2, pr: 2 }}>
                 <TextInput
                   label="Code"
                   required
@@ -554,26 +563,29 @@ const Brand = () => {
                   onChange={(e) => setPrintingName(e.target.value)}
                 />
 
-                {/* Margin Min/Max - Requires custom structure for dual input */}
-                <div className="flex items-center">
-                    <label className="w-1/3 text-sm font-medium text-gray-700 dark:text-gray-300">Margin</label>
-                    <div className="flex flex-1 items-center gap-3 ml-3">
-                        <input
-                            type="number"
-                            value={minMargin}
-                            onChange={(e) => setMinMargin(e.target.value)}
-                            placeholder="Min Margin"
-                            className="flex-1 border border-gray-300 dark:border-gray-600 rounded-sm p-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                        <input
-                            type="number"
-                            value={maxMargin}
-                            onChange={(e) => setMaxMargin(e.target.value)}
-                            placeholder="Max Margin"
-                            className="flex-1 border border-gray-300 dark:border-gray-600 rounded-sm p-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                    </div>
-                </div>
+                <Stack direction="row" sx={{ alignItems: "center" }}>
+                  <Typography component="label" sx={{ width: "33.33%", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Margin</Typography>
+                  <Stack direction="row" sx={{ flex: 1, alignItems: "center", gap: 1.5, ml: 1.5 }}>
+                    <TextField
+                      type="number"
+                      value={minMargin}
+                      onChange={(e) => setMinMargin(e.target.value)}
+                      placeholder="Min Margin"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
+                    />
+                    <TextField
+                      type="number"
+                      value={maxMargin}
+                      onChange={(e) => setMaxMargin(e.target.value)}
+                      placeholder="Max Margin"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
+                    />
+                  </Stack>
+                </Stack>
 
                 <SelectInput
                   label="Brand Type"
@@ -582,164 +594,166 @@ const Brand = () => {
                   onChange={(e) => setBrandType(e.target.value)}
                 />
 
-                {/* Discount / Discount Value - Requires custom structure for dual input */}
-                <div className="flex items-center">
-                    <label className="w-1/3 text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Discount / Value
-                    </label>
-                    <div className="flex flex-1 items-center gap-3 ml-3">
-                        <select
-                            value={discountType}
-                            onChange={(e) => setDiscountType(e.target.value)}
-                            className="flex-1 border border-gray-300 dark:border-gray-600 rounded-sm p-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                        >
-                            <option value="">Select</option>
-                            {discountOptions.map((option, index) => (
-                                <option key={index} value={option.value}>
-                                    {option.label}
-                                </option>
-                            ))}
-                        </select>
-                        <input
-                            type="number"
-                            value={discountValue}
-                            onChange={(e) => setDiscountValue(e.target.value)}
-                            placeholder="Value"
-                            className="w-20 border border-gray-300 dark:border-gray-600 rounded-sm p-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                    </div>
-                </div>
+                <Stack direction="row" sx={{ alignItems: "center" }}>
+                  <Typography component="label" sx={{ width: "33.33%", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>
+                    Discount / Value
+                  </Typography>
+                  <Stack direction="row" sx={{ flex: 1, alignItems: "center", gap: 1.5, ml: 1.5 }}>
+                    <TextField
+                      select
+                      value={discountType}
+                      onChange={(e) => setDiscountType(e.target.value)}
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
+                    >
+                      <MenuItem value="">Select</MenuItem>
+                      {discountOptions.map((option, index) => (
+                        <MenuItem key={index} value={option.value}>
+                          {option.label}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                    <TextField
+                      type="number"
+                      value={discountValue}
+                      onChange={(e) => setDiscountValue(e.target.value)}
+                      placeholder="Value"
+                      size="small"
+                      sx={{ width: 80, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
+                    />
+                  </Stack>
+                </Stack>
 
-                {/* Logo Section - Custom structure for horizontal label */}
-                <div className="flex items-center">
-                    <label className="w-1/3 text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Logo
-                    </label>
-                    <div className="flex flex-1 items-center gap-2 ml-3">
-                        <label
-                            htmlFor="logoUpload"
-                            className="cursor-pointer px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-800 rounded-sm text-blue-600 dark:text-blue-400 text-sm hover:bg-blue-200 dark:hover:bg-blue-900/50 transition"
-                        >
-                            📁 Choose Image
-                        </label>
-                        <input
-                            id="logoUpload"
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => {
-                                if (e.target.files && e.target.files[0]) {
-                                    const file = e.target.files[0];
-                                    console.log("Selected file:", file.name);
-                                }
-                            }}
-                        />
-                        <span className="text-xs text-gray-500 dark:text-gray-400 italic">No file selected</span>
-                    </div>
-                </div>
+                <Stack direction="row" sx={{ alignItems: "center" }}>
+                  <Typography component="label" sx={{ width: "33.33%", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>
+                    Logo
+                  </Typography>
+                  <Stack direction="row" sx={{ flex: 1, alignItems: "center", gap: 1, ml: 1.5 }}>
+                    <Typography
+                      component="label"
+                      htmlFor="logoUpload"
+                      sx={{ cursor: "pointer", px: 1.5, py: 0.75, bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.24 : 0.12), border: 1, borderColor: (theme) => alpha(theme.palette.primary.main, 0.4), borderRadius: "3.5px", color: "primary.main", fontSize: 12.25, "&:hover": { bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.32 : 0.2) } }}
+                    >
+                      📁 Choose Image
+                    </Typography>
+                    <Box
+                      component="input"
+                      id="logoUpload"
+                      type="file"
+                      accept="image/*"
+                      sx={{ display: "none" }}
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          const file = e.target.files[0];
+                          console.log("Selected file:", file.name);
+                        }
+                      }}
+                    />
+                    <Typography component="span" sx={{ fontSize: 10.5, color: "text.secondary", fontStyle: "italic" }}>No file selected</Typography>
+                  </Stack>
+                </Stack>
 
-                {/* Active Checkbox - Custom structure for horizontal label */}
-                <div className="flex items-center pt-2">
-                    <label className="w-1/3 text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Active
-                    </label>
-                    <div className="flex-1 flex items-center ml-3">
-                        <input
-                            id="active"
-                            type="checkbox"
-                            checked={isActive}
-                            onChange={(e) => setIsActive(e.target.checked)}
-                            className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-blue-500"
-                        />
-                        <label
-                            htmlFor="active"
-                            className="ml-2 text-sm text-gray-700 dark:text-gray-300"
-                            // Label text moved next to the checkbox if desired, or left blank if the main label is enough.
-                        ></label>
-                    </div>
-                </div>
-              </div>
+                <Stack direction="row" sx={{ alignItems: "center", pt: 1 }}>
+                  <Typography component="label" sx={{ width: "33.33%", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>
+                    Active
+                  </Typography>
+                  <Stack direction="row" sx={{ flex: 1, alignItems: "center", ml: 1.5 }}>
+                    <Checkbox
+                      id="active"
+                      checked={isActive}
+                      onChange={(e) => setIsActive(e.target.checked)}
+                      size="small"
+                      sx={{ p: 0 }}
+                    />
+                  </Stack>
+                </Stack>
+              </Box>
 
-              {/* Right Section - Product Margin List (No layout change needed here) */}
-              <div className="col-span-12 lg:col-span-6 border-l pl-4 border-gray-100 dark:border-gray-700">
-                <h2 className="text-base font-bold text-gray-800 dark:text-gray-100 mb-3 border-b dark:border-gray-700 pb-2">
+              {/* Right Section - Product Margin List */}
+              <Box sx={{ gridColumn: { xs: "span 12", lg: "span 6" }, borderLeft: 1, borderColor: "divider", pl: 2 }}>
+                <Typography component="h2" sx={{ fontSize: 15, fontWeight: 700, mb: 1.5, pb: 1, borderBottom: 1, borderColor: "divider" }}>
                   Product Margin - B2B
-                </h2>
-                <div className="border rounded-sm overflow-hidden border-gray-300 dark:border-gray-600">
-                  {/* Header Row */}
-                  <div className="flex bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600 p-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
-                    <div className="w-1/2 px-1">Product</div>
-                    <div className="w-1/3 px-1">Margin (%)</div>
-                    <div className="w-1/6 px-1 text-right">Action</div>
-                  </div>
+                </Typography>
+                <Box sx={{ border: 1, borderColor: "grey.300", borderRadius: "3.5px", overflow: "hidden" }}>
+                  <Stack direction="row" sx={{ bgcolor: "action.hover", borderBottom: 1, borderColor: "divider", p: 1, fontSize: 12.25, fontWeight: 600, color: "text.secondary" }}>
+                    <Box sx={{ width: "50%", px: 0.5 }}>Product</Box>
+                    <Box sx={{ width: "33.33%", px: 0.5 }}>Margin (%)</Box>
+                    <Box sx={{ width: "16.66%", px: 0.5, textAlign: "right" }}>Action</Box>
+                  </Stack>
 
-                  {/* Input Row */}
-                  <div className="flex items-center border-b dark:border-gray-700 p-2 space-x-2">
-                    <select
+                  <Stack direction="row" sx={{ alignItems: "center", borderBottom: 1, borderColor: "divider", p: 1, gap: 1 }}>
+                    <TextField
+                      select
                       value={product}
                       onChange={(e) => setProduct(e.target.value)}
-                      className="flex-1 border border-gray-300 dark:border-gray-600 rounded-sm p-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      size="small"
+                      sx={{ flex: 1, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
                     >
-                      <option value="">Select Product</option>
+                      <MenuItem value="">Select Product</MenuItem>
                       {products.map((p, idx) => (
-                        <option key={idx} value={p.value}>
+                        <MenuItem key={idx} value={p.value}>
                           {p.label}
-                        </option>
+                        </MenuItem>
                       ))}
-                    </select>
-                    <input
+                    </TextField>
+                    <TextField
                       type="number"
                       placeholder="Margin"
                       value={margin}
                       onChange={(e) => setMargin(e.target.value)}
-                      className="w-1/3 border border-gray-300 dark:border-gray-600 rounded-sm p-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                      size="small"
+                      sx={{ width: "33.33%", "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
                     />
-                    <button
+                    <Button
                       onClick={handleAddProduct}
-                      className="glass-btn glass-btn-primary w-1/6 flex items-center justify-center gap-2"
+                      className="glass-btn glass-btn-primary"
+                      startIcon={<PlusCircle className="w-4 h-4" />}
+                      sx={{ width: "16.66%" }}
                     >
-                      <PlusCircle className="w-4 h-4" /> Add
-                    </button>
-                  </div>
+                      Add
+                    </Button>
+                  </Stack>
 
-                  {/* Table Body */}
-                  <div className="text-sm">
+                  <Box sx={{ fontSize: 12.25 }}>
                     {productList.length === 0 ? (
-                      <div className="text-gray-500 dark:text-gray-400 italic p-3 text-center">
+                      <Box sx={{ color: "text.secondary", fontStyle: "italic", p: 1.5, textAlign: "center" }}>
                         No products added
-                      </div>
+                      </Box>
                     ) : (
-                      <table className="w-full text-sm">
-                        <tbody>
+                      <Table sx={{ width: "100%" }} size="small">
+                        <TableBody>
                           {productList.map((item, index) => (
-                            <tr
+                            <TableRow
                               key={index}
-                              className="border-t dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition"
+                              hover
                             >
-                              <td className="p-2 w-1/2">{item.productLabel || item.product}</td>
-                              <td className="p-2 w-1/3">{item.margin}%</td>
-                              <td className="p-2 w-1/6 text-right">
-                                <button
+                              <TableCell sx={{ width: "50%" }}>{item.productLabel || item.product}</TableCell>
+                              <TableCell sx={{ width: "33.33%" }}>{item.margin}%</TableCell>
+                              <TableCell sx={{ width: "16.66%", textAlign: "right" }}>
+                                <IconButton
                                   onClick={() => handleRemoveProduct(index)}
-                                  className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 p-1 rounded transition"
+                                  size="small"
+                                  sx={{ color: "error.main", "&:hover": { color: "error.dark" } }}
                                 >
                                   <Trash2 className="w-4 h-4" />
-                                </button>
-                              </td>
-                            </tr>
+                                </IconButton>
+                              </TableCell>
+                            </TableRow>
                           ))}
-                        </tbody>
-                      </table>
+                        </TableBody>
+                      </Table>
                     )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+                  </Box>
+                </Box>
+              </Box>
+            </Box>
+          </Card>
         ) : (
-          // Search Page
-          <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg border border-gray-200 dark:border-gray-700 h-full flex flex-col min-h-0 px-3 pt-3 pb-0.5">
-            <h2 className="text-base font-bold mb-1.5">Search Brands</h2>
+          <Card variant="outlined" sx={{ px: 1.5, pt: 1.5, pb: 0.5, height: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}>
+            <Typography component="h2" sx={{ fontSize: 16, fontWeight: 700, mb: 1 }}>
+              Search Brands
+            </Typography>
             <FilterableDataTable
               rows={searchResults}
               columns={brandTableColumns}
@@ -778,7 +792,7 @@ const Brand = () => {
               fillHeight
               compact
               renderActions={(row, { selectedCount } = {}) => (
-                <div className="flex items-center gap-2">
+                <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
                   <button
                     type="button"
                     onClick={() => handleEditFromSearch(row)}
@@ -796,14 +810,13 @@ const Brand = () => {
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
-                </div>
+                </Stack>
               )}
             />
-          </div>
+          </Card>
         )}
-      </div>
-
-    </div>
+      </Box>
+    </Box>
   );
 };
 

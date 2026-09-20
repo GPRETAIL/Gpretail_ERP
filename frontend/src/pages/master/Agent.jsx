@@ -2,9 +2,11 @@ import { ArrowLeft, Pencil, PlusCircle, Save, Search, Trash2 } from "lucide-reac
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
+import { Box, Stack, Card, Typography, Button, TextField, Checkbox } from "@mui/material";
 import api from "../../api/axios";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import FilterableDataTable from "../../components/FilterableDataTable";
+import PageHeader from "../../components/PageHeader";
 import { createGroupFetchers } from "../../utils/serverGrouping";
 
 // Matches config('pagination.resources.agents.groupable_columns') on the backend.
@@ -46,54 +48,57 @@ const AGENT_IMPORT_CONFIG = {
   ],
 };
 
-// ─── Module-level helper components (must NOT be inside the main component) ───
+// ─── Module-level helper components ───
 
 const TextInput = ({ label, name, required = false, type = "text", value, onChange, placeholder = "" }) => (
-  <div className="flex items-center">
-    <label className="w-2/5 text-xs font-medium text-gray-700 dark:text-gray-300 text-right pr-3">
-      {required && <span className="text-red-500 mr-1">*</span>}
+  <Stack direction="row" sx={{ alignItems: "center" }}>
+    <Typography component="label" sx={{ width: "40%", fontSize: 10.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
+      {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}
       {label}
-    </label>
-    <input
+    </Typography>
+    <TextField
       type={type}
       name={name}
       value={value}
       onChange={onChange}
       placeholder={placeholder}
-      className="flex-1 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-500 rounded-sm p-1 text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+      size="small"
+      fullWidth
+      sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.5 } }}
     />
-  </div>
+  </Stack>
 );
 
 const TextareaInput = ({ label, name, value, onChange, rows = 3 }) => (
-  <div className="flex items-start">
-    <label className="w-2/5 text-xs font-medium text-gray-700 dark:text-gray-300 text-right pr-3 pt-1">
+  <Stack direction="row" sx={{ alignItems: "flex-start" }}>
+    <Typography component="label" sx={{ width: "40%", fontSize: 10.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5, pt: 0.5 }}>
       {label}
-    </label>
-    <textarea
+    </Typography>
+    <TextField
       name={name}
       value={value}
       onChange={onChange}
       rows={rows}
-      className="flex-1 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-500 rounded-sm p-1 text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+      multiline
+      size="small"
+      fullWidth
+      sx={{ "& .MuiInputBase-input": { fontSize: 10.5 } }}
     />
-  </div>
+  </Stack>
 );
 
 const CheckboxInput = ({ label, name, checked, onChange }) => (
-  <div className="flex items-center">
-    <label className="w-2/5 text-xs font-medium text-gray-700 dark:text-gray-300 text-right pr-3">{label}</label>
-    <input
-      type="checkbox"
+  <Stack direction="row" sx={{ alignItems: "center" }}>
+    <Typography component="label" sx={{ width: "40%", fontSize: 10.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>{label}</Typography>
+    <Checkbox
       name={name}
       checked={checked}
       onChange={onChange}
-      className="w-3 h-3 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-blue-500"
+      size="small"
+      sx={{ p: 0 }}
     />
-  </div>
+  </Stack>
 );
-
-// ─── Initial blank form ───────────────────────────────────────────────────────
 
 const blank = () => ({
   agentTypeId: "", name: "", contactPerson: "", contactNo: "",
@@ -104,8 +109,6 @@ const blank = () => ({
   stateId: "", pincode: "", active: true,
 });
 
-// ─── Main Component ───────────────────────────────────────────────────────────
-
 const Agent = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -115,9 +118,8 @@ const Agent = () => {
   const [currentId, setCurrentId] = useState(null);
   const initialFormRef = useRef({ id: null, sig: null });
   const [saving, setSaving] = useState(false);
-  const savingRef = useRef(false); // synchronous double-submit guard
+  const savingRef = useRef(false);
 
-  // Search page state
   const [showSearch, setShowSearch] = useState(true);
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(true);
@@ -130,18 +132,15 @@ const Agent = () => {
   const [tableSearchField, setTableSearchField] = useState("all");
   const [forceFetchAll, setForceFetchAll] = useState(false);
 
-  // Dropdown options
   const [agentTypes, setAgentTypes] = useState([]);
   const [cities, setCities] = useState([]);
   const [taxes, setTaxes] = useState([]);
   const [banks, setBanks] = useState([]);
   const [states, setStates] = useState([]);
 
-  // Confirm dialog
   const [confirm, setConfirm] = useState({ open: false, id: null, name: "" });
   const [bulkConfirm, setBulkConfirm] = useState({ open: false, keys: [] });
 
-  // ─── Load dropdown options on mount ──────────────────────────────────────
   useEffect(() => {
     const load = async () => {
       try {
@@ -156,8 +155,6 @@ const Agent = () => {
           (res.data?.data || []).map((r) => ({ value: String(r.id), label: r.name }));
         setAgentTypes(cfg(atRes));
         setCities(cfg(cityRes));
-        // Was api.get("/taxes") with no params (default ~50 rows), no way to search beyond it --
-        // taxes now has real async search (handleAsyncTaxSearch below) covering the real table.
         setTaxes((taxRes.data?.data || []).map((t) => ({ id: String(t.id), value: String(t.id), name: t.name, label: t.name })));
         setBanks(cfg(bankRes));
         setStates(cfg(stateRes));
@@ -168,8 +165,6 @@ const Agent = () => {
     load();
   }, []);
 
-  // taxes is only ever seeded with a small batch above -- this hits /taxes' own ?search=
-  // endpoint for anything beyond that.
   const handleAsyncTaxSearch = useCallback(async (query) => {
     const trimmed = String(query || "").trim();
     if (!trimmed) return [];
@@ -189,7 +184,6 @@ const Agent = () => {
     }
   }, []);
 
-  // ─── Load record when editing from URL ───────────────────────────────────
   useEffect(() => {
     if (!editId) return;
     api.get(`/agents/${editId}`)
@@ -223,7 +217,6 @@ const Agent = () => {
       .catch(() => toast.error("Failed to load agent record"));
   }, [editId]);
 
-  // ─── Handlers ─────────────────────────────────────────────────────────────
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
@@ -404,17 +397,10 @@ const Agent = () => {
       render: (value) => value || "—",
       searchValue: (row) => row.created_by || "",
     },
-    {
-      key: "company_id",
-      label: "Store/Warehouse",
-      render: (value) => storeMap[String(value)] ?? "—",
-      searchValue: (row) => storeMap[String(row.company_id)] ?? "",
-    },
   ];
 
-  // ─────────────────────────────────────────────────────────────────────────
   return (
-    <div className="h-full flex flex-col bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 master-responsive">
+    <Box sx={{ height: "100%", display: "flex", flexDirection: "column", bgcolor: "background.default", color: "text.primary" }}>
       <ConfirmDialog
         open={confirm.open}
         message={`Are you sure you want to delete "${confirm.name}"? This action cannot be undone.`}
@@ -428,88 +414,107 @@ const Agent = () => {
         onCancel={() => setBulkConfirm({ open: false, keys: [] })}
       />
 
-      {/* Header */}
-      <div className="flex justify-between items-center px-4 py-1 bg-white dark:bg-gray-800 border-b dark:border-gray-700 shadow-sm">
-        <div className="flex items-center space-x-2">
-          <button className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200" onClick={() => navigate(-1)}>
-            <ArrowLeft className="w-4 h-4" />
-          </button>
-          <h1 className="text-sm font-semibold flex items-center gap-1">
-            <button
+      <PageHeader
+        title={
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+            <Typography
+              component="button"
               type="button"
               onClick={() => navigate("/masters")}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
+              sx={{
+                fontSize: 13,
+                fontWeight: 600,
+                color: "primary.main",
+                background: "none",
+                border: "none",
+                p: 0,
+                cursor: "pointer",
+                "&:hover": { textDecoration: "underline" },
+              }}
             >
               Master
-            </button>
-            <span className="text-gray-500 dark:text-gray-400">/</span>
-            <span>Agent</span>
-          </h1>
-        </div>
-        <div className="flex items-center space-x-3 text-xs font-medium text-gray-700 dark:text-gray-300">
-          <button onClick={handleNew} className="topbar-action-btn topbar-action-new">
-            <PlusCircle className="w-3 h-3 mr-1" /> New
-          </button>
-          <span>|</span>
-          <UploadImportButton
-            endpoint="/agents/bulk"
-            fieldConfig={AGENT_IMPORT_CONFIG}
-            onDone={() => {
-              setShowSearch(true);
-              if (page === 1) fetchSearchResults();
-              else setPage(1);
-            }}
-          />
-          {showSearch && (
-            <>
-              <span>|</span>
-              <ExportBottomSheet
-                columns={tableColumns}
-                rows={searchResults.map((row, index) => ({ ...row, __serial: index + 1 }))}
-                selectedRowKeys={selectedRows}
-                onExportRows={async () => {
-                  const res = await api.get("/agents", { params: { all: "true" } });
-                  return (res.data?.data || []).map((row, index) => ({
-                    ...row,
-                    __serial: index + 1,
-                  }));
-                }}
-                fileName="agents"
-                buttonClassName="topbar-action-btn topbar-action-export"
-              />
-            </>
-          )}
-          <span>|</span>
-          {!showSearch && (
-            <>
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="glass-btn glass-btn-success flex items-center disabled:opacity-50"
-              >
-                <Save className="w-3 h-3 mr-1" /> {saving ? "Saving…" : "Save"}
-              </button>
-              <span>|</span>
-            </>
-          )}
-          <button onClick={handleSearchOpen} className="glass-btn glass-btn-primary flex items-center">
-            <Search className="w-3 h-3 mr-1" /> Search
-          </button>
-        </div>
-      </div>
+            </Typography>
+            <Typography sx={{ fontSize: 13, color: "text.secondary" }}>/</Typography>
+            <Typography sx={{ fontSize: 13, fontWeight: 600 }}>Agent</Typography>
+          </Stack>
+        }
+        onBack={() => navigate(-1)}
+        actions={
+          <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+            <Button
+              onClick={handleNew}
+              className="topbar-action-btn topbar-action-new"
+              startIcon={<PlusCircle className="w-3 h-3" />}
+              size="small"
+            >
+              New
+            </Button>
+            <Typography sx={{ color: "text.secondary" }}>|</Typography>
+            <UploadImportButton
+              endpoint="/agents/bulk"
+              fieldConfig={AGENT_IMPORT_CONFIG}
+              onDone={() => {
+                setShowSearch(true);
+                if (page === 1) fetchSearchResults();
+                else setPage(1);
+              }}
+            />
+            {showSearch && (
+              <>
+                <Typography sx={{ color: "text.secondary" }}>|</Typography>
+                <ExportBottomSheet
+                  columns={tableColumns}
+                  rows={searchResults.map((row, index) => ({ ...row, __serial: index + 1 }))}
+                  selectedRowKeys={selectedRows}
+                  onExportRows={async () => {
+                    const res = await api.get("/agents", { params: { all: "true" } });
+                    return (res.data?.data || []).map((row, index) => ({
+                      ...row,
+                      __serial: index + 1,
+                    }));
+                  }}
+                  fileName="agents"
+                  buttonClassName="topbar-action-btn topbar-action-export"
+                />
+              </>
+            )}
+            <Typography sx={{ color: "text.secondary" }}>|</Typography>
+            {!showSearch && (
+              <>
+                <Button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="glass-btn glass-btn-success"
+                  startIcon={<Save className="w-3 h-3" />}
+                  size="small"
+                >
+                  {saving ? "Saving…" : "Save"}
+                </Button>
+                <Typography sx={{ color: "text.secondary" }}>|</Typography>
+              </>
+            )}
+            <Button
+              onClick={handleSearchOpen}
+              className="glass-btn glass-btn-primary"
+              startIcon={<Search className="w-3 h-3" />}
+              size="small"
+            >
+              Search
+            </Button>
+          </Stack>
+        }
+      />
 
-      <div className="p-3 flex-1 min-h-0">
+      <Box sx={{ p: 1.5, flex: 1, minHeight: 0 }}>
         {!showSearch ? (
-          /* ── Form ── */
-          <div
-            className="bg-white dark:bg-gray-800 shadow-lg rounded-lg border border-gray-200 dark:border-gray-700 p-4 lg:h-full"
+          <Card
+            variant="outlined"
+            sx={{ p: 2, height: { xs: "auto", lg: "100%" } }}
             data-enter-scope="true"
             onKeyDownCapture={handleEnterKeyNavigation}
           >
-            <div className="grid grid-cols-12 gap-x-6 gap-y-3">
-
-              {/* Column 1 */}
-              <div className="col-span-12 lg:col-span-6 space-y-2">
+            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "repeat(12, 1fr)" }, columnGap: 3, rowGap: 1.5 }}>
+              <Box sx={{ gridColumn: { xs: "span 12", lg: "span 6" }, display: "flex", flexDirection: "column", gap: 1 }}>
                 <SearchableSelect label="Agent Type" name="agentTypeId" options={agentTypes} value={formData.agentTypeId} onChange={handleChange} />
                 <TextInput label="Name"            name="name"          required value={formData.name}           onChange={handleChange} />
                 <TextInput label="Contact Person"  name="contactPerson"          value={formData.contactPerson}   onChange={handleChange} />
@@ -520,31 +525,28 @@ const Agent = () => {
                 <TextInput label="GST"             name="gst"                     value={formData.gst}             onChange={handleChange} />
                 <TextInput label="Commission Amt"  name="commissionAmt"           value={formData.commissionAmt}   onChange={handleChange} />
                 <TextInput label="Commission %"    name="commissionPct"           value={formData.commissionPct}   onChange={handleChange} />
-              </div>
+              </Box>
 
-              {/* Column 2 */}
-              <div className="col-span-12 lg:col-span-6 space-y-2">
+              <Box sx={{ gridColumn: { xs: "span 12", lg: "span 6" }, display: "flex", flexDirection: "column", gap: 1 }}>
                 <SearchableSelect label="City"  name="cityId"  options={cities} value={formData.cityId}  onChange={handleChange} />
                 <SearchableSelect label="State" name="stateId" options={states} value={formData.stateId} onChange={handleChange} />
                 <TextInput label="Pincode"          name="pincode"          value={formData.pincode}          onChange={handleChange} />
-                <div className="flex items-center w-full">
-                  <label className="w-2/5 text-xs font-medium text-gray-700 dark:text-gray-300 text-right pr-3 shrink-0">Tax</label>
-                  <div className="flex-1">
+                <Stack direction="row" sx={{ alignItems: "center", width: "100%" }}>
+                  <Typography component="label" sx={{ width: "40%", flexShrink: 0, fontSize: 10.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>Tax</Typography>
+                  <Box sx={{ flex: 1 }}>
                     <AsyncSearchSelect name="taxId" options={taxes} value={formData.taxId} onChange={handleChange} onAsyncSearch={handleAsyncTaxSearch} searchPlaceholder="Search tax..." />
-                  </div>
-                </div>
+                  </Box>
+                </Stack>
                 <SearchableSelect label="Bank" name="bankId" options={banks} value={formData.bankId} onChange={handleChange} />
                 <TextInput label="Bank Account Name" name="bankAccountName" value={formData.bankAccountName} onChange={handleChange} />
                 <TextInput label="IFSC"             name="ifsc"             value={formData.ifsc}             onChange={handleChange} />
                 <TextInput label="Account No"       name="accountNo"        value={formData.accountNo}        onChange={handleChange} />
                 <CheckboxInput label="Active"       name="active"           checked={formData.active}         onChange={handleChange} />
-              </div>
-
-            </div>
-          </div>
+              </Box>
+            </Box>
+          </Card>
         ) : (
-          /* ── Search page ── */
-          <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg border border-gray-200 dark:border-gray-700 p-4 h-full flex flex-col min-h-0">
+          <Card variant="outlined" sx={{ p: 2, height: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}>
             <FilterableDataTable
               rows={searchResults.map((row, index) => ({ ...row, __serial: index + 1 }))}
               columns={tableColumns}
@@ -581,7 +583,7 @@ const Agent = () => {
               onRowClick={(row) => handleEditFromSearch(row)}
               fillHeight
               renderActions={(row, { selectedCount } = {}) => (
-                <div className="flex items-center gap-2">
+                <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
                   <button
                     onClick={() => handleEditFromSearch(row)}
                     title="Edit"
@@ -597,14 +599,13 @@ const Agent = () => {
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
-                </div>
+                </Stack>
               )}
             />
-          </div>
+          </Card>
         )}
-      </div>
-
-    </div>
+      </Box>
+    </Box>
   );
 };
 

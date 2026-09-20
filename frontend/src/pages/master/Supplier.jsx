@@ -9,6 +9,8 @@ import { createGroupFetchers } from "../../utils/serverGrouping";
 // Matches config('pagination.resources.suppliers.groupable_columns') on the backend.
 const { onFetchGroupSummaries: fetchSupplierGroupSummaries, onFetchGroupRows: fetchSupplierGroupRows } =
   createGroupFetchers("/suppliers", { city_id: "city" });
+import { Box, Button, Card, Stack, Typography, TextField, MenuItem, IconButton, Checkbox, Table, TableHead, TableBody, TableRow, TableCell } from "@mui/material";
+import PageHeader from "../../components/PageHeader";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import AsyncSearchSelect from "../../components/AsyncSearchSelect";
 import ExportBottomSheet from "../../components/ExportBottomSheet";
@@ -70,211 +72,207 @@ const SUPPLIER_IMPORT_CONFIG = {
 // ─── Helper components at module level (prevents focus-loss on re-render) ────
 
 const TextInput = ({ label, name, required = false, value, onChange, placeholder = "", icon = null, type = "text", disabled = false }) => (
-  <div className="flex items-center">
-    <label className="w-1/2 text-sm font-medium text-gray-700 dark:text-gray-300">
-      {required && <span className="text-red-500 mr-1">*</span>}{label}
-    </label>
-    <div className="flex-1 flex items-center ml-3">
-      <input type={type} name={name} value={value} onChange={onChange} placeholder={placeholder} disabled={disabled}
-        className="flex-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm p-1.5 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed" />
-      {icon && <button className="glass-btn glass-btn-primary p-1.5 ml-1" type="button">{icon}</button>}
-    </div>
-  </div>
+  <Stack direction="row" sx={{ alignItems: "center" }}>
+    <Typography component="label" sx={{ width: "50%", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>
+      {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}{label}
+    </Typography>
+    <Stack direction="row" sx={{ flex: 1, alignItems: "center", ml: 1.5 }}>
+      <TextField type={type} name={name} value={value} onChange={onChange} placeholder={placeholder} disabled={disabled}
+        size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }} />
+      {icon && <IconButton className="glass-btn glass-btn-primary" sx={{ ml: 0.5, p: 0.75 }} type="button">{icon}</IconButton>}
+    </Stack>
+  </Stack>
 );
 
 const SelectInput = ({ label, name, required = false, options = [], value, onChange, icon = null, disabled = false }) => (
-  <div className="flex items-center">
-    <label className="w-1/2 text-sm font-medium text-gray-700 dark:text-gray-300">
-      {required && <span className="text-red-500 mr-1">*</span>}{label}
-    </label>
-    <div className="flex-1 flex items-center ml-3">
-      <select name={name} value={value} onChange={onChange} disabled={disabled}
-        className="flex-1 border border-gray-300 dark:border-gray-600 rounded-sm p-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed">
-        <option value="">Select {label}</option>
-        {options.map((o, i) => <option key={i} value={o.value ?? o.label}>{o.label}</option>)}
-      </select>
-      {icon && <button className="glass-btn glass-btn-primary p-1.5 ml-1" type="button">{icon}</button>}
-    </div>
-  </div>
+  <Stack direction="row" sx={{ alignItems: "center" }}>
+    <Typography component="label" sx={{ width: "50%", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>
+      {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}{label}
+    </Typography>
+    <Stack direction="row" sx={{ flex: 1, alignItems: "center", ml: 1.5 }}>
+      <TextField select name={name} value={value} onChange={onChange} disabled={disabled}
+        size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
+        <MenuItem value="">Select {label}</MenuItem>
+        {options.map((o, i) => <MenuItem key={i} value={o.value ?? o.label}>{o.label}</MenuItem>)}
+      </TextField>
+      {icon && <IconButton className="glass-btn glass-btn-primary" sx={{ ml: 0.5, p: 0.75 }} type="button">{icon}</IconButton>}
+    </Stack>
+  </Stack>
 );
 
 const DualSelectInput = ({ label, name1, value1, name2, value2, onChange, options1 = [], options2 = [], placeholder1 = "Select", placeholder2 = "Select" }) => (
-  <div className="flex items-center">
-    <label className="w-1/2 text-sm font-medium text-gray-700 dark:text-gray-300">{label}</label>
-    <div className="flex-1 flex items-center ml-3 space-x-2">
-      <select name={name1} value={value1} onChange={onChange} className="w-1/2 border border-gray-300 dark:border-gray-600 rounded-sm p-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500">
-        <option value="">{placeholder1}</option>
-        {options1.map((o, i) => <option key={i} value={o.value ?? o.label}>{o.label}</option>)}
-      </select>
-      <select name={name2} value={value2} onChange={onChange} className="w-1/2 border border-gray-300 dark:border-gray-600 rounded-sm p-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500">
-        <option value="">{placeholder2}</option>
-        {options2.map((o, i) => <option key={i} value={o.value ?? o.label}>{o.label}</option>)}
-      </select>
-    </div>
-  </div>
+  <Stack direction="row" sx={{ alignItems: "center" }}>
+    <Typography component="label" sx={{ width: "50%", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>{label}</Typography>
+    <Stack direction="row" sx={{ flex: 1, alignItems: "center", ml: 1.5, gap: 1 }}>
+      <TextField select name={name1} value={value1} onChange={onChange} size="small" sx={{ width: "50%", "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
+        <MenuItem value="">{placeholder1}</MenuItem>
+        {options1.map((o, i) => <MenuItem key={i} value={o.value ?? o.label}>{o.label}</MenuItem>)}
+      </TextField>
+      <TextField select name={name2} value={value2} onChange={onChange} size="small" sx={{ width: "50%", "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
+        <MenuItem value="">{placeholder2}</MenuItem>
+        {options2.map((o, i) => <MenuItem key={i} value={o.value ?? o.label}>{o.label}</MenuItem>)}
+      </TextField>
+    </Stack>
+  </Stack>
 );
 
 const SingleInputRight = ({ label, name, required = false, value, onChange, placeholder = "", type = "text" }) => (
-  <div className="flex items-center">
-    <label className="w-[30%] text-sm font-medium text-gray-700 dark:text-gray-300 pr-1">
-      {required && <span className="text-red-500 mr-1">*</span>}{label}
-    </label>
-    <input type={type} name={name} value={value} onChange={onChange} placeholder={placeholder}
-      className="w-[70%] border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm p-1.5 text-sm focus:ring-1 focus:ring-blue-500" />
-  </div>
+  <Stack direction="row" sx={{ alignItems: "center" }}>
+    <Typography component="label" sx={{ width: "30%", fontSize: 12.25, fontWeight: 500, color: "text.secondary", pr: 0.5 }}>
+      {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}{label}
+    </Typography>
+    <TextField type={type} name={name} value={value} onChange={onChange} placeholder={placeholder}
+      size="small" sx={{ width: "70%", "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }} />
+  </Stack>
 );
 
 const SelectInputRight = ({ label, name, required = false, options = [], value, onChange }) => (
-  <div className="flex items-center">
-    <label className="w-[30%] text-sm font-medium text-gray-700 dark:text-gray-300 pr-1">
-      {required && <span className="text-red-500 mr-1">*</span>}{label}
-    </label>
-    <select name={name} value={value} onChange={onChange}
-      className="w-[70%] border border-gray-300 dark:border-gray-600 rounded-sm p-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500">
-      <option value="">Select {label}</option>
-      {options.map((o, i) => <option key={i} value={o.value ?? o.label}>{o.label}</option>)}
-    </select>
-  </div>
+  <Stack direction="row" sx={{ alignItems: "center" }}>
+    <Typography component="label" sx={{ width: "30%", fontSize: 12.25, fontWeight: 500, color: "text.secondary", pr: 0.5 }}>
+      {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}{label}
+    </Typography>
+    <TextField select name={name} value={value} onChange={onChange}
+      size="small" sx={{ width: "70%", "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
+      <MenuItem value="">Select {label}</MenuItem>
+      {options.map((o, i) => <MenuItem key={i} value={o.value ?? o.label}>{o.label}</MenuItem>)}
+    </TextField>
+  </Stack>
 );
 
 const BankBranchField = ({ label, bankName, bankValue, branchName, branchValue, onChange, bankOptions = [] }) => (
-  <div className="flex items-center">
-    <label className="w-[30%] text-sm font-medium text-gray-700 dark:text-gray-300 pr-1">{label}</label>
-    <div className="w-[70%] flex space-x-1">
-      <select name={bankName} value={bankValue} onChange={onChange}
-        className="w-1/2 border border-gray-300 dark:border-gray-600 rounded-sm p-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500">
-        <option value="">Select Bank</option>
-        {bankOptions.map((o, i) => <option key={i} value={o.value ?? o.label}>{o.label}</option>)}
-      </select>
-      <input type="text" name={branchName} value={branchValue} onChange={onChange} placeholder="Branch"
-        className="w-1/2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm p-1.5 text-sm focus:ring-1 focus:ring-blue-500" />
-    </div>
-  </div>
+  <Stack direction="row" sx={{ alignItems: "center" }}>
+    <Typography component="label" sx={{ width: "30%", fontSize: 12.25, fontWeight: 500, color: "text.secondary", pr: 0.5 }}>{label}</Typography>
+    <Stack direction="row" sx={{ width: "70%", gap: 0.5 }}>
+      <TextField select name={bankName} value={bankValue} onChange={onChange}
+        size="small" sx={{ width: "50%", "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
+        <MenuItem value="">Select Bank</MenuItem>
+        {bankOptions.map((o, i) => <MenuItem key={i} value={o.value ?? o.label}>{o.label}</MenuItem>)}
+      </TextField>
+      <TextField type="text" name={branchName} value={branchValue} onChange={onChange} placeholder="Branch"
+        size="small" sx={{ width: "50%", "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }} />
+    </Stack>
+  </Stack>
 );
 
 const DualTextFieldRight = ({ label, name1, value1, name2, value2, onChange, placeholder1 = "", placeholder2 = "" }) => (
-  <div className="flex items-center">
-    <label className="w-[30%] text-sm font-medium text-gray-700 dark:text-gray-300 pr-1">{label}</label>
-    <div className="w-[70%] flex space-x-1">
-      <input type="text" name={name1} value={value1} onChange={onChange} placeholder={placeholder1}
-        className="w-1/2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm p-1.5 text-sm focus:ring-1 focus:ring-blue-500" />
-      <input type="text" name={name2} value={value2} onChange={onChange} placeholder={placeholder2}
-        className="w-1/2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm p-1.5 text-sm focus:ring-1 focus:ring-blue-500" />
-    </div>
-  </div>
+  <Stack direction="row" sx={{ alignItems: "center" }}>
+    <Typography component="label" sx={{ width: "30%", fontSize: 12.25, fontWeight: 500, color: "text.secondary", pr: 0.5 }}>{label}</Typography>
+    <Stack direction="row" sx={{ width: "70%", gap: 0.5 }}>
+      <TextField type="text" name={name1} value={value1} onChange={onChange} placeholder={placeholder1}
+        size="small" sx={{ width: "50%", "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }} />
+      <TextField type="text" name={name2} value={value2} onChange={onChange} placeholder={placeholder2}
+        size="small" sx={{ width: "50%", "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }} />
+    </Stack>
+  </Stack>
 );
 
 const MsmeRow = ({ label, inputName, selectName, inputValue, selectValue, onChange, groupOptions = [] }) => (
-  <div className="flex items-center">
-    <label className="w-[30%] text-sm font-medium text-gray-700 dark:text-gray-300 pr-1">{label}</label>
-    <div className="w-[70%] flex space-x-1">
-      <input type="text" name={inputName} value={inputValue} onChange={onChange}
-        className="w-1/2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm p-1.5 text-sm focus:ring-1 focus:ring-blue-500" />
-      <select name={selectName} value={selectValue} onChange={onChange}
-        className="w-1/2 border border-gray-300 dark:border-gray-600 rounded-sm p-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500">
-        <option value="">Select Group</option>
-        {groupOptions.map((o, i) => <option key={i} value={o.value ?? o.label}>{o.label}</option>)}
-      </select>
-    </div>
-  </div>
+  <Stack direction="row" sx={{ alignItems: "center" }}>
+    <Typography component="label" sx={{ width: "30%", fontSize: 12.25, fontWeight: 500, color: "text.secondary", pr: 0.5 }}>{label}</Typography>
+    <Stack direction="row" sx={{ width: "70%", gap: 0.5 }}>
+      <TextField type="text" name={inputName} value={inputValue} onChange={onChange}
+        size="small" sx={{ width: "50%", "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }} />
+      <TextField select name={selectName} value={selectValue} onChange={onChange}
+        size="small" sx={{ width: "50%", "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
+        <MenuItem value="">Select Group</MenuItem>
+        {groupOptions.map((o, i) => <MenuItem key={i} value={o.value ?? o.label}>{o.label}</MenuItem>)}
+      </TextField>
+    </Stack>
+  </Stack>
 );
 
 const RenamedRow = ({ label, name, checked, selectName, selectValue, onChange, options = [] }) => (
-  <div className="flex items-center">
-    <label className="w-[30%] text-sm font-medium text-gray-700 dark:text-gray-300 pr-1 flex items-center">
-      <input type="checkbox" name={name} checked={checked} onChange={onChange}
-        className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-blue-500 mr-2" />
+  <Stack direction="row" sx={{ alignItems: "center" }}>
+    <Stack component="label" direction="row" sx={{ width: "30%", fontSize: 12.25, fontWeight: 500, color: "text.secondary", pr: 0.5, alignItems: "center" }}>
+      <Checkbox name={name} checked={checked} onChange={onChange} size="small" sx={{ p: 0, mr: 1 }} />
       {label}
-    </label>
-    <select name={selectName} value={selectValue} onChange={onChange} disabled={!checked}
-      className={`w-[70%] border rounded-sm p-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 ${checked ? "border-gray-300 dark:border-gray-600" : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500"}`}>
-      <option value="">Select Renamed</option>
-      {options.map((o, i) => <option key={i} value={o.value ?? o.label}>{o.label}</option>)}
-    </select>
-  </div>
+    </Stack>
+    <TextField select name={selectName} value={selectValue} onChange={onChange} disabled={!checked}
+      size="small" sx={{ width: "70%", "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
+      <MenuItem value="">Select Renamed</MenuItem>
+      {options.map((o, i) => <MenuItem key={i} value={o.value ?? o.label}>{o.label}</MenuItem>)}
+    </TextField>
+  </Stack>
 );
 
 const ComplexInputRow = ({ label1, unit1, name1, unit2, name2, label2, value1, value2, onChange }) => (
-  <div className="flex items-center">
-    <label className="w-[30%] text-sm font-medium text-gray-700 dark:text-gray-300 pr-1">{label1}</label>
-    <span className="w-[10%] text-xs text-gray-500 dark:text-gray-400 pr-1">{unit1}</span>
-    <input type="text" name={name1} value={value1} onChange={onChange}
-      className="w-[20%] border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm p-1.5 text-sm text-right focus:ring-1 focus:ring-blue-500" />
-    <span className="w-[10%] text-xs text-gray-500 dark:text-gray-400 text-center">{label2}</span>
-    <input type="text" name={name2} value={value2} onChange={onChange}
-      className="w-[20%] border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm p-1.5 text-sm text-right focus:ring-1 focus:ring-blue-500" />
-    <span className="w-[10%] text-xs text-gray-500 dark:text-gray-400 text-left pl-1">{unit2}</span>
-  </div>
+  <Stack direction="row" sx={{ alignItems: "center" }}>
+    <Typography component="label" sx={{ width: "30%", fontSize: 12.25, fontWeight: 500, color: "text.secondary", pr: 0.5 }}>{label1}</Typography>
+    <Typography component="span" sx={{ width: "10%", fontSize: 10.5, color: "text.secondary", pr: 0.5 }}>{unit1}</Typography>
+    <TextField type="text" name={name1} value={value1} onChange={onChange}
+      size="small" sx={{ width: "20%", "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75, textAlign: "right" } }} />
+    <Typography component="span" sx={{ width: "10%", fontSize: 10.5, color: "text.secondary", textAlign: "center" }}>{label2}</Typography>
+    <TextField type="text" name={name2} value={value2} onChange={onChange}
+      size="small" sx={{ width: "20%", "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75, textAlign: "right" } }} />
+    <Typography component="span" sx={{ width: "10%", fontSize: 10.5, color: "text.secondary", textAlign: "left", pl: 0.5 }}>{unit2}</Typography>
+  </Stack>
 );
 
 const CheckboxRow = ({ mainLabel, label1, name1, label2, name2, value1, value2, onChange }) => (
-  <div className="flex items-center">
-    <label className="w-[30%] text-sm font-medium text-gray-700 dark:text-gray-300 pr-1">{mainLabel}</label>
-    <div className="w-[30%] flex items-center space-x-1">
-      <span className="text-xs text-gray-500 dark:text-gray-400">{label1}</span>
-      <input type="checkbox" name={name1} checked={value1} onChange={onChange}
-        className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-blue-500" />
-    </div>
-    <div className="w-[40%] flex items-center space-x-1">
-      <span className="text-xs text-gray-500 dark:text-gray-400">{label2}</span>
+  <Stack direction="row" sx={{ alignItems: "center" }}>
+    <Typography component="label" sx={{ width: "30%", fontSize: 12.25, fontWeight: 500, color: "text.secondary", pr: 0.5 }}>{mainLabel}</Typography>
+    <Stack direction="row" sx={{ width: "30%", alignItems: "center", gap: 0.5 }}>
+      <Typography component="span" sx={{ fontSize: 10.5, color: "text.secondary" }}>{label1}</Typography>
+      <Checkbox name={name1} checked={value1} onChange={onChange} size="small" sx={{ p: 0 }} />
+    </Stack>
+    <Stack direction="row" sx={{ width: "40%", alignItems: "center", gap: 0.5 }}>
+      <Typography component="span" sx={{ fontSize: 10.5, color: "text.secondary" }}>{label2}</Typography>
       {name2.includes("limit") ? (
-        <input type="text" name={name2} value={value2} onChange={onChange}
-          className="flex-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm p-1.5 text-sm focus:ring-1 focus:ring-blue-500" />
+        <TextField type="text" name={name2} value={value2} onChange={onChange}
+          size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }} />
       ) : (
-        <input type="checkbox" name={name2} checked={value2} onChange={onChange}
-          className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-blue-500" />
+        <Checkbox name={name2} checked={value2} onChange={onChange} size="small" sx={{ p: 0 }} />
       )}
-    </div>
-  </div>
+    </Stack>
+  </Stack>
 );
 
 const BottomCheckboxGroup = ({ label, name, checked, onChange }) => (
-  <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 w-1/3">
-    <input type="checkbox" name={name} checked={checked} onChange={onChange}
-      className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-blue-500" />
+  <Stack component="label" direction="row" sx={{ alignItems: "center", gap: 1, fontSize: 12.25, color: "text.secondary", width: "33.33%" }}>
+    <Checkbox name={name} checked={checked} onChange={onChange} size="small" sx={{ p: 0 }} />
     {label}
-  </label>
+  </Stack>
 );
 
 const AdvanceTextInput = ({ label, name, required = false, value, onChange, placeholder = "", type = "text" }) => (
-  <div className="flex items-center">
-    <label className="w-[35%] text-sm font-medium text-gray-700 dark:text-gray-300 pr-1 text-left">
-      {required && <span className="text-red-500 mr-1">*</span>}{label}
-    </label>
-    <input type={type} name={name} value={value} onChange={onChange} placeholder={placeholder}
-      className="w-[65%] border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm p-1.5 text-sm focus:ring-1 focus:ring-blue-500" />
-  </div>
+  <Stack direction="row" sx={{ alignItems: "center" }}>
+    <Typography component="label" sx={{ width: "35%", fontSize: 12.25, fontWeight: 500, color: "text.secondary", pr: 0.5, textAlign: "left" }}>
+      {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}{label}
+    </Typography>
+    <TextField type={type} name={name} value={value} onChange={onChange} placeholder={placeholder}
+      size="small" sx={{ width: "65%", "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }} />
+  </Stack>
 );
 
 const AdvanceSelectInput = ({ label, name, required = false, options = [], value, onChange }) => (
-  <div className="flex items-center">
-    <label className="w-[35%] text-sm font-medium text-gray-700 dark:text-gray-300 pr-1 text-left">
-      {required && <span className="text-red-500 mr-1">*</span>}{label}
-    </label>
-    <select name={name} value={value} onChange={onChange}
-      className="w-[65%] border border-gray-300 dark:border-gray-600 rounded-sm p-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500">
-      <option value="">Select {label}</option>
-      {options.map((o, i) => <option key={i} value={o.value ?? o.label}>{o.label}</option>)}
-    </select>
-  </div>
+  <Stack direction="row" sx={{ alignItems: "center" }}>
+    <Typography component="label" sx={{ width: "35%", fontSize: 12.25, fontWeight: 500, color: "text.secondary", pr: 0.5, textAlign: "left" }}>
+      {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}{label}
+    </Typography>
+    <TextField select name={name} value={value} onChange={onChange}
+      size="small" sx={{ width: "65%", "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
+      <MenuItem value="">Select {label}</MenuItem>
+      {options.map((o, i) => <MenuItem key={i} value={o.value ?? o.label}>{o.label}</MenuItem>)}
+    </TextField>
+  </Stack>
 );
 
 const AdvanceDualSelectInput = ({ label, name1, value1, name2, value2, onChange, options1 = [], options2 = [] }) => (
-  <div className="flex items-center">
-    <label className="w-[35%] text-sm font-medium text-gray-700 dark:text-gray-300 pr-1 text-left">{label}</label>
-    <div className="w-[65%] flex items-center space-x-1">
-      <select name={name1} value={value1} onChange={onChange}
-        className="w-1/2 border border-gray-300 dark:border-gray-600 rounded-sm p-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500">
-        <option value="">Select State</option>
-        {options1.map((o, i) => <option key={i} value={o.value ?? o.label}>{o.label}</option>)}
-      </select>
-      <select name={name2} value={value2} onChange={onChange}
-        className="w-1/2 border border-gray-300 dark:border-gray-600 rounded-sm p-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500">
-        <option value="">Select Country</option>
-        {options2.map((o, i) => <option key={i} value={o.value ?? o.label}>{o.label}</option>)}
-      </select>
-    </div>
-  </div>
+  <Stack direction="row" sx={{ alignItems: "center" }}>
+    <Typography component="label" sx={{ width: "35%", fontSize: 12.25, fontWeight: 500, color: "text.secondary", pr: 0.5, textAlign: "left" }}>{label}</Typography>
+    <Stack direction="row" sx={{ width: "65%", alignItems: "center", gap: 0.5 }}>
+      <TextField select name={name1} value={value1} onChange={onChange}
+        size="small" sx={{ width: "50%", "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
+        <MenuItem value="">Select State</MenuItem>
+        {options1.map((o, i) => <MenuItem key={i} value={o.value ?? o.label}>{o.label}</MenuItem>)}
+      </TextField>
+      <TextField select name={name2} value={value2} onChange={onChange}
+        size="small" sx={{ width: "50%", "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
+        <MenuItem value="">Select Country</MenuItem>
+        {options2.map((o, i) => <MenuItem key={i} value={o.value ?? o.label}>{o.label}</MenuItem>)}
+      </TextField>
+    </Stack>
+  </Stack>
 );
 
 // ─── Static options ───────────────────────────────────────────────────────────
@@ -681,46 +679,48 @@ const Supplier = () => {
   ];
 
   const renderPrimaryTab = () => (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-3 p-4">
+    <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "1fr 1fr" }, columnGap: 4, rowGap: 1.5, p: 2 }}>
       {/* --- LEFT COLUMN --- */}
-      <div className="space-y-3">
+      <Stack sx={{ gap: 1.5 }}>
         {/* Code / Input Combo */}
-        <div className="flex items-center">
-          <label className="w-1/2 text-sm font-medium text-gray-700 dark:text-gray-300">Code</label>
-          <div className="flex-1 flex items-center ml-3 space-x-2">
-            <select className="w-1/3 border border-gray-300 dark:border-gray-600 rounded-sm p-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                <option>Supplier</option>
-                <option>Job Worker</option>
-                <option>Agent</option>
-            </select>
-            <input
+        <Stack direction="row" sx={{ alignItems: "center" }}>
+          <Typography component="label" sx={{ width: "50%", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Code</Typography>
+          <Stack direction="row" sx={{ flex: 1, alignItems: "center", ml: 1.5, gap: 1 }}>
+            <TextField select defaultValue="Supplier" size="small" sx={{ width: "33.33%", "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
+                <MenuItem value="Supplier">Supplier</MenuItem>
+                <MenuItem value="Job Worker">Job Worker</MenuItem>
+                <MenuItem value="Agent">Agent</MenuItem>
+            </TextField>
+            <TextField
               type="text"
               name="code"
               value={formData.code}
               onChange={handleChange}
-              className="flex-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm p-1.5 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              size="small"
+              fullWidth
+              sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
             />
-          </div>
-        </div>
+          </Stack>
+        </Stack>
 
         {/* GST */}
         <TextInput label="GST" name="gst" value={formData.gst} onChange={handleChange} icon={<PlusCircle className="w-4 h-4" />} />
-        
+
         {/* Name */}
         <TextInput label="Name" name="name" required value={formData.name} onChange={handleChange} />
-        
+
         {/* Company Reg. Name */}
         <TextInput label="Company Reg. Name" name="companyRegName" required value={formData.companyRegName} onChange={handleChange} />
-        
+
         {/* Contact Person */}
         <TextInput label="Contact Person" name="contactPerson" required value={formData.contactPerson} onChange={handleChange} />
-        
+
         {/* Contact No */}
         <TextInput label="Contact No" name="contactNo" required value={formData.contactNo} onChange={handleChange} />
-        
+
         {/* Address */}
         <TextInput label="Address" name="address" required value={formData.address} onChange={handleChange} />
-        
+
         <SelectInput label="City" name="city" value={formData.city} onChange={handleChange} options={opts.cities} />
 
         <DualSelectInput label="State / Country"
@@ -733,9 +733,9 @@ const Supplier = () => {
         <TextInput label="Pincode" name="pincode" value={formData.pincode} onChange={handleChange} />
         <TextInput label="Email ID" name="emailId" value={formData.emailId} onChange={handleChange} />
 
-        <div className="flex items-center">
-          <label className="w-1/2 text-sm font-medium text-gray-700 dark:text-gray-300">Transport</label>
-          <div className="flex-1 ml-3">
+        <Stack direction="row" sx={{ alignItems: "center" }}>
+          <Typography component="label" sx={{ width: "50%", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Transport</Typography>
+          <Box sx={{ flex: 1, ml: 1.5 }}>
             <AsyncSearchSelect
               name="transport"
               value={formData.transport}
@@ -745,8 +745,8 @@ const Supplier = () => {
               placeholder="Select Transport"
               searchPlaceholder="Search transports..."
             />
-          </div>
-        </div>
+          </Box>
+        </Stack>
 
         <DualSelectInput label="Supplier / Buyer Group"
           name1="supplierGroup" value1={formData.supplierGroup}
@@ -756,10 +756,10 @@ const Supplier = () => {
           placeholder1="Supplier Group" placeholder2="Buyer Group" />
 
         <SelectInput label="Delivery Location" name="deliveryLocation" value={formData.deliveryLocation} onChange={handleChange} options={opts.deliveryLocations} />
-      </div>
+      </Stack>
 
       {/* --- RIGHT COLUMN --- */}
-      <div className="space-y-3">
+      <Stack sx={{ gap: 1.5 }}>
         {/* Min. Discount % / Interest % / Days */}
         <ComplexInputRow
             label1="Minimum Discount Percentage" unit1="%" name1="minDiscountPercentage" value1={formData.minDiscountPercentage}
@@ -820,73 +820,73 @@ const Supplier = () => {
           selectName="renamed" selectValue={formData.renamed} onChange={handleChange} />
 
         {/* Interstate Sale / Internal Transfer / Active */}
-        <div className="flex items-center justify-between pt-4 pr-3">
+        <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", pt: 2, pr: 1.5 }}>
             <BottomCheckboxGroup label="Interstate Sale" name="interstateSale" checked={formData.interstateSale} onChange={handleChange} />
             <BottomCheckboxGroup label="Internal Transfer" name="internalTransfer" checked={formData.internalTransfer} onChange={handleChange} />
             <BottomCheckboxGroup label="Active" name="active" checked={formData.active} onChange={handleChange} />
-        </div>
+        </Stack>
 
-      </div>
-    </div>
+      </Stack>
+    </Box>
   );
 
 
 
   const renderAdvanceTab = () => (
-    <div className="grid grid-cols-3 gap-x-6 gap-y-3 p-4">
+    <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", columnGap: 3, rowGap: 1.5, p: 2 }}>
 
       {/* COLUMN 1: Address List */}
-      <div className="col-span-1 space-y-3">
-        <h3 className="text-sm font-semibold text-red-600 dark:text-red-400">Address List</h3>
+      <Stack sx={{ gridColumn: "span 1", gap: 1.5 }}>
+        <Typography component="h3" sx={{ fontSize: 12.25, fontWeight: 600, color: "error.main" }}>Address List</Typography>
         <AdvanceSelectInput label="Address type" name="advanceAddressType" required
           options={opts.addressTypes} value={formData.advanceAddressType} onChange={handleChange} />
         <AdvanceTextInput label="Contact No" name="advanceContactNo" required value={formData.advanceContactNo} onChange={handleChange} />
-        <div className="flex">
-          <label className="w-[35%] text-sm font-medium text-gray-700 dark:text-gray-300 pr-1 pt-1 text-left">
-            <span className="text-red-500 mr-1">*</span>Address
-          </label>
-          <textarea name="advanceAddress" value={formData.advanceAddress} onChange={handleChange} rows="3"
-            className="w-[65%] border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm p-1.5 text-sm focus:ring-1 focus:ring-blue-500" />
-        </div>
+        <Stack direction="row">
+          <Typography component="label" sx={{ width: "35%", fontSize: 12.25, fontWeight: 500, color: "text.secondary", pr: 0.5, pt: 0.5, textAlign: "left" }}>
+            <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>Address
+          </Typography>
+          <TextField name="advanceAddress" value={formData.advanceAddress} onChange={handleChange} rows={3} multiline
+            size="small" sx={{ width: "65%", "& .MuiInputBase-input": { fontSize: 12.25 } }} />
+        </Stack>
         <AdvanceSelectInput label="City" name="advanceCity" options={opts.cities} value={formData.advanceCity} onChange={handleChange} />
         <AdvanceDualSelectInput label="State / Country"
           name1="advanceState" value1={formData.advanceState}
           name2="advanceCountry" value2={formData.advanceCountry}
           onChange={handleChange} options1={opts.states} options2={[]} />
-        <div className="flex items-center">
-          <label className="w-[35%] text-sm font-medium text-gray-700 dark:text-gray-300 pr-1 text-left">Pincode</label>
-          <div className="w-[65%] flex items-center">
-            <input type="text" name="advancePincode" value={formData.advancePincode} onChange={handleChange}
-              className="flex-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm p-1.5 text-sm focus:ring-1 focus:ring-blue-500" />
-            <button className="glass-btn glass-btn-primary p-1.5 ml-1" type="button">
+        <Stack direction="row" sx={{ alignItems: "center" }}>
+          <Typography component="label" sx={{ width: "35%", fontSize: 12.25, fontWeight: 500, color: "text.secondary", pr: 0.5, textAlign: "left" }}>Pincode</Typography>
+          <Stack direction="row" sx={{ width: "65%", alignItems: "center" }}>
+            <TextField type="text" name="advancePincode" value={formData.advancePincode} onChange={handleChange}
+              size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }} />
+            <IconButton className="glass-btn glass-btn-primary" sx={{ ml: 0.5, p: 0.75 }} type="button">
               <PlusCircle className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-        <div className="mt-4 border border-gray-300 dark:border-gray-600 rounded-sm overflow-hidden">
-          <table className="w-full text-xs">
-            <thead className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-              <tr>
-                <th className="border-r dark:border-gray-600 px-2 py-1 text-left w-1/4">Type</th>
-                <th className="border-r dark:border-gray-600 px-2 py-1 text-left w-1/2">Address</th>
-                <th className="px-2 py-1 text-center w-1/4">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td className="px-2 py-4 text-gray-400 dark:text-gray-500 text-center" colSpan="3">No addresses added</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+            </IconButton>
+          </Stack>
+        </Stack>
+        <Box sx={{ mt: 2, border: 1, borderColor: "grey.300", borderRadius: "3.5px", overflow: "hidden" }}>
+          <Table sx={{ width: "100%" }} size="small">
+            <TableHead sx={{ bgcolor: "action.hover" }}>
+              <TableRow>
+                <TableCell sx={{ borderRight: 1, borderColor: "divider", width: "25%" }}>Type</TableCell>
+                <TableCell sx={{ borderRight: 1, borderColor: "divider", width: "50%" }}>Address</TableCell>
+                <TableCell align="center" sx={{ width: "25%" }}>Action</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              <TableRow><TableCell colSpan={3} sx={{ py: 2, textAlign: "center", color: "text.disabled" }}>No addresses added</TableCell></TableRow>
+            </TableBody>
+          </Table>
+        </Box>
+      </Stack>
 
       {/* COLUMN 2: Product & Brand */}
-      <div className="col-span-1 space-y-3">
-        <h3 className="text-sm font-semibold text-red-600 dark:text-red-400">Product</h3>
-        <div className="flex items-center">
-          <div className="flex-1">
-            <div className="flex items-center">
-              <label className="w-[35%] text-sm font-medium text-gray-700 dark:text-gray-300 pr-1 text-left">Name</label>
-              <div className="w-[65%]">
+      <Stack sx={{ gridColumn: "span 1", gap: 1.5 }}>
+        <Typography component="h3" sx={{ fontSize: 12.25, fontWeight: 600, color: "error.main" }}>Product</Typography>
+        <Stack direction="row" sx={{ alignItems: "center" }}>
+          <Box sx={{ flex: 1 }}>
+            <Stack direction="row" sx={{ alignItems: "center" }}>
+              <Typography component="label" sx={{ width: "35%", fontSize: 12.25, fontWeight: 500, color: "text.secondary", pr: 0.5, textAlign: "left" }}>Name</Typography>
+              <Box sx={{ width: "65%" }}>
                 <AsyncSearchSelect
                   name="advanceProductName"
                   options={opts.products}
@@ -896,32 +896,32 @@ const Supplier = () => {
                   placeholder="Select Name"
                   searchPlaceholder="Search products..."
                 />
-              </div>
-            </div>
-          </div>
-          <button className="glass-btn glass-btn-primary p-1.5 ml-1" type="button">
+              </Box>
+            </Stack>
+          </Box>
+          <IconButton className="glass-btn glass-btn-primary" sx={{ ml: 0.5, p: 0.75 }} type="button">
             <PlusCircle className="w-4 h-4" />
-          </button>
-        </div>
-        <div className="mt-2 border border-gray-300 dark:border-gray-600 rounded-sm overflow-hidden">
-          <table className="w-full text-xs">
-            <thead className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-              <tr>
-                <th className="border-r dark:border-gray-600 px-2 py-1 text-left w-3/4">Name</th>
-                <th className="px-2 py-1 text-center w-1/4">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td className="px-2 py-4 text-gray-400 dark:text-gray-500 text-center" colSpan="2">No products added</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <h3 className="text-sm font-semibold text-red-600 dark:text-red-400 pt-3">Brand</h3>
-        <div className="flex items-center">
-          <div className="flex-1">
-            <div className="flex items-center">
-              <label className="w-[35%] text-sm font-medium text-gray-700 dark:text-gray-300 pr-1 text-left">Name</label>
-              <div className="w-[65%]">
+          </IconButton>
+        </Stack>
+        <Box sx={{ mt: 1, border: 1, borderColor: "grey.300", borderRadius: "3.5px", overflow: "hidden" }}>
+          <Table sx={{ width: "100%" }} size="small">
+            <TableHead sx={{ bgcolor: "action.hover" }}>
+              <TableRow>
+                <TableCell sx={{ borderRight: 1, borderColor: "divider", width: "75%" }}>Name</TableCell>
+                <TableCell align="center" sx={{ width: "25%" }}>Action</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              <TableRow><TableCell colSpan={2} sx={{ py: 2, textAlign: "center", color: "text.disabled" }}>No products added</TableCell></TableRow>
+            </TableBody>
+          </Table>
+        </Box>
+        <Typography component="h3" sx={{ fontSize: 12.25, fontWeight: 600, color: "error.main", pt: 1.5 }}>Brand</Typography>
+        <Stack direction="row" sx={{ alignItems: "center" }}>
+          <Box sx={{ flex: 1 }}>
+            <Stack direction="row" sx={{ alignItems: "center" }}>
+              <Typography component="label" sx={{ width: "35%", fontSize: 12.25, fontWeight: 500, color: "text.secondary", pr: 0.5, textAlign: "left" }}>Name</Typography>
+              <Box sx={{ width: "65%" }}>
                 <AsyncSearchSelect
                   name="advanceBrandName"
                   options={opts.brands}
@@ -931,63 +931,64 @@ const Supplier = () => {
                   placeholder="Select Name"
                   searchPlaceholder="Search brands..."
                 />
-              </div>
-            </div>
-          </div>
-          <button className="glass-btn glass-btn-primary p-1.5 ml-1" type="button">
+              </Box>
+            </Stack>
+          </Box>
+          <IconButton className="glass-btn glass-btn-primary" sx={{ ml: 0.5, p: 0.75 }} type="button">
             <PlusCircle className="w-4 h-4" />
-          </button>
-        </div>
-        <div className="mt-2 border border-gray-300 dark:border-gray-600 rounded-sm overflow-hidden">
-          <table className="w-full text-xs">
-            <thead className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-              <tr>
-                <th className="border-r dark:border-gray-600 px-2 py-1 text-left w-3/4">Name</th>
-                <th className="px-2 py-1 text-center w-1/4">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td className="px-2 py-4 text-gray-400 dark:text-gray-500 text-center" colSpan="2">No brands added</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+          </IconButton>
+        </Stack>
+        <Box sx={{ mt: 1, border: 1, borderColor: "grey.300", borderRadius: "3.5px", overflow: "hidden" }}>
+          <Table sx={{ width: "100%" }} size="small">
+            <TableHead sx={{ bgcolor: "action.hover" }}>
+              <TableRow>
+                <TableCell sx={{ borderRight: 1, borderColor: "divider", width: "75%" }}>Name</TableCell>
+                <TableCell align="center" sx={{ width: "25%" }}>Action</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              <TableRow><TableCell colSpan={2} sx={{ py: 2, textAlign: "center", color: "text.disabled" }}>No brands added</TableCell></TableRow>
+            </TableBody>
+          </Table>
+        </Box>
+      </Stack>
 
       {/* COLUMN 3: Remarks & Attachments */}
-      <div className="col-span-1 space-y-3">
-        <h3 className="text-sm font-semibold text-red-600 dark:text-red-400">Remarks</h3>
-        <textarea name="advanceRemarks" value={formData.advanceRemarks} onChange={handleChange} rows="6"
-          className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm p-1.5 text-sm focus:ring-1 focus:ring-blue-500" />
-        <h3 className="text-sm font-semibold text-red-600 dark:text-red-400 pt-3">File Attachments</h3>
-        <div className="flex items-center space-x-2">
-          <div className="w-[45%]">
+      <Stack sx={{ gridColumn: "span 1", gap: 1.5 }}>
+        <Typography component="h3" sx={{ fontSize: 12.25, fontWeight: 600, color: "error.main" }}>Remarks</Typography>
+        <TextField name="advanceRemarks" value={formData.advanceRemarks} onChange={handleChange} rows={6} multiline
+          size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25 } }} />
+        <Typography component="h3" sx={{ fontSize: 12.25, fontWeight: 600, color: "error.main", pt: 1.5 }}>File Attachments</Typography>
+        <Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
+          <Box sx={{ width: "45%" }}>
             <AdvanceSelectInput label="Type" name="advanceAttachmentType" required
               options={opts.documentTypes} value={formData.advanceAttachmentType} onChange={handleChange} />
-          </div>
-          <button className="glass-btn glass-btn-success flex items-center">
-            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          </Box>
+          <Button className="glass-btn glass-btn-success" startIcon={
+            <Box component="svg" sx={{ width: 16, height: 16 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-            </svg>
+            </Box>
+          }>
             Upload Files
-          </button>
-          <button className="glass-btn glass-btn-primary">ADD</button>
-        </div>
-        <div className="mt-2 border border-gray-300 dark:border-gray-600 rounded-sm overflow-hidden">
-          <table className="w-full text-xs">
-            <thead className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-              <tr>
-                <th className="border-r dark:border-gray-600 px-2 py-1 text-left w-1/3">Image</th>
-                <th className="border-r dark:border-gray-600 px-2 py-1 text-left w-1/3">Type</th>
-                <th className="px-2 py-1 text-center w-1/3">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td className="px-2 py-4 text-gray-400 dark:text-gray-500 text-center" colSpan="3">No attachments</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+          </Button>
+          <Button className="glass-btn glass-btn-primary">ADD</Button>
+        </Stack>
+        <Box sx={{ mt: 1, border: 1, borderColor: "grey.300", borderRadius: "3.5px", overflow: "hidden" }}>
+          <Table sx={{ width: "100%" }} size="small">
+            <TableHead sx={{ bgcolor: "action.hover" }}>
+              <TableRow>
+                <TableCell sx={{ borderRight: 1, borderColor: "divider", width: "33.33%" }}>Image</TableCell>
+                <TableCell sx={{ borderRight: 1, borderColor: "divider", width: "33.33%" }}>Type</TableCell>
+                <TableCell align="center" sx={{ width: "33.33%" }}>Action</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              <TableRow><TableCell colSpan={3} sx={{ py: 2, textAlign: "center", color: "text.disabled" }}>No attachments</TableCell></TableRow>
+            </TableBody>
+          </Table>
+        </Box>
+      </Stack>
+    </Box>
   );
 
 
@@ -1006,8 +1007,8 @@ const Supplier = () => {
   const renderContent = () => {
     if (showSearchPage) {
         return (
-            <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6 border border-gray-200 dark:border-gray-700 w-full h-full flex flex-col min-h-0">
-                <h2 className="text-xl font-bold mb-3">Search Results</h2>
+            <Card variant="outlined" sx={{ p: 2, width: "100%", height: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}>
+                <Typography variant="h6" component="h2" sx={{ fontWeight: 700, mb: 1.5, fontSize: "1.25rem" }}>Search Results</Typography>
                 <FilterableDataTable
                   rows={searchRows}
                   columns={supplierColumns}
@@ -1045,65 +1046,82 @@ const Supplier = () => {
                   onBulkDelete={handleBulkDelete}
                   fillHeight
                   renderActions={(row, { selectedCount } = {}) => (
-                    <div className="flex items-center gap-2">
-                      <button
+                    <Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
+                      <IconButton
                         type="button"
                         onClick={() => loadSupplierForEdit(row)}
                         title="Edit"
                         disabled={selectedCount > 1}
-                        className="glass-btn glass-btn-primary rounded p-1.5"
+                        className="glass-btn glass-btn-primary"
+                        sx={{ borderRadius: "3.5px", p: 0.75 }}
                       >
                         <Pencil className="w-3.5 h-3.5" />
-                      </button>
-                      <button
+                      </IconButton>
+                      <IconButton
                         type="button"
                         onClick={() => setConfirmDlg({ open: true, id: row.id, name: row.name })}
-                        className="glass-btn glass-btn-danger rounded p-1.5"
+                        className="glass-btn glass-btn-danger"
+                        sx={{ borderRadius: "3.5px", p: 0.75 }}
                         title="Delete"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
+                      </IconButton>
+                    </Stack>
                   )}
                 />
-            </div>
+            </Card>
         );
     }
 
     return (
-        <div
+        <Card
+            variant="outlined"
             ref={formContainerRef}
-            className="bg-white dark:bg-gray-800 shadow-lg rounded-lg border border-gray-200 dark:border-gray-700 w-full h-full flex flex-col min-h-0 overflow-hidden"
+            sx={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" }}
             data-enter-scope="true"
             onKeyDownCapture={handleEnterKeyNavigation}
         >
             {/* Tabs */}
-            <div className="flex border-b border-gray-200 dark:border-gray-700 px-4 pt-2">
-                <button
+            <Stack direction="row" sx={{ borderBottom: 1, borderColor: "divider", px: 2, pt: 1 }}>
+                <Box
+                    component="button"
                     onClick={() => setActiveTab('Primary')}
-                    className={`pb-2 px-3 text-sm font-medium ${activeTab === 'Primary' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                    sx={{
+                      pb: 1, px: 1.5, fontSize: 12.25, fontWeight: 500,
+                      color: activeTab === 'Primary' ? "primary.main" : "text.secondary",
+                      borderBottom: activeTab === 'Primary' ? 2 : 0,
+                      borderColor: "primary.main",
+                      "&:hover": activeTab !== 'Primary' ? { color: "text.primary" } : undefined,
+                    }}
                 >
                     Primary
-                </button>
-                <button
+                </Box>
+                <Box
+                    component="button"
                     onClick={() => setActiveTab('Advance')}
-                    className={`pb-2 px-3 text-sm font-medium ${activeTab === 'Advance' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                    sx={{
+                      pb: 1, px: 1.5, fontSize: 12.25, fontWeight: 500,
+                      color: activeTab === 'Advance' ? "primary.main" : "text.secondary",
+                      borderBottom: activeTab === 'Advance' ? 2 : 0,
+                      borderColor: "primary.main",
+                      "&:hover": activeTab !== 'Advance' ? { color: "text.primary" } : undefined,
+                    }}
                 >
                     Advance
-                </button>
-            </div>
+                </Box>
+            </Stack>
 
-            <div className="flex-1 min-h-0 overflow-auto">
+            <Box sx={{ flex: 1, minHeight: 0, overflow: "auto" }}>
               {/* Tab Content */}
               {activeTab === 'Primary' && renderPrimaryTab()}
               {activeTab === 'Advance' && renderAdvanceTab()}
-            </div>
-        </div>
+            </Box>
+        </Card>
     );
   };
 
   return (
-    <div className="flex flex-col h-full bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 master-responsive">
+    <Box sx={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden", bgcolor: "background.default", color: "text.primary" }}>
       <ConfirmDialog
         open={confirmDlg.open}
         message={`Are you sure you want to delete "${confirmDlg.name}"? This action cannot be undone.`}
@@ -1117,93 +1135,93 @@ const Supplier = () => {
         onCancel={() => setBulkConfirm({ open: false, keys: [] })}
       />
       {/* --- Header --- */}
-      <div className="flex justify-between items-center px-4 py-2 bg-white dark:bg-gray-800 border-b dark:border-gray-700 shadow-sm">
-        <div className="flex items-center space-x-2">
-          
-          <button 
-            onClick={handleBackClick}
-            className={`text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 `}
-            type="button"
-            aria-label="Back to Entry Form"
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </button>
-
-          <h1 className="text-sm font-semibold flex items-center gap-1">
-            <button
+      <PageHeader
+        title={
+          <Stack direction="row" sx={{ alignItems: "center" }} spacing={0.5}>
+            <Box
+              component="button"
               type="button"
               onClick={() => navigate("/masters")}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
+              sx={{ color: "primary.main", "&:hover": { color: "primary.dark", textDecoration: "underline" } }}
             >
               Master
-            </button>
-            <span className="text-gray-500 dark:text-gray-400">/</span>
-            <span>Supplier</span>
-          </h1>
-        </div>
-
-        {/* Actions */}
-        <div className="flex items-center space-x-3 text-sm font-medium text-gray-700 dark:text-gray-300">
-          <button className="topbar-action-btn topbar-action-new" onClick={handleNew}>
-            <PlusCircle className="w-4 h-4 mr-1" /> New
-          </button>
-          <span>|</span>
-          <UploadImportButton
-            endpoint="/suppliers/bulk"
-            fieldConfig={SUPPLIER_IMPORT_CONFIG}
-            onDone={() => {
-              setShowSearchPage(true);
-              if (page === 1) fetchSuppliers();
-              else setPage(1);
-            }}
-          />
-          {showSearchPage && (
-            <>
-              <span>|</span>
-              <ExportBottomSheet
-                columns={supplierColumns}
-                rows={searchRows}
-                selectedRowKeys={selectedRows}
-                onExportRows={async () => {
-                  const res = await api.get("/suppliers", { params: { all: "true" } });
-                  return res.data?.data || [];
-                }}
-                fileName="suppliers"
-                buttonClassName="topbar-action-btn topbar-action-export"
-              />
-            </>
-          )}
-          <span>|</span>
-          {!showSearchPage && (
-            <>
-              <button
-                className="glass-btn glass-btn-success flex items-center disabled:opacity-50"
-                onClick={handleSave}
-                disabled={saving}
-              >
-                <Save className="w-4 h-4 mr-1" /> {saving ? "Saving..." : "Save"}
-              </button>
-              <span>|</span>
-            </>
-          )}
-          <button
-            className="glass-btn glass-btn-primary flex items-center"
-            onClick={handleSearchClick}
-          >
-            <Search className="w-4 h-4 mr-1" /> Search
-          </button>
-        </div>
-      </div>
+            </Box>
+            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
+            <Box component="span">Supplier</Box>
+          </Stack>
+        }
+        onBack={handleBackClick}
+        actions={
+          <Stack direction="row" sx={{ alignItems: "center" }} spacing={1.5}>
+            <Button
+              variant="text"
+              className="topbar-action-btn topbar-action-new"
+              onClick={handleNew}
+              startIcon={<PlusCircle className="w-4 h-4" />}
+              size="small"
+            >
+              New
+            </Button>
+            <Typography variant="body2" component="span" sx={{ color: "text.disabled" }}>|</Typography>
+            <UploadImportButton
+              endpoint="/suppliers/bulk"
+              fieldConfig={SUPPLIER_IMPORT_CONFIG}
+              onDone={() => {
+                setShowSearchPage(true);
+                if (page === 1) fetchSuppliers();
+                else setPage(1);
+              }}
+            />
+            {showSearchPage && (
+              <>
+                <Typography variant="body2" component="span" sx={{ color: "text.disabled" }}>|</Typography>
+                <ExportBottomSheet
+                  columns={supplierColumns}
+                  rows={searchRows}
+                  selectedRowKeys={selectedRows}
+                  onExportRows={async () => {
+                    const res = await api.get("/suppliers", { params: { all: "true" } });
+                    return res.data?.data || [];
+                  }}
+                  fileName="suppliers"
+                  buttonClassName="topbar-action-btn topbar-action-export"
+                />
+              </>
+            )}
+            {!showSearchPage && (
+              <>
+                <Typography variant="body2" component="span" sx={{ color: "text.disabled" }}>|</Typography>
+                <Button
+                  className="glass-btn glass-btn-success"
+                  onClick={handleSave}
+                  disabled={saving}
+                  startIcon={<Save className="w-4 h-4" />}
+                  size="small"
+                >
+                  {saving ? "Saving..." : "Save"}
+                </Button>
+              </>
+            )}
+            <Typography variant="body2" component="span" sx={{ color: "text.disabled" }}>|</Typography>
+            <Button
+              className="glass-btn glass-btn-primary"
+              onClick={handleSearchClick}
+              startIcon={<Search className="w-4 h-4" />}
+              size="small"
+            >
+              Search
+            </Button>
+          </Stack>
+        }
+      />
       {/* --- END Header --- */}
 
       {/* --- Content --- */}
-      <div className="flex-1 p-4 min-h-0">
+      <Box sx={{ flex: 1, p: 1.5, minHeight: 0 }}>
         {renderContent()}
-      </div>
+      </Box>
       {/* --- END Content --- */}
-
-
-    </div>
+    </Box>
   );
 };
 

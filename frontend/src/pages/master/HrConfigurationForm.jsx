@@ -2,8 +2,10 @@ import { ArrowLeft, Save } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
+import { Box, Stack, Card, Typography, Button } from "@mui/material";
 import { CheckboxInput, SelectInput, TextInput } from "../../components/CustomInputs";
 import api from "../../api/axios";
+import PageHeader from "../../components/PageHeader";
 import { normalizeFormSignature } from "../../utils/formSignature";
 
 const STATIC_DESIGNATION_ROLES = [
@@ -163,7 +165,6 @@ const HrConfigurationForm = () => {
         };
         setFormData(loaded);
         initialFormRef.current = JSON.stringify(loaded); // baseline for the no-changes guard
-
       })
       .catch((err) => {
         toast.error(err.response?.data?.message || `Failed to load ${typeLabel.toLowerCase()}`);
@@ -281,49 +282,70 @@ const HrConfigurationForm = () => {
   };
 
   return (
-    <div className="min-h-[70vh] bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100">
-      <div className="flex justify-between items-center px-4 py-1 bg-white dark:bg-gray-800 border-b dark:border-gray-700 shadow-sm sticky top-0 z-10">
-        <div className="flex items-center space-x-2">
-          <button className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200" onClick={() => navigate(-1)}>
-            <ArrowLeft className="w-4 h-4" />
-          </button>
-          <h1 className="text-sm font-semibold flex items-center gap-1">
-            <button
+    <Box sx={{ minHeight: "70vh", bgcolor: "background.default", color: "text.primary" }}>
+      <PageHeader
+        title={
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+            <Typography
+              component="button"
               type="button"
               onClick={() => navigate("/hrms")}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
+              sx={{
+                fontSize: 13,
+                fontWeight: 600,
+                color: "primary.main",
+                background: "none",
+                border: "none",
+                p: 0,
+                cursor: "pointer",
+                "&:hover": { textDecoration: "underline" },
+              }}
             >
               HRMS
-            </button>
-            <span className="text-gray-500 dark:text-gray-400">/</span>
-            <button
+            </Typography>
+            <Typography sx={{ fontSize: 13, color: "text.secondary" }}>/</Typography>
+            <Typography
+              component="button"
               type="button"
               onClick={() => navigate("/hrms/hr-configuration")}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
+              sx={{
+                fontSize: 13,
+                fontWeight: 600,
+                color: "primary.main",
+                background: "none",
+                border: "none",
+                p: 0,
+                cursor: "pointer",
+                "&:hover": { textDecoration: "underline" },
+              }}
             >
               HR Configuration
-            </button>
-            <span className="text-gray-500 dark:text-gray-400">/</span>
-            <span>{typeLabel}</span>
-          </h1>
-        </div>
+            </Typography>
+            <Typography sx={{ fontSize: 13, color: "text.secondary" }}>/</Typography>
+            <Typography sx={{ fontSize: 13, fontWeight: 600 }}>{typeLabel}</Typography>
+          </Stack>
+        }
+        onBack={() => navigate(-1)}
+        actions={
+          <Button
+            onClick={handleSave}
+            disabled={saving}
+            className="glass-btn glass-btn-success"
+            startIcon={<Save className="w-3 h-3" />}
+            size="small"
+          >
+            {saving ? "Saving..." : "Save"}
+          </Button>
+        }
+      />
 
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="glass-btn glass-btn-success inline-flex items-center disabled:opacity-60"
-        >
-          <Save className="w-3 h-3 mr-1" /> {saving ? "Saving..." : "Save"}
-        </button>
-      </div>
-
-      <div className="p-3 pb-16">
-        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+      <Box sx={{ p: 1.5, pb: 8 }}>
+        <Card variant="outlined" sx={{ p: 1.5 }}>
           {loading ? (
-            <div className="text-xs text-gray-500 dark:text-gray-400">Loading {typeLabel.toLowerCase()}...</div>
+            <Typography sx={{ fontSize: 12, color: "text.secondary" }}>Loading {typeLabel.toLowerCase()}...</Typography>
           ) : (
-            <div className="grid grid-cols-12 gap-3">
-              <div className="col-span-12 lg:col-span-4 space-y-1.5">
+            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "repeat(12, 1fr)" }, gap: 1.5 }}>
+              <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 0.75 }}>
                 <TextInput
                   label="Code"
                   name="code"
@@ -415,12 +437,12 @@ const HrConfigurationForm = () => {
                     placeholder="hh:mm"
                   />
                 )}
-              </div>
-            </div>
+              </Box>
+            </Box>
           )}
-        </div>
-      </div>
-    </div>
+        </Card>
+      </Box>
+    </Box>
   );
 };
 

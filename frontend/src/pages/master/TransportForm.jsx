@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
-import { ArrowLeft, PlusCircle, Save, Search, Trash2 } from "lucide-react";
+import { ArrowLeft, PlusCircle, Save, Search } from "lucide-react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
+import { Box, Stack, Card, Typography, Button, TextField, MenuItem, Checkbox, IconButton, Table, TableHead, TableBody, TableRow, TableCell } from "@mui/material";
 import api from "../../api/axios";
 import AsyncSearchSelect from "../../components/AsyncSearchSelect";
+import PageHeader from "../../components/PageHeader";
 import { normalizeFormSignature } from "../../utils/formSignature";
 import { handleEnterKeyNavigation } from "../../utils/enterToNextField";
 
@@ -14,40 +16,44 @@ const mapTaxOption = (t) => ({
   label: `${t.name} (${t.tax_percentage}%)`,
 });
 
-/* ─── tiny inline helpers ─────────────────────────────────────────────────── */
+/* ─── tiny inline helpers ─── */
 const Label = ({ children, required }) => (
-  <span className="w-2/5 text-xs font-medium text-gray-700 dark:text-gray-300 text-right pr-3 flex-shrink-0">
-    {required && <span className="text-red-500 mr-1">*</span>}
+  <Typography component="span" sx={{ width: "40%", fontSize: 10.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5, flexShrink: 0 }}>
+    {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}
     {children}
-  </span>
+  </Typography>
 );
 
 const Field = ({ children }) => (
-  <div className="flex items-center mb-2">{children}</div>
+  <Stack direction="row" sx={{ alignItems: "center", mb: 1 }}>{children}</Stack>
 );
 
-const Input = ({ ...props }) => (
-  <input
+const Input = ({ className: _className, ...props }) => (
+  <TextField
     {...props}
-    className={`flex-1 border border-gray-300 dark:border-gray-600 rounded-sm p-1 text-xs bg-white dark:bg-gray-700 dark:text-gray-200 focus:ring-1 focus:ring-blue-500 ${props.disabled ? "opacity-60 cursor-not-allowed" : ""} ${props.className || ""}`}
+    size="small"
+    fullWidth
+    sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.5 } }}
   />
 );
 
-const Select = ({ options = [], placeholder, ...props }) => (
-  <select
+const Select = ({ options = [], placeholder, className: _className, ...props }) => (
+  <TextField
+    select
     {...props}
-    className={`flex-1 border border-gray-300 dark:border-gray-600 rounded-sm p-1 text-xs bg-white dark:bg-gray-700 dark:text-gray-200 focus:ring-1 focus:ring-blue-500 ${props.disabled ? "opacity-60 cursor-not-allowed" : ""} ${props.className || ""}`}
+    size="small"
+    fullWidth
+    sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.5 } }}
   >
-    <option value="">{placeholder || `— select —`}</option>
+    <MenuItem value="">{placeholder || `— select —`}</MenuItem>
     {options.map((o) => (
-      <option key={o.value} value={o.value}>
+      <MenuItem key={o.value} value={o.value}>
         {o.label}
-      </option>
+      </MenuItem>
     ))}
-  </select>
+  </TextField>
 );
 
-/* ─── constants ────────────────────────────────────────────────────────────── */
 const BUSINESS_MODES = [
   { value: "Lorry/Courier", label: "Lorry / Courier" },
   { value: "Courier", label: "Courier" },
@@ -92,7 +98,6 @@ const EMPTY_FORM = {
   isActive: true,
 };
 
-/* ─── component ────────────────────────────────────────────────────────────── */
 const TransportForm = () => {
   const { id } = useParams();
   const location = useLocation();
@@ -107,17 +112,14 @@ const TransportForm = () => {
   const [rates, setRates] = useState([]);
   const [rateRow, setRateRow] = useState(EMPTY_RATE);
   const [saving, setSaving] = useState(false);
-  const savingRef = useRef(false); // synchronous double-submit guard
-  // Baseline snapshot (edit mode) so an unchanged save reports "No changes detected".
+  const savingRef = useRef(false);
   const initialFormRef = useRef({ id: null, sig: null });
 
-  /* dropdown options */
   const [cityOpts, setCityOpts] = useState([]);
   const [stateOpts, setStateOpts] = useState([]);
   const [bankOpts, setBankOpts] = useState([]);
   const [taxOpts, setTaxOpts] = useState([]);
 
-  /* ── load dropdown data ── */
   useEffect(() => {
     const load = async () => {
       try {
@@ -130,8 +132,6 @@ const TransportForm = () => {
         setCityOpts((cities.data?.data || []).map((c) => ({ value: String(c.id), label: c.name })));
         setStateOpts((states.data?.data || []).map((s) => ({ value: String(s.id), label: s.name })));
         setBankOpts((banks.data?.data || []).map((b) => ({ value: String(b.id), label: b.name })));
-        // Was api.get("/taxes") with no params (default ~50 rows), no way to search beyond it --
-        // taxes now has real async search (handleAsyncTaxSearch below) covering the real table.
         setTaxOpts((taxes.data?.data || []).map(mapTaxOption));
       } catch {
         /* silently fail for dropdowns */
@@ -159,7 +159,6 @@ const TransportForm = () => {
     }
   };
 
-  /* ── load record for view/edit ── */
   useEffect(() => {
     if (!id) return;
     const fetch = async () => {
@@ -220,7 +219,6 @@ const TransportForm = () => {
     setForm((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
   };
 
-  /* rate row helpers */
   const handleRateChange = (e) => {
     const { name, value } = e.target;
     setRateRow((prev) => {
@@ -278,60 +276,79 @@ const TransportForm = () => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 master-responsive">
-      {/* Header */}
-      <div className="flex justify-between items-center px-4 py-1 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
-        <div className="flex items-center space-x-2">
-          <button className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200" onClick={() => navigate("/masters/transport")}>
-            <ArrowLeft className="w-4 h-4" />
-          </button>
-          <h1 className="text-sm font-semibold flex items-center gap-1">
-            <button
+    <Box sx={{ height: "100%", display: "flex", flexDirection: "column", bgcolor: "background.default", color: "text.primary" }}>
+      <PageHeader
+        title={
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+            <Typography
+              component="button"
               type="button"
               onClick={() => navigate("/masters")}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
+              sx={{
+                fontSize: 13,
+                fontWeight: 600,
+                color: "primary.main",
+                background: "none",
+                border: "none",
+                p: 0,
+                cursor: "pointer",
+                "&:hover": { textDecoration: "underline" },
+              }}
             >
               Master
-            </button>
-            <span className="text-gray-500 dark:text-gray-400">/</span>
-            <span>Transport</span>
-          </h1>
-        </div>
-        <div className="flex items-center space-x-3 text-xs font-medium text-gray-700 dark:text-gray-300">
-          <button
-            onClick={() => { setForm(EMPTY_FORM); setRates([]); navigate("/masters/transport/new"); }}
-            className="topbar-action-btn topbar-action-new"
-          >
-            <PlusCircle className="w-3 h-3 mr-1" /> New
-          </button>
-          {!readOnly && (
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="glass-btn glass-btn-success flex items-center disabled:opacity-50"
+            </Typography>
+            <Typography sx={{ fontSize: 13, color: "text.secondary" }}>/</Typography>
+            <Typography sx={{ fontSize: 13, fontWeight: 600 }}>Transport</Typography>
+          </Stack>
+        }
+        onBack={() => navigate("/masters/transport")}
+        actions={
+          <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+            <Button
+              onClick={() => { setForm(EMPTY_FORM); setRates([]); navigate("/masters/transport/new"); }}
+              className="topbar-action-btn topbar-action-new"
+              startIcon={<PlusCircle className="w-3 h-3" />}
+              size="small"
             >
-              <Save className="w-3 h-3 mr-1" /> Save
-            </button>
-          )}
-          <button
-            onClick={() => navigate("/masters/transport")}
-            className="glass-btn glass-btn-primary flex items-center"
-          >
-            <Search className="w-3 h-3 mr-1" /> Search
-          </button>
-        </div>
-      </div>
+              New
+            </Button>
+            {!readOnly && (
+              <Button
+                onClick={handleSave}
+                disabled={saving}
+                className="glass-btn glass-btn-success"
+                startIcon={<Save className="w-3 h-3" />}
+                size="small"
+              >
+                Save
+              </Button>
+            )}
+            <Button
+              onClick={() => navigate("/masters/transport")}
+              className="glass-btn glass-btn-primary"
+              startIcon={<Search className="w-3 h-3" />}
+              size="small"
+            >
+              Search
+            </Button>
+          </Stack>
+        }
+      />
 
-      {/* Body — two-column layout */}
-      <div
-        className="p-3 grid grid-cols-1 lg:grid-cols-2 gap-3 flex-1 min-h-0"
+      <Box
+        sx={{
+          p: 1.5,
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", lg: "1fr 1fr" },
+          gap: 1.5,
+          flex: 1,
+          minHeight: 0,
+        }}
         data-enter-scope="true"
         onKeyDownCapture={handleEnterKeyNavigation}
       >
-
         {/* ── LEFT PANEL ── */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4 space-y-1 lg:h-full">
-
+        <Card variant="outlined" sx={{ p: 2, display: "flex", flexDirection: "column", gap: 0.5, height: { lg: "100%" } }}>
           <Field>
             <Label required>Business Mode</Label>
             <Select
@@ -354,10 +371,9 @@ const TransportForm = () => {
             <Input name="contactPerson" value={form.contactPerson} onChange={handleChange} disabled={readOnly} />
           </Field>
 
-          {/* Contact No / Email side by side */}
           <Field>
             <Label>Contact No / Email ID</Label>
-            <div className="flex flex-1 gap-1">
+            <Stack direction="row" sx={{ flex: 1, gap: 0.5 }}>
               <Input
                 name="contactNo"
                 value={form.contactNo}
@@ -372,25 +388,27 @@ const TransportForm = () => {
                 disabled={readOnly}
                 placeholder="Email ID"
               />
-            </div>
+            </Stack>
           </Field>
 
           <Field>
             <Label>Address</Label>
-            <textarea
+            <TextField
               name="address"
               rows={3}
+              multiline
               value={form.address}
               onChange={handleChange}
               disabled={readOnly}
-              className={`flex-1 border border-gray-300 dark:border-gray-600 rounded-sm p-1 text-xs bg-white dark:bg-gray-700 dark:text-gray-200 focus:ring-1 focus:ring-blue-500 resize-none ${readOnly ? "opacity-60 cursor-not-allowed" : ""}`}
+              size="small"
+              fullWidth
+              sx={{ "& .MuiInputBase-input": { fontSize: 10.5 } }}
             />
           </Field>
 
-          {/* City / State */}
           <Field>
             <Label>City / State</Label>
-            <div className="flex flex-1 gap-1">
+            <Stack direction="row" sx={{ flex: 1, gap: 0.5 }}>
               <Select
                 name="cityId"
                 value={form.cityId}
@@ -398,7 +416,6 @@ const TransportForm = () => {
                 disabled={readOnly}
                 options={cityOpts}
                 placeholder="City"
-                className="flex-1"
               />
               <Select
                 name="stateId"
@@ -407,24 +424,21 @@ const TransportForm = () => {
                 disabled={readOnly}
                 options={stateOpts}
                 placeholder="State"
-                className="flex-1"
               />
-            </div>
+            </Stack>
           </Field>
 
-          {/* PAN / GST */}
           <Field>
             <Label>PAN / GST</Label>
-            <div className="flex flex-1 gap-1">
+            <Stack direction="row" sx={{ flex: 1, gap: 0.5 }}>
               <Input name="pan" value={form.pan} onChange={handleChange} disabled={readOnly} placeholder="PAN" />
               <Input name="gst" value={form.gst} onChange={handleChange} disabled={readOnly} placeholder="GST" />
-            </div>
+            </Stack>
           </Field>
 
-          {/* Bank / Branch */}
           <Field>
             <Label>Bank / Branch</Label>
-            <div className="flex flex-1 gap-1">
+            <Stack direction="row" sx={{ flex: 1, gap: 0.5 }}>
               <Select
                 name="bankId"
                 value={form.bankId}
@@ -432,7 +446,6 @@ const TransportForm = () => {
                 disabled={readOnly}
                 options={bankOpts}
                 placeholder="Bank"
-                className="flex-1"
               />
               <Input
                 name="branch"
@@ -441,7 +454,7 @@ const TransportForm = () => {
                 disabled={readOnly}
                 placeholder="Branch"
               />
-            </div>
+            </Stack>
           </Field>
 
           <Field>
@@ -449,19 +462,17 @@ const TransportForm = () => {
             <Input name="bankAccountName" value={form.bankAccountName} onChange={handleChange} disabled={readOnly} />
           </Field>
 
-          {/* IFSC / Account No */}
           <Field>
             <Label>IFSC / Account No</Label>
-            <div className="flex flex-1 gap-1">
+            <Stack direction="row" sx={{ flex: 1, gap: 0.5 }}>
               <Input name="ifsc" value={form.ifsc} onChange={handleChange} disabled={readOnly} placeholder="IFSC" />
               <Input name="accountNo" value={form.accountNo} onChange={handleChange} disabled={readOnly} placeholder="Account No" />
-            </div>
+            </Stack>
           </Field>
 
-          {/* Price / Tax */}
           <Field>
             <Label>Price / Tax</Label>
-            <div className="flex flex-1 gap-1">
+            <Stack direction="row" sx={{ flex: 1, gap: 0.5 }}>
               <Input
                 name="price"
                 type="number"
@@ -470,7 +481,7 @@ const TransportForm = () => {
                 disabled={readOnly}
                 placeholder="Price"
               />
-              <div className="flex-1">
+              <Box sx={{ flex: 1 }}>
                 <AsyncSearchSelect
                   name="taxId"
                   value={form.taxId}
@@ -481,8 +492,8 @@ const TransportForm = () => {
                   placeholder="Tax"
                   searchPlaceholder="Search tax..."
                 />
-              </div>
-            </div>
+              </Box>
+            </Stack>
           </Field>
 
           <Field>
@@ -490,11 +501,10 @@ const TransportForm = () => {
             <Input name="vehicles" value={form.vehicles} onChange={handleChange} disabled={readOnly} />
           </Field>
 
-          {/* Loading Charges */}
           <Field>
             <Label>Loading Charges</Label>
-            <div className="flex flex-1 gap-1 items-center">
-              <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">Per Box</span>
+            <Stack direction="row" sx={{ flex: 1, gap: 0.5, alignItems: "center" }}>
+              <Typography component="span" sx={{ fontSize: 10.5, color: "text.secondary", whiteSpace: "nowrap" }}>Per Box</Typography>
               <Input
                 name="loadingPerBox"
                 type="number"
@@ -502,7 +512,7 @@ const TransportForm = () => {
                 onChange={handleChange}
                 disabled={readOnly}
               />
-              <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">Per Bundle</span>
+              <Typography component="span" sx={{ fontSize: 10.5, color: "text.secondary", whiteSpace: "nowrap" }}>Per Bundle</Typography>
               <Input
                 name="loadingPerBundle"
                 type="number"
@@ -510,10 +520,9 @@ const TransportForm = () => {
                 onChange={handleChange}
                 disabled={readOnly}
               />
-            </div>
+            </Stack>
           </Field>
 
-          {/* Allowed Payment Mode */}
           <Field>
             <Label>Allowed Payment Mode</Label>
             <Select
@@ -526,53 +535,52 @@ const TransportForm = () => {
             />
           </Field>
 
-          {/* RCM + Active checkboxes */}
-          <div className="flex items-center gap-6 mt-1 pl-[40%]">
-            <label className="flex items-center gap-1 text-xs cursor-pointer select-none">
-              <input
-                type="checkbox"
+          <Stack direction="row" sx={{ alignItems: "center", gap: 3, mt: 0.5, pl: "40%" }}>
+            <Stack component="label" direction="row" sx={{ alignItems: "center", gap: 0.5, fontSize: 10.5, cursor: "pointer", userSelect: "none" }}>
+              <Checkbox
                 name="rcm"
                 checked={form.rcm}
                 onChange={handleChange}
                 disabled={readOnly}
-                className="w-3 h-3"
+                size="small"
+                sx={{ p: 0 }}
               />
               RCM
-            </label>
-            <label className="flex items-center gap-1 text-xs cursor-pointer select-none">
-              <input
-                type="checkbox"
+            </Stack>
+            <Stack component="label" direction="row" sx={{ alignItems: "center", gap: 0.5, fontSize: 10.5, cursor: "pointer", userSelect: "none" }}>
+              <Checkbox
                 name="isActive"
                 checked={form.isActive}
                 onChange={handleChange}
                 disabled={readOnly}
-                className="w-3 h-3"
+                size="small"
+                sx={{ p: 0 }}
               />
               Active
-            </label>
-          </div>
-        </div>
+            </Stack>
+          </Stack>
+        </Card>
 
         {/* ── RIGHT PANEL — Rate Table ── */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4 flex flex-col lg:h-full">
-          <h2 className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-2">Transport Rates</h2>
+        <Card variant="outlined" sx={{ p: 2, display: "flex", flexDirection: "column", height: { lg: "100%" } }}>
+          <Typography component="h2" sx={{ fontSize: 12, fontWeight: 600, color: "text.secondary", mb: 1 }}>
+            Transport Rates
+          </Typography>
 
-          {/* Rate input row */}
           {!readOnly && (
-            <div className="flex gap-1 mb-2 items-end">
-              <div className="flex flex-col gap-1 flex-1">
-                <span className="text-xs text-gray-500 dark:text-gray-400">City</span>
+            <Stack direction="row" sx={{ gap: 0.5, mb: 1, alignItems: "flex-end" }}>
+              <Stack sx={{ gap: 0.5, flex: 1 }}>
+                <Typography component="span" sx={{ fontSize: 10.5, color: "text.secondary" }}>City</Typography>
                 <Select
                   name="cityId"
                   value={rateRow.cityId}
                   onChange={handleRateChange}
                   options={cityOpts}
                   placeholder="City"
-                  className="w-full"
                 />
-              </div>
-              <div className="flex flex-col gap-1 w-20">
-                <span className="text-xs text-gray-500 dark:text-gray-400">Per Kg</span>
+              </Stack>
+              <Stack sx={{ gap: 0.5, width: 80 }}>
+                <Typography component="span" sx={{ fontSize: 10.5, color: "text.secondary" }}>Per Kg</Typography>
                 <Input
                   name="perKg"
                   type="number"
@@ -580,9 +588,9 @@ const TransportForm = () => {
                   onChange={handleRateChange}
                   placeholder="0"
                 />
-              </div>
-              <div className="flex flex-col gap-1 w-20">
-                <span className="text-xs text-gray-500 dark:text-gray-400">Per Box</span>
+              </Stack>
+              <Stack sx={{ gap: 0.5, width: 80 }}>
+                <Typography component="span" sx={{ fontSize: 10.5, color: "text.secondary" }}>Per Box</Typography>
                 <Input
                   name="perBox"
                   type="number"
@@ -590,9 +598,9 @@ const TransportForm = () => {
                   onChange={handleRateChange}
                   placeholder="0"
                 />
-              </div>
-              <div className="flex flex-col gap-1 w-24">
-                <span className="text-xs text-gray-500 dark:text-gray-400">Per Bundle</span>
+              </Stack>
+              <Stack sx={{ gap: 0.5, width: 96 }}>
+                <Typography component="span" sx={{ fontSize: 10.5, color: "text.secondary" }}>Per Bundle</Typography>
                 <Input
                   name="perBundle"
                   type="number"
@@ -600,67 +608,66 @@ const TransportForm = () => {
                   onChange={handleRateChange}
                   placeholder="0"
                 />
-              </div>
-              <button
+              </Stack>
+              <IconButton
                 onClick={addRate}
-                className="glass-btn glass-btn-primary mb-0.5 p-1.5"
+                className="glass-btn glass-btn-primary"
+                sx={{ mb: 0.25, p: 0.75 }}
                 title="Add rate"
               >
                 <PlusCircle className="w-4 h-4" />
-              </button>
-            </div>
+              </IconButton>
+            </Stack>
           )}
 
-          {/* Rate table */}
-          <div className="flex-1 border border-gray-200 dark:border-gray-700 rounded-sm overflow-auto">
-            <table className="w-full text-xs">
-              <thead className="bg-gray-100 dark:bg-gray-700 sticky top-0">
-                <tr>
-                  <th className="border-r dark:border-gray-600 px-2 py-1.5 text-left">City</th>
-                  <th className="border-r dark:border-gray-600 px-2 py-1.5 text-right">Per KG</th>
-                  <th className="border-r dark:border-gray-600 px-2 py-1.5 text-right">Per Box</th>
-                  <th className="border-r dark:border-gray-600 px-2 py-1.5 text-right">Per Bundle</th>
-                  {!readOnly && <th className="px-2 py-1.5 text-center">Action</th>}
-                </tr>
-              </thead>
-              <tbody>
+          <Box sx={{ flex: 1, border: 1, borderColor: "divider", borderRadius: "3.5px", overflow: "auto" }}>
+            <Table sx={{ width: "100%" }} size="small">
+              <TableHead sx={{ bgcolor: "action.hover", position: "sticky", top: 0 }}>
+                <TableRow>
+                  <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>City</TableCell>
+                  <TableCell align="right" sx={{ borderRight: 1, borderColor: "divider" }}>Per KG</TableCell>
+                  <TableCell align="right" sx={{ borderRight: 1, borderColor: "divider" }}>Per Box</TableCell>
+                  <TableCell align="right" sx={{ borderRight: readOnly ? 0 : 1, borderColor: "divider" }}>Per Bundle</TableCell>
+                  {!readOnly && <TableCell align="center">Action</TableCell>}
+                </TableRow>
+              </TableHead>
+              <TableBody>
                 {rates.length === 0 ? (
-                  <tr>
-                    <td colSpan={readOnly ? 4 : 5} className="text-center py-6 text-gray-400 dark:text-gray-500">
+                  <TableRow>
+                    <TableCell colSpan={readOnly ? 4 : 5} sx={{ textAlign: "center", py: 3, color: "text.disabled" }}>
                       No rates added yet
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : (
                   rates.map((r, i) => (
-                    <tr key={i} className="border-t dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                      <td className="border-r dark:border-gray-700 px-2 py-1">{r.cityName || r.cityId || "—"}</td>
-                      <td className="border-r dark:border-gray-700 px-2 py-1 text-right">{r.perKg || 0}</td>
-                      <td className="border-r dark:border-gray-700 px-2 py-1 text-right">{r.perBox || 0}</td>
-                      <td className={`${!readOnly ? "border-r dark:border-gray-700" : ""} px-2 py-1 text-right`}>{r.perBundle || 0}</td>
+                    <TableRow key={i} hover>
+                      <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>{r.cityName || r.cityId || "—"}</TableCell>
+                      <TableCell align="right" sx={{ borderRight: 1, borderColor: "divider" }}>{r.perKg || 0}</TableCell>
+                      <TableCell align="right" sx={{ borderRight: 1, borderColor: "divider" }}>{r.perBox || 0}</TableCell>
+                      <TableCell align="right" sx={{ borderRight: !readOnly ? 1 : 0, borderColor: "divider" }}>{r.perBundle || 0}</TableCell>
                       {!readOnly && (
-                        <td className="px-2 py-1 text-center">
-                          <button
+                        <TableCell align="center">
+                          <Button
                             onClick={() => removeRate(i)}
                             className="glass-btn glass-btn-danger"
                           >
                             Delete
-                          </button>
-                        </td>
+                          </Button>
+                        </TableCell>
                       )}
-                    </tr>
+                    </TableRow>
                   ))
                 )}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
+          </Box>
 
-          {/* row count */}
-          <div className="mt-2 text-xs text-gray-400 dark:text-gray-500 text-right">
+          <Typography sx={{ mt: 1, fontSize: 10.5, color: "text.disabled", textAlign: "right" }}>
             {rates.length === 1 ? "Showing 1 row" : `Showing ${rates.length} rows`}
-          </div>
-        </div>
-      </div>
-    </div>
+          </Typography>
+        </Card>
+      </Box>
+    </Box>
   );
 };
 

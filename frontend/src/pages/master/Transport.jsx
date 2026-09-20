@@ -2,11 +2,13 @@ import React, { useCallback, useEffect, useState } from "react";
 import { ArrowLeft, Eye, Pencil, PlusCircle, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { Box, Stack, Card, Typography, Button } from "@mui/material";
 import api from "../../api/axios";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import FilterableDataTable from "../../components/FilterableDataTable";
 import UploadImportButton from "../../components/UploadImportButton";
 import ExportBottomSheet from "../../components/ExportBottomSheet";
+import PageHeader from "../../components/PageHeader";
 import useStoreNameMap from "../../hooks/useStoreNameMap";
 import { createGroupFetchers } from "../../utils/serverGrouping";
 
@@ -173,7 +175,7 @@ const Transport = () => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 master-responsive">
+    <Box sx={{ height: "100%", display: "flex", flexDirection: "column", bgcolor: "background.default", color: "text.primary" }}>
       <ConfirmDialog
         open={confirmDlg.open}
         message={`Are you sure you want to delete "${confirmDlg.name}"? This action cannot be undone.`}
@@ -186,58 +188,72 @@ const Transport = () => {
         onConfirm={handleBulkDeleteConfirmed}
         onCancel={() => setBulkConfirm({ open: false, keys: [] })}
       />
-      {/* Header */}
-      <div className="flex justify-between items-center px-4 py-1 bg-white dark:bg-gray-800 border-b dark:border-gray-700 shadow-sm">
-        <div className="flex items-center space-x-2">
-          <button className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200" onClick={() => navigate(-1)}>
-            <ArrowLeft className="w-4 h-4" />
-          </button>
-          <h1 className="text-sm font-semibold flex items-center gap-1">
-            <button
+
+      <PageHeader
+        title={
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+            <Typography
+              component="button"
               type="button"
               onClick={() => navigate("/masters")}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
+              sx={{
+                fontSize: 13,
+                fontWeight: 600,
+                color: "primary.main",
+                background: "none",
+                border: "none",
+                p: 0,
+                cursor: "pointer",
+                "&:hover": { textDecoration: "underline" },
+              }}
             >
               Master
-            </button>
-            <span className="text-gray-500 dark:text-gray-400">/</span>
-            <span>Transport</span>
-          </h1>
-        </div>
-        <div className="flex items-center space-x-3 text-xs font-medium text-gray-700 dark:text-gray-300">
-          <button
-            onClick={() => navigate("/masters/transport/new")}
-            className="topbar-action-btn topbar-action-new"
-          >
-            <PlusCircle className="w-3 h-3 mr-1" /> New
-          </button>
-          <span>|</span>
-          <UploadImportButton
-            endpoint="/transports/bulk"
-            fieldConfig={TRANSPORT_IMPORT_CONFIG}
-            onDone={() => {
-              if (page === 1) fetchData();
-              else setPage(1);
-            }}
-          />
-          <span>|</span>
-          <ExportBottomSheet
-            columns={columns}
-            rows={data}
-            selectedRowKeys={selectedRows}
-            onExportRows={async () => {
-              const res = await api.get("/transports", { params: { all: "true" } });
-              return res.data?.data || [];
-            }}
-            fileName="transports"
-            buttonClassName="topbar-action-btn topbar-action-export"
-          />
-        </div>
-      </div>
+            </Typography>
+            <Typography sx={{ fontSize: 13, color: "text.secondary" }}>/</Typography>
+            <Typography sx={{ fontSize: 13, fontWeight: 600 }}>Transport</Typography>
+          </Stack>
+        }
+        onBack={() => navigate(-1)}
+        actions={
+          <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+            <Button
+              onClick={() => navigate("/masters/transport/new")}
+              className="topbar-action-btn topbar-action-new"
+              startIcon={<PlusCircle className="w-3 h-3" />}
+              size="small"
+            >
+              New
+            </Button>
+            <Typography sx={{ color: "text.secondary" }}>|</Typography>
+            <UploadImportButton
+              endpoint="/transports/bulk"
+              fieldConfig={TRANSPORT_IMPORT_CONFIG}
+              onDone={() => {
+                if (page === 1) fetchData();
+                else setPage(1);
+              }}
+            />
+            <Typography sx={{ color: "text.secondary" }}>|</Typography>
+            <ExportBottomSheet
+              columns={columns}
+              rows={data}
+              selectedRowKeys={selectedRows}
+              onExportRows={async () => {
+                const res = await api.get("/transports", { params: { all: "true" } });
+                return res.data?.data || [];
+              }}
+              fileName="transports"
+              buttonClassName="topbar-action-btn topbar-action-export"
+            />
+          </Stack>
+        }
+      />
 
-      <div className="p-3 flex-1 min-h-0">
-        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-5 border border-gray-200 dark:border-gray-700 h-full flex flex-col min-h-0">
-          <h2 className="text-lg font-bold mb-3">Transport Search</h2>
+      <Box sx={{ p: 1.5, flex: 1, minHeight: 0 }}>
+        <Card variant="outlined" sx={{ p: 2, height: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}>
+          <Typography component="h2" sx={{ fontSize: 18, fontWeight: 700, mb: 1.5 }}>
+            Transport Search
+          </Typography>
           <FilterableDataTable
             rows={data}
             columns={columns}
@@ -274,7 +290,7 @@ const Transport = () => {
             onRowClick={(t) => navigate(`/masters/transport/edit/${t.id}`)}
             fillHeight
             renderActions={(t, { selectedCount } = {}) => (
-              <div className="flex items-center gap-3">
+              <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
                 <button
                   onClick={() => navigate(`/masters/transport/${t.id}`)}
                   className="glass-btn glass-btn-primary"
@@ -297,12 +313,12 @@ const Transport = () => {
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
-              </div>
+              </Stack>
             )}
           />
-        </div>
-      </div>
-    </div>
+        </Card>
+      </Box>
+    </Box>
   );
 };
 

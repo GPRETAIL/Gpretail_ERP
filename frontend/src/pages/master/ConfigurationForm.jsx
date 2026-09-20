@@ -2,6 +2,7 @@ import { ArrowLeft, Save } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
+import { Box, Stack, Card, Typography, Button, TextField } from "@mui/material";
 import {
   CheckboxInput,
   SelectInput,
@@ -9,6 +10,7 @@ import {
   TextInput,
 } from "../../components/CustomInputs";
 import api from "../../api/axios";
+import PageHeader from "../../components/PageHeader";
 import { normalizeFormSignature } from "../../utils/formSignature";
 import UploadImportButton from "../../components/UploadImportButton";
 
@@ -31,18 +33,21 @@ const CFG_IMPORT_TRANSFORM = (r) => ({
 
 // ─── Local helpers ────────────────────────────────────────────────────────────
 const TextareaInput = ({ label, name, required = false, value, onChange, rows = 3 }) => (
-  <div className="flex items-start">
-    <label className="w-2/5 text-xs font-medium text-gray-700 dark:text-gray-300 text-right pr-3 pt-1">
-      {required && <span className="text-red-500 mr-1">*</span>} {label}
-    </label>
-    <textarea
+  <Stack direction="row" sx={{ alignItems: "flex-start" }}>
+    <Typography component="label" sx={{ width: "40%", fontSize: 10.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5, pt: 0.5 }}>
+      {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>} {label}
+    </Typography>
+    <TextField
       name={name}
       value={value}
       onChange={onChange}
       rows={rows}
-      className="flex-1 border border-gray-300 dark:border-gray-600 rounded-sm p-1 text-xs bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+      multiline
+      size="small"
+      fullWidth
+      sx={{ "& .MuiInputBase-input": { fontSize: 10.5 } }}
     />
-  </div>
+  </Stack>
 );
 
 // ─── Type → display label ─────────────────────────────────────────────────────
@@ -245,7 +250,7 @@ function buildExtraData(typeKey, fd) {
 }
 
 // ─── Column wrapper — defined at module level so React never remounts it ─────
-const C = ({ children }) => <div className="col-span-12 lg:col-span-4 space-y-1.5">{children}</div>;
+const C = ({ children }) => <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 0.75 }}>{children}</Box>;
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 const ConfigurationForm = () => {
@@ -675,79 +680,100 @@ const ConfigurationForm = () => {
 
   if (!typeKey) {
     return (
-      <div className="min-h-[70vh] flex items-center justify-center bg-gray-100 dark:bg-gray-900 text-gray-500 dark:text-gray-400 text-sm">
+      <Box sx={{ minHeight: "70vh", display: "flex", alignItems: "center", justifyContent: "center", bgcolor: "background.default", color: "text.secondary", fontSize: 14 }}>
         No configuration type selected. Please go back and select a type.
-      </div>
+      </Box>
     );
   }
 
   return (
-    <div className="min-h-[70vh] bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100">
-      {/* Header */}
-      <div className="flex justify-between items-center px-4 py-1 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
-        <div className="flex items-center space-x-2">
-          <button className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200" onClick={() => navigate(-1)}>
-            <ArrowLeft className="w-4 h-4" />
-          </button>
-          <h1 className="text-sm font-semibold flex items-center gap-1">
-            <button
+    <Box sx={{ minHeight: "70vh", bgcolor: "background.default", color: "text.primary" }}>
+      <PageHeader
+        title={
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+            <Typography
+              component="button"
               type="button"
               onClick={() => navigate("/masters")}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
+              sx={{
+                fontSize: 13,
+                fontWeight: 600,
+                color: "primary.main",
+                background: "none",
+                border: "none",
+                p: 0,
+                cursor: "pointer",
+                "&:hover": { textDecoration: "underline" },
+              }}
             >
               Master
-            </button>
-            <span className="text-gray-500 dark:text-gray-400">/</span>
-            <button
+            </Typography>
+            <Typography sx={{ fontSize: 13, color: "text.secondary" }}>/</Typography>
+            <Typography
+              component="button"
               type="button"
               onClick={() => navigate("/masters/configuration")}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
+              sx={{
+                fontSize: 13,
+                fontWeight: 600,
+                color: "primary.main",
+                background: "none",
+                border: "none",
+                p: 0,
+                cursor: "pointer",
+                "&:hover": { textDecoration: "underline" },
+              }}
             >
               Configuration
-            </button>
-            <span className="text-gray-500 dark:text-gray-400">/</span>
-            <span>{typeLabel}</span>
-          </h1>
-        </div>
-        <div className="flex items-center space-x-3 text-xs font-medium text-gray-700 dark:text-gray-300">
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="glass-btn glass-btn-success flex items-center disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            <Save className="w-3 h-3 mr-1" /> {saving ? "Saving…" : "Save"}
-          </button>
-          {typeKey && (
-            <>
-              <span>|</span>
-              <UploadImportButton
-                endpoint={`/configurations/${typeKey.toLowerCase()}/bulk`}
-                fieldConfig={CFG_IMPORT_CONFIG}
-                transform={CFG_IMPORT_TRANSFORM}
-                className="text-xs font-medium"
-              />
-            </>
-          )}
-        </div>
-      </div>
+            </Typography>
+            <Typography sx={{ fontSize: 13, color: "text.secondary" }}>/</Typography>
+            <Typography sx={{ fontSize: 13, fontWeight: 600 }}>{typeLabel}</Typography>
+          </Stack>
+        }
+        onBack={() => navigate(-1)}
+        actions={
+          <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+            <Button
+              onClick={handleSave}
+              disabled={saving}
+              className="glass-btn glass-btn-success"
+              startIcon={<Save className="w-3 h-3" />}
+              size="small"
+            >
+              {saving ? "Saving…" : "Save"}
+            </Button>
+            {typeKey && (
+              <>
+                <Typography sx={{ color: "text.secondary" }}>|</Typography>
+                <UploadImportButton
+                  endpoint={`/configurations/${typeKey.toLowerCase()}/bulk`}
+                  fieldConfig={CFG_IMPORT_CONFIG}
+                  transform={CFG_IMPORT_TRANSFORM}
+                  className="text-xs font-medium"
+                />
+              </>
+            )}
+          </Stack>
+        }
+      />
 
-      <div className="p-3 pb-16">
-        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg border border-gray-200 dark:border-gray-700 p-3">
-          <div className="grid grid-cols-12 gap-3">
+      <Box sx={{ p: 1.5, pb: 8 }}>
+        <Card variant="outlined" sx={{ p: 1.5 }}>
+          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "repeat(12, 1fr)" }, gap: 1.5 }}>
             {/* ─── Common Fields ──────────────────────────── */}
-            <div className="col-span-12 lg:col-span-4 space-y-1.5">
+            <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 0.75 }}>
               <TextInput label="Type" name="type_display" value={typeLabel} onChange={() => {}} disabled />
               <TextInput label="Code" name="code" value={formData.code} onChange={handleChange} />
               <TextInput label="Name" name="name" required value={formData.name} onChange={handleChange} />
               <TextInput label="Sort Order" name="sort_order" value={formData.sort_order} onChange={handleChange} />
-            </div>
+            </Box>
 
             {/* ─── Type-specific Fields ────────────────────── */}
             {renderTypeFields()}
-          </div>
-        </div>
-      </div>
-    </div>
+          </Box>
+        </Card>
+      </Box>
+    </Box>
   );
 };
 

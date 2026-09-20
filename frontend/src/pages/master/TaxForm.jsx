@@ -4,8 +4,6 @@ import {
   Pencil,
   PlusCircle,
   Save,
-  Search,
-  Trash2,
 } from "lucide-react";
 import {
   DualTextInput,
@@ -15,8 +13,10 @@ import {
 } from "../../components/CustomInputs";
 import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
+import { Box, Stack, Card, Typography, Button } from "@mui/material";
 import TaxRangeTable from "../../components/RangedTaxTable";
 import api from "../../api/axios";
+import PageHeader from "../../components/PageHeader";
 import { handleEnterKeyNavigation } from "../../utils/enterToNextField";
 import { normalizeFormSignature } from "../../utils/formSignature";
 
@@ -36,24 +36,16 @@ const TaxForm = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  // tax_code is only unique per store, so the row's own company_id (carried on the URL by
-  // Tax.jsx) is required to find the right row -- without it this falls back to whatever store
-  // is currently "active" for the caller, which 404s for any row that isn't (see
-  // TaxController.getOne). Absent entirely on the "New" form, where there is no row yet.
   const companyIdParam = searchParams.get("company_id");
 
   const isEdit = location.pathname.includes("/edit/");
   const isView = !!taxCode && !isEdit;
   const isAdd = !taxCode;
 
-  // Baseline snapshot (edit mode) so an unchanged save reports "No changes detected".
   const initialFormRef = useRef({ id: null, sig: null });
   const [saving, setSaving] = useState(false);
-  const savingRef = useRef(false); // synchronous double-submit guard (set before the first await)
+  const savingRef = useRef(false);
 
-  // Owning store — never picked here. A store user is scoped server-side, and a super admin's
-  // active store rides along on every request from the Navbar switcher. Only carried so an edit
-  // keeps the store the row is already filed under.
   const [storeId, setStoreId] = useState("");
 
   const [formData, setFormData] = useState({
@@ -66,16 +58,11 @@ const TaxForm = () => {
     taxPercentage: 0,
     extraFields: {},
   });
-  if (isEdit) {
-    console.log(formData);
-  }
   const [errors, setErrors] = useState({});
 
-  // Handler for top-level form fields
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
 
-    // Reset form when taxCharges changes
     if (name === "taxCharges") {
       setFormData({
         taxCode: "",
@@ -97,11 +84,9 @@ const TaxForm = () => {
           inCost: false,
         },
       ]);
-
       return;
     }
 
-    // Dynamic Extra Fields Handler
     if (["From", "To"].includes(name)) {
       setFormData((prev) => ({
         ...prev,
@@ -113,7 +98,6 @@ const TaxForm = () => {
       return;
     }
 
-    // GST auto calculation
     if (formData.taxCharges === "GST" && name === "taxPercentage") {
       const taxVal = parseFloat(value) || 0;
       setFormData((prev) => ({
@@ -128,7 +112,6 @@ const TaxForm = () => {
       return;
     }
 
-    // Default top-level field update
     setFormData((prevData) => ({
       ...prevData,
       [name]: type === "checkbox" ? checked : value,
@@ -137,9 +120,8 @@ const TaxForm = () => {
 
   const handleSave = async () => {
     if (isView) return;
-    if (savingRef.current) return; // a save is already in flight — ignore repeated clicks
+    if (savingRef.current) return;
 
-    // Basic validation
     const newErrors = {};
     if (!formData.taxCode.trim()) newErrors.taxCode = "Tax Code is required";
     if (!formData.name.trim()) newErrors.name = "Name is required";
@@ -163,7 +145,6 @@ const TaxForm = () => {
     savingRef.current = true;
     setSaving(true);
 
-    // Prepare payload
     const payload = {
       ...formData,
       ...(storeId ? { companyId: Number(storeId) } : {}),
@@ -179,8 +160,6 @@ const TaxForm = () => {
         })),
       },
     };
-
-    console.log("Saving payload:", payload);
 
     try {
       if (isEdit) {
@@ -212,7 +191,16 @@ const TaxForm = () => {
           company_id: payload.companyId,
         });
         toast.success("Tax record saved successfully!");
-        setFormData(initialFormData);
+        setFormData({
+          taxCode: "",
+          name: "",
+          taxCharges: "",
+          isSalesTax: false,
+          isPurchaseTax: false,
+          isDisabled: false,
+          taxPercentage: 0,
+          extraFields: {},
+        });
         setStoreId("");
         initialFormRef.current = { id: null, sig: null };
       }
@@ -238,7 +226,6 @@ const TaxForm = () => {
     navigate(`/masters/tax/new`);
   };
 
-  // Load existing tax for edit mode
   useEffect(() => {
     if (!isEdit || !taxCode) return;
     const load = async () => {
@@ -280,15 +267,22 @@ const TaxForm = () => {
     load();
   }, [isAdd, taxCode, isEdit, companyIdParam]);
 
-  if (isEdit) {
-    console.log(formData);
-  }
   const renderDynamicFields = () => {
     switch (formData.taxCharges) {
       case "GST":
-        // Fix: Use the new handleExtraFieldsChange and reference correct state
         return (
-          <div className="col-span-12 lg:col-span-3 space-y-1.5 border-l border-r border-gray-100 dark:border-gray-700 px-3">
+          <Box
+            sx={{
+              gridColumn: { xs: "span 12", lg: "span 3" },
+              display: "flex",
+              flexDirection: "column",
+              gap: 0.75,
+              borderLeft: 1,
+              borderRight: 1,
+              borderColor: "divider",
+              px: 1.5,
+            }}
+          >
             <TextInput
               label="CGST"
               name="cgst"
@@ -303,100 +297,115 @@ const TaxForm = () => {
               disabled={true}
               placeholder="Auto-calculated"
             />
-          </div>
+          </Box>
         );
 
       case "RGST":
         return (
-          <>
-            <div className="col-span-12 lg:col-span-6 space-y-1.5 px-3">
-              <DualTextInput
-                label="Exclude"
-                name1="From"
-                value1={formData.extraFields.excluesFrom}
-                name2="To"
-                value2={formData.extraFields.excluesTo}
-                onChange={handleChange}
-              />
-              <TaxRangeTable
-                isView={isView}
-                rangedTaxItems={rangedTaxItems}
-                setRangedTaxItems={setRangedTaxItems}
-              />
-            </div>
-          </>
+          <Box
+            sx={{
+              gridColumn: { xs: "span 12", lg: "span 6" },
+              display: "flex",
+              flexDirection: "column",
+              gap: 0.75,
+              px: 1.5,
+            }}
+          >
+            <DualTextInput
+              label="Exclude"
+              name1="From"
+              value1={formData.extraFields.excluesFrom}
+              name2="To"
+              value2={formData.extraFields.excluesTo}
+              onChange={handleChange}
+            />
+            <TaxRangeTable
+              isView={isView}
+              rangedTaxItems={rangedTaxItems}
+              setRangedTaxItems={setRangedTaxItems}
+            />
+          </Box>
         );
       default:
-        return;
+        return null;
     }
   };
 
   return (
-    <div className="h-full flex flex-col bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 master-responsive">
-      {/* Header */}
-      <div className="flex justify-between items-center px-4 py-1 bg-white dark:bg-gray-800 border-b dark:border-gray-700 shadow-sm">
-        <div className="flex items-center space-x-2">
-          <button
-            className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
-            onClick={() => navigate(-1)}
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </button>
-          <h1 className="text-sm font-semibold flex items-center gap-1">
-            <button
+    <Box sx={{ height: "100%", display: "flex", flexDirection: "column", bgcolor: "background.default", color: "text.primary" }}>
+      <PageHeader
+        title={
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+            <Typography
+              component="button"
               type="button"
               onClick={() => navigate("/masters")}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
+              sx={{
+                fontSize: 13,
+                fontWeight: 600,
+                color: "primary.main",
+                background: "none",
+                border: "none",
+                p: 0,
+                cursor: "pointer",
+                "&:hover": { textDecoration: "underline" },
+              }}
             >
               Master
-            </button>
-            <span className="text-gray-500 dark:text-gray-400">/</span>
-            <span>Tax</span>
-          </h1>
-        </div>
+            </Typography>
+            <Typography sx={{ fontSize: 13, color: "text.secondary" }}>/</Typography>
+            <Typography sx={{ fontSize: 13, fontWeight: 600 }}>Tax</Typography>
+          </Stack>
+        }
+        onBack={() => navigate(-1)}
+        actions={
+          <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+            {!isView && (
+              <>
+                <Button
+                  onClick={handleNew}
+                  className="topbar-action-btn topbar-action-new"
+                  startIcon={<PlusCircle className="w-3 h-3" />}
+                  size="small"
+                >
+                  New
+                </Button>
+                <Typography sx={{ color: "text.secondary" }}>|</Typography>
+                <Button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="glass-btn glass-btn-success"
+                  startIcon={<Save className="w-3 h-3" />}
+                  size="small"
+                >
+                  {saving ? "Saving…" : "Save"}
+                </Button>
+              </>
+            )}
 
-        <div className="flex items-center space-x-3 text-xs font-medium text-gray-700 dark:text-gray-300">
-          {!isView && (
-            <>
-              <button
-                onClick={handleNew}
-                className="topbar-action-btn topbar-action-new"
+            {isView && (
+              <Button
+                onClick={() => navigate(`/masters/tax/edit/${taxCode}`)}
+                className="glass-btn glass-btn-primary"
+                startIcon={<Pencil className="w-3 h-3" />}
+                size="small"
               >
-                <PlusCircle className="w-3 h-3 mr-1" /> New
-              </button>
+                Edit
+              </Button>
+            )}
+          </Stack>
+        }
+      />
 
-              <span>|</span>
-
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="glass-btn glass-btn-success flex items-center disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                <Save className="w-3 h-3 mr-1" /> {saving ? "Saving…" : "Save"}
-              </button>
-            </>
-          )}
-
-          {isView && (
-            <button
-              onClick={() => navigate(`/masters/tax/edit/${taxCode}`)}
-              className="glass-btn glass-btn-primary flex items-center"
-            >
-              <Pencil className="w-3 h-3 mr-1" /> Edit
-            </button>
-          )}
-        </div>
-      </div>
-      <hr className="my-0 border-t border-gray-200 dark:border-gray-700" />
-      <div className="p-3 flex-1 min-h-0">
-        <div
-          className="bg-white dark:bg-gray-800 shadow-lg rounded-lg border border-gray-200 dark:border-gray-700 p-3 h-full"
+      <Box sx={{ p: 1.5, flex: 1, minHeight: 0 }}>
+        <Card
+          variant="outlined"
+          sx={{ p: 1.5, height: "100%" }}
           data-enter-scope="true"
           onKeyDownCapture={handleEnterKeyNavigation}
         >
-          <div className="grid grid-cols-12 gap-3">
-            {/* Left Column - General Tax Details */}
-            <div className="col-span-12 lg:col-span-4 space-y-1.5">
+          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "repeat(12, 1fr)" }, gap: 1.5 }}>
+            <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 0.75 }}>
               <TextInput
                 label="* Tax Code"
                 name="taxCode"
@@ -405,9 +414,9 @@ const TaxForm = () => {
                 disabled={isView || isEdit}
               />
               {errors.taxCode && (
-                <p className="text-xs text-red-500 dark:text-red-400 mt-1 ml-[33%]">
+                <Typography sx={{ fontSize: 11, color: "error.main", mt: 0.25, ml: "33%" }}>
                   {errors.taxCode}
-                </p>
+                </Typography>
               )}
               <TextInput
                 label="* Name"
@@ -417,9 +426,9 @@ const TaxForm = () => {
                 disabled={isView}
               />
               {errors.name && (
-                <p className="text-xs text-red-500 dark:text-red-400 mt-1 ml-[33%]">
+                <Typography sx={{ fontSize: 11, color: "error.main", mt: 0.25, ml: "33%" }}>
                   {errors.name}
-                </p>
+                </Typography>
               )}
               <SelectInput
                 label={"* Tax / Charges"}
@@ -430,9 +439,9 @@ const TaxForm = () => {
                 disabled={isView}
               />
               {errors.taxCharges && (
-                <p className="text-xs text-red-500 dark:text-red-400 mt-1 ml-[33%]">
+                <Typography sx={{ fontSize: 11, color: "error.main", mt: 0.25, ml: "33%" }}>
                   {errors.taxCharges}
-                </p>
+                </Typography>
               )}
               {formData.taxCharges !== "RGST" && (
                 <TextInput
@@ -445,7 +454,6 @@ const TaxForm = () => {
                 />
               )}
 
-              {/* Conditional DualTextInput based on Sales Tax checkbox - as per image (Exclude From/To) */}
               <CheckboxInput
                 label="Sales Tax"
                 name="isSalesTax"
@@ -454,9 +462,9 @@ const TaxForm = () => {
                 disabled={isView}
               />
               {errors.salesTax && (
-                <p className="text-xs text-red-500 dark:text-red-400 mt-1 ml-[33%]">
+                <Typography sx={{ fontSize: 11, color: "error.main", mt: 0.25, ml: "33%" }}>
                   {errors.salesTax}
-                </p>
+                </Typography>
               )}
 
               <CheckboxInput
@@ -467,9 +475,9 @@ const TaxForm = () => {
                 disabled={isView}
               />
               {errors.purchaseTax && (
-                <p className="text-xs text-red-500 dark:text-red-400 mt-1 ml-[33%]">
+                <Typography sx={{ fontSize: 11, color: "error.main", mt: 0.25, ml: "33%" }}>
                   {errors.purchaseTax}
-                </p>
+                </Typography>
               )}
               <CheckboxInput
                 label="Disable"
@@ -479,16 +487,16 @@ const TaxForm = () => {
                 disabled={isView}
               />
               {errors.disable && (
-                <p className="text-xs text-red-500 dark:text-red-400 mt-1 ml-[33%]">
+                <Typography sx={{ fontSize: 11, color: "error.main", mt: 0.25, ml: "33%" }}>
                   {errors.disable}
-                </p>
+                </Typography>
               )}
-            </div>
+            </Box>
             {renderDynamicFields()}
-          </div>
-        </div>
-      </div>
-    </div>
+          </Box>
+        </Card>
+      </Box>
+    </Box>
   );
 };
 
