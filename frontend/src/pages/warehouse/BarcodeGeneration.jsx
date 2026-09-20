@@ -2846,7 +2846,7 @@ const BarcodeGeneration = () => {
           <Button
             onClick={openPreview}
             disabled={!canPreviewBarcodes || qrLoading}
-            className="glass-btn glass-btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+            className="glass-btn glass-btn-primary"
             sx={{ display: "flex", alignItems: "center" }}
           >
             <Eye size={16} style={{marginRight: 4}} /> Preview Barcode
@@ -2855,7 +2855,7 @@ const BarcodeGeneration = () => {
             onClick={handleDirectPrint}
             disabled={!canPreviewBarcodes || qrLoading || directPrinting}
             title="Print the already-generated barcodes for the checked/active item without opening the preview"
-            className="glass-btn glass-btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+            className="glass-btn glass-btn-primary"
             sx={{ display: "flex", alignItems: "center" }}
           >
             <Printer size={16} style={{marginRight: 4}} /> {directPrinting ? "Printing..." : "Print"}
@@ -2863,7 +2863,7 @@ const BarcodeGeneration = () => {
           <Button
             onClick={handleSave}
             disabled={saving || allItems.length === 0}
-            className="glass-btn glass-btn-success disabled:opacity-50"
+            className="glass-btn glass-btn-success"
             sx={{ display: "flex", alignItems: "center" }}
           >
             <Save size={16} style={{marginRight: 4}} /> Save
@@ -2871,7 +2871,7 @@ const BarcodeGeneration = () => {
           <Button
             onClick={handleGenerate}
             disabled={saving}
-            className="glass-btn glass-btn-primary disabled:opacity-50"
+            className="glass-btn glass-btn-primary"
             sx={{ display: "flex", alignItems: "center" }}
           >
             {saving ? "Generating..." : "Generate Barcodes"}
@@ -2933,7 +2933,7 @@ const BarcodeGeneration = () => {
             <Button
               onClick={handleGenerate}
               disabled={saving || (selectedItems.length === 0 && !allItemsHaveBarcodes)}
-              className="glass-btn glass-btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              className="glass-btn glass-btn-primary"
               fullWidth
             >
               {saving ? "Generating..." : `Generate Barcodes (${selectedItems.length})`}
@@ -2942,7 +2942,7 @@ const BarcodeGeneration = () => {
             <Button
               onClick={handleSave}
               disabled={saving || allItems.length === 0}
-              className="glass-btn glass-btn-success disabled:opacity-50 disabled:cursor-not-allowed"
+              className="glass-btn glass-btn-success"
               fullWidth
             >
               <Save size={16} style={{ display: "inline", marginRight: 4 }} /> Save
@@ -2951,7 +2951,7 @@ const BarcodeGeneration = () => {
             <Button
               onClick={openPreview}
               disabled={!canPreviewBarcodes || qrLoading}
-              className="glass-btn glass-btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              className="glass-btn glass-btn-primary"
               fullWidth
             >
               <Eye size={16} style={{ display: "inline", marginRight: 4 }} /> Preview Barcode
@@ -2960,7 +2960,7 @@ const BarcodeGeneration = () => {
             <Button
               onClick={handleDirectPrint}
               disabled={!canPreviewBarcodes || qrLoading || directPrinting}
-              className="glass-btn glass-btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              className="glass-btn glass-btn-primary"
               fullWidth
             >
               <Printer size={16} style={{ display: "inline", marginRight: 4 }} /> {directPrinting ? "Printing..." : "Print"}
@@ -3020,7 +3020,7 @@ const BarcodeGeneration = () => {
                 <Button
                   onClick={handleRowUpdate}
                   disabled={updatingRow}
-                  className="glass-btn glass-btn-primary disabled:opacity-50"
+                  className="glass-btn glass-btn-primary"
                   fullWidth
                   sx={{ mt: 2 }}
                 >

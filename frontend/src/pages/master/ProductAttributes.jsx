@@ -256,7 +256,7 @@ const ProductAttributes = () => {
               loading={false}
               emptyText="No records found for this Product Type."
               searchPlaceholder="Search in attribute fields..."
-              searchButtonClassName="glass-btn glass-btn-primary flex items-center disabled:opacity-50"
+              searchButtonClassName="glass-btn glass-btn-primary"
               showExport={false}
               tablePreferenceKey={`masters.product-attributes.${formData.productType.toLowerCase()}`}
               paginationMode="client"
@@ -282,7 +282,7 @@ const ProductAttributes = () => {
                   <button
                     onClick={() => setConfirm({ open: true, id: row.id, name: row.name })}
                     title="Delete"
-                    className="glass-btn glass-btn-danger rounded p-1.5"
+                    className="glass-btn glass-btn-danger"
                     type="button"
                   >
                     <Trash2 size={14} />

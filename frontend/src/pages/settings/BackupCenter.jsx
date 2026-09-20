@@ -824,7 +824,7 @@ export default function BackupCenter() {
               <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 10.5, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Current Scope</Typography>
               <Box sx={{ borderRadius: "4px", border: "1px solid", borderColor: "divider", bgcolor: "action.hover", color: "text.secondary", p: 1, fontSize: 12.25 }}>{selectedScopeLabel}</Box>
             </Box>
-            <Button type="button" className="glass-btn glass-btn-primary flex items-center" onClick={() => loadOverview(selectedCompanyId)}>
+            <Button type="button" className="glass-btn glass-btn-primary" onClick={() => loadOverview(selectedCompanyId)}>
               <Search size={16} style={{ marginRight: 4 }} /> Refresh
             </Button>
           </Stack>
@@ -1015,7 +1015,7 @@ export default function BackupCenter() {
 
               <Button
                 type="button"
-                className="glass-btn glass-btn-success flex items-center"
+                className="glass-btn glass-btn-success"
                 onClick={handleCreateBackup}
                 disabled={creatingBackup}
               >
@@ -1387,7 +1387,7 @@ export default function BackupCenter() {
                 label="Auto cleanup old scheduled backups"
               />
 
-              <Button type="button" className="glass-btn glass-btn-success flex items-center" onClick={handleSaveSettings}>
+              <Button type="button" className="glass-btn glass-btn-success" onClick={handleSaveSettings}>
                 <Save size={16} style={{ marginRight: 4 }} /> Save Settings
               </Button>
             </Stack>
@@ -1503,7 +1503,7 @@ export default function BackupCenter() {
 
               <Button
                 type="button"
-                className="glass-btn glass-btn-danger flex items-center"
+                className="glass-btn glass-btn-danger"
                 onClick={handleRestore}
                 disabled={restoring}
               >
@@ -1546,7 +1546,7 @@ export default function BackupCenter() {
                     }}
                   />
                 </Box>
-                <Button type="button" className="glass-btn glass-btn-primary flex items-center" onClick={handleImport}>
+                <Button type="button" className="glass-btn glass-btn-primary" onClick={handleImport}>
                   <Upload size={16} style={{ marginRight: 4 }} /> Import Backup
                 </Button>
               </Stack>
@@ -1562,7 +1562,7 @@ export default function BackupCenter() {
             </Box>
             <Button
               type="button"
-              className="glass-btn glass-btn-secondary flex items-center"
+              className="glass-btn glass-btn-secondary"
               sx={{ flexShrink: 0 }}
               onClick={() => {
                 setBackupHistoryLimit(Math.max(filteredBackups.length, DEFAULT_HISTORY_LIMIT));
@@ -1630,21 +1630,21 @@ export default function BackupCenter() {
             }}
             renderActions={(row) => (
               <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-                <Button type="button" className="glass-btn glass-btn-primary rounded p-1.5" sx={{ minWidth: "auto" }} onClick={() => handleDownload(row)} title="Download">
+                <Button type="button" className="glass-btn glass-btn-primary" sx={{ minWidth: "auto" }} onClick={() => handleDownload(row)} title="Download">
                   <Download size={14} />
                 </Button>
-                <Button type="button" className="glass-btn glass-btn-secondary rounded p-1.5" sx={{ minWidth: "auto" }} onClick={() => handleDownloadLogs(row)} title="Logs">
+                <Button type="button" className="glass-btn glass-btn-secondary" sx={{ minWidth: "auto" }} onClick={() => handleDownloadLogs(row)} title="Logs">
                   <Archive size={14} />
                 </Button>
-                <Button type="button" className="glass-btn glass-btn-success rounded p-1.5" sx={{ minWidth: "auto" }} onClick={() => selectBackupForRestore(row)} title="Restore">
+                <Button type="button" className="glass-btn glass-btn-success" sx={{ minWidth: "auto" }} onClick={() => selectBackupForRestore(row)} title="Restore">
                   <RotateCcw size={14} />
                 </Button>
-                <Button type="button" className="glass-btn glass-btn-danger rounded p-1.5" sx={{ minWidth: "auto" }} onClick={() => handleDeleteBackup(row)} title="Delete">
+                <Button type="button" className="glass-btn glass-btn-danger" sx={{ minWidth: "auto" }} onClick={() => handleDeleteBackup(row)} title="Delete">
                   <Trash2 size={14} />
                 </Button>
               </Stack>
             )}
-            searchButtonClassName="glass-btn glass-btn-primary flex items-center disabled:opacity-50"
+            searchButtonClassName="glass-btn glass-btn-primary"
           />
         </Box>
 
@@ -1656,7 +1656,7 @@ export default function BackupCenter() {
             </Box>
             <Button
               type="button"
-              className="glass-btn glass-btn-secondary flex items-center"
+              className="glass-btn glass-btn-secondary"
               sx={{ flexShrink: 0 }}
               onClick={() => {
                 setRestoreHistoryLimit(Math.max((overview.restores || []).length, DEFAULT_HISTORY_LIMIT));
@@ -1684,7 +1684,7 @@ export default function BackupCenter() {
               setRestoreHistoryLimit(value);
               setRestoreHistoryPage(1);
             }}
-            searchButtonClassName="glass-btn glass-btn-primary flex items-center disabled:opacity-50"
+            searchButtonClassName="glass-btn glass-btn-primary"
           />
         </Box>
       </Stack>

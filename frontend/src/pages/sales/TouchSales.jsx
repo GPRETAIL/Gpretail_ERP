@@ -1007,7 +1007,7 @@ const TouchSales = () => {
                 <Button
                   onClick={() => saveTouchSale({ shouldPrint: false })}
                   disabled={saving || applyingReturn}
-                  className="glass-btn glass-btn-success disabled:opacity-60"
+                  className="glass-btn glass-btn-success"
                   sx={{ display: "inline-flex", alignItems: "center", justifyContent: "center" }}
                 >
                   <Save size={16} style={{ marginRight: 4 }} /> {saving ? "Saving..." : "Save"}
@@ -1015,7 +1015,7 @@ const TouchSales = () => {
                 <Button
                   onClick={() => saveTouchSale({ shouldPrint: true })}
                   disabled={saving || applyingReturn}
-                  className="glass-btn glass-btn-primary disabled:opacity-60"
+                  className="glass-btn glass-btn-primary"
                   sx={{ display: "inline-flex", alignItems: "center", justifyContent: "center" }}
                 >
                   <Printer size={16} style={{ marginRight: 4 }} /> Save & Print

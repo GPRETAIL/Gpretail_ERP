@@ -1184,7 +1184,7 @@ const Employee = () => {
         columns={employeeColumns}
         loading={searchLoading}
         searchPlaceholder="Search in employee fields..."
-        searchButtonClassName="glass-btn glass-btn-primary flex items-center disabled:opacity-50"
+        searchButtonClassName="glass-btn glass-btn-primary"
         showExport={false}
         enableColumnResize
         tablePreferenceKey="hrms.employees.list"

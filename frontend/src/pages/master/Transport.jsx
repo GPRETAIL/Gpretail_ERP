@@ -259,7 +259,7 @@ const Transport = () => {
             columns={columns}
             loading={loading}
             searchPlaceholder="Search in transport fields..."
-            searchButtonClassName="glass-btn glass-btn-primary flex items-center disabled:opacity-50"
+            searchButtonClassName="glass-btn glass-btn-primary"
             showExport={false}
             enableColumnResize
             tablePreferenceKey="masters.transports.list"
@@ -302,13 +302,13 @@ const Transport = () => {
                   onClick={() => navigate(`/masters/transport/edit/${t.id}`)}
                   title="Edit"
                   disabled={selectedCount > 1}
-                  className="glass-btn glass-btn-primary rounded p-1.5"
+                  className="glass-btn glass-btn-primary"
                 >
                   <Pencil size={16} />
                 </button>
                 <button
                   onClick={() => setConfirmDlg({ open: true, id: t.id, name: t.name })}
-                  className="glass-btn glass-btn-danger rounded p-1.5"
+                  className="glass-btn glass-btn-danger"
                   title="Delete"
                 >
                   <Trash2 size={16} />

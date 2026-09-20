@@ -350,7 +350,7 @@ const ApprovalInbox = () => {
                         <Button
                           onClick={() => handleApprove(row)}
                           disabled={!!actingId || toStatus(row.status) !== "pending"}
-                          className="glass-btn glass-btn-success disabled:opacity-50"
+                          className="glass-btn glass-btn-success"
                           sx={{ display: "inline-flex", alignItems: "center" }}
                         >
                           <CheckCircle2 size={14} style={{marginRight: 4}} />
@@ -359,7 +359,7 @@ const ApprovalInbox = () => {
                         <Button
                           onClick={() => handleDecline(row)}
                           disabled={!!actingId || toStatus(row.status) !== "pending"}
-                          className="glass-btn glass-btn-danger disabled:opacity-50"
+                          className="glass-btn glass-btn-danger"
                           sx={{ display: "inline-flex", alignItems: "center" }}
                         >
                           <X size={14} style={{marginRight: 4}} />
@@ -476,7 +476,7 @@ const ApprovalInbox = () => {
                       type="button"
                       onClick={() => handleApprove(selectedSale)}
                       disabled={!!actingId || toStatus(selectedSale.status) !== "pending"}
-                      className="glass-btn glass-btn-success disabled:opacity-50"
+                      className="glass-btn glass-btn-success"
                       sx={{ display: "inline-flex", alignItems: "center" }}
                     >
                       <CheckCircle2 size={14} style={{marginRight: 4}} />
@@ -486,7 +486,7 @@ const ApprovalInbox = () => {
                       type="button"
                       onClick={() => handleDecline(selectedSale)}
                       disabled={!!actingId || toStatus(selectedSale.status) !== "pending"}
-                      className="glass-btn glass-btn-danger disabled:opacity-50"
+                      className="glass-btn glass-btn-danger"
                       sx={{ display: "inline-flex", alignItems: "center" }}
                     >
                       <X size={14} style={{marginRight: 4}} />

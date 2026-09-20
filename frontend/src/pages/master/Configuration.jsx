@@ -207,7 +207,7 @@ const Configuration = () => {
             loading={loading}
             emptyText={configType ? "No records found for this type." : "Select Configuration Type to load records."}
             searchPlaceholder="Search in configuration fields..."
-            searchButtonClassName="glass-btn glass-btn-primary flex items-center disabled:opacity-50"
+            searchButtonClassName="glass-btn glass-btn-primary"
             showExport={false}
             tablePreferenceKey="masters.configuration.list"
             paginationMode="client"
@@ -233,7 +233,7 @@ const Configuration = () => {
                 <button
                   onClick={() => setConfirm({ open: true, id: row.id, name: row.name })}
                   title="Delete"
-                  className="glass-btn glass-btn-danger rounded p-1.5"
+                  className="glass-btn glass-btn-danger"
                   type="button"
                 >
                   <Trash2 size={14} />

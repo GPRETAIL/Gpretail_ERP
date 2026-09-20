@@ -828,7 +828,7 @@ const CrmCustomerOrderForm = () => {
         <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", fontSize: "inherit", fontWeight: 500, color: "text.secondary" }}>
           <Box component="span" sx={{ color: "text.secondary" }}>Order No: <Box component="b">{orderNo}</Box></Box>
           <Button
-            className="glass-btn glass-btn-success flex items-center"
+            className="glass-btn glass-btn-success"
             onClick={handleSave}
             disabled={saving}
           >

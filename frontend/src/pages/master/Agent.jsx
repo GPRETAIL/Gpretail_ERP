@@ -552,7 +552,7 @@ const Agent = () => {
               columns={tableColumns}
               loading={searchLoading}
               searchPlaceholder="Search in agent fields..."
-              searchButtonClassName="glass-btn glass-btn-primary flex items-center disabled:opacity-50"
+              searchButtonClassName="glass-btn glass-btn-primary"
               showExport={false}
               enableColumnResize
               tablePreferenceKey="masters.agents.list"
@@ -588,14 +588,14 @@ const Agent = () => {
                     onClick={() => handleEditFromSearch(row)}
                     title="Edit"
                     disabled={selectedCount > 1}
-                    className="glass-btn glass-btn-primary rounded p-1.5"
+                    className="glass-btn glass-btn-primary"
                   >
                     <Pencil size={14} />
                   </button>
                   <button
                     onClick={() => setConfirm({ open: true, id: row.id, name: row.name })}
                     title="Delete"
-                    className="glass-btn glass-btn-danger rounded p-1.5"
+                    className="glass-btn glass-btn-danger"
                   >
                     <Trash2 size={14} />
                   </button>

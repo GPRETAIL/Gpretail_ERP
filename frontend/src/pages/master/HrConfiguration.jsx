@@ -196,7 +196,7 @@ const HrConfiguration = () => {
             loading={loading}
             emptyText="No records found."
             searchPlaceholder={`Search in ${typeLabel.toLowerCase()} fields...`}
-            searchButtonClassName="glass-btn glass-btn-primary flex items-center disabled:opacity-50"
+            searchButtonClassName="glass-btn glass-btn-primary"
             showExport={false}
             tablePreferenceKey={`hrms.hr-configuration.${safeType}`}
             paginationMode="client"
@@ -222,7 +222,7 @@ const HrConfiguration = () => {
                 <button
                   onClick={() => setConfirm({ open: true, id: row.id, name: row.name })}
                   title="Delete"
-                  className="glass-btn glass-btn-danger rounded p-1.5"
+                  className="glass-btn glass-btn-danger"
                   type="button"
                 >
                   <Trash2 size={14} />

@@ -315,7 +315,7 @@ const CrmCustomerOrders = () => {
                   }}
                   title="Edit"
                   disabled={selectedCount > 1}
-                  className="glass-btn glass-btn-primary rounded p-1.5"
+                  className="glass-btn glass-btn-primary"
                   sx={{ minWidth: "auto" }}
                 >
                   <Pencil size={14} />
@@ -327,7 +327,7 @@ const CrmCustomerOrders = () => {
                   }}
                   title="Duplicate"
                   disabled={selectedCount > 1}
-                  className="glass-btn rounded p-1.5"
+                  className="glass-btn"
                   sx={{ minWidth: "auto" }}
                 >
                   <Copy size={14} />
@@ -338,7 +338,7 @@ const CrmCustomerOrders = () => {
                     setConfirm({ open: true, id: row.id, name: row.orderNo });
                   }}
                   title="Delete"
-                  className="glass-btn glass-btn-danger rounded p-1.5"
+                  className="glass-btn glass-btn-danger"
                   sx={{ minWidth: "auto" }}
                 >
                   <Trash2 size={14} />

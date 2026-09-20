@@ -527,7 +527,7 @@ const CrmBillPrint = () => {
               <Box sx={{ position: "relative" }} data-bill-print-menu>
                 <Button
                   type="button"
-                  className="glass-btn glass-btn-primary inline-flex items-center gap-1"
+                  className="glass-btn glass-btn-primary"
                   onClick={(e) => {
                     const rect = e.currentTarget.getBoundingClientRect();
                     const menuWidth = 128;

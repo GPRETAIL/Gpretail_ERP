@@ -661,7 +661,7 @@ export default function Item() {
               columns={itemTableColumns}
               loading={searchLoading}
               searchPlaceholder="Search in item fields..."
-              searchButtonClassName="glass-btn glass-btn-primary flex items-center disabled:opacity-50"
+              searchButtonClassName="glass-btn glass-btn-primary"
               showExport={false}
               tablePreferenceKey="masters.items.list"
               enableColumnResize

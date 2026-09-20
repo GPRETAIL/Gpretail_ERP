@@ -261,7 +261,7 @@ const CrmCustomerForm = () => {
         </Stack>
         <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>
           <Button
-            className="glass-btn glass-btn-success flex items-center"
+            className="glass-btn glass-btn-success"
             onClick={handleSave}
             disabled={saving || loadingRecord}
           >

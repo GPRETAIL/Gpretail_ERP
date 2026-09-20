@@ -432,7 +432,7 @@ const Customer = () => {
           </Button>
           <Box component="span">|</Box>
           <Button
-            className="glass-btn glass-btn-success disabled:opacity-50"
+            className="glass-btn glass-btn-success"
             onClick={handleSave}
             disabled={saving || showSearchPage}
             sx={{ display: "flex", alignItems: "center" }}

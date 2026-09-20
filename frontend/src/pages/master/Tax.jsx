@@ -285,7 +285,7 @@ const Tax = () => {
             columns={columns}
             loading={loading}
             searchPlaceholder="Search in tax fields..."
-            searchButtonClassName="glass-btn glass-btn-primary flex items-center disabled:opacity-50"
+            searchButtonClassName="glass-btn glass-btn-primary"
             showExport={false}
             enableColumnResize
             tablePreferenceKey="masters.taxes.list"
@@ -328,13 +328,13 @@ const Tax = () => {
                   onClick={() => navigate(taxEditPath(tax))}
                   title="Modify"
                   disabled={selectedCount > 1}
-                  className="glass-btn glass-btn-primary rounded p-1.5"
+                  className="glass-btn glass-btn-primary"
                 >
                   <Pencil size={16} />
                 </button>
                 <button
                   onClick={() => setConfirmDlg({ open: true, code: tax.taxCode, name: tax.name, company_id: tax.company_id })}
-                  className="glass-btn glass-btn-danger rounded p-1.5"
+                  className="glass-btn glass-btn-danger"
                   title="Delete"
                 >
                   <Trash2 size={16} />

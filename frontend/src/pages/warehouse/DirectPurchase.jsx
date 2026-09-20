@@ -1043,7 +1043,7 @@ const JumpSizeDialog = ({
         </Stack>
         <Stack direction="row" spacing={1} sx={{ justifyContent: "flex-end", px: 2, py: 1.5, borderTop: 1, borderColor: "divider", bgcolor: "action.hover", borderBottomLeftRadius: "7px", borderBottomRightRadius: "7px" }}>
           <Button onClick={handleClose} className="glass-btn glass-btn-secondary">Cancel</Button>
-          <Button onClick={handleApply} disabled={generatedSizes.length === 0} className="glass-btn glass-btn-primary disabled:opacity-50">Apply Sizes</Button>
+          <Button onClick={handleApply} disabled={generatedSizes.length === 0} className="glass-btn glass-btn-primary">Apply Sizes</Button>
         </Stack>
       </Box>
     </Box>
@@ -1260,7 +1260,7 @@ const QuickAttributeDialog = ({ open, form, saving, onClose, onChange, onSave })
         </Stack>
         <Stack direction="row" spacing={1} sx={{ justifyContent: "flex-end", borderTop: 1, borderColor: "divider", bgcolor: "action.hover", px: 2, py: 1.5 }}>
           <Button type="button" onClick={onClose} className="glass-btn glass-btn-secondary">Close</Button>
-          <Button type="button" onClick={onSave} disabled={saving} className="glass-btn glass-btn-success disabled:opacity-50">
+          <Button type="button" onClick={onSave} disabled={saving} className="glass-btn glass-btn-success">
             {saving ? "Saving..." : "Save"}
           </Button>
         </Stack>
@@ -2562,7 +2562,7 @@ const DirectPurchase = () => {
           <Button onClick={handleOpenQuickAttribute} className="glass-btn glass-btn-secondary" sx={{ display: "flex", alignItems: "center" }}>
             <Plus size={16} style={{marginRight: 4}} /> Attribute
           </Button>
-          <Button onClick={handleSave} disabled={saving || loadingEntry} className="glass-btn glass-btn-success disabled:opacity-50" sx={{ display: "flex", alignItems: "center" }}>
+          <Button onClick={handleSave} disabled={saving || loadingEntry} className="glass-btn glass-btn-success" sx={{ display: "flex", alignItems: "center" }}>
             <Save size={16} style={{marginRight: 4}} /> {saving ? "Saving..." : editId ? "Update" : "Save"}
           </Button>
           <Button onClick={handleOpenLastSaved} className="glass-btn glass-btn-secondary">Last Saved</Button>
@@ -3165,7 +3165,7 @@ const DirectPurchase = () => {
                   </MenuItem>
                 ))}
               </TextField>
-              <Button onClick={handleSave} disabled={saving || loadingEntry} className="glass-btn glass-btn-success disabled:opacity-50" sx={{ display: "flex", alignItems: "center" }}>
+              <Button onClick={handleSave} disabled={saving || loadingEntry} className="glass-btn glass-btn-success" sx={{ display: "flex", alignItems: "center" }}>
                 <Save size={16} style={{marginRight: 4}} /> {saving ? "Saving..." : editId ? "Update" : "Save"}
               </Button>
             </Stack>

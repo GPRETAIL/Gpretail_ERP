@@ -1410,7 +1410,7 @@ const DealerInvoice = () => {
           <Button
             onClick={handleSave}
             disabled={saving || showSearchPage}
-            className="glass-btn glass-btn-success disabled:opacity-50"
+            className="glass-btn glass-btn-success"
             sx={{ display: "inline-flex", alignItems: "center" }}
           >
             <Save size={16} style={{marginRight: 4}} />

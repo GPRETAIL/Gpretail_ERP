@@ -131,7 +131,7 @@ const StoreGroupsDrawer = ({
               <Button
                 type="button"
                 onClick={handleNew}
-                className="glass-btn glass-btn-primary flex items-center"
+                className="glass-btn glass-btn-primary"
               >
                 <PlusCircle size={16} style={{ marginRight: 4 }} /> New Store Group
               </Button>
@@ -149,7 +149,7 @@ const StoreGroupsDrawer = ({
                   <Button
                     type="button"
                     onClick={() => handleEdit(row)}
-                    className="glass-btn glass-btn-primary rounded p-1.5"
+                    className="glass-btn glass-btn-primary"
                     title="Edit"
                     sx={{ minWidth: "auto" }}
                   >
@@ -158,7 +158,7 @@ const StoreGroupsDrawer = ({
                   <Button
                     type="button"
                     onClick={() => handleDelete(row)}
-                    className="glass-btn glass-btn-danger rounded p-1.5"
+                    className="glass-btn glass-btn-danger"
                     title="Delete"
                     sx={{ minWidth: "auto" }}
                   >
@@ -166,7 +166,7 @@ const StoreGroupsDrawer = ({
                   </Button>
                 </Stack>
               )}
-              searchButtonClassName="glass-btn glass-btn-primary flex items-center disabled:opacity-50"
+              searchButtonClassName="glass-btn glass-btn-primary"
             />
           </>
         ) : (
@@ -204,7 +204,7 @@ const StoreGroupsDrawer = ({
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="glass-btn glass-btn-success flex items-center"
+            className="glass-btn glass-btn-success"
             sx={{ fontSize: 12.25 }}
           >
             <Save size={16} style={{ marginRight: 4 }} /> {saving ? "Saving..." : "Save"}

@@ -631,7 +631,7 @@ const UserAccess = () => {
             <>
               <Button
                 type="button"
-                className="glass-btn glass-btn-success flex items-center"
+                className="glass-btn glass-btn-success"
                 onClick={activeTab === "user" ? handleSaveUser : handleSaveGroup}
                 disabled={saving}
               >
@@ -640,7 +640,7 @@ const UserAccess = () => {
               <Box component="span">|</Box>
             </>
           ) : null}
-          <Button type="button" className="glass-btn glass-btn-primary flex items-center" onClick={handleSearchClick}>
+          <Button type="button" className="glass-btn glass-btn-primary" onClick={handleSearchClick}>
             <Search size={16} style={{ marginRight: 4 }} /> Search
           </Button>
         </Stack>
@@ -660,7 +660,7 @@ const UserAccess = () => {
                 <Button
                   type="button"
                   onClick={() => setShowStoreGroupsDrawer(true)}
-                  className="glass-btn glass-btn-secondary flex items-center"
+                  className="glass-btn glass-btn-secondary"
                   title="Group your stores together to assign store access in bulk"
                 >
                   <Store size={16} style={{ marginRight: 4 }} /> Store Groups (which stores)
@@ -681,7 +681,7 @@ const UserAccess = () => {
                   <Button
                     type="button"
                     onClick={() => (activeTab === "user" ? handleEditUser(row) : handleEditGroup(row))}
-                    className="glass-btn glass-btn-primary rounded p-1.5"
+                    className="glass-btn glass-btn-primary"
                     title="Edit"
                     sx={{ minWidth: "auto" }}
                   >
@@ -691,7 +691,7 @@ const UserAccess = () => {
                     <Button
                       type="button"
                       onClick={() => (activeTab === "user" ? handleDeleteUser(row) : handleDeleteGroup(row))}
-                      className="glass-btn glass-btn-danger rounded p-1.5"
+                      className="glass-btn glass-btn-danger"
                       title="Delete"
                       sx={{ minWidth: "auto" }}
                     >
@@ -702,7 +702,7 @@ const UserAccess = () => {
                     <Button
                       type="button"
                       onClick={() => handleForceLogout(row)}
-                      className="glass-btn glass-btn-secondary rounded p-1.5"
+                      className="glass-btn glass-btn-secondary"
                       title="Logout"
                       sx={{ minWidth: "auto" }}
                     >
@@ -711,7 +711,7 @@ const UserAccess = () => {
                   ) : null}
                 </Stack>
               )}
-              searchButtonClassName="glass-btn glass-btn-primary flex items-center disabled:opacity-50"
+              searchButtonClassName="glass-btn glass-btn-primary"
             />
           </Box>
         ) : (

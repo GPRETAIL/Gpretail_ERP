@@ -1014,7 +1014,7 @@ const Supplier = () => {
                   columns={supplierColumns}
                   loading={searchLoading}
                   searchPlaceholder="Search in supplier fields..."
-                  searchButtonClassName="glass-btn glass-btn-primary flex items-center disabled:opacity-50"
+                  searchButtonClassName="glass-btn glass-btn-primary"
                   showExport={false}
                   enableColumnResize
                   tablePreferenceKey="masters.suppliers.list"

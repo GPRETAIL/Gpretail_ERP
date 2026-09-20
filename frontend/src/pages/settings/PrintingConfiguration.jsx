@@ -320,7 +320,7 @@ export default function PrintingConfiguration() {
                 <Button
                   type="button"
                   onClick={handleDisconnect}
-                  className="glass-btn glass-btn-danger inline-flex items-center"
+                  className="glass-btn glass-btn-danger"
                 >
                   <Unplug size={16} style={{marginRight: 4}} />
                   Disconnect
@@ -330,7 +330,7 @@ export default function PrintingConfiguration() {
                   type="button"
                   onClick={handleConnectService}
                   disabled={connecting}
-                  className="glass-btn glass-btn-primary inline-flex items-center"
+                  className="glass-btn glass-btn-primary"
                 >
                   {connecting ? "Connecting..." : "Connect Service"}
                 </Button>
@@ -340,7 +340,7 @@ export default function PrintingConfiguration() {
                 type="button"
                 onClick={handleDownloadInstaller}
                 disabled={downloadingInstaller}
-                className="glass-btn glass-btn-success inline-flex items-center"
+                className="glass-btn glass-btn-success"
               >
                 <Download size={16} style={{marginRight: 6}} />
                 {downloadingInstaller ? "Downloading..." : "Download Connector"}
@@ -352,7 +352,7 @@ export default function PrintingConfiguration() {
                   handleRefreshInstallerMeta();
                   checkServicePresence();
                 }}
-                className="glass-btn glass-btn-secondary inline-flex items-center"
+                className="glass-btn glass-btn-secondary"
               >
                 <RefreshCw size={16} style={{marginRight: 6}} />
                 Refresh
@@ -422,7 +422,7 @@ export default function PrintingConfiguration() {
             type="button"
             onClick={handleSaveRouting}
             disabled={!sessionConnected || savingRouting}
-            className="glass-btn glass-btn-primary inline-flex items-center"
+            className="glass-btn glass-btn-primary"
           >
             <Save size={16} style={{marginRight: 6}} />
             {savingRouting ? "Saving..." : "Save Routing"}

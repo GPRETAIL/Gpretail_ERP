@@ -708,7 +708,7 @@ const JumpSizeDialog = ({ open, onClose, onApply, defaultQty }) => {
           <Button
             onClick={handleApply}
             disabled={generatedSizes.length === 0}
-            className="glass-btn glass-btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+            className="glass-btn glass-btn-primary"
           >
             Apply Sizes
           </Button>

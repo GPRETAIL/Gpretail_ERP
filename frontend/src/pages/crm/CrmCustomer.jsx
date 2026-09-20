@@ -303,7 +303,7 @@ const CrmCustomer = () => {
                   }}
                   title="View Profile"
                   disabled={selectedCount > 1}
-                  className="glass-btn rounded p-1.5"
+                  className="glass-btn"
                   sx={{ minWidth: "auto" }}
                 >
                   <Eye size={14} />
@@ -312,7 +312,7 @@ const CrmCustomer = () => {
                   onClick={() => navigate(`/crm/customer/${row.id}`)}
                   title="Edit"
                   disabled={selectedCount > 1}
-                  className="glass-btn glass-btn-primary rounded p-1.5"
+                  className="glass-btn glass-btn-primary"
                   sx={{ minWidth: "auto" }}
                 >
                   <Pencil size={14} />
@@ -323,7 +323,7 @@ const CrmCustomer = () => {
                     setConfirm({ open: true, id: row.id, name: row.name });
                   }}
                   title="Delete"
-                  className="glass-btn glass-btn-danger rounded p-1.5"
+                  className="glass-btn glass-btn-danger"
                   sx={{ minWidth: "auto" }}
                 >
                   <Trash2 size={14} />

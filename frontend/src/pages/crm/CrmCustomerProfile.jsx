@@ -71,7 +71,7 @@ const CrmCustomerProfile = () => {
             <Box component="span">Profile</Box>
           </Stack>
         </Stack>
-        <Button className="glass-btn glass-btn-primary flex items-center" onClick={() => navigate(`/crm/customer/${id}`)}>
+        <Button className="glass-btn glass-btn-primary" onClick={() => navigate(`/crm/customer/${id}`)}>
           <Pencil size={12} style={{marginRight: 4}} /> Edit
         </Button>
       </Stack>

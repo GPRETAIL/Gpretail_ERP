@@ -1031,7 +1031,7 @@ const Settlement = () => {
           <Button
             onClick={openCreditDialog}
             disabled={saving || showSearchPage || selectedBills.length !== 1}
-            className="glass-btn glass-btn-secondary disabled:opacity-50"
+            className="glass-btn glass-btn-secondary"
             sx={{ display: "inline-flex", alignItems: "center" }}
           >
             <UserRound size={16} style={{marginRight: 4}} />
@@ -1040,7 +1040,7 @@ const Settlement = () => {
           <Button
             onClick={handleSave}
             disabled={saving || showSearchPage}
-            className="glass-btn glass-btn-success disabled:opacity-50"
+            className="glass-btn glass-btn-success"
             sx={{ display: "inline-flex", alignItems: "center" }}
           >
             <Save size={16} style={{marginRight: 4}} />
@@ -1106,7 +1106,7 @@ const Settlement = () => {
                   type="button"
                   onClick={() => searchCreditCustomers(creditSearch)}
                   disabled={creditSearching}
-                  className="glass-btn glass-btn-primary disabled:opacity-50"
+                  className="glass-btn glass-btn-primary"
                 >
                   {creditSearching ? "Searching..." : "Search"}
                 </Button>
@@ -1158,7 +1158,7 @@ const Settlement = () => {
                 type="button"
                 onClick={closeCreditDialog}
                 disabled={creditSaving}
-                className="glass-btn glass-btn-secondary disabled:opacity-50"
+                className="glass-btn glass-btn-secondary"
               >
                 Cancel
               </Button>
@@ -1166,7 +1166,7 @@ const Settlement = () => {
                 type="button"
                 onClick={handleSaveCredit}
                 disabled={creditSaving}
-                className="glass-btn glass-btn-primary disabled:opacity-50"
+                className="glass-btn glass-btn-primary"
               >
                 {creditSaving ? "Saving..." : "Save Credit"}
               </Button>
