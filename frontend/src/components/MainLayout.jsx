@@ -31,9 +31,9 @@ const TabbedWorkspaces = () => {
   if (!activeTab) return null;
 
   return (
-    <div className="h-full min-h-0 overflow-hidden">
+    <Box sx={{ height: "100%", minHeight: 0, overflow: "hidden" }}>
       <ProtectedLayoutRouteRenderer location={location} key={activeTab.id} />
-    </div>
+    </Box>
   );
 };
 
@@ -118,13 +118,13 @@ const PrintStatusFooter = () => {
               }}
             >
               {activeActivity ? (
-                <Loader2 className="w-3 h-3 animate-spin" style={{ flexShrink: 0 }} />
+                <Loader2 size={12} style={{ flexShrink: 0, animation: "app-spin 1s linear infinite" }} />
               ) : recentActivity?.status === "success" ? (
-                <CheckCircle2 className="w-3 h-3" style={{ flexShrink: 0 }} />
+                <CheckCircle2 size={12} style={{ flexShrink: 0 }} />
               ) : (
-                <AlertCircle className="w-3 h-3" style={{ flexShrink: 0 }} />
+                <AlertCircle size={12} style={{ flexShrink: 0 }} />
               )}
-              <TransferStatusIcon className="w-3 h-3" style={{ flexShrink: 0 }} />
+              <TransferStatusIcon size={12} style={{ flexShrink: 0 }} />
               <Typography
                 component="span"
                 noWrap
@@ -143,12 +143,12 @@ const PrintStatusFooter = () => {
               title="Switch store"
               sx={{ display: "flex", alignItems: "center", gap: 0.75, fontSize: "inherit", color: "inherit", "&:hover": { color: "text.primary" } }}
             >
-              <Store className="w-3 h-3" style={{ color: "inherit", opacity: 0.7 }} />
+              <Store size={12} style={{ color: "inherit", opacity: 0.7 }} />
               <Typography component="span" sx={{ fontSize: "inherit", color: "inherit" }}>{activeStoreLabel}</Typography>
             </ButtonBase>
           ) : (
             <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }} title="Active store context">
-              <Store className="w-3 h-3" style={{ opacity: 0.7 }} />
+              <Store size={12} style={{ opacity: 0.7 }} />
               <Typography component="span" sx={{ fontSize: "inherit" }}>{activeStoreLabel}</Typography>
             </Stack>
           )}
@@ -190,7 +190,7 @@ const PrintStatusFooter = () => {
           >
             {hasActiveJobs ? (
               <>
-                <Loader2 className="w-3 h-3 animate-spin" style={{ color: "inherit" }} />
+                <Loader2 size={12} style={{ color: "inherit", animation: "app-spin 1s linear infinite" }} />
                 <Typography component="span" sx={{ fontSize: "inherit", fontWeight: 600, color: "primary.main" }}>
                   {currentJob
                     ? currentJob.totalCopies > 1
@@ -202,7 +202,7 @@ const PrintStatusFooter = () => {
             ) : connected ? (
               <>
                 <Box sx={{ color: "success.main", display: "inline-flex" }}>
-                  <Printer className="w-3 h-3" />
+                  <Printer size={12} />
                 </Box>
                 <Typography component="span" sx={{ fontSize: "inherit", color: "success.main" }}>
                   Print Service
@@ -210,7 +210,7 @@ const PrintStatusFooter = () => {
               </>
             ) : (
               <>
-                <Printer className="w-3 h-3" style={{ opacity: 0.6 }} />
+                <Printer size={12} style={{ opacity: 0.6 }} />
                 <Typography component="span" sx={{ fontSize: "inherit" }}>Print Service (Offline)</Typography>
               </>
             )}
@@ -232,14 +232,14 @@ const PrintStatusFooter = () => {
               {syncStatus.target === "local" ? (
                 <>
                   <Box sx={{ color: "success.main", display: "inline-flex" }}>
-                    <Server className="w-3 h-3" />
+                    <Server size={12} />
                   </Box>
                   <Typography component="span" sx={{ fontSize: "inherit", color: "success.main" }}>Local Server</Typography>
                 </>
               ) : (
                 <>
                   <Box sx={{ color: "warning.main", display: "inline-flex" }}>
-                    <Cloud className="w-3 h-3" />
+                    <Cloud size={12} />
                   </Box>
                   <Typography component="span" sx={{ fontSize: "inherit", color: "warning.main" }}>Cloud (Local Down)</Typography>
                 </>
@@ -290,31 +290,26 @@ const MainLayout = () => {
 
   const closeMobileSidebar = useCallback(() => setMobileOpen(false), []);
 
-  // The shell below (mobile sidebar's fixed/translate-x slide-in, the backdrop, the flex/h-screen
-  // scaffolding) is left as plain Tailwind markup rather than converted to MUI -- pure layout and
-  // transition mechanics with no card/button/color semantics to gain from the swap, and real
-  // regression risk in the sliding-drawer z-index/transition behavior for near-zero visible benefit.
-  // Same scope call as FilterableDataTable's native Search button in Stage B2.
   return (
     <TransferActivityProvider>
       <TabProvider>
-        <div className="flex h-screen w-screen overflow-hidden bg-gray-50 dark:bg-gray-700">
+        <Box sx={{ display: "flex", height: "100vh", width: "100vw", overflow: "hidden", bgcolor: "background.default" }}>
           {isMobile && mobileOpen && (
-            <div
-              className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm transition-opacity"
+            <Box
+              sx={{ position: "fixed", inset: 0, zIndex: 40, bgcolor: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)", transition: "opacity 0.15s" }}
               onClick={closeMobileSidebar}
             />
           )}
 
-          <div
-            className={`
-              ${isMobile
-                ? `fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-in-out ${
-                    mobileOpen ? "translate-x-0" : "-translate-x-full"
-                  }`
-                : "relative shrink-0"
-              }
-            `}
+          <Box
+            sx={isMobile
+              ? {
+                  position: "fixed", top: 0, bottom: 0, left: 0, zIndex: 50,
+                  transition: "transform 0.3s ease-in-out",
+                  transform: mobileOpen ? "translateX(0)" : "translateX(-100%)",
+                }
+              : { position: "relative", flexShrink: 0 }
+            }
           >
             <Sidebar
               isExpanded={isMobile ? true : isExpanded}
@@ -322,26 +317,27 @@ const MainLayout = () => {
               isMobile={isMobile}
               onNavigate={closeMobileSidebar}
             />
-          </div>
+          </Box>
 
-          <div className="flex-1 flex flex-col overflow-hidden w-full min-w-0 transition-all duration-300 ease-in-out">
+          <Box sx={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", width: "100%", minWidth: 0, transition: "all 0.3s ease-in-out" }}>
             <Navbar sidebarExpanded={isExpanded} isMobile={isMobile} toggleSidebar={toggleSidebar} />
             <TabBar />
 
-            <main
-              className="flex-1 overflow-hidden min-h-0"
+            <Box
+              component="main"
+              sx={{ flex: 1, overflow: "hidden", minHeight: 0 }}
               data-enter-scope="true"
               onKeyDownCapture={handleEnterKeyNavigation}
             >
               <TabbedWorkspaces />
-            </main>
+            </Box>
 
             <PrintStatusFooter />
             {/* Rendered once at the layout level, not per page, so its hourly cycle survives
                 navigation instead of restarting on every route change. */}
             <SubscriptionDuePopup />
-          </div>
-        </div>
+          </Box>
+        </Box>
       </TabProvider>
     </TransferActivityProvider>
   );
