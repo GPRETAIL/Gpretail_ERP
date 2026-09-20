@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { X, RefreshCw, Trash2, CloudOff, Check } from "lucide-react";
+import { Box, Typography } from "@mui/material";
 import { getSyncQueue, removeSyncQueueItem } from "../offline/db";
 import { processSyncQueue } from "../offline/syncManager";
 
@@ -67,74 +68,85 @@ export default function SyncCenterModal({ isOpen, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[87] flex flex-col justify-end bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="w-full max-w-[480px] mx-auto bg-white rounded-t-3xl shadow-2xl flex flex-col max-h-[80vh] overflow-hidden animate-in slide-in-from-bottom duration-200">
-        <div className="p-4 border-b border-slate-100 flex items-center justify-between shrink-0">
-          <div>
-            <h3 className="text-sm font-black text-slate-900">Sync Center</h3>
-            <p className="text-[10.5px] text-slate-500 mt-0.5">
+    <Box
+      className="animate-in fade-in duration-150"
+      sx={{ position: "fixed", inset: 0, zIndex: 87, display: "flex", flexDirection: "column", justifyContent: "flex-end", bgcolor: "rgba(15,23,42,0.6)", backdropFilter: "blur(4px)" }}
+    >
+      <Box
+        className="animate-in slide-in-from-bottom duration-200"
+        sx={{ width: "100%", maxWidth: 480, mx: "auto", bgcolor: "#fff", borderTopLeftRadius: "24px", borderTopRightRadius: "24px", boxShadow: 24, display: "flex", flexDirection: "column", maxHeight: "80vh", overflow: "hidden" }}
+      >
+        <Box sx={{ p: 2, borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+          <Box>
+            <Typography component="h3" sx={{ fontSize: 14, fontWeight: 900, color: "#0f172a" }}>Sync Center</Typography>
+            <Typography component="p" sx={{ fontSize: 10.5, color: "#64748b", mt: 0.25 }}>
               {queue.length} change{queue.length === 1 ? "" : "s"} waiting to sync
-            </p>
-          </div>
-          <button type="button" onClick={onClose} className="p-1.5 text-slate-500" aria-label="Close">
+            </Typography>
+          </Box>
+          <Box component="button" type="button" onClick={onClose} sx={{ p: 0.75, color: "#64748b" }} aria-label="Close">
             <X size={20} />
-          </button>
-        </div>
+          </Box>
+        </Box>
 
-        <div className="p-3 overflow-y-auto flex-1 space-y-2">
+        <Box sx={{ p: 1.5, overflowY: "auto", flex: 1, display: "flex", flexDirection: "column", gap: 1 }}>
           {loading ? (
-            <p className="text-center text-xs text-slate-400 py-8">Loading queue...</p>
+            <Typography component="p" sx={{ textAlign: "center", fontSize: 12, color: "#94a3b8", py: 4 }}>Loading queue...</Typography>
           ) : queue.length === 0 ? (
-            <div className="text-center py-10">
-              <Check size={28} className="text-emerald-500 mx-auto mb-2" />
-              <p className="text-xs font-bold text-slate-600">Everything is synced</p>
-            </div>
+            <Box sx={{ textAlign: "center", py: 5 }}>
+              <Check size={28} style={{ color: "#10b981", margin: "0 auto 8px" }} />
+              <Typography component="p" sx={{ fontSize: 12, fontWeight: 700, color: "#475569" }}>Everything is synced</Typography>
+            </Box>
           ) : (
             queue.map((item) => (
-              <div
+              <Box
                 key={item.id}
-                className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between gap-2"
+                sx={{ p: 1.5, borderRadius: "16px", bgcolor: "#f8fafc", border: "1px solid rgba(226,232,240,0.8)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1 }}
               >
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-slate-800 truncate">{formatAction(item.action)}</p>
-                  <p className="text-[10px] text-slate-400 truncate">
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography component="p" sx={{ fontSize: 12, fontWeight: 700, color: "#1e293b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{formatAction(item.action)}</Typography>
+                  <Typography component="p" sx={{ fontSize: 10, color: "#94a3b8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {item.method} {item.endpoint} · {formatWhen(item.createdAt)}
-                  </p>
-                </div>
-                <button
+                  </Typography>
+                </Box>
+                <Box
+                  component="button"
                   type="button"
                   onClick={() => handleDiscard(item.id)}
-                  className="shrink-0 p-2 rounded-lg bg-white border border-slate-200 text-rose-500 active:scale-95 transition-all"
+                  sx={{ flexShrink: 0, p: 1, borderRadius: "8px", bgcolor: "#fff", border: "1px solid #e2e8f0", color: "#f43f5e", transition: "all 0.15s", "&:active": { transform: "scale(0.95)" } }}
                   aria-label="Discard this change"
                 >
                   <Trash2 size={14} />
-                </button>
-              </div>
+                </Box>
+              </Box>
             ))
           )}
-        </div>
+        </Box>
 
         {queue.length > 0 && (
-          <div className="p-4 border-t border-slate-100 shrink-0">
+          <Box sx={{ p: 2, borderTop: "1px solid #f1f5f9", flexShrink: 0 }}>
             {navigator.onLine ? (
-              <button
+              <Box
+                component="button"
                 type="button"
                 onClick={handleRetryAll}
                 disabled={retrying}
-                className="w-full py-3 rounded-xl bg-indigo-600 text-white text-xs font-bold flex items-center justify-center gap-1.5 disabled:opacity-50"
+                sx={{
+                  width: "100%", py: 1.5, borderRadius: "12px", bgcolor: "#4f46e5", color: "#fff", fontSize: 12, fontWeight: 700,
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 0.75, "&:disabled": { opacity: 0.5 },
+                }}
               >
                 <RefreshCw size={14} className={retrying ? "animate-spin" : ""} />
                 {retrying ? "Syncing..." : "Retry Now"}
-              </button>
+              </Box>
             ) : (
-              <div className="w-full py-3 rounded-xl bg-slate-100 text-slate-500 text-xs font-bold flex items-center justify-center gap-1.5">
+              <Box sx={{ width: "100%", py: 1.5, borderRadius: "12px", bgcolor: "#f1f5f9", color: "#64748b", fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 0.75 }}>
                 <CloudOff size={14} />
                 Offline - will sync automatically when reconnected
-              </div>
+              </Box>
             )}
-          </div>
+          </Box>
         )}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }

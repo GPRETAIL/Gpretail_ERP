@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Search, Filter, Plus, LayoutGrid } from "lucide-react";
+import { Box, Typography } from "@mui/material";
 import api from "../../api/axios";
 import { SkeletonTransList } from "../components/SkeletonCards";
 
@@ -115,27 +116,30 @@ export default function SalesScreen({ onNavigate }) {
   });
 
   return (
-    <div>
+    <Box>
       {/* Search & Filter */}
-      <div className="vx-search-row relative">
-        <div className="vx-search-input-wrap">
+      <Box className="vx-search-row relative">
+        <Box className="vx-search-input-wrap">
           <Search size={16} className="text-slate-400" />
-          <input
+          <Box
+            component="input"
             type="text"
             placeholder="Search invoices..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-        </div>
-        <button
+        </Box>
+        <Box
+          component="button"
           type="button"
           className={`vx-filter-btn ${dateRange !== "all" ? "!bg-indigo-600 !text-white" : ""}`}
           aria-label="Filter by date"
           onClick={() => setShowDateFilter((v) => !v)}
         >
           <Filter size={17} />
-        </button>
-        <button
+        </Box>
+        <Box
+          component="button"
           type="button"
           className="vx-filter-btn"
           aria-label="Summary Layouts"
@@ -143,52 +147,57 @@ export default function SalesScreen({ onNavigate }) {
           onClick={() => onNavigate && onNavigate("sales_summary")}
         >
           <LayoutGrid size={17} />
-        </button>
+        </Box>
 
         {showDateFilter && (
-          <div className="absolute right-0 top-full mt-1.5 z-30 bg-white border border-slate-200 shadow-xl rounded-2xl p-1.5 flex flex-col gap-0.5 min-w-[140px]">
+          <Box sx={{ position: "absolute", right: 0, top: "100%", mt: 0.75, zIndex: 30, bgcolor: "#fff", border: "1px solid #e2e8f0", boxShadow: 8, borderRadius: "16px", p: 0.75, display: "flex", flexDirection: "column", gap: 0.25, minWidth: 140 }}>
             {DATE_RANGE_OPTIONS.map((opt) => (
-              <button
+              <Box
+                component="button"
                 key={opt.id}
                 type="button"
                 onClick={() => {
                   setDateRange(opt.id);
                   setShowDateFilter(false);
                 }}
-                className={`px-3 py-2 text-left text-[11.5px] font-bold rounded-xl transition-all ${
-                  dateRange === opt.id ? "bg-indigo-50 text-indigo-600" : "text-slate-600 hover:bg-slate-50"
-                }`}
+                sx={{
+                  px: 1.5, py: 1, textAlign: "left", fontSize: 11.5, fontWeight: 700, borderRadius: "12px", transition: "all 0.15s",
+                  bgcolor: dateRange === opt.id ? "#eef2ff" : "transparent",
+                  color: dateRange === opt.id ? "#4f46e5" : "#475569",
+                  "&:hover": dateRange === opt.id ? {} : { bgcolor: "#f8fafc" },
+                }}
               >
                 {opt.label}
-              </button>
+              </Box>
             ))}
-          </div>
+          </Box>
         )}
-      </div>
+      </Box>
 
       {/* Filter Tabs */}
-      <div className="vx-filter-tabs">
+      <Box className="vx-filter-tabs">
         {["All", "Paid", "Credit"].map((t) => (
-          <button
+          <Box
+            component="button"
             key={t}
             type="button"
             className={`vx-filter-pill ${filter === t ? "active" : ""}`}
             onClick={() => setFilter(t)}
           >
             {t}
-          </button>
+          </Box>
         ))}
-      </div>
+      </Box>
 
       {/* Invoices List */}
       {loading ? (
         <SkeletonTransList count={4} />
       ) : filtered.length === 0 ? (
-        <div className="vx-card text-center py-8">
-          <p className="text-sm text-slate-400">No invoices found</p>
-        </div>
+        <Box className="vx-card text-center py-8">
+          <Typography component="p" sx={{ fontSize: 14, color: "#94a3b8" }}>No invoices found</Typography>
+        </Box>
       ) : (
-        <div>
+        <Box>
           {filtered.map((inv) => {
             const id = inv.invoice_no || `INV-${inv.id}`;
             const customer = inv.customer?.name || "Customer";
@@ -197,24 +206,25 @@ export default function SalesScreen({ onNavigate }) {
             const status = mapStatus(inv);
 
             return (
-              <div key={inv.id || id} className="vx-trans-card">
-                <div className="vx-trans-left">
-                  <span className="vx-trans-id">{id}</span>
-                  <span className="vx-trans-meta">{customer}</span>
-                  <span className="vx-trans-meta text-[10px]">{date}</span>
-                </div>
-                <div className="vx-trans-right">
-                  <span className="vx-trans-amount">{money(amount)}</span>
-                  <span className={`vx-pill-badge ${status}`}>{status}</span>
-                </div>
-              </div>
+              <Box key={inv.id || id} className="vx-trans-card">
+                <Box className="vx-trans-left">
+                  <Box component="span" className="vx-trans-id">{id}</Box>
+                  <Box component="span" className="vx-trans-meta">{customer}</Box>
+                  <Box component="span" className="vx-trans-meta text-[10px]">{date}</Box>
+                </Box>
+                <Box className="vx-trans-right">
+                  <Box component="span" className="vx-trans-amount">{money(amount)}</Box>
+                  <Box component="span" className={`vx-pill-badge ${status}`}>{status}</Box>
+                </Box>
+              </Box>
             );
           })}
-        </div>
+        </Box>
       )}
 
       {/* FAB */}
-      <button
+      <Box
+        component="button"
         type="button"
         className="vx-fab-btn"
         onClick={() => onNavigate("create_invoice")}
@@ -222,7 +232,7 @@ export default function SalesScreen({ onNavigate }) {
         aria-label="Create Invoice"
       >
         <Plus size={26} />
-      </button>
-    </div>
+      </Box>
+    </Box>
   );
 }
