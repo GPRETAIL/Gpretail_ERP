@@ -1,4 +1,5 @@
 import React from "react";
+import { Box, Typography } from "@mui/material";
 import "../../mobile/workspace.css";
 
 /**
@@ -8,34 +9,34 @@ import "../../mobile/workspace.css";
  */
 export default function Splash({ progress = 0 }) {
   return (
-    <div className="vx-splash-screen">
+    <Box className="vx-splash-screen">
       {/* Centered Brand Content */}
-      <div className="vx-splash-content">
+      <Box className="vx-splash-content">
         {/* Layered Glowing V Logo Box */}
-        <div className="vx-splash-logo-card">
+        <Box className="vx-splash-logo-card">
           <svg
             viewBox="0 0 100 100"
-            className="w-14 h-14 fill-white drop-shadow-md"
+            style={{ width: 56, height: 56, fill: "#fff", filter: "drop-shadow(0 4px 3px rgba(0,0,0,0.07)) drop-shadow(0 2px 2px rgba(0,0,0,0.06))" }}
             aria-hidden
           >
             <path d="M18 20 L38 20 L50 64 L62 20 L82 20 L59 86 L41 86 Z" />
           </svg>
-        </div>
+        </Box>
 
         {/* Title */}
-        <h1 className="vx-splash-brand-name">Vynerix</h1>
+        <Typography component="h1" className="vx-splash-brand-name">Vynerix</Typography>
 
         {/* Tagline */}
-        <p className="vx-splash-tagline">Smart. Secure. Simplified.</p>
+        <Typography component="p" className="vx-splash-tagline">Smart. Secure. Simplified.</Typography>
 
         {/* Loading Progress Bar Container */}
-        <div className="vx-splash-progress-track">
-          <div
+        <Box className="vx-splash-progress-track">
+          <Box
             className="vx-splash-progress-fill"
             style={{ width: `${Math.max(8, Math.min(progress, 100))}%` }}
           />
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   );
 }
