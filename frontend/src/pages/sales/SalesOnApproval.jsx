@@ -1664,14 +1664,14 @@ const SalesOnApproval = () => {
             onClick={handleSaveSale}
             disabled={saving || showSearchPage}
             className="glass-btn glass-btn-success"
-            startIcon={<Save className="w-4 h-4" />}
+            startIcon={<Save size={16} />}
           >
             {saving ? "Saving..." : "Save"}
           </Button>
           <Button
             onClick={showSearchPage ? () => setShowSearchPage(false) : openSearchPage}
             className="glass-btn glass-btn-primary"
-            startIcon={<Search className="w-4 h-4" />}
+            startIcon={<Search size={16} />}
           >
             {showSearchPage ? "Back" : "Search"}
           </Button>

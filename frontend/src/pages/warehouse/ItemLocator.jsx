@@ -394,7 +394,7 @@ const ItemLocator = () => {
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1.5, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
         <Stack direction="row" sx={{ alignItems: "center" }}>
           <IconButton onClick={() => navigate(-1)} aria-label="Back" sx={{ mr: 1.5, color: "text.secondary" }}>
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft size={16} />
           </IconButton>
           <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: 12.25, fontWeight: 600 }}>
             <Button type="button" variant="text" onClick={() => navigate("/warehouse")} sx={{ minWidth: "auto", p: 0, fontSize: 12.25, fontWeight: 600 }}>
@@ -668,7 +668,7 @@ const ItemLocator = () => {
           )}
 
           <Stack direction="row" spacing={1} sx={{ mt: 2, flexWrap: "wrap", alignItems: "center" }}>
-            <Button onClick={onSearch} disabled={searching} className="glass-btn glass-btn-primary" startIcon={<Search className="w-4 h-4" />} sx={{ opacity: searching ? 0.6 : 1 }}>
+            <Button onClick={onSearch} disabled={searching} className="glass-btn glass-btn-primary" startIcon={<Search size={16} />} sx={{ opacity: searching ? 0.6 : 1 }}>
               Search
             </Button>
             <Button onClick={onClear} disabled={searching} className="glass-btn glass-btn-secondary" sx={{ opacity: searching ? 0.6 : 1 }}>

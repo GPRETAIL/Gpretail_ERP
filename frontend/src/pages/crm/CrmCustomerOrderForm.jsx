@@ -810,7 +810,7 @@ const CrmCustomerOrderForm = () => {
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 0.5, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           <IconButton size="small" onClick={() => navigate(-1)} sx={{ color: "text.secondary" }}>
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft size={16} />
           </IconButton>
           <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: 13, fontWeight: 600 }}>
             <Button type="button" variant="text" onClick={() => navigate("/crm")} sx={{ minWidth: "auto", p: 0, fontSize: 13, fontWeight: 600 }}>
@@ -832,7 +832,7 @@ const CrmCustomerOrderForm = () => {
             onClick={handleSave}
             disabled={saving}
           >
-            <Save className="w-3 h-3 mr-1" /> {saving ? "Saving..." : "Save"}
+            <Save size={12} style={{marginRight: 4}} /> {saving ? "Saving..." : "Save"}
           </Button>
         </Stack>
       </Stack>
@@ -913,7 +913,7 @@ const CrmCustomerOrderForm = () => {
                       title="Search customer"
                       sx={{ border: "1px solid", borderColor: "divider", borderRadius: "4px", color: "primary.main" }}
                     >
-                      <Search className="w-3.5 h-3.5" />
+                      <Search size={14} />
                     </IconButton>
                   </Stack>
                 </Box>
@@ -1005,7 +1005,7 @@ const CrmCustomerOrderForm = () => {
                       title="Add communication"
                       sx={{ border: "1px solid", borderColor: "divider", borderRadius: "4px", color: "success.main" }}
                     >
-                      <PlusCircle className="w-4 h-4" />
+                      <PlusCircle size={16} />
                     </IconButton>
                   </Stack>
                 </Box>
@@ -1039,7 +1039,7 @@ const CrmCustomerOrderForm = () => {
                               title="Delete"
                               sx={{ color: "error.main" }}
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
+                              <Trash2 size={14} />
                             </IconButton>
                           </TableCell>
                         </TableRow>
@@ -1168,7 +1168,7 @@ const CrmCustomerOrderForm = () => {
                       title="Add item"
                       sx={{ border: "1px solid", borderColor: "divider", borderRadius: "4px", color: "success.main" }}
                     >
-                      <PlusCircle className="w-4 h-4" />
+                      <PlusCircle size={16} />
                     </IconButton>
                   </Stack>
                 </Box>
@@ -1214,7 +1214,7 @@ const CrmCustomerOrderForm = () => {
                               title="Delete"
                               sx={{ color: "error.main" }}
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
+                              <Trash2 size={14} />
                             </IconButton>
                           </TableCell>
                         </TableRow>
@@ -1353,7 +1353,7 @@ const CrmCustomerOrderForm = () => {
                       title="Add payment"
                       sx={{ border: "1px solid", borderColor: "divider", borderRadius: "4px", color: "success.main" }}
                     >
-                      <PlusCircle className="w-4 h-4" />
+                      <PlusCircle size={16} />
                     </IconButton>
                   </Stack>
                 </Box>
@@ -1389,7 +1389,7 @@ const CrmCustomerOrderForm = () => {
                               title="Delete"
                               sx={{ color: "error.main", mr: 0.5 }}
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
+                              <Trash2 size={14} />
                             </IconButton>
                             <Button
                               type="button"
@@ -1398,7 +1398,7 @@ const CrmCustomerOrderForm = () => {
                               title="Print"
                               sx={{ minWidth: "auto", p: 0.5 }}
                             >
-                              <Printer className="w-3.5 h-3.5" />
+                              <Printer size={14} />
                             </Button>
                           </TableCell>
                         </TableRow>
@@ -1431,7 +1431,7 @@ const CrmCustomerOrderForm = () => {
             <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1 }}>
               <Typography component="h3" sx={{ fontSize: 13, fontWeight: 600, color: "text.primary" }}>Search / Select Customer</Typography>
               <Button type="button" onClick={closeCustomerDialog} className="glass-btn glass-btn-secondary">
-                <X className="w-4 h-4" />
+                <X size={16} />
               </Button>
             </Stack>
 

@@ -24,7 +24,7 @@ export const TrendBadge = ({ trend }) => {
         color: isUp ? "success.main" : "error.main",
       }}
     >
-      <Icon className="w-3 h-3" />
+      <Icon size={12} />
       <Box component="span">{trend.changePercent}% from last month</Box>
     </Typography>
   );

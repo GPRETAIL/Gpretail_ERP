@@ -1177,7 +1177,7 @@ const InvoiceEntry = () => {
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 0.75, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
         <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
           <IconButton onClick={() => navigate("/warehouse")} sx={{ color: "text.secondary" }}>
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft size={16} />
           </IconButton>
           <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: 12.25, fontWeight: 600 }}>
             <Button type="button" variant="text" onClick={() => navigate("/warehouse")} sx={{ minWidth: "auto", p: 0, fontSize: 12.25, fontWeight: 600 }}>
@@ -1190,10 +1190,10 @@ const InvoiceEntry = () => {
           </Stack>
         </Stack>
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-          <Button onClick={() => navigate("/warehouse/invoice/search")} className="glass-btn glass-btn-primary" startIcon={<Search className="w-4 h-4" />}>
+          <Button onClick={() => navigate("/warehouse/invoice/search")} className="glass-btn glass-btn-primary" startIcon={<Search size={16} />}>
             Search
           </Button>
-          <Button className="glass-btn glass-btn-primary" onClick={handlePrintInvoice} startIcon={<Printer className="w-4 h-4" />}>
+          <Button className="glass-btn glass-btn-primary" onClick={handlePrintInvoice} startIcon={<Printer size={16} />}>
             Print
           </Button>
         </Stack>
@@ -1410,7 +1410,7 @@ const InvoiceEntry = () => {
                   onClick={handleAddItem}
                   onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddItem(); } }}
                   className="glass-btn glass-btn-primary"
-                  startIcon={<Plus className="w-4 h-4" />}
+                  startIcon={<Plus size={16} />}
                   sx={{ flexShrink: 0, height: 30, whiteSpace: "nowrap" }}
                 >
                   Add
@@ -1449,7 +1449,7 @@ const InvoiceEntry = () => {
                           <Box sx={{ px: 0.75, py: 0.5, width: 112, borderRight: 1, borderColor: "divider", textAlign: "right", fontWeight: 500 }}>{Number(item.netAmount || 0).toFixed(2)}</Box>
                           <Box sx={{ px: 0.75, py: 0.5, width: 48, textAlign: "center" }}>
                             <IconButton onClick={() => handleRemoveItem(index)} className="glass-btn glass-btn-danger" size="small" sx={{ p: 0.25 }}>
-                              <X className="w-3 h-3" />
+                              <X size={12} />
                             </IconButton>
                           </Box>
                         </Stack>
@@ -1590,10 +1590,10 @@ const InvoiceEntry = () => {
                           <TableCell sx={{ px: 1, py: 0.5, textAlign: "center" }}>
                             <Stack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "center" }}>
                               <IconButton onClick={() => handleEditInvoice(index)} className="glass-btn glass-btn-primary" title="Edit" size="small" sx={{ p: 0.25 }}>
-                                <Pencil className="w-3.5 h-3.5" />
+                                <Pencil size={14} />
                               </IconButton>
                               <IconButton onClick={() => handleRemoveInvoice(index)} className="glass-btn glass-btn-danger" title="Delete" size="small" sx={{ p: 0.25 }}>
-                                <X className="w-3.5 h-3.5" />
+                                <X size={14} />
                               </IconButton>
                             </Stack>
                           </TableCell>
@@ -1674,7 +1674,7 @@ const InvoiceEntry = () => {
                   onClick={handleInverseAdd}
                   onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleInverseAdd(); } }}
                   className="glass-btn glass-btn-primary"
-                  startIcon={<Plus className="w-3.5 h-3.5" />}
+                  startIcon={<Plus size={14} />}
                   sx={{ flexShrink: 0, height: 30, whiteSpace: "nowrap" }}
                 >
                   Add
@@ -1726,7 +1726,7 @@ const InvoiceEntry = () => {
                           size="small"
                           sx={{ p: 0.25, color: "success.main" }}
                         >
-                          <Check className="w-3 h-3" />
+                          <Check size={12} />
                         </IconButton>
                         <IconButton
                           type="button"
@@ -1735,7 +1735,7 @@ const InvoiceEntry = () => {
                           size="small"
                           sx={{ p: 0.25, color: "error.main" }}
                         >
-                          <X className="w-3 h-3" />
+                          <X size={12} />
                         </IconButton>
                       </>
                     ) : (
@@ -1746,7 +1746,7 @@ const InvoiceEntry = () => {
                         size="small"
                         sx={{ p: 0.25, color: "text.disabled", "&:hover": { color: "primary.main" } }}
                       >
-                        <Pencil className="w-3.5 h-3.5" />
+                        <Pencil size={14} />
                       </IconButton>
                     )}
                   </Stack>

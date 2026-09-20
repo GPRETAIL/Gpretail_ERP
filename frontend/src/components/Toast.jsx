@@ -52,7 +52,7 @@ const Toast = ({ open, type = "info", message, onClose, duration = 3000 }) => {
         }}
       >
         <Box sx={{ color: `${token}.main`, display: "inline-flex", flexShrink: 0 }}>
-          <Icon className="w-5 h-5" />
+          <Icon size={20} />
         </Box>
         <Typography sx={{ fontSize: 14, flex: 1, color: "inherit" }}>{message}</Typography>
         <IconButton
@@ -60,7 +60,7 @@ const Toast = ({ open, type = "info", message, onClose, duration = 3000 }) => {
           size="small"
           sx={{ flexShrink: 0, color: "inherit", "&:hover": { bgcolor: (theme) => alpha(theme.palette.text.primary, theme.palette.mode === "dark" ? 0.1 : 0.05) } }}
         >
-          <X className="w-4 h-4" />
+          <X size={16} />
         </IconButton>
       </Box>
     </Box>

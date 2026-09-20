@@ -473,7 +473,7 @@ const Brand = () => {
             <Button
               onClick={handleNew}
               className="topbar-action-btn topbar-action-new"
-              startIcon={<PlusCircle className="w-3 h-3" />}
+              startIcon={<PlusCircle size={12} />}
               size="small"
             >
               New
@@ -511,7 +511,7 @@ const Brand = () => {
                   className="glass-btn glass-btn-success"
                   onClick={handleSave}
                   disabled={saving}
-                  startIcon={<Save className="w-3 h-3" />}
+                  startIcon={<Save size={12} />}
                   size="small"
                 >
                   {saving ? "Saving..." : "Save"}
@@ -522,7 +522,7 @@ const Brand = () => {
             <Button
               className="glass-btn glass-btn-primary"
               onClick={handleSearchClick}
-              startIcon={<Search className="w-3 h-3" />}
+              startIcon={<Search size={12} />}
               size="small"
             >
               Search
@@ -708,7 +708,7 @@ const Brand = () => {
                     <Button
                       onClick={handleAddProduct}
                       className="glass-btn glass-btn-primary"
-                      startIcon={<PlusCircle className="w-4 h-4" />}
+                      startIcon={<PlusCircle size={16} />}
                       sx={{ width: "16.66%" }}
                     >
                       Add
@@ -736,7 +736,7 @@ const Brand = () => {
                                   size="small"
                                   sx={{ color: "error.main", "&:hover": { color: "error.dark" } }}
                                 >
-                                  <Trash2 className="w-4 h-4" />
+                                  <Trash2 size={16} />
                                 </IconButton>
                               </TableCell>
                             </TableRow>
@@ -800,7 +800,7 @@ const Brand = () => {
                     disabled={selectedCount > 1}
                     className="glass-btn glass-btn-primary rounded p-1.5"
                   >
-                    <Pencil className="w-3.5 h-3.5" />
+                    <Pencil size={14} />
                   </button>
                   <button
                     type="button"
@@ -808,7 +808,7 @@ const Brand = () => {
                     title="Delete"
                     className="glass-btn glass-btn-danger rounded p-1.5"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash2 size={14} />
                   </button>
                 </Stack>
               )}

@@ -218,7 +218,7 @@ const ApprovalInbox = () => {
             sx={{ color: "text.secondary" }}
             aria-label="Back"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft size={16} />
           </IconButton>
           <Typography component="h1" sx={{ fontSize: 12.25, fontWeight: 600 }}>Sales Approval Inbox</Typography>
         </Stack>
@@ -287,7 +287,7 @@ const ApprovalInbox = () => {
                 sx={{ height: 38, display: "inline-flex", alignItems: "center", justifyContent: "center" }}
                 title="Search"
               >
-                <Search className="w-4 h-4" />
+                <Search size={16} />
               </Button>
             </Box>
 
@@ -299,7 +299,7 @@ const ApprovalInbox = () => {
                 sx={{ height: 38, display: "inline-flex", alignItems: "center", justifyContent: "center" }}
                 title="Reset"
               >
-                <RotateCcw className="w-4 h-4" />
+                <RotateCcw size={16} />
               </Button>
             </Box>
           </Box>
@@ -344,7 +344,7 @@ const ApprovalInbox = () => {
                           className="glass-btn glass-btn-primary"
                           sx={{ display: "inline-flex", alignItems: "center" }}
                         >
-                          <Eye className="w-3.5 h-3.5 mr-1" />
+                          <Eye size={14} style={{marginRight: 4}} />
                           View
                         </Button>
                         <Button
@@ -353,7 +353,7 @@ const ApprovalInbox = () => {
                           className="glass-btn glass-btn-success disabled:opacity-50"
                           sx={{ display: "inline-flex", alignItems: "center" }}
                         >
-                          <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                          <CheckCircle2 size={14} style={{marginRight: 4}} />
                           {actingId === row.id && actingAction === "approve" ? "Approving..." : "Approve"}
                         </Button>
                         <Button
@@ -362,7 +362,7 @@ const ApprovalInbox = () => {
                           className="glass-btn glass-btn-danger disabled:opacity-50"
                           sx={{ display: "inline-flex", alignItems: "center" }}
                         >
-                          <X className="w-3.5 h-3.5 mr-1" />
+                          <X size={14} style={{marginRight: 4}} />
                           {actingId === row.id && actingAction === "decline" ? "Declining..." : "Decline"}
                         </Button>
                       </Stack>
@@ -385,7 +385,7 @@ const ApprovalInbox = () => {
                 sx={{ color: "text.secondary" }}
                 aria-label="Close details"
               >
-                <X className="w-5 h-5" />
+                <X size={20} />
               </IconButton>
             </Stack>
 
@@ -479,7 +479,7 @@ const ApprovalInbox = () => {
                       className="glass-btn glass-btn-success disabled:opacity-50"
                       sx={{ display: "inline-flex", alignItems: "center" }}
                     >
-                      <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                      <CheckCircle2 size={14} style={{marginRight: 4}} />
                       {actingId === selectedSale.id && actingAction === "approve" ? "Approving..." : "Approve"}
                     </Button>
                     <Button
@@ -489,7 +489,7 @@ const ApprovalInbox = () => {
                       className="glass-btn glass-btn-danger disabled:opacity-50"
                       sx={{ display: "inline-flex", alignItems: "center" }}
                     >
-                      <X className="w-3.5 h-3.5 mr-1" />
+                      <X size={14} style={{marginRight: 4}} />
                       {actingId === selectedSale.id && actingAction === "decline" ? "Declining..." : "Decline"}
                     </Button>
                   </Stack>

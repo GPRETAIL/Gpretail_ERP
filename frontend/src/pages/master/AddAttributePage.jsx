@@ -563,7 +563,7 @@ const AddAttributePage = () => {
                     type="button"
                     onClick={handleAddSize}
                     className="glass-btn glass-btn-primary"
-                    startIcon={<PlusCircle className="w-3 h-3" />}
+                    startIcon={<PlusCircle size={12} />}
                   >
                     Add
                   </Button>
@@ -586,7 +586,7 @@ const AddAttributePage = () => {
                                 size="small"
                                 sx={{ color: "error.main", "&:hover": { color: "error.dark" } }}
                               >
-                                <Trash2 className="w-3.5 h-3.5" />
+                                <Trash2 size={14} />
                               </IconButton>
                             </TableCell>
                           </TableRow>
@@ -901,7 +901,7 @@ const AddAttributePage = () => {
               variant="text"
               onClick={handleNew}
               className="topbar-action-btn topbar-action-new"
-              startIcon={<PlusCircle className="w-3 h-3" />}
+              startIcon={<PlusCircle size={12} />}
               size="small"
             >
               New
@@ -913,7 +913,7 @@ const AddAttributePage = () => {
               onClick={handleSave}
               disabled={saving}
               className="glass-btn glass-btn-success"
-              startIcon={<Save className="w-3 h-3" />}
+              startIcon={<Save size={12} />}
               size="small"
             >
               {saving ? "Saving…" : "Save"}

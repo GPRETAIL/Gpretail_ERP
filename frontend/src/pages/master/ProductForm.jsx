@@ -461,7 +461,7 @@ const ProductForm = () => {
             <Button
               onClick={handleNew}
               className="topbar-action-btn topbar-action-new"
-              startIcon={<PlusCircle className="w-3 h-3" />}
+              startIcon={<PlusCircle size={12} />}
               size="small"
             >
               New
@@ -471,7 +471,7 @@ const ProductForm = () => {
               onClick={handleSave}
               disabled={saving}
               className="glass-btn glass-btn-success"
-              startIcon={<Save className="w-3 h-3" />}
+              startIcon={<Save size={12} />}
               size="small"
             >
               {saving ? "Saving…" : "Save"}

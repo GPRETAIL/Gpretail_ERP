@@ -196,7 +196,7 @@ export default function ConfigureLocalServer() {
   if (loading) {
     return (
       <Stack direction="row" spacing={1.5} sx={{ p: 3, alignItems: "center", fontSize: 12.25, color: "text.secondary" }}>
-        <Loader2 className="w-4 h-4 animate-spin" />
+        <Loader2 size={16} className="animate-spin" />
         <Box component="span">Loading local server configuration...</Box>
       </Stack>
     );
@@ -223,7 +223,7 @@ export default function ConfigureLocalServer() {
           disabled={refreshing}
           variant="outlined"
           color="inherit"
-          startIcon={refreshing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+          startIcon={refreshing ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
           sx={{ fontSize: 12.25, whiteSpace: "nowrap" }}
         >
           Refresh Status
@@ -239,7 +239,7 @@ export default function ConfigureLocalServer() {
         }}
       >
         <Stack direction="row" spacing={1} sx={{ alignItems: "center", fontSize: 12.25, fontWeight: 500, color: tone.token ? `${tone.token}.main` : "text.secondary" }}>
-          <StatusIcon className="w-4 h-4" />
+          <StatusIcon size={16} />
           <Box component="span">{tone.label}</Box>
         </Stack>
         <Box sx={{ mt: 1, display: "grid", gap: 1.5, gridTemplateColumns: { md: "repeat(3, 1fr)" }, fontSize: 12.25, color: "text.secondary" }}>
@@ -308,7 +308,7 @@ export default function ConfigureLocalServer() {
                 disabled={saving}
                 variant="contained"
                 color="success"
-                startIcon={saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                startIcon={saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
               >
                 Save URLs
               </Button>
@@ -319,7 +319,7 @@ export default function ConfigureLocalServer() {
                 disabled={testing}
                 variant="outlined"
                 color="inherit"
-                startIcon={testing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wifi className="w-4 h-4" />}
+                startIcon={testing ? <Loader2 size={16} className="animate-spin" /> : <Wifi size={16} />}
               >
                 Test Local
               </Button>
@@ -330,7 +330,7 @@ export default function ConfigureLocalServer() {
                 disabled={testingCloud}
                 variant="outlined"
                 color="inherit"
-                startIcon={testingCloud ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wifi className="w-4 h-4" />}
+                startIcon={testingCloud ? <Loader2 size={16} className="animate-spin" /> : <Wifi size={16} />}
               >
                 Test Cloud
               </Button>
@@ -406,7 +406,7 @@ export default function ConfigureLocalServer() {
                       >
                         <TableCell sx={{ borderColor: "divider", color: "text.disabled" }}>
                           {hasBacklog ? (
-                            isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />
+                            isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />
                           ) : null}
                         </TableCell>
                         <TableCell sx={{ borderColor: "divider", color: "text.primary" }}>
@@ -417,7 +417,7 @@ export default function ConfigureLocalServer() {
                         </TableCell>
                         <TableCell sx={{ borderColor: "divider", fontWeight: 500, color: nodeTone.token ? `${nodeTone.token}.main` : "text.secondary" }}>
                           <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
-                            <NodeIcon className="w-3.5 h-3.5" />
+                            <NodeIcon size={14} />
                             <Box component="span">{nodeTone.label}</Box>
                           </Stack>
                         </TableCell>
@@ -448,7 +448,7 @@ export default function ConfigureLocalServer() {
                                   variant="outlined"
                                   color="inherit"
                                   size="small"
-                                  startIcon={retryingAllStoreId === node.store_id ? <Loader2 className="w-3 h-3 animate-spin" /> : <RotateCcw className="w-3 h-3" />}
+                                  startIcon={retryingAllStoreId === node.store_id ? <Loader2 size={12} className="animate-spin" /> : <RotateCcw size={12} />}
                                   sx={{ fontSize: 11 }}
                                 >
                                   Retry All Failed
@@ -458,7 +458,7 @@ export default function ConfigureLocalServer() {
 
                             {outboxLoading ? (
                               <Stack direction="row" spacing={1} sx={{ alignItems: "center", fontSize: 10.5, color: "text.secondary", py: 1 }}>
-                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                <Loader2 size={14} className="animate-spin" />
                                 <Box component="span">Loading...</Box>
                               </Stack>
                             ) : outboxEvents.length === 0 ? (
@@ -501,7 +501,7 @@ export default function ConfigureLocalServer() {
                                         variant="outlined"
                                         color="inherit"
                                         size="small"
-                                        startIcon={retryingId === event.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <RotateCcw className="w-3 h-3" />}
+                                        startIcon={retryingId === event.id ? <Loader2 size={12} className="animate-spin" /> : <RotateCcw size={12} />}
                                         sx={{ flexShrink: 0, fontSize: 11 }}
                                       >
                                         Retry

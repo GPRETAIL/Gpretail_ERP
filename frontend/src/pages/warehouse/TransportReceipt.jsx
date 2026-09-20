@@ -286,7 +286,7 @@ const TransportReceipt = () => {
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1.25, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           <IconButton onClick={() => navigate(-1)} aria-label="Back" sx={{ color: "text.secondary" }}>
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft size={16} />
           </IconButton>
           <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: 12.25, fontWeight: 600 }}>
             <Button type="button" variant="text" onClick={() => navigate("/warehouse")} sx={{ minWidth: "auto", p: 0, fontSize: 12.25, fontWeight: 600 }}>
@@ -297,13 +297,13 @@ const TransportReceipt = () => {
           </Stack>
         </Stack>
         <Stack direction="row" spacing={1} sx={{ fontSize: 12.25 }}>
-          <Button onClick={() => persistReceipt(false)} disabled={saving} className="glass-btn glass-btn-success" startIcon={<Save className="w-4 h-4" />} sx={{ opacity: saving ? 0.5 : 1 }}>
+          <Button onClick={() => persistReceipt(false)} disabled={saving} className="glass-btn glass-btn-success" startIcon={<Save size={16} />} sx={{ opacity: saving ? 0.5 : 1 }}>
             {saving ? "Saving..." : "Save"}
           </Button>
-          <Button onClick={() => persistReceipt(true)} disabled={saving} className="glass-btn glass-btn-primary" startIcon={<Save className="w-4 h-4" />} sx={{ opacity: saving ? 0.5 : 1 }}>
+          <Button onClick={() => persistReceipt(true)} disabled={saving} className="glass-btn glass-btn-primary" startIcon={<Save size={16} />} sx={{ opacity: saving ? 0.5 : 1 }}>
             Save & Next
           </Button>
-          <Button onClick={() => navigate("/warehouse/transport-issue/search")} className="glass-btn glass-btn-primary" startIcon={<Search className="w-4 h-4" />}>
+          <Button onClick={() => navigate("/warehouse/transport-issue/search")} className="glass-btn glass-btn-primary" startIcon={<Search size={16} />}>
             Search
           </Button>
         </Stack>

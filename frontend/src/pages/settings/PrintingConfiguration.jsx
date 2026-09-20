@@ -322,7 +322,7 @@ export default function PrintingConfiguration() {
                   onClick={handleDisconnect}
                   className="glass-btn glass-btn-danger inline-flex items-center"
                 >
-                  <Unplug className="w-4 h-4 mr-1" />
+                  <Unplug size={16} style={{marginRight: 4}} />
                   Disconnect
                 </Button>
               ) : (
@@ -342,7 +342,7 @@ export default function PrintingConfiguration() {
                 disabled={downloadingInstaller}
                 className="glass-btn glass-btn-success inline-flex items-center"
               >
-                <Download className="w-4 h-4 mr-1.5" />
+                <Download size={16} style={{marginRight: 6}} />
                 {downloadingInstaller ? "Downloading..." : "Download Connector"}
               </Button>
 
@@ -354,7 +354,7 @@ export default function PrintingConfiguration() {
                 }}
                 className="glass-btn glass-btn-secondary inline-flex items-center"
               >
-                <RefreshCw className="w-4 h-4 mr-1.5" />
+                <RefreshCw size={16} style={{marginRight: 6}} />
                 Refresh
               </Button>
             </Stack>
@@ -424,7 +424,7 @@ export default function PrintingConfiguration() {
             disabled={!sessionConnected || savingRouting}
             className="glass-btn glass-btn-primary inline-flex items-center"
           >
-            <Save className="w-4 h-4 mr-1.5" />
+            <Save size={16} style={{marginRight: 6}} />
             {savingRouting ? "Saving..." : "Save Routing"}
           </Button>
         </Stack>

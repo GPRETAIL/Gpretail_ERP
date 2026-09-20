@@ -219,7 +219,7 @@ const Transport = () => {
             <Button
               onClick={() => navigate("/masters/transport/new")}
               className="topbar-action-btn topbar-action-new"
-              startIcon={<PlusCircle className="w-3 h-3" />}
+              startIcon={<PlusCircle size={12} />}
               size="small"
             >
               New
@@ -296,7 +296,7 @@ const Transport = () => {
                   className="glass-btn glass-btn-primary"
                   title="View"
                 >
-                  <Eye className="w-4 h-4" />
+                  <Eye size={16} />
                 </button>
                 <button
                   onClick={() => navigate(`/masters/transport/edit/${t.id}`)}
@@ -304,14 +304,14 @@ const Transport = () => {
                   disabled={selectedCount > 1}
                   className="glass-btn glass-btn-primary rounded p-1.5"
                 >
-                  <Pencil className="w-4 h-4" />
+                  <Pencil size={16} />
                 </button>
                 <button
                   onClick={() => setConfirmDlg({ open: true, id: t.id, name: t.name })}
                   className="glass-btn glass-btn-danger rounded p-1.5"
                   title="Delete"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 size={16} />
                 </button>
               </Stack>
             )}

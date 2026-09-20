@@ -207,7 +207,7 @@ const ProductAttributes = () => {
             <Button
               onClick={handleNew}
               className="topbar-action-btn topbar-action-new"
-              startIcon={<PlusCircle className="w-3 h-3" />}
+              startIcon={<PlusCircle size={12} />}
               size="small"
             >
               New
@@ -277,7 +277,7 @@ const ProductAttributes = () => {
                     className="glass-btn glass-btn-primary"
                     type="button"
                   >
-                    <Pencil className="w-3.5 h-3.5" />
+                    <Pencil size={14} />
                   </button>
                   <button
                     onClick={() => setConfirm({ open: true, id: row.id, name: row.name })}
@@ -285,7 +285,7 @@ const ProductAttributes = () => {
                     className="glass-btn glass-btn-danger rounded p-1.5"
                     type="button"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash2 size={14} />
                   </button>
                 </Stack>
               )}

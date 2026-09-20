@@ -928,7 +928,7 @@ const DealerInvoice = () => {
               sx={{ display: "inline-flex", height: 32, width: 32, minWidth: 0, alignItems: "center", justifyContent: "center" }}
               title="Add tax line"
             >
-              <PlusCircle className="w-4 h-4" />
+              <PlusCircle size={16} />
             </Button>
           </Box>
 
@@ -956,7 +956,7 @@ const DealerInvoice = () => {
                         sx={{ color: "text.secondary", "&:hover": { color: "primary.main" }, p: 0.25 }}
                         title="Edit charge type"
                       >
-                        <Pencil className="w-3.5 h-3.5" />
+                        <Pencil size={14} />
                       </IconButton>
                       <IconButton
                         type="button"
@@ -965,7 +965,7 @@ const DealerInvoice = () => {
                         sx={{ color: "text.secondary", "&:hover": { color: "error.main" }, p: 0.25 }}
                         title="Remove tax row"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash2 size={14} />
                       </IconButton>
                     </Stack>
                   </Box>
@@ -1078,7 +1078,7 @@ const DealerInvoice = () => {
                 sx={{ display: "inline-flex", height: 32, alignItems: "center", justifyContent: "center" }}
                 aria-label="Add product"
               >
-                <PlusCircle className="w-3.5 h-3.5" />
+                <PlusCircle size={14} />
               </Button>
             </Box>
           </Box>
@@ -1311,7 +1311,7 @@ const DealerInvoice = () => {
                           sx={{ color: "error.main", p: 0.25 }}
                           aria-label="Remove line"
                         >
-                          <Trash2 className="w-3.5 h-3.5 inline" />
+                          <Trash2 size={14} style={{ display: "inline" }} />
                         </IconButton>
                       </TableCell>
                     </TableRow>
@@ -1391,7 +1391,7 @@ const DealerInvoice = () => {
             sx={{ color: "text.secondary" }}
             aria-label={showSearchPage ? "Back to dealer invoice entry" : "Back to sales"}
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft size={16} />
           </IconButton>
           <Typography component="h1" sx={{ fontSize: 12.25, fontWeight: 600, display: "flex", alignItems: "center", gap: 0.5 }}>
             <Button
@@ -1413,7 +1413,7 @@ const DealerInvoice = () => {
             className="glass-btn glass-btn-success disabled:opacity-50"
             sx={{ display: "inline-flex", alignItems: "center" }}
           >
-            <Save className="w-4 h-4 mr-1" />
+            <Save size={16} style={{marginRight: 4}} />
             {saving ? "Saving..." : "Save"}
           </Button>
           <Button
@@ -1422,7 +1422,7 @@ const DealerInvoice = () => {
             sx={{ display: "inline-flex", alignItems: "center" }}
             aria-label="Search"
           >
-            <Search className="w-4 h-4 mr-1" />
+            <Search size={16} style={{marginRight: 4}} />
             {showSearchPage ? "Back" : "Search"}
           </Button>
         </Stack>

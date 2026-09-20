@@ -360,7 +360,7 @@ const Customer = () => {
               className="glass-btn glass-btn-primary"
               sx={{ borderRadius: "3.5px", p: 0.75, minWidth: 0 }}
             >
-              <Edit2 className="w-4 h-4" />
+              <Edit2 size={16} />
             </Button>
             <Button
               onClick={() => setConfirmDlg({ open: true, id: row.id, name: row.name })}
@@ -368,7 +368,7 @@ const Customer = () => {
               sx={{ borderRadius: "3.5px", p: 0.75, minWidth: 0 }}
               title="Delete customer"
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 size={16} />
             </Button>
           </Stack>
         )}
@@ -411,7 +411,7 @@ const Customer = () => {
             sx={{ color: "text.secondary", minWidth: 0, p: 0.5 }}
             aria-label={showSearchPage ? "Back to customer entry" : "Back to sales"}
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft size={16} />
           </Button>
           <Typography component="h1" sx={{ fontSize: 12.25, fontWeight: 600, display: "flex", alignItems: "center", gap: 0.5 }}>
             <Button
@@ -428,7 +428,7 @@ const Customer = () => {
 
         <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>
           <Button className="topbar-action-btn topbar-action-new" onClick={handleNew}>
-            <PlusCircle className="w-4 h-4 mr-1" /> New
+            <PlusCircle size={16} style={{marginRight: 4}} /> New
           </Button>
           <Box component="span">|</Box>
           <Button
@@ -437,7 +437,7 @@ const Customer = () => {
             disabled={saving || showSearchPage}
             sx={{ display: "flex", alignItems: "center" }}
           >
-            <Save className="w-4 h-4 mr-1" /> {saving ? "Saving..." : "Save"}
+            <Save size={16} style={{marginRight: 4}} /> {saving ? "Saving..." : "Save"}
           </Button>
           <Box component="span">|</Box>
           <Button
@@ -445,7 +445,7 @@ const Customer = () => {
             onClick={showSearchPage ? () => setShowSearchPage(false) : openSearchPage}
             sx={{ display: "flex", alignItems: "center" }}
           >
-            <Search className="w-4 h-4 mr-1" /> {showSearchPage ? "Back" : "Search"}
+            <Search size={16} style={{marginRight: 4}} /> {showSearchPage ? "Back" : "Search"}
           </Button>
         </Stack>
       </Stack>

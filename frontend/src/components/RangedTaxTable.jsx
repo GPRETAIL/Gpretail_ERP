@@ -219,7 +219,7 @@ const RangedTaxTable = ({ isView, rangedTaxItems, setRangedTaxItems }) => {
                       size="small"
                       sx={{ color: "success.main", "&:hover": { color: "success.dark" } }}
                     >
-                      <PlusCircle className="w-4 h-4" />
+                      <PlusCircle size={16} />
                     </IconButton>
                   )}
 
@@ -231,7 +231,7 @@ const RangedTaxTable = ({ isView, rangedTaxItems, setRangedTaxItems }) => {
                       size="small"
                       sx={{ color: "error.main", "&:hover": { color: "error.dark" } }}
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 size={16} />
                     </IconButton>
                   )}
                 </TableCell>

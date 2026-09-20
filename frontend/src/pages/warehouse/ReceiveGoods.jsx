@@ -82,14 +82,14 @@ const ReceiveGoods = () => {
       >
         <Stack direction="row" sx={{ alignItems: "center" }}>
           <IconButton onClick={handleBackClick} aria-label="Back" sx={{ mr: 1.5, color: "text.secondary" }}>
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft size={16} />
           </IconButton>
           <Typography component="h1" sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>
             Warehouse / Receive Goods
           </Typography>
         </Stack>
         <Stack direction="row" spacing={1} sx={{ alignItems: "center", fontSize: 12.25, color: "text.secondary" }}>
-          <User className="w-5 h-5" />
+          <User size={20} />
           <Typography component="span" sx={{ fontSize: 12.25, fontWeight: 500 }}>
             User: Admin
           </Typography>
@@ -133,7 +133,7 @@ const ReceiveGoods = () => {
               aria-label="Search Package Code"
               sx={{ borderRadius: 0, borderTopRightRadius: "5.25px", borderBottomRightRadius: "5.25px" }}
             >
-              <Search className="w-5 h-5" />
+              <Search size={20} />
             </IconButton>
           </Stack>
 

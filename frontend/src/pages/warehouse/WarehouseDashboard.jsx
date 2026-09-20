@@ -1125,7 +1125,7 @@ const WarehouseDashboard = () => {
               key={step.key}
               disabled={!isEnabled}
               onClick={() => isEnabled && handleWorkflowClick(index)}
-              startIcon={<Icon className="w-4 h-4" />}
+              startIcon={<Icon size={16} />}
               sx={{
                 borderRadius: "3.5px",
                 px: 2,
@@ -1248,7 +1248,7 @@ const WarehouseDashboard = () => {
                 onClick={handleOpenColumnDialog}
                 sx={{ color: "text.secondary", border: 0, bgcolor: "transparent", cursor: "pointer", display: "flex", transition: "color 0.15s", "&:hover": { color: "primary.main" } }}
               >
-                <Settings2 className="w-3.5 h-3.5" />
+                <Settings2 size={14} />
               </Box>
             </Stack>
             {visibleColumns.map((col) => (
@@ -1266,7 +1266,7 @@ const WarehouseDashboard = () => {
               >
                 <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 0.5, pr: 1 }}>
                   <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", whiteSpace: "nowrap" }}>
-                    <GripVertical className="w-3 h-3 shrink-0" style={{ color: "#9ca3af" }} />
+                    <GripVertical size={12} style={{flexShrink: 0}} style={{ color: "#9ca3af" }} />
                     {col.label}
                   </Stack>
                   <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
@@ -1278,11 +1278,11 @@ const WarehouseDashboard = () => {
                       sx={{ display: "flex", flexDirection: "column", alignItems: "center", lineHeight: 1, border: 0, bgcolor: "transparent", cursor: "pointer", color: sortColumn === col.key ? "primary.main" : "text.disabled", "&:hover": { color: sortColumn === col.key ? "primary.main" : "text.secondary" } }}
                     >
                       <ChevronUp
-                        className="w-3 h-3 -mb-1"
-                        style={{ color: sortColumn === col.key && sortDirection === "asc" ? undefined : "#d1d5db" }}
+                        size={12}
+                        style={{ color: sortColumn === col.key && sortDirection === "asc" ? undefined : "#d1d5db", marginBottom: -4 }}
                       />
                       <ChevronDown
-                        className="w-3 h-3"
+                        size={12}
                         style={{ color: sortColumn === col.key && sortDirection === "desc" ? undefined : "#d1d5db" }}
                       />
                     </Box>
@@ -1293,7 +1293,7 @@ const WarehouseDashboard = () => {
                       onClick={(event) => toggleColumnFilterPopup(col.key, event.currentTarget)}
                       sx={{ border: 0, bgcolor: "transparent", cursor: "pointer", display: "flex", color: isFilterActive(col.key) ? "primary.main" : "text.secondary", "&:hover": { color: isFilterActive(col.key) ? "primary.dark" : "text.primary" } }}
                     >
-                      <Filter className="w-3.5 h-3.5" />
+                      <Filter size={14} />
                     </Box>
                   </Stack>
                 </Stack>
@@ -1317,7 +1317,7 @@ const WarehouseDashboard = () => {
                         onClick={() => setActiveFilterColumn(null)}
                         sx={{ color: "text.disabled", border: 0, bgcolor: "transparent", cursor: "pointer", display: "flex", "&:hover": { color: "text.secondary" } }}
                       >
-                        <X className="w-3.5 h-3.5" />
+                        <X size={14} />
                       </Box>
                     </Stack>
                     <Stack spacing={1}>
@@ -1501,7 +1501,7 @@ const WarehouseDashboard = () => {
                           className="glass-btn glass-btn-primary"
                           sx={{ borderRadius: "3.5px", p: 0.75 }}
                         >
-                          <Eye className="w-3.5 h-3.5" />
+                          <Eye size={14} />
                         </IconButton>
                         <IconButton
                           title="Edit"
@@ -1514,7 +1514,7 @@ const WarehouseDashboard = () => {
                           className="glass-btn glass-btn-primary"
                           sx={{ borderRadius: "3.5px", p: 0.75 }}
                         >
-                          <Pencil className="w-3.5 h-3.5" />
+                          <Pencil size={14} />
                         </IconButton>
                         <IconButton
                           title="Delete"
@@ -1526,7 +1526,7 @@ const WarehouseDashboard = () => {
                           className="glass-btn glass-btn-danger"
                           sx={{ borderRadius: "3.5px", p: 0.75 }}
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 size={14} />
                         </IconButton>
                       </Stack>
                     </Box>
@@ -1568,7 +1568,7 @@ const WarehouseDashboard = () => {
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   sx={{ p: 0.25, borderRadius: "1.75px", border: 0, bgcolor: "transparent", cursor: "pointer", display: "flex", "&:hover": { bgcolor: "action.selected" }, "&:disabled": { opacity: 0.4, cursor: "not-allowed" } }}
                 >
-                  <ChevronLeft className="w-4 h-4" />
+                  <ChevronLeft size={16} />
                 </Box>
                 <Box
                   component="select"
@@ -1588,7 +1588,7 @@ const WarehouseDashboard = () => {
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   sx={{ p: 0.25, borderRadius: "1.75px", border: 0, bgcolor: "transparent", cursor: "pointer", display: "flex", "&:hover": { bgcolor: "action.selected" }, "&:disabled": { opacity: 0.4, cursor: "not-allowed" } }}
                 >
-                  <ChevronRight className="w-4 h-4" />
+                  <ChevronRight size={16} />
                 </Box>
               </Stack>
             </Stack>
@@ -1613,7 +1613,7 @@ const WarehouseDashboard = () => {
                 onClick={() => setShowColumnDialog(false)}
                 sx={{ color: "text.secondary", border: 0, bgcolor: "transparent", cursor: "pointer", display: "flex", "&:hover": { color: "text.primary" } }}
               >
-                <X className="w-4 h-4" />
+                <X size={16} />
               </Box>
             </Stack>
 
@@ -1666,7 +1666,7 @@ const WarehouseDashboard = () => {
                   disabled={!availableHighlight}
                   sx={{ p: 0.75, border: "1px solid", borderColor: "divider", borderRadius: "1.75px", bgcolor: "transparent", color: "text.secondary", cursor: "pointer", display: "flex", "&:hover": { bgcolor: "action.hover" }, "&:disabled": { opacity: 0.4, cursor: "not-allowed" } }}
                 >
-                  <ChevronRight className="w-4 h-4" />
+                  <ChevronRight size={16} />
                 </Box>
                 <Box
                   component="button"
@@ -1676,7 +1676,7 @@ const WarehouseDashboard = () => {
                   disabled={draftAvailableColumns.length === 0}
                   sx={{ p: 0.75, border: "1px solid", borderColor: "divider", borderRadius: "1.75px", bgcolor: "transparent", color: "text.secondary", cursor: "pointer", display: "flex", "&:hover": { bgcolor: "action.hover" }, "&:disabled": { opacity: 0.4, cursor: "not-allowed" } }}
                 >
-                  <ChevronsRight className="w-4 h-4" />
+                  <ChevronsRight size={16} />
                 </Box>
                 <Box
                   component="button"
@@ -1686,7 +1686,7 @@ const WarehouseDashboard = () => {
                   disabled={!selectedHighlight || draftVisibleColumns.length <= 1}
                   sx={{ p: 0.75, border: "1px solid", borderColor: "divider", borderRadius: "1.75px", bgcolor: "transparent", color: "text.secondary", cursor: "pointer", display: "flex", "&:hover": { bgcolor: "action.hover" }, "&:disabled": { opacity: 0.4, cursor: "not-allowed" } }}
                 >
-                  <ChevronLeft className="w-4 h-4" />
+                  <ChevronLeft size={16} />
                 </Box>
                 <Box
                   component="button"
@@ -1696,7 +1696,7 @@ const WarehouseDashboard = () => {
                   disabled={draftVisibleColumns.length <= 1}
                   sx={{ p: 0.75, border: "1px solid", borderColor: "divider", borderRadius: "1.75px", bgcolor: "transparent", color: "text.secondary", cursor: "pointer", display: "flex", "&:hover": { bgcolor: "action.hover" }, "&:disabled": { opacity: 0.4, cursor: "not-allowed" } }}
                 >
-                  <ChevronsLeft className="w-4 h-4" />
+                  <ChevronsLeft size={16} />
                 </Box>
               </Stack>
 
@@ -1745,7 +1745,7 @@ const WarehouseDashboard = () => {
                   disabled={!selectedHighlight || draftSelectedOrder.indexOf(selectedHighlight) <= 0}
                   sx={{ p: 0.75, border: "1px solid", borderColor: "divider", borderRadius: "1.75px", bgcolor: "transparent", color: "text.secondary", cursor: "pointer", display: "flex", "&:hover": { bgcolor: "action.hover" }, "&:disabled": { opacity: 0.4, cursor: "not-allowed" } }}
                 >
-                  <ChevronUp className="w-4 h-4" />
+                  <ChevronUp size={16} />
                 </Box>
                 <Box
                   component="button"
@@ -1758,7 +1758,7 @@ const WarehouseDashboard = () => {
                   }
                   sx={{ p: 0.75, border: "1px solid", borderColor: "divider", borderRadius: "1.75px", bgcolor: "transparent", color: "text.secondary", cursor: "pointer", display: "flex", "&:hover": { bgcolor: "action.hover" }, "&:disabled": { opacity: 0.4, cursor: "not-allowed" } }}
                 >
-                  <ChevronDown className="w-4 h-4" />
+                  <ChevronDown size={16} />
                 </Box>
               </Stack>
             </Stack>

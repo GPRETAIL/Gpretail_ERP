@@ -761,12 +761,12 @@ const SizeSearchSelect = ({ value, onChange, sizes, sizeGroups, sellingMode }) =
         sx={{ width: "100%", border: "1px solid", borderColor: "divider", borderRadius: "3.5px", px: 0.5, py: 0.5, fontSize: 12.25, bgcolor: "background.paper", textAlign: "left", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }}
       >
         <Box component="span" sx={{ color: value ? "text.primary" : "text.disabled", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 10.5 }}>{value || "Size..."}</Box>
-        <ChevronDown className="w-3 h-3 shrink-0" style={{ color: "#9ca3af", transition: "transform 0.15s", transform: open ? "rotate(180deg)" : undefined }} />
+        <ChevronDown size={12} style={{flexShrink: 0}} style={{ color: "#9ca3af", transition: "transform 0.15s", transform: open ? "rotate(180deg)" : undefined }} />
       </Box>
       {open && (
         <Box sx={{ position: "absolute", zIndex: 50, left: 0, top: "100%", mt: 0.25, width: "100%", bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "3.5px", boxShadow: 4, minWidth: 160 }}>
           <Stack direction="row" spacing={0.5} sx={{ p: 0.5, borderBottom: 1, borderColor: "divider", alignItems: "center" }}>
-            <Search className="w-3 h-3 shrink-0" style={{ color: "#9ca3af" }} />
+            <Search size={12} style={{flexShrink: 0}} style={{ color: "#9ca3af" }} />
             <Box component="input" autoFocus type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} onKeyDown={handleKeyDown}
               placeholder="Search size..." sx={{ width: "100%", fontSize: 12.25, outline: "none", bgcolor: "transparent", color: "text.secondary", border: 0 }} />
           </Stack>
@@ -929,7 +929,7 @@ const JumpSizeDialog = ({
       <Box sx={{ bgcolor: "background.paper", borderRadius: "7px", boxShadow: 8, border: "1px solid", borderColor: "divider", width: "100%", maxWidth: 896, mx: 2, overflow: "hidden" }} onClick={(e) => e.stopPropagation()}>
         <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1.5, borderBottom: 1, borderColor: "divider" }}>
           <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Size Detail (Jump)</Typography>
-          <Button onClick={handleClose} className="glass-btn glass-btn-secondary"><X className="w-4 h-4" /></Button>
+          <Button onClick={handleClose} className="glass-btn glass-btn-secondary"><X size={16} /></Button>
         </Stack>
         <Stack spacing={1.5} sx={{ px: 2, py: 1.5 }}>
           <Stack direction="row" spacing={1}>
@@ -1002,7 +1002,7 @@ const JumpSizeDialog = ({
                           sx={{ borderRadius: "3.5px", p: 0.75, minWidth: 0, display: "inline-flex", alignItems: "center", justifyContent: "center" }}
                           title="Remove row"
                         >
-                          <X className="w-3.5 h-3.5" />
+                          <X size={14} />
                         </Button>
                       </Box>
                     </Box>
@@ -1031,7 +1031,7 @@ const JumpSizeDialog = ({
                           sx={{ borderRadius: "3.5px", p: 0.75, minWidth: 0, display: "inline-flex", alignItems: "center", justifyContent: "center" }}
                           title="Remove row"
                         >
-                          <X className="w-3.5 h-3.5" />
+                          <X size={14} />
                         </Button>
                       </Box>
                     </Stack>
@@ -1097,7 +1097,7 @@ const CutDetailDialog = ({
         <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", px: 2, py: 1.5 }}>
           <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Cut Detail</Typography>
           <Button type="button" onClick={onClose} className="glass-btn glass-btn-secondary">
-            <X className="w-4 h-4" />
+            <X size={16} />
           </Button>
         </Stack>
         <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1.5, px: 2, py: 2 }}>
@@ -1145,7 +1145,7 @@ const JumpSizeViewDialog = ({ open, onClose, rows }) => {
       <Box sx={{ bgcolor: "background.paper", borderRadius: "7px", boxShadow: 8, border: "1px solid", borderColor: "divider", width: "100%", maxWidth: 896, mx: 2 }} onClick={(e) => e.stopPropagation()}>
         <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1.5, borderBottom: 1, borderColor: "divider" }}>
           <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>{hasCutDetails ? "Cut Details" : "Jump Size Details"}</Typography>
-          <Button onClick={onClose} className="glass-btn glass-btn-secondary"><X className="w-4 h-4" /></Button>
+          <Button onClick={onClose} className="glass-btn glass-btn-secondary"><X size={16} /></Button>
         </Stack>
         <Box sx={{ px: 2, py: 2 }}>
           <Box sx={{ overflow: "hidden", borderRadius: "3.5px", border: "1px solid", borderColor: "divider" }}>
@@ -2543,7 +2543,7 @@ const DirectPurchase = () => {
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           <IconButton onClick={() => navigate("/warehouse")} sx={{ color: "text.secondary" }}>
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft size={16} />
           </IconButton>
           <Typography component="h1" sx={{ fontSize: 12.25, fontWeight: 600, display: "flex", alignItems: "center", gap: 0.5 }}>
             <Button
@@ -2560,14 +2560,14 @@ const DirectPurchase = () => {
         <Stack direction="row" spacing={1} sx={{ alignItems: "center", fontSize: 12.25 }}>
           <Button onClick={handleNew} className="glass-btn glass-btn-secondary">New</Button>
           <Button onClick={handleOpenQuickAttribute} className="glass-btn glass-btn-secondary" sx={{ display: "flex", alignItems: "center" }}>
-            <Plus className="w-4 h-4 mr-1" /> Attribute
+            <Plus size={16} style={{marginRight: 4}} /> Attribute
           </Button>
           <Button onClick={handleSave} disabled={saving || loadingEntry} className="glass-btn glass-btn-success disabled:opacity-50" sx={{ display: "flex", alignItems: "center" }}>
-            <Save className="w-4 h-4 mr-1" /> {saving ? "Saving..." : editId ? "Update" : "Save"}
+            <Save size={16} style={{marginRight: 4}} /> {saving ? "Saving..." : editId ? "Update" : "Save"}
           </Button>
           <Button onClick={handleOpenLastSaved} className="glass-btn glass-btn-secondary">Last Saved</Button>
           <Button onClick={() => navigate("/warehouse/direct-purchase/search")} className="glass-btn glass-btn-primary" sx={{ display: "flex", alignItems: "center" }}>
-            <Search className="w-4 h-4 mr-1" /> Search
+            <Search size={16} style={{marginRight: 4}} /> Search
           </Button>
         </Stack>
       </Stack>
@@ -2909,7 +2909,7 @@ const DirectPurchase = () => {
                   </Box>
                   <Box sx={{ width: 36 }}>
                     <Button onClick={handleAddItem} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); handleAddItem(); } }} className="glass-btn glass-btn-primary" sx={{ width: 32, height: 32, minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center" }} title="Add Item">
-                      <Plus className="w-4 h-4" />
+                      <Plus size={16} />
                     </Button>
                   </Box>
                 </Stack>
@@ -3166,7 +3166,7 @@ const DirectPurchase = () => {
                 ))}
               </TextField>
               <Button onClick={handleSave} disabled={saving || loadingEntry} className="glass-btn glass-btn-success disabled:opacity-50" sx={{ display: "flex", alignItems: "center" }}>
-                <Save className="w-4 h-4 mr-1" /> {saving ? "Saving..." : editId ? "Update" : "Save"}
+                <Save size={16} style={{marginRight: 4}} /> {saving ? "Saving..." : editId ? "Update" : "Save"}
               </Button>
             </Stack>
           </Stack>

@@ -2987,7 +2987,7 @@ const POSSales = () => {
                   aria-label="Add product"
                   sx={{ height: "34px", width: "100%", minWidth: 0, p: 0 }}
                 >
-                  <PlusCircle className="w-4 h-4" />
+                  <PlusCircle size={16} />
                 </Button>
               </Box>
             </Stack>
@@ -3518,7 +3518,7 @@ const POSSales = () => {
             aria-label="Back to sales"
             sx={{ color: "text.secondary", "&:hover": { color: "text.primary" } }}
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft size={16} />
           </IconButton>
           <Typography component="h1" className="pos-sale-page-title" sx={{ fontSize: 12.25, fontWeight: 600, display: "flex", alignItems: "center", gap: 0.5 }}>
             <Box
@@ -3541,7 +3541,7 @@ const POSSales = () => {
                 onClick={() => void downloadLastPosSalePdf()}
                 disabled={downloadingPosPdf}
                 className="glass-btn glass-btn-secondary"
-                startIcon={<FileText className="w-4 h-4" />}
+                startIcon={<FileText size={16} />}
               >
                 PDF
               </Button>
@@ -3561,7 +3561,7 @@ const POSSales = () => {
                 }}
                 disabled={saving}
                 className="glass-btn glass-btn-success"
-                startIcon={<Save className="w-4 h-4" />}
+                startIcon={<Save size={16} />}
               >
                 {saving ? "Saving..." : "Save"}
               </Button>
@@ -3579,7 +3579,7 @@ const POSSales = () => {
                   }}
                   disabled={saving}
                   className="glass-btn glass-btn-primary"
-                  startIcon={<Printer className="w-4 h-4" />}
+                  startIcon={<Printer size={16} />}
                 >
                   {saving ? "Saving..." : "Save & Print"}
                 </Button>
@@ -3595,7 +3595,7 @@ const POSSales = () => {
           <Button
             onClick={showSearchPage ? () => setShowSearchPage(false) : openSearchPage}
             className="glass-btn glass-btn-primary"
-            startIcon={<Search className="w-4 h-4" />}
+            startIcon={<Search size={16} />}
           >
             {showSearchPage ? "Back" : "Search"}
           </Button>

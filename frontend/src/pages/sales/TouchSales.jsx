@@ -696,7 +696,7 @@ const TouchSales = () => {
       <Stack direction="row" sx={{ flexShrink: 0, alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", bgcolor: "background.paper", px: { xs: 1.5, sm: 2 }, py: 1, boxShadow: 1 }}>
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           <IconButton onClick={() => navigate("/sales")} sx={{ color: "text.secondary" }} aria-label="Back">
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft size={16} />
           </IconButton>
           <Typography component="h1" sx={{ fontSize: 12.25, fontWeight: 600 }}>Sales / Touch Sale</Typography>
         </Stack>
@@ -745,7 +745,7 @@ const TouchSales = () => {
                   sx={{ color: "warning.dark", "&:hover": { bgcolor: (theme) => alpha(theme.palette.warning.main, 0.16) } }}
                   aria-label="Clear applied return"
                 >
-                  <X className="w-4 h-4" />
+                  <X size={16} />
                 </IconButton>
               </Stack>
             )}
@@ -783,7 +783,7 @@ const TouchSales = () => {
                 disabled={applyingReturn}
                 sx={{ px: 1.5, py: 0.75, fontSize: 12.25, borderBottom: 2, borderBottomColor: "success.main", bgcolor: (theme) => alpha(theme.palette.success.main, theme.palette.mode === "dark" ? 0.16 : 0.08), borderRadius: "3.5px", display: "inline-flex", alignItems: "center", color: "text.primary" }}
               >
-                <CornerDownLeft className="w-4 h-4 mr-1" /> Enter
+                <CornerDownLeft size={16} style={{marginRight: 4}} /> Enter
               </Button>
             </Stack>
 
@@ -814,7 +814,7 @@ const TouchSales = () => {
                           sx={{ border: 1, borderColor: "divider", borderRadius: "3.5px", bgcolor: "background.paper", "&:hover": { bgcolor: "action.selected" } }}
                           aria-label="Decrease quantity"
                         >
-                          <Minus className="w-4 h-4" />
+                          <Minus size={16} />
                         </IconButton>
                         <Box sx={{ width: 40, textAlign: "center", fontSize: 12.25, fontWeight: 600 }}>{pickedQty}</Box>
                         <IconButton
@@ -823,7 +823,7 @@ const TouchSales = () => {
                           sx={{ border: 1, borderColor: "divider", borderRadius: "3.5px", bgcolor: "background.paper", "&:hover": { bgcolor: "action.selected" } }}
                           aria-label="Increase quantity"
                         >
-                          <Plus className="w-4 h-4" />
+                          <Plus size={16} />
                         </IconButton>
                         <Button
                           onClick={() => addToCart(row)}
@@ -860,13 +860,13 @@ const TouchSales = () => {
                   onClick={() => setCustomerMobile((prev) => prev.slice(0, -1))}
                   className="glass-btn glass-btn-secondary"
                 >
-                  <ArrowLeft className="w-4 h-4" />
+                  <ArrowLeft size={16} />
                 </Button>
                 <Button
                   onClick={() => setCustomerMobile("")}
                   className="glass-btn glass-btn-danger"
                 >
-                  <Delete className="w-4 h-4" />
+                  <Delete size={16} />
                 </Button>
               </Stack>
 

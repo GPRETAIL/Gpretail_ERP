@@ -2821,7 +2821,7 @@ const BarcodeGeneration = () => {
             onClick={() => navigate(-1)}
             sx={{ color: "text.secondary", mr: 1.5 }}
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft size={16} />
           </IconButton>
           <Typography component="h1" sx={{ fontSize: 12.25, fontWeight: 600, display: "flex", alignItems: "center", gap: 0.5 }}>
             <Button
@@ -2850,7 +2850,7 @@ const BarcodeGeneration = () => {
             className="glass-btn glass-btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
             sx={{ display: "flex", alignItems: "center" }}
           >
-            <Eye className="w-4 h-4 mr-1" /> Preview Barcode
+            <Eye size={16} style={{marginRight: 4}} /> Preview Barcode
           </Button>
           <Button
             onClick={handleDirectPrint}
@@ -2859,7 +2859,7 @@ const BarcodeGeneration = () => {
             className="glass-btn glass-btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
             sx={{ display: "flex", alignItems: "center" }}
           >
-            <Printer className="w-4 h-4 mr-1" /> {directPrinting ? "Printing..." : "Print"}
+            <Printer size={16} style={{marginRight: 4}} /> {directPrinting ? "Printing..." : "Print"}
           </Button>
           <Button
             onClick={handleSave}
@@ -2867,7 +2867,7 @@ const BarcodeGeneration = () => {
             className="glass-btn glass-btn-success disabled:opacity-50"
             sx={{ display: "flex", alignItems: "center" }}
           >
-            <Save className="w-4 h-4 mr-1" /> Save
+            <Save size={16} style={{marginRight: 4}} /> Save
           </Button>
           <Button
             onClick={handleGenerate}
@@ -2882,7 +2882,7 @@ const BarcodeGeneration = () => {
             className="glass-btn glass-btn-primary"
             sx={{ display: "flex", alignItems: "center" }}
           >
-            <Search className="w-4 h-4 mr-1" /> Search
+            <Search size={16} style={{marginRight: 4}} /> Search
           </Button>
         </Stack>
       </Stack>
@@ -2946,7 +2946,7 @@ const BarcodeGeneration = () => {
               className="glass-btn glass-btn-success disabled:opacity-50 disabled:cursor-not-allowed"
               fullWidth
             >
-              <Save className="w-4 h-4 inline mr-1" /> Save
+              <Save size={16} style={{ display: "inline", marginRight: 4 }} /> Save
             </Button>
 
             <Button
@@ -2955,7 +2955,7 @@ const BarcodeGeneration = () => {
               className="glass-btn glass-btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
               fullWidth
             >
-              <Eye className="w-4 h-4 inline mr-1" /> Preview Barcode
+              <Eye size={16} style={{ display: "inline", marginRight: 4 }} /> Preview Barcode
             </Button>
 
             <Button
@@ -2964,7 +2964,7 @@ const BarcodeGeneration = () => {
               className="glass-btn glass-btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
               fullWidth
             >
-              <Printer className="w-4 h-4 inline mr-1" /> {directPrinting ? "Printing..." : "Print"}
+              <Printer size={16} style={{ display: "inline", marginRight: 4 }} /> {directPrinting ? "Printing..." : "Print"}
             </Button>
 
             {activeItem ? (

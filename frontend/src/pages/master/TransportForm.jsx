@@ -307,7 +307,7 @@ const TransportForm = () => {
             <Button
               onClick={() => { setForm(EMPTY_FORM); setRates([]); navigate("/masters/transport/new"); }}
               className="topbar-action-btn topbar-action-new"
-              startIcon={<PlusCircle className="w-3 h-3" />}
+              startIcon={<PlusCircle size={12} />}
               size="small"
             >
               New
@@ -317,7 +317,7 @@ const TransportForm = () => {
                 onClick={handleSave}
                 disabled={saving}
                 className="glass-btn glass-btn-success"
-                startIcon={<Save className="w-3 h-3" />}
+                startIcon={<Save size={12} />}
                 size="small"
               >
                 Save
@@ -326,7 +326,7 @@ const TransportForm = () => {
             <Button
               onClick={() => navigate("/masters/transport")}
               className="glass-btn glass-btn-primary"
-              startIcon={<Search className="w-3 h-3" />}
+              startIcon={<Search size={12} />}
               size="small"
             >
               Search
@@ -615,7 +615,7 @@ const TransportForm = () => {
                 sx={{ mb: 0.25, p: 0.75 }}
                 title="Add rate"
               >
-                <PlusCircle className="w-4 h-4" />
+                <PlusCircle size={16} />
               </IconButton>
             </Stack>
           )}

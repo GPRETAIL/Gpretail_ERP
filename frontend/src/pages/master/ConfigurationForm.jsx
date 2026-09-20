@@ -737,7 +737,7 @@ const ConfigurationForm = () => {
               onClick={handleSave}
               disabled={saving}
               className="glass-btn glass-btn-success"
-              startIcon={<Save className="w-3 h-3" />}
+              startIcon={<Save size={12} />}
               size="small"
             >
               {saving ? "Saving…" : "Save"}

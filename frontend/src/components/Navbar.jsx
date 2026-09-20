@@ -559,7 +559,7 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
                 aria-label="Open menu"
                 sx={{ color: "text.secondary" }}
               >
-                <Bars3Icon className="w-5 h-5" />
+                <Bars3Icon size={20} />
               </IconButton>
             )}
             {(!sidebarExpanded || isMobile) ? (
@@ -602,9 +602,9 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
               sx={{ color: "text.secondary" }}
             >
               {isFullscreen ? (
-                <ArrowsPointingInIcon className="w-5 h-5" />
+                <ArrowsPointingInIcon size={20} />
               ) : (
-                <ArrowsPointingOutIcon className="w-5 h-5" />
+                <ArrowsPointingOutIcon size={20} />
               )}
             </IconButton>
 
@@ -616,7 +616,7 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
                 sx={{ color: "text.secondary" }}
               >
                 <Badge badgeContent={pendingApprovalsCount} color="error" showZero overlap="circular">
-                  <InboxIcon className="w-5 h-5" />
+                  <InboxIcon size={20} />
                 </Badge>
               </IconButton>
             ) : null}
@@ -624,7 +624,7 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
             {/* 🔔 Notification Button */}
             <IconButton size="small" onClick={openNotifMenu} title="Notifications" sx={{ color: "text.secondary" }}>
               <Badge badgeContent={unreadNotifCount} color="error" showZero={false} overlap="circular">
-                <BellIcon className="w-5 h-5" />
+                <BellIcon size={20} />
               </Badge>
             </IconButton>
             <Menu
@@ -711,21 +711,21 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
                 }}
               >
                 <ListItemIcon>
-                  <UserIcon className="w-5 h-5" />
+                  <UserIcon size={20} />
                 </ListItemIcon>
                 <ListItemText>Profile</ListItemText>
               </MenuItem>
 
               <MenuItem onClick={openPrinterDialog}>
                 <ListItemIcon>
-                  <PrinterIcon className="w-5 h-5" />
+                  <PrinterIcon size={20} />
                 </ListItemIcon>
                 <ListItemText>Printer</ListItemText>
               </MenuItem>
 
               <MenuItem onClick={openCounterDialog}>
                 <ListItemIcon>
-                  <BuildingStorefrontIcon className="w-5 h-5" />
+                  <BuildingStorefrontIcon size={20} />
                 </ListItemIcon>
                 <ListItemText>Counter</ListItemText>
               </MenuItem>
@@ -733,7 +733,7 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
               {canSwitchStore && (
                 <MenuItem onClick={openStoreDialog} sx={{ color: "primary.main", fontWeight: 500 }}>
                   <ListItemIcon sx={{ color: "inherit" }}>
-                    <BuildingStorefrontIcon className="w-5 h-5" />
+                    <BuildingStorefrontIcon size={20} />
                   </ListItemIcon>
                   <ListItemText>Switch Store</ListItemText>
                 </MenuItem>
@@ -749,7 +749,7 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
                   }}
                 >
                   <ListItemIcon>
-                    <Cog6ToothIcon className="w-5 h-5" />
+                    <Cog6ToothIcon size={20} />
                   </ListItemIcon>
                   <ListItemText>Settings</ListItemText>
                 </MenuItem>
@@ -762,7 +762,7 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
                 }}
               >
                 <ListItemIcon>
-                  <DevicePhoneMobileIcon className="w-5 h-5" />
+                  <DevicePhoneMobileIcon size={20} />
                 </ListItemIcon>
                 <ListItemText>Mobile Workspace</ListItemText>
               </MenuItem>
@@ -775,7 +775,7 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
                 sx={{ color: "primary.main", fontWeight: 600 }}
               >
                 <ListItemIcon sx={{ color: "inherit" }}>
-                  <DevicePhoneMobileIcon className="w-5 h-5" />
+                  <DevicePhoneMobileIcon size={20} />
                 </ListItemIcon>
                 <ListItemText>Install Mobile App</ListItemText>
               </MenuItem>
@@ -790,7 +790,7 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
                 sx={{ color: "error.main" }}
               >
                 <ListItemIcon sx={{ color: "inherit" }}>
-                  <ArrowRightStartOnRectangleIcon className="w-5 h-5" />
+                  <ArrowRightStartOnRectangleIcon size={20} />
                 </ListItemIcon>
                 <ListItemText>Logout</ListItemText>
               </MenuItem>
@@ -908,7 +908,7 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
           <Box>
             <Typography variant="subtitle1" fontWeight={600} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <Box sx={{ color: "primary.main", display: "inline-flex" }}>
-                <BuildingStorefrontIcon className="w-5 h-5" />
+                <BuildingStorefrontIcon size={20} />
               </Box>
               Switch Active Store Scope
             </Typography>

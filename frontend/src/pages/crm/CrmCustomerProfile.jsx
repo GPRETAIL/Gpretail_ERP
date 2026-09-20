@@ -57,7 +57,7 @@ const CrmCustomerProfile = () => {
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1, flexShrink: 0 }}>
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           <IconButton size="small" onClick={() => navigate(-1)} sx={{ color: "text.secondary" }}>
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft size={16} />
           </IconButton>
           <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: 13, fontWeight: 600 }}>
             <Button type="button" variant="text" onClick={() => navigate("/crm")} sx={{ minWidth: "auto", p: 0, fontSize: 13, fontWeight: 600 }}>
@@ -72,7 +72,7 @@ const CrmCustomerProfile = () => {
           </Stack>
         </Stack>
         <Button className="glass-btn glass-btn-primary flex items-center" onClick={() => navigate(`/crm/customer/${id}`)}>
-          <Pencil className="w-3 h-3 mr-1" /> Edit
+          <Pencil size={12} style={{marginRight: 4}} /> Edit
         </Button>
       </Stack>
 

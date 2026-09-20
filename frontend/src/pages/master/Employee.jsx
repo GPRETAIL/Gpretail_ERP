@@ -701,7 +701,7 @@ const Employee = () => {
               type="button"
               onClick={() => handleFileUpload(field)}
               className="glass-btn glass-btn-success"
-              startIcon={<Upload className="w-3 h-3" />}
+              startIcon={<Upload size={12} />}
               fullWidth
               sx={{ justifyContent: "center" }}
             >
@@ -736,7 +736,7 @@ const Employee = () => {
           if (!familyForm.name.trim()) { toast.warning("Name is required"); return; }
           setFamilyList((prev) => [...prev, { ...familyForm }]);
           setFamilyForm({ name: "", gender: "", age: "", qualification: "", date_of_birth: "", relation: "" });
-        }} className="glass-btn glass-btn-primary" startIcon={<PlusCircle className="w-3 h-3" />}>
+        }} className="glass-btn glass-btn-primary" startIcon={<PlusCircle size={12} />}>
           Add
         </Button>
       </Stack>
@@ -762,7 +762,7 @@ const Employee = () => {
                 <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>{item.relation}</TableCell>
                 <TableCell align="center">
                   <IconButton type="button" onClick={() => setFamilyList((p) => p.filter((_, i) => i !== idx))}
-                    size="small" sx={{ color: "error.main", "&:hover": { color: "error.dark" } }}><Trash2 className="w-3 h-3" /></IconButton>
+                    size="small" sx={{ color: "error.main", "&:hover": { color: "error.dark" } }}><Trash2 size={12} /></IconButton>
                 </TableCell>
               </TableRow>
             ))}
@@ -843,13 +843,13 @@ const Employee = () => {
                 } catch { toast.error("Upload failed"); }
               };
               input.click();
-            }} className="glass-btn glass-btn-success" startIcon={<Upload className="w-3 h-3" />}>
+            }} className="glass-btn glass-btn-success" startIcon={<Upload size={12} />}>
               Upload Certificate
             </Button>
             <Button type="button" onClick={() => {
               setEducationList((prev) => [...prev, { ...educationForm }]);
               setEducationForm({ qualification_type: "", name: "", institution: "", place: "", year: "", percentage: "" });
-            }} className="glass-btn glass-btn-primary" startIcon={<PlusCircle className="w-3 h-3" />}>
+            }} className="glass-btn glass-btn-primary" startIcon={<PlusCircle size={12} />}>
               Add
             </Button>
           </Stack>
@@ -877,7 +877,7 @@ const Employee = () => {
                     <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>{item.percentage}</TableCell>
                     <TableCell align="center">
                       <IconButton type="button" onClick={() => setEducationList((p) => p.filter((_, i) => i !== idx))}
-                        size="small" sx={{ color: "error.main", "&:hover": { color: "error.dark" } }}><Trash2 className="w-3 h-3" /></IconButton>
+                        size="small" sx={{ color: "error.main", "&:hover": { color: "error.dark" } }}><Trash2 size={12} /></IconButton>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -912,13 +912,13 @@ const Employee = () => {
                 } catch { toast.error("Upload failed"); }
               };
               input.click();
-            }} className="glass-btn glass-btn-success" startIcon={<Upload className="w-3 h-3" />}>
+            }} className="glass-btn glass-btn-success" startIcon={<Upload size={12} />}>
               Upload Certificate
             </Button>
             <Button type="button" onClick={() => {
               setExperienceList((prev) => [...prev, { ...experienceForm }]);
               setExperienceForm({ name: "", institution: "", place: "", year: "", salary: "" });
-            }} className="glass-btn glass-btn-primary" startIcon={<PlusCircle className="w-3 h-3" />}>
+            }} className="glass-btn glass-btn-primary" startIcon={<PlusCircle size={12} />}>
               Add
             </Button>
           </Stack>
@@ -946,7 +946,7 @@ const Employee = () => {
                     <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>{item.salary}</TableCell>
                     <TableCell align="center">
                       <IconButton type="button" onClick={() => setExperienceList((p) => p.filter((_, i) => i !== idx))}
-                        size="small" sx={{ color: "error.main", "&:hover": { color: "error.dark" } }}><Trash2 className="w-3 h-3" /></IconButton>
+                        size="small" sx={{ color: "error.main", "&:hover": { color: "error.dark" } }}><Trash2 size={12} /></IconButton>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -970,7 +970,7 @@ const Employee = () => {
         <Button type="button" onClick={() => {
           setAdditionalInfoList((prev) => [...prev, { ...additionalInfoForm }]);
           setAdditionalInfoForm({ date: "", name: "", value: "" });
-        }} className="glass-btn glass-btn-primary" startIcon={<PlusCircle className="w-3 h-3" />}>
+        }} className="glass-btn glass-btn-primary" startIcon={<PlusCircle size={12} />}>
           Add
         </Button>
       </Stack>
@@ -994,7 +994,7 @@ const Employee = () => {
                 <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>{item.value}</TableCell>
                 <TableCell align="center">
                   <IconButton type="button" onClick={() => setAdditionalInfoList((p) => p.filter((_, i) => i !== idx))}
-                    size="small" sx={{ color: "error.main", "&:hover": { color: "error.dark" } }}><Trash2 className="w-3 h-3" /></IconButton>
+                    size="small" sx={{ color: "error.main", "&:hover": { color: "error.dark" } }}><Trash2 size={12} /></IconButton>
                 </TableCell>
               </TableRow>
             ))}
@@ -1022,7 +1022,7 @@ const Employee = () => {
         <Button type="button" onClick={() => {
           setTrainingList((prev) => [...prev, { ...trainingForm }]);
           setTrainingForm({ training_name: "", given_on: "", remark: "", confirmation_date: "", completion_date: "", notice_period: "" });
-        }} className="glass-btn glass-btn-primary" startIcon={<PlusCircle className="w-3 h-3" />}>
+        }} className="glass-btn glass-btn-primary" startIcon={<PlusCircle size={12} />}>
           Add
         </Button>
       </Stack>
@@ -1050,7 +1050,7 @@ const Employee = () => {
                 <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>{item.completion_date}</TableCell>
                 <TableCell align="center">
                   <IconButton type="button" onClick={() => setTrainingList((p) => p.filter((_, i) => i !== idx))}
-                    size="small" sx={{ color: "error.main", "&:hover": { color: "error.dark" } }}><Trash2 className="w-3 h-3" /></IconButton>
+                    size="small" sx={{ color: "error.main", "&:hover": { color: "error.dark" } }}><Trash2 size={12} /></IconButton>
                 </TableCell>
               </TableRow>
             ))}
@@ -1082,7 +1082,7 @@ const Employee = () => {
         <Button type="button" onClick={() => {
           setClassificationList((prev) => [...prev, { ...classificationForm }]);
           setClassificationForm({ valid_from: "", valid_to: "", designation_id: "", department_id: "", section_id: "", floor_id: "" });
-        }} className="glass-btn glass-btn-primary" startIcon={<PlusCircle className="w-3 h-3" />}>
+        }} className="glass-btn glass-btn-primary" startIcon={<PlusCircle size={12} />}>
           Add
         </Button>
       </Stack>
@@ -1110,7 +1110,7 @@ const Employee = () => {
                 <TableCell sx={{ borderRight: 1, borderColor: "divider" }}>{opts.sections.find((d) => d.value === item.section_id)?.label || item.section_id}</TableCell>
                 <TableCell align="center">
                   <IconButton type="button" onClick={() => setClassificationList((p) => p.filter((_, i) => i !== idx))}
-                    size="small" sx={{ color: "error.main", "&:hover": { color: "error.dark" } }}><Trash2 className="w-3 h-3" /></IconButton>
+                    size="small" sx={{ color: "error.main", "&:hover": { color: "error.dark" } }}><Trash2 size={12} /></IconButton>
                 </TableCell>
               </TableRow>
             ))}
@@ -1304,7 +1304,7 @@ const Employee = () => {
               variant="text"
               className="topbar-action-btn topbar-action-new"
               onClick={handleNew}
-              startIcon={<PlusCircle className="w-4 h-4" />}
+              startIcon={<PlusCircle size={16} />}
               size="small"
             >
               New
@@ -1342,7 +1342,7 @@ const Employee = () => {
                   className="glass-btn glass-btn-success"
                   onClick={handleSave}
                   disabled={saving}
-                  startIcon={<Save className="w-4 h-4" />}
+                  startIcon={<Save size={16} />}
                   size="small"
                 >
                   {saving ? "Saving..." : "Save"}
@@ -1353,7 +1353,7 @@ const Employee = () => {
             <Button
               className="glass-btn glass-btn-primary"
               onClick={() => { setShowSearchPage(true); handleSearch(); }}
-              startIcon={<Search className="w-4 h-4" />}
+              startIcon={<Search size={16} />}
               size="small"
             >
               Search

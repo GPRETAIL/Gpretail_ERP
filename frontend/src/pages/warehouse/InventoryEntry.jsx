@@ -224,13 +224,13 @@ const AttrSelect = ({
           <Box component="span" sx={{ color: selectedLabel ? "text.primary" : "text.disabled", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {selectedLabel || "Select..."}
           </Box>
-          <ChevronDown className="w-3.5 h-3.5" style={{ color: "#9ca3af", transition: "transform 0.15s", transform: open ? "rotate(180deg)" : undefined }} />
+          <ChevronDown size={14} style={{ color: "#9ca3af", transition: "transform 0.15s", transform: open ? "rotate(180deg)" : undefined }} />
         </Box>
 
         {open && (
           <Box sx={{ position: "absolute", zIndex: 50, left: 0, top: "100%", mt: 0.25, width: "100%", bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "3.5px", boxShadow: 4 }}>
             <Stack direction="row" spacing={0.5} sx={{ p: 0.5, borderBottom: 1, borderColor: "divider", alignItems: "center" }}>
-              <Search className="w-3 h-3 shrink-0" style={{ color: "#9ca3af" }} />
+              <Search size={12} style={{flexShrink: 0}} style={{ color: "#9ca3af" }} />
               <Box
                 component="input"
                 autoFocus
@@ -466,13 +466,13 @@ const SearchableSizeSelect = ({ value, onChange, sizes, sizeGroups, onJump }) =>
         <Box component="span" sx={{ color: selectedLabel ? "text.primary" : "text.disabled", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {selectedLabel || "Size..."}
         </Box>
-        <ChevronDown className="w-3 h-3" style={{ color: "#9ca3af", transition: "transform 0.15s", transform: open ? "rotate(180deg)" : undefined }} />
+        <ChevronDown size={12} style={{ color: "#9ca3af", transition: "transform 0.15s", transform: open ? "rotate(180deg)" : undefined }} />
       </Box>
 
       {open && (
         <Box sx={{ position: "absolute", zIndex: 160, left: 0, top: "100%", mt: 0.25, width: "100%", bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "3.5px", boxShadow: 4, minWidth: 160 }}>
           <Stack direction="row" spacing={0.5} sx={{ p: 0.5, borderBottom: 1, borderColor: "divider", alignItems: "center" }}>
-            <Search className="w-3 h-3 shrink-0" style={{ color: "#9ca3af" }} />
+            <Search size={12} style={{flexShrink: 0}} style={{ color: "#9ca3af" }} />
             <Box
               component="input"
               autoFocus
@@ -595,7 +595,7 @@ const JumpSizeDialog = ({ open, onClose, onApply, defaultQty }) => {
         <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1.5, borderBottom: 1, borderColor: "divider" }}>
           <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Size Detail (Jump)</Typography>
           <Button onClick={handleClose} className="glass-btn glass-btn-secondary">
-            <X className="w-4 h-4" />
+            <X size={16} />
           </Button>
         </Stack>
 
@@ -689,7 +689,7 @@ const JumpSizeDialog = ({ open, onClose, onApply, defaultQty }) => {
                   </Box>
                   <Box sx={{ p: 1, width: 64, textAlign: "center" }}>
                     <Button onClick={() => handleRemove(idx)} className="glass-btn glass-btn-danger">
-                      <X className="w-3.5 h-3.5 inline" />
+                      <X size={14} style={{ display: "inline" }} />
                     </Button>
                   </Box>
                 </Stack>
@@ -1701,7 +1701,7 @@ const InventoryEntry = () => {
                 className="glass-btn glass-btn-success"
                 sx={{ display: "flex", alignItems: "center" }}
               >
-                <Save className="w-4 h-4 mr-1" /> Save
+                <Save size={16} style={{marginRight: 4}} /> Save
               </Button>
               <Button
                 onClick={handleSaveAndNext}
@@ -1717,14 +1717,14 @@ const InventoryEntry = () => {
             className="glass-btn glass-btn-primary"
             sx={{ display: "flex", alignItems: "center" }}
           >
-            <Search className="w-4 h-4 mr-1" /> Search
+            <Search size={16} style={{marginRight: 4}} /> Search
           </Button>
           <Button
             onClick={() => navigate("/warehouse")}
             className="glass-btn glass-btn-secondary"
             sx={{ display: "flex", alignItems: "center" }}
           >
-            <ArrowLeft className="w-4 h-4 mr-1" /> Back
+            <ArrowLeft size={16} style={{marginRight: 4}} /> Back
           </Button>
         </Stack>
       </Stack>
@@ -2115,7 +2115,7 @@ const InventoryEntry = () => {
                       sx={{ width: 28, height: 28, minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center" }}
                       title={editIndex !== null ? "Update Item" : "Add Item"}
                     >
-                      <Plus className="w-4 h-4" />
+                      <Plus size={16} />
                     </Button>
                   </Box>
                 </Stack>
@@ -2325,7 +2325,7 @@ const InventoryEntry = () => {
                           sx={{ color: "primary.main", p: 0.25 }}
                           title="Edit"
                         >
-                          <Pencil className="w-3 h-3" />
+                          <Pencil size={12} />
                         </IconButton>
                         <IconButton
                           onClick={() => handleRemoveItem(index)}
@@ -2333,7 +2333,7 @@ const InventoryEntry = () => {
                           sx={{ color: "error.main", p: 0.25 }}
                           title="Delete"
                         >
-                          <Trash2 className="w-3 h-3" />
+                          <Trash2 size={12} />
                         </IconButton>
                       </Stack>
                     </Stack>

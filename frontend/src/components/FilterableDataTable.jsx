@@ -495,7 +495,7 @@ export default function FilterableDataTable({
             {column.label}
           </span>
           <IconButton size="small" onClick={() => setActiveFilterColumn(null)}>
-            <X className="w-3.5 h-3.5" />
+            <X size={14} />
           </IconButton>
         </div>
         <div className="flex flex-col gap-2">
@@ -1913,6 +1913,27 @@ export default function FilterableDataTable({
   // Non-compact originally used h-7/h-8 (Tailwind rem-based, not the compact mode's literal h-[26px])
   // -- at this app's 14px root that's 24.5px/28px, not the 16px-root values those names might suggest.
   const paginationControlSx = { height: compact ? 26 : 24.5, fontSize: compact ? 7 : 10 };
+  // Pagination sits at the bottom of the table, often near the viewport edge -- anchor the popup
+  // menu to open upward off the trigger's top edge instead of MUI's downward default, and keep the
+  // menu itself dense so a handful of rows-per-page/page options don't render as a tall, loosely
+  // spaced list.
+  const paginationMenuProps = {
+    anchorOrigin: { vertical: "top", horizontal: "left" },
+    transformOrigin: { vertical: "bottom", horizontal: "left" },
+    slotProps: {
+      paper: {
+        sx: {
+          maxHeight: 220,
+          "& .MuiMenuItem-root": {
+            minHeight: "auto",
+            fontSize: compact ? 10 : 12.25,
+            py: 0.5,
+            px: 1.5,
+          },
+        },
+      },
+    },
+  };
   const paginationButtonSx = { height: compact ? 26 : 28, minWidth: compact ? 32 : 40, fontSize: compact ? 9 : 12 };
   const loadMoreButtonSx = { fontSize: compact ? 9 : 12, px: compact ? 2 : 2.5, py: compact ? 0.5 : 0.75 };
   const resolvedSearchButtonClassName = compact
@@ -1973,7 +1994,7 @@ export default function FilterableDataTable({
               }}
               sx={{ position: "absolute", right: 2, top: "50%", transform: "translateY(-50%)", color: "text.disabled" }}
             >
-              <X className="w-3.5 h-3.5" />
+              <X size={14} />
             </IconButton>
           )}
         </Box>
@@ -1994,7 +2015,7 @@ export default function FilterableDataTable({
           disabled={Boolean(onRefresh) && refreshDisabled}
           className={resolvedSearchButtonClassName}
         >
-          <Search className="w-3 h-3 mr-1" /> Search
+          <Search size={12} style={{marginRight: 4}} /> Search
         </button>
         <Button
           size="small"
@@ -2075,7 +2096,7 @@ export default function FilterableDataTable({
               size="small"
               variant="contained"
               color="error"
-              startIcon={<Trash2 className="w-3 h-3" />}
+              startIcon={<Trash2 size={12} />}
               onClick={() => onBulkDelete(selectedRows)}
               sx={{ fontSize: 11 }}
             >
@@ -2123,7 +2144,7 @@ export default function FilterableDataTable({
                     onClick={handleOpenColumnDialog}
                     className="text-gray-600 hover:text-blue-600 transition dark:text-gray-400 dark:hover:text-blue-400"
                   >
-                    <Settings2 className="w-3.5 h-3.5" />
+                    <Settings2 size={14} />
                   </button>
                   {enableSelection && onSelectionChange && (
                     <Checkbox
@@ -2131,7 +2152,6 @@ export default function FilterableDataTable({
                       indeterminate={somePageSelected && !allPageSelected}
                       onChange={(e) => handleSelectAll(e.target.checked)}
                       size="small"
-                      className="w-3.5 h-3.5"
                       slotProps={{ input: { title: "Select all on this page" } }}
                     />
                   )}
@@ -2177,7 +2197,7 @@ export default function FilterableDataTable({
                         />
                       )}
                       {enableColumnReorder && (
-                        <GripVertical className="w-3 h-3 text-gray-400 cursor-grab dark:text-gray-500" />
+                        <GripVertical size={12} style={{ color: "#94a3b8", cursor: "grab" }} />
                       )}
                       <button
                         type="button"
@@ -2211,7 +2231,7 @@ export default function FilterableDataTable({
                             : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
                         }`}
                       >
-                        <Filter className="w-3.5 h-3.5" />
+                        <Filter size={14} />
                       </button>
                     </div>
                   </div>
@@ -2413,7 +2433,6 @@ export default function FilterableDataTable({
                           }}
                           onClick={(e) => e.stopPropagation()}
                           size="small"
-                          className="w-3 h-3"
                         />
                       )}
                     </TableCell>
@@ -2694,6 +2713,7 @@ export default function FilterableDataTable({
                 onChange={(e) => onLimitChange(Number(e.target.value))}
                 className={compact ? "compact-pagination-select" : ""}
                 sx={paginationControlSx}
+                MenuProps={paginationMenuProps}
               >
                 {[20, 50, 60, 100, 150].map((size) => (
                   <MenuItem key={size} value={size}>
@@ -2718,7 +2738,7 @@ export default function FilterableDataTable({
                 color="inherit"
                 onClick={handleNextPage}
                 disabled={!hasNext || loading}
-                startIcon={loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                startIcon={loading ? <Loader2 size={14} className="animate-spin" /> : null}
                 sx={loadMoreButtonSx}
               >
                 {hasNext ? "Load More" : "No more results"}
@@ -2741,6 +2761,7 @@ export default function FilterableDataTable({
                     onChange={(e) => setGroupSummaryState((prev) => ({ ...prev, page: Number(e.target.value) }))}
                     className={compact ? "compact-pagination-select" : ""}
                     sx={paginationControlSx}
+                    MenuProps={paginationMenuProps}
                   >
                     {pageOptions.map((p) => (
                       <MenuItem key={p} value={p}>
@@ -2758,6 +2779,7 @@ export default function FilterableDataTable({
                     onChange={(e) => onPageChange(Number(e.target.value))}
                     className={compact ? "compact-pagination-select" : ""}
                     sx={paginationControlSx}
+                    MenuProps={paginationMenuProps}
                   >
                     {pageOptions.map((p) => (
                       <MenuItem key={p} value={p}>
@@ -2802,7 +2824,7 @@ export default function FilterableDataTable({
             <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", px: 2.5, py: 1.5 }}>
               <Typography sx={{ fontSize: 14, fontWeight: 600 }}>Personalize List Columns</Typography>
               <IconButton size="small" onClick={() => setShowColumnDialog(false)}>
-                <X className="w-4 h-4" />
+                <X size={16} />
               </IconButton>
             </DialogTitle>
 
@@ -2844,7 +2866,7 @@ export default function FilterableDataTable({
                         }}
                       >
                         <GripVertical
-                          className="w-3 h-3 shrink-0"
+                          size={12} style={{flexShrink: 0}}
                           style={{ color: availableHighlight === col.key ? "inherit" : undefined, opacity: availableHighlight === col.key ? 0.7 : undefined }}
                         />
                         {col.label}
@@ -2863,7 +2885,7 @@ export default function FilterableDataTable({
                   disabled={!availableHighlight}
                   sx={{ border: "1px solid", borderColor: "divider", borderRadius: "1.75px" }}
                 >
-                  <ChevronRight className="w-4 h-4" />
+                  <ChevronRight size={16} />
                 </IconButton>
                 <IconButton
                   size="small"
@@ -2872,7 +2894,7 @@ export default function FilterableDataTable({
                   disabled={draftAvailableColumns.length === 0}
                   sx={{ border: "1px solid", borderColor: "divider", borderRadius: "1.75px" }}
                 >
-                  <ChevronsRight className="w-4 h-4" />
+                  <ChevronsRight size={16} />
                 </IconButton>
                 <IconButton
                   size="small"
@@ -2881,7 +2903,7 @@ export default function FilterableDataTable({
                   disabled={!selectedHighlight || draftVisibleColumns.length <= 1}
                   sx={{ border: "1px solid", borderColor: "divider", borderRadius: "1.75px" }}
                 >
-                  <ChevronLeft className="w-4 h-4" />
+                  <ChevronLeft size={16} />
                 </IconButton>
                 <IconButton
                   size="small"
@@ -2890,7 +2912,7 @@ export default function FilterableDataTable({
                   disabled={draftVisibleColumns.length <= 1}
                   sx={{ border: "1px solid", borderColor: "divider", borderRadius: "1.75px" }}
                 >
-                  <ChevronsLeft className="w-4 h-4" />
+                  <ChevronsLeft size={16} />
                 </IconButton>
               </Stack>
 
@@ -2932,7 +2954,7 @@ export default function FilterableDataTable({
                       }}
                     >
                       <GripVertical
-                        className="w-3 h-3 shrink-0"
+                        size={12} style={{flexShrink: 0}}
                         style={{ color: selectedHighlight === col.key ? "inherit" : undefined, opacity: selectedHighlight === col.key ? 0.7 : undefined }}
                       />
                       {col.label}
@@ -2953,7 +2975,7 @@ export default function FilterableDataTable({
                   }
                   sx={{ border: "1px solid", borderColor: "divider", borderRadius: "1.75px" }}
                 >
-                  <ChevronUp className="w-4 h-4" />
+                  <ChevronUp size={16} />
                 </IconButton>
                 <IconButton
                   size="small"
@@ -2966,7 +2988,7 @@ export default function FilterableDataTable({
                   }
                   sx={{ border: "1px solid", borderColor: "divider", borderRadius: "1.75px" }}
                 >
-                  <ChevronDown className="w-4 h-4" />
+                  <ChevronDown size={16} />
                 </IconButton>
               </Stack>
             </DialogContent>

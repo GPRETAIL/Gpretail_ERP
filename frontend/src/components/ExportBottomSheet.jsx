@@ -474,21 +474,21 @@ export default function ExportBottomSheet({
         className={`topbar-action-btn topbar-action-export ${buttonClassName}`}
         sx={{ opacity: exporting ? 0.7 : 1 }}
       >
-        <Download className="w-3 h-3 mr-1" /> {exporting ? "Exporting..." : buttonLabel}
-        <ChevronDown className="w-3 h-3 ml-1" />
+        <Download size={12} style={{marginRight: 4}} /> {exporting ? "Exporting..." : buttonLabel}
+        <ChevronDown size={12} style={{marginLeft: 4}} />
       </Button>
 
       <Menu anchorEl={anchorEl} open={open} onClose={() => setAnchorEl(null)} slotProps={{ list: { dense: true } }}>
         <MenuItem disabled={exporting} onClick={exportPdf}>
-          <ListItemIcon><FileText className="w-3.5 h-3.5" /></ListItemIcon>
+          <ListItemIcon><FileText size={14} /></ListItemIcon>
           <ListItemText primaryTypographyProps={{ fontSize: 12 }}>PDF</ListItemText>
         </MenuItem>
         <MenuItem disabled={exporting} onClick={exportExcel}>
-          <ListItemIcon><FileSpreadsheet className="w-3.5 h-3.5" /></ListItemIcon>
+          <ListItemIcon><FileSpreadsheet size={14} /></ListItemIcon>
           <ListItemText primaryTypographyProps={{ fontSize: 12 }}>EXCEL</ListItemText>
         </MenuItem>
         <MenuItem disabled={exporting} onClick={exportCsv}>
-          <ListItemIcon><FileText className="w-3.5 h-3.5" /></ListItemIcon>
+          <ListItemIcon><FileText size={14} /></ListItemIcon>
           <ListItemText primaryTypographyProps={{ fontSize: 12 }}>CSV</ListItemText>
         </MenuItem>
       </Menu>

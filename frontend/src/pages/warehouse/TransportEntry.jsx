@@ -690,7 +690,7 @@ const TransportEntry = () => {
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", bgcolor: "background.paper", px: 1.5, py: 0.75, boxShadow: 1 }}>
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           <IconButton onClick={handleBackClick} type="button" aria-label="Back to warehouse module" sx={{ color: "text.secondary" }}>
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft size={16} />
           </IconButton>
           <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: 12.25, fontWeight: 600 }}>
             <Button type="button" variant="text" onClick={() => navigate("/warehouse")} sx={{ minWidth: "auto", p: 0, fontSize: 12.25, fontWeight: 600 }}>
@@ -1123,7 +1123,7 @@ const TransportEntry = () => {
                               size="small"
                               sx={{ color: "primary.main", p: 0.25 }}
                             >
-                              <Eye className="w-3.5 h-3.5" />
+                              <Eye size={14} />
                             </IconButton>
                             <IconButton
                               type="button"
@@ -1132,7 +1132,7 @@ const TransportEntry = () => {
                               size="small"
                               sx={{ color: "error.main", p: 0.25 }}
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
+                              <Trash2 size={14} />
                             </IconButton>
                           </Stack>
                         </Box>

@@ -66,7 +66,7 @@ const StockOutward = () => {
       >
         <Stack direction="row" sx={{ alignItems: "center" }}>
           <IconButton onClick={handleBackClick} aria-label="Back" sx={{ mr: 1.5, color: "text.secondary" }}>
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft size={16} />
           </IconButton>
           <Typography component="h1" sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>
             Warehouse / Stock Outward
@@ -76,13 +76,13 @@ const StockOutward = () => {
           <Typography sx={{ fontSize: 12.25, fontWeight: 500, color: "success.main", alignSelf: "center" }}>
             Last Saved
           </Typography>
-          <Button onClick={handleSaveClick} className="glass-btn glass-btn-success" startIcon={<Save className="w-4 h-4" />}>
+          <Button onClick={handleSaveClick} className="glass-btn glass-btn-success" startIcon={<Save size={16} />}>
             New
           </Button>
-          <Button onClick={handleSaveClick} className="glass-btn glass-btn-success" startIcon={<Save className="w-4 h-4" />}>
+          <Button onClick={handleSaveClick} className="glass-btn glass-btn-success" startIcon={<Save size={16} />}>
             Save
           </Button>
-          <Button onClick={handleSearch} className="glass-btn glass-btn-primary" startIcon={<Search className="w-4 h-4" />}>
+          <Button onClick={handleSearch} className="glass-btn glass-btn-primary" startIcon={<Search size={16} />}>
             Search
           </Button>
         </Stack>
@@ -103,7 +103,7 @@ const StockOutward = () => {
                   <FormField label="Code" />
                 </Box>
                 <IconButton className="glass-btn glass-btn-primary" sx={{ alignSelf: "flex-end" }}>
-                  <Search className="w-4 h-4" />
+                  <Search size={16} />
                 </IconButton>
               </Stack>
 
@@ -138,10 +138,10 @@ const StockOutward = () => {
                     <TextField placeholder="supplier" size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }} />
                   </Box>
                   <IconButton onClick={handleSearch} className="glass-btn glass-btn-primary" sx={{ alignSelf: "flex-end" }}>
-                    <Search className="w-4 h-4" />
+                    <Search size={16} />
                   </IconButton>
                   <IconButton onClick={handleSearch} className="glass-btn glass-btn-danger" sx={{ alignSelf: "flex-end" }}>
-                    <X className="w-4 h-4" />
+                    <X size={16} />
                   </IconButton>
                 </Stack>
               </Box>
@@ -179,10 +179,10 @@ const StockOutward = () => {
                   <FormField label="Barcode" />
                 </Box>
                 <IconButton className="glass-btn glass-btn-primary" sx={{ alignSelf: "flex-end" }}>
-                  <Plus className="w-4 h-4" />
+                  <Plus size={16} />
                 </IconButton>
                 <IconButton className="glass-btn glass-btn-danger" sx={{ alignSelf: "flex-end" }}>
-                  <X className="w-4 h-4" />
+                  <X size={16} />
                 </IconButton>
               </Stack>
             </Box>
@@ -279,7 +279,7 @@ const StockOutward = () => {
                           size="small"
                           sx={{ color: "success.main", p: 0.5 }}
                         >
-                          <Plus className="w-4 h-4" />
+                          <Plus size={16} />
                         </IconButton>
                       </Box>
                     </Stack>

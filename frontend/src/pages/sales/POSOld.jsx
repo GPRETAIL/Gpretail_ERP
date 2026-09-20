@@ -2326,11 +2326,11 @@ const POSOld = () => {
             </Button>
           ))}
           <Button onClick={handleAddTab} className="glass-btn glass-btn-success" sx={{ px: 1, py: 0.5, minWidth: 0 }} title="Hold & New">
-            <Plus className="w-4 h-4" />
+            <Plus size={16} />
           </Button>
           {tabs.length > 1 && (
             <Button onClick={() => handleDeleteTab(activeTabId)} className="glass-btn glass-btn-danger" sx={{ px: 1, py: 0.5, minWidth: 0 }} title="Delete Tab">
-              <Minus className="w-4 h-4" />
+              <Minus size={16} />
             </Button>
           )}
         </Stack>
@@ -2364,12 +2364,12 @@ const POSOld = () => {
                   }
                 }}
                 className="glass-btn glass-btn-primary"
-                startIcon={<Printer className="w-4 h-4" />}
+                startIcon={<Printer size={16} />}
                 sx={{ fontSize: 12.25 }}
               >
                 Receipt
               </Button>
-              <Button onClick={handleOpenCloseRegister} className="glass-btn glass-btn-primary" startIcon={<CreditCard className="w-4 h-4" />} sx={{ fontSize: 12.25 }}>
+              <Button onClick={handleOpenCloseRegister} className="glass-btn glass-btn-primary" startIcon={<CreditCard size={16} />} sx={{ fontSize: 12.25 }}>
                 Close
               </Button>
             </>
@@ -2383,7 +2383,7 @@ const POSOld = () => {
           <Button
             onClick={showSearchPage ? () => setShowSearchPage(false) : openSearchPage}
             className="glass-btn glass-btn-primary"
-            startIcon={<Search className="w-4 h-4" />}
+            startIcon={<Search size={16} />}
             sx={{ fontSize: 12.25 }}
           >
             {showSearchPage ? "Back" : "Search"}
@@ -2624,7 +2624,7 @@ const POSOld = () => {
 
             {/* Action buttons */}
             <Box sx={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 1 }}>
-              <Button onClick={handleCancel} className="glass-btn glass-btn-danger" startIcon={<RotateCcw className="w-4 h-4" />} sx={{ py: 1.25, fontSize: 12.25, fontWeight: 700 }}>
+              <Button onClick={handleCancel} className="glass-btn glass-btn-danger" startIcon={<RotateCcw size={16} />} sx={{ py: 1.25, fontSize: 12.25, fontWeight: 700 }}>
                 CANCEL (F4)
               </Button>
               <Button
@@ -2635,7 +2635,7 @@ const POSOld = () => {
                   setTimeout(() => returnBillInputRef.current?.focus(), 0);
                 }}
                 className="glass-btn glass-btn-warning"
-                startIcon={<Repeat className="w-4 h-4" />}
+                startIcon={<Repeat size={16} />}
                 sx={{ py: 1.25, fontSize: 12.25, fontWeight: 700 }}
               >
                 Return
@@ -2648,7 +2648,7 @@ const POSOld = () => {
                   setTimeout(() => returnBillInputRef.current?.focus(), 0);
                 }}
                 className="glass-btn glass-btn-warning"
-                startIcon={<Repeat className="w-4 h-4" />}
+                startIcon={<Repeat size={16} />}
                 sx={{ py: 1.25, fontSize: 12.25, fontWeight: 700 }}
               >
                 Exchange
@@ -2657,7 +2657,7 @@ const POSOld = () => {
                 onClick={handleSave}
                 disabled={saving}
                 className="glass-btn glass-btn-primary"
-                startIcon={<Printer className="w-4 h-4" />}
+                startIcon={<Printer size={16} />}
                 sx={{ py: 1.25, fontSize: 12.25, fontWeight: 700 }}
               >
                 {saving ? "Saving..." : "Quick Pay & Print (F8)"}
@@ -2675,7 +2675,7 @@ const POSOld = () => {
                 type="button"
                 onClick={handleOpenScanner}
                 className="glass-btn glass-btn-secondary"
-                startIcon={<ScanLine className="w-4 h-4" />}
+                startIcon={<ScanLine size={16} />}
                 sx={{ flex: 1, minWidth: 0, height: 44, fontSize: 12.25, fontWeight: 700, whiteSpace: "nowrap" }}
               >
                 Scan
@@ -2687,7 +2687,7 @@ const POSOld = () => {
                 className="glass-btn glass-btn-primary"
                 sx={{ flex: 1, minWidth: 0, height: 44, fontSize: 12.25, fontWeight: 700, whiteSpace: "nowrap" }}
               >
-                <Printer className="w-4 h-4" />
+                <Printer size={16} />
                 {saving ? "Saving..." : "Quick Pay & Print"}
               </Button>
             </Stack>
@@ -2727,7 +2727,7 @@ const POSOld = () => {
             title="Hover to open Products / Brands"
           >
             <Box component="span" sx={{ display: "inline-flex", color: "text.disabled" }}>
-              <ChevronsLeft className="w-3 h-3" />
+              <ChevronsLeft size={12} />
             </Box>
           </Box>
 
@@ -2766,7 +2766,7 @@ const POSOld = () => {
           <Box sx={{ px: 1, py: 1, borderBottom: 1, borderColor: "divider", flexShrink: 0 }}>
             <Box sx={{ position: "relative" }}>
               <Box component="span" sx={{ display: "inline-flex", position: "absolute", left: 8, top: 10, color: "text.disabled" }}>
-                <Search className="w-4 h-4" />
+                <Search size={16} />
               </Box>
               <TextField
                 type="text"
@@ -2796,7 +2796,7 @@ const POSOld = () => {
                     onClick={(e) => { e.stopPropagation(); setSelectedBrand(null); setBrandSearch(""); }}
                     sx={{ color: "text.disabled", "&:hover": { color: "text.secondary" }, ml: 0.5, p: 0.25 }}
                   >
-                    <X className="w-3.5 h-3.5" />
+                    <X size={14} />
                   </IconButton>
                 )}
               </Box>
@@ -2897,7 +2897,7 @@ const POSOld = () => {
             <Stack direction="row" sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: "divider", alignItems: "center", justifyContent: "space-between" }}>
               <Typography component="h3" sx={{ fontWeight: 600, fontSize: 14, color: "text.primary" }}>Scan Barcode</Typography>
               <IconButton onClick={handleCloseScanner} size="small" sx={{ color: "text.secondary", "&:hover": { color: "text.primary" } }}>
-                <X className="w-5 h-5" />
+                <X size={20} />
               </IconButton>
             </Stack>
             <Stack sx={{ p: 1.5, gap: 1.5 }}>
@@ -2989,7 +2989,7 @@ const POSOld = () => {
             <Stack direction="row" sx={{ bgcolor: "#6B8E23", color: "common.white", px: 2, py: 1.5, alignItems: "center", justifyContent: "space-between", borderTopLeftRadius: "7px", borderTopRightRadius: "7px" }}>
               <Typography component="h3" sx={{ fontWeight: 600 }}>CloseRegister</Typography>
               <IconButton onClick={() => setShowCloseRegister(false)} size="small" sx={{ color: "common.white", "&:hover": { opacity: 0.8 } }}>
-                <X className="w-5 h-5" />
+                <X size={20} />
               </IconButton>
             </Stack>
             <Stack sx={{ p: 2, gap: 2 }}>
@@ -3282,7 +3282,7 @@ const POSOld = () => {
                                   aria-label="Remove line"
                                   sx={{ color: "error.main", "&:hover": { color: "error.dark" } }}
                                 >
-                                  <Trash2 className="w-4 h-4" />
+                                  <Trash2 size={16} />
                                 </IconButton>
                               </TableCell>
                             </TableRow>

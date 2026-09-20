@@ -448,7 +448,7 @@ const CrmBillPrint = () => {
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 0.5, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           <IconButton size="small" onClick={() => navigate(-1)} sx={{ color: "text.secondary" }}>
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft size={16} />
           </IconButton>
           <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: 13, fontWeight: 600 }}>
             <Button type="button" variant="text" onClick={() => navigate("/crm")} sx={{ minWidth: "auto", p: 0, fontSize: 13, fontWeight: 600 }}>
@@ -543,9 +543,9 @@ const CrmBillPrint = () => {
                   }}
                   disabled={printingId === row.id}
                 >
-                  <Printer className="w-3.5 h-3.5" />
+                  <Printer size={14} />
                   Print
-                  <ChevronDown className="w-3 h-3" />
+                  <ChevronDown size={12} />
                 </Button>
               </Box>
             )}

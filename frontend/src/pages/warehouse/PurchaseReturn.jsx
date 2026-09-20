@@ -895,7 +895,7 @@ const PurchaseReturn = () => {
             aria-label="Back"
             sx={{ minWidth: "auto", mr: 1.5, p: 0.5, color: "text.secondary" }}
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft size={16} />
           </Button>
           <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: 12.25, fontWeight: 600 }}>
             <Button type="button" variant="text" onClick={() => navigate("/warehouse")} sx={{ minWidth: "auto", p: 0, fontSize: 12.25, fontWeight: 600 }}>
@@ -906,13 +906,13 @@ const PurchaseReturn = () => {
           </Stack>
         </Stack>
         <Stack direction="row" spacing={1} sx={{ fontSize: 12.25 }}>
-          <Button onClick={() => saveReturn(false)} disabled={saving} className="glass-btn glass-btn-success" startIcon={<Save className="w-4 h-4" />} sx={{ opacity: saving ? 0.6 : 1 }}>
+          <Button onClick={() => saveReturn(false)} disabled={saving} className="glass-btn glass-btn-success" startIcon={<Save size={16} />} sx={{ opacity: saving ? 0.6 : 1 }}>
             Return & Save
           </Button>
           <Button onClick={() => saveReturn(true)} disabled={saving} className="glass-btn glass-btn-primary" sx={{ opacity: saving ? 0.6 : 1 }}>
             Save & Print
           </Button>
-          <Button className="glass-btn glass-btn-primary" onClick={() => navigate("/warehouse/purchase-return/search")} startIcon={<Search className="w-4 h-4" />}>
+          <Button className="glass-btn glass-btn-primary" onClick={() => navigate("/warehouse/purchase-return/search")} startIcon={<Search size={16} />}>
             Search
           </Button>
         </Stack>

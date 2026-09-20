@@ -444,7 +444,7 @@ const Agent = () => {
             <Button
               onClick={handleNew}
               className="topbar-action-btn topbar-action-new"
-              startIcon={<PlusCircle className="w-3 h-3" />}
+              startIcon={<PlusCircle size={12} />}
               size="small"
             >
               New
@@ -485,7 +485,7 @@ const Agent = () => {
                   onClick={handleSave}
                   disabled={saving}
                   className="glass-btn glass-btn-success"
-                  startIcon={<Save className="w-3 h-3" />}
+                  startIcon={<Save size={12} />}
                   size="small"
                 >
                   {saving ? "Saving…" : "Save"}
@@ -496,7 +496,7 @@ const Agent = () => {
             <Button
               onClick={handleSearchOpen}
               className="glass-btn glass-btn-primary"
-              startIcon={<Search className="w-3 h-3" />}
+              startIcon={<Search size={12} />}
               size="small"
             >
               Search
@@ -590,14 +590,14 @@ const Agent = () => {
                     disabled={selectedCount > 1}
                     className="glass-btn glass-btn-primary rounded p-1.5"
                   >
-                    <Pencil className="w-3.5 h-3.5" />
+                    <Pencil size={14} />
                   </button>
                   <button
                     onClick={() => setConfirm({ open: true, id: row.id, name: row.name })}
                     title="Delete"
                     className="glass-btn glass-btn-danger rounded p-1.5"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash2 size={14} />
                   </button>
                 </Stack>
               )}

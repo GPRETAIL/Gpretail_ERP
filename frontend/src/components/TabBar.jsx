@@ -64,7 +64,7 @@ const TabBar = () => {
                   size="small"
                   sx={{ ml: 0.25, p: 0.25, borderRadius: 1, "&:hover": { bgcolor: "action.selected" } }}
                 >
-                  <X className="w-3 h-3" />
+                  <X size={12} />
                 </IconButton>
               )}
             </Box>
@@ -80,7 +80,7 @@ const TabBar = () => {
           size="small"
           sx={{ ml: 1, p: 0.5, borderRadius: 1, color: "text.secondary", flexShrink: 0, "&:hover": { bgcolor: "action.selected" } }}
         >
-          <Plus className="w-3.5 h-3.5" />
+          <Plus size={14} />
         </IconButton>
       )}
     </Box>

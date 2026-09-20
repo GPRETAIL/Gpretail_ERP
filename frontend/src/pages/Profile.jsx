@@ -2,8 +2,11 @@ import React from "react";
 import { useSelector } from "react-redux";
 import { EnvelopeIcon, PhoneIcon } from "@heroicons/react/24/outline";
 import { Avatar, Box, Card, Stack, Typography } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 
 const Profile = () => {
+  const theme = useTheme();
+  const iconColor = theme.palette.mode === "dark" ? "#818cf8" : "#6366f1";
   // Get user info from Redux store (authSlice)
   const { user } = useSelector((state) => state.auth);
 
@@ -54,12 +57,12 @@ const Profile = () => {
 
           <Stack spacing={1.5}>
             <Stack direction="row" sx={{ alignItems: "center" }} spacing={1.5}>
-              <EnvelopeIcon className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
+              <EnvelopeIcon style={{ width: 20, height: 20, color: iconColor }} />
               <Typography variant="body2" sx={{ color: "text.primary" }}>{userEmail}</Typography>
             </Stack>
 
             <Stack direction="row" sx={{ alignItems: "center" }} spacing={1.5}>
-              <PhoneIcon className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
+              <PhoneIcon style={{ width: 20, height: 20, color: iconColor }} />
               <Typography variant="body2" sx={{ color: "text.primary" }}>{userPhone}</Typography>
             </Stack>
           </Stack>

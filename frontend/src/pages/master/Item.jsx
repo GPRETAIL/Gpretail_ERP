@@ -618,7 +618,7 @@ export default function Item() {
                 variant="text"
                 onClick={handleNew}
                 className="topbar-action-btn topbar-action-new"
-                startIcon={<PlusCircle className="w-4 h-4" />}
+                startIcon={<PlusCircle size={16} />}
                 size="small"
               >
                 New
@@ -698,7 +698,7 @@ export default function Item() {
                     className="glass-btn glass-btn-primary"
                     sx={{ borderRadius: "3.5px", p: 0.75 }}
                   >
-                    <Pencil className="w-3.5 h-3.5" />
+                    <Pencil size={14} />
                   </IconButton>
                   <IconButton
                     type="button"
@@ -707,7 +707,7 @@ export default function Item() {
                     className="glass-btn glass-btn-danger"
                     sx={{ borderRadius: "3.5px", p: 0.75 }}
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash2 size={14} />
                   </IconButton>
                 </Stack>
               )}
@@ -746,7 +746,7 @@ export default function Item() {
               variant="text"
               onClick={handleNew}
               className="topbar-action-btn topbar-action-new"
-              startIcon={<PlusCircle className="w-4 h-4" />}
+              startIcon={<PlusCircle size={16} />}
               size="small"
             >
               New
@@ -758,7 +758,7 @@ export default function Item() {
               onClick={handleSave}
               disabled={saving}
               className="glass-btn glass-btn-success"
-              startIcon={<Save className="w-4 h-4" />}
+              startIcon={<Save size={16} />}
               size="small"
             >
               {saving ? "Saving…" : "Save"}
@@ -767,7 +767,7 @@ export default function Item() {
             <Button
               onClick={() => setShowSearch(true)}
               className="glass-btn glass-btn-primary"
-              startIcon={<Search className="w-4 h-4" />}
+              startIcon={<Search size={16} />}
               size="small"
             >
               Search
@@ -945,7 +945,7 @@ export default function Item() {
               type="button"
               onClick={() => fileRef.current?.click()}
               className="glass-btn glass-btn-success"
-              startIcon={<Upload className="w-3 h-3" />}
+              startIcon={<Upload size={12} />}
             >
               Upload
             </Button>

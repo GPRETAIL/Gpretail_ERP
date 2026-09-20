@@ -85,7 +85,7 @@ const Intray = () => {
       {/* --- Header Section --- */}
       <Stack direction="row" sx={{ alignItems: "center", px: 2, py: 1, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
         <IconButton aria-label="Back" onClick={handleBackClick} sx={{ mr: 1.5, color: "text.secondary" }}>
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft size={16} />
         </IconButton>
         <Typography component="h1" sx={{ fontSize: 12.25, fontWeight: 600 }}>
           Intray
@@ -149,7 +149,7 @@ const Intray = () => {
           </Box>
 
           {/* Search Button */}
-          <Button onClick={handleSearch} className="glass-btn glass-btn-primary" startIcon={<Search className="w-4 h-4" />}>
+          <Button onClick={handleSearch} className="glass-btn glass-btn-primary" startIcon={<Search size={16} />}>
             Search
           </Button>
         </Stack>

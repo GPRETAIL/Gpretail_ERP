@@ -59,7 +59,7 @@ const ModulePage = () => {
               }}
             >
               {module.icon && (
-                <module.icon className="w-6 h-6 text-indigo-500 transition shrink-0" />
+                <module.icon style={{ width: 24, height: 24, color: "#6366f1", transition: "all 0.15s", flexShrink: 0 }} />
               )}
               <Typography sx={{ fontWeight: 500, color: "text.primary" }}>
                 {module.name}
@@ -110,7 +110,7 @@ const ModulePage = () => {
           }}
         >
           {moduleData.icon && (
-            <moduleData.icon className="w-6 h-6 text-indigo-500 transition shrink-0" />
+            <moduleData.icon style={{ width: 24, height: 24, color: "#6366f1", transition: "all 0.15s", flexShrink: 0 }} />
           )}
           <Typography sx={{ fontWeight: 500, color: "text.primary" }}>
             {moduleData.name}
@@ -196,7 +196,7 @@ const ModulePage = () => {
           >
             {/* Icon */}
             {sub.icon && (
-              <sub.icon className="w-4 h-4 text-indigo-500 transition shrink-0" />
+              <sub.icon style={{ width: 16, height: 16, color: "#6366f1", transition: "all 0.15s", flexShrink: 0 }} />
             )}
 
             {/* Name */}

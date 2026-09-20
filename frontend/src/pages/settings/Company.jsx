@@ -498,7 +498,7 @@ const CompanySettings = () => {
             type="button"
             variant="text"
             onClick={handleNew}
-            startIcon={<PlusCircle className="w-4 h-4" />}
+            startIcon={<PlusCircle size={16} />}
             sx={{ fontSize: 12.25 }}
           >
             New
@@ -509,7 +509,7 @@ const CompanySettings = () => {
             onClick={handleSave}
             disabled={saving || showSearchPage}
           >
-            <Save className="w-4 h-4 mr-1" />
+            <Save size={16} style={{marginRight: 4}} />
             {saving ? "Saving..." : "Save"}
           </Button>
           <Button
@@ -517,7 +517,7 @@ const CompanySettings = () => {
             className="glass-btn glass-btn-primary inline-flex items-center"
             onClick={handleOpenSearch}
           >
-            <Search className="w-4 h-4 mr-1" />
+            <Search size={16} style={{marginRight: 4}} />
             Search
           </Button>
         </Stack>
@@ -664,7 +664,7 @@ const CompanySettings = () => {
                             title="Delete company"
                             sx={{ display: "inline-flex", border: 0, bgcolor: "transparent", p: 0, cursor: "pointer", color: "error.main" }}
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 size={16} />
                           </Box>
                           {row.admin_user?.login_status === "logged_in" ? (
                             <Box
@@ -674,7 +674,7 @@ const CompanySettings = () => {
                               title="Logout company admin"
                               sx={{ display: "inline-flex", border: 0, bgcolor: "transparent", p: 0, cursor: "pointer", color: "warning.main" }}
                             >
-                              <LogOut className="w-4 h-4" />
+                              <LogOut size={16} />
                             </Box>
                           ) : null}
                         </Stack>
@@ -949,7 +949,7 @@ const CompanySettings = () => {
                             title="Remove"
                             sx={{ minWidth: "auto" }}
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 size={16} />
                           </Button>
                         </TableCell>
                       </TableRow>

@@ -230,7 +230,7 @@ const CrmCustomer = () => {
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1, flexShrink: 0 }}>
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           <IconButton size="small" onClick={() => navigate(-1)} sx={{ color: "text.secondary" }}>
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft size={16} />
           </IconButton>
           <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: 13, fontWeight: 600 }}>
             <Button type="button" variant="text" onClick={() => navigate("/crm")} sx={{ minWidth: "auto", p: 0, fontSize: 13, fontWeight: 600 }}>
@@ -247,7 +247,7 @@ const CrmCustomer = () => {
             onDone={() => fetchCustomers(1, limit, true)}
           />
           <Button onClick={() => navigate("/crm/customer/new")} className="topbar-action-btn topbar-action-new">
-            <PlusCircle className="w-3 h-3 mr-1" /> New
+            <PlusCircle size={12} style={{marginRight: 4}} /> New
           </Button>
         </Stack>
       </Stack>
@@ -306,7 +306,7 @@ const CrmCustomer = () => {
                   className="glass-btn rounded p-1.5"
                   sx={{ minWidth: "auto" }}
                 >
-                  <Eye className="w-3.5 h-3.5" />
+                  <Eye size={14} />
                 </Button>
                 <Button
                   onClick={() => navigate(`/crm/customer/${row.id}`)}
@@ -315,7 +315,7 @@ const CrmCustomer = () => {
                   className="glass-btn glass-btn-primary rounded p-1.5"
                   sx={{ minWidth: "auto" }}
                 >
-                  <Pencil className="w-3.5 h-3.5" />
+                  <Pencil size={14} />
                 </Button>
                 <Button
                   onClick={(e) => {
@@ -326,7 +326,7 @@ const CrmCustomer = () => {
                   className="glass-btn glass-btn-danger rounded p-1.5"
                   sx={{ minWidth: "auto" }}
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
+                  <Trash2 size={14} />
                 </Button>
               </Stack>
             )}

@@ -92,13 +92,13 @@ const TransportIssueSearchPage = () => {
       >
         <Stack direction="row" sx={{ alignItems: "center" }}>
           <IconButton onClick={handleBackClick} aria-label="Back" sx={{ mr: 1.5, color: "text.secondary" }}>
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft size={16} />
           </IconButton>
           <Typography component="h1" sx={{ fontSize: 12.25, fontWeight: 600 }}>
             Warehouse / Transport Issue Search
           </Typography>
         </Stack>
-        <Button onClick={handleSearch} className="glass-btn glass-btn-primary" startIcon={<Search className="w-4 h-4" />}>
+        <Button onClick={handleSearch} className="glass-btn glass-btn-primary" startIcon={<Search size={16} />}>
           Search
         </Button>
       </Stack>

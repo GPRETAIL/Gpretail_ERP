@@ -1511,7 +1511,7 @@ const POSReturn = () => {
                           sx={{ color: "error.main", p: 0.25 }}
                           aria-label="Remove line"
                         >
-                          <Trash2 className="w-3.5 h-3.5 inline" />
+                          <Trash2 size={14} style={{ display: "inline" }} />
                         </IconButton>
                       </Box>
                     </Stack>
@@ -1741,7 +1741,7 @@ const POSReturn = () => {
             sx={{ color: "text.secondary" }}
             aria-label={showSearchPage ? "Back to POS return entry" : "Back to sales"}
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft size={16} />
           </IconButton>
           <Typography component="h1" sx={{ fontSize: 12.25, fontWeight: 600, display: "flex", alignItems: "center", gap: 0.5 }}>
             <Button
@@ -1767,7 +1767,7 @@ const POSReturn = () => {
             className="glass-btn glass-btn-success disabled:opacity-50"
             sx={{ display: "inline-flex", alignItems: "center" }}
           >
-            <Save className="w-4 h-4 mr-1" />
+            <Save size={16} style={{marginRight: 4}} />
             {saving ? "Saving..." : "Save"}
           </Button>
           <Button
@@ -1775,7 +1775,7 @@ const POSReturn = () => {
             className="glass-btn glass-btn-primary"
             sx={{ display: "inline-flex", alignItems: "center" }}
           >
-            <Search className="w-4 h-4 mr-1" />
+            <Search size={16} style={{marginRight: 4}} />
             {showSearchPage ? "Back" : "Search"}
           </Button>
         </Stack>

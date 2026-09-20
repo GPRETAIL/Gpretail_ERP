@@ -589,7 +589,7 @@ const Product = () => {
               variant="text"
               onClick={handleNew}
               className="topbar-action-btn topbar-action-new"
-              startIcon={<PlusCircle className="w-3 h-3" />}
+              startIcon={<PlusCircle size={12} />}
               size="small"
             >
               New
@@ -924,7 +924,7 @@ const Product = () => {
                       className="glass-btn glass-btn-primary"
                       sx={{ borderRadius: "3.5px", p: 0.75 }}
                     >
-                      <Pencil className="w-4 h-4" />
+                      <Pencil size={16} />
                     </IconButton>
                     <IconButton
                       type="button"
@@ -935,7 +935,7 @@ const Product = () => {
                       sx={{ borderRadius: "3.5px", p: 0.75 }}
                       title="Delete"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 size={16} />
                     </IconButton>
                   </Stack>
                 )}

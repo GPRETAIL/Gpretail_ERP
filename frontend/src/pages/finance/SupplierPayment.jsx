@@ -526,7 +526,7 @@ const SupplierPayment = () => {
                 navigate("/finance");
               }}
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft size={16} />
             </IconButton>
             <Breadcrumbs
               separator="/"
@@ -561,7 +561,7 @@ const SupplierPayment = () => {
               />
             ) : (
               <Button type="button" className="glass-btn glass-btn-primary flex items-center" onClick={openSearchPage}>
-                <Search className="w-4 h-4 mr-1" /> Search
+                <Search size={16} style={{marginRight: 4}} /> Search
               </Button>
             )}
           </Box>

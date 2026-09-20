@@ -704,7 +704,7 @@ const Supplier = () => {
         </Stack>
 
         {/* GST */}
-        <TextInput label="GST" name="gst" value={formData.gst} onChange={handleChange} icon={<PlusCircle className="w-4 h-4" />} />
+        <TextInput label="GST" name="gst" value={formData.gst} onChange={handleChange} icon={<PlusCircle size={16} />} />
 
         {/* Name */}
         <TextInput label="Name" name="name" required value={formData.name} onChange={handleChange} />
@@ -859,7 +859,7 @@ const Supplier = () => {
             <TextField type="text" name="advancePincode" value={formData.advancePincode} onChange={handleChange}
               size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }} />
             <IconButton className="glass-btn glass-btn-primary" sx={{ ml: 0.5, p: 0.75 }} type="button">
-              <PlusCircle className="w-4 h-4" />
+              <PlusCircle size={16} />
             </IconButton>
           </Stack>
         </Stack>
@@ -900,7 +900,7 @@ const Supplier = () => {
             </Stack>
           </Box>
           <IconButton className="glass-btn glass-btn-primary" sx={{ ml: 0.5, p: 0.75 }} type="button">
-            <PlusCircle className="w-4 h-4" />
+            <PlusCircle size={16} />
           </IconButton>
         </Stack>
         <Box sx={{ mt: 1, border: 1, borderColor: "grey.300", borderRadius: "3.5px", overflow: "hidden" }}>
@@ -935,7 +935,7 @@ const Supplier = () => {
             </Stack>
           </Box>
           <IconButton className="glass-btn glass-btn-primary" sx={{ ml: 0.5, p: 0.75 }} type="button">
-            <PlusCircle className="w-4 h-4" />
+            <PlusCircle size={16} />
           </IconButton>
         </Stack>
         <Box sx={{ mt: 1, border: 1, borderColor: "grey.300", borderRadius: "3.5px", overflow: "hidden" }}>
@@ -1055,7 +1055,7 @@ const Supplier = () => {
                         className="glass-btn glass-btn-primary"
                         sx={{ borderRadius: "3.5px", p: 0.75 }}
                       >
-                        <Pencil className="w-3.5 h-3.5" />
+                        <Pencil size={14} />
                       </IconButton>
                       <IconButton
                         type="button"
@@ -1064,7 +1064,7 @@ const Supplier = () => {
                         sx={{ borderRadius: "3.5px", p: 0.75 }}
                         title="Delete"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash2 size={14} />
                       </IconButton>
                     </Stack>
                   )}
@@ -1157,7 +1157,7 @@ const Supplier = () => {
               variant="text"
               className="topbar-action-btn topbar-action-new"
               onClick={handleNew}
-              startIcon={<PlusCircle className="w-4 h-4" />}
+              startIcon={<PlusCircle size={16} />}
               size="small"
             >
               New
@@ -1195,7 +1195,7 @@ const Supplier = () => {
                   className="glass-btn glass-btn-success"
                   onClick={handleSave}
                   disabled={saving}
-                  startIcon={<Save className="w-4 h-4" />}
+                  startIcon={<Save size={16} />}
                   size="small"
                 >
                   {saving ? "Saving..." : "Save"}
@@ -1206,7 +1206,7 @@ const Supplier = () => {
             <Button
               className="glass-btn glass-btn-primary"
               onClick={handleSearchClick}
-              startIcon={<Search className="w-4 h-4" />}
+              startIcon={<Search size={16} />}
               size="small"
             >
               Search
