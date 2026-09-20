@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Search } from "lucide-react";
+import { Box, Typography } from "@mui/material";
 import api from "../../api/axios";
 import { SkeletonTransList } from "../components/SkeletonCards";
 
@@ -24,11 +25,11 @@ const formatDate = (dateStr) => {
 // No due_date/payment-terms field exists on a purchase bill, only the
 // invoice/purchase date - so this shows days outstanding since that date
 // rather than a fabricated "days remaining" that would imply a due date.
-const daysOutstandingClass = (days) => {
+const daysOutstandingColors = (days) => {
   const d = Number(days || 0);
-  if (d > 30) return "bg-rose-50 text-rose-700";
-  if (d > 15) return "bg-amber-50 text-amber-700";
-  return "bg-slate-100 text-slate-600";
+  if (d > 30) return { bg: "#fff1f2", text: "#be123c" };
+  if (d > 15) return { bg: "#fffbeb", text: "#b45309" };
+  return { bg: "#f1f5f9", text: "#475569" };
 };
 
 /**
@@ -62,56 +63,60 @@ export default function SupplierDuesScreen() {
   }, [load]);
 
   return (
-    <div>
-      <div className="vx-search-row">
-        <div className="vx-search-input-wrap">
+    <Box>
+      <Box className="vx-search-row">
+        <Box className="vx-search-input-wrap">
           <Search size={16} className="text-slate-400" />
-          <input
+          <Box
+            component="input"
             type="text"
             placeholder="Search supplier or invoice..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-        </div>
-      </div>
+        </Box>
+      </Box>
 
       {!loading && rows.length > 0 && (
-        <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200/70 mb-3 flex items-center justify-between">
-          <span className="text-[11px] font-black text-amber-800 uppercase tracking-wider">
+        <Box sx={{ p: 1.75, borderRadius: "16px", bgcolor: "#fffbeb", border: "1px solid rgba(253,230,138,0.7)", mb: 1.5, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <Typography component="span" sx={{ fontSize: 11, fontWeight: 900, color: "#92400e", textTransform: "uppercase", letterSpacing: "0.05em" }}>
             Total Payable
-          </span>
-          <span className="text-[15px] font-black text-amber-800">{money(totalPayable)}</span>
-        </div>
+          </Typography>
+          <Typography component="span" sx={{ fontSize: 15, fontWeight: 900, color: "#92400e" }}>{money(totalPayable)}</Typography>
+        </Box>
       )}
 
       {loading ? (
         <SkeletonTransList count={4} />
       ) : rows.length === 0 ? (
-        <div className="vx-card text-center py-8">
-          <p className="text-sm text-slate-400">No pending supplier dues</p>
-        </div>
+        <Box className="vx-card text-center py-8">
+          <Typography component="p" sx={{ fontSize: 14, color: "#94a3b8" }}>No pending supplier dues</Typography>
+        </Box>
       ) : (
-        <div>
-          {rows.map((row) => (
-            <div key={`${row.invoice_type}-${row.id}`} className="vx-trans-card">
-              <div className="vx-trans-left">
-                <span className="vx-trans-id">{row.invoice_no}</span>
-                <span className="vx-trans-meta">{row.supplier_name}</span>
-                <span className="vx-trans-meta text-[10px]">{formatDate(row.invoice_date)}</span>
-              </div>
-              <div className="vx-trans-right">
-                <span className={`text-[9.5px] font-bold px-1.5 py-0.5 rounded-md mb-1 ${daysOutstandingClass(row.days)}`}>
-                  {row.days}d outstanding
-                </span>
-                <span className="vx-trans-amount">{money(row.balance_due)}</span>
-                <span className="text-[9.5px] text-slate-400 font-semibold">
-                  of {money(row.total_amount)}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
+        <Box>
+          {rows.map((row) => {
+            const colors = daysOutstandingColors(row.days);
+            return (
+              <Box key={`${row.invoice_type}-${row.id}`} className="vx-trans-card">
+                <Box className="vx-trans-left">
+                  <Box component="span" className="vx-trans-id">{row.invoice_no}</Box>
+                  <Box component="span" className="vx-trans-meta">{row.supplier_name}</Box>
+                  <Box component="span" className="vx-trans-meta text-[10px]">{formatDate(row.invoice_date)}</Box>
+                </Box>
+                <Box className="vx-trans-right">
+                  <Typography component="span" sx={{ fontSize: 9.5, fontWeight: 700, px: 0.75, py: 0.25, borderRadius: "6px", mb: 0.5, bgcolor: colors.bg, color: colors.text }}>
+                    {row.days}d outstanding
+                  </Typography>
+                  <Box component="span" className="vx-trans-amount">{money(row.balance_due)}</Box>
+                  <Typography component="span" sx={{ fontSize: 9.5, color: "#94a3b8", fontWeight: 600 }}>
+                    of {money(row.total_amount)}
+                  </Typography>
+                </Box>
+              </Box>
+            );
+          })}
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }

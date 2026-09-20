@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Search, Check, X } from "lucide-react";
+import { Box, Typography } from "@mui/material";
 import api from "../../api/axios";
 import { SkeletonTransList } from "../components/SkeletonCards";
 
@@ -65,65 +66,76 @@ export default function ApprovalsScreen() {
   };
 
   return (
-    <div>
-      <div className="vx-search-row">
-        <div className="vx-search-input-wrap">
+    <Box>
+      <Box className="vx-search-row">
+        <Box className="vx-search-input-wrap">
           <Search size={16} className="text-slate-400" />
-          <input
+          <Box
+            component="input"
             type="text"
             placeholder="Search approval # or customer..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-        </div>
-      </div>
+        </Box>
+      </Box>
 
       {loading ? (
         <SkeletonTransList count={4} />
       ) : rows.length === 0 ? (
-        <div className="vx-card text-center py-8">
-          <p className="text-sm text-slate-400">No pending approvals</p>
-        </div>
+        <Box className="vx-card text-center py-8">
+          <Typography component="p" sx={{ fontSize: 14, color: "#94a3b8" }}>No pending approvals</Typography>
+        </Box>
       ) : (
-        <div className="space-y-2.5">
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1.25 }}>
           {rows.map((row) => (
-            <div key={row.id} className="vx-trans-card !flex-col !items-stretch !gap-2">
-              <div className="flex items-center justify-between w-full">
-                <div className="vx-trans-left">
-                  <span className="vx-trans-id">{row.approval_no}</span>
-                  <span className="vx-trans-meta">{row.customer?.name || "Walking customer"}</span>
-                  <span className="vx-trans-meta text-[10px]">
+            <Box key={row.id} className="vx-trans-card !flex-col !items-stretch !gap-2">
+              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+                <Box className="vx-trans-left">
+                  <Box component="span" className="vx-trans-id">{row.approval_no}</Box>
+                  <Box component="span" className="vx-trans-meta">{row.customer?.name || "Walking customer"}</Box>
+                  <Box component="span" className="vx-trans-meta text-[10px]">
                     {formatDate(row.approval_date)}
                     {row.valid_until ? ` · Valid till ${formatDate(row.valid_until)}` : ""}
-                  </span>
-                </div>
-                <div className="vx-trans-right">
-                  <span className="vx-trans-amount">{money(row.total_amount)}</span>
-                </div>
-              </div>
+                  </Box>
+                </Box>
+                <Box className="vx-trans-right">
+                  <Box component="span" className="vx-trans-amount">{money(row.total_amount)}</Box>
+                </Box>
+              </Box>
 
-              <div className="flex items-center gap-2 w-full pt-1 border-t border-slate-100">
-                <button
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1, width: "100%", pt: 0.5, borderTop: "1px solid #f1f5f9" }}>
+                <Box
+                  component="button"
                   type="button"
                   disabled={actingId === row.id}
                   onClick={() => handleAction(row.id, "reject")}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-rose-50 text-rose-600 text-xs font-bold active:scale-95 transition-all disabled:opacity-50"
+                  sx={{
+                    flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 0.75, py: 1,
+                    borderRadius: "12px", bgcolor: "#fff1f2", color: "#e11d48", fontSize: 12, fontWeight: 700,
+                    transition: "all 0.15s", "&:active": { transform: "scale(0.95)" }, "&:disabled": { opacity: 0.5 },
+                  }}
                 >
                   <X size={14} /> Reject
-                </button>
-                <button
+                </Box>
+                <Box
+                  component="button"
                   type="button"
                   disabled={actingId === row.id}
                   onClick={() => handleAction(row.id, "accept")}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold active:scale-95 transition-all disabled:opacity-50"
+                  sx={{
+                    flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 0.75, py: 1,
+                    borderRadius: "12px", bgcolor: "#059669", color: "#fff", fontSize: 12, fontWeight: 700,
+                    transition: "all 0.15s", "&:active": { transform: "scale(0.95)" }, "&:disabled": { opacity: 0.5 },
+                  }}
                 >
                   <Check size={14} /> {actingId === row.id ? "Saving..." : "Accept"}
-                </button>
-              </div>
-            </div>
+                </Box>
+              </Box>
+            </Box>
           ))}
-        </div>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }
