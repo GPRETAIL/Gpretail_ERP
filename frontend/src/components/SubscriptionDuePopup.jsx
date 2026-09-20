@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, X } from "lucide-react";
+import { Box, Button, IconButton, Typography } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import api from "../api/axios";
 import useSubscriptionStatus from "../hooks/useSubscriptionStatus";
 
@@ -141,35 +143,42 @@ export default function SubscriptionDuePopup() {
   if (!visible || !message) return null;
 
   return (
-    <div
+    <Box
       role="status"
       aria-live="polite"
-      className="fixed bottom-16 right-4 z-50 w-80 rounded-lg border border-amber-300 bg-amber-50 p-3 shadow-lg dark:border-amber-800/60 dark:bg-amber-900/30"
+      sx={{
+        position: "fixed", bottom: 64, right: 16, zIndex: 50, width: 320, borderRadius: 2,
+        border: "1px solid", borderColor: "warning.main",
+        bgcolor: (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.16 : 0.08),
+        p: 1.5, boxShadow: 6,
+      }}
     >
-      <div className="flex items-start gap-2">
-        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
-        <div className="min-w-0 flex-1">
-          <div className="text-sm font-semibold text-amber-900 dark:text-amber-200">
+      <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1 }}>
+        <AlertTriangle className="h-4 w-4 shrink-0" style={{ color: "inherit", marginTop: 2 }} />
+        <Box sx={{ minWidth: 0, flex: 1 }}>
+          <Typography sx={{ fontSize: 14, fontWeight: 600, color: "warning.dark" }}>
             {pushedNotice ? pushedNotice.subject : status?.onTrial ? "Trial" : "Subscription due"}
-          </div>
-          <p className="mt-0.5 text-xs leading-5 text-amber-800 dark:text-amber-300">{message}</p>
-          <button
-            type="button"
+          </Typography>
+          <Typography sx={{ mt: 0.25, fontSize: 12, lineHeight: 1.4, color: "warning.dark" }}>{message}</Typography>
+          <Button
             onClick={() => window.open(COMPANY_PORTAL_LOGIN_URL, "_blank", "noopener,noreferrer")}
-            className="mt-2 rounded-md bg-amber-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-amber-700"
+            variant="contained"
+            color="warning"
+            size="small"
+            sx={{ mt: 1, fontSize: 12, fontWeight: 500, textTransform: "none" }}
           >
             View plans
-          </button>
-        </div>
-        <button
-          type="button"
+          </Button>
+        </Box>
+        <IconButton
           onClick={() => (pushedNotice ? dismissPushed(pushedNotice.id) : setVisible(false))}
           aria-label="Dismiss"
-          className="rounded p-0.5 text-amber-700 hover:bg-amber-100 dark:text-amber-300 dark:hover:bg-amber-900/50"
+          size="small"
+          sx={{ color: "warning.dark", "&:hover": { bgcolor: (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.24 : 0.15) } }}
         >
           <X className="h-3.5 w-3.5" />
-        </button>
-      </div>
-    </div>
+        </IconButton>
+      </Box>
+    </Box>
   );
 }

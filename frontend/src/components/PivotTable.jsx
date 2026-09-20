@@ -1,4 +1,5 @@
 import React, { useMemo } from "react";
+import { Box, Table, TableBody, TableCell, TableFooter, TableHead, TableRow, Typography } from "@mui/material";
 import ExportBottomSheet from "./ExportBottomSheet";
 
 /**
@@ -20,6 +21,8 @@ const formatValue = (value) => {
   const n = Number(value || 0);
   return n.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 };
+
+const stickyFirstColSx = { position: "sticky", left: 0, zIndex: 1 };
 
 const PivotTable = ({
   title,
@@ -64,15 +67,15 @@ const PivotTable = ({
   const hasData = rows.length > 0 && columns.length > 0;
 
   return (
-    <div className="flex-1 min-w-0 flex flex-col min-h-0 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm px-3 pt-3 pb-0.5">
-      <div className="flex items-center justify-between mb-1.5">
-        <div>
-          <h2 className="text-base font-bold text-slate-900 dark:text-gray-100">{title}</h2>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-            Measure: <span className="font-medium text-indigo-600 dark:text-indigo-400">{measureLabel}</span>
+    <Box sx={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", minHeight: 0, bgcolor: "background.paper", borderRadius: "5.25px", border: 1, borderColor: "divider", boxShadow: 1, px: 1.5, pt: 1.5, pb: 0.0625 }}>
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 0.75 }}>
+        <Box>
+          <Typography component="h2" sx={{ fontSize: 16, fontWeight: 700, color: "text.primary" }}>{title}</Typography>
+          <Typography sx={{ fontSize: 12, color: "text.secondary", mt: 0.25 }}>
+            Measure: <Box component="span" sx={{ fontWeight: 500, color: "#4f46e5" }}>{measureLabel}</Box>
             {" "}— {rows.length} row{rows.length !== 1 ? "s" : ""} × {columns.length} column{columns.length !== 1 ? "s" : ""}
-          </p>
-        </div>
+          </Typography>
+        </Box>
         <ExportBottomSheet
           columns={exportColumns}
           rows={exportRows}
@@ -82,70 +85,70 @@ const PivotTable = ({
           sheetName="Pivot"
           buttonClassName="glass-btn glass-btn-primary flex items-center gap-1.5 text-xs px-3 py-1.5"
         />
-      </div>
+      </Box>
 
-      <div className="flex-1 min-h-0 overflow-auto border border-gray-100 dark:border-gray-700 rounded-md">
+      <Box sx={{ flex: 1, minHeight: 0, overflow: "auto", border: 1, borderColor: "divider", borderRadius: "3.5px" }}>
         {loading ? (
-          <div className="h-full flex items-center justify-center text-sm text-gray-500 dark:text-gray-400 py-12">
+          <Box sx={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "text.secondary", py: 6 }}>
             Loading pivot...
-          </div>
+          </Box>
         ) : !hasData ? (
-          <div className="h-full flex items-center justify-center text-sm text-gray-400 dark:text-gray-500 py-12">
+          <Box sx={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "text.disabled", py: 6 }}>
             {emptyText}
-          </div>
+          </Box>
         ) : (
-          <table className="w-full min-w-max text-xs">
-            <thead>
-              <tr className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-700/80 border-b border-gray-200 dark:border-gray-600">
-                <th className="px-3 py-2 text-left font-semibold text-gray-600 dark:text-gray-300 min-w-[160px] sticky left-0 bg-gray-50 dark:bg-gray-700/80 z-20">
+          <Table size="small" sx={{ width: "100%", minWidth: "max-content", fontSize: 12 }} stickyHeader>
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ ...stickyFirstColSx, textAlign: "left", fontWeight: 600, color: "text.secondary", minWidth: 160, bgcolor: "action.hover" }}>
                   {rowLabel || "Row"}
-                </th>
+                </TableCell>
                 {columns.map((c) => (
-                  <th key={c.key} className="px-3 py-2 text-right font-semibold text-gray-600 dark:text-gray-300 min-w-[110px] whitespace-nowrap">
+                  <TableCell key={c.key} align="right" sx={{ fontWeight: 600, color: "text.secondary", minWidth: 110, whiteSpace: "nowrap" }}>
                     {c.label}
-                  </th>
+                  </TableCell>
                 ))}
-                <th className="px-3 py-2 text-right font-semibold text-gray-700 dark:text-gray-200 min-w-[110px] bg-gray-100 dark:bg-gray-700">
+                <TableCell align="right" sx={{ fontWeight: 600, color: "text.primary", minWidth: 110, bgcolor: "action.hover" }}>
                   Total
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
               {rows.map((r) => (
-                <tr key={r.key} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
-                  <td className="px-3 py-2 text-gray-800 dark:text-gray-200 font-medium sticky left-0 bg-white dark:bg-gray-800">
+                <TableRow key={r.key} sx={{ "&:hover": { bgcolor: "action.hover" } }}>
+                  <TableCell sx={{ ...stickyFirstColSx, color: "text.primary", fontWeight: 500, bgcolor: "background.paper" }}>
                     {r.label}
-                  </td>
+                  </TableCell>
                   {columns.map((c) => (
-                    <td key={c.key} className="px-3 py-2 text-right text-gray-700 dark:text-gray-300 tabular-nums">
+                    <TableCell key={c.key} align="right" sx={{ color: "text.secondary", fontVariantNumeric: "tabular-nums" }}>
                       {formatValue(cellValue(r.key, c.key))}
-                    </td>
+                    </TableCell>
                   ))}
-                  <td className="px-3 py-2 text-right font-semibold text-gray-800 dark:text-gray-100 tabular-nums bg-gray-50 dark:bg-gray-700/40">
+                  <TableCell align="right" sx={{ fontWeight: 600, color: "text.primary", fontVariantNumeric: "tabular-nums", bgcolor: "action.hover" }}>
                     {formatValue(rowTotals[r.key])}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-            <tfoot>
-              <tr className="sticky bottom-0 z-10 bg-gray-100 dark:bg-gray-700/60 border-t-2 border-indigo-500 font-bold">
-                <td className="px-3 py-2.5 text-gray-800 dark:text-gray-100 sticky left-0 bg-gray-100 dark:bg-gray-700/60">
+            </TableBody>
+            <TableFooter>
+              <TableRow sx={{ "& td": { borderTop: 2, borderTopColor: "#6366f1", fontWeight: 700 }, bgcolor: "action.hover" }}>
+                <TableCell sx={{ ...stickyFirstColSx, color: "text.primary", bgcolor: "action.hover" }}>
                   TOTAL
-                </td>
+                </TableCell>
                 {columns.map((c) => (
-                  <td key={c.key} className="px-3 py-2.5 text-right text-gray-800 dark:text-gray-100 tabular-nums">
+                  <TableCell key={c.key} align="right" sx={{ color: "text.primary", fontVariantNumeric: "tabular-nums" }}>
                     {formatValue(colTotals[c.key])}
-                  </td>
+                  </TableCell>
                 ))}
-                <td className="px-3 py-2.5 text-right text-indigo-700 dark:text-indigo-400 tabular-nums">
+                <TableCell align="right" sx={{ color: "#4338ca", fontVariantNumeric: "tabular-nums" }}>
                   {formatValue(grandTotal)}
-                </td>
-              </tr>
-            </tfoot>
-          </table>
+                </TableCell>
+              </TableRow>
+            </TableFooter>
+          </Table>
         )}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 };
 

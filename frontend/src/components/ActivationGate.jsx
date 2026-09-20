@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { Loader2, ServerCrash, RefreshCw } from "lucide-react";
+import { Box, Button, Typography } from "@mui/material";
 import ActivationWizard from "../pages/ActivationWizard";
 
 // Boot gate for the tenant deployment. On start it checks /api/activation/status:
@@ -59,12 +60,12 @@ const ActivationGate = ({ children }) => {
   // makes a week early. The enforcement itself lives at sign-in, where the browser cannot reach it,
   // so nothing here is load-bearing: hiding this banner buys an attacker nothing.
   const graceBanner = licence?.state === "GRACE" && licence?.reason ? (
-    <div
+    <Box
       role="status"
-      className="w-full bg-amber-50 border-b border-amber-300 px-4 py-2 text-center text-sm text-amber-900"
+      sx={{ width: "100%", bgcolor: "#fffbeb", borderBottom: "1px solid #fcd34d", px: 2, py: 1, textAlign: "center", fontSize: 14, color: "#78350f" }}
     >
-      <span className="font-semibold">Licence needs attention.</span> {licence.reason}
-    </div>
+      <Box component="span" sx={{ fontWeight: 600 }}>Licence needs attention.</Box> {licence.reason}
+    </Box>
   ) : null;
 
   if (phase === "activated") {
@@ -104,27 +105,28 @@ const ActivationGate = ({ children }) => {
 
   if (phase === "error") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-100 px-4">
-        <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white dark:bg-gray-800 p-8 text-center shadow-xl">
-          <ServerCrash className="mx-auto h-10 w-10 text-slate-400" />
-          <h1 className="mt-3 text-lg font-bold text-slate-900">Cannot verify activation</h1>
-          <p className="mt-1 text-sm text-slate-500">The system could not be reached. Please try again.</p>
-          <button
+      <Box sx={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", bgcolor: "#f1f5f9", px: 2 }}>
+        <Box sx={{ width: "100%", maxWidth: 384, borderRadius: 3, border: "1px solid #e2e8f0", bgcolor: "background.paper", p: 4, textAlign: "center", boxShadow: 4 }}>
+          <ServerCrash className="mx-auto h-10 w-10" style={{ color: "#94a3b8" }} />
+          <Typography component="h1" sx={{ mt: 1.5, fontSize: 18, fontWeight: 700, color: "#0f172a" }}>Cannot verify activation</Typography>
+          <Typography sx={{ mt: 0.5, fontSize: 14, color: "#64748b" }}>The system could not be reached. Please try again.</Typography>
+          <Button
             type="button"
             onClick={() => { setPhase("loading"); check(); }}
-            className="mt-5 inline-flex items-center gap-2 rounded-lg bg-[#3a6ea5] px-4 py-2 text-sm font-semibold text-white hover:bg-[#345f8f]"
+            startIcon={<RefreshCw className="h-4 w-4" />}
+            sx={{ mt: 2.5, bgcolor: "#3a6ea5", fontWeight: 600, textTransform: "none", color: "#fff", "&:hover": { bgcolor: "#345f8f" }, borderRadius: 2 }}
           >
-            <RefreshCw className="h-4 w-4" /> Retry
-          </button>
-        </div>
-      </div>
+            Retry
+          </Button>
+        </Box>
+      </Box>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-100">
-      <Loader2 className="h-8 w-8 animate-spin text-[#3a6ea5]" />
-    </div>
+    <Box sx={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", bgcolor: "#f1f5f9" }}>
+      <Loader2 className="h-8 w-8 animate-spin" style={{ color: "#3a6ea5" }} />
+    </Box>
   );
 };
 

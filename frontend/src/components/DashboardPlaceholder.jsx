@@ -1,10 +1,11 @@
 import React from "react";
+import { Box, Typography } from "@mui/material";
 
 const DashboardPlaceholder = ({ title, description }) => (
-  <div className="rounded-md border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-8 text-center">
-    <h2 className="text-lg font-semibold text-slate-900 dark:text-gray-100">{title}</h2>
-    <p className="mt-2 text-sm text-slate-500 dark:text-gray-400">{description}</p>
-  </div>
+  <Box sx={{ borderRadius: "5.25px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", p: 4, textAlign: "center" }}>
+    <Typography component="h2" sx={{ fontSize: 18, fontWeight: 600, color: "text.primary" }}>{title}</Typography>
+    <Typography sx={{ mt: 1, fontSize: 14, color: "text.secondary" }}>{description}</Typography>
+  </Box>
 );
 
 export default DashboardPlaceholder;

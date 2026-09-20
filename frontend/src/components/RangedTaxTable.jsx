@@ -1,4 +1,18 @@
 import { PlusCircle, Trash2 } from "lucide-react";
+import { Box, Checkbox, IconButton, Table, TableBody, TableCell, TableHead, TableRow } from "@mui/material";
+
+const cellInputSx = (disabled) => ({
+  width: "100%",
+  border: "1px solid",
+  borderColor: "divider",
+  textAlign: "center",
+  p: 0.5,
+  fontSize: "inherit",
+  fontFamily: "inherit",
+  color: "text.primary",
+  bgcolor: disabled ? "action.hover" : "background.paper",
+  cursor: disabled ? "not-allowed" : "text",
+});
 
 const RangedTaxTable = ({ isView, rangedTaxItems, setRangedTaxItems }) => {
   // Add new range
@@ -86,67 +100,58 @@ const RangedTaxTable = ({ isView, rangedTaxItems, setRangedTaxItems }) => {
   };
 
   return (
-    <div className="w-full">
-      <div className="overflow-x-auto border border-gray-200 dark:border-gray-700">
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+    <Box sx={{ width: "100%" }}>
+      <Box sx={{ overflowX: "auto", border: 1, borderColor: "divider" }}>
+        <Table size="small" sx={{ "& td, & th": { borderBottom: 1, borderColor: "divider" } }}>
           {/* Table Header */}
-          <thead className="bg-gray-50 dark:bg-gray-700 dark:text-gray-200">
-            <tr>
-              <th className="px-2 py-1 text-xs text-center">From</th>
-              <th className="px-2 text-xs text-center">To</th>
-              <th className="px-2 text-xs text-center">TAX %</th>
-              <th className="px-2 text-xs text-center">CGST %</th>
-              <th className="px-2  text-xs text-center">SGST %</th>
-              <th className="px-2  text-xs text-center text-nowrap">IN Cost</th>
-              <th className="px-2  w-[50px]"></th>
-            </tr>
-          </thead>
+          <TableHead sx={{ bgcolor: "action.hover" }}>
+            <TableRow>
+              <TableCell align="center" sx={{ fontSize: 12 }}>From</TableCell>
+              <TableCell align="center" sx={{ fontSize: 12 }}>To</TableCell>
+              <TableCell align="center" sx={{ fontSize: 12 }}>TAX %</TableCell>
+              <TableCell align="center" sx={{ fontSize: 12 }}>CGST %</TableCell>
+              <TableCell align="center" sx={{ fontSize: 12 }}>SGST %</TableCell>
+              <TableCell align="center" sx={{ fontSize: 12, whiteSpace: "nowrap" }}>IN Cost</TableCell>
+              <TableCell sx={{ width: 50 }} />
+            </TableRow>
+          </TableHead>
 
           {/* Table Body */}
-          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700 text-gray-800 dark:text-gray-200">
+          <TableBody>
             {rangedTaxItems.map((item, index) => (
-              <tr key={index}>
+              <TableRow key={index}>
                 {/* From */}
-                <td className="p-1.5">
-                  <input
+                <TableCell sx={{ p: 0.75 }}>
+                  <Box
+                    component="input"
                     type="number"
                     value={item.from}
                     disabled={isView || index > 0}
                     onChange={(e) =>
                       handleRangedTaxItemChange(index, "from", e.target.value)
                     }
-                    className={`w-full p-1 border text-center 
-                      border-gray-300 dark:border-gray-600 dark:text-gray-100
-                      ${
-                        isView || index > 0
-                          ? "bg-gray-100 dark:bg-gray-700 cursor-not-allowed"
-                          : "bg-white dark:bg-gray-800"
-                      }`}
+                    sx={cellInputSx(isView || index > 0)}
                   />
-                </td>
+                </TableCell>
 
                 {/* To */}
-                <td className="p-1.5">
-                  <input
+                <TableCell sx={{ p: 0.75 }}>
+                  <Box
+                    component="input"
                     type="number"
                     value={item.to}
                     disabled={isView}
                     onChange={(e) =>
                       handleRangedTaxItemChange(index, "to", e.target.value)
                     }
-                    className={`w-full p-1 border text-center 
-                      border-gray-300 dark:border-gray-600 dark:text-gray-100
-                      ${
-                        isView
-                          ? "bg-gray-100 dark:bg-gray-700 cursor-not-allowed"
-                          : "bg-white dark:bg-gray-800"
-                      }`}
+                    sx={cellInputSx(isView)}
                   />
-                </td>
+                </TableCell>
 
                 {/* Tax */}
-                <td className="p-1.5">
-                  <input
+                <TableCell sx={{ p: 0.75 }}>
+                  <Box
+                    component="input"
                     type="number"
                     value={item.taxPercentage}
                     disabled={isView}
@@ -157,46 +162,37 @@ const RangedTaxTable = ({ isView, rangedTaxItems, setRangedTaxItems }) => {
                         e.target.value
                       )
                     }
-                    className={`w-full p-1 border text-center 
-                      border-gray-300 dark:border-gray-600 dark:text-gray-100
-                      ${
-                        isView
-                          ? "bg-gray-100 dark:bg-gray-700 cursor-not-allowed"
-                          : "bg-white dark:bg-gray-800"
-                      }`}
+                    sx={cellInputSx(isView)}
                   />
-                </td>
+                </TableCell>
 
                 {/* CGST (Disabled) */}
-                <td className="p-1.5">
-                  <input
+                <TableCell sx={{ p: 0.75 }}>
+                  <Box
+                    component="input"
                     type="number"
                     value={item.cgstPercentage}
                     name="cgstPercentage"
                     disabled
-                    className="w-full p-1 border text-center 
-                      border-gray-300 dark:border-gray-600 dark:text-gray-400
-                      bg-gray-100 dark:bg-gray-700 cursor-not-allowed"
+                    sx={{ ...cellInputSx(true), color: "text.secondary" }}
                   />
-                </td>
+                </TableCell>
 
                 {/* SGST (Disabled) */}
-                <td className="p-1.5">
-                  <input
+                <TableCell sx={{ p: 0.75 }}>
+                  <Box
+                    component="input"
                     type="number"
                     name="sgstPercentage"
                     value={item.sgstPercentage}
                     disabled
-                    className="w-full p-1 border text-center 
-                      border-gray-300 dark:border-gray-600 dark:text-gray-400
-                      bg-gray-100 dark:bg-gray-700 cursor-not-allowed"
+                    sx={{ ...cellInputSx(true), color: "text.secondary" }}
                   />
-                </td>
+                </TableCell>
 
                 {/* In Cost (Checkbox) */}
-                <td className="p-1.5 text-center">
-                  <input
-                    type="checkbox"
+                <TableCell align="center" sx={{ p: 0.75 }}>
+                  <Checkbox
                     checked={item.inCost}
                     disabled={isView}
                     onChange={(e) =>
@@ -206,42 +202,45 @@ const RangedTaxTable = ({ isView, rangedTaxItems, setRangedTaxItems }) => {
                         e.target.checked
                       )
                     }
+                    size="small"
                     // Blue accent color remains the same in both themes for visibility
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600"
+                    sx={{ color: "#2563eb", "&.Mui-checked": { color: "#2563eb" } }}
                   />
-                </td>
+                </TableCell>
 
                 {/* Action Button */}
-                <td className="text-center p-1.5">
+                <TableCell align="center" sx={{ p: 0.75 }}>
                   {index === 0 && !isView && (
-                    <button
+                    <IconButton
                       onClick={handleAddRangedTaxItem}
-                      className="text-green-500 hover:text-green-700 transition"
                       aria-label="Add range"
                       title="Add range"
                       disabled={isView}
+                      size="small"
+                      sx={{ color: "success.main", "&:hover": { color: "success.dark" } }}
                     >
                       <PlusCircle className="w-4 h-4" />
-                    </button>
+                    </IconButton>
                   )}
 
                   {index > 0 && !isView && (
-                    <button
+                    <IconButton
                       onClick={() => handleRemoveRangedTaxItem(index)}
-                      className="text-red-500 hover:text-red-700 transition"
                       aria-label={`Delete row ${index + 1}`}
                       title="Delete row"
+                      size="small"
+                      sx={{ color: "error.main", "&:hover": { color: "error.dark" } }}
                     >
                       <Trash2 className="w-4 h-4" />
-                    </button>
+                    </IconButton>
                   )}
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+          </TableBody>
+        </Table>
+      </Box>
+    </Box>
   );
 };
 

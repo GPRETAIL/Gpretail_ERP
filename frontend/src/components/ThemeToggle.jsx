@@ -1,14 +1,16 @@
+import { Button } from "@mui/material";
 import { useTheme } from "../features/theme-context";
 
 export default function ThemeToggle() {
   const { theme, setTheme } = useTheme();
 
   return (
-    <button
+    <Button
       onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-      className="p-2 border rounded-lg"
+      variant="outlined"
+      sx={{ textTransform: "none", borderRadius: 2, color: "text.primary", borderColor: "divider" }}
     >
       {theme === "dark" ? "☀️ Light Mode" : "🌙 Dark Mode"}
-    </button>
+    </Button>
   );
 }

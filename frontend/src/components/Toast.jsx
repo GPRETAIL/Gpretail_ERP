@@ -1,5 +1,7 @@
 import { useEffect } from "react";
 import { CheckCircle2, XCircle, AlertTriangle, Info, X } from "lucide-react";
+import { Box, IconButton, Typography } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 
 const icons = {
   success: CheckCircle2,
@@ -8,18 +10,11 @@ const icons = {
   info: Info,
 };
 
-const colors = {
-  success: "bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-700 text-green-800 dark:text-green-200",
-  error: "bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-700 text-red-800 dark:text-red-200",
-  warning: "bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-700 text-amber-800 dark:text-amber-200",
-  info: "bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700 text-blue-800 dark:text-blue-200",
-};
-
-const iconColors = {
-  success: "text-green-500 dark:text-green-400",
-  error: "text-red-500 dark:text-red-400",
-  warning: "text-amber-500 dark:text-amber-400",
-  info: "text-blue-500 dark:text-blue-400",
+const tokens = {
+  success: "success",
+  error: "error",
+  warning: "warning",
+  info: "info",
 };
 
 /**
@@ -43,22 +38,32 @@ const Toast = ({ open, type = "info", message, onClose, duration = 3000 }) => {
   if (!open) return null;
 
   const Icon = icons[type] || icons.info;
+  const token = tokens[type] || tokens.info;
 
   return (
-    <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-top-2 fade-in">
-      <div
-        className={`flex items-center gap-2 px-4 py-3 rounded-lg border shadow-lg min-w-[300px] max-w-[450px] ${colors[type]}`}
+    <Box sx={{ position: "fixed", top: 16, right: 16, zIndex: (theme) => theme.zIndex.snackbar }}>
+      <Box
+        sx={{
+          display: "flex", alignItems: "center", gap: 1, px: 2, py: 1.5, borderRadius: 2,
+          border: 1, boxShadow: 6, minWidth: 300, maxWidth: 450,
+          borderColor: `${token}.main`,
+          bgcolor: (theme) => alpha(theme.palette[token].main, theme.palette.mode === "dark" ? 0.3 : 0.08),
+          color: (theme) => (theme.palette.mode === "dark" ? theme.palette[token].light : theme.palette[token].dark),
+        }}
       >
-        <Icon className={`w-5 h-5 shrink-0 ${iconColors[type]}`} />
-        <p className="text-sm flex-1">{message}</p>
-        <button
+        <Box sx={{ color: `${token}.main`, display: "inline-flex", flexShrink: 0 }}>
+          <Icon className="w-5 h-5" />
+        </Box>
+        <Typography sx={{ fontSize: 14, flex: 1, color: "inherit" }}>{message}</Typography>
+        <IconButton
           onClick={onClose}
-          className="shrink-0 p-0.5 rounded hover:bg-black/5 dark:hover:bg-white/10 transition"
+          size="small"
+          sx={{ flexShrink: 0, color: "inherit", "&:hover": { bgcolor: (theme) => alpha(theme.palette.text.primary, theme.palette.mode === "dark" ? 0.1 : 0.05) } }}
         >
           <X className="w-4 h-4" />
-        </button>
-      </div>
-    </div>
+        </IconButton>
+      </Box>
+    </Box>
   );
 };
 

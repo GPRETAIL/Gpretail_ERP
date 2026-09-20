@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { ChevronDown, Download, FileSpreadsheet, FileText } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import * as XLSX from "xlsx";
+import { Button, ListItemIcon, ListItemText, Menu, MenuItem } from "@mui/material";
 import { useTransferActivity } from "../context/TransferActivityContext";
 
 const toCellText = (value) => {
@@ -226,9 +227,9 @@ export default function ExportBottomSheet({
   getValue,
   onExportRows = null,
 }) {
-  const [open, setOpen] = useState(false);
+  const [anchorEl, setAnchorEl] = useState(null);
+  const open = Boolean(anchorEl);
   const [exporting, setExporting] = useState(false);
-  const menuRef = useRef(null);
   const location = useLocation();
   const { startActivity, updateActivity, finishActivity, TYPE, STATUS } = useTransferActivity();
   const hasSelectedRows = Array.isArray(selectedRowKeys) && selectedRowKeys.length > 0;
@@ -367,7 +368,7 @@ export default function ExportBottomSheet({
         progressPercent: 100,
         statusMessage: "CSV export completed",
       });
-      setOpen(false);
+      setAnchorEl(null);
     } catch (err) {
       console.error("Failed to export CSV:", err);
       finishActivity(activityId, {
@@ -406,7 +407,7 @@ export default function ExportBottomSheet({
         progressPercent: 100,
         statusMessage: "Excel export completed",
       });
-      setOpen(false);
+      setAnchorEl(null);
     } catch (err) {
       console.error("Failed to export Excel:", err);
       finishActivity(activityId, {
@@ -449,7 +450,7 @@ export default function ExportBottomSheet({
         progressPercent: 100,
         statusMessage: "PDF export completed",
       });
-      setOpen(false);
+      setAnchorEl(null);
     } catch (err) {
       console.error("Failed to export PDF:", err);
       finishActivity(activityId, {
@@ -462,72 +463,35 @@ export default function ExportBottomSheet({
     }
   }, [STATUS.SUCCESS, STATUS.FAILED, TYPE.EXPORT, buildExportMatrix, exporting, fileName, finishActivity, headingLines, location.pathname, resolveExportTitle, resolveRowsForExport, startActivity, subtitle, updateActivity]);
 
-  useEffect(() => {
-    if (!open) return undefined;
-
-    const handleOutsideClick = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setOpen(false);
-      }
-    };
-
-    const handleEscape = (event) => {
-      if (event.key === "Escape") setOpen(false);
-    };
-
-    document.addEventListener("mousedown", handleOutsideClick);
-    document.addEventListener("keydown", handleEscape);
-    return () => {
-      document.removeEventListener("mousedown", handleOutsideClick);
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, [open]);
-
   return (
-    <div className="relative inline-flex" ref={menuRef}>
-      <button
+    <>
+      <Button
         type="button"
         disabled={exporting}
-        onClick={() => setOpen((prev) => !prev)}
+        onClick={(e) => setAnchorEl(e.currentTarget)}
         aria-expanded={open}
         aria-haspopup="menu"
-        className={`topbar-action-btn topbar-action-export disabled:opacity-70 ${buttonClassName}`}
+        className={`topbar-action-btn topbar-action-export ${buttonClassName}`}
+        sx={{ opacity: exporting ? 0.7 : 1 }}
       >
         <Download className="w-3 h-3 mr-1" /> {exporting ? "Exporting..." : buttonLabel}
         <ChevronDown className="w-3 h-3 ml-1" />
-      </button>
+      </Button>
 
-      {open && (
-        <div
-          role="menu"
-          className="absolute right-0 top-full mt-1 z-[140] w-36 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg py-1"
-        >
-          <button
-            type="button"
-            disabled={exporting}
-            onClick={exportPdf}
-            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 disabled:opacity-60"
-          >
-            <FileText className="w-3.5 h-3.5" /> PDF
-          </button>
-          <button
-            type="button"
-            disabled={exporting}
-            onClick={exportExcel}
-            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 disabled:opacity-60"
-          >
-            <FileSpreadsheet className="w-3.5 h-3.5" /> EXCEL
-          </button>
-          <button
-            type="button"
-            disabled={exporting}
-            onClick={exportCsv}
-            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 disabled:opacity-60"
-          >
-            <FileText className="w-3.5 h-3.5" /> CSV
-          </button>
-        </div>
-      )}
-    </div>
+      <Menu anchorEl={anchorEl} open={open} onClose={() => setAnchorEl(null)} slotProps={{ list: { dense: true } }}>
+        <MenuItem disabled={exporting} onClick={exportPdf}>
+          <ListItemIcon><FileText className="w-3.5 h-3.5" /></ListItemIcon>
+          <ListItemText primaryTypographyProps={{ fontSize: 12 }}>PDF</ListItemText>
+        </MenuItem>
+        <MenuItem disabled={exporting} onClick={exportExcel}>
+          <ListItemIcon><FileSpreadsheet className="w-3.5 h-3.5" /></ListItemIcon>
+          <ListItemText primaryTypographyProps={{ fontSize: 12 }}>EXCEL</ListItemText>
+        </MenuItem>
+        <MenuItem disabled={exporting} onClick={exportCsv}>
+          <ListItemIcon><FileText className="w-3.5 h-3.5" /></ListItemIcon>
+          <ListItemText primaryTypographyProps={{ fontSize: 12 }}>CSV</ListItemText>
+        </MenuItem>
+      </Menu>
+    </>
   );
 }

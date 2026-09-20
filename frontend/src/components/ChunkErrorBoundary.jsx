@@ -1,4 +1,5 @@
 import React from "react";
+import { Box, Button, Typography } from "@mui/material";
 
 // Every route under MainLayout is React.lazy()-loaded (see routes/protectedLayoutRoutes.jsx), so a
 // fresh deploy that replaces every chunk's content-hashed filename breaks any tab that was already
@@ -43,18 +44,19 @@ class ChunkErrorBoundary extends React.Component {
   render() {
     if (this.state.failed) {
       return (
-        <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3 text-center">
-          <p className="text-sm text-slate-600 dark:text-gray-300">
+        <Box sx={{ display: "flex", minHeight: "50vh", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 1.5, textAlign: "center" }}>
+          <Typography variant="body2" sx={{ color: "text.secondary" }}>
             This page couldn't load a required update. Please refresh the page.
-          </p>
-          <button
+          </Typography>
+          <Button
             type="button"
             onClick={() => window.location.reload()}
-            className="rounded-lg bg-[#3a6ea5] px-4 py-2 text-sm font-semibold text-white hover:bg-[#345f8f]"
+            variant="contained"
+            sx={{ bgcolor: "#3a6ea5", fontWeight: 600, textTransform: "none", "&:hover": { bgcolor: "#345f8f" }, borderRadius: 2 }}
           >
             Refresh
-          </button>
-        </div>
+          </Button>
+        </Box>
       );
     }
     return this.props.children;

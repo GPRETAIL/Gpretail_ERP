@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { Box, ButtonBase, Checkbox, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
 import {
   getPermissionCatalog,
   normalizePagePermissions,
@@ -24,53 +25,48 @@ const FragmentSection = ({
   onToggleSectionAction,
 }) => (
   <>
-    <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-700">
-      <td className="px-3 py-2 font-semibold text-gray-800 dark:text-gray-100">
-        <button
-          type="button"
+    <TableRow sx={{ bgcolor: "action.hover" }}>
+      <TableCell sx={{ fontWeight: 600, color: "text.primary" }}>
+        <ButtonBase
           onClick={onToggleExpanded}
-          className="flex w-full items-center gap-2 text-left"
           aria-expanded={isExpanded}
           aria-label={`${isExpanded ? "Collapse" : "Expand"} ${section.name}`}
+          sx={{ display: "flex", width: "100%", alignItems: "center", gap: 1, justifyContent: "flex-start", textAlign: "left" }}
         >
-          {isExpanded ? <ChevronDown className="h-4 w-4 text-gray-600 dark:text-gray-400" /> : <ChevronRight className="h-4 w-4 text-gray-600 dark:text-gray-400" />}
-          <span>{section.name}</span>
-        </button>
-      </td>
+          {isExpanded ? <ChevronDown className="h-4 w-4" style={{ color: "inherit", opacity: 0.7 }} /> : <ChevronRight className="h-4 w-4" style={{ color: "inherit", opacity: 0.7 }} />}
+          <Box component="span">{section.name}</Box>
+        </ButtonBase>
+      </TableCell>
       {PERMISSION_ACTIONS.map((action) => {
         const state = buildSectionActionState(permissions, paths, action);
         return (
-          <td key={`${section.name}-${action}`} className="px-3 py-2 text-center">
-            <input
-              type="checkbox"
+          <TableCell key={`${section.name}-${action}`} align="center">
+            <Checkbox
               checked={state.checked}
-              ref={(node) => {
-                if (node) node.indeterminate = state.partial;
-              }}
+              indeterminate={state.partial}
               disabled={disabled}
               onChange={(event) => onToggleSectionAction(section, action, event.target.checked)}
-              className="h-4 w-4"
+              size="small"
             />
-          </td>
+          </TableCell>
         );
       })}
-    </tr>
+    </TableRow>
     {isExpanded &&
       section.pages.map((page) => (
-        <tr key={page.path} className="border-b border-gray-100 dark:border-gray-700">
-          <td className="px-3 py-2 pl-9 text-gray-700 dark:text-gray-300">{page.name}</td>
+        <TableRow key={page.path}>
+          <TableCell sx={{ pl: 4.5, color: "text.secondary" }}>{page.name}</TableCell>
           {PERMISSION_ACTIONS.map((action) => (
-            <td key={`${page.path}-${action}`} className="px-3 py-2 text-center">
-              <input
-                type="checkbox"
+            <TableCell key={`${page.path}-${action}`} align="center">
+              <Checkbox
                 checked={!!permissions[page.path]?.[action]}
                 disabled={disabled}
                 onChange={(event) => onToggleAction(page.path, action, event.target.checked)}
-                className="h-4 w-4"
+                size="small"
               />
-            </td>
+            </TableCell>
           ))}
-        </tr>
+        </TableRow>
       ))}
   </>
 );
@@ -123,27 +119,27 @@ const PermissionMatrix = ({ permissions, disabled = false, entitlements = null, 
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col rounded-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800">
-      <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 px-3 py-2">
-        <div>
-          <h2 className="text-base font-bold text-gray-800 dark:text-gray-100">Page Access</h2>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Select permissions by section and page.</p>
-        </div>
-        {disabled ? <span className="text-xs font-semibold text-amber-600">Using selected access group</span> : null}
-      </div>
-      <div className="min-h-0 flex-1 overflow-auto">
-        <table className="w-full min-w-[760px] text-sm">
-          <thead className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-700">
-            <tr className="border-b border-gray-200 dark:border-gray-700">
-              <th className="px-3 py-2 text-left font-semibold text-gray-700 dark:text-gray-300">Pages</th>
+    <Box sx={{ display: "flex", height: "100%", minHeight: 0, flexDirection: "column", borderRadius: "3.5px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper" }}>
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", px: 1.5, py: 1 }}>
+        <Box>
+          <Typography component="h2" sx={{ fontSize: 16, fontWeight: 700, color: "text.primary" }}>Page Access</Typography>
+          <Typography sx={{ fontSize: 12, color: "text.secondary" }}>Select permissions by section and page.</Typography>
+        </Box>
+        {disabled ? <Typography sx={{ fontSize: 12, fontWeight: 600, color: "warning.dark" }}>Using selected access group</Typography> : null}
+      </Box>
+      <Box sx={{ minHeight: 0, flex: 1, overflow: "auto" }}>
+        <Table size="small" sx={{ width: "100%", minWidth: 760 }} stickyHeader>
+          <TableHead>
+            <TableRow>
+              <TableCell sx={{ fontWeight: 600, color: "text.secondary" }}>Pages</TableCell>
               {PERMISSION_ACTIONS.map((action) => (
-                <th key={action} className="px-3 py-2 text-center font-semibold capitalize text-gray-700 dark:text-gray-300">
+                <TableCell key={action} align="center" sx={{ fontWeight: 600, textTransform: "capitalize", color: "text.secondary" }}>
                   {action}
-                </th>
+                </TableCell>
               ))}
-            </tr>
-          </thead>
-          <tbody>
+            </TableRow>
+          </TableHead>
+          <TableBody>
             {catalog.map((section) => {
               const paths = section.pages.map((page) => page.path);
               return (
@@ -160,10 +156,10 @@ const PermissionMatrix = ({ permissions, disabled = false, entitlements = null, 
                 />
               );
             })}
-          </tbody>
-        </table>
-      </div>
-    </div>
+          </TableBody>
+        </Table>
+      </Box>
+    </Box>
   );
 };
 

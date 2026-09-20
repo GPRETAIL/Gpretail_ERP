@@ -9,6 +9,7 @@ import {
   Sparkles,
   ArrowRight,
 } from "lucide-react";
+import { Box, Button, IconButton, Typography } from "@mui/material";
 
 export default function PwaInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
@@ -151,17 +152,22 @@ export default function PwaInstallPrompt() {
   // Show installed success toast
   if (installedSuccessfully) {
     return (
-      <div className="fixed bottom-5 left-4 right-4 z-50 mx-auto max-w-md animate-in fade-in slide-in-from-bottom-5 duration-300">
-        <div className="flex items-center gap-3 rounded-2xl bg-emerald-600 p-4 text-white shadow-2xl shadow-emerald-900/40">
-          <CheckCircle2 className="h-6 w-6 shrink-0 text-white animate-bounce" />
-          <div className="flex-1">
-            <h4 className="font-bold text-sm">App Installed Successfully!</h4>
-            <p className="text-xs text-emerald-100">
+      <Box sx={{ position: "fixed", bottom: 20, left: 16, right: 16, zIndex: 50, mx: "auto", maxWidth: 448 }}>
+        <Box
+          sx={{
+            display: "flex", alignItems: "center", gap: 1.5, borderRadius: "16px", p: 2,
+            bgcolor: "#059669", color: "#fff", boxShadow: "0 25px 50px -12px rgba(6,78,59,0.4)",
+          }}
+        >
+          <CheckCircle2 className="h-6 w-6 shrink-0 animate-bounce" style={{ color: "#fff" }} />
+          <Box sx={{ flex: 1 }}>
+            <Typography component="h4" sx={{ fontWeight: 700, fontSize: 14 }}>App Installed Successfully!</Typography>
+            <Typography sx={{ fontSize: 12, color: "#d1fae5" }}>
               Launch Vynerix ERP anytime from your home screen.
-            </p>
-          </div>
-        </div>
-      </div>
+            </Typography>
+          </Box>
+        </Box>
+      </Box>
     );
   }
 
@@ -186,139 +192,172 @@ export default function PwaInstallPrompt() {
   }
 
   return (
-    <div className="fixed bottom-[72px] left-3 right-3 z-40 mx-auto max-w-[440px] animate-in fade-in slide-in-from-bottom-6 duration-300 sm:bottom-6 sm:left-auto sm:right-6">
-      <div className="relative overflow-hidden rounded-2xl border border-indigo-500/30 bg-slate-900/95 p-4 text-white shadow-2xl shadow-indigo-950/60 backdrop-blur-xl transition-all">
+    <Box
+      sx={{
+        position: "fixed", bottom: { xs: 72, sm: 24 }, left: { xs: 12, sm: "auto" }, right: { xs: 12, sm: 24 },
+        zIndex: 40, mx: "auto", maxWidth: 440,
+      }}
+    >
+      <Box
+        sx={{
+          position: "relative", overflow: "hidden", borderRadius: "16px", border: "1px solid",
+          borderColor: "rgba(99,102,241,0.3)", bgcolor: "rgba(15,23,42,0.95)", color: "#fff", p: 2,
+          boxShadow: "0 25px 50px -12px rgba(30,27,75,0.6)", backdropFilter: "blur(24px)",
+        }}
+      >
         {/* Decorative background glow */}
-        <div className="pointer-events-none absolute -top-12 -right-12 h-32 w-32 rounded-full bg-indigo-500/20 blur-2xl" />
-        <div className="pointer-events-none absolute -bottom-12 -left-12 h-32 w-32 rounded-full bg-purple-500/20 blur-2xl" />
+        <Box sx={{ pointerEvents: "none", position: "absolute", top: -48, right: -48, height: 128, width: 128, borderRadius: "50%", bgcolor: "rgba(99,102,241,0.2)", filter: "blur(40px)" }} />
+        <Box sx={{ pointerEvents: "none", position: "absolute", bottom: -48, left: -48, height: 128, width: 128, borderRadius: "50%", bgcolor: "rgba(168,85,247,0.2)", filter: "blur(40px)" }} />
 
         {/* Close Button */}
-        <button
-          type="button"
+        <IconButton
           onClick={handleDismiss}
-          className="absolute top-3 right-3 rounded-full p-1 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
           aria-label="Dismiss"
+          size="small"
+          sx={{
+            position: "absolute", top: 12, right: 12, color: "#94a3b8",
+            "&:hover": { bgcolor: "#1e293b", color: "#fff" },
+          }}
         >
           <X className="h-4 w-4" />
-        </button>
+        </IconButton>
 
         {!showIosGuide ? (
           /* Standard Install Card */
-          <div className="flex flex-col gap-3">
-            <div className="flex items-start gap-3.5 pr-6">
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+            <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.75, pr: 3 }}>
               {/* App Icon */}
-              <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-500 shadow-md shadow-indigo-500/30">
-                <Smartphone className="h-6 w-6 text-white" />
-                <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex h-3.5 w-3.5 rounded-full bg-emerald-500" />
-                </span>
-              </div>
+              <Box
+                sx={{
+                  position: "relative", display: "flex", height: 48, width: 48, flexShrink: 0,
+                  alignItems: "center", justifyContent: "center", borderRadius: "12px",
+                  backgroundImage: "linear-gradient(to top right, #4f46e5, #6366f1, #a855f7)",
+                  boxShadow: "0 4px 6px -1px rgba(99,102,241,0.3)",
+                }}
+              >
+                <Smartphone className="h-6 w-6" style={{ color: "#fff" }} />
+                <Box component="span" sx={{ position: "absolute", top: -4, right: -4, display: "flex", height: 14, width: 14 }}>
+                  <Box component="span" className="animate-ping" sx={{ position: "absolute", display: "inline-flex", height: "100%", width: "100%", borderRadius: "50%", bgcolor: "#34d399", opacity: 0.75 }} />
+                  <Box component="span" sx={{ position: "relative", display: "inline-flex", height: 14, width: 14, borderRadius: "50%", bgcolor: "#10b981" }} />
+                </Box>
+              </Box>
 
               {/* Text Info */}
-              <div className="flex-1">
-                <div className="flex items-center gap-1.5">
-                  <span className="rounded bg-indigo-500/20 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-indigo-300 uppercase">
+              <Box sx={{ flex: 1 }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                  <Typography component="span" sx={{ borderRadius: "4px", bgcolor: "rgba(99,102,241,0.2)", px: 0.75, py: 0.25, fontSize: 10, fontWeight: 600, letterSpacing: "0.025em", color: "#a5b4fc", textTransform: "uppercase" }}>
                     Mobile App
-                  </span>
-                  <span className="flex items-center gap-1 text-[11px] font-medium text-emerald-400">
+                  </Typography>
+                  <Typography component="span" sx={{ display: "flex", alignItems: "center", gap: 0.5, fontSize: 11, fontWeight: 500, color: "#34d399" }}>
                     <Sparkles className="h-3 w-3" /> Fast & Offline
-                  </span>
-                </div>
-                <h3 className="mt-0.5 text-sm font-bold text-white tracking-tight">
+                  </Typography>
+                </Box>
+                <Typography component="h3" sx={{ mt: 0.25, fontSize: 14, fontWeight: 700, color: "#fff", letterSpacing: "-0.025em" }}>
                   Install Vynerix ERP App
-                </h3>
-                <p className="mt-0.5 text-xs text-slate-300 leading-snug">
+                </Typography>
+                <Typography sx={{ mt: 0.25, fontSize: 12, color: "#cbd5e1", lineHeight: 1.375 }}>
                   Add to your home screen for 1-tap quick billing, mobile POS, and instant camera scanning.
-                </p>
-              </div>
-            </div>
+                </Typography>
+              </Box>
+            </Box>
 
             {/* Action Buttons */}
-            <div className="flex items-center gap-2 pt-1">
-              <button
-                type="button"
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1, pt: 0.5 }}>
+              <Button
                 onClick={handleInstallClick}
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-indigo-500/30 hover:from-indigo-600 hover:to-purple-700 active:scale-[0.98] transition-all"
+                startIcon={<Download className="h-4 w-4" />}
+                sx={{
+                  flex: 1, borderRadius: "12px", px: 2, py: 1.25, fontSize: 12, fontWeight: 700,
+                  color: "#fff", textTransform: "none",
+                  backgroundImage: "linear-gradient(to right, #6366f1, #9333ea)",
+                  boxShadow: "0 10px 15px -3px rgba(99,102,241,0.3)",
+                  "&:hover": { backgroundImage: "linear-gradient(to right, #4f46e5, #7e22ce)" },
+                  "&:active": { transform: "scale(0.98)" },
+                }}
               >
-                <Download className="h-4 w-4" />
-                <span>Install Vynerix App</span>
-              </button>
+                Install Vynerix App
+              </Button>
 
-              <button
-                type="button"
+              <Button
                 onClick={handleDismiss}
-                className="rounded-xl border border-slate-700 bg-slate-800/80 px-3.5 py-2.5 text-xs font-semibold text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+                sx={{
+                  borderRadius: "12px", border: "1px solid", borderColor: "#334155", bgcolor: "rgba(30,41,59,0.8)",
+                  px: 1.75, py: 1.25, fontSize: 12, fontWeight: 600, color: "#cbd5e1", textTransform: "none",
+                  "&:hover": { bgcolor: "#334155", color: "#fff" },
+                }}
               >
                 Later
-              </button>
-            </div>
-          </div>
+              </Button>
+            </Box>
+          </Box>
         ) : (
           /* Step-by-Step Home Screen Guide */
-          <div className="flex flex-col gap-3 pr-4">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-500/20 text-indigo-400">
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, pr: 2 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Box sx={{ display: "flex", height: 32, width: 32, alignItems: "center", justifyContent: "center", borderRadius: "8px", bgcolor: "rgba(99,102,241,0.2)", color: "#818cf8" }}>
                 <Smartphone className="h-4 w-4" />
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-white">
+              </Box>
+              <Box>
+                <Typography component="h4" sx={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>
                   {isIos ? "Install on iPhone / iPad" : isMobile ? "Add to Home Screen" : "Install on This Computer"}
-                </h4>
-                <p className="text-[11px] text-slate-400">
+                </Typography>
+                <Typography sx={{ fontSize: 11, color: "#94a3b8" }}>
                   {isIos ? "Follow 2 simple steps in Safari" : "Follow these quick steps in your browser"}
-                </p>
-              </div>
-            </div>
+                </Typography>
+              </Box>
+            </Box>
 
-            <div className="space-y-2 rounded-xl bg-slate-800/60 p-3 text-xs text-slate-200">
-              <div className="flex items-center gap-2.5">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-indigo-500 text-[10px] font-bold text-white">
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1, borderRadius: "12px", bgcolor: "rgba(30,41,59,0.6)", p: 1.5, fontSize: 12, color: "#e2e8f0" }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+                <Box component="span" sx={{ display: "flex", height: 20, width: 20, flexShrink: 0, alignItems: "center", justifyContent: "center", borderRadius: "50%", bgcolor: "#6366f1", fontSize: 10, fontWeight: 700, color: "#fff" }}>
                   1
-                </span>
-                <span>
+                </Box>
+                <Box component="span">
                   {isIos ? (
-                    <>Tap the <strong className="text-indigo-300 font-semibold inline-flex items-center gap-1"><Share2 className="h-3.5 w-3.5 inline" /> Share</strong> button in Safari's bottom bar.</>
+                    <>Tap the <Box component="strong" sx={{ color: "#a5b4fc", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 0.5 }}><Share2 className="h-3.5 w-3.5" style={{ display: "inline" }} /> Share</Box> button in Safari's bottom bar.</>
                   ) : isMobile ? (
-                    <>Tap the browser menu <strong className="text-indigo-300 font-semibold">⋮ (three dots)</strong> in the top right corner.</>
+                    <>Tap the browser menu <Box component="strong" sx={{ color: "#a5b4fc", fontWeight: 600 }}>⋮ (three dots)</Box> in the top right corner.</>
                   ) : (
-                    <>Look for the <strong className="text-indigo-300 font-semibold">install icon</strong> in the address bar, or open the browser's <strong className="text-indigo-300 font-semibold">⋮ menu</strong>.</>
+                    <>Look for the <Box component="strong" sx={{ color: "#a5b4fc", fontWeight: 600 }}>install icon</Box> in the address bar, or open the browser's <Box component="strong" sx={{ color: "#a5b4fc", fontWeight: 600 }}>⋮ menu</Box>.</>
                   )}
-                </span>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-indigo-500 text-[10px] font-bold text-white">
+                </Box>
+              </Box>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+                <Box component="span" sx={{ display: "flex", height: 20, width: 20, flexShrink: 0, alignItems: "center", justifyContent: "center", borderRadius: "50%", bgcolor: "#6366f1", fontSize: 10, fontWeight: 700, color: "#fff" }}>
                   2
-                </span>
-                <span>
+                </Box>
+                <Box component="span">
                   {isMobile ? (
-                    <>Scroll down & select <strong className="text-indigo-300 font-semibold inline-flex items-center gap-1"><PlusSquare className="h-3.5 w-3.5 inline" /> Add to Home Screen / Install App</strong>.</>
+                    <>Scroll down & select <Box component="strong" sx={{ color: "#a5b4fc", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 0.5 }}><PlusSquare className="h-3.5 w-3.5" style={{ display: "inline" }} /> Add to Home Screen / Install App</Box>.</>
                   ) : (
-                    <>Click <strong className="text-indigo-300 font-semibold inline-flex items-center gap-1"><PlusSquare className="h-3.5 w-3.5 inline" /> Install Vynerix ERP...</strong></>
+                    <>Click <Box component="strong" sx={{ color: "#a5b4fc", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 0.5 }}><PlusSquare className="h-3.5 w-3.5" style={{ display: "inline" }} /> Install Vynerix ERP...</Box></>
                   )}
-                </span>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-indigo-500 text-[10px] font-bold text-white">
+                </Box>
+              </Box>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+                <Box component="span" sx={{ display: "flex", height: 20, width: 20, flexShrink: 0, alignItems: "center", justifyContent: "center", borderRadius: "50%", bgcolor: "#6366f1", fontSize: 10, fontWeight: 700, color: "#fff" }}>
                   3
-                </span>
-                <span>
-                  Confirm <strong className="text-indigo-300 font-semibold">Add / Install</strong> to launch Vynerix ERP anytime!
-                </span>
-              </div>
-            </div>
+                </Box>
+                <Box component="span">
+                  Confirm <Box component="strong" sx={{ color: "#a5b4fc", fontWeight: 600 }}>Add / Install</Box> to launch Vynerix ERP anytime!
+                </Box>
+              </Box>
+            </Box>
 
-            <button
-              type="button"
+            <Button
               onClick={handleDismiss}
-              className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-xl bg-slate-800 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+              endIcon={<ArrowRight className="h-3.5 w-3.5" />}
+              sx={{
+                mt: 0.5, width: "100%", borderRadius: "12px", bgcolor: "#1e293b", py: 1, fontSize: 12,
+                fontWeight: 600, color: "#cbd5e1", textTransform: "none",
+                "&:hover": { bgcolor: "#334155", color: "#fff" },
+              }}
             >
-              <span>Got it, Thanks</span>
-              <ArrowRight className="h-3.5 w-3.5" />
-            </button>
-          </div>
+              Got it, Thanks
+            </Button>
+          </Box>
         )}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }

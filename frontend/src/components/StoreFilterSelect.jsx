@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
+import { Box, MenuItem, TextField, Typography } from "@mui/material";
 import api from "../api/axios";
 
 // Module-scope cache: every report page shares one companies fetch per session.
@@ -47,25 +48,26 @@ const StoreFilterSelect = ({ value, onChange, label = "Store" }) => {
   if (!isSuperAdmin) return null;
 
   return (
-    <div>
-      <label className="block text-[11px] font-medium text-gray-600 dark:text-gray-300 mb-1">
+    <Box>
+      <Typography component="label" sx={{ display: "block", fontSize: 11, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
         {label}
-      </label>
-      <select
+      </Typography>
+      <TextField
+        select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-md
-          bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200
-          focus:outline-none focus:ring-1 focus:ring-indigo-500"
+        size="small"
+        fullWidth
+        sx={{ "& .MuiInputBase-input": { fontSize: 10.5 } }}
       >
-        <option value="">All Stores (Consolidated)</option>
+        <MenuItem value="">All Stores (Consolidated)</MenuItem>
         {stores.map((store) => (
-          <option key={store.id} value={String(store.id)}>
+          <MenuItem key={store.id} value={String(store.id)}>
             {store.name || store.code || `Store ${store.id}`}
-          </option>
+          </MenuItem>
         ))}
-      </select>
-    </div>
+      </TextField>
+    </Box>
   );
 };
 

@@ -1,6 +1,7 @@
 // src/components/AuthInitializer.jsx
 import React, { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
+import { Box } from "@mui/material";
 import checkAuth from "../utils/checkAuth";
 import { logout } from "../features/authSlice";
 
@@ -37,9 +38,12 @@ const AuthInitializer = ({ children }) => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-slate-900 text-indigo-400">
-        <div className="w-8 h-8 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
-      </div>
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", bgcolor: "#0f172a" }}>
+        <Box
+          className="animate-spin"
+          sx={{ width: 32, height: 32, border: "2px solid #818cf8", borderTopColor: "transparent", borderRadius: "50%" }}
+        />
+      </Box>
     );
   }
 

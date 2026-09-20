@@ -1,3 +1,5 @@
+import { Box } from "@mui/material";
+
 /**
  * PageSkeleton — shimmer skeleton shown while a page is loading.
  *
@@ -5,81 +7,81 @@
  *   variant  {"form" | "table"}  — layout style (default "form")
  *   rows     {number}            — number of skeleton rows (default 8)
  */
-const shimmer = "animate-pulse bg-gray-200 dark:bg-gray-700 rounded";
+const shimmerSx = { borderRadius: 1, bgcolor: "action.hover" };
 
 const HeaderSkeleton = () => (
-  <div className="flex justify-between items-center px-4 py-3 bg-white dark:bg-gray-800 border-b dark:border-gray-700 shadow-sm">
-    <div className="flex items-center gap-3">
-      <div className={`${shimmer} w-5 h-5`} />
-      <div className={`${shimmer} w-48 h-5`} />
-    </div>
-    <div className="flex items-center gap-2">
-      <div className={`${shimmer} w-16 h-7 rounded-md`} />
-      <div className={`${shimmer} w-16 h-7 rounded-md`} />
-      <div className={`${shimmer} w-16 h-7 rounded-md`} />
-    </div>
-  </div>
+  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", px: 2, py: 1.5, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
+    <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+      <Box className="animate-pulse" sx={{ ...shimmerSx, width: 20, height: 20 }} />
+      <Box className="animate-pulse" sx={{ ...shimmerSx, width: 192, height: 20 }} />
+    </Box>
+    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+      <Box className="animate-pulse" sx={{ ...shimmerSx, width: 64, height: 28, borderRadius: "3.5px" }} />
+      <Box className="animate-pulse" sx={{ ...shimmerSx, width: 64, height: 28, borderRadius: "3.5px" }} />
+      <Box className="animate-pulse" sx={{ ...shimmerSx, width: 64, height: 28, borderRadius: "3.5px" }} />
+    </Box>
+  </Box>
 );
 
 const FormSkeleton = ({ rows = 8 }) => (
-  <div className="flex-1 p-4 space-y-4">
+  <Box sx={{ flex: 1, p: 2, display: "flex", flexDirection: "column", gap: 2 }}>
     {/* Two column form layout */}
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-3">
+    <Box sx={{ bgcolor: "background.paper", borderRadius: "5.25px", border: 1, borderColor: "divider", p: 2 }}>
+      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "repeat(2, 1fr)" }, columnGap: 4, rowGap: 1.5 }}>
         {Array.from({ length: rows }).map((_, i) => (
-          <div key={i} className="flex items-center gap-3">
-            <div className={`${shimmer} w-1/3 h-4`} />
-            <div className={`${shimmer} flex-1 h-8 rounded-sm`} />
-          </div>
+          <Box key={i} sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+            <Box className="animate-pulse" sx={{ ...shimmerSx, width: "33.33%", height: 16 }} />
+            <Box className="animate-pulse" sx={{ ...shimmerSx, flex: 1, height: 32, borderRadius: "1.75px" }} />
+          </Box>
         ))}
-      </div>
-    </div>
+      </Box>
+    </Box>
     {/* Bottom section placeholder */}
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-      <div className={`${shimmer} w-32 h-4 mb-3`} />
-      <div className="space-y-2">
+    <Box sx={{ bgcolor: "background.paper", borderRadius: "5.25px", border: 1, borderColor: "divider", p: 2 }}>
+      <Box className="animate-pulse" sx={{ ...shimmerSx, width: 128, height: 16, mb: 1.5 }} />
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className={`${shimmer} w-full h-8 rounded-sm`} />
+          <Box key={i} className="animate-pulse" sx={{ ...shimmerSx, width: "100%", height: 32, borderRadius: "1.75px" }} />
         ))}
-      </div>
-    </div>
-  </div>
+      </Box>
+    </Box>
+  </Box>
 );
 
 const TableSkeleton = ({ rows = 6, cols = 8 }) => (
-  <div className="flex-1 p-4">
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+  <Box sx={{ flex: 1, p: 2 }}>
+    <Box sx={{ bgcolor: "background.paper", borderRadius: "5.25px", border: 1, borderColor: "divider", overflow: "hidden" }}>
       {/* Header row */}
-      <div className="flex gap-2 p-3 bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-700">
+      <Box sx={{ display: "flex", gap: 1, p: 1.5, bgcolor: "action.hover", borderBottom: 1, borderColor: "divider" }}>
         {Array.from({ length: cols }).map((_, i) => (
-          <div key={i} className={`${shimmer} flex-1 h-4`} />
+          <Box key={i} className="animate-pulse" sx={{ ...shimmerSx, flex: 1, height: 16 }} />
         ))}
-      </div>
+      </Box>
       {/* Body rows */}
       {Array.from({ length: rows }).map((_, ri) => (
-        <div key={ri} className="flex gap-2 p-3 border-b border-gray-100 dark:border-gray-700">
+        <Box key={ri} sx={{ display: "flex", gap: 1, p: 1.5, borderBottom: 1, borderColor: "divider" }}>
           {Array.from({ length: cols }).map((_, ci) => (
-            <div
+            <Box
               key={ci}
-              className={`${shimmer} flex-1 h-4`}
-              style={{ width: `${45 + Math.random() * 40}%` }}
+              className="animate-pulse"
+              sx={{ ...shimmerSx, flex: 1, height: 16, width: `${45 + Math.random() * 40}%` }}
             />
           ))}
-        </div>
+        </Box>
       ))}
-    </div>
-  </div>
+    </Box>
+  </Box>
 );
 
 const PageSkeleton = ({ variant = "form", rows, cols }) => (
-  <div className="h-full flex flex-col bg-gray-100 dark:bg-gray-900">
+  <Box sx={{ height: "100%", display: "flex", flexDirection: "column", bgcolor: "background.default" }}>
     <HeaderSkeleton />
     {variant === "table" ? (
       <TableSkeleton rows={rows} cols={cols} />
     ) : (
       <FormSkeleton rows={rows} />
     )}
-  </div>
+  </Box>
 );
 
 export default PageSkeleton;

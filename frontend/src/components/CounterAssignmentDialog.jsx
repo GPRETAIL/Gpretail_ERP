@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
+import { Box, Button, IconButton, MenuItem, TextField, Typography } from "@mui/material";
 import api from "../api/axios";
 import { loginSuccess } from "../features/authSlice";
 
@@ -80,71 +81,65 @@ export default function CounterAssignmentDialog({ open, onClose, onAssigned }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[120] bg-black/30 flex items-center justify-center p-4">
-      <div className="w-full max-w-lg rounded-xl bg-white shadow-xl border border-gray-200 dark:bg-gray-900 dark:border-gray-700 overflow-hidden">
-        <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-gray-200 dark:border-gray-700">
-          <div>
-            <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">
+    <Box sx={{ position: "fixed", inset: 0, zIndex: 120, bgcolor: "rgba(0,0,0,0.3)", display: "flex", alignItems: "center", justifyContent: "center", p: 2 }}>
+      <Box sx={{ width: "100%", maxWidth: 512, borderRadius: 3, bgcolor: "background.paper", boxShadow: 8, border: "1px solid", borderColor: "divider", overflow: "hidden" }}>
+        <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 1.5, px: 2.5, py: 2, borderBottom: 1, borderColor: "divider" }}>
+          <Box>
+            <Typography component="h2" sx={{ fontSize: 16, fontWeight: 600, color: "text.primary" }}>
               Assign a Counter
-            </h2>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            </Typography>
+            <Typography sx={{ mt: 0.5, fontSize: 14, color: "text.secondary" }}>
               Select the counter you're working from before ringing up sales.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
-            aria-label="Close counter dialog"
-          >
+            </Typography>
+          </Box>
+          <IconButton onClick={onClose} aria-label="Close counter dialog" size="small" sx={{ color: "text.secondary" }}>
             <XMarkIcon className="h-5 w-5" />
-          </button>
-        </div>
+          </IconButton>
+        </Box>
 
-        <div className="px-5 py-4">
+        <Box sx={{ px: 2.5, py: 2 }}>
           {loadingCounters ? (
-            <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-800/60 dark:text-gray-300">
+            <Box sx={{ borderRadius: 2, border: "1px solid", borderColor: "divider", bgcolor: "action.hover", px: 2, py: 1.5, fontSize: 14, color: "text.secondary" }}>
               Loading counters...
-            </div>
+            </Box>
           ) : (
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
-                Counter
-              </label>
-              <select
-                value={selectedCounterId}
-                onChange={(event) => setSelectedCounterId(event.target.value)}
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-              >
-                <option value="">Select counter</option>
-                {counterOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <TextField
+              select
+              label="Counter"
+              value={selectedCounterId}
+              onChange={(event) => setSelectedCounterId(event.target.value)}
+              fullWidth
+              size="small"
+              slotProps={{ inputLabel: { shrink: true } }}
+            >
+              <MenuItem value="">Select counter</MenuItem>
+              {counterOptions.map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </TextField>
           )}
-        </div>
+        </Box>
 
-        <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50/70 dark:bg-gray-900">
-          <button
-            type="button"
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 1.5, px: 2.5, py: 2, borderTop: 1, borderColor: "divider", bgcolor: "action.hover" }}>
+          <Button
             onClick={onClose}
-            className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-800"
+            variant="outlined"
+            sx={{ textTransform: "none", borderColor: "divider", color: "text.secondary" }}
           >
             Cancel
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
             onClick={handleSave}
             disabled={loadingCounters || savingCounterAssignment}
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+            variant="contained"
+            sx={{ textTransform: "none" }}
           >
             {savingCounterAssignment ? "Saving..." : "Save"}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </Box>
+      </Box>
+    </Box>
   );
 }
