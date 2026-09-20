@@ -5,7 +5,7 @@ import {
   ArrowRight,
   BarChart3,
   Bell,
-  Box,
+  Box as BoxIcon,
   CheckCircle2,
   ChevronRight,
   ClipboardList,
@@ -39,6 +39,7 @@ import {
   Wallet,
   X,
 } from "lucide-react";
+import { Box, Typography } from "@mui/material";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate as useAppNavigate } from "react-router-dom";
 import { mobileApi } from "./mobileApi";
@@ -163,51 +164,54 @@ export default function EnterpriseMobileWorkspace() {
   };
 
   return (
-    <div className="vx-workspace">
+    <Box className="vx-workspace">
       {/* 1. Splash Screen on Launch */}
       {splashVisible && (
-        <div className="vx-splash">
-          <div className="vx-splash-logo-box">
+        <Box className="vx-splash">
+          <Box className="vx-splash-logo-box">
             <svg viewBox="0 0 100 100" className="w-12 h-12 fill-white">
               <path d="M20 20 L40 20 L50 65 L60 20 L80 20 L58 85 L42 85 Z" />
             </svg>
-          </div>
-          <h1 className="vx-splash-title">Vynerix</h1>
-          <h2 className="vx-splash-title -mt-2">ERP</h2>
-          <p className="vx-splash-sub">Smart. Secure. Simplified.</p>
-          <div className="vx-splash-bar-wrap">
-            <div className="vx-splash-bar" />
-          </div>
-        </div>
+          </Box>
+          <Typography component="h1" className="vx-splash-title">Vynerix</Typography>
+          <Typography component="h2" className="vx-splash-title -mt-2">ERP</Typography>
+          <Typography component="p" className="vx-splash-sub">Smart. Secure. Simplified.</Typography>
+          <Box className="vx-splash-bar-wrap">
+            <Box className="vx-splash-bar" />
+          </Box>
+        </Box>
       )}
 
       {/* 2. Top Header Bar */}
-      <header className="vx-ws-topbar">
+      <Box component="header" className="vx-ws-topbar">
         {page === "dashboard" || page === "modules" ? (
-          <button
+          <Box
+            component="button"
             type="button"
             className="vx-ws-icon"
             onClick={() => setMenuOpen(true)}
             aria-label="Open menu"
           >
             <Menu size={20} />
-          </button>
+          </Box>
         ) : (
-          <button
+          <Box
+            component="button"
             type="button"
             className="vx-ws-icon"
             onClick={goBack}
             aria-label="Go back"
           >
             <ArrowLeft size={20} />
-          </button>
+          </Box>
         )}
 
-        <div className="vx-page-title-center flex-1 text-center font-bold text-base text-slate-900">
+        <Box className="vx-page-title-center flex-1 text-center font-bold text-base text-slate-900">
           {getHeaderTitle()}
-        </div>
+        </Box>
 
-        <button
+        <Box
+          component="button"
           type="button"
           className="vx-ws-icon relative"
           onClick={triggerInstall}
@@ -215,97 +219,107 @@ export default function EnterpriseMobileWorkspace() {
           aria-label="Install App"
         >
           <Bell size={19} />
-          <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-indigo-600" />
-        </button>
-      </header>
+          <Box component="span" sx={{ position: "absolute", top: 8, right: 8, width: 8, height: 8, borderRadius: "50%", bgcolor: "#4f46e5" }} />
+        </Box>
+      </Box>
 
       {/* 3. Main Workspace Shell */}
-      <div className="vx-ws-shell">
+      <Box className="vx-ws-shell">
         {/* Mobile Slide-over Drawer / Desktop Sidebar */}
-        <aside className={`vx-ws-sidebar ${menuOpen ? "open" : ""}`}>
-          <div className="vx-ws-space">
-            <div>
-              <small className="text-slate-400 text-xs font-semibold">Workspace</small>
-              <h3 className="text-slate-900 font-extrabold text-base m-0">Vynerix ERP</h3>
-            </div>
-            <button
+        <Box component="aside" className={`vx-ws-sidebar ${menuOpen ? "open" : ""}`}>
+          <Box className="vx-ws-space">
+            <Box>
+              <Typography component="small" sx={{ color: "#94a3b8", fontSize: 12, fontWeight: 600 }}>Workspace</Typography>
+              <Typography component="h3" sx={{ color: "#0f172a", fontWeight: 800, fontSize: 16, m: 0 }}>Vynerix ERP</Typography>
+            </Box>
+            <Box
+              component="button"
               type="button"
               className="vx-ws-icon mobile-only"
               onClick={() => setMenuOpen(false)}
             >
               <X size={18} />
-            </button>
-          </div>
-          <nav>
-            <button
+            </Box>
+          </Box>
+          <Box component="nav">
+            <Box
+              component="button"
               type="button"
               className={page === "dashboard" ? "active" : ""}
               onClick={() => navigateTo("dashboard")}
             >
               <Home size={18} /> Dashboard
-            </button>
-            <button
+            </Box>
+            <Box
+              component="button"
               type="button"
               className={page === "modules" ? "active" : ""}
               onClick={() => navigateTo("modules")}
             >
               <Layers size={18} /> All Modules
-            </button>
-            <button
+            </Box>
+            <Box
+              component="button"
               type="button"
               className={page === "sales" ? "active" : ""}
               onClick={() => navigateTo("sales")}
             >
               <ShoppingCart size={18} /> Sales
-            </button>
-            <button
+            </Box>
+            <Box
+              component="button"
               type="button"
               className={page === "purchase" ? "active" : ""}
               onClick={() => navigateTo("purchase")}
             >
               <ClipboardList size={18} /> Purchase
-            </button>
-            <button
+            </Box>
+            <Box
+              component="button"
               type="button"
               className={page === "inventory" ? "active" : ""}
               onClick={() => navigateTo("inventory")}
             >
-              <Box size={18} /> Inventory
-            </button>
-            <button
+              <BoxIcon size={18} /> Inventory
+            </Box>
+            <Box
+              component="button"
               type="button"
               className={page === "reports" ? "active" : ""}
               onClick={() => navigateTo("reports")}
             >
               <BarChart3 size={18} /> Reports
-            </button>
-            <button
+            </Box>
+            <Box
+              component="button"
               type="button"
               className={page === "settings" ? "active" : ""}
               onClick={() => navigateTo("settings")}
             >
               <Settings size={18} /> Settings
-            </button>
+            </Box>
 
-            <div className="my-2 border-t border-slate-100 dark:border-slate-800" />
-            <button
+            <Box sx={{ my: 1, borderTop: "1px solid #f1f5f9" }} />
+            <Box
+              component="button"
               type="button"
-              className="text-indigo-600 font-bold"
+              sx={{ color: "#4f46e5", fontWeight: 700 }}
               onClick={triggerInstall}
             >
               <Download size={18} /> Install Mobile App
-            </button>
-            <a
+            </Box>
+            <Box
+              component="a"
               href="/dashboard"
-              className="flex items-center gap-2 px-3 py-2 text-xs text-slate-500 hover:text-slate-900 rounded-lg transition-colors"
+              sx={{ display: "flex", alignItems: "center", gap: 1, px: 1.5, py: 1, fontSize: 12, color: "#64748b", borderRadius: "8px", transition: "color 0.15s", "&:hover": { color: "#0f172a" } }}
             >
               <Home size={16} /> Desktop View
-            </a>
-          </nav>
-        </aside>
+            </Box>
+          </Box>
+        </Box>
 
         {/* 4. Active Screen Router */}
-        <main className="vx-ws-main">
+        <Box component="main" className="vx-ws-main">
           {page === "dashboard" && (
             <DashboardScreen
               userName={userName}
@@ -363,52 +377,57 @@ export default function EnterpriseMobileWorkspace() {
               onTriggerPwa={triggerInstall}
             />
           )}
-        </main>
-      </div>
+        </Box>
+      </Box>
 
       {/* 5. Mobile Bottom Tab Navigation */}
-      <nav className="vx-bottom">
-        <button
+      <Box component="nav" className="vx-bottom">
+        <Box
+          component="button"
           type="button"
           className={page === "dashboard" ? "active" : ""}
           onClick={() => navigateTo("dashboard")}
         >
           <Home size={20} />
-          <span>Dashboard</span>
-        </button>
-        <button
+          <Box component="span">Dashboard</Box>
+        </Box>
+        <Box
+          component="button"
           type="button"
           className={page === "sales" || page === "create_invoice" ? "active" : ""}
           onClick={() => navigateTo("sales")}
         >
           <ShoppingCart size={20} />
-          <span>Sales</span>
-        </button>
-        <button
+          <Box component="span">Sales</Box>
+        </Box>
+        <Box
+          component="button"
           type="button"
           className={page === "purchase" ? "active" : ""}
           onClick={() => navigateTo("purchase")}
         >
           <ClipboardList size={20} />
-          <span>Purchase</span>
-        </button>
-        <button
+          <Box component="span">Purchase</Box>
+        </Box>
+        <Box
+          component="button"
           type="button"
           className={page === "inventory" || page === "product_details" ? "active" : ""}
           onClick={() => navigateTo("inventory")}
         >
           <Package size={20} />
-          <span>Inventory</span>
-        </button>
-        <button
+          <Box component="span">Inventory</Box>
+        </Box>
+        <Box
+          component="button"
           type="button"
           className={page === "modules" || page === "reports" || page === "settings" ? "active" : ""}
           onClick={() => navigateTo("modules")}
         >
           <Menu size={20} />
-          <span>More</span>
-        </button>
-      </nav>
+          <Box component="span">More</Box>
+        </Box>
+      </Box>
 
       {/* Transaction Modal fallback */}
       {modal && (
@@ -419,7 +438,7 @@ export default function EnterpriseMobileWorkspace() {
           onSaved={() => loadData()}
         />
       )}
-    </div>
+    </Box>
   );
 }
 
@@ -428,76 +447,76 @@ export default function EnterpriseMobileWorkspace() {
 // -------------------------------------------------------------
 function DashboardScreen({ userName, data, onNavigate }) {
   return (
-    <div className="space-y-4">
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
       {/* Hello User Greeting */}
-      <div className="vx-user-greeting">
-        <div className="vx-greeting-left">
-          <div className="vx-greeting-avatar">
+      <Box className="vx-user-greeting">
+        <Box className="vx-greeting-left">
+          <Box className="vx-greeting-avatar">
             {userName.slice(0, 1).toUpperCase()}
-          </div>
-          <div className="vx-greeting-text">
-            <h2>Hello, {userName}</h2>
-            <p>Super Admin</p>
-          </div>
-        </div>
-      </div>
+          </Box>
+          <Box className="vx-greeting-text">
+            <Typography component="h2">Hello, {userName}</Typography>
+            <Typography component="p">Super Admin</Typography>
+          </Box>
+        </Box>
+      </Box>
 
       {/* Date Pill Selector */}
-      <div>
-        <div className="vx-date-pill">
-          <span>📅</span>
-          <span>19 Aug - 19 Aug 2025</span>
-          <span className="text-slate-400 text-xs">▼</span>
-        </div>
-      </div>
+      <Box>
+        <Box className="vx-date-pill">
+          <Box component="span">📅</Box>
+          <Box component="span">19 Aug - 19 Aug 2025</Box>
+          <Typography component="span" sx={{ color: "#94a3b8", fontSize: 12 }}>▼</Typography>
+        </Box>
+      </Box>
 
       {/* 2x2 KPI Cards */}
-      <div className="vx-kpis-grid">
-        <div className="vx-kpi-card">
-          <span className="vx-kpi-label">Sales Today</span>
-          <span className="vx-kpi-val">₹ 28,450</span>
-          <span className="vx-kpi-badge positive">
+      <Box className="vx-kpis-grid">
+        <Box className="vx-kpi-card">
+          <Box component="span" className="vx-kpi-label">Sales Today</Box>
+          <Box component="span" className="vx-kpi-val">₹ 28,450</Box>
+          <Box component="span" className="vx-kpi-badge positive">
             <TrendingUp size={13} /> +12.5%
-          </span>
-        </div>
+          </Box>
+        </Box>
 
-        <div className="vx-kpi-card">
-          <span className="vx-kpi-label">Purchase Today</span>
-          <span className="vx-kpi-val">₹ 18,750</span>
-          <span className="vx-kpi-badge negative">
+        <Box className="vx-kpi-card">
+          <Box component="span" className="vx-kpi-label">Purchase Today</Box>
+          <Box component="span" className="vx-kpi-val">₹ 18,750</Box>
+          <Box component="span" className="vx-kpi-badge negative">
             <TrendingDown size={13} /> -4.3%
-          </span>
-        </div>
+          </Box>
+        </Box>
 
-        <div className="vx-kpi-card">
-          <span className="vx-kpi-label">Receivables</span>
-          <span className="vx-kpi-val">₹ 1,25,000</span>
-          <span className="vx-kpi-badge info">
+        <Box className="vx-kpi-card">
+          <Box component="span" className="vx-kpi-label">Receivables</Box>
+          <Box component="span" className="vx-kpi-val">₹ 1,25,000</Box>
+          <Box component="span" className="vx-kpi-badge info">
             <TrendingUp size={13} /> Active
-          </span>
-        </div>
+          </Box>
+        </Box>
 
-        <div className="vx-kpi-card">
-          <span className="vx-kpi-label">Payables</span>
-          <span className="vx-kpi-val">₹ 75,400</span>
-          <span className="vx-kpi-badge purple">
+        <Box className="vx-kpi-card">
+          <Box component="span" className="vx-kpi-label">Payables</Box>
+          <Box component="span" className="vx-kpi-val">₹ 75,400</Box>
+          <Box component="span" className="vx-kpi-badge purple">
             <TrendingDown size={13} /> Due
-          </span>
-        </div>
-      </div>
+          </Box>
+        </Box>
+      </Box>
 
       {/* Sales Overview Chart Card */}
-      <div className="vx-card">
-        <div className="vx-card-header">
-          <h3 className="vx-card-title">Sales Overview</h3>
-          <select className="vx-select-sm" defaultValue="week">
+      <Box className="vx-card">
+        <Box className="vx-card-header">
+          <Typography component="h3" className="vx-card-title">Sales Overview</Typography>
+          <Box component="select" className="vx-select-sm" defaultValue="week">
             <option value="week">This Week ▾</option>
             <option value="month">This Month</option>
-          </select>
-        </div>
+          </Box>
+        </Box>
 
         {/* SVG Sparkline / Line Chart */}
-        <div className="vx-chart-box">
+        <Box className="vx-chart-box">
           <svg viewBox="0 0 650 180" className="w-full h-full">
             <defs>
               <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
@@ -562,9 +581,9 @@ function DashboardScreen({ userName, data, onNavigate }) {
             <text x="450" y="170" fontSize="10" fill="#94a3b8">18 Aug</text>
             <text x="530" y="170" fontSize="10" fill="#94a3b8">19 Aug</text>
           </svg>
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   );
 }
 
@@ -575,7 +594,7 @@ function ModulesScreen({ onNavigate }) {
   const moduleTiles = [
     { key: "sales", name: "Sales", icon: ShoppingCart, bg: "bg-indigo-600" },
     { key: "purchase", name: "Purchase", icon: ClipboardList, bg: "bg-sky-500" },
-    { key: "inventory", name: "Inventory", icon: Box, bg: "bg-amber-500" },
+    { key: "inventory", name: "Inventory", icon: BoxIcon, bg: "bg-amber-500" },
     { key: "inventory", name: "Products", icon: Package, bg: "bg-emerald-500" },
     { key: "dashboard", name: "Customers", icon: Users, bg: "bg-blue-500" },
     { key: "dashboard", name: "Suppliers", icon: Store, bg: "bg-cyan-600" },
@@ -585,57 +604,58 @@ function ModulesScreen({ onNavigate }) {
   ];
 
   return (
-    <div className="space-y-4">
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
       {/* 3x3 Grid */}
-      <div className="vx-modules-grid">
+      <Box className="vx-modules-grid">
         {moduleTiles.map((tile, i) => {
           const Icon = tile.icon;
           return (
-            <button
+            <Box
+              component="button"
               key={i}
               type="button"
               className="vx-module-tile"
               onClick={() => onNavigate(tile.key)}
             >
-              <div className={`vx-module-icon-box ${tile.bg}`}>
+              <Box className={`vx-module-icon-box ${tile.bg}`}>
                 <Icon size={22} />
-              </div>
-              <span className="vx-module-name">{tile.name}</span>
-            </button>
+              </Box>
+              <Box component="span" className="vx-module-name">{tile.name}</Box>
+            </Box>
           );
         })}
-      </div>
+      </Box>
 
       {/* Recent Activities */}
-      <div className="vx-card">
-        <h3 className="vx-card-title mb-3">Recent Activities</h3>
-        <div className="divide-y divide-slate-100">
-          <div className="flex items-center justify-between py-2.5">
-            <div>
-              <h4 className="text-xs font-bold text-slate-800 m-0">Sales Invoice INV-000123</h4>
-              <p className="text-[11px] text-slate-400 m-0">19 Aug 2025</p>
-            </div>
-            <strong className="text-xs font-extrabold text-slate-900">₹ 8,450</strong>
-          </div>
+      <Box className="vx-card">
+        <Typography component="h3" className="vx-card-title" sx={{ mb: 1.5 }}>Recent Activities</Typography>
+        <Box sx={{ "& > *:not(:first-of-type)": { borderTop: "1px solid #f1f5f9" } }}>
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", py: 1.25 }}>
+            <Box>
+              <Typography component="h4" sx={{ fontSize: 12, fontWeight: 700, color: "#1e293b", m: 0 }}>Sales Invoice INV-000123</Typography>
+              <Typography component="p" sx={{ fontSize: 11, color: "#94a3b8", m: 0 }}>19 Aug 2025</Typography>
+            </Box>
+            <Box component="strong" sx={{ fontSize: 12, fontWeight: 800, color: "#0f172a" }}>₹ 8,450</Box>
+          </Box>
 
-          <div className="flex items-center justify-between py-2.5">
-            <div>
-              <h4 className="text-xs font-bold text-slate-800 m-0">Purchase Bill BILL-000123</h4>
-              <p className="text-[11px] text-slate-400 m-0">19 Aug 2025</p>
-            </div>
-            <strong className="text-xs font-extrabold text-slate-900">₹ 5,600</strong>
-          </div>
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", py: 1.25 }}>
+            <Box>
+              <Typography component="h4" sx={{ fontSize: 12, fontWeight: 700, color: "#1e293b", m: 0 }}>Purchase Bill BILL-000123</Typography>
+              <Typography component="p" sx={{ fontSize: 11, color: "#94a3b8", m: 0 }}>19 Aug 2025</Typography>
+            </Box>
+            <Box component="strong" sx={{ fontSize: 12, fontWeight: 800, color: "#0f172a" }}>₹ 5,600</Box>
+          </Box>
 
-          <div className="flex items-center justify-between py-2.5">
-            <div>
-              <h4 className="text-xs font-bold text-slate-800 m-0">Payment Received</h4>
-              <p className="text-[11px] text-slate-400 m-0">18 Aug 2025</p>
-            </div>
-            <strong className="text-xs font-extrabold text-slate-900">₹ 10,000</strong>
-          </div>
-        </div>
-      </div>
-    </div>
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", py: 1.25 }}>
+            <Box>
+              <Typography component="h4" sx={{ fontSize: 12, fontWeight: 700, color: "#1e293b", m: 0 }}>Payment Received</Typography>
+              <Typography component="p" sx={{ fontSize: 11, color: "#94a3b8", m: 0 }}>18 Aug 2025</Typography>
+            </Box>
+            <Box component="strong" sx={{ fontSize: 12, fontWeight: 800, color: "#0f172a" }}>₹ 10,000</Box>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
   );
 }
 
@@ -659,56 +679,59 @@ function SalesInvoicesScreen({ filter, setFilter, search, setSearch, onAdd }) {
   });
 
   return (
-    <div>
+    <Box>
       {/* Search & Filter */}
-      <div className="vx-search-row">
-        <div className="vx-search-input-wrap">
+      <Box className="vx-search-row">
+        <Box className="vx-search-input-wrap">
           <Search size={16} className="text-slate-400" />
-          <input
+          <Box
+            component="input"
             type="text"
             placeholder="Search invoices..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-        </div>
-        <button type="button" className="vx-filter-btn" aria-label="Filter">
+        </Box>
+        <Box component="button" type="button" className="vx-filter-btn" aria-label="Filter">
           <Filter size={17} />
-        </button>
-      </div>
+        </Box>
+      </Box>
 
       {/* Filter Tabs */}
-      <div className="vx-filter-tabs">
+      <Box className="vx-filter-tabs">
         {["All", "Draft", "Sent", "Paid"].map((t) => (
-          <button
+          <Box
+            component="button"
             key={t}
             type="button"
             className={`vx-filter-pill ${filter === t ? "active" : ""}`}
             onClick={() => setFilter(t)}
           >
             {t}
-          </button>
+          </Box>
         ))}
-      </div>
+      </Box>
 
       {/* Invoices List */}
-      <div>
+      <Box>
         {filtered.map((inv) => (
-          <div key={inv.id} className="vx-trans-card">
-            <div className="vx-trans-left">
-              <span className="vx-trans-id">{inv.id}</span>
-              <span className="vx-trans-meta">{inv.customer}</span>
-              <span className="vx-trans-meta text-[10px]">{inv.date}</span>
-            </div>
-            <div className="vx-trans-right">
-              <span className="vx-trans-amount">{money(inv.amount)}</span>
-              <span className={`vx-pill-badge ${inv.status}`}>{inv.status}</span>
-            </div>
-          </div>
+          <Box key={inv.id} className="vx-trans-card">
+            <Box className="vx-trans-left">
+              <Box component="span" className="vx-trans-id">{inv.id}</Box>
+              <Box component="span" className="vx-trans-meta">{inv.customer}</Box>
+              <Box component="span" className="vx-trans-meta text-[10px]">{inv.date}</Box>
+            </Box>
+            <Box className="vx-trans-right">
+              <Box component="span" className="vx-trans-amount">{money(inv.amount)}</Box>
+              <Box component="span" className={`vx-pill-badge ${inv.status}`}>{inv.status}</Box>
+            </Box>
+          </Box>
         ))}
-      </div>
+      </Box>
 
       {/* Floating Action Button (+) */}
-      <button
+      <Box
+        component="button"
         type="button"
         className="vx-fab-btn"
         onClick={onAdd}
@@ -716,8 +739,8 @@ function SalesInvoicesScreen({ filter, setFilter, search, setSearch, onAdd }) {
         aria-label="Create Invoice"
       >
         <Plus size={26} />
-      </button>
-    </div>
+      </Box>
+    </Box>
   );
 }
 
@@ -726,93 +749,102 @@ function SalesInvoicesScreen({ filter, setFilter, search, setSearch, onAdd }) {
 // -------------------------------------------------------------
 function CreateInvoiceScreen({ onBack }) {
   return (
-    <div className="space-y-4 pb-12">
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 2, pb: 6 }}>
       {/* Customer Selection */}
-      <div className="vx-card">
-        <label className="text-xs font-semibold text-slate-700 block mb-1">Customer</label>
-        <select className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 outline-none font-medium">
+      <Box className="vx-card">
+        <Typography component="label" sx={{ fontSize: 12, fontWeight: 600, color: "#334155", display: "block", mb: 0.5 }}>Customer</Typography>
+        <Box component="select" sx={{ width: "100%", bgcolor: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "12px", p: 1.25, fontSize: 12, color: "#1e293b", outline: "none", fontWeight: 500 }}>
           <option>Select Customer ▾</option>
           <option>Walking Customer</option>
           <option>Sri Balaji Textiles</option>
-        </select>
-      </div>
+        </Box>
+      </Box>
 
       {/* Invoice Details */}
-      <div className="vx-card space-y-2.5">
-        <h4 className="text-xs font-bold text-slate-900 m-0">Invoice Details</h4>
+      <Box className="vx-card" sx={{ display: "flex", flexDirection: "column", gap: 1.25 }}>
+        <Typography component="h4" sx={{ fontSize: 12, fontWeight: 700, color: "#0f172a", m: 0 }}>Invoice Details</Typography>
 
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-slate-500">Invoice Number</span>
-          <span className="font-semibold text-slate-800 bg-slate-100 px-2 py-1 rounded">INV-000124</span>
-        </div>
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12 }}>
+          <Box component="span" sx={{ color: "#64748b" }}>Invoice Number</Box>
+          <Box component="span" sx={{ fontWeight: 600, color: "#1e293b", bgcolor: "#f1f5f9", px: 1, py: 0.5, borderRadius: "4px" }}>INV-000124</Box>
+        </Box>
 
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-slate-500">Invoice Date</span>
-          <span className="font-medium text-slate-800">19 Aug 2025</span>
-        </div>
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12 }}>
+          <Box component="span" sx={{ color: "#64748b" }}>Invoice Date</Box>
+          <Box component="span" sx={{ fontWeight: 500, color: "#1e293b" }}>19 Aug 2025</Box>
+        </Box>
 
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-slate-500">Due Date</span>
-          <span className="font-medium text-slate-800">02 Sep 2025</span>
-        </div>
-      </div>
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12 }}>
+          <Box component="span" sx={{ color: "#64748b" }}>Due Date</Box>
+          <Box component="span" sx={{ fontWeight: 500, color: "#1e293b" }}>02 Sep 2025</Box>
+        </Box>
+      </Box>
 
       {/* Items Section */}
-      <div className="vx-card">
-        <div className="flex items-center justify-between mb-3">
-          <h4 className="text-xs font-bold text-slate-900 m-0">Items</h4>
-          <button type="button" className="text-xs font-bold text-indigo-600 flex items-center gap-1">
+      <Box className="vx-card">
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1.5 }}>
+          <Typography component="h4" sx={{ fontSize: 12, fontWeight: 700, color: "#0f172a", m: 0 }}>Items</Typography>
+          <Box component="button" type="button" sx={{ fontSize: 12, fontWeight: 700, color: "#4f46e5", display: "flex", alignItems: "center", gap: 0.5 }}>
             <Plus size={14} /> Add Item
-          </button>
-        </div>
+          </Box>
+        </Box>
 
-        <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 flex items-center justify-between text-xs mb-3">
-          <div>
-            <span className="font-bold text-slate-900 block">1. Product Name</span>
-            <small className="text-slate-400">HSN: 1234 · 2 PCS x ₹ 500.00</small>
-          </div>
-          <strong className="text-slate-900 font-extrabold">₹ 1,000.00</strong>
-        </div>
+        <Box sx={{ bgcolor: "#f8fafc", borderRadius: "12px", p: 1.5, border: "1px solid #f1f5f9", display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12, mb: 1.5 }}>
+          <Box>
+            <Box component="span" sx={{ fontWeight: 700, color: "#0f172a", display: "block" }}>1. Product Name</Box>
+            <Box component="small" sx={{ color: "#94a3b8" }}>HSN: 1234 · 2 PCS x ₹ 500.00</Box>
+          </Box>
+          <Box component="strong" sx={{ color: "#0f172a", fontWeight: 800 }}>₹ 1,000.00</Box>
+        </Box>
 
         {/* Totals Summary */}
-        <div className="space-y-1.5 pt-2 border-t border-slate-100 text-xs">
-          <div className="flex justify-between text-slate-600">
-            <span>Subtotal</span>
-            <span>₹ 1,000.00</span>
-          </div>
-          <div className="flex justify-between text-slate-600">
-            <span>CGST (9%)</span>
-            <span>₹ 90.00</span>
-          </div>
-          <div className="flex justify-between text-slate-600">
-            <span>SGST (9%)</span>
-            <span>₹ 90.00</span>
-          </div>
-          <div className="flex justify-between text-sm font-extrabold text-slate-900 pt-1 border-t border-slate-200">
-            <span>Total</span>
-            <span>₹ 1,180.00</span>
-          </div>
-        </div>
-      </div>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75, pt: 1, borderTop: "1px solid #f1f5f9", fontSize: 12 }}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", color: "#475569" }}>
+            <Box component="span">Subtotal</Box>
+            <Box component="span">₹ 1,000.00</Box>
+          </Box>
+          <Box sx={{ display: "flex", justifyContent: "space-between", color: "#475569" }}>
+            <Box component="span">CGST (9%)</Box>
+            <Box component="span">₹ 90.00</Box>
+          </Box>
+          <Box sx={{ display: "flex", justifyContent: "space-between", color: "#475569" }}>
+            <Box component="span">SGST (9%)</Box>
+            <Box component="span">₹ 90.00</Box>
+          </Box>
+          <Box sx={{ display: "flex", justifyContent: "space-between", fontSize: 14, fontWeight: 800, color: "#0f172a", pt: 0.5, borderTop: "1px solid #e2e8f0" }}>
+            <Box component="span">Total</Box>
+            <Box component="span">₹ 1,180.00</Box>
+          </Box>
+        </Box>
+      </Box>
 
       {/* Action Buttons */}
-      <div className="flex gap-2 pt-2">
-        <button
+      <Box sx={{ display: "flex", gap: 1, pt: 0.5 }}>
+        <Box
+          component="button"
           type="button"
           onClick={onBack}
-          className="flex-1 py-3 rounded-xl border border-slate-300 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 active:scale-98 transition-all"
+          sx={{
+            flex: 1, py: 1.5, borderRadius: "12px", border: "1px solid #cbd5e1", fontSize: 12, fontWeight: 700, color: "#334155",
+            bgcolor: "#fff", transition: "all 0.15s", "&:hover": { bgcolor: "#f8fafc" }, "&:active": { transform: "scale(0.98)" },
+          }}
         >
           Save Draft
-        </button>
-        <button
+        </Box>
+        <Box
+          component="button"
           type="button"
           onClick={onBack}
-          className="flex-1 py-3 rounded-xl bg-indigo-600 text-xs font-bold text-white shadow-lg shadow-indigo-500/30 hover:bg-indigo-700 active:scale-98 transition-all"
+          sx={{
+            flex: 1, py: 1.5, borderRadius: "12px", bgcolor: "#4f46e5", fontSize: 12, fontWeight: 700, color: "#fff",
+            boxShadow: "0 10px 15px -3px rgba(99,102,241,0.3)", transition: "all 0.15s",
+            "&:hover": { bgcolor: "#4338ca" }, "&:active": { transform: "scale(0.98)" },
+          }}
         >
           Save & Send
-        </button>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   );
 }
 
@@ -828,52 +860,55 @@ function PurchaseBillsScreen({ filter, setFilter, search, setSearch, onAdd }) {
   ];
 
   return (
-    <div>
-      <div className="vx-search-row">
-        <div className="vx-search-input-wrap">
+    <Box>
+      <Box className="vx-search-row">
+        <Box className="vx-search-input-wrap">
           <Search size={16} className="text-slate-400" />
-          <input
+          <Box
+            component="input"
             type="text"
             placeholder="Search bills..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-        </div>
-        <button type="button" className="vx-filter-btn" aria-label="Filter">
+        </Box>
+        <Box component="button" type="button" className="vx-filter-btn" aria-label="Filter">
           <Filter size={17} />
-        </button>
-      </div>
+        </Box>
+      </Box>
 
-      <div className="vx-filter-tabs">
+      <Box className="vx-filter-tabs">
         {["All", "Draft", "Paid"].map((t) => (
-          <button
+          <Box
+            component="button"
             key={t}
             type="button"
             className={`vx-filter-pill ${filter === t ? "active" : ""}`}
             onClick={() => setFilter(t)}
           >
             {t}
-          </button>
+          </Box>
         ))}
-      </div>
+      </Box>
 
-      <div>
+      <Box>
         {bills.map((bill) => (
-          <div key={bill.id} className="vx-trans-card">
-            <div className="vx-trans-left">
-              <span className="vx-trans-id">{bill.id}</span>
-              <span className="vx-trans-meta">{bill.supplier}</span>
-              <span className="vx-trans-meta text-[10px]">{bill.date}</span>
-            </div>
-            <div className="vx-trans-right">
-              <span className="vx-trans-amount">{money(bill.amount)}</span>
-              <span className={`vx-pill-badge ${bill.status}`}>{bill.status}</span>
-            </div>
-          </div>
+          <Box key={bill.id} className="vx-trans-card">
+            <Box className="vx-trans-left">
+              <Box component="span" className="vx-trans-id">{bill.id}</Box>
+              <Box component="span" className="vx-trans-meta">{bill.supplier}</Box>
+              <Box component="span" className="vx-trans-meta text-[10px]">{bill.date}</Box>
+            </Box>
+            <Box className="vx-trans-right">
+              <Box component="span" className="vx-trans-amount">{money(bill.amount)}</Box>
+              <Box component="span" className={`vx-pill-badge ${bill.status}`}>{bill.status}</Box>
+            </Box>
+          </Box>
         ))}
-      </div>
+      </Box>
 
-      <button
+      <Box
+        component="button"
         type="button"
         className="vx-fab-btn"
         onClick={onAdd}
@@ -881,8 +916,8 @@ function PurchaseBillsScreen({ filter, setFilter, search, setSearch, onAdd }) {
         aria-label="Create Purchase Bill"
       >
         <Plus size={26} />
-      </button>
-    </div>
+      </Box>
+    </Box>
   );
 }
 
@@ -891,36 +926,36 @@ function PurchaseBillsScreen({ filter, setFilter, search, setSearch, onAdd }) {
 // -------------------------------------------------------------
 function InventorySummaryScreen({ onSelectProduct }) {
   return (
-    <div className="space-y-4">
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
       {/* 4 Summary Cards */}
-      <div className="vx-kpis-grid">
-        <div className="vx-kpi-card">
-          <span className="vx-kpi-label">Total Products</span>
-          <span className="vx-kpi-val">1,245</span>
-        </div>
+      <Box className="vx-kpis-grid">
+        <Box className="vx-kpi-card">
+          <Box component="span" className="vx-kpi-label">Total Products</Box>
+          <Box component="span" className="vx-kpi-val">1,245</Box>
+        </Box>
 
-        <div className="vx-kpi-card">
-          <span className="vx-kpi-label">Low Stock</span>
-          <span className="vx-kpi-val text-amber-600">32</span>
-        </div>
+        <Box className="vx-kpi-card">
+          <Box component="span" className="vx-kpi-label">Low Stock</Box>
+          <Box component="span" className="vx-kpi-val text-amber-600">32</Box>
+        </Box>
 
-        <div className="vx-kpi-card">
-          <span className="vx-kpi-label">Out of Stock</span>
-          <span className="vx-kpi-val text-rose-600">8</span>
-        </div>
+        <Box className="vx-kpi-card">
+          <Box component="span" className="vx-kpi-label">Out of Stock</Box>
+          <Box component="span" className="vx-kpi-val text-rose-600">8</Box>
+        </Box>
 
-        <div className="vx-kpi-card">
-          <span className="vx-kpi-label">Total Value</span>
-          <span className="vx-kpi-val text-xs sm:text-base">₹ 45,80,000</span>
-        </div>
-      </div>
+        <Box className="vx-kpi-card">
+          <Box component="span" className="vx-kpi-label">Total Value</Box>
+          <Box component="span" className="vx-kpi-val text-xs sm:text-base">₹ 45,80,000</Box>
+        </Box>
+      </Box>
 
       {/* Stock by Category Donut Chart Card */}
-      <div className="vx-card">
-        <h3 className="vx-card-title mb-4">Stock by Category</h3>
-        <div className="flex items-center justify-around gap-4">
+      <Box className="vx-card">
+        <Typography component="h3" className="vx-card-title" sx={{ mb: 2 }}>Stock by Category</Typography>
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-around", gap: 2 }}>
           {/* SVG Donut Chart */}
-          <div className="relative w-32 h-32 shrink-0">
+          <Box sx={{ position: "relative", width: 128, height: 128, flexShrink: 0 }}>
             <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
               <circle cx="50" cy="50" r="38" fill="none" stroke="#e2e8f0" strokeWidth="18" />
               {/* Electronics 40% */}
@@ -968,52 +1003,54 @@ function InventorySummaryScreen({ onSelectProduct }) {
                 strokeDashoffset="-202.9"
               />
             </svg>
-          </div>
+          </Box>
 
           {/* Legend */}
-          <div className="space-y-2 text-xs">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
-              <span className="text-slate-600">Electronics</span>
-              <strong className="text-slate-900 font-bold ml-auto">40%</strong>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-              <span className="text-slate-600">Fashion</span>
-              <strong className="text-slate-900 font-bold ml-auto">25%</strong>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-              <span className="text-slate-600">Home & Kitchen</span>
-              <strong className="text-slate-900 font-bold ml-auto">20%</strong>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
-              <span className="text-slate-600">Others</span>
-              <strong className="text-slate-900 font-bold ml-auto">15%</strong>
-            </div>
-          </div>
-        </div>
-      </div>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1, fontSize: 12 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Box component="span" sx={{ width: 10, height: 10, borderRadius: "50%", bgcolor: "#3b82f6" }} />
+              <Box component="span" sx={{ color: "#475569" }}>Electronics</Box>
+              <Box component="strong" sx={{ color: "#0f172a", fontWeight: 700, ml: "auto" }}>40%</Box>
+            </Box>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Box component="span" sx={{ width: 10, height: 10, borderRadius: "50%", bgcolor: "#10b981" }} />
+              <Box component="span" sx={{ color: "#475569" }}>Fashion</Box>
+              <Box component="strong" sx={{ color: "#0f172a", fontWeight: 700, ml: "auto" }}>25%</Box>
+            </Box>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Box component="span" sx={{ width: 10, height: 10, borderRadius: "50%", bgcolor: "#f59e0b" }} />
+              <Box component="span" sx={{ color: "#475569" }}>Home & Kitchen</Box>
+              <Box component="strong" sx={{ color: "#0f172a", fontWeight: 700, ml: "auto" }}>20%</Box>
+            </Box>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Box component="span" sx={{ width: 10, height: 10, borderRadius: "50%", bgcolor: "#6366f1" }} />
+              <Box component="span" sx={{ color: "#475569" }}>Others</Box>
+              <Box component="strong" sx={{ color: "#0f172a", fontWeight: 700, ml: "auto" }}>15%</Box>
+            </Box>
+          </Box>
+        </Box>
+      </Box>
 
       {/* Featured Item Button */}
-      <button
+      <Box
+        component="button"
         type="button"
         onClick={() => onSelectProduct({ name: "Sports Shoes", code: "SP001", price: 1999, cost: 1250, stock: 120, minStock: 20, hsn: "6404", category: "Footwear" })}
-        className="w-full vx-card flex items-center justify-between p-3.5 hover:bg-slate-50 transition-colors"
+        className="vx-card"
+        sx={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", p: 1.75, transition: "background-color 0.15s", "&:hover": { bgcolor: "#f8fafc" } }}
       >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+          <Box sx={{ width: 40, height: 40, borderRadius: "12px", bgcolor: "#eef2ff", color: "#4f46e5", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 }}>
             👟
-          </div>
-          <div className="text-left">
-            <h4 className="text-xs font-bold text-slate-900 m-0">Sports Shoes</h4>
-            <p className="text-[11px] text-slate-400 m-0">SP001 · Footwear</p>
-          </div>
-        </div>
-        <ChevronRight size={18} className="text-slate-400" />
-      </button>
-    </div>
+          </Box>
+          <Box sx={{ textAlign: "left" }}>
+            <Typography component="h4" sx={{ fontSize: 12, fontWeight: 700, color: "#0f172a", m: 0 }}>Sports Shoes</Typography>
+            <Typography component="p" sx={{ fontSize: 11, color: "#94a3b8", m: 0 }}>SP001 · Footwear</Typography>
+          </Box>
+        </Box>
+        <ChevronRight size={18} style={{ color: "#94a3b8" }} />
+      </Box>
+    </Box>
   );
 }
 
@@ -1033,56 +1070,61 @@ function ProductDetailsScreen({ product, onBack }) {
   };
 
   return (
-    <div className="space-y-4 pb-12">
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 2, pb: 6 }}>
       {/* Product Image Card */}
-      <div className="vx-card text-center p-6 flex flex-col items-center">
-        <div className="w-32 h-32 rounded-2xl bg-slate-100 flex items-center justify-center text-5xl mb-3 shadow-inner">
+      <Box className="vx-card text-center p-6 flex flex-col items-center">
+        <Box sx={{ width: 128, height: 128, borderRadius: "16px", bgcolor: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 48, mb: 1.5, boxShadow: "inset 0 2px 4px 0 rgba(0,0,0,0.06)" }}>
           👟
-        </div>
-        <h3 className="text-base font-extrabold text-slate-900 m-0">{p.name}</h3>
-        <p className="text-xs text-slate-400 font-mono mt-1">{p.code}</p>
-      </div>
+        </Box>
+        <Typography component="h3" sx={{ fontSize: 16, fontWeight: 800, color: "#0f172a", m: 0 }}>{p.name}</Typography>
+        <Typography component="p" sx={{ fontSize: 12, color: "#94a3b8", fontFamily: "monospace", mt: 0.5 }}>{p.code}</Typography>
+      </Box>
 
       {/* Attributes List Card */}
-      <div className="vx-card divide-y divide-slate-100 text-xs">
-        <div className="flex justify-between py-2.5">
-          <span className="text-slate-500">Selling Price</span>
-          <strong className="text-slate-900 font-bold">{money(p.price)}</strong>
-        </div>
-        <div className="flex justify-between py-2.5">
-          <span className="text-slate-500">Cost Price</span>
-          <strong className="text-slate-900 font-bold">{money(p.cost)}</strong>
-        </div>
-        <div className="flex justify-between py-2.5 items-center">
-          <span className="text-slate-500">Stock</span>
-          <span className="font-bold text-emerald-600 flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+      <Box className="vx-card divide-y divide-slate-100 text-xs">
+        <Box sx={{ display: "flex", justifyContent: "space-between", py: 1.25 }}>
+          <Box component="span" sx={{ color: "#64748b" }}>Selling Price</Box>
+          <Box component="strong" sx={{ color: "#0f172a", fontWeight: 700 }}>{money(p.price)}</Box>
+        </Box>
+        <Box sx={{ display: "flex", justifyContent: "space-between", py: 1.25 }}>
+          <Box component="span" sx={{ color: "#64748b" }}>Cost Price</Box>
+          <Box component="strong" sx={{ color: "#0f172a", fontWeight: 700 }}>{money(p.cost)}</Box>
+        </Box>
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", py: 1.25 }}>
+          <Box component="span" sx={{ color: "#64748b" }}>Stock</Box>
+          <Box component="span" sx={{ fontWeight: 700, color: "#059669", display: "flex", alignItems: "center", gap: 0.75 }}>
+            <Box component="span" sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "#10b981" }} />
             {p.stock} PCS
-          </span>
-        </div>
-        <div className="flex justify-between py-2.5">
-          <span className="text-slate-500">Min. Stock Level</span>
-          <span className="font-medium text-slate-800">{p.minStock} PCS</span>
-        </div>
-        <div className="flex justify-between py-2.5">
-          <span className="text-slate-500">HSN Code</span>
-          <span className="font-mono text-slate-800">{p.hsn}</span>
-        </div>
-        <div className="flex justify-between py-2.5">
-          <span className="text-slate-500">Category</span>
-          <span className="font-medium text-slate-800">{p.category}</span>
-        </div>
-      </div>
+          </Box>
+        </Box>
+        <Box sx={{ display: "flex", justifyContent: "space-between", py: 1.25 }}>
+          <Box component="span" sx={{ color: "#64748b" }}>Min. Stock Level</Box>
+          <Box component="span" sx={{ fontWeight: 500, color: "#1e293b" }}>{p.minStock} PCS</Box>
+        </Box>
+        <Box sx={{ display: "flex", justifyContent: "space-between", py: 1.25 }}>
+          <Box component="span" sx={{ color: "#64748b" }}>HSN Code</Box>
+          <Box component="span" sx={{ fontFamily: "monospace", color: "#1e293b" }}>{p.hsn}</Box>
+        </Box>
+        <Box sx={{ display: "flex", justifyContent: "space-between", py: 1.25 }}>
+          <Box component="span" sx={{ color: "#64748b" }}>Category</Box>
+          <Box component="span" sx={{ fontWeight: 500, color: "#1e293b" }}>{p.category}</Box>
+        </Box>
+      </Box>
 
       {/* Bottom CTA Button */}
-      <button
+      <Box
+        component="button"
         type="button"
         onClick={onBack}
-        className="w-full py-3.5 rounded-xl bg-indigo-600 text-xs font-bold text-white shadow-lg shadow-indigo-500/30 hover:bg-indigo-700 active:scale-98 transition-all"
+        sx={{
+          width: "100%", py: 1.75, borderRadius: "12px", bgcolor: "#4f46e5", fontSize: 12, fontWeight: 700, color: "#fff",
+          boxShadow: "0 10px 15px -3px rgba(99,102,241,0.3)", transition: "all 0.15s",
+          "&:hover": { bgcolor: "#4338ca" }, "&:active": { transform: "scale(0.98)" },
+        }}
       >
         Edit Product
-      </button>
-    </div>
+      </Box>
+    </Box>
   );
 }
 
@@ -1093,36 +1135,36 @@ function ReportsScreen({ onSelectReport }) {
   const reportsList = [
     { title: "Sales Report", sub: "View sales reports", icon: BarChart3, bg: "bg-emerald-500" },
     { title: "Purchase Report", sub: "View purchase reports", icon: ClipboardList, bg: "bg-rose-500" },
-    { title: "Stock Report", sub: "View stock reports", icon: Box, bg: "bg-blue-500" },
+    { title: "Stock Report", sub: "View stock reports", icon: BoxIcon, bg: "bg-blue-500" },
     { title: "Profit & Loss", sub: "View profit & loss reports", icon: TrendingUp, bg: "bg-indigo-500" },
     { title: "GST Report", sub: "View GST reports", icon: FileText, bg: "bg-purple-500" },
     { title: "Receivables Report", sub: "View receivables reports", icon: Wallet, bg: "bg-cyan-500" },
   ];
 
   return (
-    <div className="space-y-2">
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
       {reportsList.map((item, i) => {
         const Icon = item.icon;
         return (
-          <div
+          <Box
             key={i}
             className="vx-menu-row"
             onClick={onSelectReport}
           >
-            <div className="vx-menu-row-left">
-              <div className={`vx-menu-icon-box ${item.bg}`}>
+            <Box className="vx-menu-row-left">
+              <Box className={`vx-menu-icon-box ${item.bg}`}>
                 <Icon size={20} />
-              </div>
-              <div className="vx-menu-row-text">
-                <h4>{item.title}</h4>
-                <p>{item.sub}</p>
-              </div>
-            </div>
-            <ChevronRight size={18} className="text-slate-400" />
-          </div>
+              </Box>
+              <Box className="vx-menu-row-text">
+                <Typography component="h4">{item.title}</Typography>
+                <Typography component="p">{item.sub}</Typography>
+              </Box>
+            </Box>
+            <ChevronRight size={18} style={{ color: "#94a3b8" }} />
+          </Box>
         );
       })}
-    </div>
+    </Box>
   );
 }
 
@@ -1131,101 +1173,106 @@ function ReportsScreen({ onSelectReport }) {
 // -------------------------------------------------------------
 function SettingsScreen({ onLogout, onTriggerPwa }) {
   return (
-    <div className="space-y-4 pb-12">
-      <div>
-        <small className="text-slate-400 font-bold uppercase text-[11px] px-1 mb-2 block">
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 2, pb: 6 }}>
+      <Box>
+        <Typography component="small" sx={{ color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", fontSize: 11, px: 0.5, mb: 1, display: "block" }}>
           General
-        </small>
-        <div className="space-y-2">
-          <div className="vx-menu-row">
-            <div className="vx-menu-row-left">
-              <User size={18} className="text-slate-500" />
-              <div className="vx-menu-row-text">
-                <h4>Business Profile</h4>
-              </div>
-            </div>
-            <ChevronRight size={18} className="text-slate-400" />
-          </div>
+        </Typography>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+          <Box className="vx-menu-row">
+            <Box className="vx-menu-row-left">
+              <User size={18} style={{ color: "#64748b" }} />
+              <Box className="vx-menu-row-text">
+                <Typography component="h4">Business Profile</Typography>
+              </Box>
+            </Box>
+            <ChevronRight size={18} style={{ color: "#94a3b8" }} />
+          </Box>
 
-          <div className="vx-menu-row">
-            <div className="vx-menu-row-left">
-              <Users size={18} className="text-slate-500" />
-              <div className="vx-menu-row-text">
-                <h4>Users</h4>
-              </div>
-            </div>
-            <ChevronRight size={18} className="text-slate-400" />
-          </div>
+          <Box className="vx-menu-row">
+            <Box className="vx-menu-row-left">
+              <Users size={18} style={{ color: "#64748b" }} />
+              <Box className="vx-menu-row-text">
+                <Typography component="h4">Users</Typography>
+              </Box>
+            </Box>
+            <ChevronRight size={18} style={{ color: "#94a3b8" }} />
+          </Box>
 
-          <div className="vx-menu-row">
-            <div className="vx-menu-row-left">
-              <ShieldCheck size={18} className="text-slate-500" />
-              <div className="vx-menu-row-text">
-                <h4>Roles & Permissions</h4>
-              </div>
-            </div>
-            <ChevronRight size={18} className="text-slate-400" />
-          </div>
+          <Box className="vx-menu-row">
+            <Box className="vx-menu-row-left">
+              <ShieldCheck size={18} style={{ color: "#64748b" }} />
+              <Box className="vx-menu-row-text">
+                <Typography component="h4">Roles & Permissions</Typography>
+              </Box>
+            </Box>
+            <ChevronRight size={18} style={{ color: "#94a3b8" }} />
+          </Box>
 
-          <div className="vx-menu-row">
-            <div className="vx-menu-row-left">
-              <Settings size={18} className="text-slate-500" />
-              <div className="vx-menu-row-text">
-                <h4>Preferences</h4>
-              </div>
-            </div>
-            <ChevronRight size={18} className="text-slate-400" />
-          </div>
-        </div>
-      </div>
+          <Box className="vx-menu-row">
+            <Box className="vx-menu-row-left">
+              <Settings size={18} style={{ color: "#64748b" }} />
+              <Box className="vx-menu-row-text">
+                <Typography component="h4">Preferences</Typography>
+              </Box>
+            </Box>
+            <ChevronRight size={18} style={{ color: "#94a3b8" }} />
+          </Box>
+        </Box>
+      </Box>
 
-      <div>
-        <small className="text-slate-400 font-bold uppercase text-[11px] px-1 mb-2 block">
+      <Box>
+        <Typography component="small" sx={{ color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", fontSize: 11, px: 0.5, mb: 1, display: "block" }}>
           Other
-        </small>
-        <div className="space-y-2">
-          <div className="vx-menu-row">
-            <div className="vx-menu-row-left">
-              <RefreshCw size={18} className="text-slate-500" />
-              <div className="vx-menu-row-text">
-                <h4>Backup & Restore</h4>
-              </div>
-            </div>
-            <ChevronRight size={18} className="text-slate-400" />
-          </div>
+        </Typography>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+          <Box className="vx-menu-row">
+            <Box className="vx-menu-row-left">
+              <RefreshCw size={18} style={{ color: "#64748b" }} />
+              <Box className="vx-menu-row-text">
+                <Typography component="h4">Backup & Restore</Typography>
+              </Box>
+            </Box>
+            <ChevronRight size={18} style={{ color: "#94a3b8" }} />
+          </Box>
 
-          <div className="vx-menu-row" onClick={onTriggerPwa}>
-            <div className="vx-menu-row-left">
-              <Smartphone size={18} className="text-indigo-600" />
-              <div className="vx-menu-row-text">
-                <h4 className="text-indigo-600 font-bold">PWA / Mobile App Settings</h4>
-                <p>Install or configure home screen app</p>
-              </div>
-            </div>
-            <ChevronRight size={18} className="text-indigo-500" />
-          </div>
+          <Box className="vx-menu-row" onClick={onTriggerPwa}>
+            <Box className="vx-menu-row-left">
+              <Smartphone size={18} style={{ color: "#4f46e5" }} />
+              <Box className="vx-menu-row-text">
+                <Typography component="h4" sx={{ color: "#4f46e5", fontWeight: 700 }}>PWA / Mobile App Settings</Typography>
+                <Typography component="p">Install or configure home screen app</Typography>
+              </Box>
+            </Box>
+            <ChevronRight size={18} style={{ color: "#6366f1" }} />
+          </Box>
 
-          <div className="vx-menu-row">
-            <div className="vx-menu-row-left">
-              <Sparkles size={18} className="text-slate-500" />
-              <div className="vx-menu-row-text">
-                <h4>About Vynerix ERP</h4>
-                <p>v2.4.0 (Enterprise PWA)</p>
-              </div>
-            </div>
-            <ChevronRight size={18} className="text-slate-400" />
-          </div>
-        </div>
-      </div>
+          <Box className="vx-menu-row">
+            <Box className="vx-menu-row-left">
+              <Sparkles size={18} style={{ color: "#64748b" }} />
+              <Box className="vx-menu-row-text">
+                <Typography component="h4">About Vynerix ERP</Typography>
+                <Typography component="p">v2.4.0 (Enterprise PWA)</Typography>
+              </Box>
+            </Box>
+            <ChevronRight size={18} style={{ color: "#94a3b8" }} />
+          </Box>
+        </Box>
+      </Box>
 
       {/* Logout Button */}
-      <button
+      <Box
+        component="button"
         type="button"
         onClick={onLogout}
-        className="w-full py-3 rounded-xl border border-rose-200 bg-rose-50 text-rose-600 font-bold text-xs flex items-center justify-center gap-2 hover:bg-rose-100 active:scale-98 transition-all"
+        sx={{
+          width: "100%", py: 1.5, borderRadius: "12px", border: "1px solid #fecdd3", bgcolor: "#fff1f2", color: "#e11d48",
+          fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 1,
+          transition: "all 0.15s", "&:hover": { bgcolor: "#ffe4e6" }, "&:active": { transform: "scale(0.98)" },
+        }}
       >
         <LogOut size={16} /> Logout
-      </button>
-    </div>
+      </Box>
+    </Box>
   );
 }
