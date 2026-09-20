@@ -1,7 +1,8 @@
 import React from "react";
-import { Box, Table, TableBody, TableCell, TableFooter, TableHead, TableRow, Typography } from "@mui/material";
+import { useNavigate } from "react-router-dom";
+import { Box, Button, Stack, Table, TableBody, TableCell, TableFooter, TableHead, TableRow, Typography } from "@mui/material";
 
-const tableCardSx = { borderRadius: "5.25px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", p: 1.5 };
+const tableCardSx = { height: "100%", borderRadius: "5.25px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", p: 1.5 };
 
 const formatWholeAmount = (value) =>
   Number(value || 0).toLocaleString("en-IN", {
@@ -34,15 +35,23 @@ const methodDotColor = {
 };
 
 export const DailySalesSummaryTable = ({ table, loading, privacyMode }) => {
+  const navigate = useNavigate();
   const rows = table?.rows || [];
   const totals = table?.totals || { count: 0, quantity: 0, value: 0 };
   const blurSx = privacyMode ? { filter: "blur(4px)", userSelect: "none" } : {};
 
   return (
     <Box sx={tableCardSx}>
-      <Box sx={{ mb: 1 }}>
+      <Stack direction="row" sx={{ mb: 1, alignItems: "center", justifyContent: "space-between" }}>
         <Typography component="h2" sx={{ fontSize: 14, fontWeight: 600, color: "text.primary" }}>{table?.title || "Daily Sales Summary"}</Typography>
-      </Box>
+        <Button
+          size="small"
+          onClick={() => navigate("/sales/reports")}
+          sx={{ fontSize: 12, fontWeight: 600, p: 0, minWidth: "auto", "&:hover": { bgcolor: "transparent", textDecoration: "underline" } }}
+        >
+          View All
+        </Button>
+      </Stack>
       {loading ? (
         <Box sx={{ height: 320, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "text.secondary" }}>Loading table...</Box>
       ) : (
@@ -96,6 +105,7 @@ export const DailySalesSummaryTable = ({ table, loading, privacyMode }) => {
 };
 
 export const SettlementDetailsTable = ({ table, loading, privacyMode }) => {
+  const navigate = useNavigate();
   const columns = table?.columns || [];
   const rows = table?.rows || [];
   const columnTotals = table?.columnTotals || {};
@@ -104,9 +114,16 @@ export const SettlementDetailsTable = ({ table, loading, privacyMode }) => {
 
   return (
     <Box sx={{ ...tableCardSx, minWidth: 0 }}>
-      <Box sx={{ mb: 1 }}>
+      <Stack direction="row" sx={{ mb: 1, alignItems: "center", justifyContent: "space-between" }}>
         <Typography component="h2" sx={{ fontSize: 14, fontWeight: 600, color: "text.primary" }}>{table?.title || "Settlement Details"}</Typography>
-      </Box>
+        <Button
+          size="small"
+          onClick={() => navigate("/sales/reports")}
+          sx={{ fontSize: 12, fontWeight: 600, p: 0, minWidth: "auto", "&:hover": { bgcolor: "transparent", textDecoration: "underline" } }}
+        >
+          View All
+        </Button>
+      </Stack>
       {loading ? (
         <Box sx={{ height: 320, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "text.secondary" }}>Loading table...</Box>
       ) : (

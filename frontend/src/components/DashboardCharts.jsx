@@ -13,7 +13,7 @@ import {
 import { Box, Typography } from "@mui/material";
 import { useTheme } from "../features/theme-context";
 
-const chartCardSx = { borderRadius: "5.25px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", p: 1.5 };
+const chartCardSx = { height: "100%", borderRadius: "5.25px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", p: 1.5 };
 
 const DISPLAY_SCALES = [
   { threshold: 10000000, divisor: 10000000, label: "Crores" },

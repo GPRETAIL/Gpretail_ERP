@@ -30,9 +30,10 @@ const COLS = { lg: 12, md: 12, sm: 6, xs: 1 };
  * feeding that back into its own layout h) was tried here and reverted -- react-grid-layout
  * animates a tile's height/transform on layout change, and the observer kept catching those
  * mid-transition sizes, ratcheting every tile in a row up to the same inflated height instead of
- * settling. Widget-level sizing (each widget choosing a smaller h for its own empty/sparse state,
- * per its own row/content-count knowledge -- see Dashboard.jsx's overviewWidgets) is the safer
- * place to solve "don't leave dead space under sparse content", not this shared grid component.
+ * settling. Every Overview widget's own root now uses height:"100%" instead (see e.g.
+ * DashboardTables.jsx's tableCardSx) so its card fills the tile it's given rather than sizing to
+ * its own sparse/empty content and leaving dead space below -- consistent with every other tab's
+ * widgets, which already sized themselves this way.
  */
 export default function DashboardGrid({ tabKey, widgets }) {
   const { layouts, editMode, saveLayout } = useDashboardLayout();
@@ -102,18 +103,11 @@ export default function DashboardGrid({ tabKey, widgets }) {
           <Box
             key={w.key}
             sx={{
-              borderRadius: "10.5px",
+              borderRadius: "10.5px", border: "1px solid", bgcolor: "background.paper",
               overflow: "hidden",
               ...(editMode
-                ? { border: "1px solid", borderColor: "primary.main", bgcolor: "background.paper", boxShadow: 2 }
-                : tabKey === "overview"
-                  // Overview's own widgets each already draw their own card border/background
-                  // (MetricCard, the chart/table/leaderboard cards, Action Required) -- giving the
-                  // tile a second one too showed as two close concentric outlines around every
-                  // card instead of one clean border. Every other tab's widgets don't all draw
-                  // their own chrome the same way, so this stays scoped to Overview only.
-                  ? {}
-                  : { border: "1px solid", borderColor: "divider", bgcolor: "background.paper" }),
+                ? { borderColor: "primary.main", boxShadow: 2 }
+                : { borderColor: "divider" }),
             }}
           >
             {editMode && (
