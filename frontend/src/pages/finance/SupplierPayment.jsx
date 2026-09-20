@@ -710,7 +710,7 @@ const SupplierPayment = () => {
                     enableKeyboardNav
                     selectedRows={selectedRowKeys}
                     onSelectionChange={handleSelectionChange}
-                    selectionColumnWidthClassName="w-12"
+                    selectionColumnWidthPx={48}
                     fillHeight
                     searchButtonClassName="glass-btn glass-btn-primary flex items-center justify-center disabled:opacity-50"
                     enableServerSearch

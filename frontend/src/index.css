@@ -170,6 +170,28 @@ main > .p-6 {
   backdrop-filter: blur(8px);
 }
 
+/* ── FilterableDataTable's native search button (Tailwind-independent) ──
+   Default look for the `searchButtonClassName` prop when a caller doesn't
+   override it (most callers pass .glass-btn instead). Stays a plain
+   <button>, not a MUI Button -- see the comment at its call site. */
+.fdt-search-btn {
+  display: flex;
+  align-items: center;
+  padding: 4px 12px;
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  border-radius: 2px;
+  font-size: 12px;
+}
+.fdt-search-btn:hover:not(:disabled) {
+  background: #2563eb;
+}
+.fdt-search-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* ── Color Variants — neutral by default, colored on hover ── */
 
 /* Primary (blue) */

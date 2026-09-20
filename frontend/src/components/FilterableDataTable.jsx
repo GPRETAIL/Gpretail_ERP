@@ -201,9 +201,9 @@ export default function FilterableDataTable({
   enableSelection = false,
   selectedRows = [],
   onSelectionChange = null,
-  selectionColumnWidthClassName = "w-16",
+  selectionColumnWidthPx = 64,
   onBulkDelete = null,
-  searchButtonClassName = "flex items-center px-3 py-1 xl:py-1.5 bg-blue-500 text-white rounded-sm text-xs xl:text-sm hover:bg-blue-600 disabled:opacity-50",
+  searchButtonClassName = "fdt-search-btn",
 }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchField, setSearchField] = useState("all");
@@ -490,42 +490,47 @@ export default function FilterableDataTable({
           },
         }}
       >
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-[11px] font-semibold text-gray-700 dark:text-gray-300">
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}>
+          <Typography component="span" sx={{ fontSize: 11, fontWeight: 600, color: "text.secondary" }}>
             {column.label}
-          </span>
+          </Typography>
           <IconButton size="small" onClick={() => setActiveFilterColumn(null)}>
             <X size={14} />
           </IconButton>
-        </div>
-        <div className="flex flex-col gap-2">
-          <select
+        </Box>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+          <TextField
+            select
+            size="small"
+            fullWidth
+            slotProps={{ select: { native: true } }}
             value={getColumnFilter(column.key).operator}
             onChange={(e) =>
               setColumnFilter(column.key, { operator: e.target.value })
             }
-            className="block w-full border border-gray-300 dark:border-gray-600 rounded-sm p-1 text-[11px] bg-white dark:bg-gray-700 dark:text-gray-100"
+            sx={{ "& .MuiInputBase-input": { fontSize: 11 } }}
           >
             {FILTER_OPERATORS.map((op) => (
               <option key={op.value} value={op.value}>
                 {op.label}
               </option>
             ))}
-          </select>
+          </TextField>
           {!INPUT_FREE_OPERATORS.has(getColumnFilter(column.key).operator) && (
-            <input
-              ref={filterInputRef}
-              type="text"
+            <TextField
+              inputRef={filterInputRef}
+              size="small"
+              fullWidth
               value={getColumnFilter(column.key).value}
               onChange={(e) =>
                 setColumnFilter(column.key, { value: e.target.value })
               }
               placeholder="Enter filter value"
-              className="block w-full border border-gray-300 dark:border-gray-600 rounded-sm p-1 text-[11px] dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-500"
+              sx={{ "& .MuiInputBase-input": { fontSize: 11 } }}
             />
           )}
-        </div>
-        <Button size="small" onClick={() => clearColumnFilter(column.key)} className="mt-2">
+        </Box>
+        <Button size="small" onClick={() => clearColumnFilter(column.key)} sx={{ mt: 1 }}>
           Clear
         </Button>
       </Popover>
@@ -1892,7 +1897,11 @@ export default function FilterableDataTable({
   const tableViewportStyle = !fillHeight && fixedHeight
     ? { maxHeight: `${FIXED_TABLE_HEIGHT}px` }
     : undefined;
-  const compactActionClass = compact ? "h-8 px-2.5 text-[11px]" : "";
+  // Static style object (not className); merged directly onto the native search button below, so
+  // compact sizing applies regardless of whether searchButtonClassName is the default `.fdt-search-
+  // btn` or a caller-supplied override like `.glass-btn` -- an inline style always applies over a
+  // stylesheet rule, no specificity fight either way.
+  const compactActionStyle = compact ? { height: 32, padding: "0 10px", fontSize: 11 } : undefined;
   // MUI's `stickyHeader` (Table prop, active whenever fixedHeight is true -- the default) forces an
   // OPAQUE background on every .MuiTableCell-stickyHeader from the ambient theme, so sticky content
   // doesn't show through while scrolling. That wins the cascade over the `bg-gray-100`/`dark:bg-
@@ -1902,13 +1911,20 @@ export default function FilterableDataTable({
   // out-rank the component's built-in styleOverrides regardless of stylesheet order -- the one thing
   // that reliably wins this specific fight. Reads `theme.palette.mode`, which TenantThemeProvider
   // keeps in sync with the app's own light/dark toggle, so this still matches Tailwind's dark: pair.
+  // Confirmed live (getComputedStyle on a real pinned/grouped header cell) that this ALSO already
+  // wins over the header cells' own conditional bg-gray-100/bg-blue-50 classes below -- both were
+  // already fully inert before this conversion, so their removal here is a no-op, not a regression.
   const headerCellSx = {
     backgroundColor: (theme) => (theme.palette.mode === "dark" ? "#374151" : "#f3f4f6"),
   };
-  const headerCellYClass = compact ? "py-1 xl:py-1.5" : "py-2 xl:py-2.5";
-  const bodyCellYClass = compact ? "py-0 leading-none" : "py-2 xl:py-2.5";
-  const bodyRowClass = compact ? "h-8" : "";
-  const tableTextClass = compact ? "text-[10px] xl:text-[11px] leading-tight" : "text-xs xl:text-sm";
+  const headerCellYSx = compact ? { py: { xs: 0.5, xl: 0.75 } } : { py: { xs: 1, xl: 1.25 } };
+  const bodyCellYSx = compact ? { py: 0, lineHeight: 1 } : { py: { xs: 1, xl: 1.25 } };
+  const bodyRowSx = compact ? { height: 32 } : {};
+  const tableTextSx = compact
+    ? { fontSize: { xs: "10px", xl: "11px" }, lineHeight: 1.25 }
+    : { fontSize: { xs: 10.5, xl: 12.25 } };
+  const cellBorderSx = { borderRight: 1, borderColor: "divider" };
+  const rowBorderTopSx = { borderTop: 1, borderColor: "divider" };
   const paginationTextSx = { fontSize: compact ? 8 : 10, color: "text.secondary" };
   // Non-compact originally used h-7/h-8 (Tailwind rem-based, not the compact mode's literal h-[26px])
   // -- at this app's 14px root that's 24.5px/28px, not the 16px-root values those names might suggest.
@@ -1936,10 +1952,6 @@ export default function FilterableDataTable({
   };
   const paginationButtonSx = { height: compact ? 26 : 28, minWidth: compact ? 32 : 40, fontSize: compact ? 9 : 12 };
   const loadMoreButtonSx = { fontSize: compact ? 9 : 12, px: compact ? 2 : 2.5, py: compact ? 0.5 : 0.75 };
-  const resolvedSearchButtonClassName = compact
-    ? `${searchButtonClassName} ${compactActionClass}`
-    : searchButtonClassName;
-
   // Every field/button in the toolbar row shared one exact height before this conversion (all keyed
   // off the same topFieldClass/compactActionClass strings) -- MUI's Select/TextField/Button don't
   // default to matching heights at the same `size`, so it's pinned explicitly here to keep the row
@@ -2013,7 +2025,8 @@ export default function FilterableDataTable({
             }
           }}
           disabled={Boolean(onRefresh) && refreshDisabled}
-          className={resolvedSearchButtonClassName}
+          className={searchButtonClassName}
+          style={compactActionStyle}
         >
           <Search size={12} style={{marginRight: 4}} /> Search
         </button>
@@ -2121,8 +2134,7 @@ export default function FilterableDataTable({
       >
         <Table
           stickyHeader={fixedHeight}
-          className={tableTextClass}
-          sx={{ width: "100%", minWidth: "max-content", bgcolor: "background.paper", color: "text.secondary" }}
+          sx={{ width: "100%", minWidth: "max-content", bgcolor: "background.paper", color: "text.secondary", ...tableTextSx }}
         >
           <TableHead sx={{ bgcolor: (theme) => (theme.palette.mode === "dark" ? "#374151" : "#f3f4f6"), color: "text.secondary" }}>
             <TableRow>
@@ -2134,18 +2146,22 @@ export default function FilterableDataTable({
                 // -- silently dropping this corner cell to z-index 2, below a pinned column's
                 // inline zIndex:25. An inline style always wins regardless of stylesheet order.
                 style={{ position: "sticky", left: 0, zIndex: 30 }}
-                sx={headerCellSx}
-                className={`sticky left-0 z-30 border-r border-gray-200 dark:border-gray-700 bg-gray-100 px-2 ${headerCellYClass} text-left text-gray-700 dark:bg-gray-700 dark:text-gray-300 ${enableSelection ? selectionColumnWidthClassName : "w-9"}`}
+                sx={{
+                  ...headerCellSx, ...cellBorderSx, ...headerCellYSx,
+                  px: 1, textAlign: "left", color: "text.secondary",
+                  width: enableSelection ? selectionColumnWidthPx : 36,
+                }}
               >
-                <div className="flex items-center gap-1.5">
-                  <button
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                  <Box
+                    component="button"
                     type="button"
                     title="Select visible columns"
                     onClick={handleOpenColumnDialog}
-                    className="text-gray-600 hover:text-blue-600 transition dark:text-gray-400 dark:hover:text-blue-400"
+                    sx={{ display: "inline-flex", color: "text.secondary", transition: "color 0.15s", "&:hover": { color: "primary.main" } }}
                   >
                     <Settings2 size={14} />
-                  </button>
+                  </Box>
                   {enableSelection && onSelectionChange && (
                     <Checkbox
                       checked={allPageSelected}
@@ -2155,7 +2171,7 @@ export default function FilterableDataTable({
                       slotProps={{ input: { title: "Select all on this page" } }}
                     />
                   )}
-                </div>
+                </Box>
               </TableCell>
               {visibleColumnDefs.map((column) => (
                 <TableCell
@@ -2167,14 +2183,14 @@ export default function FilterableDataTable({
                     ...getStickyCellStyle(column.key, true),
                     ...(columnWidths[column.key] ? { width: columnWidths[column.key] } : null),
                   }}
-                  sx={headerCellSx}
-                  className={`border-r border-gray-200 dark:border-gray-700 px-3 ${headerCellYClass} text-left text-gray-700 dark:text-gray-300 relative whitespace-nowrap select-none ${
-                    pinnedColumnKeys.includes(column.key)
-                      ? "bg-gray-100 dark:bg-gray-700 shadow-[2px_0_0_0_rgba(229,231,235,1)] dark:shadow-[2px_0_0_0_rgba(55,65,81,1)]"
-                      : groupByColumn === column.key
-                        ? "bg-blue-50 dark:bg-blue-900/30"
-                        : ""
-                  }`}
+                  sx={{
+                    ...headerCellSx, ...cellBorderSx, ...headerCellYSx,
+                    px: 1.5, textAlign: "left", color: "text.secondary",
+                    position: "relative", whiteSpace: "nowrap", userSelect: "none",
+                    ...(pinnedColumnKeys.includes(column.key)
+                      ? { boxShadow: (theme) => `2px 0 0 0 ${theme.palette.mode === "dark" ? "#374151" : "#e5e7eb"}` }
+                      : null),
+                  }}
                   draggable={enableColumnReorder}
                   onMouseDown={(event) => handleHeaderMouseDown(event, column)}
                   onContextMenu={(event) => handleHeaderContextMenu(event, column)}
@@ -2185,8 +2201,8 @@ export default function FilterableDataTable({
                   onDragLeave={enableColumnReorder ? onDragLeave : undefined}
                   onDrop={enableColumnReorder ? onDrop : undefined}
                 >
-                  <div className="flex items-center justify-between gap-1">
-                    <div className="flex items-center gap-1">
+                  <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 0.5 }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                       {pinnedColumnKeys.includes(column.key) && (
                         <Pin size={12} style={{ color: "#d97706" }} />
                       )}
@@ -2200,45 +2216,50 @@ export default function FilterableDataTable({
                       {enableColumnReorder && (
                         <GripVertical size={12} style={{ color: "#94a3b8", cursor: "grab" }} />
                       )}
-                      <button
+                      <Box
+                        component="button"
                         type="button"
                         title={`Sort ${column.label}`}
                         onClick={() => toggleSort(column.key)}
-                        className="flex items-center gap-1 text-left hover:text-blue-600 dark:hover:text-blue-400 transition"
+                        sx={{ display: "flex", alignItems: "center", gap: 0.5, textAlign: "left", transition: "color 0.15s", "&:hover": { color: "primary.main" } }}
                       >
-                        <span>{column.label}</span>
-                        <span className="inline-flex flex-col leading-none">
-                          <ChevronUp className={`w-3 h-3 -mb-1 ${
-                            sortColumn === column.key && sortDirection === "asc"
-                              ? "text-blue-600 dark:text-blue-400"
-                              : "text-gray-300 dark:text-gray-600"
-                          }`} />
-                          <ChevronDown className={`w-3 h-3 ${
-                            sortColumn === column.key && sortDirection === "desc"
-                              ? "text-blue-600 dark:text-blue-400"
-                              : "text-gray-300 dark:text-gray-600"
-                          }`} />
-                        </span>
-                      </button>
-                    </div>
-                    <div className="flex items-center gap-0.5">
-                      <button
+                        <Box component="span">{column.label}</Box>
+                        <Box component="span" sx={{ display: "inline-flex", flexDirection: "column", lineHeight: 1 }}>
+                          <ChevronUp
+                            size={12}
+                            style={{
+                              marginBottom: -4,
+                              color: sortColumn === column.key && sortDirection === "asc" ? undefined : "#d1d5db",
+                            }}
+                          />
+                          <ChevronDown
+                            size={12}
+                            style={{
+                              color: sortColumn === column.key && sortDirection === "desc" ? undefined : "#d1d5db",
+                            }}
+                          />
+                        </Box>
+                      </Box>
+                    </Box>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.25 }}>
+                      <Box
+                        component="button"
                         type="button"
                         title={`Filter ${column.label}`}
                         onClick={(e) => toggleColumnFilterPopup(column.key, e.currentTarget)}
-                        className={`transition ${
-                          isFilterActive(column.key)
-                            ? "text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-                            : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                        }`}
+                        sx={{
+                          transition: "color 0.15s",
+                          color: isFilterActive(column.key) ? "primary.main" : "text.disabled",
+                          "&:hover": { color: isFilterActive(column.key) ? "primary.dark" : "text.secondary" },
+                        }}
                       >
                         <Filter size={14} />
-                      </button>
-                    </div>
-                  </div>
+                      </Box>
+                    </Box>
+                  </Box>
                   {renderColumnFilterPopup(column)}
                   {enableColumnResize && (
-                    <div
+                    <Box
                       role="separator"
                       aria-orientation="vertical"
                       aria-label={`Resize ${column.label} column`}
@@ -2248,49 +2269,61 @@ export default function FilterableDataTable({
                         e.stopPropagation();
                         handleResetColumnWidth(column.key);
                       }}
-                      className={`absolute right-0 top-0 h-full w-1.5 cursor-col-resize select-none z-10 ${
-                        resizingColumnKey === column.key ? "bg-blue-500/60" : "hover:bg-blue-400/40"
-                      }`}
+                      sx={{
+                        position: "absolute", right: 0, top: 0, height: "100%", width: 6,
+                        cursor: "col-resize", userSelect: "none", zIndex: 10,
+                        bgcolor: resizingColumnKey === column.key ? "rgba(59,130,246,0.6)" : "transparent",
+                        "&:hover": { bgcolor: resizingColumnKey === column.key ? "rgba(59,130,246,0.6)" : "rgba(96,165,250,0.4)" },
+                      }}
                     />
                   )}
                 </TableCell>
               ))}
-              {renderActions && <TableCell className={`px-3 ${headerCellYClass} text-left`}>{actionsLabel}</TableCell>}
+              {renderActions && <TableCell sx={{ px: 1.5, textAlign: "left", ...headerCellYSx }}>{actionsLabel}</TableCell>}
             </TableRow>
           </TableHead>
-          <TableBody className="text-gray-700 dark:text-gray-300">
+          <TableBody sx={{ color: "text.secondary" }}>
             {showLoadingSkeleton ? (
               Array.from({ length: safeLimit }, (_, i) => (
-                <TableRow key={`skel-${i}`} className={`border-t border-gray-200 dark:border-gray-700 animate-pulse ${bodyRowClass}`}>
-                  <TableCell className={`sticky left-0 z-20 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-2 ${bodyCellYClass}`}>
+                <TableRow key={`skel-${i}`} sx={{ ...rowBorderTopSx, animation: "app-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite", ...bodyRowSx }}>
+                  <TableCell
+                    sx={{
+                      position: "sticky", left: 0, zIndex: 20, ...cellBorderSx, ...bodyCellYSx,
+                      px: 1, bgcolor: (theme) => (theme.palette.mode === "dark" ? "#1f2937" : "#fff"),
+                    }}
+                  >
                     <Skeleton variant="rounded" width={14} height={14} />
                   </TableCell>
                   {visibleColumnDefs.map((col) => (
                     <TableCell
                       key={col.key}
                       style={getStickyCellStyle(col.key)}
-                      className={`border-r border-gray-200 dark:border-gray-700 px-3 ${bodyCellYClass} ${
-                        pinnedColumnKeys.includes(col.key)
-                          ? "bg-white dark:bg-gray-800 shadow-[2px_0_0_0_rgba(229,231,235,1)] dark:shadow-[2px_0_0_0_rgba(55,65,81,1)]"
-                          : ""
-                      }`}
+                      sx={{
+                        ...cellBorderSx, ...bodyCellYSx, px: 1.5,
+                        ...(pinnedColumnKeys.includes(col.key)
+                          ? {
+                              bgcolor: (theme) => (theme.palette.mode === "dark" ? "#1f2937" : "#fff"),
+                              boxShadow: (theme) => `2px 0 0 0 ${theme.palette.mode === "dark" ? "#374151" : "#e5e7eb"}`,
+                            }
+                          : null),
+                      }}
                     >
                       <Skeleton variant="text" width={`${45 + ((i * 17 + col.key.length * 7) % 40)}%`} />
                     </TableCell>
                   ))}
                   {renderActions && (
-                    <TableCell className={`px-3 ${bodyCellYClass}`}>
-                      <div className="flex gap-2">
+                    <TableCell sx={{ px: 1.5, ...bodyCellYSx }}>
+                      <Box sx={{ display: "flex", gap: 1 }}>
                         <Skeleton variant="rounded" width={14} height={14} />
                         <Skeleton variant="rounded" width={14} height={14} />
-                      </div>
+                      </Box>
                     </TableCell>
                   )}
                 </TableRow>
               ))
             ) : (groupByColumn ? groupSummaryState.data.length === 0 : sortedRows.length === 0) ? (
               <TableRow>
-                <TableCell colSpan={tableColSpan} className="text-center py-4 text-gray-500 dark:text-gray-400">
+                <TableCell colSpan={tableColSpan} sx={{ textAlign: "center", py: 2, color: "text.disabled" }}>
                   {emptyText}
                 </TableCell>
               </TableRow>
@@ -2336,12 +2369,14 @@ export default function FilterableDataTable({
                   return (
                     <TableRow
                       key={`group-${item.groupKey}`}
-                      className={`border-t border-gray-200 dark:border-gray-700 bg-slate-50 dark:bg-slate-800/40 ${bodyRowClass}`}
-                      sx={focusRingSx}
+                      sx={{
+                        ...rowBorderTopSx, ...bodyRowSx, ...focusRingSx,
+                        bgcolor: (theme) => (theme.palette.mode === "dark" ? "rgba(30,41,59,0.4)" : "#f8fafc"),
+                      }}
                       {...rowKeyboardNavProps}
                     >
-                      <TableCell colSpan={tableColSpan} className={`px-3 ${bodyCellYClass} text-gray-700 dark:text-gray-300`}>
-                        <div className="flex items-center gap-2">
+                      <TableCell colSpan={tableColSpan} sx={{ px: 1.5, ...bodyCellYSx, color: "text.secondary" }}>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                           <IconButton
                             type="button"
                             size="small"
@@ -2355,23 +2390,30 @@ export default function FilterableDataTable({
                               <ChevronRight size={14} />
                             )}
                           </IconButton>
-                          <span className="font-medium">
+                          <Box component="span" sx={{ fontWeight: 500 }}>
                             {columns.find((column) => column.key === groupByColumn)?.label || "Group"}: {item.label}
-                          </span>
-                          <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[11px] text-slate-700 dark:bg-slate-700 dark:text-slate-300">
+                          </Box>
+                          <Box
+                            component="span"
+                            sx={{
+                              borderRadius: "999px", px: 1, py: 0.25, fontSize: 11,
+                              bgcolor: (theme) => (theme.palette.mode === "dark" ? "#334155" : "#e2e8f0"),
+                              color: (theme) => (theme.palette.mode === "dark" ? "#cbd5e1" : "#334155"),
+                            }}
+                          >
                             {item.count} rows
-                          </span>
+                          </Box>
                           {item.aggregates && Object.keys(item.aggregates).length > 0 && (
-                            <span className="text-[11px] text-slate-600 dark:text-slate-400">
+                            <Box component="span" sx={{ fontSize: 11, color: (theme) => (theme.palette.mode === "dark" ? "#94a3b8" : "#475569") }}>
                               {Object.entries(item.aggregates)
                                 .map(([columnKey, value]) => {
                                   const aggColumn = columns.find((column) => column.key === columnKey);
                                   return `${aggColumn?.label || columnKey}: ${Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                                 })
                                 .join(" · ")}
-                            </span>
+                            </Box>
                           )}
-                        </div>
+                        </Box>
                       </TableCell>
                     </TableRow>
                   );
@@ -2379,23 +2421,34 @@ export default function FilterableDataTable({
 
                 if (item.type === "group-loader") {
                   return (
-                    <TableRow key={`grouploader-${item.groupKey}`} className={`border-t border-gray-100 dark:border-gray-700 bg-slate-50/60 dark:bg-slate-800/20 ${bodyRowClass}`}>
-                      <TableCell colSpan={tableColSpan} className={`px-3 ${bodyCellYClass}`}>
+                    <TableRow
+                      key={`grouploader-${item.groupKey}`}
+                      sx={{
+                        borderTop: 1, borderColor: (theme) => (theme.palette.mode === "dark" ? "divider" : "#f3f4f6"),
+                        bgcolor: (theme) => (theme.palette.mode === "dark" ? "rgba(30,41,59,0.2)" : "rgba(248,250,252,0.6)"),
+                        ...bodyRowSx,
+                      }}
+                    >
+                      <TableCell colSpan={tableColSpan} sx={{ px: 1.5, ...bodyCellYSx }}>
                         {item.loading ? (
-                          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 1, fontSize: 10.5, color: (theme) => (theme.palette.mode === "dark" ? "#94a3b8" : "#64748b") }}>
                             <Skeleton variant="text" width={120} />
-                            <span>Loading rows…</span>
-                          </div>
+                            <Box component="span">Loading rows…</Box>
+                          </Box>
                         ) : item.error ? (
-                          <span className="text-xs text-rose-600 dark:text-rose-400">{item.error}</span>
+                          <Box component="span" sx={{ fontSize: 10.5, color: (theme) => (theme.palette.mode === "dark" ? "#f87171" : "#e11d48") }}>{item.error}</Box>
                         ) : item.hasMore ? (
-                          <button
+                          <Box
+                            component="button"
                             type="button"
                             onClick={() => loadMoreGroupRows(item.groupKey)}
-                            className="text-xs font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                            sx={{
+                              fontSize: 10.5, fontWeight: 500, color: "primary.main",
+                              "&:hover": { color: "primary.dark" },
+                            }}
                           >
                             Load more…
-                          </button>
+                          </Box>
                         ) : null}
                       </TableCell>
                     </TableRow>
@@ -2405,16 +2458,24 @@ export default function FilterableDataTable({
                 const row = item.row;
                 const key = getRowKey(row, item.sourceIndex);
                 const isSelected = enableSelection && selectedRows.includes(key);
-                const rowBaseClass = item.isGroupedChild ? "bg-slate-50 dark:bg-slate-800/40" : "bg-white dark:bg-gray-800";
-                const rowHoverClass = item.isGroupedChild ? "hover:bg-slate-100 dark:hover:bg-slate-700/40" : "hover:bg-gray-50 dark:hover:bg-gray-700/50";
-                const pinnedCellBaseClass = item.isGroupedChild ? "bg-slate-50 dark:bg-slate-800/40" : "bg-white dark:bg-gray-800";
+                const rowBgSx = isSelected
+                  ? { bgcolor: (theme) => (theme.palette.mode === "dark" ? "rgba(30,58,138,0.3)" : "#eff6ff") }
+                  : item.isGroupedChild
+                    ? { bgcolor: (theme) => (theme.palette.mode === "dark" ? "rgba(30,41,59,0.4)" : "#f8fafc") }
+                    : { bgcolor: (theme) => (theme.palette.mode === "dark" ? "#1f2937" : "#fff") };
+                const rowHoverSx = isSelected
+                  ? { "&:hover": rowBgSx }
+                  : item.isGroupedChild
+                    ? { "&:hover": { bgcolor: (theme) => (theme.palette.mode === "dark" ? "rgba(51,65,85,0.4)" : "#f1f5f9") } }
+                    : { "&:hover": { bgcolor: (theme) => (theme.palette.mode === "dark" ? "rgba(55,65,81,0.5)" : "#f9fafb") } };
                 return (
                   <TableRow
                     key={key}
-                    className={`${bodyRowClass} ${onRowClick ? "cursor-pointer" : ""} border-t border-gray-200 dark:border-gray-700 ${
-                      isSelected ? "bg-blue-50 dark:bg-blue-900/30" : rowBaseClass
-                    } ${isSelected ? "hover:bg-blue-50 dark:hover:bg-blue-900/30" : rowHoverClass}`}
-                    sx={focusRingSx}
+                    sx={{
+                      ...rowBorderTopSx, ...bodyRowSx, ...rowBgSx, ...rowHoverSx,
+                      cursor: onRowClick ? "pointer" : undefined,
+                      ...focusRingSx,
+                    }}
                     onClick={onRowClick ? (event) => {
                       if (event.button !== 0) return;
                       if (enableKeyboardNav) setActiveRowIndex(displayIndex);
@@ -2422,9 +2483,7 @@ export default function FilterableDataTable({
                     } : undefined}
                     {...rowKeyboardNavProps}
                   >
-                    <TableCell className={`sticky left-0 z-20 border-r border-gray-200 dark:border-gray-700 px-2 ${bodyCellYClass} text-gray-700 dark:text-gray-300 ${
-                      isSelected ? "bg-blue-50 dark:bg-blue-900/30" : pinnedCellBaseClass
-                    }`}>
+                    <TableCell sx={{ position: "sticky", left: 0, zIndex: 20, ...cellBorderSx, px: 1, ...bodyCellYSx, color: "text.secondary", ...rowBgSx }}>
                       {enableSelection && onSelectionChange && (
                         <Checkbox
                           checked={isSelected}
@@ -2446,23 +2505,25 @@ export default function FilterableDataTable({
                         <TableCell
                           key={column.key}
                           style={getStickyCellStyle(column.key)}
-                          className={`border-r border-gray-200 dark:border-gray-700 px-3 ${bodyCellYClass} whitespace-nowrap text-gray-700 dark:text-gray-300 ${
-                            pinnedColumnKeys.includes(column.key)
-                              ? isSelected
-                                ? "bg-blue-50 dark:bg-blue-900/30 shadow-[2px_0_0_0_rgba(229,231,235,1)] dark:shadow-[2px_0_0_0_rgba(55,65,81,1)]"
-                                : `${pinnedCellBaseClass} shadow-[2px_0_0_0_rgba(229,231,235,1)] dark:shadow-[2px_0_0_0_rgba(55,65,81,1)]`
-                              : ""
-                          }`}
+                          sx={{
+                            ...cellBorderSx, px: 1.5, ...bodyCellYSx, whiteSpace: "nowrap", color: "text.secondary",
+                            ...(pinnedColumnKeys.includes(column.key)
+                              ? {
+                                  ...rowBgSx,
+                                  boxShadow: (theme) => `2px 0 0 0 ${theme.palette.mode === "dark" ? "#374151" : "#e5e7eb"}`,
+                                }
+                              : null),
+                          }}
                           onContextMenu={(event) => openRowContextMenu(event, column, row)}
                         >
                           {item.isGroupedChild && column.key === groupByColumn ? (
-                            <div className="pl-6">{content}</div>
+                            <Box sx={{ pl: 3 }}>{content}</Box>
                           ) : content}
                         </TableCell>
                       );
                     })}
                     {renderActions && (
-                      <TableCell className={`px-3 ${bodyCellYClass} text-gray-700 dark:text-gray-300`} onClick={(e) => e.stopPropagation()}>
+                      <TableCell sx={{ px: 1.5, ...bodyCellYSx, color: "text.secondary" }} onClick={(e) => e.stopPropagation()}>
                         {renderActions(row, { selectedCount: selectedRows.length })}
                       </TableCell>
                     )}
@@ -2505,7 +2566,7 @@ export default function FilterableDataTable({
         >
           <MenuItem
             onClick={() => handleTogglePinColumn(headerContextMenu.columnKey)}
-            className="gap-2 text-xs"
+            sx={{ gap: 1, fontSize: 10.5 }}
           >
             <Pin size={14} style={{ color: "#d97706" }} />
             {headerContextMenu.isPinned ? "Unpin Column" : "Pin Column"}
@@ -2517,7 +2578,7 @@ export default function FilterableDataTable({
                   ? handleUngroupColumn()
                   : handleGroupByColumn(headerContextMenu.columnKey)
               )}
-              className="gap-2 text-xs"
+              sx={{ gap: 1, fontSize: 10.5 }}
             >
               <Filter size={14} style={{ color: "#2563eb" }} />
               {headerContextMenu.isGrouped ? "Ungroup" : "Group By"}
@@ -2525,7 +2586,7 @@ export default function FilterableDataTable({
           )}
           <MenuItem
             onClick={() => openFilterPanel(headerContextMenu.columnKey)}
-            className="gap-2 text-xs"
+            sx={{ gap: 1, fontSize: 10.5 }}
           >
             <Filter size={14} style={{ color: "#2563eb" }} />
             Filter
