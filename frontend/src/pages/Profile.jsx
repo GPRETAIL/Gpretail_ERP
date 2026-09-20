@@ -1,6 +1,7 @@
 import React from "react";
 import { useSelector } from "react-redux";
-import { UserIcon, EnvelopeIcon, PhoneIcon } from "@heroicons/react/24/outline";
+import { EnvelopeIcon, PhoneIcon } from "@heroicons/react/24/outline";
+import { Avatar, Box, Card, Stack, Typography } from "@mui/material";
 
 const Profile = () => {
   // Get user info from Redux store (authSlice)
@@ -13,55 +14,70 @@ const Profile = () => {
   const userPicture = user?.picture || "https://i.pravatar.cc/150?img=68";
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+    <Box sx={{ minHeight: "100vh", bgcolor: "background.default", color: "text.primary", p: 3 }}>
       {/* Page Header */}
-      <h1 className="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-6">Profile</h1>
+      <Typography variant="h5" component="h1" sx={{ fontWeight: 600, mb: 3, color: "text.primary" }}>
+        Profile
+      </Typography>
 
       {/* Profile Card */}
-      <div className="max-w-3xl mx-auto bg-white dark:bg-gray-800 shadow-md rounded-xl p-6 flex flex-col md:flex-row items-center gap-6">
+      <Card
+        variant="outlined"
+        sx={{
+          maxWidth: 768,
+          mx: "auto",
+          p: 3,
+          display: "flex",
+          flexDirection: { xs: "column", md: "row" },
+          alignItems: "center",
+          gap: 3,
+        }}
+      >
         {/* Profile Image */}
-        <div className="flex-shrink-0">
-          <img
+        <Box sx={{ flexShrink: 0 }}>
+          <Avatar
             src={userPicture}
             alt={userName}
-            onError={(e) => (e.target.src = "https://i.pravatar.cc/150?img=68")}
-            className="w-32 h-32 rounded-full object-cover border-4 border-indigo-100 dark:border-indigo-900/40"
+            imgProps={{ onError: (e) => (e.target.src = "https://i.pravatar.cc/150?img=68") }}
+            sx={{ width: 128, height: 128, border: 4, borderColor: "divider" }}
           />
-        </div>
+        </Box>
 
         {/* Profile Info */}
-        <div className="flex-1">
-          <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-1">
+        <Box sx={{ flex: 1 }}>
+          <Typography variant="h6" component="h2" sx={{ fontWeight: 600, mb: 0.5, color: "text.primary" }}>
             {userName}
-          </h2>
-          <p className="text-gray-500 dark:text-gray-400 mb-4">User ID: {user?.id || "N/A"}</p>
+          </Typography>
+          <Typography variant="body2" sx={{ color: "text.secondary", mb: 2 }}>
+            User ID: {user?.id || "N/A"}
+          </Typography>
 
-          <div className="space-y-3">
-            <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
+          <Stack spacing={1.5}>
+            <Stack direction="row" sx={{ alignItems: "center" }} spacing={1.5}>
               <EnvelopeIcon className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
-              <span>{userEmail}</span>
-            </div>
+              <Typography variant="body2" sx={{ color: "text.primary" }}>{userEmail}</Typography>
+            </Stack>
 
-            <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
+            <Stack direction="row" sx={{ alignItems: "center" }} spacing={1.5}>
               <PhoneIcon className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
-              <span>{userPhone}</span>
-            </div>
-          </div>
-        </div>
-      </div>
+              <Typography variant="body2" sx={{ color: "text.primary" }}>{userPhone}</Typography>
+            </Stack>
+          </Stack>
+        </Box>
+      </Card>
 
       {/* Extra Section — Optional */}
-      <div className="max-w-3xl mx-auto mt-8 bg-white dark:bg-gray-800 shadow-md rounded-xl p-6">
-        <h3 className="text-lg font-medium text-gray-800 dark:text-gray-100 mb-3">
+      <Card variant="outlined" sx={{ maxWidth: 768, mx: "auto", mt: 4, p: 3 }}>
+        <Typography variant="subtitle1" component="h3" sx={{ fontWeight: 500, mb: 1.5, color: "text.primary" }}>
           Account Information
-        </h3>
-        <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
+        </Typography>
+        <Typography variant="body2" sx={{ color: "text.secondary", lineHeight: 1.6 }}>
           You can view and manage your account details here. Add functionality
           such as editing profile information, changing passwords, or managing
           linked accounts as needed.
-        </p>
-      </div>
-    </div>
+        </Typography>
+      </Card>
+    </Box>
   );
 };
 

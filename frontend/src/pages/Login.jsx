@@ -3,8 +3,10 @@ import { useDispatch, useSelector } from "react-redux";
 import { Navigate, useNavigate } from "react-router-dom";
 import { loginUser } from "../features/authSlice";
 import { FaGoogle, FaEye, FaEyeSlash } from "react-icons/fa";
+import { Box, Button, Card, Divider, IconButton, InputAdornment, TextField, Typography } from "@mui/material";
 import { getHomePathForUser } from "../utils/accessControl";
 import { useTheme } from "../features/theme-context";
+
 const Login = () => {
   const { theme } = useTheme() || {};
   const isDark = theme === "dark";
@@ -43,103 +45,79 @@ const Login = () => {
   }
 
   return (
-    <div className="login-page min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-200 to-blue-400 dark:from-gray-900 dark:to-gray-800 px-4 py-6 sm:p-5">
-      <div className="w-full max-w-md rounded-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 p-5 shadow-2xl transition-all duration-300 sm:rounded-2xl sm:p-10">
-        <h2 className="mb-6 text-center text-2xl font-extrabold text-gray-800 dark:text-gray-100 sm:mb-8 sm:text-3xl">
+    <Box className="login-page" sx={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", bgcolor: "background.default", px: 2, py: { xs: 3, sm: 5 } }}>
+      <Card variant="outlined" sx={{ width: "100%", maxWidth: 448, p: { xs: 3, sm: 5 }, borderRadius: { xs: 2, sm: 4 }, boxShadow: 4, transition: "all 0.3s" }}>
+        <Typography variant="h4" component="h2" sx={{ mb: { xs: 3, sm: 4 }, textAlign: "center", fontWeight: 800, color: "text.primary", fontSize: { xs: "1.5rem", sm: "1.875rem" } }}>
           GPRetail Login
-        </h2>
-        <form className="flex flex-col space-y-4 sm:space-y-5" onSubmit={handleLocalLogin}>
+        </Typography>
+        <Box component="form" sx={{ display: "flex", flexDirection: "column", gap: { xs: 2, sm: 2.5 } }} onSubmit={handleLocalLogin}>
           {/* Username */}
-          <div className="relative">
-            <input
-              type="text"
-              autoComplete="username"
-              autoCapitalize="none"
-              autoCorrect="off"
-              placeholder=" "
-              required
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="peer w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 pb-2 pt-5 text-base text-gray-900 dark:text-gray-100 caret-gray-900 dark:caret-gray-100
-              focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none
-              placeholder-transparent transition-all duration-200 sm:text-sm"
-            />
-            <label
-              className="absolute left-3 top-1 text-gray-500 dark:text-gray-400 text-xs
-              pointer-events-none transition-all duration-200
-              peer-placeholder-shown:top-1/2 peer-focus:top-1
-              peer-placeholder-shown:text-sm
-              peer-placeholder-shown:-translate-y-1/2 peer-focus:text-xs
-              peer-focus:-translate-y-0 peer-focus:text-blue-600 dark:peer-focus:text-blue-400 bg-white dark:bg-gray-700 px-1"
-            >
-              Username
-            </label>
-          </div>
+          <TextField
+            type="text"
+            label="Username"
+            autoComplete="username"
+            autoCapitalize="none"
+            autoCorrect="off"
+            required
+            fullWidth
+            size="small"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          />
 
           {/* Password */}
-          <div className="relative">
-            <input
-              type={showPassword ? "text" : "password"}
-              autoComplete="current-password"
-              placeholder=" "
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="peer w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 pb-2 pt-5 text-base text-gray-900 dark:text-gray-100 caret-gray-900 dark:caret-gray-100
-              focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none
-              placeholder-transparent transition-all duration-200 sm:text-sm"
-            />
-            <label
-              className="absolute left-3 top-1 text-gray-500 dark:text-gray-400 text-xs
-              pointer-events-none transition-all duration-200
-              peer-placeholder-shown:top-1/2 peer-focus:top-1
-              peer-placeholder-shown:text-sm
-              peer-placeholder-shown:-translate-y-1/2 peer-focus:text-xs
-              peer-focus:-translate-y-0 peer-focus:text-blue-600 dark:peer-focus:text-blue-400 bg-white dark:bg-gray-700 px-1"
-            >
-              Password
-            </label>
-            <span
-              onClick={togglePassword}
-              className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer
-              text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition"
-            >
-              {showPassword ? (
-                <FaEyeSlash className="w-5 h-5" />
-              ) : (
-                <FaEye className="w-5 h-5" />
-              )}
-            </span>
-          </div>
+          <TextField
+            type={showPassword ? "text" : "password"}
+            label="Password"
+            autoComplete="current-password"
+            required
+            fullWidth
+            size="small"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            slotProps={{
+              input: {
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={togglePassword} edge="end" size="small">
+                      {showPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
 
           {/* Error message */}
-          {error && <p className="text-red-500 dark:text-red-400 text-sm text-center">{error}</p>}
+          {error && <Typography variant="body2" sx={{ color: "error.main", textAlign: "center" }}>{error}</Typography>}
 
           {/* Login Button */}
-          <button
+          <Button
             type="submit"
             disabled={loading}
-            className="glass-btn glass-btn-primary mt-3 w-full rounded-lg py-3 text-base font-semibold shadow-md hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-blue-300 disabled:opacity-70 sm:text-lg"
+            className="glass-btn glass-btn-primary"
+            sx={{ mt: 1, width: "100%", py: 1.5, fontSize: { xs: "1rem", sm: "1.125rem" }, fontWeight: 600, textTransform: "none" }}
           >
             {loading ? "Logging in..." : "Login"}
-          </button>
+          </Button>
 
           {/* Divider */}
-          <div className="flex items-center my-4 space-x-3">
-            <span className="grow h-px bg-gray-300 dark:bg-gray-600"></span>
-            <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">or</span>
-            <span className="grow h-px bg-gray-300 dark:bg-gray-600"></span>
-          </div>
+          <Divider sx={{ my: 1.5 }}>
+            <Typography variant="body2" sx={{ color: "text.secondary", fontWeight: 500 }}>
+              or
+            </Typography>
+          </Divider>
 
           {/* Google Login */}
-          <button
+          <Button
             type="button"
             onClick={handleGoogleLogin}
             onMouseEnter={() => setHoverGoogle(true)}
             onMouseLeave={() => setHoverGoogle(false)}
-            className="w-full py-3 flex items-center justify-center border
-            rounded-lg font-medium text-sm transition-all duration-300 ease-in-out
-            focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            fullWidth
+            variant="outlined"
+            startIcon={<FaGoogle style={{ color: hoverGoogle ? "#fff" : "#DB4437" }} size={16} />}
+            sx={{ py: 1.5, textTransform: "none", fontWeight: 500, fontSize: "0.875rem" }}
             style={{
               backgroundColor: hoverGoogle ? "#4285F4" : isDark ? "#374151" : "#fff",
               color: hoverGoogle ? "#fff" : isDark ? "#f3f4f6" : "#000",
@@ -150,34 +128,32 @@ const Login = () => {
               borderColor: hoverGoogle ? "#4285F4" : isDark ? "#4b5563" : "#ccc",
             }}
           >
-            <FaGoogle
-              className="mr-2 w-4 h-4"
-              style={{ color: hoverGoogle ? "#fff" : "#DB4437" }}
-            />
             Login with Google
-          </button>
-        </form>
-        <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            <a
+          </Button>
+        </Box>
+        <Box sx={{ mt: 3, textAlign: "center" }}>
+          <Typography variant="body2" sx={{ color: "text.secondary" }}>
+            <Box
+              component="a"
               href="/set-password"
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition"
+              sx={{ color: "primary.main", fontWeight: 500, "&:hover": { color: "primary.dark" } }}
             >
               Set up / forgot your password?
-            </a>
-          </p>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+            </Box>
+          </Typography>
+          <Typography variant="body2" sx={{ mt: 1, color: "text.secondary" }}>
             Don't have an account?{" "}
-            <a
+            <Box
+              component="a"
               href="/register"
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition"
+              sx={{ color: "primary.main", fontWeight: 500, "&:hover": { color: "primary.dark" } }}
             >
               Create one
-            </a>
-          </p>
-        </div>
-      </div>
-    </div>
+            </Box>
+          </Typography>
+        </Box>
+      </Card>
+    </Box>
   );
 };
 

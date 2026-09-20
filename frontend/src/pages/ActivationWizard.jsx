@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { KeyRound, ShieldCheck, AlertTriangle, Loader2, CheckCircle2, Circle, Lock } from "lucide-react";
+import { KeyRound, ShieldCheck, Loader2, CheckCircle2, Circle, Lock } from "lucide-react";
+import { Alert, Box, Card, Stack, Typography, Button, TextField } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 
 // Tenant activation wizard. Shown before anyone can log in, while this deployment is in
 // "Activation Required" mode. Collects Company ID + Client ID + Activation Code (OTP) and calls the
@@ -115,9 +117,6 @@ const ActivationWizard = ({ onActivated }) => {
     }
   };
 
-  const input =
-    "w-full rounded-lg border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 px-3 py-2.5 text-sm focus:border-[#3a6ea5] focus:ring-1 focus:ring-[#3a6ea5] focus:outline-none";
-
   const heading = {
     form: "Activate this deployment",
     success: "Activating your deployment",
@@ -126,81 +125,84 @@ const ActivationWizard = ({ onActivated }) => {
   }[phase];
 
   const shell = (children) => (
-    <div className="min-h-screen flex items-center justify-center bg-slate-100 dark:bg-gray-900 px-4">
-      <div className="w-full max-w-md rounded-2xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-8 shadow-xl">
-        <div className="mb-6 flex items-center gap-3">
+    <Box sx={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", bgcolor: "background.default", px: 2 }}>
+      <Card
+        variant="outlined"
+        sx={{ borderColor: "divider", borderRadius: 2, width: "100%", maxWidth: 448, p: 4, boxShadow: 6 }}
+      >
+        <Stack direction="row" spacing={1.5} sx={{ mb: 3, alignItems: "center" }}>
           <ShieldCheck className="h-8 w-8 text-[#3a6ea5] dark:text-[#6a9bd1]" />
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500 dark:text-gray-400">Vynerix</p>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-gray-100">{heading}</h1>
-          </div>
-        </div>
+          <Box>
+            <Typography variant="caption" component="p" sx={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.25em", color: "text.secondary" }}>
+              Vynerix
+            </Typography>
+            <Typography variant="h5" component="h1" sx={{ fontWeight: 700, color: "text.primary" }}>
+              {heading}
+            </Typography>
+          </Box>
+        </Stack>
         {children}
-      </div>
-    </div>
+      </Card>
+    </Box>
   );
 
   if (phase === "done") {
     return shell(
-      <div className="flex flex-col items-center py-4 text-center">
+      <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", py: 1.5, textAlign: "center" }}>
         <CheckCircle2 className="mb-3 h-12 w-12 text-emerald-500 dark:text-emerald-400" />
-        <p className="text-sm text-slate-600 dark:text-gray-300">
+        <Typography variant="body2" sx={{ color: "text.secondary" }}>
           Your administrator account is ready. Redirecting you to sign in…
-        </p>
-      </div>,
+        </Typography>
+      </Box>,
     );
   }
 
   if (phase === "password") {
     return shell(
       <>
-        <p className="mb-5 text-sm text-slate-500 dark:text-gray-400">
+        <Typography variant="body2" sx={{ mb: 2.5, color: "text.secondary" }}>
           Activation succeeded. Set a password for your administrator account to finish and sign in.
-        </p>
+        </Typography>
         {pwError ? (
-          <div className="mb-4 flex items-start gap-2 rounded-lg bg-rose-50 dark:bg-rose-900/30 px-3 py-2.5 text-sm text-rose-700 dark:text-rose-300">
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-            <span>{pwError}</span>
-          </div>
+          <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
+            {pwError}
+          </Alert>
         ) : null}
-        <form className="space-y-4" onSubmit={submitPassword}>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-gray-300">Administrator email</label>
-            <input value={activation?.adminEmail || ""} readOnly className={`${input} bg-slate-50 dark:bg-gray-800 text-slate-500 dark:text-gray-400`} />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-gray-300">New password</label>
-            <input
-              type="password"
-              value={pw.password}
-              onChange={setPwField("password")}
-              placeholder="At least 8 characters"
-              className={input}
-              autoFocus
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-gray-300">Confirm password</label>
-            <input
-              type="password"
-              value={pw.confirm}
-              onChange={setPwField("confirm")}
-              placeholder="Re-enter password"
-              className={input}
-            />
-          </div>
-          <button
+        <Box component="form" sx={{ display: "flex", flexDirection: "column", gap: 2 }} onSubmit={submitPassword}>
+          <TextField
+            label="Administrator email"
+            value={activation?.adminEmail || ""}
+            size="small"
+            slotProps={{ input: { readOnly: true } }}
+          />
+          <TextField
+            type="password"
+            label="New password"
+            value={pw.password}
+            onChange={setPwField("password")}
+            placeholder="At least 8 characters"
+            size="small"
+            autoFocus
+          />
+          <TextField
+            type="password"
+            label="Confirm password"
+            value={pw.confirm}
+            onChange={setPwField("confirm")}
+            placeholder="Re-enter password"
+            size="small"
+          />
+          <Button
             type="submit"
             disabled={pwBusy}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#3a6ea5] py-2.5 text-sm font-semibold text-white hover:bg-[#345f8f] disabled:opacity-60"
+            variant="contained"
+            disableElevation
+            startIcon={pwBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
+            sx={{ py: 1.25, bgcolor: "#3a6ea5", fontWeight: 600, textTransform: "none", "&:hover": { bgcolor: "#345f8f" }, borderRadius: 2 }}
           >
-            {pwBusy ? (
-              <><Loader2 className="h-4 w-4 animate-spin" /> Saving…</>
-            ) : (
-              <><Lock className="h-4 w-4" /> Set password & continue</>
-            )}
-          </button>
-        </form>
+            {pwBusy ? "Saving…" : "Set password & continue"}
+          </Button>
+        </Box>
       </>,
     );
   }
@@ -210,14 +212,14 @@ const ActivationWizard = ({ onActivated }) => {
     const willSetPassword = activation?.needsPassword && activation?.setupToken;
     return shell(
       <>
-        <p className="mb-6 text-sm text-slate-500 dark:text-gray-400">
+        <Typography variant="body2" sx={{ mb: 3, color: "text.secondary" }}>
           Your credentials were accepted. Setting up your workspace…
-        </p>
-        <ul className="space-y-3.5">
+        </Typography>
+        <Stack component="ul" spacing={1.75} sx={{ listStyle: "none", p: 0, m: 0 }}>
           {STEPS.map((s, idx) => {
             const state = idx < stepIdx ? "done" : idx === stepIdx ? "active" : "pending";
             return (
-              <li key={s.key} className="flex items-center gap-3">
+              <Stack component="li" direction="row" key={s.key} spacing={1.5} sx={{ alignItems: "center" }}>
                 {state === "done" ? (
                   <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-500 dark:text-emerald-400" />
                 ) : state === "active" ? (
@@ -225,24 +227,26 @@ const ActivationWizard = ({ onActivated }) => {
                 ) : (
                   <Circle className="h-5 w-5 shrink-0 text-slate-300 dark:text-gray-600" />
                 )}
-                <span
-                  className={`text-sm ${
-                    state === "pending" ? "text-slate-400 dark:text-gray-500" : "text-slate-700 dark:text-gray-200"
-                  } ${state === "active" ? "font-medium" : ""}`}
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: state === "pending" ? "text.disabled" : "text.primary",
+                    fontWeight: state === "active" ? 500 : 400,
+                  }}
                 >
                   {s.label}
-                </span>
-              </li>
+                </Typography>
+              </Stack>
             );
           })}
-        </ul>
+        </Stack>
         {allDone ? (
-          <div className="mt-6 flex items-center gap-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-300">
-            <CheckCircle2 className="h-4 w-4 shrink-0" />
-            <span>{willSetPassword ? "Almost there — let's secure your admin account…" : "All set! Redirecting you to sign in…"}</span>
-          </div>
+          <Stack direction="row" spacing={1} sx={{ mt: 3, alignItems: "center", borderRadius: 2, bgcolor: (theme) => alpha(theme.palette.success.main, theme.palette.mode === "dark" ? 0.16 : 0.08), px: 2, py: 1.5 }}>
+            <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500 dark:text-emerald-400" />
+            <Typography variant="body2" sx={{ color: "success.dark" }}>{willSetPassword ? "Almost there — let's secure your admin account…" : "All set! Redirecting you to sign in…"}</Typography>
+          </Stack>
         ) : (
-          <p className="mt-6 text-center text-xs text-slate-400 dark:text-gray-500">Please keep this window open…</p>
+          <Typography variant="caption" sx={{ mt: 3, display: "block", textAlign: "center", color: "text.disabled" }}>Please keep this window open…</Typography>
         )}
       </>,
     );
@@ -250,38 +254,49 @@ const ActivationWizard = ({ onActivated }) => {
 
   return shell(
     <>
-      <p className="mb-5 text-sm text-slate-500 dark:text-gray-400">
+      <Typography variant="body2" sx={{ mb: 2.5, color: "text.secondary" }}>
         This system needs activation before it can be used. Enter the details from your Vynerix
         welcome email. Your company's configuration will be downloaded automatically.
-      </p>
+      </Typography>
 
       {error ? (
-        <div className="mb-4 flex items-start gap-2 rounded-lg bg-rose-50 dark:bg-rose-900/30 px-3 py-2.5 text-sm text-rose-700 dark:text-rose-300">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-          <span>{error}</span>
-        </div>
+        <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
+          {error}
+        </Alert>
       ) : null}
 
-      <form className="space-y-4" onSubmit={submit}>
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-gray-300">Company ID</label>
-          <input value={form.companyId} onChange={set("companyId")} placeholder="e.g. CMP-16" className={input} autoFocus />
-        </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-gray-300">Client ID</label>
-          <input value={form.clientId} onChange={set("clientId")} placeholder="From your welcome email" className={`${input} font-mono text-xs`} />
-        </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-gray-300">Activation Code (One-Time Password)</label>
-          <input value={form.activationCode} onChange={set("activationCode")} placeholder="One-time password" className={`${input} font-mono`} />
-        </div>
-        <button type="submit" disabled={busy} className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#3a6ea5] py-2.5 text-sm font-semibold text-white hover:bg-[#345f8f] disabled:opacity-60">
-          {busy ? <><Loader2 className="h-4 w-4 animate-spin" /> Activating…</> : <><KeyRound className="h-4 w-4" /> Activate</>}
-        </button>
-      </form>
-      <p className="mt-4 text-center text-xs text-slate-400 dark:text-gray-500">
+      <Box component="form" sx={{ display: "flex", flexDirection: "column", gap: 2 }} onSubmit={submit}>
+        <TextField label="Company ID" value={form.companyId} onChange={set("companyId")} placeholder="e.g. CMP-16" size="small" autoFocus />
+        <TextField
+          label="Client ID"
+          value={form.clientId}
+          onChange={set("clientId")}
+          placeholder="From your welcome email"
+          size="small"
+          sx={{ "& .MuiInputBase-input": { fontFamily: "monospace", fontSize: "0.75rem" } }}
+        />
+        <TextField
+          label="Activation Code (One-Time Password)"
+          value={form.activationCode}
+          onChange={set("activationCode")}
+          placeholder="One-time password"
+          size="small"
+          sx={{ "& .MuiInputBase-input": { fontFamily: "monospace" } }}
+        />
+        <Button
+          type="submit"
+          disabled={busy}
+          variant="contained"
+          disableElevation
+          startIcon={busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
+          sx={{ py: 1.25, bgcolor: "#3a6ea5", fontWeight: 600, textTransform: "none", "&:hover": { bgcolor: "#345f8f" }, borderRadius: 2 }}
+        >
+          {busy ? "Activating…" : "Activate"}
+        </Button>
+      </Box>
+      <Typography variant="caption" sx={{ mt: 2, display: "block", textAlign: "center", color: "text.disabled" }}>
         The activation code can be used once. If it fails, ask your Vynerix administrator to re-issue it.
-      </p>
+      </Typography>
     </>,
   );
 };

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { ShieldCheck, AlertTriangle, Loader2, CheckCircle2, Lock, KeyRound } from "lucide-react";
+import { ShieldCheck, Loader2, CheckCircle2, Lock, KeyRound } from "lucide-react";
+import { Alert, Box, Button, Card, Stack, TextField, Typography } from "@mui/material";
 
 // PUBLIC self-service "Set / forgot your password?" page (/set-password), linked from the login page.
 // For a company super-admin whose account was created WITHOUT a password (or provisioned by the
@@ -11,22 +12,23 @@ import { ShieldCheck, AlertTriangle, Loader2, CheckCircle2, Lock, KeyRound } fro
 // as a component (<Shell>…</Shell>) — NOT called as Shell(...), which would pass the JSX as `props`
 // and drop `children`, leaving the card body (all the form fields) blank.
 const Shell = ({ children }) => (
-  <div className="min-h-screen flex items-center justify-center bg-slate-100 dark:bg-gray-900 px-4">
-    <div className="w-full max-w-md rounded-2xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-8 shadow-xl">
-      <div className="mb-6 flex items-center gap-3">
+  <Box sx={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", bgcolor: "background.default", px: 2 }}>
+    <Card variant="outlined" sx={{ width: "100%", maxWidth: 448, p: 4, borderRadius: 3, boxShadow: 3 }}>
+      <Stack direction="row" sx={{ alignItems: "center", gap: 1.5, mb: 3 }}>
         <ShieldCheck className="h-8 w-8 text-[#3a6ea5] dark:text-[#6a9bd1]" />
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500 dark:text-gray-400">Vynerix</p>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-gray-100">Set your password</h1>
-        </div>
-      </div>
+        <Box>
+          <Typography variant="caption" sx={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.25em", color: "text.secondary", display: "block" }}>
+            Vynerix
+          </Typography>
+          <Typography variant="h5" component="h1" sx={{ fontWeight: 700, color: "text.primary" }}>
+            Set your password
+          </Typography>
+        </Box>
+      </Stack>
       {children}
-    </div>
-  </div>
+    </Card>
+  </Box>
 );
-
-const input =
-  "w-full rounded-lg border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 px-3 py-2.5 text-sm focus:border-[#3a6ea5] focus:ring-1 focus:ring-[#3a6ea5] focus:outline-none";
 
 const SetPassword = () => {
   const [phase, setPhase] = useState("email"); // email | password | done | nofix
@@ -90,13 +92,28 @@ const SetPassword = () => {
   if (phase === "done") {
     return (
       <Shell>
-        <div className="flex flex-col items-center py-3 text-center">
+        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", py: 1.5, textAlign: "center" }}>
           <CheckCircle2 className="mb-3 h-12 w-12 text-emerald-500 dark:text-emerald-400" />
-          <p className="mb-4 text-sm text-slate-600 dark:text-gray-300">Your password is set. You can sign in now.</p>
-          <a href="/login" className="rounded-lg bg-[#3a6ea5] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#345f8f]">
+          <Typography variant="body2" sx={{ mb: 2, color: "text.secondary" }}>
+            Your password is set. You can sign in now.
+          </Typography>
+          <Button
+            component="a"
+            href="/login"
+            variant="contained"
+            sx={{
+              bgcolor: "#3a6ea5",
+              fontWeight: 600,
+              textTransform: "none",
+              "&:hover": { bgcolor: "#345f8f" },
+              borderRadius: 2,
+              px: 2.5,
+              py: 1,
+            }}
+          >
             Go to sign in
-          </a>
-        </div>
+          </Button>
+        </Box>
       </Shell>
     );
   }
@@ -104,14 +121,11 @@ const SetPassword = () => {
   if (phase === "nofix") {
     return (
       <Shell>
-        <div className="mb-4 flex items-start gap-2 rounded-lg bg-amber-50 dark:bg-amber-900/30 px-3 py-3 text-sm text-amber-800 dark:text-amber-200">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-          <span>
-            This account already has a password, or the email isn't recognized. If you've forgotten your
-            password, ask your Vynerix administrator to send you a reset link.
-          </span>
-        </div>
-        <a href="/login" className="text-sm font-semibold text-[#3a6ea5] dark:text-[#6a9bd1] hover:underline">← Back to sign in</a>
+        <Alert severity="warning" sx={{ mb: 2, borderRadius: 2 }}>
+          This account already has a password, or the email isn't recognized. If you've forgotten your
+          password, ask your Vynerix administrator to send you a reset link.
+        </Alert>
+        <Box component="a" href="/login" sx={{ fontSize: "0.875rem", fontWeight: 600, color: "#3a6ea5", "&:hover": { textDecoration: "underline" } }}>← Back to sign in</Box>
       </Shell>
     );
   }
@@ -119,60 +133,93 @@ const SetPassword = () => {
   if (phase === "password") {
     return (
       <Shell>
-        <p className="mb-5 text-sm text-slate-500 dark:text-gray-400">
+        <Typography variant="body2" sx={{ mb: 2.5, color: "text.secondary" }}>
           Set a password for <b>{email}</b> to finish and sign in.
-        </p>
+        </Typography>
         {error ? (
-          <div className="mb-4 flex items-start gap-2 rounded-lg bg-rose-50 dark:bg-rose-900/30 px-3 py-2.5 text-sm text-rose-700 dark:text-rose-300">
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-            <span>{error}</span>
-          </div>
+          <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
+            {error}
+          </Alert>
         ) : null}
-        <form className="space-y-4" onSubmit={submitPw}>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-gray-300">New password</label>
-            <input type="password" value={pw.password} onChange={(e) => setPw((p) => ({ ...p, password: e.target.value }))}
-              placeholder="At least 8 characters" className={input} autoFocus />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-gray-300">Confirm password</label>
-            <input type="password" value={pw.confirm} onChange={(e) => setPw((p) => ({ ...p, confirm: e.target.value }))}
-              placeholder="Re-enter password" className={input} />
-          </div>
-          <button type="submit" disabled={busy}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#3a6ea5] py-2.5 text-sm font-semibold text-white hover:bg-[#345f8f] disabled:opacity-60">
-            {busy ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving…</> : <><Lock className="h-4 w-4" /> Set password & continue</>}
-          </button>
-        </form>
+        <Box component="form" sx={{ display: "flex", flexDirection: "column", gap: 2 }} onSubmit={submitPw}>
+          <TextField
+            type="password"
+            label="New password"
+            value={pw.password}
+            onChange={(e) => setPw((p) => ({ ...p, password: e.target.value }))}
+            placeholder="At least 8 characters"
+            size="small"
+            autoFocus
+          />
+          <TextField
+            type="password"
+            label="Confirm password"
+            value={pw.confirm}
+            onChange={(e) => setPw((p) => ({ ...p, confirm: e.target.value }))}
+            placeholder="Re-enter password"
+            size="small"
+          />
+          <Button
+            type="submit"
+            disabled={busy}
+            variant="contained"
+            startIcon={busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
+            sx={{
+              py: 1.25,
+              bgcolor: "#3a6ea5",
+              fontWeight: 600,
+              textTransform: "none",
+              "&:hover": { bgcolor: "#345f8f" },
+              borderRadius: 2,
+            }}
+          >
+            {busy ? "Saving…" : "Set password & continue"}
+          </Button>
+        </Box>
       </Shell>
     );
   }
 
   return (
     <Shell>
-      <p className="mb-5 text-sm text-slate-500 dark:text-gray-400">
+      <Typography variant="body2" sx={{ mb: 2.5, color: "text.secondary" }}>
         Enter your company email. If your account hasn't been given a password yet, you can set one here.
-      </p>
+      </Typography>
       {error ? (
-        <div className="mb-4 flex items-start gap-2 rounded-lg bg-rose-50 px-3 py-2.5 text-sm text-rose-700">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-          <span>{error}</span>
-        </div>
+        <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
+          {error}
+        </Alert>
       ) : null}
-      <form className="space-y-4" onSubmit={checkEmail}>
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-gray-300">Company email</label>
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@company.com" className={input} autoFocus />
-        </div>
-        <button type="submit" disabled={busy}
-          className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#3a6ea5] py-2.5 text-sm font-semibold text-white hover:bg-[#345f8f] disabled:opacity-60">
-          {busy ? <><Loader2 className="h-4 w-4 animate-spin" /> Checking…</> : <><KeyRound className="h-4 w-4" /> Continue</>}
-        </button>
-      </form>
-      <p className="mt-4 text-center">
-        <a href="/login" className="text-xs text-slate-400 dark:text-gray-500 hover:text-slate-600 dark:hover:text-gray-300">← Back to sign in</a>
-      </p>
+      <Box component="form" sx={{ display: "flex", flexDirection: "column", gap: 2 }} onSubmit={checkEmail}>
+        <TextField
+          type="email"
+          label="Company email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="you@company.com"
+          size="small"
+          autoFocus
+        />
+        <Button
+          type="submit"
+          disabled={busy}
+          variant="contained"
+          startIcon={busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
+          sx={{
+            py: 1.25,
+            bgcolor: "#3a6ea5",
+            fontWeight: 600,
+            textTransform: "none",
+            "&:hover": { bgcolor: "#345f8f" },
+            borderRadius: 2,
+          }}
+        >
+          {busy ? "Checking…" : "Continue"}
+        </Button>
+      </Box>
+      <Typography variant="caption" sx={{ mt: 2, display: "block", textAlign: "center" }}>
+        <Box component="a" href="/login" sx={{ fontSize: "0.75rem", color: "text.disabled", "&:hover": { color: "text.secondary" } }}>← Back to sign in</Box>
+      </Typography>
     </Shell>
   );
 };

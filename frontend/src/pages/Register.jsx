@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { FaEye, FaEyeSlash, FaGoogle } from "react-icons/fa";
-import { Navigate } from "react-router-dom";
+import { Box, Button, Card, Divider, IconButton, InputAdornment, TextField, Typography } from "@mui/material";
 import { useTheme } from "../features/theme-context";
 
 const Register = () => {
@@ -68,167 +68,132 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen flex justify-center items-center p-5 bg-gradient-to-br from-blue-200 to-blue-400 dark:from-gray-900 dark:to-gray-800">
-      <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl p-10 shadow-2xl border border-gray-100 dark:border-gray-700 transition-all duration-300">
-        <h2 className="text-center text-3xl text-gray-800 dark:text-gray-100 font-extrabold mb-8">
+    <Box sx={{ minHeight: "100vh", display: "flex", justifyContent: "center", alignItems: "center", p: { xs: 2.5, sm: 3 }, bgcolor: "background.default" }}>
+      <Card variant="outlined" sx={{ width: "100%", maxWidth: 448, borderRadius: 4, p: { xs: 3, sm: 5 }, boxShadow: 4, transition: "all 0.3s" }}>
+        <Typography variant="h4" component="h2" sx={{ textAlign: "center", fontWeight: 800, mb: 4, color: "text.primary", fontSize: { xs: "1.5rem", sm: "1.875rem" } }}>
           GPRetail Register
-        </h2>
+        </Typography>
 
-        <form className="flex flex-col space-y-5" onSubmit={handleRegister}>
+        <Box component="form" sx={{ display: "flex", flexDirection: "column", gap: 2.5 }} onSubmit={handleRegister}>
           {/* Name */}
-          <div className="relative">
-            <input
-              type="text"
-              name="name"
-              placeholder=" "
-              required
-              value={form.name}
-              onChange={handleChange}
-              className="peer w-full p-3 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg
-              focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none
-              placeholder-transparent transition-all duration-200"
-            />
-            <label
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm
-              pointer-events-none transition-all duration-200
-              peer-placeholder-shown:top-1/2 peer-placeholder-shown:text-sm
-              peer-placeholder-shown:-translate-y-1/2
-              peer-focus:top-0 peer-focus:text-xs peer-focus:-translate-y-0
-              peer-focus:text-blue-600 dark:peer-focus:text-blue-400 bg-white dark:bg-gray-700 px-1"
-            >
-              Full Name
-            </label>
-          </div>
+          <TextField
+            type="text"
+            name="name"
+            label="Full Name"
+            required
+            fullWidth
+            size="small"
+            value={form.name}
+            onChange={handleChange}
+          />
 
           {/* Email */}
-          <div className="relative">
-            <input
-              type="email"
-              name="email"
-              placeholder=" "
-              required
-              value={form.email}
-              onChange={handleChange}
-              className="peer w-full p-3 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg
-              focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none
-              placeholder-transparent transition-all duration-200"
-            />
-            <label
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm
-              pointer-events-none transition-all duration-200
-              peer-placeholder-shown:top-1/2 peer-placeholder-shown:text-sm
-              peer-placeholder-shown:-translate-y-1/2
-              peer-focus:top-0 peer-focus:text-xs peer-focus:-translate-y-0
-              peer-focus:text-blue-600 dark:peer-focus:text-blue-400 bg-white dark:bg-gray-700 px-1"
-            >
-              Email
-            </label>
-          </div>
+          <TextField
+            type="email"
+            name="email"
+            label="Email"
+            required
+            fullWidth
+            size="small"
+            value={form.email}
+            onChange={handleChange}
+          />
 
           {/* Password */}
-          <div className="relative">
-            <input
-              type={showPassword ? "text" : "password"}
-              name="password"
-              placeholder=" "
-              required
-              value={form.password}
-              onChange={handleChange}
-              className="peer w-full p-3 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg
-              focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none
-              placeholder-transparent transition-all duration-200"
-            />
-            <label
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm
-              pointer-events-none transition-all duration-200
-              peer-placeholder-shown:top-1/2
-              peer-placeholder-shown:text-sm peer-placeholder-shown:-translate-y-1/2
-              peer-focus:top-0 peer-focus:text-xs peer-focus:-translate-y-0
-              peer-focus:text-blue-600 dark:peer-focus:text-blue-400 bg-white dark:bg-gray-700 px-1"
-            >
-              Password
-            </label>
-
-            <span
-              onClick={togglePassword}
-              className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer
-              text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition"
-            >
-              {showPassword ? <FaEyeSlash /> : <FaEye />}
-            </span>
-          </div>
+          <TextField
+            type={showPassword ? "text" : "password"}
+            name="password"
+            label="Password"
+            required
+            fullWidth
+            size="small"
+            value={form.password}
+            onChange={handleChange}
+            slotProps={{
+              input: {
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={togglePassword} edge="end" size="small">
+                      {showPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
 
           {/* Confirm Password */}
-          <div className="relative">
-            <input
-              type={showPassword ? "text" : "password"}
-              name="confirmPassword"
-              placeholder=" "
-              required
-              value={form.confirmPassword}
-              onChange={handleChange}
-              className={`peer w-full p-3 text-sm border ${
-                passwordError ? "border-red-500 dark:border-red-400" : "border-gray-300 dark:border-gray-600"
-              } bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none placeholder-transparent transition-all duration-200`}
-            />
-            <label
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm
-              pointer-events-none transition-all duration-200
-              peer-placeholder-shown:top-1/2
-              peer-placeholder-shown:text-sm peer-placeholder-shown:-translate-y-1/2
-              peer-focus:top-0 peer-focus:text-xs peer-focus:-translate-y-0
-              peer-focus:text-blue-600 dark:peer-focus:text-blue-400 bg-white dark:bg-gray-700 px-1"
-            >
-              Confirm Password
-            </label>
-
-            <span
-              onClick={togglePassword}
-              className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer
-              text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition"
-            >
-              {showPassword ? <FaEyeSlash /> : <FaEye />}
-            </span>
-          </div>
+          <TextField
+            type={showPassword ? "text" : "password"}
+            name="confirmPassword"
+            label="Confirm Password"
+            required
+            fullWidth
+            size="small"
+            error={Boolean(passwordError)}
+            value={form.confirmPassword}
+            onChange={handleChange}
+            slotProps={{
+              input: {
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={togglePassword} edge="end" size="small">
+                      {showPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
 
           {/* LIVE PASSWORD MATCH ERROR */}
           {passwordError && (
-            <p className="text-red-500 dark:text-red-400 text-xs -mt-3">{passwordError}</p>
+            <Typography variant="caption" sx={{ color: "error.main", mt: -1.5 }}>
+              {passwordError}
+            </Typography>
           )}
 
           {/* Global Error */}
           {error && (
-            <p className="text-red-500 dark:text-red-400 text-sm text-center mt-1">{error}</p>
+            <Typography variant="body2" sx={{ color: "error.main", textAlign: "center" }}>
+              {error}
+            </Typography>
           )}
 
           {/* Submit */}
-          <button
+          <Button
             type="submit"
             disabled={!formValid || loading}
-            className={`w-full py-3 mt-3 text-white text-lg font-semibold rounded-lg transition duration-150 shadow-md
-            ${
-              formValid
-                ? "bg-blue-600 hover:bg-blue-700 focus:ring-blue-300"
-                : "bg-blue-300 dark:bg-blue-800/60 cursor-not-allowed"
-            }`}
+            variant="contained"
+            sx={{
+              mt: 1,
+              py: 1.5,
+              fontSize: "1.125rem",
+              fontWeight: 600,
+              textTransform: "none",
+              borderRadius: 2,
+            }}
           >
             {loading ? "Registering..." : "Register"}
-          </button>
+          </Button>
 
           {/* Divider */}
-          <div className="flex items-center my-4 space-x-3">
-            <span className="grow h-px bg-gray-300 dark:bg-gray-600"></span>
-            <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">or</span>
-            <span className="grow h-px bg-gray-300 dark:bg-gray-600"></span>
-          </div>
+          <Divider sx={{ my: 1.5 }}>
+            <Typography variant="body2" sx={{ color: "text.secondary", fontWeight: 500 }}>
+              or
+            </Typography>
+          </Divider>
 
           {/* Google Login */}
-          <button
+          <Button
             type="button"
             onClick={handleGoogleLogin}
             onMouseEnter={() => setHoverGoogle(true)}
             onMouseLeave={() => setHoverGoogle(false)}
-            className="w-full py-3 flex items-center justify-center border rounded-lg font-medium text-sm transition-all duration-300"
+            fullWidth
+            variant="outlined"
+            startIcon={<FaGoogle style={{ color: hoverGoogle ? "#fff" : "#DB4437" }} size={16} />}
+            sx={{ py: 1.5, textTransform: "none", fontWeight: 500, fontSize: "0.875rem" }}
             style={{
               backgroundColor: hoverGoogle ? "#4285F4" : isDark ? "#374151" : "#fff",
               color: hoverGoogle ? "#fff" : isDark ? "#f3f4f6" : "#000",
@@ -239,26 +204,19 @@ const Register = () => {
               borderColor: hoverGoogle ? "#4285F4" : isDark ? "#4b5563" : "#ccc",
             }}
           >
-            <FaGoogle
-              className="mr-2 w-4 h-4"
-              style={{ color: hoverGoogle ? "#fff" : "#DB4437" }}
-            />
             Register with Google
-          </button>
+          </Button>
 
           {/* Redirect */}
-          <p className="mt-4 text-center text-sm text-gray-700 dark:text-gray-300">
+          <Typography variant="body2" sx={{ mt: 2, textAlign: "center", color: "text.secondary" }}>
             Already have an account?{" "}
-            <a
-              href="/login"
-              className="text-blue-600 dark:text-blue-400 font-semibold hover:underline"
-            >
+            <Box component="a" href="/login" sx={{ color: "primary.main", fontWeight: 600, "&:hover": { textDecoration: "underline" } }}>
               Login
-            </a>
-          </p>
-        </form>
-      </div>
-    </div>
+            </Box>
+          </Typography>
+        </Box>
+      </Card>
+    </Box>
   );
 };
 

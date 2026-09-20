@@ -1,6 +1,7 @@
 import React from "react";
 import { Link, useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
+import { Box, Card, Typography } from "@mui/material";
 import { navItems } from "../utils/navItems";
 import { getVisibleNavItems } from "../utils/accessControl";
 
@@ -9,10 +10,6 @@ const ModulePage = () => {
   const user = useSelector((state) => state.auth.user);
   const normalizedModuleName = String(moduleName || "").toLowerCase();
   const visibleNavItems = getVisibleNavItems(navItems, user);
-  const menuCardClass =
-    "flex items-center gap-3 p-4 bg-white dark:bg-gray-800 shadow-md rounded-xl hover:shadow-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-all duration-200 group min-h-[72px]";
-  const subCardClass =
-    "flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 shadow-sm rounded-lg hover:shadow-md hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-all duration-200 group min-h-[48px]";
   const topLevelModuleOrder = [
     "Warehouse",
     "CRM",
@@ -21,37 +18,56 @@ const ModulePage = () => {
     "Store",
     "Analytical",
     "Masters",
+    "HRMS",
     "User Access",
     "Settings",
   ];
-  const moduleHubItems = topLevelModuleOrder
+  const orderedLower = topLevelModuleOrder.map((name) => name.toLowerCase());
+  const foundItems = topLevelModuleOrder
     .map((name) =>
       visibleNavItems.find((item) => item.name.toLowerCase() === name.toLowerCase())
     )
     .filter(Boolean);
+  const remainingItems = visibleNavItems.filter(
+    (item) => item.name && !orderedLower.includes(item.name.toLowerCase())
+  );
+  const moduleHubItems = [...foundItems, ...remainingItems];
 
   // Global modules hub page (all sidebar top-level menus as cards)
   if (normalizedModuleName === "modules") {
     return (
-      <section className="p-6">
-        <h1 className="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-6">All Modules</h1>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 content-start auto-rows-max">
+      <Box component="section" sx={{ p: 3, bgcolor: "background.default", color: "text.primary", minHeight: "100%" }}>
+        <Typography variant="h5" component="h1" sx={{ fontWeight: 600, mb: 3, color: "text.primary" }}>
+          All Modules
+        </Typography>
+        <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(3, 1fr)", lg: "repeat(4, 1fr)" }, gap: 2.5, alignItems: "start" }}>
           {moduleHubItems.map((module) => (
-            <Link
+            <Card
               key={module.name}
+              component={Link}
               to={module.path || `/${module.name.toLowerCase()}`}
-              className={menuCardClass}
+              variant="outlined"
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1.5,
+                p: 2,
+                textDecoration: "none",
+                minHeight: 72,
+                transition: "all 0.2s",
+                "&:hover": { boxShadow: 3, bgcolor: "action.hover" },
+              }}
             >
               {module.icon && (
-                <module.icon className="w-6 h-6 text-indigo-500 group-hover:text-indigo-600 transition" />
+                <module.icon className="w-6 h-6 text-indigo-500 transition shrink-0" />
               )}
-              <span className="font-medium text-gray-800 dark:text-gray-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+              <Typography sx={{ fontWeight: 500, color: "text.primary" }}>
                 {module.name}
-              </span>
-            </Link>
+              </Typography>
+            </Card>
           ))}
-        </div>
-      </section>
+        </Box>
+      </Box>
     );
   }
 
@@ -62,65 +78,135 @@ const ModulePage = () => {
 
   if (!moduleData) {
     return (
-      <section className="p-6 text-center text-gray-600 dark:text-gray-400">
-        <h2 className="text-xl font-semibold mb-2">Module Not Found</h2>
-        <p>Please check the module name in your URL.</p>
-      </section>
+      <Box component="section" sx={{ p: 3, textAlign: "center", color: "text.secondary" }}>
+        <Typography variant="h6" component="h2" sx={{ fontWeight: 600, mb: 1 }}>
+          Module Not Found
+        </Typography>
+        <Typography variant="body2">Please check the module name in your URL.</Typography>
+      </Box>
     );
   }
 
   const isWarehouse = normalizedModuleName === "warehouse";
+  const isSales = normalizedModuleName === "sales";
 
   return (
-    <section className="p-6">
+    <Box component="section" sx={{ p: 3, bgcolor: "background.default", color: "text.primary", minHeight: "100%" }}>
       {/* Module Header Card: clickable to all-modules hub */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 mb-6 content-start auto-rows-max">
-        <Link to="/modules" className={menuCardClass}>
+      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(3, 1fr)", lg: "repeat(4, 1fr)" }, gap: 2.5, mb: 3, alignItems: "start" }}>
+        <Card
+          component={Link}
+          to="/modules"
+          variant="outlined"
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1.5,
+            p: 2,
+            textDecoration: "none",
+            minHeight: 72,
+            transition: "all 0.2s",
+            "&:hover": { boxShadow: 3, bgcolor: "action.hover" },
+          }}
+        >
           {moduleData.icon && (
-            <moduleData.icon className="w-6 h-6 text-indigo-500 group-hover:text-indigo-600 transition" />
+            <moduleData.icon className="w-6 h-6 text-indigo-500 transition shrink-0" />
           )}
-          <span className="font-medium text-gray-800 dark:text-gray-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+          <Typography sx={{ fontWeight: 500, color: "text.primary" }}>
             {moduleData.name}
-          </span>
-        </Link>
+          </Typography>
+        </Card>
 
         {isWarehouse && (
-          <Link
+          <Card
+            component={Link}
             to="/warehouse/new-page"
-            className="flex items-center gap-3 p-4 bg-indigo-600 shadow-md rounded-xl hover:bg-indigo-700 hover:shadow-lg transition-all duration-200 group min-h-[72px]"
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1.5,
+              p: 2,
+              textDecoration: "none",
+              minHeight: 72,
+              bgcolor: "#4f46e5",
+              boxShadow: 3,
+              transition: "all 0.2s",
+              "&:hover": { bgcolor: "#4338ca", boxShadow: 4 },
+            }}
           >
-            <div className="w-10 h-10 rounded-lg bg-white/15 flex items-center justify-center text-white text-xl font-semibold">
+            <Box sx={{ width: 40, height: 40, borderRadius: 1.5, bgcolor: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 20, fontWeight: 600 }}>
               +
-            </div>
-            <div>
-              <span className="block font-semibold text-white">New Page</span>
-              <span className="block text-xs text-indigo-100 mt-0.5">Invoice AI intake</span>
-            </div>
-          </Link>
+            </Box>
+            <Box>
+              <Typography component="span" sx={{ display: "block", fontWeight: 600, color: "#fff" }}>New Page</Typography>
+              <Typography component="span" sx={{ display: "block", fontSize: 12, color: "#e0e7ff", mt: 0.25 }}>Invoice AI intake</Typography>
+            </Box>
+          </Card>
         )}
-      </div>
+
+        {isSales && (
+          <Card
+            component={Link}
+            to="/sales/receipt-formats"
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1.5,
+              p: 2,
+              textDecoration: "none",
+              minHeight: 72,
+              backgroundImage: "linear-gradient(to right, #4f46e5, #2563eb)",
+              boxShadow: 3,
+              transition: "all 0.2s",
+              "&:hover": { backgroundImage: "linear-gradient(to right, #4338ca, #1d4ed8)", boxShadow: 4 },
+            }}
+          >
+            <Box sx={{ width: 40, height: 40, borderRadius: 1.5, bgcolor: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>
+              <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+              </svg>
+            </Box>
+            <Box>
+              <Typography component="span" sx={{ display: "block", fontWeight: 600, color: "#fff" }}>Receipt A4 Formats</Typography>
+              <Typography component="span" sx={{ display: "block", fontSize: 12, color: "#e0e7ff", mt: 0.25 }}>Portrait, Landscape &amp; Templates</Typography>
+            </Box>
+          </Card>
+        )}
+      </Box>
 
       {/* Submenu Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 content-start auto-rows-max">
+      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "repeat(2, 1fr)", sm: "repeat(3, 1fr)", md: "repeat(4, 1fr)", lg: "repeat(5, 1fr)" }, gap: 1.5, alignItems: "start" }}>
         {(moduleData.subItems || []).map((sub) => (
-          <Link
+          <Card
             key={sub.name}
+            component={Link}
             to={sub.path}
-            className={subCardClass}
+            variant="outlined"
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              px: 1.5,
+              py: 1,
+              textDecoration: "none",
+              minHeight: 48,
+              transition: "all 0.2s",
+              "&:hover": { boxShadow: 2, bgcolor: "action.hover" },
+            }}
           >
             {/* Icon */}
             {sub.icon && (
-              <sub.icon className="w-4 h-4 text-indigo-500 group-hover:text-indigo-600 transition shrink-0" />
+              <sub.icon className="w-4 h-4 text-indigo-500 transition shrink-0" />
             )}
 
             {/* Name */}
-            <span className="text-sm font-medium text-gray-800 dark:text-gray-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+            <Typography variant="body2" sx={{ fontWeight: 500, color: "text.primary" }}>
               {sub.name}
-            </span>
-          </Link>
+            </Typography>
+          </Card>
         ))}
-      </div>
-    </section>
+      </Box>
+    </Box>
   );
 };
 

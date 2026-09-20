@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { ShieldCheck, AlertTriangle, Loader2, Lock } from "lucide-react";
+import { ShieldCheck, Loader2, Lock } from "lucide-react";
+import { Alert, Box, Button, Card, Stack, TextField, Typography } from "@mui/material";
 import api from "../api/axios";
 
 // Shown (blocking, over the whole app) right after a company super-admin's FIRST login with the
@@ -8,22 +9,23 @@ import api from "../api/axios";
 // NOTE: render as <Shell>…</Shell> — calling Shell(...) as a function passes the JSX as `props`, so
 // `{ children }` reads undefined and the card body (all fields) vanishes.
 const Shell = ({ children }) => (
-  <div className="min-h-screen flex items-center justify-center bg-slate-100 dark:bg-gray-900 px-4">
-    <div className="w-full max-w-md rounded-2xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-8 shadow-xl">
-      <div className="mb-6 flex items-center gap-3">
+  <Box sx={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", bgcolor: "background.default", px: 2 }}>
+    <Card variant="outlined" sx={{ width: "100%", maxWidth: 448, p: 4, borderRadius: 3, boxShadow: 3 }}>
+      <Stack direction="row" sx={{ alignItems: "center", gap: 1.5, mb: 3 }}>
         <ShieldCheck className="h-8 w-8 text-[#3a6ea5] dark:text-[#6a9bd1]" />
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500 dark:text-gray-400">Vynerix</p>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-gray-100">Set a new password</h1>
-        </div>
-      </div>
+        <Box>
+          <Typography variant="caption" sx={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.25em", color: "text.secondary", display: "block" }}>
+            Vynerix
+          </Typography>
+          <Typography variant="h5" component="h1" sx={{ fontWeight: 700, color: "text.primary" }}>
+            Set a new password
+          </Typography>
+        </Box>
+      </Stack>
       {children}
-    </div>
-  </div>
+    </Card>
+  </Box>
 );
-
-const input =
-  "w-full rounded-lg border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 px-3 py-2.5 text-sm focus:border-[#3a6ea5] focus:ring-1 focus:ring-[#3a6ea5] focus:outline-none";
 
 const ForceChangePassword = () => {
   const [pw, setPw] = useState({ password: "", confirm: "" });
@@ -69,31 +71,49 @@ const ForceChangePassword = () => {
 
   return (
     <Shell>
-      <p className="mb-5 text-sm text-slate-500 dark:text-gray-400">
+      <Typography variant="body2" sx={{ mb: 2.5, color: "text.secondary" }}>
         For security, set your own password before continuing. You won't be asked again.
-      </p>
+      </Typography>
       {error ? (
-        <div className="mb-4 flex items-start gap-2 rounded-lg bg-rose-50 dark:bg-rose-900/30 px-3 py-2.5 text-sm text-rose-700 dark:text-rose-300">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-          <span>{error}</span>
-        </div>
+        <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
+          {error}
+        </Alert>
       ) : null}
-      <form className="space-y-4" onSubmit={submit}>
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-gray-300">New password</label>
-          <input type="password" value={pw.password} onChange={(e) => setPw((p) => ({ ...p, password: e.target.value }))}
-            placeholder="At least 8 characters" className={input} autoFocus />
-        </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-gray-300">Confirm password</label>
-          <input type="password" value={pw.confirm} onChange={(e) => setPw((p) => ({ ...p, confirm: e.target.value }))}
-            placeholder="Re-enter password" className={input} />
-        </div>
-        <button type="submit" disabled={busy}
-          className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#3a6ea5] py-2.5 text-sm font-semibold text-white hover:bg-[#345f8f] disabled:opacity-60">
-          {busy ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving…</> : <><Lock className="h-4 w-4" /> Set password & continue</>}
-        </button>
-      </form>
+      <Box component="form" sx={{ display: "flex", flexDirection: "column", gap: 2 }} onSubmit={submit}>
+        <TextField
+          type="password"
+          label="New password"
+          value={pw.password}
+          onChange={(e) => setPw((p) => ({ ...p, password: e.target.value }))}
+          placeholder="At least 8 characters"
+          size="small"
+          autoFocus
+        />
+        <TextField
+          type="password"
+          label="Confirm password"
+          value={pw.confirm}
+          onChange={(e) => setPw((p) => ({ ...p, confirm: e.target.value }))}
+          placeholder="Re-enter password"
+          size="small"
+        />
+        <Button
+          type="submit"
+          disabled={busy}
+          variant="contained"
+          startIcon={busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
+          sx={{
+            py: 1.25,
+            bgcolor: "#3a6ea5",
+            fontWeight: 600,
+            textTransform: "none",
+            "&:hover": { bgcolor: "#345f8f" },
+            borderRadius: 2,
+          }}
+        >
+          {busy ? "Saving…" : "Set password & continue"}
+        </Button>
+      </Box>
     </Shell>
   );
 };
