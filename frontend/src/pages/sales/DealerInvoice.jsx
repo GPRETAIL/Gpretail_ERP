@@ -7,6 +7,7 @@ import FilterableDataTable from "../../components/FilterableDataTable";
 import { createGroupFetchers } from "../../utils/serverGrouping";
 import SearchableSelect from "../../components/SearchableSelect";
 import AsyncSearchSelect from "../../components/AsyncSearchSelect";
+import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, Checkbox, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
 
 // Matches config('pagination.resources.dealer_invoices.groupable_columns') on the backend.
 const { onFetchGroupSummaries: fetchDealerInvoiceGroupSummaries, onFetchGroupRows: fetchDealerInvoiceGroupRows } =
@@ -136,16 +137,16 @@ const TaxChargeTypeDialog = ({ open, value, onClose, onConfirm }) => {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div
-        className="w-full max-w-md rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-xl"
+    <Box sx={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", bgcolor: "rgba(0,0,0,0.4)" }} onClick={onClose}>
+      <Box
+        sx={{ width: "100%", maxWidth: 448, borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", boxShadow: 8 }}
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-3">
-          <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-100">Charge Type</h2>
-        </div>
-        <div className="px-4 py-4">
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Type</label>
+        <Box sx={{ borderBottom: 1, borderColor: "divider", px: 2, py: 1.5 }}>
+          <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Charge Type</Typography>
+        </Box>
+        <Box sx={{ px: 2, py: 2 }}>
+          <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 10.5, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Type</Typography>
           <SearchableSelect
             name="chargeType"
             options={CHARGE_TYPE_DIALOG_OPTIONS}
@@ -153,15 +154,15 @@ const TaxChargeTypeDialog = ({ open, value, onClose, onConfirm }) => {
             onChange={(event) => setSelectedValue(event.target.value)}
             placeholder="Select Type"
           />
-        </div>
-        <div className="flex justify-end gap-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 px-4 py-3">
-          <button type="button" onClick={onClose} className="glass-btn glass-btn-secondary">Cancel</button>
-          <button type="button" onClick={() => onConfirm(selectedValue)} className="glass-btn glass-btn-primary">
+        </Box>
+        <Stack direction="row" spacing={1} sx={{ justifyContent: "flex-end", borderTop: 1, borderColor: "divider", bgcolor: "action.hover", px: 2, py: 1.5 }}>
+          <Button type="button" onClick={onClose} className="glass-btn glass-btn-secondary">Cancel</Button>
+          <Button type="button" onClick={() => onConfirm(selectedValue)} className="glass-btn glass-btn-primary">
             Save
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </Stack>
+      </Box>
+    </Box>
   );
 };
 
@@ -768,13 +769,13 @@ const DealerInvoice = () => {
         key: "total_qty",
         label: "Total Qty",
         valueGetter: (row) => toNum(row.total_qty || 0),
-        render: (value) => <div className="text-center">{toNum(value || 0)}</div>,
+        render: (value) => <Box sx={{ textAlign: "center" }}>{toNum(value || 0)}</Box>,
       },
       {
         key: "amount",
         label: "Amount",
         valueGetter: (row) => toNum(row.amount || 0),
-        render: (value) => <div className="text-right">{formatMoney(value || 0)}</div>,
+        render: (value) => <Box sx={{ textAlign: "right" }}>{formatMoney(value || 0)}</Box>,
       },
     ],
     []
@@ -783,25 +784,25 @@ const DealerInvoice = () => {
   const [searchPagination, setSearchPagination] = useState({ total: 0, totalPages: 1 });
 
   const renderEntryPage = () => (
-    <div className="grid h-full min-h-0 grid-cols-1 gap-4 xl:grid-cols-12">
-      <div className="xl:col-span-3 h-full min-h-0 overflow-y-auto overflow-x-hidden bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-3 space-y-3">
-        <div className="grid grid-cols-3 gap-1 text-[10px]">
-          <div className="border border-gray-200 dark:border-gray-700 rounded-sm px-2 py-1">
-            <div className="text-[10px] leading-none text-gray-500 dark:text-gray-400">Bill No</div>
-            <div className="mt-1 text-[11px] font-semibold leading-none text-gray-800 dark:text-gray-100">{billNo}</div>
-          </div>
-          <div className="border border-gray-200 dark:border-gray-700 rounded-sm px-2 py-1">
-            <div className="text-[10px] leading-none text-gray-500 dark:text-gray-400">Date</div>
-            <div className="mt-1 text-[11px] font-semibold leading-none text-gray-800 dark:text-gray-100">{now.toLocaleDateString()}</div>
-          </div>
-          <div className="border border-gray-200 dark:border-gray-700 rounded-sm px-2 py-1">
-            <div className="text-[10px] leading-none text-gray-500 dark:text-gray-400">Time</div>
-            <div className="mt-1 text-[11px] font-semibold leading-none text-gray-800 dark:text-gray-100">{now.toLocaleTimeString()}</div>
-          </div>
-        </div>
+    <Box sx={{ display: "grid", height: "100%", minHeight: 0, gridTemplateColumns: { xs: "1fr", xl: "repeat(12, 1fr)" }, gap: 2 }}>
+      <Stack spacing={1.5} sx={{ gridColumn: { xl: "span 3" }, height: "100%", minHeight: 0, overflowY: "auto", overflowX: "hidden", bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "7px", boxShadow: 1, p: 1.5 }}>
+        <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 0.5, fontSize: 9 }}>
+          <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: "3.5px", px: 1, py: 0.5 }}>
+            <Typography sx={{ fontSize: 9, lineHeight: 1, color: "text.secondary" }}>Bill No</Typography>
+            <Typography sx={{ mt: 0.5, fontSize: 11, fontWeight: 600, lineHeight: 1 }}>{billNo}</Typography>
+          </Box>
+          <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: "3.5px", px: 1, py: 0.5 }}>
+            <Typography sx={{ fontSize: 9, lineHeight: 1, color: "text.secondary" }}>Date</Typography>
+            <Typography sx={{ mt: 0.5, fontSize: 11, fontWeight: 600, lineHeight: 1 }}>{now.toLocaleDateString()}</Typography>
+          </Box>
+          <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: "3.5px", px: 1, py: 0.5 }}>
+            <Typography sx={{ fontSize: 9, lineHeight: 1, color: "text.secondary" }}>Time</Typography>
+            <Typography sx={{ mt: 0.5, fontSize: 11, fontWeight: 600, lineHeight: 1 }}>{now.toLocaleTimeString()}</Typography>
+          </Box>
+        </Box>
 
-        <div>
-          <label className="text-xs font-medium text-gray-700 dark:text-gray-300 block mb-1">Customer Name</label>
+        <Box>
+          <Typography component="label" sx={{ display: "block", mb: 0.5, fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Customer Name</Typography>
           <AsyncSearchSelect
             name="customerId"
             value={customerId}
@@ -812,488 +813,540 @@ const DealerInvoice = () => {
             searchPlaceholder="Search customer..."
           />
           {selectedCustomer && (
-            <p className="mt-2 text-xs text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-sm p-2">
+            <Typography sx={{ mt: 1, fontSize: 12.25, color: "success.dark", bgcolor: (theme) => alpha(theme.palette.success.main, theme.palette.mode === "dark" ? 0.16 : 0.08), border: "1px solid", borderColor: (theme) => alpha(theme.palette.success.main, 0.4), borderRadius: "3.5px", p: 1 }}>
               Selected: {selectedCustomer.label}
-            </p>
+            </Typography>
           )}
-        </div>
+        </Box>
 
-        <div className="flex items-center gap-4 text-xs">
-          <label className="inline-flex items-center gap-2">
-            <input
-              type="checkbox"
+        <Stack direction="row" spacing={2} sx={{ fontSize: 12.25 }}>
+          <Stack component="label" direction="row" spacing={1} sx={{ alignItems: "center" }}>
+            <Checkbox
+              size="small"
               checked={discountEnabled}
               onChange={(e) => setDiscountEnabled(e.target.checked)}
-              className="w-4 h-4"
+              sx={{ p: 0 }}
             />
             Discount
-          </label>
+          </Stack>
 
-          <label className="inline-flex items-center gap-2">
-            <input
-              type="checkbox"
+          <Stack component="label" direction="row" spacing={1} sx={{ alignItems: "center" }}>
+            <Checkbox
+              size="small"
               checked={dealerSales}
               onChange={(e) => setDealerSales(e.target.checked)}
-              className="w-4 h-4"
+              sx={{ p: 0 }}
             />
             Dealer Sales
-          </label>
-        </div>
+          </Stack>
+        </Stack>
 
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label className="text-xs font-medium text-gray-700 dark:text-gray-300 block mb-1">SO No</label>
-            <input
+        <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1 }}>
+          <Box>
+            <Typography component="label" sx={{ display: "block", mb: 0.5, fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>SO No</Typography>
+            <TextField
               type="text"
               value={soNo}
               onChange={(e) => setSoNo(e.target.value)}
               placeholder="Enter SO number"
-              className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm px-2 py-1.5 text-xs focus:ring-1 focus:ring-blue-500"
+              size="small"
+              fullWidth
+              sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
             />
-          </div>
+          </Box>
 
-          <div>
-            <label className="text-xs font-medium text-gray-700 dark:text-gray-300 block mb-1">Remarks</label>
-            <input
+          <Box>
+            <Typography component="label" sx={{ display: "block", mb: 0.5, fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Remarks</Typography>
+            <TextField
               type="text"
               value={remarks}
               onChange={(e) => setRemarks(e.target.value)}
               placeholder="Enter remarks"
-              className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm px-2 py-1.5 text-xs focus:ring-1 focus:ring-blue-500"
+              size="small"
+              fullWidth
+              sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
             />
-          </div>
-        </div>
+          </Box>
+        </Box>
 
-        <div className="rounded-md border border-gray-200 dark:border-gray-700 p-2.5">
-          <div className="grid grid-cols-[1.4fr_1fr_1fr_1fr_auto] items-center gap-2 px-1 text-[11px] font-bold uppercase tracking-wide text-red-700 dark:text-red-400">
-            <div>Type</div>
-            <div>Cost</div>
-            <div>Tax</div>
-            <div>Amount</div>
-            <div></div>
-          </div>
+        <Box sx={{ borderRadius: "5.25px", border: "1px solid", borderColor: "divider", p: 1.5 }}>
+          <Box sx={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr 1fr auto", alignItems: "center", gap: 1, px: 0.5, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "error.dark" }}>
+            <Box>Type</Box>
+            <Box>Cost</Box>
+            <Box>Tax</Box>
+            <Box>Amount</Box>
+            <Box></Box>
+          </Box>
 
-          <div className="mt-1 mb-3 grid grid-cols-[1.4fr_1fr_1fr_1fr_auto] items-center gap-2">
-            <select
+          <Box sx={{ mt: 0.5, mb: 1.5, display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr 1fr auto", alignItems: "center", gap: 1 }}>
+            <TextField
+              select
               value={taxDraft.taxTypeId}
               onChange={(e) => handleTaxDraftChange("taxTypeId", e.target.value)}
-              className="w-full border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-xs bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              size="small"
+              fullWidth
+              sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
             >
-              <option value="">Select tax</option>
+              <MenuItem value="">Select tax</MenuItem>
               {taxes.map((tax) => (
-                <option key={tax.id} value={tax.id}>
+                <MenuItem key={tax.id} value={tax.id}>
                   {tax.name}
-                </option>
+                </MenuItem>
               ))}
-            </select>
-            <input
+            </TextField>
+            <TextField
               type="number"
               value={taxDraft.taxValue}
               onChange={(e) => handleTaxDraftChange("taxValue", e.target.value)}
               placeholder="taxable"
-              className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded px-2 py-1 text-xs"
+              size="small"
+              fullWidth
+              sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
             />
-            <input
+            <TextField
               type="text"
               value={taxDraft.taxTypeId ? `${taxDraftRow.taxPerc.toFixed(2)}%` : ""}
-              readOnly
+              slotProps={{ input: { readOnly: true } }}
               placeholder="tax"
-              className="w-full border border-gray-300 dark:border-gray-600 rounded bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-2 py-1 text-xs"
+              size="small"
+              fullWidth
+              sx={{ "& .MuiInputBase-root": { bgcolor: "action.hover" }, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75, color: "text.secondary" } }}
             />
-            <input
+            <TextField
               type="text"
               value={taxDraftRow.taxAmount ? taxDraftRow.taxAmount.toFixed(2) : ""}
-              readOnly
+              slotProps={{ input: { readOnly: true } }}
               placeholder="amount"
-              className="w-full border border-gray-300 dark:border-gray-600 rounded bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-2 py-1 text-xs"
+              size="small"
+              fullWidth
+              sx={{ "& .MuiInputBase-root": { bgcolor: "action.hover" }, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75, color: "text.secondary" } }}
             />
-            <button
+            <Button
               type="button"
               onClick={handleAddTaxLine}
-              className="glass-btn glass-btn-primary h-8 w-8 inline-flex items-center justify-center"
+              className="glass-btn glass-btn-primary"
+              sx={{ display: "inline-flex", height: 32, width: 32, minWidth: 0, alignItems: "center", justifyContent: "center" }}
               title="Add tax line"
             >
               <PlusCircle className="w-4 h-4" />
-            </button>
-          </div>
+            </Button>
+          </Box>
 
-          <div className="rounded border border-gray-200 dark:border-gray-700">
-            <div className="grid grid-cols-[1fr_1fr_1fr_1fr_52px] gap-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-xs font-semibold text-gray-700 dark:text-gray-300">
-              <div>Type</div>
-              <div>Cost</div>
-              <div>Tax</div>
-              <div>Amount</div>
-              <div></div>
-            </div>
-            <div className="h-24 overflow-y-auto">
+          <Box sx={{ borderRadius: "3.5px", border: "1px solid", borderColor: "divider" }}>
+            <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr 52px", gap: 1, borderBottom: 1, borderColor: "divider", bgcolor: "background.paper", px: 1.5, py: 1, fontSize: 12.25, fontWeight: 600, color: "text.secondary" }}>
+              <Box>Type</Box>
+              <Box>Cost</Box>
+              <Box>Tax</Box>
+              <Box>Amount</Box>
+              <Box></Box>
+            </Box>
+            <Box sx={{ height: 96, overflowY: "auto" }}>
               {taxRows.length > 0 ? (
                 taxRows.map((line) => (
-                  <div key={line.id} className="grid grid-cols-[1fr_1fr_1fr_1fr_52px] items-center gap-2 border-b border-gray-200 dark:border-gray-700 px-3 py-2 text-xs text-gray-800 dark:text-gray-100 last:border-b-0">
-                    <div>{line.chargeTypeLabel || line.taxName || "-"}</div>
-                    <div>{line.taxValue.toFixed(2)}</div>
-                    <div>{line.taxPerc.toFixed(2)}%</div>
-                    <div>{line.taxAmount.toFixed(2)}</div>
-                    <div className="flex items-center justify-center gap-2">
-                      <button
+                  <Box key={line.id} sx={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr 52px", alignItems: "center", gap: 1, borderBottom: 1, borderColor: "divider", "&:last-child": { borderBottom: 0 }, px: 1.5, py: 1, fontSize: 12.25, color: "text.primary" }}>
+                    <Box>{line.chargeTypeLabel || line.taxName || "-"}</Box>
+                    <Box>{line.taxValue.toFixed(2)}</Box>
+                    <Box>{line.taxPerc.toFixed(2)}%</Box>
+                    <Box>{line.taxAmount.toFixed(2)}</Box>
+                    <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", justifyContent: "center" }}>
+                      <IconButton
                         type="button"
                         onClick={() => handleOpenTaxChargeTypeDialog(line)}
-                        className="inline-flex h-6 w-6 items-center justify-center rounded text-slate-500 dark:text-slate-400 transition-colors hover:text-blue-600 dark:hover:text-blue-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500"
+                        size="small"
+                        sx={{ color: "text.secondary", "&:hover": { color: "primary.main" }, p: 0.25 }}
                         title="Edit charge type"
                       >
                         <Pencil className="w-3.5 h-3.5" />
-                      </button>
-                      <button
+                      </IconButton>
+                      <IconButton
                         type="button"
                         onClick={() => handleRemoveTaxLine(line.id)}
-                        className="inline-flex h-6 w-6 items-center justify-center rounded text-slate-500 dark:text-slate-400 transition-colors hover:text-red-600 dark:hover:text-red-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-500"
+                        size="small"
+                        sx={{ color: "text.secondary", "&:hover": { color: "error.main" }, p: 0.25 }}
                         title="Remove tax row"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
+                      </IconButton>
+                    </Stack>
+                  </Box>
                 ))
               ) : (
-                <div className="flex h-full items-center justify-center px-4 text-sm text-gray-400 dark:text-gray-500">No tax rows added</div>
+                <Box sx={{ display: "flex", height: "100%", alignItems: "center", justifyContent: "center", px: 2, fontSize: 12.25, color: "text.disabled" }}>No tax rows added</Box>
               )}
-            </div>
-            <div className="grid grid-cols-4 gap-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 px-3 py-2 text-xs font-bold text-gray-800 dark:text-gray-100">
-              <div>-</div>
-              <div>{taxSummary.taxable.toFixed(2)}</div>
-              <div>-</div>
-              <div>{taxSummary.tax.toFixed(2)}</div>
-            </div>
-          </div>
-        </div>
+            </Box>
+            <Box sx={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 1, borderTop: 1, borderColor: "divider", bgcolor: "action.hover", px: 1.5, py: 1, fontSize: 12.25, fontWeight: 700, color: "text.primary" }}>
+              <Box>-</Box>
+              <Box>{taxSummary.taxable.toFixed(2)}</Box>
+              <Box>-</Box>
+              <Box>{taxSummary.tax.toFixed(2)}</Box>
+            </Box>
+          </Box>
+        </Box>
 
-        <div className="border border-gray-200 dark:border-gray-700 rounded-md p-2.5">
-          <h2 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Bill</h2>
+        <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: "5.25px", p: 1.5 }}>
+          <Typography component="h2" sx={{ mb: 1, fontSize: 12.25, fontWeight: 600, color: "text.secondary" }}>Bill</Typography>
 
-          <div className="space-y-2 text-xs">
-            <div className="flex items-center justify-between border border-gray-200 dark:border-gray-700 rounded-sm px-3 py-2">
-              <span className="text-gray-600 dark:text-gray-400">Total Qty/Pcs</span>
-              <span className="font-semibold text-gray-800 dark:text-gray-100">{summary.totalQty.toFixed(2)}/{cartWithTotals.length}</span>
-            </div>
+          <Stack spacing={1} sx={{ fontSize: 12.25 }}>
+            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", border: "1px solid", borderColor: "divider", borderRadius: "3.5px", px: 1.5, py: 1 }}>
+              <Box component="span" sx={{ color: "text.secondary" }}>Total Qty/Pcs</Box>
+              <Box component="span" sx={{ fontWeight: 600, color: "text.primary" }}>{summary.totalQty.toFixed(2)}/{cartWithTotals.length}</Box>
+            </Stack>
 
-            <div className="flex items-center justify-between border border-gray-200 dark:border-gray-700 rounded-sm px-3 py-2">
-              <span className="text-gray-600 dark:text-gray-400">Total Discount</span>
-              <span className="font-semibold text-gray-800 dark:text-gray-100">{formatMoney(summary.totalDiscount)}</span>
-            </div>
+            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", border: "1px solid", borderColor: "divider", borderRadius: "3.5px", px: 1.5, py: 1 }}>
+              <Box component="span" sx={{ color: "text.secondary" }}>Total Discount</Box>
+              <Box component="span" sx={{ fontWeight: 600, color: "text.primary" }}>{formatMoney(summary.totalDiscount)}</Box>
+            </Stack>
 
-            <div className="flex items-center justify-between border border-gray-200 dark:border-gray-700 rounded-sm px-3 py-2 gap-2">
-              <span className="text-gray-600 dark:text-gray-400">Addl Discount</span>
-              <input
+            <Stack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "space-between", border: "1px solid", borderColor: "divider", borderRadius: "3.5px", px: 1.5, py: 1 }}>
+              <Box component="span" sx={{ color: "text.secondary" }}>Addl Discount</Box>
+              <TextField
                 type="number"
-                min="0"
-                step="0.01"
+                slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
                 value={addlDiscount}
                 onChange={(e) => setAddlDiscount(e.target.value)}
-                className="w-28 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm px-2 py-1 text-right"
+                size="small"
+                sx={{ width: 112, "& .MuiInputBase-input": { textAlign: "right", py: 0.75 } }}
               />
-            </div>
+            </Stack>
 
-            <div className="flex items-center justify-between border border-gray-200 dark:border-gray-700 rounded-sm px-3 py-2 gap-2">
-              <span className="text-gray-600 dark:text-gray-400">Addl Charge</span>
-              <input
+            <Stack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "space-between", border: "1px solid", borderColor: "divider", borderRadius: "3.5px", px: 1.5, py: 1 }}>
+              <Box component="span" sx={{ color: "text.secondary" }}>Addl Charge</Box>
+              <TextField
                 type="number"
-                min="0"
-                step="0.01"
+                slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
                 value={addlCharge}
                 onChange={(e) => setAddlCharge(e.target.value)}
-                className="w-28 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm px-2 py-1 text-right"
+                size="small"
+                sx={{ width: 112, "& .MuiInputBase-input": { textAlign: "right", py: 0.75 } }}
               />
-            </div>
-          </div>
-        </div>
-      </div>
+            </Stack>
+          </Stack>
+        </Box>
+      </Stack>
 
-      <div className="xl:col-span-9 space-y-3 min-h-0 flex flex-col">
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm px-3 py-2.5">
-          <h2 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Add Product</h2>
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-1.5 items-end">
-            <div className="md:col-span-4">
-              <label className="text-[11px] font-medium text-gray-600 dark:text-gray-400 block mb-1">Barcode</label>
-              <input
+      <Stack spacing={1.5} sx={{ gridColumn: { xl: "span 9" }, minHeight: 0 }}>
+        <Box sx={{ bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "7px", boxShadow: 1, px: 1.5, py: 1.25 }}>
+          <Typography component="h2" sx={{ mb: 1, fontSize: 12.25, fontWeight: 600, color: "text.secondary" }}>Add Product</Typography>
+          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(12, 1fr)" }, gap: 0.75, alignItems: "end" }}>
+            <Box sx={{ gridColumn: { md: "span 4" } }}>
+              <Typography component="label" sx={{ display: "block", mb: 0.5, fontSize: 11, fontWeight: 500, color: "text.secondary" }}>Barcode</Typography>
+              <TextField
                 type="text"
                 value={addBarcode}
                 onChange={(e) => setAddBarcode(e.target.value)}
                 placeholder="Scan / enter barcode"
-                className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm px-2 py-1.5 text-xs focus:ring-1 focus:ring-blue-500"
+                size="small"
+                fullWidth
+                sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
               />
-            </div>
-            <div className="md:col-span-5">
-              <label className="text-[11px] font-medium text-gray-600 dark:text-gray-400 block mb-1">Product (In Stock)</label>
-              <select
+            </Box>
+            <Box sx={{ gridColumn: { md: "span 5" } }}>
+              <Typography component="label" sx={{ display: "block", mb: 0.5, fontSize: 11, fontWeight: 500, color: "text.secondary" }}>Product (In Stock)</Typography>
+              <TextField
+                select
                 value={addProductKey}
                 onChange={(e) => setAddProductKey(e.target.value)}
-                className="w-full border border-gray-300 dark:border-gray-600 rounded-sm px-2 py-1.5 text-xs bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500"
+                size="small"
+                fullWidth
+                sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
               >
-                <option value="">Select product</option>
+                <MenuItem value="">Select product</MenuItem>
                 {productOptions.map((row) => (
-                  <option key={row.value} value={row.value}>
+                  <MenuItem key={row.value} value={row.value}>
                     {row.label}
-                  </option>
+                  </MenuItem>
                 ))}
-              </select>
-            </div>
-            <div className="md:col-span-2">
-              <label className="text-[11px] font-medium text-gray-600 dark:text-gray-400 block mb-1">Qty</label>
-              <input
+              </TextField>
+            </Box>
+            <Box sx={{ gridColumn: { md: "span 2" } }}>
+              <Typography component="label" sx={{ display: "block", mb: 0.5, fontSize: 11, fontWeight: 500, color: "text.secondary" }}>Qty</Typography>
+              <TextField
                 type="number"
-                min="1"
+                slotProps={{ htmlInput: { min: 1 } }}
                 value={addQty}
                 onChange={(e) => setAddQty(e.target.value)}
-                className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm px-2 py-1.5 text-xs focus:ring-1 focus:ring-blue-500"
+                size="small"
+                fullWidth
+                sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
               />
-            </div>
-            <div className="md:col-span-1">
-              <button
+            </Box>
+            <Box sx={{ gridColumn: { md: "span 1" } }}>
+              <Button
                 onClick={handleAddLine}
-                className="glass-btn glass-btn-primary w-full h-[32px] inline-flex items-center justify-center"
+                className="glass-btn glass-btn-primary"
+                fullWidth
+                sx={{ display: "inline-flex", height: 32, alignItems: "center", justifyContent: "center" }}
                 aria-label="Add product"
               >
                 <PlusCircle className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-          <p className="mt-1.5 text-[11px] text-gray-600 dark:text-gray-400">{selectedStockHint}</p>
-        </div>
+              </Button>
+            </Box>
+          </Box>
+          <Typography sx={{ mt: 0.75, fontSize: 11, color: "text.secondary" }}>{selectedStockHint}</Typography>
+        </Box>
 
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm flex-1 min-h-0 overflow-hidden flex flex-col">
-          <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-3">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Added Products</h2>
-          </div>
-          <div className="flex-1 min-h-0 overflow-auto">
-            <table className="min-w-[1048px] w-full table-fixed text-xs">
-              <thead className="bg-blue-50 dark:bg-blue-900/30 text-gray-700 dark:text-gray-300 sticky top-0 z-10">
-                <tr>
-                  <th className="w-[112px] border dark:border-gray-700 px-1.5 py-2 text-left">Barcode</th>
-                  <th className="w-[158px] border dark:border-gray-700 px-1.5 py-2 text-left">Product</th>
-                  <th className="w-[62px] border dark:border-gray-700 px-1.5 py-2 text-right">Tax</th>
-                  <th className="w-[72px] border dark:border-gray-700 px-1.5 py-2 text-right">MRP</th>
-                  <th className="w-[72px] border dark:border-gray-700 px-1.5 py-2 text-right">Cost</th>
-                  <th className="w-[72px] border dark:border-gray-700 px-1.5 py-2 text-right">Price</th>
-                  <th className="w-[58px] border dark:border-gray-700 px-1.5 py-2 text-center">Qty</th>
-                  <th className="w-[76px] border dark:border-gray-700 px-1.5 py-2 text-right">Discount</th>
-                  <th className="w-[64px] border dark:border-gray-700 px-1.5 py-2 text-right">A.D</th>
-                  <th className="w-[54px] border dark:border-gray-700 px-1.5 py-2 text-right">%</th>
-                  <th className="w-[86px] border dark:border-gray-700 px-1.5 py-2 text-right">Amount</th>
-                  <th className="w-[40px] border dark:border-gray-700 px-1 py-2 text-center"></th>
-                </tr>
-                <tr className="bg-sky-50 dark:bg-sky-900/20">
-                  <th className="border dark:border-gray-700 px-1 py-1">
-                    <input
+        <Stack sx={{ bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "7px", boxShadow: 1, flex: 1, minHeight: 0, overflow: "hidden" }}>
+          <Box sx={{ borderBottom: 1, borderColor: "divider", px: 2, py: 1.5 }}>
+            <Typography component="h2" sx={{ fontSize: 12.25, fontWeight: 600, color: "text.secondary" }}>Added Products</Typography>
+          </Box>
+          <Box sx={{ flex: 1, minHeight: 0, overflow: "auto" }}>
+            <Table sx={{ minWidth: 1048, width: "100%", tableLayout: "fixed", fontSize: 12.25 }}>
+              <TableHead sx={{ position: "sticky", top: 0, zIndex: 10, bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08), color: "text.secondary" }}>
+                <TableRow>
+                  <TableCell sx={{ width: 112, border: 1, borderColor: "divider", px: 0.75, py: 1, textAlign: "left" }}>Barcode</TableCell>
+                  <TableCell sx={{ width: 158, border: 1, borderColor: "divider", px: 0.75, py: 1, textAlign: "left" }}>Product</TableCell>
+                  <TableCell sx={{ width: 62, border: 1, borderColor: "divider", px: 0.75, py: 1, textAlign: "right" }}>Tax</TableCell>
+                  <TableCell sx={{ width: 72, border: 1, borderColor: "divider", px: 0.75, py: 1, textAlign: "right" }}>MRP</TableCell>
+                  <TableCell sx={{ width: 72, border: 1, borderColor: "divider", px: 0.75, py: 1, textAlign: "right" }}>Cost</TableCell>
+                  <TableCell sx={{ width: 72, border: 1, borderColor: "divider", px: 0.75, py: 1, textAlign: "right" }}>Price</TableCell>
+                  <TableCell sx={{ width: 58, border: 1, borderColor: "divider", px: 0.75, py: 1, textAlign: "center" }}>Qty</TableCell>
+                  <TableCell sx={{ width: 76, border: 1, borderColor: "divider", px: 0.75, py: 1, textAlign: "right" }}>Discount</TableCell>
+                  <TableCell sx={{ width: 64, border: 1, borderColor: "divider", px: 0.75, py: 1, textAlign: "right" }}>A.D</TableCell>
+                  <TableCell sx={{ width: 54, border: 1, borderColor: "divider", px: 0.75, py: 1, textAlign: "right" }}>%</TableCell>
+                  <TableCell sx={{ width: 86, border: 1, borderColor: "divider", px: 0.75, py: 1, textAlign: "right" }}>Amount</TableCell>
+                  <TableCell sx={{ width: 40, border: 1, borderColor: "divider", px: 0.5, py: 1, textAlign: "center" }}></TableCell>
+                </TableRow>
+                <TableRow sx={{ bgcolor: (theme) => alpha(theme.palette.info.main, theme.palette.mode === "dark" ? 0.12 : 0.06) }}>
+                  <TableCell sx={{ border: 1, borderColor: "divider", px: 0.5, py: 0.5 }}>
+                    <TextField
                       type="text"
                       value={itemFilterDraft.barcode}
                       onChange={(e) => handleItemFilterDraftChange("barcode", e.target.value)}
                       onKeyDown={handleItemFilterKeyDown}
                       placeholder="Barcode"
-                      className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded px-1 py-1 text-[10px] font-normal"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { fontSize: 10.5, fontWeight: 400, py: 0.5 } }}
                     />
-                  </th>
-                  <th className="border dark:border-gray-700 px-1 py-1">
-                    <input
+                  </TableCell>
+                  <TableCell sx={{ border: 1, borderColor: "divider", px: 0.5, py: 0.5 }}>
+                    <TextField
                       type="text"
                       value={itemFilterDraft.productName}
                       onChange={(e) => handleItemFilterDraftChange("productName", e.target.value)}
                       onKeyDown={handleItemFilterKeyDown}
                       placeholder="Product"
-                      className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded px-1 py-1 text-[10px] font-normal"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { fontSize: 10.5, fontWeight: 400, py: 0.5 } }}
                     />
-                  </th>
-                  <th className="border dark:border-gray-700 px-1 py-1">
-                    <input
+                  </TableCell>
+                  <TableCell sx={{ border: 1, borderColor: "divider", px: 0.5, py: 0.5 }}>
+                    <TextField
                       type="text"
                       value={itemFilterDraft.tax}
                       onChange={(e) => handleItemFilterDraftChange("tax", e.target.value)}
                       onKeyDown={handleItemFilterKeyDown}
                       placeholder="Tax"
-                      className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded px-1 py-1 text-[10px] font-normal text-right"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 10.5, fontWeight: 400, py: 0.5 } }}
                     />
-                  </th>
-                  <th className="border dark:border-gray-700 px-1 py-1">
-                    <input
+                  </TableCell>
+                  <TableCell sx={{ border: 1, borderColor: "divider", px: 0.5, py: 0.5 }}>
+                    <TextField
                       type="text"
                       value={itemFilterDraft.mrp}
                       onChange={(e) => handleItemFilterDraftChange("mrp", e.target.value)}
                       onKeyDown={handleItemFilterKeyDown}
                       placeholder="MRP"
-                      className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded px-1 py-1 text-[10px] font-normal text-right"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 10.5, fontWeight: 400, py: 0.5 } }}
                     />
-                  </th>
-                  <th className="border dark:border-gray-700 px-1 py-1">
-                    <input
+                  </TableCell>
+                  <TableCell sx={{ border: 1, borderColor: "divider", px: 0.5, py: 0.5 }}>
+                    <TextField
                       type="text"
                       value={itemFilterDraft.cost}
                       onChange={(e) => handleItemFilterDraftChange("cost", e.target.value)}
                       onKeyDown={handleItemFilterKeyDown}
                       placeholder="Cost"
-                      className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded px-1 py-1 text-[10px] font-normal text-right"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 10.5, fontWeight: 400, py: 0.5 } }}
                     />
-                  </th>
-                  <th className="border dark:border-gray-700 px-1 py-1">
-                    <input
+                  </TableCell>
+                  <TableCell sx={{ border: 1, borderColor: "divider", px: 0.5, py: 0.5 }}>
+                    <TextField
                       type="text"
                       value={itemFilterDraft.price}
                       onChange={(e) => handleItemFilterDraftChange("price", e.target.value)}
                       onKeyDown={handleItemFilterKeyDown}
                       placeholder="Price"
-                      className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded px-1 py-1 text-[10px] font-normal text-right"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 10.5, fontWeight: 400, py: 0.5 } }}
                     />
-                  </th>
-                  <th className="border dark:border-gray-700 px-1 py-1">
-                    <input
+                  </TableCell>
+                  <TableCell sx={{ border: 1, borderColor: "divider", px: 0.5, py: 0.5 }}>
+                    <TextField
                       type="text"
                       value={itemFilterDraft.qty}
                       onChange={(e) => handleItemFilterDraftChange("qty", e.target.value)}
                       onKeyDown={handleItemFilterKeyDown}
                       placeholder="Qty"
-                      className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded px-1 py-1 text-[10px] font-normal text-right"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 10.5, fontWeight: 400, py: 0.5 } }}
                     />
-                  </th>
-                  <th className="border dark:border-gray-700 px-1 py-1">
-                    <input
+                  </TableCell>
+                  <TableCell sx={{ border: 1, borderColor: "divider", px: 0.5, py: 0.5 }}>
+                    <TextField
                       type="text"
                       value={itemFilterDraft.discount}
                       onChange={(e) => handleItemFilterDraftChange("discount", e.target.value)}
                       onKeyDown={handleItemFilterKeyDown}
                       placeholder="Discount"
-                      className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded px-1 py-1 text-[10px] font-normal text-right"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 10.5, fontWeight: 400, py: 0.5 } }}
                     />
-                  </th>
-                  <th className="border dark:border-gray-700 px-1 py-1">
-                    <input
+                  </TableCell>
+                  <TableCell sx={{ border: 1, borderColor: "divider", px: 0.5, py: 0.5 }}>
+                    <TextField
                       type="text"
                       value={itemFilterDraft.addlDiscount}
                       onChange={(e) => handleItemFilterDraftChange("addlDiscount", e.target.value)}
                       onKeyDown={handleItemFilterKeyDown}
                       placeholder="A.D"
-                      className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded px-1 py-1 text-[10px] font-normal text-right"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 10.5, fontWeight: 400, py: 0.5 } }}
                     />
-                  </th>
-                  <th className="border dark:border-gray-700 px-1 py-1">
-                    <input
+                  </TableCell>
+                  <TableCell sx={{ border: 1, borderColor: "divider", px: 0.5, py: 0.5 }}>
+                    <TextField
                       type="text"
                       value={itemFilterDraft.discountPerc}
                       onChange={(e) => handleItemFilterDraftChange("discountPerc", e.target.value)}
                       onKeyDown={handleItemFilterKeyDown}
                       placeholder="%"
-                      className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded px-1 py-1 text-[10px] font-normal text-right"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 10.5, fontWeight: 400, py: 0.5 } }}
                     />
-                  </th>
-                  <th className="border dark:border-gray-700 px-1 py-1">
-                    <input
+                  </TableCell>
+                  <TableCell sx={{ border: 1, borderColor: "divider", px: 0.5, py: 0.5 }}>
+                    <TextField
                       type="text"
                       value={itemFilterDraft.amount}
                       onChange={(e) => handleItemFilterDraftChange("amount", e.target.value)}
                       onKeyDown={handleItemFilterKeyDown}
                       placeholder="Amount"
-                      className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded px-1 py-1 text-[10px] font-normal text-right"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 10.5, fontWeight: 400, py: 0.5 } }}
                     />
-                  </th>
-                  <th className="border dark:border-gray-700 px-1 py-1 text-[10px] font-normal text-gray-500 dark:text-gray-400 text-center">Enter</th>
-                </tr>
-              </thead>
-              <tbody>
+                  </TableCell>
+                  <TableCell sx={{ border: 1, borderColor: "divider", px: 0.5, py: 0.5, textAlign: "center", fontSize: 9, fontWeight: 400, color: "text.secondary" }}>Enter</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
                 {filteredCartWithTotals.length === 0 ? (
-                  <tr>
-                    <td colSpan="12" className="px-3 py-8 text-center text-gray-400 dark:text-gray-500">
+                  <TableRow>
+                    <TableCell colSpan={12} sx={{ px: 1.5, py: 4, textAlign: "center", color: "text.disabled" }}>
                       {cartWithTotals.length === 0 ? "No products added yet" : "No products match current filters"}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : (
                   filteredCartWithTotals.map((line) => (
-                    <tr key={line.lineId} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                      <td className="border dark:border-gray-700 px-1.5 py-1.5 font-mono text-[10px] truncate text-gray-800 dark:text-gray-100">{line.barcode || "-"}</td>
-                      <td className="border dark:border-gray-700 px-1.5 py-1.5 text-[10px] truncate text-gray-800 dark:text-gray-100">{line.productName}</td>
-                      <td className="border dark:border-gray-700 px-1.5 py-1.5 text-right text-[10px] text-gray-800 dark:text-gray-100">{line.tax.toFixed(2)}</td>
-                      <td className="border dark:border-gray-700 px-1.5 py-1.5 text-right text-[10px] text-gray-800 dark:text-gray-100">{formatMoney(line.mrp || 0)}</td>
-                      <td className="border dark:border-gray-700 px-1.5 py-1.5 text-right text-[10px] text-gray-800 dark:text-gray-100">{formatMoney(line.cost)}</td>
-                      <td className="border dark:border-gray-700 px-1.5 py-1.5">
-                        <input
+                    <TableRow key={line.lineId} sx={{ "&:hover": { bgcolor: "action.hover" } }}>
+                      <TableCell sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", border: 1, borderColor: "divider", px: 0.75, py: 0.75, fontFamily: "monospace", fontSize: 10.5 }}>{line.barcode || "-"}</TableCell>
+                      <TableCell sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", border: 1, borderColor: "divider", px: 0.75, py: 0.75, fontSize: 10.5 }}>{line.productName}</TableCell>
+                      <TableCell sx={{ border: 1, borderColor: "divider", px: 0.75, py: 0.75, textAlign: "right", fontSize: 10.5 }}>{line.tax.toFixed(2)}</TableCell>
+                      <TableCell sx={{ border: 1, borderColor: "divider", px: 0.75, py: 0.75, textAlign: "right", fontSize: 10.5 }}>{formatMoney(line.mrp || 0)}</TableCell>
+                      <TableCell sx={{ border: 1, borderColor: "divider", px: 0.75, py: 0.75, textAlign: "right", fontSize: 10.5 }}>{formatMoney(line.cost)}</TableCell>
+                      <TableCell sx={{ border: 1, borderColor: "divider", px: 0.75, py: 0.75 }}>
+                        <TextField
                           type="number"
-                          min="0"
-                          step="0.01"
+                          slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
                           value={line.price}
                           onChange={(e) => handleLineValueChange(line.lineId, "price", e.target.value)}
-                          className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm px-1 py-0.5 text-right text-[10px]"
+                          size="small"
+                          fullWidth
+                          sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 10.5, py: 0.25 } }}
                         />
-                      </td>
-                      <td className="border dark:border-gray-700 px-1.5 py-1.5 text-center text-[10px] text-gray-800 dark:text-gray-100">{line.qty}</td>
-                      <td className="border dark:border-gray-700 px-2 py-2 text-right">
-                        <input
+                      </TableCell>
+                      <TableCell sx={{ border: 1, borderColor: "divider", px: 0.75, py: 0.75, textAlign: "center", fontSize: 10.5 }}>{line.qty}</TableCell>
+                      <TableCell sx={{ border: 1, borderColor: "divider", px: 1, py: 1, textAlign: "right" }}>
+                        <TextField
                           type="number"
-                          min="0"
-                          step="0.01"
+                          slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
                           value={line.discount}
                           onChange={(e) => handleLineValueChange(line.lineId, "discount", e.target.value)}
-                          className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm px-1 py-0.5 text-right text-[10px]"
+                          size="small"
+                          fullWidth
+                          sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 10.5, py: 0.25 } }}
                         />
-                      </td>
-                      <td className="border dark:border-gray-700 px-2 py-2 text-right">
-                        <input
+                      </TableCell>
+                      <TableCell sx={{ border: 1, borderColor: "divider", px: 1, py: 1, textAlign: "right" }}>
+                        <TextField
                           type="number"
-                          min="0"
-                          step="0.01"
+                          slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
                           value={line.addlDiscount || 0}
                           onChange={(e) => handleLineValueChange(line.lineId, "addlDiscount", e.target.value)}
-                          className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm px-1 py-0.5 text-right text-[10px]"
+                          size="small"
+                          fullWidth
+                          sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 10.5, py: 0.25 } }}
                         />
-                      </td>
-                      <td className="border dark:border-gray-700 px-2 py-2 text-right">
-                        <input
+                      </TableCell>
+                      <TableCell sx={{ border: 1, borderColor: "divider", px: 1, py: 1, textAlign: "right" }}>
+                        <TextField
                           type="number"
-                          min="0"
-                          step="0.01"
+                          slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
                           value={line.discountPerc || 0}
                           onChange={(e) => handleLineValueChange(line.lineId, "discountPerc", e.target.value)}
-                          className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm px-1 py-0.5 text-right text-[10px]"
+                          size="small"
+                          fullWidth
+                          sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 10.5, py: 0.25 } }}
                         />
-                      </td>
-                      <td className="border dark:border-gray-700 px-1.5 py-1.5 text-right font-semibold text-[10px] text-gray-800 dark:text-gray-100">{formatMoney(line.amount)}</td>
-                      <td className="border dark:border-gray-700 px-1 py-1.5 text-center">
-                        <button
+                      </TableCell>
+                      <TableCell sx={{ border: 1, borderColor: "divider", px: 0.75, py: 0.75, textAlign: "right", fontSize: 10.5, fontWeight: 600 }}>{formatMoney(line.amount)}</TableCell>
+                      <TableCell sx={{ border: 1, borderColor: "divider", px: 0.5, py: 0.75, textAlign: "center" }}>
+                        <IconButton
                           type="button"
                           onClick={() => handleRemoveLine(line.lineId)}
-                          className="text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300"
+                          size="small"
+                          sx={{ color: "error.main", p: 0.25 }}
                           aria-label="Remove line"
                         >
                           <Trash2 className="w-3.5 h-3.5 inline" />
-                        </button>
-                      </td>
-                    </tr>
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
                   ))
                 )}
-              </tbody>
-            </table>
-          </div>
-          <div className="shrink-0 overflow-x-auto border-t border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-900">
-            <table className="min-w-[1048px] w-full table-fixed text-xs">
-              <tbody>
-                <tr className="bg-gray-100 dark:bg-gray-900 text-xs font-bold text-gray-700 dark:text-gray-300">
-                  <td className="w-[112px] border dark:border-gray-700 px-1.5 py-2"></td>
-                  <td className="w-[158px] border dark:border-gray-700 px-1.5 py-2"></td>
-                  <td className="w-[62px] border dark:border-gray-700 px-1.5 py-2 text-right text-red-600 dark:text-red-400">{cartColumnTotals.tax.toFixed(2)}</td>
-                  <td className="w-[72px] border dark:border-gray-700 px-1.5 py-2 text-right text-red-600 dark:text-red-400">{cartColumnTotals.mrp.toFixed(2)}</td>
-                  <td className="w-[72px] border dark:border-gray-700 px-1.5 py-2 text-right text-red-600 dark:text-red-400">{cartColumnTotals.cost.toFixed(2)}</td>
-                  <td className="w-[72px] border dark:border-gray-700 px-1.5 py-2 text-right text-red-600 dark:text-red-400">{cartColumnTotals.price.toFixed(2)}</td>
-                  <td className="w-[58px] border dark:border-gray-700 px-1.5 py-2 text-center text-red-600 dark:text-red-400">{cartColumnTotals.qty}</td>
-                  <td className="w-[76px] border dark:border-gray-700 px-1.5 py-2 text-right text-red-600 dark:text-red-400">{cartColumnTotals.discount.toFixed(2)}</td>
-                  <td className="w-[64px] border dark:border-gray-700 px-1.5 py-2 text-right text-red-600 dark:text-red-400">{cartColumnTotals.addlDiscount.toFixed(2)}</td>
-                  <td className="w-[54px] border dark:border-gray-700 px-1.5 py-2 text-right text-red-600 dark:text-red-400">{cartColumnTotals.discountPerc.toFixed(2)}</td>
-                  <td className="w-[86px] border dark:border-gray-700 px-1.5 py-2 text-right text-red-600 dark:text-red-400">{cartColumnTotals.amount.toFixed(2)}</td>
-                  <td className="w-[40px] border dark:border-gray-700 px-1 py-2"></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
+              </TableBody>
+            </Table>
+          </Box>
+          <Box sx={{ flexShrink: 0, overflowX: "auto", borderTop: 1, borderColor: "divider", bgcolor: "background.default" }}>
+            <Table sx={{ minWidth: 1048, width: "100%", tableLayout: "fixed", fontSize: 12.25 }}>
+              <TableBody>
+                <TableRow sx={{ bgcolor: "background.default", fontSize: 12.25, fontWeight: 700, color: "text.secondary" }}>
+                  <TableCell sx={{ width: 112, border: 1, borderColor: "divider", px: 0.75, py: 1 }}></TableCell>
+                  <TableCell sx={{ width: 158, border: 1, borderColor: "divider", px: 0.75, py: 1 }}></TableCell>
+                  <TableCell sx={{ width: 62, border: 1, borderColor: "divider", px: 0.75, py: 1, textAlign: "right", color: "error.main" }}>{cartColumnTotals.tax.toFixed(2)}</TableCell>
+                  <TableCell sx={{ width: 72, border: 1, borderColor: "divider", px: 0.75, py: 1, textAlign: "right", color: "error.main" }}>{cartColumnTotals.mrp.toFixed(2)}</TableCell>
+                  <TableCell sx={{ width: 72, border: 1, borderColor: "divider", px: 0.75, py: 1, textAlign: "right", color: "error.main" }}>{cartColumnTotals.cost.toFixed(2)}</TableCell>
+                  <TableCell sx={{ width: 72, border: 1, borderColor: "divider", px: 0.75, py: 1, textAlign: "right", color: "error.main" }}>{cartColumnTotals.price.toFixed(2)}</TableCell>
+                  <TableCell sx={{ width: 58, border: 1, borderColor: "divider", px: 0.75, py: 1, textAlign: "center", color: "error.main" }}>{cartColumnTotals.qty}</TableCell>
+                  <TableCell sx={{ width: 76, border: 1, borderColor: "divider", px: 0.75, py: 1, textAlign: "right", color: "error.main" }}>{cartColumnTotals.discount.toFixed(2)}</TableCell>
+                  <TableCell sx={{ width: 64, border: 1, borderColor: "divider", px: 0.75, py: 1, textAlign: "right", color: "error.main" }}>{cartColumnTotals.addlDiscount.toFixed(2)}</TableCell>
+                  <TableCell sx={{ width: 54, border: 1, borderColor: "divider", px: 0.75, py: 1, textAlign: "right", color: "error.main" }}>{cartColumnTotals.discountPerc.toFixed(2)}</TableCell>
+                  <TableCell sx={{ width: 86, border: 1, borderColor: "divider", px: 0.75, py: 1, textAlign: "right", color: "error.main" }}>{cartColumnTotals.amount.toFixed(2)}</TableCell>
+                  <TableCell sx={{ width: 40, border: 1, borderColor: "divider", px: 0.5, py: 1 }}></TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </Box>
+        </Stack>
+      </Stack>
+    </Box>
   );
 
   const renderSearchPage = () => (
-    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-4">
+    <Box sx={{ bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "7px", boxShadow: 1, p: 2 }}>
       <FilterableDataTable
         rows={searchResults}
         columns={dealerInvoiceSearchColumns}
@@ -1326,57 +1379,59 @@ const DealerInvoice = () => {
         paginationMode="server"
         enableVirtualization
       />
-    </div>
+    </Box>
   );
 
   return (
-    <div className="h-screen overflow-hidden bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100">
-      <div className="flex justify-between items-center px-4 py-2 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
-        <div className="flex items-center space-x-2">
-          <button
+    <Box sx={{ height: "100vh", overflow: "hidden", bgcolor: "background.default", color: "text.primary" }}>
+      <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", px: 2, py: 1, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+          <IconButton
             onClick={showSearchPage ? () => setShowSearchPage(false) : () => navigate("/sales")}
-            className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+            sx={{ color: "text.secondary" }}
             aria-label={showSearchPage ? "Back to dealer invoice entry" : "Back to sales"}
           >
             <ArrowLeft className="w-4 h-4" />
-          </button>
-          <h1 className="text-sm font-semibold flex items-center gap-1">
-            <button
+          </IconButton>
+          <Typography component="h1" sx={{ fontSize: 12.25, fontWeight: 600, display: "flex", alignItems: "center", gap: 0.5 }}>
+            <Button
               type="button"
               onClick={() => navigate("/sales")}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
+              sx={{ color: "primary.main", textTransform: "none", minWidth: "auto", p: 0, "&:hover": { textDecoration: "underline", bgcolor: "transparent" } }}
             >
               Sales
-            </button>
-            <span className="text-gray-500 dark:text-gray-400">/</span>
-            <span>Dealer Invoice</span>
-          </h1>
-        </div>
+            </Button>
+            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
+            <Box component="span">Dealer Invoice</Box>
+          </Typography>
+        </Stack>
 
-        <div className="flex items-center gap-2">
-          <button
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+          <Button
             onClick={handleSave}
             disabled={saving || showSearchPage}
-            className="glass-btn glass-btn-success inline-flex items-center disabled:opacity-50"
+            className="glass-btn glass-btn-success disabled:opacity-50"
+            sx={{ display: "inline-flex", alignItems: "center" }}
           >
             <Save className="w-4 h-4 mr-1" />
             {saving ? "Saving..." : "Save"}
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={showSearchPage ? () => setShowSearchPage(false) : openSearchPage}
-            className="glass-btn glass-btn-primary inline-flex items-center"
+            className="glass-btn glass-btn-primary"
+            sx={{ display: "inline-flex", alignItems: "center" }}
             aria-label="Search"
           >
             <Search className="w-4 h-4 mr-1" />
             {showSearchPage ? "Back" : "Search"}
-          </button>
-        </div>
-      </div>
+          </Button>
+        </Stack>
+      </Stack>
 
-      <div className="p-4 h-[calc(100vh-53px)] overflow-hidden">
+      <Box sx={{ p: 2, height: "calc(100vh - 53px)", overflow: "hidden" }}>
         {showSearchPage ? renderSearchPage() : renderEntryPage()}
-        {loading && <p className="text-xs text-gray-500 dark:text-gray-400 px-1">Loading master data...</p>}
-      </div>
+        {loading && <Typography sx={{ fontSize: 10.5, color: "text.secondary", px: 0.5 }}>Loading master data...</Typography>}
+      </Box>
 
       <TaxChargeTypeDialog
         open={taxChargeTypeDialog.open}
@@ -1384,7 +1439,7 @@ const DealerInvoice = () => {
         onClose={() => setTaxChargeTypeDialog({ open: false, lineId: null, value: "" })}
         onConfirm={handleSaveTaxChargeType}
       />
-    </div>
+    </Box>
   );
 };
 

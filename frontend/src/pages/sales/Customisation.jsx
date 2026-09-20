@@ -46,9 +46,24 @@ import {
   wrapSalesReceiptText,
 } from "../../utils/salesReceiptCustomization";
 import { buildPosSaleReceiptHtml } from "../../utils/posReceiptHtml";
+import { Box, Stack, Typography, TextField, Button, IconButton, Switch, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
 
-const fieldLabelClass = "mb-1 block text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400";
-const baseCardClass = "rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800";
+const fieldLabelSx = { mb: 0.5, display: "block", fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" };
+const baseCardSx = { borderRadius: "14px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", boxShadow: 1 };
+const radioPillSx = (active) => ({
+  display: "flex",
+  cursor: "pointer",
+  alignItems: "center",
+  gap: 1,
+  borderRadius: "7px",
+  border: "1px solid",
+  borderColor: active ? "primary.main" : "divider",
+  bgcolor: active ? (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08) : "background.paper",
+  color: active ? "primary.main" : "text.secondary",
+  px: 2,
+  py: 1,
+  fontSize: 12.25,
+});
 
 const sampleItems = [
   { name: "Premium Cotton Shirt", qty: 1, rate: 1237.14, taxPerc: 5 },
@@ -62,15 +77,14 @@ const formatMoney = (value) =>
     maximumFractionDigits: 2,
   });
 
-const RECEIPT_TABLE_HEAD_CLASS = "bg-[#165da8] px-3 py-3 text-left text-sm font-semibold text-white";
-const RECEIPT_TABLE_CELL_CLASS = "border border-gray-200 px-3 py-3 align-middle text-sm text-slate-700 dark:border-gray-700 dark:text-gray-300";
-const RECEIPT_TABLE_INPUT_CLASS =
-  "w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:focus:border-blue-400 dark:focus:ring-blue-900/30";
+const receiptTableHeadSx = { bgcolor: "#165da8", px: 1.5, py: 1.5, textAlign: "left", fontSize: 12.25, fontWeight: 600, color: "#fff" };
+const receiptTableCellSx = { border: "1px solid", borderColor: "divider", px: 1.5, py: 1.5, verticalAlign: "middle", fontSize: 12.25, color: "text.secondary" };
+const receiptTableInputSx = { "& .MuiInputBase-input": { fontSize: 12.25, py: 1 } };
 
 const RadioCell = ({ name, checked, onChange }) => (
-  <label className="flex items-center justify-center">
-    <input type="radio" name={name} checked={checked} onChange={onChange} className="h-4 w-4" />
-  </label>
+  <Box component="label" sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+    <Box component="input" type="radio" name={name} checked={checked} onChange={onChange} sx={{ height: 16, width: 16 }} />
+  </Box>
 );
 
 const ReceiptFieldTable = ({
@@ -80,221 +94,236 @@ const ReceiptFieldTable = ({
   onPositionChange,
   onLineChange,
 }) => (
-  <div className={`${baseCardClass} overflow-hidden`}>
-    <div className="border-b border-gray-200 px-5 py-4 dark:border-gray-700">
-      <div className="text-xl font-semibold text-slate-800 dark:text-gray-100">{title}</div>
-    </div>
-    <div className="overflow-x-auto">
-      <table className="min-w-full border-collapse">
-        <thead>
-          <tr>
-            <th className={RECEIPT_TABLE_HEAD_CLASS}>Title</th>
-            <th className={RECEIPT_TABLE_HEAD_CLASS}>Position</th>
-            <th className={`${RECEIPT_TABLE_HEAD_CLASS} w-24 text-center`}>Hide</th>
-            <th className={`${RECEIPT_TABLE_HEAD_CLASS} w-24 text-center`}>Show</th>
-            <th className={RECEIPT_TABLE_HEAD_CLASS}>Line</th>
-          </tr>
-        </thead>
-        <tbody>
+  <Box sx={{ ...baseCardSx, overflow: "hidden" }}>
+    <Box sx={{ borderBottom: 1, borderColor: "divider", px: 2.5, py: 2 }}>
+      <Typography sx={{ fontSize: 17.5, fontWeight: 600, color: "text.primary" }}>{title}</Typography>
+    </Box>
+    <Box sx={{ overflowX: "auto" }}>
+      <Table sx={{ minWidth: "100%", borderCollapse: "collapse" }}>
+        <TableHead>
+          <TableRow>
+            <TableCell sx={receiptTableHeadSx}>Title</TableCell>
+            <TableCell sx={receiptTableHeadSx}>Position</TableCell>
+            <TableCell sx={{ ...receiptTableHeadSx, width: 96, textAlign: "center" }}>Hide</TableCell>
+            <TableCell sx={{ ...receiptTableHeadSx, width: 96, textAlign: "center" }}>Show</TableCell>
+            <TableCell sx={receiptTableHeadSx}>Line</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
           {rows.map((row, index) => (
-            <tr key={row.key} className={index % 2 === 0 ? "bg-gray-50/80 dark:bg-gray-700/40" : "bg-white dark:bg-gray-800"}>
-              <td className={RECEIPT_TABLE_CELL_CLASS}>{row.label}</td>
-              <td className={RECEIPT_TABLE_CELL_CLASS}>
+            <TableRow key={row.key} sx={{ bgcolor: index % 2 === 0 ? "action.hover" : "background.paper" }}>
+              <TableCell sx={receiptTableCellSx}>{row.label}</TableCell>
+              <TableCell sx={receiptTableCellSx}>
                 {row.hasPosition ? (
-                  <select
+                  <TextField
+                    select
                     value={row.position}
                     onChange={(event) => onPositionChange(row.key, event.target.value)}
-                    className={RECEIPT_TABLE_INPUT_CLASS}
+                    size="small"
+                    fullWidth
+                    slotProps={{ select: { native: true } }}
+                    sx={receiptTableInputSx}
                   >
                     {SALES_RECEIPT_POSITION_OPTIONS.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label.toLowerCase()}
                       </option>
                     ))}
-                  </select>
+                  </TextField>
                 ) : (
-                  <div className="h-10 rounded-lg bg-gray-100 dark:bg-gray-700" />
+                  <Box sx={{ height: 40, borderRadius: "7px", bgcolor: "action.hover" }} />
                 )}
-              </td>
-              <td className={RECEIPT_TABLE_CELL_CLASS}>
+              </TableCell>
+              <TableCell sx={receiptTableCellSx}>
                 <RadioCell
                   name={`${title}-${row.key}`}
                   checked={!row.visible}
                   onChange={() => onToggleVisible(row.key, false)}
                 />
-              </td>
-              <td className={RECEIPT_TABLE_CELL_CLASS}>
+              </TableCell>
+              <TableCell sx={receiptTableCellSx}>
                 <RadioCell
                   name={`${title}-${row.key}`}
                   checked={row.visible}
                   onChange={() => onToggleVisible(row.key, true)}
                 />
-              </td>
-              <td className={RECEIPT_TABLE_CELL_CLASS}>
+              </TableCell>
+              <TableCell sx={receiptTableCellSx}>
                 {row.hasLine ? (
-                  <input
+                  <TextField
                     type="text"
-                    inputMode="numeric"
+                    slotProps={{ htmlInput: { inputMode: "numeric" } }}
                     value={row.line}
                     onChange={(event) => onLineChange(row.key, event.target.value)}
-                    className={RECEIPT_TABLE_INPUT_CLASS}
+                    size="small"
+                    fullWidth
+                    sx={receiptTableInputSx}
                   />
                 ) : (
-                  <div className="h-10 rounded-lg bg-gray-100 dark:bg-gray-700" />
+                  <Box sx={{ height: 40, borderRadius: "7px", bgcolor: "action.hover" }} />
                 )}
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
-    </div>
-  </div>
+        </TableBody>
+      </Table>
+    </Box>
+  </Box>
 );
 
 const ReceiptVisibilityTable = ({ title, rows, onToggleVisible }) => (
-  <div className={`${baseCardClass} overflow-hidden`}>
-    <div className="border-b border-gray-200 px-5 py-4 dark:border-gray-700">
-      <div className="text-xl font-semibold text-slate-800 dark:text-gray-100">{title}</div>
-    </div>
-    <div className="overflow-x-auto">
-      <table className="min-w-full border-collapse">
-        <thead>
-          <tr>
-            <th className={RECEIPT_TABLE_HEAD_CLASS}>Title</th>
-            <th className={`${RECEIPT_TABLE_HEAD_CLASS} w-24 text-center`}>Hide</th>
-            <th className={`${RECEIPT_TABLE_HEAD_CLASS} w-24 text-center`}>Show</th>
-          </tr>
-        </thead>
-        <tbody>
+  <Box sx={{ ...baseCardSx, overflow: "hidden" }}>
+    <Box sx={{ borderBottom: 1, borderColor: "divider", px: 2.5, py: 2 }}>
+      <Typography sx={{ fontSize: 17.5, fontWeight: 600, color: "text.primary" }}>{title}</Typography>
+    </Box>
+    <Box sx={{ overflowX: "auto" }}>
+      <Table sx={{ minWidth: "100%", borderCollapse: "collapse" }}>
+        <TableHead>
+          <TableRow>
+            <TableCell sx={receiptTableHeadSx}>Title</TableCell>
+            <TableCell sx={{ ...receiptTableHeadSx, width: 96, textAlign: "center" }}>Hide</TableCell>
+            <TableCell sx={{ ...receiptTableHeadSx, width: 96, textAlign: "center" }}>Show</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
           {rows.map((row, index) => (
-            <tr key={row.key} className={index % 2 === 0 ? "bg-gray-50/80 dark:bg-gray-700/40" : "bg-white dark:bg-gray-800"}>
-              <td className={RECEIPT_TABLE_CELL_CLASS}>{row.label}</td>
-              <td className={RECEIPT_TABLE_CELL_CLASS}>
+            <TableRow key={row.key} sx={{ bgcolor: index % 2 === 0 ? "action.hover" : "background.paper" }}>
+              <TableCell sx={receiptTableCellSx}>{row.label}</TableCell>
+              <TableCell sx={receiptTableCellSx}>
                 <RadioCell
                   name={`${title}-${row.key}`}
                   checked={!row.visible}
                   onChange={() => onToggleVisible(row.key, false)}
                 />
-              </td>
-              <td className={RECEIPT_TABLE_CELL_CLASS}>
+              </TableCell>
+              <TableCell sx={receiptTableCellSx}>
                 <RadioCell
                   name={`${title}-${row.key}`}
                   checked={row.visible}
                   onChange={() => onToggleVisible(row.key, true)}
                 />
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
-    </div>
-  </div>
+        </TableBody>
+      </Table>
+    </Box>
+  </Box>
 );
 
 /** Same chrome as Product table: Title + one radio per copy count (1–3). */
 const PosReceiptCopiesTable = ({ copies, onChangeCopies }) => (
-  <div className={`${baseCardClass} overflow-hidden`}>
-    <div className="border-b border-gray-200 px-5 py-4 dark:border-gray-700">
-      <div className="text-xl font-semibold text-slate-800 dark:text-gray-100">Copies</div>
-    </div>
-    <div className="overflow-x-auto">
-      <table className="min-w-full border-collapse">
-        <thead>
-          <tr>
-            <th className={RECEIPT_TABLE_HEAD_CLASS}>Title</th>
-            <th className={`${RECEIPT_TABLE_HEAD_CLASS} w-24 text-center`}>1</th>
-            <th className={`${RECEIPT_TABLE_HEAD_CLASS} w-24 text-center`}>2</th>
-            <th className={`${RECEIPT_TABLE_HEAD_CLASS} w-24 text-center`}>3</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr className="bg-gray-50/80 dark:bg-gray-700/40">
-            <td className={RECEIPT_TABLE_CELL_CLASS}>Receipt prints</td>
+  <Box sx={{ ...baseCardSx, overflow: "hidden" }}>
+    <Box sx={{ borderBottom: 1, borderColor: "divider", px: 2.5, py: 2 }}>
+      <Typography sx={{ fontSize: 17.5, fontWeight: 600, color: "text.primary" }}>Copies</Typography>
+    </Box>
+    <Box sx={{ overflowX: "auto" }}>
+      <Table sx={{ minWidth: "100%", borderCollapse: "collapse" }}>
+        <TableHead>
+          <TableRow>
+            <TableCell sx={receiptTableHeadSx}>Title</TableCell>
+            <TableCell sx={{ ...receiptTableHeadSx, width: 96, textAlign: "center" }}>1</TableCell>
+            <TableCell sx={{ ...receiptTableHeadSx, width: 96, textAlign: "center" }}>2</TableCell>
+            <TableCell sx={{ ...receiptTableHeadSx, width: 96, textAlign: "center" }}>3</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          <TableRow sx={{ bgcolor: "action.hover" }}>
+            <TableCell sx={receiptTableCellSx}>Receipt prints</TableCell>
             {[1, 2, 3].map((n) => (
-              <td key={n} className={RECEIPT_TABLE_CELL_CLASS}>
+              <TableCell key={n} sx={receiptTableCellSx}>
                 <RadioCell
                   name="pos-receipt-copies-table"
                   checked={Number(copies ?? 1) === n}
                   onChange={() => onChangeCopies(n)}
                 />
-              </td>
+              </TableCell>
             ))}
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
+          </TableRow>
+        </TableBody>
+      </Table>
+    </Box>
+  </Box>
 );
 
 const DiscountDisplayCard = ({ value, onChange }) => (
-  <div className={`${baseCardClass} p-5`}>
-    <label className={fieldLabelClass}>Show Discount As</label>
-    <div className="flex flex-wrap gap-3">
+  <Box sx={{ ...baseCardSx, p: 2.5 }}>
+    <Typography component="label" sx={fieldLabelSx}>Show Discount As</Typography>
+    <Stack direction="row" spacing={1.5} sx={{ flexWrap: "wrap" }}>
       {SALES_RECEIPT_DISCOUNT_DISPLAY_OPTIONS.map((option) => (
-        <label
+        <Stack
+          component="label"
           key={option.value}
-          className={`flex cursor-pointer items-center gap-2 rounded-lg border px-4 py-2 text-sm ${
-            value === option.value
-              ? "border-blue-600 bg-blue-50 text-blue-700 dark:border-blue-500 dark:bg-blue-900/30 dark:text-blue-400"
-              : "border-gray-300 bg-white text-gray-700 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300"
-          }`}
+          direction="row"
+          spacing={1}
+          sx={radioPillSx(value === option.value)}
         >
-          <input
+          <Box
+            component="input"
             type="radio"
             name="sales-discount-display"
             value={option.value}
             checked={value === option.value}
             onChange={() => onChange(option.value)}
-            className="h-4 w-4"
+            sx={{ height: 16, width: 16 }}
           />
-          <span>{option.label}</span>
-        </label>
+          <Box component="span">{option.label}</Box>
+        </Stack>
       ))}
-    </div>
-  </div>
+    </Stack>
+  </Box>
 );
 
 const ToggleCard = ({ label, hint, checked, onChange }) => (
-  <label className="flex cursor-pointer items-start justify-between gap-4 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 transition hover:border-blue-300 hover:bg-blue-50/40 dark:border-gray-700 dark:bg-gray-700/40 dark:hover:border-blue-500 dark:hover:bg-blue-900/20">
-    <div className="min-w-0">
-      <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">{label}</div>
-      <div className="mt-1 text-xs leading-5 text-gray-500 dark:text-gray-400">{hint}</div>
-    </div>
-    <div className="pt-0.5">
-      <span
-        className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
-          checked ? "bg-blue-600" : "bg-gray-300 dark:bg-gray-600"
-        }`}
-      >
-        <input
-          type="checkbox"
-          checked={checked}
-          onChange={(event) => onChange(event.target.checked)}
-          className="peer sr-only"
-        />
-        <span
-          className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${
-            checked ? "translate-x-5" : "translate-x-1"
-          }`}
-        />
-      </span>
-    </div>
-  </label>
+  <Stack
+    component="label"
+    direction="row"
+    spacing={2}
+    sx={{
+      cursor: "pointer",
+      alignItems: "flex-start",
+      justifyContent: "space-between",
+      borderRadius: "10.5px",
+      border: "1px solid",
+      borderColor: "divider",
+      bgcolor: "action.hover",
+      px: 2,
+      py: 1.5,
+      "&:hover": { borderColor: "primary.light", bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.12 : 0.06) },
+    }}
+  >
+    <Box sx={{ minWidth: 0 }}>
+      <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>{label}</Typography>
+      <Typography sx={{ mt: 0.5, fontSize: 10.5, lineHeight: 1.4, color: "text.secondary" }}>{hint}</Typography>
+    </Box>
+    <Box sx={{ pt: 0.25 }}>
+      <Switch checked={checked} onChange={(event) => onChange(event.target.checked)} size="small" />
+    </Box>
+  </Stack>
 );
 
 const SizeOption = ({ option, selected, onSelect }) => (
-  <button
+  <Button
     type="button"
     onClick={() => onSelect(selected ? "" : option.value)}
-    className={`rounded-xl border px-4 py-3 text-left transition ${
-      selected
-        ? "border-blue-600 bg-blue-50 text-blue-700 shadow-sm dark:border-blue-500 dark:bg-blue-900/30 dark:text-blue-400"
-        : "border-gray-200 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-50/40 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-blue-500 dark:hover:bg-blue-900/20"
-    }`}
+    sx={{
+      display: "block",
+      textAlign: "left",
+      textTransform: "none",
+      borderRadius: "10.5px",
+      border: "1px solid",
+      borderColor: selected ? "primary.main" : "divider",
+      bgcolor: selected ? (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08) : "background.paper",
+      boxShadow: selected ? 1 : 0,
+      color: selected ? "primary.main" : "text.secondary",
+      px: 2,
+      py: 1.5,
+      "&:hover": { borderColor: selected ? "primary.main" : "primary.light", bgcolor: selected ? undefined : (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.12 : 0.06) },
+    }}
   >
-    <div className="text-sm font-semibold">{option.label}</div>
-    <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">Receipt size</div>
-  </button>
+    <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "inherit" }}>{option.label}</Typography>
+    <Typography sx={{ mt: 0.5, fontSize: 10.5, color: selected ? "primary.main" : "text.secondary" }}>Receipt size</Typography>
+  </Button>
 );
 
 const PreviewMetaInlineGroup = ({ items, align = "left" }) => {
@@ -542,16 +571,16 @@ const ReceiptPreview = ({ companyInfo, settings }) => {
 
   if (isA4Preview) {
     return (
-      <div className={`${baseCardClass} overflow-hidden`}>
-        <div className="border-b border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-700/50">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">Receipt Preview</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">Sample tax invoice at A4 size</div>
-            </div>
-            <Eye className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-          </div>
-        </div>
+      <Box sx={{ ...baseCardSx, overflow: "hidden" }}>
+        <Box sx={{ borderBottom: 1, borderColor: "divider", bgcolor: "action.hover", px: 2, py: 1.5 }}>
+          <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 1.5 }}>
+            <Box>
+              <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Receipt Preview</Typography>
+              <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>Sample tax invoice at A4 size</Typography>
+            </Box>
+            <Eye className="h-4 w-4" style={{ color: "#9ca3af" }} />
+          </Stack>
+        </Box>
         <div className="bg-[#eef2f7] p-4 dark:bg-gray-900/40">
           <iframe
             title="A4 invoice preview"
@@ -560,23 +589,23 @@ const ReceiptPreview = ({ companyInfo, settings }) => {
             style={{ height: "80vh" }}
           />
         </div>
-      </div>
+      </Box>
     );
   }
 
   return (
-    <div className={`${baseCardClass} overflow-hidden`}>
-      <div className="border-b border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-700/50">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">Receipt Preview</div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">
+    <Box sx={{ ...baseCardSx, overflow: "hidden" }}>
+      <Box sx={{ borderBottom: 1, borderColor: "divider", bgcolor: "action.hover", px: 2, py: 1.5 }}>
+        <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 1.5 }}>
+          <Box>
+            <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Receipt Preview</Typography>
+            <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>
               Sample bill at {settings.receiptWidthInches || "default"} size
-            </div>
-          </div>
-          <Eye className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-        </div>
-      </div>
+            </Typography>
+          </Box>
+          <Eye className="h-4 w-4" style={{ color: "#9ca3af" }} />
+        </Stack>
+      </Box>
 
       <div className="bg-[#eef2f7] p-4 dark:bg-gray-900/40">
         <style>{buildReceiptFormatCss(settings.receiptFormat)}</style>
@@ -738,7 +767,7 @@ const ReceiptPreview = ({ companyInfo, settings }) => {
           </div>
         </div>
       </div>
-    </div>
+    </Box>
   );
 };
 
@@ -973,202 +1002,212 @@ export default function Customisation() {
   };
 
   return (
-    <div className="h-[calc(100vh-53px)] overflow-hidden bg-gray-100 px-4 py-4 text-gray-800 dark:bg-gray-900 dark:text-gray-100">
-      <div className="grid h-full gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
-        <div className="min-h-0 space-y-4 overflow-y-auto pr-1">
+    <Box sx={{ height: "calc(100vh - 53px)", overflow: "hidden", bgcolor: "background.default", px: 2, py: 2, color: "text.primary" }}>
+      <Box sx={{ display: "grid", height: "100%", gap: 2, gridTemplateColumns: { xl: "minmax(0,1fr) 420px" } }}>
+        <Stack spacing={2} sx={{ minHeight: 0, overflowY: "auto", pr: 0.5 }}>
           {/* Sticky so the header - title, description, and Save/Reset - stays reachable while
               scrolling through the settings below, instead of scrolling away with them. */}
-          <div className={`${baseCardClass} sticky top-0 z-20 px-5 py-5`}>
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <div className="text-xl font-semibold text-gray-900 dark:text-gray-100">Sales Customisation</div>
-                <div className="mt-1 max-w-2xl text-sm leading-6 text-gray-500 dark:text-gray-400">
+          <Box sx={{ ...baseCardSx, position: "sticky", top: 0, zIndex: 20, px: 2.5, py: 2.5 }}>
+            <Stack direction="row" sx={{ flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: 2 }}>
+              <Box>
+                <Typography sx={{ fontSize: 17.5, fontWeight: 600, color: "text.primary" }}>Sales Customisation</Typography>
+                <Typography sx={{ mt: 0.5, maxWidth: 672, fontSize: 12.25, lineHeight: 1.7, color: "text.secondary" }}>
                   Control bill barcode visibility, return-slip barcode preference, receipt size, and printed receipt field layout for POS sales.
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <button
+                </Typography>
+              </Box>
+              <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
+                <Button
                   type="button"
                   onClick={handleReset}
-                  className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:border-gray-400 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:border-gray-500"
+                  startIcon={<RotateCcw className="h-4 w-4" />}
+                  sx={{ borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", px: 1.5, py: 1, fontSize: 12.25, fontWeight: 500, color: "text.secondary", textTransform: "none", "&:hover": { borderColor: "text.disabled" } }}
                 >
-                  <RotateCcw className="h-4 w-4" />
                   Reset Draft
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   onClick={handleSave}
-                  className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
+                  variant="contained"
+                  startIcon={<Save className="h-4 w-4" />}
+                  sx={{ borderRadius: "7px", px: 1.5, py: 1, fontSize: 12.25, fontWeight: 500, textTransform: "none" }}
                 >
-                  <Save className="h-4 w-4" />
                   Save
-                </button>
-              </div>
-            </div>
-          </div>
+                </Button>
+              </Stack>
+            </Stack>
+          </Box>
 
-          <div className={`${baseCardClass} p-5`}>
-            <label className={fieldLabelClass}>Sales number reset</label>
-            <p className="mb-3 max-w-3xl text-sm leading-6 text-gray-500 dark:text-gray-400">
+          <Box sx={{ ...baseCardSx, p: 2.5 }}>
+            <Typography component="label" sx={fieldLabelSx}>Sales number reset</Typography>
+            <Typography sx={{ mb: 1.5, maxWidth: 768, fontSize: 12.25, lineHeight: 1.7, color: "text.secondary" }}>
               Applies only to new sales. Numbers already saved stay unchanged if you switch between daily, weekly, monthly, or yearly.
-            </p>
-            <div className="flex flex-wrap gap-3">
+            </Typography>
+            <Stack direction="row" spacing={1.5} sx={{ flexWrap: "wrap" }}>
               {BILL_NUMBER_RESET_OPTIONS.map((option) => (
-                <label
+                <Stack
+                  component="label"
                   key={option.value}
-                  className={`flex cursor-pointer items-center gap-2 rounded-lg border px-4 py-2 text-sm ${
-                    settings.billNumberReset === option.value
-                      ? "border-blue-600 bg-blue-50 text-blue-700 dark:border-blue-500 dark:bg-blue-900/30 dark:text-blue-400"
-                      : "border-gray-300 bg-white text-gray-700 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300"
-                  }`}
+                  direction="row"
+                  spacing={1}
+                  sx={radioPillSx(settings.billNumberReset === option.value)}
                 >
-                  <input
+                  <Box
+                    component="input"
                     type="radio"
                     name="bill-number-reset"
                     value={option.value}
                     checked={settings.billNumberReset === option.value}
                     onChange={() => updateSetting({ billNumberReset: option.value })}
-                    className="h-4 w-4"
+                    sx={{ height: 16, width: 16 }}
                   />
-                  <span>{option.label}</span>
-                </label>
+                  <Box component="span">{option.label}</Box>
+                </Stack>
               ))}
-            </div>
-            <div className="mt-4">
-              <label htmlFor="sales-number-override" className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
+            </Stack>
+            <Box sx={{ mt: 2 }}>
+              <Typography component="label" htmlFor="sales-number-override" sx={{ mb: 0.5, display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>
                 Custom next sales number (optional)
-              </label>
-              <input
+              </Typography>
+              <TextField
                 id="sales-number-override"
                 type="number"
-                min="1"
-                step="1"
+                slotProps={{ htmlInput: { min: 1, step: 1 } }}
                 value={settings.billNumberOverride || ""}
                 onChange={(event) => updateSetting({ billNumberOverride: event.target.value })}
                 placeholder="e.g. 5001"
-                className="w-full max-w-xs rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:focus:border-blue-400 dark:focus:ring-blue-900/30"
+                size="small"
+                sx={{ width: "100%", maxWidth: 320, "& .MuiInputBase-input": { fontSize: 12.25, py: 1 } }}
               />
-              <p className="mt-1 text-xs leading-5 text-gray-500 dark:text-gray-400">
+              <Typography sx={{ mt: 0.5, fontSize: 10.5, lineHeight: 1.4, color: "text.secondary" }}>
                 Set the next new sale to start from this number (e.g. continuing from another system). Leave blank for normal numbering.
-              </p>
-            </div>
-          </div>
+              </Typography>
+            </Box>
+          </Box>
 
-          <div className={`${baseCardClass} p-5`}>
-            <label className={fieldLabelClass}>Settlement number reset</label>
-            <p className="mb-3 max-w-3xl text-sm leading-6 text-gray-500 dark:text-gray-400">
+          <Box sx={{ ...baseCardSx, p: 2.5 }}>
+            <Typography component="label" sx={fieldLabelSx}>Settlement number reset</Typography>
+            <Typography sx={{ mb: 1.5, maxWidth: 768, fontSize: 12.25, lineHeight: 1.7, color: "text.secondary" }}>
               Applies only to new settlements. Numbers already saved stay unchanged if you switch between daily, weekly, monthly, or yearly.
-            </p>
-            <div className="flex flex-wrap gap-3">
+            </Typography>
+            <Stack direction="row" spacing={1.5} sx={{ flexWrap: "wrap" }}>
               {SETTLEMENT_NUMBER_RESET_OPTIONS.map((option) => (
-                <label
+                <Stack
+                  component="label"
                   key={option.value}
-                  className={`flex cursor-pointer items-center gap-2 rounded-lg border px-4 py-2 text-sm ${
-                    settings.settlementNumberReset === option.value
-                      ? "border-blue-600 bg-blue-50 text-blue-700 dark:border-blue-500 dark:bg-blue-900/30 dark:text-blue-400"
-                      : "border-gray-300 bg-white text-gray-700 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300"
-                  }`}
+                  direction="row"
+                  spacing={1}
+                  sx={radioPillSx(settings.settlementNumberReset === option.value)}
                 >
-                  <input
+                  <Box
+                    component="input"
                     type="radio"
                     name="settlement-number-reset"
                     value={option.value}
                     checked={settings.settlementNumberReset === option.value}
                     onChange={() => updateSetting({ settlementNumberReset: option.value })}
-                    className="h-4 w-4"
+                    sx={{ height: 16, width: 16 }}
                   />
-                  <span>{option.label}</span>
-                </label>
+                  <Box component="span">{option.label}</Box>
+                </Stack>
               ))}
-            </div>
-            <div className="mt-4">
-              <label htmlFor="settlement-number-override" className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
+            </Stack>
+            <Box sx={{ mt: 2 }}>
+              <Typography component="label" htmlFor="settlement-number-override" sx={{ mb: 0.5, display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>
                 Custom next settlement number (optional)
-              </label>
-              <input
+              </Typography>
+              <TextField
                 id="settlement-number-override"
                 type="number"
-                min="1"
-                step="1"
+                slotProps={{ htmlInput: { min: 1, step: 1 } }}
                 value={settings.settlementNumberOverride || ""}
                 onChange={(event) => updateSetting({ settlementNumberOverride: event.target.value })}
                 placeholder="e.g. 101"
-                className="w-full max-w-xs rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:focus:border-blue-400 dark:focus:ring-blue-900/30"
+                size="small"
+                sx={{ width: "100%", maxWidth: 320, "& .MuiInputBase-input": { fontSize: 12.25, py: 1 } }}
               />
-              <p className="mt-1 text-xs leading-5 text-gray-500 dark:text-gray-400">
+              <Typography sx={{ mt: 0.5, fontSize: 10.5, lineHeight: 1.4, color: "text.secondary" }}>
                 Set the next new settlement to start from this sequence number within the current period. Leave blank for normal numbering.
-              </p>
-            </div>
-          </div>
+              </Typography>
+            </Box>
+          </Box>
 
-          <div className={`${baseCardClass} p-5`}>
-            <label className={fieldLabelClass}>Sale save as</label>
-            <p className="mb-3 max-w-3xl text-sm leading-6 text-gray-500 dark:text-gray-400">
+          <Box sx={{ ...baseCardSx, p: 2.5 }}>
+            <Typography component="label" sx={fieldLabelSx}>Sale save as</Typography>
+            <Typography sx={{ mb: 1.5, maxWidth: 768, fontSize: 12.25, lineHeight: 1.7, color: "text.secondary" }}>
               Default bill status for new sales from POS Sale, POS Old, and Touch Sale. Unsettled bills stay open until you settle them on the Settlement screen.
-            </p>
-            <div className="flex flex-wrap gap-3">
+            </Typography>
+            <Stack direction="row" spacing={1.5} sx={{ flexWrap: "wrap" }}>
               {SALE_SAVE_AS_OPTIONS.map((option) => (
-                <label
+                <Stack
+                  component="label"
                   key={option.value}
-                  className={`flex cursor-pointer items-center gap-2 rounded-lg border px-4 py-2 text-sm ${
-                    settings.saleSaveAs === option.value
-                      ? "border-blue-600 bg-blue-50 text-blue-700 dark:border-blue-500 dark:bg-blue-900/30 dark:text-blue-400"
-                      : "border-gray-300 bg-white text-gray-700 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300"
-                  }`}
+                  direction="row"
+                  spacing={1}
+                  sx={radioPillSx(settings.saleSaveAs === option.value)}
                 >
-                  <input
+                  <Box
+                    component="input"
                     type="radio"
                     name="sale-save-as"
                     value={option.value}
                     checked={settings.saleSaveAs === option.value}
                     onChange={() => updateSetting({ saleSaveAs: option.value })}
-                    className="h-4 w-4"
+                    sx={{ height: 16, width: 16 }}
                   />
-                  <span>{option.label}</span>
-                </label>
+                  <Box component="span">{option.label}</Box>
+                </Stack>
               ))}
-            </div>
-          </div>
+            </Stack>
+          </Box>
 
-          <div className={`${baseCardClass} p-5`}>
-            <label className={fieldLabelClass}>Printing Mode (Direct / Silent vs Browser Default)</label>
-            <p className="mb-3 max-w-3xl text-sm leading-6 text-gray-500 dark:text-gray-400">
+          <Box sx={{ ...baseCardSx, p: 2.5 }}>
+            <Typography component="label" sx={fieldLabelSx}>Printing Mode (Direct / Silent vs Browser Default)</Typography>
+            <Typography sx={{ mb: 1.5, maxWidth: 768, fontSize: 12.25, lineHeight: 1.7, color: "text.secondary" }}>
               Choose whether sales receipts, return slips, and settlement summaries print directly to your thermal printer in the background (no popup) or open the browser print preview dialog.
-            </p>
-            <div className="grid gap-3 sm:grid-cols-2">
+            </Typography>
+            <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { sm: "1fr 1fr" } }}>
               {PRINT_MODE_OPTIONS.map((option) => (
-                <label
+                <Stack
+                  component="label"
                   key={option.value}
-                  className={`flex cursor-pointer flex-col justify-between rounded-xl border p-4 transition ${
-                    settings.printMode === option.value
-                      ? "border-blue-600 bg-blue-50/70 shadow-sm dark:border-blue-500 dark:bg-blue-900/30"
-                      : "border-gray-300 bg-white hover:border-gray-400 dark:border-gray-600 dark:bg-gray-800 dark:hover:border-gray-500"
-                  }`}
+                  spacing={0}
+                  sx={{
+                    cursor: "pointer",
+                    justifyContent: "space-between",
+                    borderRadius: "10.5px",
+                    border: "1px solid",
+                    borderColor: settings.printMode === option.value ? "primary.main" : "divider",
+                    bgcolor: settings.printMode === option.value ? (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08) : "background.paper",
+                    boxShadow: settings.printMode === option.value ? 1 : 0,
+                    p: 2,
+                    "&:hover": { borderColor: settings.printMode === option.value ? "primary.main" : "text.disabled" },
+                  }}
                 >
-                  <div className="flex items-center gap-3">
-                    <input
+                  <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+                    <Box
+                      component="input"
                       type="radio"
                       name="sales-print-mode"
                       value={option.value}
                       checked={settings.printMode === option.value}
                       onChange={() => updateSetting({ printMode: option.value })}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500"
+                      sx={{ height: 16, width: 16, accentColor: "primary.main" }}
                     />
-                    <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                    <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>
                       {option.label}
-                    </span>
-                  </div>
-                  <p className="mt-2 text-xs leading-5 text-gray-600 dark:text-gray-400">
+                    </Typography>
+                  </Stack>
+                  <Typography sx={{ mt: 1, fontSize: 10.5, lineHeight: 1.4, color: "text.secondary" }}>
                     {option.description}
-                  </p>
-                </label>
+                  </Typography>
+                </Stack>
               ))}
-            </div>
-          </div>
+            </Box>
+          </Box>
 
-          <div className={`${baseCardClass} p-5`}>
-            <label className={fieldLabelClass}>Receipt Barcode</label>
-            <div className="space-y-3">
+          <Box sx={{ ...baseCardSx, p: 2.5 }}>
+            <Typography component="label" sx={fieldLabelSx}>Receipt Barcode</Typography>
+            <Stack spacing={1.5}>
               <ToggleCard
                 label="Show barcode on bill"
                 hint="Print a scannable barcode at the bottom of the POS bill using the formatted bill number, for example SB/29."
@@ -1181,34 +1220,34 @@ export default function Customisation() {
                 checked={settings.showBarcodeOnReturnSlip}
                 onChange={(checked) => updateSetting({ showBarcodeOnReturnSlip: checked })}
               />
-              <div className="pt-1">
-              <div className={fieldLabelClass}>Show barcode or QR code</div>
-              <p className="mb-3 text-sm leading-6 text-gray-500 dark:text-gray-400">
-                Applies to sale and return slips when the barcode options above are enabled.
-              </p>
-              <div className="flex flex-wrap gap-3">
-                {RECEIPT_CODE_TYPE_OPTIONS.map((option) => (
-                  <label
-                    key={option.value}
-                    className={`flex cursor-pointer items-center gap-2 rounded-lg border px-4 py-2 text-sm ${
-                      settings.receiptCodeType === option.value
-                        ? "border-blue-600 bg-blue-50 text-blue-700 dark:border-blue-500 dark:bg-blue-900/30 dark:text-blue-400"
-                        : "border-gray-300 bg-white text-gray-700 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="receipt-code-type"
-                      value={option.value}
-                      checked={settings.receiptCodeType === option.value}
-                      onChange={() => updateSetting({ receiptCodeType: option.value })}
-                      className="h-4 w-4"
-                    />
-                    <span>{option.label}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
+              <Box sx={{ pt: 0.5 }}>
+                <Typography sx={fieldLabelSx}>Show barcode or QR code</Typography>
+                <Typography sx={{ mb: 1.5, fontSize: 12.25, lineHeight: 1.7, color: "text.secondary" }}>
+                  Applies to sale and return slips when the barcode options above are enabled.
+                </Typography>
+                <Stack direction="row" spacing={1.5} sx={{ flexWrap: "wrap" }}>
+                  {RECEIPT_CODE_TYPE_OPTIONS.map((option) => (
+                    <Stack
+                      component="label"
+                      key={option.value}
+                      direction="row"
+                      spacing={1}
+                      sx={radioPillSx(settings.receiptCodeType === option.value)}
+                    >
+                      <Box
+                        component="input"
+                        type="radio"
+                        name="receipt-code-type"
+                        value={option.value}
+                        checked={settings.receiptCodeType === option.value}
+                        onChange={() => updateSetting({ receiptCodeType: option.value })}
+                        sx={{ height: 16, width: 16 }}
+                      />
+                      <Box component="span">{option.label}</Box>
+                    </Stack>
+                  ))}
+                </Stack>
+              </Box>
               <ToggleCard
                 label="Show discount on receipt"
                 hint="Show the discount row in the printed POS receipt totals section."
@@ -1221,8 +1260,8 @@ export default function Customisation() {
                 checked={settings.showTaxTableOnReceipt}
                 onChange={(checked) => updateSetting({ showTaxTableOnReceipt: checked })}
               />
-            </div>
-          </div>
+            </Stack>
+          </Box>
 
           <DiscountDisplayCard
             value={settings.discountDisplayMode}
@@ -1275,9 +1314,9 @@ export default function Customisation() {
             onChangeCopies={(n) => updateSetting({ posReceiptPrintCopies: n })}
           />
 
-          <div className={`${baseCardClass} p-5`}>
-            <label className={fieldLabelClass}>Receipt Size</label>
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <Box sx={{ ...baseCardSx, p: 2.5 }}>
+            <Typography component="label" sx={fieldLabelSx}>Receipt Size</Typography>
+            <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { sm: "1fr 1fr", xl: "repeat(4, 1fr)" } }}>
               {SALES_RECEIPT_SIZE_OPTIONS.map((option) => (
                 <SizeOption
                   key={option.value}
@@ -1286,226 +1325,227 @@ export default function Customisation() {
                   onSelect={(value) => updateSetting({ receiptWidthInches: value })}
                 />
               ))}
-            </div>
-            <div className="mt-3 rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-3 text-xs leading-5 text-gray-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400">
+            </Box>
+            <Typography sx={{ mt: 1.5, borderRadius: "10.5px", border: "1px dashed", borderColor: "divider", bgcolor: "action.hover", px: 2, py: 1.5, fontSize: 10.5, lineHeight: 1.4, color: "text.secondary" }}>
               Leave all sizes unselected to keep the current default receipt size.
-            </div>
-          </div>
+            </Typography>
+          </Box>
 
-          <div className={`${baseCardClass} p-5`}>
-            <label className={fieldLabelClass}>Receipt Font</label>
-            <p className="mb-3 max-w-3xl text-sm leading-6 text-gray-500 dark:text-gray-400">
+          <Box sx={{ ...baseCardSx, p: 2.5 }}>
+            <Typography component="label" sx={fieldLabelSx}>Receipt Font</Typography>
+            <Typography sx={{ mb: 1.5, maxWidth: 768, fontSize: 12.25, lineHeight: 1.7, color: "text.secondary" }}>
               Applies to the printed receipt (and thermal printers) as well as the preview on the right. The monospace options keep amount columns aligned on narrow thermal paper.
-            </p>
-            <div className="flex flex-wrap gap-3">
+            </Typography>
+            <Stack direction="row" spacing={1.5} sx={{ flexWrap: "wrap" }}>
               {RECEIPT_FONT_OPTIONS.map((option) => (
-                <label
+                <Stack
+                  component="label"
                   key={option.value}
-                  className={`flex cursor-pointer items-center gap-2 rounded-lg border px-4 py-2 text-sm ${
-                    settings.receiptFontFamily === option.value
-                      ? "border-blue-600 bg-blue-50 text-blue-700 dark:border-blue-500 dark:bg-blue-900/30 dark:text-blue-400"
-                      : "border-gray-300 bg-white text-gray-700 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300"
-                  }`}
-                  style={{ fontFamily: option.cssStack }}
+                  direction="row"
+                  spacing={1}
+                  sx={{ ...radioPillSx(settings.receiptFontFamily === option.value), fontFamily: option.cssStack }}
                 >
-                  <input
+                  <Box
+                    component="input"
                     type="radio"
                     name="receipt-font-family"
                     value={option.value}
                     checked={settings.receiptFontFamily === option.value}
                     onChange={() => updateSetting({ receiptFontFamily: option.value })}
-                    className="h-4 w-4"
+                    sx={{ height: 16, width: 16 }}
                   />
-                  <span>{option.label}</span>
-                </label>
+                  <Box component="span">{option.label}</Box>
+                </Stack>
               ))}
-            </div>
-          </div>
+            </Stack>
+          </Box>
 
-          <div className={`${baseCardClass} p-5`}>
-            <label className={fieldLabelClass}>Receipt / Invoice Format</label>
-            <p className="mb-3 max-w-3xl text-sm leading-6 text-gray-500 dark:text-gray-400">
+          <Box sx={{ ...baseCardSx, p: 2.5 }}>
+            <Typography component="label" sx={fieldLabelSx}>Receipt / Invoice Format</Typography>
+            <Typography sx={{ mb: 1.5, maxWidth: 768, fontSize: 12.25, lineHeight: 1.7, color: "text.secondary" }}>
               Choose the overall look of the printed receipt -- border and divider style, spacing, and how the header and total are emphasised. Applies to the preview on the right and every POS print.
-            </p>
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+            </Typography>
+            <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { sm: "1fr 1fr", xl: "repeat(5, 1fr)" } }}>
               {RECEIPT_FORMAT_OPTIONS.map((option) => (
-                <label
+                <Stack
+                  component="label"
                   key={option.value}
-                  className={`flex cursor-pointer flex-col gap-1 rounded-lg border px-4 py-3 text-sm ${
-                    settings.receiptFormat === option.value
-                      ? "border-blue-600 bg-blue-50 text-blue-700 dark:border-blue-500 dark:bg-blue-900/30 dark:text-blue-400"
-                      : "border-gray-300 bg-white text-gray-700 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300"
-                  }`}
+                  spacing={0.5}
+                  sx={{ cursor: "pointer", borderRadius: "7px", border: "1px solid", borderColor: settings.receiptFormat === option.value ? "primary.main" : "divider", bgcolor: settings.receiptFormat === option.value ? (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08) : "background.paper", color: settings.receiptFormat === option.value ? "primary.main" : "text.secondary", px: 2, py: 1.5, fontSize: 12.25 }}
                 >
-                  <span className="flex items-center gap-2 font-medium">
-                    <input
+                  <Stack direction="row" spacing={1} sx={{ alignItems: "center", fontWeight: 500 }}>
+                    <Box
+                      component="input"
                       type="radio"
                       name="receipt-format"
                       value={option.value}
                       checked={settings.receiptFormat === option.value}
                       onChange={() => updateSetting({ receiptFormat: option.value })}
-                      className="h-4 w-4"
+                      sx={{ height: 16, width: 16 }}
                     />
                     {option.label}
-                  </span>
-                  <span className="text-xs leading-5 text-gray-500 dark:text-gray-400">{option.description}</span>
-                </label>
+                  </Stack>
+                  <Box component="span" sx={{ fontSize: 10.5, lineHeight: 1.4, color: "text.secondary" }}>{option.description}</Box>
+                </Stack>
               ))}
-            </div>
-          </div>
+            </Box>
+          </Box>
 
-          <div className={`${baseCardClass} p-5`}>
-            <label htmlFor="sales-thank-you-message" className={fieldLabelClass}>
+          <Box sx={{ ...baseCardSx, p: 2.5 }}>
+            <Typography component="label" htmlFor="sales-thank-you-message" sx={fieldLabelSx}>
               Receipt Thank You Message
-            </label>
-            <textarea
+            </Typography>
+            <TextField
               id="sales-thank-you-message"
               value={settings.thankYouMessage}
               onChange={(event) => updateSetting({ thankYouMessage: event.target.value })}
+              multiline
               rows={5}
-              className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm leading-6 text-gray-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:focus:border-blue-400 dark:focus:ring-blue-900/30"
+              fullWidth
               placeholder="Enter the closing message shown at the end of the receipt"
+              sx={{ "& .MuiInputBase-input": { fontSize: 12.25, lineHeight: 1.7 } }}
             />
-            <div className="mt-3 rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-3 text-xs leading-5 text-gray-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400">
+            <Typography sx={{ mt: 1.5, borderRadius: "10.5px", border: "1px dashed", borderColor: "divider", bgcolor: "action.hover", px: 2, py: 1.5, fontSize: 10.5, lineHeight: 1.4, color: "text.secondary" }}>
               This message is printed at the end of the POS receipt. Line breaks entered here are preserved in the preview and on print.
-            </div>
-          </div>
+            </Typography>
+          </Box>
 
-          <div className={`${baseCardClass} p-5`}>
-            <label className={fieldLabelClass}>Payment QR</label>
-            <p className="mb-3 max-w-3xl text-sm leading-6 text-gray-500 dark:text-gray-400">
+          <Box sx={{ ...baseCardSx, p: 2.5 }}>
+            <Typography component="label" sx={fieldLabelSx}>Payment QR</Typography>
+            <Typography sx={{ mb: 1.5, maxWidth: 768, fontSize: 12.25, lineHeight: 1.7, color: "text.secondary" }}>
               Prints a &ldquo;Scan to Pay&rdquo; QR at the end of the receipt. Only the UPI ID option can carry the bill amount -- an uploaded image is a fixed picture, so the customer types the amount themselves.
-            </p>
-            <div className="flex flex-wrap gap-3">
+            </Typography>
+            <Stack direction="row" spacing={1.5} sx={{ flexWrap: "wrap" }}>
               {PAYMENT_QR_MODE_OPTIONS.map((option) => (
-                <label
+                <Stack
+                  component="label"
                   key={option.value}
-                  className={`flex cursor-pointer items-center gap-2 rounded-lg border px-4 py-2 text-sm ${
-                    settings.paymentQrMode === option.value
-                      ? "border-blue-600 bg-blue-50 text-blue-700 dark:border-blue-500 dark:bg-blue-900/30 dark:text-blue-400"
-                      : "border-gray-300 bg-white text-gray-700 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300"
-                  }`}
+                  direction="row"
+                  spacing={1}
+                  sx={radioPillSx(settings.paymentQrMode === option.value)}
                 >
-                  <input
+                  <Box
+                    component="input"
                     type="radio"
                     name="payment-qr-mode"
                     value={option.value}
                     checked={settings.paymentQrMode === option.value}
                     onChange={() => updateSetting({ paymentQrMode: option.value })}
-                    className="h-4 w-4"
+                    sx={{ height: 16, width: 16 }}
                   />
-                  <span>{option.label}</span>
-                </label>
+                  <Box component="span">{option.label}</Box>
+                </Stack>
               ))}
-            </div>
+            </Stack>
 
             {settings.paymentQrMode !== "none" ? (
-              <div className="mt-4">
-                <label className={fieldLabelClass}>QR Size</label>
-                <div className="flex items-center gap-3">
-                  <button
+              <Box sx={{ mt: 2 }}>
+                <Typography component="label" sx={fieldLabelSx}>QR Size</Typography>
+                <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+                  <IconButton
                     type="button"
                     onClick={() => handlePaymentQrSizeStep(-PAYMENT_QR_SIZE_STEP)}
                     disabled={settings.paymentQrSize <= PAYMENT_QR_SIZE_MIN}
-                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700/50"
+                    sx={{ height: 36, width: 36, borderRadius: "7px", border: "1px solid", borderColor: "divider", color: "text.secondary" }}
                     aria-label="Decrease QR size"
                   >
                     <Minus className="h-4 w-4" />
-                  </button>
-                  <span className="min-w-[64px] text-center text-sm font-medium text-gray-800 dark:text-gray-200">
+                  </IconButton>
+                  <Typography sx={{ minWidth: 64, textAlign: "center", fontSize: 12.25, fontWeight: 500, color: "text.primary" }}>
                     {settings.paymentQrSize}px
-                  </span>
-                  <button
+                  </Typography>
+                  <IconButton
                     type="button"
                     onClick={() => handlePaymentQrSizeStep(PAYMENT_QR_SIZE_STEP)}
                     disabled={settings.paymentQrSize >= PAYMENT_QR_SIZE_MAX}
-                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700/50"
+                    sx={{ height: 36, width: 36, borderRadius: "7px", border: "1px solid", borderColor: "divider", color: "text.secondary" }}
                     aria-label="Increase QR size"
                   >
                     <Plus className="h-4 w-4" />
-                  </button>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                  </IconButton>
+                  <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>
                     Recommended: {PAYMENT_QR_SIZE_MIN}-{PAYMENT_QR_SIZE_MAX}px
-                  </span>
-                </div>
-              </div>
+                  </Typography>
+                </Stack>
+              </Box>
             ) : null}
 
             {settings.paymentQrMode === "upi" ? (
-              <div className="mt-4">
-                <label htmlFor="sales-payment-upi-id" className={fieldLabelClass}>
+              <Box sx={{ mt: 2 }}>
+                <Typography component="label" htmlFor="sales-payment-upi-id" sx={fieldLabelSx}>
                   UPI ID
-                </label>
-                <input
+                </Typography>
+                <TextField
                   id="sales-payment-upi-id"
                   type="text"
                   value={settings.paymentUpiId}
                   onChange={(event) => updateSetting({ paymentUpiId: event.target.value })}
                   placeholder="yourstore@okicici"
-                  autoComplete="off"
-                  spellCheck={false}
-                  className="w-full max-w-md rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:focus:border-blue-400 dark:focus:ring-blue-900/30"
+                  slotProps={{ htmlInput: { autoComplete: "off", spellCheck: false } }}
+                  sx={{ width: "100%", maxWidth: 448, "& .MuiInputBase-input": { fontSize: 12.25, py: 1.25 } }}
                 />
                 {settings.paymentUpiId.trim() ? null : (
-                  <p className="mt-2 text-xs leading-5 text-amber-700 dark:text-amber-400">
+                  <Typography sx={{ mt: 1, fontSize: 10.5, lineHeight: 1.4, color: "warning.dark" }}>
                     Enter a UPI ID -- without one, no QR is printed and this setting saves as &ldquo;None&rdquo;.
-                  </p>
+                  </Typography>
                 )}
-              </div>
+              </Box>
             ) : null}
 
             {settings.paymentQrMode === "image" ? (
-              <div className="mt-4">
-                <label htmlFor="sales-payment-qr-image" className={fieldLabelClass}>
+              <Box sx={{ mt: 2 }}>
+                <Typography component="label" htmlFor="sales-payment-qr-image" sx={fieldLabelSx}>
                   QR Image
-                </label>
-                <div className="flex flex-wrap items-start gap-4">
-                  <input
+                </Typography>
+                <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap", alignItems: "flex-start" }}>
+                  <Box
+                    component="input"
                     id="sales-payment-qr-image"
                     type="file"
                     accept="image/*"
                     onChange={handlePaymentQrImageChange}
-                    className="max-w-md text-sm text-gray-700 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-600 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-blue-700 dark:text-gray-300"
+                    sx={{ maxWidth: 448, fontSize: 12.25, color: "text.secondary" }}
                   />
                   {settings.paymentQrImageUrl ? (
-                    <div className="flex items-center gap-3">
-                      <img
+                    <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+                      <Box
+                        component="img"
                         src={settings.paymentQrImageUrl}
                         alt="Payment QR preview"
-                        className="h-24 w-24 rounded-lg border border-gray-200 bg-white object-contain p-1 dark:border-gray-600"
+                        sx={{ height: 96, width: 96, borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", objectFit: "contain", p: 0.5 }}
                       />
-                      <button
+                      <Button
                         type="button"
                         onClick={() => updateSetting({ paymentQrImageUrl: "" })}
-                        className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700/50"
+                        sx={{ borderRadius: "7px", border: "1px solid", borderColor: "divider", px: 1.5, py: 0.75, fontSize: 10.5, fontWeight: 500, color: "text.secondary", textTransform: "none" }}
                       >
                         Remove
-                      </button>
-                    </div>
+                      </Button>
+                    </Stack>
                   ) : (
-                    <p className="text-xs leading-5 text-amber-700 dark:text-amber-400">
+                    <Typography sx={{ fontSize: 10.5, lineHeight: 1.4, color: "warning.dark" }}>
                       Upload a QR image -- without one, no QR is printed and this setting saves as &ldquo;None&rdquo;.
-                    </p>
+                    </Typography>
                   )}
-                </div>
-                <div className="mt-3 rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-3 text-xs leading-5 text-gray-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400">
+                </Stack>
+                <Typography sx={{ mt: 1.5, borderRadius: "10.5px", border: "1px dashed", borderColor: "divider", bgcolor: "action.hover", px: 2, py: 1.5, fontSize: 10.5, lineHeight: 1.4, color: "text.secondary" }}>
                   The image is resized to 512px and stored with these settings. Thermal printers render QR codes best in plain black on white.
-                </div>
-              </div>
+                </Typography>
+              </Box>
             ) : null}
-          </div>
+          </Box>
 
           {hasUnsavedChanges ? (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800/50 dark:bg-amber-900/20 dark:text-amber-400">
+            <Typography sx={{ borderRadius: "10.5px", border: "1px solid", borderColor: (theme) => alpha(theme.palette.warning.main, 0.4), bgcolor: (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.16 : 0.08), px: 2, py: 1.5, fontSize: 12.25, color: "warning.dark" }}>
               You have unsaved changes in sales customisation.
-            </div>
+            </Typography>
           ) : null}
-        </div>
+        </Stack>
 
-        <div className="xl:sticky xl:top-4 xl:self-start">
+        <Box sx={{ position: { xl: "sticky" }, top: { xl: 16 }, alignSelf: { xl: "flex-start" } }}>
           <ReceiptPreview companyInfo={companyInfo} settings={settings} />
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   );
 }

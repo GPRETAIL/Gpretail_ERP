@@ -11,6 +11,7 @@ import { usePrintContext } from "../../context/PrintContext";
 import { buildSettlementReceiptHtml, browserPrintHtml } from "../../utils/settlementReceiptHtml";
 import { loadSalesReceiptCustomization } from "../../utils/salesReceiptCustomization";
 import { openNativeSelect } from "../../utils/enterToNextField";
+import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
 
 const SETTLEMENT_IMPORT_CONFIG = {
   aliases: {
@@ -45,11 +46,36 @@ const formatMoney = (value) =>
     maximumFractionDigits: 2,
   });
 
-const SETTLEMENT_FIELD_CLASS =
-  "w-full h-10 border border-gray-300 dark:border-gray-600 rounded-sm px-3 text-sm bg-white dark:bg-gray-700 dark:text-gray-100 box-border focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 dark:disabled:bg-gray-700 disabled:text-gray-500 dark:disabled:text-gray-400";
-const SETTLEMENT_SUMMARY_ROW_CLASS =
-  "flex justify-between items-center gap-3 border border-gray-300 dark:border-gray-600 rounded-sm px-3 h-10 text-sm";
-const SETTLEMENT_FIELD_LABEL_CLASS = "text-xs font-medium text-gray-600 dark:text-gray-300 block mb-1";
+const SETTLEMENT_FIELD_SX = {
+  "& .MuiInputBase-root": { height: 40 },
+  "& .MuiInputBase-input": { fontSize: 12.25 },
+};
+const SETTLEMENT_NATIVE_SELECT_SX = {
+  width: "100%",
+  height: 40,
+  border: "1px solid",
+  borderColor: "divider",
+  borderRadius: "3.5px",
+  px: 1.5,
+  fontSize: 12.25,
+  bgcolor: "background.paper",
+  color: "text.primary",
+  boxSizing: "border-box",
+  "&:disabled": { bgcolor: "action.hover", color: "text.disabled" },
+};
+const SETTLEMENT_SUMMARY_ROW_SX = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  gap: 1.5,
+  border: "1px solid",
+  borderColor: "divider",
+  borderRadius: "3.5px",
+  px: 1.5,
+  height: 40,
+  fontSize: 12.25,
+};
+const SETTLEMENT_FIELD_LABEL_SX = { fontSize: 10.5, fontWeight: 500, color: "text.secondary", display: "block", mb: 0.5 };
 
 const Settlement = () => {
   const navigate = useNavigate();
@@ -586,9 +612,9 @@ const Settlement = () => {
         render: (_, row) => {
           const no = String(row?.settlement_no || "").trim();
           return (
-            <span className="font-mono text-[11px] tracking-tight text-gray-800 dark:text-gray-100">
+            <Box component="span" sx={{ fontFamily: "monospace", fontSize: 11, letterSpacing: "-0.01em", color: "text.primary" }}>
               {no || "—"}
-            </span>
+            </Box>
           );
         },
       },
@@ -623,15 +649,15 @@ const Settlement = () => {
         valueGetter: (row) => row.status || (row.is_paid ? "paid" : "unpaid"),
         render: (value) => {
           const normalized = String(value || "unpaid").toLowerCase();
-          const statusClass = normalized === "paid"
-            ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
+          const statusColor = normalized === "paid"
+            ? "success"
             : normalized === "settled"
-              ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
+              ? "success"
             : normalized === "cancelled"
-              ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"
+              ? "error"
             : normalized === "credit"
-              ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
-              : "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400";
+              ? "primary"
+              : "warning";
           const label = normalized === "paid"
             ? "Paid"
             : normalized === "settled"
@@ -643,9 +669,21 @@ const Settlement = () => {
               : "Unsettled";
 
           return (
-            <span className={`inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium ${statusClass}`}>
+            <Box
+              component="span"
+              sx={{
+                display: "inline-flex",
+                px: 1,
+                py: 0.25,
+                borderRadius: 999,
+                fontSize: 11,
+                fontWeight: 500,
+                bgcolor: (theme) => alpha(theme.palette[statusColor].main, theme.palette.mode === "dark" ? 0.16 : 0.08),
+                color: `${statusColor}.main`,
+              }}
+            >
               {label}
-            </span>
+            </Box>
           );
         },
       },
@@ -653,19 +691,19 @@ const Settlement = () => {
         key: "settlement_amount",
         label: "Amount",
         valueGetter: (row) => toNum((row.settlement_amount ?? row.remaining_amount ?? row.amount) || 0),
-        render: (value) => <div className="text-right">{formatMoney(value || 0)}</div>,
+        render: (value) => <Box sx={{ textAlign: "right" }}>{formatMoney(value || 0)}</Box>,
       },
       {
         key: "discount_amount",
         label: "Discount",
         valueGetter: (row) => toNum(row.discount_amount || 0),
-        render: (value) => <div className="text-right">{formatMoney(value || 0)}</div>,
+        render: (value) => <Box sx={{ textAlign: "right" }}>{formatMoney(value || 0)}</Box>,
       },
       {
         key: "net_amount",
         label: "Net",
         valueGetter: (row) => toNum(row.net_amount || 0),
-        render: (value) => <div className="text-right">{formatMoney(value || 0)}</div>,
+        render: (value) => <Box sx={{ textAlign: "right" }}>{formatMoney(value || 0)}</Box>,
       },
     ],
     []
@@ -678,169 +716,176 @@ const Settlement = () => {
   }, [unpaidBills.length, searchLimit]);
 
   const renderEntryPage = () => (
-    <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
-      <div className="xl:col-span-5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-4 space-y-4">
-        <div className="grid grid-cols-12 gap-2 items-end">
-          <div className="col-span-9">
-            <label className={SETTLEMENT_FIELD_LABEL_CLASS}>Bill Number</label>
-            <input
+    <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", xl: "repeat(12, 1fr)" }, gap: 2 }}>
+      <Stack spacing={2} sx={{ gridColumn: { xl: "span 5" }, bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "7px", boxShadow: 1, p: 2 }}>
+        <Box sx={{ display: "grid", gridTemplateColumns: "repeat(12, 1fr)", gap: 1, alignItems: "end" }}>
+          <Box sx={{ gridColumn: "span 9" }}>
+            <Typography component="label" sx={SETTLEMENT_FIELD_LABEL_SX}>Bill Number</Typography>
+            <TextField
               type="text"
               value={billInput}
               onChange={(e) => setBillInput(e.target.value)}
               placeholder="Enter bill number"
-              className={SETTLEMENT_FIELD_CLASS}
+              size="small"
+              fullWidth
+              sx={SETTLEMENT_FIELD_SX}
             />
-          </div>
-          <div className="col-span-3">
-            <button
+          </Box>
+          <Box sx={{ gridColumn: "span 3" }}>
+            <Button
               onClick={handleGoBill}
-              className="glass-btn glass-btn-primary w-full h-10 inline-flex items-center justify-center"
+              className="glass-btn glass-btn-primary"
+              fullWidth
+              sx={{ height: 40, display: "inline-flex", alignItems: "center", justifyContent: "center" }}
             >
               <PlusCircle className="w-4 h-4 mr-1" /> Go
-            </button>
-          </div>
-        </div>
+            </Button>
+          </Box>
+        </Box>
 
-        <div className="border border-gray-200 dark:border-gray-700 rounded-md overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-blue-50 dark:bg-blue-900/30 text-gray-700 dark:text-gray-300">
-              <tr>
-                <th className="border dark:border-gray-700 px-2 py-2 text-left">Bill Number</th>
-                <th className="border dark:border-gray-700 px-2 py-2 text-right">Amount</th>
-                <th className="border dark:border-gray-700 px-2 py-2 text-center w-12">Action</th>
-              </tr>
-            </thead>
-            <tbody>
+        <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: "5.25px", overflowX: "auto" }}>
+          <Table sx={{ width: "100%", fontSize: 12.25 }}>
+            <TableHead sx={{ bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08), color: "text.secondary" }}>
+              <TableRow>
+                <TableCell sx={{ border: 1, borderColor: "divider", px: 1, py: 1, textAlign: "left" }}>Bill Number</TableCell>
+                <TableCell sx={{ border: 1, borderColor: "divider", px: 1, py: 1, textAlign: "right" }}>Amount</TableCell>
+                <TableCell sx={{ border: 1, borderColor: "divider", px: 1, py: 1, textAlign: "center", width: 48 }}>Action</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
               {selectedBills.length === 0 ? (
-                <tr>
-                  <td colSpan="3" className="px-3 py-8 text-center text-gray-400 dark:text-gray-500">
+                <TableRow>
+                  <TableCell colSpan={3} sx={{ px: 1.5, py: 4, textAlign: "center", color: "text.disabled" }}>
                     No bill added
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ) : (
                 selectedBills.map((row) => (
-                  <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                    <td className="border dark:border-gray-700 px-2 py-2 font-semibold">{row.bill_no}</td>
-                    <td className="border dark:border-gray-700 px-2 py-2 text-right">{formatMoney((row.settlement_amount ?? row.remaining_amount ?? row.amount) || 0)}</td>
-                    <td className="border dark:border-gray-700 px-2 py-2 text-center">
-                      <button
+                  <TableRow key={row.id} sx={{ "&:hover": { bgcolor: "action.hover" } }}>
+                    <TableCell sx={{ border: 1, borderColor: "divider", px: 1, py: 1, fontWeight: 600 }}>{row.bill_no}</TableCell>
+                    <TableCell sx={{ border: 1, borderColor: "divider", px: 1, py: 1, textAlign: "right" }}>{formatMoney((row.settlement_amount ?? row.remaining_amount ?? row.amount) || 0)}</TableCell>
+                    <TableCell sx={{ border: 1, borderColor: "divider", px: 1, py: 1, textAlign: "center" }}>
+                      <Button
                         onClick={() => removeBill(row.id)}
                         className="glass-btn glass-btn-danger"
                         aria-label="Remove bill"
                       >
                         <Trash2 className="w-4 h-4 inline" />
-                      </button>
-                    </td>
-                  </tr>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
                 ))
               )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+            </TableBody>
+          </Table>
+        </Box>
+      </Stack>
 
-      <div className="xl:col-span-7 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-4 space-y-3">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-          <div className={`${SETTLEMENT_SUMMARY_ROW_CLASS} md:col-span-2`}>
-            <span className="text-gray-600 dark:text-gray-300">Next settlement no.</span>
-            <span className="font-semibold font-mono tracking-tight">{previewSettlementNo || "—"}</span>
-          </div>
-          <div className={SETTLEMENT_SUMMARY_ROW_CLASS}>
-            <span className="text-gray-600 dark:text-gray-300">Date</span>
-            <span className="font-semibold">{now.toLocaleString()}</span>
-          </div>
-          <div className={SETTLEMENT_SUMMARY_ROW_CLASS}>
-            <span className="text-gray-600 dark:text-gray-300">Location</span>
-            <span className="font-semibold">main</span>
-          </div>
-          <div className={SETTLEMENT_SUMMARY_ROW_CLASS}>
-            <span className="text-gray-600 dark:text-gray-300">Counter</span>
-            <span className="font-semibold">{String(authUser?.counter_name || "").trim() || "-"}</span>
-          </div>
-          <div className={SETTLEMENT_SUMMARY_ROW_CLASS}>
-            <span className="text-gray-600 dark:text-gray-300">Bill(s) Amount</span>
-            <span className="font-semibold">{formatMoney(totals.billsAmount)}</span>
-          </div>
-          <div className={SETTLEMENT_SUMMARY_ROW_CLASS}>
-            <span className="text-gray-600 dark:text-gray-300">Discount Amount</span>
-            <span className="font-semibold">{formatMoney(totals.discountAmount)}</span>
-          </div>
-          <div className={SETTLEMENT_SUMMARY_ROW_CLASS}>
-            <span className="text-gray-600 dark:text-gray-300">Net Amount</span>
-            <span className="font-semibold">{formatMoney(totals.netAmount)}</span>
-          </div>
+      <Stack spacing={1.5} sx={{ gridColumn: { xl: "span 7" }, bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "7px", boxShadow: 1, p: 2 }}>
+        <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 1, fontSize: 12.25 }}>
+          <Box sx={{ ...SETTLEMENT_SUMMARY_ROW_SX, gridColumn: { md: "span 2" } }}>
+            <Box component="span" sx={{ color: "text.secondary" }}>Next settlement no.</Box>
+            <Box component="span" sx={{ fontWeight: 600, fontFamily: "monospace", letterSpacing: "-0.01em" }}>{previewSettlementNo || "—"}</Box>
+          </Box>
+          <Box sx={SETTLEMENT_SUMMARY_ROW_SX}>
+            <Box component="span" sx={{ color: "text.secondary" }}>Date</Box>
+            <Box component="span" sx={{ fontWeight: 600 }}>{now.toLocaleString()}</Box>
+          </Box>
+          <Box sx={SETTLEMENT_SUMMARY_ROW_SX}>
+            <Box component="span" sx={{ color: "text.secondary" }}>Location</Box>
+            <Box component="span" sx={{ fontWeight: 600 }}>main</Box>
+          </Box>
+          <Box sx={SETTLEMENT_SUMMARY_ROW_SX}>
+            <Box component="span" sx={{ color: "text.secondary" }}>Counter</Box>
+            <Box component="span" sx={{ fontWeight: 600 }}>{String(authUser?.counter_name || "").trim() || "-"}</Box>
+          </Box>
+          <Box sx={SETTLEMENT_SUMMARY_ROW_SX}>
+            <Box component="span" sx={{ color: "text.secondary" }}>Bill(s) Amount</Box>
+            <Box component="span" sx={{ fontWeight: 600 }}>{formatMoney(totals.billsAmount)}</Box>
+          </Box>
+          <Box sx={SETTLEMENT_SUMMARY_ROW_SX}>
+            <Box component="span" sx={{ color: "text.secondary" }}>Discount Amount</Box>
+            <Box component="span" sx={{ fontWeight: 600 }}>{formatMoney(totals.discountAmount)}</Box>
+          </Box>
+          <Box sx={SETTLEMENT_SUMMARY_ROW_SX}>
+            <Box component="span" sx={{ color: "text.secondary" }}>Net Amount</Box>
+            <Box component="span" sx={{ fontWeight: 600 }}>{formatMoney(totals.netAmount)}</Box>
+          </Box>
           {totals.isRefundSettlement ? (
             <>
-              <div className={`${SETTLEMENT_SUMMARY_ROW_CLASS} bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-700`}>
-                <span className="text-gray-700 dark:text-gray-300">Refund Amount</span>
-                <span className="font-semibold text-amber-700 dark:text-amber-400">{formatMoney(totals.netAmount)}</span>
-              </div>
-              <div className={SETTLEMENT_SUMMARY_ROW_CLASS}>
-                <span className="text-gray-600 dark:text-gray-300">Refunded</span>
-                <span className="font-semibold">{formatMoney(totals.refundedAmount)}</span>
-              </div>
-              <div className={SETTLEMENT_SUMMARY_ROW_CLASS}>
-                <span className="text-gray-600 dark:text-gray-300">Refund Balance</span>
-                <span className={`font-semibold ${totals.refundBalance > 0 ? "text-red-600 dark:text-red-400" : "text-green-700 dark:text-green-400"}`}>
+              <Box sx={{ ...SETTLEMENT_SUMMARY_ROW_SX, bgcolor: (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.16 : 0.08), borderColor: (theme) => alpha(theme.palette.warning.main, 0.4) }}>
+                <Box component="span" sx={{ color: "text.secondary" }}>Refund Amount</Box>
+                <Box component="span" sx={{ fontWeight: 600, color: "warning.dark" }}>{formatMoney(totals.netAmount)}</Box>
+              </Box>
+              <Box sx={SETTLEMENT_SUMMARY_ROW_SX}>
+                <Box component="span" sx={{ color: "text.secondary" }}>Refunded</Box>
+                <Box component="span" sx={{ fontWeight: 600 }}>{formatMoney(totals.refundedAmount)}</Box>
+              </Box>
+              <Box sx={SETTLEMENT_SUMMARY_ROW_SX}>
+                <Box component="span" sx={{ color: "text.secondary" }}>Refund Balance</Box>
+                <Box component="span" sx={{ fontWeight: 600, color: totals.refundBalance > 0 ? "error.main" : "success.main" }}>
                   {formatMoney(totals.refundBalance)}
-                </span>
-              </div>
+                </Box>
+              </Box>
             </>
           ) : (
-            <div className={SETTLEMENT_SUMMARY_ROW_CLASS}>
-              <span className="text-gray-600 dark:text-gray-300">Received</span>
-              <span className="font-semibold">{formatMoney(totals.received)}</span>
-            </div>
+            <Box sx={SETTLEMENT_SUMMARY_ROW_SX}>
+              <Box component="span" sx={{ color: "text.secondary" }}>Received</Box>
+              <Box component="span" sx={{ fontWeight: 600 }}>{formatMoney(totals.received)}</Box>
+            </Box>
           )}
           {!totals.isRefundSettlement && totals.returnAmount > 0 && (
-            <div className={`${SETTLEMENT_SUMMARY_ROW_CLASS} bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-700`}>
-              <span className="text-gray-700 dark:text-gray-300">Return</span>
-              <span className="font-semibold">{formatMoney(totals.returnAmount)}</span>
-            </div>
+            <Box sx={{ ...SETTLEMENT_SUMMARY_ROW_SX, bgcolor: (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.16 : 0.08), borderColor: (theme) => alpha(theme.palette.warning.main, 0.4) }}>
+              <Box component="span" sx={{ color: "text.secondary" }}>Return</Box>
+              <Box component="span" sx={{ fontWeight: 600 }}>{formatMoney(totals.returnAmount)}</Box>
+            </Box>
           )}
           {totals.isRefundSettlement && totals.extraRefund > 0 && (
-            <div className={`${SETTLEMENT_SUMMARY_ROW_CLASS} bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-700`}>
-              <span className="text-gray-700 dark:text-gray-300">Extra Refund</span>
-              <span className="font-semibold text-red-700 dark:text-red-400">{formatMoney(totals.extraRefund)}</span>
-            </div>
+            <Box sx={{ ...SETTLEMENT_SUMMARY_ROW_SX, bgcolor: (theme) => alpha(theme.palette.error.main, theme.palette.mode === "dark" ? 0.16 : 0.08), borderColor: (theme) => alpha(theme.palette.error.main, 0.4) }}>
+              <Box component="span" sx={{ color: "text.secondary" }}>Extra Refund</Box>
+              <Box component="span" sx={{ fontWeight: 600, color: "error.main" }}>{formatMoney(totals.extraRefund)}</Box>
+            </Box>
           )}
-        </div>
+        </Box>
 
-        <div className="space-y-2">
-          <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">Payment</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            <div className="md:col-span-2">
-              <label className={SETTLEMENT_FIELD_LABEL_CLASS}>Cash</label>
-              <input
+        <Stack spacing={1}>
+          <Typography component="h3" sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Payment</Typography>
+          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 1 }}>
+            <Box sx={{ gridColumn: { md: "span 2" } }}>
+              <Typography component="label" sx={SETTLEMENT_FIELD_LABEL_SX}>Cash</Typography>
+              <TextField
                 type="number"
-                min="0"
-                step="0.01"
+                slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
                 value={cashAmount}
                 onChange={(e) => setCashAmount(e.target.value)}
                 onKeyDown={handleCashAmountKeyDown}
-                className={SETTLEMENT_FIELD_CLASS}
+                size="small"
+                fullWidth
+                sx={SETTLEMENT_FIELD_SX}
               />
-            </div>
-            <div>
-              <label className={SETTLEMENT_FIELD_LABEL_CLASS}>Card</label>
-              <input
+            </Box>
+            <Box>
+              <Typography component="label" sx={SETTLEMENT_FIELD_LABEL_SX}>Card</Typography>
+              <TextField
                 type="number"
-                min="0"
-                step="0.01"
+                slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
                 value={cardAmount}
                 onChange={(e) => setCardAmount(e.target.value)}
                 onKeyDown={handleCardAmountKeyDown}
-                className={SETTLEMENT_FIELD_CLASS}
+                size="small"
+                fullWidth
+                sx={SETTLEMENT_FIELD_SX}
               />
-            </div>
-            <div>
-              <label className={SETTLEMENT_FIELD_LABEL_CLASS}>Card type</label>
-              <select
+            </Box>
+            <Box>
+              <Typography component="label" sx={SETTLEMENT_FIELD_LABEL_SX}>Card type</Typography>
+              <Box
+                component="select"
                 ref={cardTypeSelectRef}
                 value={cardTypeId}
                 onChange={(e) => setCardTypeId(e.target.value)}
                 onKeyDown={handleCardTypeKeyDown}
-                className={SETTLEMENT_FIELD_CLASS}
+                sx={SETTLEMENT_NATIVE_SELECT_SX}
               >
                 <option value="">Select card type</option>
                 {cardTypes.map((row) => (
@@ -848,28 +893,30 @@ const Settlement = () => {
                     {row.label}
                   </option>
                 ))}
-              </select>
-            </div>
-            <div>
-              <label className={SETTLEMENT_FIELD_LABEL_CLASS}>UPI</label>
-              <input
+              </Box>
+            </Box>
+            <Box>
+              <Typography component="label" sx={SETTLEMENT_FIELD_LABEL_SX}>UPI</Typography>
+              <TextField
                 type="number"
-                min="0"
-                step="0.01"
+                slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
                 value={upiAmount}
                 onChange={(e) => setUpiAmount(e.target.value)}
                 onKeyDown={handleUpiAmountKeyDown}
-                className={SETTLEMENT_FIELD_CLASS}
+                size="small"
+                fullWidth
+                sx={SETTLEMENT_FIELD_SX}
               />
-            </div>
-            <div>
-              <label className={SETTLEMENT_FIELD_LABEL_CLASS}>UPI type</label>
-              <select
+            </Box>
+            <Box>
+              <Typography component="label" sx={SETTLEMENT_FIELD_LABEL_SX}>UPI type</Typography>
+              <Box
+                component="select"
                 ref={upiProviderSelectRef}
                 value={upiProviderId}
                 onChange={(e) => setUpiProviderId(e.target.value)}
                 onKeyDown={handleUpiProviderKeyDown}
-                className={SETTLEMENT_FIELD_CLASS}
+                sx={SETTLEMENT_NATIVE_SELECT_SX}
               >
                 <option value="">Select UPI provider</option>
                 {upiProviders.map((row) => (
@@ -877,16 +924,16 @@ const Settlement = () => {
                     {row.label}
                   </option>
                 ))}
-              </select>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+              </Box>
+            </Box>
+          </Box>
+        </Stack>
+      </Stack>
+    </Box>
   );
 
   const renderSearchPage = () => (
-    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-4">
+    <Box sx={{ bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "7px", boxShadow: 1, p: 2 }}>
       <FilterableDataTable
         rows={unpaidBills}
         columns={settlementSearchColumns}
@@ -906,15 +953,17 @@ const Settlement = () => {
         onSelectionChange={setSelectedSearchRows}
         onBulkDelete={handleBulkDelete}
         renderActions={(row) => (
-          <button
+          <IconButton
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
               addBillToSelection(row);
             }}
-            className={`transition ${
-              ["paid", "settled", "cancelled"].includes(String(row?.status || "").toLowerCase()) ? "text-gray-300 dark:text-gray-600 cursor-not-allowed" : "text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-            }`}
+            size="small"
+            sx={{
+              color: ["paid", "settled", "cancelled"].includes(String(row?.status || "").toLowerCase()) ? "text.disabled" : "primary.main",
+              cursor: ["paid", "settled", "cancelled"].includes(String(row?.status || "").toLowerCase()) ? "not-allowed" : "pointer",
+            }}
             aria-label="Add bill"
             title={
               String(row?.status || "").toLowerCase() === "cancelled"
@@ -926,7 +975,7 @@ const Settlement = () => {
             disabled={["paid", "settled", "cancelled"].includes(String(row?.status || "").toLowerCase())}
           >
             <PlusCircle className="w-4 h-4 inline" />
-          </button>
+          </IconButton>
         )}
         actionsLabel="Action"
         page={searchPage}
@@ -940,101 +989,105 @@ const Settlement = () => {
         }}
         paginationMode="client"
       />
-      <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">Paid, settled, unsettled, credit, and cancelled bills are shown here. Only open unsettled or credit bills can be added.</p>
-    </div>
+      <Typography sx={{ fontSize: 10.5, color: "text.secondary", mt: 1 }}>Paid, settled, unsettled, credit, and cancelled bills are shown here. Only open unsettled or credit bills can be added.</Typography>
+    </Box>
   );
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100">
+    <Box sx={{ minHeight: "100vh", bgcolor: "background.default", color: "text.primary" }}>
       <ConfirmDialog
         open={bulkConfirm.open}
         message={`Are you sure you want to delete ${bulkConfirm.keys.length} selected record(s)? This action cannot be undone.`}
         onConfirm={handleBulkDeleteConfirmed}
         onCancel={() => setBulkConfirm({ open: false, keys: [] })}
       />
-      <div className="flex justify-between items-center px-4 py-2 bg-white dark:bg-gray-800 border-b dark:border-gray-700 shadow-sm">
-        <div className="flex items-center space-x-2">
-          <button
+      <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", px: 2, py: 1, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+          <IconButton
             onClick={showSearchPage ? () => setShowSearchPage(false) : () => navigate("/sales")}
-            className="text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100"
+            sx={{ color: "text.secondary" }}
             aria-label={showSearchPage ? "Back to settlement entry" : "Back to sales"}
           >
             <ArrowLeft className="w-4 h-4" />
-          </button>
-          <h1 className="text-sm font-semibold flex items-center gap-1">
-            <button
+          </IconButton>
+          <Typography component="h1" sx={{ fontSize: 12.25, fontWeight: 600, display: "flex", alignItems: "center", gap: 0.5 }}>
+            <Button
               type="button"
               onClick={() => navigate("/sales")}
-              className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline"
+              sx={{ color: "primary.main", textTransform: "none", minWidth: "auto", p: 0, "&:hover": { textDecoration: "underline", bgcolor: "transparent" } }}
             >
               Sales
-            </button>
-            <span className="text-gray-500 dark:text-gray-400">/</span>
-            <span>Settlement</span>
-          </h1>
-        </div>
+            </Button>
+            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
+            <Box component="span">Settlement</Box>
+          </Typography>
+        </Stack>
 
-        <div className="flex items-center gap-2">
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           <UploadImportButton
             endpoint="/settlements/bulk"
             fieldConfig={SETTLEMENT_IMPORT_CONFIG}
           />
-          <button
+          <Button
             onClick={openCreditDialog}
             disabled={saving || showSearchPage || selectedBills.length !== 1}
-            className="glass-btn glass-btn-secondary inline-flex items-center disabled:opacity-50"
+            className="glass-btn glass-btn-secondary disabled:opacity-50"
+            sx={{ display: "inline-flex", alignItems: "center" }}
           >
             <UserRound className="w-4 h-4 mr-1" />
             Credit
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleSave}
             disabled={saving || showSearchPage}
-            className="glass-btn glass-btn-success inline-flex items-center disabled:opacity-50"
+            className="glass-btn glass-btn-success disabled:opacity-50"
+            sx={{ display: "inline-flex", alignItems: "center" }}
           >
             <Save className="w-4 h-4 mr-1" />
             {saving ? "Saving..." : "Save"}
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={showSearchPage ? () => setShowSearchPage(false) : openSearchPage}
-            className="glass-btn glass-btn-primary inline-flex items-center"
+            className="glass-btn glass-btn-primary"
+            sx={{ display: "inline-flex", alignItems: "center" }}
             aria-label="Search"
           >
             <Search className="w-4 h-4 mr-1" />
             {showSearchPage ? "Back" : "Search"}
-          </button>
-        </div>
-      </div>
+          </Button>
+        </Stack>
+      </Stack>
 
-      <div className="p-4 space-y-4 pb-28">{showSearchPage ? renderSearchPage() : renderEntryPage()}</div>
+      <Stack spacing={2} sx={{ p: 2, pb: 7 }}>{showSearchPage ? renderSearchPage() : renderEntryPage()}</Stack>
 
       {creditDialogOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
+        <Box
+          sx={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", bgcolor: "rgba(0,0,0,0.3)", p: 2 }}
           onClick={closeCreditDialog}
         >
-          <div
-            className="w-full max-w-2xl rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-xl"
+          <Box
+            sx={{ width: "100%", maxWidth: 672, borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", boxShadow: 8 }}
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b dark:border-gray-700 px-4 py-3">
-              <div>
-                <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">Mark Bill As Credit</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">Search customer by mobile number and assign this open bill as credit.</div>
-              </div>
-              <button
+            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", px: 2, py: 1.5 }}>
+              <Box>
+                <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Mark Bill As Credit</Typography>
+                <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>Search customer by mobile number and assign this open bill as credit.</Typography>
+              </Box>
+              <IconButton
                 type="button"
                 onClick={closeCreditDialog}
-                className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+                size="small"
+                sx={{ color: "text.disabled" }}
                 aria-label="Close credit dialog"
               >
                 <X className="h-4 w-4" />
-              </button>
-            </div>
+              </IconButton>
+            </Stack>
 
-            <div className="space-y-4 px-4 py-4">
-              <div className="grid grid-cols-[minmax(0,1fr)_96px] gap-2">
-                <input
+            <Stack spacing={2} sx={{ px: 2, py: 2 }}>
+              <Box sx={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 96px", gap: 1 }}>
+                <TextField
                   type="text"
                   value={creditSearch}
                   onChange={(event) => setCreditSearch(event.target.value)}
@@ -1045,80 +1098,83 @@ const Settlement = () => {
                     }
                   }}
                   placeholder="Write customer mobile number"
-                  className="w-full rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  size="small"
+                  fullWidth
+                  sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 1 } }}
                 />
-                <button
+                <Button
                   type="button"
                   onClick={() => searchCreditCustomers(creditSearch)}
                   disabled={creditSearching}
                   className="glass-btn glass-btn-primary disabled:opacity-50"
                 >
                   {creditSearching ? "Searching..." : "Search"}
-                </button>
-              </div>
+                </Button>
+              </Box>
 
-              <div className="max-h-[320px] overflow-auto rounded border border-gray-200 dark:border-gray-700">
-                <table className="w-full text-sm">
-                  <thead className="sticky top-0 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-                    <tr>
-                      <th className="w-12 px-3 py-2 text-left"></th>
-                      <th className="px-3 py-2 text-left">Name</th>
-                      <th className="px-3 py-2 text-left">Mobile</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+              <Box sx={{ maxHeight: 320, overflow: "auto", borderRadius: "3.5px", border: "1px solid", borderColor: "divider" }}>
+                <Table sx={{ width: "100%", fontSize: 12.25 }}>
+                  <TableHead sx={{ position: "sticky", top: 0, bgcolor: "action.hover", color: "text.secondary" }}>
+                    <TableRow>
+                      <TableCell sx={{ width: 48, px: 1.5, py: 1, textAlign: "left" }}></TableCell>
+                      <TableCell sx={{ px: 1.5, py: 1, textAlign: "left" }}>Name</TableCell>
+                      <TableCell sx={{ px: 1.5, py: 1, textAlign: "left" }}>Mobile</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
                     {creditResults.length === 0 ? (
-                      <tr>
-                        <td colSpan={3} className="px-3 py-10 text-center text-gray-400 dark:text-gray-500">
+                      <TableRow>
+                        <TableCell colSpan={3} sx={{ px: 1.5, py: 4, textAlign: "center", color: "text.disabled" }}>
                           No customers found
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     ) : (
                       creditResults.map((row) => {
                         const checked = String(row.id) === creditSelectedCustomerId;
                         return (
-                          <tr key={row.id} className={`border-t dark:border-gray-700 ${checked ? "bg-blue-50 dark:bg-blue-900/30" : "bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50"}`}>
-                            <td className="px-3 py-2">
-                              <input
+                          <TableRow key={row.id} sx={{ borderTop: 1, borderColor: "divider", bgcolor: checked ? (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08) : "transparent", "&:hover": { bgcolor: checked ? undefined : "action.hover" } }}>
+                            <TableCell sx={{ px: 1.5, py: 1 }}>
+                              <Box
+                                component="input"
                                 type="radio"
                                 checked={checked}
                                 onChange={() => setCreditSelectedCustomerId(String(row.id))}
-                                className="h-4 w-4 accent-blue-600"
+                                sx={{ height: 16, width: 16, accentColor: "primary.main" }}
                               />
-                            </td>
-                            <td className="px-3 py-2">{row.name || "-"}</td>
-                            <td className="px-3 py-2">{row.mobile_no || "-"}</td>
-                          </tr>
+                            </TableCell>
+                            <TableCell sx={{ px: 1.5, py: 1 }}>{row.name || "-"}</TableCell>
+                            <TableCell sx={{ px: 1.5, py: 1 }}>{row.mobile_no || "-"}</TableCell>
+                          </TableRow>
                         );
                       })
                     )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+                  </TableBody>
+                </Table>
+              </Box>
+            </Stack>
 
-            <div className="flex items-center justify-end gap-2 border-t px-4 py-3">
-              <button
+            <Stack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "flex-end", borderTop: 1, borderColor: "divider", px: 2, py: 1.5 }}>
+              <Button
                 type="button"
                 onClick={closeCreditDialog}
                 disabled={creditSaving}
                 className="glass-btn glass-btn-secondary disabled:opacity-50"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={handleSaveCredit}
                 disabled={creditSaving}
                 className="glass-btn glass-btn-primary disabled:opacity-50"
               >
                 {creditSaving ? "Saving..." : "Save Credit"}
-              </button>
-            </div>
-          </div>
-        </div>
+              </Button>
+            </Stack>
+          </Box>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 };
 

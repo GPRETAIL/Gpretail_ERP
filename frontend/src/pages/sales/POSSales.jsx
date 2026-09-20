@@ -10,6 +10,7 @@ import { createGroupFetchers } from "../../utils/serverGrouping";
 import UploadImportButton from "../../components/UploadImportButton";
 import CounterAssignmentDialog from "../../components/CounterAssignmentDialog";
 import { usePrintContext } from "../../context/PrintContext";
+import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, Checkbox, Radio, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
 import { downloadHtmlAsPdf } from "../../utils/htmlToPdf";
 import { buildPosSaleReceiptHtml, buildPosReturnReceiptHtml } from "../../utils/posReceiptHtml";
 
@@ -275,18 +276,38 @@ const getAppliedReturnItemTotal = (item) => {
 };
 
 const POS_TABLE_COLS = {
-  sNo: "w-10 shrink-0",
-  barcode: "w-36 shrink-0",
-  product: "w-52 shrink-0",
-  qty: "w-14 shrink-0",
-  price: "w-18 shrink-0",
-  tax: "w-14 shrink-0",
-  discount: "w-18 shrink-0",
-  total: "w-20 shrink-0",
-  salesMan: "w-28 shrink-0",
-  action: "w-35 shrink-0",
+  sNo: 40,
+  barcode: 144,
+  product: 208,
+  qty: 56,
+  price: 72,
+  tax: 56,
+  discount: 72,
+  total: 80,
+  salesMan: 112,
+  action: 140,
 };
-const POS_TABLE_WIDTH = "min-w-[940px]";
+const POS_TABLE_MIN_WIDTH = 940;
+const posSalesColCellSx = (key, extra = {}) => ({
+  px: 0.75,
+  py: 0.75,
+  width: POS_TABLE_COLS[key],
+  flexShrink: 0,
+  borderRight: 1,
+  borderColor: "divider",
+  ...extra,
+});
+const posSalesFilterInputSx = {
+  width: "100%",
+  border: "1px solid",
+  borderColor: "grey.300",
+  borderRadius: "3.5px",
+  bgcolor: "background.paper",
+  color: "text.primary",
+  px: 0.75,
+  py: 0.5,
+  fontSize: { xs: 9, md: 10, lg: 10.5 },
+};
 const POS_ADDNL_TYPE_GROUPS = [
   {
     label: "Base Amount",
@@ -423,20 +444,22 @@ const TextInput = ({
   required = false,
   placeholder = "",
 }) => (
-  <div className="flex items-center">
-    <label className="w-[40%] text-sm font-medium text-gray-700 dark:text-gray-300">
-      {required && <span className="text-red-500 dark:text-red-400 mr-1">*</span>}
+  <Stack direction="row" sx={{ alignItems: "center" }}>
+    <Typography component="label" sx={{ width: "40%", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>
+      {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}
       {label}
-    </label>
-    <input
+    </Typography>
+    <TextField
       type={type}
       name={name}
       value={value}
       placeholder={placeholder}
       onChange={onChange}
-      className="flex-1 border border-gray-300 dark:border-gray-600 rounded-sm p-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ml-2"
+      size="small"
+      fullWidth
+      sx={{ ml: 1, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
     />
-  </div>
+  </Stack>
 );
 
 const SelectInput = ({
@@ -448,25 +471,28 @@ const SelectInput = ({
   required = false,
   placeholder = "Select",
 }) => (
-  <div className="flex items-center">
-    <label className="w-[40%] text-sm font-medium text-gray-700 dark:text-gray-300">
-      {required && <span className="text-red-500 dark:text-red-400 mr-1">*</span>}
+  <Stack direction="row" sx={{ alignItems: "center" }}>
+    <Typography component="label" sx={{ width: "40%", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>
+      {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}
       {label}
-    </label>
-    <select
+    </Typography>
+    <TextField
+      select
       name={name}
       value={value}
       onChange={onChange}
-      className="flex-1 border border-gray-300 dark:border-gray-600 rounded-sm p-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ml-2"
+      size="small"
+      fullWidth
+      sx={{ ml: 1, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
     >
-      <option value="">{placeholder} {label}</option>
+      <MenuItem value="">{placeholder} {label}</MenuItem>
       {options.map((row) => (
-        <option key={row.value} value={row.value}>
+        <MenuItem key={row.value} value={row.value}>
           {row.label}
-        </option>
+        </MenuItem>
       ))}
-    </select>
-  </div>
+    </TextField>
+  </Stack>
 );
 
 const DialogTextField = ({
@@ -479,20 +505,34 @@ const DialogTextField = ({
   type = "text",
   inputRef = null,
 }) => (
-  <div>
-    <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">{label}</label>
-    <input
-      ref={inputRef}
+  <Box>
+    <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>{label}</Typography>
+    <TextField
+      inputRef={inputRef}
       type={type}
       name={name}
       value={value}
       onChange={onChange}
       onKeyDown={onKeyDown}
       placeholder={placeholder}
-      className="w-full rounded border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+      size="small"
+      fullWidth
+      sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 1 } }}
     />
-  </div>
+  </Box>
 );
+
+const posSalesDialogNativeSelectSx = {
+  width: "100%",
+  border: "1px solid",
+  borderColor: "divider",
+  borderRadius: "3.5px",
+  bgcolor: "background.paper",
+  px: 1.5,
+  py: 1,
+  fontSize: 12.25,
+  color: "text.primary",
+};
 
 const DialogSelectField = ({
   label,
@@ -504,15 +544,16 @@ const DialogSelectField = ({
   inputRef = null,
   placeholder = "Select",
 }) => (
-  <div>
-    <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">{label}</label>
-    <select
+  <Box>
+    <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>{label}</Typography>
+    <Box
+      component="select"
       ref={inputRef}
       name={name}
       value={value}
       onChange={onChange}
       onKeyDown={onKeyDown}
-      className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+      sx={posSalesDialogNativeSelectSx}
     >
       <option value="">{placeholder}</option>
       {options.map((row) => (
@@ -520,8 +561,8 @@ const DialogSelectField = ({
           {row.label}
         </option>
       ))}
-    </select>
-  </div>
+    </Box>
+  </Box>
 );
 
 const POSSales = () => {
@@ -698,13 +739,13 @@ const POSSales = () => {
         key: "total_qty",
         label: "Total Qty",
         valueGetter: (row) => toNum(row.total_qty || 0),
-        render: (value) => <div className="text-center">{toNum(value || 0)}</div>,
+        render: (value) => <Box sx={{ textAlign: "center" }}>{toNum(value || 0)}</Box>,
       },
       {
         key: "amount",
         label: "Amount",
         valueGetter: (row) => toNum(row.amount || 0),
-        render: (value) => <div className="text-right">{formatMoney(value || 0)}</div>,
+        render: (value) => <Box sx={{ textAlign: "right" }}>{formatMoney(value || 0)}</Box>,
       },
     ],
     []
@@ -1279,11 +1320,6 @@ const POSSales = () => {
       ),
     [existingCustomerId, newCustomer.mobileNo, newCustomer.name]
   );
-  const summaryPanelTextClass = igstEnabled
-    ? "text-[8px] md:text-[9px] lg:text-[10px]"
-    : "text-[10px] md:text-xs lg:text-sm";
-  const summaryPanelSpacingClass = igstEnabled ? "space-y-1.5" : "space-y-2";
-
   useEffect(() => {
     searchFiltersRef.current = searchFilters;
   }, [searchFilters]);
@@ -2840,15 +2876,39 @@ const POSSales = () => {
   }, [runPosSearch, searchLimit]);
 
   const renderEntryPage = () => (
-    <div className="flex flex-col gap-2 xl:flex-1 xl:min-h-0 xl:grid xl:grid-cols-[minmax(0,1fr)_300px] xl:items-stretch">
-      <div className="min-w-0 xl:flex xl:min-h-0">
-        <div className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden xl:flex xl:h-full xl:min-h-0 xl:flex-col">
-          <div className="border-b dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-3">
-            <div className="flex flex-wrap items-end gap-2">
-              <div className="w-full min-w-0 flex-1 md:min-w-[220px]">
-                <label className="mb-1 block text-xs font-bold text-red-700 dark:text-red-400">Barcode</label>
-                <input
-                  ref={barcodeInputRef}
+    <Box
+      sx={{
+        display: { xs: "flex", xl: "grid" },
+        flexDirection: "column",
+        gap: 1,
+        flex: { xl: 1 },
+        minHeight: { xl: 0 },
+        gridTemplateColumns: { xl: "minmax(0,1fr) 300px" },
+        alignItems: { xl: "stretch" },
+      }}
+    >
+      <Box sx={{ minWidth: 0, display: { xl: "flex" }, minHeight: { xl: 0 } }}>
+        <Box
+          sx={{
+            width: "100%",
+            bgcolor: "background.paper",
+            border: 1,
+            borderColor: "grey.300",
+            borderRadius: "7px",
+            boxShadow: 1,
+            overflow: "hidden",
+            display: { xl: "flex" },
+            height: { xl: "100%" },
+            minHeight: { xl: 0 },
+            flexDirection: { xl: "column" },
+          }}
+        >
+          <Box sx={{ borderBottom: 1, borderColor: "divider", bgcolor: "background.paper", px: 1.5, py: 1.5 }}>
+            <Stack direction="row" sx={{ flexWrap: "wrap", alignItems: "flex-end", gap: 1 }}>
+              <Box sx={{ width: "100%", minWidth: { md: 220 }, flex: 1 }}>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 10.5, fontWeight: 700, color: "error.main" }}>Barcode</Typography>
+                <TextField
+                  inputRef={barcodeInputRef}
                   type="text"
                   value={addBarcode}
                   disabled={applyingReturn}
@@ -2878,29 +2938,34 @@ const POSSales = () => {
                     }
                   }}
                   placeholder={applyingReturn ? "Fetching return..." : "Scan / enter barcode"}
-                  className="w-full border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-xs bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                  size="small"
+                  fullWidth
+                  sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.75 } }}
                 />
-              </div>
-              <div className="w-full min-w-0 flex-[1.3] md:min-w-[280px]">
-                <label className="mb-1 block text-xs font-bold text-red-700 dark:text-red-400">Product (In Stock)</label>
-                <select
+              </Box>
+              <Box sx={{ width: "100%", minWidth: { md: 280 }, flex: 1.3 }}>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 10.5, fontWeight: 700, color: "error.main" }}>Product (In Stock)</Typography>
+                <TextField
+                  select
                   value={addProductKey}
                   onChange={(e) => setAddProductKey(e.target.value)}
-                  className="w-full border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-xs bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                  size="small"
+                  fullWidth
+                  sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.75 } }}
                 >
-                  <option value="">Select product</option>
+                  <MenuItem value="">Select product</MenuItem>
                   {productOptions.map((row) => (
-                    <option key={row.value} value={row.value}>
+                    <MenuItem key={row.value} value={row.value}>
                       {row.label}
-                    </option>
+                    </MenuItem>
                   ))}
-                </select>
-              </div>
-              <div className="w-28">
-                <label className="mb-1 block text-xs font-bold text-red-700 dark:text-red-400">Qty</label>
-                <input
+                </TextField>
+              </Box>
+              <Box sx={{ width: 112 }}>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 10.5, fontWeight: 700, color: "error.main" }}>Qty</Typography>
+                <TextField
                   type="number"
-                  min="1"
+                  slotProps={{ htmlInput: { min: 1 } }}
                   value={addQty}
                   onChange={(e) => setAddQty(e.target.value)}
                   onKeyDown={(e) => {
@@ -2909,280 +2974,293 @@ const POSSales = () => {
                       handleAddLine();
                     }
                   }}
-                  className="w-full border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-xs bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                  size="small"
+                  fullWidth
+                  sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.75 } }}
                 />
-              </div>
-              <div className="w-10">
-                <button
+              </Box>
+              <Box sx={{ width: 40 }}>
+                <Button
                   onClick={handleAddLine}
                   disabled={applyingReturn}
-                  className="glass-btn glass-btn-primary h-[34px] w-full inline-flex items-center justify-center"
+                  className="glass-btn glass-btn-primary"
                   aria-label="Add product"
+                  sx={{ height: "34px", width: "100%", minWidth: 0, p: 0 }}
                 >
                   <PlusCircle className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-            {selectedStockHint ? <p className="mt-2 text-xs text-gray-600 dark:text-gray-300">{selectedStockHint}</p> : null}
-          </div>
+                </Button>
+              </Box>
+            </Stack>
+            {selectedStockHint ? <Typography sx={{ mt: 1, fontSize: 10.5, color: "text.secondary" }}>{selectedStockHint}</Typography> : null}
+          </Box>
 
-          <div className="flex-1 min-h-0 overflow-x-auto">
-            <div className={`flex h-[420px] min-h-[420px] flex-col xl:h-full xl:min-h-0 ${POS_TABLE_WIDTH}`}>
-              <div className="flex border-b border-gray-200 dark:border-gray-700 bg-blue-100 dark:bg-blue-900/30 text-[10px] font-semibold text-gray-700 dark:text-gray-300 md:text-sm lg:text-base">
-                <div className={`px-1.5 py-1.5 ${POS_TABLE_COLS.sNo} border-r border-gray-200 dark:border-gray-700 text-center`}>S.No</div>
-                <div className={`px-1.5 py-1.5 ${POS_TABLE_COLS.barcode} border-r border-gray-200 dark:border-gray-700`}>Barcode</div>
-                <div className={`px-1.5 py-1.5 ${POS_TABLE_COLS.product} border-r border-gray-200 dark:border-gray-700`}>Product</div>
-                <div className={`px-1.5 py-1.5 ${POS_TABLE_COLS.qty} border-r border-gray-200 dark:border-gray-700 text-center`}>Qty</div>
-                <div className={`px-1.5 py-1.5 ${POS_TABLE_COLS.price} border-r border-gray-200 dark:border-gray-700 text-right`}>Price</div>
-                <div className={`px-1.5 py-1.5 ${POS_TABLE_COLS.tax} border-r border-gray-200 dark:border-gray-700 text-right`}>Tax%</div>
-                <div className={`px-1.5 py-1.5 ${POS_TABLE_COLS.discount} border-r border-gray-200 dark:border-gray-700 text-right`}>Discount</div>
-                <div className={`px-1.5 py-1.5 ${POS_TABLE_COLS.total} border-r border-gray-200 dark:border-gray-700 text-right`}>Total</div>
-                <div className={`px-1.5 py-1.5 ${POS_TABLE_COLS.salesMan} border-r border-gray-200 dark:border-gray-700`}>Salesman</div>
-                <div className={`px-1.5 py-1.5 ${POS_TABLE_COLS.action} text-center`}>Action</div>
-              </div>
+          <Box sx={{ flex: 1, minHeight: 0, overflowX: "auto" }}>
+            <Box sx={{ display: "flex", height: { xs: 420, xl: "100%" }, minHeight: { xs: 420, xl: 0 }, flexDirection: "column", minWidth: POS_TABLE_MIN_WIDTH }}>
+              <Box sx={{ display: "flex", borderBottom: 1, borderColor: "divider", bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.24 : 0.12), fontSize: { xs: 10, md: 14, lg: 16 }, fontWeight: 600, color: "text.secondary" }}>
+                <Box sx={posSalesColCellSx("sNo", { textAlign: "center" })}>S.No</Box>
+                <Box sx={posSalesColCellSx("barcode")}>Barcode</Box>
+                <Box sx={posSalesColCellSx("product")}>Product</Box>
+                <Box sx={posSalesColCellSx("qty", { textAlign: "center" })}>Qty</Box>
+                <Box sx={posSalesColCellSx("price", { textAlign: "right" })}>Price</Box>
+                <Box sx={posSalesColCellSx("tax", { textAlign: "right" })}>Tax%</Box>
+                <Box sx={posSalesColCellSx("discount", { textAlign: "right" })}>Discount</Box>
+                <Box sx={posSalesColCellSx("total", { textAlign: "right" })}>Total</Box>
+                <Box sx={posSalesColCellSx("salesMan")}>Salesman</Box>
+                <Box sx={{ px: 0.75, py: 0.75, width: POS_TABLE_COLS.action, flexShrink: 0, textAlign: "center" }}>Action</Box>
+              </Box>
 
-              <div className="flex border-b border-gray-200 dark:border-gray-700 bg-sky-50 dark:bg-sky-900/20">
-                <div className={`px-1.5 py-1.5 ${POS_TABLE_COLS.sNo} border-r border-gray-200 dark:border-gray-700`}></div>
-                <div className={`px-1.5 py-1.5 ${POS_TABLE_COLS.barcode} border-r border-gray-200 dark:border-gray-700`}>
-                  <input
+              <Box sx={{ display: "flex", borderBottom: 1, borderColor: "divider", bgcolor: (theme) => alpha(theme.palette.info.main, theme.palette.mode === "dark" ? 0.12 : 0.06) }}>
+                <Box sx={posSalesColCellSx("sNo")} />
+                <Box sx={posSalesColCellSx("barcode")}>
+                  <Box
+                    component="input"
                     type="text"
                     value={lineFilterDraft.barcode}
                     onChange={(e) => handleLineFilterDraftChange("barcode", e.target.value)}
                     onKeyDown={handleLineFilterKeyDown}
                     placeholder="Search barcode"
-                    className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-1.5 py-1 text-[9px] md:text-[10px] lg:text-xs"
+                    sx={posSalesFilterInputSx}
                   />
-                </div>
-                <div className={`px-1.5 py-1.5 ${POS_TABLE_COLS.product} border-r border-gray-200 dark:border-gray-700`}>
-                  <input
+                </Box>
+                <Box sx={posSalesColCellSx("product")}>
+                  <Box
+                    component="input"
                     type="text"
                     value={lineFilterDraft.productName}
                     onChange={(e) => handleLineFilterDraftChange("productName", e.target.value)}
                     onKeyDown={handleLineFilterKeyDown}
                     placeholder="Search product"
-                    className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-1.5 py-1 text-[9px] md:text-[10px] lg:text-xs"
+                    sx={posSalesFilterInputSx}
                   />
-                </div>
-                <div className={`px-1.5 py-1.5 ${POS_TABLE_COLS.qty} border-r border-gray-200 dark:border-gray-700`}>
-                  <input
+                </Box>
+                <Box sx={posSalesColCellSx("qty")}>
+                  <Box
+                    component="input"
                     type="text"
                     value={lineFilterDraft.qty}
                     onChange={(e) => handleLineFilterDraftChange("qty", e.target.value)}
                     onKeyDown={handleLineFilterKeyDown}
                     placeholder="Qty"
-                    className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-1.5 py-1 text-center text-[9px] md:text-[10px] lg:text-xs"
+                    sx={{ ...posSalesFilterInputSx, textAlign: "center" }}
                   />
-                </div>
-                <div className={`px-1.5 py-1.5 ${POS_TABLE_COLS.price} border-r border-gray-200 dark:border-gray-700`}>
-                  <input
+                </Box>
+                <Box sx={posSalesColCellSx("price")}>
+                  <Box
+                    component="input"
                     type="text"
                     value={lineFilterDraft.price}
                     onChange={(e) => handleLineFilterDraftChange("price", e.target.value)}
                     onKeyDown={handleLineFilterKeyDown}
                     placeholder="Price"
-                    className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-1.5 py-1 text-right text-[9px] md:text-[10px] lg:text-xs"
+                    sx={{ ...posSalesFilterInputSx, textAlign: "right" }}
                   />
-                </div>
-                <div className={`px-1.5 py-1.5 ${POS_TABLE_COLS.tax} border-r border-gray-200 dark:border-gray-700`}>
-                  <input
+                </Box>
+                <Box sx={posSalesColCellSx("tax")}>
+                  <Box
+                    component="input"
                     type="text"
                     value={lineFilterDraft.tax}
                     onChange={(e) => handleLineFilterDraftChange("tax", e.target.value)}
                     onKeyDown={handleLineFilterKeyDown}
                     placeholder="Tax"
-                    className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-1.5 py-1 text-right text-[9px] md:text-[10px] lg:text-xs"
+                    sx={{ ...posSalesFilterInputSx, textAlign: "right" }}
                   />
-                </div>
-                <div className={`px-1.5 py-1.5 ${POS_TABLE_COLS.discount} border-r border-gray-200 dark:border-gray-700`}>
-                  <input
+                </Box>
+                <Box sx={posSalesColCellSx("discount")}>
+                  <Box
+                    component="input"
                     type="text"
                     value={lineFilterDraft.discount}
                     onChange={(e) => handleLineFilterDraftChange("discount", e.target.value)}
                     onKeyDown={handleLineFilterKeyDown}
                     placeholder="Discount"
-                    className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-1.5 py-1 text-right text-[9px] md:text-[10px] lg:text-xs"
+                    sx={{ ...posSalesFilterInputSx, textAlign: "right" }}
                   />
-                </div>
-                <div className={`px-1.5 py-1.5 ${POS_TABLE_COLS.total} border-r border-gray-200 dark:border-gray-700`}>
-                  <input
+                </Box>
+                <Box sx={posSalesColCellSx("total")}>
+                  <Box
+                    component="input"
                     type="text"
                     value={lineFilterDraft.total}
                     onChange={(e) => handleLineFilterDraftChange("total", e.target.value)}
                     onKeyDown={handleLineFilterKeyDown}
                     placeholder="Total"
-                    className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-1.5 py-1 text-right text-[9px] md:text-[10px] lg:text-xs"
+                    sx={{ ...posSalesFilterInputSx, textAlign: "right" }}
                   />
-                </div>
-                <div className={`px-1.5 py-1.5 ${POS_TABLE_COLS.salesMan} border-r border-gray-200 dark:border-gray-700`}>
-                  <input
+                </Box>
+                <Box sx={posSalesColCellSx("salesMan")}>
+                  <Box
+                    component="input"
                     type="text"
                     value={lineFilterDraft.salesManName}
                     onChange={(e) => handleLineFilterDraftChange("salesManName", e.target.value)}
                     onKeyDown={handleLineFilterKeyDown}
                     placeholder="Salesman"
-                    className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-1.5 py-1 text-[9px] md:text-[10px] lg:text-xs"
+                    sx={posSalesFilterInputSx}
                   />
-                </div>
-                <div className={`px-1.5 py-1.5 ${POS_TABLE_COLS.action}`}></div>
-              </div>
+                </Box>
+                <Box sx={{ px: 0.75, py: 0.75, width: POS_TABLE_COLS.action, flexShrink: 0 }} />
+              </Box>
 
-              <div className="flex-1 min-h-0 overflow-y-auto" style={{ scrollbarGutter: "stable" }}>
+              <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto" }} style={{ scrollbarGutter: "stable" }}>
                 {displayCartLines.length === 0 ? (
-                  <div className="flex h-full items-center justify-center py-16 text-center text-xs text-gray-400 dark:text-gray-500">
+                  <Box sx={{ display: "flex", height: "100%", alignItems: "center", justifyContent: "center", py: 8, textAlign: "center", fontSize: 10.5, color: "text.disabled" }}>
                     No products added yet.
-                  </div>
+                  </Box>
                 ) : filteredCartLines.length === 0 ? (
-                  <div className="flex h-full items-center justify-center py-16 text-center text-xs text-gray-400 dark:text-gray-500">
+                  <Box sx={{ display: "flex", height: "100%", alignItems: "center", justifyContent: "center", py: 8, textAlign: "center", fontSize: 10.5, color: "text.disabled" }}>
                     No matching products found.
-                  </div>
+                  </Box>
                 ) : (
                   filteredCartLines.map((line, index) => {
                     const isLineEditable = editingLineId === line.lineId;
                     const isReturnDisplayLine = Boolean(line.isReturnDisplayLine);
                     return (
-                      <div key={line.lineId} className="flex border-b border-gray-200 dark:border-gray-700 text-[11px] hover:bg-gray-50 md:text-base lg:text-lg">
-                        <div className={`px-1.5 py-1.5 ${POS_TABLE_COLS.sNo} border-r border-gray-200 dark:border-gray-700 text-center`}>
+                      <Box key={line.lineId} sx={{ display: "flex", borderBottom: 1, borderColor: "divider", fontSize: { xs: 11, md: 16, lg: 18 }, "&:hover": { bgcolor: "action.hover" } }}>
+                        <Box sx={posSalesColCellSx("sNo", { textAlign: "center" })}>
                           {index + 1}
-                        </div>
-                        <div className={`px-1.5 py-1.5 ${POS_TABLE_COLS.barcode} border-r border-gray-200 dark:border-gray-700`}>
-                          <div className="line-clamp-2 break-all font-mono leading-tight">
+                        </Box>
+                        <Box sx={posSalesColCellSx("barcode")}>
+                          <Box sx={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "break-all", fontFamily: "monospace", lineHeight: 1.2 }}>
                             {line.barcode || "-"}
-                          </div>
-                        </div>
-                        <div className={`px-1.5 py-1.5 ${POS_TABLE_COLS.product} border-r border-gray-200 dark:border-gray-700`}>
-                          <div className="line-clamp-2 break-words">{line.productName}</div>
+                          </Box>
+                        </Box>
+                        <Box sx={posSalesColCellSx("product")}>
+                          <Box sx={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "break-word" }}>{line.productName}</Box>
                           {isReturnDisplayLine ? (
-                            <div className="text-[10px] text-gray-400 dark:text-gray-500 md:text-xs lg:text-sm">{line.salesManName}</div>
+                            <Box sx={{ fontSize: { xs: 10, md: 12.25, lg: 14 }, color: "text.disabled" }}>{line.salesManName}</Box>
                           ) : null}
-                        </div>
-                        <div className={`px-1.5 py-1.5 ${POS_TABLE_COLS.qty} border-r border-gray-200 dark:border-gray-700 text-center`}>
+                        </Box>
+                        <Box sx={posSalesColCellSx("qty", { textAlign: "center" })}>
                           {isReturnDisplayLine || !isLineEditable ? (
                             line.qty
                           ) : (
-                            <input
+                            <Box
+                              component="input"
                               type="number"
                               min="1"
                               step="1"
                               value={line.qty}
                               onChange={(e) => handleLineQtyChange(line.lineId, e.target.value)}
-                              className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-1.5 py-1 text-center text-[11px] md:text-base lg:text-lg"
+                              sx={{ width: "100%", borderRadius: "3.5px", border: 1, borderColor: "grey.300", bgcolor: "background.paper", color: "text.primary", px: 0.75, py: 0.5, textAlign: "center", fontSize: { xs: 11, md: 16, lg: 18 } }}
                             />
                           )}
-                        </div>
-                        <div className={`px-1.5 py-1.5 ${POS_TABLE_COLS.price} border-r border-gray-200 dark:border-gray-700`}>
+                        </Box>
+                        <Box sx={posSalesColCellSx("price")}>
                           {isReturnDisplayLine || !isLineEditable ? (
-                            <div className="text-right">{formatMoney(line.price)}</div>
+                            <Box sx={{ textAlign: "right" }}>{formatMoney(line.price)}</Box>
                           ) : (
-                            <input
+                            <Box
+                              component="input"
                               type="number"
                               min="0"
                               step="0.01"
                               value={line.price}
                               onChange={(e) => handleLineValueChange(line.lineId, "price", e.target.value)}
-                              className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-1.5 py-1 text-right text-[11px] md:text-base lg:text-lg"
+                              sx={{ width: "100%", borderRadius: "3.5px", border: 1, borderColor: "grey.300", bgcolor: "background.paper", color: "text.primary", px: 0.75, py: 0.5, textAlign: "right", fontSize: { xs: 11, md: 16, lg: 18 } }}
                             />
                           )}
-                        </div>
-                        <div className={`px-1.5 py-1.5 ${POS_TABLE_COLS.tax} border-r border-gray-200 dark:border-gray-700`}>
-                          <div className="text-right">{toNum(line.tax, 0).toFixed(2)}</div>
-                        </div>
-                        <div className={`px-1.5 py-1.5 ${POS_TABLE_COLS.discount} border-r border-gray-200 dark:border-gray-700`}>
+                        </Box>
+                        <Box sx={posSalesColCellSx("tax")}>
+                          <Box sx={{ textAlign: "right" }}>{toNum(line.tax, 0).toFixed(2)}</Box>
+                        </Box>
+                        <Box sx={posSalesColCellSx("discount")}>
                           {isReturnDisplayLine || !isLineEditable ? (
-                            <div className="text-right">{formatMoney(line.discount)}</div>
+                            <Box sx={{ textAlign: "right" }}>{formatMoney(line.discount)}</Box>
                           ) : (
-                            <input
+                            <Box
+                              component="input"
                               type="number"
                               min="0"
                               step="0.01"
                               value={line.discount}
                               onChange={(e) => handleLineValueChange(line.lineId, "discount", e.target.value)}
-                              className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-1.5 py-1 text-right text-[11px] md:text-base lg:text-lg"
+                              sx={{ width: "100%", borderRadius: "3.5px", border: 1, borderColor: "grey.300", bgcolor: "background.paper", color: "text.primary", px: 0.75, py: 0.5, textAlign: "right", fontSize: { xs: 11, md: 16, lg: 18 } }}
                             />
                           )}
-                        </div>
-                        <div className={`px-1.5 py-1.5 ${POS_TABLE_COLS.total} border-r border-gray-200 dark:border-gray-700 text-right font-medium`}>{formatMoney(line.total)}</div>
-                        <div className={`px-1.5 py-1.5 ${POS_TABLE_COLS.salesMan} border-r border-gray-200 dark:border-gray-700 truncate`}>
+                        </Box>
+                        <Box sx={posSalesColCellSx("total", { textAlign: "right", fontWeight: 500 })}>{formatMoney(line.total)}</Box>
+                        <Box sx={posSalesColCellSx("salesMan", { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" })}>
                           {isReturnDisplayLine ? "-" : (line.salesManName || "-")}
-                        </div>
-                        <div className={`px-1 py-1.5 ${POS_TABLE_COLS.action}`}>
+                        </Box>
+                        <Box sx={{ px: 0.5, py: 0.75, width: POS_TABLE_COLS.action, flexShrink: 0 }}>
                           {isReturnDisplayLine ? null : (
-                            <div className="flex w-full items-center justify-end gap-1 pr-2">
-                              <button
+                            <Stack direction="row" sx={{ width: "100%", alignItems: "center", justifyContent: "flex-end", gap: 0.5, pr: 1 }}>
+                              <IconButton
                                 onClick={() => toggleLineEdit(line.lineId)}
-                                className={`glass-btn inline-flex h-9 w-9 shrink-0 items-center justify-center rounded p-1.5 ${
-                                  isLineEditable ? "glass-btn-warning" : "glass-btn-secondary"
-                                }`}
+                                className={isLineEditable ? "glass-btn glass-btn-warning" : "glass-btn glass-btn-secondary"}
+                                sx={{ height: 36, width: 36, flexShrink: 0, borderRadius: "3.5px", p: 0.75 }}
                                 aria-label={isLineEditable ? "Lock row editing" : "Edit row"}
                                 title={isLineEditable ? "Lock row editing" : "Edit qty, price and discount"}
                               >
-                                <Pencil className="h-5 w-5 text-slate-700" />
-                              </button>
-                              <button
+                                <Pencil className="h-5 w-5" style={{ color: "#334155" }} />
+                              </IconButton>
+                              <IconButton
                                 onClick={() => openSalesManDialog(line)}
-                                className={`glass-btn inline-flex h-9 w-9 shrink-0 items-center justify-center rounded p-1.5 ${
-                                  line.salesManId ? "glass-btn-success" : "glass-btn-primary"
-                                }`}
+                                className={line.salesManId ? "glass-btn glass-btn-success" : "glass-btn glass-btn-primary"}
+                                sx={{ height: 36, width: 36, flexShrink: 0, borderRadius: "3.5px", p: 0.75 }}
                                 aria-label="Assign sales man"
                                 title={line.salesManId ? `Sales Man ID: ${line.salesManId}` : "Assign sales man"}
                               >
-                                <UserRound className="h-5 w-5 text-slate-700" />
-                              </button>
-                              <button
+                                <UserRound className="h-5 w-5" style={{ color: "#334155" }} />
+                              </IconButton>
+                              <IconButton
                                 onClick={() => handleRemoveLine(line.lineId)}
-                                className="glass-btn glass-btn-danger inline-flex h-9 w-9 shrink-0 items-center justify-center rounded p-1.5"
+                                className="glass-btn glass-btn-danger"
+                                sx={{ height: 36, width: 36, flexShrink: 0, borderRadius: "3.5px", p: 0.75 }}
                                 aria-label="Remove line"
                               >
-                                <Trash2 className="inline h-5 w-5 text-slate-700" />
-                              </button>
-                            </div>
+                                <Trash2 className="h-5 w-5" style={{ color: "#334155" }} />
+                              </IconButton>
+                            </Stack>
                           )}
-                        </div>
-                      </div>
+                        </Box>
+                      </Box>
                     );
                   })
                 )}
-              </div>
+              </Box>
 
-              <div className="flex border-t border-gray-200 dark:border-gray-700 bg-gray-100 text-[11px] font-bold text-gray-700 dark:text-gray-300 md:text-base lg:text-lg">
-                <div className={`px-1.5 py-2 ${POS_TABLE_COLS.sNo} border-r border-gray-200 dark:border-gray-700 text-center`}>-</div>
-                <div className={`px-1.5 py-1.5 ${POS_TABLE_COLS.barcode} border-r border-gray-200 dark:border-gray-700`}></div>
-                <div className={`px-1.5 py-1.5 ${POS_TABLE_COLS.product} border-r border-gray-200 dark:border-gray-700`}></div>
-                <div className={`px-1.5 py-2 ${POS_TABLE_COLS.qty} border-r border-gray-200 dark:border-gray-700 text-center text-red-600`}>
+              <Box sx={{ display: "flex", borderTop: 1, borderColor: "divider", bgcolor: "action.hover", fontSize: { xs: 11, md: 16, lg: 18 }, fontWeight: 700, color: "text.secondary" }}>
+                <Box sx={posSalesColCellSx("sNo", { textAlign: "center" })}>-</Box>
+                <Box sx={posSalesColCellSx("barcode")} />
+                <Box sx={posSalesColCellSx("product")} />
+                <Box sx={posSalesColCellSx("qty", { textAlign: "center", color: "error.main" })}>
                   {displayCartLines.reduce((sum, line) => sum + toNum(line.qty, 0), 0)}
-                </div>
-                <div className={`px-1.5 py-1.5 ${POS_TABLE_COLS.price} border-r border-gray-200 dark:border-gray-700`}></div>
-                <div className={`px-1.5 py-1.5 ${POS_TABLE_COLS.tax} border-r border-gray-200 dark:border-gray-700`}></div>
-                <div className={`px-1.5 py-2 ${POS_TABLE_COLS.discount} border-r border-gray-200 dark:border-gray-700 text-right text-red-600`}>{formatMoney(summary.totalDiscount)}</div>
-                <div className={`px-1.5 py-2 ${POS_TABLE_COLS.total} border-r border-gray-200 dark:border-gray-700 text-right text-red-600`}>{formatMoney(summary.amount)}</div>
-                <div className={`px-1.5 py-1.5 ${POS_TABLE_COLS.salesMan} border-r border-gray-200 dark:border-gray-700`}></div>
-                <div className={`px-1.5 py-1.5 ${POS_TABLE_COLS.action}`}></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+                </Box>
+                <Box sx={posSalesColCellSx("price")} />
+                <Box sx={posSalesColCellSx("tax")} />
+                <Box sx={posSalesColCellSx("discount", { textAlign: "right", color: "error.main" })}>{formatMoney(summary.totalDiscount)}</Box>
+                <Box sx={posSalesColCellSx("total", { textAlign: "right", color: "error.main" })}>{formatMoney(summary.amount)}</Box>
+                <Box sx={posSalesColCellSx("salesMan")} />
+                <Box sx={{ px: 0.75, py: 0.75, width: POS_TABLE_COLS.action, flexShrink: 0 }} />
+              </Box>
+            </Box>
+          </Box>
+        </Box>
+      </Box>
 
-      <div className="w-full xl:flex xl:min-h-0">
-        <div className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm p-3 xl:flex xl:h-full xl:flex-col">
-          <div className="border-b border-gray-200 dark:border-gray-700 pb-2">
-            <div className="flex items-center justify-between gap-3 text-[10px]">
-              <div className="flex items-center gap-1.5">
-                <span className="font-semibold text-gray-700 dark:text-gray-300">Date</span>
-                <span className="text-gray-900 dark:text-gray-100">{now.toLocaleDateString()}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-semibold text-gray-700 dark:text-gray-300">Time</span>
-                <span className="text-gray-900 dark:text-gray-100">{now.toLocaleTimeString()}</span>
-              </div>
-            </div>
-          </div>
+      <Box sx={{ width: "100%", display: { xl: "flex" }, minHeight: { xl: 0 } }}>
+        <Box sx={{ width: "100%", bgcolor: "background.paper", border: 1, borderColor: "grey.300", borderRadius: "7px", boxShadow: 1, p: 1.5, display: { xl: "flex" }, height: { xl: "100%" }, flexDirection: { xl: "column" } }}>
+          <Box sx={{ borderBottom: 1, borderColor: "divider", pb: 1 }}>
+            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 1.5, fontSize: 10 }}>
+              <Stack direction="row" sx={{ alignItems: "center", gap: 0.75 }}>
+                <Box component="span" sx={{ fontWeight: 600, color: "text.secondary" }}>Date</Box>
+                <Box component="span" sx={{ color: "text.primary" }}>{now.toLocaleDateString()}</Box>
+              </Stack>
+              <Stack direction="row" sx={{ alignItems: "center", gap: 0.75 }}>
+                <Box component="span" sx={{ fontWeight: 600, color: "text.secondary" }}>Time</Box>
+                <Box component="span" sx={{ color: "text.primary" }}>{now.toLocaleTimeString()}</Box>
+              </Stack>
+            </Stack>
+          </Box>
 
-          <div className="space-y-1.5 border-b border-gray-200 dark:border-gray-700 py-1.5">
-            <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_96px]">
-              <div className="space-y-1.5">
-                <div>
-                  <label className="mb-0.5 block text-[8px] font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Customer Number</label>
-                  <input
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75, borderBottom: 1, borderColor: "divider", py: 0.75 }}>
+            <Box sx={{ display: "grid", gap: 1, gridTemplateColumns: { md: "minmax(0,1fr) 96px" } }}>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
+                <Box>
+                  <Typography component="label" sx={{ mb: 0.25, display: "block", fontSize: 8, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Customer Number</Typography>
+                  <TextField
                     type="text"
                     value={newCustomer.mobileNo}
                     onChange={(e) => handleCustomerNumberChange(e.target.value)}
@@ -3193,38 +3271,43 @@ const POSSales = () => {
                       }
                     }}
                     placeholder="Write customer number and press Enter"
-                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded px-1.5 py-0.5 text-[9px] focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    size="small"
+                    fullWidth
+                    sx={{ "& .MuiInputBase-input": { fontSize: 9, py: 0.5 } }}
                   />
-                </div>
-                <div>
-                  <label className="mb-0.5 block text-[8px] font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Customer Name</label>
-                  <input
+                </Box>
+                <Box>
+                  <Typography component="label" sx={{ mb: 0.25, display: "block", fontSize: 8, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Customer Name</Typography>
+                  <TextField
                     type="text"
                     value={newCustomer.name}
                     onChange={(e) => handleCustomerNamePanelChange(e.target.value)}
                     placeholder="Customer name"
-                    className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded px-1.5 py-0.5 text-[9px] focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    size="small"
+                    fullWidth
+                    sx={{ "& .MuiInputBase-input": { fontSize: 9, py: 0.5 } }}
                   />
-                </div>
+                </Box>
                 {creditEnabled ? (
-                  <div>
-                    <label className="mb-0.5 block text-[8px] font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Remarks</label>
-                    <input
+                  <Box>
+                    <Typography component="label" sx={{ mb: 0.25, display: "block", fontSize: 8, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Remarks</Typography>
+                    <TextField
                       type="text"
                       value={creditRemarks}
                       onChange={(event) => setCreditRemarks(event.target.value)}
                       placeholder="Remarks"
-                      className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded px-1.5 py-0.5 text-[9px] focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { fontSize: 9, py: 0.5 } }}
                     />
-                  </div>
+                  </Box>
                 ) : null}
-              </div>
+              </Box>
 
-              <div className="flex flex-col gap-2 pt-0 md:pt-6">
-                <label className="inline-flex items-center justify-between gap-2 text-xs font-bold uppercase tracking-wide text-gray-600 dark:text-gray-300">
-                  <span>Credit</span>
-                  <input
-                    type="checkbox"
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 1, pt: { xs: 0, md: 3 } }}>
+                <Stack component="label" direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 1, fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>
+                  <Box component="span">Credit</Box>
+                  <Checkbox
                     checked={creditEnabled}
                     disabled={!hasCreditEligibleCustomer}
                     onChange={(event) => {
@@ -3232,75 +3315,81 @@ const POSSales = () => {
                       setCreditEnabled(checked);
                       if (!checked) setCreditRemarks("");
                     }}
-                    className="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-blue-600"
+                    size="small"
+                    sx={{ p: 0 }}
                   />
-                </label>
-                <label className="inline-flex items-center justify-between gap-2 text-xs font-bold uppercase tracking-wide text-gray-600 dark:text-gray-300">
-                  <span>IGST</span>
-                  <input
-                    type="checkbox"
+                </Stack>
+                <Stack component="label" direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 1, fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>
+                  <Box component="span">IGST</Box>
+                  <Checkbox
                     checked={igstEnabled}
                     onChange={(event) => {
                       const checked = event.target.checked;
                       setIgstEnabled(checked);
                       if (!checked) setPlaceOfSupplyStateId("");
                     }}
-                    className="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-blue-600"
+                    size="small"
+                    sx={{ p: 0 }}
                   />
-                </label>
-              </div>
-            </div>
+                </Stack>
+              </Box>
+            </Box>
 
             {igstEnabled ? (
-              <div>
-                <label className="mb-0.5 block text-[8px] font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              <Box>
+                <Typography component="label" sx={{ mb: 0.25, display: "block", fontSize: 8, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>
                   Place Of Supply
-                </label>
-                <select
+                </Typography>
+                <TextField
+                  select
                   value={placeOfSupplyStateId}
                   onChange={(event) => setPlaceOfSupplyStateId(event.target.value)}
-                  className="w-full border border-gray-300 dark:border-gray-600 rounded px-1.5 py-0.5 text-[9px] bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                  size="small"
+                  fullWidth
+                  sx={{ "& .MuiInputBase-input": { fontSize: 9, py: 0.5 } }}
                 >
-                  <option value="">Select state</option>
+                  <MenuItem value="">Select state</MenuItem>
                   {customerConfigOptions.states.map((row) => (
-                    <option key={row.value} value={row.value}>
+                    <MenuItem key={row.value} value={row.value}>
                       {row.label}
-                    </option>
+                    </MenuItem>
                   ))}
-                </select>
-              </div>
+                </TextField>
+              </Box>
             ) : null}
-          </div>
+          </Box>
 
-          <div className="border-t border-gray-200 dark:border-gray-700 py-3">
-            <div className="overflow-hidden rounded border border-gray-200 dark:border-gray-700">
-              <div className="grid grid-cols-[1.1fr_0.9fr_72px] border-b bg-gray-50 text-[10px] font-bold uppercase tracking-wide text-gray-700 dark:text-gray-300">
-                <div className="px-2 py-2">Last Bill</div>
-                <div className="border-l border-gray-200 dark:border-gray-700 px-2 py-2 text-right">Amount</div>
-                <div className="border-l border-gray-200 dark:border-gray-700 px-2 py-2 text-center">Action</div>
-              </div>
-              <div className="h-28 overflow-y-auto">
+          <Box sx={{ borderTop: 1, borderColor: "divider", py: 1.5 }}>
+            <Box sx={{ overflow: "hidden", borderRadius: "3.5px", border: 1, borderColor: "divider" }}>
+              <Box sx={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr 72px", borderBottom: 1, borderColor: "divider", bgcolor: "action.hover", fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>
+                <Box sx={{ px: 1, py: 1 }}>Last Bill</Box>
+                <Box sx={{ borderLeft: 1, borderColor: "divider", px: 1, py: 1, textAlign: "right" }}>Amount</Box>
+                <Box sx={{ borderLeft: 1, borderColor: "divider", px: 1, py: 1, textAlign: "center" }}>Action</Box>
+              </Box>
+              <Box sx={{ height: 112, overflowY: "auto" }}>
                 {latestPosDocument ? (
-                  <div className="grid grid-cols-[1.1fr_0.9fr_72px] items-center text-xs text-gray-700 dark:text-gray-300">
-                    <div className="px-2 py-2 font-semibold">
+                  <Box sx={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr 72px", alignItems: "center", fontSize: 10.5, color: "text.secondary" }}>
+                    <Box sx={{ px: 1, py: 1, fontWeight: 600 }}>
                       {formatLatestPosDocumentNumber(latestPosDocument)}
-                    </div>
-                    <div className="border-l border-gray-200 dark:border-gray-700 px-2 py-2 text-right font-semibold">
+                    </Box>
+                    <Box sx={{ borderLeft: 1, borderColor: "divider", px: 1, py: 1, textAlign: "right", fontWeight: 600 }}>
                       {formatMoney(latestPosDocument.amount || 0)}
-                    </div>
-                    <div className="border-l border-gray-200 dark:border-gray-700 px-1 py-1.5">
-                      <div className="flex items-center justify-center gap-2">
-                        <button
+                    </Box>
+                    <Box sx={{ borderLeft: 1, borderColor: "divider", px: 0.5, py: 0.75 }}>
+                      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "center", gap: 1 }}>
+                        <IconButton
                           type="button"
                           onClick={handlePrintLatestPosDocument}
-                          className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                          size="small"
+                          sx={{ color: "primary.main", "&:hover": { color: "primary.dark" } }}
                           title={latestPosDocument.type === "return" ? "Print last saved return" : "Print last saved bill"}
                         >
                           <Printer className="h-4 w-4" />
-                        </button>
-                        <button
+                        </IconButton>
+                        <IconButton
                           type="button"
                           onClick={handleDeleteLastSavedSale}
+                          size="small"
                           disabled={
                             deletingLatestDocument ||
                             !canDeleteLatestPosDocument(latestPosDocument) ||
@@ -3314,7 +3403,7 @@ const POSSales = () => {
                                   )
                                 : false)
                           }
-                          className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 disabled:cursor-not-allowed disabled:text-gray-300 dark:disabled:text-gray-600"
+                          sx={{ color: "error.main", "&:hover": { color: "error.dark" } }}
                           title={
                             !canDeleteLatestPosDocument(latestPosDocument)
                               ? "This document cannot be deleted from POS Sale"
@@ -3332,54 +3421,54 @@ const POSSales = () => {
                           }
                         >
                           <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                        </IconButton>
+                      </Stack>
+                    </Box>
+                  </Box>
                 ) : (
-                  <div className="flex h-full items-center justify-center px-2 text-center text-xs text-gray-400 dark:text-gray-500">
+                  <Box sx={{ display: "flex", height: "100%", alignItems: "center", justifyContent: "center", px: 1, textAlign: "center", fontSize: 10.5, color: "text.disabled" }}>
                     No saved document yet
-                  </div>
+                  </Box>
                 )}
-              </div>
-            </div>
-          </div>
+              </Box>
+            </Box>
+          </Box>
 
-          <div className={`${summaryPanelSpacingClass} border-t border-gray-200 dark:border-gray-700 pt-3 ${summaryPanelTextClass}`}>
-            <div className="flex items-center justify-between text-base md:text-lg lg:text-xl">
-              <span className="font-extrabold text-gray-800 dark:text-gray-100">Amount</span>
-              <span className={`font-extrabold ${summary.amount < 0 ? "text-red-600" : "text-gray-900 dark:text-gray-100"}`}>
+          <Stack sx={{ gap: igstEnabled ? 0.75 : 1, borderTop: 1, borderColor: "divider", pt: 1.5, fontSize: igstEnabled ? { xs: 8, md: 9, lg: 10 } : { xs: 10, md: 12.25, lg: 14 } }}>
+            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", fontSize: { xs: 16, md: 17.5, lg: 21 } }}>
+              <Box component="span" sx={{ fontWeight: 800, color: "text.primary" }}>Amount</Box>
+              <Box component="span" sx={{ fontWeight: 800, color: summary.amount < 0 ? "error.main" : "text.primary" }}>
                 {formatMoney(summary.amount)}
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="font-semibold text-gray-700 dark:text-gray-300">Total Qty/Pcs</span>
-              <span className="font-bold text-gray-900 dark:text-gray-100">
+              </Box>
+            </Stack>
+            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between" }}>
+              <Box component="span" sx={{ fontWeight: 600, color: "text.secondary" }}>Total Qty/Pcs</Box>
+              <Box component="span" sx={{ fontWeight: 700, color: "text.primary" }}>
                 {displayCartLines.reduce((sum, line) => sum + toNum(line.qty, 0), 0).toFixed(2)}/{displayCartLines.length}
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="font-semibold text-gray-700 dark:text-gray-300">Gross Value</span>
-              <span className={`font-bold ${summary.grossValue < 0 ? "text-red-600" : "text-gray-900 dark:text-gray-100"}`}>
+              </Box>
+            </Stack>
+            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between" }}>
+              <Box component="span" sx={{ fontWeight: 600, color: "text.secondary" }}>Gross Value</Box>
+              <Box component="span" sx={{ fontWeight: 700, color: summary.grossValue < 0 ? "error.main" : "text.primary" }}>
                 {formatMoney(summary.grossValue)}
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="font-semibold text-gray-700 dark:text-gray-300">Addl Discount</span>
-              <span className="font-bold text-gray-900 dark:text-gray-100">{formatMoney(summary.addlDiscount)}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="font-semibold text-gray-700 dark:text-gray-300">Total Discount</span>
-              <span className="font-bold text-gray-900 dark:text-gray-100">{formatMoney(summary.totalDiscount)}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+              </Box>
+            </Stack>
+            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between" }}>
+              <Box component="span" sx={{ fontWeight: 600, color: "text.secondary" }}>Addl Discount</Box>
+              <Box component="span" sx={{ fontWeight: 700, color: "text.primary" }}>{formatMoney(summary.addlDiscount)}</Box>
+            </Stack>
+            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between" }}>
+              <Box component="span" sx={{ fontWeight: 600, color: "text.secondary" }}>Total Discount</Box>
+              <Box component="span" sx={{ fontWeight: 700, color: "text.primary" }}>{formatMoney(summary.totalDiscount)}</Box>
+            </Stack>
+          </Stack>
+        </Box>
+      </Box>
+    </Box>
   );
 
   const renderSearchPage = () => (
-    <div className="flex flex-1 min-h-0 flex-col bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-4">
+    <Box sx={{ display: "flex", flex: 1, minHeight: 0, flexDirection: "column", bgcolor: "background.paper", border: 1, borderColor: "divider", borderRadius: "7px", boxShadow: 1, p: 2 }}>
       <FilterableDataTable
         rows={searchResults}
         columns={posSearchColumns}
@@ -3416,45 +3505,47 @@ const POSSales = () => {
         enableVirtualization
         fillHeight
       />
-    </div>
+    </Box>
   );
 
   return (
-    <div className="pos-sale-page min-h-full bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 flex flex-col">
-      <div className="flex justify-between items-center px-4 py-2 bg-white dark:bg-gray-800 border-b dark:border-gray-700 shadow-sm">
-        <div className="flex items-center space-x-2">
-          <button
+    <Box className="pos-sale-page" sx={{ minHeight: "100%", bgcolor: "background.default", color: "text.primary", display: "flex", flexDirection: "column" }}>
+      <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", px: 2, py: 1, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
+        <Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
+          <IconButton
             onClick={() => navigate("/sales")}
-            className="text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100"
+            size="small"
             aria-label="Back to sales"
+            sx={{ color: "text.secondary", "&:hover": { color: "text.primary" } }}
           >
             <ArrowLeft className="w-4 h-4" />
-          </button>
-          <h1 className="pos-sale-page-title text-sm font-semibold flex items-center gap-1">
-            <button
+          </IconButton>
+          <Typography component="h1" className="pos-sale-page-title" sx={{ fontSize: 12.25, fontWeight: 600, display: "flex", alignItems: "center", gap: 0.5 }}>
+            <Box
+              component="button"
               type="button"
               onClick={() => navigate("/sales")}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
+              sx={{ color: "primary.main", "&:hover": { color: "primary.dark", textDecoration: "underline" } }}
             >
               Sales
-            </button>
-            <span className="text-gray-500 dark:text-gray-400">/</span>
-            <span>POS Sale</span>
-          </h1>
-        </div>
+            </Box>
+            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
+            <Box component="span">POS Sale</Box>
+          </Typography>
+        </Stack>
 
-        <div className="flex items-center gap-2">
+        <Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
           {!showSearchPage && (
             <>
-              <button
+              <Button
                 onClick={() => void downloadLastPosSalePdf()}
                 disabled={downloadingPosPdf}
-                className="glass-btn glass-btn-secondary inline-flex items-center disabled:opacity-50"
+                className="glass-btn glass-btn-secondary"
+                startIcon={<FileText className="w-4 h-4" />}
               >
-                <FileText className="w-4 h-4 mr-1" />
                 PDF
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => {
                   if (!validateSaleEntry()) return;
                   if (posCheckoutPrefs.paymentDialogVisible) {
@@ -3469,13 +3560,13 @@ const POSSales = () => {
                   });
                 }}
                 disabled={saving}
-                className="glass-btn glass-btn-success inline-flex items-center disabled:opacity-50"
+                className="glass-btn glass-btn-success"
+                startIcon={<Save className="w-4 h-4" />}
               >
-                <Save className="w-4 h-4 mr-1" />
                 {saving ? "Saving..." : "Save"}
-              </button>
+              </Button>
               {!posCheckoutPrefs.paymentDialogVisible ? (
-                <button
+                <Button
                   type="button"
                   onClick={() => {
                     if (!validateSaleEntry()) return;
@@ -3487,11 +3578,11 @@ const POSSales = () => {
                     });
                   }}
                   disabled={saving}
-                  className="glass-btn glass-btn-primary inline-flex items-center disabled:opacity-50"
+                  className="glass-btn glass-btn-primary"
+                  startIcon={<Printer className="w-4 h-4" />}
                 >
-                  <Printer className="w-4 h-4 mr-1" />
                   {saving ? "Saving..." : "Save & Print"}
-                </button>
+                </Button>
               ) : null}
             </>
           )}
@@ -3501,49 +3592,50 @@ const POSSales = () => {
               fieldConfig={POS_SALE_IMPORT_CONFIG}
             />
           )}
-          <button
+          <Button
             onClick={showSearchPage ? () => setShowSearchPage(false) : openSearchPage}
-            className="glass-btn glass-btn-primary inline-flex items-center"
+            className="glass-btn glass-btn-primary"
+            startIcon={<Search className="w-4 h-4" />}
           >
-            <Search className="w-4 h-4 mr-1" />
             {showSearchPage ? "Back" : "Search"}
-          </button>
-        </div>
-      </div>
+          </Button>
+        </Stack>
+      </Stack>
 
-      <div className="flex-1 min-h-0 p-4 space-y-4 pb-28 xl:flex xl:flex-col xl:pb-4">
+      <Box sx={{ flex: 1, minHeight: 0, p: 2, display: "flex", flexDirection: "column", gap: 2, pb: { xs: 14, xl: 2 } }}>
         {showSearchPage ? renderSearchPage() : renderEntryPage()}
 
-        {loading && <p className="text-xs text-gray-500 dark:text-gray-400 px-1">Loading master data...</p>}
-      </div>
+        {loading && <Typography sx={{ fontSize: 10.5, color: "text.secondary", px: 0.5 }}>Loading master data...</Typography>}
+      </Box>
 
       {salesManDialog.open && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
+        <Box
+          sx={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", bgcolor: "rgba(0,0,0,0.3)", p: 2 }}
           onClick={closeSalesManDialog}
         >
-          <div
-            className="w-full max-w-md rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-xl"
+          <Box
+            sx={{ width: "100%", maxWidth: 448, borderRadius: "7px", border: 1, borderColor: "divider", bgcolor: "background.paper", boxShadow: 12 }}
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 px-4 py-3">
-              <div>
-                <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">Sales Man</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">Write or scan the Sales Man ID</div>
-              </div>
-              <button
+            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", px: 2, py: 1.5 }}>
+              <Box>
+                <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Sales Man</Typography>
+                <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>Write or scan the Sales Man ID</Typography>
+              </Box>
+              <IconButton
                 type="button"
                 onClick={closeSalesManDialog}
-                className="rounded p-1 text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700/50 hover:text-gray-700 dark:hover:text-gray-100"
+                size="small"
                 aria-label="Close sales man dialog"
+                sx={{ color: "text.disabled", "&:hover": { color: "text.secondary" } }}
               >
                 <X className="h-4 w-4" />
-              </button>
-            </div>
+              </IconButton>
+            </Stack>
 
-            <div className="px-4 py-4">
-              <label className="mb-1 block text-xs font-bold text-red-700 dark:text-red-400">Sales Man ID</label>
-              <input
+            <Box sx={{ px: 2, py: 2 }}>
+              <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 10.5, fontWeight: 700, color: "error.main" }}>Sales Man ID</Typography>
+              <TextField
                 type="text"
                 value={salesManDialog.value}
                 onChange={(event) =>
@@ -3556,59 +3648,61 @@ const POSSales = () => {
                   }
                 }}
                 placeholder="Write or scan Sales Man ID"
-                className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                size="small"
+                fullWidth
                 autoFocus
               />
-            </div>
+            </Box>
 
-            <div className="flex items-center justify-end gap-2 border-t border-gray-200 dark:border-gray-700 px-4 py-3">
-              <button
+            <Stack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "flex-end", borderTop: 1, borderColor: "divider", px: 2, py: 1.5 }}>
+              <Button
                 type="button"
                 onClick={closeSalesManDialog}
                 className="glass-btn glass-btn-secondary"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={saveSalesManDialog}
                 className="glass-btn glass-btn-primary"
               >
                 Save
-              </button>
-            </div>
-          </div>
-        </div>
+              </Button>
+            </Stack>
+          </Box>
+        </Box>
       )}
 
       {quickCustomerDialogOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
+        <Box
+          sx={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", bgcolor: "rgba(0,0,0,0.3)", p: 2 }}
           onClick={closeQuickCustomerDialog}
         >
-          <div
-            className="flex max-h-[92vh] w-full max-w-7xl flex-col rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-xl"
+          <Box
+            sx={{ display: "flex", maxHeight: "92vh", width: "100%", maxWidth: 1280, flexDirection: "column", borderRadius: "7px", border: 1, borderColor: "divider", bgcolor: "background.paper", boxShadow: 12 }}
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 px-5 py-4">
-              <div>
-                <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">Quick Customer</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">
+            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", px: 2.5, py: 2 }}>
+              <Box>
+                <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Quick Customer</Typography>
+                <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>
                   Press Enter to move to next field. On mobile number Enter, existing customers appear below.
-                </div>
-              </div>
-              <button
+                </Typography>
+              </Box>
+              <IconButton
                 type="button"
                 onClick={closeQuickCustomerDialog}
-                className="rounded p-1 text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700/50 hover:text-gray-700 dark:hover:text-gray-100"
+                size="small"
                 aria-label="Close quick customer dialog"
+                sx={{ color: "text.disabled", "&:hover": { color: "text.secondary" } }}
               >
                 <X className="h-4 w-4" />
-              </button>
-            </div>
+              </IconButton>
+            </Stack>
 
-            <div className="flex-1 overflow-y-auto px-5 py-4">
-              <div className="grid grid-cols-1 gap-x-6 gap-y-4 xl:grid-cols-2">
+            <Box sx={{ flex: 1, overflowY: "auto", px: 2.5, py: 2 }}>
+              <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", xl: "1fr 1fr" }, columnGap: 3, rowGap: 2 }}>
                 <DialogTextField
                   label="Mobile No"
                   name="mobileNo"
@@ -3640,7 +3734,7 @@ const POSSales = () => {
                     quickCustomerFieldRefs.current.name = node;
                   }}
                 />
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <Box sx={{ display: "grid", gridTemplateColumns: { md: "1fr 1fr" }, gap: 2 }}>
                   <DialogSelectField
                     label="City"
                     name="cityId"
@@ -3663,9 +3757,9 @@ const POSSales = () => {
                       quickCustomerFieldRefs.current.stateId = node;
                     }}
                   />
-                </div>
+                </Box>
 
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <Box sx={{ display: "grid", gridTemplateColumns: { md: "1fr 1fr" }, gap: 2 }}>
                   <DialogTextField
                     label="Date of Birth"
                     name="dateOfBirth"
@@ -3687,8 +3781,8 @@ const POSSales = () => {
                       quickCustomerFieldRefs.current.billingName = node;
                     }}
                   />
-                </div>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                </Box>
+                <Box sx={{ display: "grid", gridTemplateColumns: { md: "1fr 1fr" }, gap: 2 }}>
                   <DialogSelectField
                     label="Customer Category"
                     name="customerCategoryId"
@@ -3710,9 +3804,9 @@ const POSSales = () => {
                       quickCustomerFieldRefs.current.sectionReligion = node;
                     }}
                   />
-                </div>
+                </Box>
 
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <Box sx={{ display: "grid", gridTemplateColumns: { md: "1fr 1fr" }, gap: 2 }}>
                   <DialogTextField
                     label="Card No"
                     name="cardNo"
@@ -3733,8 +3827,8 @@ const POSSales = () => {
                       quickCustomerFieldRefs.current.gstNo = node;
                     }}
                   />
-                </div>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                </Box>
+                <Box sx={{ display: "grid", gridTemplateColumns: { md: "1fr 1fr" }, gap: 2 }}>
                   <DialogTextField
                     label="Email Id"
                     name="emailId"
@@ -3756,366 +3850,368 @@ const POSSales = () => {
                       quickCustomerFieldRefs.current.areaId = node;
                     }}
                   />
-                </div>
+                </Box>
 
-                <div className="xl:col-span-2">
-                  <div className="mb-2 text-sm font-semibold text-gray-800 dark:text-gray-100">Search Results</div>
-                  <div className="overflow-hidden rounded border border-gray-200 dark:border-gray-700">
-                    <div className="max-h-[320px] overflow-auto">
-                      <table className="w-full min-w-[720px] text-sm">
-                        <thead className="sticky top-0 bg-gray-50 text-gray-700 dark:text-gray-300">
-                          <tr>
-                            <th className="w-10 px-3 py-2 text-left"></th>
-                            <th className="px-3 py-2 text-left">Name</th>
-                            <th className="px-3 py-2 text-left">GSTNO</th>
-                            <th className="px-3 py-2 text-left">Area</th>
-                            <th className="px-3 py-2 text-left">Mobile</th>
-                            <th className="px-3 py-2 text-left">Action</th>
-                          </tr>
-                        </thead>
-                        <tbody>
+                <Box sx={{ gridColumn: { xl: "span 2" } }}>
+                  <Typography sx={{ mb: 1, fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Search Results</Typography>
+                  <Box sx={{ overflow: "hidden", borderRadius: "3.5px", border: 1, borderColor: "divider" }}>
+                    <Box sx={{ maxHeight: 320, overflow: "auto" }}>
+                      <Table sx={{ width: "100%", minWidth: 720 }} size="small">
+                        <TableHead sx={{ position: "sticky", top: 0, bgcolor: "action.hover" }}>
+                          <TableRow>
+                            <TableCell sx={{ width: 40 }} />
+                            <TableCell>Name</TableCell>
+                            <TableCell>GSTNO</TableCell>
+                            <TableCell>Area</TableCell>
+                            <TableCell>Mobile</TableCell>
+                            <TableCell>Action</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
                           {quickCustomerSearchResults.length === 0 ? (
-                            <tr>
-                              <td colSpan={6} className="px-3 py-10 text-center text-sm text-gray-400 dark:text-gray-500">
+                            <TableRow>
+                              <TableCell colSpan={6} sx={{ py: 5, textAlign: "center", color: "text.disabled" }}>
                                 No matched customers
-                              </td>
-                            </tr>
+                              </TableCell>
+                            </TableRow>
                           ) : (
                             quickCustomerSearchResults.map((row) => {
                               const isSelected = row.value === quickCustomerSelectedId;
                               return (
-                                <tr
+                                <TableRow
                                   key={row.value}
-                                  className={`border-t dark:border-gray-700 ${isSelected ? "bg-blue-50 dark:bg-indigo-900/30" : "bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50"}`}
+                                  sx={{ bgcolor: isSelected ? (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.24 : 0.08) : "background.paper", "&:hover": { bgcolor: isSelected ? undefined : "action.hover" } }}
                                 >
-                                  <td className="px-3 py-2">
-                                    <input
-                                      type="radio"
+                                  <TableCell>
+                                    <Radio
                                       checked={isSelected}
                                       onChange={() => setQuickCustomerSelectedId(row.value)}
-                                      className="h-4 w-4 accent-blue-600"
+                                      size="small"
                                     />
-                                  </td>
-                                  <td className="px-3 py-2">{row.name || "-"}</td>
-                                  <td className="px-3 py-2">{row.gstNo || "-"}</td>
-                                  <td className="px-3 py-2">{row.areaName || "-"}</td>
-                                  <td className="px-3 py-2">{row.mobileNo || "-"}</td>
-                                  <td className="px-3 py-2">
-                                    <button
+                                  </TableCell>
+                                  <TableCell>{row.name || "-"}</TableCell>
+                                  <TableCell>{row.gstNo || "-"}</TableCell>
+                                  <TableCell>{row.areaName || "-"}</TableCell>
+                                  <TableCell>{row.mobileNo || "-"}</TableCell>
+                                  <TableCell>
+                                    <Button
                                       type="button"
                                       onClick={() => applyQuickCustomerSelection(row)}
                                       className="glass-btn glass-btn-primary"
+                                      size="small"
                                     >
                                       Select
-                                    </button>
-                                  </td>
-                                </tr>
+                                    </Button>
+                                  </TableCell>
+                                </TableRow>
                               );
                             })
                           )}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+                        </TableBody>
+                      </Table>
+                    </Box>
+                  </Box>
+                </Box>
+              </Box>
+            </Box>
 
-            <div className="flex items-center justify-between border-t border-gray-200 dark:border-gray-700 px-5 py-4">
-              <button
+            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderTop: 1, borderColor: "divider", px: 2.5, py: 2 }}>
+              <Button
                 type="button"
                 onClick={saveQuickCustomer}
                 disabled={quickCustomerSaving}
-                className="glass-btn glass-btn-success disabled:opacity-50"
+                className="glass-btn glass-btn-success"
               >
                 {quickCustomerSaving ? "Saving..." : "Save"}
-              </button>
-              <div className="flex items-center gap-2">
-                <button
+              </Button>
+              <Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
+                <Button
                   type="button"
                   onClick={() => applyQuickCustomerSelection(selectedQuickCustomerSearchRow)}
                   disabled={!selectedQuickCustomerSearchRow}
-                  className="glass-btn glass-btn-primary disabled:opacity-50"
+                  className="glass-btn glass-btn-primary"
                 >
                   Select
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   onClick={closeQuickCustomerDialog}
                   disabled={quickCustomerSaving}
-                  className="glass-btn glass-btn-secondary disabled:opacity-50"
+                  className="glass-btn glass-btn-secondary"
                 >
                   Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+                </Button>
+              </Stack>
+            </Stack>
+          </Box>
+        </Box>
       )}
 
       {discountDialogOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
+        <Box
+          sx={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", bgcolor: "rgba(0,0,0,0.3)", p: 2 }}
           onClick={closeDiscountDialog}
         >
-          <div
-            className="flex max-h-[86vh] w-full max-w-5xl flex-col rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-xl"
+          <Box
+            sx={{ display: "flex", maxHeight: "86vh", width: "100%", maxWidth: 1024, flexDirection: "column", borderRadius: "7px", border: 1, borderColor: "divider", bgcolor: "background.paper", boxShadow: 12 }}
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 px-5 py-4">
-              <div>
-                <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">Sale Discount</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">
+            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", px: 2.5, py: 2 }}>
+              <Box>
+                <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Sale Discount</Typography>
+                <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>
                   Select sale rows and apply a discount percentage to the current POS bill.
-                </div>
-              </div>
-              <button
+                </Typography>
+              </Box>
+              <IconButton
                 type="button"
                 onClick={closeDiscountDialog}
-                className="rounded p-1 text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700/50 hover:text-gray-700 dark:hover:text-gray-100"
+                size="small"
                 aria-label="Close discount dialog"
+                sx={{ color: "text.disabled", "&:hover": { color: "text.secondary" } }}
               >
                 <X className="h-4 w-4" />
-              </button>
-            </div>
+              </IconButton>
+            </Stack>
 
-            <div className="flex-1 overflow-auto px-5 py-4">
-              <div className="overflow-hidden rounded border border-gray-200 dark:border-gray-700">
-                <div className="max-h-[44vh] overflow-auto">
-                  <table className="w-full min-w-[860px] text-sm">
-                    <thead className="sticky top-0 bg-gray-50 text-gray-700 dark:text-gray-300">
-                      <tr>
-                        <th className="w-12 px-3 py-3 text-left">
-                          <input
-                            type="checkbox"
+            <Box sx={{ flex: 1, overflow: "auto", px: 2.5, py: 2 }}>
+              <Box sx={{ overflow: "hidden", borderRadius: "3.5px", border: 1, borderColor: "divider" }}>
+                <Box sx={{ maxHeight: "44vh", overflow: "auto" }}>
+                  <Table sx={{ width: "100%", minWidth: 860 }} size="small">
+                    <TableHead sx={{ position: "sticky", top: 0, bgcolor: "action.hover" }}>
+                      <TableRow>
+                        <TableCell sx={{ width: 48 }}>
+                          <Checkbox
                             checked={cartWithTotals.length > 0 && discountSelectedLineIds.length === cartWithTotals.length}
                             onChange={handleDiscountToggleAll}
-                            className="h-4 w-4 accent-blue-600"
+                            size="small"
                           />
-                        </th>
-                        <th className="px-3 py-3 text-left">Barcode</th>
-                        <th className="px-3 py-3 text-left">Detail</th>
-                        <th className="px-3 py-3 text-right">Price</th>
-                        <th className="px-3 py-3 text-right">Qty</th>
-                        <th className="px-3 py-3 text-left">Discount</th>
-                        <th className="px-3 py-3 text-right">Addin %</th>
-                        <th className="px-3 py-3 text-right">D.Value</th>
-                        <th className="px-3 py-3 text-right">Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody>
+                        </TableCell>
+                        <TableCell>Barcode</TableCell>
+                        <TableCell>Detail</TableCell>
+                        <TableCell align="right">Price</TableCell>
+                        <TableCell align="right">Qty</TableCell>
+                        <TableCell>Discount</TableCell>
+                        <TableCell align="right">Addin %</TableCell>
+                        <TableCell align="right">D.Value</TableCell>
+                        <TableCell align="right">Amount</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
                       {discountDialogRows.map((line, index) => (
-                        <tr key={line.lineId} className="border-t dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                          <td className="px-3 py-3">
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="checkbox"
+                        <TableRow key={line.lineId} hover>
+                          <TableCell>
+                            <Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
+                              <Checkbox
                                 checked={discountDialogSelectedSet.has(line.lineId)}
                                 onChange={() => handleDiscountRowToggle(line.lineId)}
-                                className="h-4 w-4 accent-blue-600"
+                                size="small"
                               />
-                              <span className="text-gray-600 dark:text-gray-300">{index + 1}</span>
-                            </div>
-                          </td>
-                          <td className="px-3 py-3 font-mono">{line.barcode || "-"}</td>
-                          <td className="px-3 py-3">{line.productName || "-"}</td>
-                          <td className="px-3 py-3 text-right">{formatMoney(line.price)}</td>
-                          <td className="px-3 py-3 text-right">{toNum(line.qty, 0)}</td>
-                          <td className="px-3 py-3">{`${formatMoney(line.discount)} @ ${line.appliedPercent}%`}</td>
-                          <td className="px-3 py-3 text-right">
-                            <input
+                              <Box component="span" sx={{ color: "text.secondary" }}>{index + 1}</Box>
+                            </Stack>
+                          </TableCell>
+                          <TableCell sx={{ fontFamily: "monospace" }}>{line.barcode || "-"}</TableCell>
+                          <TableCell>{line.productName || "-"}</TableCell>
+                          <TableCell align="right">{formatMoney(line.price)}</TableCell>
+                          <TableCell align="right">{toNum(line.qty, 0)}</TableCell>
+                          <TableCell sx={{ color: "text.secondary" }}>{`${formatMoney(line.discount)} @ ${line.appliedPercent}%`}</TableCell>
+                          <TableCell align="right">
+                            <TextField
                               type="number"
-                              min="0"
-                              step="0.01"
+                              slotProps={{ htmlInput: { min: 0
+                              , step: 0.01 } }}
                               value={line.percentInput}
                               onChange={(event) => handleDiscountRowPercentChange(line.lineId, event.target.value)}
-                              className="w-20 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-2 py-1 text-right text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                              size="small"
+                              sx={{ width: 80, "& .MuiInputBase-input": { fontSize: 12.25, textAlign: "right" } }}
                             />
-                          </td>
-                          <td className="px-3 py-3 text-right">
-                            <input
+                          </TableCell>
+                          <TableCell align="right">
+                            <TextField
                               type="number"
-                              min="0"
-                              step="0.01"
+                              slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
                               value={line.valueInput}
                               onChange={(event) => handleDiscountRowValueChange(line.lineId, event.target.value)}
-                              className="w-24 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-2 py-1 text-right text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                              size="small"
+                              sx={{ width: 96, "& .MuiInputBase-input": { fontSize: 12.25, textAlign: "right" } }}
                             />
-                          </td>
-                          <td className="px-3 py-3 text-right">{formatMoney(line.previewNetAmount)}</td>
-                        </tr>
+                          </TableCell>
+                          <TableCell align="right">{formatMoney(line.previewNetAmount)}</TableCell>
+                        </TableRow>
                       ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
+                    </TableBody>
+                  </Table>
+                </Box>
+              </Box>
+            </Box>
 
-            <div className="flex flex-col gap-3 border-t border-gray-200 dark:border-gray-700 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex flex-wrap items-end gap-3">
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Discount %</label>
-                  <input
+            <Stack sx={{ flexDirection: { xs: "column", lg: "row" }, gap: 1.5, borderTop: 1, borderColor: "divider", px: 2.5, py: 2, alignItems: { lg: "center" }, justifyContent: { lg: "space-between" } }}>
+              <Stack direction="row" sx={{ flexWrap: "wrap", alignItems: "flex-end", gap: 1.5 }}>
+                <Box>
+                  <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Discount %</Typography>
+                  <TextField
                     type="number"
-                    min="0"
-                    step="0.01"
+                    slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
                     value={discountPercentInput}
                     onChange={(event) => applyDiscountPercentToSelected(event.target.value)}
-                    className="w-32 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    size="small"
                     autoFocus
+                    sx={{ width: 128, "& .MuiInputBase-input": { fontSize: 12.25 } }}
                   />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">D.Value</label>
-                  <input
+                </Box>
+                <Box>
+                  <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>D.Value</Typography>
+                  <TextField
                     type="number"
-                    min="0"
-                    step="0.01"
+                    slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
                     value={discountValueInput}
                     onChange={(event) => applyDiscountValueToSelected(event.target.value)}
-                    className="w-40 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    size="small"
+                    sx={{ width: 160, "& .MuiInputBase-input": { fontSize: 12.25 } }}
                   />
-                </div>
-                <div className="pb-2 text-sm text-gray-600 dark:text-gray-300">
+                </Box>
+                <Typography sx={{ pb: 1, fontSize: 12.25, color: "text.secondary" }}>
                   Allowed on selected amount: {formatMoney(discountDialogTotals.selectedAmount)}
-                </div>
-              </div>
+                </Typography>
+              </Stack>
 
-              <div className="flex items-center justify-end gap-2">
-                <button
+              <Stack direction="row" sx={{ alignItems: "center", justifyContent: "flex-end", gap: 1 }}>
+                <Button
                   type="button"
                   onClick={applyDiscountDialog}
                   className="glass-btn glass-btn-primary"
                 >
                   Apply ({formatMoney(discountDialogTotals.previewDiscountValue)})
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   onClick={closeDiscountDialog}
                   className="glass-btn glass-btn-secondary"
                 >
                   Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+                </Button>
+              </Stack>
+            </Stack>
+          </Box>
+        </Box>
       )}
 
       {paymentDialogOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
+        <Box
+          sx={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", bgcolor: "rgba(0,0,0,0.3)", p: 2 }}
           onClick={closePaymentDialog}
         >
-          <div
-            className="w-full max-w-3xl rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-xl"
+          <Box
+            sx={{ width: "100%", maxWidth: 768, borderRadius: "7px", border: 1, borderColor: "divider", bgcolor: "background.paper", boxShadow: 12 }}
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 px-4 py-3">
-              <div>
-                <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">POS Payment</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">Review bill amount and enter received payment</div>
-              </div>
-              <button
+            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", px: 2, py: 1.5 }}>
+              <Box>
+                <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>POS Payment</Typography>
+                <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>Review bill amount and enter received payment</Typography>
+              </Box>
+              <IconButton
                 type="button"
                 onClick={closePaymentDialog}
-                className="rounded p-1 text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700/50 hover:text-gray-700 dark:hover:text-gray-100"
+                size="small"
                 aria-label="Close payment dialog"
+                sx={{ color: "text.disabled", "&:hover": { color: "text.secondary" } }}
               >
                 <X className="h-4 w-4" />
-              </button>
-            </div>
+              </IconButton>
+            </Stack>
 
-            <div className="grid gap-4 px-4 py-4 lg:grid-cols-[1.05fr_1.4fr]">
-              <div className="grid grid-cols-1 gap-2 text-sm">
-                <div className="flex justify-between rounded border border-gray-200 dark:border-gray-700 px-3 py-2">
-                  <span className="text-gray-600 dark:text-gray-300">Bill(s) Amount</span>
-                  <span className={`font-semibold ${paymentDisplayTotals.billAmount < 0 ? "text-red-600 dark:text-red-400" : ""}`}>
+            <Box sx={{ display: "grid", gap: 2, px: 2, py: 2, gridTemplateColumns: { lg: "1.05fr 1.4fr" } }}>
+              <Stack sx={{ gap: 1, fontSize: 12.25 }}>
+                <Stack direction="row" sx={{ justifyContent: "space-between", borderRadius: "3.5px", border: 1, borderColor: "divider", px: 1.5, py: 1 }}>
+                  <Box component="span" sx={{ color: "text.secondary" }}>Bill(s) Amount</Box>
+                  <Box component="span" sx={{ fontWeight: 600, color: paymentDisplayTotals.billAmount < 0 ? "error.main" : "text.primary" }}>
                     {formatMoney(paymentDisplayTotals.billAmount)}
-                  </span>
-                </div>
-                <div className="flex justify-between rounded border border-gray-200 dark:border-gray-700 px-3 py-2">
-                  <span className="text-gray-600 dark:text-gray-300">Discount Amount</span>
-                  <span className="font-semibold">{formatMoney(summary.totalDiscount)}</span>
-                </div>
-                <div className="flex justify-between rounded border border-gray-200 dark:border-gray-700 px-3 py-2">
-                  <span className="text-gray-600 dark:text-gray-300">Net Amount</span>
-                  <span className={`font-semibold ${paymentDisplayTotals.netAmount < 0 ? "text-red-600 dark:text-red-400" : ""}`}>
+                  </Box>
+                </Stack>
+                <Stack direction="row" sx={{ justifyContent: "space-between", borderRadius: "3.5px", border: 1, borderColor: "divider", px: 1.5, py: 1 }}>
+                  <Box component="span" sx={{ color: "text.secondary" }}>Discount Amount</Box>
+                  <Box component="span" sx={{ fontWeight: 600, color: "text.primary" }}>{formatMoney(summary.totalDiscount)}</Box>
+                </Stack>
+                <Stack direction="row" sx={{ justifyContent: "space-between", borderRadius: "3.5px", border: 1, borderColor: "divider", px: 1.5, py: 1 }}>
+                  <Box component="span" sx={{ color: "text.secondary" }}>Net Amount</Box>
+                  <Box component="span" sx={{ fontWeight: 600, color: paymentDisplayTotals.netAmount < 0 ? "error.main" : "text.primary" }}>
                     {formatMoney(paymentDisplayTotals.netAmount)}
-                  </span>
-                </div>
-                <div className="flex justify-between rounded border border-gray-200 dark:border-gray-700 px-3 py-2">
-                  <span className="text-gray-600 dark:text-gray-300">Balance</span>
-                  <span className={`font-semibold ${paymentDisplayTotals.balanceAmount > 0 ? "text-red-600 dark:text-red-400" : "text-green-700 dark:text-green-400"}`}>
+                  </Box>
+                </Stack>
+                <Stack direction="row" sx={{ justifyContent: "space-between", borderRadius: "3.5px", border: 1, borderColor: "divider", px: 1.5, py: 1 }}>
+                  <Box component="span" sx={{ color: "text.secondary" }}>Balance</Box>
+                  <Box component="span" sx={{ fontWeight: 600, color: paymentDisplayTotals.balanceAmount > 0 ? "error.main" : "success.main" }}>
                     {formatMoney(paymentDisplayTotals.balanceAmount)}
-                  </span>
-                </div>
-                <div className="flex justify-between rounded border border-gray-200 dark:border-gray-700 px-3 py-2">
-                  <span className="text-gray-600 dark:text-gray-300">Received</span>
-                  <span className="font-semibold">{formatMoney(paymentDisplayTotals.receivedAmount)}</span>
-                </div>
+                  </Box>
+                </Stack>
+                <Stack direction="row" sx={{ justifyContent: "space-between", borderRadius: "3.5px", border: 1, borderColor: "divider", px: 1.5, py: 1 }}>
+                  <Box component="span" sx={{ color: "text.secondary" }}>Received</Box>
+                  <Box component="span" sx={{ fontWeight: 600, color: "text.primary" }}>{formatMoney(paymentDisplayTotals.receivedAmount)}</Box>
+                </Stack>
                 {paymentDisplayTotals.changeAmount > 0 && (
-                  <div className="flex justify-between rounded border border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/20 px-3 py-2">
-                    <span className="text-gray-700 dark:text-gray-300">Change</span>
-                    <span className="font-semibold">{formatMoney(paymentDisplayTotals.changeAmount)}</span>
-                  </div>
+                  <Stack direction="row" sx={{ justifyContent: "space-between", borderRadius: "3.5px", border: 1, borderColor: (theme) => alpha(theme.palette.warning.main, 0.4), bgcolor: (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.16 : 0.08), px: 1.5, py: 1 }}>
+                    <Box component="span" sx={{ color: "text.secondary" }}>Change</Box>
+                    <Box component="span" sx={{ fontWeight: 600, color: "text.primary" }}>{formatMoney(paymentDisplayTotals.changeAmount)}</Box>
+                  </Stack>
                 )}
-              </div>
+              </Stack>
 
-              <div className="grid gap-4">
+              <Stack sx={{ gap: 2 }}>
                 {paymentTotals.refundAmount > 0 && (
-                  <div className="rounded border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-3">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="text-xs text-amber-800 dark:text-amber-400">
+                  <Box sx={{ borderRadius: "3.5px", border: 1, borderColor: (theme) => alpha(theme.palette.warning.main, 0.4), bgcolor: (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.16 : 0.08), p: 1.5 }}>
+                    <Stack direction="row" sx={{ flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 1 }}>
+                      <Typography sx={{ fontSize: 10.5, color: "warning.dark" }}>
                         Confirm the refund before saving. Any received amount is added to the refund.
-                      </div>
-                      <button
+                      </Typography>
+                      <Button
                         type="button"
                         onClick={() =>
                           paymentForm.refundApproved
                             ? handlePaymentFieldChange("refundApproved", false)
                             : handleConfirmRefund()
                         }
-                        className={`glass-btn ${paymentForm.refundApproved ? "glass-btn-success" : "glass-btn-primary"}`}
+                        className={paymentForm.refundApproved ? "glass-btn glass-btn-success" : "glass-btn glass-btn-primary"}
                       >
                         {paymentForm.refundApproved
                           ? `Refunded ${formatMoney(paymentTotals.refundAmount)}`
                           : `Refund ${formatMoney(paymentTotals.refundAmount)}`}
-                      </button>
-                    </div>
-                  </div>
+                      </Button>
+                    </Stack>
+                  </Box>
                 )}
 
-                <div className="grid gap-2">
-                  <label className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Cash</label>
-                  <input
+                <Stack sx={{ gap: 1 }}>
+                  <Typography sx={{ fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Cash</Typography>
+                  <TextField
                     type="number"
-                    min="0"
-                    step="0.01"
+                    slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
                     value={paymentForm.cashAmount}
                     onChange={(event) => handlePaymentFieldChange("cashAmount", event.target.value)}
                     onKeyDown={handlePaymentAmountKeyDown}
-                    className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    size="small"
+                    fullWidth
                     placeholder="Enter cash received"
                   />
-                </div>
+                </Stack>
 
-                <div className="grid gap-2 md:grid-cols-2">
-                  <div className="grid gap-2">
-                    <label className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Card Amount</label>
-                    <input
+                <Box sx={{ display: "grid", gap: 1, gridTemplateColumns: { md: "1fr 1fr" } }}>
+                  <Stack sx={{ gap: 1 }}>
+                    <Typography sx={{ fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Card Amount</Typography>
+                    <TextField
                       type="number"
-                      min="0"
-                      step="0.01"
+                      slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
                       value={paymentForm.cardAmount}
                       onChange={(event) => handlePaymentFieldChange("cardAmount", event.target.value)}
                       onKeyDown={handleCardAmountKeyDown}
-                      className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                      size="small"
+                      fullWidth
                     />
-                  </div>
-                  <div className="grid gap-2">
-                    <label className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Card Type</label>
-                    <select
+                  </Stack>
+                  <Stack sx={{ gap: 1 }}>
+                    <Typography sx={{ fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Card Type</Typography>
+                    <Box
+                      component="select"
                       ref={cardTypeSelectRef}
                       value={paymentForm.cardTypeId}
                       onChange={(event) => {
@@ -4123,7 +4219,7 @@ const POSSales = () => {
                         handlePaymentFieldChange("cardTypeId", event.target.value);
                       }}
                       onKeyDown={handleCardTypeKeyDown}
-                      className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                      sx={posSalesDialogNativeSelectSx}
                     >
                       <option value="">Select card type</option>
                       {cardTypes.map((row) => (
@@ -4131,26 +4227,27 @@ const POSSales = () => {
                           {row.label}
                         </option>
                       ))}
-                    </select>
-                  </div>
-                </div>
+                    </Box>
+                  </Stack>
+                </Box>
 
-                <div className="grid gap-2 md:grid-cols-2">
-                  <div className="grid gap-2">
-                    <label className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">UPI Amount</label>
-                    <input
+                <Box sx={{ display: "grid", gap: 1, gridTemplateColumns: { md: "1fr 1fr" } }}>
+                  <Stack sx={{ gap: 1 }}>
+                    <Typography sx={{ fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>UPI Amount</Typography>
+                    <TextField
                       type="number"
-                      min="0"
-                      step="0.01"
+                      slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
                       value={paymentForm.upiAmount}
                       onChange={(event) => handlePaymentFieldChange("upiAmount", event.target.value)}
                       onKeyDown={handleUpiAmountKeyDown}
-                      className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                      size="small"
+                      fullWidth
                     />
-                  </div>
-                  <div className="grid gap-2">
-                    <label className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">UPI Provider</label>
-                    <select
+                  </Stack>
+                  <Stack sx={{ gap: 1 }}>
+                    <Typography sx={{ fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>UPI Provider</Typography>
+                    <Box
+                      component="select"
                       ref={upiProviderSelectRef}
                       value={paymentForm.upiProviderId}
                       onChange={(event) => {
@@ -4158,7 +4255,7 @@ const POSSales = () => {
                         handlePaymentFieldChange("upiProviderId", event.target.value);
                       }}
                       onKeyDown={handleUpiProviderKeyDown}
-                      className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                      sx={posSalesDialogNativeSelectSx}
                     >
                       <option value="">Select UPI provider</option>
                       {upiProviders.map((row) => (
@@ -4166,48 +4263,48 @@ const POSSales = () => {
                           {row.label}
                         </option>
                       ))}
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </div>
+                    </Box>
+                  </Stack>
+                </Box>
+              </Stack>
+            </Box>
 
-            <div className="flex flex-wrap items-center justify-end gap-2 border-t border-gray-200 dark:border-gray-700 px-4 py-3">
-              <button
+            <Stack direction="row" sx={{ flexWrap: "wrap", alignItems: "center", justifyContent: "flex-end", gap: 1, borderTop: 1, borderColor: "divider", px: 2, py: 1.5 }}>
+              <Button
                 type="button"
                 onClick={closePaymentDialog}
                 disabled={saving}
-                className="glass-btn glass-btn-secondary disabled:opacity-50"
+                className="glass-btn glass-btn-secondary"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={() => handleSaveSale({ shouldPrint: false })}
                 disabled={saving}
-                className="glass-btn glass-btn-success inline-flex items-center disabled:opacity-50"
+                className="glass-btn glass-btn-success"
+                startIcon={<Save className="h-4 w-4" />}
               >
-                <Save className="mr-1 h-4 w-4" />
                 {saving ? "Saving..." : "Save"}
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={() => handleSaveSale({ shouldPrint: true })}
                 disabled={saving}
-                className="glass-btn glass-btn-primary inline-flex items-center disabled:opacity-50"
+                className="glass-btn glass-btn-primary"
+                startIcon={<Printer className="h-4 w-4" />}
               >
-                <Printer className="mr-1 h-4 w-4" />
                 {saving ? "Saving..." : "Save & Print"}
-              </button>
-            </div>
-          </div>
-        </div>
+              </Button>
+            </Stack>
+          </Box>
+        </Box>
       )}
       <CounterAssignmentDialog
         open={counterAssignmentOpen}
         onClose={() => setCounterAssignmentOpen(false)}
       />
-    </div>
+    </Box>
   );
 };
 

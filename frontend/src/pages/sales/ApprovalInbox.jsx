@@ -4,6 +4,7 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 import AsyncSearchSelect from "../../components/AsyncSearchSelect";
+import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
 
 const mapCustomerOption = (row) => ({
   value: String(row.id),
@@ -209,42 +210,45 @@ const ApprovalInbox = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 space-y-4">
-      <div className="flex justify-between items-center px-4 py-2 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
-        <div className="flex items-center space-x-2">
-          <button
+    <Stack spacing={2} sx={{ minHeight: "100vh", bgcolor: "background.default", color: "text.primary" }}>
+      <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", px: 2, py: 1, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+          <IconButton
             onClick={() => navigate(-1)}
-            className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+            sx={{ color: "text.secondary" }}
             aria-label="Back"
           >
             <ArrowLeft className="w-4 h-4" />
-          </button>
-          <h1 className="text-sm font-semibold">Sales Approval Inbox</h1>
-        </div>
-      </div>
+          </IconButton>
+          <Typography component="h1" sx={{ fontSize: 12.25, fontWeight: 600 }}>Sales Approval Inbox</Typography>
+        </Stack>
+      </Stack>
 
-      <div className="p-4 space-y-4 pb-24">
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-4">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-2 items-end">
-            <div className="md:col-span-4">
-              <label className="text-xs font-medium text-gray-600 dark:text-gray-400 block mb-1">Product</label>
-              <select
+      <Stack spacing={2} sx={{ p: 2, pb: 6 }}>
+        <Box sx={{ bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "7px", boxShadow: 1, p: 2 }}>
+          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(12, 1fr)" }, gap: 1, alignItems: "end" }}>
+            <Box sx={{ gridColumn: { md: "span 4" } }}>
+              <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>Product</Typography>
+              <TextField
+                select
                 value={filters.product}
                 onChange={(e) => setFilters((prev) => ({ ...prev, product: e.target.value }))}
-                className="w-full border border-gray-300 dark:border-gray-600 rounded-sm p-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 disabled={loadingFilters}
+                size="small"
+                fullWidth
+                sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 1 } }}
               >
-                <option value="">All products</option>
+                <MenuItem value="">All products</MenuItem>
                 {products.map((row) => (
-                  <option key={row.value} value={row.value}>
+                  <MenuItem key={row.value} value={row.value}>
                     {row.label}
-                  </option>
+                  </MenuItem>
                 ))}
-              </select>
-            </div>
+              </TextField>
+            </Box>
 
-            <div className="md:col-span-4">
-              <label className="text-xs font-medium text-gray-600 dark:text-gray-400 block mb-1">Customer</label>
+            <Box sx={{ gridColumn: { md: "span 4" } }}>
+              <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>Customer</Typography>
               <AsyncSearchSelect
                 name="customerId"
                 value={filters.customerId}
@@ -254,236 +258,248 @@ const ApprovalInbox = () => {
                 placeholder="All customers"
                 searchPlaceholder="Search customer..."
               />
-            </div>
+            </Box>
 
-            <div className="md:col-span-2">
-              <label className="text-xs font-medium text-gray-600 dark:text-gray-400 block mb-1">Status</label>
-              <select
+            <Box sx={{ gridColumn: { md: "span 2" } }}>
+              <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>Status</Typography>
+              <TextField
+                select
                 value={filters.status}
                 onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value }))}
-                className="w-full border border-gray-300 dark:border-gray-600 rounded-sm p-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                size="small"
+                fullWidth
+                sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 1 } }}
               >
-                <option value="">All status</option>
+                <MenuItem value="">All status</MenuItem>
                 {statusOptions.map((row) => (
-                  <option key={row.value} value={row.value}>
+                  <MenuItem key={row.value} value={row.value}>
                     {row.label}
-                  </option>
+                  </MenuItem>
                 ))}
-              </select>
-            </div>
+              </TextField>
+            </Box>
 
-            <div className="md:col-span-1">
-              <button
+            <Box sx={{ gridColumn: { md: "span 1" } }}>
+              <Button
                 onClick={() => runSearch()}
-                className="glass-btn glass-btn-primary w-full h-[38px] inline-flex items-center justify-center"
+                className="glass-btn glass-btn-primary"
+                fullWidth
+                sx={{ height: 38, display: "inline-flex", alignItems: "center", justifyContent: "center" }}
                 title="Search"
               >
                 <Search className="w-4 h-4" />
-              </button>
-            </div>
+              </Button>
+            </Box>
 
-            <div className="md:col-span-1">
-              <button
+            <Box sx={{ gridColumn: { md: "span 1" } }}>
+              <Button
                 onClick={handleResetFilters}
-                className="glass-btn glass-btn-secondary w-full h-[38px] inline-flex items-center justify-center"
+                className="glass-btn glass-btn-secondary"
+                fullWidth
+                sx={{ height: 38, display: "inline-flex", alignItems: "center", justifyContent: "center" }}
                 title="Reset"
               >
                 <RotateCcw className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </div>
+              </Button>
+            </Box>
+          </Box>
+        </Box>
 
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-x-auto">
-          <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-sm font-semibold text-gray-700 dark:text-gray-300">
+        <Box sx={{ bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "7px", boxShadow: 1, overflowX: "auto" }}>
+          <Box sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: "divider", bgcolor: "action.hover", fontSize: 12.25, fontWeight: 600, color: "text.secondary" }}>
             Approval Rows
-          </div>
-          <table className="w-full text-sm">
-            <thead className="bg-blue-50 dark:bg-blue-900/30 text-gray-700 dark:text-gray-300">
-              <tr>
-                <th className="border dark:border-gray-700 px-2 py-2 text-left">Approval No</th>
-                <th className="border dark:border-gray-700 px-2 py-2 text-left">Date</th>
-                <th className="border dark:border-gray-700 px-2 py-2 text-left">Customer</th>
-                <th className="border dark:border-gray-700 px-2 py-2 text-left">Status</th>
-                <th className="border dark:border-gray-700 px-2 py-2 text-left">Bill #</th>
-                <th className="border dark:border-gray-700 px-2 py-2 text-right">Amount</th>
-                <th className="border dark:border-gray-700 px-2 py-2 text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody>
+          </Box>
+          <Table sx={{ width: "100%", fontSize: 12.25 }}>
+            <TableHead sx={{ bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08), color: "text.secondary" }}>
+              <TableRow>
+                <TableCell sx={{ border: 1, borderColor: "divider", px: 1, py: 1, textAlign: "left" }}>Approval No</TableCell>
+                <TableCell sx={{ border: 1, borderColor: "divider", px: 1, py: 1, textAlign: "left" }}>Date</TableCell>
+                <TableCell sx={{ border: 1, borderColor: "divider", px: 1, py: 1, textAlign: "left" }}>Customer</TableCell>
+                <TableCell sx={{ border: 1, borderColor: "divider", px: 1, py: 1, textAlign: "left" }}>Status</TableCell>
+                <TableCell sx={{ border: 1, borderColor: "divider", px: 1, py: 1, textAlign: "left" }}>Bill #</TableCell>
+                <TableCell sx={{ border: 1, borderColor: "divider", px: 1, py: 1, textAlign: "right" }}>Amount</TableCell>
+                <TableCell sx={{ border: 1, borderColor: "divider", px: 1, py: 1, textAlign: "right" }}>Action</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
               {rows.length === 0 ? (
-                <tr>
-                  <td colSpan="7" className="px-3 py-8 text-center text-gray-400 dark:text-gray-500">
+                <TableRow>
+                  <TableCell colSpan={7} sx={{ px: 1.5, py: 4, textAlign: "center", color: "text.disabled" }}>
                     {searching ? "Searching..." : "No entries found"}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ) : (
                 rows.map((row) => (
-                  <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                    <td className="border dark:border-gray-700 px-2 py-2 font-semibold">{row.approval_no}</td>
-                    <td className="border dark:border-gray-700 px-2 py-2">{formatDateTime(row.sale_at)}</td>
-                    <td className="border dark:border-gray-700 px-2 py-2">{row.customer_name || row.customer?.name || "-"}</td>
-                    <td className="border dark:border-gray-700 px-2 py-2 capitalize">{toStatus(row.status) || "-"}</td>
-                    <td className="border dark:border-gray-700 px-2 py-2">{row.bill?.bill_no || "-"}</td>
-                    <td className="border dark:border-gray-700 px-2 py-2 text-right">{formatMoney(row.amount || 0)}</td>
-                    <td className="border dark:border-gray-700 px-2 py-2">
-                      <div className="flex justify-end gap-2">
-                        <button
+                  <TableRow key={row.id} sx={{ "&:hover": { bgcolor: "action.hover" } }}>
+                    <TableCell sx={{ border: 1, borderColor: "divider", px: 1, py: 1, fontWeight: 600 }}>{row.approval_no}</TableCell>
+                    <TableCell sx={{ border: 1, borderColor: "divider", px: 1, py: 1 }}>{formatDateTime(row.sale_at)}</TableCell>
+                    <TableCell sx={{ border: 1, borderColor: "divider", px: 1, py: 1 }}>{row.customer_name || row.customer?.name || "-"}</TableCell>
+                    <TableCell sx={{ border: 1, borderColor: "divider", px: 1, py: 1, textTransform: "capitalize" }}>{toStatus(row.status) || "-"}</TableCell>
+                    <TableCell sx={{ border: 1, borderColor: "divider", px: 1, py: 1 }}>{row.bill?.bill_no || "-"}</TableCell>
+                    <TableCell sx={{ border: 1, borderColor: "divider", px: 1, py: 1, textAlign: "right" }}>{formatMoney(row.amount || 0)}</TableCell>
+                    <TableCell sx={{ border: 1, borderColor: "divider", px: 1, py: 1 }}>
+                      <Stack direction="row" spacing={1} sx={{ justifyContent: "flex-end" }}>
+                        <Button
                           onClick={() => handleView(row.id)}
-                          className="glass-btn glass-btn-primary inline-flex items-center"
+                          className="glass-btn glass-btn-primary"
+                          sx={{ display: "inline-flex", alignItems: "center" }}
                         >
                           <Eye className="w-3.5 h-3.5 mr-1" />
                           View
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           onClick={() => handleApprove(row)}
                           disabled={!!actingId || toStatus(row.status) !== "pending"}
-                          className="glass-btn glass-btn-success inline-flex items-center disabled:opacity-50"
+                          className="glass-btn glass-btn-success disabled:opacity-50"
+                          sx={{ display: "inline-flex", alignItems: "center" }}
                         >
                           <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
                           {actingId === row.id && actingAction === "approve" ? "Approving..." : "Approve"}
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           onClick={() => handleDecline(row)}
                           disabled={!!actingId || toStatus(row.status) !== "pending"}
-                          className="glass-btn glass-btn-danger inline-flex items-center disabled:opacity-50"
+                          className="glass-btn glass-btn-danger disabled:opacity-50"
+                          sx={{ display: "inline-flex", alignItems: "center" }}
                         >
                           <X className="w-3.5 h-3.5 mr-1" />
                           {actingId === row.id && actingAction === "decline" ? "Declining..." : "Decline"}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+                        </Button>
+                      </Stack>
+                    </TableCell>
+                  </TableRow>
                 ))
               )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+            </TableBody>
+          </Table>
+        </Box>
+      </Stack>
 
       {viewOpen && (
-        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 w-full max-w-6xl max-h-[90vh] rounded-lg shadow-xl overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
-              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Sales On Approval Details</h2>
-              <button
+        <Box sx={{ position: "fixed", inset: 0, zIndex: 50, bgcolor: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", p: 2 }}>
+          <Box sx={{ bgcolor: "background.paper", width: "100%", maxWidth: 1152, maxHeight: "90vh", borderRadius: "7px", boxShadow: 8, overflow: "hidden" }}>
+            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1.5, borderBottom: 1, borderColor: "divider", bgcolor: "action.hover" }}>
+              <Typography component="h2" sx={{ fontSize: 12.25, fontWeight: 600, color: "text.secondary" }}>Sales On Approval Details</Typography>
+              <IconButton
                 onClick={() => setViewOpen(false)}
-                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                sx={{ color: "text.secondary" }}
                 aria-label="Close details"
               >
                 <X className="w-5 h-5" />
-              </button>
-            </div>
+              </IconButton>
+            </Stack>
 
-            <div className="p-4 space-y-4 overflow-y-auto max-h-[calc(90vh-56px)] text-gray-800 dark:text-gray-100">
+            <Stack spacing={2} sx={{ p: 2, overflowY: "auto", maxHeight: "calc(90vh - 56px)", color: "text.primary" }}>
               {loadingDetails ? (
-                <p className="text-sm text-gray-500 dark:text-gray-400">Loading details...</p>
+                <Typography sx={{ fontSize: 12.25, color: "text.secondary" }}>Loading details...</Typography>
               ) : !selectedSale ? (
-                <p className="text-sm text-gray-500 dark:text-gray-400">Unable to load details.</p>
+                <Typography sx={{ fontSize: 12.25, color: "text.secondary" }}>Unable to load details.</Typography>
               ) : (
                 <>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
-                    <div className="flex justify-between border dark:border-gray-700 rounded-sm px-3 py-2">
-                      <span className="text-gray-600 dark:text-gray-400">Approval No</span>
-                      <span className="font-semibold">{selectedSale.approval_no || "-"}</span>
-                    </div>
-                    <div className="flex justify-between border dark:border-gray-700 rounded-sm px-3 py-2">
-                      <span className="text-gray-600 dark:text-gray-400">Status</span>
-                      <span className="font-semibold capitalize">{toStatus(selectedSale.status) || "-"}</span>
-                    </div>
-                    <div className="flex justify-between border dark:border-gray-700 rounded-sm px-3 py-2">
-                      <span className="text-gray-600 dark:text-gray-400">Bill No</span>
-                      <span className="font-semibold">{selectedSale.bill?.bill_no || "-"}</span>
-                    </div>
-                    <div className="flex justify-between border dark:border-gray-700 rounded-sm px-3 py-2">
-                      <span className="text-gray-600 dark:text-gray-400">Date</span>
-                      <span className="font-semibold">{formatDateTime(selectedSale.sale_at)}</span>
-                    </div>
-                    <div className="flex justify-between border dark:border-gray-700 rounded-sm px-3 py-2">
-                      <span className="text-gray-600 dark:text-gray-400">Total Qty</span>
-                      <span className="font-semibold">{selectedSale.total_qty || 0}</span>
-                    </div>
-                    <div className="flex justify-between border dark:border-gray-700 rounded-sm px-3 py-2">
-                      <span className="text-gray-600 dark:text-gray-400">Amount</span>
-                      <span className="font-semibold">{formatMoney(selectedSale.amount || 0)}</span>
-                    </div>
-                  </div>
+                  <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(3, 1fr)" }, gap: 1, fontSize: 12.25 }}>
+                    <Stack direction="row" sx={{ justifyContent: "space-between", border: 1, borderColor: "divider", borderRadius: "3.5px", px: 1.5, py: 1 }}>
+                      <Box component="span" sx={{ color: "text.secondary" }}>Approval No</Box>
+                      <Box component="span" sx={{ fontWeight: 600 }}>{selectedSale.approval_no || "-"}</Box>
+                    </Stack>
+                    <Stack direction="row" sx={{ justifyContent: "space-between", border: 1, borderColor: "divider", borderRadius: "3.5px", px: 1.5, py: 1 }}>
+                      <Box component="span" sx={{ color: "text.secondary" }}>Status</Box>
+                      <Box component="span" sx={{ fontWeight: 600, textTransform: "capitalize" }}>{toStatus(selectedSale.status) || "-"}</Box>
+                    </Stack>
+                    <Stack direction="row" sx={{ justifyContent: "space-between", border: 1, borderColor: "divider", borderRadius: "3.5px", px: 1.5, py: 1 }}>
+                      <Box component="span" sx={{ color: "text.secondary" }}>Bill No</Box>
+                      <Box component="span" sx={{ fontWeight: 600 }}>{selectedSale.bill?.bill_no || "-"}</Box>
+                    </Stack>
+                    <Stack direction="row" sx={{ justifyContent: "space-between", border: 1, borderColor: "divider", borderRadius: "3.5px", px: 1.5, py: 1 }}>
+                      <Box component="span" sx={{ color: "text.secondary" }}>Date</Box>
+                      <Box component="span" sx={{ fontWeight: 600 }}>{formatDateTime(selectedSale.sale_at)}</Box>
+                    </Stack>
+                    <Stack direction="row" sx={{ justifyContent: "space-between", border: 1, borderColor: "divider", borderRadius: "3.5px", px: 1.5, py: 1 }}>
+                      <Box component="span" sx={{ color: "text.secondary" }}>Total Qty</Box>
+                      <Box component="span" sx={{ fontWeight: 600 }}>{selectedSale.total_qty || 0}</Box>
+                    </Stack>
+                    <Stack direction="row" sx={{ justifyContent: "space-between", border: 1, borderColor: "divider", borderRadius: "3.5px", px: 1.5, py: 1 }}>
+                      <Box component="span" sx={{ color: "text.secondary" }}>Amount</Box>
+                      <Box component="span" sx={{ fontWeight: 600 }}>{formatMoney(selectedSale.amount || 0)}</Box>
+                    </Stack>
+                  </Box>
 
-                  <div className="border border-gray-200 dark:border-gray-700 rounded-md p-3 text-sm space-y-1">
-                    <h2 className="font-semibold text-gray-700 dark:text-gray-300">Customer Details</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
-                      <div>Name: {selectedSale.customer_name || selectedSale.customer?.name || "-"}</div>
-                      <div>Mobile: {selectedSale.customer_mobile || selectedSale.customer?.mobile_no || "-"}</div>
-                      <div>Billing Name: {selectedSale.customer?.billing_name || "-"}</div>
-                      <div>Email: {selectedSale.customer?.email_id || "-"}</div>
-                      <div className="md:col-span-2">Address: {selectedSale.customer?.address || "-"}</div>
-                    </div>
-                  </div>
+                  <Stack spacing={0.5} sx={{ border: "1px solid", borderColor: "divider", borderRadius: "5.25px", p: 1.5, fontSize: 12.25 }}>
+                    <Typography component="h2" sx={{ fontWeight: 600, color: "text.secondary" }}>Customer Details</Typography>
+                    <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 0.5 }}>
+                      <Box>Name: {selectedSale.customer_name || selectedSale.customer?.name || "-"}</Box>
+                      <Box>Mobile: {selectedSale.customer_mobile || selectedSale.customer?.mobile_no || "-"}</Box>
+                      <Box>Billing Name: {selectedSale.customer?.billing_name || "-"}</Box>
+                      <Box>Email: {selectedSale.customer?.email_id || "-"}</Box>
+                      <Box sx={{ gridColumn: { md: "span 2" } }}>Address: {selectedSale.customer?.address || "-"}</Box>
+                    </Box>
+                  </Stack>
 
-                  <div className="border border-gray-200 dark:border-gray-700 rounded-md overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-                        <tr>
-                          <th className="border dark:border-gray-700 px-2 py-2 text-left">Barcode</th>
-                          <th className="border dark:border-gray-700 px-2 py-2 text-left">Product</th>
-                          <th className="border dark:border-gray-700 px-2 py-2 text-center">Qty</th>
-                          <th className="border dark:border-gray-700 px-2 py-2 text-right">Price</th>
-                          <th className="border dark:border-gray-700 px-2 py-2 text-right">Tax %</th>
-                          <th className="border dark:border-gray-700 px-2 py-2 text-right">Discount</th>
-                          <th className="border dark:border-gray-700 px-2 py-2 text-right">Total</th>
-                        </tr>
-                      </thead>
-                      <tbody>
+                  <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: "5.25px", overflowX: "auto" }}>
+                    <Table sx={{ width: "100%", fontSize: 12.25 }}>
+                      <TableHead sx={{ bgcolor: "action.hover", color: "text.secondary" }}>
+                        <TableRow>
+                          <TableCell sx={{ border: 1, borderColor: "divider", px: 1, py: 1, textAlign: "left" }}>Barcode</TableCell>
+                          <TableCell sx={{ border: 1, borderColor: "divider", px: 1, py: 1, textAlign: "left" }}>Product</TableCell>
+                          <TableCell sx={{ border: 1, borderColor: "divider", px: 1, py: 1, textAlign: "center" }}>Qty</TableCell>
+                          <TableCell sx={{ border: 1, borderColor: "divider", px: 1, py: 1, textAlign: "right" }}>Price</TableCell>
+                          <TableCell sx={{ border: 1, borderColor: "divider", px: 1, py: 1, textAlign: "right" }}>Tax %</TableCell>
+                          <TableCell sx={{ border: 1, borderColor: "divider", px: 1, py: 1, textAlign: "right" }}>Discount</TableCell>
+                          <TableCell sx={{ border: 1, borderColor: "divider", px: 1, py: 1, textAlign: "right" }}>Total</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
                         {(selectedSale.items || []).length === 0 ? (
-                          <tr>
-                            <td colSpan="7" className="px-3 py-6 text-center text-gray-400 dark:text-gray-500">
+                          <TableRow>
+                            <TableCell colSpan={7} sx={{ px: 1.5, py: 3, textAlign: "center", color: "text.disabled" }}>
                               No items found
-                            </td>
-                          </tr>
+                            </TableCell>
+                          </TableRow>
                         ) : (
                           (selectedSale.items || []).map((item) => (
-                            <tr key={item.id}>
-                              <td className="border dark:border-gray-700 px-2 py-2">{item.barcode || "-"}</td>
-                              <td className="border dark:border-gray-700 px-2 py-2">{item.product_name || "-"}</td>
-                              <td className="border dark:border-gray-700 px-2 py-2 text-center">{item.qty || 0}</td>
-                              <td className="border dark:border-gray-700 px-2 py-2 text-right">{formatMoney(item.price || 0)}</td>
-                              <td className="border dark:border-gray-700 px-2 py-2 text-right">{Number(item.tax_perc || 0).toFixed(2)}</td>
-                              <td className="border dark:border-gray-700 px-2 py-2 text-right">{formatMoney(item.discount || 0)}</td>
-                              <td className="border dark:border-gray-700 px-2 py-2 text-right">{formatMoney(item.total || 0)}</td>
-                            </tr>
+                            <TableRow key={item.id}>
+                              <TableCell sx={{ border: 1, borderColor: "divider", px: 1, py: 1 }}>{item.barcode || "-"}</TableCell>
+                              <TableCell sx={{ border: 1, borderColor: "divider", px: 1, py: 1 }}>{item.product_name || "-"}</TableCell>
+                              <TableCell sx={{ border: 1, borderColor: "divider", px: 1, py: 1, textAlign: "center" }}>{item.qty || 0}</TableCell>
+                              <TableCell sx={{ border: 1, borderColor: "divider", px: 1, py: 1, textAlign: "right" }}>{formatMoney(item.price || 0)}</TableCell>
+                              <TableCell sx={{ border: 1, borderColor: "divider", px: 1, py: 1, textAlign: "right" }}>{Number(item.tax_perc || 0).toFixed(2)}</TableCell>
+                              <TableCell sx={{ border: 1, borderColor: "divider", px: 1, py: 1, textAlign: "right" }}>{formatMoney(item.discount || 0)}</TableCell>
+                              <TableCell sx={{ border: 1, borderColor: "divider", px: 1, py: 1, textAlign: "right" }}>{formatMoney(item.total || 0)}</TableCell>
+                            </TableRow>
                           ))
                         )}
-                      </tbody>
-                    </table>
-                  </div>
+                      </TableBody>
+                    </Table>
+                  </Box>
 
-                  <div className="flex items-center justify-end gap-2">
-                    <button
+                  <Stack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "flex-end" }}>
+                    <Button
                       type="button"
                       onClick={() => handleApprove(selectedSale)}
                       disabled={!!actingId || toStatus(selectedSale.status) !== "pending"}
-                      className="glass-btn glass-btn-success inline-flex items-center disabled:opacity-50"
+                      className="glass-btn glass-btn-success disabled:opacity-50"
+                      sx={{ display: "inline-flex", alignItems: "center" }}
                     >
                       <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
                       {actingId === selectedSale.id && actingAction === "approve" ? "Approving..." : "Approve"}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
                       onClick={() => handleDecline(selectedSale)}
                       disabled={!!actingId || toStatus(selectedSale.status) !== "pending"}
-                      className="glass-btn glass-btn-danger inline-flex items-center disabled:opacity-50"
+                      className="glass-btn glass-btn-danger disabled:opacity-50"
+                      sx={{ display: "inline-flex", alignItems: "center" }}
                     >
                       <X className="w-3.5 h-3.5 mr-1" />
                       {actingId === selectedSale.id && actingAction === "decline" ? "Declining..." : "Decline"}
-                    </button>
-                  </div>
+                    </Button>
+                  </Stack>
                 </>
               )}
-            </div>
-          </div>
-        </div>
+            </Stack>
+          </Box>
+        </Box>
       )}
-    </div>
+    </Stack>
   );
 };
 

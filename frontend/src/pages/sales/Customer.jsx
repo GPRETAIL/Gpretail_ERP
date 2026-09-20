@@ -1,48 +1,52 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, PlusCircle, Save, Search, Trash2, Edit2 } from "lucide-react";
 import { toast } from "react-toastify";
 import api from "../../api/axios";
 import { useNavigate } from "react-router-dom";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import FilterableDataTable from "../../components/FilterableDataTable";
+import { Box, Stack, Typography, TextField, MenuItem, Button, Checkbox } from "@mui/material";
 
 const TextInput = ({ label, name, required = false, value, onChange, placeholder = "", type = "text" }) => (
-  <div className="flex items-center">
-    <label className="w-[40%] text-sm font-medium text-gray-700 dark:text-gray-300">
-      {required && <span className="text-red-500 dark:text-red-400 mr-1">*</span>}
+  <Stack direction="row" sx={{ alignItems: "center" }}>
+    <Typography component="label" sx={{ width: "40%", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>
+      {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}
       {label}
-    </label>
-    <input
+    </Typography>
+    <TextField
       type={type}
       name={name}
       value={value}
       onChange={onChange}
       placeholder={placeholder}
-      className="flex-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm p-1.5 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ml-2"
+      size="small"
+      sx={{ flex: 1, ml: 1, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
     />
-  </div>
+  </Stack>
 );
 
 const SelectInput = ({ label, name, required = false, options = [], value, onChange }) => (
-  <div className="flex items-center">
-    <label className="w-[40%] text-sm font-medium text-gray-700 dark:text-gray-300">
-      {required && <span className="text-red-500 dark:text-red-400 mr-1">*</span>}
+  <Stack direction="row" sx={{ alignItems: "center" }}>
+    <Typography component="label" sx={{ width: "40%", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>
+      {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}
       {label}
-    </label>
-    <select
+    </Typography>
+    <TextField
+      select
       name={name}
       value={value}
       onChange={onChange}
-      className="flex-1 border border-gray-300 dark:border-gray-600 rounded-sm p-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ml-2"
+      size="small"
+      sx={{ flex: 1, ml: 1, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
     >
-      <option value="">Select {label}</option>
+      <MenuItem value="">Select {label}</MenuItem>
       {options.map((o, i) => (
-        <option key={i} value={o.value ?? o.label}>
+        <MenuItem key={i} value={o.value ?? o.label}>
           {o.label}
-        </option>
+        </MenuItem>
       ))}
-    </select>
-  </div>
+    </TextField>
+  </Stack>
 );
 
 const Customer = () => {
@@ -149,9 +153,9 @@ const Customer = () => {
         label: "Active",
         valueGetter: (row) => !!row.is_active,
         render: (value) => (
-          <span className={value ? "text-green-700 dark:text-green-400 font-medium" : "text-gray-500 dark:text-gray-400"}>
+          <Box component="span" sx={{ color: value ? "success.main" : "text.secondary", fontWeight: value ? 500 : 400 }}>
             {value ? "Yes" : "No"}
-          </span>
+          </Box>
         ),
       },
     ],
@@ -276,16 +280,16 @@ const Customer = () => {
       await Promise.all(keys.map((id) => api.delete(`/customers/${id}`)));
       toast.success(`${keys.length} record(s) deleted`);
       setSelectedRows([]);
-      await handleSearch();
+      await fetchCustomers();
     } catch {
       toast.error("Failed to delete some records");
     }
   };
 
   const renderForm = () => (
-    <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg border border-gray-200 dark:border-gray-700 w-full">
-      <div className="p-4">
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+    <Box sx={{ bgcolor: "background.paper", boxShadow: 3, borderRadius: "7px", border: "1px solid", borderColor: "divider", width: "100%" }}>
+      <Box sx={{ p: 2 }}>
+        <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", xl: "1fr 1fr" }, gap: 1.5 }}>
           <TextInput label="Mobile No" name="mobileNo" value={formData.mobileNo} onChange={handleChange} />
           <TextInput label="Name" name="name" required value={formData.name} onChange={handleChange} />
           <TextInput
@@ -311,23 +315,22 @@ const Customer = () => {
           <TextInput label="Email Id" name="emailId" type="email" value={formData.emailId} onChange={handleChange} />
           <SelectInput label="Area" name="areaId" options={opts.areas} value={formData.areaId} onChange={handleChange} />
 
-          <div className="flex items-center xl:col-span-2 pt-1">
-            <label className="w-[20%] text-sm font-medium text-gray-700 dark:text-gray-300">Active</label>
-            <input
-              type="checkbox"
+          <Stack direction="row" sx={{ alignItems: "center", gridColumn: { xl: "span 2" }, pt: 0.5 }}>
+            <Typography component="label" sx={{ width: "20%", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Active</Typography>
+            <Checkbox
               name="active"
               checked={formData.active}
               onChange={handleChange}
-              className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-blue-500 ml-2"
+              sx={{ ml: 1, p: 0 }}
             />
-          </div>
-        </div>
-      </div>
-    </div>
+          </Stack>
+        </Box>
+      </Box>
+    </Box>
   );
 
   const renderSearchPage = () => (
-    <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4 border border-gray-200 dark:border-gray-700 w-full">
+    <Box sx={{ bgcolor: "background.paper", boxShadow: 3, borderRadius: "7px", p: 2, border: "1px solid", borderColor: "divider", width: "100%" }}>
       <FilterableDataTable
         rows={searchResults}
         columns={customerSearchColumns}
@@ -348,24 +351,26 @@ const Customer = () => {
         onSelectionChange={setSelectedRows}
         onBulkDelete={handleBulkDelete}
         renderActions={(row, { selectedCount } = {}) => (
-          <div className="flex items-center gap-2">
-            <button
+          <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+            <Button
               type="button"
               onClick={() => handleEdit(row)}
               title="Edit customer"
               disabled={selectedCount > 1}
-              className="glass-btn glass-btn-primary rounded p-1.5"
+              className="glass-btn glass-btn-primary"
+              sx={{ borderRadius: "3.5px", p: 0.75, minWidth: 0 }}
             >
               <Edit2 className="w-4 h-4" />
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => setConfirmDlg({ open: true, id: row.id, name: row.name })}
-              className="glass-btn glass-btn-danger rounded p-1.5"
+              className="glass-btn glass-btn-danger"
+              sx={{ borderRadius: "3.5px", p: 0.75, minWidth: 0 }}
               title="Delete customer"
             >
               <Trash2 className="w-4 h-4" />
-            </button>
-          </div>
+            </Button>
+          </Stack>
         )}
         page={searchPage}
         limit={searchLimit}
@@ -382,11 +387,11 @@ const Customer = () => {
         }}
         paginationMode="server"
       />
-    </div>
+    </Box>
   );
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100">
+    <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh", bgcolor: "background.default", color: "text.primary" }}>
       <ConfirmDialog
         open={confirmDlg.open}
         message={`Are you sure you want to delete "${confirmDlg.name}"? This action cannot be undone.`}
@@ -399,53 +404,55 @@ const Customer = () => {
         onConfirm={handleBulkDeleteConfirmed}
         onCancel={() => setBulkConfirm({ open: false, keys: [] })}
       />
-      <div className="flex justify-between items-center px-4 py-2 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
-        <div className="flex items-center space-x-2">
-          <button
+      <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", px: 2, py: 1, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+          <Button
             onClick={showSearchPage ? () => setShowSearchPage(false) : () => navigate("/sales")}
-            className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+            sx={{ color: "text.secondary", minWidth: 0, p: 0.5 }}
             aria-label={showSearchPage ? "Back to customer entry" : "Back to sales"}
           >
             <ArrowLeft className="w-4 h-4" />
-          </button>
-          <h1 className="text-sm font-semibold flex items-center gap-1">
-            <button
+          </Button>
+          <Typography component="h1" sx={{ fontSize: 12.25, fontWeight: 600, display: "flex", alignItems: "center", gap: 0.5 }}>
+            <Button
               type="button"
               onClick={() => navigate("/sales")}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
+              sx={{ color: "primary.main", textTransform: "none", minWidth: "auto", p: 0, "&:hover": { textDecoration: "underline", bgcolor: "transparent" } }}
             >
               Sales
-            </button>
-            <span className="text-gray-500 dark:text-gray-400">/</span>
-            <span>Customer {currentId ? `(Edit: #${currentId})` : ""}</span>
-          </h1>
-        </div>
+            </Button>
+            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
+            <Box component="span">Customer {currentId ? `(Edit: #${currentId})` : ""}</Box>
+          </Typography>
+        </Stack>
 
-        <div className="flex items-center space-x-3 text-sm font-medium text-gray-700 dark:text-gray-300">
-          <button className="topbar-action-btn topbar-action-new" onClick={handleNew}>
+        <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>
+          <Button className="topbar-action-btn topbar-action-new" onClick={handleNew}>
             <PlusCircle className="w-4 h-4 mr-1" /> New
-          </button>
-          <span>|</span>
-          <button
-            className="glass-btn glass-btn-success flex items-center disabled:opacity-50"
+          </Button>
+          <Box component="span">|</Box>
+          <Button
+            className="glass-btn glass-btn-success disabled:opacity-50"
             onClick={handleSave}
             disabled={saving || showSearchPage}
+            sx={{ display: "flex", alignItems: "center" }}
           >
             <Save className="w-4 h-4 mr-1" /> {saving ? "Saving..." : "Save"}
-          </button>
-          <span>|</span>
-          <button
-            className="glass-btn glass-btn-primary flex items-center"
+          </Button>
+          <Box component="span">|</Box>
+          <Button
+            className="glass-btn glass-btn-primary"
             onClick={showSearchPage ? () => setShowSearchPage(false) : openSearchPage}
+            sx={{ display: "flex", alignItems: "center" }}
           >
             <Search className="w-4 h-4 mr-1" /> {showSearchPage ? "Back" : "Search"}
-          </button>
-        </div>
-      </div>
+          </Button>
+        </Stack>
+      </Stack>
 
-      <div className="flex-1 p-4">{showSearchPage ? renderSearchPage() : renderForm()}</div>
+      <Box sx={{ flex: 1, p: 2 }}>{showSearchPage ? renderSearchPage() : renderForm()}</Box>
 
-    </div>
+    </Box>
   );
 };
 

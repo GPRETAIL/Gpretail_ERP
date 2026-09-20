@@ -10,6 +10,7 @@ import SearchableSelect from "../../components/SearchableSelect";
 import UploadImportButton from "../../components/UploadImportButton";
 import CounterAssignmentDialog from "../../components/CounterAssignmentDialog";
 import { usePrintContext } from "../../context/PrintContext";
+import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, Checkbox, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
 
 const POS_OLD_SALE_IMPORT_CONFIG = {
   aliases: {
@@ -2173,7 +2174,7 @@ const POSOld = () => {
         key: "amount",
         label: "Amount",
         valueGetter: (row) => toNum(row.amount || 0),
-        render: (value) => <div className="text-right">{formatMoney(value || 0)}</div>,
+        render: (value) => <Box sx={{ textAlign: "right" }}>{formatMoney(value || 0)}</Box>,
       },
     ],
     []
@@ -2267,7 +2268,7 @@ const POSOld = () => {
   }, [runPosOldSearch, searchLimit]);
 
   const renderSearchPage = () => (
-    <div className="flex flex-1 min-h-0 min-w-0 flex-col rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm">
+    <Box sx={{ display: "flex", flex: 1, minHeight: 0, minWidth: 0, flexDirection: "column", borderRadius: "7px", border: 1, borderColor: "divider", bgcolor: "background.paper", p: 2, boxShadow: 1 }}>
       <FilterableDataTable
         rows={searchResults}
         columns={posOldSearchColumns}
@@ -2303,44 +2304,42 @@ const POSOld = () => {
         enableVirtualization
         fillHeight
       />
-    </div>
+    </Box>
   );
 
   /* ───────────────── RENDER ───────────────── */
   return (
-    <div className="h-screen flex flex-col bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 overflow-hidden">
+    <Box sx={{ height: "100vh", display: "flex", flexDirection: "column", bgcolor: "background.default", color: "text.primary", overflow: "hidden" }}>
       {/* ─── TOP BAR ─── */}
-      <div className="flex items-center justify-between px-3 py-1.5 bg-white dark:bg-gray-800 border-b dark:border-gray-700 shadow-sm flex-shrink-0">
+      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 1.5, py: 0.75, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1, flexShrink: 0 }}>
         {/* Tabs */}
-        <div className="flex items-center gap-1 overflow-x-auto">
+        <Stack direction="row" sx={{ alignItems: "center", gap: 0.5, overflowX: "auto" }}>
           {tabs.map((tab, idx) => (
-            <button
+            <Button
               key={tab.id}
               onClick={() => setActiveTabId(tab.id)}
-              className={`flex items-center gap-1 px-3 py-1 rounded text-sm font-medium border transition ${
-                tab.id === activeTabId
-                  ? "bg-blue-600 text-white border-blue-600"
-                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700/50"
-              }`}
+              variant={tab.id === activeTabId ? "contained" : "outlined"}
+              size="small"
+              sx={{ fontSize: 12.25, fontWeight: 500 }}
             >
-              <span>{`Bill ${idx + 1}`}</span>
-            </button>
+              {`Bill ${idx + 1}`}
+            </Button>
           ))}
-          <button onClick={handleAddTab} className="glass-btn glass-btn-success px-2 py-1" title="Hold & New">
+          <Button onClick={handleAddTab} className="glass-btn glass-btn-success" sx={{ px: 1, py: 0.5, minWidth: 0 }} title="Hold & New">
             <Plus className="w-4 h-4" />
-          </button>
+          </Button>
           {tabs.length > 1 && (
-            <button onClick={() => handleDeleteTab(activeTabId)} className="glass-btn glass-btn-danger px-2 py-1" title="Delete Tab">
+            <Button onClick={() => handleDeleteTab(activeTabId)} className="glass-btn glass-btn-danger" sx={{ px: 1, py: 0.5, minWidth: 0 }} title="Delete Tab">
               <Minus className="w-4 h-4" />
-            </button>
+            </Button>
           )}
-        </div>
+        </Stack>
 
         {/* Top right buttons */}
-        <div className="flex items-center gap-2">
+        <Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
           {!showSearchPage && (
             <>
-              <button
+              <Button
                 onClick={async () => {
                   try {
                     const res = await api.get("/pos-old-sales/last-receipt");
@@ -2364,13 +2363,15 @@ const POSOld = () => {
                     toast.error(err?.response?.data?.message || "No previous sale found");
                   }
                 }}
-                className="glass-btn glass-btn-primary inline-flex items-center gap-1 text-sm"
+                className="glass-btn glass-btn-primary"
+                startIcon={<Printer className="w-4 h-4" />}
+                sx={{ fontSize: 12.25 }}
               >
-                <Printer className="w-4 h-4" /> Receipt
-              </button>
-              <button onClick={handleOpenCloseRegister} className="glass-btn glass-btn-primary inline-flex items-center gap-1 text-sm">
-                <CreditCard className="w-4 h-4" /> Close
-              </button>
+                Receipt
+              </Button>
+              <Button onClick={handleOpenCloseRegister} className="glass-btn glass-btn-primary" startIcon={<CreditCard className="w-4 h-4" />} sx={{ fontSize: 12.25 }}>
+                Close
+              </Button>
             </>
           )}
           {showSearchPage && (
@@ -2379,22 +2380,25 @@ const POSOld = () => {
               fieldConfig={POS_OLD_SALE_IMPORT_CONFIG}
             />
           )}
-          <button
+          <Button
             onClick={showSearchPage ? () => setShowSearchPage(false) : openSearchPage}
-            className="glass-btn glass-btn-primary inline-flex items-center gap-1 text-sm"
+            className="glass-btn glass-btn-primary"
+            startIcon={<Search className="w-4 h-4" />}
+            sx={{ fontSize: 12.25 }}
           >
-            <Search className="w-4 h-4" /> {showSearchPage ? "Back" : "Search"}
-          </button>
-        </div>
-      </div>
+            {showSearchPage ? "Back" : "Search"}
+          </Button>
+        </Stack>
+      </Stack>
 
       {/* ─── MAIN AREA ─── */}
-      {showSearchPage ? <div className="flex flex-1 min-h-0 min-w-0 overflow-hidden p-4">{renderSearchPage()}</div> : <div className="flex flex-1 overflow-hidden">
+      {showSearchPage ? <Box sx={{ display: "flex", flex: 1, minHeight: 0, minWidth: 0, overflow: "hidden", p: 2 }}>{renderSearchPage()}</Box> : <Box sx={{ display: "flex", flex: 1, overflow: "hidden" }}>
         {/* ─── LEFT PANEL ─── */}
-        <div className="flex-1 flex flex-col overflow-hidden border-r dark:border-gray-700">
+        <Box sx={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", borderRight: 1, borderColor: "divider" }}>
           {/* Customer + Barcode row */}
-          <div className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 border-b dark:border-gray-700">
-            <select
+          <Stack direction="row" sx={{ alignItems: "center", gap: 1, px: 1.5, py: 1, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider" }}>
+            <TextField
+              select
               value={activeTab.customerMode}
               onChange={(e) => updateActiveTab({
                 customerMode: e.target.value,
@@ -2402,12 +2406,13 @@ const POSOld = () => {
                 customerMobile: "",
                 customerName: "",
               })}
-              className="border border-gray-300 rounded px-2 py-1.5 text-sm bg-white w-44 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
+              size="small"
+              sx={{ width: 176, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
             >
-              <option value="walking">WalkinCustomer</option>
-              <option value="existing">Existing Customer</option>
-              <option value="new">New Customer</option>
-            </select>
+              <MenuItem value="walking">WalkinCustomer</MenuItem>
+              <MenuItem value="existing">Existing Customer</MenuItem>
+              <MenuItem value="new">New Customer</MenuItem>
+            </TextField>
             {activeTab.customerMode === "existing" ? (
               <input
                 type="text"
@@ -2431,12 +2436,13 @@ const POSOld = () => {
                   handleCustomerNumberLookup(e.currentTarget.value, "existing");
                 }}
                 placeholder="Customer number, press Enter"
-                className="border border-gray-300 rounded px-2 py-1.5 text-sm bg-white w-48 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
+                size="small"
+                sx={{ width: 192, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
               />
             ) : null}
             {activeTab.customerMode === "new" ? (
               <>
-                <input
+                <TextField
                   type="text"
                   value={activeTab.customerMobile}
                   onChange={(e) => updateActiveTab({ customerMobile: e.target.value, existingCustomerId: "" })}
@@ -2446,497 +2452,576 @@ const POSOld = () => {
                     handleCustomerNumberLookup(e.currentTarget.value, "new");
                   }}
                   placeholder="Customer number"
-                  className="border border-gray-300 rounded px-2 py-1.5 text-sm bg-white w-36 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
+                  size="small"
+                  sx={{ width: 144, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
                 />
-                <input
+                <TextField
                   type="text"
                   value={activeTab.customerName}
                   onChange={(e) => updateActiveTab({ customerName: e.target.value, existingCustomerId: "" })}
                   placeholder="Customer name"
-                  className="border border-gray-300 rounded px-2 py-1.5 text-sm bg-white w-40 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
+                  size="small"
+                  sx={{ width: 160, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
                 />
               </>
             ) : null}
-            <div className="hidden lg:block flex-1 relative">
-              <input
-                ref={barcodeRef}
+            <Box sx={{ display: { xs: "none", lg: "block" }, flex: 1, position: "relative" }}>
+              <TextField
+                inputRef={barcodeRef}
                 type="text"
                 value={barcodeInput}
                 onChange={(e) => setBarcodeInput(e.target.value)}
                 onKeyDown={handleBarcodeSubmit}
                 placeholder="Barcode_Product_Name"
-                className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 dark:placeholder-gray-500"
+                size="small"
+                fullWidth
+                sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
               />
-            </div>
-            <div className="flex items-center gap-1 text-lg font-semibold text-gray-700 dark:text-gray-300">
-              <span>🛒</span>
-              <span>{totalItems} item{totalItems !== 1 ? "s" : ""}</span>
-            </div>
-          </div>
+            </Box>
+            <Stack direction="row" sx={{ alignItems: "center", gap: 0.5, fontSize: 17.5, fontWeight: 600, color: "text.secondary" }}>
+              <Box component="span">🛒</Box>
+              <Box component="span">{totalItems} item{totalItems !== 1 ? "s" : ""}</Box>
+            </Stack>
+          </Stack>
 
           {/* Cart Table */}
-          <div className="flex-1 overflow-auto bg-white dark:bg-gray-800">
-            <table className="w-full text-sm table-fixed">
+          <Box sx={{ flex: 1, overflow: "auto", bgcolor: "background.paper" }}>
+            <Table sx={{ width: "100%", fontSize: 12.25, tableLayout: "fixed" }}>
               <colgroup>
-                <col className="w-[60px]" />
+                <col style={{ width: 60 }} />
                 <col />
-                <col className="w-[80px]" />
-                <col className="w-[100px]" />
-                <col className="w-[80px]" />
-                <col className="w-[90px]" />
-                <col className="w-[90px]" />
-                <col className="w-[90px]" />
-                <col className="w-[36px]" />
+                <col style={{ width: 80 }} />
+                <col style={{ width: 100 }} />
+                <col style={{ width: 80 }} />
+                <col style={{ width: 90 }} />
+                <col style={{ width: 90 }} />
+                <col style={{ width: 90 }} />
+                <col style={{ width: 36 }} />
               </colgroup>
-              <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0">
-                <tr className="text-gray-600 dark:text-gray-300 font-semibold">
-                  <th className="px-2 py-2 text-left border-b dark:border-gray-700">S.No</th>
-                  <th className="px-2 py-2 text-left border-b dark:border-gray-700">Product</th>
-                  <th className="px-2 py-2 text-right border-b dark:border-gray-700">MRP</th>
-                  <th className="px-2 py-2 text-center border-b dark:border-gray-700">Price</th>
-                  <th className="px-2 py-2 text-center border-b dark:border-gray-700">Quantity</th>
-                  <th className="px-2 py-2 text-center border-b dark:border-gray-700">Dis %</th>
-                  <th className="px-2 py-2 text-center border-b dark:border-gray-700">Dis AMT</th>
-                  <th className="px-2 py-2 text-right border-b dark:border-gray-700">Total</th>
-                  <th className="px-2 py-2 text-center border-b dark:border-gray-700"></th>
-                </tr>
-              </thead>
-              <tbody>
+              <TableHead sx={{ bgcolor: "action.hover", position: "sticky", top: 0 }}>
+                <TableRow sx={{ color: "text.secondary", fontWeight: 600 }}>
+                  <TableCell sx={{ textAlign: "left" }}>S.No</TableCell>
+                  <TableCell sx={{ textAlign: "left" }}>Product</TableCell>
+                  <TableCell sx={{ textAlign: "right" }}>MRP</TableCell>
+                  <TableCell sx={{ textAlign: "center" }}>Price</TableCell>
+                  <TableCell sx={{ textAlign: "center" }}>Quantity</TableCell>
+                  <TableCell sx={{ textAlign: "center" }}>Dis %</TableCell>
+                  <TableCell sx={{ textAlign: "center" }}>Dis AMT</TableCell>
+                  <TableCell sx={{ textAlign: "right" }}>Total</TableCell>
+                  <TableCell sx={{ textAlign: "center" }} />
+                </TableRow>
+              </TableHead>
+              <TableBody>
                 {cartWithTotals.length === 0 ? (
-                  <tr>
-                    <td colSpan="9" className="px-3 py-16 text-center text-gray-400 dark:text-gray-500">
+                  <TableRow>
+                    <TableCell colSpan={9} sx={{ py: 8, textAlign: "center", color: "text.disabled" }}>
                       Scan barcode or select products from right panel
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : (
                   cartWithTotals.map((line, idx) => (
-                    <tr key={line.lineId} className={`border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 ${isExchangeReturnLine(line) ? "bg-red-50/60 dark:bg-red-900/20" : ""}`}>
-                      <td className="px-2 py-1.5 text-xs font-mono truncate">{idx + 1}</td>
-                      <td className={`px-2 py-1.5 truncate ${isExchangeReturnLine(line) ? "text-red-700 dark:text-red-400" : ""}`} title={line.productName}>{line.productName}</td>
-                      <td className={`px-2 py-1.5 text-right ${isExchangeReturnLine(line) ? "text-red-700 dark:text-red-400" : ""}`}>{formatMoney(line.mrp)}</td>
-                      <td className="px-2 py-1.5">
-                        <input
+                    <TableRow
+                      key={line.lineId}
+                      hover
+                      sx={isExchangeReturnLine(line) ? { bgcolor: (theme) => alpha(theme.palette.error.main, theme.palette.mode === "dark" ? 0.12 : 0.06) } : undefined}
+                    >
+                      <TableCell sx={{ fontSize: 10.5, fontFamily: "monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{idx + 1}</TableCell>
+                      <TableCell sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: isExchangeReturnLine(line) ? "error.main" : undefined }} title={line.productName}>{line.productName}</TableCell>
+                      <TableCell sx={{ textAlign: "right", color: isExchangeReturnLine(line) ? "error.main" : undefined }}>{formatMoney(line.mrp)}</TableCell>
+                      <TableCell>
+                        <Box
+                          component="input"
                           type="number" min="0" step="0.1"
                           value={isExchangeReturnLine(line) ? line.signedPrice : line.price}
                           onChange={(e) => handleLineChange(line.lineId, "price", e.target.value)}
                           readOnly={isExchangeReturnLine(line)}
-                          className={`w-full rounded border border-gray-300 dark:border-gray-600 px-1 py-0.5 text-right text-sm dark:bg-gray-700 dark:text-gray-100 ${isExchangeReturnLine(line) ? "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400" : ""}`}
+                          sx={{
+                            width: "100%", borderRadius: "3.5px", border: 1, borderColor: "grey.300", px: 0.5, py: 0.25, textAlign: "right", fontSize: 12.25, bgcolor: "background.paper", color: "text.primary",
+                            ...(isExchangeReturnLine(line) ? { bgcolor: (theme) => alpha(theme.palette.error.main, 0.08), color: "error.main" } : {}),
+                          }}
                         />
-                      </td>
-                      <td className="px-2 py-1.5 text-center">
-                        <input
+                      </TableCell>
+                      <TableCell sx={{ textAlign: "center" }}>
+                        <Box
+                          component="input"
                           type="number" min="0"
                           value={line.qty}
                           onChange={(e) => handleLineChange(line.lineId, "qty", e.target.value)}
-                          className={`w-full rounded border border-gray-300 dark:border-gray-600 px-1 py-0.5 text-center text-sm dark:bg-gray-700 dark:text-gray-100 ${isExchangeReturnLine(line) ? "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400" : ""}`}
+                          sx={{
+                            width: "100%", borderRadius: "3.5px", border: 1, borderColor: "grey.300", px: 0.5, py: 0.25, textAlign: "center", fontSize: 12.25, bgcolor: "background.paper", color: "text.primary",
+                            ...(isExchangeReturnLine(line) ? { bgcolor: (theme) => alpha(theme.palette.error.main, 0.08), color: "error.main" } : {}),
+                          }}
                         />
-                      </td>
-                      <td className="px-2 py-1.5">
-                        <input
+                      </TableCell>
+                      <TableCell>
+                        <Box
+                          component="input"
                           type="number" min="0" step="0.1"
                           value={line.discPerc}
                           onChange={(e) => handleLineChange(line.lineId, "discPerc", e.target.value)}
                           readOnly={isExchangeReturnLine(line)}
-                          className={`w-full rounded border border-gray-300 dark:border-gray-600 px-1 py-0.5 text-right text-sm dark:bg-gray-700 dark:text-gray-100 ${isExchangeReturnLine(line) ? "bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400" : ""}`}
+                          sx={{
+                            width: "100%", borderRadius: "3.5px", border: 1, borderColor: "grey.300", px: 0.5, py: 0.25, textAlign: "right", fontSize: 12.25, bgcolor: "background.paper", color: "text.primary",
+                            ...(isExchangeReturnLine(line) ? { bgcolor: "action.hover", color: "text.disabled" } : {}),
+                          }}
                         />
-                      </td>
-                      <td className="px-2 py-1.5">
-                        <input
+                      </TableCell>
+                      <TableCell>
+                        <Box
+                          component="input"
                           type="number" min="0" step="0.1"
                           value={line.discAmt}
                           onChange={(e) => handleLineChange(line.lineId, "discAmt", e.target.value)}
                           readOnly={isExchangeReturnLine(line)}
-                          className={`w-full rounded border border-gray-300 dark:border-gray-600 px-1 py-0.5 text-right text-sm dark:bg-gray-700 dark:text-gray-100 ${isExchangeReturnLine(line) ? "bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400" : ""}`}
+                          sx={{
+                            width: "100%", borderRadius: "3.5px", border: 1, borderColor: "grey.300", px: 0.5, py: 0.25, textAlign: "right", fontSize: 12.25, bgcolor: "background.paper", color: "text.primary",
+                            ...(isExchangeReturnLine(line) ? { bgcolor: "action.hover", color: "text.disabled" } : {}),
+                          }}
                         />
-                      </td>
-                      <td className={`px-2 py-1.5 text-right font-semibold ${line.total < 0 ? "text-red-700 dark:text-red-400" : ""}`}>{formatMoney(line.total)}</td>
-                      <td className="px-2 py-1.5 text-center">
-                        <button
+                      </TableCell>
+                      <TableCell sx={{ textAlign: "right", fontWeight: 600, color: line.total < 0 ? "error.main" : undefined }}>{formatMoney(line.total)}</TableCell>
+                      <TableCell sx={{ textAlign: "center" }}>
+                        <IconButton
                           type="button"
                           onClick={() => removeLine(line.lineId)}
-                          className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 font-bold text-lg"
+                          size="small"
                           aria-label="Remove line"
+                          sx={{ color: "error.main", "&:hover": { color: "error.dark" }, fontWeight: 700, fontSize: 17.5 }}
                         >
                           &times;
-                        </button>
-                      </td>
-                    </tr>
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
                   ))
                 )}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
+          </Box>
 
           {/* Bottom summary */}
-          <div className="hidden lg:block bg-white dark:bg-gray-800 border-t dark:border-gray-700 px-3 py-2 flex-shrink-0 space-y-2">
+          <Stack sx={{ display: { xs: "none", lg: "block" }, bgcolor: "background.paper", borderTop: 1, borderColor: "divider", px: 1.5, py: 1, flexShrink: 0, gap: 1 }}>
             {/* Row 1: Discount, SubTotal, Total, Balance */}
-            <div className="grid grid-cols-4 gap-3 items-end">
-              <div>
-                <label className="text-xs font-medium text-gray-600 dark:text-gray-300 block">Discount_amt</label>
-                <div className="text-sm font-semibold dark:text-gray-100">{formatMoney(cartWithTotals.reduce((s, l) => s + l.discAmt, 0))}</div>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-gray-600 dark:text-gray-300 block">SubTotal</label>
-                <div className="text-sm font-semibold dark:text-gray-100">{formatMoney(subtotal)}</div>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-gray-600 dark:text-gray-300 block text-red-600 dark:text-red-400">Total</label>
-                <div className="text-2xl font-bold text-red-600 dark:text-red-400">₹ {formatMoney(totalAmount)}</div>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-gray-600 dark:text-gray-300 block">Balanceamt</label>
-                <div className={`text-lg font-bold ${balanceAmount < 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}>
+            <Box sx={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 1.5, alignItems: "flex-end" }}>
+              <Box>
+                <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>Discount_amt</Typography>
+                <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>{formatMoney(cartWithTotals.reduce((s, l) => s + l.discAmt, 0))}</Typography>
+              </Box>
+              <Box>
+                <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>SubTotal</Typography>
+                <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>{formatMoney(subtotal)}</Typography>
+              </Box>
+              <Box>
+                <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "error.main" }}>Total</Typography>
+                <Typography sx={{ fontSize: 21, fontWeight: 700, color: "error.main" }}>₹ {formatMoney(totalAmount)}</Typography>
+              </Box>
+              <Box>
+                <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>Balanceamt</Typography>
+                <Typography sx={{ fontSize: 15.75, fontWeight: 700, color: balanceAmount < 0 ? "error.main" : "success.main" }}>
                   ₹ {formatMoney(balanceAmount)}
-                </div>
-              </div>
-            </div>
+                </Typography>
+              </Box>
+            </Box>
 
             {/* Action buttons */}
-            <div className="grid grid-cols-4 gap-2">
-              <button onClick={handleCancel} className="glass-btn glass-btn-danger py-2.5 text-sm font-bold inline-flex items-center justify-center gap-1">
-                <RotateCcw className="w-4 h-4" /> CANCEL (F4)
-              </button>
-              <button
+            <Box sx={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 1 }}>
+              <Button onClick={handleCancel} className="glass-btn glass-btn-danger" startIcon={<RotateCcw className="w-4 h-4" />} sx={{ py: 1.25, fontSize: 12.25, fontWeight: 700 }}>
+                CANCEL (F4)
+              </Button>
+              <Button
                 onClick={() => {
                   setShowExchangeDialog(false);
                   setShowReturnDialog(true);
                   resetReturnExchangeDialogState();
                   setTimeout(() => returnBillInputRef.current?.focus(), 0);
                 }}
-                className="glass-btn glass-btn-warning py-2.5 text-sm font-bold inline-flex items-center justify-center gap-1"
+                className="glass-btn glass-btn-warning"
+                startIcon={<Repeat className="w-4 h-4" />}
+                sx={{ py: 1.25, fontSize: 12.25, fontWeight: 700 }}
               >
-                <Repeat className="w-4 h-4" /> Return
-              </button>
-              <button
+                Return
+              </Button>
+              <Button
                 onClick={() => {
                   setShowReturnDialog(false);
                   setShowExchangeDialog(true);
                   resetReturnExchangeDialogState();
                   setTimeout(() => returnBillInputRef.current?.focus(), 0);
                 }}
-                className="glass-btn glass-btn-warning py-2.5 text-sm font-bold inline-flex items-center justify-center gap-1"
+                className="glass-btn glass-btn-warning"
+                startIcon={<Repeat className="w-4 h-4" />}
+                sx={{ py: 1.25, fontSize: 12.25, fontWeight: 700 }}
               >
-                <Repeat className="w-4 h-4" /> Exchange
-              </button>
-              <button
+                Exchange
+              </Button>
+              <Button
                 onClick={handleSave}
                 disabled={saving}
-                className="glass-btn glass-btn-primary py-2.5 text-sm font-bold inline-flex items-center justify-center gap-1 disabled:opacity-50"
+                className="glass-btn glass-btn-primary"
+                startIcon={<Printer className="w-4 h-4" />}
+                sx={{ py: 1.25, fontSize: 12.25, fontWeight: 700 }}
               >
-                <Printer className="w-4 h-4" /> {saving ? "Saving..." : "Quick Pay & Print (F8)"}
-              </button>
-            </div>
-          </div>
+                {saving ? "Saving..." : "Quick Pay & Print (F8)"}
+              </Button>
+            </Box>
+          </Stack>
 
-          <div className="lg:hidden bg-white dark:bg-gray-800 border-t dark:border-gray-700 px-3 py-2 space-y-2 flex-shrink-0">
-            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-              <span>{totalItems} item{totalItems !== 1 ? "s" : ""} · SubTotal</span>
-              <span className="text-lg font-bold text-gray-800 dark:text-gray-100">₹{formatMoney(totalAmount)}</span>
-            </div>
-            <div className="flex flex-nowrap items-center gap-2">
-              <button
+          <Stack sx={{ display: { lg: "none" }, bgcolor: "background.paper", borderTop: 1, borderColor: "divider", px: 1.5, py: 1, gap: 1, flexShrink: 0 }}>
+            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", fontSize: 10.5, color: "text.secondary" }}>
+              <Box component="span">{totalItems} item{totalItems !== 1 ? "s" : ""} · SubTotal</Box>
+              <Box component="span" sx={{ fontSize: 15.75, fontWeight: 700, color: "text.primary" }}>₹{formatMoney(totalAmount)}</Box>
+            </Stack>
+            <Stack direction="row" sx={{ flexWrap: "nowrap", alignItems: "center", gap: 1 }}>
+              <Button
                 type="button"
                 onClick={handleOpenScanner}
-                className="glass-btn glass-btn-secondary flex-1 min-w-0 h-11 text-sm font-bold inline-flex items-center justify-center gap-2 whitespace-nowrap"
+                className="glass-btn glass-btn-secondary"
+                startIcon={<ScanLine className="w-4 h-4" />}
+                sx={{ flex: 1, minWidth: 0, height: 44, fontSize: 12.25, fontWeight: 700, whiteSpace: "nowrap" }}
               >
-                <ScanLine className="w-4 h-4" />
                 Scan
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={handleSave}
                 disabled={saving}
-                className="glass-btn glass-btn-primary flex-1 min-w-0 h-11 text-sm font-bold inline-flex items-center justify-center gap-2 whitespace-nowrap disabled:opacity-50"
+                className="glass-btn glass-btn-primary"
+                sx={{ flex: 1, minWidth: 0, height: 44, fontSize: 12.25, fontWeight: 700, whiteSpace: "nowrap" }}
               >
                 <Printer className="w-4 h-4" />
                 {saving ? "Saving..." : "Quick Pay & Print"}
-              </button>
-            </div>
-          </div>
-        </div>
+              </Button>
+            </Stack>
+          </Stack>
+        </Box>
 
-        <div
-          className={`relative border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex-shrink-0 transition-[width] duration-200 ease-out ${
-            isRightPanelOpen ? "w-[332px]" : "w-3"
-          }`}
+        <Box
+          sx={{
+            position: "relative",
+            borderLeft: 1,
+            borderColor: "divider",
+            bgcolor: "background.paper",
+            flexShrink: 0,
+            transition: "width 0.2s ease-out",
+            width: isRightPanelOpen ? "332px" : "12px",
+          }}
           onMouseEnter={() => setIsRightPanelOpen(true)}
           onMouseLeave={() => {
             setIsRightPanelOpen(false);
             setBrandDropdownOpen(false);
           }}
         >
-          <div
-            className={`absolute inset-y-0 left-0 w-3 flex items-center justify-center border-l border-gray-300 dark:border-gray-600 transition-colors ${
-              isRightPanelOpen ? "bg-white dark:bg-gray-800" : "bg-white dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-indigo-900/30"
-            }`}
+          <Box
+            sx={{
+              position: "absolute",
+              inset: "0 auto 0 0",
+              width: 12,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              borderLeft: 1,
+              borderColor: "grey.300",
+              transition: "background-color 0.15s",
+              bgcolor: "background.paper",
+              "&:hover": !isRightPanelOpen ? { bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.24 : 0.08) } : undefined,
+            }}
             title="Hover to open Products / Brands"
           >
-            <ChevronsLeft className="w-3 h-3 text-gray-400 dark:text-gray-500" />
-          </div>
+            <Box component="span" sx={{ display: "inline-flex", color: "text.disabled" }}>
+              <ChevronsLeft className="w-3 h-3" />
+            </Box>
+          </Box>
 
         {/* ─── RIGHT PANEL ─── */}
         {isRightPanelOpen && (
-        <div className="absolute inset-y-0 left-3 w-80 flex flex-col bg-white dark:bg-gray-800 overflow-hidden flex-shrink-0 shadow-sm">
+        <Box sx={{ position: "absolute", inset: "0 auto 0 12px", width: 320, display: "flex", flexDirection: "column", bgcolor: "background.paper", overflow: "hidden", flexShrink: 0, boxShadow: 1 }}>
           {/* Tabs: Products | Brands */}
-          <div className="flex border-b dark:border-gray-700 flex-shrink-0">
-            <button
+          <Stack direction="row" sx={{ borderBottom: 1, borderColor: "divider", flexShrink: 0 }}>
+            <Box
+              component="button"
               onClick={() => { setRightTab("products"); setSelectedBrand(null); }}
-              className={`flex-1 px-3 py-2 text-sm font-medium text-center transition ${
-                rightTab === "products" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-              }`}
+              sx={{
+                flex: 1, px: 1.5, py: 1, fontSize: 12.25, fontWeight: 500, textAlign: "center", transition: "background-color 0.15s",
+                bgcolor: rightTab === "products" ? "primary.main" : "action.hover",
+                color: rightTab === "products" ? "primary.contrastText" : "text.secondary",
+                "&:hover": rightTab !== "products" ? { bgcolor: "action.selected" } : undefined,
+              }}
             >
               Products
-            </button>
-            <button
+            </Box>
+            <Box
+              component="button"
               onClick={() => setRightTab("brands")}
-              className={`flex-1 px-3 py-2 text-sm font-medium text-center transition ${
-                rightTab === "brands" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-              }`}
+              sx={{
+                flex: 1, px: 1.5, py: 1, fontSize: 12.25, fontWeight: 500, textAlign: "center", transition: "background-color 0.15s",
+                bgcolor: rightTab === "brands" ? "primary.main" : "action.hover",
+                color: rightTab === "brands" ? "primary.contrastText" : "text.secondary",
+                "&:hover": rightTab !== "brands" ? { bgcolor: "action.selected" } : undefined,
+              }}
             >
               Brands
-            </button>
-          </div>
+            </Box>
+          </Stack>
 
           {/* Search */}
-          <div className="px-2 py-2 border-b dark:border-gray-700 flex-shrink-0">
-            <div className="relative">
-              <Search className="w-4 h-4 absolute left-2 top-2.5 text-gray-400 dark:text-gray-500" />
-              <input
+          <Box sx={{ px: 1, py: 1, borderBottom: 1, borderColor: "divider", flexShrink: 0 }}>
+            <Box sx={{ position: "relative" }}>
+              <Box component="span" sx={{ display: "inline-flex", position: "absolute", left: 8, top: 10, color: "text.disabled" }}>
+                <Search className="w-4 h-4" />
+              </Box>
+              <TextField
                 type="text"
                 value={productSearch}
                 onChange={(e) => setProductSearch(e.target.value)}
                 placeholder="Search"
-                className="w-full border border-gray-300 rounded pl-8 pr-2 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 dark:placeholder-gray-500"
+                size="small"
+                fullWidth
+                sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75, pl: 4, pr: 1 } }}
               />
-            </div>
-          </div>
+            </Box>
+          </Box>
 
           {/* Brand selector dropdown (only in brands tab) */}
           {rightTab === "brands" && (
-            <div ref={brandDropdownRef} className="px-2 py-1 border-b dark:border-gray-700 flex-shrink-0 relative">
-              <div
-                className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm bg-white cursor-pointer flex items-center justify-between dark:bg-gray-700 dark:border-gray-600"
+            <Box ref={brandDropdownRef} sx={{ px: 1, py: 0.5, borderBottom: 1, borderColor: "divider", flexShrink: 0, position: "relative" }}>
+              <Box
+                sx={{ width: "100%", border: 1, borderColor: "grey.300", borderRadius: "3.5px", px: 1, py: 0.75, fontSize: 12.25, bgcolor: "background.paper", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between" }}
                 onClick={() => setBrandDropdownOpen((v) => !v)}
               >
-                <span className={selectedBrand ? "text-gray-900 dark:text-gray-100" : "text-gray-400 dark:text-gray-500"}>
+                <Box component="span" sx={{ color: selectedBrand ? "text.primary" : "text.disabled" }}>
                   {selectedBrand ? brands.find((b) => b.id === selectedBrand)?.name || "All Brands" : "All Brands"}
-                </span>
+                </Box>
                 {selectedBrand && (
-                  <button
+                  <IconButton
+                    size="small"
                     onClick={(e) => { e.stopPropagation(); setSelectedBrand(null); setBrandSearch(""); }}
-                    className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 ml-1"
+                    sx={{ color: "text.disabled", "&:hover": { color: "text.secondary" }, ml: 0.5, p: 0.25 }}
                   >
                     <X className="w-3.5 h-3.5" />
-                  </button>
+                  </IconButton>
                 )}
-              </div>
+              </Box>
               {brandDropdownOpen && (
-                <div className="absolute left-2 right-2 top-full mt-0.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded shadow-lg z-30 max-h-60 flex flex-col">
-                  <div className="p-1.5 border-b dark:border-gray-700">
-                    <input
+                <Box sx={{ position: "absolute", left: 8, right: 8, top: "100%", mt: 0.25, bgcolor: "background.paper", border: 1, borderColor: "grey.300", borderRadius: "3.5px", boxShadow: 8, zIndex: 30, maxHeight: 240, display: "flex", flexDirection: "column" }}>
+                  <Box sx={{ p: 0.75, borderBottom: 1, borderColor: "divider" }}>
+                    <TextField
                       type="text"
                       autoFocus
                       value={brandSearch}
                       onChange={(e) => setBrandSearch(e.target.value)}
                       placeholder="Search brand..."
-                      className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 dark:placeholder-gray-500"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.5 } }}
                     />
-                  </div>
-                  <div className="overflow-y-auto flex-1">
-                    <div
+                  </Box>
+                  <Box sx={{ overflowY: "auto", flex: 1 }}>
+                    <Box
                       onClick={() => { setSelectedBrand(null); setBrandDropdownOpen(false); setBrandSearch(""); }}
-                      className={`px-3 py-1.5 text-sm cursor-pointer hover:bg-blue-50 dark:hover:bg-indigo-900/30 ${!selectedBrand ? "bg-blue-100 font-medium dark:bg-indigo-900/40 dark:text-indigo-300" : "dark:text-gray-200"}`}
+                      sx={{
+                        px: 1.5, py: 0.75, fontSize: 12.25, cursor: "pointer", "&:hover": { bgcolor: "action.hover" },
+                        ...(!selectedBrand ? { bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.24 : 0.12), fontWeight: 500 } : { color: "text.secondary" }),
+                      }}
                     >
                       All Brands
-                    </div>
+                    </Box>
                     {brands
                       .filter((b) => !brandSearch || normalize(b.name).includes(normalize(brandSearch)))
                       .map((b) => (
-                        <div
+                        <Box
                           key={b.id}
                           onClick={() => { setSelectedBrand(b.id); setBrandDropdownOpen(false); setBrandSearch(""); }}
-                          className={`px-3 py-1.5 text-sm cursor-pointer hover:bg-blue-50 dark:hover:bg-indigo-900/30 ${selectedBrand === b.id ? "bg-blue-100 font-medium dark:bg-indigo-900/40 dark:text-indigo-300" : "dark:text-gray-200"}`}
+                          sx={{
+                            px: 1.5, py: 0.75, fontSize: 12.25, cursor: "pointer", "&:hover": { bgcolor: "action.hover" },
+                            ...(selectedBrand === b.id ? { bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.24 : 0.12), fontWeight: 500 } : { color: "text.secondary" }),
+                          }}
                         >
                           {b.name}
-                        </div>
+                        </Box>
                       ))}
-                  </div>
-                </div>
+                  </Box>
+                </Box>
               )}
-            </div>
+            </Box>
           )}
 
           {/* Product list */}
-          <div className="flex-1 overflow-y-auto border-t border-gray-200 dark:border-gray-700">
+          <Box sx={{ flex: 1, overflowY: "auto", borderTop: 1, borderColor: "divider" }}>
             {rightTab === "products" ? (
               filteredProducts.map((p) => (
-                <div key={p.id} className="w-full border-b border-gray-200 dark:border-gray-700">
-                  <button
+                <Box key={p.id} sx={{ width: "100%", borderBottom: 1, borderColor: "divider" }}>
+                  <Box
+                    component="button"
                     onClick={() => addToCart(stockRows.find((s) => s.id === p.id))}
-                    className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm transition hover:bg-blue-50 dark:hover:bg-indigo-900/30"
+                    sx={{ display: "flex", width: "100%", alignItems: "center", justifyContent: "space-between", gap: 1.5, px: 1.5, py: 1, textAlign: "left", fontSize: 12.25, transition: "background-color 0.15s", "&:hover": { bgcolor: "action.hover" } }}
                   >
-                    <span className="min-w-0 flex-1 truncate text-gray-800 dark:text-gray-100" title={p.productName}>{p.productName}</span>
-                    <span className="flex-shrink-0 font-semibold whitespace-nowrap text-red-600 dark:text-red-400">-Rs.{formatMoney(p.price)}</span>
-                  </button>
-                </div>
+                    <Box component="span" sx={{ minWidth: 0, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "text.primary" }} title={p.productName}>{p.productName}</Box>
+                    <Box component="span" sx={{ flexShrink: 0, fontWeight: 600, whiteSpace: "nowrap", color: "error.main" }}>-Rs.{formatMoney(p.price)}</Box>
+                  </Box>
+                </Box>
               ))
             ) : (
               Object.entries(productsByBrand).map(([brandName, prods]) => (
-                <div key={brandName}>
-                  <div className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-xs font-bold text-gray-600 dark:text-gray-300 uppercase sticky top-0">
+                <Box key={brandName}>
+                  <Box sx={{ px: 1.5, py: 0.75, bgcolor: "action.hover", fontSize: 10.5, fontWeight: 700, color: "text.secondary", textTransform: "uppercase", position: "sticky", top: 0 }}>
                     {brandName}
-                  </div>
+                  </Box>
                   {prods.map((p) => (
-                    <div key={p.id} className="w-full border-b border-gray-200 dark:border-gray-700">
-                      <button
+                    <Box key={p.id} sx={{ width: "100%", borderBottom: 1, borderColor: "divider" }}>
+                      <Box
+                        component="button"
                         onClick={() => addToCart(stockRows.find((s) => s.id === p.id))}
-                        className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm transition hover:bg-blue-50 dark:hover:bg-indigo-900/30"
+                        sx={{ display: "flex", width: "100%", alignItems: "center", justifyContent: "space-between", gap: 1.5, px: 1.5, py: 1, textAlign: "left", fontSize: 12.25, transition: "background-color 0.15s", "&:hover": { bgcolor: "action.hover" } }}
                       >
-                        <span className="min-w-0 flex-1 truncate text-gray-800 dark:text-gray-100" title={p.productName}>{p.productName}</span>
-                        <span className="flex-shrink-0 font-semibold whitespace-nowrap text-red-600 dark:text-red-400">-Rs.{formatMoney(p.price)}</span>
-                      </button>
-                    </div>
+                        <Box component="span" sx={{ minWidth: 0, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "text.primary" }} title={p.productName}>{p.productName}</Box>
+                        <Box component="span" sx={{ flexShrink: 0, fontWeight: 600, whiteSpace: "nowrap", color: "error.main" }}>-Rs.{formatMoney(p.price)}</Box>
+                      </Box>
+                    </Box>
                   ))}
-                </div>
+                </Box>
               ))
             )}
             {filteredProducts.length === 0 && (
-              <div className="px-3 py-8 text-center text-gray-400 dark:text-gray-500 text-sm">No products found</div>
+              <Box sx={{ px: 1.5, py: 4, textAlign: "center", color: "text.disabled", fontSize: 12.25 }}>No products found</Box>
             )}
-          </div>
-        </div>
+          </Box>
+        </Box>
         )}
-        </div>
-      </div>}
+        </Box>
+      </Box>}
 
       {/* ═══════════ DIALOGS ═══════════ */}
 
       {showScanner && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-3">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md overflow-hidden">
-            <div className="px-4 py-3 border-b dark:border-gray-700 flex items-center justify-between">
-              <h3 className="font-semibold text-base dark:text-gray-100">Scan Barcode</h3>
-              <button onClick={handleCloseScanner} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+        <Box sx={{ position: "fixed", inset: 0, bgcolor: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50, p: 1.5 }}>
+          <Box sx={{ bgcolor: "background.paper", borderRadius: "7px", boxShadow: 12, width: "100%", maxWidth: 448, overflow: "hidden" }}>
+            <Stack direction="row" sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: "divider", alignItems: "center", justifyContent: "space-between" }}>
+              <Typography component="h3" sx={{ fontWeight: 600, fontSize: 14, color: "text.primary" }}>Scan Barcode</Typography>
+              <IconButton onClick={handleCloseScanner} size="small" sx={{ color: "text.secondary", "&:hover": { color: "text.primary" } }}>
                 <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="p-3 space-y-3">
-              <div className="relative aspect-video w-full bg-black rounded-md overflow-hidden">
-                <video
+              </IconButton>
+            </Stack>
+            <Stack sx={{ p: 1.5, gap: 1.5 }}>
+              <Box sx={{ position: "relative", aspectRatio: "16 / 9", width: "100%", bgcolor: "common.black", borderRadius: "5.25px", overflow: "hidden" }}>
+                <Box
+                  component="video"
                   ref={scannerVideoRef}
-                  className="w-full h-full object-cover"
+                  sx={{ width: "100%", height: "100%", objectFit: "cover" }}
                   autoPlay
                   muted
                   playsInline
                 />
                 {scannerLoading && (
-                  <div className="absolute inset-0 flex items-center justify-center text-white text-sm bg-black/70">
+                  <Box sx={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: "common.white", fontSize: 12.25, bgcolor: "rgba(0,0,0,0.7)" }}>
                     Starting camera...
-                  </div>
+                  </Box>
                 )}
                 {!scannerLoading && scannerError && (
-                  <div className="absolute inset-0 flex items-center justify-center text-white text-center text-xs px-4 bg-black/80">
+                  <Box sx={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: "common.white", textAlign: "center", fontSize: 10.5, px: 2, bgcolor: "rgba(0,0,0,0.8)" }}>
                     {scannerError}
-                  </div>
+                  </Box>
                 )}
                 {!scannerLoading && !scannerError && (
-                  <div className="absolute inset-x-0 bottom-0 text-center text-white text-xs py-1 bg-black/40">
+                  <Box sx={{ position: "absolute", left: 0, right: 0, bottom: 0, textAlign: "center", color: "common.white", fontSize: 10.5, py: 0.5, bgcolor: "rgba(0,0,0,0.4)" }}>
                     Place barcode inside frame
-                  </div>
+                  </Box>
                 )}
-              </div>
+              </Box>
 
               {scannerError && (
-                <input
+                <TextField
                   type="text"
                   value={barcodeInput}
                   onChange={(e) => setBarcodeInput(e.target.value)}
                   onKeyDown={handleBarcodeSubmit}
                   placeholder="Enter barcode manually"
-                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 dark:placeholder-gray-500"
+                  size="small"
+                  fullWidth
+                  sx={{ "& .MuiInputBase-input": { fontSize: 12.25 } }}
                 />
               )}
 
-              <button
+              <Button
                 type="button"
                 onClick={handleCloseScanner}
-                className="w-full glass-btn glass-btn-danger py-2 text-sm font-medium"
+                className="glass-btn glass-btn-danger"
+                fullWidth
+                sx={{ py: 1, fontSize: 12.25, fontWeight: 500 }}
               >
                 Close
-              </button>
-            </div>
-          </div>
-        </div>
+              </Button>
+            </Stack>
+          </Box>
+        </Box>
       )}
 
       {/* Hold Confirm */}
       {holdConfirm && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-80">
-            <h3 className="text-lg font-semibold mb-2 dark:text-gray-100">Are you sure</h3>
-            <p className="text-gray-600 dark:text-gray-300 mb-4">Do you want to hold the customer?</p>
-            <div className="flex gap-2 justify-end">
-              <button onClick={() => setHoldConfirm(false)} className="glass-btn glass-btn-danger px-4 py-1.5">No</button>
-              <button onClick={confirmAddTab} className="glass-btn glass-btn-success px-4 py-1.5">Yes</button>
-            </div>
-          </div>
-        </div>
+        <Box sx={{ position: "fixed", inset: 0, bgcolor: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}>
+          <Box sx={{ bgcolor: "background.paper", borderRadius: "7px", boxShadow: 12, p: 3, width: 320 }}>
+            <Typography component="h3" sx={{ fontSize: 15.75, fontWeight: 600, mb: 1, color: "text.primary" }}>Are you sure</Typography>
+            <Typography sx={{ color: "text.secondary", mb: 2 }}>Do you want to hold the customer?</Typography>
+            <Stack direction="row" sx={{ gap: 1, justifyContent: "flex-end" }}>
+              <Button onClick={() => setHoldConfirm(false)} className="glass-btn glass-btn-danger" sx={{ px: 2, py: 0.75 }}>No</Button>
+              <Button onClick={confirmAddTab} className="glass-btn glass-btn-success" sx={{ px: 2, py: 0.75 }}>Yes</Button>
+            </Stack>
+          </Box>
+        </Box>
       )}
 
       {/* Delete Tab Confirm */}
       {deleteConfirm && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-80">
-            <h3 className="text-lg font-semibold mb-2 dark:text-gray-100">Delete Tab</h3>
-            <p className="text-gray-600 dark:text-gray-300 mb-4">Are you sure you want to delete this tab?</p>
-            <div className="flex gap-2 justify-end">
-              <button onClick={() => setDeleteConfirm(null)} className="glass-btn glass-btn-danger px-4 py-1.5">No</button>
-              <button onClick={confirmDeleteTab} className="glass-btn glass-btn-success px-4 py-1.5">Yes</button>
-            </div>
-          </div>
-        </div>
+        <Box sx={{ position: "fixed", inset: 0, bgcolor: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}>
+          <Box sx={{ bgcolor: "background.paper", borderRadius: "7px", boxShadow: 12, p: 3, width: 320 }}>
+            <Typography component="h3" sx={{ fontSize: 15.75, fontWeight: 600, mb: 1, color: "text.primary" }}>Delete Tab</Typography>
+            <Typography sx={{ color: "text.secondary", mb: 2 }}>Are you sure you want to delete this tab?</Typography>
+            <Stack direction="row" sx={{ gap: 1, justifyContent: "flex-end" }}>
+              <Button onClick={() => setDeleteConfirm(null)} className="glass-btn glass-btn-danger" sx={{ px: 2, py: 0.75 }}>No</Button>
+              <Button onClick={confirmDeleteTab} className="glass-btn glass-btn-success" sx={{ px: 2, py: 0.75 }}>Yes</Button>
+            </Stack>
+          </Box>
+        </Box>
       )}
 
       {/* Close Register Dialog */}
       {showCloseRegister && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-[700px] max-h-[90vh] overflow-auto">
-            <div className="bg-[#6B8E23] text-white px-4 py-3 flex items-center justify-between rounded-t-lg">
-              <h3 className="font-semibold">CloseRegister</h3>
-              <button onClick={() => setShowCloseRegister(false)} className="text-white hover:text-gray-200">
+        <Box sx={{ position: "fixed", inset: 0, bgcolor: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}>
+          <Box sx={{ bgcolor: "background.paper", borderRadius: "7px", boxShadow: 12, width: 700, maxHeight: "90vh", overflow: "auto" }}>
+            <Stack direction="row" sx={{ bgcolor: "#6B8E23", color: "common.white", px: 2, py: 1.5, alignItems: "center", justifyContent: "space-between", borderTopLeftRadius: "7px", borderTopRightRadius: "7px" }}>
+              <Typography component="h3" sx={{ fontWeight: 600 }}>CloseRegister</Typography>
+              <IconButton onClick={() => setShowCloseRegister(false)} size="small" sx={{ color: "common.white", "&:hover": { opacity: 0.8 } }}>
                 <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="p-4 space-y-4">
+              </IconButton>
+            </Stack>
+            <Stack sx={{ p: 2, gap: 2 }}>
               {/* Info row */}
-              <div className="grid grid-cols-3 gap-4 text-sm">
-                <div>
-                  <div className="text-gray-500 dark:text-gray-400 font-semibold">Opened by</div>
-                  <div className="dark:text-gray-100">POS User</div>
-                </div>
-                <div>
-                  <div className="text-gray-500 dark:text-gray-400 font-semibold">Cash in Hand</div>
-                  <div className="dark:text-gray-100">0.00 INR</div>
-                </div>
-                <div>
-                  <div className="text-gray-500 dark:text-gray-400 font-semibold">Opening Time</div>
-                  <div className="dark:text-gray-100">{now.toLocaleDateString("en-IN")} {now.toLocaleTimeString("en-IN")}</div>
-                </div>
-              </div>
+              <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 2, fontSize: 12.25 }}>
+                <Box>
+                  <Box sx={{ color: "text.secondary", fontWeight: 600 }}>Opened by</Box>
+                  <Box sx={{ color: "text.primary" }}>POS User</Box>
+                </Box>
+                <Box>
+                  <Box sx={{ color: "text.secondary", fontWeight: 600 }}>Cash in Hand</Box>
+                  <Box sx={{ color: "text.primary" }}>0.00 INR</Box>
+                </Box>
+                <Box>
+                  <Box sx={{ color: "text.secondary", fontWeight: 600 }}>Opening Time</Box>
+                  <Box sx={{ color: "text.primary" }}>{now.toLocaleDateString("en-IN")} {now.toLocaleTimeString("en-IN")}</Box>
+                </Box>
+              </Box>
 
               {/* Payments Summary */}
-              <div>
-                <h4 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">Payments Summary</h4>
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 dark:bg-gray-700">
-                    <tr>
-                      <th className="text-left px-3 py-2 dark:text-gray-300">Payment Type</th>
-                      <th className="text-left px-3 py-2 dark:text-gray-300">Expected (INR)</th>
-                      <th className="text-left px-3 py-2 dark:text-gray-300">Counted</th>
-                      <th className="text-left px-3 py-2 dark:text-gray-300">Difference</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+              <Box>
+                <Typography sx={{ fontSize: 15.75, fontWeight: 600, color: "text.secondary", mb: 1 }}>Payments Summary</Typography>
+                <Table sx={{ width: "100%", fontSize: 12.25 }}>
+                  <TableHead sx={{ bgcolor: "action.hover" }}>
+                    <TableRow>
+                      <TableCell sx={{ textAlign: "left" }}>Payment Type</TableCell>
+                      <TableCell sx={{ textAlign: "left" }}>Expected (INR)</TableCell>
+                      <TableCell sx={{ textAlign: "left" }}>Counted</TableCell>
+                      <TableCell sx={{ textAlign: "left" }}>Difference</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
                     {[
                       { label: "Cash", key: "cash" },
                       { label: "Credit Card", key: "credit_card" },
@@ -2944,100 +3029,103 @@ const POSOld = () => {
                       { label: "Online Pay", key: "online_pay" },
                       { label: "Returns", key: "returns" },
                     ].map((row) => (
-                      <tr key={row.key} className="border-b dark:border-gray-700">
-                        <td className="px-3 py-2 font-medium dark:text-gray-100">{row.label}</td>
-                        <td className="px-3 py-2">
-                          <input type="text" readOnly value={toNum(sessionSummary[row.key], 0).toFixed(2)} className="w-full bg-gray-100 border border-gray-300 rounded px-2 py-1 text-sm dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600" />
-                        </td>
-                        <td className="px-3 py-2">
-                          <input type="text" defaultValue="0.00" className="w-full border border-gray-300 rounded px-2 py-1 text-sm dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600" />
-                        </td>
-                        <td className="px-3 py-2">
-                          <input type="text" readOnly defaultValue={(-toNum(sessionSummary[row.key], 0)).toFixed(2)} className="w-full bg-gray-100 border border-gray-300 rounded px-2 py-1 text-sm dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600" />
-                        </td>
-                      </tr>
+                      <TableRow key={row.key}>
+                        <TableCell sx={{ fontWeight: 500, color: "text.primary" }}>{row.label}</TableCell>
+                        <TableCell>
+                          <Box component="input" type="text" readOnly value={toNum(sessionSummary[row.key], 0).toFixed(2)} sx={{ width: "100%", bgcolor: "action.hover", border: 1, borderColor: "grey.300", borderRadius: "3.5px", px: 1, py: 0.5, fontSize: 12.25, color: "text.primary" }} />
+                        </TableCell>
+                        <TableCell>
+                          <Box component="input" type="text" defaultValue="0.00" sx={{ width: "100%", border: 1, borderColor: "grey.300", borderRadius: "3.5px", px: 1, py: 0.5, fontSize: 12.25, bgcolor: "background.paper", color: "text.primary" }} />
+                        </TableCell>
+                        <TableCell>
+                          <Box component="input" type="text" readOnly defaultValue={(-toNum(sessionSummary[row.key], 0)).toFixed(2)} sx={{ width: "100%", bgcolor: "action.hover", border: 1, borderColor: "grey.300", borderRadius: "3.5px", px: 1, py: 0.5, fontSize: 12.25, color: "text.primary" }} />
+                        </TableCell>
+                      </TableRow>
                     ))}
-                    <tr className="bg-gray-50 dark:bg-gray-700 font-bold">
-                      <td className="px-3 py-2 dark:text-gray-100">Total</td>
-                      <td className="px-3 py-2">
-                        <input type="text" readOnly value={toNum(sessionSummary.total, 0).toFixed(2)} className="w-full bg-gray-100 border border-gray-300 rounded px-2 py-1 text-sm font-bold dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600" />
-                      </td>
-                      <td className="px-3 py-2">
-                        <input type="text" readOnly defaultValue="0.00" className="w-full bg-gray-100 border border-gray-300 rounded px-2 py-1 text-sm font-bold dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600" />
-                      </td>
-                      <td className="px-3 py-2">
-                        <input type="text" readOnly defaultValue="0.00" className="w-full bg-gray-100 border border-gray-300 rounded px-2 py-1 text-sm font-bold dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600" />
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+                    <TableRow sx={{ bgcolor: "action.hover" }}>
+                      <TableCell sx={{ fontWeight: 700, color: "text.primary" }}>Total</TableCell>
+                      <TableCell>
+                        <Box component="input" type="text" readOnly value={toNum(sessionSummary.total, 0).toFixed(2)} sx={{ width: "100%", bgcolor: "action.hover", border: 1, borderColor: "grey.300", borderRadius: "3.5px", px: 1, py: 0.5, fontSize: 12.25, fontWeight: 700, color: "text.primary" }} />
+                      </TableCell>
+                      <TableCell>
+                        <Box component="input" type="text" readOnly defaultValue="0.00" sx={{ width: "100%", bgcolor: "action.hover", border: 1, borderColor: "grey.300", borderRadius: "3.5px", px: 1, py: 0.5, fontSize: 12.25, fontWeight: 700, color: "text.primary" }} />
+                      </TableCell>
+                      <TableCell>
+                        <Box component="input" type="text" readOnly defaultValue="0.00" sx={{ width: "100%", bgcolor: "action.hover", border: 1, borderColor: "grey.300", borderRadius: "3.5px", px: 1, py: 0.5, fontSize: 12.25, fontWeight: 700, color: "text.primary" }} />
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </Box>
 
               {/* Cash Denominations + Note */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">Cash Denominations</h4>
-                  <div className="space-y-1">
+              <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
+                <Box>
+                  <Typography sx={{ fontSize: 15.75, fontWeight: 600, color: "text.secondary", mb: 1 }}>Cash Denominations</Typography>
+                  <Stack sx={{ gap: 0.5 }}>
                     {DENOMINATIONS.map((d) => (
-                      <div key={d} className="flex items-center gap-2 text-sm">
-                        <span className="w-12 font-medium dark:text-gray-100">{d}</span>
-                        <span className="text-gray-400 dark:text-gray-500">X</span>
-                        <input
+                      <Stack direction="row" key={d} sx={{ alignItems: "center", gap: 1, fontSize: 12.25 }}>
+                        <Box component="span" sx={{ width: 48, fontWeight: 500, color: "text.primary" }}>{d}</Box>
+                        <Box component="span" sx={{ color: "text.disabled" }}>X</Box>
+                        <Box
+                          component="input"
                           type="number" min="0"
                           value={denomCounts[`c_${d}`]}
                           onChange={(e) => setDenomCounts((p) => ({ ...p, [`c_${d}`]: toInt(e.target.value, 0) }))}
-                          className="w-16 border border-gray-300 rounded px-2 py-0.5 text-sm text-right dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
+                          sx={{ width: 64, border: 1, borderColor: "grey.300", borderRadius: "3.5px", px: 1, py: 0.25, fontSize: 12.25, textAlign: "right", bgcolor: "background.paper", color: "text.primary" }}
                         />
-                        <span className="text-sm dark:text-gray-300">{(toInt(denomCounts[`c_${d}`], 0) * d).toFixed(2)}</span>
-                      </div>
+                        <Box component="span" sx={{ fontSize: 12.25, color: "text.secondary" }}>{(toInt(denomCounts[`c_${d}`], 0) * d).toFixed(2)}</Box>
+                      </Stack>
                     ))}
-                    <div className="flex items-center gap-2 text-sm font-bold border-t dark:border-gray-700 pt-1 dark:text-gray-100">
-                      <span>Total:</span>
-                      <span>{denomTotal.toFixed(2)}</span>
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">Note</h4>
-                  <textarea
+                    <Stack direction="row" sx={{ alignItems: "center", gap: 1, fontSize: 12.25, fontWeight: 700, borderTop: 1, borderColor: "divider", pt: 0.5, color: "text.primary" }}>
+                      <Box component="span">Total:</Box>
+                      <Box component="span">{denomTotal.toFixed(2)}</Box>
+                    </Stack>
+                  </Stack>
+                </Box>
+                <Box>
+                  <Typography sx={{ fontSize: 15.75, fontWeight: 600, color: "text.secondary", mb: 1 }}>Note</Typography>
+                  <TextField
                     value={closeNote}
                     onChange={(e) => setCloseNote(e.target.value)}
+                    multiline
                     rows={6}
-                    className="w-full border border-gray-300 rounded p-2 text-sm resize-y dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
+                    fullWidth
+                    sx={{ "& .MuiInputBase-input": { fontSize: 12.25 } }}
                   />
-                </div>
-              </div>
+                </Box>
+              </Box>
 
-              <div className="flex justify-end gap-2">
-                <button onClick={() => setShowCloseRegister(false)} className="glass-btn glass-btn-danger px-4 py-2">Close</button>
-                <button className="glass-btn glass-btn-primary px-4 py-2">save&print</button>
-              </div>
-            </div>
-          </div>
-        </div>
+              <Stack direction="row" sx={{ justifyContent: "flex-end", gap: 1 }}>
+                <Button onClick={() => setShowCloseRegister(false)} className="glass-btn glass-btn-danger" sx={{ px: 2, py: 1 }}>Close</Button>
+                <Button className="glass-btn glass-btn-primary" sx={{ px: 2, py: 1 }}>save&print</Button>
+              </Stack>
+            </Stack>
+          </Box>
+        </Box>
       )}
 
       {/* Return / Exchange dialog — bill → reason → lines */}
       {(showReturnDialog || showExchangeDialog) && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-xl w-full max-w-lg max-h-[80vh] overflow-auto">
-            <div className="flex items-center justify-between border-b dark:border-gray-700 px-4 py-3 rounded-t-lg">
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-                <span className="font-semibold text-gray-900 dark:text-gray-100">{showExchangeDialog ? "Exchange" : "Return"}</span>
+        <Box sx={{ position: "fixed", inset: 0, bgcolor: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50, p: 2 }}>
+          <Box sx={{ bgcolor: "background.paper", borderRadius: "7px", border: 1, borderColor: "divider", boxShadow: 12, width: "100%", maxWidth: 512, maxHeight: "80vh", overflow: "auto" }}>
+            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", px: 2, py: 1.5, borderTopLeftRadius: "7px", borderTopRightRadius: "7px" }}>
+              <Stack direction="row" sx={{ flexWrap: "wrap", alignItems: "center", columnGap: 2, rowGap: 0.5, fontSize: 12.25 }}>
+                <Box component="span" sx={{ fontWeight: 600, color: "text.primary" }}>{showExchangeDialog ? "Exchange" : "Return"}</Box>
                 {returnSourceSale ? (
                   <>
-                    <span className="text-gray-600 dark:text-gray-300">{formatMoney(Math.abs(returnDraftSummary.amount))}</span>
-                    <span className="text-gray-600 dark:text-gray-300">Qty: {returnDraftSummary.totalQty}</span>
+                    <Box component="span" sx={{ color: "text.secondary" }}>{formatMoney(Math.abs(returnDraftSummary.amount))}</Box>
+                    <Box component="span" sx={{ color: "text.secondary" }}>Qty: {returnDraftSummary.totalQty}</Box>
                   </>
                 ) : null}
-              </div>
-              <span className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wide">Esc close</span>
-            </div>
-            <div className="p-4 space-y-3">
-              <div>
-                <label className="mb-1 block text-xs font-bold text-gray-700 dark:text-gray-300">Bill no. or barcode</label>
-                <input
-                  ref={returnBillInputRef}
+              </Stack>
+              <Box component="span" sx={{ fontSize: 10, color: "text.disabled", textTransform: "uppercase", letterSpacing: 0.5 }}>Esc close</Box>
+            </Stack>
+            <Stack sx={{ p: 2, gap: 1.5 }}>
+              <Box>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 10.5, fontWeight: 700, color: "text.secondary" }}>Bill no. or barcode</Typography>
+                <TextField
+                  inputRef={returnBillInputRef}
                   type="text"
                   value={returnBillLookup}
                   onChange={(e) => setReturnBillLookup(e.target.value)}
@@ -3059,14 +3147,16 @@ const POSOld = () => {
                       : "SB/12, 12, or product barcode (same as POS Return)"
                   }
                   disabled={loadingReturnBill}
-                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 dark:placeholder-gray-500"
+                  size="small"
+                  fullWidth
+                  sx={{ "& .MuiInputBase-input": { fontSize: 12.25 } }}
                 />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-bold text-gray-700 dark:text-gray-300">Selected bill</label>
-                <input
+              </Box>
+              <Box>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 10.5, fontWeight: 700, color: "text.secondary" }}>Selected bill</Typography>
+                <TextField
                   type="text"
-                  readOnly
+                  slotProps={{ input: { readOnly: true } }}
                   value={
                     returnSourceSale
                       ? returnSourceSale.standalone
@@ -3077,14 +3167,16 @@ const POSOld = () => {
                       : ""
                   }
                   placeholder="Load a bill or scan a product first"
-                  className="w-full rounded border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-700 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600"
+                  size="small"
+                  fullWidth
+                  sx={{ "& .MuiInputBase-input": { fontSize: 12.25 }, "& .MuiInputBase-root": { bgcolor: "action.hover" } }}
                 />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-bold text-gray-700 dark:text-gray-300">Reason</label>
-                <div
+              </Box>
+              <Box>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 10.5, fontWeight: 700, color: "text.secondary" }}>Reason</Typography>
+                <Box
                   ref={returnReasonSelectWrapRef}
-                  className={!returnSourceSale ? "pointer-events-none opacity-55" : ""}
+                  sx={!returnSourceSale ? { pointerEvents: "none", opacity: 0.55 } : undefined}
                   onKeyDown={(e) => {
                     if (e.key !== "Enter" || !selectedReturnReasonId) return;
                     e.preventDefault();
@@ -3107,43 +3199,43 @@ const POSOld = () => {
                     triggerClassName="px-3 py-2 text-sm rounded-md min-h-[38px]"
                     searchInputClassName="text-sm"
                   />
-                </div>
-              </div>
+                </Box>
+              </Box>
               {returnSourceSale && posOldReturnPendingDocNo ? (
-                <p className="text-lg font-bold text-gray-900 dark:text-gray-100 font-mono pt-1">{posOldReturnPendingDocNo}</p>
+                <Typography sx={{ fontSize: 15.75, fontWeight: 700, color: "text.primary", fontFamily: "monospace", pt: 0.5 }}>{posOldReturnPendingDocNo}</Typography>
               ) : null}
-            </div>
-          </div>
+            </Stack>
+          </Box>
 
           {showReturnLinesDialog && (
-            <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-3">
-              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-xl w-full max-w-4xl max-h-[92vh] flex flex-col">
-                <div className="flex items-center justify-between border-b dark:border-gray-700 px-4 py-3 rounded-t-lg flex-shrink-0">
-                  <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">{showExchangeDialog ? "Exchange lines" : "Return lines"}</div>
-                  <span className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wide">Esc back</span>
-                </div>
-                <div className="flex-1 min-h-0 overflow-auto p-3">
-                  <table className="w-full text-sm border-collapse">
-                    <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0">
-                      <tr className="text-left text-gray-700 dark:text-gray-300">
-                        <th className="border dark:border-gray-600 px-2 py-2 w-10">#</th>
-                        <th className="border dark:border-gray-600 px-2 py-2">Barcode</th>
-                        <th className="border dark:border-gray-600 px-2 py-2">Product</th>
-                        <th className="border dark:border-gray-600 px-2 py-2 w-24">Qty</th>
-                        <th className="border dark:border-gray-600 px-2 py-2 w-24 text-right">Price</th>
-                        <th className="border dark:border-gray-600 px-2 py-2 w-20 text-right">Tax%</th>
-                        <th className="border dark:border-gray-600 px-2 py-2 w-24 text-right">Disc.</th>
-                        <th className="border dark:border-gray-600 px-2 py-2 w-28 text-right">Total</th>
-                        <th className="border dark:border-gray-600 px-2 py-2 w-12" />
-                      </tr>
-                    </thead>
-                    <tbody>
+            <Box sx={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", bgcolor: "rgba(0,0,0,0.5)", p: 1.5 }}>
+              <Box sx={{ bgcolor: "background.paper", borderRadius: "7px", border: 1, borderColor: "divider", boxShadow: 12, width: "100%", maxWidth: 896, maxHeight: "92vh", display: "flex", flexDirection: "column" }}>
+                <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", px: 2, py: 1.5, borderTopLeftRadius: "7px", borderTopRightRadius: "7px", flexShrink: 0 }}>
+                  <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>{showExchangeDialog ? "Exchange lines" : "Return lines"}</Typography>
+                  <Box component="span" sx={{ fontSize: 10, color: "text.disabled", textTransform: "uppercase", letterSpacing: 0.5 }}>Esc back</Box>
+                </Stack>
+                <Box sx={{ flex: 1, minHeight: 0, overflow: "auto", p: 1.5 }}>
+                  <Table sx={{ width: "100%", fontSize: 12.25, borderCollapse: "collapse" }}>
+                    <TableHead sx={{ bgcolor: "action.hover", position: "sticky", top: 0 }}>
+                      <TableRow sx={{ color: "text.secondary" }}>
+                        <TableCell sx={{ border: 1, borderColor: "divider", width: 40, textAlign: "left" }}>#</TableCell>
+                        <TableCell sx={{ border: 1, borderColor: "divider", textAlign: "left" }}>Barcode</TableCell>
+                        <TableCell sx={{ border: 1, borderColor: "divider", textAlign: "left" }}>Product</TableCell>
+                        <TableCell sx={{ border: 1, borderColor: "divider", width: 96, textAlign: "left" }}>Qty</TableCell>
+                        <TableCell sx={{ border: 1, borderColor: "divider", width: 96, textAlign: "right" }}>Price</TableCell>
+                        <TableCell sx={{ border: 1, borderColor: "divider", width: 80, textAlign: "right" }}>Tax%</TableCell>
+                        <TableCell sx={{ border: 1, borderColor: "divider", width: 96, textAlign: "right" }}>Disc.</TableCell>
+                        <TableCell sx={{ border: 1, borderColor: "divider", width: 112, textAlign: "right" }}>Total</TableCell>
+                        <TableCell sx={{ border: 1, borderColor: "divider", width: 48 }} />
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
                       {returnCartDraft.length === 0 ? (
-                        <tr>
-                          <td colSpan={9} className="border dark:border-gray-600 px-3 py-8 text-center text-gray-400 dark:text-gray-500">
+                        <TableRow>
+                          <TableCell colSpan={9} sx={{ border: 1, borderColor: "divider", py: 4, textAlign: "center", color: "text.disabled" }}>
                             No lines
-                          </td>
-                        </tr>
+                          </TableCell>
+                        </TableRow>
                       ) : (
                         returnCartDraft.map((line, idx) => {
                           const qty = Math.max(0, toInt(line.qty, 0));
@@ -3154,55 +3246,57 @@ const POSOld = () => {
                           const taxAmount = (subtotal * tax) / 100;
                           const lineTotal = round2(-Math.max(subtotal + taxAmount - discount, 0));
                           return (
-                            <tr key={line.lineId} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                              <td className="border dark:border-gray-600 px-2 py-1.5 text-center dark:text-gray-100">{idx + 1}</td>
-                              <td className="border dark:border-gray-600 px-2 py-1.5 font-mono text-xs dark:text-gray-300">{line.barcode || "—"}</td>
-                              <td className="border dark:border-gray-600 px-2 py-1.5 truncate max-w-[200px] dark:text-gray-100" title={line.productName}>
+                            <TableRow key={line.lineId} hover>
+                              <TableCell sx={{ border: 1, borderColor: "divider", textAlign: "center", color: "text.primary" }}>{idx + 1}</TableCell>
+                              <TableCell sx={{ border: 1, borderColor: "divider", fontFamily: "monospace", fontSize: 10.5, color: "text.secondary" }}>{line.barcode || "—"}</TableCell>
+                              <TableCell sx={{ border: 1, borderColor: "divider", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "text.primary" }} title={line.productName}>
                                 {line.productName || "—"}
                                 {!line.productName ? null : (
-                                  <div className="text-[10px] text-gray-400 dark:text-gray-500 whitespace-normal">
+                                  <Box sx={{ fontSize: 10, color: "text.disabled", whiteSpace: "normal" }}>
                                     {line.standaloneLine
                                       ? "Barcode return (catalogue pricing)"
                                       : `Original ${line.originalQty} · Returned ${line.returnedQty} · Max ${line.maxQty}`}
-                                  </div>
+                                  </Box>
                                 )}
-                              </td>
-                              <td className="border dark:border-gray-600 px-2 py-1.5">
-                                <input
+                              </TableCell>
+                              <TableCell sx={{ border: 1, borderColor: "divider" }}>
+                                <Box
+                                  component="input"
                                   type="number"
                                   min={0}
                                   max={line.standaloneLine ? STANDALONE_MAX_QTY : line.maxQty}
                                   value={line.qty}
                                   onChange={(e) => handleReturnDraftQtyChange(line.lineId, e.target.value)}
-                                  className="w-full rounded border border-gray-300 px-1 py-0.5 text-center text-sm dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
+                                  sx={{ width: "100%", borderRadius: "3.5px", border: 1, borderColor: "grey.300", px: 0.5, py: 0.25, textAlign: "center", fontSize: 12.25, bgcolor: "background.paper", color: "text.primary" }}
                                 />
-                              </td>
-                              <td className="border dark:border-gray-600 px-2 py-1.5 text-right dark:text-gray-100">{formatMoney(line.price)}</td>
-                              <td className="border dark:border-gray-600 px-2 py-1.5 text-right dark:text-gray-100">{formatMoney(line.tax)}</td>
-                              <td className="border dark:border-gray-600 px-2 py-1.5 text-right dark:text-gray-100">{formatMoney(line.discount)}</td>
-                              <td className="border dark:border-gray-600 px-2 py-1.5 text-right font-medium dark:text-gray-100">{formatMoney(lineTotal)}</td>
-                              <td className="border dark:border-gray-600 px-2 py-1.5 text-center">
-                                <button
+                              </TableCell>
+                              <TableCell sx={{ border: 1, borderColor: "divider", textAlign: "right", color: "text.primary" }}>{formatMoney(line.price)}</TableCell>
+                              <TableCell sx={{ border: 1, borderColor: "divider", textAlign: "right", color: "text.primary" }}>{formatMoney(line.tax)}</TableCell>
+                              <TableCell sx={{ border: 1, borderColor: "divider", textAlign: "right", color: "text.primary" }}>{formatMoney(line.discount)}</TableCell>
+                              <TableCell sx={{ border: 1, borderColor: "divider", textAlign: "right", fontWeight: 500, color: "text.primary" }}>{formatMoney(lineTotal)}</TableCell>
+                              <TableCell sx={{ border: 1, borderColor: "divider", textAlign: "center" }}>
+                                <IconButton
                                   type="button"
                                   onClick={() => handleRemoveReturnDraftLine(line.lineId)}
-                                  className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 inline-flex"
+                                  size="small"
                                   aria-label="Remove line"
+                                  sx={{ color: "error.main", "&:hover": { color: "error.dark" } }}
                                 >
                                   <Trash2 className="w-4 h-4" />
-                                </button>
-                              </td>
-                            </tr>
+                                </IconButton>
+                              </TableCell>
+                            </TableRow>
                           );
                         })
                       )}
-                    </tbody>
-                  </table>
-                </div>
-                <div className="border-t dark:border-gray-700 px-4 py-3 space-y-3 flex-shrink-0">
-                  <div>
-                    <label className="mb-1 block text-xs font-bold text-gray-700 dark:text-gray-300">Scan / enter barcode</label>
-                    <input
-                      ref={returnLinesScanRef}
+                    </TableBody>
+                  </Table>
+                </Box>
+                <Stack sx={{ borderTop: 1, borderColor: "divider", px: 2, py: 1.5, gap: 1.5, flexShrink: 0 }}>
+                  <Box>
+                    <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 10.5, fontWeight: 700, color: "text.secondary" }}>Scan / enter barcode</Typography>
+                    <TextField
+                      inputRef={returnLinesScanRef}
                       type="text"
                       value={returnScanInput}
                       onChange={(e) => setReturnScanInput(e.target.value)}
@@ -3212,195 +3306,198 @@ const POSOld = () => {
                           ? "Barcode · 0 + Enter = Apply to bill"
                           : "Barcode (same as POS Return) · 0 + Enter = Save & Print"
                       }
-                      className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 dark:placeholder-gray-500"
+                      size="small"
+                      fullWidth
+                      sx={{ "& .MuiInputBase-input": { fontSize: 12.25 } }}
                     />
-                  </div>
+                  </Box>
                   {!showExchangeDialog ? (
-                    <div className="flex flex-wrap justify-end gap-2">
-                      <button
+                    <Stack direction="row" sx={{ flexWrap: "wrap", justifyContent: "flex-end", gap: 1 }}>
+                      <Button
                         type="button"
                         onClick={() => submitReturnFromPosOldDialog({ shouldPrint: false })}
                         disabled={returnSaving}
-                        className="glass-btn glass-btn-secondary px-4 py-2 disabled:opacity-50"
+                        className="glass-btn glass-btn-secondary"
+                        sx={{ px: 2, py: 1 }}
                       >
                         {returnSaving ? "Saving…" : "Save"}
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         type="button"
                         onClick={() => submitReturnFromPosOldDialog({ shouldPrint: true })}
                         disabled={returnSaving}
-                        className="glass-btn glass-btn-primary px-4 py-2 disabled:opacity-50"
+                        className="glass-btn glass-btn-primary"
+                        sx={{ px: 2, py: 1 }}
                       >
                         {returnSaving ? "Saving…" : "Save & Print"}
-                      </button>
-                    </div>
+                      </Button>
+                    </Stack>
                   ) : null}
-                </div>
-              </div>
-            </div>
+                </Stack>
+              </Box>
+            </Box>
           )}
-        </div>
+        </Box>
       )}
 
       {discountDialogOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
+        <Box
+          sx={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", bgcolor: "rgba(0,0,0,0.3)", p: 2 }}
           onClick={closeDiscountDialog}
         >
-          <div
-            className="flex max-h-[86vh] w-full max-w-5xl flex-col rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-xl"
+          <Box
+            sx={{ display: "flex", maxHeight: "86vh", width: "100%", maxWidth: 1024, flexDirection: "column", borderRadius: "7px", border: 1, borderColor: "divider", bgcolor: "background.paper", boxShadow: 12 }}
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b dark:border-gray-700 px-5 py-4">
-              <div>
-                <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">Sale Discount</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">
+            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", px: 2.5, py: 2 }}>
+              <Box>
+                <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Sale Discount</Typography>
+                <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>
                   Select sale rows and apply a discount percentage to the current POS Old bill.
-                </div>
-              </div>
-              <button
+                </Typography>
+              </Box>
+              <IconButton
                 type="button"
                 onClick={closeDiscountDialog}
-                className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+                size="small"
                 aria-label="Close discount dialog"
+                sx={{ color: "text.disabled", "&:hover": { color: "text.secondary" } }}
               >
                 <X className="h-4 w-4" />
-              </button>
-            </div>
+              </IconButton>
+            </Stack>
 
-            <div className="flex-1 overflow-auto px-5 py-4">
-              <div className="overflow-hidden rounded border border-gray-200 dark:border-gray-700">
-                <div className="max-h-[44vh] overflow-auto">
-                  <table className="w-full min-w-[760px] text-sm">
-                    <thead className="sticky top-0 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-                      <tr>
-                        <th className="w-12 px-3 py-3 text-left">
-                          <input
-                            type="checkbox"
+            <Box sx={{ flex: 1, overflow: "auto", px: 2.5, py: 2 }}>
+              <Box sx={{ overflow: "hidden", borderRadius: "3.5px", border: 1, borderColor: "divider" }}>
+                <Box sx={{ maxHeight: "44vh", overflow: "auto" }}>
+                  <Table sx={{ width: "100%", minWidth: 760, fontSize: 12.25 }}>
+                    <TableHead sx={{ position: "sticky", top: 0, bgcolor: "action.hover", color: "text.secondary" }}>
+                      <TableRow>
+                        <TableCell sx={{ width: 48 }}>
+                          <Checkbox
                             checked={positiveCartLines.length > 0 && discountSelectedLineIds.length === positiveCartLines.length}
                             onChange={handleDiscountToggleAll}
-                            className="h-4 w-4 accent-blue-600"
+                            size="small"
                           />
-                        </th>
-                        <th className="px-3 py-3 text-left">Barcode</th>
-                        <th className="px-3 py-3 text-left">Product</th>
-                        <th className="px-3 py-3 text-right">Price</th>
-                        <th className="px-3 py-3 text-right">Qty</th>
-                        <th className="px-3 py-3 text-left">Discount</th>
-                        <th className="px-3 py-3 text-right">Dis %</th>
-                        <th className="px-3 py-3 text-right">Dis AMT</th>
-                        <th className="px-3 py-3 text-right">Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody>
+                        </TableCell>
+                        <TableCell>Barcode</TableCell>
+                        <TableCell>Product</TableCell>
+                        <TableCell align="right">Price</TableCell>
+                        <TableCell align="right">Qty</TableCell>
+                        <TableCell>Discount</TableCell>
+                        <TableCell align="right">Dis %</TableCell>
+                        <TableCell align="right">Dis AMT</TableCell>
+                        <TableCell align="right">Amount</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
                       {discountDialogRows.map((line, index) => (
-                        <tr key={line.lineId} className="border-t dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                          <td className="px-3 py-3">
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="checkbox"
+                        <TableRow key={line.lineId} hover>
+                          <TableCell>
+                            <Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
+                              <Checkbox
                                 checked={discountDialogSelectedSet.has(line.lineId)}
                                 onChange={() => handleDiscountRowToggle(line.lineId)}
-                                className="h-4 w-4 accent-blue-600"
+                                size="small"
                               />
-                              <span className="text-gray-600 dark:text-gray-400">{index + 1}</span>
-                            </div>
-                          </td>
-                          <td className="px-3 py-3 font-mono dark:text-gray-300">{line.barcode || "-"}</td>
-                          <td className="px-3 py-3 dark:text-gray-100">{line.productName || "-"}</td>
-                          <td className="px-3 py-3 text-right dark:text-gray-100">{formatMoney(line.price)}</td>
-                          <td className="px-3 py-3 text-right dark:text-gray-100">{toNum(line.qty, 0)}</td>
-                          <td className="px-3 py-3 dark:text-gray-300">{`${formatMoney(line.discAmt)} @ ${line.appliedPercent}%`}</td>
-                          <td className="px-3 py-3 text-right">
-                            <input
+                              <Box component="span" sx={{ color: "text.secondary" }}>{index + 1}</Box>
+                            </Stack>
+                          </TableCell>
+                          <TableCell sx={{ fontFamily: "monospace", color: "text.secondary" }}>{line.barcode || "-"}</TableCell>
+                          <TableCell>{line.productName || "-"}</TableCell>
+                          <TableCell align="right">{formatMoney(line.price)}</TableCell>
+                          <TableCell align="right">{toNum(line.qty, 0)}</TableCell>
+                          <TableCell sx={{ color: "text.secondary" }}>{`${formatMoney(line.discAmt)} @ ${line.appliedPercent}%`}</TableCell>
+                          <TableCell align="right">
+                            <TextField
                               type="number"
-                              min="0"
-                              step="0.01"
+                              slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
                               value={line.percentInput}
                               onChange={(event) => handleDiscountRowPercentChange(line.lineId, event.target.value)}
-                              className="w-20 rounded border border-gray-300 px-2 py-1 text-right text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
+                              size="small"
+                              sx={{ width: 80, "& .MuiInputBase-input": { fontSize: 12.25, textAlign: "right" } }}
                             />
-                          </td>
-                          <td className="px-3 py-3 text-right">
-                            <input
+                          </TableCell>
+                          <TableCell align="right">
+                            <TextField
                               type="number"
-                              min="0"
-                              step="0.01"
+                              slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
                               value={line.valueInput}
                               onChange={(event) => handleDiscountRowValueChange(line.lineId, event.target.value)}
-                              className="w-24 rounded border border-gray-300 px-2 py-1 text-right text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
+                              size="small"
+                              sx={{ width: 96, "& .MuiInputBase-input": { fontSize: 12.25, textAlign: "right" } }}
                             />
-                          </td>
-                          <td className="px-3 py-3 text-right dark:text-gray-100">{formatMoney(line.previewNetAmount)}</td>
-                        </tr>
+                          </TableCell>
+                          <TableCell align="right">{formatMoney(line.previewNetAmount)}</TableCell>
+                        </TableRow>
                       ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
+                    </TableBody>
+                  </Table>
+                </Box>
+              </Box>
+            </Box>
 
-            <div className="flex flex-col gap-3 border-t dark:border-gray-700 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex flex-wrap items-end gap-3">
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Discount %</label>
-                  <input
+            <Stack sx={{ flexDirection: { xs: "column", lg: "row" }, gap: 1.5, borderTop: 1, borderColor: "divider", px: 2.5, py: 2, alignItems: { lg: "center" }, justifyContent: { lg: "space-between" } }}>
+              <Stack direction="row" sx={{ flexWrap: "wrap", alignItems: "flex-end", gap: 1.5 }}>
+                <Box>
+                  <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Discount %</Typography>
+                  <TextField
                     type="number"
-                    min="0"
-                    step="0.01"
+                    slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
                     value={discountPercentInput}
                     onChange={(event) => applyDiscountPercentToSelected(event.target.value)}
-                    className="w-32 rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
+                    size="small"
                     autoFocus
+                    sx={{ width: 128, "& .MuiInputBase-input": { fontSize: 12.25 } }}
                   />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">D.Value</label>
-                  <input
+                </Box>
+                <Box>
+                  <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>D.Value</Typography>
+                  <TextField
                     type="number"
-                    min="0"
-                    step="0.01"
+                    slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
                     value={discountValueInput}
                     onChange={(event) => applyDiscountValueToSelected(event.target.value)}
-                    className="w-40 rounded border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
+                    size="small"
+                    sx={{ width: 160, "& .MuiInputBase-input": { fontSize: 12.25 } }}
                   />
-                </div>
-                <div className="pb-2 text-sm text-gray-600 dark:text-gray-300">
+                </Box>
+                <Typography sx={{ pb: 1, fontSize: 12.25, color: "text.secondary" }}>
                   Allowed on selected amount: {formatMoney(discountDialogTotals.selectedAmount)}
-                </div>
-              </div>
+                </Typography>
+              </Stack>
 
-              <div className="flex items-center justify-end gap-2">
-                <button
+              <Stack direction="row" sx={{ alignItems: "center", justifyContent: "flex-end", gap: 1 }}>
+                <Button
                   type="button"
                   onClick={applyDiscountDialog}
                   className="glass-btn glass-btn-primary"
                 >
                   Apply ({formatMoney(discountDialogTotals.previewDiscountValue)})
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   onClick={closeDiscountDialog}
                   className="glass-btn glass-btn-secondary"
                 >
                   Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+                </Button>
+              </Stack>
+            </Stack>
+          </Box>
+        </Box>
       )}
 
       {loading && (
-        <div className="fixed bottom-4 left-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-sm px-3 py-1.5 text-xs text-gray-500 dark:text-gray-400">
+        <Box sx={{ position: "fixed", bottom: 16, left: 16, bgcolor: "background.paper", border: 1, borderColor: "divider", borderRadius: "3.5px", boxShadow: 1, px: 1.5, py: 0.75, fontSize: 10.5, color: "text.secondary" }}>
           Loading master data...
-        </div>
+        </Box>
       )}
       <CounterAssignmentDialog
         open={counterAssignmentOpen}
         onClose={() => setCounterAssignmentOpen(false)}
       />
-    </div>
+    </Box>
   );
 };
 

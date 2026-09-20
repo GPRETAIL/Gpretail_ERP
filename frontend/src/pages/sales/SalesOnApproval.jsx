@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Pencil, PlusCircle, Save, Search, Trash2, UserRound, X } from "lucide-react";
+import { Pencil, PlusCircle, Save, Search, Trash2, UserRound, X } from "lucide-react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 import FilterableDataTable from "../../components/FilterableDataTable";
 import { createGroupFetchers } from "../../utils/serverGrouping";
+import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, Checkbox, Radio, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
 
 // Matches config('pagination.resources.sales_approvals.groupable_columns') on the backend.
 const { onFetchGroupSummaries: fetchApprovalGroupSummaries, onFetchGroupRows: fetchApprovalGroupRows } =
@@ -99,20 +100,50 @@ const DialogTextField = ({
   type = "text",
   inputRef = null,
 }) => (
-  <div>
-    <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">{label}</label>
-    <input
-      ref={inputRef}
+  <Box>
+    <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>{label}</Typography>
+    <TextField
+      inputRef={inputRef}
       type={type}
       name={name}
       value={value}
       onChange={onChange}
       onKeyDown={onKeyDown}
       placeholder={placeholder}
-      className="w-full rounded border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+      size="small"
+      fullWidth
+      sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 1 } }}
     />
-  </div>
+  </Box>
 );
+
+const dialogNativeSelectSx = {
+  width: "100%",
+  border: "1px solid",
+  borderColor: "divider",
+  borderRadius: "3.5px",
+  bgcolor: "background.paper",
+  px: 1.5,
+  py: 1,
+  fontSize: 12.25,
+  color: "text.primary",
+};
+
+const SOA_GRID_COLS = "44px 88px minmax(0,0.72fr) 52px 68px 58px 70px 68px 78px 78px 64px";
+const SOA_CELL_SX = { borderRight: 1, borderColor: "divider", px: 1, py: 0.75 };
+const SOA_HEADER_FONT_SX = { fontSize: { xs: 9, md: 10, lg: 10.5 } };
+const SOA_SEARCH_INPUT_SX = {
+  width: "100%",
+  border: "1px solid",
+  borderColor: "grey.300",
+  borderRadius: "1.75px",
+  bgcolor: "background.paper",
+  color: "text.primary",
+  px: 0.5,
+  py: 0.25,
+  fontSize: { xs: 9, md: 10 },
+};
+const SOA_ROW_INPUT_SX = { ...SOA_SEARCH_INPUT_SX, fontSize: { xs: 9, md: 10, lg: 10.5 } };
 
 const DialogSelectField = ({
   label,
@@ -124,15 +155,16 @@ const DialogSelectField = ({
   inputRef = null,
   placeholder = "Select",
 }) => (
-  <div>
-    <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">{label}</label>
-    <select
+  <Box>
+    <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>{label}</Typography>
+    <Box
+      component="select"
       ref={inputRef}
       name={name}
       value={value}
       onChange={onChange}
       onKeyDown={onKeyDown}
-      className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-gray-900 dark:text-gray-100"
+      sx={dialogNativeSelectSx}
     >
       <option value="">{placeholder}</option>
       {options.map((row) => (
@@ -140,8 +172,8 @@ const DialogSelectField = ({
           {row.label}
         </option>
       ))}
-    </select>
-  </div>
+    </Box>
+  </Box>
 );
 
 const SalesOnApproval = () => {
@@ -1116,13 +1148,13 @@ const SalesOnApproval = () => {
         key: "total_qty",
         label: "Total Qty",
         valueGetter: (row) => toNum(row.total_qty || 0),
-        render: (value) => <div className="text-center">{toNum(value || 0)}</div>,
+        render: (value) => <Box sx={{ textAlign: "center" }}>{toNum(value || 0)}</Box>,
       },
       {
         key: "amount",
         label: "Amount",
         valueGetter: (row) => toNum(row.amount || 0),
-        render: (value) => <div className="text-right">{formatMoney(value || 0)}</div>,
+        render: (value) => <Box sx={{ textAlign: "right" }}>{formatMoney(value || 0)}</Box>,
       },
     ],
     []
@@ -1131,16 +1163,41 @@ const SalesOnApproval = () => {
   const [searchPagination, setSearchPagination] = useState({ total: 0, totalPages: 1 });
 
   const renderEntryPage = () => (
-    <div className="flex min-h-[calc(100vh-170px)] flex-col gap-2 xl:h-full xl:flex-1 xl:min-h-0 xl:grid xl:grid-cols-[minmax(0,1fr)_300px] xl:items-stretch">
-      <div className="min-w-0 xl:flex xl:min-h-0">
-        <div className="w-full overflow-hidden rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-sm xl:flex xl:h-full xl:min-h-0 xl:flex-col">
-          <div className="border-b dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-3">
-            <div className="mb-2 text-xs font-semibold text-gray-800 dark:text-gray-100">Add Product</div>
-            <div className="flex flex-wrap items-end gap-2">
-              <div className="w-full min-w-0 flex-1 md:min-w-[220px]">
-                <label className="mb-1 block text-xs font-bold text-red-700 dark:text-red-400">Barcode</label>
-                <input
-                  ref={barcodeInputRef}
+    <Box
+      sx={{
+        display: { xs: "flex", xl: "grid" },
+        minHeight: { xs: "calc(100vh - 170px)", xl: 0 },
+        flexDirection: "column",
+        gap: 1,
+        height: { xl: "100%" },
+        flex: { xl: 1 },
+        gridTemplateColumns: { xl: "minmax(0,1fr) 300px" },
+        alignItems: { xl: "stretch" },
+      }}
+    >
+      <Box sx={{ minWidth: 0, display: { xl: "flex" }, minHeight: { xl: 0 } }}>
+        <Box
+          sx={{
+            width: "100%",
+            overflow: "hidden",
+            borderRadius: "7px",
+            border: 1,
+            borderColor: "grey.300",
+            bgcolor: "background.paper",
+            boxShadow: 1,
+            display: { xl: "flex" },
+            height: { xl: "100%" },
+            minHeight: { xl: 0 },
+            flexDirection: { xl: "column" },
+          }}
+        >
+          <Box sx={{ borderBottom: 1, borderColor: "divider", bgcolor: "background.paper", px: 1.5, py: 1.5 }}>
+            <Typography sx={{ mb: 1, fontSize: 10.5, fontWeight: 600, color: "text.primary" }}>Add Product</Typography>
+            <Stack direction="row" sx={{ flexWrap: "wrap", alignItems: "flex-end", gap: 1 }}>
+              <Box sx={{ width: "100%", minWidth: { md: 220 }, flex: 1 }}>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 10.5, fontWeight: 700, color: "error.main" }}>Barcode</Typography>
+                <TextField
+                  inputRef={barcodeInputRef}
                   type="text"
                   value={addBarcode}
                   onChange={(e) => setAddBarcode(e.target.value)}
@@ -1167,29 +1224,34 @@ const SalesOnApproval = () => {
                     }
                   }}
                   placeholder="Scan / enter barcode"
-                  className="w-full rounded border border-gray-300 dark:border-gray-600 px-2 py-1 text-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  size="small"
+                  fullWidth
+                  sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.75 } }}
                 />
-              </div>
-              <div className="w-full min-w-0 flex-[1.3] md:min-w-[280px]">
-                <label className="mb-1 block text-xs font-bold text-red-700 dark:text-red-400">Product (In Stock)</label>
-                <select
+              </Box>
+              <Box sx={{ width: "100%", minWidth: { md: 280 }, flex: 1.3 }}>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 10.5, fontWeight: 700, color: "error.main" }}>Product (In Stock)</Typography>
+                <TextField
+                  select
                   value={addProductKey}
                   onChange={(e) => setAddProductKey(e.target.value)}
-                  className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-1 text-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-gray-900 dark:text-gray-100"
+                  size="small"
+                  fullWidth
+                  sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.75 } }}
                 >
-                  <option value="">Select product</option>
+                  <MenuItem value="">Select product</MenuItem>
                   {productOptions.map((row) => (
-                    <option key={row.value} value={row.value}>
+                    <MenuItem key={row.value} value={row.value}>
                       {row.label}
-                    </option>
+                    </MenuItem>
                   ))}
-                </select>
-              </div>
-              <div className="w-28">
-                <label className="mb-1 block text-xs font-bold text-red-700 dark:text-red-400">Qty</label>
-                <input
+                </TextField>
+              </Box>
+              <Box sx={{ width: 112 }}>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 10.5, fontWeight: 700, color: "error.main" }}>Qty</Typography>
+                <TextField
                   type="number"
-                  min="1"
+                  slotProps={{ htmlInput: { min: 1 } }}
                   value={addQty}
                   onChange={(e) => setAddQty(e.target.value)}
                   onKeyDown={(e) => {
@@ -1198,247 +1260,213 @@ const SalesOnApproval = () => {
                       handleAddLine();
                     }
                   }}
-                  className="w-full rounded border border-gray-300 dark:border-gray-600 px-2 py-1 text-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  size="small"
+                  fullWidth
+                  sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.75 } }}
                 />
-              </div>
-              <div className="w-10">
-                <button
+              </Box>
+              <Box sx={{ width: 40 }}>
+                <Button
                   onClick={handleAddLine}
-                  className="glass-btn glass-btn-primary inline-flex h-[34px] w-full items-center justify-center"
+                  className="glass-btn glass-btn-primary"
                   aria-label="Add product"
+                  sx={{ height: "34px", width: "100%", minWidth: 0, p: 0 }}
                 >
                   <PlusCircle className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-            <p className="mt-2 text-xs text-gray-600 dark:text-gray-400">{selectedStockHint}</p>
-          </div>
+                </Button>
+              </Box>
+            </Stack>
+            <Typography sx={{ mt: 1, fontSize: 10.5, color: "text.secondary" }}>{selectedStockHint}</Typography>
+          </Box>
 
-          <div className="flex-1 min-h-0 overflow-x-auto">
-            <div className="flex h-[420px] min-h-[420px] flex-col xl:h-full xl:min-h-0">
-              <div className="grid grid-cols-[44px_88px_minmax(0,0.72fr)_52px_68px_58px_70px_68px_78px_78px_64px] border-b dark:border-gray-700 bg-blue-100 dark:bg-blue-900/30 text-[9px] font-semibold text-gray-700 dark:text-gray-300 md:text-[10px] lg:text-xs">
-                <div className="border-r dark:border-gray-700 px-2 py-1.5 text-center">S.No</div>
-                <div className="border-r dark:border-gray-700 px-2 py-1.5">Barcode</div>
-                <div className="border-r dark:border-gray-700 px-2 py-1.5">Product</div>
-                <div className="border-r dark:border-gray-700 px-2 py-1.5 text-center">Qty</div>
-                <div className="border-r dark:border-gray-700 px-2 py-1.5 text-right">Price</div>
-                <div className="border-r dark:border-gray-700 px-2 py-1.5 text-right">Tax%</div>
-                <div className="border-r dark:border-gray-700 px-2 py-1.5 text-right">Discount</div>
-                <div className="border-r dark:border-gray-700 px-2 py-1.5 text-right">Cost</div>
-                <div className="border-r dark:border-gray-700 px-2 py-1.5 text-right">Total</div>
-                <div className="border-r dark:border-gray-700 px-2 py-1.5">Salesman</div>
-                <div className="px-2 py-1.5 text-center">Action</div>
-              </div>
+          <Box sx={{ flex: 1, minHeight: 0, overflowX: "auto" }}>
+            <Box sx={{ display: "flex", height: { xs: 420, xl: "100%" }, minHeight: { xs: 420, xl: 0 }, flexDirection: "column" }}>
+              <Box sx={{ display: "grid", gridTemplateColumns: SOA_GRID_COLS, borderBottom: 1, borderColor: "divider", bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.24 : 0.12), fontWeight: 600, color: "text.secondary", ...SOA_HEADER_FONT_SX }}>
+                <Box sx={{ ...SOA_CELL_SX, textAlign: "center" }}>S.No</Box>
+                <Box sx={SOA_CELL_SX}>Barcode</Box>
+                <Box sx={SOA_CELL_SX}>Product</Box>
+                <Box sx={{ ...SOA_CELL_SX, textAlign: "center" }}>Qty</Box>
+                <Box sx={{ ...SOA_CELL_SX, textAlign: "right" }}>Price</Box>
+                <Box sx={{ ...SOA_CELL_SX, textAlign: "right" }}>Tax%</Box>
+                <Box sx={{ ...SOA_CELL_SX, textAlign: "right" }}>Discount</Box>
+                <Box sx={{ ...SOA_CELL_SX, textAlign: "right" }}>Cost</Box>
+                <Box sx={{ ...SOA_CELL_SX, textAlign: "right" }}>Total</Box>
+                <Box sx={SOA_CELL_SX}>Salesman</Box>
+                <Box sx={{ px: 1, py: 0.75, textAlign: "center" }}>Action</Box>
+              </Box>
 
-              <div className="grid grid-cols-[44px_88px_minmax(0,0.72fr)_52px_68px_58px_70px_68px_78px_78px_64px] border-b dark:border-gray-700 bg-sky-50 dark:bg-sky-900/20 text-[9px] md:text-[10px] lg:text-xs">
-                <div className="border-r dark:border-gray-700 px-2 py-1.5"></div>
-                <div className="border-r dark:border-gray-700 px-2 py-1.5">
-                  <input
-                    type="text"
-                    placeholder="Search barcode"
-                    className="w-full rounded border border-gray-300 dark:border-gray-600 px-1 py-0.5 text-[9px] md:text-[10px] bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                    disabled
-                  />
-                </div>
-                <div className="border-r dark:border-gray-700 px-2 py-1.5">
-                  <input
-                    type="text"
-                    placeholder="Search product"
-                    className="w-full rounded border border-gray-300 dark:border-gray-600 px-1 py-0.5 text-[9px] md:text-[10px] bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                    disabled
-                  />
-                </div>
-                <div className="border-r dark:border-gray-700 px-2 py-1.5">
-                  <input
-                    type="text"
-                    placeholder="Qty"
-                    className="w-full rounded border border-gray-300 dark:border-gray-600 px-1 py-0.5 text-center text-[9px] md:text-[10px] bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                    disabled
-                  />
-                </div>
-                <div className="border-r dark:border-gray-700 px-2 py-1.5">
-                  <input
-                    type="text"
-                    placeholder="Price"
-                    className="w-full rounded border border-gray-300 dark:border-gray-600 px-1 py-0.5 text-right text-[9px] md:text-[10px] bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                    disabled
-                  />
-                </div>
-                <div className="border-r dark:border-gray-700 px-2 py-1.5">
-                  <input
-                    type="text"
-                    placeholder="Tax"
-                    className="w-full rounded border border-gray-300 dark:border-gray-600 px-1 py-0.5 text-right text-[9px] md:text-[10px] bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                    disabled
-                  />
-                </div>
-                <div className="border-r dark:border-gray-700 px-2 py-1.5">
-                  <input
-                    type="text"
-                    placeholder="Disco"
-                    className="w-full rounded border border-gray-300 dark:border-gray-600 px-1 py-0.5 text-right text-[9px] md:text-[10px] bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                    disabled
-                  />
-                </div>
-                <div className="border-r dark:border-gray-700 px-2 py-1.5"></div>
-                <div className="border-r dark:border-gray-700 px-2 py-1.5">
-                  <input
-                    type="text"
-                    placeholder="Total"
-                    className="w-full rounded border border-gray-300 dark:border-gray-600 px-1 py-0.5 text-right text-[9px] md:text-[10px] bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                    disabled
-                  />
-                </div>
-                <div className="border-r dark:border-gray-700 px-2 py-1.5">
-                  <input
-                    type="text"
-                    placeholder="Salesman"
-                    className="w-full rounded border border-gray-300 dark:border-gray-600 px-1 py-0.5 text-[9px] md:text-[10px] bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                    disabled
-                  />
-                </div>
-                <div className="px-2 py-1.5"></div>
-              </div>
+              <Box sx={{ display: "grid", gridTemplateColumns: SOA_GRID_COLS, borderBottom: 1, borderColor: "divider", bgcolor: (theme) => alpha(theme.palette.info.main, theme.palette.mode === "dark" ? 0.12 : 0.06), fontSize: { xs: 9, md: 10 } }}>
+                <Box sx={SOA_CELL_SX} />
+                <Box sx={SOA_CELL_SX}>
+                  <Box component="input" type="text" placeholder="Search barcode" disabled sx={SOA_SEARCH_INPUT_SX} />
+                </Box>
+                <Box sx={SOA_CELL_SX}>
+                  <Box component="input" type="text" placeholder="Search product" disabled sx={SOA_SEARCH_INPUT_SX} />
+                </Box>
+                <Box sx={SOA_CELL_SX}>
+                  <Box component="input" type="text" placeholder="Qty" disabled sx={{ ...SOA_SEARCH_INPUT_SX, textAlign: "center" }} />
+                </Box>
+                <Box sx={SOA_CELL_SX}>
+                  <Box component="input" type="text" placeholder="Price" disabled sx={{ ...SOA_SEARCH_INPUT_SX, textAlign: "right" }} />
+                </Box>
+                <Box sx={SOA_CELL_SX}>
+                  <Box component="input" type="text" placeholder="Tax" disabled sx={{ ...SOA_SEARCH_INPUT_SX, textAlign: "right" }} />
+                </Box>
+                <Box sx={SOA_CELL_SX}>
+                  <Box component="input" type="text" placeholder="Disco" disabled sx={{ ...SOA_SEARCH_INPUT_SX, textAlign: "right" }} />
+                </Box>
+                <Box sx={SOA_CELL_SX} />
+                <Box sx={SOA_CELL_SX}>
+                  <Box component="input" type="text" placeholder="Total" disabled sx={{ ...SOA_SEARCH_INPUT_SX, textAlign: "right" }} />
+                </Box>
+                <Box sx={SOA_CELL_SX}>
+                  <Box component="input" type="text" placeholder="Salesman" disabled sx={SOA_SEARCH_INPUT_SX} />
+                </Box>
+                <Box sx={{ px: 1, py: 0.75 }} />
+              </Box>
 
-              <div className="flex-1 min-h-0 overflow-y-auto" style={{ scrollbarGutter: "stable" }}>
+              <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto" }} style={{ scrollbarGutter: "stable" }}>
                 {cartWithTotals.length === 0 ? (
-                  <div className="flex h-full items-center justify-center py-16 text-center text-xs text-gray-400 dark:text-gray-500">
+                  <Box sx={{ display: "flex", height: "100%", alignItems: "center", justifyContent: "center", py: 8, textAlign: "center", fontSize: 10.5, color: "text.disabled" }}>
                     No products added yet.
-                  </div>
+                  </Box>
                 ) : (
                   cartWithTotals.map((line, index) => (
-                    <div
+                    <Box
                       key={line.lineId}
-                      className="grid grid-cols-[44px_88px_minmax(0,0.72fr)_52px_68px_58px_70px_68px_78px_78px_64px] border-b dark:border-gray-700 text-[9px] hover:bg-gray-50 dark:hover:bg-gray-700/50 md:text-[10px] lg:text-xs"
+                      sx={{ display: "grid", gridTemplateColumns: SOA_GRID_COLS, borderBottom: 1, borderColor: "divider", fontSize: { xs: 9, md: 10, lg: 10.5 }, "&:hover": { bgcolor: "action.hover" } }}
                     >
                       {(() => {
                         const isLineEditable = editingLineId === line.lineId;
                         return (
                           <>
-                      <div className="border-r dark:border-gray-700 px-2 py-1.5 text-center">{index + 1}</div>
-                      <div className="truncate border-r dark:border-gray-700 px-2 py-1.5 font-mono">{line.barcode || "-"}</div>
-                      <div className="truncate border-r dark:border-gray-700 px-2 py-1.5">{line.productName}</div>
-                      <div className="border-r dark:border-gray-700 px-2 py-1.5 text-center">
+                      <Box sx={{ ...SOA_CELL_SX, textAlign: "center" }}>{index + 1}</Box>
+                      <Box sx={{ ...SOA_CELL_SX, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontFamily: "monospace" }}>{line.barcode || "-"}</Box>
+                      <Box sx={{ ...SOA_CELL_SX, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{line.productName}</Box>
+                      <Box sx={{ ...SOA_CELL_SX, textAlign: "center" }}>
                         {isLineEditable ? (
-                          <input
+                          <Box
+                            component="input"
                             type="number"
                             min="1"
                             step="1"
                             value={line.qty}
                             onChange={(e) => handleLineQtyChange(line.lineId, e.target.value)}
-                            className="w-full rounded border border-gray-300 dark:border-gray-600 px-1 py-0.5 text-center text-[9px] md:text-[10px] lg:text-xs bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                            sx={{ ...SOA_ROW_INPUT_SX, textAlign: "center" }}
                           />
                         ) : line.qty}
-                      </div>
-                      <div className="border-r dark:border-gray-700 px-1.5 py-1.5 text-right">
+                      </Box>
+                      <Box sx={{ borderRight: 1, borderColor: "divider", px: 0.75, py: 0.75, textAlign: "right" }}>
                         {isLineEditable ? (
-                          <input
+                          <Box
+                            component="input"
                             type="number"
                             min="0"
                             step="0.01"
                             value={line.price}
                             onChange={(e) => handleLineValueChange(line.lineId, "price", e.target.value)}
-                            className="w-full rounded border border-gray-300 dark:border-gray-600 px-1 py-0.5 text-right text-[9px] md:text-[10px] lg:text-xs bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                            sx={{ ...SOA_ROW_INPUT_SX, textAlign: "right" }}
                           />
                         ) : (
                           formatMoney(line.price)
                         )}
-                      </div>
-                      <div className="border-r dark:border-gray-700 px-2 py-1.5 text-right">{toNum(line.tax, 0).toFixed(2)}</div>
-                      <div className="border-r dark:border-gray-700 px-1.5 py-1.5 text-right">
+                      </Box>
+                      <Box sx={{ ...SOA_CELL_SX, textAlign: "right" }}>{toNum(line.tax, 0).toFixed(2)}</Box>
+                      <Box sx={{ borderRight: 1, borderColor: "divider", px: 0.75, py: 0.75, textAlign: "right" }}>
                         {isLineEditable ? (
-                          <input
+                          <Box
+                            component="input"
                             type="number"
                             min="0"
                             step="0.01"
                             value={line.discount}
                             onChange={(e) => handleLineValueChange(line.lineId, "discount", e.target.value)}
-                            className="w-full rounded border border-gray-300 dark:border-gray-600 px-1 py-0.5 text-right text-[9px] md:text-[10px] lg:text-xs bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                            sx={{ ...SOA_ROW_INPUT_SX, textAlign: "right" }}
                           />
                         ) : (
                           formatMoney(line.discount)
                         )}
-                      </div>
-                      <div className="border-r dark:border-gray-700 px-2 py-1.5 text-right">{formatMoney(line.cost)}</div>
-                      <div className="border-r dark:border-gray-700 px-2 py-1.5 text-right font-medium">{formatMoney(line.total)}</div>
-                      <div className="truncate border-r dark:border-gray-700 px-2 py-1.5">{line.salesManName || "-"}</div>
-                      <div className="flex items-center justify-center gap-0.5 px-1 py-1.5">
-                        <button
+                      </Box>
+                      <Box sx={{ ...SOA_CELL_SX, textAlign: "right" }}>{formatMoney(line.cost)}</Box>
+                      <Box sx={{ ...SOA_CELL_SX, textAlign: "right", fontWeight: 500 }}>{formatMoney(line.total)}</Box>
+                      <Box sx={{ ...SOA_CELL_SX, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{line.salesManName || "-"}</Box>
+                      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "center", gap: 0.25, px: 0.5, py: 0.75 }}>
+                        <Box
+                          component="button"
                           type="button"
                           onClick={() => toggleLineEdit(line.lineId)}
-                          className={`inline-flex items-center justify-center ${
-                            isLineEditable ? "text-amber-600 dark:text-amber-400" : "text-gray-600 dark:text-gray-400"
-                          } hover:opacity-80`}
+                          sx={{ display: "inline-flex", alignItems: "center", justifyContent: "center", color: isLineEditable ? "warning.main" : "text.secondary", "&:hover": { opacity: 0.8 } }}
                           aria-label={isLineEditable ? "Lock row editing" : "Edit row"}
                         >
                           <Pencil className="h-3.5 w-3.5" />
-                        </button>
-                        <button
+                        </Box>
+                        <Box
+                          component="button"
                           type="button"
                           onClick={() => openSalesManDialog(line)}
-                          className={`inline-flex items-center justify-center ${
-                            line.salesManId ? "text-green-600 dark:text-green-400" : "text-blue-600 dark:text-blue-400"
-                          } hover:opacity-80`}
+                          sx={{ display: "inline-flex", alignItems: "center", justifyContent: "center", color: line.salesManId ? "success.main" : "primary.main", "&:hover": { opacity: 0.8 } }}
                           aria-label="Assign sales man"
                         >
                           <UserRound className="h-3.5 w-3.5" />
-                        </button>
-                        <button
+                        </Box>
+                        <Box
+                          component="button"
+                          type="button"
                           onClick={() => handleRemoveLine(line.lineId)}
-                          className="inline-flex items-center justify-center text-red-600 dark:text-red-400 hover:opacity-80"
+                          sx={{ display: "inline-flex", alignItems: "center", justifyContent: "center", color: "error.main", "&:hover": { opacity: 0.8 } }}
                           aria-label="Remove line"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
+                        </Box>
+                      </Stack>
                           </>
                         );
                       })()}
-                    </div>
+                    </Box>
                   ))
                 )}
-              </div>
+              </Box>
 
-              <div className="grid grid-cols-[44px_88px_minmax(0,0.72fr)_52px_68px_58px_70px_68px_78px_78px_64px] border-t dark:border-gray-700 bg-gray-100 dark:bg-gray-700 text-[9px] font-bold text-gray-700 dark:text-gray-300 md:text-[10px] lg:text-xs">
-                <div className="border-r dark:border-gray-700 px-2 py-1.5 text-center">-</div>
-                <div className="border-r dark:border-gray-700 px-2 py-1.5"></div>
-                <div className="border-r dark:border-gray-700 px-2 py-1.5"></div>
-                <div className="border-r dark:border-gray-700 px-2 py-1.5 text-center text-red-600 dark:text-red-400">{summary.totalQty}</div>
-                <div className="border-r dark:border-gray-700 px-2 py-1.5"></div>
-                <div className="border-r dark:border-gray-700 px-2 py-1.5"></div>
-                <div className="border-r dark:border-gray-700 px-2 py-1.5 text-right text-red-600 dark:text-red-400">{formatMoney(summary.totalDiscount)}</div>
-                <div className="border-r dark:border-gray-700 px-2 py-1.5"></div>
-                <div className="border-r dark:border-gray-700 px-2 py-1.5 text-right text-red-600 dark:text-red-400">{formatMoney(summary.amount)}</div>
-                <div className="border-r dark:border-gray-700 px-2 py-1.5"></div>
-                <div className="px-2 py-1.5"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+              <Box sx={{ display: "grid", gridTemplateColumns: SOA_GRID_COLS, borderTop: 1, borderColor: "divider", bgcolor: "action.hover", fontWeight: 700, color: "text.secondary", ...SOA_HEADER_FONT_SX }}>
+                <Box sx={{ ...SOA_CELL_SX, textAlign: "center" }}>-</Box>
+                <Box sx={SOA_CELL_SX} />
+                <Box sx={SOA_CELL_SX} />
+                <Box sx={{ ...SOA_CELL_SX, textAlign: "center", color: "error.main" }}>{summary.totalQty}</Box>
+                <Box sx={SOA_CELL_SX} />
+                <Box sx={SOA_CELL_SX} />
+                <Box sx={{ ...SOA_CELL_SX, textAlign: "right", color: "error.main" }}>{formatMoney(summary.totalDiscount)}</Box>
+                <Box sx={SOA_CELL_SX} />
+                <Box sx={{ ...SOA_CELL_SX, textAlign: "right", color: "error.main" }}>{formatMoney(summary.amount)}</Box>
+                <Box sx={SOA_CELL_SX} />
+                <Box sx={{ px: 1, py: 0.75 }} />
+              </Box>
+            </Box>
+          </Box>
+        </Box>
+      </Box>
 
-      <div className="w-full xl:flex xl:min-h-0">
-        <div className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 p-3 shadow-sm xl:flex xl:h-full xl:flex-col">
-          <div className="border-b border-gray-200 dark:border-gray-700 pb-2">
-            <div className="flex items-center justify-between gap-3 text-xs">
-              <div className="flex items-center gap-1.5">
-                <span className="font-semibold text-gray-700 dark:text-gray-300">Date</span>
-                <span className="text-gray-900 dark:text-gray-100">{now.toLocaleDateString()}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-semibold text-gray-700 dark:text-gray-300">Time</span>
-                <span className="text-gray-900 dark:text-gray-100">{now.toLocaleTimeString()}</span>
-              </div>
-            </div>
-          </div>
+      <Box sx={{ width: "100%", display: { xl: "flex" }, minHeight: { xl: 0 } }}>
+        <Box sx={{ width: "100%", borderRadius: "7px", border: 1, borderColor: "grey.300", bgcolor: "background.paper", p: 1.5, boxShadow: 1, display: { xl: "flex" }, height: { xl: "100%" }, flexDirection: { xl: "column" } }}>
+          <Box sx={{ borderBottom: 1, borderColor: "divider", pb: 1 }}>
+            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 1.5, fontSize: 10.5 }}>
+              <Stack direction="row" sx={{ alignItems: "center", gap: 0.75 }}>
+                <Box component="span" sx={{ fontWeight: 600, color: "text.secondary" }}>Date</Box>
+                <Box component="span" sx={{ color: "text.primary" }}>{now.toLocaleDateString()}</Box>
+              </Stack>
+              <Stack direction="row" sx={{ alignItems: "center", gap: 0.75 }}>
+                <Box component="span" sx={{ fontWeight: 600, color: "text.secondary" }}>Time</Box>
+                <Box component="span" sx={{ color: "text.primary" }}>{now.toLocaleTimeString()}</Box>
+              </Stack>
+            </Stack>
+          </Box>
 
-          <div className="space-y-2 border-b border-gray-200 dark:border-gray-700 py-2">
-            <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_96px]">
-              <div className="space-y-2">
-                <div>
-                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Customer Number</label>
-                  <input
-                    ref={customerNumberInputRef}
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1, borderBottom: 1, borderColor: "divider", py: 1 }}>
+            <Box sx={{ display: "grid", gap: 1, gridTemplateColumns: { md: "minmax(0,1fr) 96px" } }}>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                <Box>
+                  <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Customer Number</Typography>
+                  <TextField
+                    inputRef={customerNumberInputRef}
                     type="text"
                     value={newCustomer.mobileNo}
                     onChange={(e) => handleCustomerNumberChange(e.target.value)}
@@ -1449,127 +1477,135 @@ const SalesOnApproval = () => {
                       }
                     }}
                     placeholder="Write customer number and press Enter"
-                    className="w-full rounded border border-gray-300 dark:border-gray-600 px-2 py-1.5 text-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    size="small"
+                    fullWidth
+                    sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.75 } }}
                   />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Customer Name</label>
-                  <input
+                </Box>
+                <Box>
+                  <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Customer Name</Typography>
+                  <TextField
                     type="text"
                     value={newCustomer.name}
                     onChange={(e) => handleCustomerNamePanelChange(e.target.value)}
                     placeholder="Customer name"
-                    className="w-full rounded border border-gray-300 dark:border-gray-600 px-2 py-1.5 text-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    size="small"
+                    fullWidth
+                    sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.75 } }}
                   />
-                </div>
-              </div>
+                </Box>
+              </Box>
 
-              <div className="flex flex-col gap-2 pt-0 md:pt-6">
-                <label className="inline-flex items-center justify-between gap-2 text-xs font-bold uppercase tracking-wide text-gray-600 dark:text-gray-400">
-                  <span>Credit</span>
-                  <input
-                    type="checkbox"
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 1, pt: { xs: 0, md: 3 } }}>
+                <Stack component="label" direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 1, fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>
+                  <Box component="span">Credit</Box>
+                  <Checkbox
                     checked={creditEnabled}
                     onChange={(event) => setCreditEnabled(event.target.checked)}
-                    className="rounded border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-400"
+                    size="small"
+                    sx={{ p: 0 }}
                   />
-                </label>
-                <label className="inline-flex items-center justify-between gap-2 text-xs font-bold uppercase tracking-wide text-gray-600 dark:text-gray-400">
-                  <span>IGST</span>
-                  <input
-                    type="checkbox"
+                </Stack>
+                <Stack component="label" direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 1, fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>
+                  <Box component="span">IGST</Box>
+                  <Checkbox
                     checked={igstEnabled}
                     onChange={(event) => {
                       const checked = event.target.checked;
                       setIgstEnabled(checked);
                       if (!checked) setPlaceOfSupplyStateId("");
                     }}
-                    className="rounded border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-400"
+                    size="small"
+                    sx={{ p: 0 }}
                   />
-                </label>
-              </div>
-            </div>
+                </Stack>
+              </Box>
+            </Box>
 
             {igstEnabled ? (
-              <div>
-                <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              <Box>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>
                   Place Of Supply
-                </label>
-                <select
+                </Typography>
+                <TextField
+                  select
                   value={placeOfSupplyStateId}
                   onChange={(event) => setPlaceOfSupplyStateId(event.target.value)}
-                  className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-1.5 text-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-gray-900 dark:text-gray-100"
+                  size="small"
+                  fullWidth
+                  sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.75 } }}
                 >
-                  <option value="">Select state</option>
+                  <MenuItem value="">Select state</MenuItem>
                   {customerConfigOptions.states.map((row) => (
-                    <option key={row.value} value={row.value}>
+                    <MenuItem key={row.value} value={row.value}>
                       {row.label}
-                    </option>
+                    </MenuItem>
                   ))}
-                </select>
-              </div>
+                </TextField>
+              </Box>
             ) : null}
-          </div>
+          </Box>
 
-          <div className="border-t border-gray-200 dark:border-gray-700 py-3">
-            <div className="overflow-hidden rounded border border-gray-200 dark:border-gray-700">
-              <div className="grid grid-cols-[1.1fr_0.9fr_72px] border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-[10px] font-bold uppercase tracking-wide text-gray-700 dark:text-gray-300">
-                <div className="px-2 py-2">Last Doc</div>
-                <div className="border-l border-gray-200 dark:border-gray-700 px-2 py-2 text-right">Amount</div>
-                <div className="border-l border-gray-200 dark:border-gray-700 px-2 py-2 text-center">Action</div>
-              </div>
-              <div className="h-28 overflow-y-auto">
+          <Box sx={{ borderTop: 1, borderColor: "divider", py: 1.5 }}>
+            <Box sx={{ overflow: "hidden", borderRadius: "3.5px", border: 1, borderColor: "divider" }}>
+              <Box sx={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr 72px", borderBottom: 1, borderColor: "divider", bgcolor: "action.hover", fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>
+                <Box sx={{ px: 1, py: 1 }}>Last Doc</Box>
+                <Box sx={{ borderLeft: 1, borderColor: "divider", px: 1, py: 1, textAlign: "right" }}>Amount</Box>
+                <Box sx={{ borderLeft: 1, borderColor: "divider", px: 1, py: 1, textAlign: "center" }}>Action</Box>
+              </Box>
+              <Box sx={{ height: 112, overflowY: "auto" }}>
                 {latestApprovalDoc ? (
-                  <div className="grid grid-cols-[1.1fr_0.9fr_72px] items-center text-xs text-gray-700 dark:text-gray-300">
-                    <div className="px-2 py-2 font-semibold">{formatApprovalNo(latestApprovalDoc.approval_no || latestApprovalDoc.id)}</div>
-                    <div className="border-l border-gray-200 dark:border-gray-700 px-2 py-2 text-right font-semibold">
+                  <Box sx={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr 72px", alignItems: "center", fontSize: 10.5, color: "text.secondary" }}>
+                    <Box sx={{ px: 1, py: 1, fontWeight: 600 }}>{formatApprovalNo(latestApprovalDoc.approval_no || latestApprovalDoc.id)}</Box>
+                    <Box sx={{ borderLeft: 1, borderColor: "divider", px: 1, py: 1, textAlign: "right", fontWeight: 600 }}>
                       {formatMoney(latestApprovalDoc.amount || 0)}
-                    </div>
-                    <div className="border-l border-gray-200 dark:border-gray-700 px-2 py-2 text-center">
-                      <button
+                    </Box>
+                    <Box sx={{ borderLeft: 1, borderColor: "divider", px: 1, py: 1, textAlign: "center" }}>
+                      <Box
+                        component="button"
                         type="button"
                         onClick={openLatestApprovalInSearch}
-                        className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                        sx={{ color: "primary.main", "&:hover": { color: "primary.dark" } }}
                         title="Open latest approval in search"
                       >
                         <Search className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
+                      </Box>
+                    </Box>
+                  </Box>
                 ) : (
-                  <div className="flex h-full items-center justify-center px-2 text-center text-xs text-gray-400 dark:text-gray-500">
+                  <Box sx={{ display: "flex", height: "100%", alignItems: "center", justifyContent: "center", px: 1, textAlign: "center", fontSize: 10.5, color: "text.disabled" }}>
                     No saved approval yet
-                  </div>
+                  </Box>
                 )}
-              </div>
-            </div>
-          </div>
+              </Box>
+            </Box>
+          </Box>
 
-          <div className="space-y-2 border-t border-gray-200 dark:border-gray-700 pt-3 text-xs">
-            <div className="flex items-center justify-between">
-              <span className="font-semibold text-gray-700 dark:text-gray-300">Amount</span>
-              <span className="font-bold text-gray-900 dark:text-gray-100">{formatMoney(summary.amount)}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="font-semibold text-gray-700 dark:text-gray-300">Total Qty/Pcs</span>
-              <span className="font-bold text-gray-900 dark:text-gray-100">{summary.totalQty}/{cartWithTotals.length}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="font-semibold text-gray-700 dark:text-gray-300">Gross Value</span>
-              <span className="font-bold text-gray-900 dark:text-gray-100">{formatMoney(summary.grossValue)}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="font-semibold text-gray-700 dark:text-gray-300">Total Discount</span>
-              <span className="font-bold text-gray-900 dark:text-gray-100">{formatMoney(summary.totalDiscount)}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1, borderTop: 1, borderColor: "divider", pt: 1.5, fontSize: 10.5 }}>
+            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between" }}>
+              <Box component="span" sx={{ fontWeight: 600, color: "text.secondary" }}>Amount</Box>
+              <Box component="span" sx={{ fontWeight: 700, color: "text.primary" }}>{formatMoney(summary.amount)}</Box>
+            </Stack>
+            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between" }}>
+              <Box component="span" sx={{ fontWeight: 600, color: "text.secondary" }}>Total Qty/Pcs</Box>
+              <Box component="span" sx={{ fontWeight: 700, color: "text.primary" }}>{summary.totalQty}/{cartWithTotals.length}</Box>
+            </Stack>
+            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between" }}>
+              <Box component="span" sx={{ fontWeight: 600, color: "text.secondary" }}>Gross Value</Box>
+              <Box component="span" sx={{ fontWeight: 700, color: "text.primary" }}>{formatMoney(summary.grossValue)}</Box>
+            </Stack>
+            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between" }}>
+              <Box component="span" sx={{ fontWeight: 600, color: "text.secondary" }}>Total Discount</Box>
+              <Box component="span" sx={{ fontWeight: 700, color: "text.primary" }}>{formatMoney(summary.totalDiscount)}</Box>
+            </Stack>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
   );
 
   const renderSearchPage = () => (
-    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-4">
+    <Box sx={{ bgcolor: "background.paper", border: 1, borderColor: "divider", borderRadius: "7px", boxShadow: 1, p: 2 }}>
       <FilterableDataTable
         rows={searchResults}
         columns={approvalSearchColumns}
@@ -1602,81 +1638,76 @@ const SalesOnApproval = () => {
         paginationMode="server"
         enableVirtualization
       />
-    </div>
+    </Box>
   );
 
   return (
-    <div className="pos-sale-page min-h-full bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 flex flex-col">
-      <div className="flex justify-between items-center px-4 py-2 bg-white dark:bg-gray-800 border-b dark:border-gray-700 shadow-sm">
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={showSearchPage ? () => setShowSearchPage(false) : () => navigate("/sales")}
-            className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
-            aria-label={showSearchPage ? "Back to sales on approval entry" : "Back to sales"}
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </button>
-          <h1 className="text-sm font-semibold flex items-center gap-1">
-            <button
+    <Box className="pos-sale-page" sx={{ minHeight: "100%", bgcolor: "background.default", color: "text.primary", display: "flex", flexDirection: "column" }}>
+      <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", px: 2, py: 1, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
+        <Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
+          <Typography component="h1" sx={{ fontSize: 12.25, fontWeight: 600, display: "flex", alignItems: "center", gap: 0.5 }}>
+            <Box
+              component="button"
               type="button"
               onClick={() => navigate("/sales")}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
+              sx={{ color: "primary.main", "&:hover": { color: "primary.dark", textDecoration: "underline" } }}
             >
               Sales
-            </button>
-            <span className="text-gray-500 dark:text-gray-400">/</span>
-            <span>Sales On Approval</span>
-          </h1>
-        </div>
+            </Box>
+            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
+            <Box component="span">Sales On Approval</Box>
+          </Typography>
+        </Stack>
 
-        <div className="flex items-center gap-2">
-          <button
+        <Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
+          <Button
             onClick={handleSaveSale}
             disabled={saving || showSearchPage}
-            className="glass-btn glass-btn-success inline-flex items-center disabled:opacity-50"
+            className="glass-btn glass-btn-success"
+            startIcon={<Save className="w-4 h-4" />}
           >
-            <Save className="w-4 h-4 mr-1" />
             {saving ? "Saving..." : "Save"}
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={showSearchPage ? () => setShowSearchPage(false) : openSearchPage}
-            className="glass-btn glass-btn-primary inline-flex items-center"
+            className="glass-btn glass-btn-primary"
+            startIcon={<Search className="w-4 h-4" />}
           >
-            <Search className="w-4 h-4 mr-1" />
             {showSearchPage ? "Back" : "Search"}
-          </button>
-        </div>
-      </div>
+          </Button>
+        </Stack>
+      </Stack>
 
-      <div className="flex-1 min-h-0 p-4 space-y-4 pb-28 xl:flex xl:flex-col xl:pb-4">
+      <Box sx={{ flex: 1, minHeight: 0, p: 2, display: "flex", flexDirection: "column", gap: 2, pb: { xs: 14, xl: 2 } }}>
         {showSearchPage ? renderSearchPage() : renderEntryPage()}
 
-        {loading && <p className="text-xs text-gray-500 dark:text-gray-400 px-1">Loading master data...</p>}
-      </div>
+        {loading && <Typography sx={{ fontSize: 10.5, color: "text.secondary", px: 0.5 }}>Loading master data...</Typography>}
+      </Box>
 
       {salesManDialog.open && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
+        <Box
+          sx={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", bgcolor: "rgba(0,0,0,0.3)", p: 2 }}
           onClick={closeSalesManDialog}
         >
-          <div
-            className="w-full max-w-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-xl"
+          <Box
+            sx={{ width: "100%", maxWidth: 384, borderRadius: "7px", border: 1, borderColor: "divider", bgcolor: "background.paper", boxShadow: 12 }}
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b dark:border-gray-700 px-4 py-3">
-              <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">Sales Man</div>
-              <button
+            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", px: 2, py: 1.5 }}>
+              <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Sales Man</Typography>
+              <IconButton
                 type="button"
                 onClick={closeSalesManDialog}
-                className="rounded p-1 text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200"
+                size="small"
                 aria-label="Close sales man dialog"
+                sx={{ color: "text.disabled", "&:hover": { color: "text.secondary" } }}
               >
                 <X className="h-4 w-4" />
-              </button>
-            </div>
+              </IconButton>
+            </Stack>
 
-            <div className="px-4 py-4">
-              <input
+            <Box sx={{ px: 2, py: 2 }}>
+              <TextField
                 type="text"
                 value={salesManDialog.value}
                 onChange={(event) =>
@@ -1689,59 +1720,61 @@ const SalesOnApproval = () => {
                   }
                 }}
                 placeholder="Write or scan Sales Man ID"
-                className="w-full rounded border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                size="small"
+                fullWidth
                 autoFocus
               />
-            </div>
+            </Box>
 
-            <div className="flex items-center justify-end gap-2 border-t dark:border-gray-700 px-4 py-3">
-              <button
+            <Stack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "flex-end", borderTop: 1, borderColor: "divider", px: 2, py: 1.5 }}>
+              <Button
                 type="button"
                 onClick={closeSalesManDialog}
                 className="glass-btn glass-btn-secondary"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={saveSalesManDialog}
                 className="glass-btn glass-btn-primary"
               >
                 Save
-              </button>
-            </div>
-          </div>
-        </div>
+              </Button>
+            </Stack>
+          </Box>
+        </Box>
       )}
 
       {quickCustomerDialogOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
+        <Box
+          sx={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", bgcolor: "rgba(0,0,0,0.3)", p: 2 }}
           onClick={closeQuickCustomerDialog}
         >
-          <div
-            className="flex max-h-[92vh] w-full max-w-7xl flex-col rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-xl"
+          <Box
+            sx={{ display: "flex", maxHeight: "92vh", width: "100%", maxWidth: 1280, flexDirection: "column", borderRadius: "7px", border: 1, borderColor: "divider", bgcolor: "background.paper", boxShadow: 12 }}
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b dark:border-gray-700 px-5 py-4">
-              <div>
-                <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">Quick Customer</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">
+            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", px: 2.5, py: 2 }}>
+              <Box>
+                <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Quick Customer</Typography>
+                <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>
                   Press Enter to move to next field. On mobile number Enter, existing customers appear below.
-                </div>
-              </div>
-              <button
+                </Typography>
+              </Box>
+              <IconButton
                 type="button"
                 onClick={closeQuickCustomerDialog}
-                className="rounded p-1 text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200"
+                size="small"
                 aria-label="Close quick customer dialog"
+                sx={{ color: "text.disabled", "&:hover": { color: "text.secondary" } }}
               >
                 <X className="h-4 w-4" />
-              </button>
-            </div>
+              </IconButton>
+            </Stack>
 
-            <div className="flex-1 overflow-y-auto px-5 py-4">
-              <div className="grid grid-cols-1 gap-x-6 gap-y-4 xl:grid-cols-2">
+            <Box sx={{ flex: 1, overflowY: "auto", px: 2.5, py: 2 }}>
+              <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", xl: "1fr 1fr" }, columnGap: 3, rowGap: 2 }}>
                 <DialogTextField
                   label="Mobile No"
                   name="mobileNo"
@@ -1773,7 +1806,7 @@ const SalesOnApproval = () => {
                     quickCustomerFieldRefs.current.name = node;
                   }}
                 />
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <Box sx={{ display: "grid", gridTemplateColumns: { md: "1fr 1fr" }, gap: 2 }}>
                   <DialogSelectField
                     label="City"
                     name="cityId"
@@ -1796,9 +1829,9 @@ const SalesOnApproval = () => {
                       quickCustomerFieldRefs.current.stateId = node;
                     }}
                   />
-                </div>
+                </Box>
 
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <Box sx={{ display: "grid", gridTemplateColumns: { md: "1fr 1fr" }, gap: 2 }}>
                   <DialogTextField
                     label="Date of Birth"
                     name="dateOfBirth"
@@ -1820,8 +1853,8 @@ const SalesOnApproval = () => {
                       quickCustomerFieldRefs.current.billingName = node;
                     }}
                   />
-                </div>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                </Box>
+                <Box sx={{ display: "grid", gridTemplateColumns: { md: "1fr 1fr" }, gap: 2 }}>
                   <DialogSelectField
                     label="Customer Category"
                     name="customerCategoryId"
@@ -1843,9 +1876,9 @@ const SalesOnApproval = () => {
                       quickCustomerFieldRefs.current.sectionReligion = node;
                     }}
                   />
-                </div>
+                </Box>
 
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <Box sx={{ display: "grid", gridTemplateColumns: { md: "1fr 1fr" }, gap: 2 }}>
                   <DialogTextField
                     label="Card No"
                     name="cardNo"
@@ -1866,8 +1899,8 @@ const SalesOnApproval = () => {
                       quickCustomerFieldRefs.current.gstNo = node;
                     }}
                   />
-                </div>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                </Box>
+                <Box sx={{ display: "grid", gridTemplateColumns: { md: "1fr 1fr" }, gap: 2 }}>
                   <DialogTextField
                     label="Email Id"
                     name="emailId"
@@ -1889,192 +1922,189 @@ const SalesOnApproval = () => {
                       quickCustomerFieldRefs.current.areaId = node;
                     }}
                   />
-                </div>
+                </Box>
 
-                <div className="xl:col-span-2">
-                  <div className="mb-2 text-sm font-semibold text-gray-800 dark:text-gray-100">Search Results</div>
-                  <div className="overflow-hidden rounded border border-gray-200 dark:border-gray-700">
-                    <div className="max-h-[320px] overflow-auto">
-                      <table className="w-full min-w-[720px] text-sm">
-                        <thead className="sticky top-0 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-                          <tr>
-                            <th className="w-10 px-3 py-2 text-left"></th>
-                            <th className="px-3 py-2 text-left">Name</th>
-                            <th className="px-3 py-2 text-left">GSTNO</th>
-                            <th className="px-3 py-2 text-left">Area</th>
-                            <th className="px-3 py-2 text-left">Mobile</th>
-                            <th className="px-3 py-2 text-left">Action</th>
-                          </tr>
-                        </thead>
-                        <tbody>
+                <Box sx={{ gridColumn: { xl: "span 2" } }}>
+                  <Typography sx={{ mb: 1, fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Search Results</Typography>
+                  <Box sx={{ overflow: "hidden", borderRadius: "3.5px", border: 1, borderColor: "divider" }}>
+                    <Box sx={{ maxHeight: 320, overflow: "auto" }}>
+                      <Table sx={{ width: "100%", minWidth: 720 }} size="small">
+                        <TableHead sx={{ position: "sticky", top: 0, bgcolor: "action.hover" }}>
+                          <TableRow>
+                            <TableCell sx={{ width: 40 }} />
+                            <TableCell>Name</TableCell>
+                            <TableCell>GSTNO</TableCell>
+                            <TableCell>Area</TableCell>
+                            <TableCell>Mobile</TableCell>
+                            <TableCell>Action</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
                           {quickCustomerSearchResults.length === 0 ? (
-                            <tr>
-                              <td colSpan={6} className="px-3 py-10 text-center text-sm text-gray-400 dark:text-gray-500">
+                            <TableRow>
+                              <TableCell colSpan={6} sx={{ py: 5, textAlign: "center", color: "text.disabled" }}>
                                 No matched customers
-                              </td>
-                            </tr>
+                              </TableCell>
+                            </TableRow>
                           ) : (
                             quickCustomerSearchResults.map((row) => {
                               const isSelected = row.value === quickCustomerSelectedId;
                               return (
-                                <tr
+                                <TableRow
                                   key={row.value}
-                                  className={`border-t dark:border-gray-700 ${isSelected ? "bg-blue-50 dark:bg-blue-900/30" : "bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50"}`}
+                                  sx={{ bgcolor: isSelected ? (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.24 : 0.08) : "background.paper", "&:hover": { bgcolor: isSelected ? undefined : "action.hover" } }}
                                 >
-                                  <td className="px-3 py-2">
-                                    <input
-                                      type="radio"
+                                  <TableCell>
+                                    <Radio
                                       checked={isSelected}
                                       onChange={() => setQuickCustomerSelectedId(row.value)}
-                                      className="h-4 w-4 accent-blue-600"
+                                      size="small"
                                     />
-                                  </td>
-                                  <td className="px-3 py-2">{row.name || "-"}</td>
-                                  <td className="px-3 py-2">{row.gstNo || "-"}</td>
-                                  <td className="px-3 py-2">{row.areaName || "-"}</td>
-                                  <td className="px-3 py-2">{row.mobileNo || "-"}</td>
-                                  <td className="px-3 py-2">
-                                    <button
+                                  </TableCell>
+                                  <TableCell>{row.name || "-"}</TableCell>
+                                  <TableCell>{row.gstNo || "-"}</TableCell>
+                                  <TableCell>{row.areaName || "-"}</TableCell>
+                                  <TableCell>{row.mobileNo || "-"}</TableCell>
+                                  <TableCell>
+                                    <Button
                                       type="button"
                                       onClick={() => applyQuickCustomerSelection(row)}
                                       className="glass-btn glass-btn-primary"
+                                      size="small"
                                     >
                                       Select
-                                    </button>
-                                  </td>
-                                </tr>
+                                    </Button>
+                                  </TableCell>
+                                </TableRow>
                               );
                             })
                           )}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+                        </TableBody>
+                      </Table>
+                    </Box>
+                  </Box>
+                </Box>
+              </Box>
+            </Box>
 
-            <div className="flex items-center justify-between border-t dark:border-gray-700 px-5 py-4">
-              <button
+            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderTop: 1, borderColor: "divider", px: 2.5, py: 2 }}>
+              <Button
                 type="button"
                 onClick={saveQuickCustomer}
                 disabled={quickCustomerSaving}
-                className="glass-btn glass-btn-success disabled:opacity-50"
+                className="glass-btn glass-btn-success"
               >
                 {quickCustomerSaving ? "Saving..." : "Save"}
-              </button>
-              <div className="flex items-center gap-2">
-                <button
+              </Button>
+              <Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
+                <Button
                   type="button"
                   onClick={() => applyQuickCustomerSelection(selectedQuickCustomerSearchRow)}
                   disabled={!selectedQuickCustomerSearchRow}
-                  className="glass-btn glass-btn-primary disabled:opacity-50"
+                  className="glass-btn glass-btn-primary"
                 >
                   Select
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   onClick={closeQuickCustomerDialog}
                   disabled={quickCustomerSaving}
-                  className="glass-btn glass-btn-secondary disabled:opacity-50"
+                  className="glass-btn glass-btn-secondary"
                 >
                   Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+                </Button>
+              </Stack>
+            </Stack>
+          </Box>
+        </Box>
       )}
 
       {discountDialogOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
+        <Box
+          sx={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", bgcolor: "rgba(0,0,0,0.3)", p: 2 }}
           onClick={closeDiscountDialog}
         >
-          <div
-            className="flex max-h-[92vh] w-full max-w-7xl flex-col rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-xl"
+          <Box
+            sx={{ display: "flex", maxHeight: "92vh", width: "100%", maxWidth: 1280, flexDirection: "column", borderRadius: "7px", border: 1, borderColor: "divider", bgcolor: "background.paper", boxShadow: 12 }}
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b dark:border-gray-700 px-5 py-4">
-              <div>
-                <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">Sale Discount</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">
+            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", px: 2.5, py: 2 }}>
+              <Box>
+                <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Sale Discount</Typography>
+                <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>
                   Select sale rows and apply a discount percentage to the current approval bill.
-                </div>
-              </div>
-              <button
+                </Typography>
+              </Box>
+              <IconButton
                 type="button"
                 onClick={closeDiscountDialog}
-                className="rounded p-1 text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200"
+                size="small"
                 aria-label="Close discount dialog"
+                sx={{ color: "text.disabled", "&:hover": { color: "text.secondary" } }}
               >
                 <X className="h-4 w-4" />
-              </button>
-            </div>
+              </IconButton>
+            </Stack>
 
-            <div className="flex-1 overflow-auto px-5 py-4">
-              <div className="overflow-hidden rounded border border-gray-200 dark:border-gray-700">
-                <div className="max-h-[56vh] overflow-auto">
-                  <table className="w-full min-w-[980px] text-sm">
-                    <thead className="sticky top-0 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-                      <tr>
-                        <th className="w-12 px-3 py-3 text-left">
-                          <input
-                            type="checkbox"
+            <Box sx={{ flex: 1, overflow: "auto", px: 2.5, py: 2 }}>
+              <Box sx={{ overflow: "hidden", borderRadius: "3.5px", border: 1, borderColor: "divider" }}>
+                <Box sx={{ maxHeight: "56vh", overflow: "auto" }}>
+                  <Table sx={{ width: "100%", minWidth: 980 }} size="small">
+                    <TableHead sx={{ position: "sticky", top: 0, bgcolor: "action.hover" }}>
+                      <TableRow>
+                        <TableCell sx={{ width: 48 }}>
+                          <Checkbox
                             checked={cartWithTotals.length > 0 && discountSelectedLineIds.length === cartWithTotals.length}
                             onChange={handleDiscountToggleAll}
-                            className="h-4 w-4 accent-blue-600"
+                            size="small"
                           />
-                        </th>
-                        <th className="px-3 py-3 text-left">Barcode</th>
-                        <th className="px-3 py-3 text-left">Detail</th>
-                        <th className="px-3 py-3 text-right">Price</th>
-                        <th className="px-3 py-3 text-right">Qty</th>
-                        <th className="px-3 py-3 text-left">Discount</th>
-                        <th className="px-3 py-3 text-right">Addin %</th>
-                        <th className="px-3 py-3 text-right">D.Value</th>
-                        <th className="px-3 py-3 text-right">Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody>
+                        </TableCell>
+                        <TableCell>Barcode</TableCell>
+                        <TableCell>Detail</TableCell>
+                        <TableCell align="right">Price</TableCell>
+                        <TableCell align="right">Qty</TableCell>
+                        <TableCell>Discount</TableCell>
+                        <TableCell align="right">Addin %</TableCell>
+                        <TableCell align="right">D.Value</TableCell>
+                        <TableCell align="right">Amount</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
                       {discountDialogRows.map((line, index) => (
-                        <tr key={line.lineId} className="border-t dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                          <td className="px-3 py-3">
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="checkbox"
+                        <TableRow key={line.lineId} hover>
+                          <TableCell>
+                            <Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
+                              <Checkbox
                                 checked={discountDialogSelectedSet.has(line.lineId)}
                                 onChange={() => handleDiscountRowToggle(line.lineId)}
-                                className="h-4 w-4 accent-blue-600"
+                                size="small"
                               />
-                              <span className="text-gray-600 dark:text-gray-400">{index + 1}</span>
-                            </div>
-                          </td>
-                          <td className="px-3 py-3">{line.barcode || "-"}</td>
-                          <td className="px-3 py-3">{line.productName}</td>
-                          <td className="px-3 py-3 text-right">{formatMoney(line.price)}</td>
-                          <td className="px-3 py-3 text-right">{line.qty}</td>
-                          <td className="px-3 py-3">{formatMoney(line.discount)}</td>
-                          <td className="px-3 py-3 text-right">{line.previewPercent.toFixed(2)}</td>
-                          <td className="px-3 py-3 text-right">{formatMoney(line.previewDiscountValue)}</td>
-                          <td className="px-3 py-3 text-right font-medium">{formatMoney(line.lineAmount)}</td>
-                        </tr>
+                              <Box component="span" sx={{ color: "text.secondary" }}>{index + 1}</Box>
+                            </Stack>
+                          </TableCell>
+                          <TableCell>{line.barcode || "-"}</TableCell>
+                          <TableCell>{line.productName}</TableCell>
+                          <TableCell align="right">{formatMoney(line.price)}</TableCell>
+                          <TableCell align="right">{line.qty}</TableCell>
+                          <TableCell>{formatMoney(line.discount)}</TableCell>
+                          <TableCell align="right">{line.previewPercent.toFixed(2)}</TableCell>
+                          <TableCell align="right">{formatMoney(line.previewDiscountValue)}</TableCell>
+                          <TableCell align="right" sx={{ fontWeight: 500 }}>{formatMoney(line.lineAmount)}</TableCell>
+                        </TableRow>
                       ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
+                    </TableBody>
+                  </Table>
+                </Box>
+              </Box>
+            </Box>
 
-            <div className="border-t dark:border-gray-700 px-5 py-4">
-              <div className="mb-3 flex flex-wrap items-end gap-3">
-                <div className="min-w-[220px]">
-                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Discount %</label>
-                  <input
+            <Box sx={{ borderTop: 1, borderColor: "divider", px: 2.5, py: 2 }}>
+              <Stack direction="row" sx={{ mb: 1.5, flexWrap: "wrap", alignItems: "flex-end", gap: 1.5 }}>
+                <Box sx={{ minWidth: 220 }}>
+                  <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Discount %</Typography>
+                  <TextField
                     type="number"
-                    min="0"
-                    max="100"
-                    step="0.01"
+                    slotProps={{ htmlInput: { min: 0, max: 100, step: 0.01 } }}
                     value={discountPercentInput}
                     onChange={(event) => setDiscountPercentInput(event.target.value)}
                     onKeyDown={(event) => {
@@ -2083,47 +2113,48 @@ const SalesOnApproval = () => {
                         applyDiscountDialog();
                       }
                     }}
-                    className="w-full rounded border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    size="small"
+                    fullWidth
                     autoFocus
                   />
-                </div>
-                <div className="grid min-w-[260px] flex-1 grid-cols-3 gap-3 text-sm">
-                  <div className="rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 px-3 py-2">
-                    <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Selected Amount</div>
-                    <div className="mt-1 font-semibold text-gray-900 dark:text-gray-100">{formatMoney(discountDialogSummary.selectedAmount)}</div>
-                  </div>
-                  <div className="rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 px-3 py-2">
-                    <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Discount Value</div>
-                    <div className="mt-1 font-semibold text-gray-900 dark:text-gray-100">{formatMoney(discountDialogSummary.previewDiscountValue)}</div>
-                  </div>
-                  <div className="rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 px-3 py-2">
-                    <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Net Amount</div>
-                    <div className="mt-1 font-semibold text-gray-900 dark:text-gray-100">{formatMoney(discountDialogSummary.previewNetAmount)}</div>
-                  </div>
-                </div>
-              </div>
+                </Box>
+                <Box sx={{ display: "grid", minWidth: 260, flex: 1, gridTemplateColumns: "repeat(3, 1fr)", gap: 1.5, fontSize: 12.25 }}>
+                  <Box sx={{ borderRadius: "3.5px", border: 1, borderColor: "divider", bgcolor: "action.hover", px: 1.5, py: 1 }}>
+                    <Box sx={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Selected Amount</Box>
+                    <Box sx={{ mt: 0.5, fontWeight: 600, color: "text.primary" }}>{formatMoney(discountDialogSummary.selectedAmount)}</Box>
+                  </Box>
+                  <Box sx={{ borderRadius: "3.5px", border: 1, borderColor: "divider", bgcolor: "action.hover", px: 1.5, py: 1 }}>
+                    <Box sx={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Discount Value</Box>
+                    <Box sx={{ mt: 0.5, fontWeight: 600, color: "text.primary" }}>{formatMoney(discountDialogSummary.previewDiscountValue)}</Box>
+                  </Box>
+                  <Box sx={{ borderRadius: "3.5px", border: 1, borderColor: "divider", bgcolor: "action.hover", px: 1.5, py: 1 }}>
+                    <Box sx={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Net Amount</Box>
+                    <Box sx={{ mt: 0.5, fontWeight: 600, color: "text.primary" }}>{formatMoney(discountDialogSummary.previewNetAmount)}</Box>
+                  </Box>
+                </Box>
+              </Stack>
 
-              <div className="flex items-center justify-end gap-2">
-                <button
+              <Stack direction="row" sx={{ alignItems: "center", justifyContent: "flex-end", gap: 1 }}>
+                <Button
                   type="button"
                   onClick={closeDiscountDialog}
                   className="glass-btn glass-btn-secondary"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   onClick={applyDiscountDialog}
                   className="glass-btn glass-btn-primary"
                 >
                   Apply
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+                </Button>
+              </Stack>
+            </Box>
+          </Box>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 };
 

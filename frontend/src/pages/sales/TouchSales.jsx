@@ -27,6 +27,7 @@ import {
   buildPaymentQrMarkup,
   buildReceiptCodeMarkupAsync,
 } from "../../utils/salesReceiptCustomization";
+import { Box, Stack, Typography, IconButton, Button, Checkbox, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
 
 // A touch sale is stored as a POS sale (the backend delegates both create and bulk import to
 // PosSaleService), so the import columns are deliberately identical to POS Sale's.
@@ -691,27 +692,28 @@ const TouchSales = () => {
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-100">
-      <div className="flex shrink-0 items-center justify-between border-b bg-white px-3 py-2 shadow-sm dark:border-gray-700 dark:bg-gray-800 sm:px-4">
-        <div className="flex items-center space-x-2">
-          <button onClick={() => navigate("/sales")} className="text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100" aria-label="Back">
+    <Stack sx={{ height: "100%", minHeight: 0, bgcolor: "background.default", color: "text.primary" }}>
+      <Stack direction="row" sx={{ flexShrink: 0, alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", bgcolor: "background.paper", px: { xs: 1.5, sm: 2 }, py: 1, boxShadow: 1 }}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+          <IconButton onClick={() => navigate("/sales")} sx={{ color: "text.secondary" }} aria-label="Back">
             <ArrowLeft className="w-4 h-4" />
-          </button>
-          <h1 className="text-sm font-semibold">Sales / Touch Sale</h1>
-        </div>
-        <div className="flex items-center gap-3">
+          </IconButton>
+          <Typography component="h1" sx={{ fontSize: 12.25, fontWeight: 600 }}>Sales / Touch Sale</Typography>
+        </Stack>
+        <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
           <UploadImportButton
             endpoint="/touch-sales/bulk"
             fieldConfig={TOUCH_SALE_IMPORT_CONFIG}
           />
-          <div className="text-sm text-gray-600 dark:text-gray-300">Next bill: <b>{formatSaleBillNo(billNo)}</b></div>
-        </div>
-      </div>
+          <Typography sx={{ fontSize: 12.25, color: "text.secondary" }}>Next bill: <Box component="b">{formatSaleBillNo(billNo)}</Box></Typography>
+        </Stack>
+      </Stack>
 
-      <div className="flex min-h-0 flex-1 flex-col p-3 sm:p-4">
-        <div className="grid h-full min-h-0 grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-12">
-          <div className="flex min-h-0 flex-col rounded-lg border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-700 dark:bg-gray-800 lg:col-span-8">
-            <input
+      <Stack sx={{ minHeight: 0, flex: 1, p: { xs: 1.5, sm: 2 } }}>
+        <Box sx={{ display: "grid", height: "100%", minHeight: 0, gridTemplateColumns: { xs: "1fr", lg: "repeat(12, 1fr)" }, gap: { xs: 1.5, sm: 2 } }}>
+          <Stack sx={{ minHeight: 0, borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", p: 1.5, boxShadow: 1, gridColumn: { lg: "span 8" } }}>
+            <Box
+              component="input"
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -725,68 +727,69 @@ const TouchSales = () => {
                 }
               }}
               placeholder="Search product, barcode, or RR/… / RO/…"
-              className="w-full border border-gray-300 rounded-sm px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
               disabled={applyingReturn}
+              sx={{ width: "100%", border: "1px solid", borderColor: "divider", borderRadius: "3.5px", px: 1.5, py: 1, fontSize: 12.25, bgcolor: "background.paper", color: "text.primary" }}
             />
 
             {appliedReturn && (
-              <div className="mt-2 flex items-center justify-between gap-2 text-xs bg-amber-50 border border-amber-200 rounded-sm px-2 py-1.5 dark:bg-amber-900/30 dark:border-amber-700 dark:text-amber-100">
-                <span>
-                  <b>{appliedReturn.displayReturnNo || formatReturnNo(appliedReturn.returnNo)}</b>
+              <Stack direction="row" sx={{ mt: 1, alignItems: "center", justifyContent: "space-between", gap: 1, fontSize: 10.5, bgcolor: (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.16 : 0.08), border: "1px solid", borderColor: (theme) => alpha(theme.palette.warning.main, 0.4), borderRadius: "3.5px", px: 1, py: 0.75, color: "warning.dark" }}>
+                <Box component="span">
+                  <Box component="b">{appliedReturn.displayReturnNo || formatReturnNo(appliedReturn.returnNo)}</Box>
                   {" · "}
                   Credit {formatMoney(Math.abs(toNum(appliedReturn.amount, 0)))}
-                </span>
-                <button
+                </Box>
+                <IconButton
                   type="button"
                   onClick={clearAppliedReturn}
-                  className="p-0.5 rounded hover:bg-amber-100 text-amber-900 dark:hover:bg-amber-800/40 dark:text-amber-200"
+                  size="small"
+                  sx={{ color: "warning.dark", "&:hover": { bgcolor: (theme) => alpha(theme.palette.warning.main, 0.16) } }}
                   aria-label="Clear applied return"
                 >
                   <X className="w-4 h-4" />
-                </button>
-              </div>
+                </IconButton>
+              </Stack>
             )}
 
-            <div className="mt-3 flex flex-wrap gap-2">
+            <Stack direction="row" spacing={1} sx={{ mt: 1.5, flexWrap: "wrap" }}>
               {LETTER_KEYS.map((key) => (
-                <button
+                <Button
                   key={key}
                   onClick={() => applySearchKey(key)}
-                  className="min-w-10 px-3 py-1.5 text-sm border-b-2 border-teal-400 bg-gray-100 rounded-sm hover:bg-gray-200 dark:border-teal-500 dark:bg-gray-700 dark:hover:bg-gray-600"
+                  sx={{ minWidth: 40, px: 1.5, py: 0.75, fontSize: 12.25, borderBottom: 2, borderBottomColor: "info.light", bgcolor: "action.hover", borderRadius: "3.5px", color: "text.primary", "&:hover": { bgcolor: "action.selected" } }}
                 >
                   {key}
-                </button>
+                </Button>
               ))}
-              <button
+              <Button
                 onClick={() => applySearchKey("CLEAR")}
-                className="px-3 py-1.5 text-sm border-b-2 border-red-400 bg-red-50 rounded-sm hover:bg-red-100 dark:border-red-600 dark:bg-red-900/30 dark:hover:bg-red-800/40"
+                sx={{ px: 1.5, py: 0.75, fontSize: 12.25, borderBottom: 2, borderBottomColor: "error.light", bgcolor: (theme) => alpha(theme.palette.error.main, theme.palette.mode === "dark" ? 0.16 : 0.08), borderRadius: "3.5px", color: "text.primary" }}
               >
                 Clear
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => applySearchKey("SPACE")}
-                className="px-3 py-1.5 text-sm border-b-2 border-indigo-400 bg-gray-100 rounded-sm hover:bg-gray-200 dark:border-indigo-500 dark:bg-gray-700 dark:hover:bg-gray-600"
+                sx={{ px: 1.5, py: 0.75, fontSize: 12.25, borderBottom: 2, borderBottomColor: "primary.light", bgcolor: "action.hover", borderRadius: "3.5px", color: "text.primary" }}
               >
                 Space
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => applySearchKey("SLASH")}
-                className="px-3 py-1.5 text-sm border-b-2 border-gray-400 bg-gray-100 rounded-sm hover:bg-gray-200 font-mono dark:border-gray-500 dark:bg-gray-700 dark:hover:bg-gray-600"
+                sx={{ px: 1.5, py: 0.75, fontSize: 12.25, borderBottom: 2, borderBottomColor: "divider", bgcolor: "action.hover", borderRadius: "3.5px", color: "text.primary", fontFamily: "monospace" }}
               >
                 /
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => applySearchKey("ENTER")}
                 disabled={applyingReturn}
-                className="px-3 py-1.5 text-sm border-b-2 border-green-500 bg-green-50 rounded-sm hover:bg-green-100 disabled:opacity-50 inline-flex items-center dark:bg-green-900/30 dark:hover:bg-green-800/40"
+                sx={{ px: 1.5, py: 0.75, fontSize: 12.25, borderBottom: 2, borderBottomColor: "success.main", bgcolor: (theme) => alpha(theme.palette.success.main, theme.palette.mode === "dark" ? 0.16 : 0.08), borderRadius: "3.5px", display: "inline-flex", alignItems: "center", color: "text.primary" }}
               >
                 <CornerDownLeft className="w-4 h-4 mr-1" /> Enter
-              </button>
-            </div>
+              </Button>
+            </Stack>
 
-            <div className="mt-4 min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
+            <Stack spacing={1} sx={{ mt: 2, minHeight: 0, flex: 1, overflowY: "auto", pr: 0.5 }}>
               {searchTerm && filteredRows.length === 0 && (
-                <div className="text-sm text-gray-500 px-1 dark:text-gray-400">No products found</div>
+                <Box sx={{ fontSize: 12.25, color: "text.secondary", px: 0.5 }}>No products found</Box>
               )}
 
               {filteredRows.map((row) => {
@@ -794,53 +797,56 @@ const TouchSales = () => {
                 const used = usedQtyByStockId.get(row.id) || 0;
                 const remaining = Math.max(0, row.qty - used);
                 return (
-                  <div key={row.id} className="border border-gray-200 rounded-md p-3 bg-gray-50 dark:border-gray-700 dark:bg-gray-700">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div>
-                        <div className="font-semibold text-sm">{row.productName}</div>
-                        <div className="text-xs text-gray-500 font-mono dark:text-gray-400">{row.barcode}</div>
-                        <div className="text-xs text-gray-600 mt-1 dark:text-gray-300">
-                          Selling Price: <b>{formatMoney(row.price)}</b> | Stock: <b>{remaining}</b>
-                        </div>
-                      </div>
+                  <Box key={row.id} sx={{ border: "1px solid", borderColor: "divider", borderRadius: "5.25px", p: 1.5, bgcolor: "action.hover" }}>
+                    <Stack direction="row" sx={{ flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 1 }}>
+                      <Box>
+                        <Typography sx={{ fontWeight: 600, fontSize: 12.25 }}>{row.productName}</Typography>
+                        <Typography sx={{ fontSize: 10.5, color: "text.secondary", fontFamily: "monospace" }}>{row.barcode}</Typography>
+                        <Typography sx={{ fontSize: 10.5, color: "text.secondary", mt: 0.5 }}>
+                          Selling Price: <Box component="b">{formatMoney(row.price)}</Box> | Stock: <Box component="b">{remaining}</Box>
+                        </Typography>
+                      </Box>
 
-                      <div className="flex items-center gap-2">
-                        <button
+                      <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                        <IconButton
                           onClick={() => adjustDraftQty(row.id, -1)}
-                          className="p-1.5 border rounded-sm bg-white hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700/50"
+                          size="small"
+                          sx={{ border: 1, borderColor: "divider", borderRadius: "3.5px", bgcolor: "background.paper", "&:hover": { bgcolor: "action.selected" } }}
                           aria-label="Decrease quantity"
                         >
                           <Minus className="w-4 h-4" />
-                        </button>
-                        <div className="w-10 text-center text-sm font-semibold">{pickedQty}</div>
-                        <button
+                        </IconButton>
+                        <Box sx={{ width: 40, textAlign: "center", fontSize: 12.25, fontWeight: 600 }}>{pickedQty}</Box>
+                        <IconButton
                           onClick={() => adjustDraftQty(row.id, 1)}
-                          className="p-1.5 border rounded-sm bg-white hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700/50"
+                          size="small"
+                          sx={{ border: 1, borderColor: "divider", borderRadius: "3.5px", bgcolor: "background.paper", "&:hover": { bgcolor: "action.selected" } }}
                           aria-label="Increase quantity"
                         >
                           <Plus className="w-4 h-4" />
-                        </button>
-                        <button
+                        </IconButton>
+                        <Button
                           onClick={() => addToCart(row)}
                           className="glass-btn glass-btn-primary"
                         >
                           Add To Cart
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                        </Button>
+                      </Stack>
+                    </Stack>
+                  </Box>
                 );
               })}
-            </div>
-          </div>
+            </Stack>
+          </Stack>
 
-          <div className="flex min-h-0 flex-col rounded-lg border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-700 dark:bg-gray-800 lg:col-span-4">
-            <div className="shrink-0">
-              <div className="text-sm font-semibold">COUNTER : //</div>
-              <div className="mb-2 text-sm font-semibold">DATE/TIME : {now.toLocaleString()}</div>
+          <Stack sx={{ minHeight: 0, borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", p: 1.5, boxShadow: 1, gridColumn: { lg: "span 4" } }}>
+            <Box sx={{ flexShrink: 0 }}>
+              <Typography sx={{ fontSize: 12.25, fontWeight: 600 }}>COUNTER : //</Typography>
+              <Typography sx={{ mb: 1, fontSize: 12.25, fontWeight: 600 }}>DATE/TIME : {now.toLocaleString()}</Typography>
 
-              <div className="mb-2 flex gap-2">
-                <input
+              <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
+                <Box
+                  component="input"
                   type="text"
                   value={customerMobile}
                   onChange={(e) => setCustomerMobile(e.target.value.replace(/\D/g, ""))}
@@ -848,80 +854,80 @@ const TouchSales = () => {
                     if (e.key === "Enter") applyMobileKey("ENTER");
                   }}
                   placeholder="Customer mobile number"
-                  className="flex-1 rounded-sm border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                  sx={{ flex: 1, borderRadius: "3.5px", border: "1px solid", borderColor: "divider", px: 1.5, py: 1, fontSize: 12.25, bgcolor: "background.paper", color: "text.primary" }}
                 />
-                <button
+                <Button
                   onClick={() => setCustomerMobile((prev) => prev.slice(0, -1))}
                   className="glass-btn glass-btn-secondary"
                 >
                   <ArrowLeft className="w-4 h-4" />
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={() => setCustomerMobile("")}
                   className="glass-btn glass-btn-danger"
                 >
                   <Delete className="w-4 h-4" />
-                </button>
-              </div>
+                </Button>
+              </Stack>
 
-              <div className="mb-3 flex flex-wrap gap-2">
+              <Stack direction="row" spacing={1} sx={{ mb: 1.5, flexWrap: "wrap" }}>
                 {DIGIT_KEYS.map((digit) => (
-                  <button
+                  <Button
                     key={digit}
                     onClick={() => applyMobileKey(digit)}
-                    className="min-w-10 rounded-sm border-b-2 border-teal-400 bg-gray-100 px-3 py-1.5 text-sm hover:bg-gray-200 dark:border-teal-500 dark:bg-gray-700 dark:hover:bg-gray-600"
+                    sx={{ minWidth: 40, borderRadius: "3.5px", borderBottom: 2, borderBottomColor: "info.light", bgcolor: "action.hover", px: 1.5, py: 0.75, fontSize: 12.25, color: "text.primary" }}
                   >
                     {digit}
-                  </button>
+                  </Button>
                 ))}
-                <button
+                <Button
                   onClick={() => applyMobileKey("ENTER")}
-                  className="inline-flex items-center rounded-sm border-b-2 border-green-500 bg-green-50 px-3 py-1.5 text-sm hover:bg-green-100 dark:bg-green-900/30 dark:hover:bg-green-800/40"
+                  sx={{ display: "inline-flex", alignItems: "center", borderRadius: "3.5px", borderBottom: 2, borderBottomColor: "success.main", bgcolor: (theme) => alpha(theme.palette.success.main, theme.palette.mode === "dark" ? 0.16 : 0.08), px: 1.5, py: 0.75, fontSize: 12.25, color: "text.primary" }}
                 >
                   <CornerDownLeft className="mr-1 h-4 w-4" /> Enter
-                </button>
-              </div>
+                </Button>
+              </Stack>
 
               {detectedCustomer && (
-                <div className="mb-3 rounded-sm border border-green-200 bg-green-50 px-2 py-1 text-xs text-green-700 dark:border-green-700 dark:bg-green-900/30 dark:text-green-400">
+                <Box sx={{ mb: 1.5, borderRadius: "3.5px", border: "1px solid", borderColor: (theme) => alpha(theme.palette.success.main, 0.4), bgcolor: (theme) => alpha(theme.palette.success.main, theme.palette.mode === "dark" ? 0.16 : 0.08), px: 1, py: 0.5, fontSize: 10.5, color: "success.dark" }}>
                   Customer: {detectedCustomer.name}
-                </div>
+                </Box>
               )}
-            </div>
+            </Box>
 
-            <div className="min-h-0 flex-1 overflow-y-auto rounded-sm border border-gray-200 dark:border-gray-700">
-              <table className="w-full min-w-[320px] text-sm">
-                <thead className="bg-gray-100 dark:bg-gray-700">
-                  <tr>
-                    <th className="px-2 py-2 text-left">Item</th>
-                    <th className="px-2 py-2 text-center">Quantity</th>
-                    <th className="px-2 py-2 text-right">Price</th>
-                    <th className="px-2 py-2 text-right">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
+            <Box sx={{ minHeight: 0, flex: 1, overflowY: "auto", borderRadius: "3.5px", border: "1px solid", borderColor: "divider" }}>
+              <Table sx={{ width: "100%", minWidth: 320, fontSize: 12.25 }}>
+                <TableHead sx={{ bgcolor: "action.hover" }}>
+                  <TableRow>
+                    <TableCell sx={{ px: 1, py: 1, textAlign: "left" }}>Item</TableCell>
+                    <TableCell sx={{ px: 1, py: 1, textAlign: "center" }}>Quantity</TableCell>
+                    <TableCell sx={{ px: 1, py: 1, textAlign: "right" }}>Price</TableCell>
+                    <TableCell sx={{ px: 1, py: 1, textAlign: "right" }}>Total</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
                   {billLinesForDisplay.length === 0 ? (
-                    <tr>
-                      <td colSpan="4" className="px-2 py-4 text-center text-gray-400 dark:text-gray-500">No items in bill</td>
-                    </tr>
+                    <TableRow>
+                      <TableCell colSpan={4} sx={{ px: 1, py: 2, textAlign: "center", color: "text.disabled" }}>No items in bill</TableCell>
+                    </TableRow>
                   ) : (
                     billLinesForDisplay.map((line) => {
                       if (line.isReturnDisplayLine) {
                         return (
-                          <tr key={line.lineId} className="border-t bg-amber-50/60 dark:border-gray-700 dark:bg-amber-900/20">
-                            <td className="px-2 py-2">
-                              <div className="text-[10px] font-semibold uppercase tracking-wide text-amber-900 dark:text-amber-300">
+                          <TableRow key={line.lineId} sx={{ borderTop: 1, borderColor: "divider", bgcolor: (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.12 : 0.06) }}>
+                            <TableCell sx={{ px: 1, py: 1 }}>
+                              <Typography sx={{ fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: "warning.dark" }}>
                                 {line.returnNoteLabel}
-                              </div>
-                              <div className="text-xs font-medium text-gray-900 dark:text-gray-100">{line.productName}</div>
-                              <div className="text-[10px] font-mono text-gray-500 dark:text-gray-400">{line.barcode}</div>
-                            </td>
-                            <td className="px-2 py-2 text-center font-medium text-red-700 dark:text-red-400">{line.qty}</td>
-                            <td className="px-2 py-2 text-right">{formatMoney(line.price)}</td>
-                            <td className={`px-2 py-2 text-right font-medium ${line.lineTotal < 0 ? "text-red-700 dark:text-red-400" : ""}`}>
+                              </Typography>
+                              <Typography sx={{ fontSize: 10.5, fontWeight: 500, color: "text.primary" }}>{line.productName}</Typography>
+                              <Typography sx={{ fontSize: 9, fontFamily: "monospace", color: "text.secondary" }}>{line.barcode}</Typography>
+                            </TableCell>
+                            <TableCell sx={{ px: 1, py: 1, textAlign: "center", fontWeight: 500, color: "error.main" }}>{line.qty}</TableCell>
+                            <TableCell sx={{ px: 1, py: 1, textAlign: "right" }}>{formatMoney(line.price)}</TableCell>
+                            <TableCell sx={{ px: 1, py: 1, textAlign: "right", fontWeight: 500, color: line.lineTotal < 0 ? "error.main" : undefined }}>
                               {formatMoney(line.lineTotal)}
-                            </td>
-                          </tr>
+                            </TableCell>
+                          </TableRow>
                         );
                       }
 
@@ -929,99 +935,103 @@ const TouchSales = () => {
                       const lineTax = (lineSubtotal * toNum(line.tax, 0)) / 100;
                       const lineFinal = lineSubtotal + lineTax;
                       return (
-                        <tr key={line.lineId} className="border-t dark:border-gray-700">
-                          <td className="px-2 py-2">
-                            <div className="text-xs font-medium">{line.productName}</div>
-                            <div className="text-[10px] font-mono text-gray-500 dark:text-gray-400">{line.barcode}</div>
-                          </td>
-                          <td className="px-2 py-2 text-center">
-                            <div className="inline-flex items-center gap-1">
-                              <button
+                        <TableRow key={line.lineId} sx={{ borderTop: 1, borderColor: "divider" }}>
+                          <TableCell sx={{ px: 1, py: 1 }}>
+                            <Typography sx={{ fontSize: 10.5, fontWeight: 500 }}>{line.productName}</Typography>
+                            <Typography sx={{ fontSize: 9, fontFamily: "monospace", color: "text.secondary" }}>{line.barcode}</Typography>
+                          </TableCell>
+                          <TableCell sx={{ px: 1, py: 1, textAlign: "center" }}>
+                            <Stack direction="row" spacing={0.5} sx={{ display: "inline-flex", alignItems: "center" }}>
+                              <IconButton
                                 onClick={() => updateCartQty(line.lineId, -1)}
-                                className="rounded-sm border p-0.5 dark:border-gray-600"
+                                size="small"
+                                sx={{ border: 1, borderColor: "divider", borderRadius: "3.5px", p: 0.25 }}
                               >
                                 <Minus className="h-3 w-3" />
-                              </button>
-                              <span className="min-w-5">{line.qty}</span>
-                              <button
+                              </IconButton>
+                              <Box component="span" sx={{ minWidth: 20 }}>{line.qty}</Box>
+                              <IconButton
                                 onClick={() => updateCartQty(line.lineId, 1)}
-                                className="rounded-sm border p-0.5 dark:border-gray-600"
+                                size="small"
+                                sx={{ border: 1, borderColor: "divider", borderRadius: "3.5px", p: 0.25 }}
                               >
                                 <Plus className="h-3 w-3" />
-                              </button>
-                            </div>
-                          </td>
-                          <td className="px-2 py-2 text-right">{formatMoney(line.price)}</td>
-                          <td className="px-2 py-2 text-right">
-                            <div className="inline-flex items-center gap-1">
-                              <span>{formatMoney(lineFinal)}</span>
-                              <button onClick={() => removeLine(line.lineId)} className="text-red-600 dark:text-red-400">
+                              </IconButton>
+                            </Stack>
+                          </TableCell>
+                          <TableCell sx={{ px: 1, py: 1, textAlign: "right" }}>{formatMoney(line.price)}</TableCell>
+                          <TableCell sx={{ px: 1, py: 1, textAlign: "right" }}>
+                            <Stack direction="row" spacing={0.5} sx={{ display: "inline-flex", alignItems: "center" }}>
+                              <Box component="span">{formatMoney(lineFinal)}</Box>
+                              <IconButton onClick={() => removeLine(line.lineId)} size="small" sx={{ color: "error.main", p: 0.25 }}>
                                 <Delete className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
+                              </IconButton>
+                            </Stack>
+                          </TableCell>
+                        </TableRow>
                       );
                     })
                   )}
-                </tbody>
-              </table>
-            </div>
+                </TableBody>
+              </Table>
+            </Box>
 
-            <div className="mt-3 shrink-0 space-y-3">
-              <div className="space-y-1 text-sm">
-                <div className="flex justify-between"><span>Subtotal</span><b>{formatMoney(billSummary.subtotal)}</b></div>
-                <div className="flex justify-between"><span>Tax</span><b>{formatMoney(billSummary.taxAmount)}</b></div>
+            <Stack spacing={1.5} sx={{ mt: 1.5, flexShrink: 0 }}>
+              <Stack spacing={0.5} sx={{ fontSize: 12.25 }}>
+                <Stack direction="row" sx={{ justifyContent: "space-between" }}><Box component="span">Subtotal</Box><Box component="b">{formatMoney(billSummary.subtotal)}</Box></Stack>
+                <Stack direction="row" sx={{ justifyContent: "space-between" }}><Box component="span">Tax</Box><Box component="b">{formatMoney(billSummary.taxAmount)}</Box></Stack>
                 {appliedReturn ? (
-                  <div className="flex justify-between"><span>Sale amount</span><b>{formatMoney(billSummary.finalAmount)}</b></div>
+                  <Stack direction="row" sx={{ justifyContent: "space-between" }}><Box component="span">Sale amount</Box><Box component="b">{formatMoney(billSummary.finalAmount)}</Box></Stack>
                 ) : null}
-                <div className="flex justify-between border-t border-gray-200 pt-1 font-semibold dark:border-gray-700">
-                  <span>Final Amount</span>
-                  <b className={appliedReturn && billSummary.netAmount < 0 ? "text-red-700 dark:text-red-400" : ""}>
+                <Stack direction="row" sx={{ justifyContent: "space-between", borderTop: 1, borderColor: "divider", pt: 0.5, fontWeight: 600 }}>
+                  <Box component="span">Final Amount</Box>
+                  <Box component="b" sx={{ color: appliedReturn && billSummary.netAmount < 0 ? "error.main" : undefined }}>
                     {formatMoney(appliedReturn ? billSummary.netAmount : billSummary.finalAmount)}
-                  </b>
-                </div>
-              </div>
+                  </Box>
+                </Stack>
+              </Stack>
 
               {appliedReturn && billSummary.netAmount < 0 ? (
-                <label className="flex cursor-pointer items-center gap-2 text-xs text-gray-700 dark:text-gray-300">
-                  <input
-                    type="checkbox"
+                <Stack component="label" direction="row" spacing={1} sx={{ alignItems: "center", cursor: "pointer", fontSize: 10.5, color: "text.secondary" }}>
+                  <Checkbox
+                    size="small"
                     checked={refundApproved}
                     onChange={(e) => setRefundApproved(e.target.checked)}
-                    className="rounded border-gray-300 dark:border-gray-600"
+                    sx={{ p: 0 }}
                   />
                   Refund to customer confirmed ({formatMoney(Math.abs(billSummary.netAmount))})
-                </label>
+                </Stack>
               ) : null}
 
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                <button
+              <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 1 }}>
+                <Button
                   onClick={() => saveTouchSale({ shouldPrint: false })}
                   disabled={saving || applyingReturn}
-                  className="glass-btn glass-btn-success inline-flex items-center justify-center disabled:opacity-60"
+                  className="glass-btn glass-btn-success disabled:opacity-60"
+                  sx={{ display: "inline-flex", alignItems: "center", justifyContent: "center" }}
                 >
                   <Save className="mr-1 h-4 w-4" /> {saving ? "Saving..." : "Save"}
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={() => saveTouchSale({ shouldPrint: true })}
                   disabled={saving || applyingReturn}
-                  className="glass-btn glass-btn-primary inline-flex items-center justify-center disabled:opacity-60"
+                  className="glass-btn glass-btn-primary disabled:opacity-60"
+                  sx={{ display: "inline-flex", alignItems: "center", justifyContent: "center" }}
                 >
                   <Printer className="mr-1 h-4 w-4" /> Save & Print
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+                </Button>
+              </Box>
+            </Stack>
+          </Stack>
+        </Box>
 
-        {loading && <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">Loading touch sale data...</p>}
-      </div>
+        {loading && <Typography sx={{ mt: 1, fontSize: 10.5, color: "text.secondary" }}>Loading touch sale data...</Typography>}
+      </Stack>
       <CounterAssignmentDialog
         open={counterAssignmentOpen}
         onClose={() => setCounterAssignmentOpen(false)}
       />
-    </div>
+    </Stack>
   );
 };
 

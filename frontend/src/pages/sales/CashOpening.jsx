@@ -4,6 +4,7 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 import FilterableDataTable from "../../components/FilterableDataTable";
+import { Box, Stack, Typography, TextField, MenuItem, Button, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
 
 const DENOMINATIONS = [2000, 500, 200, 100, 50, 20, 10, 5, 2, 1];
 
@@ -261,7 +262,7 @@ const CashOpening = () => {
         key: "amount",
         label: "Amount",
         valueGetter: (row) => Number(row.amount || 0),
-        render: (value) => <div className="text-right">{formatCurrency(value || 0)}</div>,
+        render: (value) => <Box sx={{ textAlign: "right" }}>{formatCurrency(value || 0)}</Box>,
       },
     ],
     []
@@ -274,30 +275,32 @@ const CashOpening = () => {
   }, [searchResults.length, searchLimit]);
 
   const renderSelect = (label, name, value, optionsList, onChange) => (
-    <div className="flex items-center">
-      <label className="w-[40%] text-sm font-medium text-gray-700 dark:text-gray-300">{label}</label>
-      <select
+    <Stack direction="row" sx={{ alignItems: "center" }}>
+      <Typography component="label" sx={{ width: "40%", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>{label}</Typography>
+      <TextField
+        select
         name={name}
         value={value}
         onChange={onChange}
-        className="flex-1 border border-gray-300 dark:border-gray-600 rounded-sm p-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ml-2"
+        size="small"
+        sx={{ flex: 1, ml: 1, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
       >
-        <option value="">Select {label}</option>
+        <MenuItem value="">Select {label}</MenuItem>
         {optionsList.map((row) => (
-          <option key={row.value} value={row.value}>
+          <MenuItem key={row.value} value={row.value}>
             {row.label}
-          </option>
+          </MenuItem>
         ))}
-      </select>
-    </div>
+      </TextField>
+    </Stack>
   );
 
   const renderEntryPage = () => (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-4">
-          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Cash Opening Details</h2>
-          <div className="space-y-3 max-w-xl">
+    <Stack spacing={2}>
+      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", xl: "1fr 1fr" }, gap: 2 }}>
+        <Box sx={{ bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "7px", boxShadow: 1, p: 2 }}>
+          <Typography component="h2" sx={{ fontSize: 12.25, fontWeight: 600, color: "text.secondary", mb: 1.5 }}>Cash Opening Details</Typography>
+          <Stack spacing={1.5} sx={{ maxWidth: 576 }}>
             {renderSelect(
               "Location",
               "locationId",
@@ -306,16 +309,17 @@ const CashOpening = () => {
               (e) => setFormData((prev) => ({ ...prev, locationId: e.target.value }))
             )}
 
-            <div className="flex items-center">
-              <label className="w-[40%] text-sm font-medium text-gray-700 dark:text-gray-300">Date / Time</label>
-              <input
+            <Stack direction="row" sx={{ alignItems: "center" }}>
+              <Typography component="label" sx={{ width: "40%", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Date / Time</Typography>
+              <TextField
                 type="text"
                 value={now.toLocaleString()}
                 disabled
-                readOnly
-                className="flex-1 border border-gray-300 dark:border-gray-600 rounded-sm p-1.5 text-sm bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 ml-2"
+                slotProps={{ input: { readOnly: true } }}
+                size="small"
+                sx={{ flex: 1, ml: 1, "& .MuiInputBase-root": { bgcolor: "action.hover" }, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
               />
-            </div>
+            </Stack>
 
             {renderSelect(
               "Counter",
@@ -341,73 +345,75 @@ const CashOpening = () => {
               (e) => setFormData((prev) => ({ ...prev, cashierEmployeeId: e.target.value }))
             )}
 
-            <div className="flex items-center">
-              <label className="w-[40%] text-sm font-medium text-gray-700 dark:text-gray-300">Amount</label>
-              <input
+            <Stack direction="row" sx={{ alignItems: "center" }}>
+              <Typography component="label" sx={{ width: "40%", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Amount</Typography>
+              <TextField
                 type="text"
                 value={formatCurrency(amount)}
                 disabled
-                readOnly
-                className="flex-1 border border-gray-300 dark:border-gray-600 rounded-sm p-1.5 text-sm bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 ml-2 font-semibold"
+                slotProps={{ input: { readOnly: true } }}
+                size="small"
+                sx={{ flex: 1, ml: 1, "& .MuiInputBase-root": { bgcolor: "action.hover" }, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75, fontWeight: 600 } }}
               />
-            </div>
-          </div>
-        </div>
+            </Stack>
+          </Stack>
+        </Box>
 
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Denominations</h2>
-          </div>
-          <div className="p-4 overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-blue-50 dark:bg-blue-900/30 text-gray-700 dark:text-gray-300">
-                <tr>
-                  <th className="border dark:border-gray-700 px-3 py-2 text-left">Denomination</th>
-                  <th className="border dark:border-gray-700 px-3 py-2 text-center">Count</th>
-                  <th className="border dark:border-gray-700 px-3 py-2 text-right">Value</th>
-                </tr>
-              </thead>
-              <tbody>
+        <Box sx={{ bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "7px", boxShadow: 1, overflow: "hidden" }}>
+          <Box sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: "divider", bgcolor: "action.hover" }}>
+            <Typography component="h2" sx={{ fontSize: 12.25, fontWeight: 600, color: "text.secondary" }}>Denominations</Typography>
+          </Box>
+          <Box sx={{ p: 2, overflowX: "auto" }}>
+            <Table sx={{ width: "100%", fontSize: 12.25 }}>
+              <TableHead sx={{ bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08), color: "text.secondary" }}>
+                <TableRow>
+                  <TableCell sx={{ border: 1, borderColor: "divider", px: 1.5, py: 1, textAlign: "left" }}>Denomination</TableCell>
+                  <TableCell sx={{ border: 1, borderColor: "divider", px: 1.5, py: 1, textAlign: "center" }}>Count</TableCell>
+                  <TableCell sx={{ border: 1, borderColor: "divider", px: 1.5, py: 1, textAlign: "right" }}>Value</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
                 {DENOMINATIONS.map((denomination) => {
                   const key = makeCountKey(denomination);
                   const count = Math.max(0, toInt(formData[key], 0));
                   const value = count * denomination;
                   return (
-                    <tr key={denomination} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                      <td className="border dark:border-gray-700 px-3 py-2 font-semibold">
+                    <TableRow key={denomination} sx={{ "&:hover": { bgcolor: "action.hover" } }}>
+                      <TableCell sx={{ border: 1, borderColor: "divider", px: 1.5, py: 1, fontWeight: 600 }}>
                         ₹{denomination.toLocaleString("en-IN")}
-                      </td>
-                      <td className="border dark:border-gray-700 px-3 py-2 text-center">
-                        <input
+                      </TableCell>
+                      <TableCell sx={{ border: 1, borderColor: "divider", px: 1.5, py: 1, textAlign: "center" }}>
+                        <TextField
                           type="number"
-                          min="0"
+                          slotProps={{ htmlInput: { min: 0 } }}
                           value={formData[key]}
                           onChange={(e) => handleCountChange(key, e.target.value)}
-                          className="w-24 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm px-2 py-1 text-right focus:ring-1 focus:ring-blue-500"
+                          size="small"
+                          sx={{ width: 96, "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, py: 0.5 } }}
                         />
-                      </td>
-                      <td className="border dark:border-gray-700 px-3 py-2 text-right font-medium">
+                      </TableCell>
+                      <TableCell sx={{ border: 1, borderColor: "divider", px: 1.5, py: 1, textAlign: "right", fontWeight: 500 }}>
                         {formatCurrency(value)}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
-                <tr className="bg-gray-50 dark:bg-gray-700">
-                  <td className="border dark:border-gray-700 px-3 py-2 font-semibold" colSpan="2">
+                <TableRow sx={{ bgcolor: "action.hover" }}>
+                  <TableCell colSpan={2} sx={{ border: 1, borderColor: "divider", px: 1.5, py: 1, fontWeight: 600 }}>
                     Total Amount
-                  </td>
-                  <td className="border dark:border-gray-700 px-3 py-2 text-right font-bold">{formatCurrency(amount)}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
+                  </TableCell>
+                  <TableCell sx={{ border: 1, borderColor: "divider", px: 1.5, py: 1, textAlign: "right", fontWeight: 700 }}>{formatCurrency(amount)}</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </Box>
+        </Box>
+      </Box>
+    </Stack>
   );
 
   const renderSearchPage = () => (
-    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-4 space-y-4">
+    <Stack spacing={2} sx={{ bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "7px", boxShadow: 1, p: 2 }}>
       <FilterableDataTable
         rows={searchResults}
         columns={cashOpeningSearchColumns}
@@ -432,57 +438,59 @@ const CashOpening = () => {
         }}
         paginationMode="client"
       />
-    </div>
+    </Stack>
   );
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100">
-      <div className="flex justify-between items-center px-4 py-2 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
-        <div className="flex items-center space-x-2">
-          <button
+    <Box sx={{ minHeight: "100vh", bgcolor: "background.default", color: "text.primary" }}>
+      <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", px: 2, py: 1, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+          <Button
             onClick={showSearchPage ? () => setShowSearchPage(false) : () => navigate("/sales")}
-            className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+            sx={{ color: "text.secondary", minWidth: 0, p: 0.5 }}
             aria-label={showSearchPage ? "Back to cash opening entry" : "Back to sales"}
           >
             <ArrowLeft className="w-4 h-4" />
-          </button>
-          <h1 className="text-sm font-semibold flex items-center gap-1">
-            <button
+          </Button>
+          <Typography component="h1" sx={{ fontSize: 12.25, fontWeight: 600, display: "flex", alignItems: "center", gap: 0.5 }}>
+            <Button
               type="button"
               onClick={() => navigate("/sales")}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
+              sx={{ color: "primary.main", textTransform: "none", minWidth: "auto", p: 0, "&:hover": { textDecoration: "underline", bgcolor: "transparent" } }}
             >
               Sales
-            </button>
-            <span className="text-gray-500 dark:text-gray-400">/</span>
-            <span>Cash Opening</span>
-          </h1>
-        </div>
+            </Button>
+            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
+            <Box component="span">Cash Opening</Box>
+          </Typography>
+        </Stack>
 
-        <div className="flex items-center gap-2">
-          <button
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+          <Button
             onClick={handleSave}
             disabled={saving || showSearchPage || loadingMeta}
-            className="glass-btn glass-btn-success inline-flex items-center disabled:opacity-50"
+            className="glass-btn glass-btn-success disabled:opacity-50"
+            sx={{ display: "inline-flex", alignItems: "center" }}
           >
             <Save className="w-4 h-4 mr-1" />
             {saving ? "Saving..." : "Save"}
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={showSearchPage ? () => setShowSearchPage(false) : openSearchPage}
-            className="glass-btn glass-btn-primary inline-flex items-center"
+            className="glass-btn glass-btn-primary"
+            sx={{ display: "inline-flex", alignItems: "center" }}
           >
             <Search className="w-4 h-4 mr-1" />
             {showSearchPage ? "Back" : "Search"}
-          </button>
-        </div>
-      </div>
+          </Button>
+        </Stack>
+      </Stack>
 
-      <div className="p-4 space-y-4 pb-28">
+      <Stack spacing={2} sx={{ p: 2, pb: 7 }}>
         {showSearchPage ? renderSearchPage() : renderEntryPage()}
-        {loadingMeta && <p className="text-xs text-gray-500 dark:text-gray-400 px-1">Loading options...</p>}
-      </div>
-    </div>
+        {loadingMeta && <Typography sx={{ fontSize: 10.5, color: "text.secondary", px: 0.5 }}>Loading options...</Typography>}
+      </Stack>
+    </Box>
   );
 };
 
