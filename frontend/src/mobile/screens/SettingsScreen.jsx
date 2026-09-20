@@ -20,6 +20,7 @@ import {
   Lock,
   Type,
 } from "lucide-react";
+import { Box, Typography } from "@mui/material";
 import api from "../../api/axios";
 import SecurityPinSettings from "../security/SecurityPinSettings";
 import DisplayAccessibilitySettings from "./DisplayAccessibilitySettings";
@@ -125,13 +126,13 @@ export default function SettingsScreen({ onLogout, onTriggerPwa, appLock, biomet
   };
 
   return (
-    <div className="space-y-4 pb-12">
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 2, pb: 6 }}>
       {/* General Section */}
-      <div>
-        <small className="text-slate-400 font-bold uppercase text-[11px] px-1 mb-2 block">
+      <Box>
+        <Typography component="small" sx={{ color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", fontSize: 11, px: 0.5, mb: 1, display: "block" }}>
           General
-        </small>
-        <div className="space-y-2">
+        </Typography>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
           {!isRestricted && (
             <MenuItem icon={Building} title="Business Profile" onClick={() => setActiveModal("profile")} />
           )}
@@ -149,15 +150,15 @@ export default function SettingsScreen({ onLogout, onTriggerPwa, appLock, biomet
           />
           <MenuItem icon={Sliders} title="Preferences" onClick={() => setActiveModal("preferences")} />
           <MenuItem icon={Type} title="Display & Accessibility" onClick={() => setActiveModal("display")} />
-        </div>
-      </div>
+        </Box>
+      </Box>
 
       {/* Other Section */}
-      <div>
-        <small className="text-slate-400 font-bold uppercase text-[11px] px-1 mb-2 block">
+      <Box>
+        <Typography component="small" sx={{ color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", fontSize: 11, px: 0.5, mb: 1, display: "block" }}>
           Other
-        </small>
-        <div className="space-y-2">
+        </Typography>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
           {!isRestricted && (
             <MenuItem icon={Database} title="Backup & Restore" onClick={() => setActiveModal("backup")} />
           )}
@@ -180,84 +181,89 @@ export default function SettingsScreen({ onLogout, onTriggerPwa, appLock, biomet
             subtitle="v3.0.2 (Enterprise PWA)"
             onClick={() => setActiveModal("about")}
           />
-        </div>
-      </div>
+        </Box>
+      </Box>
 
       {/* Logout Button */}
-      <button
+      <Box
+        component="button"
         type="button"
         onClick={onLogout}
-        className="w-full py-3 rounded-xl border border-rose-200 bg-rose-50 text-rose-600 font-bold text-xs flex items-center justify-center gap-2 hover:bg-rose-100 active:scale-98 transition-all"
+        sx={{
+          width: "100%", py: 1.5, borderRadius: "12px", border: "1px solid #fecdd3", bgcolor: "#fff1f2", color: "#e11d48",
+          fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 1,
+          transition: "all 0.15s", "&:hover": { bgcolor: "#ffe4e6" }, "&:active": { transform: "scale(0.98)" },
+        }}
       >
         <LogOut size={16} /> Logout
-      </button>
+      </Box>
 
       {/* ─── MODALS & DRAWERS ─── */}
 
       {/* Business Profile Modal */}
       {activeModal === "profile" && (
         <SettingsDrawer title="Business Profile" onClose={() => setActiveModal(null)}>
-          <div className="space-y-4 text-slate-800">
-            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80">
-              <h4 className="text-xs font-bold text-slate-400 uppercase">Registered Company</h4>
-              <p className="text-sm font-black text-slate-900 mt-1">{profile?.name || "Vynerix ERP"}</p>
-            </div>
-            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80">
-              <h4 className="text-xs font-bold text-slate-400 uppercase">GSTIN / Tax ID</h4>
-              <p className="text-sm font-black text-slate-900 mt-1">{profile?.gstin || "Not set"}</p>
-            </div>
-            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80">
-              <h4 className="text-xs font-bold text-slate-400 uppercase">Primary Contact</h4>
-              <p className="text-sm font-bold text-slate-700 mt-1">{profile?.email || "Not set"}</p>
-              <p className="text-sm font-bold text-slate-700">{profile?.phone || "Not set"}</p>
-            </div>
-          </div>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2, color: "#1e293b" }}>
+            <Box sx={{ p: 2, borderRadius: "16px", bgcolor: "#f8fafc", border: "1px solid rgba(226,232,240,0.8)" }}>
+              <Typography component="h4" sx={{ fontSize: 12, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase" }}>Registered Company</Typography>
+              <Typography component="p" sx={{ fontSize: 14, fontWeight: 900, color: "#0f172a", mt: 0.5 }}>{profile?.name || "Vynerix ERP"}</Typography>
+            </Box>
+            <Box sx={{ p: 2, borderRadius: "16px", bgcolor: "#f8fafc", border: "1px solid rgba(226,232,240,0.8)" }}>
+              <Typography component="h4" sx={{ fontSize: 12, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase" }}>GSTIN / Tax ID</Typography>
+              <Typography component="p" sx={{ fontSize: 14, fontWeight: 900, color: "#0f172a", mt: 0.5 }}>{profile?.gstin || "Not set"}</Typography>
+            </Box>
+            <Box sx={{ p: 2, borderRadius: "16px", bgcolor: "#f8fafc", border: "1px solid rgba(226,232,240,0.8)" }}>
+              <Typography component="h4" sx={{ fontSize: 12, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase" }}>Primary Contact</Typography>
+              <Typography component="p" sx={{ fontSize: 14, fontWeight: 700, color: "#334155", mt: 0.5 }}>{profile?.email || "Not set"}</Typography>
+              <Typography component="p" sx={{ fontSize: 14, fontWeight: 700, color: "#334155" }}>{profile?.phone || "Not set"}</Typography>
+            </Box>
+          </Box>
         </SettingsDrawer>
       )}
 
       {/* Users List Modal */}
       {activeModal === "users" && (
         <SettingsDrawer title="Active Users" onClose={() => setActiveModal(null)}>
-          <div className="space-y-2">
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
             {employees.length > 0 ? (
               employees.map((u, i) => (
-                <div key={i} className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-200/80">
-                  <div>
-                    <p className="text-xs font-black text-slate-900">{u.name}</p>
-                    <p className="text-[10px] text-slate-500">{u.email || "No email"}</p>
-                  </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-600">
+                <Box key={i} sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", p: 1.5, borderRadius: "16px", bgcolor: "#f8fafc", border: "1px solid rgba(226,232,240,0.8)" }}>
+                  <Box>
+                    <Typography component="p" sx={{ fontSize: 12, fontWeight: 900, color: "#0f172a" }}>{u.name}</Typography>
+                    <Typography component="p" sx={{ fontSize: 10, color: "#64748b" }}>{u.email || "No email"}</Typography>
+                  </Box>
+                  <Typography component="span" sx={{ fontSize: 10, fontWeight: 700, px: 1, py: 0.25, borderRadius: "999px", bgcolor: "#eef2ff", border: "1px solid #e0e7ff", color: "#4f46e5" }}>
                     {u.role || "Staff"}
-                  </span>
-                </div>
+                  </Typography>
+                </Box>
               ))
             ) : (
-              <div className="p-3 text-center text-xs text-slate-500">Loading user database...</div>
+              <Box sx={{ p: 1.5, textAlign: "center", fontSize: 12, color: "#64748b" }}>Loading user database...</Box>
             )}
-          </div>
+          </Box>
         </SettingsDrawer>
       )}
 
       {/* Roles & Permissions Modal */}
       {activeModal === "roles" && (
         <SettingsDrawer title="Roles & Permissions" onClose={() => setActiveModal(null)}>
-          <div className="space-y-3">
-            <div className="p-3 rounded-2xl bg-amber-50 border border-amber-100/80">
-              <p className="text-[10.5px] text-amber-800 leading-relaxed">
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+            <Box sx={{ p: 1.5, borderRadius: "16px", bgcolor: "#fffbeb", border: "1px solid rgba(254,243,199,0.8)" }}>
+              <Typography component="p" sx={{ fontSize: 10.5, color: "#92400e", lineHeight: 1.625 }}>
                 These are the real role groups defined for this account. Fine-grained page-level permissions per role aren't enforced by the backend yet - a role name here doesn't currently restrict what a user can do.
-              </p>
-            </div>
+              </Typography>
+            </Box>
             {roles.length > 0 ? (
               roles.map((r) => (
-                <div key={r.id} className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
-                  <h4 className="text-xs font-black text-indigo-600">{r.display_name || r.name}</h4>
-                  <p className="text-[11px] text-slate-500 mt-1 leading-normal">{r.description || "No description set"}</p>
-                </div>
+                <Box key={r.id} sx={{ p: 1.75, borderRadius: "16px", bgcolor: "#f8fafc", border: "1px solid rgba(226,232,240,0.8)" }}>
+                  <Typography component="h4" sx={{ fontSize: 12, fontWeight: 900, color: "#4f46e5" }}>{r.display_name || r.name}</Typography>
+                  <Typography component="p" sx={{ fontSize: 11, color: "#64748b", mt: 0.5, lineHeight: 1.5 }}>{r.description || "No description set"}</Typography>
+                </Box>
               ))
             ) : (
-              <div className="p-3 text-center text-xs text-slate-500">Loading role groups...</div>
+              <Box sx={{ p: 1.5, textAlign: "center", fontSize: 12, color: "#64748b" }}>Loading role groups...</Box>
             )}
-          </div>
+          </Box>
         </SettingsDrawer>
       )}
 
@@ -278,202 +284,217 @@ export default function SettingsScreen({ onLogout, onTriggerPwa, appLock, biomet
       {/* Preferences Modal */}
       {activeModal === "preferences" && (
         <SettingsDrawer title="Terminal Preferences" onClose={() => setActiveModal(null)}>
-          <div className="space-y-4">
-            <div>
-              <label className="text-xs font-bold text-slate-500 block mb-1.5">Thermal Receipt Width</label>
-              <div className="grid grid-cols-3 gap-2">
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <Box>
+              <Typography component="label" sx={{ fontSize: 12, fontWeight: 700, color: "#64748b", display: "block", mb: 0.75 }}>Thermal Receipt Width</Typography>
+              <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1 }}>
                 {["2-inch", "3-inch", "4-inch"].map((w) => (
-                  <button
+                  <Box
+                    component="button"
                     key={w}
                     type="button"
                     onClick={() => setPrefPaper(w)}
-                    className={`py-2 rounded-xl text-xs font-bold border transition-all ${
-                      prefPaper === w
-                        ? "bg-indigo-600 border-indigo-600 text-white"
-                        : "bg-slate-50 border-slate-200 text-slate-700"
-                    }`}
+                    sx={{
+                      py: 1, borderRadius: "12px", fontSize: 12, fontWeight: 700, border: "1px solid", transition: "all 0.15s",
+                      bgcolor: prefPaper === w ? "#4f46e5" : "#f8fafc",
+                      borderColor: prefPaper === w ? "#4f46e5" : "#e2e8f0",
+                      color: prefPaper === w ? "#fff" : "#334155",
+                    }}
                   >
                     {w}
-                  </button>
+                  </Box>
                 ))}
-              </div>
-            </div>
+              </Box>
+            </Box>
 
-            <div>
-              <label className="text-xs font-bold text-slate-500 block mb-1.5">Print Workflow</label>
-              <div className="grid grid-cols-2 gap-2">
+            <Box>
+              <Typography component="label" sx={{ fontSize: 12, fontWeight: 700, color: "#64748b", display: "block", mb: 0.75 }}>Print Workflow</Typography>
+              <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1 }}>
                 {[
                   { id: "browser", label: "Browser Print" },
                   { id: "direct", label: "Direct Thermal API" },
                 ].map((m) => (
-                  <button
+                  <Box
+                    component="button"
                     key={m.id}
                     type="button"
                     onClick={() => setPrefMode(m.id)}
-                    className={`py-2 rounded-xl text-xs font-bold border transition-all ${
-                      prefMode === m.id
-                        ? "bg-indigo-600 border-indigo-600 text-white"
-                        : "bg-slate-50 border-slate-200 text-slate-700"
-                    }`}
+                    sx={{
+                      py: 1, borderRadius: "12px", fontSize: 12, fontWeight: 700, border: "1px solid", transition: "all 0.15s",
+                      bgcolor: prefMode === m.id ? "#4f46e5" : "#f8fafc",
+                      borderColor: prefMode === m.id ? "#4f46e5" : "#e2e8f0",
+                      color: prefMode === m.id ? "#fff" : "#334155",
+                    }}
                   >
                     {m.label}
-                  </button>
+                  </Box>
                 ))}
-              </div>
-            </div>
+              </Box>
+            </Box>
 
-            <button
+            <Box
+              component="button"
               type="button"
               onClick={handleSavePref}
-              className="w-full bg-indigo-600 text-white text-xs font-bold py-3 rounded-xl shadow active:scale-95 transition-all flex items-center justify-center gap-1.5"
+              sx={{ width: "100%", bgcolor: "#4f46e5", color: "#fff", fontSize: 12, fontWeight: 700, py: 1.5, borderRadius: "12px", boxShadow: 1, transition: "all 0.15s", display: "flex", alignItems: "center", justifyContent: "center", gap: 0.75, "&:active": { transform: "scale(0.95)" } }}
             >
               <Check size={16} /> Save Preferences
-            </button>
-          </div>
+            </Box>
+          </Box>
         </SettingsDrawer>
       )}
 
       {/* Backup & Restore Modal */}
       {activeModal === "backup" && (
         <SettingsDrawer title="Backup & Restore" onClose={() => setActiveModal(null)}>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-2">
-              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80">
-                <p className="text-[9.5px] font-bold text-slate-400 uppercase tracking-wide">Last Backup</p>
-                <p className="text-xs font-black text-slate-900 mt-1 capitalize">
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1 }}>
+              <Box sx={{ p: 1.5, borderRadius: "16px", bgcolor: "#f8fafc", border: "1px solid rgba(226,232,240,0.8)" }}>
+                <Typography component="p" sx={{ fontSize: 9.5, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.03em" }}>Last Backup</Typography>
+                <Typography component="p" sx={{ fontSize: 12, fontWeight: 900, color: "#0f172a", mt: 0.5, textTransform: "capitalize" }}>
                   {backupOverview?.stats?.last_backup_status || "Never"}
-                </p>
-                <p className="text-[9.5px] text-slate-500 mt-0.5">{formatDateTime(backupOverview?.stats?.last_backup_at)}</p>
-              </div>
-              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80">
-                <p className="text-[9.5px] font-bold text-slate-400 uppercase tracking-wide">Storage Used</p>
-                <p className="text-xs font-black text-slate-900 mt-1">
+                </Typography>
+                <Typography component="p" sx={{ fontSize: 9.5, color: "#64748b", mt: 0.25 }}>{formatDateTime(backupOverview?.stats?.last_backup_at)}</Typography>
+              </Box>
+              <Box sx={{ p: 1.5, borderRadius: "16px", bgcolor: "#f8fafc", border: "1px solid rgba(226,232,240,0.8)" }}>
+                <Typography component="p" sx={{ fontSize: 9.5, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.03em" }}>Storage Used</Typography>
+                <Typography component="p" sx={{ fontSize: 12, fontWeight: 900, color: "#0f172a", mt: 0.5 }}>
                   {backupOverview?.stats?.storage_usage?.total_label || "0 B"}
-                </p>
-                <p className="text-[9.5px] text-slate-500 mt-0.5">{backupOverview?.stats?.total_backups ?? 0} backups</p>
-              </div>
-            </div>
+                </Typography>
+                <Typography component="p" sx={{ fontSize: 9.5, color: "#64748b", mt: 0.25 }}>{backupOverview?.stats?.total_backups ?? 0} backups</Typography>
+              </Box>
+            </Box>
 
-            <button
+            <Box
+              component="button"
               type="button"
               onClick={handleCreateBackup}
               disabled={creatingBackup}
-              className="w-full py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition-all disabled:opacity-50"
+              sx={{ width: "100%", py: 1.25, borderRadius: "12px", bgcolor: "#4f46e5", color: "#fff", fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 0.75, transition: "all 0.15s", "&:active": { transform: "scale(0.95)" }, "&:disabled": { opacity: 0.5 } }}
             >
               <Play size={14} /> {creatingBackup ? "Creating backup..." : "Create Full Backup Now"}
-            </button>
-            <p className="text-[9.5px] text-slate-400 -mt-2 text-center">
+            </Box>
+            <Typography component="p" sx={{ fontSize: 9.5, color: "#94a3b8", mt: -1, textAlign: "center" }}>
               For restore, encryption, and scheduling, use Backup Center on the desktop app.
-            </p>
+            </Typography>
 
             {backupOverview?.backups?.length > 0 && (
-              <div className="space-y-2 pt-2 border-t border-slate-100">
-                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-wide">Recent Backups</h4>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 1, pt: 1, borderTop: "1px solid #f1f5f9" }}>
+                <Typography component="h4" sx={{ fontSize: 10, fontWeight: 900, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.03em" }}>Recent Backups</Typography>
                 {backupOverview.backups.slice(0, 5).map((row) => (
-                  <div key={row.id} className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200/80">
-                    <div className="min-w-0">
-                      <p className="text-[11px] font-bold text-slate-800 truncate">{row.file_name}</p>
-                      <p className="text-[9.5px] text-slate-500 mt-0.5">
+                  <Box key={row.id} sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", p: 1.25, borderRadius: "12px", bgcolor: "#f8fafc", border: "1px solid rgba(226,232,240,0.8)" }}>
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography component="p" sx={{ fontSize: 11, fontWeight: 700, color: "#1e293b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.file_name}</Typography>
+                      <Typography component="p" sx={{ fontSize: 9.5, color: "#64748b", mt: 0.25 }}>
                         {row.file_size_label} &middot; {formatDateTime(row.completed_at)}
-                      </p>
-                    </div>
-                    <button
+                      </Typography>
+                    </Box>
+                    <Box
+                      component="button"
                       type="button"
                       onClick={() => handleDownloadBackup(row)}
-                      className="shrink-0 ml-2 p-2 rounded-lg bg-white border border-slate-200 text-indigo-600 active:scale-95 transition-all"
+                      sx={{ flexShrink: 0, ml: 1, p: 1, borderRadius: "8px", bgcolor: "#fff", border: "1px solid #e2e8f0", color: "#4f46e5", transition: "all 0.15s", "&:active": { transform: "scale(0.95)" } }}
                       aria-label="Download backup"
                     >
                       <Download size={14} />
-                    </button>
-                  </div>
+                    </Box>
+                  </Box>
                 ))}
-              </div>
+              </Box>
             )}
 
-            <div className="space-y-2 pt-2 border-t border-slate-100">
-              <button
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1, pt: 1, borderTop: "1px solid #f1f5f9" }}>
+              <Box
+                component="button"
                 type="button"
                 onClick={handleClearCache}
-                className="w-full py-2.5 rounded-xl border border-rose-200 text-rose-600 text-xs font-bold hover:bg-rose-50 transition-all"
+                sx={{ width: "100%", py: 1.25, borderRadius: "12px", border: "1px solid #fecdd3", color: "#e11d48", fontSize: 12, fontWeight: 700, transition: "all 0.15s", "&:hover": { bgcolor: "#fff1f2" } }}
               >
                 Clear Cache & Hard Reset
-              </button>
-            </div>
-          </div>
+              </Box>
+            </Box>
+          </Box>
         </SettingsDrawer>
       )}
 
       {/* About Vynerix ERP Modal */}
       {activeModal === "about" && (
         <SettingsDrawer title="About Vynerix ERP" onClose={() => setActiveModal(null)}>
-          <div className="text-center py-4 space-y-4">
-            <div className="w-16 h-16 rounded-3xl bg-indigo-600 text-white font-black text-3xl flex items-center justify-center shadow-lg mx-auto">
+          <Box sx={{ textAlign: "center", py: 2, display: "flex", flexDirection: "column", gap: 2 }}>
+            <Box sx={{ width: 64, height: 64, borderRadius: "24px", bgcolor: "#4f46e5", color: "#fff", fontWeight: 900, fontSize: 30, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: 8, mx: "auto" }}>
               V
-            </div>
-            <div>
-              <h3 className="text-sm font-black text-slate-900 m-0">Vynerix ERP Mobile</h3>
-              <p className="text-xs text-slate-400 mt-1">Version 3.0.2 (Production)</p>
-            </div>
-            <p className="text-xs text-slate-500 max-w-[280px] mx-auto leading-relaxed">
+            </Box>
+            <Box>
+              <Typography component="h3" sx={{ fontSize: 14, fontWeight: 900, color: "#0f172a", m: 0 }}>Vynerix ERP Mobile</Typography>
+              <Typography component="p" sx={{ fontSize: 12, color: "#94a3b8", mt: 0.5 }}>Version 3.0.2 (Production)</Typography>
+            </Box>
+            <Typography component="p" sx={{ fontSize: 12, color: "#64748b", maxWidth: 280, mx: "auto", lineHeight: 1.625 }}>
               Vynerix ERP is a secure, cloud-enabled Progressive Web Application designed for point-of-sale, warehouse workflows, and inventory tracking.
-            </p>
-            <div className="text-[10px] text-slate-400 pt-2 border-t border-slate-100">
+            </Typography>
+            <Box sx={{ fontSize: 10, color: "#94a3b8", pt: 1, borderTop: "1px solid #f1f5f9" }}>
               © 2026 Vynerix Inc. All rights reserved.
-            </div>
-          </div>
+            </Box>
+          </Box>
         </SettingsDrawer>
       )}
-    </div>
+    </Box>
   );
 }
 
 function MenuItem({ icon: Icon, title, subtitle, highlight, onClick }) {
   return (
-    <div
+    <Box
       className="vx-menu-row cursor-pointer active:bg-slate-50 transition-all"
       onClick={onClick}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onClick(); }}
     >
-      <div className="vx-menu-row-left">
+      <Box className="vx-menu-row-left">
         <Icon
           size={18}
-          className={highlight ? "text-indigo-600" : "text-slate-500"}
+          style={{ color: highlight ? "#4f46e5" : "#64748b" }}
         />
-        <div className="vx-menu-row-text">
-          <h4 className={highlight ? "text-indigo-600 font-bold text-xs" : "text-xs text-slate-800 font-bold"}>
+        <Box className="vx-menu-row-text">
+          <Typography component="h4" sx={highlight ? { color: "#4f46e5", fontWeight: 700, fontSize: 12 } : { fontSize: 12, color: "#1e293b", fontWeight: 700 }}>
             {title}
-          </h4>
-          {subtitle && <p className="text-[10px] text-slate-500 mt-0.5">{subtitle}</p>}
-        </div>
-      </div>
+          </Typography>
+          {subtitle && <Typography component="p" sx={{ fontSize: 10, color: "#64748b", mt: 0.25 }}>{subtitle}</Typography>}
+        </Box>
+      </Box>
       <ChevronRight
         size={18}
-        className={highlight ? "text-indigo-500" : "text-slate-400"}
+        style={{ color: highlight ? "#6366f1" : "#94a3b8" }}
       />
-    </div>
+    </Box>
   );
 }
 
 function SettingsDrawer({ title, onClose, children }) {
   return (
-    <div className="fixed inset-0 z-[80] flex flex-col justify-end bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
-      <div className="w-full max-w-[480px] mx-auto bg-white rounded-t-3xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden animate-in slide-in-from-bottom duration-200">
-        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-          <h3 className="text-sm font-black text-slate-900">{title}</h3>
-          <button
+    <Box
+      className="animate-in fade-in duration-150"
+      sx={{ position: "fixed", inset: 0, zIndex: 80, display: "flex", flexDirection: "column", justifyContent: "flex-end", bgcolor: "rgba(15,23,42,0.6)", backdropFilter: "blur(4px)" }}
+    >
+      <Box
+        className="animate-in slide-in-from-bottom duration-200"
+        sx={{ width: "100%", maxWidth: 480, mx: "auto", bgcolor: "#fff", borderTopLeftRadius: "24px", borderTopRightRadius: "24px", boxShadow: 24, display: "flex", flexDirection: "column", maxHeight: "85vh", overflow: "hidden" }}
+      >
+        <Box sx={{ p: 2, borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <Typography component="h3" sx={{ fontSize: 14, fontWeight: 900, color: "#0f172a" }}>{title}</Typography>
+          <Box
+            component="button"
             type="button"
             onClick={onClose}
-            className="text-xs font-bold text-indigo-600 hover:text-indigo-700 px-2 py-1 rounded-lg"
+            sx={{ fontSize: 12, fontWeight: 700, color: "#4f46e5", px: 1, py: 0.5, borderRadius: "8px", "&:hover": { color: "#4338ca" } }}
           >
             Close
-          </button>
-        </div>
-        <div className="p-4 overflow-y-auto flex-1">
+          </Box>
+        </Box>
+        <Box sx={{ p: 2, overflowY: "auto", flex: 1 }}>
           {children}
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   );
 }
