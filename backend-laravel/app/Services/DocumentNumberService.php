@@ -71,11 +71,18 @@ class DocumentNumberService
         $seq = DB::transaction(function () use ($storeId, $prefix, $period, $origin) {
             $now = now();
 
-            DB::statement(
-                'INSERT IGNORE INTO document_number_counters (store_id, prefix, period, origin, last_seq, created_at, updated_at)
-                 VALUES (?, ?, ?, ?, 0, ?, ?)',
-                [$storeId, $prefix, $period, $origin, $now, $now]
-            );
+            // Portable across drivers (MySQL/MariaDB in production, SQLite in
+            // tests) -- a raw "INSERT IGNORE" string is MySQL-only syntax and
+            // throws a syntax error under SQLite's "INSERT OR IGNORE" dialect.
+            DB::table('document_number_counters')->insertOrIgnore([
+                'store_id' => $storeId,
+                'prefix' => $prefix,
+                'period' => $period,
+                'origin' => $origin,
+                'last_seq' => 0,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
 
             $row = DB::table('document_number_counters')
                 ->where(['store_id' => $storeId, 'prefix' => $prefix, 'period' => $period, 'origin' => $origin])

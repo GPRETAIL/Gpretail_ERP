@@ -195,7 +195,7 @@ class FinanceDashboardService
                 'count'        => $unpaidInvoices,
                 'severity'     => 'warning',
                 'color'        => 'orange',
-                'route'        => '/warehouse/purchase-invoice',
+                'route'        => '/warehouse/invoice',
                 'filter_param' => 'filter=unpaid',
             ],
             [

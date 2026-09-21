@@ -127,6 +127,10 @@ $registerAppRoutes = function () {
     Route::post('companies/tenant-sync/pull', [CompanyController::class, 'index']);
     Route::get('companies/{id}/theme', [SettingsController::class, 'getTheme']);
     Route::put('companies/{id}/theme', [SettingsController::class, 'updateTheme']);
+    Route::get('companies/{id}/theme-presets', [SettingsController::class, 'listThemePresets']);
+    Route::post('companies/{id}/theme-presets', [SettingsController::class, 'saveThemePreset']);
+    Route::post('companies/{id}/theme-presets/{presetId}/apply', [SettingsController::class, 'applyThemePreset']);
+    Route::delete('companies/{id}/theme-presets/{presetId}', [SettingsController::class, 'deleteThemePreset']);
     Route::post('companies/{id}/force-logout', [UserAccessController::class, 'forceLogout']);
     Route::get('companies/{id}', [CompanyController::class, 'show']);
     Route::put('companies/{id}', [CompanyController::class, 'update']);

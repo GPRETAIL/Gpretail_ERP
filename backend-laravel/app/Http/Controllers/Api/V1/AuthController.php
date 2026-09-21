@@ -77,6 +77,8 @@ class AuthController extends Controller
                     'company_id' => $user->store_id ?? 1,
                     'company_name' => $user->store?->name,
                     'counter_id' => $user->counter_id,
+                    'brand' => $user->store?->theme_customization ?: [],
+                    'logo' => $user->store?->logo,
                     'must_change_password' => (bool) $user->must_change_password,
                 ],
             ],
@@ -118,6 +120,8 @@ class AuthController extends Controller
                 'company_id' => $user->store_id ?? 1,
                 'company_name' => $user->store?->name,
                 'counter_id' => $user->counter_id,
+                'brand' => $user->store?->theme_customization ?: [],
+                'logo' => $user->store?->logo,
             ],
         ]);
     }
@@ -254,6 +258,8 @@ class AuthController extends Controller
                     'company_id' => $user->store_id ?? 1,
                     'company_name' => $user->store?->name,
                     'counter_id' => $counterId,
+                    'brand' => $user->store?->theme_customization ?: [],
+                    'logo' => $user->store?->logo,
                 ],
                 'token' => $request->bearerToken(),
             ],

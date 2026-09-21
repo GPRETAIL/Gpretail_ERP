@@ -22,6 +22,7 @@ import {
   CreditCardIcon,
   ClockIcon,
   SwatchIcon,
+  PrinterIcon,
 } from "@heroicons/react/24/outline";
 
 // Note: Paths are placeholders (e.g., /module/item-name)
@@ -231,6 +232,11 @@ export const navItems = [
         name: "B2B Sales Inbox",
         path: "/sales/b2b-inbox",
         icon: DocumentTextIcon,
+      },
+      {
+        name: "Receipt A4 Formats",
+        path: "/sales/receipt-formats",
+        icon: PrinterIcon,
       },
       {
         name: "Customisation",

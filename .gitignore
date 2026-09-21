@@ -26,3 +26,8 @@ Thumbs.db
 .tempmediaStorage/
 .agents/
 scratch/
+
+# Local sync-node test harness (backend-laravel junctioned in, own .env/storage) -- see
+# backend-laravel/tests/Feature/AuthenticateSyncReplayTest.php and SyncCycleServiceTest.php
+# for the automated coverage; this is only for manual live two-node testing.
+backend-laravel-local-node/

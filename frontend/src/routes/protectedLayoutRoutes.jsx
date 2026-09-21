@@ -86,6 +86,7 @@ const CashOpening = lazy(() => import("../pages/sales/CashOpening"));
 const CashClosing = lazy(() => import("../pages/sales/CashClosing"));
 const POSOld = lazy(() => import("../pages/sales/POSOld"));
 const Customisation = lazy(() => import("../pages/sales/Customisation"));
+const ReceiptFormatsDesigner = lazy(() => import("../pages/sales/ReceiptFormatsDesigner"));
 const StockAnalyzer = lazy(() => import("../pages/analytical/StockAnalyzer"));
 const SalesComparer = lazy(() => import("../pages/analytical/SalesComparer"));
 const SalesVsPurchase = lazy(() => import("../pages/analytical/SalesVsPurchase"));
@@ -186,6 +187,8 @@ export const protectedLayoutRoutes = [
   { path: "/sales/pos-old", render: () => <POSOld /> },
   { path: "/sales/customisation", render: () => <Customisation /> },
   { path: "/sales/customization", render: () => <Customisation /> },
+  { path: "/sales/receipt-formats", render: () => <ReceiptFormatsDesigner /> },
+  { path: "/sales/receipt-a4-formats", render: () => <ReceiptFormatsDesigner /> },
   { path: "/analytical/stock-analyzer", render: () => <StockAnalyzer /> },
   { path: "/analytical/sales-comparer", render: () => <SalesComparer /> },
   { path: "/analytical/sales-vs-purchase", render: () => <SalesVsPurchase /> },

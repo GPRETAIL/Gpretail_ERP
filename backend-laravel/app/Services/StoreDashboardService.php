@@ -151,7 +151,7 @@ class StoreDashboardService
                 'count'        => $lowStockStores,
                 'severity'     => 'info',
                 'color'        => 'yellow',
-                'route'        => '/warehouse/item-locator',
+                'route'        => '/warehouse/stock-item',
                 'filter_param' => 'stock_filter=low_stock',
             ],
         ];

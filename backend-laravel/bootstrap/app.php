@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\AuthenticateSyncReplay;
 use App\Http\Middleware\CaptureSyncOutbox;
 use Illuminate\Auth\Middleware\Authenticate;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -32,6 +33,17 @@ return Application::configure(basePath: dirname(__DIR__))
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Must run before auth:sanctum so a validated node-trust replay can
+        // supply an authenticated user before Sanctum looks for a token.
+        // Group prepend alone doesn't guarantee this -- auth:sanctum is
+        // applied as separate route-level middleware (routes/api.php), and
+        // the framework's default priority list reorders regardless of group
+        // registration order. That list references the *interface*
+        // Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests (which
+        // Authenticate implements), not the concrete class -- pin against
+        // that, or this silently sorts to run after auth and never executes.
+        $middleware->prependToGroup('api', [AuthenticateSyncReplay::class]);
+        $middleware->prependToPriorityList(\Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests::class, AuthenticateSyncReplay::class);
         $middleware->appendToGroup('api', [CaptureSyncOutbox::class]);
 
         // This is a pure JSON API + React SPA - there is no server-rendered

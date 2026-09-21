@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useEffect, useState } from "react";
 import api from "../api/axios";
-import { getRuntimeRoutingSnapshot } from "../api/runtimeRouting";
+import { getRuntimeRoutingSnapshot, RUNTIME_ROUTING_CHANGED_EVENT } from "../api/runtimeRouting";
 
 const SyncStatusContext = createContext(null);
 
@@ -42,9 +42,27 @@ export const SyncStatusProvider = ({ children }) => {
 
     refresh();
     const timer = setInterval(refresh, POLL_INTERVAL_MS);
+
+    // A local<->cloud switch (a failed health check, or a request failing over mid-flight) is
+    // exactly the moment this status needs to be right -- reflect it the instant it happens
+    // rather than leaving the footer showing the stale target for up to POLL_INTERVAL_MS.
+    // outboxPending/outboxFailed aren't carried by this event, so they keep showing their
+    // last-polled values until the next refresh() rather than being reset here.
+    const onRoutingChanged = () => {
+      if (!alive) return;
+      const routing = getRuntimeRoutingSnapshot();
+      setStatus((prev) => ({
+        ...prev,
+        target: routing.currentTarget === "local" ? "local" : "cloud",
+        healthy: Boolean(routing.localHealthy),
+      }));
+    };
+    window.addEventListener(RUNTIME_ROUTING_CHANGED_EVENT, onRoutingChanged);
+
     return () => {
       alive = false;
       clearInterval(timer);
+      window.removeEventListener(RUNTIME_ROUTING_CHANGED_EVENT, onRoutingChanged);
     };
   }, []);
 

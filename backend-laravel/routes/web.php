@@ -28,6 +28,13 @@ Route::get('/run-migrations', function () {
 // Invoice AI proxy. Laravel owns auth/store context; the OCR server never accesses MariaDB.
 Route::post('/api/v1/invoice-ai/extract', [InvoiceAiController::class, 'extract'])
     ->middleware('auth:sanctum');
+Route::post('/api/v1/invoice-ai/process-flow', [InvoiceAiController::class, 'processPurchaseFlow'])
+    ->middleware('auth:sanctum');
+Route::get('/api/v1/invoice-ai/engine-config', [InvoiceAiController::class, 'getEngineConfig'])
+    ->middleware('auth:sanctum');
+Route::post('/api/v1/invoice-ai/engine-config', [InvoiceAiController::class, 'saveEngineConfig'])
+    ->middleware('auth:sanctum');
+
 
 // Serve React SPA index.html for all frontend web routes
 Route::get('/{any?}', function () {

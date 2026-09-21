@@ -229,25 +229,151 @@ class SettingsController extends Controller
     }
 
     // Company Theme
+    // "Company" is this app's user-facing name for what the schema calls a Store (see
+    // AuthController::me, which maps company_id straight from store_id) -- there is no separate
+    // companies table, so {id} here is a store id.
+    private const THEME_STYLES = ['classic', 'apple', 'glass'];
+    // Must mirror FONT_OPTIONS ids in themeRegistry.js exactly -- an allowlist, not free-text, so
+    // this field can't become an arbitrary-CSS-injection surface (low severity for font-family
+    // specifically, but there's no reason to accept anything the frontend wouldn't ever send).
+    private const FONT_FAMILIES = ['system', 'inter', 'roboto', 'poppins', 'playfair'];
+    private const HEX_COLOR_RULE = 'regex:/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/';
+
     public function getTheme(Request $request, $id)
     {
+        $store = Store::find($id);
+        if (! $store) {
+            return response()->json(['success' => false, 'message' => 'Store not found'], 404);
+        }
+
         return response()->json([
             'success' => true,
-            'data' => [
-                'primary_color' => '#2563eb',
-                'secondary_color' => '#1e40af',
-                'mode' => 'light',
-            ],
+            'data' => $store->theme_customization ?: [],
         ]);
     }
 
     public function updateTheme(Request $request, $id)
     {
+        $store = Store::find($id);
+        if (! $store) {
+            return response()->json(['success' => false, 'message' => 'Store not found'], 404);
+        }
+
+        $validated = $request->validate($this->themeValidationRules());
+
+        // Themes.jsx's "Reset to Default" sends an empty payload -- store that as null (not an
+        // empty array) so it reads back identically to a store that never had a theme saved at
+        // all, and createTenantTheme's own per-field fallback applies uniformly either way.
+        $store->theme_customization = array_filter($validated, fn ($v) => $v !== null) ?: null;
+        $store->save();
+
         return response()->json([
             'success' => true,
             'message' => 'Theme updated successfully',
-            'data' => $request->all(),
+            'data' => $store->theme_customization ?: [],
         ]);
+    }
+
+    private function themeValidationRules(): array
+    {
+        return [
+            'primary_color' => ['nullable', self::HEX_COLOR_RULE],
+            'secondary_color' => ['nullable', self::HEX_COLOR_RULE],
+            // Advanced tokens -- optional on top of primary/secondary; createTenantTheme falls
+            // back to MUI's own sensible defaults per-field when a tenant hasn't set one.
+            'background_color' => ['nullable', self::HEX_COLOR_RULE],
+            'text_color' => ['nullable', self::HEX_COLOR_RULE],
+            'success_color' => ['nullable', self::HEX_COLOR_RULE],
+            'warning_color' => ['nullable', self::HEX_COLOR_RULE],
+            'error_color' => ['nullable', self::HEX_COLOR_RULE],
+            'border_radius' => ['nullable', 'integer', 'min:0', 'max:32'],
+            'theme_style' => ['nullable', 'in:'.implode(',', self::THEME_STYLES)],
+            'font_family' => ['nullable', 'in:'.implode(',', self::FONT_FAMILIES)],
+        ];
+    }
+
+    // Saved presets are an entirely separate, named library layered on top of the one active
+    // theme_customization above -- saving/listing/deleting one never touches it. Only "apply"
+    // does, and it does so by routing through the exact same updateTheme path (see applyThemePreset
+    // below), not by duplicating its persistence logic.
+    public function listThemePresets(Request $request, $id)
+    {
+        $store = Store::find($id);
+        if (! $store) {
+            return response()->json(['success' => false, 'message' => 'Store not found'], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $store->themePresets()->orderBy('name')->get(['id', 'name', 'config']),
+        ]);
+    }
+
+    public function saveThemePreset(Request $request, $id)
+    {
+        $store = Store::find($id);
+        if (! $store) {
+            return response()->json(['success' => false, 'message' => 'Store not found'], 404);
+        }
+
+        $data = $request->validate(array_merge(
+            ['name' => ['required', 'string', 'max:60']],
+            $this->themeValidationRules()
+        ));
+        $name = $data['name'];
+        unset($data['name']);
+
+        // Whatever fields were actually sent become the saved snapshot -- typically the page's
+        // current live form state (including ones left blank/default), so re-applying this preset
+        // later reproduces exactly what was being previewed when it was saved, not just the fields
+        // that happened to differ from default at that moment.
+        $preset = $store->themePresets()->updateOrCreate(
+            ['name' => $name],
+            ['config' => array_filter($data, fn ($v) => $v !== null)]
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => "Saved \"{$name}\"",
+            'data' => $preset->only(['id', 'name', 'config']),
+        ], 201);
+    }
+
+    public function applyThemePreset(Request $request, $id, $presetId)
+    {
+        $store = Store::find($id);
+        if (! $store) {
+            return response()->json(['success' => false, 'message' => 'Store not found'], 404);
+        }
+
+        $preset = $store->themePresets()->find($presetId);
+        if (! $preset) {
+            return response()->json(['success' => false, 'message' => 'Preset not found'], 404);
+        }
+
+        $store->theme_customization = $preset->config ?: null;
+        $store->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => "Applied \"{$preset->name}\"",
+            'data' => $store->theme_customization ?: [],
+        ]);
+    }
+
+    public function deleteThemePreset(Request $request, $id, $presetId)
+    {
+        $store = Store::find($id);
+        if (! $store) {
+            return response()->json(['success' => false, 'message' => 'Store not found'], 404);
+        }
+
+        $deleted = $store->themePresets()->where('id', $presetId)->delete();
+        if (! $deleted) {
+            return response()->json(['success' => false, 'message' => 'Preset not found'], 404);
+        }
+
+        return response()->json(['success' => true, 'message' => 'Preset deleted']);
     }
 
     // Admin notify

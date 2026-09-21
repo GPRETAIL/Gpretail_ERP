@@ -46,6 +46,7 @@ class Store extends Model
         'barcode_customization',
         'attendance_settings',
         'backup_settings',
+        'theme_customization',
         'is_active',
         'loyalty_point_value',
         'loyalty_redeem_min_points',
@@ -65,6 +66,7 @@ class Store extends Model
             'barcode_customization' => 'array',
             'attendance_settings' => 'array',
             'backup_settings' => 'array',
+            'theme_customization' => 'array',
             'loyalty_point_value' => 'decimal:2',
             'loyalty_redeem_min_points' => 'integer',
             'loyalty_redeem_window_months' => 'integer',
@@ -94,5 +96,10 @@ class Store extends Model
     public function posSales()
     {
         return $this->hasMany(PosSale::class);
+    }
+
+    public function themePresets()
+    {
+        return $this->hasMany(ThemePreset::class);
     }
 }

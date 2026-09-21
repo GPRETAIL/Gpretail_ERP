@@ -145,11 +145,11 @@ class SyncCycleService
 
         foreach ($events as $event) {
             try {
-                $localResponse = Http::withHeaders([
+                $localResponse = Http::withHeaders(array_merge($this->authHeaders($node), [
                     'X-Sync-Replay' => '1',
                     'X-Company-Scope-Id' => (string) $node->store_id,
                     'Content-Type' => $event['headers']['Content-Type'] ?? 'application/json',
-                ])->timeout(15)->send($event['method'], $localBase.'/api'.$event['path'], [
+                ]))->timeout(15)->send($event['method'], $localBase.'/api'.$event['path'], [
                     'json' => $event['payload'] ?? [],
                 ]);
 

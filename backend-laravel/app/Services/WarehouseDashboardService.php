@@ -272,7 +272,7 @@ class WarehouseDashboardService
                 'count'       => $lowStockCount,
                 'severity'    => 'warning',
                 'color'       => 'orange',
-                'route'       => '/warehouse/item-locator',
+                'route'       => '/warehouse/stock-item',
                 'filter_param'=> 'stock_filter=low_stock',
             ],
             [

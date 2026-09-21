@@ -243,7 +243,7 @@ class CrmDashboardService
                 'count'       => $inactivePointsMembers,
                 'severity'    => 'info',
                 'color'       => 'yellow',
-                'route'       => '/crm/loyalty',
+                'route'       => '/crm/loyalty-management',
                 'filter_param'=> 'min_points=500',
             ],
         ];

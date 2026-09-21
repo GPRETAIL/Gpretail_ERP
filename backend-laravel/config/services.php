@@ -46,4 +46,21 @@ return [
         'cluster' => env('PUSHER_APP_CLUSTER'),
     ],
 
+    // Pixel-Perfect AI Vision OCR for Purchase Invoice Inwarding
+    // Ultra-lightweight HTTPS API calls: zero server RAM, zero Python/C++, 100% Hostinger shared hosting safe.
+    'gemini' => [
+        'key' => env('GEMINI_API_KEY'),
+        'model' => env('GEMINI_MODEL', 'gemini-3.6-flash'),
+    ],
+
+    'openai' => [
+        'key' => env('OPENAI_API_KEY'),
+        'model' => env('OPENAI_MODEL', 'gpt-4o-mini'),
+    ],
+
+    'space_ocr' => [
+        'key' => env('SPACE_OCR_API_KEY'),
+        'endpoint' => env('SPACE_OCR_ENDPOINT', 'https://api.space-ocr.com/ocr/markdown'),
+    ],
+
 ];

@@ -89,6 +89,11 @@ const isRetryableSetupFailure = (error) => {
   );
 };
 
+// Every mutation path funnels through here, so this is the one place that needs to notify
+// listeners (e.g. a navbar status badge) -- no separate "did the target actually change" check,
+// since re-rendering on an identical snapshot is harmless and simpler than tracking a diff.
+const RUNTIME_ROUTING_CHANGED_EVENT = "erp:runtime-routing-changed";
+
 const persistState = () => {
   if (!isBrowser()) return;
   try {
@@ -96,6 +101,7 @@ const persistState = () => {
   } catch {
     // ignore
   }
+  window.dispatchEvent(new CustomEvent(RUNTIME_ROUTING_CHANGED_EVENT));
 };
 
 const readStoredState = () => {
@@ -395,12 +401,16 @@ export const getCloudBaseUrl = () => {
 };
 
 // Read-only snapshot of the live routing state for UI that just wants to display it (e.g. a
-// footer status indicator) without participating in routing decisions itself.
+// navbar status badge) without participating in routing decisions itself. Pair with
+// RUNTIME_ROUTING_CHANGED_EVENT to re-read this on every state change instead of polling.
 export const getRuntimeRoutingSnapshot = () => ({
   enabled: runtimeState.enabled,
   currentTarget: runtimeState.currentTarget,
   localHealthy: runtimeState.localHealthy,
+  blockedReason: runtimeState.blockedReason,
 });
+
+export { RUNTIME_ROUTING_CHANGED_EVENT };
 
 const storedState = readStoredState();
 if (storedState) {
