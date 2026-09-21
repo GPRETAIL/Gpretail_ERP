@@ -444,7 +444,7 @@ export default function SettingsScreen({ onLogout, onTriggerPwa, appLock, biomet
 function MenuItem({ icon: Icon, title, subtitle, highlight, onClick }) {
   return (
     <Box
-      className="vx-menu-row cursor-pointer active:bg-slate-50 transition-all"
+      className="vx-menu-row"
       onClick={onClick}
       role="button"
       tabIndex={0}

@@ -85,7 +85,7 @@ export default function ReturnsScreen() {
       {/* Search & Filter */}
       <Box className="vx-search-row relative">
         <Box className="vx-search-input-wrap">
-          <Search size={16} className="text-slate-400" />
+          <Search size={16} color="#94a3b8" />
           <Box
             component="input"
             type="text"

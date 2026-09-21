@@ -117,8 +117,14 @@ export default function MobileHeader({
           component="button"
           type="button"
           onClick={onOpenUserMenu}
-          className="vx-avatar cursor-pointer hover:ring-2 hover:ring-indigo-400 active:scale-95 transition-all"
+          className="vx-avatar"
           aria-label="User Profile"
+          sx={{
+            cursor: "pointer",
+            transition: "all 0.15s ease",
+            "&:hover": { boxShadow: "0 0 0 2px #818cf8" },
+            "&:active": { transform: "scale(0.95)" },
+          }}
         >
           {initial}
         </Box>

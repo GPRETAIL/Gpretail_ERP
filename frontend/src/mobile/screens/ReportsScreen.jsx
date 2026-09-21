@@ -34,7 +34,7 @@ export default function ReportsScreen({ onNavigate }) {
         return (
           <Box
             key={i}
-            className="vx-menu-row cursor-pointer active:bg-slate-50 transition-all"
+            className="vx-menu-row"
             onClick={() => onNavigate && onNavigate(item.target)}
             role="button"
             tabIndex={0}
@@ -51,7 +51,7 @@ export default function ReportsScreen({ onNavigate }) {
                 <Typography component="p">{item.sub}</Typography>
               </Box>
             </Box>
-            <ChevronRight size={18} className="text-slate-400" />
+            <ChevronRight size={18} color="#94a3b8" />
           </Box>
         );
       })}

@@ -169,7 +169,7 @@ export default function EnterpriseMobileWorkspace() {
       {splashVisible && (
         <Box className="vx-splash">
           <Box className="vx-splash-logo-box">
-            <svg viewBox="0 0 100 100" className="w-12 h-12 fill-white">
+            <svg viewBox="0 0 100 100" style={{ width: 48, height: 48, fill: "#ffffff" }}>
               <path d="M20 20 L40 20 L50 65 L60 20 L80 20 L58 85 L42 85 Z" />
             </svg>
           </Box>
@@ -683,7 +683,7 @@ function SalesInvoicesScreen({ filter, setFilter, search, setSearch, onAdd }) {
       {/* Search & Filter */}
       <Box className="vx-search-row">
         <Box className="vx-search-input-wrap">
-          <Search size={16} className="text-slate-400" />
+          <Search size={16} color="#94a3b8" />
           <Box
             component="input"
             type="text"
@@ -863,7 +863,7 @@ function PurchaseBillsScreen({ filter, setFilter, search, setSearch, onAdd }) {
     <Box>
       <Box className="vx-search-row">
         <Box className="vx-search-input-wrap">
-          <Search size={16} className="text-slate-400" />
+          <Search size={16} color="#94a3b8" />
           <Box
             component="input"
             type="text"
