@@ -1,4 +1,7 @@
 import React from "react";
+import { Box } from "@mui/material";
+
+const truncateSx = { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" };
 
 // Format helper
 const formatCurrency = (val) => {
@@ -148,9 +151,14 @@ export default function InvoiceTemplateRenderer({
     const hasColoredHeader = isIndigoThermal || isEmeraldThermal || isSunsetThermal;
 
     return (
-      <div
-        className="mx-auto bg-white text-black font-mono select-none relative"
-        style={{
+      <Box
+        sx={{
+          mx: "auto",
+          bgcolor: "#ffffff",
+          color: "#000000",
+          fontFamily: "monospace",
+          userSelect: "none",
+          position: "relative",
           width: thermalWidth,
           minHeight: "140mm",
           padding: "5mm",
@@ -160,200 +168,216 @@ export default function InvoiceTemplateRenderer({
         }}
       >
         {/* Thermal Header */}
-        <div
-          className={`text-center pb-2 ${
-            hasColoredHeader
-              ? "p-2 text-white rounded mb-2"
+        <Box
+          sx={{
+            textAlign: "center",
+            pb: "7px",
+            ...(hasColoredHeader
+              ? { p: "7px", color: "#ffffff", borderRadius: "3.5px", mb: "7px" }
               : isTallyThermal
-              ? "border-2 border-black p-1.5 mb-2"
-              : isBoldThermal
-              ? "border-b-2 border-black"
-              : "border-b border-dashed border-gray-400"
-          }`}
-          style={hasColoredHeader ? { backgroundColor: thermalAccentColor } : {}}
+                ? { border: "2px solid #000000", p: "5.25px", mb: "7px" }
+                : isBoldThermal
+                  ? { borderBottom: "2px solid #000000" }
+                  : { borderBottom: "1px dashed #9ca3af" }),
+          }}
+          style={hasColoredHeader ? { backgroundColor: thermalAccentColor } : undefined}
         >
-          <div className={`text-xs uppercase tracking-wider ${isBoldThermal ? "font-black text-sm" : "font-bold"}`}>
+          <Box sx={{ fontSize: isBoldThermal ? 12.25 : 10.5, textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: isBoldThermal ? 900 : 700 }}>
             {header.documentTitle || "TAX INVOICE"}
-          </div>
+          </Box>
           {header.showCompanyName && (
-            <div className={`text-base mt-0.5 ${isBoldThermal ? "font-black text-lg" : "font-extrabold"}`}>
+            <Box sx={{ fontSize: isBoldThermal ? 15.75 : 14, mt: "1.75px", fontWeight: isBoldThermal ? 900 : 800 }}>
               {data.company.name}
-            </div>
+            </Box>
           )}
-          <div className={`text-[10px] mt-0.5 leading-tight ${hasColoredHeader ? "text-white/90" : "text-gray-700"}`}>
+          <Box sx={{ fontSize: 10, mt: "1.75px", lineHeight: 1.25, color: hasColoredHeader ? "rgba(255,255,255,0.9)" : "#374151" }}>
             {data.company.address}
-          </div>
-          <div className="text-[10px] mt-0.5">
+          </Box>
+          <Box sx={{ fontSize: 10, mt: "1.75px" }}>
             {header.showMobile && <span>Tel: {data.company.phone}</span>}
-            {header.showEmail && <span className="block">Email: {data.company.email}</span>}
-          </div>
+            {header.showEmail && <Box component="span" sx={{ display: "block" }}>Email: {data.company.email}</Box>}
+          </Box>
           {header.showGstin && (
-            <div className="text-[10px] font-semibold mt-0.5">GSTIN: {data.company.gstin}</div>
+            <Box sx={{ fontSize: 10, fontWeight: 600, mt: "1.75px" }}>GSTIN: {data.company.gstin}</Box>
           )}
-        </div>
+        </Box>
 
         {/* Invoice Meta */}
-        <div
-          className={`py-2 text-[10px] space-y-0.5 ${
-            isTallyThermal
-              ? "border border-black p-1 mb-2"
+        <Box
+          sx={{
+            py: "7px",
+            fontSize: 10,
+            "& > * + *": { mt: "1.75px" },
+            ...(isTallyThermal
+              ? { border: "1px solid #000000", p: "3.5px", mb: "7px" }
               : isBoldThermal
-              ? "border-b-2 border-black font-semibold"
-              : "border-b border-dashed border-gray-400"
-          }`}
+                ? { borderBottom: "2px solid #000000", fontWeight: 600 }
+                : { borderBottom: "1px dashed #9ca3af" }),
+          }}
         >
-          <div className="flex justify-between">
-            <span>Bill No: <b className="font-mono">{data.invoiceNo}</b></span>
+          <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+            <span>Bill No: <Box component="b" sx={{ fontFamily: "monospace" }}>{data.invoiceNo}</Box></span>
             <span>Date: {data.date}</span>
-          </div>
-          <div className="flex justify-between">
+          </Box>
+          <Box sx={{ display: "flex", justifyContent: "space-between" }}>
             <span>Cust: <b>{data.customer.name}</b></span>
             <span>Ph: {data.customer.phone}</span>
-          </div>
-        </div>
+          </Box>
+        </Box>
 
         {/* Thermal Items Table */}
-        <table
-          className={`w-full text-left my-2 border-collapse text-[10px] ${
-            isTallyThermal ? "border border-black" : ""
-          }`}
+        <Box
+          component="table"
+          sx={{
+            width: "100%",
+            textAlign: "left",
+            my: "7px",
+            borderCollapse: "collapse",
+            fontSize: 10,
+            ...(isTallyThermal ? { border: "1px solid #000000" } : {}),
+          }}
         >
           <thead>
-            <tr
-              className={`border-b font-bold ${
-                isTallyThermal
-                  ? "bg-gray-200 border-black"
-                  : isBoldThermal
-                  ? "border-b-2 border-black uppercase text-[11px]"
-                  : "border-black"
-              }`}
+            <Box
+              component="tr"
+              sx={{
+                borderBottom: isBoldThermal ? "2px solid #000000" : "1px solid #000000",
+                fontWeight: 700,
+                ...(isTallyThermal ? { bgcolor: "#e5e7eb" } : {}),
+                ...(isBoldThermal ? { textTransform: "uppercase", fontSize: 11 } : {}),
+              }}
             >
-              <th className={`py-1 ${isTallyThermal ? "border-r border-black px-1" : ""}`}>Item</th>
-              <th className={`py-1 text-center ${isTallyThermal ? "border-r border-black" : ""}`}>Qty</th>
-              <th className={`py-1 text-right ${isTallyThermal ? "border-r border-black px-1" : ""}`}>Rate</th>
-              <th className={`py-1 text-right ${isTallyThermal ? "px-1" : ""}`}>Amt</th>
-            </tr>
+              <Box component="th" sx={{ py: "3.5px", ...(isTallyThermal ? { borderRight: "1px solid #000000", px: "3.5px" } : {}) }}>Item</Box>
+              <Box component="th" sx={{ py: "3.5px", textAlign: "center", ...(isTallyThermal ? { borderRight: "1px solid #000000" } : {}) }}>Qty</Box>
+              <Box component="th" sx={{ py: "3.5px", textAlign: "right", ...(isTallyThermal ? { borderRight: "1px solid #000000", px: "3.5px" } : {}) }}>Rate</Box>
+              <Box component="th" sx={{ py: "3.5px", textAlign: "right", ...(isTallyThermal ? { px: "3.5px" } : {}) }}>Amt</Box>
+            </Box>
           </thead>
           <tbody>
             {data.items.map((item, idx) => (
-              <tr
+              <Box
+                component="tr"
                 key={idx}
-                className={
-                  isTallyThermal
-                    ? "border-b border-black"
-                    : isBoldThermal
-                    ? "border-b border-gray-300 font-medium"
-                    : "border-b border-gray-200"
-                }
+                sx={{
+                  borderBottom: isTallyThermal ? "1px solid #000000" : isBoldThermal ? "1px solid #d1d5db" : "1px solid #e5e7eb",
+                  fontWeight: isBoldThermal ? 500 : undefined,
+                }}
               >
-                <td className={`py-1 pr-1 ${isTallyThermal ? "border-r border-black px-1" : ""}`}>
-                  <div className="font-medium truncate max-w-[110px]">{item.name}</div>
-                  {item.hsn && <div className="text-[9px] text-gray-500">HSN: {item.hsn}</div>}
-                </td>
-                <td className={`py-1 text-center whitespace-nowrap ${isTallyThermal ? "border-r border-black" : ""}`}>
+                <Box component="td" sx={{ py: "3.5px", pr: "3.5px", ...(isTallyThermal ? { borderRight: "1px solid #000000", px: "3.5px" } : {}) }}>
+                  <Box sx={{ fontWeight: 500, maxWidth: 110, ...truncateSx }}>{item.name}</Box>
+                  {item.hsn && <Box sx={{ fontSize: 9, color: "#6b7280" }}>HSN: {item.hsn}</Box>}
+                </Box>
+                <Box component="td" sx={{ py: "3.5px", textAlign: "center", whiteSpace: "nowrap", ...(isTallyThermal ? { borderRight: "1px solid #000000" } : {}) }}>
                   {item.qty} {item.unit}
-                </td>
-                <td className={`py-1 text-right whitespace-nowrap ${isTallyThermal ? "border-r border-black px-1" : ""}`}>
+                </Box>
+                <Box component="td" sx={{ py: "3.5px", textAlign: "right", whiteSpace: "nowrap", ...(isTallyThermal ? { borderRight: "1px solid #000000", px: "3.5px" } : {}) }}>
                   {item.rate.toFixed(2)}
-                </td>
-                <td className={`py-1 text-right font-semibold whitespace-nowrap ${isTallyThermal ? "px-1" : ""}`}>
+                </Box>
+                <Box component="td" sx={{ py: "3.5px", textAlign: "right", fontWeight: 600, whiteSpace: "nowrap", ...(isTallyThermal ? { px: "3.5px" } : {}) }}>
                   {item.totalAmt.toFixed(2)}
-                </td>
-              </tr>
+                </Box>
+              </Box>
             ))}
           </tbody>
-        </table>
+        </Box>
 
         {/* Thermal Totals */}
-        <div
-          className={`pt-1 text-[11px] space-y-1 ${
-            isTallyThermal
-              ? "border border-black p-1.5 mb-2"
+        <Box
+          sx={{
+            pt: "3.5px",
+            fontSize: 11,
+            "& > * + *": { mt: "3.5px" },
+            ...(isTallyThermal
+              ? { border: "1px solid #000000", p: "5.25px", mb: "7px" }
               : isBoldThermal
-              ? "border-t-2 border-black font-semibold"
-              : "border-t border-dashed border-black"
-          }`}
+                ? { borderTop: "2px solid #000000", fontWeight: 600 }
+                : { borderTop: "1px dashed #000000" }),
+          }}
         >
-          <div className="flex justify-between">
+          <Box sx={{ display: "flex", justifyContent: "space-between" }}>
             <span>Total Qty:</span>
-            <span className="font-bold">{data.totals.totalQty}</span>
-          </div>
-          <div className="flex justify-between">
+            <Box component="span" sx={{ fontWeight: 700 }}>{data.totals.totalQty}</Box>
+          </Box>
+          <Box sx={{ display: "flex", justifyContent: "space-between" }}>
             <span>Sub Total:</span>
             <span>₹{formatCurrency(data.totals.subTotal)}</span>
-          </div>
+          </Box>
           {data.totals.totalDiscount > 0 && (
-            <div className="flex justify-between text-gray-700">
+            <Box sx={{ display: "flex", justifyContent: "space-between", color: "#374151" }}>
               <span>Discount:</span>
               <span>-₹{formatCurrency(data.totals.totalDiscount)}</span>
-            </div>
+            </Box>
           )}
-          <div className="flex justify-between">
+          <Box sx={{ display: "flex", justifyContent: "space-between" }}>
             <span>Taxable Value:</span>
             <span>₹{formatCurrency(data.totals.taxableAmount)}</span>
-          </div>
-          <div className="flex justify-between">
+          </Box>
+          <Box sx={{ display: "flex", justifyContent: "space-between" }}>
             <span>CGST:</span>
             <span>₹{formatCurrency(data.totals.totalCgst)}</span>
-          </div>
-          <div className="flex justify-between">
+          </Box>
+          <Box sx={{ display: "flex", justifyContent: "space-between" }}>
             <span>SGST:</span>
             <span>₹{formatCurrency(data.totals.totalSgst)}</span>
-          </div>
+          </Box>
           {data.totals.roundOff !== 0 && (
-            <div className="flex justify-between text-[10px]">
+            <Box sx={{ display: "flex", justifyContent: "space-between", fontSize: 10 }}>
               <span>Round Off:</span>
               <span>₹{formatCurrency(data.totals.roundOff)}</span>
-            </div>
+            </Box>
           )}
-          <div
-            className={`flex justify-between py-1 px-1.5 ${
-              hasColoredHeader
-                ? "text-white rounded font-black text-sm"
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              py: "3.5px",
+              px: "5.25px",
+              ...(hasColoredHeader
+                ? { color: "#ffffff", borderRadius: "3.5px", fontWeight: 900, fontSize: 12.25 }
                 : isBoldThermal
-                ? "font-black text-base border-t-2 border-b-2 border-black"
-                : "font-extrabold text-sm border-t border-b border-black"
-            }`}
-            style={hasColoredHeader ? { backgroundColor: thermalAccentColor } : {}}
+                  ? { fontWeight: 900, fontSize: 14, borderTop: "2px solid #000000", borderBottom: "2px solid #000000" }
+                  : { fontWeight: 800, fontSize: 12.25, borderTop: "1px solid #000000", borderBottom: "1px solid #000000" }),
+            }}
+            style={hasColoredHeader ? { backgroundColor: thermalAccentColor } : undefined}
           >
             <span>Total Payable:</span>
             <span>₹{formatCurrency(data.totals.grandTotal)}</span>
-          </div>
-        </div>
+          </Box>
+        </Box>
 
         {/* Amount in words */}
         {footer.showInWords && (
-          <div className="text-[10px] italic py-1 border-b border-dashed border-gray-400">
+          <Box sx={{ fontSize: 10, fontStyle: "italic", py: "3.5px", borderBottom: "1px dashed #9ca3af" }}>
             In Words: {data.totals.amountInWords}
-          </div>
+          </Box>
         )}
 
         {/* Payment & Outstanding */}
         {footer.showPaymentDetails && (
-          <div className="text-[10px] py-1 border-b border-dashed border-gray-400">
+          <Box sx={{ fontSize: 10, py: "3.5px", borderBottom: "1px dashed #9ca3af" }}>
             <div>Payment: <b>{data.payment.mode}</b></div>
             {footer.showOutstanding && (
               <div>Current Outstanding: ₹{formatCurrency(data.customer.previousBalance + data.totals.grandTotal)}</div>
             )}
-          </div>
+          </Box>
         )}
 
         {/* Bank & UPI */}
         {footer.showBankDetails && (
-          <div className="text-[9px] py-1 text-gray-800">
+          <Box sx={{ fontSize: 9, py: "3.5px", color: "#1f2937" }}>
             <div>Bank: {footer.bankDetails?.bankName}</div>
             <div>A/C: {footer.bankDetails?.accountNo} | IFSC: {footer.bankDetails?.ifsc}</div>
             {footer.bankDetails?.upiId && <div>UPI: {footer.bankDetails?.upiId}</div>}
-          </div>
+          </Box>
         )}
 
         {/* Terms & Footer */}
         {footer.showNotes && (
-          <div className="text-center font-bold text-[10px] mt-2 pt-1 border-t border-dashed border-gray-400">
+          <Box sx={{ textAlign: "center", fontWeight: 700, fontSize: 10, mt: "7px", pt: "3.5px", borderTop: "1px dashed #9ca3af" }}>
             {footer.notesText}
-          </div>
+          </Box>
         )}
-      </div>
+      </Box>
     );
   }
 
@@ -362,12 +386,16 @@ export default function InvoiceTemplateRenderer({
   const canvasMinHeight = isLandscape ? "200mm" : "287mm";
 
   return (
-    <div
+    <Box
       id="vynerix-printable-invoice"
-      className={`relative mx-auto bg-white text-gray-900 transition-all duration-200 select-none ${
-        isPrintMode ? "p-0 shadow-none" : "shadow-2xl"
-      }`}
-      style={{
+      sx={{
+        position: "relative",
+        mx: "auto",
+        bgcolor: "#ffffff",
+        color: "#111827",
+        transition: "all 0.2s",
+        userSelect: "none",
+        boxShadow: isPrintMode ? "none" : "0 25px 50px -12px rgba(0,0,0,0.25)",
         width: canvasWidth,
         minHeight: canvasMinHeight,
         padding: `${settings.margins?.top || 6}mm ${settings.margins?.right || 8}mm ${settings.margins?.bottom || 6}mm ${settings.margins?.left || 8}mm`,
@@ -379,12 +407,12 @@ export default function InvoiceTemplateRenderer({
     >
       {/* Dynamic Watermark */}
       {watermark.enabled && watermark.text && (
-        <div
-          className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden z-0"
+        <Box
+          sx={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none", overflow: "hidden", zIndex: 0 }}
           style={{ opacity: (watermark.opacity || 12) / 100 }}
         >
-          <div
-            className="font-black text-gray-400 uppercase tracking-widest text-center select-none"
+          <Box
+            sx={{ fontWeight: 900, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.1em", textAlign: "center", userSelect: "none" }}
             style={{
               fontSize: isLandscape ? "80px" : "64px",
               transform: `rotate(${watermark.angle || -30}deg)`,
@@ -392,12 +420,12 @@ export default function InvoiceTemplateRenderer({
             }}
           >
             {watermark.text}
-          </div>
-        </div>
+          </Box>
+        </Box>
       )}
 
       {/* INNER CONTENT WRAPPER */}
-      <div className="relative z-10 flex flex-col justify-between h-full">
+      <Box sx={{ position: "relative", zIndex: 10, display: "flex", flexDirection: "column", justifyContent: "space-between", height: "100%" }}>
         <div>
           {/* ========================================================================= */}
           {/* HEADER SECTION (Template Specific Variations) */}
@@ -405,896 +433,918 @@ export default function InvoiceTemplateRenderer({
 
           {/* TEMPLATE 1: GENERAL (Standard GST Tax Invoice with Clean Borders) */}
           {template === "general" && (
-            <div className="border border-gray-400 mb-2">
-              <div
-                className="py-1 text-center font-bold tracking-wider text-xs uppercase border-b border-gray-400"
+            <Box sx={{ border: "1px solid #9ca3af", mb: "7px" }}>
+              <Box
+                sx={{ py: "3.5px", textAlign: "center", fontWeight: 700, letterSpacing: "0.05em", fontSize: 10.5, textTransform: "uppercase", borderBottom: "1px solid #9ca3af" }}
                 style={{ backgroundColor: `${primaryColor}15`, color: primaryColor }}
               >
                 {resolvedDocumentTitle}
                 {header.documentSubtitle && (
-                  <span className="ml-2 font-normal text-[10px] text-gray-600">
+                  <Box component="span" sx={{ ml: "7px", fontWeight: 400, fontSize: 10, color: "#4b5563" }}>
                     {header.documentSubtitle}
-                  </span>
+                  </Box>
                 )}
-              </div>
+              </Box>
 
-              <div className="p-3 flex justify-between items-start gap-4">
+              <Box sx={{ p: "10.5px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "14px" }}>
                 {/* Company Block */}
-                <div className="flex-1">
+                <Box sx={{ flex: 1 }}>
                   {header.showCompanyName && (
-                    <h1
-                      className="font-black leading-tight tracking-tight uppercase"
+                    <Box
+                      component="h1"
+                      sx={{ fontWeight: 900, lineHeight: 1.25, letterSpacing: "-0.025em", textTransform: "uppercase" }}
                       style={{ fontSize: headerFontSize, color: primaryColor }}
                     >
                       {data.company.name}
-                    </h1>
+                    </Box>
                   )}
-                  <p className="text-gray-700 text-xs mt-0.5 max-w-md leading-relaxed">
+                  <Box component="p" sx={{ color: "#374151", fontSize: 10.5, mt: "1.75px", maxWidth: 448, lineHeight: 1.625 }}>
                     {data.company.address}
-                  </p>
-                  <div className="flex flex-wrap gap-x-3 text-xs mt-1 text-gray-800">
+                  </Box>
+                  <Box sx={{ display: "flex", flexWrap: "wrap", columnGap: "10.5px", fontSize: 10.5, mt: "3.5px", color: "#1f2937" }}>
                     {header.showMobile && <span><b>Tel:</b> {data.company.phone}</span>}
                     {header.showEmail && <span><b>Email:</b> {data.company.email}</span>}
-                  </div>
-                  <div className="flex flex-wrap gap-x-4 text-xs mt-1 font-semibold text-gray-900">
+                  </Box>
+                  <Box sx={{ display: "flex", flexWrap: "wrap", columnGap: "14px", fontSize: 10.5, mt: "3.5px", fontWeight: 600, color: "#111827" }}>
                     {header.showGstin && <span>GSTIN: {data.company.gstin}</span>}
                     {header.showPan && <span>PAN: {data.company.pan}</span>}
                     {header.showState && <span>State: {data.company.state} (Code: {data.company.stateCode})</span>}
-                  </div>
-                </div>
+                  </Box>
+                </Box>
 
                 {/* Invoice Meta Grid */}
-                <div className="w-64 border border-gray-300 text-xs rounded overflow-hidden">
-                  <div className="bg-gray-100 px-2 py-1 font-bold text-gray-700 flex justify-between border-b border-gray-300">
+                <Box sx={{ width: 224, border: "1px solid #d1d5db", fontSize: 10.5, borderRadius: "3.5px", overflow: "hidden" }}>
+                  <Box sx={{ bgcolor: "#f3f4f6", px: "7px", py: "3.5px", fontWeight: 700, color: "#374151", display: "flex", justifyContent: "space-between", borderBottom: "1px solid #d1d5db" }}>
                     <span>Document Details</span>
-                  </div>
-                  <div className="p-2 space-y-1">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">{docNumLabel}</span>
-                      <span className="font-bold text-gray-900">{data.invoiceNo}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">{docDateLabel}</span>
-                      <span className="font-semibold text-gray-900">{data.date}</span>
-                    </div>
+                  </Box>
+                  <Box sx={{ p: "7px", "& > * + *": { mt: "3.5px" } }}>
+                    <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                      <Box component="span" sx={{ color: "#4b5563" }}>{docNumLabel}</Box>
+                      <Box component="span" sx={{ fontWeight: 700, color: "#111827" }}>{data.invoiceNo}</Box>
+                    </Box>
+                    <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                      <Box component="span" sx={{ color: "#4b5563" }}>{docDateLabel}</Box>
+                      <Box component="span" sx={{ fontWeight: 600, color: "#111827" }}>{data.date}</Box>
+                    </Box>
                     {header.showDueDate && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Due Date:</span>
-                        <span className="font-medium text-gray-900">{data.dueDate}</span>
-                      </div>
+                      <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                        <Box component="span" sx={{ color: "#4b5563" }}>Due Date:</Box>
+                        <Box component="span" sx={{ fontWeight: 500, color: "#111827" }}>{data.dueDate}</Box>
+                      </Box>
                     )}
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Place of Supply:</span>
-                      <span className="font-medium text-gray-900">{data.placeOfSupply}</span>
-                    </div>
+                    <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                      <Box component="span" sx={{ color: "#4b5563" }}>Place of Supply:</Box>
+                      <Box component="span" sx={{ fontWeight: 500, color: "#111827" }}>{data.placeOfSupply}</Box>
+                    </Box>
                     {header.showReverseCharge && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Reverse Charge:</span>
-                        <span className="font-medium text-gray-900">{data.reverseCharge}</span>
-                      </div>
+                      <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                        <Box component="span" sx={{ color: "#4b5563" }}>Reverse Charge:</Box>
+                        <Box component="span" sx={{ fontWeight: 500, color: "#111827" }}>{data.reverseCharge}</Box>
+                      </Box>
                     )}
-                  </div>
-                </div>
-              </div>
-            </div>
+                  </Box>
+                </Box>
+              </Box>
+            </Box>
           )}
 
           {/* TEMPLATE 2: GLASS MODERN (Gradient Header Bar & Rounded Aesthetic) */}
           {template === "glass" && (
-            <div className="mb-3 rounded-lg overflow-hidden border border-gray-200 shadow-xs">
-              <div
-                className="px-4 py-2.5 text-white flex justify-between items-center"
-                style={{
-                  background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}dd)`,
-                }}
+            <Box sx={{ mb: "10.5px", borderRadius: "7px", overflow: "hidden", border: "1px solid #e5e7eb", boxShadow: "0 1px 2px 0 rgba(0,0,0,0.05)" }}>
+              <Box
+                sx={{ px: "14px", py: "8.75px", color: "#ffffff", display: "flex", justifyContent: "space-between", alignItems: "center" }}
+                style={{ background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}dd)` }}
               >
-                <div>
-                  <h1 className="font-black tracking-wide" style={{ fontSize: headerFontSize }}>
+                <Box>
+                  <Box component="h1" sx={{ fontWeight: 900, letterSpacing: "0.025em" }} style={{ fontSize: headerFontSize }}>
                     {data.company.name}
-                  </h1>
-                  <p className="text-xs text-blue-50 opacity-90">{data.company.address}</p>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm font-extrabold tracking-wider uppercase bg-white/20 px-3 py-1 rounded backdrop-blur-xs inline-block">
+                  </Box>
+                  <Box component="p" sx={{ fontSize: 10.5, color: "#eff6ff", opacity: 0.9 }}>{data.company.address}</Box>
+                </Box>
+                <Box sx={{ textAlign: "right" }}>
+                  <Box sx={{ fontSize: 12.25, fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase", bgcolor: "rgba(255,255,255,0.2)", px: "10.5px", py: "3.5px", borderRadius: "3.5px", backdropFilter: "blur(4px)", display: "inline-block" }}>
                     {resolvedDocumentTitle}
-                  </div>
-                  <div className="text-xs text-blue-100 mt-1">{docNumLabel.replace(':', '')} #{data.invoiceNo} | {data.date}</div>
-                </div>
-              </div>
-              <div className="p-2.5 bg-gray-50 flex justify-between text-xs border-t border-gray-200 text-gray-700">
-                <div className="flex gap-4">
+                  </Box>
+                  <Box sx={{ fontSize: 10.5, color: "#dbeafe", mt: "3.5px" }}>{docNumLabel.replace(':', '')} #{data.invoiceNo} | {data.date}</Box>
+                </Box>
+              </Box>
+              <Box sx={{ p: "8.75px", bgcolor: "#f9fafb", display: "flex", justifyContent: "space-between", fontSize: 10.5, borderTop: "1px solid #e5e7eb", color: "#374151" }}>
+                <Box sx={{ display: "flex", gap: "14px" }}>
                   {header.showMobile && <span><b>Ph:</b> {data.company.phone}</span>}
                   {header.showEmail && <span><b>Email:</b> {data.company.email}</span>}
                   {header.showGstin && <span><b>GSTIN:</b> {data.company.gstin}</span>}
-                </div>
-                <div>
+                </Box>
+                <Box>
                   <b>Place of Supply:</b> {data.placeOfSupply}
-                </div>
-              </div>
-            </div>
+                </Box>
+              </Box>
+            </Box>
           )}
 
           {/* TEMPLATE 3: GST FOCUS (Tax-centric Top Block) */}
           {template === "gst" && (
-            <div className="border-2 border-indigo-900 mb-2">
-              <div className="bg-indigo-900 text-white text-center py-1 text-sm font-extrabold uppercase tracking-wider">
+            <Box sx={{ border: "2px solid #312e81", mb: "7px" }}>
+              <Box sx={{ bgcolor: "#312e81", color: "#ffffff", textAlign: "center", py: "3.5px", fontSize: 12.25, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em" }}>
                 {resolvedDocumentTitle} {header.documentSubtitle}
-              </div>
-              <div className="p-3 grid grid-cols-2 gap-4">
-                <div>
-                  <h1 className="font-extrabold text-indigo-950" style={{ fontSize: headerFontSize }}>
+              </Box>
+              <Box sx={{ p: "10.5px", display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "14px" }}>
+                <Box>
+                  <Box component="h1" sx={{ fontWeight: 800, color: "#1e1b4b" }} style={{ fontSize: headerFontSize }}>
                     {data.company.name}
-                  </h1>
-                  <div className="text-xs text-gray-700 leading-snug">{data.company.address}</div>
-                  <div className="text-xs mt-1">
+                  </Box>
+                  <Box sx={{ fontSize: 10.5, color: "#374151", lineHeight: 1.375 }}>{data.company.address}</Box>
+                  <Box sx={{ fontSize: 10.5, mt: "3.5px" }}>
                     <b>GSTIN:</b> {data.company.gstin} | <b>PAN:</b> {data.company.pan}
-                  </div>
-                  <div className="text-xs">
+                  </Box>
+                  <Box sx={{ fontSize: 10.5 }}>
                     <b>State:</b> {data.company.state} (Code: {data.company.stateCode})
-                  </div>
-                </div>
-                <div className="text-xs border-l border-gray-300 pl-4 space-y-1">
-                  <div className="grid grid-cols-2">
-                    <span className="font-bold text-gray-700">{docNumLabel}</span>
-                    <span className="font-black text-indigo-900">{data.invoiceNo}</span>
-                  </div>
-                  <div className="grid grid-cols-2">
-                    <span className="font-bold text-gray-700">{docDateLabel}</span>
+                  </Box>
+                </Box>
+                <Box sx={{ fontSize: 10.5, borderLeft: "1px solid #d1d5db", pl: "14px", "& > * + *": { mt: "3.5px" } }}>
+                  <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)" }}>
+                    <Box component="span" sx={{ fontWeight: 700, color: "#374151" }}>{docNumLabel}</Box>
+                    <Box component="span" sx={{ fontWeight: 900, color: "#312e81" }}>{data.invoiceNo}</Box>
+                  </Box>
+                  <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)" }}>
+                    <Box component="span" sx={{ fontWeight: 700, color: "#374151" }}>{docDateLabel}</Box>
                     <span>{data.date}</span>
-                  </div>
-                  <div className="grid grid-cols-2">
-                    <span className="font-bold text-gray-700">Place of Supply:</span>
+                  </Box>
+                  <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)" }}>
+                    <Box component="span" sx={{ fontWeight: 700, color: "#374151" }}>Place of Supply:</Box>
                     <span>{data.placeOfSupply}</span>
-                  </div>
-                  <div className="grid grid-cols-2">
-                    <span className="font-bold text-gray-700">Reverse Charge:</span>
+                  </Box>
+                  <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)" }}>
+                    <Box component="span" sx={{ fontWeight: 700, color: "#374151" }}>Reverse Charge:</Box>
                     <span>{data.reverseCharge}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+                  </Box>
+                </Box>
+              </Box>
+            </Box>
           )}
 
           {/* TEMPLATE 4: CLASSIC COMPACT */}
           {template === "classic" && (
-            <div className="border-b-2 border-black pb-2 mb-2">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h1 className="font-black text-black" style={{ fontSize: headerFontSize }}>
+            <Box sx={{ borderBottom: "2px solid #000000", pb: "7px", mb: "7px" }}>
+              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <Box>
+                  <Box component="h1" sx={{ fontWeight: 900, color: "#000000" }} style={{ fontSize: headerFontSize }}>
                     {data.company.name}
-                  </h1>
-                  <p className="text-xs text-gray-800 leading-tight">{data.company.address}</p>
-                  <p className="text-xs text-gray-800 mt-0.5">
+                  </Box>
+                  <Box component="p" sx={{ fontSize: 10.5, color: "#1f2937", lineHeight: 1.25 }}>{data.company.address}</Box>
+                  <Box component="p" sx={{ fontSize: 10.5, color: "#1f2937", mt: "1.75px" }}>
                     Ph: {data.company.phone} | GSTIN: {data.company.gstin}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <h2 className="font-extrabold text-sm uppercase text-gray-900 tracking-wider">
+                  </Box>
+                </Box>
+                <Box sx={{ textAlign: "right" }}>
+                  <Box component="h2" sx={{ fontWeight: 800, fontSize: 12.25, textTransform: "uppercase", color: "#111827", letterSpacing: "0.05em" }}>
                     {resolvedDocumentTitle}
-                  </h2>
-                  <div className="text-xs mt-1"><b>{docNumLabel}</b> {data.invoiceNo}</div>
-                  <div className="text-xs"><b>{docDateLabel}</b> {data.date}</div>
-                </div>
-              </div>
-            </div>
+                  </Box>
+                  <Box sx={{ fontSize: 10.5, mt: "3.5px" }}><b>{docNumLabel}</b> {data.invoiceNo}</Box>
+                  <Box sx={{ fontSize: 10.5 }}><b>{docDateLabel}</b> {data.date}</Box>
+                </Box>
+              </Box>
+            </Box>
           )}
 
           {/* TEMPLATE 5: TALLY GRID STYLE */}
           {template === "tally" && (
-            <div className="border-2 border-black mb-2 text-black">
-              <div className="text-center font-bold text-xs py-1 border-b border-black uppercase tracking-wider bg-gray-100">
+            <Box sx={{ border: "2px solid #000000", mb: "7px", color: "#000000" }}>
+              <Box sx={{ textAlign: "center", fontWeight: 700, fontSize: 10.5, py: "3.5px", borderBottom: "1px solid #000000", textTransform: "uppercase", letterSpacing: "0.05em", bgcolor: "#f3f4f6" }}>
                 {resolvedDocumentTitle}
-              </div>
-              <div className="flex divide-x border-black">
-                <div className="p-2 flex-1">
-                  <h1 className="font-black text-lg uppercase leading-none">{data.company.name}</h1>
-                  <p className="text-xs mt-1">{data.company.address}</p>
-                  <p className="text-xs font-semibold mt-1">GSTIN/UIN: {data.company.gstin}</p>
-                  <p className="text-xs">State Name: {data.company.state}, Code: {data.company.stateCode}</p>
-                  <p className="text-xs">E-Mail: {data.company.email}</p>
-                </div>
-                <div className="w-64 text-xs">
-                  <div className="p-1 border-b border-black flex justify-between">
-                    <span className="text-gray-600">{docNumLabel}</span>
-                    <span className="font-bold">{data.invoiceNo}</span>
-                  </div>
-                  <div className="p-1 border-b border-black flex justify-between">
-                    <span className="text-gray-600">{docDateLabel}</span>
-                    <span className="font-bold">{data.date}</span>
-                  </div>
-                  <div className="p-1 border-b border-black flex justify-between">
-                    <span className="text-gray-600">Place of Supply</span>
+              </Box>
+              <Box sx={{ display: "flex", "& > * + *": { borderLeft: "1px solid #000000" } }}>
+                <Box sx={{ p: "7px", flex: 1 }}>
+                  <Box component="h1" sx={{ fontWeight: 900, fontSize: 15.75, textTransform: "uppercase", lineHeight: 1 }}>{data.company.name}</Box>
+                  <Box component="p" sx={{ fontSize: 10.5, mt: "3.5px" }}>{data.company.address}</Box>
+                  <Box component="p" sx={{ fontSize: 10.5, fontWeight: 600, mt: "3.5px" }}>GSTIN/UIN: {data.company.gstin}</Box>
+                  <Box component="p" sx={{ fontSize: 10.5 }}>State Name: {data.company.state}, Code: {data.company.stateCode}</Box>
+                  <Box component="p" sx={{ fontSize: 10.5 }}>E-Mail: {data.company.email}</Box>
+                </Box>
+                <Box sx={{ width: 224, fontSize: 10.5 }}>
+                  <Box sx={{ p: "3.5px", borderBottom: "1px solid #000000", display: "flex", justifyContent: "space-between" }}>
+                    <Box component="span" sx={{ color: "#4b5563" }}>{docNumLabel}</Box>
+                    <Box component="span" sx={{ fontWeight: 700 }}>{data.invoiceNo}</Box>
+                  </Box>
+                  <Box sx={{ p: "3.5px", borderBottom: "1px solid #000000", display: "flex", justifyContent: "space-between" }}>
+                    <Box component="span" sx={{ color: "#4b5563" }}>{docDateLabel}</Box>
+                    <Box component="span" sx={{ fontWeight: 700 }}>{data.date}</Box>
+                  </Box>
+                  <Box sx={{ p: "3.5px", borderBottom: "1px solid #000000", display: "flex", justifyContent: "space-between" }}>
+                    <Box component="span" sx={{ color: "#4b5563" }}>Place of Supply</Box>
                     <span>{data.placeOfSupply}</span>
-                  </div>
-                  <div className="p-1 flex justify-between">
-                    <span className="text-gray-600">Buyer's Order No.</span>
+                  </Box>
+                  <Box sx={{ p: "3.5px", display: "flex", justifyContent: "space-between" }}>
+                    <Box component="span" sx={{ color: "#4b5563" }}>Buyer's Order No.</Box>
                     <span>{data.purchaseOrder.poNumber}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+                  </Box>
+                </Box>
+              </Box>
+            </Box>
           )}
 
           {/* TEMPLATE 6: INDIGO THEME */}
           {template === "indigo" && (
-            <div className="mb-3 border-t-4 border-indigo-600 bg-indigo-50/40 p-3 rounded-b-md border-x border-b border-indigo-100">
-              <div className="flex justify-between items-start">
-                <div>
-                  <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-indigo-600 text-white mb-1">
+            <Box sx={{ mb: "10.5px", borderTop: "4px solid #4f46e5", bgcolor: "rgba(238,242,255,0.4)", p: "10.5px", borderBottomLeftRadius: "5.25px", borderBottomRightRadius: "5.25px", borderLeft: "1px solid #e0e7ff", borderRight: "1px solid #e0e7ff", borderBottom: "1px solid #e0e7ff" }}>
+              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <Box>
+                  <Box component="span" sx={{ display: "inline-block", px: "7px", py: "1.75px", borderRadius: "3.5px", fontSize: 10, fontWeight: 700, textTransform: "uppercase", bgcolor: "#4f46e5", color: "#ffffff", mb: "3.5px" }}>
                     {resolvedDocumentTitle}
-                  </span>
-                  <h1 className="font-black text-indigo-950" style={{ fontSize: headerFontSize }}>
+                  </Box>
+                  <Box component="h1" sx={{ fontWeight: 900, color: "#1e1b4b" }} style={{ fontSize: headerFontSize }}>
                     {data.company.name}
-                  </h1>
-                  <p className="text-xs text-gray-600">{data.company.address}</p>
-                  <div className="text-xs text-gray-700 mt-1 flex gap-3">
+                  </Box>
+                  <Box component="p" sx={{ fontSize: 10.5, color: "#4b5563" }}>{data.company.address}</Box>
+                  <Box sx={{ fontSize: 10.5, color: "#374151", mt: "3.5px", display: "flex", gap: "10.5px" }}>
                     <span><b>GSTIN:</b> {data.company.gstin}</span>
                     <span><b>Mobile:</b> {data.company.phone}</span>
-                  </div>
-                </div>
-                <div className="bg-white p-2.5 rounded shadow-xs border border-indigo-100 text-xs text-right space-y-0.5">
-                  <div className="text-gray-500 font-semibold">{docNumLabel.replace(':', '').toUpperCase()}</div>
-                  <div className="font-extrabold text-indigo-700 text-sm">{data.invoiceNo}</div>
-                  <div className="text-gray-600 text-[11px]">{docDateLabel} <b>{data.date}</b></div>
-                </div>
-              </div>
-            </div>
+                  </Box>
+                </Box>
+                <Box sx={{ bgcolor: "#ffffff", p: "8.75px", borderRadius: "3.5px", boxShadow: "0 1px 2px 0 rgba(0,0,0,0.05)", border: "1px solid #e0e7ff", fontSize: 10.5, textAlign: "right", "& > * + *": { mt: "1.75px" } }}>
+                  <Box sx={{ color: "#6b7280", fontWeight: 600 }}>{docNumLabel.replace(':', '').toUpperCase()}</Box>
+                  <Box sx={{ fontWeight: 800, color: "#4338ca", fontSize: 12.25 }}>{data.invoiceNo}</Box>
+                  <Box sx={{ color: "#4b5563", fontSize: 11 }}>{docDateLabel} <b>{data.date}</b></Box>
+                </Box>
+              </Box>
+            </Box>
           )}
 
           {/* TEMPLATE: EMERALD THEME */}
           {template === "emerald" && (
-            <div className="mb-3 border-t-4 border-emerald-600 bg-emerald-50/40 p-3 rounded-b-md border-x border-b border-emerald-100">
-              <div className="flex justify-between items-start">
-                <div>
-                  <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-600 text-white mb-1">
+            <Box sx={{ mb: "10.5px", borderTop: "4px solid #059669", bgcolor: "rgba(236,253,245,0.4)", p: "10.5px", borderBottomLeftRadius: "5.25px", borderBottomRightRadius: "5.25px", borderLeft: "1px solid #d1fae5", borderRight: "1px solid #d1fae5", borderBottom: "1px solid #d1fae5" }}>
+              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <Box>
+                  <Box component="span" sx={{ display: "inline-block", px: "7px", py: "1.75px", borderRadius: "3.5px", fontSize: 10, fontWeight: 700, textTransform: "uppercase", bgcolor: "#059669", color: "#ffffff", mb: "3.5px" }}>
                     {resolvedDocumentTitle}
-                  </span>
-                  <h1 className="font-black text-emerald-950" style={{ fontSize: headerFontSize }}>
+                  </Box>
+                  <Box component="h1" sx={{ fontWeight: 900, color: "#022c22" }} style={{ fontSize: headerFontSize }}>
                     {data.company.name}
-                  </h1>
-                  <p className="text-xs text-gray-600">{data.company.address}</p>
-                  <div className="text-xs text-gray-700 mt-1 flex gap-3">
+                  </Box>
+                  <Box component="p" sx={{ fontSize: 10.5, color: "#4b5563" }}>{data.company.address}</Box>
+                  <Box sx={{ fontSize: 10.5, color: "#374151", mt: "3.5px", display: "flex", gap: "10.5px" }}>
                     <span><b>GSTIN:</b> {data.company.gstin}</span>
                     <span><b>Mobile:</b> {data.company.phone}</span>
-                  </div>
-                </div>
-                <div className="bg-white p-2.5 rounded shadow-xs border border-emerald-100 text-xs text-right space-y-0.5">
-                  <div className="text-gray-500 font-semibold">{docNumLabel.replace(':', '').toUpperCase()}</div>
-                  <div className="font-extrabold text-emerald-700 text-sm">{data.invoiceNo}</div>
-                  <div className="text-gray-600 text-[11px]">{docDateLabel} <b>{data.date}</b></div>
-                </div>
-              </div>
-            </div>
+                  </Box>
+                </Box>
+                <Box sx={{ bgcolor: "#ffffff", p: "8.75px", borderRadius: "3.5px", boxShadow: "0 1px 2px 0 rgba(0,0,0,0.05)", border: "1px solid #d1fae5", fontSize: 10.5, textAlign: "right", "& > * + *": { mt: "1.75px" } }}>
+                  <Box sx={{ color: "#6b7280", fontWeight: 600 }}>{docNumLabel.replace(':', '').toUpperCase()}</Box>
+                  <Box sx={{ fontWeight: 800, color: "#047857", fontSize: 12.25 }}>{data.invoiceNo}</Box>
+                  <Box sx={{ color: "#4b5563", fontSize: 11 }}>{docDateLabel} <b>{data.date}</b></Box>
+                </Box>
+              </Box>
+            </Box>
           )}
 
           {/* TEMPLATE: SUNSET THEME */}
           {template === "sunset" && (
-            <div className="mb-3 border-t-4 border-orange-600 bg-orange-50/40 p-3 rounded-b-md border-x border-b border-orange-100">
-              <div className="flex justify-between items-start">
-                <div>
-                  <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-orange-600 text-white mb-1">
+            <Box sx={{ mb: "10.5px", borderTop: "4px solid #ea580c", bgcolor: "rgba(255,247,237,0.4)", p: "10.5px", borderBottomLeftRadius: "5.25px", borderBottomRightRadius: "5.25px", borderLeft: "1px solid #ffedd5", borderRight: "1px solid #ffedd5", borderBottom: "1px solid #ffedd5" }}>
+              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <Box>
+                  <Box component="span" sx={{ display: "inline-block", px: "7px", py: "1.75px", borderRadius: "3.5px", fontSize: 10, fontWeight: 700, textTransform: "uppercase", bgcolor: "#ea580c", color: "#ffffff", mb: "3.5px" }}>
                     {resolvedDocumentTitle}
-                  </span>
-                  <h1 className="font-black text-orange-950" style={{ fontSize: headerFontSize }}>
+                  </Box>
+                  <Box component="h1" sx={{ fontWeight: 900, color: "#431407" }} style={{ fontSize: headerFontSize }}>
                     {data.company.name}
-                  </h1>
-                  <p className="text-xs text-gray-600">{data.company.address}</p>
-                  <div className="text-xs text-gray-700 mt-1 flex gap-3">
+                  </Box>
+                  <Box component="p" sx={{ fontSize: 10.5, color: "#4b5563" }}>{data.company.address}</Box>
+                  <Box sx={{ fontSize: 10.5, color: "#374151", mt: "3.5px", display: "flex", gap: "10.5px" }}>
                     <span><b>GSTIN:</b> {data.company.gstin}</span>
                     <span><b>Mobile:</b> {data.company.phone}</span>
-                  </div>
-                </div>
-                <div className="bg-white p-2.5 rounded shadow-xs border border-orange-100 text-xs text-right space-y-0.5">
-                  <div className="text-gray-500 font-semibold">{docNumLabel.replace(':', '').toUpperCase()}</div>
-                  <div className="font-extrabold text-orange-700 text-sm">{data.invoiceNo}</div>
-                  <div className="text-gray-600 text-[11px]">{docDateLabel} <b>{data.date}</b></div>
-                </div>
-              </div>
-            </div>
+                  </Box>
+                </Box>
+                <Box sx={{ bgcolor: "#ffffff", p: "8.75px", borderRadius: "3.5px", boxShadow: "0 1px 2px 0 rgba(0,0,0,0.05)", border: "1px solid #ffedd5", fontSize: 10.5, textAlign: "right", "& > * + *": { mt: "1.75px" } }}>
+                  <Box sx={{ color: "#6b7280", fontWeight: 600 }}>{docNumLabel.replace(':', '').toUpperCase()}</Box>
+                  <Box sx={{ fontWeight: 800, color: "#c2410c", fontSize: 12.25 }}>{data.invoiceNo}</Box>
+                  <Box sx={{ color: "#4b5563", fontSize: 11 }}>{docDateLabel} <b>{data.date}</b></Box>
+                </Box>
+              </Box>
+            </Box>
           )}
 
           {/* TEMPLATE 7: LANDSCAPE DUAL-COLUMN (Optimized for Wide Screens) */}
           {template === "landscape_dual" && (
-            <div className="border border-emerald-700 mb-2">
-              <div className="bg-emerald-700 text-white px-3 py-1 flex justify-between items-center text-xs font-bold uppercase">
+            <Box sx={{ border: "1px solid #047857", mb: "7px" }}>
+              <Box sx={{ bgcolor: "#047857", color: "#ffffff", px: "10.5px", py: "3.5px", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 10.5, fontWeight: 700, textTransform: "uppercase" }}>
                 <span>{data.company.name}</span>
                 <span>{resolvedDocumentTitle} - {data.invoiceNo}</span>
                 <span>{data.date}</span>
-              </div>
-              <div className="p-2 grid grid-cols-3 gap-2 text-xs divide-x divide-gray-300">
-                <div className="pr-2">
-                  <div className="font-bold text-emerald-800 uppercase text-[10px]">Seller Details</div>
-                  <div className="font-semibold text-gray-900">{data.company.name}</div>
-                  <div className="text-[11px] text-gray-600">{data.company.address}</div>
-                  <div className="text-[11px] mt-0.5">GSTIN: <b>{data.company.gstin}</b> | State: {data.company.state}</div>
-                </div>
-                <div className="px-2">
-                  <div className="font-bold text-emerald-800 uppercase text-[10px]">{docPartyLabel}</div>
-                  <div className="font-bold text-gray-900">{data.customer.name}</div>
-                  <div className="text-[11px] text-gray-600">{data.customer.billingAddress}</div>
-                  <div className="text-[11px] mt-0.5">GSTIN: <b>{data.customer.gstin}</b> | Ph: {data.customer.phone}</div>
-                </div>
-                <div className="pl-2 space-y-0.5 text-[11px]">
-                  <div className="font-bold text-emerald-800 uppercase text-[10px]">Dispatch & PO</div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Transporter:</span>
-                    <span className="font-medium">{data.transport.transporterName}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">LR / Doc No:</span>
-                    <span className="font-medium">{data.transport.lrNumber}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">PO Number:</span>
-                    <span className="font-medium">{data.purchaseOrder.poNumber}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">E-Way Bill:</span>
-                    <span className="font-medium">{data.ewayBill.ewayBillNo}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+              </Box>
+              <Box sx={{ p: "7px", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "7px", fontSize: 10.5, "& > * + *": { borderLeft: "1px solid #d1d5db" } }}>
+                <Box sx={{ pr: "7px" }}>
+                  <Box sx={{ fontWeight: 700, color: "#065f46", textTransform: "uppercase", fontSize: 10 }}>Seller Details</Box>
+                  <Box sx={{ fontWeight: 600, color: "#111827" }}>{data.company.name}</Box>
+                  <Box sx={{ fontSize: 11, color: "#4b5563" }}>{data.company.address}</Box>
+                  <Box sx={{ fontSize: 11, mt: "1.75px" }}>GSTIN: <b>{data.company.gstin}</b> | State: {data.company.state}</Box>
+                </Box>
+                <Box sx={{ px: "7px" }}>
+                  <Box sx={{ fontWeight: 700, color: "#065f46", textTransform: "uppercase", fontSize: 10 }}>{docPartyLabel}</Box>
+                  <Box sx={{ fontWeight: 700, color: "#111827" }}>{data.customer.name}</Box>
+                  <Box sx={{ fontSize: 11, color: "#4b5563" }}>{data.customer.billingAddress}</Box>
+                  <Box sx={{ fontSize: 11, mt: "1.75px" }}>GSTIN: <b>{data.customer.gstin}</b> | Ph: {data.customer.phone}</Box>
+                </Box>
+                <Box sx={{ pl: "7px", fontSize: 11, "& > * + *": { mt: "1.75px" } }}>
+                  <Box sx={{ fontWeight: 700, color: "#065f46", textTransform: "uppercase", fontSize: 10 }}>Dispatch & PO</Box>
+                  <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                    <Box component="span" sx={{ color: "#4b5563" }}>Transporter:</Box>
+                    <Box component="span" sx={{ fontWeight: 500 }}>{data.transport.transporterName}</Box>
+                  </Box>
+                  <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                    <Box component="span" sx={{ color: "#4b5563" }}>LR / Doc No:</Box>
+                    <Box component="span" sx={{ fontWeight: 500 }}>{data.transport.lrNumber}</Box>
+                  </Box>
+                  <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                    <Box component="span" sx={{ color: "#4b5563" }}>PO Number:</Box>
+                    <Box component="span" sx={{ fontWeight: 500 }}>{data.purchaseOrder.poNumber}</Box>
+                  </Box>
+                  <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                    <Box component="span" sx={{ color: "#4b5563" }}>E-Way Bill:</Box>
+                    <Box component="span" sx={{ fontWeight: 500 }}>{data.ewayBill.ewayBillNo}</Box>
+                  </Box>
+                </Box>
+              </Box>
+            </Box>
           )}
 
           {/* TEMPLATE 8: MINIMALIST CLEAN */}
           {template === "minimal" && (
-            <div className="border-b border-gray-200 pb-3 mb-3">
-              <div className="flex justify-between items-end">
-                <div>
-                  <h1 className="font-bold text-gray-900 tracking-tight" style={{ fontSize: headerFontSize }}>
+            <Box sx={{ borderBottom: "1px solid #e5e7eb", pb: "10.5px", mb: "10.5px" }}>
+              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+                <Box>
+                  <Box component="h1" sx={{ fontWeight: 700, color: "#111827", letterSpacing: "-0.025em" }} style={{ fontSize: headerFontSize }}>
                     {data.company.name}
-                  </h1>
-                  <p className="text-xs text-gray-500 max-w-md mt-0.5">{data.company.address}</p>
-                  <p className="text-xs text-gray-600 mt-1">
+                  </Box>
+                  <Box component="p" sx={{ fontSize: 10.5, color: "#6b7280", maxWidth: 448, mt: "1.75px" }}>{data.company.address}</Box>
+                  <Box component="p" sx={{ fontSize: 10.5, color: "#4b5563", mt: "3.5px" }}>
                     GSTIN: {data.company.gstin} &bull; Phone: {data.company.phone}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <span className="text-xs uppercase tracking-widest text-gray-400 font-semibold block">
+                  </Box>
+                </Box>
+                <Box sx={{ textAlign: "right" }}>
+                  <Box component="span" sx={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: "0.1em", color: "#9ca3af", fontWeight: 600, display: "block" }}>
                     {resolvedDocumentTitle}
-                  </span>
-                  <span className="text-base font-bold text-gray-900 block mt-0.5">{data.invoiceNo}</span>
-                  <span className="text-xs text-gray-500 block">{data.date}</span>
-                </div>
-              </div>
-            </div>
+                  </Box>
+                  <Box component="span" sx={{ fontSize: 14, fontWeight: 700, color: "#111827", display: "block", mt: "1.75px" }}>{data.invoiceNo}</Box>
+                  <Box component="span" sx={{ fontSize: 10.5, color: "#6b7280", display: "block" }}>{data.date}</Box>
+                </Box>
+              </Box>
+            </Box>
           )}
 
           {/* ========================================================================= */}
           {/* RECEIPT VOUCHER BODY vs INVOICE / CHALLAN BODY */}
           {/* ========================================================================= */}
           {isReceiptFormat ? (
-            <div className="space-y-2.5 my-2">
+            <Box sx={{ "& > * + *": { mt: "8.75px" }, my: "7px" }}>
               {/* Receipt Party & Voucher Details */}
-              <div className="border border-gray-300 rounded overflow-hidden text-xs">
-                <div className="grid grid-cols-1 md:grid-cols-2 divide-x divide-gray-300">
+              <Box sx={{ border: "1px solid #d1d5db", borderRadius: "3.5px", overflow: "hidden", fontSize: 10.5 }}>
+                <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, "& > * + *": { borderLeft: { md: "1px solid #d1d5db" } } }}>
                   {/* Payer Card */}
-                  <div className="p-3 bg-gray-50/60">
-                    <div className="font-bold text-gray-700 uppercase tracking-wide text-[10px] mb-1.5 flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: primaryColor }} />
+                  <Box sx={{ p: "10.5px", bgcolor: "rgba(249,250,251,0.6)" }}>
+                    <Box sx={{ fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.025em", fontSize: 10, mb: "5.25px", display: "flex", alignItems: "center", gap: "5.25px" }}>
+                      <Box component="span" sx={{ width: 7, height: 7, borderRadius: "9999px", display: "inline-block" }} style={{ backgroundColor: primaryColor }} />
                       {docPartyLabel}
-                    </div>
-                    <div className="font-bold text-gray-900 text-sm">{receiptData.receivedFrom}</div>
-                    <div className="text-gray-600 mt-1 leading-snug">{receiptData.customerAddress}</div>
-                    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-gray-800 font-medium text-[11px]">
+                    </Box>
+                    <Box sx={{ fontWeight: 700, color: "#111827", fontSize: 12.25 }}>{receiptData.receivedFrom}</Box>
+                    <Box sx={{ color: "#4b5563", mt: "3.5px", lineHeight: 1.375 }}>{receiptData.customerAddress}</Box>
+                    <Box sx={{ mt: "7px", display: "flex", flexWrap: "wrap", columnGap: "14px", rowGap: "3.5px", color: "#1f2937", fontWeight: 500, fontSize: 11 }}>
                       {receiptData.customerPhone && <span><b>Ph:</b> {receiptData.customerPhone}</span>}
                       {receiptData.customerGstin && <span><b>GSTIN:</b> {receiptData.customerGstin}</span>}
                       {receiptData.customerPan && <span><b>PAN:</b> {receiptData.customerPan}</span>}
-                    </div>
-                  </div>
+                    </Box>
+                  </Box>
 
                   {/* Payment Meta */}
-                  <div className="p-3 space-y-1.5">
-                    <div className="font-bold text-gray-700 uppercase tracking-wide text-[10px] mb-1 flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: primaryColor }} />
+                  <Box sx={{ p: "10.5px", "& > * + *": { mt: "5.25px" } }}>
+                    <Box sx={{ fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.025em", fontSize: 10, mb: "3.5px", display: "flex", alignItems: "center", gap: "5.25px" }}>
+                      <Box component="span" sx={{ width: 7, height: 7, borderRadius: "9999px", display: "inline-block" }} style={{ backgroundColor: primaryColor }} />
                       Payment Transaction Details
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Receipt Voucher No:</span>
-                      <span className="font-bold font-mono text-gray-900">{receiptData.receiptNo}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Receipt Date:</span>
-                      <span className="font-semibold text-gray-900">{receiptData.date}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Payment Mode:</span>
-                      <span className="font-bold text-indigo-700">{receiptData.paymentMode}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Reference / UTR / Cheque:</span>
-                      <span className="font-mono text-gray-800 font-medium">{receiptData.referenceNo}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Deposited Account:</span>
-                      <span className="text-gray-800 text-[11px] truncate max-w-[170px]">{receiptData.bankAccount}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+                    </Box>
+                    <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                      <Box component="span" sx={{ color: "#4b5563" }}>Receipt Voucher No:</Box>
+                      <Box component="span" sx={{ fontWeight: 700, fontFamily: "monospace", color: "#111827" }}>{receiptData.receiptNo}</Box>
+                    </Box>
+                    <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                      <Box component="span" sx={{ color: "#4b5563" }}>Receipt Date:</Box>
+                      <Box component="span" sx={{ fontWeight: 600, color: "#111827" }}>{receiptData.date}</Box>
+                    </Box>
+                    <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                      <Box component="span" sx={{ color: "#4b5563" }}>Payment Mode:</Box>
+                      <Box component="span" sx={{ fontWeight: 700, color: "#4338ca" }}>{receiptData.paymentMode}</Box>
+                    </Box>
+                    <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                      <Box component="span" sx={{ color: "#4b5563" }}>Reference / UTR / Cheque:</Box>
+                      <Box component="span" sx={{ fontFamily: "monospace", color: "#1f2937", fontWeight: 500 }}>{receiptData.referenceNo}</Box>
+                    </Box>
+                    <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                      <Box component="span" sx={{ color: "#4b5563" }}>Deposited Account:</Box>
+                      <Box component="span" sx={{ color: "#1f2937", fontSize: 11, maxWidth: 170, ...truncateSx }}>{receiptData.bankAccount}</Box>
+                    </Box>
+                  </Box>
+                </Box>
+              </Box>
 
               {/* Amount Received Highlight Banner */}
-              <div
-                className="p-3.5 rounded-lg text-white shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3"
-                style={{
-                  background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}dd)`,
+              <Box
+                sx={{
+                  p: "12.25px",
+                  borderRadius: "7px",
+                  color: "#ffffff",
+                  boxShadow: "0 1px 2px 0 rgba(0,0,0,0.05)",
+                  display: "flex",
+                  flexDirection: { xs: "column", md: "row" },
+                  alignItems: { md: "center" },
+                  justifyContent: "space-between",
+                  gap: "10.5px",
                 }}
+                style={{ background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}dd)` }}
               >
-                <div>
-                  <div className="text-[11px] uppercase tracking-widest opacity-90 font-bold">Total Amount Received</div>
-                  <div className="text-2xl font-black tracking-tight mt-0.5">
+                <Box>
+                  <Box sx={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em", opacity: 0.9, fontWeight: 700 }}>Total Amount Received</Box>
+                  <Box sx={{ fontSize: 21, fontWeight: 900, letterSpacing: "-0.025em", mt: "1.75px" }}>
                     ₹{formatCurrency(receiptData.amountReceived)}
-                  </div>
-                </div>
-                <div className="text-right md:max-w-md">
-                  <div className="text-[10px] uppercase tracking-wider opacity-85 font-semibold">Amount in Words</div>
-                  <div className="text-xs font-semibold italic text-white/95 mt-0.5 leading-snug">
+                  </Box>
+                </Box>
+                <Box sx={{ textAlign: "right", maxWidth: { md: 448 } }}>
+                  <Box sx={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.05em", opacity: 0.85, fontWeight: 600 }}>Amount in Words</Box>
+                  <Box sx={{ fontSize: 10.5, fontWeight: 600, fontStyle: "italic", color: "rgba(255,255,255,0.95)", mt: "1.75px", lineHeight: 1.375 }}>
                     {receiptData.amountInWords}
-                  </div>
-                </div>
-              </div>
+                  </Box>
+                </Box>
+              </Box>
 
               {/* Settled Bills / Invoices Allocation Table */}
-              <div className="border border-gray-300 rounded overflow-hidden">
-                <div className="bg-gray-100 px-3 py-1.5 font-bold text-xs text-gray-800 uppercase tracking-wide border-b border-gray-300 flex justify-between items-center">
+              <Box sx={{ border: "1px solid #d1d5db", borderRadius: "3.5px", overflow: "hidden" }}>
+                <Box sx={{ bgcolor: "#f3f4f6", px: "10.5px", py: "5.25px", fontWeight: 700, fontSize: 10.5, color: "#1f2937", textTransform: "uppercase", letterSpacing: "0.025em", borderBottom: "1px solid #d1d5db", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span>Bill / Invoice Settlement Allocation</span>
-                  <span className="text-[10px] text-gray-500 font-normal">Details of invoices cleared by this payment</span>
-                </div>
-                <table className="w-full text-left border-collapse text-xs">
+                  <Box component="span" sx={{ fontSize: 10, color: "#6b7280", fontWeight: 400 }}>Details of invoices cleared by this payment</Box>
+                </Box>
+                <Box component="table" sx={{ width: "100%", textAlign: "left", borderCollapse: "collapse", fontSize: 10.5 }}>
                   <thead>
-                    <tr
-                      className="font-bold border-b border-gray-300 select-none text-[11px]"
+                    <Box
+                      component="tr"
+                      sx={{ fontWeight: 700, borderBottom: "1px solid #d1d5db", userSelect: "none", fontSize: 11 }}
                       style={{ backgroundColor: `${primaryColor}15`, color: primaryColor }}
                     >
-                      <th className="py-2 px-2 text-center border-r border-gray-300 w-12">SN</th>
-                      <th className="py-2 px-2 text-left border-r border-gray-300">Invoice / Ref No</th>
-                      <th className="py-2 px-2 text-center border-r border-gray-300">Invoice Date</th>
-                      <th className="py-2 px-2 text-right border-r border-gray-300">Bill Amount (₹)</th>
-                      <th className="py-2 px-2 text-right border-r border-gray-300">Amount Paid (₹)</th>
-                      <th className="py-2 px-2 text-right border-r border-gray-300">Balance (₹)</th>
-                      <th className="py-2 px-2 text-center">Status</th>
-                    </tr>
+                      <Box component="th" sx={{ py: "7px", px: "7px", textAlign: "center", borderRight: "1px solid #d1d5db", width: 42 }}>SN</Box>
+                      <Box component="th" sx={{ py: "7px", px: "7px", textAlign: "left", borderRight: "1px solid #d1d5db" }}>Invoice / Ref No</Box>
+                      <Box component="th" sx={{ py: "7px", px: "7px", textAlign: "center", borderRight: "1px solid #d1d5db" }}>Invoice Date</Box>
+                      <Box component="th" sx={{ py: "7px", px: "7px", textAlign: "right", borderRight: "1px solid #d1d5db" }}>Bill Amount (₹)</Box>
+                      <Box component="th" sx={{ py: "7px", px: "7px", textAlign: "right", borderRight: "1px solid #d1d5db" }}>Amount Paid (₹)</Box>
+                      <Box component="th" sx={{ py: "7px", px: "7px", textAlign: "right", borderRight: "1px solid #d1d5db" }}>Balance (₹)</Box>
+                      <Box component="th" sx={{ py: "7px", px: "7px", textAlign: "center" }}>Status</Box>
+                    </Box>
                   </thead>
                   <tbody>
                     {receiptData.allocations.map((alloc, idx) => (
-                      <tr key={idx} className={`border-b border-gray-200 ${idx % 2 === 1 ? "bg-gray-50/50" : "bg-white"}`}>
-                        <td className="py-2 px-2 text-center border-r border-gray-200 text-gray-500 font-mono text-[11px]">{alloc.sn}</td>
-                        <td className="py-2 px-2 text-left border-r border-gray-200 font-bold text-gray-800">{alloc.invoiceNo}</td>
-                        <td className="py-2 px-2 text-center border-r border-gray-200 text-gray-600">{alloc.invoiceDate}</td>
-                        <td className="py-2 px-2 text-right border-r border-gray-200 text-gray-700">{formatCurrency(alloc.invoiceAmount)}</td>
-                        <td className="py-2 px-2 text-right border-r border-gray-200 font-bold text-emerald-700">₹{formatCurrency(alloc.paidAmount)}</td>
-                        <td className="py-2 px-2 text-right border-r border-gray-200 font-medium text-gray-700">₹{formatCurrency(alloc.balanceDue)}</td>
-                        <td className="py-2 px-2 text-center">
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${alloc.balanceDue === 0 ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>
+                      <Box component="tr" key={idx} sx={{ borderBottom: "1px solid #e5e7eb", bgcolor: idx % 2 === 1 ? "rgba(249,250,251,0.5)" : "#ffffff" }}>
+                        <Box component="td" sx={{ py: "7px", px: "7px", textAlign: "center", borderRight: "1px solid #e5e7eb", color: "#6b7280", fontFamily: "monospace", fontSize: 11 }}>{alloc.sn}</Box>
+                        <Box component="td" sx={{ py: "7px", px: "7px", textAlign: "left", borderRight: "1px solid #e5e7eb", fontWeight: 700, color: "#1f2937" }}>{alloc.invoiceNo}</Box>
+                        <Box component="td" sx={{ py: "7px", px: "7px", textAlign: "center", borderRight: "1px solid #e5e7eb", color: "#4b5563" }}>{alloc.invoiceDate}</Box>
+                        <Box component="td" sx={{ py: "7px", px: "7px", textAlign: "right", borderRight: "1px solid #e5e7eb", color: "#374151" }}>{formatCurrency(alloc.invoiceAmount)}</Box>
+                        <Box component="td" sx={{ py: "7px", px: "7px", textAlign: "right", borderRight: "1px solid #e5e7eb", fontWeight: 700, color: "#047857" }}>₹{formatCurrency(alloc.paidAmount)}</Box>
+                        <Box component="td" sx={{ py: "7px", px: "7px", textAlign: "right", borderRight: "1px solid #e5e7eb", fontWeight: 500, color: "#374151" }}>₹{formatCurrency(alloc.balanceDue)}</Box>
+                        <Box component="td" sx={{ py: "7px", px: "7px", textAlign: "center" }}>
+                          <Box
+                            component="span"
+                            sx={{
+                              px: "7px",
+                              py: "1.75px",
+                              borderRadius: "9999px",
+                              fontSize: 10,
+                              fontWeight: 700,
+                              bgcolor: alloc.balanceDue === 0 ? "#d1fae5" : "#fef3c7",
+                              color: alloc.balanceDue === 0 ? "#065f46" : "#92400e",
+                            }}
+                          >
                             {alloc.status}
-                          </span>
-                        </td>
-                      </tr>
+                          </Box>
+                        </Box>
+                      </Box>
                     ))}
                   </tbody>
                   <tfoot>
-                    <tr className="bg-gray-100 font-bold border-t-2 border-gray-300 text-xs">
-                      <td colSpan={3} className="py-2 px-3 text-left border-r border-gray-300">Total Settlement Summary</td>
-                      <td className="py-2 px-2 text-right border-r border-gray-300 font-bold text-gray-900">
+                    <Box component="tr" sx={{ bgcolor: "#f3f4f6", fontWeight: 700, borderTop: "2px solid #d1d5db", fontSize: 10.5 }}>
+                      <Box component="td" colSpan={3} sx={{ py: "7px", px: "10.5px", textAlign: "left", borderRight: "1px solid #d1d5db" }}>Total Settlement Summary</Box>
+                      <Box component="td" sx={{ py: "7px", px: "7px", textAlign: "right", borderRight: "1px solid #d1d5db", fontWeight: 700, color: "#111827" }}>
                         ₹{formatCurrency(receiptData.allocations.reduce((s, a) => s + (a.invoiceAmount || 0), 0))}
-                      </td>
-                      <td className="py-2 px-2 text-right border-r border-gray-300 font-extrabold text-emerald-800">
+                      </Box>
+                      <Box component="td" sx={{ py: "7px", px: "7px", textAlign: "right", borderRight: "1px solid #d1d5db", fontWeight: 800, color: "#065f46" }}>
                         ₹{formatCurrency(receiptData.amountReceived)}
-                      </td>
-                      <td className="py-2 px-2 text-right border-r border-gray-300 font-bold text-gray-900">
+                      </Box>
+                      <Box component="td" sx={{ py: "7px", px: "7px", textAlign: "right", borderRight: "1px solid #d1d5db", fontWeight: 700, color: "#111827" }}>
                         ₹{formatCurrency(receiptData.allocations.reduce((s, a) => s + (a.balanceDue || 0), 0))}
-                      </td>
-                      <td className="py-2 px-2 text-center text-emerald-700 text-[10px] font-bold">Cleared</td>
-                    </tr>
+                      </Box>
+                      <Box component="td" sx={{ py: "7px", px: "7px", textAlign: "center", color: "#047857", fontSize: 10, fontWeight: 700 }}>Cleared</Box>
+                    </Box>
                   </tfoot>
-                </table>
-              </div>
+                </Box>
+              </Box>
 
               {/* Ledger Summary & Narration Box */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+              <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: "10.5px", fontSize: 10.5 }}>
                 {/* Customer Ledger Snapshot */}
-                <div className="border border-gray-300 rounded p-3 bg-white space-y-1.5">
-                  <div className="font-bold text-gray-700 uppercase tracking-wide text-[10px] mb-1">
+                <Box sx={{ border: "1px solid #d1d5db", borderRadius: "3.5px", p: "10.5px", bgcolor: "#ffffff", "& > * + *": { mt: "5.25px" } }}>
+                  <Box sx={{ fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.025em", fontSize: 10, mb: "3.5px" }}>
                     Customer Account Balance Snapshot
-                  </div>
-                  <div className="flex justify-between text-gray-600">
+                  </Box>
+                  <Box sx={{ display: "flex", justifyContent: "space-between", color: "#4b5563" }}>
                     <span>Previous Outstanding Balance:</span>
-                    <span className="font-medium">₹{formatCurrency(receiptData.previousBalance)}</span>
-                  </div>
-                  <div className="flex justify-between text-emerald-700 font-semibold">
+                    <Box component="span" sx={{ fontWeight: 500 }}>₹{formatCurrency(receiptData.previousBalance)}</Box>
+                  </Box>
+                  <Box sx={{ display: "flex", justifyContent: "space-between", color: "#047857", fontWeight: 600 }}>
                     <span>Payment Received (Credit):</span>
                     <span>-₹{formatCurrency(receiptData.amountReceived)}</span>
-                  </div>
-                  <div className="flex justify-between border-t border-gray-300 pt-1 font-bold text-gray-900">
+                  </Box>
+                  <Box sx={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid #d1d5db", pt: "3.5px", fontWeight: 700, color: "#111827" }}>
                     <span>Net Closing Balance Outstanding:</span>
-                    <span className="text-sm text-indigo-700">₹{formatCurrency(receiptData.currentBalance)}</span>
-                  </div>
-                  <div className="text-[10px] text-gray-500 pt-1 italic">
+                    <Box component="span" sx={{ fontSize: 12.25, color: "#4338ca" }}>₹{formatCurrency(receiptData.currentBalance)}</Box>
+                  </Box>
+                  <Box sx={{ fontSize: 10, color: "#6b7280", pt: "3.5px", fontStyle: "italic" }}>
                     Note: {receiptData.narration}
-                  </div>
-                </div>
+                  </Box>
+                </Box>
 
                 {/* Bank / Settlement Acknowledgement */}
-                <div className="border border-gray-300 rounded p-3 bg-gray-50/60 space-y-1.5">
-                  <div className="font-bold text-gray-700 uppercase tracking-wide text-[10px] mb-1">
+                <Box sx={{ border: "1px solid #d1d5db", borderRadius: "3.5px", p: "10.5px", bgcolor: "rgba(249,250,251,0.6)", "& > * + *": { mt: "5.25px" } }}>
+                  <Box sx={{ fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.025em", fontSize: 10, mb: "3.5px" }}>
                     Payment Acknowledgement
-                  </div>
-                  <p className="text-[11px] text-gray-600 leading-relaxed">
+                  </Box>
+                  <Box component="p" sx={{ fontSize: 11, color: "#4b5563", lineHeight: 1.625 }}>
                     Received with thanks from <b>{receiptData.receivedFrom}</b> sum of <b>₹{formatCurrency(receiptData.amountReceived)}</b> via <b>{receiptData.paymentMode}</b> ({receiptData.referenceNo}).
-                  </p>
+                  </Box>
                   {footer.showBankDetails && (
-                    <div className="text-[10px] text-gray-600 border-t border-gray-200 pt-1">
+                    <Box sx={{ fontSize: 10, color: "#4b5563", borderTop: "1px solid #e5e7eb", pt: "3.5px" }}>
                       <div><b>Deposited in:</b> {footer.bankDetails?.bankName} (A/C: {footer.bankDetails?.accountNo})</div>
                       {footer.bankDetails?.upiId && <div><b>UPI ID:</b> {footer.bankDetails?.upiId}</div>}
-                    </div>
+                    </Box>
                   )}
-                </div>
-              </div>
-            </div>
+                </Box>
+              </Box>
+            </Box>
           ) : (
             <>
               {/* CUSTOMER & DISPATCH BLOCK (For templates other than Landscape Dual) */}
               {template !== "landscape_dual" && (
-                <div className="border border-gray-300 mb-2 text-xs rounded overflow-hidden">
-                  <div className="grid grid-cols-1 md:grid-cols-2 divide-x divide-gray-300">
+                <Box sx={{ border: "1px solid #d1d5db", mb: "7px", fontSize: 10.5, borderRadius: "3.5px", overflow: "hidden" }}>
+                  <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, "& > * + *": { borderLeft: { md: "1px solid #d1d5db" } } }}>
                     {/* Bill To */}
-                    <div className="p-2.5 bg-gray-50/50">
-                      <div className="font-bold text-gray-700 uppercase tracking-wide text-[10px] mb-1 flex items-center gap-1.5">
-                        <span
-                          className="w-2 h-2 rounded-full inline-block"
+                    <Box sx={{ p: "8.75px", bgcolor: "rgba(249,250,251,0.5)" }}>
+                      <Box sx={{ fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.025em", fontSize: 10, mb: "3.5px", display: "flex", alignItems: "center", gap: "5.25px" }}>
+                        <Box
+                          component="span"
+                          sx={{ width: 7, height: 7, borderRadius: "9999px", display: "inline-block" }}
                           style={{ backgroundColor: primaryColor }}
                         />
                         {docPartyLabel}
-                      </div>
-                      <div className="font-bold text-gray-900 text-sm">{data.customer.name}</div>
-                      <div className="text-gray-600 mt-0.5 leading-snug">{data.customer.billingAddress}</div>
-                      <div className="mt-1 flex flex-wrap gap-x-3 text-gray-800 font-medium">
+                      </Box>
+                      <Box sx={{ fontWeight: 700, color: "#111827", fontSize: 12.25 }}>{data.customer.name}</Box>
+                      <Box sx={{ color: "#4b5563", mt: "1.75px", lineHeight: 1.375 }}>{data.customer.billingAddress}</Box>
+                      <Box sx={{ mt: "3.5px", display: "flex", flexWrap: "wrap", columnGap: "10.5px", color: "#1f2937", fontWeight: 500 }}>
                         <span>Ph: {data.customer.phone}</span>
                         <span>GSTIN: {data.customer.gstin}</span>
                         <span>State: {data.customer.state} ({data.customer.stateCode})</span>
-                      </div>
-                    </div>
+                      </Box>
+                    </Box>
 
                     {/* Ship To or Transport Details */}
-                    <div className="p-2.5">
+                    <Box sx={{ p: "8.75px" }}>
                       {header.showShipTo ? (
                         <>
-                          <div className="font-bold text-gray-700 uppercase tracking-wide text-[10px] mb-1">
+                          <Box sx={{ fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.025em", fontSize: 10, mb: "3.5px" }}>
                             Details of Consignee (Shipped To)
-                          </div>
-                          <div className="font-semibold text-gray-800">{data.customer.name}</div>
-                          <div className="text-gray-600 mt-0.5 leading-snug">{data.customer.shippingAddress}</div>
+                          </Box>
+                          <Box sx={{ fontWeight: 600, color: "#1f2937" }}>{data.customer.name}</Box>
+                          <Box sx={{ color: "#4b5563", mt: "1.75px", lineHeight: 1.375 }}>{data.customer.shippingAddress}</Box>
                         </>
                       ) : (
-                        <div className="space-y-1">
-                          <div className="font-bold text-gray-700 uppercase tracking-wide text-[10px] mb-1">
+                        <Box sx={{ "& > * + *": { mt: "3.5px" } }}>
+                          <Box sx={{ fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.025em", fontSize: 10, mb: "3.5px" }}>
                             Transport & Order Details
-                          </div>
+                          </Box>
                           {header.showTransport && (
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">Transporter:</span>
-                              <span className="font-medium">{data.transport.transporterName}</span>
-                            </div>
+                            <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                              <Box component="span" sx={{ color: "#4b5563" }}>Transporter:</Box>
+                              <Box component="span" sx={{ fontWeight: 500 }}>{data.transport.transporterName}</Box>
+                            </Box>
                           )}
                           {header.showPo && (
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">PO Number:</span>
-                              <span className="font-medium">{data.purchaseOrder.poNumber}</span>
-                            </div>
+                            <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                              <Box component="span" sx={{ color: "#4b5563" }}>PO Number:</Box>
+                              <Box component="span" sx={{ fontWeight: 500 }}>{data.purchaseOrder.poNumber}</Box>
+                            </Box>
                           )}
-                        </div>
+                        </Box>
                       )}
 
                       {/* Supplemental Transport row */}
                       {(header.showTransport || header.showPo || header.showEway) && (
-                        <div className="mt-1.5 pt-1.5 border-t border-gray-200 grid grid-cols-2 gap-1 text-[10px] text-gray-600">
+                        <Box sx={{ mt: "5.25px", pt: "5.25px", borderTop: "1px solid #e5e7eb", display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "3.5px", fontSize: 10, color: "#4b5563" }}>
                           {header.showTransport && <div>LR No: <b>{data.transport.lrNumber}</b></div>}
                           {header.showPo && <div>PO Date: <b>{data.purchaseOrder.poDate}</b></div>}
                           {header.showEway && <div>E-Way: <b>{data.ewayBill.ewayBillNo}</b></div>}
-                        </div>
+                        </Box>
                       )}
-                    </div>
-                  </div>
-                </div>
+                    </Box>
+                  </Box>
+                </Box>
               )}
 
               {/* ITEMS TABLE */}
-              <div className="overflow-x-auto mb-2 border border-gray-400 rounded-sm">
-                <table className="w-full text-left border-collapse text-xs">
+              <Box sx={{ overflowX: "auto", mb: "7px", border: "1px solid #9ca3af", borderRadius: "1.75px" }}>
+                <Box component="table" sx={{ width: "100%", textAlign: "left", borderCollapse: "collapse", fontSize: 10.5 }}>
                   <thead>
-                    <tr
-                      className="font-bold text-gray-800 border-b border-gray-400 select-none"
+                    <Box
+                      component="tr"
+                      sx={{ fontWeight: 700, color: "#1f2937", borderBottom: "1px solid #9ca3af", userSelect: "none" }}
                       style={{
                         backgroundColor: template === "glass" ? `${primaryColor}15` : template === "tally" ? "#e5e7eb" : `${primaryColor}18`,
                         color: template === "tally" ? "#000" : primaryColor,
                       }}
                     >
                       {activeCols.map((col) => {
-                        const alignClass =
+                        const textAlign =
                           col.id === "sn"
-                            ? "text-center"
+                            ? "center"
                             : col.id === "item_name"
-                            ? "text-left"
+                            ? "left"
                             : ["qty", "unit", "discount", "gst_rate"].includes(col.id)
-                            ? "text-center"
-                            : "text-right";
+                            ? "center"
+                            : "right";
 
                         return (
-                          <th
+                          <Box
+                            component="th"
                             key={col.id}
-                            className={`py-1.5 px-2 border-r border-gray-300 font-bold uppercase tracking-wider text-[10px] ${alignClass}`}
+                            sx={{ py: "5.25px", px: "7px", borderRight: "1px solid #d1d5db", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", fontSize: 10, textAlign }}
                             style={{ minWidth: col.minWidth }}
                           >
                             {col.label}
-                          </th>
+                          </Box>
                         );
                       })}
-                    </tr>
+                    </Box>
                   </thead>
                   <tbody>
                     {data.items.map((item, idx) => {
                       return (
-                        <tr
+                        <Box
+                          component="tr"
                           key={item.sn}
-                          className={`border-b border-gray-300 ${
-                            idx % 2 === 1 ? "bg-gray-50/60" : "bg-white"
-                          }`}
+                          sx={{ borderBottom: "1px solid #d1d5db", bgcolor: idx % 2 === 1 ? "rgba(249,250,251,0.6)" : "#ffffff" }}
                         >
                           {activeCols.map((col) => {
                             let content = null;
-                            let alignClass = "text-right";
+                            let cellSx = { textAlign: "right" };
 
                             switch (col.id) {
                               case "sn":
                                 content = item.sn;
-                                alignClass = "text-center font-semibold text-gray-600";
+                                cellSx = { textAlign: "center", fontWeight: 600, color: "#4b5563" };
                                 break;
                               case "item_name":
                                 content = (
                                   <div>
-                                    <span className="font-semibold text-gray-900">{item.name}</span>
+                                    <Box component="span" sx={{ fontWeight: 600, color: "#111827" }}>{item.name}</Box>
                                     {item.code && (
-                                      <span className="block text-[10px] text-gray-500">
+                                      <Box component="span" sx={{ display: "block", fontSize: 10, color: "#6b7280" }}>
                                         Code: {item.code} {item.batchNo ? `| Batch: ${item.batchNo}` : ""}
-                                      </span>
+                                      </Box>
                                     )}
                                   </div>
                                 );
-                                alignClass = "text-left";
+                                cellSx = { textAlign: "left" };
                                 break;
                               case "item_code":
                                 content = item.code;
-                                alignClass = "text-left font-mono text-[10px]";
+                                cellSx = { textAlign: "left", fontFamily: "monospace", fontSize: 10 };
                                 break;
                               case "batch_no":
                                 content = item.batchNo;
-                                alignClass = "text-center font-mono text-[10px]";
+                                cellSx = { textAlign: "center", fontFamily: "monospace", fontSize: 10 };
                                 break;
                               case "exp_date":
                                 content = item.expDate;
-                                alignClass = "text-center text-[10px]";
+                                cellSx = { textAlign: "center", fontSize: 10 };
                                 break;
                               case "hsn_sac":
                                 content = item.hsn;
-                                alignClass = "text-center font-mono text-[10px]";
+                                cellSx = { textAlign: "center", fontFamily: "monospace", fontSize: 10 };
                                 break;
                               case "mrp":
                                 content = formatCurrency(item.mrp);
                                 break;
                               case "qty":
                                 content = item.qty;
-                                alignClass = "text-center font-bold";
+                                cellSx = { textAlign: "center", fontWeight: 700 };
                                 break;
                               case "unit":
                                 content = item.unit;
-                                alignClass = "text-center text-gray-600";
+                                cellSx = { textAlign: "center", color: "#4b5563" };
                                 break;
                               case "rate":
                                 content = formatCurrency(item.rate);
                                 break;
                               case "discount":
                                 content = item.discountPerc ? `${item.discountPerc}%` : "-";
-                                alignClass = "text-center text-gray-600";
+                                cellSx = { textAlign: "center", color: "#4b5563" };
                                 break;
                               case "taxable_amt":
                                 content = formatCurrency(item.taxableAmt);
-                                alignClass = "text-right font-medium";
+                                cellSx = { textAlign: "right", fontWeight: 500 };
                                 break;
                               case "gst_rate":
                                 content = `${item.gstRate}%`;
-                                alignClass = "text-center font-medium";
+                                cellSx = { textAlign: "center", fontWeight: 500 };
                                 break;
                               case "total_amt":
                                 content = formatCurrency(item.totalAmt);
-                                alignClass = "text-right font-bold text-gray-900";
+                                cellSx = { textAlign: "right", fontWeight: 700, color: "#111827" };
                                 break;
                               default:
                                 content = "";
                             }
 
                             return (
-                              <td
+                              <Box
+                                component="td"
                                 key={col.id}
-                                className={`py-1.5 px-2 border-r border-gray-300 ${alignClass}`}
+                                sx={{ py: "5.25px", px: "7px", borderRight: "1px solid #d1d5db", ...cellSx }}
                               >
                                 {content}
-                              </td>
+                              </Box>
                             );
                           })}
-                        </tr>
+                        </Box>
                       );
                     })}
                   </tbody>
                   <tfoot>
-                    <tr className="bg-gray-100 font-bold border-t-2 border-gray-400">
+                    <Box component="tr" sx={{ bgcolor: "#f3f4f6", fontWeight: 700, borderTop: "2px solid #9ca3af" }}>
                       {activeCols.map((col, cIdx) => {
                         if (cIdx === 0) {
                           return (
-                            <td key={col.id} className="py-1.5 px-2 text-center border-r border-gray-300">
+                            <Box component="td" key={col.id} sx={{ py: "5.25px", px: "7px", textAlign: "center", borderRight: "1px solid #d1d5db" }}>
                               Total
-                            </td>
+                            </Box>
                           );
                         }
                         if (col.id === "qty") {
                           return (
-                            <td key={col.id} className="py-1.5 px-2 text-center border-r border-gray-300 font-extrabold">
+                            <Box component="td" key={col.id} sx={{ py: "5.25px", px: "7px", textAlign: "center", borderRight: "1px solid #d1d5db", fontWeight: 800 }}>
                               {data.totals.totalQty}
-                            </td>
+                            </Box>
                           );
                         }
                         if (col.id === "taxable_amt") {
                           return (
-                            <td key={col.id} className="py-1.5 px-2 text-right border-r border-gray-300">
+                            <Box component="td" key={col.id} sx={{ py: "5.25px", px: "7px", textAlign: "right", borderRight: "1px solid #d1d5db" }}>
                               ₹{formatCurrency(data.totals.taxableAmount)}
-                            </td>
+                            </Box>
                           );
                         }
                         if (col.id === "total_amt") {
                           return (
-                            <td key={col.id} className="py-1.5 px-2 text-right border-r border-gray-300 font-extrabold text-gray-900">
+                            <Box component="td" key={col.id} sx={{ py: "5.25px", px: "7px", textAlign: "right", borderRight: "1px solid #d1d5db", fontWeight: 800, color: "#111827" }}>
                               ₹{formatCurrency(data.totals.grandTotal)}
-                            </td>
+                            </Box>
                           );
                         }
                         return (
-                          <td key={col.id} className="py-1 px-2 border-r border-gray-300"></td>
+                          <Box component="td" key={col.id} sx={{ py: "3.5px", px: "7px", borderRight: "1px solid #d1d5db" }} />
                         );
                       })}
-                    </tr>
+                    </Box>
                   </tfoot>
-                </table>
-              </div>
+                </Box>
+              </Box>
 
               {/* TAX BREAKDOWN & TOTALS SECTION */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2 items-start">
+              <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: "7px", mb: "7px", alignItems: "flex-start" }}>
                 {/* Left: HSN Summary & Amount in Words */}
-                <div className="space-y-2">
+                <Box sx={{ "& > * + *": { mt: "7px" } }}>
                   {footer.showHsnSummary && (
-                    <div className="border border-gray-300 rounded overflow-hidden">
-                      <div className="bg-gray-100 px-2 py-1 font-bold text-[10px] text-gray-700 uppercase border-b border-gray-300">
+                    <Box sx={{ border: "1px solid #d1d5db", borderRadius: "3.5px", overflow: "hidden" }}>
+                      <Box sx={{ bgcolor: "#f3f4f6", px: "7px", py: "3.5px", fontWeight: 700, fontSize: 10, color: "#374151", textTransform: "uppercase", borderBottom: "1px solid #d1d5db" }}>
                         HSN / SAC Tax Summary
-                      </div>
-                      <table className="w-full text-[10px] text-center border-collapse">
+                      </Box>
+                      <Box component="table" sx={{ width: "100%", fontSize: 10, textAlign: "center", borderCollapse: "collapse" }}>
                         <thead>
-                          <tr className="border-b border-gray-300 bg-gray-50 text-gray-600 font-semibold">
-                            <th className="py-1 px-1 border-r border-gray-300">HSN</th>
-                            <th className="py-1 px-1 border-r border-gray-300 text-right">Taxable</th>
-                            <th className="py-1 px-1 border-r border-gray-300">CGST</th>
-                            <th className="py-1 px-1 border-r border-gray-300">SGST</th>
-                            <th className="py-1 px-1 text-right">Total Tax</th>
-                          </tr>
+                          <Box component="tr" sx={{ borderBottom: "1px solid #d1d5db", bgcolor: "#f9fafb", color: "#4b5563", fontWeight: 600 }}>
+                            <Box component="th" sx={{ py: "3.5px", px: "3.5px", borderRight: "1px solid #d1d5db" }}>HSN</Box>
+                            <Box component="th" sx={{ py: "3.5px", px: "3.5px", borderRight: "1px solid #d1d5db", textAlign: "right" }}>Taxable</Box>
+                            <Box component="th" sx={{ py: "3.5px", px: "3.5px", borderRight: "1px solid #d1d5db" }}>CGST</Box>
+                            <Box component="th" sx={{ py: "3.5px", px: "3.5px", borderRight: "1px solid #d1d5db" }}>SGST</Box>
+                            <Box component="th" sx={{ py: "3.5px", px: "3.5px", textAlign: "right" }}>Total Tax</Box>
+                          </Box>
                         </thead>
                         <tbody>
                           {data.hsnSummary.map((h, i) => (
-                            <tr key={i} className="border-b border-gray-200">
-                              <td className="py-0.5 px-1 border-r border-gray-300 font-mono">{h.hsn}</td>
-                              <td className="py-0.5 px-1 border-r border-gray-300 text-right">₹{formatCurrency(h.taxableAmt)}</td>
-                              <td className="py-0.5 px-1 border-r border-gray-300">₹{formatCurrency(h.cgstAmt)}</td>
-                              <td className="py-0.5 px-1 border-r border-gray-300">₹{formatCurrency(h.sgstAmt)}</td>
-                              <td className="py-0.5 px-1 text-right font-medium">₹{formatCurrency(h.totalTax)}</td>
-                            </tr>
+                            <Box component="tr" key={i} sx={{ borderBottom: "1px solid #e5e7eb" }}>
+                              <Box component="td" sx={{ py: "1.75px", px: "3.5px", borderRight: "1px solid #d1d5db", fontFamily: "monospace" }}>{h.hsn}</Box>
+                              <Box component="td" sx={{ py: "1.75px", px: "3.5px", borderRight: "1px solid #d1d5db", textAlign: "right" }}>₹{formatCurrency(h.taxableAmt)}</Box>
+                              <Box component="td" sx={{ py: "1.75px", px: "3.5px", borderRight: "1px solid #d1d5db" }}>₹{formatCurrency(h.cgstAmt)}</Box>
+                              <Box component="td" sx={{ py: "1.75px", px: "3.5px", borderRight: "1px solid #d1d5db" }}>₹{formatCurrency(h.sgstAmt)}</Box>
+                              <Box component="td" sx={{ py: "1.75px", px: "3.5px", textAlign: "right", fontWeight: 500 }}>₹{formatCurrency(h.totalTax)}</Box>
+                            </Box>
                           ))}
                         </tbody>
-                      </table>
-                    </div>
+                      </Box>
+                    </Box>
                   )}
 
                   {/* Amount in Words */}
                   {footer.showInWords && (
-                    <div className="p-2 bg-gray-50 border border-gray-300 rounded text-xs leading-tight">
-                      <span className="text-gray-500 font-semibold text-[10px] block uppercase">Invoice Amount in Words:</span>
-                      <span className="font-bold text-gray-900 italic">{data.totals.amountInWords}</span>
-                    </div>
+                    <Box sx={{ p: "7px", bgcolor: "#f9fafb", border: "1px solid #d1d5db", borderRadius: "3.5px", fontSize: 10.5, lineHeight: 1.25 }}>
+                      <Box component="span" sx={{ color: "#6b7280", fontWeight: 600, fontSize: 10, display: "block", textTransform: "uppercase" }}>Invoice Amount in Words:</Box>
+                      <Box component="span" sx={{ fontWeight: 700, color: "#111827", fontStyle: "italic" }}>{data.totals.amountInWords}</Box>
+                    </Box>
                   )}
 
                   {/* Bank Details & UPI QR */}
                   {footer.showBankDetails && (
-                    <div className="p-2 border border-gray-300 rounded bg-white text-xs">
-                      <div className="font-bold text-[10px] text-gray-700 uppercase mb-1">
+                    <Box sx={{ p: "7px", border: "1px solid #d1d5db", borderRadius: "3.5px", bgcolor: "#ffffff", fontSize: 10.5 }}>
+                      <Box sx={{ fontWeight: 700, fontSize: 10, color: "#374151", textTransform: "uppercase", mb: "3.5px" }}>
                         Company Bank Account Details
-                      </div>
-                      <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[11px] text-gray-800">
+                      </Box>
+                      <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", columnGap: "7px", rowGap: "1.75px", fontSize: 11, color: "#1f2937" }}>
                         <div><b>Bank:</b> {footer.bankDetails?.bankName}</div>
                         <div><b>A/C No:</b> {footer.bankDetails?.accountNo}</div>
                         <div><b>IFSC:</b> {footer.bankDetails?.ifsc}</div>
                         <div><b>Branch:</b> {footer.bankDetails?.branch}</div>
                         {footer.bankDetails?.upiId && (
-                          <div className="col-span-2 text-indigo-700 font-semibold mt-0.5">
+                          <Box sx={{ gridColumn: "span 2 / span 2", color: "#4338ca", fontWeight: 600, mt: "1.75px" }}>
                             UPI ID: {footer.bankDetails?.upiId}
-                          </div>
+                          </Box>
                         )}
-                      </div>
-                    </div>
+                      </Box>
+                    </Box>
                   )}
-                </div>
+                </Box>
 
                 {/* Right: Calculations & Grand Total Box */}
-                <div className="border border-gray-400 rounded overflow-hidden">
-                  <div className="bg-gray-100 px-3 py-1 font-bold text-xs text-gray-700 uppercase border-b border-gray-300">
+                <Box sx={{ border: "1px solid #9ca3af", borderRadius: "3.5px", overflow: "hidden" }}>
+                  <Box sx={{ bgcolor: "#f3f4f6", px: "10.5px", py: "3.5px", fontWeight: 700, fontSize: 10.5, color: "#374151", textTransform: "uppercase", borderBottom: "1px solid #d1d5db" }}>
                     Payment & Taxes Summary
-                  </div>
-                  <div className="p-2 space-y-1 text-xs">
-                    <div className="flex justify-between text-gray-700">
+                  </Box>
+                  <Box sx={{ p: "7px", "& > * + *": { mt: "3.5px" }, fontSize: 10.5 }}>
+                    <Box sx={{ display: "flex", justifyContent: "space-between", color: "#374151" }}>
                       <span>Sub Total (Gross):</span>
-                      <span className="font-medium">₹{formatCurrency(data.totals.subTotal)}</span>
-                    </div>
+                      <Box component="span" sx={{ fontWeight: 500 }}>₹{formatCurrency(data.totals.subTotal)}</Box>
+                    </Box>
                     {data.totals.totalDiscount > 0 && (
-                      <div className="flex justify-between text-emerald-700 font-medium">
+                      <Box sx={{ display: "flex", justifyContent: "space-between", color: "#047857", fontWeight: 500 }}>
                         <span>Total Discount:</span>
                         <span>-₹{formatCurrency(data.totals.totalDiscount)}</span>
-                      </div>
+                      </Box>
                     )}
-                    <div className="flex justify-between text-gray-800 border-t border-gray-200 pt-1 font-semibold">
+                    <Box sx={{ display: "flex", justifyContent: "space-between", color: "#1f2937", borderTop: "1px solid #e5e7eb", pt: "3.5px", fontWeight: 600 }}>
                       <span>Taxable Value:</span>
                       <span>₹{formatCurrency(data.totals.taxableAmount)}</span>
-                    </div>
-                    <div className="flex justify-between text-gray-600">
+                    </Box>
+                    <Box sx={{ display: "flex", justifyContent: "space-between", color: "#4b5563" }}>
                       <span>Central GST (CGST):</span>
                       <span>+₹{formatCurrency(data.totals.totalCgst)}</span>
-                    </div>
-                    <div className="flex justify-between text-gray-600">
+                    </Box>
+                    <Box sx={{ display: "flex", justifyContent: "space-between", color: "#4b5563" }}>
                       <span>State GST (SGST):</span>
                       <span>+₹{formatCurrency(data.totals.totalSgst)}</span>
-                    </div>
+                    </Box>
                     {data.totals.roundOff !== 0 && (
-                      <div className="flex justify-between text-gray-500 text-[11px]">
+                      <Box sx={{ display: "flex", justifyContent: "space-between", color: "#6b7280", fontSize: 11 }}>
                         <span>Round Off:</span>
                         <span>₹{formatCurrency(data.totals.roundOff)}</span>
-                      </div>
+                      </Box>
                     )}
 
                     {/* Grand Total Bar */}
-                    <div
-                      className="flex justify-between items-center py-2 px-3 mt-1.5 rounded font-black text-sm text-white"
+                    <Box
+                      sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", py: "7px", px: "10.5px", mt: "5.25px", borderRadius: "3.5px", fontWeight: 900, fontSize: 12.25, color: "#ffffff" }}
                       style={{ backgroundColor: primaryColor }}
                     >
-                      <span className="uppercase tracking-wide">Grand Total:</span>
-                      <span className="text-base">₹{formatCurrency(data.totals.grandTotal)}</span>
-                    </div>
+                      <Box component="span" sx={{ textTransform: "uppercase", letterSpacing: "0.025em" }}>Grand Total:</Box>
+                      <Box component="span" sx={{ fontSize: 14 }}>₹{formatCurrency(data.totals.grandTotal)}</Box>
+                    </Box>
 
                     {/* Savings highlight */}
                     {footer.showSavings && data.totals.totalSavings > 0 && (
-                      <div className="text-center text-[10px] font-bold text-emerald-700 py-1 bg-emerald-50 rounded border border-emerald-200">
+                      <Box sx={{ textAlign: "center", fontSize: 10, fontWeight: 700, color: "#047857", py: "3.5px", bgcolor: "#ecfdf5", borderRadius: "3.5px", border: "1px solid #d1fae5" }}>
                         🎉 You Saved ₹{formatCurrency(data.totals.totalSavings)} on this purchase!
-                      </div>
+                      </Box>
                     )}
 
                     {/* Customer Outstanding */}
                     {footer.showOutstanding && (
-                      <div className="pt-1.5 border-t border-gray-200 text-[11px] text-gray-700 flex justify-between">
+                      <Box sx={{ pt: "5.25px", borderTop: "1px solid #e5e7eb", fontSize: 11, color: "#374151", display: "flex", justifyContent: "space-between" }}>
                         <span>
                           Total Balance (
                           {footer.outstandingTiming === "after" ? "After this bill" : "Before bill"}):
                         </span>
-                        <span className="font-bold text-gray-900">
+                        <Box component="span" sx={{ fontWeight: 700, color: "#111827" }}>
                           ₹{formatCurrency(data.customer.previousBalance + (footer.outstandingTiming === "after" ? data.totals.grandTotal : 0))}
-                        </span>
-                      </div>
+                        </Box>
+                      </Box>
                     )}
-                  </div>
-                </div>
-              </div>
+                  </Box>
+                </Box>
+              </Box>
             </>
           )}
         </div>
@@ -1302,59 +1352,59 @@ export default function InvoiceTemplateRenderer({
         {/* ========================================================================= */}
         {/* FOOTER: TERMS & SIGNATURES */}
         {/* ========================================================================= */}
-        <div className="border-t-2 border-gray-400 pt-2 mt-2">
-          <div className="grid grid-cols-2 gap-4 items-end">
+        <Box sx={{ borderTop: "2px solid #9ca3af", pt: "7px", mt: "7px" }}>
+          <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "14px", alignItems: "flex-end" }}>
             {/* Terms & Conditions */}
-            <div>
+            <Box>
               {footer.showTerms && (
-                <div>
-                  <div className="font-bold text-[10px] text-gray-700 uppercase mb-0.5">
+                <Box>
+                  <Box sx={{ fontWeight: 700, fontSize: 10, color: "#374151", textTransform: "uppercase", mb: "1.75px" }}>
                     {isReceiptFormat ? "Receipt Terms & Notes:" : "Terms & Conditions:"}
-                  </div>
-                  <p className="text-[10px] text-gray-600 whitespace-pre-line leading-tight">
+                  </Box>
+                  <Box component="p" sx={{ fontSize: 10, color: "#4b5563", whiteSpace: "pre-line", lineHeight: 1.25 }}>
                     {isReceiptFormat
                       ? "1. Cheque / Demand Draft payments are subject to bank realization.\n2. Official receipt valid only with authorized firm signature & stamp.\n3. Keep this receipt safe for future account settlement reference."
                       : footer.termsText}
-                  </p>
-                </div>
+                  </Box>
+                </Box>
               )}
               {footer.showNotes && (
-                <div className="mt-1 text-[10px] text-gray-600 font-semibold italic">
+                <Box sx={{ mt: "3.5px", fontSize: 10, color: "#4b5563", fontWeight: 600, fontStyle: "italic" }}>
                   Note: {isReceiptFormat ? "Thank you for your timely payment!" : footer.notesText}
-                </div>
+                </Box>
               )}
-            </div>
+            </Box>
 
             {/* Authorized Signatory Block */}
-            <div className="text-right flex flex-col justify-end items-end">
+            <Box sx={{ textAlign: "right", display: "flex", flexDirection: "column", justifyContent: "flex-end", alignItems: "flex-end" }}>
               {footer.showSignatory && (
-                <div className="text-center w-52">
-                  <div className="font-bold text-xs text-gray-800">
+                <Box sx={{ textAlign: "center", width: 182 }}>
+                  <Box sx={{ fontWeight: 700, fontSize: 10.5, color: "#1f2937" }}>
                     {footer.signatoryFirm || `For ${data.company.name}`}
-                  </div>
-                  <div className="h-12 flex items-center justify-center text-gray-300 italic text-[10px]">
+                  </Box>
+                  <Box sx={{ height: 42, display: "flex", alignItems: "center", justifyContent: "center", color: "#d1d5db", fontStyle: "italic", fontSize: 10 }}>
                     [Authorized Signatory & Seal]
-                  </div>
-                  <div className="border-t border-gray-400 pt-1 text-[10px] font-semibold text-gray-700">
+                  </Box>
+                  <Box sx={{ borderTop: "1px solid #9ca3af", pt: "3.5px", fontSize: 10, fontWeight: 600, color: "#374151" }}>
                     Authorized Signatory
-                  </div>
-                </div>
+                  </Box>
+                </Box>
               )}
               {footer.showCustomerSign && (
-                <div className="text-left w-full mt-2 text-[10px] text-gray-500">
+                <Box sx={{ textAlign: "left", width: "100%", mt: "7px", fontSize: 10, color: "#6b7280" }}>
                   {isReceiptFormat ? "Receiver / Payer Signature: _______________________" : "Customer Signature: _______________________"}
-                </div>
+                </Box>
               )}
-            </div>
-          </div>
+            </Box>
+          </Box>
 
-          <div className="text-center text-[9px] text-gray-400 mt-2 border-t border-gray-200 pt-1">
+          <Box sx={{ textAlign: "center", fontSize: 9, color: "#9ca3af", mt: "7px", borderTop: "1px solid #e5e7eb", pt: "3.5px" }}>
             {isReceiptFormat
               ? "This is a computer generated official payment receipt voucher and requires no physical seal where authorized digitally."
               : "This is a computer generated invoice and requires no physical signature under GST regulations."}
-          </div>
-        </div>
-      </div>
-    </div>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
   );
 }

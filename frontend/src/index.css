@@ -1,6 +1,3 @@
-@import "tailwindcss";
-@custom-variant dark (&:where(.dark, .dark *));
-
 /* ── Global layout overrides ── */
 /* Remove min-h-screen from page wrappers so they fit inside the flex layout */
 main > div {

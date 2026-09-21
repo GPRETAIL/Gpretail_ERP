@@ -21,6 +21,8 @@ import {
   Sparkles,
 } from "lucide-react";
 import { toast } from "react-toastify";
+import { Box, Stack, Typography, Button, IconButton, TextField, Checkbox, MenuItem } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import InvoiceTemplateRenderer from "../../components/printing/InvoiceTemplateRenderer";
 import {
   PDF_FORMAT_OPTIONS,
@@ -38,6 +40,8 @@ import {
 } from "../../utils/printFormatDefaults";
 
 export default function ReceiptFormatsDesigner() {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
   const [settings, setSettings] = useState(loadPrintFormatSettings);
   const [activeDrawer, setActiveDrawer] = useState(null); // 'template' | 'customise' | 'header' | 'table' | 'footer' | null
   const [zoomLevel, setZoomLevel] = useState(85); // percentage zoom for preview canvas
@@ -187,97 +191,199 @@ export default function ReceiptFormatsDesigner() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 dark:bg-slate-950 flex flex-col font-sans">
+    <Box sx={{ minHeight: "100vh", bgcolor: isDark ? "#020617" : "#f1f5f9", display: "flex", flexDirection: "column" }}>
       {/* ========================================================================= */}
       {/* TOP TITLE & ACTION BAR */}
       {/* ========================================================================= */}
-      <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 py-3.5 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-30 shadow-xs">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="p-1.5 rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400">
-              <Printer className="w-5 h-5" />
-            </span>
-            <h1 className="text-xl font-bold text-slate-900 dark:text-white">
+      <Stack
+        direction="row"
+        sx={{
+          bgcolor: isDark ? "#0f172a" : "#ffffff",
+          borderBottom: "1px solid",
+          borderColor: isDark ? "#1e293b" : "#e2e8f0",
+          px: "21px",
+          py: "12.25px",
+          flexWrap: "wrap",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "14px",
+          position: "sticky",
+          top: 0,
+          zIndex: 30,
+          boxShadow: "0 1px 2px 0 rgba(0,0,0,0.05)",
+        }}
+      >
+        <Box>
+          <Stack direction="row" sx={{ alignItems: "center", gap: "7px" }}>
+            <Box
+              component="span"
+              sx={{
+                p: "5.25px",
+                borderRadius: "7px",
+                bgcolor: isDark ? "#1e1b4b" : "#eef2ff",
+                color: isDark ? "#818cf8" : "#4f46e5",
+                display: "inline-flex",
+              }}
+            >
+              <Printer size={17.5} />
+            </Box>
+            <Typography component="h1" sx={{ fontSize: 17.5, fontWeight: 700, color: isDark ? "#ffffff" : "#0f172a" }}>
               Invoice & Receipt Print Formats
-            </h1>
-            <span className="text-xs px-2.5 py-0.5 rounded-full font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+            </Typography>
+            <Box
+              component="span"
+              sx={{
+                fontSize: 10.5,
+                px: "8.75px",
+                py: "1.75px",
+                borderRadius: "9999px",
+                fontWeight: 500,
+                bgcolor: isDark ? "#022c22" : "#d1fae5",
+                color: isDark ? "#6ee7b7" : "#065f46",
+              }}
+            >
               {settings.orientation.toUpperCase()} &bull; {settings.pageSize}
-            </span>
-          </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            </Box>
+          </Stack>
+          <Typography sx={{ fontSize: 10.5, color: isDark ? "#94a3b8" : "#64748b", mt: "1.75px" }}>
             Configure A4/A5 document invoices and thermal POS receipts with live preview & print styling
-          </p>
-        </div>
+          </Typography>
+        </Box>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-2">
+        <Stack direction="row" sx={{ alignItems: "center", gap: "7px" }}>
           {/* Zoom controls */}
-          <div className="hidden md:flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-1 text-xs border border-slate-200 dark:border-slate-700 mr-2">
-            <button
+          <Stack
+            direction="row"
+            sx={{
+              display: { xs: "none", md: "flex" },
+              alignItems: "center",
+              bgcolor: isDark ? "#1e293b" : "#f1f5f9",
+              borderRadius: "7px",
+              p: "3.5px",
+              fontSize: 10.5,
+              border: "1px solid",
+              borderColor: isDark ? "#334155" : "#e2e8f0",
+              mr: "7px",
+            }}
+          >
+            <IconButton
               onClick={() => setZoomLevel((z) => Math.max(z - 10, 50))}
-              className="p-1 hover:bg-white dark:hover:bg-slate-700 rounded transition text-slate-600 dark:text-slate-300"
               title="Zoom out"
+              size="small"
+              sx={{ p: "3.5px", borderRadius: "3.5px", color: isDark ? "#cbd5e1" : "#475569" }}
             >
-              <ZoomOut className="w-3.5 h-3.5" />
-            </button>
-            <span className="px-2 font-mono text-slate-700 dark:text-slate-300 font-semibold">
+              <ZoomOut size={12.25} />
+            </IconButton>
+            <Typography component="span" sx={{ px: "7px", fontFamily: "monospace", color: isDark ? "#cbd5e1" : "#334155", fontWeight: 600 }}>
               {zoomLevel}%
-            </span>
-            <button
+            </Typography>
+            <IconButton
               onClick={() => setZoomLevel((z) => Math.min(z + 10, 130))}
-              className="p-1 hover:bg-white dark:hover:bg-slate-700 rounded transition text-slate-600 dark:text-slate-300"
               title="Zoom in"
+              size="small"
+              sx={{ p: "3.5px", borderRadius: "3.5px", color: isDark ? "#cbd5e1" : "#475569" }}
             >
-              <ZoomIn className="w-3.5 h-3.5" />
-            </button>
-            <button
+              <ZoomIn size={12.25} />
+            </IconButton>
+            <Button
               onClick={() => setZoomLevel(85)}
-              className="px-1.5 py-0.5 hover:bg-white dark:hover:bg-slate-700 rounded transition text-[10px] text-slate-500"
               title="Reset Zoom"
+              sx={{ px: "5.25px", py: "1.75px", fontSize: 10, color: "#64748b", textTransform: "none", minWidth: "auto" }}
             >
               Fit
-            </button>
-          </div>
+            </Button>
+          </Stack>
 
-          <button
+          <Button
             onClick={handleReset}
-            className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-lg transition"
+            startIcon={<RotateCcw size={12.25} />}
+            sx={{
+              fontSize: 10.5,
+              fontWeight: 600,
+              color: isDark ? "#e2e8f0" : "#334155",
+              bgcolor: isDark ? "#1e293b" : "#f1f5f9",
+              "&:hover": { bgcolor: isDark ? "#334155" : "#e2e8f0" },
+              borderRadius: "7px",
+              px: "10.5px",
+              py: "7px",
+              textTransform: "none",
+            }}
           >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span>Reset</span>
-          </button>
+            Reset
+          </Button>
 
-          <button
+          <Button
             onClick={handlePrint}
-            className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-slate-800 dark:text-slate-100 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg shadow-xs transition"
+            startIcon={<Printer size={12.25} style={{ color: isDark ? "#818cf8" : "#4f46e5" }} />}
+            sx={{
+              fontSize: 10.5,
+              fontWeight: 700,
+              color: isDark ? "#f1f5f9" : "#1e293b",
+              bgcolor: isDark ? "#1e293b" : "#ffffff",
+              "&:hover": { bgcolor: isDark ? "#334155" : "#f8fafc" },
+              border: "1px solid",
+              borderColor: isDark ? "#475569" : "#cbd5e1",
+              borderRadius: "7px",
+              px: "14px",
+              py: "7px",
+              boxShadow: "0 1px 2px 0 rgba(0,0,0,0.05)",
+              textTransform: "none",
+            }}
           >
-            <Printer className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-            <span>Test Print</span>
-          </button>
+            Test Print
+          </Button>
 
-          <button
+          <Button
             onClick={handleSave}
-            className="flex items-center gap-1.5 px-5 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-md hover:shadow-indigo-500/20 transition"
+            variant="contained"
+            startIcon={<Save size={12.25} />}
+            sx={{
+              fontSize: 10.5,
+              fontWeight: 700,
+              bgcolor: "#4f46e5",
+              "&:hover": { bgcolor: "#4338ca" },
+              borderRadius: "7px",
+              px: "17.5px",
+              py: "7px",
+              boxShadow: 2,
+              textTransform: "none",
+            }}
           >
-            <Save className="w-3.5 h-3.5" />
-            <span>Save Format</span>
-          </button>
-        </div>
-      </div>
+            Save Format
+          </Button>
+        </Stack>
+      </Stack>
 
       {/* ========================================================================= */}
       {/* MAIN TWO-COLUMN WORKSPACE: CONTROLS (LEFT) & LIVE CANVAS (RIGHT) */}
       {/* ========================================================================= */}
-      <div className="flex-1 flex overflow-hidden relative">
+      <Box sx={{ flex: "1 1 0%", display: "flex", overflow: "hidden", position: "relative" }}>
         {/* LEFT CONTROL SIDEBAR (Swayam Bill Book Replica) */}
-        <div className="w-80 sm:w-88 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col shrink-0 overflow-y-auto z-10 shadow-sm">
-          <div className="p-4 space-y-4">
+        <Box
+          sx={{
+            width: { xs: 280, sm: 308 },
+            bgcolor: isDark ? "#0f172a" : "#ffffff",
+            borderRight: "1px solid",
+            borderColor: isDark ? "#1e293b" : "#e2e8f0",
+            display: "flex",
+            flexDirection: "column",
+            flexShrink: 0,
+            overflowY: "auto",
+            zIndex: 10,
+            boxShadow: 1,
+          }}
+        >
+          <Box sx={{ p: "14px", "& > * + *": { mt: "14px" } }}>
             {/* 1. Template Type Dropdown (Swayam Bill Book dynamic template types) */}
-            <div>
-              <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+            <Box>
+              <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 700, color: isDark ? "#cbd5e1" : "#475569", textTransform: "uppercase", letterSpacing: "0.05em", mb: "5.25px" }}>
                 Template Type
-              </label>
-              <select
+              </Typography>
+              <TextField
+                select
+                fullWidth
+                size="small"
                 value={settings.template}
                 onChange={(e) => {
                   const val = e.target.value;
@@ -287,70 +393,127 @@ export default function ReceiptFormatsDesigner() {
                     orientation: val === "landscape_dual" ? "landscape" : prev.orientation,
                   }));
                 }}
-                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-xs font-medium text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                sx={{ "& .MuiInputBase-input": { fontSize: 10.5, fontWeight: 500 } }}
               >
                 {availableTemplates.map((tmpl) => (
-                  <option key={tmpl.id} value={tmpl.id}>
+                  <MenuItem key={tmpl.id} value={tmpl.id}>
                     {tmpl.name}
-                  </option>
+                  </MenuItem>
                 ))}
-              </select>
-            </div>
+              </TextField>
+            </Box>
 
             {/* 2. Transaction Type Dropdown (Swayam / Vyapar replica matching exact screenshot) */}
-            <div className="relative pt-1" ref={txnDropdownRef}>
-              <div
+            <Box sx={{ position: "relative", pt: "3.5px" }} ref={txnDropdownRef}>
+              <Box
                 onClick={() => setTxnDropdownOpen((o) => !o)}
-                className="relative cursor-pointer border-2 border-indigo-600 dark:border-indigo-500 rounded-lg px-3.5 pt-3 pb-2.5 bg-white dark:bg-slate-900 transition shadow-xs hover:border-indigo-700 select-none flex items-center justify-between"
+                sx={{
+                  position: "relative",
+                  cursor: "pointer",
+                  border: "2px solid",
+                  borderColor: isDark ? "#6366f1" : "#4f46e5",
+                  borderRadius: "7px",
+                  px: "12.25px",
+                  pt: "10.5px",
+                  pb: "8.75px",
+                  bgcolor: isDark ? "#0f172a" : "#ffffff",
+                  transition: "all 0.15s",
+                  boxShadow: "0 1px 2px 0 rgba(0,0,0,0.05)",
+                  "&:hover": { borderColor: "#4338ca" },
+                  userSelect: "none",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
               >
                 {/* Floating Outlined Label in border notch */}
-                <span className="absolute -top-2.5 left-2.5 bg-white dark:bg-slate-900 px-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400">
+                <Box
+                  component="span"
+                  sx={{
+                    position: "absolute",
+                    top: "-8.75px",
+                    left: "8.75px",
+                    bgcolor: isDark ? "#0f172a" : "#ffffff",
+                    px: "5.25px",
+                    fontSize: 10.5,
+                    fontWeight: 700,
+                    color: isDark ? "#818cf8" : "#4f46e5",
+                  }}
+                >
                   Transaction Type
-                </span>
+                </Box>
 
                 {/* Selected Text */}
-                <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                <Box component="span" sx={{ fontSize: 12.25, fontWeight: 500, color: isDark ? "#f1f5f9" : "#0f172a" }}>
                   {activeTxnMeta.name}
-                </span>
+                </Box>
 
                 {/* Arrow Icon */}
                 {txnDropdownOpen ? (
-                  <ChevronUp className="w-5 h-5 text-indigo-600 dark:text-indigo-400 stroke-[2.5]" />
+                  <ChevronUp size={17.5} strokeWidth={2.5} style={{ color: isDark ? "#818cf8" : "#4f46e5" }} />
                 ) : (
-                  <ChevronDown className="w-5 h-5 text-indigo-600 dark:text-indigo-400 stroke-[2.5]" />
+                  <ChevronDown size={17.5} strokeWidth={2.5} style={{ color: isDark ? "#818cf8" : "#4f46e5" }} />
                 )}
-              </div>
+              </Box>
 
               {/* Dropdown Menu Popup */}
               {txnDropdownOpen && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-2xl z-40 overflow-hidden py-1 animate-in fade-in-50 zoom-in-95 duration-150">
+                <Box
+                  sx={{
+                    position: "absolute",
+                    top: "100%",
+                    left: 0,
+                    right: 0,
+                    mt: "3.5px",
+                    bgcolor: isDark ? "#0f172a" : "#ffffff",
+                    border: "1px solid",
+                    borderColor: isDark ? "#1e293b" : "#e2e8f0",
+                    borderRadius: "7px",
+                    boxShadow: 12,
+                    zIndex: 40,
+                    overflow: "hidden",
+                    py: "3.5px",
+                  }}
+                >
                   {TRANSACTION_TYPES.map((t) => {
                     const isSelected = settings.transactionType === t.id;
                     return (
-                      <div
+                      <Box
                         key={t.id}
                         onClick={() => handleSelectTransactionType(t.id)}
-                        className={`px-4 py-2.5 text-sm cursor-pointer transition flex items-center justify-between ${
-                          isSelected
-                            ? "bg-[#4338ca] text-white font-semibold"
-                            : "text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium"
-                        }`}
+                        sx={{
+                          px: "14px",
+                          py: "8.75px",
+                          fontSize: 12.25,
+                          cursor: "pointer",
+                          transition: "all 0.15s",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          bgcolor: isSelected ? "#4338ca" : "transparent",
+                          color: isSelected ? "#ffffff" : isDark ? "#e2e8f0" : "#1e293b",
+                          fontWeight: isSelected ? 600 : 500,
+                          "&:hover": { bgcolor: isSelected ? "#4338ca" : isDark ? "#1e293b" : "#f1f5f9" },
+                        }}
                       >
                         <span>{t.name}</span>
-                        {isSelected && <Check className="w-4 h-4 text-white stroke-[2.5]" />}
-                      </div>
+                        {isSelected && <Check size={14} strokeWidth={2.5} color="#ffffff" />}
+                      </Box>
                     );
                   })}
-                </div>
+                </Box>
               )}
-            </div>
+            </Box>
 
             {/* 3. PDF Format Dropdown (All 7 Swayam formats: A4, A5, Thermal Print, Landscape A4, Landscape A5, Letter Head, A4 Half) */}
-            <div>
-              <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+            <Box>
+              <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 700, color: isDark ? "#cbd5e1" : "#475569", textTransform: "uppercase", letterSpacing: "0.05em", mb: "5.25px" }}>
                 PDF Format
-              </label>
-              <select
+              </Typography>
+              <TextField
+                select
+                fullWidth
+                size="small"
                 value={settings.pdfFormat}
                 onChange={(e) => {
                   const fmtId = e.target.value;
@@ -377,102 +540,127 @@ export default function ReceiptFormatsDesigner() {
                     };
                   });
                 }}
-                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-xs font-medium text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                sx={{ "& .MuiInputBase-input": { fontSize: 10.5, fontWeight: 500 } }}
               >
                 {PDF_FORMAT_OPTIONS.map((opt) => (
-                  <option key={opt.id} value={opt.id}>
+                  <MenuItem key={opt.id} value={opt.id}>
                     {opt.name}
-                  </option>
+                  </MenuItem>
                 ))}
-              </select>
-            </div>
+              </TextField>
+            </Box>
 
             {/* 4. Page Size & Format Buttons */}
-            <div>
-              <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+            <Box>
+              <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 700, color: isDark ? "#cbd5e1" : "#475569", textTransform: "uppercase", letterSpacing: "0.05em", mb: "5.25px" }}>
                 Page Size
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                {settings.pdfFormat === "thermal" ? (
-                  <>
-                    {["2inch", "3inch", "4inch"].map((sz) => (
-                      <button
-                        key={sz}
-                        onClick={() => setSettings((prev) => ({ ...prev, pageSize: sz }))}
-                        className={`py-2 text-xs font-bold rounded-lg border transition ${
-                          settings.pageSize === sz
-                            ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
-                            : "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:bg-slate-100"
-                        }`}
-                      >
-                        {sz === "2inch" ? "2 inch (58mm)" : sz === "3inch" ? "3 inch (80mm)" : "4 inch"}
-                      </button>
-                    ))}
-                  </>
-                ) : (
-                  <>
-                    {["A4", "A5", "Letter"].map((sz) => (
-                      <button
-                        key={sz}
-                        onClick={() => setSettings((prev) => ({ ...prev, pageSize: sz }))}
-                        className={`py-2 text-xs font-bold rounded-lg border transition ${
-                          settings.pageSize === sz
-                            ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
-                            : "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:bg-slate-100"
-                        }`}
-                      >
-                        {sz}
-                      </button>
-                    ))}
-                  </>
-                )}
-              </div>
-            </div>
+              </Typography>
+              <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "7px" }}>
+                {(settings.pdfFormat === "thermal" ? ["2inch", "3inch", "4inch"] : ["A4", "A5", "Letter"]).map((sz) => (
+                  <Button
+                    key={sz}
+                    onClick={() => setSettings((prev) => ({ ...prev, pageSize: sz }))}
+                    sx={{
+                      py: "7px",
+                      fontSize: 10.5,
+                      fontWeight: 700,
+                      borderRadius: "7px",
+                      border: "1px solid",
+                      textTransform: "none",
+                      ...(settings.pageSize === sz
+                        ? { bgcolor: "#4f46e5", color: "#ffffff", borderColor: "#4f46e5", boxShadow: 1, "&:hover": { bgcolor: "#4f46e5" } }
+                        : {
+                            bgcolor: isDark ? "#1e293b" : "#f8fafc",
+                            color: isDark ? "#cbd5e1" : "#334155",
+                            borderColor: isDark ? "#334155" : "#cbd5e1",
+                            "&:hover": { bgcolor: isDark ? "#334155" : "#f1f5f9" },
+                          }),
+                    }}
+                  >
+                    {settings.pdfFormat === "thermal"
+                      ? sz === "2inch" ? "2 inch (58mm)" : sz === "3inch" ? "3 inch (80mm)" : "4 inch"
+                      : sz}
+                  </Button>
+                ))}
+              </Box>
+            </Box>
 
             {/* 5. Orientation Switch (PORTRAIT vs LANDSCAPE) */}
             {settings.pdfFormat !== "thermal" && (
-              <div>
-                <div className="flex justify-between items-center mb-1.5">
-                  <label className="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+              <Box>
+                <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", mb: "5.25px" }}>
+                  <Typography component="label" sx={{ fontSize: 10.5, fontWeight: 700, color: isDark ? "#cbd5e1" : "#475569", textTransform: "uppercase", letterSpacing: "0.05em" }}>
                     Orientation
-                  </label>
-                  <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold">
+                  </Typography>
+                  <Box component="span" sx={{ fontSize: 10, color: isDark ? "#818cf8" : "#4f46e5", fontWeight: 600 }}>
                     {settings.orientation === "landscape" ? "Wide Layout" : "Vertical Layout"}
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
+                  </Box>
+                </Stack>
+                <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "7px" }}>
+                  <Button
                     onClick={() => setSettings((prev) => ({ ...prev, orientation: "portrait" }))}
-                    className={`py-2 px-3 text-xs font-bold rounded-lg border flex items-center justify-center gap-2 transition ${
-                      settings.orientation === "portrait"
-                        ? "bg-indigo-600 text-white border-indigo-600 shadow-sm ring-2 ring-indigo-500/20"
-                        : "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:bg-slate-100"
-                    }`}
+                    sx={{
+                      py: "7px",
+                      px: "10.5px",
+                      fontSize: 10.5,
+                      fontWeight: 700,
+                      borderRadius: "7px",
+                      border: "1px solid",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "7px",
+                      textTransform: "none",
+                      ...(settings.orientation === "portrait"
+                        ? { bgcolor: "#4f46e5", color: "#ffffff", borderColor: "#4f46e5", boxShadow: 1, outline: "2px solid rgba(99,102,241,0.2)", outlineOffset: "0px" }
+                        : {
+                            bgcolor: isDark ? "#1e293b" : "#f8fafc",
+                            color: isDark ? "#cbd5e1" : "#334155",
+                            borderColor: isDark ? "#334155" : "#cbd5e1",
+                            "&:hover": { bgcolor: isDark ? "#334155" : "#f1f5f9" },
+                          }),
+                    }}
                   >
-                    <div className="w-3.5 h-4.5 border border-current rounded-xs" />
+                    <Box sx={{ width: 12.25, height: 15.75, border: "1px solid currentColor", borderRadius: "1.75px" }} />
                     <span>Portrait</span>
-                  </button>
+                  </Button>
 
-                  <button
+                  <Button
                     onClick={() => setSettings((prev) => ({ ...prev, orientation: "landscape" }))}
-                    className={`py-2 px-3 text-xs font-bold rounded-lg border flex items-center justify-center gap-2 transition ${
-                      settings.orientation === "landscape"
-                        ? "bg-indigo-600 text-white border-indigo-600 shadow-sm ring-2 ring-indigo-500/20"
-                        : "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:bg-slate-100"
-                    }`}
+                    sx={{
+                      py: "7px",
+                      px: "10.5px",
+                      fontSize: 10.5,
+                      fontWeight: 700,
+                      borderRadius: "7px",
+                      border: "1px solid",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "7px",
+                      textTransform: "none",
+                      ...(settings.orientation === "landscape"
+                        ? { bgcolor: "#4f46e5", color: "#ffffff", borderColor: "#4f46e5", boxShadow: 1, outline: "2px solid rgba(99,102,241,0.2)", outlineOffset: "0px" }
+                        : {
+                            bgcolor: isDark ? "#1e293b" : "#f8fafc",
+                            color: isDark ? "#cbd5e1" : "#334155",
+                            borderColor: isDark ? "#334155" : "#cbd5e1",
+                            "&:hover": { bgcolor: isDark ? "#334155" : "#f1f5f9" },
+                          }),
+                    }}
                   >
-                    <div className="w-4.5 h-3.5 border border-current rounded-xs" />
+                    <Box sx={{ width: 15.75, height: 12.25, border: "1px solid currentColor", borderRadius: "1.75px" }} />
                     <span>Landscape</span>
-                  </button>
-                </div>
-              </div>
+                  </Button>
+                </Box>
+              </Box>
             )}
 
             {/* Divider */}
-            <div className="border-t border-slate-200 dark:border-slate-800 my-2" />
+            <Box sx={{ borderTop: "1px solid", borderColor: isDark ? "#1e293b" : "#e2e8f0", my: "7px" }} />
 
             {/* 6. Navigation Buttons matching Swayam Bill Book screenshot */}
-            <div className="space-y-3 pt-2">
+            <Box sx={{ "& > * + *": { mt: "10.5px" }, pt: "7px" }}>
               {[
                 { id: "template", label: "Invoice Template" },
                 { id: "customise", label: "Customize Format" },
@@ -480,35 +668,95 @@ export default function ReceiptFormatsDesigner() {
                 { id: "table", label: "Table Settings" },
                 { id: "footer", label: "Footer Settings" },
               ].map((item) => (
-                <div
+                <Stack
                   key={item.id}
+                  direction="row"
                   onClick={() => setActiveDrawer(activeDrawer === item.id ? null : item.id)}
-                  className={`flex items-center justify-between py-2.5 px-3 rounded-xl cursor-pointer transition select-none group ${
-                    activeDrawer === item.id
-                      ? "bg-indigo-50 dark:bg-indigo-950/40 ring-1 ring-indigo-500/30"
-                      : "hover:bg-slate-50 dark:hover:bg-slate-800/60"
-                  }`}
+                  sx={{
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    py: "8.75px",
+                    px: "10.5px",
+                    borderRadius: "10.5px",
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                    userSelect: "none",
+                    bgcolor: activeDrawer === item.id ? (isDark ? "rgba(30,27,75,0.4)" : "#eef2ff") : "transparent",
+                    boxShadow: activeDrawer === item.id ? "0 0 0 1px rgba(99,102,241,0.3)" : "none",
+                    "&:hover": {
+                      bgcolor: activeDrawer === item.id ? undefined : isDark ? "rgba(30,41,59,0.6)" : "#f8fafc",
+                    },
+                    "&:hover .nav-item-label": { color: isDark ? "#a5b4fc" : "#4338ca" },
+                    "&:hover .nav-item-icon": { transform: "scale(1.1)" },
+                  }}
                 >
-                  <span className="font-bold text-[#4338ca] dark:text-indigo-400 text-[15px] group-hover:text-indigo-700 dark:group-hover:text-indigo-300 transition">
+                  <Box
+                    component="span"
+                    className="nav-item-label"
+                    sx={{ fontWeight: 700, fontSize: 15, transition: "color 0.15s", color: isDark ? "#818cf8" : "#4338ca" }}
+                  >
                     {item.label}
-                  </span>
-                  <div className="w-7 h-7 rounded-full bg-[#4f46e5] hover:bg-[#4338ca] text-white flex items-center justify-center shadow-xs transition transform group-hover:scale-110 shrink-0">
-                    <ChevronRight className="w-4 h-4 stroke-[2.5]" />
-                  </div>
-                </div>
+                  </Box>
+                  <Box
+                    className="nav-item-icon"
+                    sx={{
+                      width: 24.5,
+                      height: 24.5,
+                      borderRadius: "9999px",
+                      bgcolor: "#4f46e5",
+                      "&:hover": { bgcolor: "#4338ca" },
+                      color: "#ffffff",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      boxShadow: "0 1px 2px 0 rgba(0,0,0,0.05)",
+                      transition: "transform 0.15s",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <ChevronRight size={14} strokeWidth={2.5} />
+                  </Box>
+                </Stack>
               ))}
-            </div>
-          </div>
-        </div>
+            </Box>
+          </Box>
+        </Box>
 
         {/* ========================================================================= */}
         {/* SLIDE-OUT DRAWER / MODAL PANELS */}
         {/* ========================================================================= */}
         {activeDrawer && (
-          <div className="absolute top-0 bottom-0 left-80 sm:left-88 w-96 max-w-[calc(100vw-360px)] bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shadow-2xl z-20 flex flex-col animate-in slide-in-from-left duration-200">
+          <Box
+            sx={{
+              position: "absolute",
+              top: 0,
+              bottom: 0,
+              left: { xs: 280, sm: 308 },
+              width: 336,
+              maxWidth: "calc(100vw - 360px)",
+              bgcolor: isDark ? "#0f172a" : "#ffffff",
+              borderRight: "1px solid",
+              borderColor: isDark ? "#1e293b" : "#e2e8f0",
+              boxShadow: 12,
+              zIndex: 20,
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
             {/* Drawer Header */}
-            <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-850">
-              <h2 className="font-bold text-sm text-slate-800 dark:text-slate-100 capitalize">
+            <Stack
+              direction="row"
+              sx={{
+                px: "14px",
+                py: "10.5px",
+                borderBottom: "1px solid",
+                borderColor: isDark ? "#1e293b" : "#e2e8f0",
+                alignItems: "center",
+                justifyContent: "space-between",
+                bgcolor: isDark ? "#172033" : "#f8fafc",
+              }}
+            >
+              <Typography component="h2" sx={{ fontWeight: 700, fontSize: 12.25, color: isDark ? "#f1f5f9" : "#1e293b", textTransform: "capitalize" }}>
                 {activeDrawer === "template"
                   ? "Select Invoice Template"
                   : activeDrawer === "customise"
@@ -518,27 +766,33 @@ export default function ReceiptFormatsDesigner() {
                   : activeDrawer === "table"
                   ? "Table Columns"
                   : "Footer Settings"}
-              </h2>
-              <button
+              </Typography>
+              <IconButton
                 onClick={() => setActiveDrawer(null)}
-                className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 transition"
+                size="small"
+                sx={{
+                  p: "3.5px",
+                  color: "#94a3b8",
+                  "&:hover": { color: isDark ? "#e2e8f0" : "#334155", bgcolor: isDark ? "#1e293b" : "#e2e8f0" },
+                  borderRadius: "7px",
+                }}
               >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+                <X size={14} />
+              </IconButton>
+            </Stack>
 
             {/* Drawer Body */}
-            <div className="p-4 flex-1 overflow-y-auto space-y-4">
+            <Box sx={{ p: "14px", flex: "1 1 0%", overflowY: "auto", "& > * + *": { mt: "14px" } }}>
               {/* DRAWER 1: TEMPLATE SELECTOR */}
               {activeDrawer === "template" && (
-                <div className="space-y-3">
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                <Box sx={{ "& > * + *": { mt: "10.5px" } }}>
+                  <Typography sx={{ fontSize: 10.5, color: isDark ? "#94a3b8" : "#64748b" }}>
                     Choose an invoice layout tailored for standard Indian GST tax invoices or high-density retail vouchers:
-                  </p>
+                  </Typography>
                   {availableTemplates.map((tmpl) => {
                     const isSelected = settings.template === tmpl.id;
                     return (
-                      <div
+                      <Box
                         key={tmpl.id}
                         onClick={() => {
                           setSettings((prev) => ({
@@ -547,92 +801,140 @@ export default function ReceiptFormatsDesigner() {
                             orientation: tmpl.id === "landscape_dual" ? "landscape" : prev.orientation,
                           }));
                         }}
-                        className={`p-3 rounded-xl border cursor-pointer transition relative group ${
-                          isSelected
-                            ? "bg-indigo-50/70 border-indigo-500 dark:bg-indigo-950/40 dark:border-indigo-500 ring-2 ring-indigo-500/20 shadow-xs"
-                            : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-indigo-300"
-                        }`}
+                        sx={{
+                          p: "10.5px",
+                          borderRadius: "10.5px",
+                          border: "1px solid",
+                          cursor: "pointer",
+                          transition: "all 0.15s",
+                          position: "relative",
+                          ...(isSelected
+                            ? {
+                                bgcolor: isDark ? "rgba(30,27,75,0.4)" : "rgba(238,242,255,0.7)",
+                                borderColor: "#6366f1",
+                                boxShadow: "0 0 0 2px rgba(99,102,241,0.2), 0 1px 2px 0 rgba(0,0,0,0.05)",
+                              }
+            : {
+                                bgcolor: isDark ? "#1e293b" : "#ffffff",
+                                borderColor: isDark ? "#334155" : "#e2e8f0",
+                                "&:hover": { borderColor: "#a5b4fc" },
+                                "&:hover .tmpl-select-label": { color: isDark ? "#818cf8" : "#4f46e5" },
+                              }),
+                        }}
                       >
-                        <div className="flex justify-between items-start mb-1">
-                          <span className="font-bold text-xs text-slate-900 dark:text-white">
+                        <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "flex-start", mb: "3.5px" }}>
+                          <Box component="span" sx={{ fontWeight: 700, fontSize: 10.5, color: isDark ? "#ffffff" : "#0f172a" }}>
                             {tmpl.name}
-                          </span>
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${tmpl.badgeColor}`}>
+                          </Box>
+                          <Box
+                            component="span"
+                            sx={{
+                              fontSize: 10,
+                              fontWeight: 700,
+                              px: "7px",
+                              py: "1.75px",
+                              borderRadius: "9999px",
+                              bgcolor: isDark ? tmpl.badgeColor.darkBg : tmpl.badgeColor.bg,
+                              color: isDark ? tmpl.badgeColor.darkColor : tmpl.badgeColor.color,
+                            }}
+                          >
                             {tmpl.badge}
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
+                          </Box>
+                        </Stack>
+                        <Typography sx={{ fontSize: 11, color: isDark ? "#94a3b8" : "#64748b", lineHeight: 1.375 }}>
                           {tmpl.description}
-                        </p>
+                        </Typography>
 
-                        <div className="mt-2 flex justify-between items-center pt-2 border-t border-slate-100 dark:border-slate-700/60">
-                          <span className="text-[10px] font-medium text-slate-400">
+                        <Stack
+                          direction="row"
+                          sx={{
+                            mt: "7px",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            pt: "7px",
+                            borderTop: "1px solid",
+                            borderColor: isDark ? "rgba(51,65,85,0.6)" : "#f1f5f9",
+                          }}
+                        >
+                          <Box component="span" sx={{ fontSize: 10, fontWeight: 500, color: "#94a3b8" }}>
                             {tmpl.id === "landscape_dual" ? "Wide Format" : "Portrait / Landscape"}
-                          </span>
+                          </Box>
                           {isSelected ? (
-                            <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1">
-                              <Check className="w-3.5 h-3.5" /> Selected
-                            </span>
+                            <Stack direction="row" sx={{ alignItems: "center", gap: "3.5px", fontSize: 10.5, fontWeight: 700, color: isDark ? "#818cf8" : "#4f46e5" }}>
+                              <Check size={12.25} /> Selected
+                            </Stack>
                           ) : (
-                            <span className="text-xs font-semibold text-slate-600 group-hover:text-indigo-600 dark:text-slate-300">
+                            <Box component="span" className="tmpl-select-label" sx={{ fontSize: 10.5, fontWeight: 600, color: isDark ? "#cbd5e1" : "#475569", transition: "color 0.15s" }}>
                               Select &rarr;
-                            </span>
+                            </Box>
                           )}
-                        </div>
-                      </div>
+                        </Stack>
+                      </Box>
                     );
                   })}
-                </div>
+                </Box>
               )}
 
               {/* DRAWER 2: CUSTOMIZE FORMAT */}
               {activeDrawer === "customise" && (
-                <div className="space-y-4">
+                <Box sx={{ "& > * + *": { mt: "14px" } }}>
                   {/* Accent Colour */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide mb-2">
+                  <Box>
+                    <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 700, color: isDark ? "#cbd5e1" : "#334155", textTransform: "uppercase", letterSpacing: "0.025em", mb: "7px" }}>
                       Accent Colour
-                    </label>
-                    <div className="flex flex-wrap gap-2.5 items-center">
+                    </Typography>
+                    <Stack direction="row" sx={{ flexWrap: "wrap", gap: "8.75px", alignItems: "center" }}>
                       {ACCENT_COLOR_PALETTES.map((pal) => (
-                        <button
+                        <Box
+                          component="button"
+                          type="button"
                           key={pal.hex}
                           onClick={() => setSettings((prev) => ({ ...prev, accentColor: pal.hex }))}
                           title={pal.name}
-                          className={`w-7 h-7 rounded-full transition transform hover:scale-110 flex items-center justify-center ${
-                            settings.accentColor === pal.hex
-                              ? "ring-2 ring-offset-2 ring-indigo-500 scale-105"
-                              : "opacity-90 hover:opacity-100"
-                          }`}
+                          sx={{
+                            width: 24.5,
+                            height: 24.5,
+                            borderRadius: "9999px",
+                            transition: "all 0.15s",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            border: "none",
+                            cursor: "pointer",
+                            "&:hover": { transform: "scale(1.1)" },
+                            ...(settings.accentColor === pal.hex
+                              ? { boxShadow: "0 0 0 2px #ffffff, 0 0 0 4px #6366f1", transform: "scale(1.05)" }
+                              : { opacity: 0.9, "&:hover": { opacity: 1, transform: "scale(1.1)" } }),
+                          }}
                           style={{ backgroundColor: pal.hex }}
                         >
                           {settings.accentColor === pal.hex && (
-                            <Check className="w-3.5 h-3.5 text-white stroke-[3]" />
+                            <Check size={12.25} strokeWidth={3} color="#ffffff" />
                           )}
-                        </button>
+                        </Box>
                       ))}
-                      <div className="flex items-center gap-1.5 ml-1">
-                        <input
+                      <Stack direction="row" sx={{ alignItems: "center", gap: "5.25px", ml: "3.5px" }}>
+                        <Box
+                          component="input"
                           type="color"
                           value={settings.accentColor}
                           onChange={(e) => setSettings((prev) => ({ ...prev, accentColor: e.target.value }))}
-                          className="w-7 h-7 rounded cursor-pointer border border-slate-300 dark:border-slate-600"
+                          sx={{ width: 24.5, height: 24.5, borderRadius: "3.5px", cursor: "pointer", border: "1px solid", borderColor: isDark ? "#475569" : "#cbd5e1" }}
                         />
-                        <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 uppercase">
+                        <Typography component="span" sx={{ fontSize: 11, fontFamily: "monospace", color: isDark ? "#94a3b8" : "#64748b", textTransform: "uppercase" }}>
                           {settings.accentColor}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+                        </Typography>
+                      </Stack>
+                    </Stack>
+                  </Box>
 
                   {/* Watermark Section */}
-                  <div className="border-t border-slate-200 dark:border-slate-800 pt-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">
+                  <Box sx={{ borderTop: "1px solid", borderColor: isDark ? "#1e293b" : "#e2e8f0", pt: "10.5px" }}>
+                    <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", mb: "7px" }}>
+                      <Box component="span" sx={{ fontSize: 10.5, fontWeight: 700, color: isDark ? "#cbd5e1" : "#334155", textTransform: "uppercase", letterSpacing: "0.025em" }}>
                         Show Watermark
-                      </span>
-                      <input
-                        type="checkbox"
+                      </Box>
+                      <Checkbox
                         checked={settings.watermark?.enabled || false}
                         onChange={(e) =>
                           setSettings((prev) => ({
@@ -640,18 +942,20 @@ export default function ReceiptFormatsDesigner() {
                             watermark: { ...prev.watermark, enabled: e.target.checked },
                           }))
                         }
-                        className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                        size="small"
+                        sx={{ p: 0, color: "#4f46e5", "&.Mui-checked": { color: "#4f46e5" } }}
                       />
-                    </div>
+                    </Stack>
 
                     {settings.watermark?.enabled && (
-                      <div className="space-y-2.5 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
-                        <div>
-                          <label className="block text-[11px] text-slate-600 dark:text-slate-300 font-medium mb-1">
+                      <Box sx={{ "& > * + *": { mt: "8.75px" }, bgcolor: isDark ? "rgba(30,41,59,0.6)" : "#f8fafc", p: "10.5px", borderRadius: "7px", border: "1px solid", borderColor: isDark ? "#334155" : "#e2e8f0" }}>
+                        <Box>
+                          <Typography component="label" sx={{ display: "block", fontSize: 11, color: isDark ? "#cbd5e1" : "#475569", fontWeight: 500, mb: "3.5px" }}>
                             Watermark Text
-                          </label>
-                          <input
-                            type="text"
+                          </Typography>
+                          <TextField
+                            fullWidth
+                            size="small"
                             value={settings.watermark?.text || ""}
                             onChange={(e) =>
                               setSettings((prev) => ({
@@ -660,16 +964,17 @@ export default function ReceiptFormatsDesigner() {
                               }))
                             }
                             placeholder="e.g. VYNERIX ERP or FIRM NAME"
-                            className="w-full text-xs px-3 py-1.5 rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+                            sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: "5.25px" } }}
                           />
-                        </div>
+                        </Box>
 
-                        <div>
-                          <div className="flex justify-between text-[11px] text-slate-600 dark:text-slate-300 mb-1">
+                        <Box>
+                          <Stack direction="row" sx={{ justifyContent: "space-between", fontSize: 11, color: isDark ? "#cbd5e1" : "#475569", mb: "3.5px" }}>
                             <span>Opacity</span>
                             <span>{settings.watermark?.opacity || 12}%</span>
-                          </div>
-                          <input
+                          </Stack>
+                          <Box
+                            component="input"
                             type="range"
                             min="5"
                             max="40"
@@ -680,22 +985,24 @@ export default function ReceiptFormatsDesigner() {
                                 watermark: { ...prev.watermark, opacity: Number(e.target.value) },
                               }))
                             }
-                            className="w-full"
+                            sx={{ width: "100%" }}
                           />
-                        </div>
-                      </div>
+                        </Box>
+                      </Box>
                     )}
-                  </div>
+                  </Box>
 
                   {/* Margins */}
-                  <div className="border-t border-slate-200 dark:border-slate-800 pt-3">
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide mb-2">
+                  <Box sx={{ borderTop: "1px solid", borderColor: isDark ? "#1e293b" : "#e2e8f0", pt: "10.5px" }}>
+                    <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 700, color: isDark ? "#cbd5e1" : "#334155", textTransform: "uppercase", letterSpacing: "0.025em", mb: "7px" }}>
                       Print Margins (mm)
-                    </label>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div>
-                        <span className="text-[11px] text-slate-500">Top:</span>
-                        <input
+                    </Typography>
+                    <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "7px", fontSize: 10.5 }}>
+                      <Box>
+                        <Typography component="span" sx={{ fontSize: 11, color: "#64748b" }}>Top:</Typography>
+                        <TextField
+                          fullWidth
+                          size="small"
                           type="number"
                           value={settings.margins?.top || 6}
                           onChange={(e) =>
@@ -704,12 +1011,14 @@ export default function ReceiptFormatsDesigner() {
                               margins: { ...prev.margins, top: Number(e.target.value) },
                             }))
                           }
-                          className="w-full mt-1 px-2 py-1 rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+                          sx={{ mt: "3.5px", "& .MuiInputBase-input": { fontSize: 10.5, py: "3.5px" } }}
                         />
-                      </div>
-                      <div>
-                        <span className="text-[11px] text-slate-500">Bottom:</span>
-                        <input
+                      </Box>
+                      <Box>
+                        <Typography component="span" sx={{ fontSize: 11, color: "#64748b" }}>Bottom:</Typography>
+                        <TextField
+                          fullWidth
+                          size="small"
                           type="number"
                           value={settings.margins?.bottom || 6}
                           onChange={(e) =>
@@ -718,24 +1027,24 @@ export default function ReceiptFormatsDesigner() {
                               margins: { ...prev.margins, bottom: Number(e.target.value) },
                             }))
                           }
-                          className="w-full mt-1 px-2 py-1 rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+                          sx={{ mt: "3.5px", "& .MuiInputBase-input": { fontSize: 10.5, py: "3.5px" } }}
                         />
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                      </Box>
+                    </Box>
+                  </Box>
+                </Box>
               )}
 
               {/* DRAWER 3: HEADER SETTINGS */}
               {activeDrawer === "header" && (
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">
+                <Box sx={{ "& > * + *": { mt: "10.5px" } }}>
+                  <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center" }}>
+                    <Box component="span" sx={{ fontSize: 10.5, fontWeight: 700, color: isDark ? "#cbd5e1" : "#334155", textTransform: "uppercase", letterSpacing: "0.025em" }}>
                       Header Elements
-                    </span>
-                  </div>
+                    </Box>
+                  </Stack>
 
-                  <div className="space-y-2 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
+                  <Box sx={{ "& > * + *": { mt: "7px" }, bgcolor: isDark ? "rgba(30,41,59,0.6)" : "#f8fafc", p: "10.5px", borderRadius: "7px", border: "1px solid", borderColor: isDark ? "#334155" : "#e2e8f0" }}>
                     {[
                       { key: "showCompanyName", label: "Company Name" },
                       { key: "showMobile", label: "Mobile / Phone Number" },
@@ -746,116 +1055,146 @@ export default function ReceiptFormatsDesigner() {
                       { key: "showDueDate", label: "Payment Due Date" },
                       { key: "showReverseCharge", label: "Reverse Charge Indicator" },
                     ].map((item) => (
-                      <label
+                      <Stack
+                        component="label"
+                        direction="row"
                         key={item.key}
-                        className="flex items-center justify-between text-xs text-slate-700 dark:text-slate-300 py-1 cursor-pointer"
+                        sx={{ alignItems: "center", justifyContent: "space-between", fontSize: 10.5, color: isDark ? "#cbd5e1" : "#334155", py: "3.5px", cursor: "pointer" }}
                       >
                         <span>{item.label}</span>
-                        <input
-                          type="checkbox"
+                        <Checkbox
                           checked={settings.header?.[item.key] !== false}
                           onChange={() => toggleHeaderField(item.key)}
-                          className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                          size="small"
+                          sx={{ p: 0, color: "#4f46e5", "&.Mui-checked": { color: "#4f46e5" } }}
                         />
-                      </label>
+                      </Stack>
                     ))}
-                  </div>
+                  </Box>
 
-                  <div className="border-t border-slate-200 dark:border-slate-800 pt-2">
-                    <span className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide mb-2">
+                  <Box sx={{ borderTop: "1px solid", borderColor: isDark ? "#1e293b" : "#e2e8f0", pt: "7px" }}>
+                    <Box component="span" sx={{ display: "block", fontSize: 10.5, fontWeight: 700, color: isDark ? "#cbd5e1" : "#334155", textTransform: "uppercase", letterSpacing: "0.025em", mb: "7px" }}>
                       Transaction & Dispatch Details
-                    </span>
-                    <div className="space-y-2 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
+                    </Box>
+                    <Box sx={{ "& > * + *": { mt: "7px" }, bgcolor: isDark ? "rgba(30,41,59,0.6)" : "#f8fafc", p: "10.5px", borderRadius: "7px", border: "1px solid", borderColor: isDark ? "#334155" : "#e2e8f0" }}>
                       {[
                         { key: "showTransport", label: "Transport & LR Details" },
                         { key: "showPo", label: "Purchase Order (PO) Details" },
                         { key: "showEway", label: "E-Way Bill Details" },
                         { key: "showShipTo", label: "Ship To (Consignee) Address" },
                       ].map((item) => (
-                        <label
+                        <Stack
+                          component="label"
+                          direction="row"
                           key={item.key}
-                          className="flex items-center justify-between text-xs text-slate-700 dark:text-slate-300 py-1 cursor-pointer"
+                          sx={{ alignItems: "center", justifyContent: "space-between", fontSize: 10.5, color: isDark ? "#cbd5e1" : "#334155", py: "3.5px", cursor: "pointer" }}
                         >
                           <span>{item.label}</span>
-                          <input
-                            type="checkbox"
+                          <Checkbox
                             checked={settings.header?.[item.key] !== false}
                             onChange={() => toggleHeaderField(item.key)}
-                            className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                            size="small"
+                            sx={{ p: 0, color: "#4f46e5", "&.Mui-checked": { color: "#4f46e5" } }}
                           />
-                        </label>
+                        </Stack>
                       ))}
-                    </div>
-                  </div>
-                </div>
+                    </Box>
+                  </Box>
+                </Box>
               )}
 
               {/* DRAWER 4: TABLE SETTINGS */}
               {activeDrawer === "table" && (
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">
+                <Box sx={{ "& > * + *": { mt: "10.5px" } }}>
+                  <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center" }}>
+                    <Box component="span" sx={{ fontSize: 10.5, fontWeight: 700, color: isDark ? "#cbd5e1" : "#334155", textTransform: "uppercase", letterSpacing: "0.025em" }}>
                       Item Table Columns
-                    </span>
-                    <div className="flex gap-2 text-xs">
-                      <button
+                    </Box>
+                    <Stack direction="row" sx={{ gap: "7px", fontSize: 10.5 }}>
+                      <Box
+                        component="button"
+                        type="button"
                         onClick={() => setAllColumns(true)}
-                        className="text-indigo-600 hover:underline font-semibold"
+                        sx={{ color: "#4f46e5", "&:hover": { textDecoration: "underline" }, fontWeight: 600, border: "none", bgcolor: "transparent", cursor: "pointer", p: 0 }}
                       >
                         Show all
-                      </button>
+                      </Box>
                       <span>|</span>
-                      <button
+                      <Box
+                        component="button"
+                        type="button"
                         onClick={() => setAllColumns(false)}
-                        className="text-slate-500 hover:underline"
+                        sx={{ color: "#64748b", "&:hover": { textDecoration: "underline" }, border: "none", bgcolor: "transparent", cursor: "pointer", p: 0 }}
                       >
                         Hide all
-                      </button>
-                    </div>
-                  </div>
+                      </Box>
+                    </Stack>
+                  </Stack>
 
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  <Typography sx={{ fontSize: 11, color: isDark ? "#94a3b8" : "#64748b" }}>
                     Enable or disable columns displayed on the printed invoice:
-                  </p>
+                  </Typography>
 
-                  <div className="space-y-1.5">
+                  <Box sx={{ "& > * + *": { mt: "5.25px" } }}>
                     {settings.columns.map((col, idx) => (
-                      <div
+                      <Stack
+                        direction="row"
                         key={col.id}
-                        className={`flex items-center justify-between p-2.5 rounded-lg border text-xs transition ${
-                          col.enabled
-                            ? "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200"
-                            : "bg-slate-50 dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-400 line-through opacity-70"
-                        }`}
+                        sx={{
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          p: "8.75px",
+                          borderRadius: "7px",
+                          border: "1px solid",
+                          fontSize: 10.5,
+                          transition: "all 0.15s",
+                          ...(col.enabled
+                            ? { bgcolor: isDark ? "#1e293b" : "#ffffff", borderColor: isDark ? "#334155" : "#cbd5e1", color: isDark ? "#e2e8f0" : "#1e293b" }
+                            : { bgcolor: isDark ? "#172033" : "#f8fafc", borderColor: isDark ? "#1e293b" : "#e2e8f0", color: "#94a3b8", textDecoration: "line-through", opacity: 0.7 }),
+                        }}
                       >
-                        <div className="flex items-center gap-2">
-                          <span className="w-5 h-5 rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 flex items-center justify-center font-mono text-[10px]">
+                        <Stack direction="row" sx={{ alignItems: "center", gap: "7px" }}>
+                          <Box
+                            component="span"
+                            sx={{
+                              width: 17.5,
+                              height: 17.5,
+                              borderRadius: "3.5px",
+                              bgcolor: isDark ? "#334155" : "#f1f5f9",
+                              color: isDark ? "#94a3b8" : "#475569",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontFamily: "monospace",
+                              fontSize: 10,
+                            }}
+                          >
                             {idx + 1}
-                          </span>
-                          <span className="font-medium">{col.label}</span>
-                        </div>
-                        <input
-                          type="checkbox"
+                          </Box>
+                          <Box component="span" sx={{ fontWeight: 500 }}>{col.label}</Box>
+                        </Stack>
+                        <Checkbox
                           checked={col.enabled}
                           onChange={() => toggleColumn(col.id)}
-                          className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                          size="small"
+                          sx={{ p: 0, color: "#4f46e5", "&.Mui-checked": { color: "#4f46e5" } }}
                         />
-                      </div>
+                      </Stack>
                     ))}
-                  </div>
-                </div>
+                  </Box>
+                </Box>
               )}
 
               {/* DRAWER 5: FOOTER SETTINGS */}
               {activeDrawer === "footer" && (
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">
+                <Box sx={{ "& > * + *": { mt: "10.5px" } }}>
+                  <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center" }}>
+                    <Box component="span" sx={{ fontSize: 10.5, fontWeight: 700, color: isDark ? "#cbd5e1" : "#334155", textTransform: "uppercase", letterSpacing: "0.025em" }}>
                       Footer Elements
-                    </span>
-                  </div>
+                    </Box>
+                  </Stack>
 
-                  <div className="space-y-2 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
+                  <Box sx={{ "& > * + *": { mt: "7px" }, bgcolor: isDark ? "rgba(30,41,59,0.6)" : "#f8fafc", p: "10.5px", borderRadius: "7px", border: "1px solid", borderColor: isDark ? "#334155" : "#e2e8f0" }}>
                     {[
                       { key: "showHsnSummary", label: "HSN / SAC Summary Table" },
                       { key: "showInWords", label: "Amount in Words" },
@@ -865,36 +1204,40 @@ export default function ReceiptFormatsDesigner() {
                       { key: "showSignatory", label: "Authorized Signatory Block" },
                       { key: "showCustomerSign", label: "Customer Signature Line" },
                     ].map((item) => (
-                      <label
+                      <Stack
+                        component="label"
+                        direction="row"
                         key={item.key}
-                        className="flex items-center justify-between text-xs text-slate-700 dark:text-slate-300 py-1 cursor-pointer"
+                        sx={{ alignItems: "center", justifyContent: "space-between", fontSize: 10.5, color: isDark ? "#cbd5e1" : "#334155", py: "3.5px", cursor: "pointer" }}
                       >
                         <span>{item.label}</span>
-                        <input
-                          type="checkbox"
+                        <Checkbox
                           checked={settings.footer?.[item.key] !== false}
                           onChange={() => toggleFooterField(item.key)}
-                          className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                          size="small"
+                          sx={{ p: 0, color: "#4f46e5", "&.Mui-checked": { color: "#4f46e5" } }}
                         />
-                      </label>
+                      </Stack>
                     ))}
-                  </div>
+                  </Box>
 
                   {/* Terms Textarea */}
-                  <div className="border-t border-slate-200 dark:border-slate-800 pt-3">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">
+                  <Box sx={{ borderTop: "1px solid", borderColor: isDark ? "#1e293b" : "#e2e8f0", pt: "10.5px" }}>
+                    <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", mb: "3.5px" }}>
+                      <Box component="span" sx={{ fontSize: 10.5, fontWeight: 700, color: isDark ? "#cbd5e1" : "#334155", textTransform: "uppercase", letterSpacing: "0.025em" }}>
                         Terms & Conditions
-                      </span>
-                      <input
-                        type="checkbox"
+                      </Box>
+                      <Checkbox
                         checked={settings.footer?.showTerms !== false}
                         onChange={() => toggleFooterField("showTerms")}
-                        className="w-4 h-4 rounded text-indigo-600"
+                        size="small"
+                        sx={{ p: 0, color: "#4f46e5", "&.Mui-checked": { color: "#4f46e5" } }}
                       />
-                    </div>
+                    </Stack>
                     {settings.footer?.showTerms !== false && (
-                      <textarea
+                      <TextField
+                        fullWidth
+                        multiline
                         rows={3}
                         value={settings.footer?.termsText || ""}
                         onChange={(e) =>
@@ -903,68 +1246,140 @@ export default function ReceiptFormatsDesigner() {
                             footer: { ...prev.footer, termsText: e.target.value },
                           }))
                         }
-                        className="w-full text-xs p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                         placeholder="Enter terms and conditions..."
+                        sx={{ "& .MuiInputBase-input": { fontSize: 10.5 } }}
                       />
                     )}
-                  </div>
-                </div>
+                  </Box>
+                </Box>
               )}
-            </div>
+            </Box>
 
             {/* Drawer Bottom Bar (Swayam Bill Book style: Save, Back, and Reset to original) */}
-            <div className="p-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-850">
-              <div className="flex items-center gap-2">
-                <button
+            <Stack
+              direction="row"
+              sx={{
+                p: "10.5px",
+                borderTop: "1px solid",
+                borderColor: isDark ? "#1e293b" : "#e2e8f0",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "7px",
+                bgcolor: isDark ? "#172033" : "#f8fafc",
+              }}
+            >
+              <Stack direction="row" sx={{ alignItems: "center", gap: "7px" }}>
+                <Button
                   onClick={() => {
                     handleSave();
                     setActiveDrawer(null);
                   }}
-                  className="px-5 py-2 text-xs font-bold text-white bg-[#4f46e5] hover:bg-[#4338ca] rounded-lg shadow-sm transition"
+                  variant="contained"
+                  sx={{
+                    px: "17.5px",
+                    py: "7px",
+                    fontSize: 10.5,
+                    fontWeight: 700,
+                    bgcolor: "#4f46e5",
+                    "&:hover": { bgcolor: "#4338ca" },
+                    borderRadius: "7px",
+                    boxShadow: 1,
+                    textTransform: "none",
+                  }}
                 >
                   Save
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={() => setActiveDrawer(null)}
-                  className="px-5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 rounded-lg transition"
+                  sx={{
+                    px: "17.5px",
+                    py: "7px",
+                    fontSize: 10.5,
+                    fontWeight: 600,
+                    color: isDark ? "#e2e8f0" : "#334155",
+                    bgcolor: isDark ? "#334155" : "#e2e8f0",
+                    "&:hover": { bgcolor: isDark ? "#475569" : "#cbd5e1" },
+                    borderRadius: "7px",
+                    textTransform: "none",
+                  }}
                 >
                   Back
-                </button>
-              </div>
+                </Button>
+              </Stack>
 
               {activeDrawer === "customise" && (
-                <button
+                <Box
+                  component="button"
+                  type="button"
                   onClick={handleReset}
-                  className="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 underline font-medium"
+                  sx={{
+                    fontSize: 10.5,
+                    color: "#64748b",
+                    "&:hover": { color: isDark ? "#cbd5e1" : "#334155" },
+                    textDecoration: "underline",
+                    fontWeight: 500,
+                    border: "none",
+                    bgcolor: "transparent",
+                    cursor: "pointer",
+                  }}
                 >
                   Reset to original
-                </button>
+                </Box>
               )}
-            </div>
-          </div>
+            </Stack>
+          </Box>
         )}
 
         {/* ========================================================================= */}
         {/* CENTER / RIGHT REAL-TIME WYSIWYG PREVIEW CANVAS */}
         {/* ========================================================================= */}
-        <div className="flex-1 overflow-auto p-4 sm:p-8 flex flex-col items-center justify-start bg-slate-200 dark:bg-slate-950/80">
+        <Box
+          sx={{
+            flex: "1 1 0%",
+            overflow: "auto",
+            p: { xs: "14px", sm: "28px" },
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "flex-start",
+            bgcolor: isDark ? "rgba(2,6,23,0.8)" : "#e2e8f0",
+          }}
+        >
           {/* Format Canvas Banner */}
-          <div className="mb-3 px-3 py-1.5 rounded-full bg-white/80 dark:bg-slate-800/80 backdrop-blur-xs border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-3 shadow-xs">
-            <span className="flex items-center gap-1 text-indigo-600 dark:text-indigo-400">
-              <Sparkles className="w-3.5 h-3.5" /> Live WYSIWYG Preview
-            </span>
+          <Stack
+            direction="row"
+            sx={{
+              mb: "10.5px",
+              px: "10.5px",
+              py: "5.25px",
+              borderRadius: "9999px",
+              bgcolor: isDark ? "rgba(30,41,59,0.8)" : "rgba(255,255,255,0.8)",
+              backdropFilter: "blur(4px)",
+              border: "1px solid",
+              borderColor: isDark ? "#334155" : "#cbd5e1",
+              fontSize: 10.5,
+              fontWeight: 600,
+              color: isDark ? "#cbd5e1" : "#475569",
+              alignItems: "center",
+              gap: "10.5px",
+              boxShadow: "0 1px 2px 0 rgba(0,0,0,0.05)",
+            }}
+          >
+            <Stack direction="row" sx={{ alignItems: "center", gap: "3.5px", color: isDark ? "#818cf8" : "#4f46e5" }}>
+              <Sparkles size={12.25} /> Live WYSIWYG Preview
+            </Stack>
             <span>&bull;</span>
             <span>
               {settings.pageSize}{" "}
               {settings.orientation === "landscape" ? "Landscape (297 × 210 mm)" : "Portrait (210 × 297 mm)"}
             </span>
             <span>&bull;</span>
-            <span className="capitalize">{settings.template} Template</span>
-          </div>
+            <Box component="span" sx={{ textTransform: "capitalize" }}>{settings.template} Template</Box>
+          </Stack>
 
           {/* Scaled Preview Wrapper */}
-          <div
-            className="transition-transform duration-200 origin-top"
+          <Box
+            sx={{ transition: "transform 0.2s", transformOrigin: "top" }}
             style={{
               transform: `scale(${zoomLevel / 100})`,
               marginBottom: "100px",
@@ -975,9 +1390,9 @@ export default function ReceiptFormatsDesigner() {
               data={sampleDataForPreview}
               isPrintMode={false}
             />
-          </div>
-        </div>
-      </div>
-    </div>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
   );
 }

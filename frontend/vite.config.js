@@ -5,7 +5,6 @@ import { loadEnv } from "vite";
 import fs from "node:fs";
 import path from "node:path";
 import react from "@vitejs/plugin-react";
-import tailwindcss from "@tailwindcss/vite";
 
 // Serve dev over HTTPS when an mkcert-generated cert pair is present
 // (./certs/localhost-{cert,key}.pem). Browsers that force secure
@@ -31,9 +30,6 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [
       react(),
-      tailwindcss({
-        darkMode: "class",
-      }),
     ],
     test: {
       testTimeout: 20000,
