@@ -332,22 +332,20 @@ const PreviewMetaInlineGroup = ({ items, align = "left" }) => {
   // out of the grid's auto-placement -- the next group then slides into this one's column instead
   // of its own (e.g. a line with only a left + right item, no center, was rendering "right" in the
   // middle column because the empty center group vanished and right auto-placed into column 2).
-  const alignClass =
-    align === "right"
-      ? "justify-end text-right"
-      : align === "center"
-        ? "justify-center text-center"
-        : "justify-start text-left";
+  const justifyContent = align === "right" ? "flex-end" : align === "center" ? "center" : "flex-start";
+  const textAlign = align === "right" ? "right" : align === "center" ? "center" : "left";
 
   return (
-    <div className={`flex flex-wrap gap-x-3 gap-y-0.5 ${alignClass}`}>
+    <Box sx={{ display: "flex", flexWrap: "wrap", columnGap: "10.5px", rowGap: "1.75px", justifyContent, textAlign }}>
       {items.map((item) => (
-        <span key={item.key} className="whitespace-nowrap">
+        <Box component="span" key={item.key} sx={{ whiteSpace: "nowrap" }}>
           <span>{item.label}: </span>
-          <span className={item.key === "salesNo" ? "font-mono font-semibold" : ""}>{item.value}</span>
-        </span>
+          <Box component="span" sx={item.key === "salesNo" ? { fontFamily: "monospace", fontWeight: 600 } : undefined}>
+            {item.value}
+          </Box>
+        </Box>
       ))}
-    </div>
+    </Box>
   );
 };
 
@@ -364,11 +362,11 @@ const PreviewMetaLine = ({ line }) => {
   const rightItems = items.filter((item) => item.position === "right");
 
   return (
-    <div className="grid grid-cols-3 items-start gap-2">
+    <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", alignItems: "flex-start", gap: "7px" }}>
       <PreviewMetaInlineGroup items={leftItems} align="left" />
       <PreviewMetaInlineGroup items={centerItems} align="center" />
       <PreviewMetaInlineGroup items={rightItems} align="right" />
-    </div>
+    </Box>
   );
 };
 
@@ -581,14 +579,23 @@ const ReceiptPreview = ({ companyInfo, settings }) => {
             <Eye size={16} style={{ color: "#9ca3af" }} />
           </Stack>
         </Box>
-        <div className="bg-[#eef2f7] p-4 dark:bg-gray-900/40">
-          <iframe
+        <Box sx={{ bgcolor: (theme) => (theme.palette.mode === "dark" ? alpha("#111827", 0.4) : "#eef2f7"), p: "14px" }}>
+          <Box
+            component="iframe"
             title="A4 invoice preview"
             srcDoc={a4PreviewHtml}
-            className="mx-auto block w-full rounded-2xl border border-gray-300 bg-white shadow-lg"
-            style={{ height: "80vh" }}
+            sx={{
+              mx: "auto",
+              display: "block",
+              width: "100%",
+              borderRadius: "14px",
+              border: "1px solid #d1d5db",
+              bgcolor: "#ffffff",
+              boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1)",
+              height: "80vh",
+            }}
           />
-        </div>
+        </Box>
       </Box>
     );
   }
@@ -607,146 +614,224 @@ const ReceiptPreview = ({ companyInfo, settings }) => {
         </Stack>
       </Box>
 
-      <div className="bg-[#eef2f7] p-4 dark:bg-gray-900/40">
+      <Box sx={{ bgcolor: (theme) => (theme.palette.mode === "dark" ? alpha("#111827", 0.4) : "#eef2f7"), p: "14px" }}>
         <style>{buildReceiptFormatCss(settings.receiptFormat)}</style>
-        <div
-          className="receipt mx-auto max-w-full rounded-2xl border border-gray-300 bg-white p-4 shadow-lg"
-          style={{ width: `min(100%, ${widthCss})`, fontFamily: getSalesReceiptFontCss(settings.receiptFontFamily) }}
+        {/* This element's own "receipt"/"space-y-1"/"line"/"title"/"totals-row"/"grand" classNames are
+            NOT Tailwind -- they're selector hooks for buildReceiptFormatCss's injected <style> above
+            (an unlayered stylesheet that always wins over any Tailwind utility on the same property,
+            e.g. .receipt's own border-radius rule already made rounded-2xl fully inert). Kept verbatim;
+            only the genuinely-functional Tailwind fragments (no property overlap with that CSS) were
+            converted to sx below. */}
+        <Box
+          className="receipt"
+          sx={{
+            mx: "auto",
+            maxWidth: "100%",
+            border: "1px solid #d1d5db",
+            bgcolor: "#ffffff",
+            p: "14px",
+            boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1)",
+            width: `min(100%, ${widthCss})`,
+            fontFamily: getSalesReceiptFontCss(settings.receiptFontFamily),
+          }}
         >
-          <div className="space-y-1">
+          <Box className="space-y-1" sx={{ "& > * + *": { mt: "3.5px" } }}>
             {topGeneralRows.map((row) => (
-              <div
+              <Box
                 key={row.key}
-                className={`text-[11px] leading-4 text-gray-600 ${
-                  generalFields[row.key]?.position === "left"
-                    ? "text-left"
-                    : generalFields[row.key]?.position === "right"
-                      ? "text-right"
-                      : "text-center"
-                }`}
+                sx={{
+                  fontSize: 11,
+                  lineHeight: "14px",
+                  color: "#4b5563",
+                  textAlign:
+                    generalFields[row.key]?.position === "left"
+                      ? "left"
+                      : generalFields[row.key]?.position === "right"
+                        ? "right"
+                        : "center",
+                }}
               >
                 {row.key === "logo" ? (
-                  <div className="inline-flex h-10 min-w-[84px] items-center justify-center rounded-lg border border-dashed border-gray-300 px-4 text-[10px] font-semibold tracking-[0.18em] text-gray-500">
+                  <Box
+                    sx={{
+                      display: "inline-flex",
+                      height: 40,
+                      minWidth: 84,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderRadius: "7px",
+                      border: "1px dashed #d1d5db",
+                      px: "14px",
+                      fontSize: 10,
+                      fontWeight: 600,
+                      letterSpacing: "0.18em",
+                      color: "#6b7280",
+                    }}
+                  >
                     {generalContent.logo}
-                  </div>
+                  </Box>
                 ) : row.key === "company" ? (
-                  <div className="title text-base font-extrabold tracking-[0.18em] text-gray-900">{generalContent.company}</div>
+                  <Box className="title" sx={{ fontSize: 14, fontWeight: 800, letterSpacing: "0.18em", color: "#111827" }}>
+                    {generalContent.company}
+                  </Box>
                 ) : (
                   generalContent[row.key]
                 )}
-              </div>
+              </Box>
             ))}
             {!topGeneralRows.some((row) => row.key === "company") ? (
-              <div className="title text-center text-base font-extrabold tracking-[0.18em] text-gray-900">{sampleStoreName}</div>
+              <Box className="title" sx={{ textAlign: "center", fontSize: 14, fontWeight: 800, letterSpacing: "0.18em", color: "#111827" }}>
+                {sampleStoreName}
+              </Box>
             ) : null}
             {!topGeneralRows.some((row) => row.key === "address") ? (
-              <div className="text-center text-[11px] leading-4 text-gray-500">{sampleAddress}</div>
+              <Box sx={{ textAlign: "center", fontSize: 11, lineHeight: "14px", color: "#6b7280" }}>{sampleAddress}</Box>
             ) : null}
             {!topGeneralRows.some((row) => row.key === "gst") ? (
-              <div className="text-center text-[11px] leading-4 text-gray-500">GST No: {sampleGst}</div>
+              <Box sx={{ textAlign: "center", fontSize: 11, lineHeight: "14px", color: "#6b7280" }}>GST No: {sampleGst}</Box>
             ) : null}
-            <div className="text-center text-[11px] leading-4 text-gray-500">Contact: {samplePhone}</div>
-          </div>
+            <Box sx={{ textAlign: "center", fontSize: 11, lineHeight: "14px", color: "#6b7280" }}>Contact: {samplePhone}</Box>
+          </Box>
 
-          <div className="line my-3 border-t border-dashed border-gray-300" />
+          <Box className="line" />
 
-          <div className="space-y-1 text-[11px] text-gray-700">
+          <Box sx={{ "& > * + *": { mt: "3.5px" }, fontSize: 11, color: "#374151" }}>
             {groupedGeneralLines.map((line) => (
               <PreviewMetaLine key={line.lineNumber} line={line} />
             ))}
-          </div>
+          </Box>
 
-          <div className="line my-3 border-t border-dashed border-gray-300" />
+          <Box className="line" />
 
-          <div className="overflow-hidden rounded-lg border border-gray-200">
+          <Box sx={{ overflow: "hidden", borderRadius: "7px", border: "1px solid #e5e7eb" }}>
             {visibleProductColumns.length > 0 ? (
-              <div
-                className="grid bg-gray-50 text-[10px] font-bold uppercase tracking-wide text-gray-500"
-                style={{ gridTemplateColumns: `repeat(${Math.max(visibleProductColumns.length, 1)}, minmax(0, 1fr))` }}
+              <Box
+                sx={{
+                  display: "grid",
+                  bgcolor: "#f9fafb",
+                  fontSize: 10,
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.025em",
+                  color: "#6b7280",
+                  gridTemplateColumns: `repeat(${Math.max(visibleProductColumns.length, 1)}, minmax(0, 1fr))`,
+                }}
               >
                 {visibleProductColumns.map((column) => (
-                  <div
-                    key={column.key}
-                    className={`px-2 py-2 ${
-                      column.key === "productName" ? "text-left" : "text-right"
-                    }`}
-                  >
+                  <Box key={column.key} sx={{ px: "7px", py: "7px", textAlign: column.key === "productName" ? "left" : "right" }}>
                     {column.label}
-                  </div>
+                  </Box>
                 ))}
-              </div>
+              </Box>
             ) : null}
             {previewItems.map((item) => (
-              <div
+              <Box
                 key={item.name}
-                className="grid border-t border-gray-100 text-[11px] text-gray-700"
-                style={{ gridTemplateColumns: `repeat(${Math.max(visibleProductColumns.length, 1)}, minmax(0, 1fr))` }}
+                sx={{
+                  display: "grid",
+                  borderTop: "1px solid #f3f4f6",
+                  fontSize: 11,
+                  color: "#374151",
+                  gridTemplateColumns: `repeat(${Math.max(visibleProductColumns.length, 1)}, minmax(0, 1fr))`,
+                }}
               >
                 {visibleProductColumns.map((column) => (
-                  <div
+                  <Box
                     key={`${item.name}-${column.key}`}
-                    className={`px-2 py-2 ${
-                      column.key === "productName" ? "whitespace-pre-line leading-4 text-left" : "text-right"
-                    }`}
+                    sx={{
+                      px: "7px",
+                      py: "7px",
+                      textAlign: column.key === "productName" ? "left" : "right",
+                      whiteSpace: column.key === "productName" ? "pre-line" : "normal",
+                      lineHeight: column.key === "productName" ? "14px" : "normal",
+                    }}
                   >
                     {previewProductCellValue(item, column.key)}
-                  </div>
+                  </Box>
                 ))}
-              </div>
+              </Box>
             ))}
-          </div>
+          </Box>
 
-          <div className="my-3 space-y-1 text-[11px] text-gray-700">
+          <Box sx={{ my: "10.5px", "& > * + *": { mt: "3.5px" }, fontSize: 11, color: "#374151" }}>
             {previewTotals.map((row) => (
-              <div
+              <Box
                 key={row.key}
-                className={`totals-row flex items-center justify-between gap-3 ${row.grand ? "grand" : ""}`}
+                className={`totals-row${row.grand ? " grand" : ""}`}
+                sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10.5px" }}
               >
                 <span>{row.label}</span>
-                <span className={row.grand ? "text-sm font-bold text-gray-900" : ""}>{row.value}</span>
-              </div>
+                <Box component="span" sx={row.grand ? { fontSize: 12.25, fontWeight: 700, color: "#111827" } : undefined}>
+                  {row.value}
+                </Box>
+              </Box>
             ))}
-          </div>
+          </Box>
 
           {settings.showTaxTableOnReceipt && taxRows.length > 0 && visibleTaxColumns.length > 0 ? (
-            <div className="mb-3 overflow-hidden rounded-lg border border-gray-200">
-              <div
-                className="grid bg-gray-50 text-[10px] font-bold uppercase tracking-wide text-gray-500"
-                style={{ gridTemplateColumns: `repeat(${visibleTaxColumns.length}, minmax(0, 1fr))` }}
+            <Box sx={{ mb: "10.5px", overflow: "hidden", borderRadius: "7px", border: "1px solid #e5e7eb" }}>
+              <Box
+                sx={{
+                  display: "grid",
+                  bgcolor: "#f9fafb",
+                  fontSize: 10,
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.025em",
+                  color: "#6b7280",
+                  gridTemplateColumns: `repeat(${visibleTaxColumns.length}, minmax(0, 1fr))`,
+                }}
               >
                 {visibleTaxColumns.map((column) => (
-                  <div
-                    key={column.key}
-                    className={`px-2 py-2 ${column.key === "taxName" ? "text-left" : "text-right"}`}
-                  >
+                  <Box key={column.key} sx={{ px: "7px", py: "7px", textAlign: column.key === "taxName" ? "left" : "right" }}>
                     {column.label}
-                  </div>
+                  </Box>
                 ))}
-              </div>
+              </Box>
               {taxRows.map((row) => (
-                <div
+                <Box
                   key={`${row.label}-${row.taxPerc}`}
-                  className="grid border-t border-gray-100 text-[11px] text-gray-700"
-                  style={{ gridTemplateColumns: `repeat(${visibleTaxColumns.length}, minmax(0, 1fr))` }}
+                  sx={{
+                    display: "grid",
+                    borderTop: "1px solid #f3f4f6",
+                    fontSize: 11,
+                    color: "#374151",
+                    gridTemplateColumns: `repeat(${visibleTaxColumns.length}, minmax(0, 1fr))`,
+                  }}
                 >
                   {visibleTaxColumns.map((column) => (
-                    <div
+                    <Box
                       key={`${row.label}-${row.taxPerc}-${column.key}`}
-                      className={`px-2 py-2 ${column.key === "taxName" ? "truncate text-left" : "text-right"}`}
+                      sx={{
+                        px: "7px",
+                        py: "7px",
+                        textAlign: column.key === "taxName" ? "left" : "right",
+                        overflow: column.key === "taxName" ? "hidden" : "visible",
+                        textOverflow: column.key === "taxName" ? "ellipsis" : "clip",
+                        whiteSpace: column.key === "taxName" ? "nowrap" : "normal",
+                      }}
                     >
                       {previewTaxCellValue(row, column.key)}
-                    </div>
+                    </Box>
                   ))}
-                </div>
+                </Box>
               ))}
-            </div>
+            </Box>
           ) : null}
 
           {billCodeMarkup ? (
             <>
-              <div className="line my-3 border-t border-dashed border-gray-300" />
-              <div
-                className="flex flex-col items-center justify-center overflow-hidden [&_img]:h-24 [&_img]:w-24 [&_img]:max-w-full [&_img]:object-contain [&_svg]:h-auto [&_svg]:w-full [&_svg]:max-w-full"
+              <Box className="line" />
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  overflow: "hidden",
+                  "& img": { height: 84, width: 84, maxWidth: "100%", objectFit: "contain" },
+                  "& svg": { height: "auto", width: "100%", maxWidth: "100%" },
+                }}
                 dangerouslySetInnerHTML={{ __html: billCodeMarkup }}
               />
             </>
@@ -754,19 +839,27 @@ const ReceiptPreview = ({ companyInfo, settings }) => {
 
           {paymentQrMarkup ? (
             <>
-              <div className="line my-3 border-t border-dashed border-gray-300" />
-              <div
-                className="flex flex-col items-center justify-center overflow-hidden [&_img]:h-24 [&_img]:w-24 [&_img]:max-w-full [&_img]:object-contain [&_svg]:h-auto [&_svg]:w-full [&_svg]:max-w-full"
+              <Box className="line" />
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  overflow: "hidden",
+                  "& img": { height: 84, width: 84, maxWidth: "100%", objectFit: "contain" },
+                  "& svg": { height: "auto", width: "100%", maxWidth: "100%" },
+                }}
                 dangerouslySetInnerHTML={{ __html: paymentQrMarkup }}
               />
             </>
           ) : null}
 
-          <div className="mt-4 whitespace-pre-line text-center text-[11px] font-medium leading-5 text-gray-700">
+          <Box sx={{ mt: "14px", whiteSpace: "pre-line", textAlign: "center", fontSize: 11, fontWeight: 500, lineHeight: "17.5px", color: "#374151" }}>
             {settings.thankYouMessage}
-          </div>
-        </div>
-      </div>
+          </Box>
+        </Box>
+      </Box>
     </Box>
   );
 };

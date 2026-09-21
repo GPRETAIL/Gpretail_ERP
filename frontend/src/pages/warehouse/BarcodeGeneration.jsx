@@ -13,10 +13,8 @@ import {
   DEFAULT_WAREHOUSE_BARCODE_CUSTOMIZATION,
   getWarehouseCodePosition,
   getWarehouseEffectiveFieldPosition,
-  getWarehouseLabelFieldAlignClass,
   getWarehouseLabelFieldFlexJustifyContent,
   getWarehouseLabelFieldFontMm,
-  getWarehouseLabelFieldJustifyClass,
   getWarehouseOrderedFields,
   getWarehouseLabelFieldPosition,
   getWarehouseLabelFieldTextAlign,
@@ -1384,6 +1382,8 @@ const hasGeneratedDirectPurchaseBarcodes = (entry) => {
   });
 };
 
+const truncateSx = { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" };
+
 const StickerFieldsBlock = ({ fields, metrics, textStyle, customization, layout = "stack", availableWidthMm }) => {
   if (fields.length === 0) return null;
   const codePosition = getWarehouseCodePosition(customization);
@@ -1421,11 +1421,11 @@ const StickerFieldsBlock = ({ fields, metrics, textStyle, customization, layout 
   }
 
   return (
-    <div
-      style={
+    <Box
+      sx={
         isRow
           ? {
-              marginTop: `${metrics.fieldsMarginTopMm}mm`,
+              mt: `${metrics.fieldsMarginTopMm}mm`,
               display: "flex",
               flexDirection: "row",
               justifyContent: "space-between",
@@ -1433,7 +1433,7 @@ const StickerFieldsBlock = ({ fields, metrics, textStyle, customization, layout 
               columnGap: `${metrics.bodyGapMm}mm`,
             }
           : {
-              marginTop: `${metrics.fieldsMarginTopMm}mm`,
+              mt: `${metrics.fieldsMarginTopMm}mm`,
               display: "grid",
               rowGap: `${metrics.fieldRowGapMm}mm`,
             }
@@ -1446,13 +1446,19 @@ const StickerFieldsBlock = ({ fields, metrics, textStyle, customization, layout 
           codePosition
         );
         const displayFontMm = fontMm * fontScaleDown;
+        const justifyContent = getWarehouseLabelFieldFlexJustifyContent(fieldPosition);
+        const textAlign = getWarehouseLabelFieldTextAlign(fieldPosition);
 
         if (isStriked) {
           return (
-            <div
+            <Box
               key={field.key}
-              className={`flex items-center text-gray-700 ${getWarehouseLabelFieldJustifyClass(fieldPosition)} ${getWarehouseLabelFieldAlignClass(fieldPosition)}`}
-              style={{
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                color: "#374151",
+                justifyContent,
+                textAlign,
                 gap: `${metrics.bodyGapMm}mm`,
                 fontSize: `${displayFontMm}mm`,
                 lineHeight: 1.1,
@@ -1461,26 +1467,31 @@ const StickerFieldsBlock = ({ fields, metrics, textStyle, customization, layout 
                 fontStyle: textStyle.fontStyle,
               }}
             >
-              <span className="relative inline-flex items-center gap-[0.8mm]">
-                <span className="truncate uppercase">{field.label}</span>
-                <span className="truncate">{field.value}</span>
-                <svg
-                  className="pointer-events-none absolute -inset-x-1 inset-y-0 h-full w-[calc(100%+8px)] overflow-visible"
+              <Box component="span" sx={{ position: "relative", display: "inline-flex", alignItems: "center", gap: "0.8mm" }}>
+                <Box component="span" sx={{ ...truncateSx, textTransform: "uppercase" }}>{field.label}</Box>
+                <Box component="span" sx={truncateSx}>{field.value}</Box>
+                <Box
+                  component="svg"
+                  sx={{ position: "absolute", pointerEvents: "none", left: "-3.5px", right: "-3.5px", top: 0, bottom: 0, height: "100%", width: "calc(100% + 8px)", overflow: "visible" }}
                   viewBox="0 0 100 100"
                   preserveAspectRatio="none"
                 >
                   <line x1="0" y1="50" x2="100" y2="50" stroke="#dc2626" strokeWidth="8" strokeLinecap="round" />
-                </svg>
-              </span>
-            </div>
+                </Box>
+              </Box>
+            </Box>
           );
         }
 
         return (
-          <div
+          <Box
             key={field.key}
-            className={`flex items-center ${isRs && !priceEmphasis?.boxed ? "font-bold text-gray-950" : "text-gray-800"} ${getWarehouseLabelFieldJustifyClass(fieldPosition)} ${getWarehouseLabelFieldAlignClass(fieldPosition)}`}
-            style={{
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              color: isRs ? "#030712" : "#1f2937",
+              justifyContent,
+              textAlign,
               gap: `${metrics.bodyGapMm}mm`,
               fontSize: `${displayFontMm}mm`,
               lineHeight: 1.1,
@@ -1499,12 +1510,12 @@ const StickerFieldsBlock = ({ fields, metrics, textStyle, customization, layout 
                 : null),
             }}
           >
-            <span className="truncate uppercase">{field.label}</span>
-            <span className="truncate">{field.value}</span>
-          </div>
+            <Box component="span" sx={{ ...truncateSx, textTransform: "uppercase" }}>{field.label}</Box>
+            <Box component="span" sx={truncateSx}>{field.value}</Box>
+          </Box>
         );
       })}
-    </div>
+    </Box>
   );
 };
 
@@ -1518,7 +1529,12 @@ const StickerCard = ({ label, customization, storeName, qrSrc = "" }) => {
   const metrics = getWarehouseStickerMetrics(customization);
   const textStyle = metrics.textStyle;
   const formatStyle = metrics.formatStyle;
-  const cardClassName = `overflow-hidden bg-white ${formatStyle.rounded ? "rounded-[3mm]" : ""} ${formatStyle.cardBorder ? "border border-gray-300" : ""}`;
+  const cardSx = {
+    overflow: "hidden",
+    bgcolor: "#fff",
+    ...(formatStyle.rounded ? { borderRadius: "3mm" } : null),
+    ...(formatStyle.cardBorder ? { border: "1px solid #d1d5db" } : null),
+  };
   const headerDividerStyle = formatStyle.headerDivider === "accent"
     ? { borderBottom: "0.4mm solid #2563eb" }
     : formatStyle.headerDivider === "solid"
@@ -1545,31 +1561,35 @@ const StickerCard = ({ label, customization, storeName, qrSrc = "" }) => {
       })
     : "";
   const codeContent = (
-    <div className="flex flex-col items-center justify-center overflow-hidden">
+    <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
       {label.codeType === "code" ? (
         qrSrc ? (
-          <img
+          <Box
+            component="img"
             src={qrSrc}
             alt={label.codeValue}
-            className="object-contain"
-            style={{ width: `${metrics.qrSizeMm}mm`, height: `${metrics.qrSizeMm}mm` }}
+            sx={{ objectFit: "contain", width: `${metrics.qrSizeMm}mm`, height: `${metrics.qrSizeMm}mm` }}
           />
         ) : (
-          <div
-            style={{ width: `${metrics.qrSizeMm}mm`, height: `${metrics.qrSizeMm}mm`, borderRadius: "1mm", backgroundColor: "#f3f4f6", animation: "app-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite" }}
+          <Box
+            sx={{ width: `${metrics.qrSizeMm}mm`, height: `${metrics.qrSizeMm}mm`, borderRadius: "1mm", backgroundColor: "#f3f4f6", animation: "app-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite" }}
           />
         )
       ) : (
-        <div
-          className="flex w-full items-center justify-center overflow-hidden"
+        <Box
+          sx={{ display: "flex", width: "100%", alignItems: "center", justifyContent: "center", overflow: "hidden" }}
           style={{ maxHeight: `${metrics.barcodeHeightMm}mm` }}
           dangerouslySetInnerHTML={{ __html: makeCode39SvgResponsive(barcodeMarkup) }}
         />
       )}
-      <div
-        className="max-w-full truncate text-center tracking-[0.02em] text-gray-700"
-        style={{
-          marginTop: `${metrics.codeTextMarginTopMm}mm`,
+      <Box
+        sx={{
+          maxWidth: "100%",
+          ...truncateSx,
+          textAlign: "center",
+          letterSpacing: "0.02em",
+          color: "#374151",
+          mt: `${metrics.codeTextMarginTopMm}mm`,
           fontSize: `${metrics.codeTextFontMm}mm`,
           fontFamily: textStyle.fontFamily,
           fontWeight: textStyle.fontWeight,
@@ -1578,16 +1598,26 @@ const StickerCard = ({ label, customization, storeName, qrSrc = "" }) => {
         }}
       >
         {label.codeValue}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
   const productNameContent = showProductName ? (
-    <div
-      className={`flex w-full items-center ${getWarehouseLabelFieldJustifyClass(productNamePosition)} ${getWarehouseLabelFieldAlignClass(productNamePosition)}`}
+    <Box
+      sx={{
+        display: "flex",
+        width: "100%",
+        alignItems: "center",
+        justifyContent: getWarehouseLabelFieldFlexJustifyContent(productNamePosition),
+        textAlign: getWarehouseLabelFieldTextAlign(productNamePosition),
+      }}
     >
-      <div
-        className="max-w-full truncate uppercase leading-tight text-gray-900"
-        style={{
+      <Box
+        sx={{
+          maxWidth: "100%",
+          ...truncateSx,
+          textTransform: "uppercase",
+          lineHeight: 1.25,
+          color: "#111827",
           fontSize: `${metrics.productNameFontMm}mm`,
           fontFamily: textStyle.fontFamily,
           fontWeight: textStyle.fontWeight,
@@ -1596,17 +1626,25 @@ const StickerCard = ({ label, customization, storeName, qrSrc = "" }) => {
         }}
       >
         {label.productName}
-      </div>
-    </div>
+      </Box>
+    </Box>
   ) : null;
   const noteContent = showNote ? (
-    <div
-      className={`flex w-full items-center ${getWarehouseLabelFieldJustifyClass(notePosition)} ${getWarehouseLabelFieldAlignClass(notePosition)}`}
-      style={{ marginTop: `${metrics.noteMarginTopMm}mm` }}
+    <Box
+      sx={{
+        display: "flex",
+        width: "100%",
+        alignItems: "center",
+        justifyContent: getWarehouseLabelFieldFlexJustifyContent(notePosition),
+        textAlign: getWarehouseLabelFieldTextAlign(notePosition),
+        mt: `${metrics.noteMarginTopMm}mm`,
+      }}
     >
-      <div
-        className="max-w-full leading-tight text-gray-700"
-        style={{
+      <Box
+        sx={{
+          maxWidth: "100%",
+          lineHeight: 1.25,
+          color: "#374151",
           fontSize: `${metrics.noteFontMm}mm`,
           fontFamily: textStyle.fontFamily,
           fontWeight: textStyle.fontWeight,
@@ -1615,11 +1653,11 @@ const StickerCard = ({ label, customization, storeName, qrSrc = "" }) => {
         }}
       >
         {label.note}
-      </div>
-    </div>
+      </Box>
+    </Box>
   ) : null;
   const contentColumn = (
-    <div className="min-w-0 overflow-hidden">
+    <Box sx={{ minWidth: 0, overflow: "hidden" }}>
       {productNameContent}
       <StickerFieldsBlock
         fields={orderedVisibleFields}
@@ -1628,18 +1666,28 @@ const StickerCard = ({ label, customization, storeName, qrSrc = "" }) => {
         customization={customization}
       />
       {noteContent}
-    </div>
+    </Box>
   );
 
   const headerBlock = metrics.topBandHeightMm > 0 ? (
-    <div
-      className={`flex items-center px-[1.5mm] ${getWarehouseLabelFieldJustifyClass(storeNamePosition)} ${getWarehouseLabelFieldAlignClass(storeNamePosition)}`}
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        px: "1.5mm",
+        justifyContent: getWarehouseLabelFieldFlexJustifyContent(storeNamePosition),
+        textAlign: getWarehouseLabelFieldTextAlign(storeNamePosition),
+      }}
       style={{ minHeight: `${metrics.topBandHeightMm}mm`, ...(headerDividerStyle || {}) }}
     >
       {showStoreName ? (
-        <div
-          className={`w-full truncate uppercase text-gray-900 ${getWarehouseLabelFieldAlignClass(storeNamePosition)}`}
-          style={{
+        <Box
+          sx={{
+            width: "100%",
+            ...truncateSx,
+            textTransform: "uppercase",
+            color: "#111827",
+            textAlign: getWarehouseLabelFieldTextAlign(storeNamePosition),
             fontSize: `${metrics.storeNameFontMm}mm`,
             letterSpacing: `${metrics.storeNameLetterSpacingEm}em`,
             fontFamily: textStyle.fontFamily,
@@ -1649,9 +1697,9 @@ const StickerCard = ({ label, customization, storeName, qrSrc = "" }) => {
           }}
         >
           {storeName}
-        </div>
+        </Box>
       ) : null}
-    </div>
+    </Box>
   ) : null;
 
   // A linear (Code39) barcode is naturally wide/short, unlike a QR's square footprint - squeezing
@@ -1660,14 +1708,15 @@ const StickerCard = ({ label, customization, storeName, qrSrc = "" }) => {
   // labels get their own full-width stacked layout so the barcode can use nearly the whole label.
   if (label.codeType === "barcode") {
     return (
-      <div
-        className={cardClassName}
-        style={{ width: `${metrics.labelWidthMm}mm`, height: `${metrics.labelHeightMm}mm` }}
+      <Box
+        sx={{ ...cardSx, width: `${metrics.labelWidthMm}mm`, height: `${metrics.labelHeightMm}mm` }}
       >
         {headerBlock}
-        <div
-          className="flex flex-col overflow-hidden"
-          style={{
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
             padding: `${metrics.bodyPadYMm}mm ${metrics.bodyPadXMm}mm`,
             height: metrics.topBandHeightMm > 0
               ? `calc(${metrics.labelHeightMm}mm - ${metrics.topBandHeightMm}mm)`
@@ -1683,16 +1732,20 @@ const StickerCard = ({ label, customization, storeName, qrSrc = "" }) => {
             layout="row"
             availableWidthMm={metrics.labelWidthMm - (2 * metrics.bodyPadXMm)}
           />
-          <div className="flex w-full flex-col items-center" style={{ marginTop: `${metrics.fieldsMarginTopMm}mm` }}>
-            <div
-              className="flex w-full items-center justify-center overflow-hidden"
+          <Box sx={{ display: "flex", width: "100%", flexDirection: "column", alignItems: "center", mt: `${metrics.fieldsMarginTopMm}mm` }}>
+            <Box
+              sx={{ display: "flex", width: "100%", alignItems: "center", justifyContent: "center", overflow: "hidden" }}
               style={{ maxHeight: `${metrics.barcodeStripMaxHeightMm}mm` }}
               dangerouslySetInnerHTML={{ __html: makeCode39SvgResponsive(barcodeMarkup) }}
             />
-            <div
-              className="max-w-full truncate text-center tracking-[0.02em] text-gray-700"
-              style={{
-                marginTop: `${metrics.codeTextMarginTopMm}mm`,
+            <Box
+              sx={{
+                maxWidth: "100%",
+                ...truncateSx,
+                textAlign: "center",
+                letterSpacing: "0.02em",
+                color: "#374151",
+                mt: `${metrics.codeTextMarginTopMm}mm`,
                 fontSize: `${metrics.codeTextFontMm}mm`,
                 fontFamily: textStyle.fontFamily,
                 fontWeight: textStyle.fontWeight,
@@ -1701,24 +1754,24 @@ const StickerCard = ({ label, customization, storeName, qrSrc = "" }) => {
               }}
             >
               {label.codeValue}
-            </div>
-          </div>
+            </Box>
+          </Box>
           {noteContent}
-        </div>
-      </div>
+        </Box>
+      </Box>
     );
   }
 
   return (
-    <div
-      className={cardClassName}
-      style={{ width: `${metrics.labelWidthMm}mm`, height: `${metrics.labelHeightMm}mm` }}
+    <Box
+      sx={{ ...cardSx, width: `${metrics.labelWidthMm}mm`, height: `${metrics.labelHeightMm}mm` }}
     >
       {headerBlock}
 
-      <div
-        className={isCodeCentered ? "flex flex-col" : "grid"}
-        style={{
+      <Box
+        sx={{
+          display: isCodeCentered ? "flex" : "grid",
+          flexDirection: isCodeCentered ? "column" : undefined,
           ...(isCodeCentered
             ? {}
             : {
@@ -1736,31 +1789,34 @@ const StickerCard = ({ label, customization, storeName, qrSrc = "" }) => {
         {isCodeCentered ? (
           <>
             {productNameContent}
-            <div
-              className="grid min-h-0 flex-1 items-center"
-              style={{
+            <Box
+              sx={{
+                display: "grid",
+                minHeight: 0,
+                flex: "1 1 0%",
+                alignItems: "center",
                 gridTemplateColumns: `minmax(0, 1fr) ${metrics.codeColumnWidthMm}mm minmax(0, 1fr)`,
                 columnGap: `${metrics.bodyGapMm}mm`,
               }}
             >
-              <div className="min-w-0 overflow-hidden">
+              <Box sx={{ minWidth: 0, overflow: "hidden" }}>
                 <StickerFieldsBlock
                   fields={leftFields}
                   metrics={metrics}
                   textStyle={textStyle}
                   customization={customization}
                 />
-              </div>
+              </Box>
               {codeContent}
-              <div className="min-w-0 overflow-hidden">
+              <Box sx={{ minWidth: 0, overflow: "hidden" }}>
                 <StickerFieldsBlock
                   fields={rightFields}
                   metrics={metrics}
                   textStyle={textStyle}
                   customization={customization}
                 />
-              </div>
-            </div>
+              </Box>
+            </Box>
             {noteContent}
           </>
         ) : isCodeRight ? (
@@ -1774,8 +1830,8 @@ const StickerCard = ({ label, customization, storeName, qrSrc = "" }) => {
             {contentColumn}
           </>
         )}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 };
 
@@ -1832,10 +1888,11 @@ const BarcodePreviewModal = ({
               No generated barcodes available for preview.
             </Box>
           ) : (
-            <div className="overflow-x-auto">
-              <div
-                className="grid bg-white"
-                style={{
+            <Box sx={{ overflowX: "auto" }}>
+              <Box
+                sx={{
+                  display: "grid",
+                  bgcolor: "#fff",
                   width: `${sheetWidthMm}mm`,
                   gridTemplateColumns: `repeat(${metrics.labelsPerRow}, ${metrics.labelWidthMm}mm)`,
                   columnGap: "0mm",
@@ -1851,8 +1908,8 @@ const BarcodePreviewModal = ({
                     qrSrc={qrSources[label.key] || ""}
                   />
                 ))}
-              </div>
-            </div>
+              </Box>
+            </Box>
           )}
         </Box>
       </Stack>
