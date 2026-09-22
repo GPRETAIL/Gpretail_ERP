@@ -2042,8 +2042,8 @@ export default function FilterableDataTable({
         </button>
         <Button
           size="small"
-          variant="outlined"
-          color={hasActiveColumnFilters ? "primary" : "inherit"}
+          variant="text"
+          className={hasActiveColumnFilters ? "glass-btn glass-btn-primary" : "glass-btn"}
           onClick={() => openFilterPanel()}
           startIcon={<Filter size={14} />}
           sx={toolbarFieldSx}
