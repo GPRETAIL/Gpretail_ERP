@@ -13,7 +13,12 @@ import TenantThemeProvider from "./theme/TenantThemeProvider.jsx";
 import { PrintProvider } from "./context/PrintContext.jsx";
 import { SyncStatusProvider } from "./context/SyncStatusContext.jsx";
 
-if ("serviceWorker" in navigator) {
+// Only register in production builds -- in dev (vite dev), the SW's own caching is exactly what
+// was causing edited JS/CSS to silently keep serving old content after a normal reload, since a
+// service worker intercepts requests independently of the browser's own cache and Vite's HMR has
+// no way to know about or invalidate it. Production is unaffected: import.meta.env.PROD is true
+// there, so the actual PWA offline behavior this exists for still registers normally.
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker
       .register("/sw.js", { scope: "/" })

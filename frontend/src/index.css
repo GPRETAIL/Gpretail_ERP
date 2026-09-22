@@ -162,7 +162,7 @@ main > .p-6 {
    which element renders it. Scoped to .topbar-action-btn only (not the shared .glass-btn, which
    also sizes small icon-only buttons elsewhere that should stay compact). */
 .topbar-action-btn {
-  min-height: 33px;
+  min-height: 28px;
 }
 
 /* Shimmer highlight layer */
