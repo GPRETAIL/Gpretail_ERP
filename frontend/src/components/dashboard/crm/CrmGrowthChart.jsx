@@ -28,7 +28,7 @@ export default function CrmGrowthChart({ timelineChart = [] }) {
       </Stack>
 
       {timelineChart.length > 0 ? (
-        <Box sx={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 1, pt: 2 }}>
+        <Box sx={{ display: "grid", gap: 1, gridAutoFlow: "column", gridAutoColumns: "minmax(44px, 1fr)", gridTemplateRows: "1fr", pt: 2, overflowX: "auto" }}>
           {timelineChart.map((item) => {
             const maxVal = Math.max(
               ...timelineChart.map((d) => Math.max(d.new_customers || 0, d.orders_count || 0)),

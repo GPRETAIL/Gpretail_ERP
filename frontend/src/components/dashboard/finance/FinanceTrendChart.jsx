@@ -22,7 +22,7 @@ export default function FinanceTrendChart({ trendChart = [] }) {
         </Stack>
       </Stack>
       {trendChart.length > 0 ? (
-        <Box sx={{ display: "grid", gap: 1, gridTemplateColumns: "repeat(7, minmax(0, 1fr))", pt: 2, overflowX: "auto" }}>
+        <Box sx={{ display: "grid", gap: 1, gridAutoFlow: "column", gridAutoColumns: "minmax(44px, 1fr)", gridTemplateRows: "1fr", pt: 2, overflowX: "auto" }}>
           {trendChart.map((item) => {
             const maxVal = Math.max(...trendChart.map((d) => Math.max(d.purchases || 0, d.payments || 0)), 10);
             const purchaseHeight = Math.min(100, Math.round(((item.purchases || 0) / maxVal) * 100));

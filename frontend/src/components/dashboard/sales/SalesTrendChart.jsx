@@ -23,7 +23,7 @@ export default function SalesTrendChart({ salesTrendChart = [] }) {
       </Stack>
 
       {salesTrendChart.length > 0 ? (
-        <Box sx={{ display: "grid", gap: 1, gridTemplateColumns: "repeat(7, minmax(0, 1fr))", pt: 2, overflowX: "auto" }}>
+        <Box sx={{ display: "grid", gap: 1, gridAutoFlow: "column", gridAutoColumns: "minmax(44px, 1fr)", gridTemplateRows: "1fr", pt: 2, overflowX: "auto" }}>
           {salesTrendChart.map((item) => {
             const maxVal = Math.max(...salesTrendChart.map((d) => Math.max(d.sales || 0, d.returns || 0)), 10);
             const salesHeight = Math.min(100, Math.round(((item.sales || 0) / maxVal) * 100));

@@ -28,7 +28,7 @@ export default function WarehouseStockMovementChart({ stockMovementChart = [] })
       </Stack>
 
       {stockMovementChart.length > 0 ? (
-        <Box sx={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 1, pt: 2 }}>
+        <Box sx={{ display: "grid", gap: 1, gridAutoFlow: "column", gridAutoColumns: "minmax(44px, 1fr)", gridTemplateRows: "1fr", pt: 2, overflowX: "auto" }}>
           {stockMovementChart.map((item) => {
             const maxVal = Math.max(
               ...stockMovementChart.map((d) => Math.max(d.incoming || 0, d.outgoing || 0)),
