@@ -17,6 +17,7 @@ import { Box, Stack, Card, Typography, Button } from "@mui/material";
 import TaxRangeTable from "../../components/RangedTaxTable";
 import api from "../../api/axios";
 import PageHeader from "../../components/PageHeader";
+import Breadcrumbs from "../../components/Breadcrumbs";
 import { handleEnterKeyNavigation } from "../../utils/enterToNextField";
 import { normalizeFormSignature } from "../../utils/formSignature";
 
@@ -335,27 +336,12 @@ const TaxForm = () => {
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column", bgcolor: "background.default", color: "text.primary" }}>
       <PageHeader
         title={
-          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
-            <Typography
-              component="button"
-              type="button"
-              onClick={() => navigate("/masters")}
-              sx={{
-                fontSize: 13,
-                fontWeight: 600,
-                color: "primary.main",
-                background: "none",
-                border: "none",
-                p: 0,
-                cursor: "pointer",
-                "&:hover": { textDecoration: "underline" },
-              }}
-            >
-              Master
-            </Typography>
-            <Typography sx={{ fontSize: 13, color: "text.secondary" }}>/</Typography>
-            <Typography sx={{ fontSize: 13, fontWeight: 600 }}>Tax</Typography>
-          </Stack>
+          <Breadcrumbs
+            items={[
+              { label: "Master", onClick: () => navigate("/masters") },
+              { label: "Tax" },
+            ]}
+          />
         }
         onBack={() => navigate(-1)}
         actions={

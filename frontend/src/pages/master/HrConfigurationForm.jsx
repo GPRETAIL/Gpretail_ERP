@@ -6,6 +6,7 @@ import { Box, Stack, Card, Typography, Button } from "@mui/material";
 import { CheckboxInput, SelectInput, TextInput } from "../../components/CustomInputs";
 import api from "../../api/axios";
 import PageHeader from "../../components/PageHeader";
+import Breadcrumbs from "../../components/Breadcrumbs";
 import { normalizeFormSignature } from "../../utils/formSignature";
 
 const STATIC_DESIGNATION_ROLES = [
@@ -285,45 +286,13 @@ const HrConfigurationForm = () => {
     <Box sx={{ minHeight: "70vh", bgcolor: "background.default", color: "text.primary" }}>
       <PageHeader
         title={
-          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
-            <Typography
-              component="button"
-              type="button"
-              onClick={() => navigate("/hrms")}
-              sx={{
-                fontSize: 13,
-                fontWeight: 600,
-                color: "primary.main",
-                background: "none",
-                border: "none",
-                p: 0,
-                cursor: "pointer",
-                "&:hover": { textDecoration: "underline" },
-              }}
-            >
-              HRMS
-            </Typography>
-            <Typography sx={{ fontSize: 13, color: "text.secondary" }}>/</Typography>
-            <Typography
-              component="button"
-              type="button"
-              onClick={() => navigate("/hrms/hr-configuration")}
-              sx={{
-                fontSize: 13,
-                fontWeight: 600,
-                color: "primary.main",
-                background: "none",
-                border: "none",
-                p: 0,
-                cursor: "pointer",
-                "&:hover": { textDecoration: "underline" },
-              }}
-            >
-              HR Configuration
-            </Typography>
-            <Typography sx={{ fontSize: 13, color: "text.secondary" }}>/</Typography>
-            <Typography sx={{ fontSize: 13, fontWeight: 600 }}>{typeLabel}</Typography>
-          </Stack>
+          <Breadcrumbs
+            items={[
+              { label: "HRMS", onClick: () => navigate("/hrms") },
+              { label: "HR Configuration", onClick: () => navigate("/hrms/hr-configuration") },
+              { label: typeLabel },
+            ]}
+          />
         }
         onBack={() => navigate(-1)}
         actions={

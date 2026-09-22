@@ -10,6 +10,7 @@ import ExportBottomSheet from "../../components/ExportBottomSheet";
 import UploadImportButton from "../../components/UploadImportButton";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import PageHeader from "../../components/PageHeader";
+import Breadcrumbs from "../../components/Breadcrumbs";
 import { handleEnterKeyNavigation } from "../../utils/enterToNextField";
 import useStoreNameMap from "../../hooks/useStoreNameMap";
 import { normalizeFormSignature } from "../../utils/formSignature";
@@ -445,27 +446,12 @@ const Brand = () => {
 
       <PageHeader
         title={
-          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
-            <Typography
-              component="button"
-              type="button"
-              onClick={() => navigate("/masters")}
-              sx={{
-                fontSize: 13,
-                fontWeight: 600,
-                color: "primary.main",
-                background: "none",
-                border: "none",
-                p: 0,
-                cursor: "pointer",
-                "&:hover": { textDecoration: "underline" },
-              }}
-            >
-              Master
-            </Typography>
-            <Typography sx={{ fontSize: 13, color: "text.secondary" }}>/</Typography>
-            <Typography sx={{ fontSize: 13, fontWeight: 600 }}>Brand</Typography>
-          </Stack>
+          <Breadcrumbs
+            items={[
+              { label: "Master", onClick: () => navigate("/masters") },
+              { label: "Brand" },
+            ]}
+          />
         }
         onBack={() => navigate(-1)}
         actions={

@@ -7,6 +7,7 @@ import api from "../../api/axios";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import FilterableDataTable from "../../components/FilterableDataTable";
 import PageHeader from "../../components/PageHeader";
+import Breadcrumbs from "../../components/Breadcrumbs";
 import { createGroupFetchers } from "../../utils/serverGrouping";
 
 // Matches config('pagination.resources.agents.groupable_columns') on the backend.
@@ -416,27 +417,12 @@ const Agent = () => {
 
       <PageHeader
         title={
-          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
-            <Typography
-              component="button"
-              type="button"
-              onClick={() => navigate("/masters")}
-              sx={{
-                fontSize: 13,
-                fontWeight: 600,
-                color: "primary.main",
-                background: "none",
-                border: "none",
-                p: 0,
-                cursor: "pointer",
-                "&:hover": { textDecoration: "underline" },
-              }}
-            >
-              Master
-            </Typography>
-            <Typography sx={{ fontSize: 13, color: "text.secondary" }}>/</Typography>
-            <Typography sx={{ fontSize: 13, fontWeight: 600 }}>Agent</Typography>
-          </Stack>
+          <Breadcrumbs
+            items={[
+              { label: "Master", onClick: () => navigate("/masters") },
+              { label: "Agent" },
+            ]}
+          />
         }
         onBack={() => navigate(-1)}
         actions={

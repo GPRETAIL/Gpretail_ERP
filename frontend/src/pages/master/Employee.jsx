@@ -12,6 +12,7 @@ const { onFetchGroupSummaries: fetchEmployeeGroupSummaries, onFetchGroupRows: fe
   createGroupFetchers("/employees", { is_active: "is_active" });
 import { Box, Button, Card, Stack, Typography, TextField, MenuItem, Checkbox, IconButton, Table, TableHead, TableBody, TableRow, TableCell } from "@mui/material";
 import PageHeader from "../../components/PageHeader";
+import Breadcrumbs from "../../components/Breadcrumbs";
 import ExportBottomSheet from "../../components/ExportBottomSheet";
 import UploadImportButton from "../../components/UploadImportButton";
 import { handleEnterKeyNavigation } from "../../utils/enterToNextField";
@@ -1281,18 +1282,12 @@ const Employee = () => {
       {/* Header */}
       <PageHeader
         title={
-          <Stack direction="row" sx={{ alignItems: "center" }} spacing={0.5}>
-            <Box
-              component="button"
-              type="button"
-              onClick={() => navigate("/hrms")}
-              sx={{ color: "primary.main", "&:hover": { color: "primary.dark", textDecoration: "underline" } }}
-            >
-              HRMS
-            </Box>
-            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
-            <Box component="span">Employee</Box>
-          </Stack>
+          <Breadcrumbs
+            items={[
+              { label: "HRMS", onClick: () => navigate("/hrms") },
+              { label: "Employee" },
+            ]}
+          />
         }
         onBack={handleBackClick}
         actions={

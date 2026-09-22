@@ -4,6 +4,7 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { Box, Button, Card, Stack, Typography, TextField, MenuItem, Checkbox, IconButton } from "@mui/material";
 import PageHeader from "../../components/PageHeader";
+import Breadcrumbs from "../../components/Breadcrumbs";
 import api from "../../api/axios";
 import FilterableDataTable from "../../components/FilterableDataTable";
 import { createGroupFetchers } from "../../utils/serverGrouping";
@@ -598,18 +599,12 @@ export default function Item() {
         />
         <PageHeader
           title={
-            <Stack direction="row" sx={{ alignItems: "center" }} spacing={0.5}>
-              <Box
-                component="button"
-                type="button"
-                onClick={() => navigate("/masters")}
-                sx={{ color: "primary.main", "&:hover": { color: "primary.dark", textDecoration: "underline" } }}
-              >
-                Master
-              </Box>
-              <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
-              <Box component="span">Item</Box>
-            </Stack>
+            <Breadcrumbs
+              items={[
+                { label: "Master", onClick: () => navigate("/masters") },
+                { label: "Item" },
+              ]}
+            />
           }
           onBack={() => navigate("/masters")}
           actions={
@@ -726,18 +721,12 @@ export default function Item() {
       {/* ── Header ── */}
       <PageHeader
         title={
-          <Stack direction="row" sx={{ alignItems: "center" }} spacing={0.5}>
-            <Box
-              component="button"
-              type="button"
-              onClick={() => navigate("/masters")}
-              sx={{ color: "primary.main", "&:hover": { color: "primary.dark", textDecoration: "underline" } }}
-            >
-              Master
-            </Box>
-            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
-            <Box component="span">Item</Box>
-          </Stack>
+          <Breadcrumbs
+            items={[
+              { label: "Master", onClick: () => navigate("/masters") },
+              { label: "Item" },
+            ]}
+          />
         }
         onBack={() => setShowSearch(true)}
         actions={

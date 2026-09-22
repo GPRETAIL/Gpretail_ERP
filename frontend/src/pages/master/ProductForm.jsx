@@ -13,6 +13,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import api from "../../api/axios";
 import PageHeader from "../../components/PageHeader";
+import Breadcrumbs from "../../components/Breadcrumbs";
 
 const mapTaxOption = (t) => ({
   id: String(t.id),
@@ -431,29 +432,12 @@ const ProductForm = () => {
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column", bgcolor: "background.default", color: "text.primary" }}>
       <PageHeader
         title={
-          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
-            <Typography
-              component="button"
-              type="button"
-              onClick={() => navigate("/masters")}
-              sx={{
-                fontSize: 13,
-                fontWeight: 600,
-                color: "primary.main",
-                background: "none",
-                border: "none",
-                p: 0,
-                cursor: "pointer",
-                "&:hover": { textDecoration: "underline" },
-              }}
-            >
-              Master
-            </Typography>
-            <Typography sx={{ fontSize: 13, color: "text.secondary" }}>/</Typography>
-            <Typography sx={{ fontSize: 13, fontWeight: 600 }}>
-              Products {isEdit ? `(Edit: ${editCode})` : ""}
-            </Typography>
-          </Stack>
+          <Breadcrumbs
+            items={[
+              { label: "Master", onClick: () => navigate("/masters") },
+              { label: `Products ${isEdit ? `(Edit: ${editCode})` : ""}` },
+            ]}
+          />
         }
         onBack={() => navigate(-1)}
         actions={

@@ -11,6 +11,7 @@ const { onFetchGroupSummaries: fetchSupplierGroupSummaries, onFetchGroupRows: fe
   createGroupFetchers("/suppliers", { city_id: "city" });
 import { Box, Button, Card, Stack, Typography, TextField, MenuItem, IconButton, Checkbox, Table, TableHead, TableBody, TableRow, TableCell } from "@mui/material";
 import PageHeader from "../../components/PageHeader";
+import Breadcrumbs from "../../components/Breadcrumbs";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import AsyncSearchSelect from "../../components/AsyncSearchSelect";
 import ExportBottomSheet from "../../components/ExportBottomSheet";
@@ -1137,18 +1138,12 @@ const Supplier = () => {
       {/* --- Header --- */}
       <PageHeader
         title={
-          <Stack direction="row" sx={{ alignItems: "center" }} spacing={0.5}>
-            <Box
-              component="button"
-              type="button"
-              onClick={() => navigate("/masters")}
-              sx={{ color: "primary.main", "&:hover": { color: "primary.dark", textDecoration: "underline" } }}
-            >
-              Master
-            </Box>
-            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
-            <Box component="span">Supplier</Box>
-          </Stack>
+          <Breadcrumbs
+            items={[
+              { label: "Master", onClick: () => navigate("/masters") },
+              { label: "Supplier" },
+            ]}
+          />
         }
         onBack={handleBackClick}
         actions={

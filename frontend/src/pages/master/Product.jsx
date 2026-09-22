@@ -5,6 +5,7 @@ import { toast } from "react-toastify";
 import api from "../../api/axios";
 import { Box, Button, Card, Stack, Typography, TextField, MenuItem, IconButton, alpha } from "@mui/material";
 import PageHeader from "../../components/PageHeader";
+import Breadcrumbs from "../../components/Breadcrumbs";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import ExportBottomSheet from "../../components/ExportBottomSheet";
 import FilterableDataTable from "../../components/FilterableDataTable";
@@ -569,18 +570,12 @@ const Product = () => {
       />
       <PageHeader
         title={
-          <Stack direction="row" sx={{ alignItems: "center" }} spacing={0.5}>
-            <Box
-              component="button"
-              type="button"
-              onClick={() => navigate("/masters")}
-              sx={{ color: "primary.main", "&:hover": { color: "primary.dark", textDecoration: "underline" } }}
-            >
-              Master
-            </Box>
-            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
-            <Box component="span">Products</Box>
-          </Stack>
+          <Breadcrumbs
+            items={[
+              { label: "Master", onClick: () => navigate("/masters") },
+              { label: "Products" },
+            ]}
+          />
         }
         onBack={() => navigate(-1)}
         actions={

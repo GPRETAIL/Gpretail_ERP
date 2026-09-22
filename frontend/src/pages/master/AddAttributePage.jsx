@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import { Box, Button, Card, Stack, Typography, TextField, MenuItem, Table, TableBody, TableRow, TableCell, IconButton } from "@mui/material";
 import PageHeader from "../../components/PageHeader";
+import Breadcrumbs from "../../components/Breadcrumbs";
 import {
   CheckboxInput,
   SelectInput,
@@ -872,27 +873,13 @@ const AddAttributePage = () => {
       {/* Header */}
       <PageHeader
         title={
-          <Stack direction="row" sx={{ alignItems: "center" }} spacing={0.5}>
-            <Box
-              component="button"
-              type="button"
-              onClick={() => navigate("/masters")}
-              sx={{ color: "primary.main", "&:hover": { color: "primary.dark", textDecoration: "underline" } }}
-            >
-              Master
-            </Box>
-            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
-            <Box
-              component="button"
-              type="button"
-              onClick={() => navigate("/masters/product-attributes")}
-              sx={{ color: "primary.main", "&:hover": { color: "primary.dark", textDecoration: "underline" } }}
-            >
-              Product Attributes
-            </Box>
-            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
-            <Box component="span">{editingId ? "Edit" : "Add New"}</Box>
-          </Stack>
+          <Breadcrumbs
+            items={[
+              { label: "Master", onClick: () => navigate("/masters") },
+              { label: "Product Attributes", onClick: () => navigate("/masters/product-attributes") },
+              { label: editingId ? "Edit" : "Add New" },
+            ]}
+          />
         }
         onBack={() => navigate(-1)}
         actions={
