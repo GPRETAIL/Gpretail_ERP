@@ -5,6 +5,7 @@ import api from "../../api/axios";
 import { useNavigate } from "react-router-dom";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import FilterableDataTable from "../../components/FilterableDataTable";
+import Breadcrumbs from "../../components/Breadcrumbs";
 import { Box, Stack, Typography, TextField, MenuItem, Button, Checkbox } from "@mui/material";
 
 const TextInput = ({ label, name, required = false, value, onChange, placeholder = "", type = "text" }) => (
@@ -413,17 +414,13 @@ const Customer = () => {
           >
             <ArrowLeft size={16} />
           </Button>
-          <Typography component="h1" sx={{ fontSize: 12.25, fontWeight: 600, display: "flex", alignItems: "center", gap: 0.5 }}>
-            <Button
-              type="button"
-              onClick={() => navigate("/sales")}
-              sx={{ color: "primary.main", textTransform: "none", minWidth: "auto", p: 0, "&:hover": { textDecoration: "underline", bgcolor: "transparent" } }}
-            >
-              Sales
-            </Button>
-            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
-            <Box component="span">Customer {currentId ? `(Edit: #${currentId})` : ""}</Box>
-          </Typography>
+          <Breadcrumbs
+            sx={{ fontSize: 12.25, fontWeight: 600 }}
+            items={[
+              { label: "Sales", onClick: () => navigate("/sales") },
+              { label: `Customer ${currentId ? `(Edit: #${currentId})` : ""}` },
+            ]}
+          />
         </Stack>
 
         <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>

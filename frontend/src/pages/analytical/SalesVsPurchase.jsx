@@ -7,6 +7,7 @@ import { Box, Button, IconButton, Stack, TextField, Typography } from "@mui/mate
 import api from "../../api/axios";
 import StoreFilterSelect from "../../components/StoreFilterSelect";
 import FilterableDataTable from "../../components/FilterableDataTable";
+import Breadcrumbs from "../../components/Breadcrumbs";
 import { toast } from "react-toastify";
 
 // ─── Left panel fields (matches backend FIELD_CONFIG keys) ─────────────────
@@ -200,13 +201,13 @@ const SalesVsPurchase = () => {
           <IconButton size="small" onClick={handleBackClick} sx={{ color: "text.secondary" }} aria-label="Back to analytical">
             <ArrowLeft size={16} />
           </IconButton>
-          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: 13, fontWeight: 600 }}>
-            <Button type="button" variant="text" onClick={handleBackClick} sx={{ minWidth: "auto", p: 0, fontSize: 13, fontWeight: 600 }}>
-              Analytical
-            </Button>
-            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
-            <Box component="span">Sales Vs Purchase</Box>
-          </Stack>
+          <Breadcrumbs
+            sx={{ fontSize: 13, fontWeight: 600 }}
+            items={[
+              { label: "Analytical", onClick: handleBackClick },
+              { label: "Sales Vs Purchase" },
+            ]}
+          />
         </Stack>
       </Stack>
 

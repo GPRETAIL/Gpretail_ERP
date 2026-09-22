@@ -8,6 +8,7 @@ import { Box, Button, Checkbox, FormControlLabel, IconButton, Stack, Typography 
 import api from "../../api/axios";
 import FilterableDataTable from "../../components/FilterableDataTable";
 import PermissionMatrix from "../../components/PermissionMatrix";
+import Breadcrumbs from "../../components/Breadcrumbs";
 import {
   hasAnyViewPermission,
   setPermissionAction,
@@ -613,13 +614,13 @@ const UserAccess = () => {
           <IconButton size="small" onClick={handleBackClick} sx={{ color: "text.secondary" }} aria-label="Back">
             <ArrowLeft size={16} />
           </IconButton>
-          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: 13, fontWeight: 600 }}>
-            <Button type="button" variant="text" onClick={() => navigate("/user-access")} sx={{ minWidth: "auto", p: 0, fontSize: 13, fontWeight: 600 }}>
-              User Access
-            </Button>
-            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
-            <Box component="span">{entityTitle}</Box>
-          </Stack>
+          <Breadcrumbs
+            sx={{ fontSize: 13, fontWeight: 600 }}
+            items={[
+              { label: "User Access", onClick: () => navigate("/user-access") },
+              { label: entityTitle },
+            ]}
+          />
         </Stack>
 
         <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>

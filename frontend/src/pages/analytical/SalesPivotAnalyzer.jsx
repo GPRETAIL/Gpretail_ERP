@@ -7,6 +7,7 @@ import { Box, Button, IconButton, MenuItem, Stack, TextField, Typography } from 
 import api from "../../api/axios";
 import StoreFilterSelect from "../../components/StoreFilterSelect";
 import PivotTable from "../../components/PivotTable";
+import Breadcrumbs from "../../components/Breadcrumbs";
 import { toast } from "react-toastify";
 
 const fieldSx = { "& .MuiInputBase-input": { fontSize: 10.5 } };
@@ -78,13 +79,13 @@ const SalesPivotAnalyzer = () => {
           <IconButton size="small" onClick={handleBackClick} sx={{ color: "text.secondary" }} aria-label="Back to analytical">
             <ArrowLeft size={16} />
           </IconButton>
-          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: 13, fontWeight: 600 }}>
-            <Button type="button" variant="text" onClick={handleBackClick} sx={{ minWidth: "auto", p: 0, fontSize: 13, fontWeight: 600 }}>
-              Analytical
-            </Button>
-            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
-            <Box component="span">360° Sales Analyzer</Box>
-          </Stack>
+          <Breadcrumbs
+            sx={{ fontSize: 13, fontWeight: 600 }}
+            items={[
+              { label: "Analytical", onClick: handleBackClick },
+              { label: "360° Sales Analyzer" },
+            ]}
+          />
         </Stack>
       </Stack>
 

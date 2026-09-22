@@ -7,6 +7,7 @@ import { Box, Button, Checkbox, IconButton, Stack, Table, TableBody, TableCell, 
 import api from "../../api/axios";
 import SearchableSelect from "../../components/SearchableSelect";
 import AsyncSearchSelect from "../../components/AsyncSearchSelect";
+import Breadcrumbs from "../../components/Breadcrumbs";
 import { usePrintContext } from "../../context/PrintContext";
 
 // The whole form is pinned to a single compact 10px baseline (was `text-[10px]` on the root
@@ -812,17 +813,14 @@ const CrmCustomerOrderForm = () => {
           <IconButton size="small" onClick={() => navigate(-1)} sx={{ color: "text.secondary" }}>
             <ArrowLeft size={16} />
           </IconButton>
-          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: 13, fontWeight: 600 }}>
-            <Button type="button" variant="text" onClick={() => navigate("/crm")} sx={{ minWidth: "auto", p: 0, fontSize: 13, fontWeight: 600 }}>
-              CRM
-            </Button>
-            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
-            <Button type="button" variant="text" onClick={() => navigate("/crm/customer-orders")} sx={{ minWidth: "auto", p: 0, fontSize: 13, fontWeight: 600 }}>
-              Customer Orders
-            </Button>
-            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
-            <Box component="span">New</Box>
-          </Stack>
+          <Breadcrumbs
+            sx={{ fontSize: 13, fontWeight: 600 }}
+            items={[
+              { label: "CRM", onClick: () => navigate("/crm") },
+              { label: "Customer Orders", onClick: () => navigate("/crm/customer-orders") },
+              { label: "New" },
+            ]}
+          />
         </Stack>
 
         <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", fontSize: "inherit", fontWeight: 500, color: "text.secondary" }}>

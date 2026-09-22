@@ -8,6 +8,7 @@ import ConfirmDialog from "../../components/ConfirmDialog";
 import FilterableDataTable from "../../components/FilterableDataTable";
 import { createGroupFetchers } from "../../utils/serverGrouping";
 import UploadImportButton from "../../components/UploadImportButton";
+import Breadcrumbs from "../../components/Breadcrumbs";
 
 // Matches config('pagination.resources.customers.groupable_columns') on the backend.
 const { onFetchGroupSummaries: fetchCustomerGroupSummaries, onFetchGroupRows: fetchCustomerGroupRows } =
@@ -232,13 +233,13 @@ const CrmCustomer = () => {
           <IconButton size="small" onClick={() => navigate(-1)} sx={{ color: "text.secondary" }}>
             <ArrowLeft size={16} />
           </IconButton>
-          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: 13, fontWeight: 600 }}>
-            <Button type="button" variant="text" onClick={() => navigate("/crm")} sx={{ minWidth: "auto", p: 0, fontSize: 13, fontWeight: 600 }}>
-              CRM
-            </Button>
-            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
-            <Box component="span">Customers</Box>
-          </Stack>
+          <Breadcrumbs
+            sx={{ fontSize: 13, fontWeight: 600 }}
+            items={[
+              { label: "CRM", onClick: () => navigate("/crm") },
+              { label: "Customers" },
+            ]}
+          />
         </Stack>
         <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>
           <UploadImportButton

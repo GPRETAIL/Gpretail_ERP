@@ -9,6 +9,7 @@ import FilterableDataTable from "../../components/FilterableDataTable";
 import { createGroupFetchers } from "../../utils/serverGrouping";
 import UploadImportButton from "../../components/UploadImportButton";
 import CounterAssignmentDialog from "../../components/CounterAssignmentDialog";
+import Breadcrumbs from "../../components/Breadcrumbs";
 import { usePrintContext } from "../../context/PrintContext";
 import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, Checkbox, Radio, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
 import { downloadHtmlAsPdf } from "../../utils/htmlToPdf";
@@ -3521,16 +3522,12 @@ const POSSales = () => {
             <ArrowLeft size={16} />
           </IconButton>
           <Typography component="h1" className="pos-sale-page-title" sx={{ fontSize: 12.25, fontWeight: 600, display: "flex", alignItems: "center", gap: 0.5 }}>
-            <Box
-              component="button"
-              type="button"
-              onClick={() => navigate("/sales")}
-              sx={{ color: "primary.main", "&:hover": { color: "primary.dark", textDecoration: "underline" } }}
-            >
-              Sales
-            </Box>
-            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
-            <Box component="span">POS Sale</Box>
+            <Breadcrumbs
+              items={[
+                { label: "Sales", onClick: () => navigate("/sales") },
+                { label: "POS Sale" },
+              ]}
+            />
           </Typography>
         </Stack>
 

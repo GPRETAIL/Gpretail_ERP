@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import api from "../../api/axios";
 import FilterableDataTable from "../../components/FilterableDataTable";
+import Breadcrumbs from "../../components/Breadcrumbs";
 import { Box, Stack, Typography, TextField, MenuItem, Button, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
 
 const DENOMINATIONS = [2000, 500, 200, 100, 50, 20, 10, 5, 2, 1];
@@ -808,17 +809,13 @@ const CashClosing = () => {
           >
             <ArrowLeft size={16} />
           </Button>
-          <Typography component="h1" sx={{ fontSize: 12.25, fontWeight: 600, display: "flex", alignItems: "center", gap: 0.5 }}>
-            <Button
-              type="button"
-              onClick={() => navigate("/sales")}
-              sx={{ color: "primary.main", textTransform: "none", minWidth: "auto", p: 0, "&:hover": { textDecoration: "underline", bgcolor: "transparent" } }}
-            >
-              Sales
-            </Button>
-            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
-            <Box component="span">Cash Closing</Box>
-          </Typography>
+          <Breadcrumbs
+            sx={{ fontSize: 12.25, fontWeight: 600 }}
+            items={[
+              { label: "Sales", onClick: () => navigate("/sales") },
+              { label: "Cash Closing" },
+            ]}
+          />
         </Stack>
 
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>

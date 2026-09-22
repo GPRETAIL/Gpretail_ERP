@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import { Box, Button, IconButton, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
 import api from "../../api/axios";
+import Breadcrumbs from "../../components/Breadcrumbs";
 
 const toNum = (value, fallback = 0) => {
   const parsed = Number(value);
@@ -59,17 +60,14 @@ const CrmCustomerProfile = () => {
           <IconButton size="small" onClick={() => navigate(-1)} sx={{ color: "text.secondary" }}>
             <ArrowLeft size={16} />
           </IconButton>
-          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: 13, fontWeight: 600 }}>
-            <Button type="button" variant="text" onClick={() => navigate("/crm")} sx={{ minWidth: "auto", p: 0, fontSize: 13, fontWeight: 600 }}>
-              CRM
-            </Button>
-            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
-            <Button type="button" variant="text" onClick={() => navigate("/crm/customer")} sx={{ minWidth: "auto", p: 0, fontSize: 13, fontWeight: 600 }}>
-              Customer
-            </Button>
-            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
-            <Box component="span">Profile</Box>
-          </Stack>
+          <Breadcrumbs
+            sx={{ fontSize: 13, fontWeight: 600 }}
+            items={[
+              { label: "CRM", onClick: () => navigate("/crm") },
+              { label: "Customer", onClick: () => navigate("/crm/customer") },
+              { label: "Profile" },
+            ]}
+          />
         </Stack>
         <Button className="glass-btn glass-btn-primary" onClick={() => navigate(`/crm/customer/${id}`)}>
           <Pencil size={12} style={{marginRight: 4}} /> Edit

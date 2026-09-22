@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 import FilterableDataTable from "../../components/FilterableDataTable";
 import AsyncSearchSelect from "../../components/AsyncSearchSelect";
+import Breadcrumbs from "../../components/Breadcrumbs";
 import { createGroupFetchers } from "../../utils/serverGrouping";
 import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, Checkbox, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
 
@@ -1215,17 +1216,13 @@ const DealerInvoiceReturn = () => {
           >
             <ArrowLeft size={16} />
           </IconButton>
-          <Typography component="h1" sx={{ fontSize: 12.25, fontWeight: 600, display: "flex", alignItems: "center", gap: 0.5 }}>
-            <Button
-              type="button"
-              onClick={() => navigate("/sales")}
-              sx={{ color: "primary.main", textTransform: "none", minWidth: "auto", p: 0, "&:hover": { textDecoration: "underline", bgcolor: "transparent" } }}
-            >
-              Sales
-            </Button>
-            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
-            <Box component="span">Dealer Invoice Return</Box>
-          </Typography>
+          <Breadcrumbs
+            sx={{ fontSize: 12.25, fontWeight: 600 }}
+            items={[
+              { label: "Sales", onClick: () => navigate("/sales") },
+              { label: "Dealer Invoice Return" },
+            ]}
+          />
         </Stack>
 
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>

@@ -8,6 +8,7 @@ import { fetchReceiptCompanyInfo } from "../../utils/receiptCompanyInfo";
 import FilterableDataTable from "../../components/FilterableDataTable";
 import { createGroupFetchers } from "../../utils/serverGrouping";
 import UploadImportButton from "../../components/UploadImportButton";
+import Breadcrumbs from "../../components/Breadcrumbs";
 import { usePrintContext } from "../../context/PrintContext";
 import {
   canDeleteLatestPosDocument,
@@ -1743,17 +1744,13 @@ const POSReturn = () => {
           >
             <ArrowLeft size={16} />
           </IconButton>
-          <Typography component="h1" sx={{ fontSize: 12.25, fontWeight: 600, display: "flex", alignItems: "center", gap: 0.5 }}>
-            <Button
-              type="button"
-              onClick={() => navigate("/sales")}
-              sx={{ color: "primary.main", textTransform: "none", minWidth: "auto", p: 0, "&:hover": { textDecoration: "underline", bgcolor: "transparent" } }}
-            >
-              Sales
-            </Button>
-            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
-            <Box component="span">POS Return</Box>
-          </Typography>
+          <Breadcrumbs
+            sx={{ fontSize: 12.25, fontWeight: 600 }}
+            items={[
+              { label: "Sales", onClick: () => navigate("/sales") },
+              { label: "POS Return" },
+            ]}
+          />
         </Stack>
 
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>

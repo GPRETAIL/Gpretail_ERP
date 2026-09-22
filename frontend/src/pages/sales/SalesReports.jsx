@@ -6,6 +6,7 @@ import { useSelector } from "react-redux";
 import api from "../../api/axios";
 import ExportBottomSheet from "../../components/ExportBottomSheet";
 import FilterableDataTable from "../../components/FilterableDataTable";
+import Breadcrumbs from "../../components/Breadcrumbs";
 import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, Radio, alpha } from "@mui/material";
 
 const formatDate = (value) => {
@@ -2562,29 +2563,21 @@ const SalesReports = () => {
           >
             <ArrowLeft size={16} />
           </IconButton>
-          <Typography component="h1" sx={{ display: "flex", alignItems: "center", gap: 0.5, fontSize: { xs: 12.25, md: 14 }, fontWeight: 600 }}>
-            {selectedReport ? (
-              <>
-                <Box component="button" type="button" onClick={() => navigate("/sales")} sx={{ color: "primary.main", "&:hover": { color: "primary.dark", textDecoration: "underline" } }}>
-                  Sales
-                </Box>
-                <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
-                <Box component="button" type="button" onClick={() => setSelectedReportKey("")} sx={{ color: "primary.main", "&:hover": { color: "primary.dark", textDecoration: "underline" } }}>
-                  Reports
-                </Box>
-                <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
-                <Box component="span" sx={{ color: "text.secondary" }}>{selectedReport.title}</Box>
-              </>
-            ) : (
-              <>
-                <Box component="button" type="button" onClick={() => navigate("/sales")} sx={{ color: "primary.main", "&:hover": { color: "primary.dark", textDecoration: "underline" } }}>
-                  Sales
-                </Box>
-                <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
-                <Box component="span">Reports</Box>
-              </>
-            )}
-          </Typography>
+          <Breadcrumbs
+            sx={{ fontSize: { xs: 12.25, md: 14 }, fontWeight: 600 }}
+            items={
+              selectedReport
+                ? [
+                    { label: "Sales", onClick: () => navigate("/sales") },
+                    { label: "Reports", onClick: () => setSelectedReportKey("") },
+                    { label: selectedReport.title },
+                  ]
+                : [
+                    { label: "Sales", onClick: () => navigate("/sales") },
+                    { label: "Reports" },
+                  ]
+            }
+          />
         </Stack>
 
         {selectedReport ? (
