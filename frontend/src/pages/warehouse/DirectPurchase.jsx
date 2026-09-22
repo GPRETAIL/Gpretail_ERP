@@ -8,6 +8,7 @@ import ConfirmDialog from "../../components/ConfirmDialog";
 import SearchableSelect from "../../components/SearchableSelect";
 import AsyncSearchSelect from "../../components/AsyncSearchSelect";
 import PageSkeleton from "../../components/PageSkeleton";
+import Breadcrumbs from "../../components/Breadcrumbs";
 import { buildSizeSelectOptions } from "../../utils/sizeSelectOptions";
 import {
   Box,
@@ -2545,17 +2546,13 @@ const DirectPurchase = () => {
           <IconButton onClick={() => navigate("/warehouse")} sx={{ color: "text.secondary" }}>
             <ArrowLeft size={16} />
           </IconButton>
-          <Typography component="h1" sx={{ fontSize: 12.25, fontWeight: 600, display: "flex", alignItems: "center", gap: 0.5 }}>
-            <Button
-              type="button"
-              onClick={() => navigate("/warehouse")}
-              sx={{ color: "primary.main", textTransform: "none", minWidth: "auto", p: 0, "&:hover": { textDecoration: "underline", bgcolor: "transparent" } }}
-            >
-              Warehouse
-            </Button>
-            <Box component="span" sx={{ color: "text.disabled" }}>/</Box>
-            <Box component="span" sx={{ color: "text.primary" }}>Direct Purchase</Box>
-          </Typography>
+          <Breadcrumbs
+            sx={{ fontSize: 12.25, fontWeight: 600 }}
+            items={[
+              { label: "Warehouse", onClick: () => navigate("/warehouse") },
+              { label: "Direct Purchase" },
+            ]}
+          />
         </Stack>
         <Stack direction="row" spacing={1} sx={{ alignItems: "center", fontSize: 12.25 }}>
           <Button onClick={handleNew} className="glass-btn glass-btn-secondary">New</Button>

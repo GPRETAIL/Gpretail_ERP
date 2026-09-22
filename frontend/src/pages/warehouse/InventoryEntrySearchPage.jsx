@@ -5,6 +5,7 @@ import api from "../../api/axios";
 import Toast from "../../components/Toast";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import FilterableDataTable from "../../components/FilterableDataTable";
+import Breadcrumbs from "../../components/Breadcrumbs";
 import ExportBottomSheet from "../../components/ExportBottomSheet";
 import UploadImportButton from "../../components/UploadImportButton";
 import { Box, Stack, IconButton, Button } from "@mui/material";
@@ -233,13 +234,13 @@ const InventoryEntrySearchPage = () => {
           <IconButton onClick={() => navigate("/warehouse/inventory-entry")} aria-label="Back" sx={{ mr: 1.5, color: "text.secondary" }}>
             <ArrowLeft size={16} />
           </IconButton>
-          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: 12.25, fontWeight: 600 }}>
-            <Button type="button" variant="text" onClick={() => navigate("/warehouse")} sx={{ minWidth: "auto", p: 0, fontSize: 12.25, fontWeight: 600 }}>
-              Warehouse
-            </Button>
-            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
-            <Box component="span">Inventory Entry Search</Box>
-          </Stack>
+          <Breadcrumbs
+            sx={{ fontSize: 12.25, fontWeight: 600 }}
+            items={[
+              { label: "Warehouse", onClick: () => navigate("/warehouse") },
+              { label: "Inventory Entry Search" },
+            ]}
+          />
         </Stack>
 
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>

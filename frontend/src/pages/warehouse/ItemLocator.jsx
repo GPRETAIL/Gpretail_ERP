@@ -6,6 +6,7 @@ import Toast from "../../components/Toast";
 import FilterableDataTable from "../../components/FilterableDataTable";
 import ExportBottomSheet from "../../components/ExportBottomSheet";
 import PageSkeleton from "../../components/PageSkeleton";
+import Breadcrumbs from "../../components/Breadcrumbs";
 import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, Radio } from "@mui/material";
 
 const filterRowSx = { display: "grid", gridTemplateColumns: "160px minmax(0, 1fr)", alignItems: "center", gap: 1 };
@@ -396,13 +397,13 @@ const ItemLocator = () => {
           <IconButton onClick={() => navigate(-1)} aria-label="Back" sx={{ mr: 1.5, color: "text.secondary" }}>
             <ArrowLeft size={16} />
           </IconButton>
-          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: 12.25, fontWeight: 600 }}>
-            <Button type="button" variant="text" onClick={() => navigate("/warehouse")} sx={{ minWidth: "auto", p: 0, fontSize: 12.25, fontWeight: 600 }}>
-              Warehouse
-            </Button>
-            <Box component="span" sx={{ color: "text.disabled" }}>/</Box>
-            <Box component="span" sx={{ color: "text.primary" }}>Item Locator</Box>
-          </Stack>
+          <Breadcrumbs
+            sx={{ fontSize: 12.25, fontWeight: 600 }}
+            items={[
+              { label: "Warehouse", onClick: () => navigate("/warehouse") },
+              { label: "Item Locator" },
+            ]}
+          />
         </Stack>
         <ExportBottomSheet
           columns={itemLocatorColumns}

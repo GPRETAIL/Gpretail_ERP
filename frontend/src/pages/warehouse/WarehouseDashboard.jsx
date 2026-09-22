@@ -24,6 +24,7 @@ import api from "../../api/axios";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import SearchableSelect from "../../components/SearchableSelect";
 import Toast from "../../components/Toast";
+import Breadcrumbs from "../../components/Breadcrumbs";
 import { Box, Stack, Typography, IconButton, Button, alpha } from "@mui/material";
 
 // Workflow steps in order
@@ -1070,13 +1071,13 @@ const WarehouseDashboard = () => {
           <IconButton onClick={handleBackClick} type="button" aria-label="Back to warehouse module" sx={{ color: "text.secondary" }}>
             <ArrowLeft size={16} />
           </IconButton>
-          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: 12.25, fontWeight: 600 }}>
-            <Button type="button" variant="text" onClick={() => navigate("/warehouse")} sx={{ minWidth: "auto", p: 0, fontSize: 12.25, fontWeight: 600 }}>
-              Warehouse
-            </Button>
-            <Box component="span" sx={{ color: "text.disabled" }}>/</Box>
-            <Box component="span" sx={{ color: "text.primary" }}>Dashboard</Box>
-          </Stack>
+          <Breadcrumbs
+            sx={{ fontSize: 12.25, fontWeight: 600 }}
+            items={[
+              { label: "Warehouse", onClick: () => navigate("/warehouse") },
+              { label: "Dashboard" },
+            ]}
+          />
         </Stack>
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           {selectedEntry && selectedEntry.status === "barcode_generated" && (

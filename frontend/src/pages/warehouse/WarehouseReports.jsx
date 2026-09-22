@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import api from "../../api/axios";
 import FilterableDataTable from "../../components/FilterableDataTable";
+import Breadcrumbs from "../../components/Breadcrumbs";
 import { Box, Stack, Typography, IconButton, Button, alpha } from "@mui/material";
 
 const formatDate = (dateStr) => {
@@ -1111,29 +1112,21 @@ const WarehouseReports = () => {
           <IconButton onClick={() => navigate("/warehouse")} aria-label="Back to warehouse" sx={{ color: "text.secondary" }}>
             <ArrowLeft size={16} />
           </IconButton>
-          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: { xs: 12.25, md: 14 }, fontWeight: 600 }}>
-            {selectedReport ? (
-              <>
-                <Button type="button" variant="text" onClick={() => navigate("/warehouse")} sx={{ minWidth: "auto", p: 0, fontSize: "inherit", fontWeight: 600 }}>
-                  Warehouse
-                </Button>
-                <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
-                <Button type="button" variant="text" onClick={() => setSelectedReportKey("")} sx={{ minWidth: "auto", p: 0, fontSize: "inherit", fontWeight: 600 }}>
-                  Reports
-                </Button>
-                <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
-                <Box component="span" sx={{ color: "text.secondary" }}>{selectedReport.title}</Box>
-              </>
-            ) : (
-              <>
-                <Button type="button" variant="text" onClick={() => navigate("/warehouse")} sx={{ minWidth: "auto", p: 0, fontSize: "inherit", fontWeight: 600 }}>
-                  Warehouse
-                </Button>
-                <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
-                <Box component="span">Reports</Box>
-              </>
-            )}
-          </Stack>
+          <Breadcrumbs
+            sx={{ fontSize: { xs: 12.25, md: 14 }, fontWeight: 600 }}
+            items={
+              selectedReport
+                ? [
+                    { label: "Warehouse", onClick: () => navigate("/warehouse") },
+                    { label: "Reports", onClick: () => setSelectedReportKey("") },
+                    { label: selectedReport.title },
+                  ]
+                : [
+                    { label: "Warehouse", onClick: () => navigate("/warehouse") },
+                    { label: "Reports" },
+                  ]
+            }
+          />
         </Stack>
 
         {selectedReport ? (

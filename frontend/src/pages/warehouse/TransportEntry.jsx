@@ -7,6 +7,7 @@ import ConfirmDialog from "../../components/ConfirmDialog";
 import SearchableSelect from "../../components/SearchableSelect";
 import AsyncSearchSelect from "../../components/AsyncSearchSelect";
 import PageSkeleton from "../../components/PageSkeleton";
+import Breadcrumbs from "../../components/Breadcrumbs";
 import { getMasterLookups } from "../../utils/lookupCache";
 import { Box, Stack, Typography, TextField, IconButton, Button, Checkbox, alpha } from "@mui/material";
 
@@ -673,15 +674,13 @@ const TransportEntry = () => {
           <IconButton onClick={handleBackClick} type="button" aria-label="Back to warehouse module" sx={{ color: "text.secondary" }}>
             <ArrowLeft size={16} />
           </IconButton>
-          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: 12.25, fontWeight: 600 }}>
-            <Button type="button" variant="text" onClick={() => navigate("/warehouse")} sx={{ minWidth: "auto", p: 0, fontSize: 12.25, fontWeight: 600 }}>
-              Warehouse
-            </Button>
-            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
-            <Box component="span" sx={{ color: "text.primary" }}>
-              Transport Entry{isViewMode ? " (View)" : paramMode === "edit" ? " (Edit)" : ""}
-            </Box>
-          </Stack>
+          <Breadcrumbs
+            sx={{ fontSize: 12.25, fontWeight: 600 }}
+            items={[
+              { label: "Warehouse", onClick: () => navigate("/warehouse") },
+              { label: `Transport Entry${isViewMode ? " (View)" : paramMode === "edit" ? " (Edit)" : ""}` },
+            ]}
+          />
         </Stack>
         <Stack direction="row" spacing={0.75} sx={{ flexWrap: "wrap", alignItems: "center", justifyContent: "flex-end", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>
           <Button className="topbar-action-btn topbar-action-new" onClick={handleNew} startIcon={<PlusCircle size={14} />} sx={{ fontSize: 10.5 }}>

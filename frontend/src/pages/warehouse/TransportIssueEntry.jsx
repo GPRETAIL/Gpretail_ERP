@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../../api/axios";
 import Toast from "../../components/Toast";
 import PageSkeleton from "../../components/PageSkeleton";
+import Breadcrumbs from "../../components/Breadcrumbs";
 import AsyncSearchSelect from "../../components/AsyncSearchSelect";
 import { Box, Stack, Typography, TextField, IconButton, Button, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
 
@@ -267,13 +268,13 @@ const TransportIssueEntry = () => {
           <IconButton onClick={() => navigate(-1)} aria-label="Back" sx={{ color: "text.secondary" }}>
             <ArrowLeft size={16} />
           </IconButton>
-          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: 12.25, fontWeight: 600 }}>
-            <Button type="button" variant="text" onClick={() => navigate("/warehouse")} sx={{ minWidth: "auto", p: 0, fontSize: 12.25, fontWeight: 600 }}>
-              Warehouse
-            </Button>
-            <Box component="span" sx={{ color: "text.disabled" }}>/</Box>
-            <Box component="span" sx={{ color: "text.primary" }}>Transport Issue</Box>
-          </Stack>
+          <Breadcrumbs
+            sx={{ fontSize: 12.25, fontWeight: 600 }}
+            items={[
+              { label: "Warehouse", onClick: () => navigate("/warehouse") },
+              { label: "Transport Issue" },
+            ]}
+          />
         </Stack>
         <Stack direction="row" spacing={1} sx={{ fontSize: 12.25 }}>
           <Button onClick={() => persistIssue(false)} disabled={saving} className="glass-btn glass-btn-success" startIcon={<Save size={16} />} sx={{ opacity: saving ? 0.5 : 1 }}>

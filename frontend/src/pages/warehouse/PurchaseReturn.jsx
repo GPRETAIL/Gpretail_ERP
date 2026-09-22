@@ -5,6 +5,7 @@ import { useSelector } from "react-redux";
 import api from "../../api/axios";
 import Toast from "../../components/Toast";
 import PageSkeleton from "../../components/PageSkeleton";
+import Breadcrumbs from "../../components/Breadcrumbs";
 import AsyncSearchSelect from "../../components/AsyncSearchSelect";
 import { usePrintContext } from "../../context/PrintContext";
 import { Box, Stack, Typography, TextField as MuiTextField, MenuItem, Button, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
@@ -897,13 +898,13 @@ const PurchaseReturn = () => {
           >
             <ArrowLeft size={16} />
           </Button>
-          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: 12.25, fontWeight: 600 }}>
-            <Button type="button" variant="text" onClick={() => navigate("/warehouse")} sx={{ minWidth: "auto", p: 0, fontSize: 12.25, fontWeight: 600 }}>
-              Warehouse
-            </Button>
-            <Box component="span" sx={{ color: "text.disabled" }}>/</Box>
-            <Box component="span" sx={{ color: "text.primary" }}>Purchase Return</Box>
-          </Stack>
+          <Breadcrumbs
+            sx={{ fontSize: 12.25, fontWeight: 600 }}
+            items={[
+              { label: "Warehouse", onClick: () => navigate("/warehouse") },
+              { label: "Purchase Return" },
+            ]}
+          />
         </Stack>
         <Stack direction="row" spacing={1} sx={{ fontSize: 12.25 }}>
           <Button onClick={() => saveReturn(false)} disabled={saving} className="glass-btn glass-btn-success" startIcon={<Save size={16} />} sx={{ opacity: saving ? 0.6 : 1 }}>

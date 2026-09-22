@@ -5,6 +5,7 @@ import api from "../../api/axios";
 import Toast from "../../components/Toast";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import PageSkeleton from "../../components/PageSkeleton";
+import Breadcrumbs from "../../components/Breadcrumbs";
 import AsyncSearchSelect from "../../components/AsyncSearchSelect";
 import { buildSizeSelectOptions } from "../../utils/sizeSelectOptions";
 import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, Checkbox, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
@@ -1681,17 +1682,13 @@ const InventoryEntry = () => {
           >
             <ArrowLeft size={16} />
           </IconButton>
-          <Typography component="h1" sx={{ fontSize: 12.25, fontWeight: 600, display: "flex", alignItems: "center", gap: 0.5 }}>
-            <Button
-              type="button"
-              onClick={() => navigate("/warehouse")}
-              sx={{ color: "primary.main", textTransform: "none", minWidth: "auto", p: 0, "&:hover": { textDecoration: "underline", bgcolor: "transparent" } }}
-            >
-              Warehouse
-            </Button>
-            <Box component="span" sx={{ color: "text.disabled" }}>/</Box>
-            <Box component="span" sx={{ color: "text.primary" }}>{isViewMode ? "View Inventory Entry" : "Inventory Entry"}</Box>
-          </Typography>
+          <Breadcrumbs
+            sx={{ fontSize: 12.25, fontWeight: 600 }}
+            items={[
+              { label: "Warehouse", onClick: () => navigate("/warehouse") },
+              { label: isViewMode ? "View Inventory Entry" : "Inventory Entry" },
+            ]}
+          />
         </Stack>
         <Stack direction="row" spacing={1} sx={{ alignItems: "center", fontSize: 12.25 }}>
           {!isViewMode && (

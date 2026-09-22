@@ -5,6 +5,7 @@ import api from "../../api/axios";
 import Toast from "../../components/Toast";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import FilterableDataTable from "../../components/FilterableDataTable";
+import Breadcrumbs from "../../components/Breadcrumbs";
 import { createGroupFetchers } from "../../utils/serverGrouping";
 import ExportBottomSheet from "../../components/ExportBottomSheet";
 import UploadImportButton from "../../components/UploadImportButton";
@@ -280,13 +281,13 @@ const DirectPurchaseSearchPage = () => {
           <IconButton onClick={() => navigate("/warehouse/direct-purchase")} aria-label="Back" sx={{ mr: 1.5, color: "text.secondary" }}>
             <ArrowLeft size={16} />
           </IconButton>
-          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: 12.25, fontWeight: 600 }}>
-            <Button type="button" variant="text" onClick={() => navigate("/warehouse")} sx={{ minWidth: "auto", p: 0, fontSize: 12.25, fontWeight: 600 }}>
-              Warehouse
-            </Button>
-            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
-            <Box component="span">Direct Purchase Search</Box>
-          </Stack>
+          <Breadcrumbs
+            sx={{ fontSize: 12.25, fontWeight: 600 }}
+            items={[
+              { label: "Warehouse", onClick: () => navigate("/warehouse") },
+              { label: "Direct Purchase Search" },
+            ]}
+          />
         </Stack>
 
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>

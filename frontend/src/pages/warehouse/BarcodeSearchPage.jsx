@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 import Toast from "../../components/Toast";
 import FilterableDataTable from "../../components/FilterableDataTable";
+import Breadcrumbs from "../../components/Breadcrumbs";
 import { Box, Stack, Typography, IconButton, Button } from "@mui/material";
 
 const formatDate = (value) => {
@@ -181,13 +182,13 @@ const BarcodeSearchPage = () => {
           <IconButton onClick={() => navigate("/warehouse")} aria-label="Back" sx={{ mr: 1.5, color: "text.secondary" }}>
             <ArrowLeft size={16} />
           </IconButton>
-          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: 12.25, fontWeight: 600 }}>
-            <Button type="button" variant="text" onClick={() => navigate("/warehouse")} sx={{ minWidth: "auto", p: 0, fontSize: 12.25, fontWeight: 600 }}>
-              Warehouse
-            </Button>
-            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
-            <Box component="span">Barcode Search</Box>
-          </Stack>
+          <Breadcrumbs
+            sx={{ fontSize: 12.25, fontWeight: 600 }}
+            items={[
+              { label: "Warehouse", onClick: () => navigate("/warehouse") },
+              { label: "Barcode Search" },
+            ]}
+          />
         </Stack>
       </Stack>
 

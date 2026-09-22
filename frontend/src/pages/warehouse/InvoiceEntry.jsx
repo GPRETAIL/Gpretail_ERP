@@ -6,6 +6,7 @@ import Toast from "../../components/Toast";
 import SearchableSelect from "../../components/SearchableSelect";
 import AsyncSearchSelect from "../../components/AsyncSearchSelect";
 import PageSkeleton from "../../components/PageSkeleton";
+import Breadcrumbs from "../../components/Breadcrumbs";
 import { usePrintContext } from "../../context/PrintContext";
 import { getMasterLookups } from "../../utils/lookupCache";
 import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, Checkbox, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
@@ -1179,15 +1180,13 @@ const InvoiceEntry = () => {
           <IconButton onClick={() => navigate("/warehouse")} sx={{ color: "text.secondary" }}>
             <ArrowLeft size={16} />
           </IconButton>
-          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: 12.25, fontWeight: 600 }}>
-            <Button type="button" variant="text" onClick={() => navigate("/warehouse")} sx={{ minWidth: "auto", p: 0, fontSize: 12.25, fontWeight: 600 }}>
-              Warehouse
-            </Button>
-            <Box component="span" sx={{ color: "text.secondary" }}>/</Box>
-            <Box component="span" sx={{ color: "text.primary" }}>
-              Invoice{isViewMode ? " (View)" : pageMode === "edit" ? " (Edit)" : ""}
-            </Box>
-          </Stack>
+          <Breadcrumbs
+            sx={{ fontSize: 12.25, fontWeight: 600 }}
+            items={[
+              { label: "Warehouse", onClick: () => navigate("/warehouse") },
+              { label: `Invoice${isViewMode ? " (View)" : pageMode === "edit" ? " (Edit)" : ""}` },
+            ]}
+          />
         </Stack>
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           <Button onClick={() => navigate("/warehouse/invoice/search")} className="glass-btn glass-btn-primary" startIcon={<Search size={16} />}>
