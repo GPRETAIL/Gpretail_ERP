@@ -9,8 +9,12 @@
 //
 // index.css's .topbar-action-btn min-height/padding/font-size are kept numerically in sync with
 // TOOLBAR_BUTTON_HEIGHT/etc. below by hand (CSS can't import a JS module) -- update both together.
-export const SEARCHABLE_TRIGGER_HEIGHT = 32;
-export const SEARCHABLE_FONT_SIZE = 11;
+// Matches CustomInputs.jsx's fieldBaseSx (fontSize 10.5, ~24px tall with its own border+padding)
+// so a SearchableSelect/AsyncSearchSelect trigger sitting next to a plain TextInput/SelectInput on
+// the same form -- e.g. Product's "Sales Tax" beside "Barcode Mode" -- lines up instead of standing
+// out taller with bigger text.
+export const SEARCHABLE_TRIGGER_HEIGHT = 24;
+export const SEARCHABLE_FONT_SIZE = 10.5;
 
 export const SEARCHABLE_TRIGGER_SX = { height: SEARCHABLE_TRIGGER_HEIGHT, px: 1, py: 0.25, fontSize: SEARCHABLE_FONT_SIZE };
 export const SEARCHABLE_INPUT_SX = { fontSize: SEARCHABLE_FONT_SIZE };
