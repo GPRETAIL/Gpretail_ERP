@@ -635,7 +635,7 @@ const ReceiptPreview = ({ companyInfo, settings }) => {
             fontFamily: getSalesReceiptFontCss(settings.receiptFontFamily),
           }}
         >
-          <Box className="space-y-1" sx={{ "& > * + *": { mt: "3.5px" } }}>
+          <Box sx={{ "& > * + *": { mt: "3.5px" } }}>
             {topGeneralRows.map((row) => (
               <Box
                 key={row.key}

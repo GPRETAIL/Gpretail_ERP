@@ -185,7 +185,7 @@ function DonutChart({ categories, totalValue }) {
 
   return (
     <Box sx={{ position: "relative", width: 128, height: 128, flexShrink: 0 }}>
-      <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+      <svg viewBox="0 0 100 100" style={{ width: "100%", height: "100%", transform: "rotate(-90deg)" }}>
         <circle cx="50" cy="50" r={R} fill="none" stroke="#e2e8f0" strokeWidth="18" />
         {categories.slice(0, 6).map((cat, i) => {
           const pct = (cat.retail_value || 0) / totalValue;

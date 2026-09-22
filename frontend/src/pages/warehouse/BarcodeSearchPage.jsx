@@ -60,13 +60,13 @@ const BarcodeSearchPage = () => {
         key: "mrp",
         label: "MRP",
         valueGetter: (row) => Number(row.mrp || 0),
-        render: (value) => <div className="text-right">{formatMoney(value)}</div>,
+        render: (value) => <div style={{ textAlign: "right" }}>{formatMoney(value)}</div>,
       },
       {
         key: "final_price",
         label: "Final Price",
         valueGetter: (row) => Number(row.final_price || 0),
-        render: (value) => <div className="text-right">{formatMoney(value)}</div>,
+        render: (value) => <div style={{ textAlign: "right" }}>{formatMoney(value)}</div>,
       },
       {
         key: "supplier",

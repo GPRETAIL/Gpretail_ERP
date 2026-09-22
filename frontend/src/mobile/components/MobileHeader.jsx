@@ -95,7 +95,8 @@ export default function MobileHeader({
           component="button"
           type="button"
           onClick={onOpenNotifications}
-          className="vx-ws-icon relative"
+          className="vx-ws-icon"
+          sx={{ position: "relative" }}
           aria-label="Notifications"
         >
           <Bell size={19} />

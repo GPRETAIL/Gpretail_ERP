@@ -118,7 +118,7 @@ export default function SalesScreen({ onNavigate }) {
   return (
     <Box>
       {/* Search & Filter */}
-      <Box className="vx-search-row relative">
+      <Box className="vx-search-row" sx={{ position: "relative" }}>
         <Box className="vx-search-input-wrap">
           <Search size={16} color="#94a3b8" />
           <Box
@@ -132,7 +132,8 @@ export default function SalesScreen({ onNavigate }) {
         <Box
           component="button"
           type="button"
-          className={`vx-filter-btn ${dateRange !== "all" ? "!bg-indigo-600 !text-white" : ""}`}
+          className="vx-filter-btn"
+          sx={dateRange !== "all" ? { bgcolor: "#4f46e5", color: "#fff" } : undefined}
           aria-label="Filter by date"
           onClick={() => setShowDateFilter((v) => !v)}
         >

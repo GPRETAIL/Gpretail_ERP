@@ -23,16 +23,16 @@ const money = (n) =>
   });
 
 const MODULE_TILES = [
-  { key: "sales", name: "Sales", icon: ShoppingCart, bg: "bg-indigo-600" },
-  { key: "purchase", name: "Purchase", icon: ClipboardList, bg: "bg-sky-500" },
-  { key: "inventory", name: "Inventory", icon: BoxIcon, bg: "bg-amber-500" },
-  { key: "inventory", name: "Products", icon: Package, bg: "bg-emerald-500" },
-  { key: "customers", name: "Customers", icon: Users, bg: "bg-blue-500" },
-  { key: "suppliers", name: "Suppliers", icon: Store, bg: "bg-cyan-600" },
-  { key: "attendance", name: "Attendance", icon: UserCheck, bg: "bg-teal-600" },
-  { key: "dashboard", name: "Expenses", icon: Wallet, bg: "bg-orange-500" },
-  { key: "reports", name: "Reports", icon: BarChart3, bg: "bg-slate-600" },
-  { key: "settings", name: "Settings", icon: Settings, bg: "bg-slate-500" },
+  { key: "sales", name: "Sales", icon: ShoppingCart, bg: "#4f46e5" },
+  { key: "purchase", name: "Purchase", icon: ClipboardList, bg: "#0ea5e9" },
+  { key: "inventory", name: "Inventory", icon: BoxIcon, bg: "#f59e0b" },
+  { key: "inventory", name: "Products", icon: Package, bg: "#10b981" },
+  { key: "customers", name: "Customers", icon: Users, bg: "#3b82f6" },
+  { key: "suppliers", name: "Suppliers", icon: Store, bg: "#0891b2" },
+  { key: "attendance", name: "Attendance", icon: UserCheck, bg: "#0d9488" },
+  { key: "dashboard", name: "Expenses", icon: Wallet, bg: "#f97316" },
+  { key: "reports", name: "Reports", icon: BarChart3, bg: "#475569" },
+  { key: "settings", name: "Settings", icon: Settings, bg: "#64748b" },
 ];
 
 /**
@@ -75,7 +75,7 @@ export default function ModulesScreen({ onNavigate, authUser }) {
               className="vx-module-tile"
               onClick={() => onNavigate(tile.key)}
             >
-              <Box className={`vx-module-icon-box ${tile.bg}`}>
+              <Box className="vx-module-icon-box" sx={{ bgcolor: tile.bg }}>
                 <Icon size={22} />
               </Box>
               <Box component="span" className="vx-module-name">{tile.name}</Box>

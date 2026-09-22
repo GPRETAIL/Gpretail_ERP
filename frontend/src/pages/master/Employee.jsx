@@ -18,9 +18,6 @@ import { handleEnterKeyNavigation } from "../../utils/enterToNextField";
 import useStoreNameMap from "../../hooks/useStoreNameMap";
 import { normalizeFormSignature } from "../../utils/formSignature";
 
-const FORM_LABEL_CLASS = "text-xs font-medium text-gray-700 dark:text-gray-300 leading-normal";
-const FORM_CONTROL_CLASS = "h-8 rounded-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-2 py-1 text-xs leading-normal placeholder:text-xs placeholder-gray-400 dark:placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100 dark:disabled:bg-gray-800";
-
 const EMPLOYEE_IMPORT_CONFIG = {
   aliases: {
     employeecode: "employee_code",

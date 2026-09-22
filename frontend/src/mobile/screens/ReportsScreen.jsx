@@ -15,12 +15,12 @@ import { Box, Typography } from "@mui/material";
 // Profit & Loss/GST/Receivables have no dedicated mobile screen yet, so they
 // route to the shared ReportDetailScreen with the relevant report type.
 const REPORTS = [
-  { title: "Sales Report", sub: "View sales reports", icon: BarChart3, bg: "bg-emerald-500", target: "sales" },
-  { title: "Purchase Report", sub: "View purchase reports", icon: ClipboardList, bg: "bg-rose-500", target: "purchase" },
-  { title: "Stock Report", sub: "View stock reports", icon: BoxIcon, bg: "bg-blue-500", target: "inventory" },
-  { title: "Profit & Loss", sub: "View profit & loss reports", icon: TrendingUp, bg: "bg-indigo-500", target: "report_profit_loss" },
-  { title: "GST Report", sub: "View GST reports", icon: FileText, bg: "bg-purple-500", target: "report_gst" },
-  { title: "Receivables Report", sub: "View receivables reports", icon: Wallet, bg: "bg-cyan-500", target: "report_receivables" },
+  { title: "Sales Report", sub: "View sales reports", icon: BarChart3, bg: "#10b981", target: "sales" },
+  { title: "Purchase Report", sub: "View purchase reports", icon: ClipboardList, bg: "#f43f5e", target: "purchase" },
+  { title: "Stock Report", sub: "View stock reports", icon: BoxIcon, bg: "#3b82f6", target: "inventory" },
+  { title: "Profit & Loss", sub: "View profit & loss reports", icon: TrendingUp, bg: "#6366f1", target: "report_profit_loss" },
+  { title: "GST Report", sub: "View GST reports", icon: FileText, bg: "#a855f7", target: "report_gst" },
+  { title: "Receivables Report", sub: "View receivables reports", icon: Wallet, bg: "#06b6d4", target: "report_receivables" },
 ];
 
 /**
@@ -28,7 +28,7 @@ const REPORTS = [
  */
 export default function ReportsScreen({ onNavigate }) {
   return (
-    <Box className="space-y-2">
+    <Box sx={{ "& > * + *": { mt: 1 } }}>
       {REPORTS.map((item, i) => {
         const Icon = item.icon;
         return (
@@ -43,7 +43,7 @@ export default function ReportsScreen({ onNavigate }) {
             }}
           >
             <Box className="vx-menu-row-left">
-              <Box className={`vx-menu-icon-box ${item.bg}`}>
+              <Box className="vx-menu-icon-box" sx={{ bgcolor: item.bg }}>
                 <Icon size={20} />
               </Box>
               <Box className="vx-menu-row-text">

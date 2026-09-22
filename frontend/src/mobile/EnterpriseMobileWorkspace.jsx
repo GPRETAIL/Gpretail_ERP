@@ -213,7 +213,8 @@ export default function EnterpriseMobileWorkspace() {
         <Box
           component="button"
           type="button"
-          className="vx-ws-icon relative"
+          className="vx-ws-icon"
+          sx={{ position: "relative" }}
           onClick={triggerInstall}
           title="Install Mobile App"
           aria-label="Install App"
@@ -592,15 +593,15 @@ function DashboardScreen({ userName, data, onNavigate }) {
 // -------------------------------------------------------------
 function ModulesScreen({ onNavigate }) {
   const moduleTiles = [
-    { key: "sales", name: "Sales", icon: ShoppingCart, bg: "bg-indigo-600" },
-    { key: "purchase", name: "Purchase", icon: ClipboardList, bg: "bg-sky-500" },
-    { key: "inventory", name: "Inventory", icon: BoxIcon, bg: "bg-amber-500" },
-    { key: "inventory", name: "Products", icon: Package, bg: "bg-emerald-500" },
-    { key: "dashboard", name: "Customers", icon: Users, bg: "bg-blue-500" },
-    { key: "dashboard", name: "Suppliers", icon: Store, bg: "bg-cyan-600" },
-    { key: "dashboard", name: "Expenses", icon: Wallet, bg: "bg-orange-500" },
-    { key: "reports", name: "Reports", icon: BarChart3, bg: "bg-slate-600" },
-    { key: "settings", name: "Settings", icon: Settings, bg: "bg-slate-500" },
+    { key: "sales", name: "Sales", icon: ShoppingCart, bg: "#4f46e5" },
+    { key: "purchase", name: "Purchase", icon: ClipboardList, bg: "#0ea5e9" },
+    { key: "inventory", name: "Inventory", icon: BoxIcon, bg: "#f59e0b" },
+    { key: "inventory", name: "Products", icon: Package, bg: "#10b981" },
+    { key: "dashboard", name: "Customers", icon: Users, bg: "#3b82f6" },
+    { key: "dashboard", name: "Suppliers", icon: Store, bg: "#0891b2" },
+    { key: "dashboard", name: "Expenses", icon: Wallet, bg: "#f97316" },
+    { key: "reports", name: "Reports", icon: BarChart3, bg: "#475569" },
+    { key: "settings", name: "Settings", icon: Settings, bg: "#64748b" },
   ];
 
   return (
@@ -617,7 +618,7 @@ function ModulesScreen({ onNavigate }) {
               className="vx-module-tile"
               onClick={() => onNavigate(tile.key)}
             >
-              <Box className={`vx-module-icon-box ${tile.bg}`}>
+              <Box className="vx-module-icon-box" sx={{ bgcolor: tile.bg }}>
                 <Icon size={22} />
               </Box>
               <Box component="span" className="vx-module-name">{tile.name}</Box>
@@ -956,7 +957,7 @@ function InventorySummaryScreen({ onSelectProduct }) {
         <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-around", gap: 2 }}>
           {/* SVG Donut Chart */}
           <Box sx={{ position: "relative", width: 128, height: 128, flexShrink: 0 }}>
-            <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+            <svg viewBox="0 0 100 100" style={{ width: "100%", height: "100%", transform: "rotate(-90deg)" }}>
               <circle cx="50" cy="50" r="38" fill="none" stroke="#e2e8f0" strokeWidth="18" />
               {/* Electronics 40% */}
               <circle
@@ -1133,12 +1134,12 @@ function ProductDetailsScreen({ product, onBack }) {
 // -------------------------------------------------------------
 function ReportsScreen({ onSelectReport }) {
   const reportsList = [
-    { title: "Sales Report", sub: "View sales reports", icon: BarChart3, bg: "bg-emerald-500" },
-    { title: "Purchase Report", sub: "View purchase reports", icon: ClipboardList, bg: "bg-rose-500" },
-    { title: "Stock Report", sub: "View stock reports", icon: BoxIcon, bg: "bg-blue-500" },
-    { title: "Profit & Loss", sub: "View profit & loss reports", icon: TrendingUp, bg: "bg-indigo-500" },
-    { title: "GST Report", sub: "View GST reports", icon: FileText, bg: "bg-purple-500" },
-    { title: "Receivables Report", sub: "View receivables reports", icon: Wallet, bg: "bg-cyan-500" },
+    { title: "Sales Report", sub: "View sales reports", icon: BarChart3, bg: "#10b981" },
+    { title: "Purchase Report", sub: "View purchase reports", icon: ClipboardList, bg: "#f43f5e" },
+    { title: "Stock Report", sub: "View stock reports", icon: BoxIcon, bg: "#3b82f6" },
+    { title: "Profit & Loss", sub: "View profit & loss reports", icon: TrendingUp, bg: "#6366f1" },
+    { title: "GST Report", sub: "View GST reports", icon: FileText, bg: "#a855f7" },
+    { title: "Receivables Report", sub: "View receivables reports", icon: Wallet, bg: "#06b6d4" },
   ];
 
   return (
@@ -1152,7 +1153,7 @@ function ReportsScreen({ onSelectReport }) {
             onClick={onSelectReport}
           >
             <Box className="vx-menu-row-left">
-              <Box className={`vx-menu-icon-box ${item.bg}`}>
+              <Box className="vx-menu-icon-box" sx={{ bgcolor: item.bg }}>
                 <Icon size={20} />
               </Box>
               <Box className="vx-menu-row-text">
