@@ -70,6 +70,18 @@ input[type="radio"] {
   border-radius: revert;
 }
 
+/* Plain native <select> elements (CustomInputs.jsx's SelectInput, used across every "new"/"edit"
+   form page) hit the same appearance:none problem as checkboxes above, but with no follow-up rule
+   to fix it -- confirmed live: a select with no dropdown affordance at all, indistinguishable from
+   a plain text input. Unlike checkboxes, a select's own border/background/padding here should stay
+   exactly as SelectInput's fieldBaseSx sets them (that's already correct); appearance:auto on
+   modern browsers only adds back the disclosure arrow + native popup behavior on top of those
+   author styles, it doesn't reintroduce the browser's own default select chrome the way it would
+   for a checkbox. */
+select {
+  appearance: auto;
+}
+
 /* ── Global layout overrides ── */
 /* Remove min-h-screen from page wrappers so they fit inside the flex layout */
 main > div {
