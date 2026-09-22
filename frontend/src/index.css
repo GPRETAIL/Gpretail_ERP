@@ -47,6 +47,29 @@ button {
   cursor: pointer;
 }
 
+/* Checkboxes/radios need their native appearance restored -- Tailwind's own Preflight resets
+   them too, but replaces the native widget with its own explicit border + checked-state SVG
+   background; appearance:none with nothing to fill in visually is not equivalent, it's just
+   invisible (confirmed: a raw checkbox rendered as a blank, borderless, background-less 12x12 box
+   with nothing to see, even when checked). This codebase's own hand-rolled checkbox inputs (e.g.
+   CustomInputs.jsx's CheckboxInput) already set `accentColor` explicitly, which only has any
+   effect on the browser's own native widget -- appearance:none would make that styling choice
+   pointless too. A `:not([type="checkbox"])` exclusion on the selector above was tried first and
+   reverted: each `:not()` argument that's itself an attribute selector adds (0,1,0) to that
+   selector's specificity same as a real class, so two of them pushed this plain-tag reset's
+   specificity above a single MUI/emotion sx class -- silently breaking every OTHER hand-rolled
+   input's own border/background (the exact thing this whole rule exists to let win). A separate,
+   later rule keeps the main reset's specificity untouched at a single tag selector. */
+input[type="checkbox"],
+input[type="radio"] {
+  appearance: auto;
+  border: revert;
+  background: revert;
+  padding: revert;
+  margin: revert;
+  border-radius: revert;
+}
+
 /* ── Global layout overrides ── */
 /* Remove min-h-screen from page wrappers so they fit inside the flex layout */
 main > div {
