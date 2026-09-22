@@ -3,11 +3,22 @@
    padding/border are included in the declared height rather than added on top. Restored
    explicitly now that tailwindcss itself is uninstalled -- without it, padding+border push
    every such box taller than its allotted space, which is what caused the dashboard cards'
-   unwanted inner scrollbars. */
+   unwanted inner scrollbars.
+
+   Preflight also zeroed every element's default margin -- missed the first time around, which
+   left <body> at the browser's own default 8px margin (all 4 sides). That margin is invisible on
+   most pages (MUI Box/Typography never relied on it), but it counts toward <html>'s scrollHeight
+   like any other content, so any page whose content came close to filling the viewport gained a
+   phantom ~16px (top+bottom) of extra height -- just enough to trigger an unwanted page-level
+   scrollbar even with visible empty space still showing beneath the actual content. MUI
+   Typography/Box already set their own margins explicitly (0 by default, unless gutterBottom is
+   used) with real CSS classes that outrank this plain tag-selector reset, so this only affects
+   genuinely-native elements like <body> that nothing else was ever styling. */
 *,
 *::before,
 *::after {
   box-sizing: border-box;
+  margin: 0;
 }
 
 /* Tailwind's Preflight also normalized native form elements (button/input/select/textarea),
