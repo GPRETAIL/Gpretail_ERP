@@ -370,8 +370,12 @@ const Dashboard = () => {
         </Stack>
       </Box>
 
-      <Stack spacing={1.5} sx={{ flexDirection: { xs: "column", lg: "row" }, alignItems: { lg: "flex-end" }, justifyContent: { lg: "space-between" } }}>
-        <Stack spacing={1.5} sx={{ flexDirection: { xs: "column", sm: "row" }, alignItems: { sm: "flex-end" } }}>
+      <Stack
+        direction={{ xs: "column", lg: "row" }}
+        spacing={1.5}
+        sx={{ alignItems: { lg: "flex-end" }, justifyContent: { lg: "space-between" } }}
+      >
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ alignItems: { sm: "flex-end" } }}>
           <TextField
             type="date"
             label="From"

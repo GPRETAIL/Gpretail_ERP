@@ -484,7 +484,7 @@ export default function FilterableDataTable({
               bgcolor: "background.paper",
               border: "1px solid",
               borderColor: "divider",
-              borderRadius: 1,
+              borderRadius: "7px",
               boxShadow: 4,
             },
           },
@@ -508,7 +508,7 @@ export default function FilterableDataTable({
             onChange={(e) =>
               setColumnFilter(column.key, { operator: e.target.value })
             }
-            sx={{ "& .MuiInputBase-input": { fontSize: 11 } }}
+            sx={{ "& .MuiInputBase-input": { fontSize: 11 }, "& .MuiOutlinedInput-root": { borderRadius: "5.25px" } }}
           >
             {FILTER_OPERATORS.map((op) => (
               <option key={op.value} value={op.value}>
@@ -526,7 +526,7 @@ export default function FilterableDataTable({
                 setColumnFilter(column.key, { value: e.target.value })
               }
               placeholder="Enter filter value"
-              sx={{ "& .MuiInputBase-input": { fontSize: 11 } }}
+              sx={{ "& .MuiInputBase-input": { fontSize: 11 }, "& .MuiOutlinedInput-root": { borderRadius: "5.25px" } }}
             />
           )}
         </Box>

@@ -13,7 +13,7 @@ const PageHeader = ({ title, onBack, actions }) => (
       alignItems: "center",
       justifyContent: "space-between",
       px: 2,
-      py: 1,
+      py: 0.75,
       borderBottom: 1,
       borderColor: "divider",
       boxShadow: "0 1px 2px 0 rgba(0,0,0,0.05)", // matches Tailwind's shadow-sm exactly
