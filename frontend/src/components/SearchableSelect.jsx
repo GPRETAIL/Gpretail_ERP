@@ -17,7 +17,10 @@ import { SEARCHABLE_TRIGGER_SX, SEARCHABLE_INPUT_SX } from "../theme/formControl
  *   onChange         {function(e)}  — fires a synthetic event {target:{name,value}}
  *   required         {boolean}
  *   placeholder      {string}
- *   portalDropdown   {boolean} — render menu in document.body with fixed position (use inside overflow-hidden modals)
+ *   portalDropdown   {boolean} — render menu in document.body with fixed position, immune to an
+ *                     ancestor's `overflow: hidden` (e.g. a Card, which MUI clips by default).
+ *                     Defaults to true; pass false only for a rare case that genuinely wants the
+ *                     old inline-flow behavior.
  *   triggerSx        {object} — sx overrides merged onto the trigger button's base sx. Defaults to
  *                     the app's shared common size (theme/formControlSizes.js) -- only pass this
  *                     when a page genuinely needs to differ (e.g. larger touch targets), not to
@@ -36,7 +39,7 @@ const SearchableSelect = ({
   creatable = false,
   triggerSx = SEARCHABLE_TRIGGER_SX,
   searchInputSx = SEARCHABLE_INPUT_SX,
-  portalDropdown = false,
+  portalDropdown = true,
   openOnFocus = false,
 }) => {
   const theme = useTheme();

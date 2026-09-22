@@ -1,5 +1,6 @@
 import { ChevronDown, Search } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Box } from "@mui/material";
 import { useTheme, alpha } from "@mui/material/styles";
 import { SEARCHABLE_TRIGGER_SX, SEARCHABLE_INPUT_SX } from "../theme/formControlSizes";
@@ -27,12 +28,44 @@ const AsyncSearchSelect = ({ name, value, onChange, options, onAsyncSearch, plac
   const containerRef = useRef(null);
   const triggerRef = useRef(null);
   const listRef = useRef(null);
+  const dropdownPortalRef = useRef(null);
   const keyboardSelectionArmedRef = useRef(false);
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [asyncResults, setAsyncResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [dropdownPlacement, setDropdownPlacement] = useState(null);
+
+  // Rendered via a document.body portal (see below) so the panel is never clipped by an
+  // ancestor's `overflow: hidden` (e.g. a Card, which MUI clips by default).
+  const measurePortalPlacement = () => {
+    const el = triggerRef.current;
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - r.bottom - 8;
+    return {
+      top: r.bottom + 4,
+      left: r.left,
+      width: Math.max(r.width, 220),
+      maxHeight: Math.min(320, Math.max(160, spaceBelow)),
+    };
+  };
+
+  useLayoutEffect(() => {
+    if (!open) return undefined;
+    const place = () => {
+      const next = measurePortalPlacement();
+      if (next) setDropdownPlacement(next);
+    };
+    place();
+    window.addEventListener("scroll", place, true);
+    window.addEventListener("resize", place);
+    return () => {
+      window.removeEventListener("scroll", place, true);
+      window.removeEventListener("resize", place);
+    };
+  }, [open]);
 
   const safeOptions = useMemo(() => (Array.isArray(options) ? options : []), [options]);
 
@@ -100,7 +133,12 @@ const AsyncSearchSelect = ({ name, value, onChange, options, onAsyncSearch, plac
 
   useEffect(() => {
     if (!open) return;
-    const handler = (e) => { if (containerRef.current && !containerRef.current.contains(e.target)) { setOpen(false); setSearchTerm(""); setHighlightedIndex(-1); } };
+    const handler = (e) => {
+      const target = e.target;
+      if (containerRef.current?.contains(target)) return;
+      if (dropdownPortalRef.current?.contains(target)) return;
+      setOpen(false); setSearchTerm(""); setHighlightedIndex(-1);
+    };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
@@ -250,64 +288,70 @@ const AsyncSearchSelect = ({ name, value, onChange, options, onAsyncSearch, plac
         <Box component="span" sx={{ color: selectedLabel ? "text.primary" : "text.disabled", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 10.5 }}>{selectedLabel || placeholder}</Box>
         <ChevronDown size={12} style={{ color: isDark ? "#64748b" : "#9ca3af", flexShrink: 0, transition: "transform 0.15s", transform: open ? "rotate(180deg)" : "none" }} />
       </Box>
-      {open && !disabled && (
-        <Box sx={{ position: "absolute", zIndex: 50, left: 0, top: "100%", mt: 0.25, width: "100%", bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "4px", boxShadow: 4, minWidth: 160 }}>
-          <Box sx={{ p: 0.5, borderBottom: "1px solid", borderColor: "divider", display: "flex", alignItems: "center", gap: 0.5 }}>
-            <Search size={12} style={{ color: isDark ? "#64748b" : "#9ca3af", flexShrink: 0 }} />
-            <Box
-              component="input"
-              autoFocus
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={searchPlaceholder}
-              sx={{
-                width: "100%", fontSize: 10.5, outline: "none", bgcolor: "transparent", color: "text.secondary",
-                "&::placeholder": { color: "text.disabled" },
-                ...searchInputSx,
-              }}
-            />
-            {isSearching && (
-              <Box component="span" sx={{ fontSize: 10, color: "#3b82f6", fontWeight: 500, flexShrink: 0, px: 0.5, animation: "app-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite" }}>Searching...</Box>
-            )}
-          </Box>
-          <Box component="ul" ref={listRef} sx={{ maxHeight: 208, overflowY: "auto" }}>
-            <Box
-              component="li"
-              onClick={() => selectVal("")}
-              sx={{
-                px: 1, py: 0.5, fontSize: 10.5, color: "text.secondary", cursor: "pointer",
-                bgcolor: highlightedIndex === 0 ? highlightBg : "transparent",
-                "&:hover": highlightedIndex === 0 ? {} : { bgcolor: alpha(theme.palette.primary.main, 0.04) },
-              }}
-            >{placeholder}</Box>
-            {finalOptions.map((opt, idx) => {
-              const isHighlighted = highlightedIndex === idx + 1;
-              const isSelected = getId(opt) === String(value);
-              return (
-                <Box
-                  component="li"
-                  key={getId(opt)}
-                  onClick={() => selectVal(getId(opt))}
-                  sx={{
-                    px: 1, py: 0.5, fontSize: 10.5, cursor: "pointer",
-                    bgcolor: isHighlighted || isSelected ? highlightBg : "transparent",
-                    color: isHighlighted || isSelected ? selectedText : "text.secondary",
-                    fontWeight: isHighlighted || isSelected ? 500 : 400,
-                    "&:hover": isHighlighted || isSelected ? {} : { bgcolor: alpha(theme.palette.primary.main, 0.04) },
-                  }}
-                >{getLabel(opt)}</Box>
-              );
-            })}
-          </Box>
-          {filtered.length > 100 && (
-            <Box sx={{ px: 1, py: 0.25, fontSize: 10, color: "text.disabled", bgcolor: alpha(theme.palette.text.primary, 0.02), textAlign: "center", borderTop: "1px solid", borderColor: "divider" }}>
-              Showing top 100 of {filtered.length} (type to narrow)
+      {open && !disabled && dropdownPlacement &&
+        createPortal(
+          <Box
+            ref={dropdownPortalRef}
+            sx={{ bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "4px", boxShadow: 8, overflow: "hidden" }}
+            style={{ position: "fixed", top: dropdownPlacement.top, left: dropdownPlacement.left, width: dropdownPlacement.width, zIndex: 10060 }}
+          >
+            <Box sx={{ p: 0.5, borderBottom: "1px solid", borderColor: "divider", display: "flex", alignItems: "center", gap: 0.5 }}>
+              <Search size={12} style={{ color: isDark ? "#64748b" : "#9ca3af", flexShrink: 0 }} />
+              <Box
+                component="input"
+                autoFocus
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={searchPlaceholder}
+                sx={{
+                  width: "100%", fontSize: 10.5, outline: "none", bgcolor: "transparent", color: "text.secondary",
+                  "&::placeholder": { color: "text.disabled" },
+                  ...searchInputSx,
+                }}
+              />
+              {isSearching && (
+                <Box component="span" sx={{ fontSize: 10, color: "#3b82f6", fontWeight: 500, flexShrink: 0, px: 0.5, animation: "app-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite" }}>Searching...</Box>
+              )}
             </Box>
-          )}
-        </Box>
-      )}
+            <Box component="ul" ref={listRef} sx={{ maxHeight: dropdownPlacement.maxHeight, overflowY: "auto" }}>
+              <Box
+                component="li"
+                onClick={() => selectVal("")}
+                sx={{
+                  px: 1, py: 0.5, fontSize: 10.5, color: "text.secondary", cursor: "pointer",
+                  bgcolor: highlightedIndex === 0 ? highlightBg : "transparent",
+                  "&:hover": highlightedIndex === 0 ? {} : { bgcolor: alpha(theme.palette.primary.main, 0.04) },
+                }}
+              >{placeholder}</Box>
+              {finalOptions.map((opt, idx) => {
+                const isHighlighted = highlightedIndex === idx + 1;
+                const isSelected = getId(opt) === String(value);
+                return (
+                  <Box
+                    component="li"
+                    key={getId(opt)}
+                    onClick={() => selectVal(getId(opt))}
+                    sx={{
+                      px: 1, py: 0.5, fontSize: 10.5, cursor: "pointer",
+                      bgcolor: isHighlighted || isSelected ? highlightBg : "transparent",
+                      color: isHighlighted || isSelected ? selectedText : "text.secondary",
+                      fontWeight: isHighlighted || isSelected ? 500 : 400,
+                      "&:hover": isHighlighted || isSelected ? {} : { bgcolor: alpha(theme.palette.primary.main, 0.04) },
+                    }}
+                  >{getLabel(opt)}</Box>
+                );
+              })}
+            </Box>
+            {filtered.length > 100 && (
+              <Box sx={{ px: 1, py: 0.25, fontSize: 10, color: "text.disabled", bgcolor: alpha(theme.palette.text.primary, 0.02), textAlign: "center", borderTop: "1px solid", borderColor: "divider" }}>
+                Showing top 100 of {filtered.length} (type to narrow)
+              </Box>
+            )}
+          </Box>,
+          document.body
+        )}
     </Box>
   );
 };
