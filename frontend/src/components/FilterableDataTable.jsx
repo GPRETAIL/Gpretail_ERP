@@ -2178,6 +2178,7 @@ export default function FilterableDataTable({
                       indeterminate={somePageSelected && !allPageSelected}
                       onChange={(e) => handleSelectAll(e.target.checked)}
                       size="small"
+                      sx={{ p: 0.25 }}
                       slotProps={{ input: { title: "Select all on this page" } }}
                     />
                   )}
@@ -2503,6 +2504,7 @@ export default function FilterableDataTable({
                           }}
                           onClick={(e) => e.stopPropagation()}
                           size="small"
+                          sx={{ p: 0.25 }}
                         />
                       )}
                     </TableCell>
