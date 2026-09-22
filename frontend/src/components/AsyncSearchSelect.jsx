@@ -14,8 +14,12 @@ import { useTheme, alpha } from "@mui/material/styles";
  * cheap client-side check can reproduce, so re-narrowing them here would silently drop correct
  * matches. Only the locally-cached `options` -- never server-filtered for this specific query --
  * get a client-side (best-effort, broadened) match.
+ *
+ * triggerSx / searchInputSx {object} -- sx overrides merged onto the trigger button / search input's
+ * base sx, same convention as SearchableSelect's own triggerSx/searchInputSx, so a page can size
+ * both components identically when they sit side by side.
  */
-const AsyncSearchSelect = ({ name, value, onChange, options, onAsyncSearch, placeholder = "Select...", searchPlaceholder = "Search...", disabled = false }) => {
+const AsyncSearchSelect = ({ name, value, onChange, options, onAsyncSearch, placeholder = "Select...", searchPlaceholder = "Search...", disabled = false, triggerSx = {}, searchInputSx = {} }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
   const containerRef = useRef(null);
@@ -238,6 +242,7 @@ const AsyncSearchSelect = ({ name, value, onChange, options, onAsyncSearch, plac
           fontSize: 10.5, bgcolor: "background.paper", textAlign: "left", display: "flex", alignItems: "center",
           justifyContent: "space-between", opacity: disabled ? 0.6 : 1, cursor: disabled ? "not-allowed" : "pointer",
           "&:focus": { outline: "none", borderColor: "#3b82f6", boxShadow: "0 0 0 1px #3b82f6" },
+          ...triggerSx,
         }}
       >
         <Box component="span" sx={{ color: selectedLabel ? "text.primary" : "text.disabled", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 10.5 }}>{selectedLabel || placeholder}</Box>
@@ -258,6 +263,7 @@ const AsyncSearchSelect = ({ name, value, onChange, options, onAsyncSearch, plac
               sx={{
                 width: "100%", fontSize: 10.5, outline: "none", bgcolor: "transparent", color: "text.secondary",
                 "&::placeholder": { color: "text.disabled" },
+                ...searchInputSx,
               }}
             />
             {isSearching && (

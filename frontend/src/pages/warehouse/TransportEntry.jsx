@@ -8,7 +8,7 @@ import SearchableSelect from "../../components/SearchableSelect";
 import AsyncSearchSelect from "../../components/AsyncSearchSelect";
 import PageSkeleton from "../../components/PageSkeleton";
 import { getMasterLookups } from "../../utils/lookupCache";
-import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, Checkbox, alpha } from "@mui/material";
+import { Box, Stack, Typography, TextField, IconButton, Button, Checkbox, alpha } from "@mui/material";
 
 const TRANSPORT_SEARCHABLE_TRIGGER_SX = { height: 32, px: 1, py: 0.25, fontSize: 11 };
 const TRANSPORT_SEARCHABLE_INPUT_SX = { fontSize: 11 };
@@ -95,23 +95,6 @@ const CheckboxTextInput = ({
         }}
       />
     </Stack>
-  </Box>
-);
-
-const SelectInput = ({ label, required = false, options, value, onChange }) => (
-  <Box>
-    <Typography component="label" sx={transportLabelSx}>
-      {required && <Box component="span" sx={{ color: "error.main" }}>* </Box>}
-      {label}
-    </Typography>
-    <TextField select value={value} onChange={onChange} size="small" fullWidth sx={transportControlSx}>
-      <MenuItem value="">{`Select ${label}`}</MenuItem>
-      {options.map((option, index) => (
-        <MenuItem key={option.value || index} value={option.value ?? option.label}>
-          {option.label}
-        </MenuItem>
-      ))}
-    </TextField>
   </Box>
 );
 
@@ -807,6 +790,8 @@ const TransportEntry = () => {
                     onChange={(e) => { handleFieldChange("supplierId")(e); focusRef(agentRef); }}
                     placeholder="Select Supplier"
                     searchPlaceholder="Search supplier..."
+                    triggerSx={TRANSPORT_SEARCHABLE_TRIGGER_SX}
+                    searchInputSx={TRANSPORT_SEARCHABLE_INPUT_SX}
                   />
                 </Box>
               </Box>
@@ -826,6 +811,8 @@ const TransportEntry = () => {
                       onChange={(e) => { handleFieldChange("agentId")(e); focusRef(commissionRef); }}
                       placeholder="Select Agent"
                       searchPlaceholder="Search agent..."
+                      triggerSx={TRANSPORT_SEARCHABLE_TRIGGER_SX}
+                      searchInputSx={TRANSPORT_SEARCHABLE_INPUT_SX}
                     />
                   </Box>
                 </Box>
@@ -851,6 +838,8 @@ const TransportEntry = () => {
                     onChange={(e) => { handleFieldChange("transportId")(e); focusRef(fromCityRef); }}
                     placeholder="Select Transport"
                     searchPlaceholder="Search transport..."
+                    triggerSx={TRANSPORT_SEARCHABLE_TRIGGER_SX}
+                    searchInputSx={TRANSPORT_SEARCHABLE_INPUT_SX}
                   />
                 </Box>
               </Box>
@@ -941,6 +930,8 @@ const TransportEntry = () => {
                     onChange={handleFieldChange("purchaseManager")}
                     placeholder="Select Purchase Manager"
                     searchPlaceholder="Search employees..."
+                    triggerSx={TRANSPORT_SEARCHABLE_TRIGGER_SX}
+                    searchInputSx={TRANSPORT_SEARCHABLE_INPUT_SX}
                   />
                 </Box>
               </Box>
@@ -1038,12 +1029,20 @@ const TransportEntry = () => {
                 disabled={isViewMode}
               />
 
-              <SelectInput
-                label="Bundle Rack"
-                options={bundleRacks.map((row) => ({ label: row.name, value: row.name }))}
-                value={formData.bundleRate}
-                onChange={handleFieldChange("bundleRate")}
-              />
+              <Box>
+                <Typography component="label" sx={transportLabelSx}>Bundle Rack</Typography>
+                <Box sx={{ mt: 0.25 }}>
+                  <SearchableSelect
+                    name="bundleRate"
+                    options={bundleRacks.map((row) => ({ label: row.name, value: row.name }))}
+                    value={formData.bundleRate}
+                    onChange={handleFieldChange("bundleRate")}
+                    placeholder="Select Bundle Rack"
+                    triggerSx={TRANSPORT_SEARCHABLE_TRIGGER_SX}
+                    searchInputSx={TRANSPORT_SEARCHABLE_INPUT_SX}
+                  />
+                </Box>
+              </Box>
 
               <TextInput
                 label="Remark"
@@ -1200,12 +1199,20 @@ const TransportEntry = () => {
                 disabled={isViewMode}
               />
 
-              <SelectInput
-                label="Section"
-                options={sections.map((row) => ({ label: row.name, value: row.name }))}
-                value={formData.section}
-                onChange={handleFieldChange("section")}
-              />
+              <Box>
+                <Typography component="label" sx={transportLabelSx}>Section</Typography>
+                <Box sx={{ mt: 0.25 }}>
+                  <SearchableSelect
+                    name="section"
+                    options={sections.map((row) => ({ label: row.name, value: row.name }))}
+                    value={formData.section}
+                    onChange={handleFieldChange("section")}
+                    placeholder="Select Section"
+                    triggerSx={TRANSPORT_SEARCHABLE_TRIGGER_SX}
+                    searchInputSx={TRANSPORT_SEARCHABLE_INPUT_SX}
+                  />
+                </Box>
+              </Box>
             </Stack>
           </Box>
         </Box>
