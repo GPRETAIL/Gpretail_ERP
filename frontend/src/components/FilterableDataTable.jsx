@@ -1914,11 +1914,21 @@ export default function FilterableDataTable({
   // Confirmed live (getComputedStyle on a real pinned/grouped header cell) that this ALSO already
   // wins over the header cells' own conditional bg-gray-100/bg-blue-50 classes below -- both were
   // already fully inert before this conversion, so their removal here is a no-op, not a regression.
+  // fontSize here (not just on tableTextSx/<Table> below) because MUI's own .MuiTableCell-root
+  // sets an explicit font-size from the theme's typography scale, which wins over simple
+  // inheritance from an ancestor <table> -- tableTextSx alone never actually reached any real
+  // <th>/<td> text, on any page, compact or not (confirmed live: every table's header text
+  // measured the same ~14px MUI default regardless of the compact prop). Real sx on each cell is
+  // the only thing that reliably outranks MUI's own styleOverrides, same reasoning as the
+  // background-color comment above.
   const headerCellSx = {
     backgroundColor: (theme) => (theme.palette.mode === "dark" ? "#374151" : "#f3f4f6"),
+    fontSize: compact ? { xs: "10px", xl: "11px" } : { xs: 10.5, xl: 12.25 },
   };
   const headerCellYSx = compact ? { py: { xs: 0.5, xl: 0.75 } } : { py: { xs: 1, xl: 1.25 } };
-  const bodyCellYSx = compact ? { py: 0, lineHeight: 1 } : { py: { xs: 1, xl: 1.25 } };
+  const bodyCellYSx = compact
+    ? { py: 0, lineHeight: 1, fontSize: { xs: "10px", xl: "11px" } }
+    : { py: { xs: 1, xl: 1.25 }, fontSize: { xs: 10.5, xl: 12.25 } };
   const bodyRowSx = compact ? { height: 32 } : {};
   const tableTextSx = compact
     ? { fontSize: { xs: "10px", xl: "11px" }, lineHeight: 1.25 }
@@ -2279,7 +2289,7 @@ export default function FilterableDataTable({
                   )}
                 </TableCell>
               ))}
-              {renderActions && <TableCell sx={{ px: 1.5, textAlign: "left", ...headerCellYSx }}>{actionsLabel}</TableCell>}
+              {renderActions && <TableCell sx={{ px: 1.5, textAlign: "left", ...headerCellSx, ...headerCellYSx }}>{actionsLabel}</TableCell>}
             </TableRow>
           </TableHead>
           <TableBody sx={{ color: "text.secondary" }}>
@@ -2323,7 +2333,7 @@ export default function FilterableDataTable({
               ))
             ) : (groupByColumn ? groupSummaryState.data.length === 0 : sortedRows.length === 0) ? (
               <TableRow>
-                <TableCell colSpan={tableColSpan} sx={{ textAlign: "center", py: 2, color: "text.disabled" }}>
+                <TableCell colSpan={tableColSpan} sx={{ textAlign: "center", py: 2, color: "text.disabled", ...tableTextSx }}>
                   {emptyText}
                 </TableCell>
               </TableRow>
