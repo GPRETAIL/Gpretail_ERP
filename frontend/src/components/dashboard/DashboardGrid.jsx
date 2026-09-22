@@ -44,13 +44,17 @@ export default function DashboardGrid({ tabKey, widgets }) {
   // position/size survives until it's restored.
   const layout = useMemo(() => {
     const byKey = new Map((Array.isArray(savedLayout) ? savedLayout : []).map((item) => [item.i, item]));
-    return widgets.map((w) => ({
-      ...w.defaultLayout,
-      ...byKey.get(w.key),
-      i: w.key,
-      minW: w.defaultLayout.minW,
-      minH: w.defaultLayout.minH,
-    }));
+    return widgets.map((w) => {
+      const saved = byKey.get(w.key);
+      const merged = { ...w.defaultLayout, ...saved, i: w.key, minW: w.defaultLayout.minW, minH: w.defaultLayout.minH };
+      // Self-heal any already-persisted layout that violates its own widget's minW/minH (see
+      // handleLayoutChange below for how this could get saved in the first place) -- fall back to
+      // that widget's own default size for just the dimension that's invalid, rather than
+      // rendering a collapsed, sub-minimum tile every time this loads.
+      if (merged.w < merged.minW) merged.w = w.defaultLayout.w;
+      if (merged.h < merged.minH) merged.h = w.defaultLayout.h;
+      return merged;
+    });
   }, [savedLayout, widgets]);
 
   const hiddenKeys = useMemo(() => new Set(layout.filter((item) => item.hidden).map((item) => item.i)), [layout]);
@@ -64,8 +68,26 @@ export default function DashboardGrid({ tabKey, widgets }) {
       // nextLayout only reports the currently-rendered (visible) items -- merge their fresh
       // x/y/w/h back into the full layout rather than replacing it outright, or dragging any
       // one visible widget would silently wipe every hidden widget's hidden flag and saved spot.
+      //
+      // react-grid-layout fires this same callback for ANY layout recalculation, not just an
+      // explicit drag/resize -- including a breakpoint change (e.g. the container briefly
+      // measuring narrow while still mid-transition) that clamps every item down to whatever the
+      // narrowest active breakpoint (cols: 1) allows. If that fires while editMode happens to be
+      // on, every widget's real w/h gets silently overwritten with that clamped-for-1-column
+      // value and persisted, permanently corrupting the tab's saved layout below its own minW/minH
+      // (confirmed happened for real: a saved "warehouse" layout had w:1 on every widget against
+      // minW as high as 6, collapsing every card into one narrow stacked column with no way to
+      // fix it from the UI short of dragging each one back out individually). Guard against ever
+      // persisting a value that violates the widget's own constraint -- keep its last-known-good
+      // w/h instead of blindly trusting whatever this callback reports.
       const byKey = new Map(nextLayout.map(({ i, x, y, w, h }) => [i, { x, y, w, h }]));
-      const merged = layout.map((item) => ({ ...item, ...(byKey.get(item.i) || {}) }));
+      const merged = layout.map((item) => {
+        const next = byKey.get(item.i);
+        if (!next) return item;
+        const w = next.w >= item.minW ? next.w : item.w;
+        const h = next.h >= item.minH ? next.h : item.h;
+        return { ...item, x: next.x, y: next.y, w, h };
+      });
       saveLayout(tabKey, merged);
     },
     [editMode, saveLayout, tabKey, layout]
