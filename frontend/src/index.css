@@ -1,3 +1,41 @@
+/* Tailwind's Preflight used to set this globally; every fixed/percentage-height box built
+   throughout the MUI migration (dashboard tiles, cards, etc.) assumed border-box sizing so
+   padding/border are included in the declared height rather than added on top. Restored
+   explicitly now that tailwindcss itself is uninstalled -- without it, padding+border push
+   every such box taller than its allotted space, which is what caused the dashboard cards'
+   unwanted inner scrollbars. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Tailwind's Preflight also normalized native form elements (button/input/select/textarea),
+   stripping the browser's own default border/background/font/appearance so a bare
+   `<Box component="button">` (used throughout this codebase instead of MUI's Button/ButtonBase
+   wherever a plain, unstyled-by-default clickable element is wanted -- e.g. the breadcrumb
+   "Master" link on master-data list pages) renders invisibly until its own sx adds styling.
+   Restored the same minimal reset now that tailwindcss is uninstalled -- without it, those
+   elements fall back to the browser's default button chrome (a visible outset border/background).
+   Real MUI components (Button, IconButton, TextField, ...) set their own base styles via actual
+   CSS classes, which always win over this plain tag-selector reset, so they're unaffected. */
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+  border: 0;
+  background: none;
+  border-radius: 0;
+  padding: 0;
+  margin: 0;
+  appearance: none;
+}
+button {
+  cursor: pointer;
+}
+
 /* ── Global layout overrides ── */
 /* Remove min-h-screen from page wrappers so they fit inside the flex layout */
 main > div {
@@ -103,6 +141,17 @@ main > .p-6 {
     color 250ms ease;
   cursor: pointer;
   overflow: hidden;
+}
+
+/* Toolbar action buttons (New/Upload/Export/...) mix real MUI <Button>s (New, Export) with
+   plain <Box component="button">s (Upload) sharing this same class for their visual skin. MUI's
+   own Button-root class sets its own line-height with higher specificity than this class's
+   line-height:1, so the MUI ones end up taller than the plain Box ones with nothing to override
+   that line-height -- pin an explicit height so every topbar action button matches regardless of
+   which element renders it. Scoped to .topbar-action-btn only (not the shared .glass-btn, which
+   also sizes small icon-only buttons elsewhere that should stay compact). */
+.topbar-action-btn {
+  min-height: 33px;
 }
 
 /* Shimmer highlight layer */
