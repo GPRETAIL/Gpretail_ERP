@@ -160,9 +160,13 @@ main > .p-6 {
    line-height:1, so the MUI ones end up taller than the plain Box ones with nothing to override
    that line-height -- pin an explicit height so every topbar action button matches regardless of
    which element renders it. Scoped to .topbar-action-btn only (not the shared .glass-btn, which
-   also sizes small icon-only buttons elsewhere that should stay compact). */
+   also sizes small icon-only buttons elsewhere that should stay compact).
+   Padding is also tightened here specifically (not in the shared rule above) for the same reason
+   -- a denser toolbar per explicit request, without shrinking every other .glass-btn icon button
+   app-wide that happens to reuse that same base class. */
 .topbar-action-btn {
-  min-height: 28px;
+  min-height: 24px;
+  padding: 0.15rem 0.55rem !important;
 }
 
 /* Shimmer highlight layer */
