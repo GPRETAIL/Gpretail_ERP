@@ -474,7 +474,7 @@ const ProductForm = () => {
           {/* Reduced inner padding */}
           <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "repeat(12, 1fr)" }, gap: 1.5 }}>
             {/* Reduced gap */} {/* --- Column 1: Left --- */}
-            <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 0.75 }}>
+            <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 0.5 }}>
               {/* Reduced vertical space */}
               <SelectInput
                 label="Product Group"
@@ -592,7 +592,7 @@ const ProductForm = () => {
               />
             </Box>
             {/* --- Column 2: Middle --- */}
-            <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 0.75, borderLeft: 1, borderRight: 1, borderColor: "divider", px: 1.5 }}>
+            <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 0.5, borderLeft: 1, borderRight: 1, borderColor: "divider", px: 1.5 }}>
               {/* Reduced vertical space and horizontal padding */}
               <SearchableSelect
                 label="Company Type"
