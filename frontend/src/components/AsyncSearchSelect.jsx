@@ -2,6 +2,7 @@ import { ChevronDown, Search } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Box } from "@mui/material";
 import { useTheme, alpha } from "@mui/material/styles";
+import { SEARCHABLE_TRIGGER_SX, SEARCHABLE_INPUT_SX } from "../theme/formControlSizes";
 
 /**
  * Dropdown select with a search box that debounce-fetches from the server via `onAsyncSearch`,
@@ -16,10 +17,11 @@ import { useTheme, alpha } from "@mui/material/styles";
  * get a client-side (best-effort, broadened) match.
  *
  * triggerSx / searchInputSx {object} -- sx overrides merged onto the trigger button / search input's
- * base sx, same convention as SearchableSelect's own triggerSx/searchInputSx, so a page can size
- * both components identically when they sit side by side.
+ * base sx, same convention as SearchableSelect's own triggerSx/searchInputSx. Default to the app's
+ * shared common size (theme/formControlSizes.js) -- only pass these when a page genuinely needs to
+ * differ, not to restate the common size.
  */
-const AsyncSearchSelect = ({ name, value, onChange, options, onAsyncSearch, placeholder = "Select...", searchPlaceholder = "Search...", disabled = false, triggerSx = {}, searchInputSx = {} }) => {
+const AsyncSearchSelect = ({ name, value, onChange, options, onAsyncSearch, placeholder = "Select...", searchPlaceholder = "Search...", disabled = false, triggerSx = SEARCHABLE_TRIGGER_SX, searchInputSx = SEARCHABLE_INPUT_SX }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
   const containerRef = useRef(null);

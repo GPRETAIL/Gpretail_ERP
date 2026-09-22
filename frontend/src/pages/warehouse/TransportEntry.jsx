@@ -10,8 +10,6 @@ import PageSkeleton from "../../components/PageSkeleton";
 import { getMasterLookups } from "../../utils/lookupCache";
 import { Box, Stack, Typography, TextField, IconButton, Button, Checkbox, alpha } from "@mui/material";
 
-const TRANSPORT_SEARCHABLE_TRIGGER_SX = { height: 32, px: 1, py: 0.25, fontSize: 11 };
-const TRANSPORT_SEARCHABLE_INPUT_SX = { fontSize: 11 };
 const transportLabelSx = { display: "block", fontSize: 11, fontWeight: 500, color: "text.secondary" };
 const transportControlSx = { mt: 0.25, "& .MuiInputBase-input": { fontSize: 11, py: 0.5 } };
 
@@ -726,8 +724,6 @@ const TransportEntry = () => {
                     value={String(formData.companyId)}
                     onChange={(e) => { handleFieldChange("companyId")(e); focusRef(lrModeRef); }}
                     placeholder="Select Company"
-                    triggerSx={TRANSPORT_SEARCHABLE_TRIGGER_SX}
-                    searchInputSx={TRANSPORT_SEARCHABLE_INPUT_SX}
                   />
                 </Box>
               </Box>
@@ -745,8 +741,6 @@ const TransportEntry = () => {
                       value={formData.lrMode}
                       onChange={(e) => { handleFieldChange("lrMode")(e); focusRef(lrNoRef); }}
                       placeholder="Select LR Mode"
-                      triggerSx={TRANSPORT_SEARCHABLE_TRIGGER_SX}
-                      searchInputSx={TRANSPORT_SEARCHABLE_INPUT_SX}
                     />
                   </Box>
                 </Box>
@@ -790,8 +784,6 @@ const TransportEntry = () => {
                     onChange={(e) => { handleFieldChange("supplierId")(e); focusRef(agentRef); }}
                     placeholder="Select Supplier"
                     searchPlaceholder="Search supplier..."
-                    triggerSx={TRANSPORT_SEARCHABLE_TRIGGER_SX}
-                    searchInputSx={TRANSPORT_SEARCHABLE_INPUT_SX}
                   />
                 </Box>
               </Box>
@@ -811,8 +803,6 @@ const TransportEntry = () => {
                       onChange={(e) => { handleFieldChange("agentId")(e); focusRef(commissionRef); }}
                       placeholder="Select Agent"
                       searchPlaceholder="Search agent..."
-                      triggerSx={TRANSPORT_SEARCHABLE_TRIGGER_SX}
-                      searchInputSx={TRANSPORT_SEARCHABLE_INPUT_SX}
                     />
                   </Box>
                 </Box>
@@ -838,8 +828,6 @@ const TransportEntry = () => {
                     onChange={(e) => { handleFieldChange("transportId")(e); focusRef(fromCityRef); }}
                     placeholder="Select Transport"
                     searchPlaceholder="Search transport..."
-                    triggerSx={TRANSPORT_SEARCHABLE_TRIGGER_SX}
-                    searchInputSx={TRANSPORT_SEARCHABLE_INPUT_SX}
                   />
                 </Box>
               </Box>
@@ -854,8 +842,6 @@ const TransportEntry = () => {
                     value={String(formData.fromCityId)}
                     onChange={(e) => { handleFieldChange("fromCityId")(e); focusRef(receivingCityRef); }}
                     placeholder="Select From City"
-                    triggerSx={TRANSPORT_SEARCHABLE_TRIGGER_SX}
-                    searchInputSx={TRANSPORT_SEARCHABLE_INPUT_SX}
                   />
                 </Box>
               </Box>
@@ -868,8 +854,6 @@ const TransportEntry = () => {
                     value={String(formData.receivingCityId)}
                     onChange={(e) => { handleFieldChange("receivingCityId")(e); focusRef(autoTransferRef); }}
                     placeholder="Select Receiving City"
-                    triggerSx={TRANSPORT_SEARCHABLE_TRIGGER_SX}
-                    searchInputSx={TRANSPORT_SEARCHABLE_INPUT_SX}
                   />
                 </Box>
               </Box>
@@ -930,8 +914,6 @@ const TransportEntry = () => {
                     onChange={handleFieldChange("purchaseManager")}
                     placeholder="Select Purchase Manager"
                     searchPlaceholder="Search employees..."
-                    triggerSx={TRANSPORT_SEARCHABLE_TRIGGER_SX}
-                    searchInputSx={TRANSPORT_SEARCHABLE_INPUT_SX}
                   />
                 </Box>
               </Box>
@@ -1038,8 +1020,6 @@ const TransportEntry = () => {
                     value={formData.bundleRate}
                     onChange={handleFieldChange("bundleRate")}
                     placeholder="Select Bundle Rack"
-                    triggerSx={TRANSPORT_SEARCHABLE_TRIGGER_SX}
-                    searchInputSx={TRANSPORT_SEARCHABLE_INPUT_SX}
                   />
                 </Box>
               </Box>
@@ -1065,8 +1045,6 @@ const TransportEntry = () => {
                         value={formData.fileType}
                         onChange={handleFieldChange("fileType")}
                         placeholder="Select Type"
-                        triggerSx={TRANSPORT_SEARCHABLE_TRIGGER_SX}
-                        searchInputSx={TRANSPORT_SEARCHABLE_INPUT_SX}
                       />
                     </Box>
                   </Box>
@@ -1167,8 +1145,6 @@ const TransportEntry = () => {
                     value={formData.payMode}
                     onChange={(e) => { handleFieldChange("payMode")(e); focusRef(devDateRef); }}
                     placeholder="Select Pay Mode"
-                    triggerSx={TRANSPORT_SEARCHABLE_TRIGGER_SX}
-                    searchInputSx={TRANSPORT_SEARCHABLE_INPUT_SX}
                   />
                 </Box>
               </Box>
@@ -1208,8 +1184,6 @@ const TransportEntry = () => {
                     value={formData.section}
                     onChange={handleFieldChange("section")}
                     placeholder="Select Section"
-                    triggerSx={TRANSPORT_SEARCHABLE_TRIGGER_SX}
-                    searchInputSx={TRANSPORT_SEARCHABLE_INPUT_SX}
                   />
                 </Box>
               </Box>

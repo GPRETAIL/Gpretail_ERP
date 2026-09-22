@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Box } from "@mui/material";
 import { useTheme, alpha } from "@mui/material/styles";
+import { SEARCHABLE_TRIGGER_SX, SEARCHABLE_INPUT_SX } from "../theme/formControlSizes";
 
 /**
  * SearchableSelect — drop-in replacement for a plain <select>.
@@ -17,8 +18,11 @@ import { useTheme, alpha } from "@mui/material/styles";
  *   required         {boolean}
  *   placeholder      {string}
  *   portalDropdown   {boolean} — render menu in document.body with fixed position (use inside overflow-hidden modals)
- *   triggerSx        {object} — sx overrides merged onto the trigger button's base sx
- *   searchInputSx    {object} — sx overrides merged onto the search input's base sx
+ *   triggerSx        {object} — sx overrides merged onto the trigger button's base sx. Defaults to
+ *                     the app's shared common size (theme/formControlSizes.js) -- only pass this
+ *                     when a page genuinely needs to differ (e.g. larger touch targets), not to
+ *                     restate the common size.
+ *   searchInputSx    {object} — sx overrides merged onto the search input's base sx. Same default.
  */
 const SearchableSelect = ({
   label,
@@ -30,8 +34,8 @@ const SearchableSelect = ({
   placeholder,
   showEmptyOption = true,
   creatable = false,
-  triggerSx = {},
-  searchInputSx = {},
+  triggerSx = SEARCHABLE_TRIGGER_SX,
+  searchInputSx = SEARCHABLE_INPUT_SX,
   portalDropdown = false,
   openOnFocus = false,
 }) => {
