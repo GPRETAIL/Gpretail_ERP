@@ -108,10 +108,13 @@ class ConfigurationController extends Controller
         if ($dbConfigs->isNotEmpty()) {
             $data = $dbConfigs->map(function ($c) {
                 return [
-                    'id'    => $c->id,
-                    'name'  => $c->value ?? $c->config_value,
-                    'value' => $c->value ?? $c->config_value,
-                    'key'   => $c->key ?? $c->config_key,
+                    'id'         => $c->id,
+                    'name'       => $c->value ?? $c->config_value,
+                    'value'      => $c->value ?? $c->config_value,
+                    'key'        => $c->key ?? $c->config_key,
+                    'code'       => $c->code,
+                    'sort_order' => $c->sort_order,
+                    'extra_data' => $c->extra_data,
                 ];
             });
 
@@ -150,6 +153,9 @@ class ConfigurationController extends Controller
             'config_value' => is_array($val) ? json_encode($val) : (string)$val,
             'group'        => $group,
             'group_name'   => $group,
+            'code'         => $request->input('code'),
+            'sort_order'   => $request->input('sort_order', 0),
+            'extra_data'   => $request->input('extra_data'),
         ]);
 
         return response()->json([
@@ -173,6 +179,9 @@ class ConfigurationController extends Controller
             $config->update([
                 'value'        => is_array($val) ? json_encode($val) : (string)$val,
                 'config_value' => is_array($val) ? json_encode($val) : (string)$val,
+                'code'         => $request->input('code', $config->code),
+                'sort_order'   => $request->input('sort_order', $config->sort_order),
+                'extra_data'   => $request->input('extra_data', $config->extra_data),
             ]);
         }
 
@@ -180,6 +189,30 @@ class ConfigurationController extends Controller
             'success' => true,
             'message' => 'Configuration updated successfully',
             'data'    => $config,
+        ]);
+    }
+
+    /**
+     * Single-record fetch for the Configuration master page's edit form (code/name/sort_order/
+     * extra_data) -- was missing entirely, so the frontend's GET to this exact URL shape 404'd
+     * and every edit failed with "Failed to load record" before any field even populated.
+     */
+    public function showType(Request $request, $type, $id)
+    {
+        $config = SystemConfiguration::find($id);
+        if (!$config) {
+            return response()->json(['success' => false, 'message' => 'Configuration not found'], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data'    => [
+                'id'         => $config->id,
+                'code'       => $config->code,
+                'name'       => $config->value ?? $config->config_value,
+                'sort_order' => $config->sort_order,
+                'extra_data' => $config->extra_data,
+            ],
         ]);
     }
 

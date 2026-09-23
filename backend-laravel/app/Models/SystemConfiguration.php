@@ -16,5 +16,12 @@ class SystemConfiguration extends Model
         'config_value',
         'group',
         'group_name',
+        'code',
+        'sort_order',
+        'extra_data',
+    ];
+
+    protected $casts = [
+        'extra_data' => 'array',
     ];
 }

@@ -164,6 +164,7 @@ $registerAppRoutes = function () {
     Route::get('configurations/counter', [ConfigurationController::class, 'getCounters']);
     Route::get('configurations/{key}', [ConfigurationController::class, 'show']);
     Route::post('configurations/{type}', [ConfigurationController::class, 'storeType']);
+    Route::get('configurations/{type}/{id}', [ConfigurationController::class, 'showType'])->where('id', '[0-9]+');
     Route::put('configurations/{type}/{id}', [ConfigurationController::class, 'updateType']);
     Route::delete('configurations/{type}/{id}', [ConfigurationController::class, 'destroyType']);
     Route::get('configurations', [ConfigurationController::class, 'index']);
