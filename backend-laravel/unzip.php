@@ -47,13 +47,24 @@ if ($res === true) {
     // Delete the zip file after extraction
     @unlink($zipFile);
     
-    // Ensure write permissions for storage and cache
+    // Ensure write permissions for storage and cache. mkdir() only helps the first time a
+    // directory doesn't exist yet -- a bootstrap/cache/*.php file left over from an earlier
+    // deploy (e.g. routes-v7.php) keeps whatever permissions it already had, and a subsequent
+    // route:cache call that can't overwrite it fails without necessarily throwing a PHP
+    // exception (Artisan::call() returns a non-zero exit code for most command failures, it
+    // doesn't throw), so the try/catch below alone never caught this -- explicitly chmod the
+    // directory AND its existing contents on every deploy so a stale permission from any
+    // earlier state can't silently pin production on an old compiled route/config cache.
     @mkdir(__DIR__ . '/storage/framework/cache/data', 0777, true);
     @mkdir(__DIR__ . '/storage/framework/sessions', 0777, true);
     @mkdir(__DIR__ . '/storage/framework/views', 0777, true);
     @mkdir(__DIR__ . '/storage/logs', 0777, true);
     @mkdir(__DIR__ . '/bootstrap/cache', 0777, true);
-    
+    @chmod(__DIR__ . '/bootstrap/cache', 0777);
+    foreach (glob(__DIR__ . '/bootstrap/cache/*.php') ?: [] as $cacheFile) {
+        @chmod($cacheFile, 0666);
+    }
+
     // Delete default placeholder if present
     if (file_exists(__DIR__ . '/default.php')) {
         @unlink(__DIR__ . '/default.php');
@@ -70,6 +81,12 @@ if ($res === true) {
     // the exact same way before it ever gets a chance to clear itself. Clearing
     // and rebuilding first, unconditionally, means this deploy's real .env is
     // what's actually in effect regardless of whether migrate itself succeeds.
+    //
+    // Each command's own exit code + output is captured (not just "did an exception get
+    // thrown") because a stale/unwritable bootstrap/cache/routes-v7.php from an earlier deploy
+    // made route:cache silently fail to update -- Artisan::call() doesn't throw for that, it
+    // just returns non-zero, so a blanket "Caches cleared and rebuilt." message regardless of
+    // each command's real result had been masking exactly this failure.
     try {
         $baseDir = file_exists(__DIR__ . '/vendor/autoload.php') ? __DIR__ : dirname(__DIR__);
         require_once $baseDir . '/vendor/autoload.php';
@@ -77,13 +94,13 @@ if ($res === true) {
         $kernel = $app->make(\Illuminate\Contracts\Console\Kernel::class);
         $kernel->bootstrap();
 
-        \Illuminate\Support\Facades\Artisan::call('config:clear');
-        \Illuminate\Support\Facades\Artisan::call('route:clear');
-        \Illuminate\Support\Facades\Artisan::call('cache:clear');
-        \Illuminate\Support\Facades\Artisan::call('config:cache');
-        \Illuminate\Support\Facades\Artisan::call('route:cache');
-        \Illuminate\Support\Facades\Artisan::call('view:cache');
-        $cacheOutput = 'Caches cleared and rebuilt.';
+        $cacheSteps = [];
+        foreach (['config:clear', 'route:clear', 'cache:clear', 'config:cache', 'route:cache', 'view:cache'] as $cmd) {
+            $exitCode = \Illuminate\Support\Facades\Artisan::call($cmd);
+            $out = trim(\Illuminate\Support\Facades\Artisan::output());
+            $cacheSteps[] = "{$cmd} => exit {$exitCode}" . ($out !== '' ? " ({$out})" : '');
+        }
+        $cacheOutput = "Cache steps:\n" . implode("\n", $cacheSteps);
     } catch (\Throwable $e) {
         $cacheOutput = 'Cache note: ' . $e->getMessage();
     }
