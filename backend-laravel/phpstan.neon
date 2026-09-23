@@ -1,0 +1,15 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    paths:
+        - app
+        - routes
+
+    # Level 5 is Larastan's own recommended starting point for an existing app rather than a
+    # greenfield one -- higher levels (missing return types, strict comparisons, etc.) would
+    # surface hundreds of pre-existing findings on first run instead of the real bugs this is
+    # meant to catch. Raise it over time as the baseline shrinks.
+    level: 5
+
+    tmpDir: storage/framework/phpstan
