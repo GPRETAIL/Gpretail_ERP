@@ -2,9 +2,10 @@ import React, { useEffect, useState } from "react";
 import { ArrowLeft, Save } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
-import { Box, Button, Checkbox, FormControlLabel, IconButton, MenuItem, Stack, TextField, Typography } from "@mui/material";
+import { Box, Button, IconButton, Stack, Typography } from "@mui/material";
 import api from "../../api/axios";
 import Breadcrumbs from "../../components/Breadcrumbs";
+import { TextInput, SelectInput, CheckboxInput } from "../../components/CustomInputs";
 
 const CUSTOMER_TYPES = [
   "Employee", "Retail", "Provider", "Customer", "Tailoring",
@@ -22,53 +23,6 @@ const SUPPLY_TYPES = [
   "Export without payment",
   "Deemed Export",
 ];
-
-const fieldLabelSx = { width: "50%", fontSize: 12.25, fontWeight: 500, color: "text.secondary", flexShrink: 0 };
-const fieldSx = { "& .MuiInputBase-input": { fontSize: 12.25 } };
-
-const TextInput = ({ label, name, required = false, value, onChange, placeholder = "", type = "text", disabled = false }) => (
-  <Stack direction="row" sx={{ alignItems: "center", width: "100%", minWidth: 0 }}>
-    <Typography component="label" sx={fieldLabelSx}>
-      {required && <Box component="span" sx={{ mr: 0.5, color: "error.main" }}>*</Box>}
-      {label}
-    </Typography>
-    <TextField
-      type={type}
-      name={name}
-      value={value}
-      onChange={onChange}
-      placeholder={placeholder}
-      disabled={disabled}
-      size="small"
-      fullWidth
-      sx={{ ml: 1.5, ...fieldSx }}
-    />
-  </Stack>
-);
-
-const SelectInput = ({ label, name, required = false, options = [], value, onChange }) => (
-  <Stack direction="row" sx={{ alignItems: "center", width: "100%", minWidth: 0 }}>
-    <Typography component="label" sx={fieldLabelSx}>
-      {required && <Box component="span" sx={{ mr: 0.5, color: "error.main" }}>*</Box>}
-      {label}
-    </Typography>
-    <TextField select name={name} value={value} onChange={onChange} size="small" fullWidth sx={{ ml: 1.5, ...fieldSx }}>
-      <MenuItem value="">Select</MenuItem>
-      {options.map((o, i) => (
-        <MenuItem key={i} value={o.value ?? o.label}>
-          {o.label}
-        </MenuItem>
-      ))}
-    </TextField>
-  </Stack>
-);
-
-const CheckboxInput = ({ label, name, checked, onChange }) => (
-  <Stack direction="row" sx={{ alignItems: "center", width: "100%", minWidth: 0 }}>
-    <Typography component="label" sx={fieldLabelSx}>{label}</Typography>
-    <Checkbox name={name} checked={checked} onChange={onChange} size="small" sx={{ ml: 1.5, p: 0 }} />
-  </Stack>
-);
 
 const blankForm = {
   customerType: "",
@@ -273,7 +227,7 @@ const CrmCustomerForm = () => {
           {loadingRecord ? (
             <Typography sx={{ textAlign: "center", py: 4, color: "text.secondary" }}>Loading...</Typography>
           ) : (
-            <Box sx={{ display: "grid", gap: "12px 32px", gridTemplateColumns: { xl: "repeat(3, 1fr)" }, width: "100%" }}>
+            <Box sx={{ display: "grid", gap: "8px 32px", gridTemplateColumns: { xl: "repeat(3, 1fr)" }, width: "100%" }}>
               {/* Row 1 */}
               <SelectInput
                 label="Customer Type"

@@ -5,6 +5,7 @@ import { toast } from "react-toastify";
 import { Box, Button, IconButton, Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from "@mui/material";
 import api from "../../api/axios";
 import Breadcrumbs from "../../components/Breadcrumbs";
+import { muiFieldSx } from "../../theme/formControlSizes";
 
 const toNum = (value, fallback = 0) => {
   const parsed = Number(value);
@@ -100,7 +101,7 @@ const CrmLoyaltyManagement = () => {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search name, phone, or loyalty card..."
-              sx={{ width: 256, "& .MuiInputBase-input": { fontSize: "inherit" } }}
+              sx={[muiFieldSx, { width: 256 }]}
             />
           )}
         </Stack>

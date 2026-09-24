@@ -8,12 +8,8 @@ import api from "../../api/axios";
 import SearchableSelect from "../../components/SearchableSelect";
 import AsyncSearchSelect from "../../components/AsyncSearchSelect";
 import Breadcrumbs from "../../components/Breadcrumbs";
+import { muiFieldSx } from "../../theme/formControlSizes";
 import { usePrintContext } from "../../context/PrintContext";
-
-// The whole form is pinned to a single compact 10px baseline (was `text-[10px]` on the root
-// plus per-element arbitrary overrides) -- applied explicitly per TextField since MUI's own
-// input font-size doesn't inherit from an ancestor's fontSize the way a plain <input> would.
-const compactFieldSx = { "& .MuiInputBase-input": { fontSize: 10, padding: "4px 6px" } };
 
 const PAYMENT_MODES = ["Inter bank transfer", "Cheque/DD", "Cash", "Card", "UPI"];
 
@@ -94,7 +90,7 @@ const initialCustomerDialog = {
 };
 
 const InputLabel = ({ text, required = false }) => (
-  <Typography component="label" sx={{ fontSize: 10, fontWeight: 600, color: "text.secondary", mb: 0.25, display: "block", lineHeight: 1.2 }}>
+  <Typography component="label" sx={{ fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5, display: "block", lineHeight: 1.2 }}>
     {required && <Box component="span" sx={{ mr: 0.25, color: "error.main" }}>*</Box>}
     {text}
   </Typography>
@@ -866,7 +862,7 @@ const CrmCustomerOrderForm = () => {
                     type="date"
                     size="small"
                     fullWidth
-                    sx={compactFieldSx}
+                    sx={muiFieldSx}
                     value={form.orderDate}
                     onChange={(e) => {
                       updateForm("orderDate", e.target.value);
@@ -882,7 +878,7 @@ const CrmCustomerOrderForm = () => {
                     type="date"
                     size="small"
                     fullWidth
-                    sx={compactFieldSx}
+                    sx={muiFieldSx}
                     value={form.deliveryDate}
                     onChange={(e) => updateForm("deliveryDate", e.target.value)}
                   />
@@ -900,7 +896,7 @@ const CrmCustomerOrderForm = () => {
                       type="text"
                       size="small"
                       fullWidth
-                      sx={compactFieldSx}
+                      sx={muiFieldSx}
                       value={form.customerMobile}
                       onChange={(e) => onManualCustomerMobileChange(e.target.value)}
                       placeholder="Enter mobile no"
@@ -921,7 +917,7 @@ const CrmCustomerOrderForm = () => {
                     type="text"
                     size="small"
                     fullWidth
-                    sx={compactFieldSx}
+                    sx={muiFieldSx}
                     value={form.customerName}
                     onChange={(e) => {
                       updateForm("customerName", e.target.value);
@@ -937,7 +933,7 @@ const CrmCustomerOrderForm = () => {
                     rows={3}
                     size="small"
                     fullWidth
-                    sx={compactFieldSx}
+                    sx={muiFieldSx}
                     value={form.customerAddress}
                     onChange={(e) => {
                       updateForm("customerAddress", e.target.value);
@@ -968,7 +964,7 @@ const CrmCustomerOrderForm = () => {
                     type="date"
                     size="small"
                     fullWidth
-                    sx={compactFieldSx}
+                    sx={muiFieldSx}
                     value={form.communicationDate}
                     onChange={(e) => updateForm("communicationDate", e.target.value)}
                   />
@@ -979,7 +975,7 @@ const CrmCustomerOrderForm = () => {
                     type="text"
                     size="small"
                     fullWidth
-                    sx={compactFieldSx}
+                    sx={muiFieldSx}
                     value={form.communicationPerson}
                     onChange={(e) => updateForm("communicationPerson", e.target.value)}
                     placeholder="Person"
@@ -992,7 +988,7 @@ const CrmCustomerOrderForm = () => {
                       type="text"
                       size="small"
                       fullWidth
-                      sx={compactFieldSx}
+                      sx={muiFieldSx}
                       value={form.communicationMessage}
                       onChange={(e) => updateForm("communicationMessage", e.target.value)}
                       placeholder="Message"
@@ -1128,7 +1124,7 @@ const CrmCustomerOrderForm = () => {
                     type="text"
                     size="small"
                     fullWidth
-                    sx={compactFieldSx}
+                    sx={muiFieldSx}
                     value={itemDraft.designNo}
                     onChange={(e) => setItemDraft((prev) => ({ ...prev, designNo: e.target.value }))}
                     placeholder="Design"
@@ -1141,7 +1137,7 @@ const CrmCustomerOrderForm = () => {
                     type="number"
                     size="small"
                     fullWidth
-                    sx={compactFieldSx}
+                    sx={muiFieldSx}
                     value={itemDraft.price}
                     onChange={(e) => setItemDraft((prev) => ({ ...prev, price: e.target.value }))}
                     placeholder="0.00"
@@ -1155,7 +1151,7 @@ const CrmCustomerOrderForm = () => {
                       type="number"
                       size="small"
                       fullWidth
-                      sx={compactFieldSx}
+                      sx={muiFieldSx}
                       value={itemDraft.qty}
                       onChange={(e) => setItemDraft((prev) => ({ ...prev, qty: e.target.value }))}
                       placeholder="0"
@@ -1280,7 +1276,7 @@ const CrmCustomerOrderForm = () => {
                     type="datetime-local"
                     size="small"
                     fullWidth
-                    sx={compactFieldSx}
+                    sx={muiFieldSx}
                     value={paymentDraft.date}
                     onChange={(e) => setPaymentDraft((prev) => ({ ...prev, date: e.target.value }))}
                   />
@@ -1314,7 +1310,7 @@ const CrmCustomerOrderForm = () => {
                     type="date"
                     size="small"
                     fullWidth
-                    sx={compactFieldSx}
+                    sx={muiFieldSx}
                     value={paymentDraft.bankDate}
                     onChange={(e) => setPaymentDraft((prev) => ({ ...prev, bankDate: e.target.value }))}
                   />
@@ -1326,7 +1322,7 @@ const CrmCustomerOrderForm = () => {
                     type="number"
                     size="small"
                     fullWidth
-                    sx={compactFieldSx}
+                    sx={muiFieldSx}
                     value={paymentDraft.amount}
                     onChange={(e) => setPaymentDraft((prev) => ({ ...prev, amount: e.target.value }))}
                     placeholder="0.00"
@@ -1340,7 +1336,7 @@ const CrmCustomerOrderForm = () => {
                       type="text"
                       size="small"
                       fullWidth
-                      sx={compactFieldSx}
+                      sx={muiFieldSx}
                       value={paymentDraft.remarks}
                       onChange={(e) => setPaymentDraft((prev) => ({ ...prev, remarks: e.target.value }))}
                       placeholder="Remarks"
@@ -1412,7 +1408,7 @@ const CrmCustomerOrderForm = () => {
                   type="text"
                   size="small"
                   fullWidth
-                  sx={compactFieldSx}
+                  sx={muiFieldSx}
                   value={form.remarks}
                   onChange={(e) => updateForm("remarks", e.target.value)}
                   placeholder="Additional remarks"
@@ -1441,7 +1437,7 @@ const CrmCustomerOrderForm = () => {
                     type="text"
                     size="small"
                     fullWidth
-                    sx={{ "& .MuiInputBase-input": { fontSize: 12.25 } }}
+                    sx={muiFieldSx}
                     value={customerDialog.name}
                     onChange={(e) => setCustomerDialog((prev) => ({ ...prev, name: e.target.value }))}
                   />
@@ -1452,7 +1448,7 @@ const CrmCustomerOrderForm = () => {
                     type="text"
                     size="small"
                     fullWidth
-                    sx={{ "& .MuiInputBase-input": { fontSize: 12.25 } }}
+                    sx={muiFieldSx}
                     value={customerDialog.contactNo}
                     onChange={(e) => setCustomerDialog((prev) => ({ ...prev, contactNo: e.target.value }))}
                   />
@@ -1463,7 +1459,7 @@ const CrmCustomerOrderForm = () => {
                     type="text"
                     size="small"
                     fullWidth
-                    sx={{ "& .MuiInputBase-input": { fontSize: 12.25 } }}
+                    sx={muiFieldSx}
                     value={customerDialog.area}
                     onChange={(e) => setCustomerDialog((prev) => ({ ...prev, area: e.target.value }))}
                   />
