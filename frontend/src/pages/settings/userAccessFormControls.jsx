@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { Box, Checkbox, MenuItem, Stack, TextField, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
+import { muiFieldSx } from "../../theme/formControlSizes";
 
 // Small presentational form primitives shared by the User Access page (UserAccess.jsx)
 // and the Store Groups management drawer (StoreGroupsDrawer.jsx). Extracted from
@@ -9,7 +10,7 @@ import { alpha } from "@mui/material/styles";
 
 // Label stays a separate column to the left of the field (not MUI's own floating label) --
 // this two-column layout is the established look across every UserAccess/StoreGroups form.
-const fieldLabelSx = { width: "33.333%", fontSize: 12.25, fontWeight: 500, color: "text.secondary" };
+const fieldLabelSx = { width: "33.333%", fontSize: 11.5, fontWeight: 500, color: "text.secondary" };
 
 export const TextInput = ({ label, value, onChange, type = "text", required = false }) => (
   <Stack direction="row" sx={{ alignItems: "center" }}>
@@ -17,7 +18,7 @@ export const TextInput = ({ label, value, onChange, type = "text", required = fa
       {required ? <Box component="span" sx={{ mr: 0.5, color: "error.main" }}>*</Box> : null}
       {label}
     </Typography>
-    <TextField type={type} value={value} onChange={onChange} size="small" fullWidth sx={{ ml: 1.5 }} />
+    <TextField type={type} value={value} onChange={onChange} size="small" fullWidth sx={[muiFieldSx, { ml: 1.5 }]} />
   </Stack>
 );
 
@@ -27,7 +28,7 @@ export const SelectInput = ({ label, value, onChange, options = [], required = f
       {required ? <Box component="span" sx={{ mr: 0.5, color: "error.main" }}>*</Box> : null}
       {label}
     </Typography>
-    <TextField select value={value} onChange={onChange} size="small" fullWidth sx={{ ml: 1.5 }}>
+    <TextField select value={value} onChange={onChange} size="small" fullWidth sx={[muiFieldSx, { ml: 1.5 }]}>
       {options.map((option) => (
         <MenuItem key={option.value} value={option.value} disabled={!!option.disabled}>
           {option.label}

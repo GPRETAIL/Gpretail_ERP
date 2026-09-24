@@ -33,6 +33,7 @@ import {
   TableRow,
   Divider,
 } from "@mui/material";
+import { muiFieldSx, SEARCHABLE_TRIGGER_SX } from "../../theme/formControlSizes";
 
 const fmt = (val) => {
   const n = Number(val);
@@ -117,7 +118,7 @@ const PENDING_TABLE_COLUMNS = [
 const HISTORY_TABLE_COLUMNS = PENDING_TABLE_COLUMNS.filter((column) => column.key !== "amount");
 
 // Label above a field, matching the app's existing small-caps field-label look.
-const fieldLabelSx = { fontSize: 11, fontWeight: 600, color: "text.secondary", mb: 0.5, display: "block" };
+const fieldLabelSx = { fontSize: 11.5, fontWeight: 600, color: "text.secondary", mb: 0.5, display: "block" };
 
 // Read-only "field display" box used in the Invoice Summary panel.
 const SummaryField = ({ label, children, sx }) => (
@@ -402,7 +403,7 @@ const SupplierPayment = () => {
   const handleSelectionChange = useCallback((keys) => {
     setSelectedIds(new Set(keys));
   }, []);
-  const searchableTriggerSx = { width: "100%", borderRadius: "5px", px: 1.5, py: 1, fontSize: { xs: 10.5, sm: 12.25 } };
+  const searchableTriggerSx = { ...SEARCHABLE_TRIGGER_SX, width: "100%" };
   const searchableOptions = useMemo(() => ({
     companies: [{ value: "", label: "All Companies" }, ...companies.map((c) => ({ value: String(c.id), label: c.name }))],
     locations: [{ value: "", label: "All Locations" }, ...locations.map((l) => ({ value: l.name, label: l.name }))],
@@ -617,8 +618,8 @@ const SupplierPayment = () => {
                     <Box>
                       <Typography component="label" sx={fieldLabelSx}>Date Range</Typography>
                       <Stack direction={{ xs: "row", xl: "column" }} spacing={1}>
-                        <TextField type="date" size="small" fullWidth value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
-                        <TextField type="date" size="small" fullWidth value={toDate} onChange={(e) => setToDate(e.target.value)} />
+                        <TextField type="date" size="small" fullWidth value={fromDate} onChange={(e) => setFromDate(e.target.value)} sx={muiFieldSx} />
+                        <TextField type="date" size="small" fullWidth value={toDate} onChange={(e) => setToDate(e.target.value)} sx={muiFieldSx} />
                       </Stack>
                     </Box>
                     <Box>
@@ -1022,7 +1023,7 @@ const SupplierPayment = () => {
                     </Box>
                     <Box>
                       <Typography component="label" sx={fieldLabelSx}>Payment Date</Typography>
-                      <TextField type="date" size="small" fullWidth value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} />
+                      <TextField type="date" size="small" fullWidth value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} sx={muiFieldSx} />
                     </Box>
                     <Box>
                       <Typography component="label" sx={fieldLabelSx}>Ref. No</Typography>
@@ -1032,6 +1033,7 @@ const SupplierPayment = () => {
                         value={refNo}
                         onChange={(e) => setRefNo(e.target.value)}
                         placeholder="Cheque / Transaction ref"
+                        sx={muiFieldSx}
                       />
                     </Box>
                     <Box>
@@ -1043,7 +1045,7 @@ const SupplierPayment = () => {
                         slotProps={{ htmlInput: { step: "0.01" } }}
                         value={paidAmountInput}
                         onChange={(e) => setPaidAmountInput(e.target.value)}
-                        sx={{ "& input": { fontWeight: 600 } }}
+                        sx={[muiFieldSx, { "& input": { fontWeight: 600 } }]}
                       />
                     </Box>
                     <Box>
@@ -1055,6 +1057,7 @@ const SupplierPayment = () => {
                         value={remarks}
                         onChange={(e) => setRemarks(e.target.value)}
                         placeholder="Optional remarks..."
+                        sx={muiFieldSx}
                       />
                     </Box>
                   </Stack>

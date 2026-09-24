@@ -9,6 +9,7 @@ import StoreFilterSelect from "../../components/StoreFilterSelect";
 import FilterableDataTable from "../../components/FilterableDataTable";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import { toast } from "react-toastify";
+import { muiFieldSx } from "../../theme/formControlSizes";
 
 // ─── Left panel fields (static, matches backend FIELD_CONFIG keys) ─────────
 const ANALYZER_FIELDS = [
@@ -177,7 +178,7 @@ const StockAnalyzer = () => {
               value={fieldSearch}
               onChange={(e) => setFieldSearch(e.target.value)}
               placeholder="Search fields..."
-              sx={{ "& .MuiInputBase-input": { fontSize: 10.5 } }}
+              sx={muiFieldSx}
               slotProps={{
                 input: {
                   startAdornment: (

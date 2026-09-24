@@ -9,9 +9,10 @@ import StoreFilterSelect from "../../components/StoreFilterSelect";
 import PivotTable from "../../components/PivotTable";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import { toast } from "react-toastify";
+import { muiFieldSx } from "../../theme/formControlSizes";
 
-const fieldSx = { "& .MuiInputBase-input": { fontSize: 10.5 } };
-const labelSx = { display: "block", fontSize: 11, fontWeight: 500, color: "text.secondary", mb: 0.5 };
+const fieldSx = muiFieldSx;
+const labelSx = { display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 };
 
 const ROW_BY_OPTIONS = [
   { value: "product", label: "Product (rows) × Supplier (columns)" },

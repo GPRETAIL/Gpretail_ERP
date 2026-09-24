@@ -9,6 +9,7 @@ import StoreFilterSelect from "../../components/StoreFilterSelect";
 import FilterableDataTable from "../../components/FilterableDataTable";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import { toast } from "react-toastify";
+import { muiFieldSx } from "../../theme/formControlSizes";
 
 // ─── Left panel fields (matches backend FIELD_CONFIG keys) ─────────────────
 const COMPARER_FIELDS = [
@@ -164,27 +165,27 @@ const SalesVsStock = () => {
             <Stack spacing={1}>
               <StoreFilterSelect value={storeFilter} onChange={setStoreFilter} />
               <Box>
-                <Typography component="label" sx={{ display: "block", fontSize: 11, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
+                <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
                   From Date
                 </Typography>
                 <TextField
                   type="date"
                   size="small"
                   fullWidth
-                  sx={{ "& .MuiInputBase-input": { fontSize: 10.5 } }}
+                  sx={muiFieldSx}
                   value={dateFrom}
                   onChange={(e) => setDateFrom(e.target.value)}
                 />
               </Box>
               <Box>
-                <Typography component="label" sx={{ display: "block", fontSize: 11, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
+                <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
                   To Date
                 </Typography>
                 <TextField
                   type="date"
                   size="small"
                   fullWidth
-                  sx={{ "& .MuiInputBase-input": { fontSize: 10.5 } }}
+                  sx={muiFieldSx}
                   value={dateTo}
                   onChange={(e) => setDateTo(e.target.value)}
                 />
@@ -202,7 +203,7 @@ const SalesVsStock = () => {
               value={fieldSearch}
               onChange={(e) => setFieldSearch(e.target.value)}
               placeholder="Search fields..."
-              sx={{ "& .MuiInputBase-input": { fontSize: 10.5 } }}
+              sx={muiFieldSx}
               slotProps={{
                 input: {
                   startAdornment: (

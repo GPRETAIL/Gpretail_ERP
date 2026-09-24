@@ -12,6 +12,7 @@ import {
   getPrintConfigDeviceId,
   savePrinterRouting,
 } from "../../utils/localPrinterService";
+import { muiFieldSx } from "../../theme/formControlSizes";
 
 const DEFAULT_PRINTER_SERVICE_URL =
   import.meta.env.VITE_LOCAL_PRINTER_SERVICE_URL ||
@@ -508,7 +509,7 @@ export default function PrintingConfiguration() {
                         onChange={(event) =>
                           handleRouteChange(name, { printer_function: event.target.value })
                         }
-                        sx={{ minWidth: 120 }}
+                        sx={[muiFieldSx, { minWidth: 120 }]}
                       >
                         {PRINTER_FUNCTION_OPTIONS.map((option) => (
                           <MenuItem key={option.value} value={option.value}>
@@ -531,7 +532,7 @@ export default function PrintingConfiguration() {
                             user_name: selectedUser?.name || selectedUser?.email || "",
                           });
                         }}
-                        sx={{ minWidth: 120 }}
+                        sx={[muiFieldSx, { minWidth: 120 }]}
                       >
                         <MenuItem value="">Any user</MenuItem>
                         {users.map((user) => (

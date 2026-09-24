@@ -9,6 +9,7 @@ import StoreFilterSelect from "../../components/StoreFilterSelect";
 import FilterableDataTable from "../../components/FilterableDataTable";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import { toast } from "react-toastify";
+import { muiFieldSx } from "../../theme/formControlSizes";
 
 // ─── Left panel fields (matches backend FIELD_CONFIG keys) ─────────────────
 const COMPARER_FIELDS = [
@@ -226,7 +227,7 @@ const SalesVsPurchase = () => {
             <Stack spacing={1}>
               <StoreFilterSelect value={storeFilter} onChange={setStoreFilter} />
               <Box ref={purchaseRangeRef} sx={{ position: "relative" }}>
-                <Typography component="label" sx={{ display: "block", fontSize: 11, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
+                <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
                   Purchase Date
                 </Typography>
                 <Box
@@ -248,21 +249,21 @@ const SalesVsPurchase = () => {
                       border: "1px solid", borderColor: "divider", borderRadius: "5.25px", boxShadow: 4,
                     }}
                   >
-                    <Typography component="label" sx={{ display: "block", fontSize: 11, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>From</Typography>
+                    <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>From</Typography>
                     <TextField
                       type="date"
                       size="small"
                       fullWidth
-                      sx={{ mb: 1, "& .MuiInputBase-input": { fontSize: 10.5 } }}
+                      sx={[muiFieldSx, { mb: 1 }]}
                       value={purchaseFromDate}
                       onChange={(e) => setPurchaseFromDate(e.target.value)}
                     />
-                    <Typography component="label" sx={{ display: "block", fontSize: 11, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>To</Typography>
+                    <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>To</Typography>
                     <TextField
                       type="date"
                       size="small"
                       fullWidth
-                      sx={{ "& .MuiInputBase-input": { fontSize: 10.5 } }}
+                      sx={muiFieldSx}
                       value={purchaseToDate}
                       onChange={(e) => setPurchaseToDate(e.target.value)}
                     />
@@ -293,7 +294,7 @@ const SalesVsPurchase = () => {
               </Box>
 
               <Box ref={saleRangeRef} sx={{ position: "relative" }}>
-                <Typography component="label" sx={{ display: "block", fontSize: 11, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
+                <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
                   Sale Date
                 </Typography>
                 <Box
@@ -315,21 +316,21 @@ const SalesVsPurchase = () => {
                       border: "1px solid", borderColor: "divider", borderRadius: "5.25px", boxShadow: 4,
                     }}
                   >
-                    <Typography component="label" sx={{ display: "block", fontSize: 11, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>From</Typography>
+                    <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>From</Typography>
                     <TextField
                       type="date"
                       size="small"
                       fullWidth
-                      sx={{ mb: 1, "& .MuiInputBase-input": { fontSize: 10.5 } }}
+                      sx={[muiFieldSx, { mb: 1 }]}
                       value={saleFromDate}
                       onChange={(e) => setSaleFromDate(e.target.value)}
                     />
-                    <Typography component="label" sx={{ display: "block", fontSize: 11, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>To</Typography>
+                    <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>To</Typography>
                     <TextField
                       type="date"
                       size="small"
                       fullWidth
-                      sx={{ "& .MuiInputBase-input": { fontSize: 10.5 } }}
+                      sx={muiFieldSx}
                       value={saleToDate}
                       onChange={(e) => setSaleToDate(e.target.value)}
                     />
@@ -371,7 +372,7 @@ const SalesVsPurchase = () => {
               value={fieldSearch}
               onChange={(e) => setFieldSearch(e.target.value)}
               placeholder="Search fields..."
-              sx={{ "& .MuiInputBase-input": { fontSize: 10.5 } }}
+              sx={muiFieldSx}
               slotProps={{
                 input: {
                   startAdornment: (

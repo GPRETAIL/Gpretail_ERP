@@ -18,6 +18,7 @@ import {
   Typography,
 } from "@mui/material";
 import api from "../../api/axios";
+import { muiFieldSx } from "../../theme/formControlSizes";
 
 const REQUIRED_FIELDS = ["code", "name", "regName", "contactPerson", "contactNo"];
 
@@ -100,7 +101,7 @@ const resolveAssetUrl = (path) => {
 
 const InputField = ({ label, required = false, children, sx }) => (
   <Box sx={sx}>
-    <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
+    <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
       {required && <Box component="span" sx={{ mr: 0.5, color: "error.main" }}>*</Box>}
       {label}
     </Typography>
@@ -471,7 +472,7 @@ const CompanySettings = () => {
   };
 
   const cardSx = { bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "5.25px", boxShadow: 1 };
-  const fieldSx = { "& .MuiInputBase-input": { fontSize: 12.25 } };
+  const fieldSx = muiFieldSx;
 
   if (loading) {
     return <Typography sx={{ fontSize: 12.25, color: "text.secondary" }}>Loading company setup...</Typography>;

@@ -15,6 +15,7 @@ import { toast } from "react-toastify";
 import { alpha } from "@mui/material/styles";
 import { Box, Button, Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from "@mui/material";
 import api from "../../api/axios";
+import { muiFieldSx } from "../../theme/formControlSizes";
 
 const cardSx = { borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", boxShadow: 1 };
 
@@ -267,7 +268,7 @@ export default function ConfigureLocalServer() {
 
           <Stack spacing={2} sx={{ mt: 2 }}>
             <Box>
-              <Typography component="label" sx={{ display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary", mb: 0.75 }}>
+              <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.75 }}>
                 Local Server URL
               </Typography>
               <TextField
@@ -277,6 +278,7 @@ export default function ConfigureLocalServer() {
                 value={localServerUrl}
                 onChange={(e) => setLocalServerUrl(e.target.value)}
                 placeholder="http://192.168.1.25:8000"
+                sx={muiFieldSx}
               />
               <Typography sx={{ mt: 0.5, fontSize: 10.5, color: "text.secondary" }}>
                 The LAN address of this store's local server, e.g. http://192.168.1.25:8000. Leave blank to disable local-server failover for this store.
@@ -284,7 +286,7 @@ export default function ConfigureLocalServer() {
             </Box>
 
             <Box>
-              <Typography component="label" sx={{ display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary", mb: 0.75 }}>
+              <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.75 }}>
                 Cloud Server URL
               </Typography>
               <TextField
@@ -294,6 +296,7 @@ export default function ConfigureLocalServer() {
                 value={cloudServerUrl}
                 onChange={(e) => setCloudServerUrl(e.target.value)}
                 placeholder={config?.effective_cloud_server_url || "https://yourcompany.gpsoftware.in"}
+                sx={muiFieldSx}
               />
               <Typography sx={{ mt: 0.5, fontSize: 10.5, color: "text.secondary" }}>
                 Where devices fail over to when the local server above is unreachable. Leave blank to use the

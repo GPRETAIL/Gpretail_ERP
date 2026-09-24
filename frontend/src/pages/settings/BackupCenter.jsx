@@ -33,8 +33,9 @@ import api from "../../api/axios";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import FilterableDataTable from "../../components/FilterableDataTable";
 import PageSkeleton from "../../components/PageSkeleton";
+import { muiFieldSx } from "../../theme/formControlSizes";
 
-const fieldSx = { "& .MuiInputBase-input": { fontSize: 12.25 } };
+const fieldSx = muiFieldSx;
 const cardSx = { borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", boxShadow: 3, p: 2 };
 
 const storageModeOptions = [
@@ -254,7 +255,7 @@ const MultiSelectInput = ({
 
   return (
     <Stack spacing={0.5}>
-      <Typography component="label" sx={{ display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>{label}</Typography>
+      <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>{label}</Typography>
       <Box sx={{ position: "relative" }} ref={wrapperRef}>
         <Box
           component="button"
@@ -821,7 +822,7 @@ export default function BackupCenter() {
           </Box>
           <Stack direction="row" spacing={1.5} sx={{ flexWrap: "wrap", alignItems: "center" }}>
             <Box sx={{ minWidth: 220 }}>
-              <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 10.5, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Current Scope</Typography>
+              <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Current Scope</Typography>
               <Box sx={{ borderRadius: "4px", border: "1px solid", borderColor: "divider", bgcolor: "action.hover", color: "text.secondary", p: 1, fontSize: 12.25 }}>{selectedScopeLabel}</Box>
             </Box>
             <Button type="button" className="glass-btn glass-btn-primary" onClick={() => loadOverview(selectedCompanyId)}>
@@ -901,7 +902,7 @@ export default function BackupCenter() {
 
             <Stack spacing={1.5}>
               <Box>
-                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Backup Type</Typography>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Backup Type</Typography>
                 <TextField select size="small" fullWidth sx={fieldSx} value={createForm.backupType} onChange={(event) => setCreateForm((prev) => ({ ...prev, backupType: event.target.value }))}>
                   {backupTypeOptions.map((option) => (
                     <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
@@ -921,7 +922,7 @@ export default function BackupCenter() {
               ) : null}
 
               <Box>
-                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Backup Scope</Typography>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Backup Scope</Typography>
                 {isSuperAdmin ? (
                   <TextField select size="small" fullWidth sx={fieldSx} value={selectedCompanyId} onChange={(event) => setSelectedCompanyId(event.target.value)}>
                     <MenuItem value="">All Stores</MenuItem>
@@ -935,7 +936,7 @@ export default function BackupCenter() {
               </Box>
 
               <Box>
-                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Storage Mode</Typography>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Storage Mode</Typography>
                 <TextField select size="small" fullWidth sx={fieldSx} value={createForm.storageMode} onChange={(event) => setCreateForm((prev) => ({ ...prev, storageMode: event.target.value }))}>
                   {storageModeOptions.map((option) => {
                     const needsCloud = option.value === "cloud" || option.value === "hybrid";
@@ -980,7 +981,7 @@ export default function BackupCenter() {
               {createForm.encryptionEnabled ? (
                 <>
                   <Box>
-                    <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Encryption Password</Typography>
+                    <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Encryption Password</Typography>
                     <TextField
                       type="password"
                       size="small"
@@ -991,7 +992,7 @@ export default function BackupCenter() {
                     />
                   </Box>
                   <Box>
-                    <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Password Hint</Typography>
+                    <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Password Hint</Typography>
                     <TextField
                       size="small"
                       fullWidth
@@ -1046,7 +1047,7 @@ export default function BackupCenter() {
 
             <Stack spacing={1.5}>
               <Box>
-                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Default Storage</Typography>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Default Storage</Typography>
                 <TextField select size="small" fullWidth sx={fieldSx} value={settingsForm.storageMode} onChange={(event) => setSettingsForm((prev) => ({ ...prev, storageMode: event.target.value }))}>
                   {storageModeOptions.map((option) => {
                     const needsCloud = option.value === "cloud" || option.value === "hybrid";
@@ -1333,7 +1334,7 @@ export default function BackupCenter() {
               ) : null}
 
               <Box>
-                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>
                   Retention (how many old scheduled backups to keep)
                 </Typography>
                 <Typography sx={{ mb: 1, fontSize: 10.5, color: "text.secondary" }}>
@@ -1356,7 +1357,7 @@ export default function BackupCenter() {
                             : { borderColor: "divider" }),
                         }}
                       >
-                        <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 10.5, fontWeight: 500, color: active ? "primary.main" : "text.secondary" }}>
+                        <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 500, color: active ? "primary.main" : "text.secondary" }}>
                           {label}
                           {active ? " (active)" : ""}
                         </Typography>
@@ -1415,7 +1416,7 @@ export default function BackupCenter() {
                 Click the restore icon in Backup History to select a backup here, then press <Box component="span" sx={{ fontWeight: 600 }}>Run Restore</Box>.
               </Typography>
               <Box>
-                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Selected Backup</Typography>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Selected Backup</Typography>
                 <TextField
                   select
                   size="small"
@@ -1444,7 +1445,7 @@ export default function BackupCenter() {
               </Box>
 
               <Box>
-                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Restore Type</Typography>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Restore Type</Typography>
                 <TextField select size="small" fullWidth sx={fieldSx} value={restoreForm.restoreType} onChange={(event) => setRestoreForm((prev) => ({ ...prev, restoreType: event.target.value }))}>
                   {restoreTypeOptions.map((option) => (
                     <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
@@ -1467,7 +1468,7 @@ export default function BackupCenter() {
               />
 
               <Box>
-                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Restore Into Store</Typography>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Restore Into Store</Typography>
                 <TextField select size="small" fullWidth sx={fieldSx} value={restoreForm.targetCompanyId} onChange={(event) => setRestoreForm((prev) => ({ ...prev, targetCompanyId: event.target.value }))}>
                   <MenuItem value="">Original store(s) from backup</MenuItem>
                   {companyOptions.map((option) => (
@@ -1480,7 +1481,7 @@ export default function BackupCenter() {
               </Box>
 
               <Box>
-                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Password</Typography>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Password</Typography>
                 <TextField
                   type="password"
                   size="small"
@@ -1517,7 +1518,7 @@ export default function BackupCenter() {
               ) : null}
 
               <Stack spacing={1.5} sx={{ borderTop: 1, borderColor: "divider", pt: 1.5 }}>
-                <Typography component="label" sx={{ display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Import Backup File</Typography>
+                <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Import Backup File</Typography>
                 <Box
                   component="input"
                   type="file"
@@ -1526,7 +1527,7 @@ export default function BackupCenter() {
                   sx={{ fontSize: 12.25, color: "text.secondary" }}
                 />
                 <Box>
-                  <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Import Password</Typography>
+                  <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Import Password</Typography>
                   <TextField
                     type="password"
                     size="small"
