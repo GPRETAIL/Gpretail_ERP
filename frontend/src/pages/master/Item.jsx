@@ -4,7 +4,7 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { Box, Button, Card, Stack, Typography, IconButton } from "@mui/material";
 import PageHeader from "../../components/PageHeader";
-import { fieldBaseSx } from "../../components/CustomInputs";
+import { fieldBaseSx } from "../../theme/formControlSizes";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import api from "../../api/axios";
 import FilterableDataTable from "../../components/FilterableDataTable";

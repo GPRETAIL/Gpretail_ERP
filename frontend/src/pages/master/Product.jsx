@@ -5,7 +5,7 @@ import { toast } from "react-toastify";
 import api from "../../api/axios";
 import { Box, Button, Card, Stack, Typography, IconButton, alpha } from "@mui/material";
 import PageHeader from "../../components/PageHeader";
-import { fieldBaseSx } from "../../components/CustomInputs";
+import { fieldBaseSx } from "../../theme/formControlSizes";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import ExportBottomSheet from "../../components/ExportBottomSheet";

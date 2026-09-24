@@ -5,7 +5,7 @@ import { toast } from "react-toastify";
 import { Box, Stack, Card, Typography, Button, IconButton, Table, TableHead, TableBody, TableRow, TableCell } from "@mui/material";
 import api from "../../api/axios";
 import AsyncSearchSelect from "../../components/AsyncSearchSelect";
-import { fieldBaseSx } from "../../components/CustomInputs";
+import { fieldBaseSx } from "../../theme/formControlSizes";
 import PageHeader from "../../components/PageHeader";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import { normalizeFormSignature } from "../../utils/formSignature";

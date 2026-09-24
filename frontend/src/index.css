@@ -573,7 +573,12 @@ main > .p-6 {
  }
 }
 
-/* ── Master page responsive scaling (desktop) ── */
+/* ── Master page responsive scaling (desktop) ──
+   Headings and tables only. Form controls deliberately get no rule here: their size comes from
+   CustomInputs.jsx (fieldBaseSx / muiFieldSx) and formControlSizes.js so every page's fields match.
+   An `.master-responsive input/select/textarea/button` rule used to live here and, being more
+   specific than an sx class, silently enlarged every field and SearchableSelect trigger on just
+   the pages carrying this class. */
 @media (min-width: 1280px) {
   .master-responsive h1 {
     font-size: 1.2rem;
@@ -583,25 +588,6 @@ main > .p-6 {
   .master-responsive h2 {
     font-size: 1.05rem;
     line-height: 1.25;
-  }
-
-  .master-responsive .topbar-action-btn {
-    font-size: 0.82rem;
-    padding: 0.42rem 0.82rem;
-  }
-
-  .master-responsive input:not([type="checkbox"]):not([type="radio"]),
-  .master-responsive select,
-  .master-responsive textarea,
-  .master-responsive button {
-    font-size: 0.82rem;
-  }
-
-  .master-responsive input:not([type="checkbox"]):not([type="radio"]),
-  .master-responsive select,
-  .master-responsive textarea {
-    padding-top: 0.42rem;
-    padding-bottom: 0.42rem;
   }
 
   .master-responsive table {
@@ -624,18 +610,6 @@ main > .p-6 {
     font-size: 1.15rem;
   }
 
-  .master-responsive .topbar-action-btn {
-    font-size: 0.9rem;
-    padding: 0.5rem 0.95rem;
-  }
-
-  .master-responsive input:not([type="checkbox"]):not([type="radio"]),
-  .master-responsive select,
-  .master-responsive textarea,
-  .master-responsive button {
-    font-size: 0.9rem;
-  }
-
   .master-responsive table {
     font-size: 0.9rem;
   }
@@ -652,11 +626,6 @@ main > .p-6 {
     line-height: 1.25;
   }
 
-  .master-responsive .topbar-action-btn {
-    font-size: 0.86rem;
-    padding: 0.46rem 0.9rem;
-  }
-
   .master-responsive .text-xs {
     font-size: 0.8rem;
     line-height: 1.2;
@@ -665,20 +634,6 @@ main > .p-6 {
   .master-responsive .text-sm {
     font-size: 0.92rem;
     line-height: 1.3;
-  }
-
-  .master-responsive input:not([type="checkbox"]):not([type="radio"]),
-  .master-responsive select,
-  .master-responsive textarea,
-  .master-responsive button {
-    font-size: 0.86rem;
-  }
-
-  .master-responsive input:not([type="checkbox"]):not([type="radio"]),
-  .master-responsive select,
-  .master-responsive textarea {
-    padding-top: 0.46rem;
-    padding-bottom: 0.46rem;
   }
 
   .master-responsive table {
@@ -701,24 +656,12 @@ main > .p-6 {
     font-size: 1.2rem;
   }
 
-  .master-responsive .topbar-action-btn {
-    font-size: 0.96rem;
-    padding: 0.54rem 1rem;
-  }
-
   .master-responsive .text-xs {
     font-size: 0.86rem;
   }
 
   .master-responsive .text-sm {
     font-size: 0.98rem;
-  }
-
-  .master-responsive input:not([type="checkbox"]):not([type="radio"]),
-  .master-responsive select,
-  .master-responsive textarea,
-  .master-responsive button {
-    font-size: 0.96rem;
   }
 
   .master-responsive table {

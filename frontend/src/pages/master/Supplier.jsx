@@ -11,7 +11,7 @@ const { onFetchGroupSummaries: fetchSupplierGroupSummaries, onFetchGroupRows: fe
   createGroupFetchers("/suppliers", { city_id: "city" });
 import { Box, Button, Card, Stack, Typography, IconButton, Table, TableHead, TableBody, TableRow, TableCell } from "@mui/material";
 import PageHeader from "../../components/PageHeader";
-import { fieldBaseSx } from "../../components/CustomInputs";
+import { fieldBaseSx } from "../../theme/formControlSizes";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import AsyncSearchSelect from "../../components/AsyncSearchSelect";

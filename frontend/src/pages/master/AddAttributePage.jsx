@@ -9,8 +9,8 @@ import {
   CheckboxInput,
   SelectInput,
   TextInput,
-  fieldBaseSx,
 } from "../../components/CustomInputs";
+import { fieldBaseSx } from "../../theme/formControlSizes";
 import api from "../../api/axios";
 import { normalizeFormSignature } from "../../utils/formSignature";
 import UploadImportButton from "../../components/UploadImportButton";

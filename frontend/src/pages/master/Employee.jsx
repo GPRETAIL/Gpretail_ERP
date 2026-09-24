@@ -11,7 +11,7 @@ import { createGroupFetchers } from "../../utils/serverGrouping";
 const { onFetchGroupSummaries: fetchEmployeeGroupSummaries, onFetchGroupRows: fetchEmployeeGroupRows } =
   createGroupFetchers("/employees", { is_active: "is_active" });
 import { Box, Button, Card, Stack, Typography, IconButton, Table, TableHead, TableBody, TableRow, TableCell } from "@mui/material";
-import { fieldBaseSx } from "../../components/CustomInputs";
+import { fieldBaseSx } from "../../theme/formControlSizes";
 import PageHeader from "../../components/PageHeader";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import ExportBottomSheet from "../../components/ExportBottomSheet";

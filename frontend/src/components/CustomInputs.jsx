@@ -1,28 +1,6 @@
 import { Box } from "@mui/material";
 import AsyncSearchSelect from "./AsyncSearchSelect";
-
-const focusRingSx = {
-  outline: "none",
-  "&:focus": { borderColor: "#3b82f6", boxShadow: "0 0 0 1px #3b82f6" },
-};
-
-const fieldBaseSx = (disabled) => ({
-  border: "1px solid",
-  borderColor: "divider",
-  borderRadius: "2px",
-  // Explicit height (not just padding) so a native <select> -- whose appearance:auto chrome adds
-  // ~1.5px over an <input> with identical padding -- and SearchableSelect's trigger (formControlSizes
-  // SEARCHABLE_TRIGGER_HEIGHT) all land on exactly the same row height.
-  height: 30,
-  px: 1,
-  py: 0,
-  fontSize: 11.5,
-  bgcolor: disabled ? "action.disabledBackground" : "background.paper",
-  color: "text.primary",
-  cursor: disabled ? "not-allowed" : "auto",
-  opacity: disabled ? 0.7 : 1,
-  ...focusRingSx,
-});
+import { FIELD_FONT_SIZE, fieldBaseSx, focusRingSx } from "../theme/formControlSizes";
 
 const TextInput = ({
   label,
@@ -35,7 +13,7 @@ const TextInput = ({
   disabled = false,
 }) => (
   <Box sx={{ display: "flex", alignItems: "center" }}>
-    <Box component="label" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
+    <Box component="label" sx={{ width: "40%", fontSize: FIELD_FONT_SIZE, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
       {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>} {label}
     </Box>
     <Box
@@ -60,7 +38,7 @@ const SelectInput = ({
   disabled = false,
 }) => (
   <Box sx={{ display: "flex", alignItems: "center" }}>
-    <Box component="label" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
+    <Box component="label" sx={{ width: "40%", fontSize: FIELD_FONT_SIZE, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
       {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>} {label}
     </Box>
     <Box
@@ -88,7 +66,7 @@ const CheckboxInput = ({
   disabled = false,
 }) => (
   <Box sx={{ display: "flex", alignItems: "center" }}>
-    <Box component="label" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
+    <Box component="label" sx={{ width: "40%", fontSize: FIELD_FONT_SIZE, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
       {label}
     </Box>
     <Box
@@ -116,7 +94,7 @@ const TextareaInput = ({
   disabled = false,
 }) => (
   <Box sx={{ display: "flex", alignItems: "flex-start" }}>
-    <Box component="label" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5, pt: 1 }}>
+    <Box component="label" sx={{ width: "40%", fontSize: FIELD_FONT_SIZE, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5, pt: 1 }}>
       {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>} {label}
     </Box>
     <Box
@@ -142,7 +120,7 @@ const CheckboxSelectInput = ({
   disabled = false,
 }) => (
   <Box sx={{ display: "flex", alignItems: "center" }}>
-    <Box component="label" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
+    <Box component="label" sx={{ width: "40%", fontSize: FIELD_FONT_SIZE, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
       {label}
     </Box>
     <Box sx={{ flex: 1, display: "flex", alignItems: "center", gap: 1.5 }}>
@@ -187,7 +165,7 @@ const DualTextInput = ({
   disabled = false,
 }) => (
   <Box sx={{ display: "flex", alignItems: "center" }}>
-    <Box component="label" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
+    <Box component="label" sx={{ width: "40%", fontSize: FIELD_FONT_SIZE, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
       {label}
     </Box>
     <Box sx={{ flex: 1, display: "flex", alignItems: "center", gap: 1 }}>
@@ -232,7 +210,7 @@ const SelectTextInput = ({
 }) => (
   <Box sx={{ display: "flex", alignItems: "center", flex: label ? undefined : 1 }}>
     {label && (
-      <Box component="label" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
+      <Box component="label" sx={{ width: "40%", fontSize: FIELD_FONT_SIZE, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
         {label}
       </Box>
     )}
@@ -283,7 +261,7 @@ const AsyncSelectInput = ({
   disabled = false,
 }) => (
   <Box sx={{ display: "flex", alignItems: "center" }}>
-    <Box component="label" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
+    <Box component="label" sx={{ width: "40%", fontSize: FIELD_FONT_SIZE, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
       {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>} {label}
     </Box>
     <Box sx={{ flex: 1 }}>
@@ -310,6 +288,4 @@ export {
   SelectTextInput,
   SelectInput,
   AsyncSelectInput,
-  // For pages that compose their own row layouts but should still render the shared field look.
-  fieldBaseSx,
 };
