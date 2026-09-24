@@ -277,7 +277,7 @@ const TaxForm = () => {
               gridColumn: { xs: "span 12", lg: "span 3" },
               display: "flex",
               flexDirection: "column",
-              gap: 0.75,
+              gap: 1,
               borderLeft: 1,
               borderRight: 1,
               borderColor: "divider",
@@ -308,7 +308,7 @@ const TaxForm = () => {
               gridColumn: { xs: "span 12", lg: "span 6" },
               display: "flex",
               flexDirection: "column",
-              gap: 0.75,
+              gap: 1,
               px: 1.5,
             }}
           >
@@ -391,7 +391,7 @@ const TaxForm = () => {
           onKeyDownCapture={handleEnterKeyNavigation}
         >
           <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "repeat(12, 1fr)" }, gap: 1.5 }}>
-            <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 0.75 }}>
+            <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 1 }}>
               <TextInput
                 label="* Tax Code"
                 name="taxCode"

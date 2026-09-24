@@ -2,12 +2,13 @@ import { ArrowLeft, Pencil, PlusCircle, Save, Search, Trash2 } from "lucide-reac
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
-import { Box, Stack, Card, Typography, Button, TextField, Checkbox } from "@mui/material";
+import { Box, Stack, Card, Typography, Button } from "@mui/material";
 import api from "../../api/axios";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import FilterableDataTable from "../../components/FilterableDataTable";
 import PageHeader from "../../components/PageHeader";
 import Breadcrumbs from "../../components/Breadcrumbs";
+import { TextInput, TextareaInput, CheckboxInput } from "../../components/CustomInputs";
 import { createGroupFetchers } from "../../utils/serverGrouping";
 
 // Matches config('pagination.resources.agents.groupable_columns') on the backend.
@@ -48,58 +49,6 @@ const AGENT_IMPORT_CONFIG = {
     "state", "pincode", "is_active",
   ],
 };
-
-// ─── Module-level helper components ───
-
-const TextInput = ({ label, name, required = false, type = "text", value, onChange, placeholder = "" }) => (
-  <Stack direction="row" sx={{ alignItems: "center" }}>
-    <Typography component="label" sx={{ width: "40%", fontSize: 10.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
-      {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}
-      {label}
-    </Typography>
-    <TextField
-      type={type}
-      name={name}
-      value={value}
-      onChange={onChange}
-      placeholder={placeholder}
-      size="small"
-      fullWidth
-      sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.5 } }}
-    />
-  </Stack>
-);
-
-const TextareaInput = ({ label, name, value, onChange, rows = 3 }) => (
-  <Stack direction="row" sx={{ alignItems: "flex-start" }}>
-    <Typography component="label" sx={{ width: "40%", fontSize: 10.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5, pt: 0.5 }}>
-      {label}
-    </Typography>
-    <TextField
-      name={name}
-      value={value}
-      onChange={onChange}
-      rows={rows}
-      multiline
-      size="small"
-      fullWidth
-      sx={{ "& .MuiInputBase-input": { fontSize: 10.5 } }}
-    />
-  </Stack>
-);
-
-const CheckboxInput = ({ label, name, checked, onChange }) => (
-  <Stack direction="row" sx={{ alignItems: "center" }}>
-    <Typography component="label" sx={{ width: "40%", fontSize: 10.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>{label}</Typography>
-    <Checkbox
-      name={name}
-      checked={checked}
-      onChange={onChange}
-      size="small"
-      sx={{ p: 0 }}
-    />
-  </Stack>
-);
 
 const blank = () => ({
   agentTypeId: "", name: "", contactPerson: "", contactNo: "",
@@ -491,11 +440,11 @@ const Agent = () => {
         }
       />
 
-      <Box sx={{ p: 1.5, flex: 1, minHeight: 0 }}>
+      <Box sx={{ p: 1.5, flex: 1, minHeight: 0, overflowY: "auto" }}>
         {!showSearch ? (
           <Card
             variant="outlined"
-            sx={{ p: 2, height: { xs: "auto", lg: "100%" } }}
+            sx={{ p: 2 }}
             data-enter-scope="true"
             onKeyDownCapture={handleEnterKeyNavigation}
           >

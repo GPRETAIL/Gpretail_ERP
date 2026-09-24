@@ -2,12 +2,13 @@ import { ArrowLeft, Save } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
-import { Box, Stack, Card, Typography, Button, TextField } from "@mui/material";
+import { Box, Stack, Card, Typography, Button } from "@mui/material";
 import {
   CheckboxInput,
   SelectInput,
   AsyncSelectInput,
   TextInput,
+  TextareaInput,
 } from "../../components/CustomInputs";
 import api from "../../api/axios";
 import PageHeader from "../../components/PageHeader";
@@ -31,25 +32,6 @@ const CFG_IMPORT_TRANSFORM = (r) => ({
   code:       r.code || null,
   sort_order: r.sortOrder ? parseInt(r.sortOrder) : 0,
 });
-
-// ─── Local helpers ────────────────────────────────────────────────────────────
-const TextareaInput = ({ label, name, required = false, value, onChange, rows = 3 }) => (
-  <Stack direction="row" sx={{ alignItems: "flex-start" }}>
-    <Typography component="label" sx={{ width: "40%", fontSize: 10.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5, pt: 0.5 }}>
-      {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>} {label}
-    </Typography>
-    <TextField
-      name={name}
-      value={value}
-      onChange={onChange}
-      rows={rows}
-      multiline
-      size="small"
-      fullWidth
-      sx={{ "& .MuiInputBase-input": { fontSize: 10.5 } }}
-    />
-  </Stack>
-);
 
 // ─── Type → display label ─────────────────────────────────────────────────────
 const TYPE_LABELS = {
@@ -251,7 +233,7 @@ function buildExtraData(typeKey, fd) {
 }
 
 // ─── Column wrapper — defined at module level so React never remounts it ─────
-const C = ({ children }) => <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 0.75 }}>{children}</Box>;
+const C = ({ children }) => <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 1 }}>{children}</Box>;
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 const ConfigurationForm = () => {
@@ -730,7 +712,7 @@ const ConfigurationForm = () => {
         <Card variant="outlined" sx={{ p: 1.5 }}>
           <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "repeat(12, 1fr)" }, gap: 1.5 }}>
             {/* ─── Common Fields ──────────────────────────── */}
-            <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 0.75 }}>
+            <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 1 }}>
               <TextInput label="Type" name="type_display" value={typeLabel} onChange={() => {}} disabled />
               <TextInput label="Code" name="code" value={formData.code} onChange={handleChange} />
               <TextInput label="Name" name="name" required value={formData.name} onChange={handleChange} />

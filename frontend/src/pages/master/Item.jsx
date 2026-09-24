@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { ArrowLeft, Pencil, PlusCircle, Save, Search, Trash2, Upload } from "lucide-react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
-import { Box, Button, Card, Stack, Typography, TextField, MenuItem, Checkbox, IconButton } from "@mui/material";
+import { Box, Button, Card, Stack, Typography, IconButton } from "@mui/material";
 import PageHeader from "../../components/PageHeader";
+import { fieldBaseSx } from "../../components/CustomInputs";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import api from "../../api/axios";
 import FilterableDataTable from "../../components/FilterableDataTable";
@@ -116,77 +117,65 @@ const normalizeItemRow = (item = {}) => ({
   image: item.image ?? null,
 });
 
-// ─── Reusable field components ────────────────────────────────────────────────
+// ─── Reusable field components (layout only -- the field look is the shared fieldBaseSx) ──
+const LABEL_SX = { fontSize: 11.5, fontWeight: 500, color: "text.secondary" };
+
 const Label = ({ text, required }) => (
-  <Typography component="span" sx={{ fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>
+  <Typography component="span" sx={LABEL_SX}>
     {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}
     {text}
   </Typography>
 );
 
 const Row = ({ label, required, children }) => (
-  <Stack direction="row" sx={{ alignItems: "center", minHeight: 28 }}>
-    <Box sx={{ width: 144, flexShrink: 0 }}>
+  <Stack direction="row" sx={{ alignItems: "center" }}>
+    <Box sx={{ width: "40%", flexShrink: 0, textAlign: "right", pr: 1.5 }}>
       <Label text={label} required={required} />
     </Box>
-    <Box sx={{ flex: 1 }}>{children}</Box>
+    <Box sx={{ flex: 1, minWidth: 0 }}>{children}</Box>
   </Stack>
 );
 
-const TInput = ({ value, onChange, disabled, placeholder = "", type = "text" }) => (
-  <TextField
+const TInput = ({ value, onChange, disabled = false, placeholder = "", type = "text" }) => (
+  <Box
+    component="input"
     type={type}
     value={value}
     onChange={onChange}
     disabled={disabled}
     placeholder={placeholder}
-    size="small"
-    fullWidth
-    sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.5 } }}
+    sx={{ width: "100%", minWidth: 0, ...fieldBaseSx(disabled) }}
   />
 );
 
-const TSelect = ({ value, onChange, options, disabled }) => (
-  <TextField
-    select
-    value={value}
-    onChange={onChange}
-    disabled={disabled}
-    size="small"
-    fullWidth
-    sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.5 } }}
-  >
-    <MenuItem value="">-- Select --</MenuItem>
+const TSelect = ({ value, onChange, options, disabled = false }) => (
+  <Box component="select" value={value} onChange={onChange} disabled={disabled} sx={{ width: "100%", minWidth: 0, ...fieldBaseSx(disabled) }}>
+    <option value="">-- Select --</option>
     {options.map((o) => (
-      <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
+      <option key={o.value} value={o.value}>{o.label}</option>
     ))}
-  </TextField>
+  </Box>
 );
 
 const TCheckbox = ({ label, checked, onChange }) => (
-  <Stack component="label" direction="row" sx={{ alignItems: "center", gap: 0.75, fontSize: 12.25, color: "text.secondary", cursor: "pointer", userSelect: "none" }}>
-    <Checkbox
-      checked={checked}
-      onChange={onChange}
-      size="small"
-      sx={{ p: 0 }}
-    />
+  <Stack component="label" direction="row" sx={{ ...LABEL_SX, alignItems: "center", gap: 0.75, cursor: "pointer", userSelect: "none", whiteSpace: "nowrap" }}>
+    <Box component="input" type="checkbox" checked={checked} onChange={onChange} sx={{ width: 14, height: 14, m: 0, accentColor: "#2563eb" }} />
     {label}
   </Stack>
 );
 
 // ─── Inline checkbox row (checkbox + optional text input on the same row) ─────
 const ToggleRow = ({ label, checked, onCheck, value, onValue, placeholder = "" }) => (
-  <Stack direction="row" sx={{ alignItems: "center", gap: 1.5 }}>
+  <Stack direction="row" sx={{ alignItems: "center", gap: 1.5, minHeight: 34 }}>
     <TCheckbox label={label} checked={checked} onChange={onCheck} />
     {checked && (
-      <TextField
+      <Box
+        component="input"
         type="text"
         value={value}
         onChange={onValue}
         placeholder={placeholder}
-        size="small"
-        sx={{ flex: 1, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.5 } }}
+        sx={{ flex: 1, minWidth: 0, ...fieldBaseSx(false) }}
       />
     )}
   </Stack>
@@ -194,13 +183,13 @@ const ToggleRow = ({ label, checked, onCheck, value, onValue, placeholder = "" }
 
 // ─── Pair row (label | input | label | input) in the right panel ──────────────
 const PairRow = ({ label1, val1, onChange1, label2, val2, onChange2, disabled }) => (
-  <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1 }}>
+  <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1.5 }}>
     <Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
-      <Typography component="span" sx={{ fontSize: 12.25, color: "text.secondary", whiteSpace: "nowrap", width: 96, flexShrink: 0 }}>{label1}</Typography>
+      <Typography component="span" sx={{ ...LABEL_SX, whiteSpace: "nowrap", width: 96, flexShrink: 0, textAlign: "right" }}>{label1}</Typography>
       <TInput value={val1} onChange={onChange1} disabled={disabled} />
     </Stack>
     <Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
-      <Typography component="span" sx={{ fontSize: 12.25, color: "text.secondary", whiteSpace: "nowrap", width: 112, flexShrink: 0 }}>{label2}</Typography>
+      <Typography component="span" sx={{ ...LABEL_SX, whiteSpace: "nowrap", width: 96, flexShrink: 0, textAlign: "right" }}>{label2}</Typography>
       <TInput value={val2} onChange={onChange2} disabled={disabled} />
     </Stack>
   </Box>
@@ -774,13 +763,14 @@ export default function Item() {
           gap: 1.5,
           flex: 1,
           minHeight: 0,
+          overflowY: "auto",
         }}
         data-enter-scope="true"
         onKeyDownCapture={handleEnterKeyNavigation}
       >
 
         {/* ════ LEFT PANEL ════ */}
-        <Card variant="outlined" sx={{ p: 1.5, display: "flex", flexDirection: "column", gap: 1, height: { lg: "100%" } }}>
+        <Card variant="outlined" sx={{ p: 1.5, display: "flex", flexDirection: "column", gap: 1, overflow: "visible" }}>
           {/* Product */}
           <Row label="Product" required>
             <AsyncSearchSelect
@@ -795,16 +785,13 @@ export default function Item() {
           </Row>
 
           {/* Item Code + Design on same row */}
-          <Stack direction="row" sx={{ alignItems: "center", minHeight: 28 }}>
-            <Box sx={{ width: 144, flexShrink: 0 }}>
-              <Label text="Item Code" />
-            </Box>
-            <Stack direction="row" sx={{ gap: 1, flex: 1 }}>
+          <Row label="Item Code">
+            <Stack direction="row" sx={{ gap: 1, alignItems: "center" }}>
               <TInput value={form.item_code} onChange={set("item_code")} placeholder="Auto" />
-              <Box sx={{ display: "flex", alignItems: "center", fontSize: 10.5, color: "text.secondary", whiteSpace: "nowrap" }}>Design</Box>
+              <Box sx={{ ...LABEL_SX, whiteSpace: "nowrap" }}>Design</Box>
               <TInput value={form.design} onChange={set("design")} />
             </Stack>
-          </Stack>
+          </Row>
 
           <Row label="Selling Name" required>
             <TInput value={form.selling_name} onChange={set("selling_name")} />
@@ -850,7 +837,7 @@ export default function Item() {
         </Card>
 
         {/* ════ RIGHT PANEL ════ */}
-        <Card variant="outlined" sx={{ p: 1.5, display: "flex", flexDirection: "column", gap: 1.25, height: { lg: "100%" } }}>
+        <Card variant="outlined" sx={{ p: 1.5, display: "flex", flexDirection: "column", gap: 1, overflow: "visible" }}>
 
           {/* Re-Order */}
           <PairRow

@@ -2,13 +2,14 @@ import { ArrowLeft, PlusCircle, Save, Trash2 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
-import { Box, Button, Card, Stack, Typography, TextField, MenuItem, Table, TableBody, TableRow, TableCell, IconButton } from "@mui/material";
+import { Box, Button, Card, Stack, Typography, Table, TableBody, TableRow, TableCell, IconButton } from "@mui/material";
 import PageHeader from "../../components/PageHeader";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import {
   CheckboxInput,
   SelectInput,
   TextInput,
+  fieldBaseSx,
 } from "../../components/CustomInputs";
 import api from "../../api/axios";
 import { normalizeFormSignature } from "../../utils/formSignature";
@@ -448,7 +449,7 @@ const AddAttributePage = () => {
     switch (formData.productType) {
       case "MARKER":
         return (
-          <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 0.75 }}>
+          <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 1 }}>
             {[
               "code",
               "name",
@@ -507,7 +508,7 @@ const AddAttributePage = () => {
       case "SIZEGROUP":
         return (
           <>
-            <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 0.75, borderLeft: 1, borderRight: 1, borderColor: "divider", px: 1.5 }}>
+            <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 1, borderLeft: 1, borderRight: 1, borderColor: "divider", px: 1.5 }}>
               <TextInput
                 label="Code"
                 name="code"
@@ -534,7 +535,7 @@ const AddAttributePage = () => {
                 onChange={handleChange}
               />
             </Box>
-            <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 0.75 }}>
+            <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 1 }}>
               <Box sx={{ border: 1, borderColor: "grey.300", borderRadius: "3.5px", overflow: "hidden" }}>
                 {/* Header */}
                 <Stack direction="row" sx={{ bgcolor: "action.hover", borderBottom: 1, borderColor: "divider", p: 1, fontSize: 10.5, fontWeight: 600, color: "text.secondary" }}>
@@ -544,22 +545,16 @@ const AddAttributePage = () => {
 
                 {/* Input Row */}
                 <Stack direction="row" sx={{ alignItems: "center", borderBottom: 1, borderColor: "divider", p: 1, gap: 1 }}>
-                  <TextField
-                    select
-                    value={selectedSizeId}
-                    onChange={(e) => setSelectedSizeId(e.target.value)}
-                    size="small"
-                    sx={{ flex: 1, "& .MuiInputBase-input": { fontSize: 10.5, py: 0.75 } }}
-                  >
-                    <MenuItem value="">Select Size</MenuItem>
+                  <Box component="select" value={selectedSizeId} onChange={(e) => setSelectedSizeId(e.target.value)} sx={{ width: "100%", minWidth: 0, ...fieldBaseSx(false) }}>
+                    <option value="">Select Size</option>
                     {availableSizes
                       .filter((s) => !sizeList.some((sl) => sl.id === s.id))
                       .map((s) => (
-                        <MenuItem key={s.id} value={s.id}>
+                        <option key={s.id} value={s.id}>
                           {s.size_name}
-                        </MenuItem>
+                        </option>
                       ))}
-                  </TextField>
+                  </Box>
                   <Button
                     type="button"
                     onClick={handleAddSize}
@@ -606,7 +601,7 @@ const AddAttributePage = () => {
       // -----------------------------------
       case "SIZE":
         return (
-          <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 0.75 }}>
+          <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 1 }}>
             <TextInput
               label="Code"
               name="code"
@@ -686,7 +681,7 @@ const AddAttributePage = () => {
       // -----------------------------------
       case "PRICETAGS":
         return (
-          <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 0.75 }}>
+          <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 1 }}>
             <TextInput
               label="Code"
               name="code"
@@ -725,7 +720,7 @@ const AddAttributePage = () => {
       // -----------------------------------
       case "DIVISION":
         return (
-          <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 0.75 }}>
+          <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 1 }}>
             <TextInput
               label="Code"
               name="code"
@@ -768,7 +763,7 @@ const AddAttributePage = () => {
         );
       default:
         return (
-          <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 0.75 }}>
+          <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 1 }}>
             {/* Name field — shown for every attribute */}
             <TextInput
               label="Name"

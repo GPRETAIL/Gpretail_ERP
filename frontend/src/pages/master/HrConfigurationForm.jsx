@@ -314,7 +314,7 @@ const HrConfigurationForm = () => {
             <Typography sx={{ fontSize: 12, color: "text.secondary" }}>Loading {typeLabel.toLowerCase()}...</Typography>
           ) : (
             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "repeat(12, 1fr)" }, gap: 1.5 }}>
-              <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 0.75 }}>
+              <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 1 }}>
                 <TextInput
                   label="Code"
                   name="code"

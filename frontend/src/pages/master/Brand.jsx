@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, Pencil, PlusCircle, Save, Search, Trash2 } from "lucide-react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
-import { Box, Stack, Card, Typography, Button, TextField, MenuItem, Checkbox, Table, TableBody, TableRow, TableCell, IconButton, alpha } from "@mui/material";
+import { Box, Stack, Card, Typography, Button, Table, TableBody, TableRow, TableCell, IconButton, alpha } from "@mui/material";
 import api from "../../api/axios";
 import FilterableDataTable from "../../components/FilterableDataTable";
 import { createGroupFetchers } from "../../utils/serverGrouping";
@@ -11,6 +11,7 @@ import UploadImportButton from "../../components/UploadImportButton";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import PageHeader from "../../components/PageHeader";
 import Breadcrumbs from "../../components/Breadcrumbs";
+import { TextInput, SelectInput, DualTextInput, SelectTextInput, CheckboxInput } from "../../components/CustomInputs";
 import { handleEnterKeyNavigation } from "../../utils/enterToNextField";
 import useStoreNameMap from "../../hooks/useStoreNameMap";
 import { normalizeFormSignature } from "../../utils/formSignature";
@@ -56,49 +57,6 @@ const BRAND_IMPORT_CONFIG = {
     "brand_type", "discount_type", "discount_value", "is_active",
   ],
 };
-
-// ─── Helpers defined OUTSIDE component to prevent remount on render ───────────
-const TextInput = ({ label, required = false, type = "text", value, onChange, placeholder = "" }) => (
-  <Stack direction="row" sx={{ alignItems: "center" }}>
-    <Typography component="label" sx={{ width: "33.33%", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>
-      {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}
-      {label}
-    </Typography>
-    <TextField
-      type={type}
-      value={value}
-      onChange={onChange}
-      placeholder={placeholder}
-      size="small"
-      fullWidth
-      sx={{ ml: 1.5, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
-    />
-  </Stack>
-);
-
-const SelectInput = ({ label, required = false, options, value, onChange }) => (
-  <Stack direction="row" sx={{ alignItems: "center" }}>
-    <Typography component="label" sx={{ width: "33.33%", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>
-      {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}
-      {label}
-    </Typography>
-    <TextField
-      select
-      value={value}
-      onChange={onChange}
-      size="small"
-      fullWidth
-      sx={{ ml: 1.5, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
-    >
-      <MenuItem value="">{`Select ${label}`}</MenuItem>
-      {options.map((option, index) => (
-        <MenuItem key={index} value={option.value || option.label}>
-          {option.label}
-        </MenuItem>
-      ))}
-    </TextField>
-  </Stack>
-);
 
 const brandTypeOptions = [
   { label: "Premium", value: "Premium" },
@@ -517,17 +475,17 @@ const Brand = () => {
         }
       />
 
-      <Box sx={{ p: 1.5, flex: 1, minHeight: 0 }}>
+      <Box sx={{ p: 1.5, flex: 1, minHeight: 0, overflowY: "auto" }}>
         {!showSearchPage ? (
           <Card
             variant="outlined"
-            sx={{ p: 2, height: { lg: "100%" } }}
+            sx={{ p: 2 }}
             data-enter-scope="true"
             onKeyDownCapture={handleEnterKeyNavigation}
           >
             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "repeat(12, 1fr)" }, gap: 3 }}>
               {/* Left Section - Primary Details */}
-              <Box sx={{ gridColumn: { xs: "span 12", lg: "span 6" }, display: "flex", flexDirection: "column", gap: 2, pr: 2 }}>
+              <Box sx={{ gridColumn: { xs: "span 12", lg: "span 6" }, display: "flex", flexDirection: "column", gap: 1, pr: 2 }}>
                 <TextInput
                   label="Code"
                   required
@@ -549,29 +507,14 @@ const Brand = () => {
                   onChange={(e) => setPrintingName(e.target.value)}
                 />
 
-                <Stack direction="row" sx={{ alignItems: "center" }}>
-                  <Typography component="label" sx={{ width: "33.33%", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Margin</Typography>
-                  <Stack direction="row" sx={{ flex: 1, alignItems: "center", gap: 1.5, ml: 1.5 }}>
-                    <TextField
-                      type="number"
-                      value={minMargin}
-                      onChange={(e) => setMinMargin(e.target.value)}
-                      placeholder="Min Margin"
-                      size="small"
-                      fullWidth
-                      sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
-                    />
-                    <TextField
-                      type="number"
-                      value={maxMargin}
-                      onChange={(e) => setMaxMargin(e.target.value)}
-                      placeholder="Max Margin"
-                      size="small"
-                      fullWidth
-                      sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
-                    />
-                  </Stack>
-                </Stack>
+                <DualTextInput
+                  label="Margin"
+                  name1="minMargin"
+                  value1={minMargin}
+                  name2="maxMargin"
+                  value2={maxMargin}
+                  onChange={(e) => (e.target.name === "minMargin" ? setMinMargin : setMaxMargin)(e.target.value)}
+                />
 
                 <SelectInput
                   label="Brand Type"
@@ -580,42 +523,23 @@ const Brand = () => {
                   onChange={(e) => setBrandType(e.target.value)}
                 />
 
-                <Stack direction="row" sx={{ alignItems: "center" }}>
-                  <Typography component="label" sx={{ width: "33.33%", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>
-                    Discount / Value
-                  </Typography>
-                  <Stack direction="row" sx={{ flex: 1, alignItems: "center", gap: 1.5, ml: 1.5 }}>
-                    <TextField
-                      select
-                      value={discountType}
-                      onChange={(e) => setDiscountType(e.target.value)}
-                      size="small"
-                      fullWidth
-                      sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
-                    >
-                      <MenuItem value="">Select</MenuItem>
-                      {discountOptions.map((option, index) => (
-                        <MenuItem key={index} value={option.value}>
-                          {option.label}
-                        </MenuItem>
-                      ))}
-                    </TextField>
-                    <TextField
-                      type="number"
-                      value={discountValue}
-                      onChange={(e) => setDiscountValue(e.target.value)}
-                      placeholder="Value"
-                      size="small"
-                      sx={{ width: 80, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
-                    />
-                  </Stack>
-                </Stack>
+                <SelectTextInput
+                  label="Discount / Value"
+                  selectName="discountType"
+                  selectValue={discountType}
+                  options={discountOptions}
+                  placeholder="Select"
+                  inputName="discountValue"
+                  inputValue={discountValue}
+                  inputPlaceholder="Value"
+                  onChange={(e) => (e.target.name === "discountType" ? setDiscountType : setDiscountValue)(e.target.value)}
+                />
 
                 <Stack direction="row" sx={{ alignItems: "center" }}>
-                  <Typography component="label" sx={{ width: "33.33%", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>
+                  <Typography component="label" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
                     Logo
                   </Typography>
-                  <Stack direction="row" sx={{ flex: 1, alignItems: "center", gap: 1, ml: 1.5 }}>
+                  <Stack direction="row" sx={{ flex: 1, alignItems: "center", gap: 1 }}>
                     <Typography
                       component="label"
                       htmlFor="logoUpload"
@@ -640,20 +564,12 @@ const Brand = () => {
                   </Stack>
                 </Stack>
 
-                <Stack direction="row" sx={{ alignItems: "center", pt: 1 }}>
-                  <Typography component="label" sx={{ width: "33.33%", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>
-                    Active
-                  </Typography>
-                  <Stack direction="row" sx={{ flex: 1, alignItems: "center", ml: 1.5 }}>
-                    <Checkbox
-                      id="active"
-                      checked={isActive}
-                      onChange={(e) => setIsActive(e.target.checked)}
-                      size="small"
-                      sx={{ p: 0 }}
-                    />
-                  </Stack>
-                </Stack>
+                <CheckboxInput
+                  label="Active"
+                  name="isActive"
+                  checked={isActive}
+                  onChange={(e) => setIsActive(e.target.checked)}
+                />
               </Box>
 
               {/* Right Section - Product Margin List */}
@@ -669,33 +585,21 @@ const Brand = () => {
                   </Stack>
 
                   <Stack direction="row" sx={{ alignItems: "center", borderBottom: 1, borderColor: "divider", p: 1, gap: 1 }}>
-                    <TextField
-                      select
-                      value={product}
-                      onChange={(e) => setProduct(e.target.value)}
-                      size="small"
-                      sx={{ flex: 1, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
-                    >
-                      <MenuItem value="">Select Product</MenuItem>
-                      {products.map((p, idx) => (
-                        <MenuItem key={idx} value={p.value}>
-                          {p.label}
-                        </MenuItem>
-                      ))}
-                    </TextField>
-                    <TextField
-                      type="number"
-                      placeholder="Margin"
-                      value={margin}
-                      onChange={(e) => setMargin(e.target.value)}
-                      size="small"
-                      sx={{ width: "33.33%", "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
+                    <SelectTextInput
+                      selectName="product"
+                      selectValue={product}
+                      options={products}
+                      placeholder="Select Product"
+                      inputName="margin"
+                      inputValue={margin}
+                      inputPlaceholder="Margin"
+                      onChange={(e) => (e.target.name === "product" ? setProduct : setMargin)(e.target.value)}
                     />
                     <Button
                       onClick={handleAddProduct}
                       className="glass-btn glass-btn-primary"
                       startIcon={<PlusCircle size={16} />}
-                      sx={{ width: "16.66%" }}
+                      sx={{ width: "16.66%", height: 30, flexShrink: 0 }}
                     >
                       Add
                     </Button>

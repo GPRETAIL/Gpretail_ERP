@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { ArrowLeft, PlusCircle, Save, Search } from "lucide-react";
-import { Box, Stack, Card, Typography, Button, TextField, MenuItem, Checkbox } from "@mui/material";
+import { Box, Stack, Card, Typography, Button, Checkbox } from "@mui/material";
 import {
   DualTextInput,
+  SelectTextInput,
   SelectInput,
   AsyncSelectInput,
   CheckboxInput,
@@ -464,17 +465,17 @@ const ProductForm = () => {
         }
       />
 
-      <Box sx={{ p: 1.5, flex: 1, minHeight: 0 }}>
+      <Box sx={{ p: 1.5, flex: 1, minHeight: 0, overflowY: "auto" }}>
         <Card
           variant="outlined"
-          sx={{ p: 1.5, height: { xs: "auto", lg: "100%" }, minHeight: 0, overflowY: "auto" }}
+          sx={{ p: 1.5 }}
           data-enter-scope="true"
           onKeyDownCapture={handleEnterKeyNavigation}
         >
           {/* Reduced inner padding */}
           <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "repeat(12, 1fr)" }, gap: 1.5 }}>
             {/* Reduced gap */} {/* --- Column 1: Left --- */}
-            <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 0.5 }}>
+            <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 1 }}>
               {/* Reduced vertical space */}
               <SelectInput
                 label="Product Group"
@@ -520,36 +521,15 @@ const ProductForm = () => {
                 value2={formData.marginMax}
                 onChange={handleChange}
               />
-              {/* Discount Mode (Select + Input) */}
-              <Stack direction="row" sx={{ alignItems: "center" }}>
-                <Typography component="label" sx={{ width: "40%", fontSize: 10.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
-                  Discount Mode
-                </Typography>
-                <Stack direction="row" sx={{ flex: 1, alignItems: "center", gap: 1 }}>
-                  <TextField
-                    select
-                    name="discountMode"
-                    value={formData.discountMode}
-                    onChange={handleChange}
-                    size="small"
-                    sx={{ width: "66.66%", "& .MuiInputBase-input": { fontSize: 10.5, py: 0.5 } }}
-                  >
-                    {discountModeOptions.map((option, index) => (
-                      <MenuItem key={index} value={option.value || option.label}>
-                        {option.label}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                  <TextField
-                    type="number"
-                    name="discountModeValue"
-                    value={formData.discountModeValue}
-                    onChange={handleChange}
-                    size="small"
-                    sx={{ width: "33.33%", "& .MuiInputBase-input": { fontSize: 10.5, py: 0.5 } }}
-                  />
-                </Stack>
-              </Stack>
+              <SelectTextInput
+                label="Discount Mode"
+                selectName="discountMode"
+                selectValue={formData.discountMode}
+                options={discountModeOptions}
+                inputName="discountModeValue"
+                inputValue={formData.discountModeValue}
+                onChange={handleChange}
+              />
               <SelectInput
                 label="Barcode Source"
                 name="barcodeSource"
@@ -592,7 +572,7 @@ const ProductForm = () => {
               />
             </Box>
             {/* --- Column 2: Middle --- */}
-            <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 0.5, borderLeft: 1, borderRight: 1, borderColor: "divider", px: 1.5 }}>
+            <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 1, borderLeft: 1, borderRight: 1, borderColor: "divider", px: 1.5 }}>
               {/* Reduced vertical space and horizontal padding */}
               <SearchableSelect
                 label="Company Type"

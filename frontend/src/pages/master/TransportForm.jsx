@@ -2,9 +2,10 @@ import React, { useState, useEffect, useRef } from "react";
 import { ArrowLeft, PlusCircle, Save, Search } from "lucide-react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
-import { Box, Stack, Card, Typography, Button, TextField, MenuItem, Checkbox, IconButton, Table, TableHead, TableBody, TableRow, TableCell } from "@mui/material";
+import { Box, Stack, Card, Typography, Button, IconButton, Table, TableHead, TableBody, TableRow, TableCell } from "@mui/material";
 import api from "../../api/axios";
 import AsyncSearchSelect from "../../components/AsyncSearchSelect";
+import { fieldBaseSx } from "../../components/CustomInputs";
 import PageHeader from "../../components/PageHeader";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import { normalizeFormSignature } from "../../utils/formSignature";
@@ -17,9 +18,9 @@ const mapTaxOption = (t) => ({
   label: `${t.name} (${t.tax_percentage}%)`,
 });
 
-/* ─── tiny inline helpers ─── */
+/* ─── tiny inline helpers (layout only -- the field look itself is the shared fieldBaseSx) ─── */
 const Label = ({ children, required }) => (
-  <Typography component="span" sx={{ width: "40%", fontSize: 10.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5, flexShrink: 0 }}>
+  <Typography component="span" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5, flexShrink: 0 }}>
     {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}
     {children}
   </Typography>
@@ -29,30 +30,26 @@ const Field = ({ children }) => (
   <Stack direction="row" sx={{ alignItems: "center", mb: 1 }}>{children}</Stack>
 );
 
-const Input = ({ className: _className, ...props }) => (
-  <TextField
-    {...props}
-    size="small"
-    fullWidth
-    sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.5 } }}
-  />
+const Input = ({ className: _className, disabled = false, ...props }) => (
+  <Box component="input" disabled={disabled} {...props} sx={{ width: "100%", minWidth: 0, ...fieldBaseSx(disabled) }} />
 );
 
-const Select = ({ options = [], placeholder, className: _className, ...props }) => (
-  <TextField
-    select
-    {...props}
-    size="small"
-    fullWidth
-    sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.5 } }}
-  >
-    <MenuItem value="">{placeholder || `— select —`}</MenuItem>
+const Select = ({ options = [], placeholder, className: _className, disabled = false, ...props }) => (
+  <Box component="select" disabled={disabled} {...props} sx={{ width: "100%", minWidth: 0, ...fieldBaseSx(disabled) }}>
+    <option value="">{placeholder || "— select —"}</option>
     {options.map((o) => (
-      <MenuItem key={o.value} value={o.value}>
+      <option key={o.value} value={o.value}>
         {o.label}
-      </MenuItem>
+      </option>
     ))}
-  </TextField>
+  </Box>
+);
+
+const Check = ({ label, ...props }) => (
+  <Stack component="label" direction="row" sx={{ alignItems: "center", gap: 0.75, fontSize: 11.5, color: "text.secondary", cursor: "pointer", userSelect: "none" }}>
+    <Box component="input" type="checkbox" {...props} sx={{ width: 14, height: 14, m: 0, accentColor: "#2563eb" }} />
+    {label}
+  </Stack>
 );
 
 const BUSINESS_MODES = [
@@ -329,12 +326,16 @@ const TransportForm = () => {
           gap: 1.5,
           flex: 1,
           minHeight: 0,
+          overflowY: "auto",
         }}
         data-enter-scope="true"
         onKeyDownCapture={handleEnterKeyNavigation}
       >
         {/* ── LEFT PANEL ── */}
-        <Card variant="outlined" sx={{ p: 2, display: "flex", flexDirection: "column", gap: 0.5, height: { lg: "100%" } }}>
+        {/* overflow: visible -- MUI Card's default overflow:hidden makes it a scroll container, whose
+            automatic min-height is 0, so the grid row shrank to the viewport and clipped the last rows
+            instead of growing and letting the page scroll. */}
+        <Card variant="outlined" sx={{ p: 2, display: "flex", flexDirection: "column", gap: 0.5, overflow: "visible" }}>
           <Field>
             <Label required>Business Mode</Label>
             <Select
@@ -379,16 +380,14 @@ const TransportForm = () => {
 
           <Field>
             <Label>Address</Label>
-            <TextField
+            <Box
+              component="textarea"
               name="address"
               rows={3}
-              multiline
               value={form.address}
               onChange={handleChange}
               disabled={readOnly}
-              size="small"
-              fullWidth
-              sx={{ "& .MuiInputBase-input": { fontSize: 10.5 } }}
+              sx={{ flex: 1, minWidth: 0, ...fieldBaseSx(readOnly), height: "auto", py: 0.75, resize: "vertical", fontFamily: "inherit" }}
             />
           </Field>
 
@@ -459,15 +458,17 @@ const TransportForm = () => {
           <Field>
             <Label>Price / Tax</Label>
             <Stack direction="row" sx={{ flex: 1, gap: 0.5 }}>
-              <Input
-                name="price"
-                type="number"
-                value={form.price}
-                onChange={handleChange}
-                disabled={readOnly}
-                placeholder="Price"
-              />
-              <Box sx={{ flex: 1 }}>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Input
+                  name="price"
+                  type="number"
+                  value={form.price}
+                  onChange={handleChange}
+                  disabled={readOnly}
+                  placeholder="Price"
+                />
+              </Box>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
                 <AsyncSearchSelect
                   name="taxId"
                   value={form.taxId}
@@ -522,33 +523,13 @@ const TransportForm = () => {
           </Field>
 
           <Stack direction="row" sx={{ alignItems: "center", gap: 3, mt: 0.5, pl: "40%" }}>
-            <Stack component="label" direction="row" sx={{ alignItems: "center", gap: 0.5, fontSize: 10.5, cursor: "pointer", userSelect: "none" }}>
-              <Checkbox
-                name="rcm"
-                checked={form.rcm}
-                onChange={handleChange}
-                disabled={readOnly}
-                size="small"
-                sx={{ p: 0 }}
-              />
-              RCM
-            </Stack>
-            <Stack component="label" direction="row" sx={{ alignItems: "center", gap: 0.5, fontSize: 10.5, cursor: "pointer", userSelect: "none" }}>
-              <Checkbox
-                name="isActive"
-                checked={form.isActive}
-                onChange={handleChange}
-                disabled={readOnly}
-                size="small"
-                sx={{ p: 0 }}
-              />
-              Active
-            </Stack>
+            <Check label="RCM" name="rcm" checked={form.rcm} onChange={handleChange} disabled={readOnly} />
+            <Check label="Active" name="isActive" checked={form.isActive} onChange={handleChange} disabled={readOnly} />
           </Stack>
         </Card>
 
         {/* ── RIGHT PANEL — Rate Table ── */}
-        <Card variant="outlined" sx={{ p: 2, display: "flex", flexDirection: "column", height: { lg: "100%" } }}>
+        <Card variant="outlined" sx={{ p: 2, display: "flex", flexDirection: "column", overflow: "visible" }}>
           <Typography component="h2" sx={{ fontSize: 12, fontWeight: 600, color: "text.secondary", mb: 1 }}>
             Transport Rates
           </Typography>
@@ -598,7 +579,7 @@ const TransportForm = () => {
               <IconButton
                 onClick={addRate}
                 className="glass-btn glass-btn-primary"
-                sx={{ mb: 0.25, p: 0.75 }}
+                sx={{ width: 30, height: 30, minWidth: 30, flexShrink: 0, p: "0 !important" }}
                 title="Add rate"
               >
                 <PlusCircle size={16} />

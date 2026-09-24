@@ -9,8 +9,9 @@ import { createGroupFetchers } from "../../utils/serverGrouping";
 // Matches config('pagination.resources.suppliers.groupable_columns') on the backend.
 const { onFetchGroupSummaries: fetchSupplierGroupSummaries, onFetchGroupRows: fetchSupplierGroupRows } =
   createGroupFetchers("/suppliers", { city_id: "city" });
-import { Box, Button, Card, Stack, Typography, TextField, MenuItem, IconButton, Checkbox, Table, TableHead, TableBody, TableRow, TableCell } from "@mui/material";
+import { Box, Button, Card, Stack, Typography, IconButton, Table, TableHead, TableBody, TableRow, TableCell } from "@mui/material";
 import PageHeader from "../../components/PageHeader";
+import { fieldBaseSx } from "../../components/CustomInputs";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import AsyncSearchSelect from "../../components/AsyncSearchSelect";
@@ -72,14 +73,16 @@ const SUPPLIER_IMPORT_CONFIG = {
 
 // ─── Helper components at module level (prevents focus-loss on re-render) ────
 
+const LABEL_SX = { width: "40%", flexShrink: 0, fontSize: 11.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 };
+
 const TextInput = ({ label, name, required = false, value, onChange, placeholder = "", icon = null, type = "text", disabled = false }) => (
   <Stack direction="row" sx={{ alignItems: "center" }}>
-    <Typography component="label" sx={{ width: "50%", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>
+    <Typography component="label" sx={LABEL_SX}>
       {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}{label}
     </Typography>
-    <Stack direction="row" sx={{ flex: 1, alignItems: "center", ml: 1.5 }}>
-      <TextField type={type} name={name} value={value} onChange={onChange} placeholder={placeholder} disabled={disabled}
-        size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }} />
+    <Stack direction="row" sx={{ flex: 1, minWidth: 0, alignItems: "center" }}>
+      <Box component="input" type={type} name={name} value={value} onChange={onChange} placeholder={placeholder} disabled={disabled}
+        sx={{ width: "100%", minWidth: 0, ...fieldBaseSx(disabled) }} />
       {icon && <IconButton className="glass-btn glass-btn-primary" sx={{ ml: 0.5, p: 0.75 }} type="button">{icon}</IconButton>}
     </Stack>
   </Stack>
@@ -87,15 +90,15 @@ const TextInput = ({ label, name, required = false, value, onChange, placeholder
 
 const SelectInput = ({ label, name, required = false, options = [], value, onChange, icon = null, disabled = false }) => (
   <Stack direction="row" sx={{ alignItems: "center" }}>
-    <Typography component="label" sx={{ width: "50%", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>
+    <Typography component="label" sx={LABEL_SX}>
       {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}{label}
     </Typography>
-    <Stack direction="row" sx={{ flex: 1, alignItems: "center", ml: 1.5 }}>
-      <TextField select name={name} value={value} onChange={onChange} disabled={disabled}
-        size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
-        <MenuItem value="">Select {label}</MenuItem>
-        {options.map((o, i) => <MenuItem key={i} value={o.value ?? o.label}>{o.label}</MenuItem>)}
-      </TextField>
+    <Stack direction="row" sx={{ flex: 1, minWidth: 0, alignItems: "center" }}>
+      <Box component="select" name={name} value={value} onChange={onChange} disabled={disabled}
+        sx={{ width: "100%", minWidth: 0, ...fieldBaseSx(disabled) }}>
+        <option value="">Select {label}</option>
+        {options.map((o, i) => <option key={i} value={o.value ?? o.label}>{o.label}</option>)}
+      </Box>
       {icon && <IconButton className="glass-btn glass-btn-primary" sx={{ ml: 0.5, p: 0.75 }} type="button">{icon}</IconButton>}
     </Stack>
   </Stack>
@@ -103,126 +106,114 @@ const SelectInput = ({ label, name, required = false, options = [], value, onCha
 
 const DualSelectInput = ({ label, name1, value1, name2, value2, onChange, options1 = [], options2 = [], placeholder1 = "Select", placeholder2 = "Select" }) => (
   <Stack direction="row" sx={{ alignItems: "center" }}>
-    <Typography component="label" sx={{ width: "50%", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>{label}</Typography>
-    <Stack direction="row" sx={{ flex: 1, alignItems: "center", ml: 1.5, gap: 1 }}>
-      <TextField select name={name1} value={value1} onChange={onChange} size="small" sx={{ width: "50%", "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
-        <MenuItem value="">{placeholder1}</MenuItem>
-        {options1.map((o, i) => <MenuItem key={i} value={o.value ?? o.label}>{o.label}</MenuItem>)}
-      </TextField>
-      <TextField select name={name2} value={value2} onChange={onChange} size="small" sx={{ width: "50%", "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
-        <MenuItem value="">{placeholder2}</MenuItem>
-        {options2.map((o, i) => <MenuItem key={i} value={o.value ?? o.label}>{o.label}</MenuItem>)}
-      </TextField>
+    <Typography component="label" sx={LABEL_SX}>{label}</Typography>
+    <Stack direction="row" sx={{ flex: 1, minWidth: 0, alignItems: "center", gap: 1 }}>
+      <Box component="select" name={name1} value={value1} onChange={onChange} sx={{ width: "50%", minWidth: 0, ...fieldBaseSx(false) }}>
+        <option value="">{placeholder1}</option>
+        {options1.map((o, i) => <option key={i} value={o.value ?? o.label}>{o.label}</option>)}
+      </Box>
+      <Box component="select" name={name2} value={value2} onChange={onChange} sx={{ width: "50%", minWidth: 0, ...fieldBaseSx(false) }}>
+        <option value="">{placeholder2}</option>
+        {options2.map((o, i) => <option key={i} value={o.value ?? o.label}>{o.label}</option>)}
+      </Box>
     </Stack>
   </Stack>
 );
 
 const SingleInputRight = ({ label, name, required = false, value, onChange, placeholder = "", type = "text" }) => (
   <Stack direction="row" sx={{ alignItems: "center" }}>
-    <Typography component="label" sx={{ width: "30%", fontSize: 12.25, fontWeight: 500, color: "text.secondary", pr: 0.5 }}>
+    <Typography component="label" sx={{ width: "30%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", pr: 1.5, textAlign: "right" }}>
       {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}{label}
     </Typography>
-    <TextField type={type} name={name} value={value} onChange={onChange} placeholder={placeholder}
-      size="small" sx={{ width: "70%", "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }} />
+    <Box component="input" type={type} name={name} value={value} onChange={onChange} placeholder={placeholder} sx={{ width: "70%", minWidth: 0, ...fieldBaseSx(false) }} />
   </Stack>
 );
 
 const SelectInputRight = ({ label, name, required = false, options = [], value, onChange }) => (
   <Stack direction="row" sx={{ alignItems: "center" }}>
-    <Typography component="label" sx={{ width: "30%", fontSize: 12.25, fontWeight: 500, color: "text.secondary", pr: 0.5 }}>
+    <Typography component="label" sx={{ width: "30%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", pr: 1.5, textAlign: "right" }}>
       {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}{label}
     </Typography>
-    <TextField select name={name} value={value} onChange={onChange}
-      size="small" sx={{ width: "70%", "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
-      <MenuItem value="">Select {label}</MenuItem>
-      {options.map((o, i) => <MenuItem key={i} value={o.value ?? o.label}>{o.label}</MenuItem>)}
-    </TextField>
+    <Box component="select" name={name} value={value} onChange={onChange} sx={{ width: "70%", minWidth: 0, ...fieldBaseSx(false) }}>
+      <option value="">Select {label}</option>
+      {options.map((o, i) => <option key={i} value={o.value ?? o.label}>{o.label}</option>)}
+    </Box>
   </Stack>
 );
 
 const BankBranchField = ({ label, bankName, bankValue, branchName, branchValue, onChange, bankOptions = [] }) => (
   <Stack direction="row" sx={{ alignItems: "center" }}>
-    <Typography component="label" sx={{ width: "30%", fontSize: 12.25, fontWeight: 500, color: "text.secondary", pr: 0.5 }}>{label}</Typography>
+    <Typography component="label" sx={{ width: "30%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", pr: 1.5, textAlign: "right" }}>{label}</Typography>
     <Stack direction="row" sx={{ width: "70%", gap: 0.5 }}>
-      <TextField select name={bankName} value={bankValue} onChange={onChange}
-        size="small" sx={{ width: "50%", "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
-        <MenuItem value="">Select Bank</MenuItem>
-        {bankOptions.map((o, i) => <MenuItem key={i} value={o.value ?? o.label}>{o.label}</MenuItem>)}
-      </TextField>
-      <TextField type="text" name={branchName} value={branchValue} onChange={onChange} placeholder="Branch"
-        size="small" sx={{ width: "50%", "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }} />
+      <Box component="select" name={bankName} value={bankValue} onChange={onChange} sx={{ width: "50%", minWidth: 0, ...fieldBaseSx(false) }}>
+        <option value="">Select Bank</option>
+        {bankOptions.map((o, i) => <option key={i} value={o.value ?? o.label}>{o.label}</option>)}
+      </Box>
+      <Box component="input" type="text" name={branchName} value={branchValue} onChange={onChange} placeholder="Branch" sx={{ width: "50%", minWidth: 0, ...fieldBaseSx(false) }} />
     </Stack>
   </Stack>
 );
 
 const DualTextFieldRight = ({ label, name1, value1, name2, value2, onChange, placeholder1 = "", placeholder2 = "" }) => (
   <Stack direction="row" sx={{ alignItems: "center" }}>
-    <Typography component="label" sx={{ width: "30%", fontSize: 12.25, fontWeight: 500, color: "text.secondary", pr: 0.5 }}>{label}</Typography>
+    <Typography component="label" sx={{ width: "30%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", pr: 1.5, textAlign: "right" }}>{label}</Typography>
     <Stack direction="row" sx={{ width: "70%", gap: 0.5 }}>
-      <TextField type="text" name={name1} value={value1} onChange={onChange} placeholder={placeholder1}
-        size="small" sx={{ width: "50%", "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }} />
-      <TextField type="text" name={name2} value={value2} onChange={onChange} placeholder={placeholder2}
-        size="small" sx={{ width: "50%", "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }} />
+      <Box component="input" type="text" name={name1} value={value1} onChange={onChange} placeholder={placeholder1} sx={{ width: "50%", minWidth: 0, ...fieldBaseSx(false) }} />
+      <Box component="input" type="text" name={name2} value={value2} onChange={onChange} placeholder={placeholder2} sx={{ width: "50%", minWidth: 0, ...fieldBaseSx(false) }} />
     </Stack>
   </Stack>
 );
 
 const MsmeRow = ({ label, inputName, selectName, inputValue, selectValue, onChange, groupOptions = [] }) => (
   <Stack direction="row" sx={{ alignItems: "center" }}>
-    <Typography component="label" sx={{ width: "30%", fontSize: 12.25, fontWeight: 500, color: "text.secondary", pr: 0.5 }}>{label}</Typography>
+    <Typography component="label" sx={{ width: "30%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", pr: 1.5, textAlign: "right" }}>{label}</Typography>
     <Stack direction="row" sx={{ width: "70%", gap: 0.5 }}>
-      <TextField type="text" name={inputName} value={inputValue} onChange={onChange}
-        size="small" sx={{ width: "50%", "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }} />
-      <TextField select name={selectName} value={selectValue} onChange={onChange}
-        size="small" sx={{ width: "50%", "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
-        <MenuItem value="">Select Group</MenuItem>
-        {groupOptions.map((o, i) => <MenuItem key={i} value={o.value ?? o.label}>{o.label}</MenuItem>)}
-      </TextField>
+      <Box component="input" type="text" name={inputName} value={inputValue} onChange={onChange} sx={{ width: "50%", minWidth: 0, ...fieldBaseSx(false) }} />
+      <Box component="select" name={selectName} value={selectValue} onChange={onChange} sx={{ width: "50%", minWidth: 0, ...fieldBaseSx(false) }}>
+        <option value="">Select Group</option>
+        {groupOptions.map((o, i) => <option key={i} value={o.value ?? o.label}>{o.label}</option>)}
+      </Box>
     </Stack>
   </Stack>
 );
 
 const RenamedRow = ({ label, name, checked, selectName, selectValue, onChange, options = [] }) => (
   <Stack direction="row" sx={{ alignItems: "center" }}>
-    <Stack component="label" direction="row" sx={{ width: "30%", fontSize: 12.25, fontWeight: 500, color: "text.secondary", pr: 0.5, alignItems: "center" }}>
-      <Checkbox name={name} checked={checked} onChange={onChange} size="small" sx={{ p: 0, mr: 1 }} />
+    <Stack component="label" direction="row" sx={{ width: "30%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", pr: 1.5, alignItems: "center" }}>
+      <Box component="input" type="checkbox" name={name} checked={checked} onChange={onChange} sx={{ width: 14, height: 14, m: 0, mr: 1, accentColor: "#2563eb" }} />
       {label}
     </Stack>
-    <TextField select name={selectName} value={selectValue} onChange={onChange} disabled={!checked}
-      size="small" sx={{ width: "70%", "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
-      <MenuItem value="">Select Renamed</MenuItem>
-      {options.map((o, i) => <MenuItem key={i} value={o.value ?? o.label}>{o.label}</MenuItem>)}
-    </TextField>
+    <Box component="select" name={selectName} value={selectValue} onChange={onChange} disabled={!checked} sx={{ width: "70%", minWidth: 0, ...fieldBaseSx(!checked) }}>
+      <option value="">Select Renamed</option>
+      {options.map((o, i) => <option key={i} value={o.value ?? o.label}>{o.label}</option>)}
+    </Box>
   </Stack>
 );
 
 const ComplexInputRow = ({ label1, unit1, name1, unit2, name2, label2, value1, value2, onChange }) => (
   <Stack direction="row" sx={{ alignItems: "center" }}>
-    <Typography component="label" sx={{ width: "30%", fontSize: 12.25, fontWeight: 500, color: "text.secondary", pr: 0.5 }}>{label1}</Typography>
+    <Typography component="label" sx={{ width: "30%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", pr: 1.5, textAlign: "right" }}>{label1}</Typography>
     <Typography component="span" sx={{ width: "10%", fontSize: 10.5, color: "text.secondary", pr: 0.5 }}>{unit1}</Typography>
-    <TextField type="text" name={name1} value={value1} onChange={onChange}
-      size="small" sx={{ width: "20%", "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75, textAlign: "right" } }} />
+    <Box component="input" type="text" name={name1} value={value1} onChange={onChange} sx={{ width: "20%", minWidth: 0, ...fieldBaseSx(false), textAlign: "right" }} />
     <Typography component="span" sx={{ width: "10%", fontSize: 10.5, color: "text.secondary", textAlign: "center" }}>{label2}</Typography>
-    <TextField type="text" name={name2} value={value2} onChange={onChange}
-      size="small" sx={{ width: "20%", "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75, textAlign: "right" } }} />
+    <Box component="input" type="text" name={name2} value={value2} onChange={onChange} sx={{ width: "20%", minWidth: 0, ...fieldBaseSx(false), textAlign: "right" }} />
     <Typography component="span" sx={{ width: "10%", fontSize: 10.5, color: "text.secondary", textAlign: "left", pl: 0.5 }}>{unit2}</Typography>
   </Stack>
 );
 
 const CheckboxRow = ({ mainLabel, label1, name1, label2, name2, value1, value2, onChange }) => (
   <Stack direction="row" sx={{ alignItems: "center" }}>
-    <Typography component="label" sx={{ width: "30%", fontSize: 12.25, fontWeight: 500, color: "text.secondary", pr: 0.5 }}>{mainLabel}</Typography>
+    <Typography component="label" sx={{ width: "30%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", pr: 1.5, textAlign: "right" }}>{mainLabel}</Typography>
     <Stack direction="row" sx={{ width: "30%", alignItems: "center", gap: 0.5 }}>
       <Typography component="span" sx={{ fontSize: 10.5, color: "text.secondary" }}>{label1}</Typography>
-      <Checkbox name={name1} checked={value1} onChange={onChange} size="small" sx={{ p: 0 }} />
+      <Box component="input" type="checkbox" name={name1} checked={value1} onChange={onChange} sx={{ width: 14, height: 14, m: 0, accentColor: "#2563eb" }} />
     </Stack>
     <Stack direction="row" sx={{ width: "40%", alignItems: "center", gap: 0.5 }}>
       <Typography component="span" sx={{ fontSize: 10.5, color: "text.secondary" }}>{label2}</Typography>
       {name2.includes("limit") ? (
-        <TextField type="text" name={name2} value={value2} onChange={onChange}
-          size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }} />
+        <Box component="input" type="text" name={name2} value={value2} onChange={onChange} sx={{ width: "100%", minWidth: 0, ...fieldBaseSx(false) }} />
       ) : (
-        <Checkbox name={name2} checked={value2} onChange={onChange} size="small" sx={{ p: 0 }} />
+        <Box component="input" type="checkbox" name={name2} checked={value2} onChange={onChange} sx={{ width: 14, height: 14, m: 0, accentColor: "#2563eb" }} />
       )}
     </Stack>
   </Stack>
@@ -230,48 +221,44 @@ const CheckboxRow = ({ mainLabel, label1, name1, label2, name2, value1, value2, 
 
 const BottomCheckboxGroup = ({ label, name, checked, onChange }) => (
   <Stack component="label" direction="row" sx={{ alignItems: "center", gap: 1, fontSize: 12.25, color: "text.secondary", width: "33.33%" }}>
-    <Checkbox name={name} checked={checked} onChange={onChange} size="small" sx={{ p: 0 }} />
+    <Box component="input" type="checkbox" name={name} checked={checked} onChange={onChange} sx={{ width: 14, height: 14, m: 0, accentColor: "#2563eb" }} />
     {label}
   </Stack>
 );
 
 const AdvanceTextInput = ({ label, name, required = false, value, onChange, placeholder = "", type = "text" }) => (
   <Stack direction="row" sx={{ alignItems: "center" }}>
-    <Typography component="label" sx={{ width: "35%", fontSize: 12.25, fontWeight: 500, color: "text.secondary", pr: 0.5, textAlign: "left" }}>
+    <Typography component="label" sx={{ width: "35%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", pr: 1.5, textAlign: "right" }}>
       {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}{label}
     </Typography>
-    <TextField type={type} name={name} value={value} onChange={onChange} placeholder={placeholder}
-      size="small" sx={{ width: "65%", "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }} />
+    <Box component="input" type={type} name={name} value={value} onChange={onChange} placeholder={placeholder} sx={{ width: "65%", minWidth: 0, ...fieldBaseSx(false) }} />
   </Stack>
 );
 
 const AdvanceSelectInput = ({ label, name, required = false, options = [], value, onChange }) => (
   <Stack direction="row" sx={{ alignItems: "center" }}>
-    <Typography component="label" sx={{ width: "35%", fontSize: 12.25, fontWeight: 500, color: "text.secondary", pr: 0.5, textAlign: "left" }}>
+    <Typography component="label" sx={{ width: "35%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", pr: 1.5, textAlign: "right" }}>
       {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}{label}
     </Typography>
-    <TextField select name={name} value={value} onChange={onChange}
-      size="small" sx={{ width: "65%", "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
-      <MenuItem value="">Select {label}</MenuItem>
-      {options.map((o, i) => <MenuItem key={i} value={o.value ?? o.label}>{o.label}</MenuItem>)}
-    </TextField>
+    <Box component="select" name={name} value={value} onChange={onChange} sx={{ width: "65%", minWidth: 0, ...fieldBaseSx(false) }}>
+      <option value="">Select {label}</option>
+      {options.map((o, i) => <option key={i} value={o.value ?? o.label}>{o.label}</option>)}
+    </Box>
   </Stack>
 );
 
 const AdvanceDualSelectInput = ({ label, name1, value1, name2, value2, onChange, options1 = [], options2 = [] }) => (
   <Stack direction="row" sx={{ alignItems: "center" }}>
-    <Typography component="label" sx={{ width: "35%", fontSize: 12.25, fontWeight: 500, color: "text.secondary", pr: 0.5, textAlign: "left" }}>{label}</Typography>
+    <Typography component="label" sx={{ width: "35%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", pr: 1.5, textAlign: "right" }}>{label}</Typography>
     <Stack direction="row" sx={{ width: "65%", alignItems: "center", gap: 0.5 }}>
-      <TextField select name={name1} value={value1} onChange={onChange}
-        size="small" sx={{ width: "50%", "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
-        <MenuItem value="">Select State</MenuItem>
-        {options1.map((o, i) => <MenuItem key={i} value={o.value ?? o.label}>{o.label}</MenuItem>)}
-      </TextField>
-      <TextField select name={name2} value={value2} onChange={onChange}
-        size="small" sx={{ width: "50%", "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
-        <MenuItem value="">Select Country</MenuItem>
-        {options2.map((o, i) => <MenuItem key={i} value={o.value ?? o.label}>{o.label}</MenuItem>)}
-      </TextField>
+      <Box component="select" name={name1} value={value1} onChange={onChange} sx={{ width: "50%", minWidth: 0, ...fieldBaseSx(false) }}>
+        <option value="">Select State</option>
+        {options1.map((o, i) => <option key={i} value={o.value ?? o.label}>{o.label}</option>)}
+      </Box>
+      <Box component="select" name={name2} value={value2} onChange={onChange} sx={{ width: "50%", minWidth: 0, ...fieldBaseSx(false) }}>
+        <option value="">Select Country</option>
+        {options2.map((o, i) => <option key={i} value={o.value ?? o.label}>{o.label}</option>)}
+      </Box>
     </Stack>
   </Stack>
 );
@@ -685,22 +672,14 @@ const Supplier = () => {
       <Stack sx={{ gap: 1.5 }}>
         {/* Code / Input Combo */}
         <Stack direction="row" sx={{ alignItems: "center" }}>
-          <Typography component="label" sx={{ width: "50%", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Code</Typography>
-          <Stack direction="row" sx={{ flex: 1, alignItems: "center", ml: 1.5, gap: 1 }}>
-            <TextField select defaultValue="Supplier" size="small" sx={{ width: "33.33%", "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
-                <MenuItem value="Supplier">Supplier</MenuItem>
-                <MenuItem value="Job Worker">Job Worker</MenuItem>
-                <MenuItem value="Agent">Agent</MenuItem>
-            </TextField>
-            <TextField
-              type="text"
-              name="code"
-              value={formData.code}
-              onChange={handleChange}
-              size="small"
-              fullWidth
-              sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
-            />
+          <Typography component="label" sx={LABEL_SX}>Code</Typography>
+          <Stack direction="row" sx={{ flex: 1, minWidth: 0, alignItems: "center", gap: 1 }}>
+            <Box component="select" defaultValue="Supplier" sx={{ width: "33.33%", minWidth: 0, ...fieldBaseSx(false) }}>
+                <option value="Supplier">Supplier</option>
+                <option value="Job Worker">Job Worker</option>
+                <option value="Agent">Agent</option>
+            </Box>
+            <Box component="input" type="text" name="code" value={formData.code} onChange={handleChange} sx={{ width: "100%", minWidth: 0, ...fieldBaseSx(false) }} />
           </Stack>
         </Stack>
 
@@ -843,11 +822,10 @@ const Supplier = () => {
           options={opts.addressTypes} value={formData.advanceAddressType} onChange={handleChange} />
         <AdvanceTextInput label="Contact No" name="advanceContactNo" required value={formData.advanceContactNo} onChange={handleChange} />
         <Stack direction="row">
-          <Typography component="label" sx={{ width: "35%", fontSize: 12.25, fontWeight: 500, color: "text.secondary", pr: 0.5, pt: 0.5, textAlign: "left" }}>
+          <Typography component="label" sx={{ width: "35%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", pr: 1.5, pt: 0.75, textAlign: "right" }}>
             <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>Address
           </Typography>
-          <TextField name="advanceAddress" value={formData.advanceAddress} onChange={handleChange} rows={3} multiline
-            size="small" sx={{ width: "65%", "& .MuiInputBase-input": { fontSize: 12.25 } }} />
+          <Box component="textarea" name="advanceAddress" value={formData.advanceAddress} onChange={handleChange} rows={3} sx={{ width: "65%", minWidth: 0, ...fieldBaseSx(false), height: "auto", py: 0.75, resize: "vertical", fontFamily: "inherit" }} />
         </Stack>
         <AdvanceSelectInput label="City" name="advanceCity" options={opts.cities} value={formData.advanceCity} onChange={handleChange} />
         <AdvanceDualSelectInput label="State / Country"
@@ -855,10 +833,9 @@ const Supplier = () => {
           name2="advanceCountry" value2={formData.advanceCountry}
           onChange={handleChange} options1={opts.states} options2={[]} />
         <Stack direction="row" sx={{ alignItems: "center" }}>
-          <Typography component="label" sx={{ width: "35%", fontSize: 12.25, fontWeight: 500, color: "text.secondary", pr: 0.5, textAlign: "left" }}>Pincode</Typography>
+          <Typography component="label" sx={{ width: "35%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", pr: 1.5, textAlign: "right" }}>Pincode</Typography>
           <Stack direction="row" sx={{ width: "65%", alignItems: "center" }}>
-            <TextField type="text" name="advancePincode" value={formData.advancePincode} onChange={handleChange}
-              size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }} />
+            <Box component="input" type="text" name="advancePincode" value={formData.advancePincode} onChange={handleChange} sx={{ width: "100%", minWidth: 0, ...fieldBaseSx(false) }} />
             <IconButton className="glass-btn glass-btn-primary" sx={{ ml: 0.5, p: 0.75 }} type="button">
               <PlusCircle size={16} />
             </IconButton>
@@ -886,7 +863,7 @@ const Supplier = () => {
         <Stack direction="row" sx={{ alignItems: "center" }}>
           <Box sx={{ flex: 1 }}>
             <Stack direction="row" sx={{ alignItems: "center" }}>
-              <Typography component="label" sx={{ width: "35%", fontSize: 12.25, fontWeight: 500, color: "text.secondary", pr: 0.5, textAlign: "left" }}>Name</Typography>
+              <Typography component="label" sx={{ width: "35%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", pr: 1.5, textAlign: "right" }}>Name</Typography>
               <Box sx={{ width: "65%" }}>
                 <AsyncSearchSelect
                   name="advanceProductName"
@@ -921,7 +898,7 @@ const Supplier = () => {
         <Stack direction="row" sx={{ alignItems: "center" }}>
           <Box sx={{ flex: 1 }}>
             <Stack direction="row" sx={{ alignItems: "center" }}>
-              <Typography component="label" sx={{ width: "35%", fontSize: 12.25, fontWeight: 500, color: "text.secondary", pr: 0.5, textAlign: "left" }}>Name</Typography>
+              <Typography component="label" sx={{ width: "35%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", pr: 1.5, textAlign: "right" }}>Name</Typography>
               <Box sx={{ width: "65%" }}>
                 <AsyncSearchSelect
                   name="advanceBrandName"
@@ -957,8 +934,7 @@ const Supplier = () => {
       {/* COLUMN 3: Remarks & Attachments */}
       <Stack sx={{ gridColumn: "span 1", gap: 1.5 }}>
         <Typography component="h3" sx={{ fontSize: 12.25, fontWeight: 600, color: "error.main" }}>Remarks</Typography>
-        <TextField name="advanceRemarks" value={formData.advanceRemarks} onChange={handleChange} rows={6} multiline
-          size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25 } }} />
+        <Box component="textarea" name="advanceRemarks" value={formData.advanceRemarks} onChange={handleChange} rows={6} sx={{ width: "100%", minWidth: 0, ...fieldBaseSx(false), height: "auto", py: 0.75, resize: "vertical", fontFamily: "inherit" }} />
         <Typography component="h3" sx={{ fontSize: 12.25, fontWeight: 600, color: "error.main", pt: 1.5 }}>File Attachments</Typography>
         <Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
           <Box sx={{ width: "45%" }}>

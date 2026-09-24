@@ -3,8 +3,9 @@ import { ArrowLeft, Pencil, PlusCircle, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import api from "../../api/axios";
-import { Box, Button, Card, Stack, Typography, TextField, MenuItem, IconButton, alpha } from "@mui/material";
+import { Box, Button, Card, Stack, Typography, IconButton, alpha } from "@mui/material";
 import PageHeader from "../../components/PageHeader";
+import { fieldBaseSx } from "../../components/CustomInputs";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import ExportBottomSheet from "../../components/ExportBottomSheet";
@@ -636,214 +637,121 @@ const Product = () => {
                 <Box sx={{ display: "grid", gridTemplateColumns: { sm: "1fr 1fr" }, gap: 1, fontSize: 11 }}>
                   <Box>
                     <Typography component="label" sx={{ display: "block", color: "text.secondary", mb: 0.25 }}>Change Brand</Typography>
-                    <TextField
-                      select
-                      value={bulkEditForm.brandId}
-                      onChange={(e) => handleBulkFieldChange("brandId", e.target.value)}
-                      size="small"
-                      fullWidth
-                      sx={{ "& .MuiInputBase-input": { fontSize: 11, py: 0.5 } }}
-                    >
-                      <MenuItem value="">Select Brand</MenuItem>
+                    <Box component="select" value={bulkEditForm.brandId} onChange={(e) => handleBulkFieldChange("brandId", e.target.value)} sx={{ width: "100%", minWidth: 0, ...fieldBaseSx(false) }}>
+                      <option value="">Select Brand</option>
                       {bulkBrandOptions.map((opt) => (
-                        <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
                       ))}
-                    </TextField>
+                    </Box>
                   </Box>
 
                   <Box>
                     <Typography component="label" sx={{ display: "block", color: "text.secondary", mb: 0.25 }}>Change Purchase Tax</Typography>
-                    <TextField
-                      select
-                      value={bulkEditForm.purchaseTaxId}
-                      onChange={(e) => handleBulkFieldChange("purchaseTaxId", e.target.value)}
-                      size="small"
-                      fullWidth
-                      sx={{ "& .MuiInputBase-input": { fontSize: 11, py: 0.5 } }}
-                    >
-                      <MenuItem value="">Select Purchase Tax</MenuItem>
+                    <Box component="select" value={bulkEditForm.purchaseTaxId} onChange={(e) => handleBulkFieldChange("purchaseTaxId", e.target.value)} sx={{ width: "100%", minWidth: 0, ...fieldBaseSx(false) }}>
+                      <option value="">Select Purchase Tax</option>
                       {bulkTaxOptions.map((opt) => (
-                        <MenuItem key={`p-${opt.value}`} value={opt.value}>{opt.label}</MenuItem>
+                        <option key={`p-${opt.value}`} value={opt.value}>{opt.label}</option>
                       ))}
-                    </TextField>
+                    </Box>
                   </Box>
                   <Box>
                     <Typography component="label" sx={{ display: "block", color: "text.secondary", mb: 0.25 }}>Change Sales Tax</Typography>
-                    <TextField
-                      select
-                      value={bulkEditForm.salesTaxId}
-                      onChange={(e) => handleBulkFieldChange("salesTaxId", e.target.value)}
-                      size="small"
-                      fullWidth
-                      sx={{ "& .MuiInputBase-input": { fontSize: 11, py: 0.5 } }}
-                    >
-                      <MenuItem value="">Select Sales Tax</MenuItem>
+                    <Box component="select" value={bulkEditForm.salesTaxId} onChange={(e) => handleBulkFieldChange("salesTaxId", e.target.value)} sx={{ width: "100%", minWidth: 0, ...fieldBaseSx(false) }}>
+                      <option value="">Select Sales Tax</option>
                       {bulkTaxOptions.map((opt) => (
-                        <MenuItem key={`s-${opt.value}`} value={opt.value}>{opt.label}</MenuItem>
+                        <option key={`s-${opt.value}`} value={opt.value}>{opt.label}</option>
                       ))}
-                    </TextField>
+                    </Box>
                   </Box>
 
                   <Box>
                     <Typography component="label" sx={{ display: "block", color: "text.secondary", mb: 0.25 }}>Change Selling Mode</Typography>
-                    <TextField
-                      select
-                      value={bulkEditForm.sellingMode}
-                      onChange={(e) => handleBulkFieldChange("sellingMode", e.target.value)}
-                      size="small"
-                      fullWidth
-                      sx={{ "& .MuiInputBase-input": { fontSize: 11, py: 0.5 } }}
-                    >
-                      <MenuItem value="">Select Selling Mode</MenuItem>
+                    <Box component="select" value={bulkEditForm.sellingMode} onChange={(e) => handleBulkFieldChange("sellingMode", e.target.value)} sx={{ width: "100%", minWidth: 0, ...fieldBaseSx(false) }}>
+                      <option value="">Select Selling Mode</option>
                       {SELLING_MODE_OPTIONS.map((opt) => (
-                        <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
                       ))}
-                    </TextField>
+                    </Box>
                   </Box>
 
                   <Box>
                     <Typography component="label" sx={{ display: "block", color: "text.secondary", mb: 0.25 }}>Change Barcode Mode</Typography>
-                    <TextField
-                      select
-                      value={bulkEditForm.barcodeMode}
-                      onChange={(e) => handleBulkFieldChange("barcodeMode", e.target.value)}
-                      size="small"
-                      fullWidth
-                      sx={{ "& .MuiInputBase-input": { fontSize: 11, py: 0.5 } }}
-                    >
-                      <MenuItem value="">Select Barcode Mode</MenuItem>
+                    <Box component="select" value={bulkEditForm.barcodeMode} onChange={(e) => handleBulkFieldChange("barcodeMode", e.target.value)} sx={{ width: "100%", minWidth: 0, ...fieldBaseSx(false) }}>
+                      <option value="">Select Barcode Mode</option>
                       {BARCODE_MODE_OPTIONS.map((opt) => (
-                        <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
                       ))}
-                    </TextField>
+                    </Box>
                   </Box>
 
                   <Box>
                     <Typography component="label" sx={{ display: "block", color: "text.secondary", mb: 0.25 }}>Change Barcode Source</Typography>
-                    <TextField
-                      select
-                      value={bulkEditForm.barcodeSource}
-                      onChange={(e) => handleBulkFieldChange("barcodeSource", e.target.value)}
-                      size="small"
-                      fullWidth
-                      sx={{ "& .MuiInputBase-input": { fontSize: 11, py: 0.5 } }}
-                    >
-                      <MenuItem value="">Select Barcode Source</MenuItem>
+                    <Box component="select" value={bulkEditForm.barcodeSource} onChange={(e) => handleBulkFieldChange("barcodeSource", e.target.value)} sx={{ width: "100%", minWidth: 0, ...fieldBaseSx(false) }}>
+                      <option value="">Select Barcode Source</option>
                       {BARCODE_SOURCE_OPTIONS.map((opt) => (
-                        <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
                       ))}
-                    </TextField>
+                    </Box>
                   </Box>
 
                   <Box>
                     <Typography component="label" sx={{ display: "block", color: "text.secondary", mb: 0.25 }}>Change Discount Mode</Typography>
-                    <TextField
-                      select
-                      value={bulkEditForm.discountMode}
-                      onChange={(e) => handleBulkFieldChange("discountMode", e.target.value)}
-                      size="small"
-                      fullWidth
-                      sx={{ "& .MuiInputBase-input": { fontSize: 11, py: 0.5 } }}
-                    >
-                      <MenuItem value="">Select Discount Mode</MenuItem>
+                    <Box component="select" value={bulkEditForm.discountMode} onChange={(e) => handleBulkFieldChange("discountMode", e.target.value)} sx={{ width: "100%", minWidth: 0, ...fieldBaseSx(false) }}>
+                      <option value="">Select Discount Mode</option>
                       {DISCOUNT_MODE_OPTIONS.map((opt) => (
-                        <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
                       ))}
-                    </TextField>
+                    </Box>
                   </Box>
 
                   <Box>
                     <Typography component="label" sx={{ display: "block", color: "text.secondary", mb: 0.25 }}>Change Purchase Plan Mode</Typography>
-                    <TextField
-                      select
-                      value={bulkEditForm.purchasePlanMode}
-                      onChange={(e) => handleBulkFieldChange("purchasePlanMode", e.target.value)}
-                      size="small"
-                      fullWidth
-                      sx={{ "& .MuiInputBase-input": { fontSize: 11, py: 0.5 } }}
-                    >
-                      <MenuItem value="">Select Purchase Plan Mode</MenuItem>
+                    <Box component="select" value={bulkEditForm.purchasePlanMode} onChange={(e) => handleBulkFieldChange("purchasePlanMode", e.target.value)} sx={{ width: "100%", minWidth: 0, ...fieldBaseSx(false) }}>
+                      <option value="">Select Purchase Plan Mode</option>
                       {PURCHASE_PLAN_MODE_OPTIONS.map((opt) => (
-                        <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
                       ))}
-                    </TextField>
+                    </Box>
                   </Box>
 
                   <Box>
                     <Typography component="label" sx={{ display: "block", color: "text.secondary", mb: 0.25 }}>Change Expected Gender</Typography>
-                    <TextField
-                      select
-                      value={bulkEditForm.expectedGender}
-                      onChange={(e) => handleBulkFieldChange("expectedGender", e.target.value)}
-                      size="small"
-                      fullWidth
-                      sx={{ "& .MuiInputBase-input": { fontSize: 11, py: 0.5 } }}
-                    >
-                      <MenuItem value="">Select Expected Gender</MenuItem>
+                    <Box component="select" value={bulkEditForm.expectedGender} onChange={(e) => handleBulkFieldChange("expectedGender", e.target.value)} sx={{ width: "100%", minWidth: 0, ...fieldBaseSx(false) }}>
+                      <option value="">Select Expected Gender</option>
                       {EXPECTED_GENDER_OPTIONS.map((opt) => (
-                        <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
                       ))}
-                    </TextField>
+                    </Box>
                   </Box>
 
                   <Box>
                     <Typography component="label" sx={{ display: "block", color: "text.secondary", mb: 0.25 }}>Change Size Group</Typography>
-                    <TextField
-                      select
-                      value={bulkEditForm.sizeGroupId}
-                      onChange={(e) => handleBulkFieldChange("sizeGroupId", e.target.value)}
-                      size="small"
-                      fullWidth
-                      sx={{ "& .MuiInputBase-input": { fontSize: 11, py: 0.5 } }}
-                    >
-                      <MenuItem value="">Select Size Group</MenuItem>
+                    <Box component="select" value={bulkEditForm.sizeGroupId} onChange={(e) => handleBulkFieldChange("sizeGroupId", e.target.value)} sx={{ width: "100%", minWidth: 0, ...fieldBaseSx(false) }}>
+                      <option value="">Select Size Group</option>
                       {bulkSizeGroupOptions.map((opt) => (
-                        <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
                       ))}
-                    </TextField>
+                    </Box>
                   </Box>
 
                   <Box>
                     <Typography component="label" sx={{ display: "block", color: "text.secondary", mb: 0.25 }}>Change Type</Typography>
-                    <TextField
-                      select
-                      value={bulkEditForm.type}
-                      onChange={(e) => handleBulkFieldChange("type", e.target.value)}
-                      size="small"
-                      fullWidth
-                      sx={{ "& .MuiInputBase-input": { fontSize: 11, py: 0.5 } }}
-                    >
-                      <MenuItem value="">Select Type</MenuItem>
+                    <Box component="select" value={bulkEditForm.type} onChange={(e) => handleBulkFieldChange("type", e.target.value)} sx={{ width: "100%", minWidth: 0, ...fieldBaseSx(false) }}>
+                      <option value="">Select Type</option>
                       {TYPE_OPTIONS.map((opt) => (
-                        <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
                       ))}
-                    </TextField>
+                    </Box>
                   </Box>
 
                   <Box>
                     <Typography component="label" sx={{ display: "block", color: "text.secondary", mb: 0.25 }}>Change Section</Typography>
-                    <TextField
-                      type="text"
-                      value={bulkEditForm.section}
-                      onChange={(e) => handleBulkFieldChange("section", e.target.value)}
-                      placeholder="Section"
-                      size="small"
-                      fullWidth
-                      sx={{ "& .MuiInputBase-input": { fontSize: 11, py: 0.5 } }}
-                    />
+                    <Box component="input" type="text" value={bulkEditForm.section} onChange={(e) => handleBulkFieldChange("section", e.target.value)} placeholder="Section" sx={{ width: "100%", minWidth: 0, ...fieldBaseSx(false) }} />
                   </Box>
 
                   <Box>
                     <Typography component="label" sx={{ display: "block", color: "text.secondary", mb: 0.25 }}>Change HSN</Typography>
-                    <TextField
-                      type="text"
-                      value={bulkEditForm.hsn}
-                      onChange={(e) => handleBulkFieldChange("hsn", e.target.value)}
-                      placeholder="HSN"
-                      size="small"
-                      fullWidth
-                      sx={{ "& .MuiInputBase-input": { fontSize: 11, py: 0.5 } }}
-                    />
+                    <Box component="input" type="text" value={bulkEditForm.hsn} onChange={(e) => handleBulkFieldChange("hsn", e.target.value)} placeholder="HSN" sx={{ width: "100%", minWidth: 0, ...fieldBaseSx(false) }} />
                   </Box>
                 </Box>
 

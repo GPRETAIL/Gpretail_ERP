@@ -10,7 +10,8 @@ import { createGroupFetchers } from "../../utils/serverGrouping";
 // Matches config('pagination.resources.employees.groupable_columns') on the backend.
 const { onFetchGroupSummaries: fetchEmployeeGroupSummaries, onFetchGroupRows: fetchEmployeeGroupRows } =
   createGroupFetchers("/employees", { is_active: "is_active" });
-import { Box, Button, Card, Stack, Typography, TextField, MenuItem, Checkbox, IconButton, Table, TableHead, TableBody, TableRow, TableCell } from "@mui/material";
+import { Box, Button, Card, Stack, Typography, IconButton, Table, TableHead, TableBody, TableRow, TableCell } from "@mui/material";
+import { fieldBaseSx } from "../../components/CustomInputs";
 import PageHeader from "../../components/PageHeader";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import ExportBottomSheet from "../../components/ExportBottomSheet";
@@ -103,48 +104,44 @@ const EMPLOYEE_IMPORT_CONFIG = {
 
 const TextInput = ({ label, name, required = false, value, onChange, placeholder = "", type = "text", disabled = false, sx }) => (
   <Stack direction="row" sx={{ alignItems: "center", ...sx }}>
-    <Typography component="label" sx={{ width: "40%", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>
+    <Typography component="label" sx={{ width: "40%", flexShrink: 0, fontSize: 11.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
       {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}{label}
     </Typography>
-    <Stack direction="row" sx={{ ml: 0.75, flex: 1, alignItems: "center" }}>
-      <TextField type={type} name={name} value={value} onChange={onChange} placeholder={placeholder} disabled={disabled}
-        size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.5 } }} />
+    <Stack direction="row" sx={{ flex: 1, minWidth: 0, alignItems: "center" }}>
+      <Box component="input" type={type} name={name} value={value} onChange={onChange} placeholder={placeholder} disabled={disabled} sx={{ width: "100%", minWidth: 0, ...fieldBaseSx(disabled) }} />
     </Stack>
   </Stack>
 );
 
 const SelectInput = ({ label, name, required = false, options = [], value, onChange, disabled = false, sx }) => (
   <Stack direction="row" sx={{ alignItems: "center", ...sx }}>
-    <Typography component="label" sx={{ width: "40%", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>
+    <Typography component="label" sx={{ width: "40%", flexShrink: 0, fontSize: 11.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
       {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}{label}
     </Typography>
-    <Stack direction="row" sx={{ ml: 0.75, flex: 1, alignItems: "center" }}>
-      <TextField select name={name} value={value} onChange={onChange} disabled={disabled}
-        size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.5 } }}>
-        <MenuItem value="">Select {label}</MenuItem>
-        {options.map((o, i) => <MenuItem key={i} value={o.value ?? o.label}>{o.label}</MenuItem>)}
-      </TextField>
+    <Stack direction="row" sx={{ flex: 1, minWidth: 0, alignItems: "center" }}>
+      <Box component="select" name={name} value={value} onChange={onChange} disabled={disabled} sx={{ width: "100%", minWidth: 0, ...fieldBaseSx(disabled) }}>
+        <option value="">Select {label}</option>
+        {options.map((o, i) => <option key={i} value={o.value ?? o.label}>{o.label}</option>)}
+      </Box>
     </Stack>
   </Stack>
 );
 
 const CheckboxInput = ({ label, name, checked, onChange, disabled = false, sx }) => (
   <Stack direction="row" sx={{ alignItems: "center", ...sx }}>
-    <Typography component="label" sx={{ width: "40%", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>{label}</Typography>
-    <Box sx={{ ml: 0.75, flex: 1 }}>
-      <Checkbox name={name} checked={checked} onChange={onChange} disabled={disabled} size="small" sx={{ p: 0 }} />
+    <Typography component="label" sx={{ width: "40%", flexShrink: 0, fontSize: 11.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>{label}</Typography>
+    <Box sx={{ flex: 1, minWidth: 0 }}>
+      <Box component="input" type="checkbox" name={name} checked={checked} onChange={onChange} disabled={disabled} sx={{ width: 14, height: 14, m: 0, accentColor: "#2563eb" }} />
     </Box>
   </Stack>
 );
 
 const CheckboxWithField = ({ label, checkName, checked, fieldName, fieldValue, onChange, fieldType = "text", fieldPlaceholder = "", sx }) => (
   <Stack direction="row" sx={{ alignItems: "center", ...sx }}>
-    <Typography component="label" sx={{ width: "40%", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>{label}</Typography>
-    <Stack direction="row" sx={{ ml: 0.75, flex: 1, alignItems: "center", gap: 0.75 }}>
-      <Checkbox name={checkName} checked={checked} onChange={onChange} size="small" sx={{ p: 0 }} />
-      <TextField type={fieldType} name={fieldName} value={fieldValue} onChange={onChange} disabled={!checked}
-        placeholder={fieldPlaceholder}
-        size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.5 } }} />
+    <Typography component="label" sx={{ width: "40%", flexShrink: 0, fontSize: 11.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>{label}</Typography>
+    <Stack direction="row" sx={{ flex: 1, minWidth: 0, alignItems: "center", gap: 0.75 }}>
+      <Box component="input" type="checkbox" name={checkName} checked={checked} onChange={onChange} sx={{ width: 14, height: 14, m: 0, accentColor: "#2563eb" }} />
+      <Box component="input" type={fieldType} name={fieldName} value={fieldValue} onChange={onChange} disabled={!checked} placeholder={fieldPlaceholder} sx={{ width: "100%", minWidth: 0, ...fieldBaseSx(!checked) }} />
     </Stack>
   </Stack>
 );
@@ -152,31 +149,29 @@ const CheckboxWithField = ({ label, checkName, checked, fieldName, fieldValue, o
 // Right side text input with narrower label
 const RTextInput = ({ label, name, required = false, value, onChange, placeholder = "", type = "text", disabled = false }) => (
   <Stack direction="row" sx={{ alignItems: "center" }}>
-    <Typography component="label" sx={{ width: "33%", pr: 0.5, fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>
+    <Typography component="label" sx={{ width: "33%", flexShrink: 0, pr: 1.5, fontSize: 11.5, fontWeight: 500, color: "text.secondary", textAlign: "right" }}>
       {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}{label}
     </Typography>
-    <TextField type={type} name={name} value={value} onChange={onChange} placeholder={placeholder} disabled={disabled}
-      size="small" sx={{ width: "67%", "& .MuiInputBase-input": { fontSize: 10.5, py: 0.5 } }} />
+    <Box component="input" type={type} name={name} value={value} onChange={onChange} placeholder={placeholder} disabled={disabled} sx={{ width: "67%", minWidth: 0, ...fieldBaseSx(disabled) }} />
   </Stack>
 );
 
 const RSelectInput = ({ label, name, required = false, options = [], value, onChange, disabled = false }) => (
   <Stack direction="row" sx={{ alignItems: "center" }}>
-    <Typography component="label" sx={{ width: "33%", pr: 0.5, fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>
+    <Typography component="label" sx={{ width: "33%", flexShrink: 0, pr: 1.5, fontSize: 11.5, fontWeight: 500, color: "text.secondary", textAlign: "right" }}>
       {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}{label}
     </Typography>
-    <TextField select name={name} value={value} onChange={onChange} disabled={disabled}
-      size="small" sx={{ width: "67%", "& .MuiInputBase-input": { fontSize: 10.5, py: 0.5 } }}>
-      <MenuItem value="">Select {label}</MenuItem>
-      {options.map((o, i) => <MenuItem key={i} value={o.value ?? o.label}>{o.label}</MenuItem>)}
-    </TextField>
+    <Box component="select" name={name} value={value} onChange={onChange} disabled={disabled} sx={{ width: "67%", minWidth: 0, ...fieldBaseSx(disabled) }}>
+      <option value="">Select {label}</option>
+      {options.map((o, i) => <option key={i} value={o.value ?? o.label}>{o.label}</option>)}
+    </Box>
   </Stack>
 );
 
 const RCheckboxInput = ({ label, name, checked, onChange }) => (
   <Stack direction="row" sx={{ alignItems: "center" }}>
-    <Typography component="label" sx={{ width: "33%", pr: 0.5, fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>{label}</Typography>
-    <Checkbox name={name} checked={checked} onChange={onChange} size="small" sx={{ p: 0 }} />
+    <Typography component="label" sx={{ width: "33%", flexShrink: 0, pr: 1.5, fontSize: 11.5, fontWeight: 500, color: "text.secondary", textAlign: "right" }}>{label}</Typography>
+    <Box component="input" type="checkbox" name={name} checked={checked} onChange={onChange} sx={{ width: 14, height: 14, m: 0, accentColor: "#2563eb" }} />
   </Stack>
 );
 
@@ -606,16 +601,16 @@ const Employee = () => {
       <TextInput label="Referred By" name="referred_by" value={formData.referred_by} onChange={handleChange} />
       <SelectInput label="Leave Encashment" name="leave_encashment" value={formData.leave_encashment} onChange={handleChange} options={LEAVE_ENCASHMENT_OPTIONS} />
       <Stack direction="row" sx={{ alignItems: "center", pt: 0.25, gridColumn: { md: "span 2" } }}>
-        <Typography component="label" sx={{ width: "40%", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>OT / Beta</Typography>
+        <Typography component="label" sx={{ width: "40%", flexShrink: 0, fontSize: 11.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>OT / Beta</Typography>
         <Stack direction="row" sx={{ ml: 0.75, flex: 1, alignItems: "center", gap: 1.5 }}>
           <Stack component="label" direction="row" sx={{ alignItems: "center", gap: 0.5, fontSize: 9.625, color: "text.secondary" }}>
-            <Checkbox name="e_ot" checked={formData.e_ot} onChange={handleChange} size="small" sx={{ p: 0 }} /> E.OT
+            <Box component="input" type="checkbox" name="e_ot" checked={formData.e_ot} onChange={handleChange} sx={{ width: 14, height: 14, m: 0, accentColor: "#2563eb" }} /> E.OT
           </Stack>
           <Stack component="label" direction="row" sx={{ alignItems: "center", gap: 0.5, fontSize: 9.625, color: "text.secondary" }}>
-            <Checkbox name="m_ot" checked={formData.m_ot} onChange={handleChange} size="small" sx={{ p: 0 }} /> M.OT
+            <Box component="input" type="checkbox" name="m_ot" checked={formData.m_ot} onChange={handleChange} sx={{ width: 14, height: 14, m: 0, accentColor: "#2563eb" }} /> M.OT
           </Stack>
           <Stack component="label" direction="row" sx={{ alignItems: "center", gap: 0.5, fontSize: 9.625, color: "text.secondary" }}>
-            <Checkbox name="beta" checked={formData.beta} onChange={handleChange} size="small" sx={{ p: 0 }} /> Beta
+            <Box component="input" type="checkbox" name="beta" checked={formData.beta} onChange={handleChange} sx={{ width: 14, height: 14, m: 0, accentColor: "#2563eb" }} /> Beta
           </Stack>
         </Stack>
       </Stack>
@@ -1248,7 +1243,9 @@ const Employee = () => {
     >
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "repeat(12, 1fr)" }, gap: 2, p: 1.75, flex: 1, minHeight: 0 }}>
         {/* LEFT COLUMN */}
-        <Box sx={{ gridColumn: { xs: "span 12", lg: "span 8" }, pr: { lg: 1 } }}>
+        {/* Scrolls independently like the right column -- the Card is pinned to the viewport height
+            with overflow:hidden, so without this everything below the fold was simply clipped. */}
+        <Box sx={{ gridColumn: { xs: "span 12", lg: "span 8" }, pr: { lg: 1 }, overflowY: "auto", minHeight: 0 }}>
           {renderLeftSide()}
         </Box>
 
@@ -1256,18 +1253,16 @@ const Employee = () => {
         <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, overflowY: "auto", pl: { lg: 1 }, borderLeft: { lg: 1 }, borderColor: "divider", minHeight: 0 }}>
           {/* Tab selector dropdown */}
           <Box sx={{ mb: 1.5 }}>
-            <TextField
-              select
+            <Box
+              component="select"
               value={rightTab}
               onChange={(e) => setRightTab(e.target.value)}
-              size="small"
-              fullWidth
-              sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75, fontWeight: 500 } }}
+              sx={{ width: "100%", minWidth: 0, ...fieldBaseSx(false), fontWeight: 500 }}
             >
               {RIGHT_TABS.map((tab) => (
-                <MenuItem key={tab} value={tab}>{tab}</MenuItem>
+                <option key={tab} value={tab}>{tab}</option>
               ))}
-            </TextField>
+            </Box>
           </Box>
           {renderRightPanel()}
         </Box>
