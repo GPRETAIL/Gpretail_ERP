@@ -8,14 +8,15 @@ import PageSkeleton from "../../components/PageSkeleton";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import AsyncSearchSelect from "../../components/AsyncSearchSelect";
 import { usePrintContext } from "../../context/PrintContext";
+import { muiFieldSx } from "../../theme/formControlSizes";
 import { Box, Stack, Typography, TextField as MuiTextField, MenuItem, Button, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
 
 const SelectField = ({ label, name, value, onChange, options, inline = false, sx }) => (
   <Box sx={{ display: inline ? "flex" : "block", alignItems: inline ? "center" : undefined, gap: inline ? 1 : undefined, ...sx }}>
-    <Typography component="label" sx={inline ? { width: 112, flexShrink: 0, fontSize: 12.25, fontWeight: 500, color: "text.secondary" } : { display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
+    <Typography component="label" sx={inline ? { width: 112, flexShrink: 0, fontSize: 11.5, fontWeight: 500, color: "text.secondary" } : { display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
       {label}
     </Typography>
-    <MuiTextField select name={name} value={value} onChange={onChange} size="small" fullWidth sx={{ flex: inline ? 1 : undefined, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
+    <MuiTextField select name={name} value={value} onChange={onChange} size="small" fullWidth sx={[muiFieldSx, { flex: inline ? 1 : undefined }]}>
       <MenuItem value="">Select</MenuItem>
       {options.map((opt) => (
         <MenuItem key={opt.value} value={opt.value}>
@@ -28,7 +29,7 @@ const SelectField = ({ label, name, value, onChange, options, inline = false, sx
 
 const TextField = ({ label, name, value, onChange, type = "text", placeholder = "", onKeyDown, inline = false, sx }) => (
   <Box sx={{ display: inline ? "flex" : "block", alignItems: inline ? "center" : undefined, gap: inline ? 1 : undefined, ...sx }}>
-    <Typography component="label" sx={inline ? { width: 112, flexShrink: 0, fontSize: 12.25, fontWeight: 500, color: "text.secondary" } : { display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
+    <Typography component="label" sx={inline ? { width: 112, flexShrink: 0, fontSize: 11.5, fontWeight: 500, color: "text.secondary" } : { display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
       {label}
     </Typography>
     <MuiTextField
@@ -40,14 +41,14 @@ const TextField = ({ label, name, value, onChange, type = "text", placeholder = 
       placeholder={placeholder}
       size="small"
       fullWidth
-      sx={{ flex: inline ? 1 : undefined, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
+      sx={[muiFieldSx, { flex: inline ? 1 : undefined }]}
     />
   </Box>
 );
 
 const InlineTextField = ({ label, name, value, onChange, type = "text", placeholder = "", maxWidth }) => (
   <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-    <Typography component="label" sx={{ width: 96, flexShrink: 0, fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>{label}</Typography>
+    <Typography component="label" sx={{ width: 96, flexShrink: 0, fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>{label}</Typography>
     <MuiTextField
       type={type}
       name={name}
@@ -56,7 +57,7 @@ const InlineTextField = ({ label, name, value, onChange, type = "text", placehol
       placeholder={placeholder}
       size="small"
       fullWidth
-      sx={{ maxWidth, "& .MuiInputBase-input": { fontSize: 10.5, py: 0.5 } }}
+      sx={[muiFieldSx, { maxWidth }]}
     />
   </Stack>
 );
@@ -999,7 +1000,7 @@ const PurchaseReturn = () => {
                 {isSupplierMode ? (
                   <>
                     <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-                      <Typography component="label" sx={{ width: 112, flexShrink: 0, fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Supplier</Typography>
+                      <Typography component="label" sx={{ width: 112, flexShrink: 0, fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Supplier</Typography>
                       <Box sx={{ flex: 1 }}>
                         <AsyncSearchSelect
                           name="supplierId"
@@ -1032,7 +1033,7 @@ const PurchaseReturn = () => {
                     />
 
                     <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-                      <Typography component="label" sx={{ width: 112, flexShrink: 0, fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Agent</Typography>
+                      <Typography component="label" sx={{ width: 112, flexShrink: 0, fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Agent</Typography>
                       <Box sx={{ flex: 1 }}>
                         <AsyncSearchSelect
                           name="agentId"
@@ -1358,7 +1359,7 @@ const PurchaseReturn = () => {
                 maxWidth={120}
               />
               <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-                <Typography component="label" sx={{ width: 96, flexShrink: 0, fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Tax</Typography>
+                <Typography component="label" sx={{ width: 96, flexShrink: 0, fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Tax</Typography>
                 <Box sx={{ maxWidth: 180, width: "100%" }}>
                   <AsyncSearchSelect
                     name="taxId"
@@ -1420,7 +1421,7 @@ const PurchaseReturn = () => {
                 <Box component="span" sx={{ fontWeight: 500, color: "text.primary" }}>{tableTotals.gross.toFixed(2)}</Box>
               </Stack>
               <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-                <Typography component="label" sx={{ width: 96, flexShrink: 0, fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Transport</Typography>
+                <Typography component="label" sx={{ width: 96, flexShrink: 0, fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Transport</Typography>
                 <Box sx={{ maxWidth: 180, width: "100%" }}>
                   <AsyncSearchSelect
                     name="transportId"

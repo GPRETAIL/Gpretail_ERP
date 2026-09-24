@@ -3,11 +3,12 @@ import { ArrowLeft, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import useCompanyOptions from "../../utils/useCompanyOptions";
 import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, Radio, alpha } from "@mui/material";
+import { muiFieldSx } from "../../theme/formControlSizes";
 
 // Reusable SelectInput helper component (simplified)
 const SelectInput = ({ label, options, value, onChange, name, isRequired = false }) => (
   <Box sx={{ flex: 1, minWidth: 0 }}>
-    <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>
+    <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>
       {isRequired && (
         <Box component="span" sx={{ color: "error.main", mr: 0.25 }}>
           *
@@ -15,7 +16,7 @@ const SelectInput = ({ label, options, value, onChange, name, isRequired = false
       )}
       {label}
     </Typography>
-    <TextField select name={name} value={value} onChange={onChange} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
+    <TextField select name={name} value={value} onChange={onChange} size="small" fullWidth sx={muiFieldSx}>
       <MenuItem value="">ALL</MenuItem>
       {options.map((option, index) => (
         <MenuItem key={index} value={option.value || option.label}>
@@ -29,12 +30,12 @@ const SelectInput = ({ label, options, value, onChange, name, isRequired = false
 // Input Field helper
 const InputField = ({ label, type = "text", value, onChange, name, isDate = false, isRadio = false }) => (
   <Box>
-    <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary", mb: 0.25 }}>
+    <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.25 }}>
       {label}
     </Typography>
     {isRadio ? (
       <Stack direction="row" spacing={2}>
-        <Stack component="label" direction="row" sx={{ alignItems: "center", fontSize: 12.25, color: "text.secondary" }}>
+        <Stack component="label" direction="row" sx={{ alignItems: "center", fontSize: 11.5, color: "text.secondary" }}>
           <Radio
             name={name}
             value="Warehouse"
@@ -45,7 +46,7 @@ const InputField = ({ label, type = "text", value, onChange, name, isDate = fals
           />
           From Warehouse
         </Stack>
-        <Stack component="label" direction="row" sx={{ alignItems: "center", fontSize: 12.25, color: "text.secondary" }}>
+        <Stack component="label" direction="row" sx={{ alignItems: "center", fontSize: 11.5, color: "text.secondary" }}>
           <Radio
             name={name}
             value="Retail"
@@ -65,7 +66,7 @@ const InputField = ({ label, type = "text", value, onChange, name, isDate = fals
         onChange={onChange}
         size="small"
         fullWidth
-        sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
+        sx={muiFieldSx}
       />
     )}
   </Box>

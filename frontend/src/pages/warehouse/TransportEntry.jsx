@@ -9,10 +9,11 @@ import AsyncSearchSelect from "../../components/AsyncSearchSelect";
 import PageSkeleton from "../../components/PageSkeleton";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import { getMasterLookups } from "../../utils/lookupCache";
+import { muiFieldSx } from "../../theme/formControlSizes";
 import { Box, Stack, Typography, TextField, IconButton, Button, Checkbox, alpha } from "@mui/material";
 
-const transportLabelSx = { display: "block", fontSize: 11, fontWeight: 500, color: "text.secondary" };
-const transportControlSx = { mt: 0.25, "& .MuiInputBase-input": { fontSize: 11, py: 0.5 } };
+const transportLabelSx = { display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" };
+const transportControlSx = { mt: 0.25, ...muiFieldSx };
 
 const TextInput = ({
   label,
@@ -56,7 +57,7 @@ const CheckboxTextInput = ({
     <Typography component="label" sx={transportLabelSx}>{label}</Typography>
     <Stack
       direction="row"
-      sx={{ position: "relative", mt: 0.25, alignItems: "center", height: 32, borderRadius: "1.75px", border: "1px solid", borderColor: "divider", bgcolor: disabled ? "action.hover" : "background.paper" }}
+      sx={{ position: "relative", mt: 0.25, alignItems: "center", height: 30, borderRadius: "2px", border: "1px solid", borderColor: "divider", bgcolor: disabled ? "action.hover" : "background.paper" }}
     >
       <Checkbox
         id={id}
@@ -86,7 +87,7 @@ const CheckboxTextInput = ({
           borderLeftStyle: "solid",
           px: 1,
           py: 0,
-          fontSize: 11,
+          fontSize: 11.5,
           outline: "none",
           bgcolor: disabled || !checked ? "action.hover" : "transparent",
           color: disabled || !checked ? "text.disabled" : "text.primary",

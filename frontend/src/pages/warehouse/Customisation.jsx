@@ -34,10 +34,11 @@ import {
   WAREHOUSE_LABEL_FORMAT_OPTIONS,
 } from "../../utils/warehouseBarcodeCustomization";
 import { Box, Stack, Typography, TextField, MenuItem, Button, Radio, Switch, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
+import { muiFieldSx } from "../../theme/formControlSizes";
 
 const settingsCardSx = { borderRadius: "10.5px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", boxShadow: 1, p: 2.5 };
-const settingsFieldLabelSx = { display: "block", mb: 0.5, fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "text.secondary" };
-const mmFieldSx = { "& .MuiInputBase-input": { fontSize: 12.25, py: 1.25 } };
+const settingsFieldLabelSx = { display: "block", mb: 0.5, fontSize: 11.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "text.secondary" };
+const mmFieldSx = muiFieldSx;
 
 const RadioCell = ({ name, checked, onChange }) => (
   <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -78,7 +79,7 @@ const WarehouseFieldTable = ({
                     onChange={(event) => onPositionChange(row.key, event.target.value)}
                     size="small"
                     fullWidth
-                    sx={{ "& .MuiInputBase-input": { fontSize: 12.25 } }}
+                    sx={muiFieldSx}
                   >
                     {WAREHOUSE_BARCODE_POSITION_OPTIONS.map((option) => (
                       <MenuItem key={option.value} value={option.value}>
@@ -98,7 +99,7 @@ const WarehouseFieldTable = ({
                     onChange={(event) => onPriorityChange(row.key, event.target.value)}
                     size="small"
                     fullWidth
-                    sx={{ "& .MuiInputBase-input": { fontSize: 12.25 } }}
+                    sx={muiFieldSx}
                   />
                 ) : (
                   <Box sx={{ height: 40, borderRadius: "7px", bgcolor: "action.hover" }} />
@@ -677,7 +678,7 @@ export default function WarehouseCustomisation() {
               </Box>
               <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", alignItems: "center" }}>
                 {companyOptions && companyOptions.length > 1 && (
-                  <TextField select value={companyId} onChange={(e) => setCompanyId(e.target.value)} size="small" sx={{ "& .MuiInputBase-input": { fontSize: 12.25 } }}>
+                  <TextField select value={companyId} onChange={(e) => setCompanyId(e.target.value)} size="small" sx={muiFieldSx}>
                     {companyOptions.map((c) => (
                       <MenuItem key={c.value} value={c.value}>
                         {c.label}
@@ -709,7 +710,7 @@ export default function WarehouseCustomisation() {
           </Box>
 
           <Box sx={{ borderRadius: "10.5px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", boxShadow: 1, p: 2.5 }}>
-            <Typography component="label" sx={{ display: "block", mb: 0.5, fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "text.secondary" }}>Use Barcode Or Code</Typography>
+            <Typography component="label" sx={{ display: "block", mb: 0.5, fontSize: 11.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "text.secondary" }}>Use Barcode Or Code</Typography>
             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)" }, gap: 1.5 }}>
               <Box
                 component="button"
@@ -749,7 +750,7 @@ export default function WarehouseCustomisation() {
               </Box>
             </Box>
             <Box sx={{ mt: 2, maxWidth: 320 }}>
-              <Typography component="label" htmlFor="warehouse-code-position" sx={{ display: "block", mb: 0.5, fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "text.secondary" }}>
+              <Typography component="label" htmlFor="warehouse-code-position" sx={{ display: "block", mb: 0.5, fontSize: 11.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "text.secondary" }}>
                 Barcode / QR position
               </Typography>
               <TextField
@@ -758,7 +759,7 @@ export default function WarehouseCustomisation() {
                 value={settings.codePosition || "left"}
                 onChange={(event) => updateSetting({ codePosition: event.target.value })}
                 fullWidth
-                sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 1.25 } }}
+                sx={muiFieldSx}
               >
                 {WAREHOUSE_BARCODE_POSITION_OPTIONS.map((option) => (
                   <MenuItem key={option.value} value={option.value}>
@@ -830,7 +831,7 @@ export default function WarehouseCustomisation() {
                     borderColor: settings.labelFormat === option.value ? "primary.main" : "divider",
                     bgcolor: settings.labelFormat === option.value ? (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08) : "background.paper",
                     color: settings.labelFormat === option.value ? "primary.main" : "text.secondary",
-                    px: 2, py: 1.5, fontSize: 12.25,
+                    px: 2, py: 1.5, fontSize: 11.5,
                   }}
                 >
                   <Stack direction="row" spacing={1} sx={{ alignItems: "center", fontWeight: 500 }}>
@@ -1031,7 +1032,7 @@ export default function WarehouseCustomisation() {
                     value={settings[control.key]}
                     onChange={(event) => updateSetting({ [control.key]: event.target.value })}
                     fullWidth
-                    sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 1.5 } }}
+                    sx={muiFieldSx}
                   />
                 </Box>
               ))}
@@ -1047,7 +1048,7 @@ export default function WarehouseCustomisation() {
                   value={settings.fontFamily}
                   onChange={(event) => updateSetting({ fontFamily: event.target.value })}
                   fullWidth
-                  sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 1.5, fontFamily: metrics.textStyle.fontFamily } }}
+                  sx={[muiFieldSx, { "& .MuiInputBase-input": { fontFamily: metrics.textStyle.fontFamily } }]}
                 >
                   {WAREHOUSE_FONT_FAMILY_OPTIONS.map((option) => (
                     <MenuItem key={option.value} value={option.value}>
@@ -1104,7 +1105,7 @@ export default function WarehouseCustomisation() {
               rows={3}
               fullWidth
               placeholder="No note"
-              sx={{ "& .MuiInputBase-input": { fontSize: 12.25, lineHeight: 1.6 } }}
+              sx={muiFieldSx}
             />
           </Box>
 

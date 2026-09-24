@@ -7,6 +7,7 @@ import PageSkeleton from "../../components/PageSkeleton";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import AsyncSearchSelect from "../../components/AsyncSearchSelect";
 import { Box, Stack, Typography, TextField, IconButton, Button, Checkbox, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
+import { muiFieldSx } from "../../theme/formControlSizes";
 
 const SKY = "#0284c7";
 
@@ -320,12 +321,12 @@ const TransportReceipt = () => {
 
             <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 2 }}>
               <Box component="label" sx={{ display: "block" }}>
-                <Typography component="span" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>Receipt Number</Typography>
-                <TextField value={form.receiptNumber} slotProps={{ input: { readOnly: true } }} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25 }, "& .MuiOutlinedInput-root": { bgcolor: "action.hover" } }} />
+                <Typography component="span" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>Receipt Number</Typography>
+                <TextField value={form.receiptNumber} slotProps={{ input: { readOnly: true } }} size="small" fullWidth sx={[muiFieldSx, { "& .MuiOutlinedInput-root": { bgcolor: "action.hover" } }]} />
               </Box>
               <Box component="label" sx={{ display: "block" }}>
-                <Typography component="span" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>Received On</Typography>
-                <TextField type="date" value={form.receivedOn} onChange={(e) => handleFieldChange("receivedOn", e.target.value)} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25 } }} />
+                <Typography component="span" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>Received On</Typography>
+                <TextField type="date" value={form.receivedOn} onChange={(e) => handleFieldChange("receivedOn", e.target.value)} size="small" fullWidth sx={muiFieldSx} />
               </Box>
             </Box>
 
@@ -336,7 +337,7 @@ const TransportReceipt = () => {
 
             <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 2 }}>
               <Box>
-                <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>Received By</Typography>
+                <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>Received By</Typography>
                 <AsyncSearchSelect
                   name="receivedById"
                   value={form.receivedById}
@@ -352,12 +353,12 @@ const TransportReceipt = () => {
 
             <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 2 }}>
               <Box component="label" sx={{ display: "block" }}>
-                <Typography component="span" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>Security Inward No</Typography>
-                <TextField value={form.securityInwardNo} onChange={(e) => handleFieldChange("securityInwardNo", e.target.value)} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25 } }} />
+                <Typography component="span" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>Security Inward No</Typography>
+                <TextField value={form.securityInwardNo} onChange={(e) => handleFieldChange("securityInwardNo", e.target.value)} size="small" fullWidth sx={muiFieldSx} />
               </Box>
               <Box component="label" sx={{ display: "block" }}>
-                <Typography component="span" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>Security Inward Date</Typography>
-                <TextField type="date" value={form.securityInwardDate} onChange={(e) => handleFieldChange("securityInwardDate", e.target.value)} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25 } }} />
+                <Typography component="span" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>Security Inward Date</Typography>
+                <TextField type="date" value={form.securityInwardDate} onChange={(e) => handleFieldChange("securityInwardDate", e.target.value)} size="small" fullWidth sx={muiFieldSx} />
               </Box>
             </Box>
 
@@ -384,7 +385,7 @@ const TransportReceipt = () => {
                 onPaidChange={(checked) => handleFieldChange("freightChargePaid", checked)}
               />
               <Box component="label" sx={{ display: "block" }}>
-                <Typography component="span" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>Other Charges</Typography>
+                <Typography component="span" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>Other Charges</Typography>
                 <TextField
                   type="number"
                   slotProps={{ htmlInput: { step: "0.01" } }}
@@ -392,7 +393,7 @@ const TransportReceipt = () => {
                   onChange={(e) => handleFieldChange("otherCharges", e.target.value)}
                   size="small"
                   fullWidth
-                  sx={{ "& .MuiInputBase-input": { fontSize: 12.25, textAlign: "right" } }}
+                  sx={[muiFieldSx, { "& .MuiInputBase-input": { textAlign: "right" } }]}
                 />
               </Box>
               <Metric label="Total Charges" value={toCurrency(form.totalCharges)} />
@@ -476,13 +477,13 @@ const TransportReceipt = () => {
 const Metric = ({ label, value }) => (
   <Box>
     <Typography sx={{ fontSize: 10.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>{label}</Typography>
-    <TextField value={value} slotProps={{ input: { readOnly: true } }} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25 }, "& .MuiOutlinedInput-root": { bgcolor: "action.hover" } }} />
+    <TextField value={value} slotProps={{ input: { readOnly: true } }} size="small" fullWidth sx={[muiFieldSx, { "& .MuiOutlinedInput-root": { bgcolor: "action.hover" } }]} />
   </Box>
 );
 
 const EditableMetric = ({ label, value, onChange }) => (
   <Box component="label" sx={{ display: "block" }}>
-    <Typography component="span" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>{label}</Typography>
+    <Typography component="span" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>{label}</Typography>
     <TextField
       type="number"
       slotProps={{ htmlInput: { step: "0.01" } }}
@@ -490,7 +491,7 @@ const EditableMetric = ({ label, value, onChange }) => (
       onChange={(e) => onChange(e.target.value)}
       size="small"
       fullWidth
-      sx={{ "& .MuiInputBase-input": { fontSize: 12.25, textAlign: "right" } }}
+      sx={[muiFieldSx, { "& .MuiInputBase-input": { textAlign: "right" } }]}
     />
   </Box>
 );
@@ -507,10 +508,10 @@ const ChargeRow = ({ label, amount, paid, onAmountChange, onPaidChange }) => (
         onChange={(e) => onAmountChange(e.target.value)}
         size="small"
         fullWidth
-        sx={{ "& .MuiInputBase-input": { fontSize: 12.25, textAlign: "right" } }}
+        sx={[muiFieldSx, { "& .MuiInputBase-input": { textAlign: "right" } }]}
       />
     </Box>
-    <Stack component="label" direction="row" spacing={0.75} sx={{ alignItems: "center", pb: 1, fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>
+    <Stack component="label" direction="row" spacing={0.75} sx={{ alignItems: "center", pb: 1, fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>
       <Checkbox
         checked={paid}
         onChange={(e) => onPaidChange(e.target.checked)}

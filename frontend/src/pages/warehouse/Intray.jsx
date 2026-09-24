@@ -3,6 +3,7 @@ import { ArrowLeft, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import useCompanyOptions from "../../utils/useCompanyOptions";
 import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, alpha } from "@mui/material";
+import { muiFieldSx } from "../../theme/formControlSizes";
 
 // Mock data structure for the list
 const mockEntries = [
@@ -100,10 +101,10 @@ const Intray = () => {
         <Stack direction="row" spacing={2} sx={{ alignItems: "flex-end" }}>
           {/* Type Filter */}
           <Box sx={{ flex: 1, maxWidth: 200 }}>
-            <Typography component="label" sx={{ display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>
+            <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>
               Type
             </Typography>
-            <TextField select name="type" value={filters.type} onChange={handleFilterChange} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
+            <TextField select name="type" value={filters.type} onChange={handleFilterChange} size="small" fullWidth sx={muiFieldSx}>
               {typeOptions.map((option) => (
                 <MenuItem key={option.value} value={option.value}>
                   {option.label}
@@ -114,10 +115,10 @@ const Intray = () => {
 
           {/* Company Filter */}
           <Box sx={{ flex: 1, maxWidth: 200 }}>
-            <Typography component="label" sx={{ display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>
+            <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>
               Company
             </Typography>
-            <TextField select name="company" value={filters.company} onChange={handleFilterChange} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
+            <TextField select name="company" value={filters.company} onChange={handleFilterChange} size="small" fullWidth sx={muiFieldSx}>
               {companyOptions.map((option) => (
                 <MenuItem key={option.value} value={option.value}>
                   {option.label}
@@ -128,10 +129,10 @@ const Intray = () => {
 
           {/* Status Filter */}
           <Box sx={{ flex: 1, maxWidth: 200 }}>
-            <Typography component="label" sx={{ display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>
+            <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>
               Status
             </Typography>
-            <TextField select name="status" value={filters.status} onChange={handleFilterChange} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
+            <TextField select name="status" value={filters.status} onChange={handleFilterChange} size="small" fullWidth sx={muiFieldSx}>
               {statusOptions.map((option) => (
                 <MenuItem key={option.value} value={option.value}>
                   {option.label}
@@ -142,10 +143,10 @@ const Intray = () => {
 
           {/* Date Filter (as date range or single date) */}
           <Box sx={{ flex: 1, maxWidth: 200 }}>
-            <Typography component="label" sx={{ display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>
+            <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>
               Date
             </Typography>
-            <TextField type="date" name="date" value={filters.date} onChange={handleFilterChange} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }} />
+            <TextField type="date" name="date" value={filters.date} onChange={handleFilterChange} size="small" fullWidth sx={muiFieldSx} />
           </Box>
 
           {/* Search Button */}

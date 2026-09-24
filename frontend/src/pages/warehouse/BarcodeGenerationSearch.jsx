@@ -3,6 +3,7 @@ import { ArrowLeft, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import useCompanyOptions from "../../utils/useCompanyOptions";
 import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, alpha } from "@mui/material";
+import { muiFieldSx } from "../../theme/formControlSizes";
 
 // Mock Data for Intray results
 const mockIntrayResults = [
@@ -35,10 +36,10 @@ const mockIntrayResults = [
 // Reusable SelectInput helper component (simplified)
 const SelectInput = ({ label, options, value, onChange, name, sx }) => (
   <Box sx={{ flex: 1, minWidth: 0, maxWidth: 150, ...sx }}>
-    <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>
+    <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>
       {label}
     </Typography>
-    <TextField select name={name} value={value} onChange={onChange} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
+    <TextField select name={name} value={value} onChange={onChange} size="small" fullWidth sx={muiFieldSx}>
       <MenuItem value="ALL">ALL</MenuItem>
       {options.map((option, index) => (
         <MenuItem key={index} value={option.value || option.label}>
@@ -168,10 +169,10 @@ const BarcodeGenerationSearch = () => {
 
           {/* Date Filter */}
           <Box sx={{ flex: 1, maxWidth: 150 }}>
-            <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>
+            <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>
               Date
             </Typography>
-            <TextField type="date" name="date" value={filters.date} onChange={handleFilterChange} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }} />
+            <TextField type="date" name="date" value={filters.date} onChange={handleFilterChange} size="small" fullWidth sx={muiFieldSx} />
           </Box>
 
           {/* Search Button */}
@@ -191,25 +192,25 @@ const BarcodeGenerationSearch = () => {
           <Box sx={{ width: 80 }}>Action</Box>
         </Stack>
         <Stack direction="row" spacing={1} sx={{ fontSize: 12.25, mt: 0.5 }}>
-          <TextField size="small" sx={{ width: 100, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.5 } }} />
-          <TextField size="small" sx={{ width: 150, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.5 } }} />
+          <TextField size="small" sx={[muiFieldSx, { width: 100 }]} />
+          <TextField size="small" sx={[muiFieldSx, { width: 150 }]} />
           <TextField
             name="descriptionSearch"
             value={filters.descriptionSearch}
             onChange={handleFilterChange}
             size="small"
             fullWidth
-            sx={{ flexGrow: 1, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.5 } }}
+            sx={[muiFieldSx, { flexGrow: 1 }]}
           />
           <TextField
             name="createdBySearch"
             value={filters.createdBySearch}
             onChange={handleFilterChange}
             size="small"
-            sx={{ width: 120, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.5 } }}
+            sx={[muiFieldSx, { width: 120 }]}
           />
-          <TextField size="small" sx={{ width: 120, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.5 } }} />
-          <TextField size="small" sx={{ width: 100, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.5 } }} />
+          <TextField size="small" sx={[muiFieldSx, { width: 120 }]} />
+          <TextField size="small" sx={[muiFieldSx, { width: 100 }]} />
           <Box
             sx={(theme) => ({
               width: 80,

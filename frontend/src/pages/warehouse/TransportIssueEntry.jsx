@@ -7,6 +7,7 @@ import PageSkeleton from "../../components/PageSkeleton";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import AsyncSearchSelect from "../../components/AsyncSearchSelect";
 import { Box, Stack, Typography, TextField, IconButton, Button, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
+import { muiFieldSx } from "../../theme/formControlSizes";
 
 const SKY = "#0284c7";
 const SKY_HOVER = "#0369a1";
@@ -303,15 +304,15 @@ const TransportIssueEntry = () => {
                 <Typography sx={{ mt: 0.5, fontSize: 21, fontWeight: 600, color: "error.main" }}>{form.companyName}</Typography>
               </Box>
               <Box component="label" sx={{ display: "block" }}>
-                <Typography component="span" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
+                <Typography component="span" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
                   <Box component="span" sx={{ color: "error.main" }}>*</Box> Issue Number
                 </Typography>
-                <TextField value={form.issueNumber} slotProps={{ input: { readOnly: true } }} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25 }, "& .MuiOutlinedInput-root": { bgcolor: "action.hover" } }} />
+                <TextField value={form.issueNumber} slotProps={{ input: { readOnly: true } }} size="small" fullWidth sx={[muiFieldSx, { "& .MuiOutlinedInput-root": { bgcolor: "action.hover" } }]} />
               </Box>
             </Box>
 
             <Box>
-              <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
+              <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
                 <Box component="span" sx={{ color: "error.main" }}>*</Box> Collected By
               </Typography>
               <AsyncSearchSelect
@@ -326,7 +327,7 @@ const TransportIssueEntry = () => {
             </Box>
 
             <Box>
-              <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
+              <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
                 <Box component="span" sx={{ color: "error.main" }}>*</Box> Issue Date
               </Typography>
               <TextField
@@ -335,7 +336,7 @@ const TransportIssueEntry = () => {
                 onChange={(e) => handleFieldChange("issueDate", e.target.value)}
                 size="small"
                 fullWidth
-                sx={{ "& .MuiInputBase-input": { fontSize: 12.25 } }}
+                sx={muiFieldSx}
               />
             </Box>
 
@@ -352,7 +353,7 @@ const TransportIssueEntry = () => {
 
             <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 2 }}>
               <Box>
-                <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
+                <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
                   <Box component="span" sx={{ color: "error.main" }}>*</Box> LR Number
                 </Typography>
                 <Stack direction="row">
@@ -361,7 +362,7 @@ const TransportIssueEntry = () => {
                     onChange={(e) => handleFieldChange("lrNumber", e.target.value)}
                     size="small"
                     fullWidth
-                    sx={{ "& .MuiInputBase-input": { fontSize: 12.25 }, "& .MuiOutlinedInput-root": { borderTopRightRadius: 0, borderBottomRightRadius: 0 } }}
+                    sx={[muiFieldSx, { "& .MuiOutlinedInput-root": { borderTopRightRadius: 0, borderBottomRightRadius: 0 } }]}
                   />
                   <IconButton
                     type="button"
@@ -373,7 +374,7 @@ const TransportIssueEntry = () => {
                 </Stack>
               </Box>
               <Box>
-                <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
+                <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
                   <Box component="span" sx={{ color: "error.main" }}>*</Box> Entry Number
                 </Typography>
                 <Stack direction="row">
@@ -382,7 +383,7 @@ const TransportIssueEntry = () => {
                     onChange={(e) => handleFieldChange("entryNumber", e.target.value)}
                     size="small"
                     fullWidth
-                    sx={{ "& .MuiInputBase-input": { fontSize: 12.25 }, "& .MuiOutlinedInput-root": { borderTopRightRadius: 0, borderBottomRightRadius: 0 } }}
+                    sx={[muiFieldSx, { "& .MuiOutlinedInput-root": { borderTopRightRadius: 0, borderBottomRightRadius: 0 } }]}
                   />
                   <IconButton
                     type="button"
@@ -493,7 +494,7 @@ const TransportIssueEntry = () => {
 const Metric = ({ label, value }) => (
   <Box>
     <Typography sx={{ fontSize: 10.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>{label}</Typography>
-    <TextField value={value} slotProps={{ input: { readOnly: true } }} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25 }, "& .MuiOutlinedInput-root": { bgcolor: "action.hover" } }} />
+    <TextField value={value} slotProps={{ input: { readOnly: true } }} size="small" fullWidth sx={[muiFieldSx, { "& .MuiOutlinedInput-root": { bgcolor: "action.hover" } }]} />
   </Box>
 );
 

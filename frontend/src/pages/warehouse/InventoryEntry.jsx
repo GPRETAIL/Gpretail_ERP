@@ -9,6 +9,7 @@ import Breadcrumbs from "../../components/Breadcrumbs";
 import AsyncSearchSelect from "../../components/AsyncSearchSelect";
 import { buildSizeSelectOptions } from "../../utils/sizeSelectOptions";
 import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, Checkbox, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
+import { muiFieldSx, SEARCHABLE_TRIGGER_SX } from "../../theme/formControlSizes";
 
 // ─── Reusable sub-components (defined OUTSIDE to prevent focus loss) ────────
 
@@ -164,7 +165,7 @@ const AttrSelect = ({
         <Typography
           component="label"
           sx={stacked
-            ? { display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }
+            ? { display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }
             : { width: 112, fontSize: 12.25, fontWeight: 500, color: "text.secondary", flexShrink: 0 }}
         >
           {required && <Box component="span" sx={{ color: "error.main" }}>* </Box>}
@@ -176,7 +177,7 @@ const AttrSelect = ({
           value={value}
           onChange={onChange}
           size="small"
-          sx={{ ...(stacked ? { width: "100%" } : { flex: 1 }), "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
+          sx={[muiFieldSx, { ...(stacked ? { width: "100%" } : { flex: 1 }) }]}
         >
           <MenuItem value="">Select...</MenuItem>
           {options.map((opt) => (
@@ -198,7 +199,7 @@ const AttrSelect = ({
       <Typography
         component="label"
         sx={stacked
-          ? { display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }
+          ? { display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }
           : { width: 112, fontSize: 12.25, fontWeight: 500, color: "text.secondary", flexShrink: 0 }}
       >
         {required && <Box component="span" sx={{ color: "error.main" }}>* </Box>}
@@ -220,7 +221,7 @@ const AttrSelect = ({
               setHighlightedIndex(-1);
             }
           }}
-          sx={{ width: "100%", border: "1px solid", borderColor: "divider", borderRadius: "3.5px", px: 1, py: 0.5, fontSize: 12.25, bgcolor: "background.paper", textAlign: "left", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }}
+          sx={{ width: "100%", border: "1px solid", borderColor: "divider", borderRadius: "2px", bgcolor: "background.paper", textAlign: "left", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", ...SEARCHABLE_TRIGGER_SX }}
         >
           <Box component="span" sx={{ color: selectedLabel ? "text.primary" : "text.disabled", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {selectedLabel || "Select..."}
@@ -293,7 +294,7 @@ const AttrText = ({
     <Typography
       component="label"
       sx={stacked
-        ? { display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }
+        ? { display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }
         : { width: 112, fontSize: 12.25, fontWeight: 500, color: "text.secondary", flexShrink: 0 }}
     >
       {required && <Box component="span" sx={{ color: "error.main" }}>* </Box>}
@@ -305,7 +306,7 @@ const AttrText = ({
       onChange={onChange}
       placeholder={placeholder}
       size="small"
-      sx={{ ...(stacked ? { width: "100%" } : { flex: 1 }), "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
+      sx={[muiFieldSx, { ...(stacked ? { width: "100%" } : { flex: 1 }) }]}
     />
   </Box>
 );
@@ -462,7 +463,7 @@ const SearchableSizeSelect = ({ value, onChange, sizes, sizeGroups, onJump }) =>
             setHighlightedIndex(-1);
           }
         }}
-        sx={{ width: "100%", border: "1px solid", borderColor: "divider", borderRadius: "3.5px", px: 0.5, py: 0.5, fontSize: 12.25, bgcolor: "background.paper", textAlign: "left", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }}
+        sx={{ width: "100%", border: "1px solid", borderColor: "divider", borderRadius: "2px", bgcolor: "background.paper", textAlign: "left", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", ...SEARCHABLE_TRIGGER_SX }}
       >
         <Box component="span" sx={{ color: selectedLabel ? "text.primary" : "text.disabled", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {selectedLabel || "Size..."}
@@ -604,7 +605,7 @@ const JumpSizeDialog = ({ open, onClose, onApply, defaultQty }) => {
           {/* Input Row: Start - Increment - End */}
           <Stack direction="row" spacing={1}>
             <Box sx={{ flex: 1 }}>
-              <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>Start</Typography>
+              <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Start</Typography>
               <TextField
                 type="number"
                 value={start}
@@ -612,12 +613,12 @@ const JumpSizeDialog = ({ open, onClose, onApply, defaultQty }) => {
                 size="small"
                 fullWidth
                 placeholder="e.g. 10"
-                sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
+                sx={muiFieldSx}
               />
             </Box>
             <Box sx={{ display: "flex", alignItems: "flex-end", pb: 0.5, color: "text.disabled", fontWeight: 700 }}>-</Box>
             <Box sx={{ flex: 1 }}>
-              <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>Increment</Typography>
+              <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Increment</Typography>
               <TextField
                 type="number"
                 value={increment}
@@ -625,12 +626,12 @@ const JumpSizeDialog = ({ open, onClose, onApply, defaultQty }) => {
                 size="small"
                 fullWidth
                 placeholder="e.g. 2"
-                sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
+                sx={muiFieldSx}
               />
             </Box>
             <Box sx={{ display: "flex", alignItems: "flex-end", pb: 0.5, color: "text.disabled", fontWeight: 700 }}>-</Box>
             <Box sx={{ flex: 1 }}>
-              <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>End</Typography>
+              <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>End</Typography>
               <TextField
                 type="number"
                 value={end}
@@ -638,7 +639,7 @@ const JumpSizeDialog = ({ open, onClose, onApply, defaultQty }) => {
                 size="small"
                 fullWidth
                 placeholder="e.g. 26"
-                sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
+                sx={muiFieldSx}
               />
             </Box>
           </Stack>
@@ -646,7 +647,7 @@ const JumpSizeDialog = ({ open, onClose, onApply, defaultQty }) => {
           {/* Quantity */}
           <Stack direction="row" spacing={1} sx={{ alignItems: "flex-end" }}>
             <Box sx={{ width: 96 }}>
-              <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>Quantity</Typography>
+              <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Quantity</Typography>
               <TextField
                 type="number"
                 value={qty}
@@ -654,7 +655,7 @@ const JumpSizeDialog = ({ open, onClose, onApply, defaultQty }) => {
                 size="small"
                 fullWidth
                 placeholder="1"
-                sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
+                sx={muiFieldSx}
               />
             </Box>
             <Button
@@ -1737,7 +1738,7 @@ const InventoryEntry = () => {
 
             <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", columnGap: 1.5, rowGap: 0.5 }}>
               <Box sx={{ mb: 0.75 }}>
-                <Typography component="label" sx={{ display: "block", fontSize: 11, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
+                <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
                   <Box component="span" sx={{ color: "error.main" }}>* </Box>Product
                 </Typography>
                 <AsyncSearchSelect
@@ -1750,7 +1751,7 @@ const InventoryEntry = () => {
                 />
               </Box>
               <Box sx={{ mb: 0.75 }}>
-                <Typography component="label" sx={{ display: "block", fontSize: 11, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
+                <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
                   {mandatoryFields.has("brandId") && <Box component="span" sx={{ color: "error.main" }}>* </Box>}Brand
                 </Typography>
                 <AsyncSearchSelect
@@ -1776,7 +1777,7 @@ const InventoryEntry = () => {
               <AttrSelect label="Material" name="materialId" value={attrs.materialId} onChange={handleAttrChange} options={materials} required={mandatoryFields.has("materialId")} stacked searchable searchPlaceholder="Search material..." />
               <AttrSelect label="Color" name="colorId" value={attrs.colorId} onChange={handleAttrChange} options={colors} required={mandatoryFields.has("colorId")} stacked searchable searchPlaceholder="Search color..." />
               <Box sx={{ mb: 0.75 }}>
-                <Typography component="label" sx={{ display: "block", fontSize: 11, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>Tax</Typography>
+                <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>Tax</Typography>
                 <AsyncSearchSelect
                   name="taxId"
                   value={attrs.taxId}
@@ -1992,7 +1993,7 @@ const InventoryEntry = () => {
                       slotProps={{ input: { readOnly: true } }}
                       size="small"
                       fullWidth
-                      sx={{ "& .MuiInputBase-input": { textAlign: "center", fontSize: 12.25, py: 0.25 } }}
+                      sx={[muiFieldSx, { "& .MuiInputBase-input": { textAlign: "center" } }]}
                     />
                   </Box>
                   <Box sx={{ p: 0.25, width: 80, flexShrink: 0 }}>
@@ -2013,7 +2014,7 @@ const InventoryEntry = () => {
                       placeholder="Design No"
                       size="small"
                       fullWidth
-                      sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.25 } }}
+                      sx={muiFieldSx}
                     />
                   </Box>
                   <Box sx={{ p: 0.25, width: 64, flexShrink: 0 }} />
@@ -2027,7 +2028,7 @@ const InventoryEntry = () => {
                       slotProps={{ input: { readOnly: Boolean(currentItem.jumpSizes?.length) } }}
                       size="small"
                       fullWidth
-                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, py: 0.25 }, ...(currentItem.jumpSizes?.length ? { "& .MuiInputBase-root": { bgcolor: "action.hover" }, "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, py: 0.25, color: "text.disabled" } } : {}) }}
+                      sx={[muiFieldSx, { "& .MuiInputBase-input": { textAlign: "right" }, ...(currentItem.jumpSizes?.length ? { "& .MuiInputBase-root": { bgcolor: "action.hover" }, "& .MuiInputBase-input": { textAlign: "right", color: "text.disabled" } } : {}) }]}
                     />
                   </Box>
                   <Box sx={{ p: 0.25, width: 80, flexShrink: 0 }}>
@@ -2039,7 +2040,7 @@ const InventoryEntry = () => {
                       placeholder="0.00"
                       size="small"
                       fullWidth
-                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, py: 0.25 } }}
+                      sx={[muiFieldSx, { "& .MuiInputBase-input": { textAlign: "right" } }]}
                     />
                   </Box>
                   <Box sx={{ p: 0.25, width: 56, flexShrink: 0 }} />
@@ -2052,7 +2053,7 @@ const InventoryEntry = () => {
                       placeholder="0"
                       size="small"
                       fullWidth
-                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, py: 0.25 } }}
+                      sx={[muiFieldSx, { "& .MuiInputBase-input": { textAlign: "right" } }]}
                     />
                   </Box>
                   <Box sx={{ p: 0.25, width: 64, flexShrink: 0 }}>
@@ -2062,7 +2063,7 @@ const InventoryEntry = () => {
                       slotProps={{ input: { readOnly: true } }}
                       size="small"
                       fullWidth
-                      sx={{ "& .MuiInputBase-root": { bgcolor: "action.hover" }, "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, py: 0.25, color: "text.disabled" } }}
+                      sx={[muiFieldSx, { "& .MuiInputBase-root": { bgcolor: "action.hover" }, "& .MuiInputBase-input": { textAlign: "right", color: "text.disabled" } }]}
                     />
                   </Box>
                   <Box sx={{ p: 0.25, width: 64, flexShrink: 0 }}>
@@ -2072,7 +2073,7 @@ const InventoryEntry = () => {
                       slotProps={{ input: { readOnly: true } }}
                       size="small"
                       fullWidth
-                      sx={{ "& .MuiInputBase-root": { bgcolor: "action.hover" }, "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, py: 0.25, color: "text.disabled" } }}
+                      sx={[muiFieldSx, { "& .MuiInputBase-root": { bgcolor: "action.hover" }, "& .MuiInputBase-input": { textAlign: "right", color: "text.disabled" } }]}
                     />
                   </Box>
                   <Box sx={{ p: 0.25, width: 56, flexShrink: 0 }}>
@@ -2084,7 +2085,7 @@ const InventoryEntry = () => {
                       placeholder="0"
                       size="small"
                       fullWidth
-                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, py: 0.25 } }}
+                      sx={[muiFieldSx, { "& .MuiInputBase-input": { textAlign: "right" } }]}
                     />
                   </Box>
                   <Box sx={{ p: 0.25, width: 64, flexShrink: 0 }}>
@@ -2094,7 +2095,7 @@ const InventoryEntry = () => {
                       slotProps={{ input: { readOnly: true } }}
                       size="small"
                       fullWidth
-                      sx={{ "& .MuiInputBase-root": { bgcolor: "action.hover" }, "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, py: 0.25, color: "text.disabled" } }}
+                      sx={[muiFieldSx, { "& .MuiInputBase-root": { bgcolor: "action.hover" }, "& .MuiInputBase-input": { textAlign: "right", color: "text.disabled" } }]}
                     />
                   </Box>
                   <Box sx={{ p: 0.25, width: 80, flexShrink: 0 }} />
@@ -2149,7 +2150,7 @@ const InventoryEntry = () => {
                       placeholder="Search size"
                       size="small"
                       fullWidth
-                      sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.25 } }}
+                      sx={muiFieldSx}
                     />
                   </Box>
                   <Box sx={{ px: 1, py: 0.5, width: 80, borderRight: 1, borderColor: "divider" }}>
@@ -2160,7 +2161,7 @@ const InventoryEntry = () => {
                       placeholder="Search design"
                       size="small"
                       fullWidth
-                      sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.25 } }}
+                      sx={muiFieldSx}
                     />
                   </Box>
                   <Box sx={{ px: 1, py: 0.5, width: 64, borderRight: 1, borderColor: "divider" }}>
@@ -2171,7 +2172,7 @@ const InventoryEntry = () => {
                       placeholder="HSN"
                       size="small"
                       fullWidth
-                      sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.25 } }}
+                      sx={muiFieldSx}
                     />
                   </Box>
                   <Box sx={{ px: 1, py: 0.5, width: 48, borderRight: 1, borderColor: "divider" }}>
@@ -2182,7 +2183,7 @@ const InventoryEntry = () => {
                       placeholder="Qty"
                       size="small"
                       fullWidth
-                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, py: 0.25 } }}
+                      sx={[muiFieldSx, { "& .MuiInputBase-input": { textAlign: "right" } }]}
                     />
                   </Box>
                   <Box sx={{ px: 1, py: 0.5, width: 80, borderRight: 1, borderColor: "divider" }}>
@@ -2193,7 +2194,7 @@ const InventoryEntry = () => {
                       placeholder="Cost"
                       size="small"
                       fullWidth
-                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, py: 0.25 } }}
+                      sx={[muiFieldSx, { "& .MuiInputBase-input": { textAlign: "right" } }]}
                     />
                   </Box>
                   <Box sx={{ px: 1, py: 0.5, width: 56, borderRight: 1, borderColor: "divider" }}>
@@ -2204,7 +2205,7 @@ const InventoryEntry = () => {
                       placeholder="P.Dis"
                       size="small"
                       fullWidth
-                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, py: 0.25 } }}
+                      sx={[muiFieldSx, { "& .MuiInputBase-input": { textAlign: "right" } }]}
                     />
                   </Box>
                   <Box sx={{ px: 1, py: 0.5, width: 64, borderRight: 1, borderColor: "divider" }}>
@@ -2215,7 +2216,7 @@ const InventoryEntry = () => {
                       placeholder="Margin"
                       size="small"
                       fullWidth
-                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, py: 0.25 } }}
+                      sx={[muiFieldSx, { "& .MuiInputBase-input": { textAlign: "right" } }]}
                     />
                   </Box>
                   <Box sx={{ px: 1, py: 0.5, width: 64, borderRight: 1, borderColor: "divider" }}>
@@ -2226,7 +2227,7 @@ const InventoryEntry = () => {
                       placeholder="Sale"
                       size="small"
                       fullWidth
-                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, py: 0.25 } }}
+                      sx={[muiFieldSx, { "& .MuiInputBase-input": { textAlign: "right" } }]}
                     />
                   </Box>
                   <Box sx={{ px: 1, py: 0.5, width: 64, borderRight: 1, borderColor: "divider" }}>
@@ -2237,7 +2238,7 @@ const InventoryEntry = () => {
                       placeholder="MRP"
                       size="small"
                       fullWidth
-                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, py: 0.25 } }}
+                      sx={[muiFieldSx, { "& .MuiInputBase-input": { textAlign: "right" } }]}
                     />
                   </Box>
                   <Box sx={{ px: 1, py: 0.5, width: 56, borderRight: 1, borderColor: "divider" }}>
@@ -2248,7 +2249,7 @@ const InventoryEntry = () => {
                       placeholder="Dis%"
                       size="small"
                       fullWidth
-                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, py: 0.25 } }}
+                      sx={[muiFieldSx, { "& .MuiInputBase-input": { textAlign: "right" } }]}
                     />
                   </Box>
                   <Box sx={{ px: 1, py: 0.5, width: 64, borderRight: 1, borderColor: "divider" }}>
@@ -2259,7 +2260,7 @@ const InventoryEntry = () => {
                       placeholder="Final"
                       size="small"
                       fullWidth
-                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, py: 0.25 } }}
+                      sx={[muiFieldSx, { "& .MuiInputBase-input": { textAlign: "right" } }]}
                     />
                   </Box>
                   <Box sx={{ px: 1, py: 0.5, width: 80, borderRight: 1, borderColor: "divider" }}>
@@ -2270,7 +2271,7 @@ const InventoryEntry = () => {
                       placeholder="Amount"
                       size="small"
                       fullWidth
-                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, py: 0.25 } }}
+                      sx={[muiFieldSx, { "& .MuiInputBase-input": { textAlign: "right" } }]}
                     />
                   </Box>
                   <Box sx={{ px: 1, py: 0.5, width: 64, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "text.secondary" }}>
@@ -2355,7 +2356,7 @@ const InventoryEntry = () => {
                 value={attrs.invoiceWorkflowStatus}
                 onChange={handleAttrChange}
                 size="small"
-                sx={{ minWidth: 210, "& .MuiInputBase-input": { fontSize: 12.25, fontWeight: 500, py: 0.75 } }}
+                sx={[muiFieldSx, { minWidth: 210, "& .MuiInputBase-input": { fontWeight: 500 } }]}
               >
                 {WORKFLOW_STATUS_OPTIONS.map((option) => (
                   <MenuItem key={option.value} value={option.value}>

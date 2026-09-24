@@ -3,12 +3,13 @@ import { ArrowLeft, Search, Save, Plus, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import useCompanyOptions from "../../utils/useCompanyOptions";
 import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, alpha } from "@mui/material";
+import { muiFieldSx } from "../../theme/formControlSizes";
 
 // --- Custom Components for Reusability ---
 
 const FormField = ({ label, type = "text", isDate = false, isSelect = false, isRequired = false, options = [], sx }) => (
   <Box sx={{ fontSize: 12.25, ...sx }}>
-    <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary", mb: 0.25 }}>
+    <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.25 }}>
       {isRequired && (
         <Box component="span" sx={{ color: "error.main", mr: 0.25 }}>
           *
@@ -17,7 +18,7 @@ const FormField = ({ label, type = "text", isDate = false, isSelect = false, isR
       {label}
     </Typography>
     {isSelect ? (
-      <TextField select size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
+      <TextField select size="small" fullWidth sx={muiFieldSx}>
         <MenuItem value="">Select...</MenuItem>
         {options.map((opt, index) => (
           <MenuItem key={index} value={opt}>
@@ -26,7 +27,7 @@ const FormField = ({ label, type = "text", isDate = false, isSelect = false, isR
         ))}
       </TextField>
     ) : (
-      <TextField type={isDate ? "date" : type} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }} />
+      <TextField type={isDate ? "date" : type} size="small" fullWidth sx={muiFieldSx} />
     )}
   </Box>
 );
@@ -132,10 +133,10 @@ const StockOutward = () => {
               <Box sx={{ gridColumn: "span 4" }}>
                 <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
                   <Box sx={{ flex: 1 }}>
-                    <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary", mb: 0.25 }}>
+                    <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.25 }}>
                       supplier
                     </Typography>
-                    <TextField placeholder="supplier" size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }} />
+                    <TextField placeholder="supplier" size="small" fullWidth sx={muiFieldSx} />
                   </Box>
                   <IconButton onClick={handleSearch} className="glass-btn glass-btn-primary" sx={{ alignSelf: "flex-end" }}>
                     <Search size={16} />

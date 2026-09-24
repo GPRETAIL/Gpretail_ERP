@@ -8,6 +8,7 @@ import ExportBottomSheet from "../../components/ExportBottomSheet";
 import PageSkeleton from "../../components/PageSkeleton";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, Radio } from "@mui/material";
+import { muiFieldSx } from "../../theme/formControlSizes";
 
 const filterRowSx = { display: "grid", gridTemplateColumns: "160px minmax(0, 1fr)", alignItems: "center", gap: 1 };
 
@@ -441,7 +442,7 @@ const ItemLocator = () => {
                 <Typography sx={{ fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Mode</Typography>
                 <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap", alignItems: "center" }}>
                   {modeOptions.map((option) => (
-                    <Stack key={option.value} component="label" direction="row" spacing={0.75} sx={{ alignItems: "center", fontSize: 12.25, color: "text.secondary" }}>
+                    <Stack key={option.value} component="label" direction="row" spacing={0.75} sx={{ alignItems: "center", fontSize: 11.5, color: "text.secondary" }}>
                       <Radio
                         name="locator-mode"
                         checked={filters.mode === option.value}
@@ -464,7 +465,7 @@ const ItemLocator = () => {
                     onKeyDown={handleFilterKeyDown}
                     size="small"
                     fullWidth
-                    sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
+                    sx={muiFieldSx}
                   />
                   <Button onClick={onSearch} disabled={searching} className="glass-btn glass-btn-primary" sx={{ minWidth: 72, opacity: searching ? 0.6 : 1 }}>
                     Go
@@ -474,7 +475,7 @@ const ItemLocator = () => {
 
               <Box sx={filterRowSx}>
                 <Typography sx={{ fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Product</Typography>
-                <TextField select value={filters.product} onChange={(e) => updateFilter("product", e.target.value)} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
+                <TextField select value={filters.product} onChange={(e) => updateFilter("product", e.target.value)} size="small" fullWidth sx={muiFieldSx}>
                   <MenuItem value="">Select product</MenuItem>
                   {dropdownOptions.product.map((option) => (
                     <MenuItem key={option.value} value={option.value}>
@@ -486,7 +487,7 @@ const ItemLocator = () => {
 
               <Box sx={filterRowSx}>
                 <Typography sx={{ fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Style</Typography>
-                <TextField select value={filters.style} onChange={(e) => updateFilter("style", e.target.value)} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
+                <TextField select value={filters.style} onChange={(e) => updateFilter("style", e.target.value)} size="small" fullWidth sx={muiFieldSx}>
                   <MenuItem value="">Select style</MenuItem>
                   {dropdownOptions.style.map((option) => (
                     <MenuItem key={option.value} value={option.value}>
@@ -498,7 +499,7 @@ const ItemLocator = () => {
 
               <Box sx={filterRowSx}>
                 <Typography sx={{ fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Size</Typography>
-                <TextField select value={filters.size} onChange={(e) => updateFilter("size", e.target.value)} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
+                <TextField select value={filters.size} onChange={(e) => updateFilter("size", e.target.value)} size="small" fullWidth sx={muiFieldSx}>
                   <MenuItem value="">Select size</MenuItem>
                   {dropdownOptions.size.map((option) => (
                     <MenuItem key={option.value} value={option.value}>
@@ -510,7 +511,7 @@ const ItemLocator = () => {
 
               <Box sx={filterRowSx}>
                 <Typography sx={{ fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Supplier</Typography>
-                <TextField select value={filters.supplier} onChange={(e) => updateFilter("supplier", e.target.value)} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
+                <TextField select value={filters.supplier} onChange={(e) => updateFilter("supplier", e.target.value)} size="small" fullWidth sx={muiFieldSx}>
                   <MenuItem value="">Select supplier</MenuItem>
                   {dropdownOptions.supplier.map((option) => (
                     <MenuItem key={option.value} value={option.value}>
@@ -530,7 +531,7 @@ const ItemLocator = () => {
                   onKeyDown={handleFilterKeyDown}
                   size="small"
                   fullWidth
-                  sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
+                  sx={muiFieldSx}
                 />
               </Box>
 
@@ -544,7 +545,7 @@ const ItemLocator = () => {
                     placeholder="Bill no"
                     size="small"
                     fullWidth
-                    sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
+                    sx={muiFieldSx}
                   />
                   <TextField
                     type="date"
@@ -552,7 +553,7 @@ const ItemLocator = () => {
                     onChange={(e) => updateFilter("billDate", e.target.value)}
                     size="small"
                     fullWidth
-                    sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
+                    sx={muiFieldSx}
                   />
                 </Box>
               </Box>
@@ -567,7 +568,7 @@ const ItemLocator = () => {
                     placeholder="Bill min"
                     size="small"
                     fullWidth
-                    sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
+                    sx={muiFieldSx}
                   />
                   <TextField
                     value={filters.billValueMax}
@@ -576,7 +577,7 @@ const ItemLocator = () => {
                     placeholder="Bill max"
                     size="small"
                     fullWidth
-                    sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
+                    sx={muiFieldSx}
                   />
                   <TextField
                     value={filters.priceMin}
@@ -585,7 +586,7 @@ const ItemLocator = () => {
                     placeholder="Price min"
                     size="small"
                     fullWidth
-                    sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
+                    sx={muiFieldSx}
                   />
                   <TextField
                     value={filters.priceMax}
@@ -594,7 +595,7 @@ const ItemLocator = () => {
                     placeholder="Price max"
                     size="small"
                     fullWidth
-                    sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
+                    sx={muiFieldSx}
                   />
                 </Box>
               </Box>
@@ -602,7 +603,7 @@ const ItemLocator = () => {
               <Box sx={filterRowSx}>
                 <Typography sx={{ fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Brand / Design</Typography>
                 <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)" }, gap: 1 }}>
-                  <TextField select value={filters.brand} onChange={(e) => updateFilter("brand", e.target.value)} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
+                  <TextField select value={filters.brand} onChange={(e) => updateFilter("brand", e.target.value)} size="small" fullWidth sx={muiFieldSx}>
                     <MenuItem value="">Select brand</MenuItem>
                     {dropdownOptions.brand.map((option) => (
                       <MenuItem key={option.value} value={option.value}>
@@ -610,7 +611,7 @@ const ItemLocator = () => {
                       </MenuItem>
                     ))}
                   </TextField>
-                  <TextField select value={filters.design} onChange={(e) => updateFilter("design", e.target.value)} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
+                  <TextField select value={filters.design} onChange={(e) => updateFilter("design", e.target.value)} size="small" fullWidth sx={muiFieldSx}>
                     <MenuItem value="">Select design</MenuItem>
                     {dropdownOptions.design.map((option) => (
                       <MenuItem key={option.value} value={option.value}>
@@ -624,7 +625,7 @@ const ItemLocator = () => {
               <Box sx={filterRowSx}>
                 <Typography sx={{ fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Pattern/Color</Typography>
                 <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)" }, gap: 1 }}>
-                  <TextField select value={filters.pattern} onChange={(e) => updateFilter("pattern", e.target.value)} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
+                  <TextField select value={filters.pattern} onChange={(e) => updateFilter("pattern", e.target.value)} size="small" fullWidth sx={muiFieldSx}>
                     <MenuItem value="">Select pattern</MenuItem>
                     {dropdownOptions.pattern.map((option) => (
                       <MenuItem key={option.value} value={option.value}>
@@ -632,7 +633,7 @@ const ItemLocator = () => {
                       </MenuItem>
                     ))}
                   </TextField>
-                  <TextField select value={filters.color} onChange={(e) => updateFilter("color", e.target.value)} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
+                  <TextField select value={filters.color} onChange={(e) => updateFilter("color", e.target.value)} size="small" fullWidth sx={muiFieldSx}>
                     <MenuItem value="">Select color</MenuItem>
                     {dropdownOptions.color.map((option) => (
                       <MenuItem key={option.value} value={option.value}>
@@ -646,7 +647,7 @@ const ItemLocator = () => {
               <Box sx={filterRowSx}>
                 <Typography sx={{ fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Material/Type</Typography>
                 <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)" }, gap: 1 }}>
-                  <TextField select value={filters.material} onChange={(e) => updateFilter("material", e.target.value)} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
+                  <TextField select value={filters.material} onChange={(e) => updateFilter("material", e.target.value)} size="small" fullWidth sx={muiFieldSx}>
                     <MenuItem value="">Select material</MenuItem>
                     {dropdownOptions.material.map((option) => (
                       <MenuItem key={option.value} value={option.value}>
@@ -654,7 +655,7 @@ const ItemLocator = () => {
                       </MenuItem>
                     ))}
                   </TextField>
-                  <TextField select value={filters.type} onChange={(e) => updateFilter("type", e.target.value)} size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}>
+                  <TextField select value={filters.type} onChange={(e) => updateFilter("type", e.target.value)} size="small" fullWidth sx={muiFieldSx}>
                     <MenuItem value="">Select type</MenuItem>
                     {dropdownOptions.type.map((option) => (
                       <MenuItem key={option.value} value={option.value}>
