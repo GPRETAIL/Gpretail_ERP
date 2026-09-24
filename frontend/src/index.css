@@ -189,17 +189,21 @@ main > .p-6 {
   overflow: hidden;
 }
 
-/* Toolbar action buttons (New/Upload/Export/...) mix real MUI <Button>s (New, Export) with
-   plain <Box component="button">s (Upload) sharing this same class for their visual skin. MUI's
-   own Button-root class sets its own line-height with higher specificity than this class's
-   line-height:1, so the MUI ones end up taller than the plain Box ones with nothing to override
-   that line-height -- pin an explicit height so every topbar action button matches regardless of
-   which element renders it. Scoped to .topbar-action-btn only (not the shared .glass-btn, which
-   also sizes small icon-only buttons elsewhere that should stay compact).
-   Padding is also tightened here specifically (not in the shared rule above) for the same reason
-   -- a denser toolbar per explicit request, without shrinking every other .glass-btn icon button
-   app-wide that happens to reuse that same base class. */
-.topbar-action-btn {
+/* Toolbar action buttons (New/Upload/Export/Save/...) mix real MUI <Button>s with plain
+   <Box component="button">s sharing this same class for their visual skin. MUI's own Button-root
+   class sets its own line-height with higher specificity than this class's line-height:1, so the
+   MUI ones end up taller than the plain Box ones with nothing to override that line-height -- pin
+   an explicit height so every toolbar/header button matches regardless of which element renders
+   it or which class (.topbar-action-btn vs a bare .glass-btn-*) it was given. This used to be
+   scoped to .topbar-action-btn only, on the assumption every .glass-btn caller wanted to stay at
+   the larger base size -- in practice most of them are page-header Save/Upload buttons sitting
+   right next to a .topbar-action-btn sibling (e.g. Product's New + Save row), so the two classes
+   rendering at different heights in the same row was the actual bug, not a deliberate size
+   difference. A .glass-btn caller that genuinely needs to stay large (e.g. Login's submit button)
+   already sets its own sx height/padding/fontSize, which -- being an MUI sx class -- outranks this
+   plain class selector regardless, so this change doesn't touch those. */
+.topbar-action-btn,
+.glass-btn {
   min-height: 24px;
   padding: 0.15rem 0.55rem !important;
 }
