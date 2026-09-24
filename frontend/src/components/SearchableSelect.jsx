@@ -363,7 +363,7 @@ const SearchableSelect = ({
   return (
     <Box sx={{ display: "flex", alignItems: "center", width: "100%" }} ref={containerRef} data-enter-ignore="true">
       {label && (
-        <Box component="label" sx={{ width: "40%", fontSize: 10.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5, flexShrink: 0 }}>
+        <Box component="label" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5, flexShrink: 0 }}>
           {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}
           {label}
         </Box>

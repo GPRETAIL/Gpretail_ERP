@@ -10,8 +10,13 @@ const fieldBaseSx = (disabled) => ({
   border: "1px solid",
   borderColor: "divider",
   borderRadius: "2px",
-  p: 0.5,
-  fontSize: 10.5,
+  // Explicit height (not just padding) so a native <select> -- whose appearance:auto chrome adds
+  // ~1.5px over an <input> with identical padding -- and SearchableSelect's trigger (formControlSizes
+  // SEARCHABLE_TRIGGER_HEIGHT) all land on exactly the same row height.
+  height: 30,
+  px: 1,
+  py: 0,
+  fontSize: 11.5,
   bgcolor: disabled ? "action.disabledBackground" : "background.paper",
   color: "text.primary",
   cursor: disabled ? "not-allowed" : "auto",
@@ -30,7 +35,7 @@ const TextInput = ({
   disabled = false,
 }) => (
   <Box sx={{ display: "flex", alignItems: "center" }}>
-    <Box component="label" sx={{ width: "40%", fontSize: 10.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
+    <Box component="label" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
       {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>} {label}
     </Box>
     <Box
@@ -55,7 +60,7 @@ const SelectInput = ({
   disabled = false,
 }) => (
   <Box sx={{ display: "flex", alignItems: "center" }}>
-    <Box component="label" sx={{ width: "40%", fontSize: 10.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
+    <Box component="label" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
       {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>} {label}
     </Box>
     <Box
@@ -83,7 +88,7 @@ const CheckboxInput = ({
   disabled = false,
 }) => (
   <Box sx={{ display: "flex", alignItems: "center" }}>
-    <Box component="label" sx={{ width: "40%", fontSize: 10.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
+    <Box component="label" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
       {label}
     </Box>
     <Box
@@ -94,12 +99,38 @@ const CheckboxInput = ({
       disabled={disabled}
       onChange={onChange}
       sx={{
-        width: 12, height: 12, accentColor: "#2563eb", borderColor: "divider", borderRadius: "2px",
+        width: 14, height: 14, accentColor: "#2563eb", borderColor: "divider", borderRadius: "2px",
         cursor: disabled ? "not-allowed" : "auto", opacity: disabled ? 0.7 : 1, ...focusRingSx,
       }}
     />
   </Box>
 );
+
+const TextareaInput = ({
+  label,
+  name,
+  required = false,
+  value,
+  onChange,
+  rows = 3,
+  disabled = false,
+}) => (
+  <Box sx={{ display: "flex", alignItems: "flex-start" }}>
+    <Box component="label" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5, pt: 1 }}>
+      {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>} {label}
+    </Box>
+    <Box
+      component="textarea"
+      name={name}
+      value={value}
+      onChange={onChange}
+      rows={rows}
+      disabled={disabled}
+      sx={{ flex: 1, ...fieldBaseSx(disabled), height: "auto", py: 0.75, resize: "vertical", fontFamily: "inherit" }}
+    />
+  </Box>
+);
+
 const CheckboxSelectInput = ({
   label,
   checkName,
@@ -111,7 +142,7 @@ const CheckboxSelectInput = ({
   disabled = false,
 }) => (
   <Box sx={{ display: "flex", alignItems: "center" }}>
-    <Box component="label" sx={{ width: "40%", fontSize: 10.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
+    <Box component="label" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
       {label}
     </Box>
     <Box sx={{ flex: 1, display: "flex", alignItems: "center", gap: 1.5 }}>
@@ -123,7 +154,7 @@ const CheckboxSelectInput = ({
         onChange={onChange}
         disabled={disabled}
         sx={{
-          width: 12, height: 12, accentColor: "#2563eb", borderColor: "divider", borderRadius: "2px",
+          width: 14, height: 14, accentColor: "#2563eb", borderColor: "divider", borderRadius: "2px",
           cursor: disabled ? "not-allowed" : "auto", opacity: disabled ? 0.7 : 1, ...focusRingSx,
         }}
       />
@@ -156,7 +187,7 @@ const DualTextInput = ({
   disabled = false,
 }) => (
   <Box sx={{ display: "flex", alignItems: "center" }}>
-    <Box component="label" sx={{ width: "40%", fontSize: 10.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
+    <Box component="label" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
       {label}
     </Box>
     <Box sx={{ flex: 1, display: "flex", alignItems: "center", gap: 1 }}>
@@ -184,6 +215,57 @@ const DualTextInput = ({
   </Box>
 );
 
+// A select paired with a value input on one row (e.g. Product's Discount Mode + amount). Omit
+// `label` to use it inline, e.g. inside a table row that already has column headers.
+const SelectTextInput = ({
+  label,
+  selectName,
+  selectValue,
+  options = [],
+  placeholder,
+  inputName,
+  inputValue,
+  inputType = "number",
+  inputPlaceholder = "",
+  onChange,
+  disabled = false,
+}) => (
+  <Box sx={{ display: "flex", alignItems: "center", flex: label ? undefined : 1 }}>
+    {label && (
+      <Box component="label" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
+        {label}
+      </Box>
+    )}
+    <Box sx={{ flex: 1, display: "flex", alignItems: "center", gap: 1 }}>
+      <Box
+        component="select"
+        name={selectName}
+        value={selectValue}
+        onChange={onChange}
+        disabled={disabled}
+        sx={{ width: "66.66%", ...fieldBaseSx(disabled) }}
+      >
+        {placeholder && <option value="">{placeholder}</option>}
+        {(options || []).map((option, index) => (
+          <option key={index} value={option.value || option.label}>
+            {option.label}
+          </option>
+        ))}
+      </Box>
+      <Box
+        component="input"
+        type={inputType}
+        name={inputName}
+        value={inputValue}
+        onChange={onChange}
+        placeholder={inputPlaceholder}
+        disabled={disabled}
+        sx={{ width: "33.33%", minWidth: 0, ...fieldBaseSx(disabled) }}
+      />
+    </Box>
+  </Box>
+);
+
 /**
  * Same label/layout contract as SelectInput, but backed by AsyncSearchSelect so the field can
  * find rows beyond whatever was preloaded. For fields fed by large tables (taxes, products,
@@ -201,7 +283,7 @@ const AsyncSelectInput = ({
   disabled = false,
 }) => (
   <Box sx={{ display: "flex", alignItems: "center" }}>
-    <Box component="label" sx={{ width: "40%", fontSize: 10.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
+    <Box component="label" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
       {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>} {label}
     </Box>
     <Box sx={{ flex: 1 }}>
@@ -222,8 +304,12 @@ const AsyncSelectInput = ({
 export {
   TextInput,
   CheckboxInput,
+  TextareaInput,
   CheckboxSelectInput,
   DualTextInput,
+  SelectTextInput,
   SelectInput,
   AsyncSelectInput,
+  // For pages that compose their own row layouts but should still render the shared field look.
+  fieldBaseSx,
 };
