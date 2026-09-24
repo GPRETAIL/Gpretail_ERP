@@ -40,6 +40,7 @@ import {
   wrapSalesReceiptText,
 } from "../../utils/salesReceiptCustomization";
 import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, alpha } from "@mui/material";
+import { muiFieldSx } from "../../theme/formControlSizes";
 
 // Matches config('pagination.resources.pos_returns.groupable_columns') on the backend.
 const { onFetchGroupSummaries: fetchPosReturnGroupSummaries, onFetchGroupRows: fetchPosReturnGroupRows } =
@@ -1378,7 +1379,7 @@ const POSReturn = () => {
           <Box sx={{ borderBottom: 1, borderColor: "divider", bgcolor: "background.paper", px: 1.5, py: 1.5 }}>
             <Box sx={{ display: "grid", gap: 1, gridTemplateColumns: { md: "minmax(0,1fr) 150px minmax(0,1fr)" } }}>
               <Box sx={{ minWidth: 0 }}>
-                <Typography component="label" sx={{ display: "block", mb: 0.5, fontSize: 12.25, fontWeight: 700, color: "error.dark" }}>Bill no. / barcode</Typography>
+                <Typography component="label" sx={{ display: "block", mb: 0.5, fontSize: 11.5, fontWeight: 700, color: "error.dark" }}>Bill no. / barcode</Typography>
                 <TextField
                   inputRef={billInputRef}
                   type="text"
@@ -1399,12 +1400,12 @@ const POSReturn = () => {
                   placeholder="Bill (SB/…) or product barcode"
                   size="small"
                   fullWidth
-                  sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
+                  sx={muiFieldSx}
                 />
               </Box>
 
               <Box sx={{ minWidth: 0 }}>
-                <Typography component="label" sx={{ display: "block", mb: 0.5, fontSize: 12.25, fontWeight: 700, color: "text.secondary" }}>Selected Bill</Typography>
+                <Typography component="label" sx={{ display: "block", mb: 0.5, fontSize: 11.5, fontWeight: 700, color: "text.secondary" }}>Selected Bill</Typography>
                 <TextField
                   type="text"
                   value={
@@ -1418,19 +1419,19 @@ const POSReturn = () => {
                   placeholder="No bill selected"
                   size="small"
                   fullWidth
-                  sx={{ "& .MuiInputBase-root": { bgcolor: "action.hover" }, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75, color: "text.secondary" } }}
+                  sx={[muiFieldSx, { "& .MuiInputBase-root": { bgcolor: "action.hover" }, "& .MuiInputBase-input": { color: "text.secondary" } }]}
                 />
               </Box>
 
               <Box sx={{ minWidth: 0 }}>
-                <Typography component="label" sx={{ display: "block", mb: 0.5, fontSize: 12.25, fontWeight: 700, color: "text.secondary" }}>Reason</Typography>
+                <Typography component="label" sx={{ display: "block", mb: 0.5, fontSize: 11.5, fontWeight: 700, color: "text.secondary" }}>Reason</Typography>
                 <TextField
                   select
                   value={selectedReturnReasonId}
                   onChange={(e) => setSelectedReturnReasonId(e.target.value)}
                   size="small"
                   fullWidth
-                  sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
+                  sx={muiFieldSx}
                 >
                   <MenuItem value="">Select return reason</MenuItem>
                   {returnReasons.map((row) => (
@@ -1564,7 +1565,7 @@ const POSReturn = () => {
                   : "-"}
             </Typography>
             <Box>
-              <Typography component="label" sx={{ display: "block", mb: 0.5, fontSize: 12.25, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Customer Number</Typography>
+              <Typography component="label" sx={{ display: "block", mb: 0.5, fontSize: 11.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Customer Number</Typography>
               <TextField
                 type="text"
                 value={newCustomer.mobileNo}
@@ -1572,11 +1573,11 @@ const POSReturn = () => {
                 size="small"
                 fullWidth
                 placeholder="Customer number"
-                sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
+                sx={muiFieldSx}
               />
             </Box>
             <Box>
-              <Typography component="label" sx={{ display: "block", mb: 0.5, fontSize: 12.25, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Customer Name</Typography>
+              <Typography component="label" sx={{ display: "block", mb: 0.5, fontSize: 11.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Customer Name</Typography>
               <TextField
                 type="text"
                 value={newCustomer.name}
@@ -1584,7 +1585,7 @@ const POSReturn = () => {
                 size="small"
                 fullWidth
                 placeholder="Customer name"
-                sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
+                sx={muiFieldSx}
               />
             </Box>
           </Stack>

@@ -13,6 +13,7 @@ import { buildSettlementReceiptHtml, browserPrintHtml } from "../../utils/settle
 import { loadSalesReceiptCustomization } from "../../utils/salesReceiptCustomization";
 import { openNativeSelect } from "../../utils/enterToNextField";
 import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
+import { FIELD_FONT_SIZE, FIELD_HEIGHT, fieldBaseSx, muiFieldSx } from "../../theme/formControlSizes";
 
 const SETTLEMENT_IMPORT_CONFIG = {
   aliases: {
@@ -47,20 +48,12 @@ const formatMoney = (value) =>
     maximumFractionDigits: 2,
   });
 
-const SETTLEMENT_FIELD_SX = {
-  "& .MuiInputBase-root": { height: 40 },
-  "& .MuiInputBase-input": { fontSize: 12.25 },
-};
+// Fields, native selects and the summary rows beside them share one height so each row lines up;
+// that height is the app-wide field size from formControlSizes.
+const SETTLEMENT_FIELD_SX = muiFieldSx;
 const SETTLEMENT_NATIVE_SELECT_SX = {
+  ...fieldBaseSx(false),
   width: "100%",
-  height: 40,
-  border: "1px solid",
-  borderColor: "divider",
-  borderRadius: "3.5px",
-  px: 1.5,
-  fontSize: 12.25,
-  bgcolor: "background.paper",
-  color: "text.primary",
   boxSizing: "border-box",
   "&:disabled": { bgcolor: "action.hover", color: "text.disabled" },
 };
@@ -73,10 +66,10 @@ const SETTLEMENT_SUMMARY_ROW_SX = {
   borderColor: "divider",
   borderRadius: "3.5px",
   px: 1.5,
-  height: 40,
-  fontSize: 12.25,
+  height: FIELD_HEIGHT,
+  fontSize: FIELD_FONT_SIZE,
 };
-const SETTLEMENT_FIELD_LABEL_SX = { fontSize: 10.5, fontWeight: 500, color: "text.secondary", display: "block", mb: 0.5 };
+const SETTLEMENT_FIELD_LABEL_SX = { fontSize: FIELD_FONT_SIZE, fontWeight: 500, color: "text.secondary", display: "block", mb: 0.5 };
 
 const Settlement = () => {
   const navigate = useNavigate();
@@ -737,7 +730,7 @@ const Settlement = () => {
               onClick={handleGoBill}
               className="glass-btn glass-btn-primary"
               fullWidth
-              sx={{ height: 40, display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+              sx={{ height: FIELD_HEIGHT, display: "inline-flex", alignItems: "center", justifyContent: "center" }}
             >
               <PlusCircle size={16} style={{marginRight: 4}} /> Go
             </Button>
@@ -1097,7 +1090,7 @@ const Settlement = () => {
                   placeholder="Write customer mobile number"
                   size="small"
                   fullWidth
-                  sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 1 } }}
+                  sx={muiFieldSx}
                 />
                 <Button
                   type="button"

@@ -8,6 +8,7 @@ import ExportBottomSheet from "../../components/ExportBottomSheet";
 import FilterableDataTable from "../../components/FilterableDataTable";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, Radio, alpha } from "@mui/material";
+import { muiFieldSx } from "../../theme/formControlSizes";
 
 const formatDate = (value) => {
   if (!value) return "-";
@@ -2761,7 +2762,7 @@ const SalesReports = () => {
                           onChange={(e) => setSalesSummaryScopedCompanyId(e.target.value)}
                           size="small"
                           fullWidth
-                          sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.75 } }}
+                          sx={muiFieldSx}
                         >
                           <MenuItem value="">All allowed companies</MenuItem>
                           {(superAdminCompanies || []).map((c) => (
@@ -2818,7 +2819,7 @@ const SalesReports = () => {
                           onChange={(e) => setSalesSummaryForm((prev) => ({ ...prev, day: e.target.value }))}
                           size="small"
                           fullWidth
-                          sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.75, fontFamily: "monospace" } }}
+                          sx={[muiFieldSx, { "& .MuiInputBase-input": { fontFamily: "monospace" } }]}
                         />
                       </Box>
                     ) : (
@@ -2831,7 +2832,7 @@ const SalesReports = () => {
                             onChange={(e) => setSalesSummaryForm((prev) => ({ ...prev, from: e.target.value }))}
                             size="small"
                             fullWidth
-                            sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.75, fontFamily: "monospace" } }}
+                            sx={[muiFieldSx, { "& .MuiInputBase-input": { fontFamily: "monospace" } }]}
                           />
                         </Box>
                         <Box>
@@ -2842,7 +2843,7 @@ const SalesReports = () => {
                             onChange={(e) => setSalesSummaryForm((prev) => ({ ...prev, to: e.target.value }))}
                             size="small"
                             fullWidth
-                            sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.75, fontFamily: "monospace" } }}
+                            sx={[muiFieldSx, { "& .MuiInputBase-input": { fontFamily: "monospace" } }]}
                           />
                         </Box>
                       </Box>
@@ -2858,7 +2859,7 @@ const SalesReports = () => {
                           placeholder='e.g. SB/142 or 142'
                           size="small"
                           fullWidth
-                          sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.75, fontFamily: "monospace" } }}
+                          sx={[muiFieldSx, { "& .MuiInputBase-input": { fontFamily: "monospace" } }]}
                         />
                       </Box>
                     ) : null}

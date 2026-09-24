@@ -47,8 +47,9 @@ import {
 } from "../../utils/salesReceiptCustomization";
 import { buildPosSaleReceiptHtml } from "../../utils/posReceiptHtml";
 import { Box, Stack, Typography, TextField, Button, IconButton, Switch, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
+import { FIELD_HEIGHT, muiFieldSx } from "../../theme/formControlSizes";
 
-const fieldLabelSx = { mb: 0.5, display: "block", fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" };
+const fieldLabelSx = { mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" };
 const baseCardSx = { borderRadius: "14px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", boxShadow: 1 };
 const radioPillSx = (active) => ({
   display: "flex",
@@ -79,7 +80,7 @@ const formatMoney = (value) =>
 
 const receiptTableHeadSx = { bgcolor: "#165da8", px: 1.5, py: 1.5, textAlign: "left", fontSize: 12.25, fontWeight: 600, color: "#fff" };
 const receiptTableCellSx = { border: "1px solid", borderColor: "divider", px: 1.5, py: 1.5, verticalAlign: "middle", fontSize: 12.25, color: "text.secondary" };
-const receiptTableInputSx = { "& .MuiInputBase-input": { fontSize: 12.25, py: 1 } };
+const receiptTableInputSx = muiFieldSx;
 
 const RadioCell = ({ name, checked, onChange }) => (
   <Box component="label" sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -131,7 +132,7 @@ const ReceiptFieldTable = ({
                     ))}
                   </TextField>
                 ) : (
-                  <Box sx={{ height: 40, borderRadius: "7px", bgcolor: "action.hover" }} />
+                  <Box sx={{ height: FIELD_HEIGHT, borderRadius: "2px", bgcolor: "action.hover" }} />
                 )}
               </TableCell>
               <TableCell sx={receiptTableCellSx}>
@@ -160,7 +161,7 @@ const ReceiptFieldTable = ({
                     sx={receiptTableInputSx}
                   />
                 ) : (
-                  <Box sx={{ height: 40, borderRadius: "7px", bgcolor: "action.hover" }} />
+                  <Box sx={{ height: FIELD_HEIGHT, borderRadius: "2px", bgcolor: "action.hover" }} />
                 )}
               </TableCell>
             </TableRow>
@@ -1158,7 +1159,7 @@ export default function Customisation() {
               ))}
             </Stack>
             <Box sx={{ mt: 2 }}>
-              <Typography component="label" htmlFor="sales-number-override" sx={{ mb: 0.5, display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>
+              <Typography component="label" htmlFor="sales-number-override" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>
                 Custom next sales number (optional)
               </Typography>
               <TextField
@@ -1169,7 +1170,7 @@ export default function Customisation() {
                 onChange={(event) => updateSetting({ billNumberOverride: event.target.value })}
                 placeholder="e.g. 5001"
                 size="small"
-                sx={{ width: "100%", maxWidth: 320, "& .MuiInputBase-input": { fontSize: 12.25, py: 1 } }}
+                sx={[muiFieldSx, { width: "100%", maxWidth: 320 }]}
               />
               <Typography sx={{ mt: 0.5, fontSize: 10.5, lineHeight: 1.4, color: "text.secondary" }}>
                 Set the next new sale to start from this number (e.g. continuing from another system). Leave blank for normal numbering.
@@ -1205,7 +1206,7 @@ export default function Customisation() {
               ))}
             </Stack>
             <Box sx={{ mt: 2 }}>
-              <Typography component="label" htmlFor="settlement-number-override" sx={{ mb: 0.5, display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>
+              <Typography component="label" htmlFor="settlement-number-override" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>
                 Custom next settlement number (optional)
               </Typography>
               <TextField
@@ -1216,7 +1217,7 @@ export default function Customisation() {
                 onChange={(event) => updateSetting({ settlementNumberOverride: event.target.value })}
                 placeholder="e.g. 101"
                 size="small"
-                sx={{ width: "100%", maxWidth: 320, "& .MuiInputBase-input": { fontSize: 12.25, py: 1 } }}
+                sx={[muiFieldSx, { width: "100%", maxWidth: 320 }]}
               />
               <Typography sx={{ mt: 0.5, fontSize: 10.5, lineHeight: 1.4, color: "text.secondary" }}>
                 Set the next new settlement to start from this sequence number within the current period. Leave blank for normal numbering.
@@ -1464,7 +1465,7 @@ export default function Customisation() {
                   component="label"
                   key={option.value}
                   spacing={0.5}
-                  sx={{ cursor: "pointer", borderRadius: "7px", border: "1px solid", borderColor: settings.receiptFormat === option.value ? "primary.main" : "divider", bgcolor: settings.receiptFormat === option.value ? (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08) : "background.paper", color: settings.receiptFormat === option.value ? "primary.main" : "text.secondary", px: 2, py: 1.5, fontSize: 12.25 }}
+                  sx={{ cursor: "pointer", borderRadius: "7px", border: "1px solid", borderColor: settings.receiptFormat === option.value ? "primary.main" : "divider", bgcolor: settings.receiptFormat === option.value ? (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08) : "background.paper", color: settings.receiptFormat === option.value ? "primary.main" : "text.secondary", px: 2, py: 1.5, fontSize: 11.5 }}
                 >
                   <Stack direction="row" spacing={1} sx={{ alignItems: "center", fontWeight: 500 }}>
                     <Box
@@ -1496,7 +1497,7 @@ export default function Customisation() {
               rows={5}
               fullWidth
               placeholder="Enter the closing message shown at the end of the receipt"
-              sx={{ "& .MuiInputBase-input": { fontSize: 12.25, lineHeight: 1.7 } }}
+              sx={muiFieldSx}
             />
             <Typography sx={{ mt: 1.5, borderRadius: "10.5px", border: "1px dashed", borderColor: "divider", bgcolor: "action.hover", px: 2, py: 1.5, fontSize: 10.5, lineHeight: 1.4, color: "text.secondary" }}>
               This message is printed at the end of the POS receipt. Line breaks entered here are preserved in the preview and on print.
@@ -1575,7 +1576,7 @@ export default function Customisation() {
                   onChange={(event) => updateSetting({ paymentUpiId: event.target.value })}
                   placeholder="yourstore@okicici"
                   slotProps={{ htmlInput: { autoComplete: "off", spellCheck: false } }}
-                  sx={{ width: "100%", maxWidth: 448, "& .MuiInputBase-input": { fontSize: 12.25, py: 1.25 } }}
+                  sx={[muiFieldSx, { width: "100%", maxWidth: 448 }]}
                 />
                 {settings.paymentUpiId.trim() ? null : (
                   <Typography sx={{ mt: 1, fontSize: 10.5, lineHeight: 1.4, color: "warning.dark" }}>

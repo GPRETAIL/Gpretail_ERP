@@ -7,6 +7,7 @@ import api from "../../api/axios";
 import FilterableDataTable from "../../components/FilterableDataTable";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import { Box, Stack, Typography, TextField, MenuItem, Button, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
+import { muiFieldSx } from "../../theme/formControlSizes";
 
 const DENOMINATIONS = [2000, 500, 200, 100, 50, 20, 10, 5, 2, 1];
 
@@ -502,7 +503,7 @@ const CashClosing = () => {
       onChange={onChange}
       size="small"
       fullWidth
-      sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 1 } }}
+      sx={muiFieldSx}
     >
       <MenuItem value="">{allOption ? "All" : `Select ${label}`}</MenuItem>
       {optionsList.map((row) => (
@@ -588,19 +589,19 @@ const CashClosing = () => {
           <Typography component="h2" sx={{ fontSize: 12.25, fontWeight: 600, color: "text.secondary", mb: 1.5 }}>Cash Closing Details</Typography>
           <Stack spacing={1.5} sx={{ maxWidth: 576 }}>
             <Stack direction="row" sx={{ alignItems: "center" }}>
-              <Typography component="label" sx={{ width: "40%", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Date / Time</Typography>
+              <Typography component="label" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Date / Time</Typography>
               <TextField
                 type="text"
                 value={now.toLocaleString()}
                 disabled
                 slotProps={{ input: { readOnly: true } }}
                 size="small"
-                sx={{ flex: 1, ml: 1, "& .MuiInputBase-root": { bgcolor: "action.hover" }, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
+                sx={[muiFieldSx, { flex: 1, ml: 1, "& .MuiInputBase-root": { bgcolor: "action.hover" } }]}
               />
             </Stack>
 
             <Stack direction="row" sx={{ alignItems: "center" }}>
-              <Typography component="label" sx={{ width: "40%", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Counter</Typography>
+              <Typography component="label" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Counter</Typography>
               <Box sx={{ flex: 1, ml: 1 }}>
                 {renderSelect(
                   "Counter",
@@ -613,7 +614,7 @@ const CashClosing = () => {
             </Stack>
 
             <Stack direction="row" sx={{ alignItems: "center" }}>
-              <Typography component="label" sx={{ width: "40%", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Received By</Typography>
+              <Typography component="label" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Received By</Typography>
               <Box sx={{ flex: 1, ml: 1 }}>
                 {renderSelect(
                   "Received By",
@@ -626,7 +627,7 @@ const CashClosing = () => {
             </Stack>
 
             <Stack direction="row" sx={{ alignItems: "center" }}>
-              <Typography component="label" sx={{ width: "40%", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Cashier</Typography>
+              <Typography component="label" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Cashier</Typography>
               <Box sx={{ flex: 1, ml: 1 }}>
                 {renderSelect(
                   "Cashier",
@@ -639,75 +640,75 @@ const CashClosing = () => {
             </Stack>
 
             <Stack direction="row" sx={{ alignItems: "center" }}>
-              <Typography component="label" sx={{ width: "40%", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Opening</Typography>
+              <Typography component="label" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Opening</Typography>
               <TextField
                 type="text"
                 value={loadingOpening ? "Loading..." : formatCurrency(openingAmount)}
                 disabled
                 slotProps={{ input: { readOnly: true } }}
                 size="small"
-                sx={{ flex: 1, ml: 1, "& .MuiInputBase-root": { bgcolor: "action.hover" }, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75, fontWeight: 600 } }}
+                sx={[muiFieldSx, { flex: 1, ml: 1, "& .MuiInputBase-root": { bgcolor: "action.hover" }, "& .MuiInputBase-input": { fontWeight: 600 } }]}
               />
             </Stack>
 
             <Stack direction="row" sx={{ alignItems: "center" }}>
-              <Typography component="label" sx={{ width: "40%", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Closing Bill No</Typography>
+              <Typography component="label" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Closing Bill No</Typography>
               <TextField
                 type="text"
                 value={closingBillNo}
                 disabled
                 slotProps={{ input: { readOnly: true } }}
                 size="small"
-                sx={{ flex: 1, ml: 1, "& .MuiInputBase-root": { bgcolor: "action.hover" }, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75, fontWeight: 600 } }}
+                sx={[muiFieldSx, { flex: 1, ml: 1, "& .MuiInputBase-root": { bgcolor: "action.hover" }, "& .MuiInputBase-input": { fontWeight: 600 } }]}
               />
             </Stack>
 
             <Stack direction="row" sx={{ alignItems: "center" }}>
-              <Typography component="label" sx={{ width: "40%", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Counter Expenses</Typography>
+              <Typography component="label" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Counter Expenses</Typography>
               <TextField
                 type="number"
                 slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
                 value={formData.counterExpenses}
                 onChange={(e) => setFormData((prev) => ({ ...prev, counterExpenses: e.target.value }))}
                 size="small"
-                sx={{ flex: 1, ml: 1, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
+                sx={[muiFieldSx, { flex: 1, ml: 1 }]}
               />
             </Stack>
 
             <Stack direction="row" sx={{ alignItems: "flex-start" }}>
-              <Typography component="label" sx={{ width: "40%", fontSize: 12.25, fontWeight: 500, color: "text.secondary", mt: 0.5 }}>Notes</Typography>
+              <Typography component="label" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mt: 0.5 }}>Notes</Typography>
               <TextField
                 value={formData.notes}
                 onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
                 multiline
                 rows={3}
                 size="small"
-                sx={{ flex: 1, ml: 1, "& .MuiInputBase-input": { fontSize: 12.25 }, "& textarea": { resize: "vertical" } }}
+                sx={[muiFieldSx, { flex: 1, ml: 1, "& textarea": { resize: "vertical" } }]}
               />
             </Stack>
 
             <Stack direction="row" sx={{ alignItems: "center" }}>
-              <Typography component="label" sx={{ width: "40%", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Closing</Typography>
+              <Typography component="label" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Closing</Typography>
               <TextField
                 type="text"
                 value={formatCurrency(closingAmount)}
                 disabled
                 slotProps={{ input: { readOnly: true } }}
                 size="small"
-                sx={{ flex: 1, ml: 1, "& .MuiInputBase-root": { bgcolor: "action.hover" }, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75, fontWeight: 600 } }}
+                sx={[muiFieldSx, { flex: 1, ml: 1, "& .MuiInputBase-root": { bgcolor: "action.hover" }, "& .MuiInputBase-input": { fontWeight: 600 } }]}
               />
             </Stack>
 
             <Box>
               <Stack direction="row" sx={{ alignItems: "center" }}>
-                <Typography component="label" sx={{ width: "40%", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Difference</Typography>
+                <Typography component="label" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Difference</Typography>
                 <TextField
                   type="text"
                   value={formatCurrency(difference)}
                   disabled
                   slotProps={{ input: { readOnly: true } }}
                   size="small"
-                  sx={{ flex: 1, ml: 1, "& .MuiInputBase-root": { bgcolor: "action.hover" }, "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75, fontWeight: 600 } }}
+                  sx={[muiFieldSx, { flex: 1, ml: 1, "& .MuiInputBase-root": { bgcolor: "action.hover" }, "& .MuiInputBase-input": { fontWeight: 600 } }]}
                 />
               </Stack>
               <Typography sx={{ ml: "40%", pl: 1, mt: 0.5, fontSize: 10.5, color: "text.secondary" }}>
@@ -747,7 +748,7 @@ const CashClosing = () => {
                           value={formData[key]}
                           onChange={(e) => handleCountChange(key, e.target.value)}
                           size="small"
-                          sx={{ width: 96, "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, py: 0.5 } }}
+                          sx={[muiFieldSx, { width: 96, "& .MuiInputBase-input": { textAlign: "right" } }]}
                         />
                       </TableCell>
                       <TableCell sx={{ border: 1, borderColor: "divider", px: 1.5, py: 1, textAlign: "right", fontWeight: 500 }}>{formatCurrency(value)}</TableCell>
