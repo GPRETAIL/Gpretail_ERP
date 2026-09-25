@@ -250,7 +250,7 @@ const PosReceiptCopiesTable = ({ copies, onChangeCopies }) => (
 const DiscountDisplayCard = ({ value, onChange }) => (
   <Box sx={{ ...baseCardSx, p: 2.5 }}>
     <Typography component="label" sx={fieldLabelSx}>Show Discount As</Typography>
-    <Stack direction="row" spacing={1.5} sx={{ flexWrap: "wrap" }}>
+    <Stack direction="row" sx={{ flexWrap: "wrap", gap: 1.5 }}>
       {SALES_RECEIPT_DISCOUNT_DISPLAY_OPTIONS.map((option) => (
         <Stack
           component="label"
@@ -1112,7 +1112,7 @@ export default function Customisation() {
                   Control bill barcode visibility, return-slip barcode preference, receipt size, and printed receipt field layout for POS sales.
                 </Typography>
               </Box>
-              <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
+              <Stack direction="row" sx={{ flexWrap: "wrap", gap: 1 }}>
                 <Button
                   type="button"
                   onClick={handleReset}
@@ -1139,7 +1139,7 @@ export default function Customisation() {
             <Typography sx={{ mb: 1.5, maxWidth: 768, fontSize: 12.25, lineHeight: 1.7, color: "text.secondary" }}>
               Applies only to new sales. Numbers already saved stay unchanged if you switch between daily, weekly, monthly, or yearly.
             </Typography>
-            <Stack direction="row" spacing={1.5} sx={{ flexWrap: "wrap" }}>
+            <Stack direction="row" sx={{ flexWrap: "wrap", gap: 1.5 }}>
               {BILL_NUMBER_RESET_OPTIONS.map((option) => (
                 <Stack
                   component="label"
@@ -1186,7 +1186,7 @@ export default function Customisation() {
             <Typography sx={{ mb: 1.5, maxWidth: 768, fontSize: 12.25, lineHeight: 1.7, color: "text.secondary" }}>
               Applies only to new settlements. Numbers already saved stay unchanged if you switch between daily, weekly, monthly, or yearly.
             </Typography>
-            <Stack direction="row" spacing={1.5} sx={{ flexWrap: "wrap" }}>
+            <Stack direction="row" sx={{ flexWrap: "wrap", gap: 1.5 }}>
               {SETTLEMENT_NUMBER_RESET_OPTIONS.map((option) => (
                 <Stack
                   component="label"
@@ -1233,7 +1233,7 @@ export default function Customisation() {
             <Typography sx={{ mb: 1.5, maxWidth: 768, fontSize: 12.25, lineHeight: 1.7, color: "text.secondary" }}>
               Default bill status for new sales from POS Sale, POS Old, and Touch Sale. Unsettled bills stay open until you settle them on the Settlement screen.
             </Typography>
-            <Stack direction="row" spacing={1.5} sx={{ flexWrap: "wrap" }}>
+            <Stack direction="row" sx={{ flexWrap: "wrap", gap: 1.5 }}>
               {SALE_SAVE_AS_OPTIONS.map((option) => (
                 <Stack
                   component="label"
@@ -1322,7 +1322,7 @@ export default function Customisation() {
                 <Typography sx={{ mb: 1.5, fontSize: 12.25, lineHeight: 1.7, color: "text.secondary" }}>
                   Applies to sale and return slips when the barcode options above are enabled.
                 </Typography>
-                <Stack direction="row" spacing={1.5} sx={{ flexWrap: "wrap" }}>
+                <Stack direction="row" sx={{ flexWrap: "wrap", gap: 1.5 }}>
                   {RECEIPT_CODE_TYPE_OPTIONS.map((option) => (
                     <Stack
                       component="label"
@@ -1433,7 +1433,7 @@ export default function Customisation() {
             <Typography sx={{ mb: 1.5, maxWidth: 768, fontSize: 12.25, lineHeight: 1.7, color: "text.secondary" }}>
               Applies to the printed receipt (and thermal printers) as well as the preview on the right. The monospace options keep amount columns aligned on narrow thermal paper.
             </Typography>
-            <Stack direction="row" spacing={1.5} sx={{ flexWrap: "wrap" }}>
+            <Stack direction="row" sx={{ flexWrap: "wrap", gap: 1.5 }}>
               {RECEIPT_FONT_OPTIONS.map((option) => (
                 <Stack
                   component="label"
@@ -1512,7 +1512,7 @@ export default function Customisation() {
             <Typography sx={{ mb: 1.5, maxWidth: 768, fontSize: 12.25, lineHeight: 1.7, color: "text.secondary" }}>
               Prints a &ldquo;Scan to Pay&rdquo; QR at the end of the receipt. Only the UPI ID option can carry the bill amount -- an uploaded image is a fixed picture, so the customer types the amount themselves.
             </Typography>
-            <Stack direction="row" spacing={1.5} sx={{ flexWrap: "wrap" }}>
+            <Stack direction="row" sx={{ flexWrap: "wrap", gap: 1.5 }}>
               {PAYMENT_QR_MODE_OPTIONS.map((option) => (
                 <Stack
                   component="label"
@@ -1594,7 +1594,7 @@ export default function Customisation() {
                 <Typography component="label" htmlFor="sales-payment-qr-image" sx={fieldLabelSx}>
                   QR Image
                 </Typography>
-                <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap", alignItems: "flex-start" }}>
+                <Stack direction="row" sx={{ flexWrap: "wrap", alignItems: "flex-start", gap: 2 }}>
                   <Box
                     component="input"
                     id="sales-payment-qr-image"
