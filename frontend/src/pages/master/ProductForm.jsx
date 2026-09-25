@@ -466,16 +466,20 @@ const ProductForm = () => {
       />
 
       <Box sx={{ p: 1.5, flex: 1, minHeight: 0, overflowY: "auto" }}>
+        {/* minHeight: "100%" + the flex column below make the card fill the scroll area's height
+            instead of shrinking to its (shorter-than-a-tall-monitor) content and leaving bare page
+            background underneath it -- the grid then gets flex:1 to actually claim that height. */}
         <Card
           variant="outlined"
-          sx={{ p: 1.5 }}
+          sx={{ p: 1.5, minHeight: "100%", display: "flex", flexDirection: "column" }}
           data-enter-scope="true"
           onKeyDownCapture={handleEnterKeyNavigation}
         >
-          {/* Reduced inner padding */}
-          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "repeat(12, 1fr)" }, gap: 1.5 }}>
-            {/* Reduced gap */} {/* --- Column 1: Left --- */}
-            <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 1 }}>
+          {/* An md step (2 columns) between the xs single column and the lg 3-column layout, so the
+              form doesn't jump straight from full-width to cramped-3-across at 1024px. */}
+          <Box sx={{ flex: 1, display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr", lg: "repeat(12, 1fr)" }, gap: 2 }}>
+            {/* --- Column 1: Left --- */}
+            <Box sx={{ gridColumn: { xs: "span 12", md: "span 1", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 1 }}>
               {/* Reduced vertical space */}
               <SelectInput
                 label="Product Group"
@@ -572,7 +576,9 @@ const ProductForm = () => {
               />
             </Box>
             {/* --- Column 2: Middle --- */}
-            <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 1, borderLeft: 1, borderRight: 1, borderColor: "divider", px: 1.5 }}>
+            {/* The side dividers only make sense once column 1 is actually beside this one (md+) --
+                stacked full-width on xs, a left/right border would just look like a stray line. */}
+            <Box sx={{ gridColumn: { xs: "span 12", md: "span 1", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 1, borderLeft: { xs: 0, md: 1 }, borderRight: { xs: 0, md: 1 }, borderColor: "divider", px: { xs: 0, md: 1.5 } }}>
               {/* Reduced vertical space and horizontal padding */}
               <SearchableSelect
                 label="Company Type"
@@ -673,7 +679,9 @@ const ProductForm = () => {
               />
             </Box>
             {/* --- Column 3: Right (Attributes Table) --- */}
-            <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, pl: 1.5 }}>
+            {/* Full width at md (a 2-up row under columns 1+2, not a cramped third column in a
+                2-column grid) -- only goes genuinely side-by-side at lg, where there's room for it. */}
+            <Box sx={{ gridColumn: { xs: "span 12", md: "span 2", lg: "span 4" }, pl: { xs: 0, lg: 1.5 } }}>
               {/* Reduced horizontal padding */} {/* Header with Checkbox */}
               <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", mb: 1.5 }}>
                 {/* Reduced vertical margin */}
@@ -691,7 +699,10 @@ const ProductForm = () => {
                   Configure
                 </Stack>
               </Stack>
-              <Box sx={{ border: 1, borderColor: "grey.300", borderRadius: "3.5px", overflow: "hidden", height: { xs: 320, md: 380, xl: 450 }, display: "flex", flexDirection: "column" }}>
+              {/* Scrolls internally (the body box below is overflowY:auto), so a taller value here
+                  just surfaces more rows before that scroll kicks in -- purely a "use the extra
+                  space a big monitor has" bump, never a risk of clipping shorter content. */}
+              <Box sx={{ border: 1, borderColor: "grey.300", borderRadius: "3.5px", overflow: "hidden", height: { xs: 320, md: 380, lg: 420, xl: 520 }, display: "flex", flexDirection: "column" }}>
                 {/* Slight height adjustment */} {/* Table Header */}
                 <Stack direction="row" sx={{ bgcolor: "action.hover", fontSize: 10.5, fontWeight: 600, color: "text.secondary", borderBottom: 1, borderColor: "divider" }}>
                   <Box sx={{ width: "75%", px: 1, py: 0.5 }}>Name</Box>
