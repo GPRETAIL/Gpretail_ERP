@@ -1433,7 +1433,7 @@ export default function Customisation() {
             <Typography sx={{ mb: 1.5, maxWidth: 768, fontSize: 12.25, lineHeight: 1.7, color: "text.secondary" }}>
               Applies to the printed receipt (and thermal printers) as well as the preview on the right. The monospace options keep amount columns aligned on narrow thermal paper.
             </Typography>
-            <Stack direction="row" sx={{ flexWrap: "wrap", gap: 1.5 }}>
+            <Stack direction="row" sx={{ flexWrap: "wrap", gap: 2 }}>
               {RECEIPT_FONT_OPTIONS.map((option) => (
                 <Stack
                   component="label"
