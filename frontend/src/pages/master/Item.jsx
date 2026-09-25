@@ -129,7 +129,7 @@ const Label = ({ text, required }) => (
 
 const Row = ({ label, required, children }) => (
   <Stack direction="row" sx={{ alignItems: "center" }}>
-    <Box sx={{ width: "40%", flexShrink: 0, textAlign: "right", pr: 1.5 }}>
+    <Box sx={{ width: "40%", flexShrink: 0, textAlign: "left", pr: 1.5 }}>
       <Label text={label} required={required} />
     </Box>
     <Box sx={{ flex: 1, minWidth: 0 }}>{children}</Box>
@@ -185,11 +185,11 @@ const ToggleRow = ({ label, checked, onCheck, value, onValue, placeholder = "" }
 const PairRow = ({ label1, val1, onChange1, label2, val2, onChange2, disabled }) => (
   <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1.5 }}>
     <Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
-      <Typography component="span" sx={{ ...LABEL_SX, whiteSpace: "nowrap", width: 96, flexShrink: 0, textAlign: "right" }}>{label1}</Typography>
+      <Typography component="span" sx={{ ...LABEL_SX, whiteSpace: "nowrap", width: 96, flexShrink: 0, textAlign: "left" }}>{label1}</Typography>
       <TInput value={val1} onChange={onChange1} disabled={disabled} />
     </Stack>
     <Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
-      <Typography component="span" sx={{ ...LABEL_SX, whiteSpace: "nowrap", width: 96, flexShrink: 0, textAlign: "right" }}>{label2}</Typography>
+      <Typography component="span" sx={{ ...LABEL_SX, whiteSpace: "nowrap", width: 96, flexShrink: 0, textAlign: "left" }}>{label2}</Typography>
       <TInput value={val2} onChange={onChange2} disabled={disabled} />
     </Stack>
   </Box>

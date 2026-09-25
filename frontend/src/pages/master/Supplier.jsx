@@ -73,7 +73,7 @@ const SUPPLIER_IMPORT_CONFIG = {
 
 // ─── Helper components at module level (prevents focus-loss on re-render) ────
 
-const LABEL_SX = { width: "40%", flexShrink: 0, fontSize: 11.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 };
+const LABEL_SX = { width: "40%", flexShrink: 0, fontSize: 11.5, fontWeight: 500, color: "text.secondary", textAlign: "left", pr: 1.5 };
 
 const TextInput = ({ label, name, required = false, value, onChange, placeholder = "", icon = null, type = "text", disabled = false }) => (
   <Stack direction="row" sx={{ alignItems: "center" }}>
@@ -122,7 +122,7 @@ const DualSelectInput = ({ label, name1, value1, name2, value2, onChange, option
 
 const SingleInputRight = ({ label, name, required = false, value, onChange, placeholder = "", type = "text" }) => (
   <Stack direction="row" sx={{ alignItems: "center" }}>
-    <Typography component="label" sx={{ width: "30%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", pr: 1.5, textAlign: "right" }}>
+    <Typography component="label" sx={{ width: "30%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", pr: 1.5, textAlign: "left" }}>
       {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}{label}
     </Typography>
     <Box component="input" type={type} name={name} value={value} onChange={onChange} placeholder={placeholder} sx={{ width: "70%", minWidth: 0, ...fieldBaseSx(false) }} />
@@ -131,7 +131,7 @@ const SingleInputRight = ({ label, name, required = false, value, onChange, plac
 
 const SelectInputRight = ({ label, name, required = false, options = [], value, onChange }) => (
   <Stack direction="row" sx={{ alignItems: "center" }}>
-    <Typography component="label" sx={{ width: "30%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", pr: 1.5, textAlign: "right" }}>
+    <Typography component="label" sx={{ width: "30%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", pr: 1.5, textAlign: "left" }}>
       {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}{label}
     </Typography>
     <Box component="select" name={name} value={value} onChange={onChange} sx={{ width: "70%", minWidth: 0, ...fieldBaseSx(false) }}>
@@ -143,7 +143,7 @@ const SelectInputRight = ({ label, name, required = false, options = [], value, 
 
 const BankBranchField = ({ label, bankName, bankValue, branchName, branchValue, onChange, bankOptions = [] }) => (
   <Stack direction="row" sx={{ alignItems: "center" }}>
-    <Typography component="label" sx={{ width: "30%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", pr: 1.5, textAlign: "right" }}>{label}</Typography>
+    <Typography component="label" sx={{ width: "30%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", pr: 1.5, textAlign: "left" }}>{label}</Typography>
     <Stack direction="row" sx={{ width: "70%", gap: 0.5 }}>
       <Box component="select" name={bankName} value={bankValue} onChange={onChange} sx={{ width: "50%", minWidth: 0, ...fieldBaseSx(false) }}>
         <option value="">Select Bank</option>
@@ -156,7 +156,7 @@ const BankBranchField = ({ label, bankName, bankValue, branchName, branchValue, 
 
 const DualTextFieldRight = ({ label, name1, value1, name2, value2, onChange, placeholder1 = "", placeholder2 = "" }) => (
   <Stack direction="row" sx={{ alignItems: "center" }}>
-    <Typography component="label" sx={{ width: "30%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", pr: 1.5, textAlign: "right" }}>{label}</Typography>
+    <Typography component="label" sx={{ width: "30%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", pr: 1.5, textAlign: "left" }}>{label}</Typography>
     <Stack direction="row" sx={{ width: "70%", gap: 0.5 }}>
       <Box component="input" type="text" name={name1} value={value1} onChange={onChange} placeholder={placeholder1} sx={{ width: "50%", minWidth: 0, ...fieldBaseSx(false) }} />
       <Box component="input" type="text" name={name2} value={value2} onChange={onChange} placeholder={placeholder2} sx={{ width: "50%", minWidth: 0, ...fieldBaseSx(false) }} />
@@ -166,7 +166,7 @@ const DualTextFieldRight = ({ label, name1, value1, name2, value2, onChange, pla
 
 const MsmeRow = ({ label, inputName, selectName, inputValue, selectValue, onChange, groupOptions = [] }) => (
   <Stack direction="row" sx={{ alignItems: "center" }}>
-    <Typography component="label" sx={{ width: "30%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", pr: 1.5, textAlign: "right" }}>{label}</Typography>
+    <Typography component="label" sx={{ width: "30%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", pr: 1.5, textAlign: "left" }}>{label}</Typography>
     <Stack direction="row" sx={{ width: "70%", gap: 0.5 }}>
       <Box component="input" type="text" name={inputName} value={inputValue} onChange={onChange} sx={{ width: "50%", minWidth: 0, ...fieldBaseSx(false) }} />
       <Box component="select" name={selectName} value={selectValue} onChange={onChange} sx={{ width: "50%", minWidth: 0, ...fieldBaseSx(false) }}>
@@ -192,7 +192,7 @@ const RenamedRow = ({ label, name, checked, selectName, selectValue, onChange, o
 
 const ComplexInputRow = ({ label1, unit1, name1, unit2, name2, label2, value1, value2, onChange }) => (
   <Stack direction="row" sx={{ alignItems: "center" }}>
-    <Typography component="label" sx={{ width: "30%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", pr: 1.5, textAlign: "right" }}>{label1}</Typography>
+    <Typography component="label" sx={{ width: "30%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", pr: 1.5, textAlign: "left" }}>{label1}</Typography>
     <Typography component="span" sx={{ width: "10%", fontSize: 10.5, color: "text.secondary", pr: 0.5 }}>{unit1}</Typography>
     <Box component="input" type="text" name={name1} value={value1} onChange={onChange} sx={{ width: "20%", minWidth: 0, ...fieldBaseSx(false), textAlign: "right" }} />
     <Typography component="span" sx={{ width: "10%", fontSize: 10.5, color: "text.secondary", textAlign: "center" }}>{label2}</Typography>
@@ -203,7 +203,7 @@ const ComplexInputRow = ({ label1, unit1, name1, unit2, name2, label2, value1, v
 
 const CheckboxRow = ({ mainLabel, label1, name1, label2, name2, value1, value2, onChange }) => (
   <Stack direction="row" sx={{ alignItems: "center" }}>
-    <Typography component="label" sx={{ width: "30%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", pr: 1.5, textAlign: "right" }}>{mainLabel}</Typography>
+    <Typography component="label" sx={{ width: "30%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", pr: 1.5, textAlign: "left" }}>{mainLabel}</Typography>
     <Stack direction="row" sx={{ width: "30%", alignItems: "center", gap: 0.5 }}>
       <Typography component="span" sx={{ fontSize: 10.5, color: "text.secondary" }}>{label1}</Typography>
       <Box component="input" type="checkbox" name={name1} checked={value1} onChange={onChange} sx={{ width: 14, height: 14, m: 0, accentColor: "#2563eb" }} />
@@ -228,7 +228,7 @@ const BottomCheckboxGroup = ({ label, name, checked, onChange }) => (
 
 const AdvanceTextInput = ({ label, name, required = false, value, onChange, placeholder = "", type = "text" }) => (
   <Stack direction="row" sx={{ alignItems: "center" }}>
-    <Typography component="label" sx={{ width: "35%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", pr: 1.5, textAlign: "right" }}>
+    <Typography component="label" sx={{ width: "35%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", pr: 1.5, textAlign: "left" }}>
       {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}{label}
     </Typography>
     <Box component="input" type={type} name={name} value={value} onChange={onChange} placeholder={placeholder} sx={{ width: "65%", minWidth: 0, ...fieldBaseSx(false) }} />
@@ -237,7 +237,7 @@ const AdvanceTextInput = ({ label, name, required = false, value, onChange, plac
 
 const AdvanceSelectInput = ({ label, name, required = false, options = [], value, onChange }) => (
   <Stack direction="row" sx={{ alignItems: "center" }}>
-    <Typography component="label" sx={{ width: "35%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", pr: 1.5, textAlign: "right" }}>
+    <Typography component="label" sx={{ width: "35%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", pr: 1.5, textAlign: "left" }}>
       {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}{label}
     </Typography>
     <Box component="select" name={name} value={value} onChange={onChange} sx={{ width: "65%", minWidth: 0, ...fieldBaseSx(false) }}>
@@ -249,7 +249,7 @@ const AdvanceSelectInput = ({ label, name, required = false, options = [], value
 
 const AdvanceDualSelectInput = ({ label, name1, value1, name2, value2, onChange, options1 = [], options2 = [] }) => (
   <Stack direction="row" sx={{ alignItems: "center" }}>
-    <Typography component="label" sx={{ width: "35%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", pr: 1.5, textAlign: "right" }}>{label}</Typography>
+    <Typography component="label" sx={{ width: "35%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", pr: 1.5, textAlign: "left" }}>{label}</Typography>
     <Stack direction="row" sx={{ width: "65%", alignItems: "center", gap: 0.5 }}>
       <Box component="select" name={name1} value={value1} onChange={onChange} sx={{ width: "50%", minWidth: 0, ...fieldBaseSx(false) }}>
         <option value="">Select State</option>
@@ -822,7 +822,7 @@ const Supplier = () => {
           options={opts.addressTypes} value={formData.advanceAddressType} onChange={handleChange} />
         <AdvanceTextInput label="Contact No" name="advanceContactNo" required value={formData.advanceContactNo} onChange={handleChange} />
         <Stack direction="row">
-          <Typography component="label" sx={{ width: "35%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", pr: 1.5, pt: 0.75, textAlign: "right" }}>
+          <Typography component="label" sx={{ width: "35%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", pr: 1.5, pt: 0.75, textAlign: "left" }}>
             <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>Address
           </Typography>
           <Box component="textarea" name="advanceAddress" value={formData.advanceAddress} onChange={handleChange} rows={3} sx={{ width: "65%", minWidth: 0, ...fieldBaseSx(false), height: "auto", py: 0.75, resize: "vertical", fontFamily: "inherit" }} />
@@ -833,7 +833,7 @@ const Supplier = () => {
           name2="advanceCountry" value2={formData.advanceCountry}
           onChange={handleChange} options1={opts.states} options2={[]} />
         <Stack direction="row" sx={{ alignItems: "center" }}>
-          <Typography component="label" sx={{ width: "35%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", pr: 1.5, textAlign: "right" }}>Pincode</Typography>
+          <Typography component="label" sx={{ width: "35%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", pr: 1.5, textAlign: "left" }}>Pincode</Typography>
           <Stack direction="row" sx={{ width: "65%", alignItems: "center" }}>
             <Box component="input" type="text" name="advancePincode" value={formData.advancePincode} onChange={handleChange} sx={{ width: "100%", minWidth: 0, ...fieldBaseSx(false) }} />
             <IconButton className="glass-btn glass-btn-primary" sx={{ ml: 0.5, p: 0.75 }} type="button">
@@ -863,7 +863,7 @@ const Supplier = () => {
         <Stack direction="row" sx={{ alignItems: "center" }}>
           <Box sx={{ flex: 1 }}>
             <Stack direction="row" sx={{ alignItems: "center" }}>
-              <Typography component="label" sx={{ width: "35%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", pr: 1.5, textAlign: "right" }}>Name</Typography>
+              <Typography component="label" sx={{ width: "35%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", pr: 1.5, textAlign: "left" }}>Name</Typography>
               <Box sx={{ width: "65%" }}>
                 <AsyncSearchSelect
                   name="advanceProductName"
@@ -898,7 +898,7 @@ const Supplier = () => {
         <Stack direction="row" sx={{ alignItems: "center" }}>
           <Box sx={{ flex: 1 }}>
             <Stack direction="row" sx={{ alignItems: "center" }}>
-              <Typography component="label" sx={{ width: "35%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", pr: 1.5, textAlign: "right" }}>Name</Typography>
+              <Typography component="label" sx={{ width: "35%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", pr: 1.5, textAlign: "left" }}>Name</Typography>
               <Box sx={{ width: "65%" }}>
                 <AsyncSearchSelect
                   name="advanceBrandName"
