@@ -5,7 +5,7 @@ import { toast } from "react-toastify";
 import api from "../api/axios";
 import { HourlySalesChart, DailyTrendChart } from "../components/DashboardCharts";
 import { LeaderboardCard } from "../components/DashboardHighlightCards";
-import { DailySalesSummaryTable, SettlementDetailsTable } from "../components/DashboardTables";
+import { DailySalesSummaryTable, SettlementDetailsTable, SupplierPaymentsTable } from "../components/DashboardTables";
 import DashboardGrid from "../components/dashboard/DashboardGrid";
 import {
   TotalBillsCard,
@@ -293,6 +293,16 @@ const Dashboard = () => {
           viewAllLabel: "View All",
         },
         defaultLayout: { x: 6, y: 8 + BELOW_KPI_ROW_H, w: 6, h: BELOW_KPI_ROW_H, minW: 4, minH: 3 },
+      },
+      {
+        key: "table-supplier-payments",
+        title: "Supplier Payments",
+        component: SupplierPaymentsTable,
+        props: { table: tables?.supplierPayments, loading, privacyMode },
+        // Full width, below both Fast Moving Products and Sales Person of the Day -- six columns
+        // need more room than either half-width card above it, and slightly taller (h:5, not the
+        // usual 4) since it can carry up to 15 rows rather than a leaderboard's top-5.
+        defaultLayout: { x: 0, y: 8 + BELOW_KPI_ROW_H * 2, w: 12, h: 5, minW: 6, minH: 4 },
       },
     ].filter((widget) => {
       // Skip Action Required entirely once we know it's empty, instead of rendering an empty

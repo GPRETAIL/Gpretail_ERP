@@ -227,6 +227,62 @@ class DashboardController extends Controller
             'value'   => (float) $r->value,
         ])->all();
 
+        // Supplier Payments (Overview) - per-invoice outstanding payables across both payable
+        // document types (Direct Purchase and Purchase Invoice), the same two sources Finance's own
+        // payables KPI already sums (see FinanceDashboardService::getSummary). One row per document
+        // here instead of that summary's per-supplier aggregate, so Overview can show what's
+        // actually due, per invoice, and how overdue it is -- ordered most-overdue first.
+        $overdueThresholdDays = 30;
+        $todayForDays = Carbon::today();
+
+        $dpPayments = DB::table('direct_purchases as dp')
+            ->leftJoin('suppliers as s', 's.id', '=', 'dp.supplier_id')
+            ->when($storeId && $storeId !== 'all', fn ($q) => $q->where(fn ($sq) => $sq->where('dp.store_id', $storeId)->orWhere('dp.company_id', $storeId)))
+            ->whereRaw('dp.total_amount > dp.paid_amount')
+            ->selectRaw('
+                COALESCE(s.name, dp.supplier_name, "Unknown") as supplier_name,
+                COALESCE(dp.invoice_no, dp.purchase_no) as invoice_no,
+                COALESCE(dp.purchase_type, "Direct Purchase") as invoice_type,
+                COALESCE(dp.invoice_date, dp.purchase_date) as invoice_date,
+                dp.total_amount as invoice_value,
+                (dp.total_amount - dp.paid_amount) as balance
+            ');
+
+        $piPayments = DB::table('purchase_invoices as pi')
+            ->leftJoin('suppliers as s', 's.id', '=', 'pi.supplier_id')
+            ->when($storeId && $storeId !== 'all', fn ($q) => $q->where('pi.store_id', $storeId))
+            ->whereRaw('pi.grand_total > pi.paid_amount')
+            ->selectRaw('
+                COALESCE(s.name, "Unknown") as supplier_name,
+                COALESCE(pi.supplier_invoice_no, pi.invoice_no) as invoice_no,
+                "Purchase Invoice" as invoice_type,
+                COALESCE(pi.supplier_invoice_date, pi.invoice_date) as invoice_date,
+                pi.grand_total as invoice_value,
+                (pi.grand_total - pi.paid_amount) as balance
+            ');
+
+        $supplierPaymentRows = $dpPayments->unionAll($piPayments)->get()
+            ->map(function ($row) use ($todayForDays, $overdueThresholdDays) {
+                $invoiceDate = $row->invoice_date ? Carbon::parse($row->invoice_date) : null;
+                $days = $invoiceDate ? $invoiceDate->diffInDays($todayForDays) : null;
+                return [
+                    'supplierName' => $row->supplier_name,
+                    'invoiceNo'    => $row->invoice_no ?: '-',
+                    'invoiceType'  => $row->invoice_type,
+                    'days'         => $days,
+                    'invoiceValue' => (float) $row->invoice_value,
+                    'balance'      => (float) $row->balance,
+                    'overdue'      => $days !== null && $days > $overdueThresholdDays,
+                ];
+            })
+            ->sortByDesc('days')
+            ->values()
+            ->take(15)
+            ->all();
+
+        $supplierPaymentsTotalBalance = collect($supplierPaymentRows)->sum('balance');
+        $supplierPaymentsOverdueCount = collect($supplierPaymentRows)->where('overdue', true)->count();
+
         // Store List
         $stores = Store::when($storeId && $storeId !== 'all', fn ($q) => $q->where('id', $storeId))->get();
         if ($stores->isEmpty()) {
@@ -523,6 +579,13 @@ class DashboardController extends Controller
                     'fastMovingSection' => [
                         'title' => 'Fast Moving Products',
                         'rows'  => $topSellingRows,
+                    ],
+                    'supplierPayments' => [
+                        'title'        => 'Supplier Payments',
+                        'rows'         => $supplierPaymentRows,
+                        'totalBalance' => $supplierPaymentsTotalBalance,
+                        'overdueCount' => $supplierPaymentsOverdueCount,
+                        'overdueDays'  => $overdueThresholdDays,
                     ],
                     'salesPersonOfTheDay' => [
                         'title' => 'Sales Person of the Day',

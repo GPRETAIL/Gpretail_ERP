@@ -1,6 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Box, Button, Stack, Table, TableBody, TableCell, TableFooter, TableHead, TableRow, Typography } from "@mui/material";
+import { StatusChip } from "../theme/StatusChip";
 
 const tableCardSx = { height: "100%", borderRadius: "5.25px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", p: 1.5 };
 
@@ -196,6 +197,93 @@ export const SettlementDetailsTable = ({ table, loading, privacyMode }) => {
             ) : null}
           </Table>
         </Box>
+      )}
+    </Box>
+  );
+};
+
+// Per-invoice outstanding payables across both payable document types (Direct Purchase and
+// Purchase Invoice) -- see DashboardController::overview()'s supplierPaymentRows for the query.
+// Deliberately scoped to invoices eligible for supplier payment (balance > 0) only -- no stock/
+// quantity columns, that's what Fast Moving Products / the Warehouse tab already cover.
+export const SupplierPaymentsTable = ({ table, loading, privacyMode }) => {
+  const navigate = useNavigate();
+  const rows = table?.rows || [];
+  const overdueCount = table?.overdueCount || 0;
+  const overdueDays = table?.overdueDays ?? 30;
+  const blurSx = privacyMode ? { filter: "blur(4px)", userSelect: "none" } : {};
+
+  return (
+    <Box sx={tableCardSx}>
+      <Stack direction="row" sx={{ mb: 1, alignItems: "center", justifyContent: "space-between", gap: 1 }}>
+        <Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
+          <Typography component="h2" sx={{ fontSize: 14, fontWeight: 600, color: "text.primary" }}>{table?.title || "Supplier Payments"}</Typography>
+          {overdueCount > 0 && <StatusChip label={`${overdueCount} overdue`} tone="error" />}
+        </Stack>
+        <Button
+          size="small"
+          onClick={() => navigate("/finance/supplier-payment")}
+          sx={{ fontSize: 12, fontWeight: 600, p: 0, minWidth: "auto", "&:hover": { bgcolor: "transparent", textDecoration: "underline" } }}
+        >
+          View All
+        </Button>
+      </Stack>
+      {loading ? (
+        <Box sx={{ height: 320, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "text.secondary" }}>Loading table...</Box>
+      ) : (
+        <Box sx={{ overflowX: "auto", width: "100%" }}>
+          <Table size="small" sx={{ width: "100%", minWidth: "max-content", "& .MuiTableCell-root": { py: 0.5 }, "& tbody tr:last-child td": { borderBottom: 0 } }}>
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ fontSize: 12, color: "text.secondary" }}>Supplier</TableCell>
+                <TableCell sx={{ fontSize: 12, color: "text.secondary" }}>Invoice No</TableCell>
+                <TableCell sx={{ fontSize: 12, color: "text.secondary" }}>Type</TableCell>
+                <TableCell align="right" sx={{ fontSize: 12, color: "text.secondary" }}>Days</TableCell>
+                <TableCell align="right" sx={{ fontSize: 12, color: "text.secondary" }}>Invoice Value</TableCell>
+                <TableCell align="right" sx={{ fontSize: 12, color: "text.secondary" }}>Balance</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {rows.length ? (
+                rows.map((row, index) => (
+                  <TableRow
+                    key={`${row.supplierName}-${row.invoiceNo}-${index}`}
+                    sx={{
+                      "&:hover": { bgcolor: "action.hover" },
+                      ...(row.overdue ? { bgcolor: (theme) => (theme.palette.mode === "dark" ? "rgba(239,68,68,0.08)" : "rgba(239,68,68,0.05)") } : {}),
+                    }}
+                  >
+                    <TableCell sx={{ color: "text.primary" }}>{row.supplierName}</TableCell>
+                    <TableCell sx={{ color: "text.secondary" }}>{row.invoiceNo}</TableCell>
+                    <TableCell sx={{ color: "text.secondary" }}>{row.invoiceType}</TableCell>
+                    <TableCell align="right">
+                      {row.overdue ? (
+                        <StatusChip label={`${row.days}d`} tone="error" />
+                      ) : (
+                        <Box component="span" sx={{ color: "text.secondary" }}>{row.days ?? "-"}</Box>
+                      )}
+                    </TableCell>
+                    <TableCell align="right" sx={{ color: "text.primary", ...blurSx }}>{formatCurrency(row.invoiceValue)}</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 500, color: row.overdue ? "error.main" : "text.primary", ...blurSx }}>
+                      {formatCurrency(row.balance)}
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={6} align="center" sx={{ py: 4, fontSize: 14, color: "text.secondary" }}>
+                    No outstanding supplier payments
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </Box>
+      )}
+      {rows.length > 0 && (
+        <Typography sx={{ mt: 1, fontSize: 11, color: "text.secondary" }}>
+          Overdue = invoice date older than {overdueDays} days.
+        </Typography>
       )}
     </Box>
   );
