@@ -17,6 +17,15 @@ ErrorDocument 403 /index.php
 # cached app shell - for up to 7 days no matter how many times the
 # backend gets redeployed. Force these specific files to always
 # revalidate so PWA updates actually reach users after a deploy.
+#
+# index.html has the exact same problem and is worse in practice: every SPA
+# route (this app has no other physical entry point) resolves to it, it has
+# no content hash of its own, and it's what NAMES the current hashed JS/CSS
+# bundle -- so a 7-day-cached copy keeps pointing every route at last week's
+# bundle regardless of how many times the backend gets redeployed. Confirmed
+# live on dev.gpsoftware.in: server responses for "/" carried a bare
+# "Cache-Control: public" with no max-age of our own, meaning Hostinger's
+# blanket 7-day rule was the only one in effect.
 <IfModule mod_headers.c>
     <FilesMatch "^(sw|service-worker|registerSW)\.js$">
         Header set Cache-Control "no-cache, no-store, must-revalidate"
@@ -24,6 +33,9 @@ ErrorDocument 403 /index.php
         Header unset Expires
     </FilesMatch>
     <FilesMatch "^manifest\.webmanifest$">
+        Header set Cache-Control "no-cache, must-revalidate"
+    </FilesMatch>
+    <FilesMatch "^index\.html$">
         Header set Cache-Control "no-cache, must-revalidate"
     </FilesMatch>
 </IfModule>
