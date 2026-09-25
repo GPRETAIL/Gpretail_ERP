@@ -36,7 +36,12 @@ const ModulePage = () => {
   // Global modules hub page (all sidebar top-level menus as cards)
   if (normalizedModuleName === "modules") {
     return (
-      <Box component="section" sx={{ p: 3, bgcolor: "background.default", color: "text.primary", minHeight: "100%" }}>
+      // height:"100%" + overflowY:"auto": MainLayout's routed-content wrapper is overflow:hidden
+      // (every page is expected to scroll itself), which this page never did -- with enough cards
+      // to exceed the viewport (near-guaranteed on mobile's 2-column grid, common on desktop too
+      // once a module has a dozen-plus sub-pages), everything past the fold was simply unreachable,
+      // not just visually cut off.
+      <Box component="section" sx={{ height: "100%", overflowY: "auto", p: 3, bgcolor: "background.default", color: "text.primary" }}>
         <Typography variant="h5" component="h1" sx={{ fontWeight: 600, mb: 3, color: "text.primary" }}>
           All Modules
         </Typography>
@@ -91,7 +96,9 @@ const ModulePage = () => {
   const isSales = normalizedModuleName === "sales";
 
   return (
-    <Box component="section" sx={{ p: 3, bgcolor: "background.default", color: "text.primary", minHeight: "100%" }}>
+    // Same fix as the "modules" hub branch above -- this is the far more common case in practice
+    // (every module's own sub-page grid), and was clipping content just as silently.
+    <Box component="section" sx={{ height: "100%", overflowY: "auto", p: 3, bgcolor: "background.default", color: "text.primary" }}>
       {/* Module Header Card: clickable to all-modules hub */}
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(3, 1fr)", lg: "repeat(4, 1fr)" }, gap: 2.5, mb: 3, alignItems: "start" }}>
         <Card
