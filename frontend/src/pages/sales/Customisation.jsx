@@ -1098,7 +1098,10 @@ export default function Customisation() {
   return (
     <Box sx={{ height: "calc(100vh - 53px)", overflow: "hidden", bgcolor: "background.default", px: 2, py: 2, color: "text.primary" }}>
       <Box sx={{ display: "grid", height: "100%", gap: 2, gridTemplateColumns: { xl: "minmax(0,1fr) 420px" } }}>
-        <Stack spacing={2} sx={{ minHeight: 0, overflowY: "auto", pr: 0.5 }}>
+        {/* Children must not shrink: this is a scrolling flex column, and the receipt field tables use
+            overflow:hidden (for their rounded corners), which drops their automatic min-height to 0 --
+            so flexbox squeezed them to a 2px border line instead of letting the column scroll. */}
+        <Stack spacing={2} sx={{ minHeight: 0, overflowY: "auto", pr: 0.5, "& > *": { flexShrink: 0 } }}>
           {/* Sticky so the header - title, description, and Save/Reset - stays reachable while
               scrolling through the settings below, instead of scrolling away with them. */}
           <Box sx={{ ...baseCardSx, position: "sticky", top: 0, zIndex: 20, px: 2.5, py: 2.5 }}>
