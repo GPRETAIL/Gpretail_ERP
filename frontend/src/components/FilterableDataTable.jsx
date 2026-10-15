@@ -180,6 +180,8 @@ export default function FilterableDataTable({
   fixedHeight = true,
   // Feature 1b: Fill available page height on large screens
   fillHeight = false,
+  autoHideScrollbars = false,
+  filterPanelWidth = 380,
   compact = true,
   // Feature 1c: Row virtualization (opt-in; requires compact=true -- that's the only mode with a
   // CSS-enforced, uniform row height, see the .compact-data-table rule in index.css). No-op with a
@@ -257,6 +259,15 @@ export default function FilterableDataTable({
   const leadingHeaderRef = useRef(null);
   const headerCellRefs = useRef({});
   const tableContainerRef = useRef(null);
+  const scrollbarIdleTimer = useRef(null);
+  const [scrollbarsVisible, setScrollbarsVisible] = useState(false);
+  const revealScrollbars = useCallback(() => {
+    if (!autoHideScrollbars) return;
+    setScrollbarsVisible(true);
+    clearTimeout(scrollbarIdleTimer.current);
+    scrollbarIdleTimer.current = setTimeout(() => setScrollbarsVisible(false), 1200);
+  }, [autoHideScrollbars]);
+  useEffect(() => () => clearTimeout(scrollbarIdleTimer.current), []);
   const rowNodeRefs = useRef(new Map());
   const filterInputRef = useRef(null);
   const stableSchemaColumnsRef = useRef(columns);
@@ -2179,11 +2190,26 @@ export default function FilterableDataTable({
 
       <TableContainer
         ref={tableContainerRef}
+        data-scrollbar-visible={autoHideScrollbars ? scrollbarsVisible : undefined}
+        tabIndex={autoHideScrollbars ? 0 : undefined}
+        role={autoHideScrollbars ? "region" : undefined}
+        aria-label={autoHideScrollbars ? "Scrollable table results" : undefined}
+        onScroll={autoHideScrollbars ? revealScrollbars : undefined}
+        onPointerEnter={autoHideScrollbars ? revealScrollbars : undefined}
+        onPointerMove={autoHideScrollbars ? revealScrollbars : undefined}
+        onFocusCapture={autoHideScrollbars ? revealScrollbars : undefined}
         className={compact ? "compact-data-table" : ""}
         sx={{
           border: "1px solid", borderColor: "divider", borderRadius: "1.75px", overflow: "auto",
           bgcolor: "background.paper", color: "text.secondary",
           ...tableViewportSx,
+          ...(autoHideScrollbars ? {
+            scrollbarGutter: "stable",
+            scrollbarColor: "transparent transparent",
+            "&::-webkit-scrollbar-thumb, &:hover::-webkit-scrollbar-thumb": { backgroundColor: "transparent" },
+            '&[data-scrollbar-visible="true"]': { scrollbarColor: "rgba(100, 116, 139, 0.6) transparent" },
+            '&[data-scrollbar-visible="true"]::-webkit-scrollbar-thumb': { backgroundColor: "rgba(100, 116, 139, 0.6)" },
+          } : {}),
         }}
         style={tableViewportStyle}
       >
@@ -2242,7 +2268,7 @@ export default function FilterableDataTable({
                   sx={{
                     ...headerCellSx, ...cellBorderSx, ...headerCellYSx,
                     px: 1.5, textAlign: "left", color: "text.secondary",
-                    position: "relative", whiteSpace: "nowrap", userSelect: "none",
+                    position: fixedHeight ? "sticky" : "relative", whiteSpace: "nowrap", userSelect: "none",
                     ...(pinnedColumnKeys.includes(column.key)
                       ? { boxShadow: (theme) => `2px 0 0 0 ${theme.palette.mode === "dark" ? "#374151" : "#e5e7eb"}` }
                       : null),
@@ -2793,7 +2819,7 @@ export default function FilterableDataTable({
           paper: {
             sx: {
               width: "100%",
-              maxWidth: 380,
+              maxWidth: filterPanelWidth,
               bgcolor: "background.paper",
             },
           },

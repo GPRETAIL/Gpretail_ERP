@@ -576,7 +576,7 @@ const Product = () => {
         }
         onBack={() => navigate(-1)}
         actions={
-          <Stack direction="row" sx={{ alignItems: "center" }} spacing={1.5}>
+          <Stack direction="row" sx={{ alignItems: "center", "& .topbar-action-btn": { height: 28, minHeight: 28, boxSizing: "border-box" } }} spacing={1.5}>
             <Button
               variant="text"
               onClick={handleNew}
@@ -620,6 +620,7 @@ const Product = () => {
             p: 1,
             pb: 0.5,
             "& .MuiOutlinedInput-root": { borderRadius: "0.5rem" },
+            "& .MuiOutlinedInput-notchedOutline": { borderRadius: "inherit" },
           }}
         >
           <Typography variant="h6" component="h2" sx={{ fontWeight: 700, mb: 1, fontSize: "1rem" }}>
@@ -815,6 +816,8 @@ const Product = () => {
                 rowKey={(row) => row.rowKey}
                 onRowClick={handleEdit}
                 fillHeight
+                autoHideScrollbars
+                filterPanelWidth={340}
                 renderActions={(product, { selectedCount } = {}) => (
                   <Stack direction="row" sx={{ alignItems: "center", gap: 1.5 }}>
                     <IconButton
