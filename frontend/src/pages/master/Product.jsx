@@ -619,6 +619,7 @@ const Product = () => {
             minHeight: 0,
             p: 1,
             pb: 0.5,
+            "& .MuiOutlinedInput-root": { borderRadius: "0.5rem" },
           }}
         >
           <Typography variant="h6" component="h2" sx={{ fontWeight: 700, mb: 1, fontSize: "1rem" }}>
