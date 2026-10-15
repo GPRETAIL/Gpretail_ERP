@@ -14,6 +14,43 @@ describe("FilterableDataTable — Server-side Group By", () => {
     { key: "active", label: "Active" },
   ];
 
+  it("uses sequential controls for grouped products and blocks navigation while fetching", async () => {
+    let finishSecondPage;
+    const onFetchGroupSummaries = vi.fn()
+      .mockResolvedValueOnce({
+        data: [{ group_value: "1", label: "Yes", row_count: 20 }],
+        pagination: { page: 1, total: 2, total_pages: 2, has_next: true },
+      })
+      .mockImplementationOnce(() => new Promise(resolve => { finishSecondPage = resolve; }));
+    render(
+      <MemoryRouter>
+        <FilterableDataTable
+          rows={[]}
+          columns={sampleColumns}
+          showExport={false}
+          defaultGroupByColumn="active"
+          onFetchGroupSummaries={onFetchGroupSummaries}
+          onFetchGroupRows={vi.fn()}
+          page={1}
+          limit={20}
+          allowPageJump={false}
+          onPageChange={vi.fn()}
+          onLimitChange={vi.fn()}
+        />
+      </MemoryRouter>
+    );
+    expect(await screen.findByText("Page 1 of 2")).toBeDefined();
+    expect(screen.queryByText("Page 1", { exact: true })).toBeNull();
+    fireEvent.click(screen.getByTitle("Next"));
+    await waitFor(() => expect(onFetchGroupSummaries).toHaveBeenCalledWith(expect.objectContaining({ page: 2 })));
+    expect(screen.getByTitle("Previous").disabled).toBe(true);
+    expect(screen.getByTitle("Next").disabled).toBe(true);
+    finishSecondPage({ data: [{ group_value: "0", label: "No", row_count: 10 }], pagination: { page: 2, total: 2, total_pages: 2, has_next: false } });
+    await waitFor(() => expect(screen.getByTitle("Previous").disabled).toBe(false));
+    expect(screen.getByText("Page 2 of 2")).toBeDefined();
+    expect(screen.getByTitle("Next").disabled).toBe(true);
+  });
+
   it("fetches group summaries from the server instead of grouping the rows prop client-side", async () => {
     const onFetchGroupSummaries = vi.fn().mockResolvedValue({
       success: true,

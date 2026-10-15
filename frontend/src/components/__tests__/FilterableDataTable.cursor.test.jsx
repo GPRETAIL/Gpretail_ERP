@@ -45,6 +45,49 @@ describe("FilterableDataTable — Adaptive Cursor & Offset Pagination", () => {
 
     expect(screen.getByText("Total: 50")).toBeDefined();
     expect(screen.getByText("Page 1")).toBeDefined();
+    fireEvent.mouseDown(screen.getByText("Page 1"));
+    fireEvent.click(screen.getByRole("option", { name: "Page 4", exact: true }));
+    expect(onPageChange).toHaveBeenCalledWith(4);
+  });
+
+  it.each([
+    { page: 1, totalPages: 5, totalRows: 50, loading: false, prevDisabled: true, nextDisabled: false },
+    { page: 3, totalPages: 5, totalRows: 50, loading: false, prevDisabled: false, nextDisabled: false },
+    { page: 5, totalPages: 5, totalRows: 50, loading: false, prevDisabled: false, nextDisabled: true },
+    { page: 1, totalPages: 1, totalRows: 0, loading: false, prevDisabled: true, nextDisabled: true },
+    { page: 3, totalPages: 5, totalRows: 50, loading: true, prevDisabled: true, nextDisabled: true },
+    { page: 1, totalPages: 1000000, totalRows: 20000000, loading: false, prevDisabled: true, nextDisabled: false },
+  ])("supports sequential navigation without a page selector: %j", ({ page, totalPages, totalRows, loading, prevDisabled, nextDisabled }) => {
+    const onPageChange = vi.fn();
+    render(
+      <MemoryRouter>
+        <FilterableDataTable
+          rows={totalRows ? sampleRows : []}
+          columns={sampleColumns}
+          showExport={false}
+          page={page}
+          limit={20}
+          totalPages={totalPages}
+          totalRows={totalRows}
+          loading={loading}
+          allowPageJump={false}
+          onPageChange={onPageChange}
+          onLimitChange={vi.fn()}
+        />
+      </MemoryRouter>
+    );
+    expect(screen.getByText(`Page ${page} of ${totalPages}`)).toBeDefined();
+    expect(screen.queryByText(`Page ${page}`, { exact: true })).toBeNull();
+    const previous = screen.getByTitle("Previous");
+    const next = screen.getByTitle("Next");
+    expect(previous.disabled).toBe(prevDisabled);
+    expect(next.disabled).toBe(nextDisabled);
+    fireEvent.click(previous);
+    fireEvent.click(next);
+    expect(onPageChange.mock.calls.map(([value]) => value)).toEqual([
+      ...(!prevDisabled ? [page - 1] : []),
+      ...(!nextDisabled ? [page + 1] : []),
+    ]);
   });
 
   it("renders cursor pagination with Continuous indicator and triggers cursor callbacks", () => {

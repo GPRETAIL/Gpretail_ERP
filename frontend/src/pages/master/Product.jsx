@@ -785,6 +785,7 @@ const Product = () => {
                 totalRows={pagination.total}
                 pagination={rawPagination}
                 onPageChange={setPage}
+                allowPageJump={false}
                 onFetchGroupSummaries={fetchProductGroupSummaries}
                 onFetchGroupRows={fetchProductGroupRows}
                 onLimitChange={(value) => {
