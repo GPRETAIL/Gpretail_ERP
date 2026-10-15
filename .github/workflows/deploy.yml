@@ -118,38 +118,12 @@ jobs:
         run: |
           cp -r frontend-dist/* backend-laravel/public/
           tar -czf deploy.tar.gz --exclude='./.env' --exclude='./.env.*' --exclude='./storage' --exclude='./bootstrap/cache/*.php' --exclude='./tests' --exclude='./.git*' --exclude='./deploy.zip' --exclude='./deploy.tar.gz' -C backend-laravel .
-      - name: Upload over SSH
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.HOSTINGER_SSH_HOST }}
-          username: ${{ secrets.HOSTINGER_SSH_USER }}
-          key: ${{ secrets.HOSTINGER_SSH_KEY }}
-          fingerprint: ${{ secrets.HOSTINGER_SSH_FINGERPRINT }}
-          port: ${{ secrets.HOSTINGER_SSH_PORT || 22 }}
-          source: deploy.tar.gz
-          target: ${{ secrets.HOSTINGER_APP_DIR }}
-      - name: Extract and migrate using the existing server configuration
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Deploy over SSH with the pinned ED25519 host key
         env:
+          SSH_HOST: ${{ secrets.HOSTINGER_SSH_HOST }}
+          SSH_USER: ${{ secrets.HOSTINGER_SSH_USER }}
+          SSH_PORT: ${{ secrets.HOSTINGER_SSH_PORT || 22 }}
+          SSH_KEY: ${{ secrets.HOSTINGER_SSH_KEY }}
+          HOST_KEY_FINGERPRINT: ${{ secrets.HOSTINGER_SSH_FINGERPRINT }}
           APP_DIR: ${{ secrets.HOSTINGER_APP_DIR }}
-        with:
-          host: ${{ secrets.HOSTINGER_SSH_HOST }}
-          username: ${{ secrets.HOSTINGER_SSH_USER }}
-          key: ${{ secrets.HOSTINGER_SSH_KEY }}
-          fingerprint: ${{ secrets.HOSTINGER_SSH_FINGERPRINT }}
-          port: ${{ secrets.HOSTINGER_SSH_PORT || 22 }}
-          envs: APP_DIR
-          script: |
-            set -eu
-            cd "$APP_DIR"
-            test -f artisan && test -f .env && test -f composer.json
-            PHP=/opt/alt/php84/usr/bin/php
-            test -x "$PHP"
-            tar -xzf deploy.tar.gz
-            rm deploy.tar.gz
-            $PHP artisan config:clear
-            $PHP artisan migrate --force
-            $PHP artisan config:cache
-            $PHP artisan route:cache
-            $PHP artisan view:cache
-            $PHP artisan queue:restart
+        run: bash .github/scripts/deploy-hostinger.sh

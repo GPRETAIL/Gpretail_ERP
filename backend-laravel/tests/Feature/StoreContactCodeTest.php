@@ -145,4 +145,25 @@ class StoreContactCodeTest extends TestCase
         $this->assertTrue(Schema::hasIndex('employees', 'employees_store_id_code_unique'));
         $this->assertDatabaseCount('employees', 2);
     }
+
+    public static function legacyEmployeeStoreCounts(): array
+    {
+        return ['one store' => [1], 'multiple stores' => [2]];
+    }
+
+    #[DataProvider('legacyEmployeeStoreCounts')]
+    public function test_legacy_employees_are_assigned_only_when_the_store_is_unambiguous(int $storeCount): void
+    {
+        $store = Store::create(['name' => 'Existing store', 'code' => 'LEGACY-ONE']);
+        if ($storeCount === 2) {
+            Store::create(['name' => 'Second store', 'code' => 'LEGACY-TWO']);
+        }
+        $legacyId = DB::table('employees')->insertGetId(['name' => 'Legacy employee', 'code' => 'LEGACY-EMPLOYEE']);
+        $ownedId = DB::table('employees')->insertGetId(['name' => 'Assigned employee', 'code' => 'ASSIGNED-EMPLOYEE', 'store_id' => $store->id]);
+        $migration = require database_path('migrations/2026_10_15_083815_assign_single_store_legacy_employees.php');
+        $migration->up();
+        $migration->up();
+        $this->assertDatabaseHas('employees', ['id' => $legacyId, 'store_id' => $storeCount === 1 ? $store->id : null]);
+        $this->assertDatabaseHas('employees', ['id' => $ownedId, 'store_id' => $store->id]);
+    }
 }
