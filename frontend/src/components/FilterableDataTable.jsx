@@ -205,6 +205,7 @@ export default function FilterableDataTable({
   selectionColumnWidthPx = 64,
   onBulkDelete = null,
   searchButtonClassName = "fdt-search-btn",
+  searchButtonStyle = undefined,
 }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchField, setSearchField] = useState("all");
@@ -2080,7 +2081,7 @@ export default function FilterableDataTable({
           }}
           disabled={Boolean(onRefresh) && refreshDisabled}
           className={searchButtonClassName}
-          style={compactActionStyle}
+          style={{ ...compactActionStyle, ...searchButtonStyle }}
         >
           <Search size={12} style={{marginRight: 4}} /> Search
         </button>

@@ -609,7 +609,7 @@ const Product = () => {
         }
       />
 
-      <Box sx={{ p: 1.5, flex: 1, minHeight: 0 }}>
+      <Box sx={{ p: 0.75, flex: 1, minHeight: 0, minWidth: 0 }}>
         <Card
           variant="outlined"
           sx={{
@@ -617,7 +617,7 @@ const Product = () => {
             display: "flex",
             flexDirection: "column",
             minHeight: 0,
-            p: 1.5,
+            p: 1,
             pb: 0.5,
           }}
         >
@@ -779,7 +779,8 @@ const Product = () => {
                 columns={PRODUCT_COLUMNS}
                 loading={loading}
                 searchPlaceholder="Search in product fields..."
-                searchButtonClassName="glass-btn glass-btn-primary flex items-center h-8 px-2.5 text-[11px] disabled:opacity-50"
+                searchButtonClassName="glass-btn glass-btn-primary flex items-center px-2.5 text-[11px] disabled:opacity-50"
+                searchButtonStyle={{ height: 28, boxSizing: "border-box" }}
                 showExport={false}
                 onExportRows={handleExportRows}
                 enableColumnResize
