@@ -54,6 +54,26 @@ class PilotControllersPaginationTest extends TestCase
         Sanctum::actingAs($this->user);
     }
 
+    public function test_products_cursor_mode_traverses_both_directions_without_leaking_other_stores(): void
+    {
+        config()->set('pagination.cursor_threshold', 1);
+        $otherStore = Store::create(['name' => 'Other', 'code' => 'OTHER-CURSOR']);
+        Product::create(['company_id' => $otherStore->id, 'name' => 'Shared name', 'code' => 'OTHER']);
+        $ids = [];
+        for ($i = 1; $i <= 5; $i++) {
+            $ids[] = Product::create(['company_id' => $this->store->id, 'name' => 'Shared name', 'code' => 'CURSOR-'.$i])->id;
+        }
+        $this->withHeader('X-Company-Scope-Id', (string) $this->store->id);
+        $first = $this->getJson('/api/products?page=1&limit=2')->assertOk()->assertJsonPath('pagination.mode', 'cursor');
+        $this->assertSame(array_slice($ids, 0, 2), array_column($first->json('data'), 'id'));
+        $second = $this->getJson('/api/products?limit=2&cursor='.urlencode($first->json('pagination.next_cursor')))->assertOk();
+        $this->assertSame(array_slice($ids, 2, 2), array_column($second->json('data'), 'id'));
+        $back = $this->getJson('/api/products?limit=2&cursor='.urlencode($second->json('pagination.previous_cursor')))->assertOk();
+        $this->assertSame(array_slice($ids, 0, 2), array_column($back->json('data'), 'id'));
+        $last = $this->getJson('/api/products?limit=2&cursor='.urlencode($second->json('pagination.next_cursor')))->assertOk()->assertJsonPath('pagination.has_next', false);
+        $this->assertSame(array_slice($ids, 4, 1), array_column($last->json('data'), 'id'));
+    }
+
     public function test_products_endpoint_uses_offset_mode(): void
     {
         // Create 12 products

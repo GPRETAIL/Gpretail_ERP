@@ -1774,7 +1774,7 @@ export default function FilterableDataTable({
   const pageOptions = allowPageJump && (isServerGrouped || !isCursorMode)
     ? Array.from({ length: safeTotalPages }, (_, i) => i + 1)
     : [];
-  const sequentialNavigationBusy = !allowPageJump && (loading || (isServerGrouped && groupSummaryState.loading));
+  const paginationBusy = loading || (isServerGrouped && groupSummaryState.loading);
   const hasPrev = isServerGrouped
     ? currentPage > 1
     : isCursorMode
@@ -1787,7 +1787,7 @@ export default function FilterableDataTable({
       : currentPage < safeTotalPages;
 
   const handlePrevPage = useCallback(() => {
-    if (!hasPrev || sequentialNavigationBusy) return;
+    if (!hasPrev || paginationBusy) return;
     if (isServerGrouped) {
       setGroupSummaryState((prev) => ({ ...prev, page: Math.max(1, prev.page - 1) }));
     } else if (isCursorMode) {
@@ -1799,10 +1799,10 @@ export default function FilterableDataTable({
     } else if (typeof onPageChange === "function") {
       onPageChange(currentPage - 1);
     }
-  }, [hasPrev, sequentialNavigationBusy, isServerGrouped, isCursorMode, onPreviousCursor, onPageChange, pagination, currentPage]);
+  }, [hasPrev, paginationBusy, isServerGrouped, isCursorMode, onPreviousCursor, onPageChange, pagination, currentPage]);
 
   const handleNextPage = useCallback(() => {
-    if (!hasNext || sequentialNavigationBusy) return;
+    if (!hasNext || paginationBusy) return;
     if (isServerGrouped) {
       setGroupSummaryState((prev) => ({ ...prev, page: prev.page + 1 }));
     } else if (isCursorMode) {
@@ -1814,7 +1814,7 @@ export default function FilterableDataTable({
     } else if (typeof onPageChange === "function") {
       onPageChange(currentPage + 1);
     }
-  }, [hasNext, sequentialNavigationBusy, isServerGrouped, isCursorMode, onNextCursor, onPageChange, pagination, currentPage]);
+  }, [hasNext, paginationBusy, isServerGrouped, isCursorMode, onNextCursor, onPageChange, pagination, currentPage]);
 
   const tableColSpan = visibleColumnDefs.length + (renderActions ? 2 : 1);
 
@@ -2960,7 +2960,7 @@ export default function FilterableDataTable({
                 <IconButton
                   size="small"
                   onClick={handlePrevPage}
-                  disabled={!hasPrev || sequentialNavigationBusy}
+                  disabled={!hasPrev || paginationBusy}
                   title="Previous"
                   className={compact ? "compact-pagination-button" : ""}
                   sx={{ ...paginationButtonSx, border: "1px solid", borderColor: "divider", borderRadius: "1.75px" }}
@@ -3007,7 +3007,7 @@ export default function FilterableDataTable({
                 <IconButton
                   size="small"
                   onClick={handleNextPage}
-                  disabled={!hasNext || sequentialNavigationBusy}
+                  disabled={!hasNext || paginationBusy}
                   title="Next"
                   className={compact ? "compact-pagination-button" : ""}
                   sx={{ ...paginationButtonSx, border: "1px solid", borderColor: "divider", borderRadius: "1.75px" }}

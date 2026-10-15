@@ -8,10 +8,9 @@ return [
     'max_offset' => 50000,
 
     'resources' => [
-        // Master data keeps page navigation at every dataset size.
+        // Product pagination switches to cursors for large datasets; other masters keep page navigation.
         'products' => [
-            'mode' => 'offset',
-            'page_only' => true,
+            'mode' => 'auto',
             'default_sort' => 'name',
             'default_order' => 'asc',
             'tie_breaker' => 'id',

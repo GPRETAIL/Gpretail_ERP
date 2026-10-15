@@ -220,7 +220,7 @@ class PaginationServiceTest extends TestCase
 
     public function test_master_pages_remain_numbered_above_cursor_threshold_and_deep_offsets(): void
     {
-        foreach (['products', 'customers', 'suppliers', 'employees', 'brands', 'categories', 'taxes', 'agents', 'transports', 'sizes', 'attribute_values', 'users'] as $resource) {
+        foreach (['customers', 'suppliers', 'employees', 'brands', 'categories', 'taxes', 'agents', 'transports', 'sizes', 'attribute_values', 'users'] as $resource) {
             $resourceConfig = config("pagination.resources.{$resource}");
             foreach ([['page' => 2, 'limit' => 5], ['page' => 1200, 'limit' => 50], ['cursor' => 'old-client-cursor']] as $params) {
                 $mode = $this->service->resolveMode($resource, $resourceConfig, Request::create('/test', 'GET', $params), ['estimated_count' => 60000]);
@@ -228,10 +228,24 @@ class PaginationServiceTest extends TestCase
             }
         }
 
-        $result = $this->service->paginate(DB::table('test_pagination_items'), 'products', Request::create('/test', 'GET', ['page' => 2, 'limit' => 5]), ['estimated_count' => 60000, 'default_sort' => 'id']);
+        $result = $this->service->paginate(DB::table('test_pagination_items'), 'customers', Request::create('/test', 'GET', ['page' => 2, 'limit' => 5]), ['estimated_count' => 60000, 'default_sort' => 'id']);
         $this->assertSame('offset', $result['pagination']['mode']);
         $this->assertSame(2, $result['pagination']['page']);
         $this->assertSame(3, $result['pagination']['total_pages']);
         $this->assertCount(5, $result['data']);
+    }
+
+    public function test_products_switch_at_the_configured_threshold_and_preserve_cursor_continuations(): void
+    {
+        foreach ([50000 => 'offset', 50001 => 'cursor', 1000000 => 'cursor', 20000 => 'offset'] as $count => $expected) {
+            $result = $this->service->paginate(DB::table('test_pagination_items'), 'products', Request::create('/test', 'GET', ['page' => 1, 'limit' => 5]), ['estimated_count' => $count, 'default_sort' => 'id']);
+            $this->assertSame($expected, $result['pagination']['mode']);
+        }
+        $deep = $this->service->resolveMode('products', config('pagination.resources.products'), Request::create('/test', 'GET', ['page' => 1200, 'limit' => 50]), ['estimated_count' => 10]);
+        $this->assertSame('cursor', $deep);
+        $first = $this->service->paginate(DB::table('test_pagination_items'), 'products', Request::create('/test', 'GET', ['page' => 1, 'limit' => 5]), ['estimated_count' => 1000000, 'default_sort' => 'id']);
+        $second = $this->service->paginate(DB::table('test_pagination_items'), 'products', Request::create('/test', 'GET', ['cursor' => $first['pagination']['next_cursor'], 'limit' => 5]), ['estimated_count' => 10, 'default_sort' => 'id']);
+        $this->assertSame('cursor', $second['pagination']['mode']);
+        $this->assertSame([6, 7, 8, 9, 10], array_column($second['data'], 'id'));
     }
 }

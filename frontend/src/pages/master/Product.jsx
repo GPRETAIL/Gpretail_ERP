@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, Pencil, PlusCircle, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -285,6 +285,7 @@ const Product = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
+  const productRequestId = useRef(0);
   const [limit, setLimit] = useState(20);
   const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
   const [rawPagination, setRawPagination] = useState(null);
@@ -315,15 +316,17 @@ const Product = () => {
     pageToLoad = page,
     limitToLoad = limit,
     queryOverride = tableSearch,
-    filtersOverride = tableColumnFilters
+    filtersOverride = tableColumnFilters,
+    cursorToken = null
   ) => {
+    const requestId = ++productRequestId.current;
     try {
       setLoading(true);
       const query = String(queryOverride || "").trim();
       const activeColumnFilters = buildActiveColumnFilters(filtersOverride);
       const hasColumnFilters = activeColumnFilters.length > 0;
       const params = {
-        page: pageToLoad,
+        ...(cursorToken ? { cursor: cursorToken } : { page: pageToLoad }),
         limit: limitToLoad,
         search: query || undefined,
         field: query && tableSearchField !== "all" ? tableSearchField : undefined,
@@ -331,6 +334,7 @@ const Product = () => {
         ...(forceFetchAll ? { all: "true" } : {}),
       };
       const res = await api.get("/products", { params });
+      if (requestId !== productRequestId.current) return;
       const rows = (res.data?.data || []).map(mapProductRow);
       setProducts(rows);
 
@@ -342,14 +346,20 @@ const Product = () => {
       setPagination({ total, totalPages });
       setRawPagination(res.data?.pagination || null);
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to load products");
+      if (requestId === productRequestId.current) toast.error(err.response?.data?.message || "Failed to load products");
     } finally {
-      setLoading(false);
+      if (requestId === productRequestId.current) setLoading(false);
     }
   }, [page, limit, tableSearch, tableSearchField, tableColumnFilters, forceFetchAll]);
 
+  const handleProductCursor = useCallback(
+    (cursor) => fetchProducts(page, limit, tableSearch, tableColumnFilters, cursor),
+    [fetchProducts, page, limit, tableSearch, tableColumnFilters]
+  );
+
   useEffect(() => {
     fetchProducts();
+    return () => { productRequestId.current += 1; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, limit, tableSearch, tableSearchField, tableColumnFilters, forceFetchAll]);
 
@@ -785,7 +795,9 @@ const Product = () => {
                 totalRows={pagination.total}
                 pagination={rawPagination}
                 onPageChange={setPage}
-                allowPageJump={false}
+                allowPageJump={rawPagination?.mode !== "cursor"}
+                onNextCursor={handleProductCursor}
+                onPreviousCursor={handleProductCursor}
                 onFetchGroupSummaries={fetchProductGroupSummaries}
                 onFetchGroupRows={fetchProductGroupRows}
                 onLimitChange={(value) => {
