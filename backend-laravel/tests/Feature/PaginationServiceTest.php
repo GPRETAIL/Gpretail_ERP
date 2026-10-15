@@ -16,7 +16,7 @@ class PaginationServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new PaginationService();
+        $this->service = new PaginationService;
 
         Schema::create('test_pagination_items', function (Blueprint $table) {
             $table->id();
@@ -28,9 +28,9 @@ class PaginationServiceTest extends TestCase
         // Insert 15 deterministic records
         for ($i = 1; $i <= 15; $i++) {
             DB::table('test_pagination_items')->insert([
-                'id'         => $i,
-                'name'       => "Item {$i}",
-                'amount'     => $i * 10.0,
+                'id' => $i,
+                'name' => "Item {$i}",
+                'amount' => $i * 10.0,
                 'created_at' => now()->subMinutes(15 - $i),
                 'updated_at' => now(),
             ]);
@@ -38,18 +38,18 @@ class PaginationServiceTest extends TestCase
 
         // Configure test resources in config
         config()->set('pagination.resources.test_master', [
-            'mode'          => 'offset',
-            'default_sort'  => 'id',
+            'mode' => 'offset',
+            'default_sort' => 'id',
             'default_order' => 'asc',
-            'tie_breaker'   => 'id',
+            'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'name', 'amount', 'created_at'],
         ]);
 
         config()->set('pagination.resources.test_tx', [
-            'mode'          => 'cursor',
-            'default_sort'  => 'id',
+            'mode' => 'cursor',
+            'default_sort' => 'id',
             'default_order' => 'desc',
-            'tie_breaker'   => 'id',
+            'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'amount', 'created_at'],
         ]);
     }
@@ -216,5 +216,22 @@ class PaginationServiceTest extends TestCase
         $res = $this->service->paginate($query, 'test_master', $request);
 
         $this->assertSame('cursor', $res['pagination']['mode']);
+    }
+
+    public function test_master_pages_remain_numbered_above_cursor_threshold_and_deep_offsets(): void
+    {
+        foreach (['products', 'customers', 'suppliers', 'employees', 'brands', 'categories', 'taxes', 'agents', 'transports', 'sizes', 'attribute_values', 'users'] as $resource) {
+            $resourceConfig = config("pagination.resources.{$resource}");
+            foreach ([['page' => 2, 'limit' => 5], ['page' => 1200, 'limit' => 50], ['cursor' => 'old-client-cursor']] as $params) {
+                $mode = $this->service->resolveMode($resource, $resourceConfig, Request::create('/test', 'GET', $params), ['estimated_count' => 60000]);
+                $this->assertSame('offset', $mode, $resource);
+            }
+        }
+
+        $result = $this->service->paginate(DB::table('test_pagination_items'), 'products', Request::create('/test', 'GET', ['page' => 2, 'limit' => 5]), ['estimated_count' => 60000, 'default_sort' => 'id']);
+        $this->assertSame('offset', $result['pagination']['mode']);
+        $this->assertSame(2, $result['pagination']['page']);
+        $this->assertSame(3, $result['pagination']['total_pages']);
+        $this->assertCount(5, $result['data']);
     }
 }

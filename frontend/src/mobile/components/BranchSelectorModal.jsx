@@ -20,12 +20,12 @@ import api from "../../api/axios";
 export default function BranchSelectorModal({ isOpen, onClose }) {
   const [stores, setStores] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedId, setSelectedId] = useState(() => localStorage.getItem("activeStoreId") || "");
+  const [selectedId, setSelectedId] = useState(() => sessionStorage.getItem("activeStoreId") || "");
 
   useEffect(() => {
     if (!isOpen) return;
     setLoading(true);
-    setSelectedId(localStorage.getItem("activeStoreId") || "");
+    setSelectedId(sessionStorage.getItem("activeStoreId") || "");
     api
       .get("/companies", { params: { limit: 500 } })
       .then((res) => {
@@ -43,9 +43,9 @@ export default function BranchSelectorModal({ isOpen, onClose }) {
 
   const handleSave = () => {
     if (selectedId) {
-      localStorage.setItem("activeStoreId", selectedId);
+      sessionStorage.setItem("activeStoreId", selectedId);
     } else {
-      localStorage.removeItem("activeStoreId");
+      sessionStorage.removeItem("activeStoreId");
     }
     window.location.reload();
   };

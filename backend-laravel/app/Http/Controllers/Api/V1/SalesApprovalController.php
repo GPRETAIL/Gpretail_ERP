@@ -42,6 +42,7 @@ class SalesApprovalController extends Controller
     public function groupedSummary(Request $request)
     {
         $result = $this->groupAggregationService->summarize($this->filteredQuery($request), 'sales_approvals', $request);
+
         return response()->json($result, $result['success'] ? 200 : 422);
     }
 
@@ -60,9 +61,9 @@ class SalesApprovalController extends Controller
         }
 
         $result = $this->paginationService->paginate($query, 'sales_approvals', $request, [
-            'default_sort'  => 'id',
+            'default_sort' => 'id',
             'default_order' => 'desc',
-            'tie_breaker'   => 'id',
+            'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'approval_date', 'approval_no', 'created_at'],
         ]);
 

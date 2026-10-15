@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\PlatformActivation;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
@@ -13,6 +14,20 @@ use Illuminate\Support\Facades\Http;
  */
 class PlatformClient
 {
+    public function activateStore(PlatformActivation $activation, string $storeCode, string $code): array
+    {
+        try {
+            $response = Http::timeout((int) config('platform.http_timeout_seconds'))->withToken($activation->sync_token)
+                ->post($this->baseUrl().'/api/v1/tenant/'.$activation->company_code.'/stores/activate', [
+                    'store_code' => $storeCode, 'activation_code' => $code, 'deployment_id' => $activation->deployment_id,
+                ]);
+        } catch (ConnectionException $exception) {
+            return ['ok' => false, 'status' => 0, 'data' => [], 'message' => 'Could not reach GP Admin. Try activation again.'];
+        }
+
+        return $this->parse($response);
+    }
+
     private function baseUrl(): string
     {
         return rtrim((string) config('platform.base_url'), '/');
@@ -106,5 +121,15 @@ class PlatformClient
             'data' => $body['data'] ?? [],
             'message' => $body['message'] ?? null,
         ];
+    }
+
+    public function firstEntry(string $companyCode, string $syncToken): array
+    {
+        try {
+            return $this->parse(Http::timeout((int) config('platform.http_timeout_seconds'))->withToken($syncToken)
+                ->post($this->baseUrl().'/api/v1/tenant/'.$companyCode.'/first-entry'));
+        } catch (ConnectionException $exception) {
+            return ['ok' => false, 'status' => 0, 'data' => [], 'message' => 'Could not validate company onboarding. Check the connection to GP Admin and retry.'];
+        }
     }
 }

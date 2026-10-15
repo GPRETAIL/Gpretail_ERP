@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Backup;
+use App\Models\PlatformActivation;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -168,6 +169,9 @@ class BackupService
             }
 
             $query = DB::table($table);
+            if ($companyId) {
+                StoreQuery::scope($query, $table, $table, [$companyId]);
+            }
             $this->applyScope($query, $table, $spec, $companyId, $manifest);
 
             if ($since && Schema::hasColumn($table, 'updated_at')) {
@@ -338,6 +342,9 @@ class BackupService
 
         DB::transaction(function () use ($zip, $tables, $targetCompanyId, $originalCompanyId, &$restoredRows, &$tableCounts) {
             foreach ($tables as $table) {
+                if (in_array($table, ['platform_activations', 'personal_access_tokens', 'store_local_nodes'], true)) {
+                    continue;
+                }
                 if (! Schema::hasTable($table)) {
                     continue;
                 }
@@ -359,6 +366,32 @@ class BackupService
 
                 if ($targetCompanyId && $originalCompanyId && $targetCompanyId !== $originalCompanyId) {
                     $rows = $this->rewriteScopeColumn($table, $rows, $originalCompanyId, $targetCompanyId);
+                }
+
+                if ($targetCompanyId && PlatformActivation::current()?->activated) {
+                    $columns = Schema::getColumnListing($table);
+                    $ownership = array_values(array_intersect(['store_id', 'company_id'], $columns));
+                    if (! $ownership) {
+                        throw new RuntimeException('Restore for indirectly owned or global tables needs a validated tenant migration: '.$table);
+                    }
+                    foreach ($rows as $row) {
+                        foreach ($ownership as $column) {
+                            if ((int) ($row[$column] ?? 0) !== $targetCompanyId) {
+                                throw new RuntimeException('Archive contains records outside the selected store.');
+                            }
+                        }
+                        if (isset($row['id'])) {
+                            $existing = DB::table($table)->where('id', $row['id'])->first();
+                            foreach ($ownership as $column) {
+                                if ($existing && (int) ($existing->$column ?? 0) !== $targetCompanyId) {
+                                    throw new RuntimeException('Archive record IDs conflict with another store.');
+                                }
+                            }
+                        }
+                        if ($table === 'users' && ($row['role'] ?? '') === 'super_admin') {
+                            throw new RuntimeException('Platform administrators cannot be restored through tenant backups.');
+                        }
+                    }
                 }
 
                 $uniqueBy = $table === 'role_permissions' ? ['role_id', 'permission_id'] : ['id'];
@@ -408,6 +441,17 @@ class BackupService
 
         DB::transaction(function () use ($exportedData, &$mergedRows, &$tableCounts) {
             foreach ($exportedData as $table => $rows) {
+                if (in_array($table, ['platform_activations', 'personal_access_tokens', 'store_local_nodes'], true)) {
+                    continue;
+                }
+                if ($table === 'stores') {
+                    foreach ($rows as &$storeRow) {
+                        foreach (['platform_store_id', 'platform_company_code', 'platform_active_till', 'platform_subscription', 'platform_licence_token', 'activation_required', 'activated_at', 'is_active', 'code'] as $field) {
+                            unset($storeRow[$field]);
+                        }
+                    }
+                    unset($storeRow);
+                }
                 if (! Schema::hasTable($table) || ! $rows) {
                     $tableCounts[$table] = 0;
 

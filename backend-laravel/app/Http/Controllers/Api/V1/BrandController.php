@@ -6,10 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Brand;
 use App\Services\GroupAggregationService;
 use App\Services\PaginationService;
+use App\Services\StoreQuery;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class BrandController extends Controller
 {
@@ -24,7 +25,7 @@ class BrandController extends Controller
 
         // FULLTEXT / Indexed Search
         if ($request->filled('search')) {
-            $s     = trim($request->input('search'));
+            $s = trim($request->input('search'));
             $field = $request->input('field');
 
             // 'printing_name' was allow-listed here and referenced below, but brands has no such
@@ -37,13 +38,13 @@ class BrandController extends Controller
                 $cleaned = preg_replace('/[+\-><()~*\"@]+/', ' ', $s);
                 $terms = array_filter(explode(' ', trim($cleaned)));
 
-                if (!empty($terms) && strlen($s) >= 3) {
-                    $booleanQuery = '+' . implode('* +', $terms) . '*';
-                    $query->whereRaw("MATCH(name, code) AGAINST(? IN BOOLEAN MODE)", [$booleanQuery]);
+                if (! empty($terms) && strlen($s) >= 3) {
+                    $booleanQuery = '+'.implode('* +', $terms).'*';
+                    $query->whereRaw('MATCH(name, code) AGAINST(? IN BOOLEAN MODE)', [$booleanQuery]);
                 } else {
                     $query->where(function ($q) use ($s) {
                         $q->where('name', 'like', "{$s}%")
-                          ->orWhere('code', 'like', "{$s}%");
+                            ->orWhere('code', 'like', "{$s}%");
                     });
                 }
             }
@@ -59,19 +60,21 @@ class BrandController extends Controller
             // of those threw a 500.
             $allowed = ['code', 'name', 'is_active'];
             foreach ($filters as $filter) {
-                $col = $filter['field']    ?? null;
-                $op  = $filter['operator'] ?? 'contains';
-                $val = $filter['value']    ?? '';
-                if (!$col || !in_array($col, $allowed)) continue;
+                $col = $filter['field'] ?? null;
+                $op = $filter['operator'] ?? 'contains';
+                $val = $filter['value'] ?? '';
+                if (! $col || ! in_array($col, $allowed)) {
+                    continue;
+                }
 
                 match ($op) {
-                    'equals'     => $query->where($col, $val),
+                    'equals' => $query->where($col, $val),
                     'not_equals' => $query->where($col, '!=', $val),
-                    'starts'     => $query->where($col, 'like', "{$val}%"),
-                    'ends'       => $query->where($col, 'like', "%{$val}"),
-                    'blank'      => $query->whereNull($col)->orWhere($col, ''),
-                    'not_blank'  => $query->whereNotNull($col)->where($col, '!=', ''),
-                    default      => $query->where($col, 'like', "%{$val}%"),
+                    'starts' => $query->where($col, 'like', "{$val}%"),
+                    'ends' => $query->where($col, 'like', "%{$val}"),
+                    'blank' => $query->whereNull($col)->orWhere($col, ''),
+                    'not_blank' => $query->whereNotNull($col)->where($col, '!=', ''),
+                    default => $query->where($col, 'like', "%{$val}%"),
                 };
             }
         }
@@ -82,6 +85,7 @@ class BrandController extends Controller
     public function groupedSummary(Request $request)
     {
         $result = $this->groupAggregationService->summarize($this->filteredQuery($request), 'brands', $request);
+
         return response()->json($result, $result['success'] ? 200 : 422);
     }
 
@@ -92,18 +96,19 @@ class BrandController extends Controller
         // ?all=true — for dropdowns & export
         if ($request->boolean('all') || in_array($request->input('limit'), ['500', '1000', 500, 1000])) {
             $items = $query->orderBy('name')->limit(2000)->get();
+
             return response()->json([
                 'success' => true,
-                'data'    => $items,
-                'total'   => $items->count(),
+                'data' => $items,
+                'total' => $items->count(),
             ]);
         }
 
         // Adaptive Server-Side Pagination
         $result = $this->paginationService->paginate($query, 'brands', $request, [
-            'default_sort'  => 'name',
+            'default_sort' => 'name',
             'default_order' => 'asc',
-            'tie_breaker'   => 'id',
+            'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'name', 'code', 'created_at'],
         ]);
 
@@ -113,6 +118,7 @@ class BrandController extends Controller
     public function show($id)
     {
         $brand = Brand::findOrFail($id);
+
         return response()->json(['success' => true, 'data' => $brand]);
     }
 
@@ -120,7 +126,7 @@ class BrandController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'code' => 'required|string|max:50|unique:brands,code',
+            'code' => ['required', 'string', 'max:50', Rule::unique('brands', 'code')->where('store_id', $request->attributes->get('store_context_id'))],
         ]);
 
         if ($validator->fails()) {
@@ -128,12 +134,12 @@ class BrandController extends Controller
         }
 
         $brand = Brand::create($request->all());
-        Cache::forget('brands_total_unfiltered_count');
+        Cache::forget(StoreQuery::cacheKey('brands_total_unfiltered_count'));
 
         return response()->json([
             'success' => true,
             'message' => 'Brand created successfully',
-            'data'    => $brand,
+            'data' => $brand,
         ], 201);
     }
 
@@ -143,7 +149,7 @@ class BrandController extends Controller
 
         $validator = Validator::make($request->all(), [
             'name' => 'sometimes|required|string|max:255',
-            'code' => 'sometimes|required|string|max:50|unique:brands,code,' . $id,
+            'code' => ['sometimes', 'required', 'string', 'max:50', Rule::unique('brands', 'code')->where('store_id', $request->attributes->get('store_context_id'))->ignore($brand)],
         ]);
 
         if ($validator->fails()) {
@@ -155,7 +161,7 @@ class BrandController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Brand updated successfully',
-            'data'    => $brand,
+            'data' => $brand,
         ]);
     }
 
@@ -163,7 +169,7 @@ class BrandController extends Controller
     {
         $brand = Brand::findOrFail($id);
         $brand->delete();
-        Cache::forget('brands_total_unfiltered_count');
+        Cache::forget(StoreQuery::cacheKey('brands_total_unfiltered_count'));
 
         return response()->json([
             'success' => true,

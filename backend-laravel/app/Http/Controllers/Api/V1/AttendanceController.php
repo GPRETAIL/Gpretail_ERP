@@ -47,33 +47,33 @@ class AttendanceController extends Controller
             }
 
             return [
-                'employee_id'   => $employee->id,
-                'name'          => $employee->name,
-                'code'          => $employee->code,
-                'department'    => $employee->department?->name,
-                'status'        => $status,
-                'check_in'      => $checkIn,
-                'check_out'     => $checkOut,
+                'employee_id' => $employee->id,
+                'name' => $employee->name,
+                'code' => $employee->code,
+                'department' => $employee->department?->name,
+                'status' => $status,
+                'check_in' => $checkIn,
+                'check_out' => $checkOut,
             ];
         })->values();
 
         $summary = [
-            'total'   => $rows->count(),
+            'total' => $rows->count(),
             'present' => $rows->where('status', 'PRESENT')->count(),
-            'absent'  => $rows->where('status', 'ABSENT')->count(),
-            'leave'   => $rows->where('status', 'LEAVE')->count(),
+            'absent' => $rows->where('status', 'ABSENT')->count(),
+            'leave' => $rows->where('status', 'LEAVE')->count(),
         ];
 
         return response()->json([
             'success' => true,
-            'data'    => [
-                'date'     => $today,
+            'data' => [
+                'date' => $today,
                 'settings' => [
                     'shift_start' => $shiftStart,
                     'late_cutoff' => $lateCutoff,
                 ],
-                'summary'  => $summary,
-                'rows'     => $rows,
+                'summary' => $summary,
+                'rows' => $rows,
             ],
         ]);
     }
@@ -98,7 +98,7 @@ class AttendanceController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Checked in',
-            'data'    => $attendance,
+            'data' => $attendance,
         ]);
     }
 
@@ -118,7 +118,7 @@ class AttendanceController extends Controller
             ->whereDate('date', $today)
             ->first();
 
-        if (!$attendance || !$attendance->check_in) {
+        if (! $attendance || ! $attendance->check_in) {
             return response()->json(['success' => false, 'message' => 'Employee has not checked in today'], 422);
         }
 
@@ -127,7 +127,7 @@ class AttendanceController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Checked out',
-            'data'    => $attendance,
+            'data' => $attendance,
         ]);
     }
 
@@ -151,7 +151,7 @@ class AttendanceController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Marked on leave',
-            'data'    => $attendance,
+            'data' => $attendance,
         ]);
     }
 
@@ -160,12 +160,12 @@ class AttendanceController extends Controller
         $storeId = $request->header('X-Company-Scope-Id');
 
         if ($request->isMethod('post') || $request->isMethod('put')) {
-            if (!$storeId || $storeId === 'all') {
+            if (! $storeId || $storeId === 'all') {
                 return response()->json(['success' => false, 'message' => 'A specific store must be selected'], 422);
             }
 
             $store = Store::find($storeId);
-            if (!$store) {
+            if (! $store) {
                 return response()->json(['success' => false, 'message' => 'Store not found'], 404);
             }
 
@@ -184,7 +184,7 @@ class AttendanceController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => [
+            'data' => [
                 'shift_start' => $settings['shift_start'] ?? '09:30',
                 'late_cutoff' => $settings['late_cutoff'] ?? '10:00',
             ],

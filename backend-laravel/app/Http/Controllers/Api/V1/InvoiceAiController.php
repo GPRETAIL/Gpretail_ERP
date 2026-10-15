@@ -42,6 +42,7 @@ class InvoiceAiController extends Controller
         if (! in_array($role, self::ADMIN_ROLES, true)) {
             return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
         }
+
         return null;
     }
 
@@ -55,6 +56,7 @@ class InvoiceAiController extends Controller
             return response()->json($ocr->extract($request->file('file')));
         } catch (Throwable $e) {
             report($e);
+
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage() ?: 'Invoice OCR failed.',
@@ -90,20 +92,20 @@ class InvoiceAiController extends Controller
             'gemini' => [
                 'configured' => $geminiKey !== '',
                 'model' => config('services.gemini.model', 'gemini-3.6-flash'),
-                'masked_key' => $geminiKey ? substr($geminiKey, 0, 4) . '...' . substr($geminiKey, -4) : '',
+                'masked_key' => $geminiKey ? substr($geminiKey, 0, 4).'...'.substr($geminiKey, -4) : '',
             ],
             'space_ocr' => [
                 'configured' => $spaceOcrKey !== '',
-                'masked_key' => $spaceOcrKey ? substr($spaceOcrKey, 0, 6) . '...' . substr($spaceOcrKey, -4) : '',
+                'masked_key' => $spaceOcrKey ? substr($spaceOcrKey, 0, 6).'...'.substr($spaceOcrKey, -4) : '',
             ],
             'openai' => [
                 'configured' => $openaiKey !== '',
                 'model' => config('services.openai.model', 'gpt-4o-mini'),
-                'masked_key' => $openaiKey ? substr($openaiKey, 0, 4) . '...' . substr($openaiKey, -4) : '',
+                'masked_key' => $openaiKey ? substr($openaiKey, 0, 4).'...'.substr($openaiKey, -4) : '',
             ],
             'ocr_space' => [
                 'configured' => $ocrSpaceKey !== '',
-                'masked_key' => $ocrSpaceKey ? substr($ocrSpaceKey, 0, 4) . '...' . substr($ocrSpaceKey, -4) : '',
+                'masked_key' => $ocrSpaceKey ? substr($ocrSpaceKey, 0, 4).'...'.substr($ocrSpaceKey, -4) : '',
             ],
         ]);
     }
@@ -126,7 +128,7 @@ class InvoiceAiController extends Controller
         ]);
 
         $envFile = base_path('.env');
-        if (!file_exists($envFile)) {
+        if (! file_exists($envFile)) {
             return response()->json(['success' => false, 'message' => '.env file not found.'], 500);
         }
 
@@ -195,16 +197,16 @@ class InvoiceAiController extends Controller
 
                 // 1. Resolve or create Supplier
                 $supplier = null;
-                if (!empty($supplierData['id'])) {
+                if (! empty($supplierData['id'])) {
                     $supplier = Supplier::find($supplierData['id']);
                 }
-                if (!$supplier && !empty($supplierData['gstin'])) {
+                if (! $supplier && ! empty($supplierData['gstin'])) {
                     $supplier = Supplier::where('gstin', $supplierData['gstin'])->first();
                 }
-                if (!$supplier && !empty($supplierData['name'])) {
+                if (! $supplier && ! empty($supplierData['name'])) {
                     $supplier = Supplier::where('name', $supplierData['name'])->first();
                 }
-                if (!$supplier && !empty($supplierData['name'])) {
+                if (! $supplier && ! empty($supplierData['name'])) {
                     $supplier = Supplier::create([
                         'name' => $supplierData['name'],
                         'gstin' => $supplierData['gstin'] ?? null,
@@ -213,7 +215,7 @@ class InvoiceAiController extends Controller
                         'is_active' => 1,
                     ]);
                 }
-                if (!$supplier) {
+                if (! $supplier) {
                     $supplier = Supplier::first() ?: Supplier::create([
                         'name' => 'Default Supplier',
                         'code' => 'SUP_DEF',
@@ -223,26 +225,26 @@ class InvoiceAiController extends Controller
 
                 // 2. Resolve or create Transport & Transport Entry
                 $transport = null;
-                if (!empty($transportData['transport_id'])) {
+                if (! empty($transportData['transport_id'])) {
                     $transport = Transport::find($transportData['transport_id']);
                 }
-                if (!$transport && !empty($transportData['transport_name'])) {
+                if (! $transport && ! empty($transportData['transport_name'])) {
                     $transport = Transport::where('name', $transportData['transport_name'])->first();
                 }
-                if (!$transport && !empty($transportData['transport_name'])) {
+                if (! $transport && ! empty($transportData['transport_name'])) {
                     $transport = Transport::create([
                         'name' => $transportData['transport_name'],
-                        'code' => 'TRP_' . strtoupper(substr(uniqid(), -6)),
+                        'code' => 'TRP_'.strtoupper(substr(uniqid(), -6)),
                     ]);
                 }
-                if (!$transport) {
+                if (! $transport) {
                     $transport = Transport::first() ?: Transport::create([
                         'name' => 'Direct Transport',
                         'code' => 'TRP_DIR',
                     ]);
                 }
 
-                $lrNo = !empty($transportData['lr_no'])
+                $lrNo = ! empty($transportData['lr_no'])
                     ? $transportData['lr_no']
                     : DocumentNumberService::resolve($request, $storeId, 'LR');
 
@@ -259,9 +261,9 @@ class InvoiceAiController extends Controller
                 ]);
 
                 // 3. Create Purchase Invoice
-                $invoiceNo = !empty($invoiceData['invoice_no'])
+                $invoiceNo = ! empty($invoiceData['invoice_no'])
                     ? $invoiceData['invoice_no']
-                    : 'PINV-' . date('Ymd') . '-' . rand(1000, 9999);
+                    : 'PINV-'.date('Ymd').'-'.rand(1000, 9999);
 
                 $subtotal = (float) ($invoiceData['subtotal'] ?? 0);
                 $taxAmount = (float) ($invoiceData['tax_amount'] ?? 0);
@@ -290,7 +292,7 @@ class InvoiceAiController extends Controller
                 // 4. Create Inventory Entry Shell
                 $inventoryEntry = InventoryEntry::create([
                     'store_id' => $storeId,
-                    'entry_no' => 'INV-ENT-' . date('Ymd') . '-' . rand(1000, 9999),
+                    'entry_no' => 'INV-ENT-'.date('Ymd').'-'.rand(1000, 9999),
                     'entry_date' => $invoiceData['invoice_date'] ?? now()->toDateString(),
                     'type' => 'PURCHASE',
                     'total_amount' => $grandTotal,
@@ -305,13 +307,13 @@ class InvoiceAiController extends Controller
 
                 foreach ($itemsData as $idx => $item) {
                     $product = null;
-                    $isNew = !empty($item['is_new_product']);
+                    $isNew = ! empty($item['is_new_product']);
 
-                    if (!$isNew && !empty($item['product_id'])) {
+                    if (! $isNew && ! empty($item['product_id'])) {
                         $product = Product::find($item['product_id']);
                     }
 
-                    if (!$product) {
+                    if (! $product) {
                         $desc = trim($item['description'] ?? '');
                         if ($desc !== '') {
                             $product = Product::where('name', $desc)
@@ -321,11 +323,11 @@ class InvoiceAiController extends Controller
                         }
                     }
 
-                    if (!$product) {
+                    if (! $product) {
                         // Create New Product in Master
                         $newProd = $item['new_product_data'] ?? [];
-                        $pName = trim($newProd['name'] ?? $item['description'] ?? "Product " . ($idx + 1));
-                        $pCode = trim($newProd['code'] ?? '') ?: ('PRD_' . strtoupper(substr(uniqid(), -6)));
+                        $pName = trim($newProd['name'] ?? $item['description'] ?? 'Product '.($idx + 1));
+                        $pCode = trim($newProd['code'] ?? '') ?: ('PRD_'.strtoupper(substr(uniqid(), -6)));
                         $pRate = (float) ($item['rate'] ?? $newProd['cost_price'] ?? 0);
                         $pSelling = (float) ($newProd['selling_price'] ?? $item['selling_price'] ?? ($pRate * 1.25));
                         $pMrp = (float) ($newProd['mrp'] ?? $item['mrp'] ?? ($pRate * 1.35));
@@ -407,10 +409,10 @@ class InvoiceAiController extends Controller
                 if ($generateBarcodes) {
                     foreach ($resolvedItems as $ritem) {
                         $prod = $ritem['product'];
-                        $barcodeVal = $prod->barcode ?: ('BC' . date('ymd') . str_pad((string) rand(1, 99999), 5, '0', STR_PAD_LEFT));
+                        $barcodeVal = $prod->barcode ?: ('BC'.date('ymd').str_pad((string) rand(1, 99999), 5, '0', STR_PAD_LEFT));
                         $barcode = Barcode::create([
                             'barcode' => $barcodeVal,
-                            'batch_no' => 'BATCH-' . date('ymd') . '-' . $inventoryEntry->id,
+                            'batch_no' => 'BATCH-'.date('ymd').'-'.$inventoryEntry->id,
                             'product_id' => $prod->id,
                             'product_name' => $prod->name,
                             'inventory_entry_id' => $inventoryEntry->id,
@@ -442,9 +444,10 @@ class InvoiceAiController extends Controller
             ], 201);
         } catch (Throwable $e) {
             report($e);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to process purchase entry flow: ' . $e->getMessage(),
+                'message' => 'Failed to process purchase entry flow: '.$e->getMessage(),
             ], 422);
         }
     }

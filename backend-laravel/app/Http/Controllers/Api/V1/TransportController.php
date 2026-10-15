@@ -8,6 +8,7 @@ use App\Services\GroupAggregationService;
 use App\Services\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class TransportController extends Controller
 {
@@ -24,9 +25,9 @@ class TransportController extends Controller
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('code', 'like', "%{$search}%")
-                  ->orWhere('phone', 'like', "%{$search}%")
-                  ->orWhere('vehicle_no', 'like', "%{$search}%");
+                    ->orWhere('code', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('vehicle_no', 'like', "%{$search}%");
             });
         }
 
@@ -37,7 +38,9 @@ class TransportController extends Controller
                 $col = $filter['field'] ?? null;
                 $op = $filter['operator'] ?? 'contains';
                 $val = $filter['value'] ?? '';
-                if (!$col || !in_array($col, $allowed)) continue;
+                if (! $col || ! in_array($col, $allowed)) {
+                    continue;
+                }
                 match ($op) {
                     'equals' => $query->where($col, $val),
                     'not_equals' => $query->where($col, '!=', $val),
@@ -56,6 +59,7 @@ class TransportController extends Controller
     public function groupedSummary(Request $request)
     {
         $result = $this->groupAggregationService->summarize($this->filteredQuery($request), 'transports', $request);
+
         return response()->json($result, $result['success'] ? 200 : 422);
     }
 
@@ -65,17 +69,18 @@ class TransportController extends Controller
 
         if ($request->boolean('all') || $request->input('limit') == 500 || $request->input('limit') == 1000) {
             $items = $query->orderBy('name')->limit(2000)->get();
+
             return response()->json([
                 'success' => true,
-                'data'    => $items,
-                'total'   => $items->count(),
+                'data' => $items,
+                'total' => $items->count(),
             ]);
         }
 
         $result = $this->paginationService->paginate($query, 'transports', $request, [
-            'default_sort'  => 'name',
+            'default_sort' => 'name',
             'default_order' => 'asc',
-            'tie_breaker'   => 'id',
+            'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'name', 'code', 'phone', 'vehicle_no', 'created_at'],
         ]);
 
@@ -85,10 +90,10 @@ class TransportController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'name'           => 'required|string|max:255',
-            'code'           => 'nullable|string|max:50|unique:transports,code',
-            'phone'          => 'nullable|string|max:50',
-            'vehicle_no'     => 'nullable|string|max:50',
+            'name' => 'required|string|max:255',
+            'code' => ['nullable', 'string', 'max:50', Rule::unique('transports', 'code')->where('store_id', $request->attributes->get('store_context_id'))],
+            'phone' => 'nullable|string|max:50',
+            'vehicle_no' => 'nullable|string|max:50',
             'contact_person' => 'nullable|string|max:255',
         ]);
 
@@ -96,25 +101,25 @@ class TransportController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors'  => $validator->errors(),
+                'errors' => $validator->errors(),
             ], 422);
         }
 
-        $code = $request->input('code') ?: 'TRP_' . strtoupper(substr(uniqid(), -6));
+        $code = $request->input('code') ?: 'TRP_'.strtoupper(substr(uniqid(), -6));
 
         $transport = Transport::create([
-            'name'           => $request->input('name'),
-            'code'           => $code,
-            'phone'          => $request->input('phone'),
-            'vehicle_no'     => $request->input('vehicle_no'),
+            'name' => $request->input('name'),
+            'code' => $code,
+            'phone' => $request->input('phone'),
+            'vehicle_no' => $request->input('vehicle_no'),
             'contact_person' => $request->input('contact_person'),
-            'is_active'      => $request->boolean('is_active', true),
+            'is_active' => $request->boolean('is_active', true),
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Transport created successfully',
-            'data'    => $transport,
+            'data' => $transport,
         ], 201);
     }
 
@@ -122,7 +127,7 @@ class TransportController extends Controller
     {
         $transport = Transport::find($id);
 
-        if (!$transport) {
+        if (! $transport) {
             return response()->json([
                 'success' => false,
                 'message' => 'Transport not found',
@@ -131,7 +136,7 @@ class TransportController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $transport,
+            'data' => $transport,
         ]);
     }
 
@@ -139,7 +144,7 @@ class TransportController extends Controller
     {
         $transport = Transport::find($id);
 
-        if (!$transport) {
+        if (! $transport) {
             return response()->json([
                 'success' => false,
                 'message' => 'Transport not found',
@@ -147,10 +152,10 @@ class TransportController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'name'           => 'sometimes|required|string|max:255',
-            'code'           => 'sometimes|required|string|max:50|unique:transports,code,' . $id,
-            'phone'          => 'nullable|string|max:50',
-            'vehicle_no'     => 'nullable|string|max:50',
+            'name' => 'sometimes|required|string|max:255',
+            'code' => ['sometimes', 'required', 'string', 'max:50', Rule::unique('transports', 'code')->where('store_id', $request->attributes->get('store_context_id'))->ignore($transport)],
+            'phone' => 'nullable|string|max:50',
+            'vehicle_no' => 'nullable|string|max:50',
             'contact_person' => 'nullable|string|max:255',
         ]);
 
@@ -158,18 +163,18 @@ class TransportController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors'  => $validator->errors(),
+                'errors' => $validator->errors(),
             ], 422);
         }
 
         $transport->update($request->only([
-            'name', 'code', 'phone', 'vehicle_no', 'contact_person', 'is_active'
+            'name', 'code', 'phone', 'vehicle_no', 'contact_person', 'is_active',
         ]));
 
         return response()->json([
             'success' => true,
             'message' => 'Transport updated successfully',
-            'data'    => $transport,
+            'data' => $transport,
         ]);
     }
 
@@ -177,7 +182,7 @@ class TransportController extends Controller
     {
         $transport = Transport::find($id);
 
-        if (!$transport) {
+        if (! $transport) {
             return response()->json([
                 'success' => false,
                 'message' => 'Transport not found',

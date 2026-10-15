@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\Stock;
 use App\Services\GroupAggregationService;
 use App\Services\PaginationService;
+use App\Services\StoreQuery;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -21,7 +22,7 @@ class ItemController extends Controller
     {
         $totalItems = Product::count();
         $totalBarcodes = Product::whereNotNull('barcode')->where('barcode', '!=', '')->count();
-        $totalStockValue = DB::table('stocks')
+        $totalStockValue = StoreQuery::table('stocks')
             ->join('products', 'stocks.product_id', '=', 'products.id')
             ->selectRaw('SUM(stocks.quantity * products.cost_price)')
             ->value(DB::raw('SUM(stocks.quantity * products.cost_price)')) ?? 0;
@@ -29,11 +30,11 @@ class ItemController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => [
-                'totalItems'      => (int) $totalItems,
-                'totalBarcodes'   => (int) $totalBarcodes,
+            'data' => [
+                'totalItems' => (int) $totalItems,
+                'totalBarcodes' => (int) $totalBarcodes,
                 'totalStockValue' => (float) $totalStockValue,
-                'lowStockItems'   => (int) $lowStockItems,
+                'lowStockItems' => (int) $lowStockItems,
             ],
         ]);
     }
@@ -50,6 +51,7 @@ class ItemController extends Controller
         $arr['mrp'] = (float) $item->mrp;
         $arr['active'] = (bool) $item->is_active;
         $arr['product'] = $item->category;
+
         return $arr;
     }
 
@@ -59,27 +61,27 @@ class ItemController extends Controller
 
         // Name mapping: selling_name or printing_name or name
         if (empty($data['name'])) {
-            $data['name'] = $data['selling_name'] ?? $data['printing_name'] ?? ('Item ' . ($data['item_code'] ?? $data['code'] ?? ''));
+            $data['name'] = $data['selling_name'] ?? $data['printing_name'] ?? ('Item '.($data['item_code'] ?? $data['code'] ?? ''));
         }
 
         // Code mapping: item_code or code
         if (empty($data['code'])) {
-            $data['code'] = !empty($data['item_code']) ? $data['item_code'] : (!empty($data['sku']) ? $data['sku'] : ('ITM_' . strtoupper(substr(uniqid(), -6))));
+            $data['code'] = ! empty($data['item_code']) ? $data['item_code'] : (! empty($data['sku']) ? $data['sku'] : ('ITM_'.strtoupper(substr(uniqid(), -6))));
         }
         if (empty($data['barcode'])) {
             $data['barcode'] = $data['code'];
         }
 
         // Category / Product mapping
-        if (empty($data['category_id']) && !empty($data['product_id'])) {
+        if (empty($data['category_id']) && ! empty($data['product_id'])) {
             $data['category_id'] = $data['product_id'];
         }
 
         // Prices mapping
-        if (isset($data['pur_rate']) && !isset($data['cost_price'])) {
+        if (isset($data['pur_rate']) && ! isset($data['cost_price'])) {
             $data['cost_price'] = (float) $data['pur_rate'];
         }
-        if (isset($data['sale_rate']) && !isset($data['selling_price'])) {
+        if (isset($data['sale_rate']) && ! isset($data['selling_price'])) {
             $data['selling_price'] = (float) $data['sale_rate'];
         }
         if (isset($data['mrp'])) {
@@ -87,10 +89,10 @@ class ItemController extends Controller
         }
 
         // Stock bounds
-        if (isset($data['reorder_min']) && !isset($data['min_stock'])) {
+        if (isset($data['reorder_min']) && ! isset($data['min_stock'])) {
             $data['min_stock'] = (int) $data['reorder_min'];
         }
-        if (isset($data['reorder_max']) && !isset($data['max_stock'])) {
+        if (isset($data['reorder_max']) && ! isset($data['max_stock'])) {
             $data['max_stock'] = (int) $data['reorder_max'];
         }
 
@@ -100,20 +102,20 @@ class ItemController extends Controller
         }
 
         // Validate foreign keys
-        if (!empty($data['tax_id']) && !DB::table('taxes')->where('id', $data['tax_id'])->exists()) {
+        if (! empty($data['tax_id']) && ! StoreQuery::table('taxes')->where('id', $data['tax_id'])->exists()) {
             $data['tax_id'] = null;
         }
-        if (!empty($data['category_id']) && !DB::table('categories')->where('id', $data['category_id'])->exists()) {
+        if (! empty($data['category_id']) && ! StoreQuery::table('categories')->where('id', $data['category_id'])->exists()) {
             $data['category_id'] = null;
         }
-        if (!empty($data['brand_id']) && !DB::table('brands')->where('id', $data['brand_id'])->exists()) {
+        if (! empty($data['brand_id']) && ! StoreQuery::table('brands')->where('id', $data['brand_id'])->exists()) {
             $data['brand_id'] = null;
         }
 
         // Handle image upload if present
         if ($request->hasFile('image')) {
             $path = $request->file('image')->store('products', 'public');
-            $data['image'] = '/storage/' . $path;
+            $data['image'] = '/storage/'.$path;
         }
 
         return $data;
@@ -127,8 +129,8 @@ class ItemController extends Controller
             $s = $request->search;
             $query->where(function ($q) use ($s) {
                 $q->where('name', 'like', "%{$s}%")
-                  ->orWhere('code', 'like', "%{$s}%")
-                  ->orWhere('barcode', 'like', "%{$s}%");
+                    ->orWhere('code', 'like', "%{$s}%")
+                    ->orWhere('barcode', 'like', "%{$s}%");
             });
         }
 
@@ -140,6 +142,7 @@ class ItemController extends Controller
         // Same underlying table/resource as ProductController -- reuses
         // config('pagination.resources.products.groupable_columns') as-is.
         $result = $this->groupAggregationService->summarize($this->filteredQuery($request), 'products', $request);
+
         return response()->json($result, $result['success'] ? 200 : 422);
     }
 
@@ -148,13 +151,13 @@ class ItemController extends Controller
         $query = $this->filteredQuery($request);
 
         $result = $this->paginationService->paginate($query, 'products', $request, [
-            'default_sort'  => 'name',
+            'default_sort' => 'name',
             'default_order' => 'asc',
-            'tie_breaker'   => 'id',
+            'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'name', 'code', 'barcode', 'sku', 'selling_price', 'created_at'],
         ]);
 
-        $result['data'] = collect($result['data'])->map(fn($item) => $this->formatItem($item))->values();
+        $result['data'] = collect($result['data'])->map(fn ($item) => $this->formatItem($item))->values();
 
         return response()->json($result);
     }
@@ -177,7 +180,7 @@ class ItemController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Item created successfully',
-            'data'    => $this->formatItem($item),
+            'data' => $this->formatItem($item),
         ], 201);
     }
 
@@ -193,7 +196,7 @@ class ItemController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Item updated successfully',
-            'data'    => $this->formatItem($item),
+            'data' => $this->formatItem($item),
         ]);
     }
 

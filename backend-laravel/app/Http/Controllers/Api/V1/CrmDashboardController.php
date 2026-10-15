@@ -31,7 +31,7 @@ class CrmDashboardController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $data,
+            'data' => $data,
         ]);
     }
 
@@ -49,8 +49,8 @@ class CrmDashboardController extends Controller
         $segmentation = $data['segmentation'] ?? [];
 
         $headers = [
-            'Content-Type'        => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="crm_dashboard_' . Carbon::now()->format('Y-m-d_His') . '.csv"',
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="crm_dashboard_'.Carbon::now()->format('Y-m-d_His').'.csv"',
         ];
 
         return response()->stream(function () use ($summary, $segmentation) {
@@ -78,7 +78,7 @@ class CrmDashboardController extends Controller
                 fputcsv($handle, [
                     $seg['label'] ?? $key,
                     $seg['count'] ?? 0,
-                    ($seg['pct'] ?? 0) . '%',
+                    ($seg['pct'] ?? 0).'%',
                 ]);
             }
 

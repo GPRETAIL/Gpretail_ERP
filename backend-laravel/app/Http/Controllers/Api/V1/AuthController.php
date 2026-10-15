@@ -3,10 +3,13 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\PlatformActivation;
 use App\Models\Store;
 use App\Models\StoreLocalNode;
 use App\Models\SyncOutboxEvent;
 use App\Models\User;
+use App\Services\PlatformClient;
+use App\Services\StoreContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -52,6 +55,23 @@ class AuthController extends Controller
             ], 403);
         }
 
+        if ($user->platform_company_code) {
+            $activation = PlatformActivation::current();
+            if (! $activation || ! $activation->activated || $activation->company_code !== $user->platform_company_code || $activation->status !== 'active') {
+                return response()->json(['success' => false, 'message' => 'Your company ERP activation is not active. Contact your administrator.'], 403);
+            }
+            if ($activation->onboarding_required && ! $activation->first_erp_login_at) {
+                $entry = app(PlatformClient::class)->firstEntry($activation->company_code, (string) $activation->sync_token);
+                if (! $entry['ok'] || empty($entry['data']['first_erp_login_at'])) {
+                    return response()->json(['success' => false, 'message' => $entry['message'] ?? 'Company validation failed. Retry after checking the GP Admin connection.'], 503);
+                }
+                $activation->update([
+                    'first_erp_login_at' => $entry['data']['first_erp_login_at'],
+                    'active_till' => $entry['data']['active_till'] ?? $activation->active_till,
+                ]);
+            }
+        }
+
         // Create Sanctum Token
         $token = $user->createToken('auth-token')->plainTextToken;
 
@@ -66,7 +86,7 @@ class AuthController extends Controller
                     'name' => $user->name,
                     'email' => $user->email,
                     'role' => $user->role,
-                    'store_id' => $user->store_id ?? 1,
+                    'store_id' => $user->store_id,
                     // "Company" and "Store" are the same concept in this
                     // app (CompanyController is backed by the Store model,
                     // the "Switch Store" dialog is the company switcher) -
@@ -74,15 +94,30 @@ class AuthController extends Controller
                     // receipt sync) have always expected company_id/
                     // company_name on the auth user but never received
                     // them, so those sync calls silently never fired.
-                    'company_id' => $user->store_id ?? 1,
+                    'company_id' => $user->store_id,
                     'company_name' => $user->store?->name,
                     'counter_id' => $user->counter_id,
                     'brand' => $user->store?->theme_customization ?: [],
                     'logo' => $user->store?->logo,
                     'must_change_password' => (bool) $user->must_change_password,
+                    ...app(StoreContext::class)->authFields($user),
                 ],
             ],
         ]);
+    }
+
+    public function changePassword(Request $request)
+    {
+        $request->validate(['newPassword' => 'required|string|min:8|max:255', 'currentPassword' => 'nullable|string']);
+        $user = $request->user();
+        abort_unless($user, 401);
+        if (! $user->must_change_password) {
+            abort_unless(Hash::check((string) $request->input('currentPassword', ''), $user->password), 422, 'Current password is incorrect.');
+        }
+        $user->update(['password' => $request->input('newPassword'), 'must_change_password' => false]);
+        $token = $user->createToken('auth-token')->plainTextToken;
+
+        return response()->json(['success' => true, 'data' => ['token' => $token], 'message' => 'Password updated. Other sessions have been signed out.']);
     }
 
     public function logout(Request $request)
@@ -116,19 +151,20 @@ class AuthController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'role' => $user->role,
-                'store_id' => $user->store_id ?? 1,
-                'company_id' => $user->store_id ?? 1,
+                'store_id' => $user->store_id,
+                'company_id' => $user->store_id,
                 'company_name' => $user->store?->name,
                 'counter_id' => $user->counter_id,
                 'brand' => $user->store?->theme_customization ?: [],
                 'logo' => $user->store?->logo,
+                ...app(StoreContext::class)->authFields($user),
             ],
         ]);
     }
 
     public function localServerConfig(Request $request)
     {
-        $storeId = (int) $request->header('X-Company-Scope-Id', 1);
+        $storeId = (int) $request->attributes->get('store_context_id', 0);
         $node = StoreLocalNode::where('store_id', $storeId)->first();
 
         return response()->json([
@@ -139,7 +175,8 @@ class AuthController extends Controller
 
     public function localServerConfigUpdate(Request $request)
     {
-        $storeId = (int) $request->header('X-Company-Scope-Id', 1);
+        abort_unless(in_array($request->user()?->role, ['admin', 'super_admin'], true), 403, 'Only administrators can configure the local server.');
+        $storeId = (int) $request->attributes->get('store_context_id', 0);
         $store = Store::find($storeId);
 
         if (! $store) {
@@ -177,7 +214,7 @@ class AuthController extends Controller
 
     public function localServerConfigRuntime(Request $request)
     {
-        $storeId = (int) ($request->header('X-Company-Scope-Id') ?: ($request->user()->store_id ?? 1));
+        $storeId = (int) $request->attributes->get('store_context_id', 0);
         $node = StoreLocalNode::where('store_id', $storeId)->where('enabled', true)->first();
 
         return response()->json([
@@ -254,8 +291,8 @@ class AuthController extends Controller
                     'name' => $user->name,
                     'email' => $user->email,
                     'role' => $user->role,
-                    'store_id' => $user->store_id ?? 1,
-                    'company_id' => $user->store_id ?? 1,
+                    'store_id' => $user->store_id,
+                    'company_id' => $user->store_id,
                     'company_name' => $user->store?->name,
                     'counter_id' => $counterId,
                     'brand' => $user->store?->theme_customization ?: [],

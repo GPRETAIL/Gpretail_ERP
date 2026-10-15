@@ -161,7 +161,7 @@ export default function SubscriptionDuePopup() {
           </Typography>
           <Typography sx={{ mt: 0.25, fontSize: 12, lineHeight: 1.4, color: "warning.dark" }}>{message}</Typography>
           <Button
-            onClick={() => window.open(COMPANY_PORTAL_LOGIN_URL, "_blank", "noopener,noreferrer")}
+            onClick={() => window.open(status?.subscription_portal_url || COMPANY_PORTAL_LOGIN_URL, "_blank", "noopener,noreferrer")}
             variant="contained"
             color="warning"
             size="small"

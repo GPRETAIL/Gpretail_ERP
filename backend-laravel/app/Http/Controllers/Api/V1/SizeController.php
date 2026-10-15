@@ -7,7 +7,6 @@ use App\Models\Size;
 use App\Models\SizeGroup;
 use App\Services\PaginationService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 
 class SizeController extends Controller
 {
@@ -34,6 +33,7 @@ class SizeController extends Controller
         $arr['company_id'] = $size->company_id ?? 1;
         $arr['created_by'] = $size->created_by ?: 'Superadmin';
         $arr['updated_by'] = $size->updated_by ?? null;
+
         return $arr;
     }
 
@@ -50,8 +50,9 @@ class SizeController extends Controller
         $arr['created_by'] = $group->created_by ?: 'Superadmin';
         $arr['updated_by'] = $group->updated_by ?? null;
         if (isset($group->sizes)) {
-            $arr['sizes'] = collect($group->sizes)->map(fn($s) => $this->formatSize($s))->values()->all();
+            $arr['sizes'] = collect($group->sizes)->map(fn ($s) => $this->formatSize($s))->values()->all();
         }
+
         return $arr;
     }
 
@@ -68,27 +69,28 @@ class SizeController extends Controller
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('code', 'like', "%{$search}%");
+                    ->orWhere('code', 'like', "%{$search}%");
             });
         }
 
         if ($request->boolean('all') || $request->input('limit') == 500 || $request->input('limit') == 1000) {
             $items = $query->orderBy('sort_order')->limit(2000)->get();
+
             return response()->json([
                 'success' => true,
-                'data'    => collect($items)->map(fn($s) => $this->formatSize($s)),
-                'total'   => $items->count(),
+                'data' => collect($items)->map(fn ($s) => $this->formatSize($s)),
+                'total' => $items->count(),
             ]);
         }
 
         $result = $this->paginationService->paginate($query, 'sizes', $request, [
-            'default_sort'  => 'sort_order',
+            'default_sort' => 'sort_order',
             'default_order' => 'asc',
-            'tie_breaker'   => 'id',
+            'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'name', 'code', 'sort_order', 'created_at'],
         ]);
 
-        $result['data'] = collect($result['data'])->map(fn($s) => $this->formatSize($s))->values();
+        $result['data'] = collect($result['data'])->map(fn ($s) => $this->formatSize($s))->values();
 
         return response()->json($result);
     }
@@ -97,7 +99,7 @@ class SizeController extends Controller
     {
         $size = Size::with('sizeGroup')->where('id', $id)->orWhere('code', $id)->first();
 
-        if (!$size) {
+        if (! $size) {
             return response()->json([
                 'success' => false,
                 'message' => 'Size not found',
@@ -106,7 +108,7 @@ class SizeController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $this->formatSize($size),
+            'data' => $this->formatSize($size),
         ]);
     }
 
@@ -114,7 +116,7 @@ class SizeController extends Controller
     {
         $name = $request->input('size_name') ?? $request->input('name') ?? $request->input('sizeName');
 
-        if (!$name) {
+        if (! $name) {
             return response()->json([
                 'success' => false,
                 'message' => 'Size name is required',
@@ -122,9 +124,9 @@ class SizeController extends Controller
         }
 
         $sizeGroupId = $request->input('size_group_id');
-        if (!$sizeGroupId) {
+        if (! $sizeGroupId) {
             $defaultGroup = SizeGroup::firstOrCreate(
-                ['code' => 'STD_SIZES'],
+                ['code' => 'STD_SIZES_'.($request->attributes->get('store_context_id') ?? 'legacy')],
                 ['name' => 'Standard Sizes', 'is_active' => true]
             );
             $sizeGroupId = $defaultGroup->id;
@@ -138,17 +140,17 @@ class SizeController extends Controller
 
         $size = Size::create([
             'size_group_id' => $sizeGroupId,
-            'name'          => $name,
-            'code'          => $code,
-            'sort_order'    => $request->input('sort_order', 0),
-            'company_id'    => $companyId,
-            'created_by'    => $createdBy,
+            'name' => $name,
+            'code' => $code,
+            'sort_order' => $request->input('sort_order', 0),
+            'company_id' => $companyId,
+            'created_by' => $createdBy,
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Size created successfully',
-            'data'    => $this->formatSize($size->load('sizeGroup')),
+            'data' => $this->formatSize($size->load('sizeGroup')),
         ], 201);
     }
 
@@ -156,7 +158,7 @@ class SizeController extends Controller
     {
         $size = Size::where('id', $id)->orWhere('code', $id)->first();
 
-        if (!$size) {
+        if (! $size) {
             return response()->json([
                 'success' => false,
                 'message' => 'Size not found',
@@ -168,18 +170,28 @@ class SizeController extends Controller
 
         $data = ['updated_by' => $updatedBy];
         $name = $request->input('size_name') ?? $request->input('name') ?? $request->input('sizeName');
-        if ($name !== null) $data['name'] = $name;
-        if ($request->has('code')) $data['code'] = $request->input('code');
-        if ($request->has('sort_order')) $data['sort_order'] = (int) $request->input('sort_order');
-        if ($request->has('size_group_id')) $data['size_group_id'] = $request->input('size_group_id');
-        if ($request->has('company_id')) $data['company_id'] = $request->input('company_id');
+        if ($name !== null) {
+            $data['name'] = $name;
+        }
+        if ($request->has('code')) {
+            $data['code'] = $request->input('code');
+        }
+        if ($request->has('sort_order')) {
+            $data['sort_order'] = (int) $request->input('sort_order');
+        }
+        if ($request->has('size_group_id')) {
+            $data['size_group_id'] = $request->input('size_group_id');
+        }
+        if ($request->has('company_id')) {
+            $data['company_id'] = $request->input('company_id');
+        }
 
         $size->update($data);
 
         return response()->json([
             'success' => true,
             'message' => 'Size updated successfully',
-            'data'    => $this->formatSize($size->load('sizeGroup')),
+            'data' => $this->formatSize($size->load('sizeGroup')),
         ]);
     }
 
@@ -187,7 +199,7 @@ class SizeController extends Controller
     {
         $size = Size::where('id', $id)->orWhere('code', $id)->first();
 
-        if (!$size) {
+        if (! $size) {
             return response()->json([
                 'success' => false,
                 'message' => 'Size not found',
@@ -216,8 +228,8 @@ class SizeController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => collect($groups)->map(fn($g) => $this->formatGroup($g)),
-            'total'   => $groups->count(),
+            'data' => collect($groups)->map(fn ($g) => $this->formatGroup($g)),
+            'total' => $groups->count(),
         ]);
     }
 
@@ -225,7 +237,7 @@ class SizeController extends Controller
     {
         $group = SizeGroup::with('sizes')->where('id', $id)->orWhere('code', $id)->first();
 
-        if (!$group) {
+        if (! $group) {
             return response()->json([
                 'success' => false,
                 'message' => 'Size group not found',
@@ -234,7 +246,7 @@ class SizeController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $this->formatGroup($group),
+            'data' => $this->formatGroup($group),
         ]);
     }
 
@@ -242,7 +254,7 @@ class SizeController extends Controller
     {
         $name = $request->input('group_name') ?? $request->input('name') ?? $request->input('groupName');
 
-        if (!$name) {
+        if (! $name) {
             return response()->json([
                 'success' => false,
                 'message' => 'Group name is required',
@@ -252,21 +264,21 @@ class SizeController extends Controller
         $user = $request->user();
         $createdBy = $request->input('created_by') ?: ($user?->name ?: ($user?->username ?: 'Superadmin'));
         $companyId = $request->input('company_id') ?: ($user?->company_id ?: 1);
-        $code = $request->input('code') ?: 'SG_' . strtoupper(substr(uniqid(), -6));
+        $code = $request->input('code') ?: 'SG_'.strtoupper(substr(uniqid(), -6));
 
         $group = SizeGroup::create([
-            'name'        => $name,
-            'code'        => $code,
+            'name' => $name,
+            'code' => $code,
             'description' => $request->input('description'),
-            'company_id'  => $companyId,
-            'created_by'  => $createdBy,
-            'is_active'   => $request->boolean('is_active', true),
+            'company_id' => $companyId,
+            'created_by' => $createdBy,
+            'is_active' => $request->boolean('is_active', true),
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Size group created successfully',
-            'data'    => $this->formatGroup($group),
+            'data' => $this->formatGroup($group),
         ], 201);
     }
 
@@ -274,7 +286,7 @@ class SizeController extends Controller
     {
         $group = SizeGroup::where('id', $id)->orWhere('code', $id)->first();
 
-        if (!$group) {
+        if (! $group) {
             return response()->json([
                 'success' => false,
                 'message' => 'Size group not found',
@@ -286,18 +298,28 @@ class SizeController extends Controller
 
         $data = ['updated_by' => $updatedBy];
         $name = $request->input('group_name') ?? $request->input('name') ?? $request->input('groupName');
-        if ($name !== null) $data['name'] = $name;
-        if ($request->has('code')) $data['code'] = $request->input('code');
-        if ($request->has('description')) $data['description'] = $request->input('description');
-        if ($request->has('is_active')) $data['is_active'] = $request->boolean('is_active');
-        if ($request->has('company_id')) $data['company_id'] = $request->input('company_id');
+        if ($name !== null) {
+            $data['name'] = $name;
+        }
+        if ($request->has('code')) {
+            $data['code'] = $request->input('code');
+        }
+        if ($request->has('description')) {
+            $data['description'] = $request->input('description');
+        }
+        if ($request->has('is_active')) {
+            $data['is_active'] = $request->boolean('is_active');
+        }
+        if ($request->has('company_id')) {
+            $data['company_id'] = $request->input('company_id');
+        }
 
         $group->update($data);
 
         return response()->json([
             'success' => true,
             'message' => 'Size group updated successfully',
-            'data'    => $this->formatGroup($group),
+            'data' => $this->formatGroup($group),
         ]);
     }
 
@@ -305,7 +327,7 @@ class SizeController extends Controller
     {
         $group = SizeGroup::where('id', $id)->orWhere('code', $id)->first();
 
-        if (!$group) {
+        if (! $group) {
             return response()->json([
                 'success' => false,
                 'message' => 'Size group not found',

@@ -4,15 +4,13 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\PosSale;
-use App\Models\PosSaleItem;
-use App\Models\PurchaseInvoice;
-use App\Models\Stock;
 use App\Models\Product;
+use App\Models\Stock;
 use App\Services\GroupAggregationService;
 use App\Services\PaginationService;
+use App\Services\StoreQuery;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 
 class SalesReportController extends Controller
 {
@@ -65,17 +63,18 @@ class SalesReportController extends Controller
 
         if ($request->boolean('all')) {
             $sales = $query->orderBy('id', 'desc')->get();
+
             return response()->json([
                 'success' => true,
-                'data'    => $sales,
-                'total'   => $sales->count(),
+                'data' => $sales,
+                'total' => $sales->count(),
             ]);
         }
 
         $result = $this->paginationService->paginate($query, 'pos_sales', $request, [
-            'default_sort'  => 'id',
+            'default_sort' => 'id',
             'default_order' => 'desc',
-            'tie_breaker'   => 'id',
+            'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'sale_date', 'invoice_no', 'grand_total', 'created_at'],
         ]);
 
@@ -98,7 +97,7 @@ class SalesReportController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $summary,
+            'data' => $summary,
         ]);
     }
 
@@ -111,28 +110,30 @@ class SalesReportController extends Controller
      * system) and gets a "not available" notice instead of fake/blank data.
      */
     private const FIELD_CONFIG = [
-        'brand'         => ['label' => 'Brand', 'source' => 'product', 'column' => 'brand_id', 'join_table' => 'brands', 'label_from' => 'brands.name'],
+        'brand' => ['label' => 'Brand', 'source' => 'product', 'column' => 'brand_id', 'join_table' => 'brands', 'label_from' => 'brands.name'],
         'product_group' => ['label' => 'Product Group', 'source' => 'product', 'column' => 'category_id', 'join_table' => 'categories', 'label_from' => 'categories.name'],
-        'hsn_code'      => ['label' => 'HSN Code', 'source' => 'product', 'column' => 'hsn_code'],
-        'type'          => ['label' => 'Type', 'source' => 'product', 'column' => 'type'],
-        'section'       => ['label' => 'Section', 'source' => 'product', 'column' => 'section'],
-        'product'       => ['label' => 'Product', 'source' => 'product', 'column' => 'name'],
-        'item'          => ['label' => 'Item', 'source' => 'product', 'column' => 'name'],
-        'product_code'  => ['label' => 'Product Code', 'source' => 'product', 'column' => 'code'],
-        'barcode'       => ['label' => 'Barcode', 'source' => 'product', 'column' => 'barcode'],
-        'company'       => ['label' => 'Company', 'source' => 'store'],
-        'customer'      => ['label' => 'Customer', 'source' => 'customer'],
+        'hsn_code' => ['label' => 'HSN Code', 'source' => 'product', 'column' => 'hsn_code'],
+        'type' => ['label' => 'Type', 'source' => 'product', 'column' => 'type'],
+        'section' => ['label' => 'Section', 'source' => 'product', 'column' => 'section'],
+        'product' => ['label' => 'Product', 'source' => 'product', 'column' => 'name'],
+        'item' => ['label' => 'Item', 'source' => 'product', 'column' => 'name'],
+        'product_code' => ['label' => 'Product Code', 'source' => 'product', 'column' => 'code'],
+        'barcode' => ['label' => 'Barcode', 'source' => 'product', 'column' => 'barcode'],
+        'company' => ['label' => 'Company', 'source' => 'store'],
+        'customer' => ['label' => 'Customer', 'source' => 'customer'],
     ];
 
     private function fieldNotice(string $field): string
     {
         $label = self::FIELD_CONFIG[$field]['label'] ?? strtoupper(str_replace('_', ' ', $field));
+
         return "\"{$label}\" is not available for analysis yet -- this attribute has no matching data in the current system.";
     }
 
     private function resolveStoreId(Request $request)
     {
         $storeId = $request->input('company_id') ?: $request->header('X-Company-Scope-Id');
+
         return ($storeId && $storeId !== 'all') ? $storeId : null;
     }
 
@@ -153,11 +154,11 @@ class SalesReportController extends Controller
         int $limit = 500
     ): Collection {
         $config = self::FIELD_CONFIG[$field] ?? null;
-        if (!$config) {
+        if (! $config) {
             return collect();
         }
 
-        $query = DB::table("{$itemTable} as i")
+        $query = StoreQuery::table("{$itemTable} as i")
             ->join("{$headerTable} as h", 'h.id', '=', "i.{$headerForeignKey}");
 
         foreach ($wheres as $callback) {
@@ -169,7 +170,7 @@ class SalesReportController extends Controller
         if ($config['source'] === 'product') {
             $query->join('products as p', 'p.id', '=', 'i.product_id');
             $groupExpr = "p.{$config['column']}";
-            if (!empty($config['join_table'])) {
+            if (! empty($config['join_table'])) {
                 $query->leftJoin($config['join_table'], "{$config['join_table']}.id", '=', "p.{$config['column']}");
                 $labelSelect = "MAX({$config['label_from']}) as group_label";
             }
@@ -215,6 +216,7 @@ class SalesReportController extends Controller
         return $allKeys->map(function ($key) use ($aKeyed, $bKeyed) {
             $ar = $aKeyed->get($key);
             $br = $bKeyed->get($key);
+
             return (object) [
                 'group_value' => $ar->group_value ?? $br->group_value ?? null,
                 'group_label' => $ar->group_label ?? $br->group_label ?? null,
@@ -226,9 +228,10 @@ class SalesReportController extends Controller
 
     private function describeRow($row): string
     {
-        if (!empty($row->group_label)) {
+        if (! empty($row->group_label)) {
             return (string) $row->group_label;
         }
+
         return $row->group_value === null ? '(Blank)' : (string) $row->group_value;
     }
 
@@ -236,7 +239,7 @@ class SalesReportController extends Controller
     {
         $field = (string) $request->input('groupBy', 'brand');
 
-        if (!array_key_exists($field, self::FIELD_CONFIG)) {
+        if (! array_key_exists($field, self::FIELD_CONFIG)) {
             return response()->json(['success' => true, 'data' => [], 'totals' => null, 'notice' => $this->fieldNotice($field)]);
         }
 
@@ -246,9 +249,15 @@ class SalesReportController extends Controller
 
         $sales = $this->groupItemsByDimension('pos_sale_items', 'pos_sales', 'pos_sale_id', $field, [
             function ($q) use ($storeId, $saleFrom, $saleTo) {
-                if ($storeId) $q->where('h.store_id', $storeId);
-                if ($saleFrom) $q->whereDate('h.sale_date', '>=', $saleFrom);
-                if ($saleTo) $q->whereDate('h.sale_date', '<=', $saleTo);
+                if ($storeId) {
+                    $q->where('h.store_id', $storeId);
+                }
+                if ($saleFrom) {
+                    $q->whereDate('h.sale_date', '>=', $saleFrom);
+                }
+                if ($saleTo) {
+                    $q->whereDate('h.sale_date', '<=', $saleTo);
+                }
             },
         ], [
             'qty_sold' => 'SUM(i.quantity)',
@@ -259,9 +268,15 @@ class SalesReportController extends Controller
 
         $returns = $this->groupItemsByDimension('pos_return_items', 'pos_returns', 'pos_return_id', $field, [
             function ($q) use ($storeId, $saleFrom, $saleTo) {
-                if ($storeId) $q->where('h.store_id', $storeId);
-                if ($saleFrom) $q->whereDate('h.return_date', '>=', $saleFrom);
-                if ($saleTo) $q->whereDate('h.return_date', '<=', $saleTo);
+                if ($storeId) {
+                    $q->where('h.store_id', $storeId);
+                }
+                if ($saleFrom) {
+                    $q->whereDate('h.return_date', '>=', $saleFrom);
+                }
+                if ($saleTo) {
+                    $q->whereDate('h.return_date', '<=', $saleTo);
+                }
             },
         ], [
             'qty_returned' => 'SUM(i.quantity)',
@@ -312,7 +327,7 @@ class SalesReportController extends Controller
     {
         $field = (string) $request->input('groupBy', 'brand');
 
-        if ($field === 'customer' || !array_key_exists($field, self::FIELD_CONFIG)) {
+        if ($field === 'customer' || ! array_key_exists($field, self::FIELD_CONFIG)) {
             return response()->json(['success' => true, 'data' => [], 'totals' => null, 'notice' => $this->fieldNotice($field)]);
         }
 
@@ -324,9 +339,15 @@ class SalesReportController extends Controller
 
         $sales = $this->groupItemsByDimension('pos_sale_items', 'pos_sales', 'pos_sale_id', $field, [
             function ($q) use ($storeId, $saleFrom, $saleTo) {
-                if ($storeId) $q->where('h.store_id', $storeId);
-                if ($saleFrom) $q->whereDate('h.sale_date', '>=', $saleFrom);
-                if ($saleTo) $q->whereDate('h.sale_date', '<=', $saleTo);
+                if ($storeId) {
+                    $q->where('h.store_id', $storeId);
+                }
+                if ($saleFrom) {
+                    $q->whereDate('h.sale_date', '>=', $saleFrom);
+                }
+                if ($saleTo) {
+                    $q->whereDate('h.sale_date', '<=', $saleTo);
+                }
             },
         ], [
             'qty_sold' => 'SUM(i.quantity)',
@@ -335,9 +356,15 @@ class SalesReportController extends Controller
 
         $returns = $this->groupItemsByDimension('pos_return_items', 'pos_returns', 'pos_return_id', $field, [
             function ($q) use ($storeId, $saleFrom, $saleTo) {
-                if ($storeId) $q->where('h.store_id', $storeId);
-                if ($saleFrom) $q->whereDate('h.return_date', '>=', $saleFrom);
-                if ($saleTo) $q->whereDate('h.return_date', '<=', $saleTo);
+                if ($storeId) {
+                    $q->where('h.store_id', $storeId);
+                }
+                if ($saleFrom) {
+                    $q->whereDate('h.return_date', '>=', $saleFrom);
+                }
+                if ($saleTo) {
+                    $q->whereDate('h.return_date', '<=', $saleTo);
+                }
             },
         ], [
             'qty_returned' => 'SUM(i.quantity)',
@@ -348,9 +375,15 @@ class SalesReportController extends Controller
         // to avoid double-counting until the receiving workflow is confirmed).
         $directPurchases = $this->groupItemsByDimension('direct_purchase_items', 'direct_purchases', 'direct_purchase_id', $field, [
             function ($q) use ($storeId, $purchaseFrom, $purchaseTo) {
-                if ($storeId) $q->where('h.store_id', $storeId);
-                if ($purchaseFrom) $q->whereDate('h.purchase_date', '>=', $purchaseFrom);
-                if ($purchaseTo) $q->whereDate('h.purchase_date', '<=', $purchaseTo);
+                if ($storeId) {
+                    $q->where('h.store_id', $storeId);
+                }
+                if ($purchaseFrom) {
+                    $q->whereDate('h.purchase_date', '>=', $purchaseFrom);
+                }
+                if ($purchaseTo) {
+                    $q->whereDate('h.purchase_date', '<=', $purchaseTo);
+                }
             },
         ], [
             'purchase_qty' => 'SUM(i.quantity)',
@@ -359,9 +392,15 @@ class SalesReportController extends Controller
 
         $invoicePurchases = $this->groupItemsByDimension('purchase_invoice_items', 'purchase_invoices', 'purchase_invoice_id', $field, [
             function ($q) use ($storeId, $purchaseFrom, $purchaseTo) {
-                if ($storeId) $q->where('h.store_id', $storeId);
-                if ($purchaseFrom) $q->whereDate('h.invoice_date', '>=', $purchaseFrom);
-                if ($purchaseTo) $q->whereDate('h.invoice_date', '<=', $purchaseTo);
+                if ($storeId) {
+                    $q->where('h.store_id', $storeId);
+                }
+                if ($purchaseFrom) {
+                    $q->whereDate('h.invoice_date', '>=', $purchaseFrom);
+                }
+                if ($purchaseTo) {
+                    $q->whereDate('h.invoice_date', '<=', $purchaseTo);
+                }
             },
         ], [
             'purchase_qty' => 'SUM(i.quantity)',
@@ -442,7 +481,7 @@ class SalesReportController extends Controller
     {
         $field = (string) $request->input('groupBy', 'brand');
 
-        if ($field === 'customer' || !array_key_exists($field, self::FIELD_CONFIG)) {
+        if ($field === 'customer' || ! array_key_exists($field, self::FIELD_CONFIG)) {
             return response()->json(['success' => true, 'data' => [], 'totals' => null, 'notice' => $this->fieldNotice($field)]);
         }
 
@@ -452,9 +491,15 @@ class SalesReportController extends Controller
 
         $sold = $this->groupItemsByDimension('pos_sale_items', 'pos_sales', 'pos_sale_id', $field, [
             function ($q) use ($storeId, $dateFrom, $dateTo) {
-                if ($storeId) $q->where('h.store_id', $storeId);
-                if ($dateFrom) $q->whereDate('h.sale_date', '>=', $dateFrom);
-                if ($dateTo) $q->whereDate('h.sale_date', '<=', $dateTo);
+                if ($storeId) {
+                    $q->where('h.store_id', $storeId);
+                }
+                if ($dateFrom) {
+                    $q->whereDate('h.sale_date', '>=', $dateFrom);
+                }
+                if ($dateTo) {
+                    $q->whereDate('h.sale_date', '<=', $dateTo);
+                }
             },
         ], [
             'sold_pieces' => 'SUM(i.quantity)',
@@ -464,7 +509,7 @@ class SalesReportController extends Controller
         // directly here rather than through groupItemsByDimension, which assumes
         // an item+header pair.
         $config = self::FIELD_CONFIG[$field];
-        $stockQuery = DB::table('stocks as i');
+        $stockQuery = StoreQuery::table('stocks as i');
         if ($storeId) {
             $stockQuery->where('i.store_id', $storeId);
         }
@@ -473,7 +518,7 @@ class SalesReportController extends Controller
             $stockQuery->join('products as p', 'p.id', '=', 'i.product_id');
             $groupExpr = "p.{$config['column']}";
             $selects = ["{$groupExpr} as group_value"];
-            if (!empty($config['join_table'])) {
+            if (! empty($config['join_table'])) {
                 $stockQuery->leftJoin($config['join_table'], "{$config['join_table']}.id", '=', "p.{$config['column']}");
                 $selects[] = "MAX({$config['label_from']}) as group_label";
             }

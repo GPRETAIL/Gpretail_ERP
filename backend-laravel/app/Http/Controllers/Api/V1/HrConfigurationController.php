@@ -7,6 +7,7 @@ use App\Models\HrDepartment;
 use App\Models\HrDesignation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class HrConfigurationController extends Controller
 {
@@ -24,16 +25,16 @@ class HrConfigurationController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $items,
-            'total'   => $items->count(),
+            'data' => $items,
+            'total' => $items->count(),
         ]);
     }
 
     public function designationsStore(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'name'          => 'required|string|max:255',
-            'code'          => 'nullable|string|max:50|unique:hr_designations,code',
+            'name' => 'required|string|max:255',
+            'code' => ['nullable', 'string', 'max:50', Rule::unique('hr_designations', 'code')->where('store_id', $request->attributes->get('store_context_id'))],
             'department_id' => 'nullable|exists:hr_departments,id',
         ]);
 
@@ -41,12 +42,12 @@ class HrConfigurationController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors'  => $validator->errors(),
+                'errors' => $validator->errors(),
             ], 422);
         }
 
         $deptId = $request->input('department_id');
-        if (!$deptId) {
+        if (! $deptId) {
             $defaultDept = HrDepartment::firstOrCreate(
                 ['code' => 'GENERAL_DEPT'],
                 ['name' => 'General Department', 'is_active' => true]
@@ -54,44 +55,53 @@ class HrConfigurationController extends Controller
             $deptId = $defaultDept->id;
         }
 
-        $code = $request->input('code') ?: 'DES_' . strtoupper(substr(uniqid(), -6));
+        $code = $request->input('code') ?: 'DES_'.strtoupper(substr(uniqid(), -6));
 
         $designation = HrDesignation::create([
             'department_id' => $deptId,
-            'name'          => $request->input('name'),
-            'code'          => $code,
-            'is_active'     => $request->boolean('is_active', true),
+            'name' => $request->input('name'),
+            'code' => $code,
+            'is_active' => $request->boolean('is_active', true),
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Designation created successfully',
-            'data'    => $designation->load('department'),
+            'data' => $designation->load('department'),
         ], 201);
     }
 
     public function designationsShow($id)
     {
         $designation = HrDesignation::with('department')->findOrFail($id);
+
         return response()->json(['success' => true, 'data' => $designation]);
     }
 
     public function designationsUpdate(Request $request, $id)
     {
         $designation = HrDesignation::findOrFail($id);
+        $validator = Validator::make($request->all(), [
+            'name' => 'sometimes|required|string|max:255',
+            'code' => ['sometimes', 'required', 'string', 'max:50', Rule::unique('hr_designations', 'code')->where('store_id', $request->attributes->get('store_context_id'))->ignore($designation)],
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
         $data = $request->all();
 
         $designation->update([
             'department_id' => $data['department_id'] ?? $designation->department_id,
-            'name'          => $data['name'] ?? $designation->name,
-            'code'          => $data['code'] ?? $designation->code,
-            'is_active'     => $request->has('is_active') ? $request->boolean('is_active') : $designation->is_active,
+            'name' => $data['name'] ?? $designation->name,
+            'code' => $data['code'] ?? $designation->code,
+            'is_active' => $request->has('is_active') ? $request->boolean('is_active') : $designation->is_active,
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Designation updated successfully',
-            'data'    => $designation->load('department'),
+            'data' => $designation->load('department'),
         ]);
     }
 
@@ -120,14 +130,15 @@ class HrConfigurationController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $items,
-            'total'   => $items->count(),
+            'data' => $items,
+            'total' => $items->count(),
         ]);
     }
 
     public function departmentsShow($id)
     {
         $dept = HrDepartment::with('designations')->findOrFail($id);
+
         return response()->json(['success' => true, 'data' => $dept]);
     }
 
@@ -135,49 +146,57 @@ class HrConfigurationController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'code' => 'nullable|string|max:50|unique:hr_departments,code',
+            'code' => ['nullable', 'string', 'max:50', Rule::unique('hr_departments', 'code')->where('store_id', $request->attributes->get('store_context_id'))],
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors'  => $validator->errors(),
+                'errors' => $validator->errors(),
             ], 422);
         }
 
-        $code = $request->input('code') ?: 'DEPT_' . strtoupper(substr(uniqid(), -6));
+        $code = $request->input('code') ?: 'DEPT_'.strtoupper(substr(uniqid(), -6));
 
         $dept = HrDepartment::create([
-            'name'        => $request->input('name'),
-            'code'        => $code,
+            'name' => $request->input('name'),
+            'code' => $code,
             'description' => $request->input('description'),
-            'is_active'   => $request->boolean('is_active', true),
+            'is_active' => $request->boolean('is_active', true),
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Department created successfully',
-            'data'    => $dept,
+            'data' => $dept,
         ], 201);
     }
 
     public function departmentsUpdate(Request $request, $id)
     {
         $dept = HrDepartment::findOrFail($id);
+        $validator = Validator::make($request->all(), [
+            'name' => 'sometimes|required|string|max:255',
+            'code' => ['sometimes', 'required', 'string', 'max:50', Rule::unique('hr_departments', 'code')->where('store_id', $request->attributes->get('store_context_id'))->ignore($dept)],
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
         $data = $request->all();
 
         $dept->update([
-            'name'        => $data['name'] ?? $dept->name,
-            'code'        => $data['code'] ?? $dept->code,
+            'name' => $data['name'] ?? $dept->name,
+            'code' => $data['code'] ?? $dept->code,
             'description' => $data['description'] ?? $dept->description,
-            'is_active'   => $request->has('is_active') ? $request->boolean('is_active') : $dept->is_active,
+            'is_active' => $request->has('is_active') ? $request->boolean('is_active') : $dept->is_active,
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Department updated successfully',
-            'data'    => $dept,
+            'data' => $dept,
         ]);
     }
 
@@ -197,16 +216,27 @@ class HrConfigurationController extends Controller
     {
         if (str_contains($type, 'designation')) {
             if ($id) {
-                if ($request->isMethod('delete')) return $this->designationsDestroy($id);
-                if ($request->isMethod('put') || $request->isMethod('patch')) return $this->designationsUpdate($request, $id);
+                if ($request->isMethod('delete')) {
+                    return $this->designationsDestroy($id);
+                }
+                if ($request->isMethod('put') || $request->isMethod('patch')) {
+                    return $this->designationsUpdate($request, $id);
+                }
+
                 return $this->designationsShow($id);
             }
+
             return $request->isMethod('post') ? $this->designationsStore($request) : $this->designationsIndex($request);
         }
 
         if ($id) {
-            if ($request->isMethod('delete')) return $this->departmentsDestroy($id);
-            if ($request->isMethod('put') || $request->isMethod('patch')) return $this->departmentsUpdate($request, $id);
+            if ($request->isMethod('delete')) {
+                return $this->departmentsDestroy($id);
+            }
+            if ($request->isMethod('put') || $request->isMethod('patch')) {
+                return $this->departmentsUpdate($request, $id);
+            }
+
             return $this->departmentsShow($id);
         }
 

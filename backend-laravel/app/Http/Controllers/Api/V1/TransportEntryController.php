@@ -44,6 +44,7 @@ class TransportEntryController extends Controller
     public function groupedSummary(Request $request)
     {
         $result = $this->groupAggregationService->summarize($this->filteredQuery($request), 'transport_entries', $request);
+
         return response()->json($result, $result['success'] ? 200 : 422);
     }
 
@@ -62,9 +63,9 @@ class TransportEntryController extends Controller
         }
 
         $result = $this->paginationService->paginate($query, 'transport_entries', $request, [
-            'default_sort'  => 'id',
+            'default_sort' => 'id',
             'default_order' => 'desc',
-            'tie_breaker'   => 'id',
+            'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'lr_no', 'lr_date', 'created_at'],
         ]);
 

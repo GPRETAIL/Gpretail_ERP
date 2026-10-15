@@ -42,7 +42,10 @@ const ForceChangePassword = () => {
     if (pw.password !== pw.confirm) return setError("Passwords do not match.");
     setBusy(true);
     try {
-      await api.post("/auth/change-password", { newPassword: pw.password });
+      const response = await api.post("/auth/change-password", { newPassword: pw.password });
+      if (response.data?.data?.token) {
+        localStorage.setItem("token", response.data.data.token);
+      }
       // Clear the flag locally and reload so /auth/me refreshes and the app proceeds.
       try {
         const u = JSON.parse(localStorage.getItem("user") || "{}");

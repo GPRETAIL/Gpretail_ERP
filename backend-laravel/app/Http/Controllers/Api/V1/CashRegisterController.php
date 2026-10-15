@@ -24,17 +24,18 @@ class CashRegisterController extends Controller
 
         if ($request->boolean('all')) {
             $sessions = $query->orderBy('opened_at', 'desc')->limit(1000)->get();
+
             return response()->json([
                 'success' => true,
-                'data'    => $sessions,
-                'total'   => $sessions->count(),
+                'data' => $sessions,
+                'total' => $sessions->count(),
             ]);
         }
 
         $result = $this->paginationService->paginate($query, 'cash_register_sessions', $request, [
-            'default_sort'  => 'id',
+            'default_sort' => 'id',
             'default_order' => 'desc',
-            'tie_breaker'   => 'id',
+            'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'opened_at', 'closed_at', 'status', 'created_at'],
         ]);
 

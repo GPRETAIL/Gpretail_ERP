@@ -13,8 +13,13 @@ import SetPassword from "./pages/SetPassword";
 import ForceChangePassword from "./pages/ForceChangePassword";
 import VynerixMobileApp from "./mobile/MobileAppV2";
 import PwaInstallPrompt from "./components/PwaInstallPrompt";
+import StoreSelectionDialog from "./components/StoreSelectionDialog";
+import StoreActivation from "./pages/StoreActivation";
 
 function App() {
+  const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
+  const authUser = useSelector((state) => state.auth.user);
+
   // Normalize capital /App path to lowercase /app for case-insensitive mobile routing
   if (window.location.pathname.toLowerCase() === "/app" || window.location.pathname.toLowerCase().startsWith("/app/")) {
     if (!window.location.pathname.startsWith("/app")) {
@@ -23,8 +28,6 @@ function App() {
     }
   }
 
-  const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
-  const authUser = useSelector((state) => state.auth.user);
   const homePath = "/dashboard";
 
   return (
@@ -43,11 +46,13 @@ function App() {
               <Route path="/set-password" element={<SetPassword />} />
               <Route path="/app/*" element={<VynerixMobileApp />} />
               <Route element={<ProtectedRoute />}>
+                <Route path="/store-activation" element={<StoreActivation />} />
                 <Route path="*" element={<MainLayout />} />
               </Route>
               <Route path="/" element={isAuthenticated ? <Navigate to={homePath} replace /> : <Navigate to="/login" replace />} />
             </Routes>
             {isAuthenticated && <PwaInstallPrompt />}
+            {isAuthenticated && <StoreSelectionDialog />}
           </>
         )}
       </AuthInitializer>

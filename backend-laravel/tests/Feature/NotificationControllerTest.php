@@ -24,6 +24,7 @@ class NotificationControllerTest extends TestCase
     use RefreshDatabase;
 
     protected Store $store;
+
     protected User $user;
 
     protected function setUp(): void
@@ -49,7 +50,7 @@ class NotificationControllerTest extends TestCase
 
     public function test_customer_over_credit_limit_creates_one_notification(): void
     {
-        Customer::create([
+        Customer::create(['store_id' => $this->store->id,
             'name' => 'Over Limit Co', 'code' => 'CUST-001',
             'credit_limit' => 10000, 'current_balance' => 15000,
         ]);
@@ -65,7 +66,7 @@ class NotificationControllerTest extends TestCase
 
     public function test_customer_under_credit_limit_creates_no_notification(): void
     {
-        Customer::create([
+        Customer::create(['store_id' => $this->store->id,
             'name' => 'Fine Co', 'code' => 'CUST-002',
             'credit_limit' => 10000, 'current_balance' => 5000,
         ]);
@@ -82,7 +83,7 @@ class NotificationControllerTest extends TestCase
         // Unread-only dedup: marking the notification read must allow a fresh one to be
         // generated on the next scan, since the customer could still be over-limit (or go
         // back over it later) -- unlike an ever-created dedup, which would never re-alert.
-        $customer = Customer::create([
+        $customer = Customer::create(['store_id' => $this->store->id,
             'name' => 'Repeat Offender', 'code' => 'CUST-003',
             'credit_limit' => 10000, 'current_balance' => 15000,
         ]);
@@ -102,7 +103,7 @@ class NotificationControllerTest extends TestCase
 
     public function test_credit_sale_generates_due_soon_then_overdue_without_duplicating(): void
     {
-        $customer = Customer::create(['name' => 'Credit Buyer', 'code' => 'CUST-004']);
+        $customer = Customer::create(['store_id' => $this->store->id, 'name' => 'Credit Buyer', 'code' => 'CUST-004']);
 
         DB::table('pos_sales')->insert([
             'store_id' => $this->store->id, 'user_id' => $this->user->id, 'customer_id' => $customer->id,
@@ -183,7 +184,7 @@ class NotificationControllerTest extends TestCase
 
     public function test_backup_stale_is_a_singleton_once_a_backup_has_lapsed(): void
     {
-        DB::table('backups')->insert([
+        DB::table('backups')->insert(['company_id' => $this->store->id,
             'file_name' => 'backup-old.zip', 'backup_type' => 'full', 'status' => 'success',
             'completed_at' => now()->subDays(10), 'created_at' => now()->subDays(10), 'updated_at' => now()->subDays(10),
         ]);
@@ -196,7 +197,7 @@ class NotificationControllerTest extends TestCase
 
     public function test_failed_backup_creates_one_notification_per_failed_run(): void
     {
-        DB::table('backups')->insert([
+        DB::table('backups')->insert(['company_id' => $this->store->id,
             'file_name' => 'backup-2026-09-01.zip', 'backup_type' => 'full',
             'status' => 'failed', 'created_at' => now(), 'updated_at' => now(),
         ]);
@@ -210,7 +211,7 @@ class NotificationControllerTest extends TestCase
 
     public function test_unread_count_reflects_generated_alerts(): void
     {
-        Customer::create([
+        Customer::create(['store_id' => $this->store->id,
             'name' => 'Over Limit Co', 'code' => 'CUST-005',
             'credit_limit' => 10000, 'current_balance' => 15000,
         ]);
@@ -235,7 +236,7 @@ class NotificationControllerTest extends TestCase
             for ($i = 0; $i < $n; $i++) {
                 DB::table('direct_purchases')->insert([
                     'store_id' => $this->store->id, 'supplier_id' => $supplier,
-                    'purchase_no' => 'DP-SCALE-' . uniqid('', true),
+                    'purchase_no' => 'DP-SCALE-'.uniqid('', true),
                     'purchase_date' => now()->subDays(40), 'total_amount' => 1000, 'paid_amount' => 0,
                     'payment_status' => 'UNPAID', 'created_at' => now(), 'updated_at' => now(),
                 ]);
@@ -243,6 +244,8 @@ class NotificationControllerTest extends TestCase
         };
 
         $insertOldUnpaid(3);
+        $this->fetchNotifications()->assertOk();
+        Notification::truncate();
         DB::enableQueryLog();
         $this->fetchNotifications()->assertOk();
         $threeCount = count(DB::getQueryLog());
@@ -265,7 +268,7 @@ class NotificationControllerTest extends TestCase
             $selectQueriesThree,
             $selectQueriesTwentyThree,
             "Expected SELECT query count to stay flat as bill count grows (3 bills: {$threeCount} total queries, "
-            . "23 bills: {$twentyThreeCount} total queries) -- a per-row query appears to have been reintroduced."
+            ."23 bills: {$twentyThreeCount} total queries) -- a per-row query appears to have been reintroduced."
         );
     }
 }

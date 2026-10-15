@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
-import NewPage from "../NewPage";
+import InvoiceImportPage from "../InvoiceImportPage";
 
 // Mock API
 vi.mock("../../../api/axios", () => ({
@@ -11,11 +11,11 @@ vi.mock("../../../api/axios", () => ({
   },
 }));
 
-describe("NewPage (AI Invoice Inwarding)", () => {
+describe("InvoiceImportPage (AI Invoice Inwarding)", () => {
   it("renders upload dropzone, document viewer prompt, and action headers", () => {
     render(
       <MemoryRouter>
-        <NewPage />
+        <InvoiceImportPage />
       </MemoryRouter>
     );
 
@@ -29,7 +29,7 @@ describe("NewPage (AI Invoice Inwarding)", () => {
     const { fireEvent } = await import("@testing-library/react");
     render(
       <MemoryRouter>
-        <NewPage />
+        <InvoiceImportPage />
       </MemoryRouter>
     );
 

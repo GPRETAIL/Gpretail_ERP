@@ -67,7 +67,10 @@ class CaptureSyncOutbox
             }
         }
 
-        $storeId = (int) ($request->header('X-Company-Scope-Id') ?: 1);
+        $storeId = (int) $request->attributes->get('store_context_id');
+        if ($storeId < 1) {
+            return;
+        }
         $role = config('sync.node_role');
 
         if ($role === 'local') {

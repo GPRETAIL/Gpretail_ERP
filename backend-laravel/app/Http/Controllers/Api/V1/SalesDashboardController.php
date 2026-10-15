@@ -31,7 +31,7 @@ class SalesDashboardController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $data,
+            'data' => $data,
         ]);
     }
 
@@ -49,8 +49,8 @@ class SalesDashboardController extends Controller
         $paymentBreakdown = $data['payment_breakdown'] ?? [];
 
         $headers = [
-            'Content-Type'        => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="sales_dashboard_' . Carbon::now()->format('Y-m-d_His') . '.csv"',
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="sales_dashboard_'.Carbon::now()->format('Y-m-d_His').'.csv"',
         ];
 
         return response()->stream(function () use ($summary, $paymentBreakdown) {

@@ -3,7 +3,10 @@
 namespace App\Services;
 
 use App\Models\PlatformActivation;
+use App\Models\Store;
 use App\Models\User;
+use App\Models\Warehouse;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -28,8 +31,24 @@ class PlatformActivationService
             return ['ok' => false, 'message' => 'This deployment has no company_code/client_id configured. Set PLATFORM_COMPANY_CODE and PLATFORM_CLIENT_ID.', 'activation' => null];
         }
 
+        $existing = PlatformActivation::current();
+        if (config('platform.company_code') && config('platform.company_code') !== $companyCode) {
+            return ['ok' => false, 'message' => 'The activation company does not match the company configured for this installation.', 'activation' => null];
+        }
+        if ($existing && $existing->company_code !== $companyCode) {
+            return ['ok' => false, 'message' => 'This ERP installation is already bound to another company.', 'activation' => null];
+        }
+        if ($existing && $existing->sync_token && $existing->client_id === $clientId) {
+            $sync = $this->sync($existing);
+            if ($sync['ok']) {
+                $existing->update(['activated' => true]);
+            }
+
+            return ['ok' => $sync['ok'], 'message' => $sync['message'] ?? null, 'activation' => $existing->fresh()];
+        }
+
         $result = $this->client->register($companyCode, $clientId, $oneTimePassword);
-        if (!$result['ok']) {
+        if (! $result['ok']) {
             return ['ok' => false, 'message' => $result['message'] ?? 'Registration was rejected by the platform.', 'activation' => null];
         }
 
@@ -38,7 +57,7 @@ class PlatformActivationService
             [
                 'client_id' => $clientId,
                 'sync_token' => $result['data']['sync_token'] ?? null,
-                'activated' => true,
+                'activated' => false,
                 'registered_at' => now(),
             ]
         );
@@ -46,9 +65,12 @@ class PlatformActivationService
         // Pull the full configuration immediately rather than making the installer wait for the
         // next scheduled platform:sync — registering and then showing "not activated" until a
         // cron fires would look broken even though it isn't.
-        $this->sync($activation);
+        $sync = $this->sync($activation);
+        if ($sync['ok']) {
+            $activation->update(['activated' => true]);
+        }
 
-        return ['ok' => true, 'message' => null, 'activation' => $activation->fresh()];
+        return ['ok' => $sync['ok'], 'message' => $sync['message'] ?? null, 'activation' => $activation->fresh()];
     }
 
     /**
@@ -60,22 +82,26 @@ class PlatformActivationService
     public function sync(?PlatformActivation $activation = null): array
     {
         $activation ??= PlatformActivation::current();
-        if (!$activation) {
+        if (! $activation) {
             return ['ok' => false, 'message' => 'Not registered with the platform yet.'];
         }
 
         $result = $this->client->pullSnapshot($activation->company_code, $activation->sync_token);
-        if (!$result['ok']) {
+        if (! $result['ok']) {
             $activation->update(['last_sync_error' => $result['message'] ?? ('HTTP '.$result['status'])]);
 
             return ['ok' => false, 'message' => $result['message']];
         }
 
         $company = $result['data']['company'] ?? [];
+        if (($company['company_code'] ?? null) !== $activation->company_code) {
+            return ['ok' => false, 'message' => 'GP Admin returned configuration for a different company.'];
+        }
         $licenceToken = $result['data']['licence'] ?? null;
         $licenceClaims = $this->decodeLicenceClaims($licenceToken);
 
         $activation->update([
+            'sync_token' => $result['data']['sync_token'] ?? $activation->sync_token,
             'status' => $company['status'] ?? $activation->status,
             'active_till' => $company['active_till'] ?? null,
             'limits' => $company['limits'] ?? [],
@@ -88,11 +114,101 @@ class PlatformActivationService
                 : $activation->licence_grace_until,
             'last_synced_at' => now(),
             'last_sync_error' => null,
+            'tenant_admin_email' => $company['tenant_admin_email'] ?? null,
+            'onboarding_required' => (bool) ($company['onboarding_required'] ?? false),
+            'first_erp_login_at' => $company['first_erp_login_at'] ?? null,
         ]);
 
-        $this->adoptTenantPassword($activation, $company);
+        try {
+            if (! $activation->deployment_id) {
+                $activation->update(['deployment_id' => (string) Str::uuid()]);
+            }
+            $this->importStores($activation, $result['data']['stores'] ?? []);
+            $this->importWarehouses($activation, $result['data']['warehouses'] ?? []);
+            $this->adoptTenantPassword($activation, $company);
+        } catch (\RuntimeException $exception) {
+            $activation->update(['last_sync_error' => $exception->getMessage()]);
+
+            return ['ok' => false, 'message' => $exception->getMessage()];
+        }
 
         return ['ok' => true, 'message' => null];
+    }
+
+    private function importWarehouses(PlatformActivation $activation, array $warehouses): void
+    {
+        Warehouse::withoutEvents(function () use ($activation, $warehouses): void {
+            DB::transaction(function () use ($activation, $warehouses): void {
+                $seen = [];
+                foreach ($warehouses as $source) {
+                    if (! ($source['licence_inherited'] ?? false)) {
+                        continue;
+                    }
+                    $store = Store::where('platform_company_code', $activation->company_code)->where('platform_store_id', $source['store_id'] ?? 0)->first();
+                    if (! $store) {
+                        throw new \RuntimeException('Warehouse references a store that is not provisioned in this company.');
+                    }
+                    $id = (int) ($source['warehouse_id'] ?? 0);
+                    if ($id < 1) {
+                        throw new \RuntimeException('Invalid warehouse identity.');
+                    }
+                    $warehouse = Warehouse::withoutGlobalScopes()->where('platform_warehouse_id', $id)->first();
+                    if ($warehouse && ($warehouse->platform_company_code !== $activation->company_code || $warehouse->store_id !== $store->id)) {
+                        throw new \RuntimeException('Warehouse ownership changed. Reconcile stock before importing it.');
+                    }
+                    $warehouse ??= new Warehouse;
+                    $warehouse->fill(['platform_warehouse_id' => $id, 'platform_company_code' => $activation->company_code,
+                        'store_id' => $store->id, 'name' => $source['name'], 'code' => $source['code'],
+                        'is_active' => $store->is_active && ($source['status'] ?? '') === 'active'])->save();
+                    $seen[] = $id;
+                }
+                Warehouse::withoutGlobalScopes()->where('platform_company_code', $activation->company_code)
+                    ->whereNotIn('platform_warehouse_id', $seen)->update(['is_active' => false]);
+            });
+        });
+    }
+
+    private function importStores(PlatformActivation $activation, array $stores): void
+    {
+        DB::transaction(function () use ($activation, $stores): void {
+            $seen = [];
+            foreach ($stores as $source) {
+                if (! ($source['activation_required'] ?? false)) {
+                    continue;
+                }
+                $id = (int) ($source['store_id'] ?? 0);
+                if ($id < 1 || empty($source['code'])) {
+                    throw new \RuntimeException('GP Admin returned an invalid store identity.');
+                }
+                $local = Store::where('platform_store_id', $id)->first();
+                if ($local && $local->platform_company_code !== $activation->company_code) {
+                    throw new \RuntimeException('Store identity conflicts with a different local company.');
+                }
+                if (Store::where('code', $source['code'])->when($local, fn ($q) => $q->where('id', '!=', $local->id))->exists()) {
+                    throw new \RuntimeException('A GP Admin store code conflicts with an unlinked local store. Reconcile it before sync.');
+                }
+                $local ??= new Store;
+                $local->fill([
+                    'name' => $source['name'], 'code' => $source['code'],
+                    'platform_store_id' => $id, 'platform_company_code' => $activation->company_code,
+                    'activation_required' => true, 'activated_at' => $source['activated_at'] ?? null,
+                    'is_active' => $activation->status === 'active' && ($source['status'] ?? '') === 'active'
+                        && ! empty($source['activated_at']) && ($source['deployment_id'] ?? '') === $activation->deployment_id
+                        && ! empty($source['active_till']) && Carbon::parse($source['active_till'])->isFuture()
+                        && ($source['subscription']['status'] ?? '') === 'active',
+                    'platform_active_till' => $source['active_till'] ?? null,
+                    'platform_licence_token' => $source['licence'] ?? null,
+                    'platform_subscription' => $source['subscription'] ?? null,
+                ]);
+                if ($local->is_active && ! app(StoreLicenceVerifier::class)->verify($local, $activation)['ok']) {
+                    throw new \RuntimeException('GP Admin returned a store licence that this installation cannot verify. Check the pinned public key and refresh.');
+                }
+                $local->save();
+                $seen[] = $id;
+            }
+            Store::where('platform_company_code', $activation->company_code)->whereNotNull('platform_store_id')
+                ->whereNotIn('platform_store_id', $seen)->update(['is_active' => false]);
+        });
     }
 
     /**
@@ -118,10 +234,20 @@ class PlatformActivationService
         $mustChange = (bool) ($company['tenant_password_must_change'] ?? false);
         $user = User::whereRaw('LOWER(email) = ?', [$email])->first();
 
+        if ($user && $user->platform_company_code !== $activation->company_code) {
+            throw new \RuntimeException('The tenant email conflicts with an existing local account. Resolve its company ownership before activation.');
+        }
+        if ($user && (int) $user->platform_password_version >= (int) $version) {
+            $this->client->passwordAdopted($activation->company_code, $activation->sync_token, (int) $version);
+
+            return;
+        }
+
         if ($user) {
             $user->password = $hash;
             $user->must_change_password = $mustChange;
             $user->is_active = true;
+            $user->platform_password_version = (int) $version;
             $user->save();
         } else {
             User::create([
@@ -130,9 +256,11 @@ class PlatformActivationService
                 'email' => $email,
                 'password' => $hash,
                 'role' => 'admin',
-                'store_id' => DB::table('stores')->value('id'),
+                'store_id' => null, // Company owner chooses a store; never assign the first local store.
                 'is_active' => true,
                 'must_change_password' => $mustChange,
+                'platform_company_code' => $activation->company_code,
+                'platform_password_version' => (int) $version,
             ]);
         }
 
@@ -160,7 +288,7 @@ class PlatformActivationService
      */
     private function decodeLicenceClaims(?string $token): array
     {
-        if (!$token || substr_count($token, '.') !== 2) {
+        if (! $token || substr_count($token, '.') !== 2) {
             return [];
         }
         [, $payload] = explode('.', $token);

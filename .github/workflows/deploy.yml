@@ -9,6 +9,9 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   frontend:
     name: Frontend Test & Build
@@ -25,6 +28,9 @@ jobs:
       - name: Install Frontend Dependencies
         working-directory: frontend
         run: npm ci
+      - name: Lint Frontend
+        working-directory: frontend
+        run: npm run lint
       - name: Run Frontend Tests
         working-directory: frontend
         run: npm test
@@ -41,6 +47,8 @@ jobs:
   backend:
     name: Backend Test & Validate
     runs-on: ubuntu-latest
+    env:
+      APP_ENV: testing
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -55,7 +63,7 @@ jobs:
         run: composer validate --strict
       - name: Install Composer Dependencies
         working-directory: backend-laravel
-        run: composer install --prefer-dist --no-progress --no-interaction --ignore-platform-req=php+
+        run: composer install --prefer-dist --no-progress --no-interaction
       - name: Setup Test Environment
         working-directory: backend-laravel
         run: |
@@ -66,180 +74,82 @@ jobs:
         run: php artisan test --without-tty
 
   deploy:
-    name: Deploy to Hostinger
+    name: Deploy through SSH
+    concurrency:
+      group: gp-erp-production
+      cancel-in-progress: false
     needs: [frontend, backend]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     env:
-      HOSTINGER_SSH_HOST: ${{ secrets.HOSTINGER_SSH_HOST }}
+      APP_ENV: testing
+      HOSTINGER_APP_DIR: ${{ secrets.HOSTINGER_APP_DIR }}
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-      - name: Setup PHP for Production Deployment Package
-        uses: shivammathur/setup-php@v2
+      - name: Require deploy key and pinned host identity
+        env:
+          SSH_KEY: ${{ secrets.HOSTINGER_SSH_KEY }}
+          HOST_KEY_FINGERPRINT: ${{ secrets.HOSTINGER_SSH_FINGERPRINT }}
+        run: |
+          test -n "$SSH_KEY" || { echo "::error::Configure HOSTINGER_SSH_KEY"; exit 1; }
+          case "$HOST_KEY_FINGERPRINT" in
+            SHA256:*) ;;
+            *) echo "::error::Configure the verified HOSTINGER_SSH_FINGERPRINT"; exit 1 ;;
+          esac
+      - name: Check explicit deployment target
+        run: |
+          case "$HOSTINGER_APP_DIR" in
+            /*) ;;
+            *) echo "::error::Set HOSTINGER_APP_DIR to the absolute Laravel application directory containing artisan and .env"; exit 1 ;;
+          esac
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
           extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_sqlite, pdo_mysql, bcmath, curl
           coverage: none
-      - name: Install Production Composer Dependencies
+      - name: Install production dependencies
         working-directory: backend-laravel
-        run: composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --ignore-platform-req=php+
-      - name: Download Frontend Build
-        uses: actions/download-artifact@v4
+        run: composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction
+      - uses: actions/download-artifact@v4
         with:
           name: frontend-dist
           path: frontend-dist/
-      - name: Prepare Deployment Package
-        env:
-          OCR_SPACE_API_KEY: ${{ secrets.OCR_SPACE_API_KEY }}
-          BACKUP_CRON_SECRET: ${{ secrets.BACKUP_CRON_SECRET }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          APP_KEY: ${{ secrets.APP_KEY }}
-          PUSHER_APP_SECRET: ${{ secrets.PUSHER_APP_SECRET }}
+      - name: Package application without secrets or runtime state
         run: |
-          mkdir -p backend-laravel/public/
           cp -r frontend-dist/* backend-laravel/public/
-          cp backend-laravel/.env.production.example backend-laravel/.env
-          if [ -n "$OCR_SPACE_API_KEY" ]; then
-            printf '\nOCR_SPACE_API_KEY=%s\n' "$OCR_SPACE_API_KEY" >> backend-laravel/.env
-          fi
-          # .env is regenerated fresh from .env.production.example on every deploy
-          # (see cp above), which ships with BACKUP_CRON_SECRET blank - so without
-          # this, the scheduled-run endpoint fails closed (403) on every request,
-          # no matter what token is supplied. Same pattern as OCR_SPACE_API_KEY.
-          if [ -n "$BACKUP_CRON_SECRET" ]; then
-            printf '\nBACKUP_CRON_SECRET=%s\n' "$BACKUP_CRON_SECRET" >> backend-laravel/.env
-          fi
-          # DB_PASSWORD and APP_KEY used to be committed in plaintext directly in
-          # .env.production.example (a real, working production DB password and
-          # Laravel encryption key, sitting in a public repo's git history). Moved
-          # to the same GitHub-secret-injection pattern as the above two -- the
-          # example file now ships these blank, so a deploy without the secrets set
-          # fails closed (blank DB_PASSWORD/APP_KEY) rather than silently reusing a
-          # committed value.
-          # Quoted: dotenv treats an unquoted # as a comment start, which would
-          # silently truncate any password containing one.
-          if [ -n "$DB_PASSWORD" ]; then
-            printf '\nDB_PASSWORD="%s"\n' "$DB_PASSWORD" >> backend-laravel/.env
-          fi
-          if [ -n "$APP_KEY" ]; then
-            printf '\nAPP_KEY=%s\n' "$APP_KEY" >> backend-laravel/.env
-          fi
-          if [ -n "$PUSHER_APP_SECRET" ]; then
-            printf '\nPUSHER_APP_SECRET=%s\n' "$PUSHER_APP_SECRET" >> backend-laravel/.env
-          fi
-          mkdir -p backend-laravel/storage/framework/cache/data
-          mkdir -p backend-laravel/storage/framework/sessions
-          mkdir -p backend-laravel/storage/framework/views
-          mkdir -p backend-laravel/storage/logs
-          mkdir -p backend-laravel/bootstrap/cache
-          chmod -R 777 backend-laravel/storage backend-laravel/bootstrap/cache
-          cd backend-laravel
-          zip -r ../deploy.zip . -x "*.git*" "node_modules/*" "tests/*"
-          cd ..
-          mkdir -p ftp_upload
-          cp deploy.zip ftp_upload/
-          cp backend-laravel/unzip.php ftp_upload/
-      - name: Upload Deployment Archive to GitHub Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: hostinger-deployment-package
-          path: deploy.zip
-          retention-days: 7
-      # FTP is flaky on this host (control-socket connect timeouts, both plain
-      # FTP and FTPS - looks like Hostinger blocks/restricts it at the network
-      # level for GitHub Actions' runner IPs). Made non-blocking so a failed
-      # upload here doesn't prevent the independent SSH deploy path below from
-      # running. The final "Verify a deploy method succeeded" step still fails
-      # the job loudly if BOTH paths fail, so this never silently no-ops.
-      - name: Fast Upload via FTP to Hostinger
-        id: ftp_upload
-        continue-on-error: true
-        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
-        with:
-          server: ${{ secrets.HOSTINGER_FTP_SERVER || '157.173.216.156' }}
-          username: ${{ secrets.HOSTINGER_FTP_USERNAME }}
-          password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
-          port: 21
-          protocol: ftps
-          security: loose
-          server-dir: ./
-          local-dir: ./ftp_upload/
-          dangerous-clean-slate: false
-      - name: Trigger Remote Unzip and Run Migrations
-        if: steps.ftp_upload.outcome == 'success'
-        id: unzip_trigger
-        continue-on-error: true
-        env:
-          # The actual repository secret is named NEXTERPDEPLOYSECRET2026,
-          # not HOSTINGER_DEPLOY_TOKEN - that name doesn't exist in this
-          # repo's secrets, so it always resolved empty and every run has
-          # silently been using the hardcoded fallback literal below
-          # instead of the real secret. Wired up correctly now.
-          HOSTINGER_DEPLOY_TOKEN: ${{ secrets.NEXTERPDEPLOYSECRET2026 }}
-        run: |
-          # Trim whitespace defensively - a GitHub secret pasted with a
-          # trailing newline is non-empty, so `${VAR:-default}` silently
-          # uses the corrupted value instead of falling back, and every
-          # request then gets a consistent 403 no matter how many times
-          # it's retried (this is what actually happened: all 8 attempts
-          # failed with 403, not a timing issue at all).
-          TOKEN=$(printf '%s' "${HOSTINGER_DEPLOY_TOKEN:-NextErpDeploySecret2026}" | tr -d '[:space:]')
-          # Diagnostic only, never prints the token itself: a sha256 hash
-          # reveals whether TOKEN matches one of the 3 values unzip.php
-          # already accepts (their hashes are not secret - the plaintext
-          # values are hardcoded in that public file) without leaking
-          # anything new. Lets us tell "secret is wrong" apart from
-          # "secret is fine, something else is rejecting it".
-          echo "Token length: $(printf '%s' "$TOKEN" | wc -c), sha256: $(printf '%s' "$TOKEN" | sha256sum | cut -d' ' -f1)"
-          echo "(Reference - NextErpDeploySecret2026: 0aa741ce0745dbbffb2e88c61c367d7aabce7548a19b1fe9404c038c12342c78)"
-          sleep 5
-          success=false
-          # 20 retries at 12s apart (~240s) plus the initial 5s sleep gives a
-          # ~245s window - comfortably longer than a 20-30MB deploy.zip can
-          # take to finish uploading via FTPS on this flaky host, so the loop
-          # self-heals instead of exhausting retries while the upload is
-          # still settling (as happened on 2026-09-11).
-          for i in $(seq 1 20); do
-            response=$(curl -fsS -G "https://dev.gpsoftware.in/unzip.php" --data-urlencode "token=${TOKEN}") && \
-            echo "$response" | grep -q '"status":"success"' && {
-              echo "Remote deployment unzipped and migrations run successfully!"
-              echo "$response"
-              success=true
-              break
-            }
-            echo "Attempt $i did not confirm success (FTP upload may still be settling), retrying in 12s..."
-            echo "$response"
-            sleep 12
-          done
-          if [ "$success" != "true" ]; then
-            echo "::error::Remote unzip never confirmed success after all retries"
-            exit 1
-          fi
-      - name: Deploy via SSH to Hostinger
-        if: steps.unzip_trigger.outcome != 'success' && env.HOSTINGER_SSH_HOST != ''
-        id: ssh_deploy
-        uses: appleboy/ssh-action@v1.0.3
+          tar -czf deploy.tar.gz --exclude='./.env' --exclude='./.env.*' --exclude='./storage' --exclude='./bootstrap/cache/*.php' --exclude='./tests' --exclude='./.git*' --exclude='./deploy.zip' --exclude='./deploy.tar.gz' -C backend-laravel .
+      - name: Upload over SSH
+        uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.HOSTINGER_SSH_HOST }}
           username: ${{ secrets.HOSTINGER_SSH_USER }}
           key: ${{ secrets.HOSTINGER_SSH_KEY }}
+          fingerprint: ${{ secrets.HOSTINGER_SSH_FINGERPRINT }}
           port: ${{ secrets.HOSTINGER_SSH_PORT || 22 }}
+          source: deploy.tar.gz
+          target: ${{ secrets.HOSTINGER_APP_DIR }}
+      - name: Extract and migrate using the existing server configuration
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          APP_DIR: ${{ secrets.HOSTINGER_APP_DIR }}
+        with:
+          host: ${{ secrets.HOSTINGER_SSH_HOST }}
+          username: ${{ secrets.HOSTINGER_SSH_USER }}
+          key: ${{ secrets.HOSTINGER_SSH_KEY }}
+          fingerprint: ${{ secrets.HOSTINGER_SSH_FINGERPRINT }}
+          port: ${{ secrets.HOSTINGER_SSH_PORT || 22 }}
+          envs: APP_DIR
           script: |
-            cd ${{ secrets.HOSTINGER_TARGET_DIR || 'domains/dev.gpsoftware.in/public_html' }}
-            git pull origin main
-            cd backend-laravel
-            composer install --no-dev --optimize-autoloader --no-interaction
-            php artisan migrate --force
-            php artisan config:cache
-            php artisan route:cache
-            php artisan view:cache
-      - name: Verify a deploy method succeeded
-        if: always()
-        run: |
-          if [ "${{ steps.unzip_trigger.outcome }}" = "success" ] || [ "${{ steps.ssh_deploy.outcome }}" = "success" ]; then
-            echo "Deploy succeeded (FTP+unzip: ${{ steps.unzip_trigger.outcome || 'skipped' }}, SSH: ${{ steps.ssh_deploy.outcome || 'skipped' }})"
-          else
-            echo "::error::Both deploy paths failed or were skipped - nothing was deployed. FTP+unzip: ${{ steps.unzip_trigger.outcome || 'skipped' }}, SSH: ${{ steps.ssh_deploy.outcome || 'skipped' }}"
-            exit 1
-          fi
+            set -eu
+            cd "$APP_DIR"
+            test -f artisan && test -f .env && test -f composer.json
+            PHP=/opt/alt/php84/usr/bin/php
+            test -x "$PHP"
+            tar -xzf deploy.tar.gz
+            rm deploy.tar.gz
+            $PHP artisan config:clear
+            $PHP artisan migrate --force
+            $PHP artisan config:cache
+            $PHP artisan route:cache
+            $PHP artisan view:cache
+            $PHP artisan queue:restart

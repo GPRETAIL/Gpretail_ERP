@@ -37,26 +37,26 @@ import {
   loadLatestPosDocument,
 } from "../../utils/posLatestDocument";
 import {
-  buildSalesReceiptGeneralLayout,
-  buildSalesReceiptTaxRows,
+  buildSalesReceiptGeneralLayout as _buildSalesReceiptGeneralLayout,
+  buildSalesReceiptTaxRows as _buildSalesReceiptTaxRows,
   buildPaymentQrMarkup,
   buildReceiptCodeMarkupAsync,
-  buildReceiptCodeMarkupSync,
+  buildReceiptCodeMarkupSync as _buildReceiptCodeMarkupSync,
   DEFAULT_SALES_RECEIPT_MESSAGE,
-  buildReceiptFormatCss,
-  getVisibleSalesReceiptProductColumns,
-  getVisibleSalesReceiptTaxColumns,
-  getSalesReceiptFontCss,
-  getSalesReceiptRateWithTax,
+  buildReceiptFormatCss as _buildReceiptFormatCss,
+  getVisibleSalesReceiptProductColumns as _getVisibleSalesReceiptProductColumns,
+  getVisibleSalesReceiptTaxColumns as _getVisibleSalesReceiptTaxColumns,
+  getSalesReceiptFontCss as _getSalesReceiptFontCss,
+  getSalesReceiptRateWithTax as _getSalesReceiptRateWithTax,
   getPosBillBarcodeValue,
   getPosReturnBarcodeValue,
   getSalesReceiptPaperSize,
-  getSalesReceiptWidthCss,
+  getSalesReceiptWidthCss as _getSalesReceiptWidthCss,
   loadSalesReceiptCustomization,
   fetchSalesReceiptCustomization,
   RECEIPT_QR_CODE_DISPLAY_PX,
-  shouldShowSalesReceiptDiscountColumn,
-  wrapSalesReceiptText,
+  shouldShowSalesReceiptDiscountColumn as _shouldShowSalesReceiptDiscountColumn,
+  wrapSalesReceiptText as _wrapSalesReceiptText,
 } from "../../utils/salesReceiptCustomization";
 
 // Matches config('pagination.resources.pos_sales.groupable_columns') on the backend.
@@ -215,7 +215,7 @@ const buildReceiptMetaInlineHtml = (items = []) =>
     </span>
   `).join("");
 
-const buildReceiptMetaLineHtml = (line) => {
+const _buildReceiptMetaLineHtml = (line) => {
   const items = Array.isArray(line?.items) ? line.items : [];
   const positions = Array.from(new Set(items.map((item) => item.position || "left")));
 
@@ -569,7 +569,7 @@ const DialogSelectField = ({
 const POSSales = () => {
   const navigate = useNavigate();
   const authUser = useSelector((state) => state.auth.user);
-  const { connected: printerConnected, printHtml: queuePrintHtml } = usePrintContext();
+  const { connected: _printerConnected, printHtml: queuePrintHtml } = usePrintContext();
   const barcodeInputRef = useRef(null);
   const quickCustomerFieldRefs = useRef({});
   const [resolvedExportCompanyName, setResolvedExportCompanyName] = useState(

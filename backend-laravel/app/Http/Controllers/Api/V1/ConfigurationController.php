@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\SystemConfiguration;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class ConfigurationController extends Controller
 {
@@ -23,24 +22,25 @@ class ConfigurationController extends Controller
             ->orWhere('group_name', 'counter')
             ->get()
             ->map(fn ($c) => [
-                'id'   => $c->id,
+                'id' => $c->id,
                 'name' => $c->value ?? $c->config_value,
             ]);
 
         return response()->json([
             'success' => true,
-            'data'    => $rows,
-            'total'   => $rows->count(),
+            'data' => $rows,
+            'total' => $rows->count(),
         ]);
     }
 
     public function index(Request $request)
     {
         $configs = SystemConfiguration::all();
+
         return response()->json([
             'success' => true,
-            'data'    => $configs,
-            'total'   => $configs->count(),
+            'data' => $configs,
+            'total' => $configs->count(),
         ]);
     }
 
@@ -108,11 +108,11 @@ class ConfigurationController extends Controller
         if ($dbConfigs->isNotEmpty()) {
             $data = $dbConfigs->map(function ($c) {
                 return [
-                    'id'         => $c->id,
-                    'name'       => $c->value ?? $c->config_value,
-                    'value'      => $c->value ?? $c->config_value,
-                    'key'        => $c->key ?? $c->config_key,
-                    'code'       => $c->code,
+                    'id' => $c->id,
+                    'name' => $c->value ?? $c->config_value,
+                    'value' => $c->value ?? $c->config_value,
+                    'key' => $c->key ?? $c->config_key,
+                    'code' => $c->code,
                     'sort_order' => $c->sort_order,
                     'extra_data' => $c->extra_data,
                 ];
@@ -120,23 +120,23 @@ class ConfigurationController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data'    => $data,
-                'total'   => $data->count(),
+                'data' => $data,
+                'total' => $data->count(),
             ]);
         }
 
         if (isset($defaults[$normalized])) {
             return response()->json([
                 'success' => true,
-                'data'    => $defaults[$normalized],
-                'total'   => count($defaults[$normalized]),
+                'data' => $defaults[$normalized],
+                'total' => count($defaults[$normalized]),
             ]);
         }
 
         return response()->json([
             'success' => true,
-            'data'    => [],
-            'total'   => 0,
+            'data' => [],
+            'total' => 0,
         ]);
     }
 
@@ -147,27 +147,28 @@ class ConfigurationController extends Controller
         $group = $request->input('group') ?? $request->input('group_name') ?? $key;
 
         $config = SystemConfiguration::create([
-            'key'          => $key,
-            'config_key'   => $key,
-            'value'        => is_array($val) ? json_encode($val) : (string)$val,
-            'config_value' => is_array($val) ? json_encode($val) : (string)$val,
-            'group'        => $group,
-            'group_name'   => $group,
-            'code'         => $request->input('code'),
-            'sort_order'   => $request->input('sort_order', 0),
-            'extra_data'   => $request->input('extra_data'),
+            'key' => $key,
+            'config_key' => $key,
+            'value' => is_array($val) ? json_encode($val) : (string) $val,
+            'config_value' => is_array($val) ? json_encode($val) : (string) $val,
+            'group' => $group,
+            'group_name' => $group,
+            'code' => $request->input('code'),
+            'sort_order' => $request->input('sort_order', 0),
+            'extra_data' => $request->input('extra_data'),
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Configuration saved successfully',
-            'data'    => $config,
+            'data' => $config,
         ], 201);
     }
 
     public function storeType(Request $request, $type)
     {
         $request->merge(['key' => $type, 'group' => $type]);
+
         return $this->store($request);
     }
 
@@ -177,18 +178,18 @@ class ConfigurationController extends Controller
         if ($config) {
             $val = $request->input('value') ?? $request->input('config_value') ?? $request->input('name') ?? $config->value;
             $config->update([
-                'value'        => is_array($val) ? json_encode($val) : (string)$val,
-                'config_value' => is_array($val) ? json_encode($val) : (string)$val,
-                'code'         => $request->input('code', $config->code),
-                'sort_order'   => $request->input('sort_order', $config->sort_order),
-                'extra_data'   => $request->input('extra_data', $config->extra_data),
+                'value' => is_array($val) ? json_encode($val) : (string) $val,
+                'config_value' => is_array($val) ? json_encode($val) : (string) $val,
+                'code' => $request->input('code', $config->code),
+                'sort_order' => $request->input('sort_order', $config->sort_order),
+                'extra_data' => $request->input('extra_data', $config->extra_data),
             ]);
         }
 
         return response()->json([
             'success' => true,
             'message' => 'Configuration updated successfully',
-            'data'    => $config,
+            'data' => $config,
         ]);
     }
 
@@ -200,16 +201,16 @@ class ConfigurationController extends Controller
     public function showType(Request $request, $type, $id)
     {
         $config = SystemConfiguration::find($id);
-        if (!$config) {
+        if (! $config) {
             return response()->json(['success' => false, 'message' => 'Configuration not found'], 404);
         }
 
         return response()->json([
             'success' => true,
-            'data'    => [
-                'id'         => $config->id,
-                'code'       => $config->code,
-                'name'       => $config->value ?? $config->config_value,
+            'data' => [
+                'id' => $config->id,
+                'code' => $config->code,
+                'name' => $config->value ?? $config->config_value,
                 'sort_order' => $config->sort_order,
                 'extra_data' => $config->extra_data,
             ],

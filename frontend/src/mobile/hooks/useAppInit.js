@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef as _useRef } from "react";
 import { useSelector } from "react-redux";
 import api from "../../api/axios";
 
@@ -7,7 +7,7 @@ import api from "../../api/axios";
  * Returns { ready, progress, error } where progress is 0→100.
  */
 export default function useAppInit() {
-  const isAuthenticated = useSelector((s) => s.auth.isAuthenticated);
+  const _isAuthenticated = useSelector((s) => s.auth.isAuthenticated);
   const [progress, setProgress] = useState(10);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState(null);

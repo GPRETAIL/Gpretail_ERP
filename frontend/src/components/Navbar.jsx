@@ -478,7 +478,7 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
       // No active store saved = the existing "read everything" default, i.e. All Stores. A saved
       // id only pre-checks that one store if it's still in the fetched list (a deleted/stale store
       // falls back to All Stores rather than pre-checking something no longer selectable).
-      const activeStoreId = localStorage.getItem("activeStoreId");
+      const activeStoreId = sessionStorage.getItem("activeStoreId");
       setSelectedStoreIds(
         activeStoreId && list.some((option) => option.value === activeStoreId)
           ? new Set([activeStoreId])
@@ -527,10 +527,10 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
     // already applies whenever no store is actively switched. A write still needs exactly one
     // store, same as always (StoreAssignment 422s "Select a store first" if it can't tell which).
     if (selectedStoreIds.has(ALL_STORES_ID) || specificIds.length !== 1) {
-      localStorage.removeItem("activeStoreId");
+      sessionStorage.removeItem("activeStoreId");
       toast.success("Now viewing all your stores");
     } else {
-      localStorage.setItem("activeStoreId", specificIds[0]);
+      sessionStorage.setItem("activeStoreId", specificIds[0]);
       const label = storeOptions.find((option) => option.value === specificIds[0])?.label || "the selected store";
       toast.success(`Switched active store context to ${label}`);
     }

@@ -5,11 +5,11 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\Employee;
 use App\Models\HrDepartment;
-use App\Models\HrDesignation;
 use App\Services\GroupAggregationService;
 use App\Services\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class EmployeeController extends Controller
 {
@@ -22,9 +22,9 @@ class EmployeeController extends Controller
     {
         return response()->json([
             'success' => true,
-            'data'    => [
-                'totalEmployees'   => Employee::count(),
-                'activeEmployees'  => Employee::where('is_active', true)->count(),
+            'data' => [
+                'totalEmployees' => Employee::count(),
+                'activeEmployees' => Employee::where('is_active', true)->count(),
                 'totalDepartments' => HrDepartment::count(),
             ],
         ]);
@@ -38,9 +38,9 @@ class EmployeeController extends Controller
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('code', 'like', "%{$search}%")
-                  ->orWhere('phone', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
+                    ->orWhere('code', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
             });
         }
 
@@ -51,7 +51,9 @@ class EmployeeController extends Controller
                 $col = $filter['field'] ?? null;
                 $op = $filter['operator'] ?? 'contains';
                 $val = $filter['value'] ?? '';
-                if (!$col || !in_array($col, $allowed)) continue;
+                if (! $col || ! in_array($col, $allowed)) {
+                    continue;
+                }
                 match ($op) {
                     'equals' => $query->where($col, $val),
                     'not_equals' => $query->where($col, '!=', $val),
@@ -70,6 +72,7 @@ class EmployeeController extends Controller
     public function groupedSummary(Request $request)
     {
         $result = $this->groupAggregationService->summarize($this->filteredQuery($request), 'employees', $request);
+
         return response()->json($result, $result['success'] ? 200 : 422);
     }
 
@@ -79,17 +82,18 @@ class EmployeeController extends Controller
 
         if ($request->boolean('all') || $request->input('limit') == 500 || $request->input('limit') == 1000) {
             $items = $query->orderBy('name')->limit(2000)->get();
+
             return response()->json([
                 'success' => true,
-                'data'    => $items,
-                'total'   => $items->count(),
+                'data' => $items,
+                'total' => $items->count(),
             ]);
         }
 
         $result = $this->paginationService->paginate($query, 'employees', $request, [
-            'default_sort'  => 'name',
+            'default_sort' => 'name',
             'default_order' => 'asc',
-            'tie_breaker'   => 'id',
+            'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'name', 'code', 'phone', 'email', 'created_at'],
         ]);
 
@@ -99,44 +103,44 @@ class EmployeeController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'name'           => 'required|string|max:255',
-            'code'           => 'nullable|string|max:50|unique:employees,code',
-            'email'          => 'nullable|email|max:255',
-            'phone'          => 'nullable|string|max:50',
-            'department_id'  => 'nullable|exists:hr_departments,id',
+            'name' => 'required|string|max:255',
+            'code' => ['nullable', 'string', 'max:50', Rule::unique('employees', 'code')->where('store_id', $request->attributes->get('store_context_id'))],
+            'email' => 'nullable|email|max:255',
+            'phone' => 'nullable|string|max:50',
+            'department_id' => 'nullable|exists:hr_departments,id',
             'designation_id' => 'nullable|exists:hr_designations,id',
-            'salary'         => 'nullable|numeric|min:0',
+            'salary' => 'nullable|numeric|min:0',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors'  => $validator->errors(),
+                'errors' => $validator->errors(),
             ], 422);
         }
 
-        $code = $request->input('code') ?: 'EMP_' . strtoupper(substr(uniqid(), -6));
+        $code = $request->input('code') ?: 'EMP_'.strtoupper(substr(uniqid(), -6));
         $storeId = $request->header('X-Company-Scope-Id');
 
         $employee = Employee::create([
-            'store_id'       => ($storeId && $storeId !== 'all') ? $storeId : null,
-            'name'           => $request->input('name'),
-            'code'           => $code,
-            'email'          => $request->input('email'),
-            'phone'          => $request->input('phone'),
-            'address'        => $request->input('address'),
-            'department_id'  => $request->input('department_id'),
+            'store_id' => ($storeId && $storeId !== 'all') ? $storeId : null,
+            'name' => $request->input('name'),
+            'code' => $code,
+            'email' => $request->input('email'),
+            'phone' => $request->input('phone'),
+            'address' => $request->input('address'),
+            'department_id' => $request->input('department_id'),
             'designation_id' => $request->input('designation_id'),
-            'salary'         => $request->input('salary', 0),
-            'joining_date'   => $request->input('joining_date') ?: now()->toDateString(),
-            'is_active'      => $request->boolean('is_active', true),
+            'salary' => $request->input('salary', 0),
+            'joining_date' => $request->input('joining_date') ?: now()->toDateString(),
+            'is_active' => $request->boolean('is_active', true),
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Employee created successfully',
-            'data'    => $employee->load(['department', 'designation']),
+            'data' => $employee->load(['department', 'designation']),
         ], 201);
     }
 
@@ -144,7 +148,7 @@ class EmployeeController extends Controller
     {
         $employee = Employee::with(['department', 'designation', 'store'])->find($id);
 
-        if (!$employee) {
+        if (! $employee) {
             return response()->json([
                 'success' => false,
                 'message' => 'Employee not found',
@@ -153,7 +157,7 @@ class EmployeeController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $employee,
+            'data' => $employee,
         ]);
     }
 
@@ -161,21 +165,29 @@ class EmployeeController extends Controller
     {
         $employee = Employee::find($id);
 
-        if (!$employee) {
+        if (! $employee) {
             return response()->json([
                 'success' => false,
                 'message' => 'Employee not found',
             ], 404);
         }
 
+        $validator = Validator::make($request->all(), [
+            'name' => 'sometimes|required|string|max:255',
+            'code' => ['sometimes', 'required', 'string', 'max:50', Rule::unique('employees', 'code')->where('store_id', $request->attributes->get('store_context_id'))->ignore($employee)],
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
         $employee->update($request->only([
-            'name', 'code', 'email', 'phone', 'address', 'department_id', 'designation_id', 'salary', 'joining_date', 'is_active'
+            'name', 'code', 'email', 'phone', 'address', 'department_id', 'designation_id', 'salary', 'joining_date', 'is_active',
         ]));
 
         return response()->json([
             'success' => true,
             'message' => 'Employee updated successfully',
-            'data'    => $employee->load(['department', 'designation']),
+            'data' => $employee->load(['department', 'designation']),
         ]);
     }
 
@@ -183,7 +195,7 @@ class EmployeeController extends Controller
     {
         $employee = Employee::find($id);
 
-        if (!$employee) {
+        if (! $employee) {
             return response()->json([
                 'success' => false,
                 'message' => 'Employee not found',
@@ -203,7 +215,7 @@ class EmployeeController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Document uploaded successfully',
-            'data'    => ['id' => rand(100, 999), 'url' => '/files/sample_doc.pdf'],
+            'data' => ['id' => rand(100, 999), 'url' => '/files/sample_doc.pdf'],
         ]);
     }
 
@@ -212,7 +224,7 @@ class EmployeeController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Education certificate uploaded successfully',
-            'data'    => ['id' => rand(100, 999), 'url' => '/files/certificate.pdf'],
+            'data' => ['id' => rand(100, 999), 'url' => '/files/certificate.pdf'],
         ]);
     }
 }

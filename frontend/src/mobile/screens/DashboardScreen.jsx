@@ -49,7 +49,7 @@ const formatYmd = (date) => {
 
 export default function DashboardScreen({ onNavigate, onOpenSearch, onOpenSyncCenter, authUser }) {
   const [dateRange, setDateRange] = useState("today"); // 'today' | 'yesterday' | 'week' | 'month'
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
   const [overviewData, setOverviewData] = useState(null);
   const [, setSummaryData] = useState(null);
   const [attentionData, setAttentionData] = useState(null);
@@ -67,7 +67,7 @@ export default function DashboardScreen({ onNavigate, onOpenSearch, onOpenSyncCe
   const canSwitchStore = isSuperAdmin || hasMultipleStores;
 
   const activeStoreId =
-    typeof window !== "undefined" ? localStorage.getItem("activeStoreId") : null;
+    typeof window !== "undefined" ? sessionStorage.getItem("activeStoreId") : null;
 
   // The pill used to hardcode "Main Retail Branch" regardless of which
   // store was actually active - resolves the real name instead: the

@@ -8,6 +8,7 @@ use App\Services\GroupAggregationService;
 use App\Services\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class AgentController extends Controller
 {
@@ -19,54 +20,58 @@ class AgentController extends Controller
     private function formatAgent($a)
     {
         return [
-            'id'                => $a->id,
-            'name'              => $a->name,
-            'code'              => $a->code,
-            'agent_type_id'     => $a->agent_type_id,
-            'agentTypeId'       => $a->agent_type_id,
-            'contact_person'    => $a->contact_person,
-            'contactPerson'     => $a->contact_person,
-            'contact_no'        => $a->contact_no ?: $a->phone,
-            'contactNo'         => $a->contact_no ?: $a->phone,
-            'phone'             => $a->phone ?: $a->contact_no,
-            'email'             => $a->email ?: $a->email_id,
-            'email_id'          => $a->email_id ?: $a->email,
-            'emailId'           => $a->email_id ?: $a->email,
-            'address'           => $a->address,
-            'pan'               => $a->pan,
-            'gst'               => $a->gst,
-            'commission_amt'    => (float) ($a->commission_amt ?? 0),
-            'commissionAmt'     => (float) ($a->commission_amt ?? 0),
-            'commission_pct'    => (float) ($a->commission_pct ?? $a->commission_rate ?? 0),
-            'commissionPct'     => (float) ($a->commission_pct ?? $a->commission_rate ?? 0),
-            'commission_rate'   => (float) ($a->commission_rate ?? $a->commission_pct ?? 0),
-            'city_id'           => $a->city_id,
-            'cityId'            => $a->city_id,
-            'tax_id'            => $a->tax_id,
-            'taxId'             => $a->tax_id,
-            'bank_id'           => $a->bank_id,
-            'bankId'            => $a->bank_id,
+            'id' => $a->id,
+            'name' => $a->name,
+            'code' => $a->code,
+            'agent_type_id' => $a->agent_type_id,
+            'agentTypeId' => $a->agent_type_id,
+            'contact_person' => $a->contact_person,
+            'contactPerson' => $a->contact_person,
+            'contact_no' => $a->contact_no ?: $a->phone,
+            'contactNo' => $a->contact_no ?: $a->phone,
+            'phone' => $a->phone ?: $a->contact_no,
+            'email' => $a->email ?: $a->email_id,
+            'email_id' => $a->email_id ?: $a->email,
+            'emailId' => $a->email_id ?: $a->email,
+            'address' => $a->address,
+            'pan' => $a->pan,
+            'gst' => $a->gst,
+            'commission_amt' => (float) ($a->commission_amt ?? 0),
+            'commissionAmt' => (float) ($a->commission_amt ?? 0),
+            'commission_pct' => (float) ($a->commission_pct ?? $a->commission_rate ?? 0),
+            'commissionPct' => (float) ($a->commission_pct ?? $a->commission_rate ?? 0),
+            'commission_rate' => (float) ($a->commission_rate ?? $a->commission_pct ?? 0),
+            'city_id' => $a->city_id,
+            'cityId' => $a->city_id,
+            'tax_id' => $a->tax_id,
+            'taxId' => $a->tax_id,
+            'bank_id' => $a->bank_id,
+            'bankId' => $a->bank_id,
             'bank_account_name' => $a->bank_account_name,
-            'bankAccountName'   => $a->bank_account_name,
-            'ifsc'              => $a->ifsc,
-            'account_no'        => $a->account_no,
-            'accountNo'         => $a->account_no,
-            'state_id'          => $a->state_id,
-            'stateId'           => $a->state_id,
-            'pincode'           => $a->pincode,
-            'is_active'         => (bool) $a->is_active,
-            'active'            => (bool) $a->is_active,
-            'created_at'        => $a->created_at,
-            'updated_at'        => $a->updated_at,
+            'bankAccountName' => $a->bank_account_name,
+            'ifsc' => $a->ifsc,
+            'account_no' => $a->account_no,
+            'accountNo' => $a->account_no,
+            'state_id' => $a->state_id,
+            'stateId' => $a->state_id,
+            'pincode' => $a->pincode,
+            'is_active' => (bool) $a->is_active,
+            'active' => (bool) $a->is_active,
+            'created_at' => $a->created_at,
+            'updated_at' => $a->updated_at,
         ];
     }
 
     private function extractAgentData(Request $request): array
     {
         $data = [];
-        if ($request->has('name')) $data['name'] = $request->input('name');
-        if ($request->has('code')) $data['code'] = $request->input('code');
-        
+        if ($request->has('name')) {
+            $data['name'] = $request->input('name');
+        }
+        if ($request->has('code')) {
+            $data['code'] = $request->input('code');
+        }
+
         if ($request->has('agent_type_id') || $request->has('agentTypeId')) {
             $data['agent_type_id'] = $request->input('agent_type_id') ?: $request->input('agentTypeId') ?: null;
         }
@@ -83,10 +88,16 @@ class AgentController extends Controller
             $data['email_id'] = $val;
             $data['email'] = $val;
         }
-        if ($request->has('address')) $data['address'] = $request->input('address');
-        if ($request->has('pan')) $data['pan'] = $request->input('pan');
-        if ($request->has('gst')) $data['gst'] = $request->input('gst');
-        
+        if ($request->has('address')) {
+            $data['address'] = $request->input('address');
+        }
+        if ($request->has('pan')) {
+            $data['pan'] = $request->input('pan');
+        }
+        if ($request->has('gst')) {
+            $data['gst'] = $request->input('gst');
+        }
+
         if ($request->has('commission_amt') || $request->has('commissionAmt')) {
             $data['commission_amt'] = $request->input('commission_amt') ?? $request->input('commissionAmt') ?? 0;
         }
@@ -95,7 +106,7 @@ class AgentController extends Controller
             $data['commission_pct'] = $pct;
             $data['commission_rate'] = $pct;
         }
-        
+
         if ($request->has('city_id') || $request->has('cityId')) {
             $data['city_id'] = $request->input('city_id') ?: $request->input('cityId') ?: null;
         }
@@ -108,15 +119,19 @@ class AgentController extends Controller
         if ($request->has('bank_account_name') || $request->has('bankAccountName')) {
             $data['bank_account_name'] = $request->input('bank_account_name') ?: $request->input('bankAccountName') ?: null;
         }
-        if ($request->has('ifsc')) $data['ifsc'] = $request->input('ifsc');
+        if ($request->has('ifsc')) {
+            $data['ifsc'] = $request->input('ifsc');
+        }
         if ($request->has('account_no') || $request->has('accountNo')) {
             $data['account_no'] = $request->input('account_no') ?: $request->input('accountNo') ?: null;
         }
         if ($request->has('state_id') || $request->has('stateId')) {
             $data['state_id'] = $request->input('state_id') ?: $request->input('stateId') ?: null;
         }
-        if ($request->has('pincode')) $data['pincode'] = $request->input('pincode');
-        
+        if ($request->has('pincode')) {
+            $data['pincode'] = $request->input('pincode');
+        }
+
         if ($request->has('active')) {
             $data['is_active'] = $request->boolean('active');
         } elseif ($request->has('is_active')) {
@@ -134,10 +149,10 @@ class AgentController extends Controller
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('code', 'like', "%{$search}%")
-                  ->orWhere('phone', 'like', "%{$search}%")
-                  ->orWhere('contact_no', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
+                    ->orWhere('code', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('contact_no', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
             });
         }
 
@@ -148,7 +163,9 @@ class AgentController extends Controller
                 $col = $filter['field'] ?? null;
                 $op = $filter['operator'] ?? 'contains';
                 $val = $filter['value'] ?? '';
-                if (!$col || !in_array($col, $allowed)) continue;
+                if (! $col || ! in_array($col, $allowed)) {
+                    continue;
+                }
                 match ($op) {
                     'equals' => $query->where($col, $val),
                     'not_equals' => $query->where($col, '!=', $val),
@@ -167,6 +184,7 @@ class AgentController extends Controller
     public function groupedSummary(Request $request)
     {
         $result = $this->groupAggregationService->summarize($this->filteredQuery($request), 'agents', $request);
+
         return response()->json($result, $result['success'] ? 200 : 422);
     }
 
@@ -175,22 +193,23 @@ class AgentController extends Controller
         $query = $this->filteredQuery($request);
 
         if ($request->boolean('all') || $request->input('limit') == 500 || $request->input('limit') == 1000) {
-            $items = $query->orderBy('name')->limit(2000)->get()->map(fn($a) => $this->formatAgent($a));
+            $items = $query->orderBy('name')->limit(2000)->get()->map(fn ($a) => $this->formatAgent($a));
+
             return response()->json([
                 'success' => true,
-                'data'    => $items,
-                'total'   => $items->count(),
+                'data' => $items,
+                'total' => $items->count(),
             ]);
         }
 
         $result = $this->paginationService->paginate($query, 'agents', $request, [
-            'default_sort'  => 'name',
+            'default_sort' => 'name',
             'default_order' => 'asc',
-            'tie_breaker'   => 'id',
+            'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'name', 'code', 'phone', 'email', 'created_at'],
         ]);
 
-        $result['data'] = collect($result['data'])->map(fn($a) => $this->formatAgent($a))->values();
+        $result['data'] = collect($result['data'])->map(fn ($a) => $this->formatAgent($a))->values();
 
         return response()->json($result);
     }
@@ -199,19 +218,20 @@ class AgentController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
+            'code' => ['nullable', 'string', 'max:50', Rule::unique('agents', 'code')->where('store_id', $request->attributes->get('store_context_id'))],
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors'  => $validator->errors(),
+                'errors' => $validator->errors(),
             ], 422);
         }
 
         $data = $this->extractAgentData($request);
         if (empty($data['code'])) {
-            $data['code'] = 'AGT_' . strtoupper(substr(uniqid(), -6));
+            $data['code'] = 'AGT_'.strtoupper(substr(uniqid(), -6));
         }
 
         $agent = Agent::create($data);
@@ -219,17 +239,34 @@ class AgentController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Agent created successfully',
-            'data'    => $this->formatAgent($agent),
+            'data' => $this->formatAgent($agent),
         ], 201);
+    }
+
+    private function findAgent(string $id): ?Agent
+    {
+        if (ctype_digit($id)) {
+            $agent = Agent::find($id);
+            if ($agent) {
+                return $agent;
+            }
+        }
+        if (! request()->attributes->get('store_context_id')) {
+            abort(response()->json([
+                'success' => false,
+                'code' => 'STORE_SELECTION_REQUIRED',
+                'message' => 'Select a store before looking up an agent by code.',
+            ], 422));
+        }
+
+        return Agent::where('code', $id)->first();
     }
 
     public function show($id)
     {
-        $agent = Agent::where('id', $id)
-            ->orWhere('code', $id)
-            ->first();
+        $agent = $this->findAgent((string) $id);
 
-        if (!$agent) {
+        if (! $agent) {
             return response()->json([
                 'success' => false,
                 'message' => 'Agent not found',
@@ -238,21 +275,27 @@ class AgentController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $this->formatAgent($agent),
+            'data' => $this->formatAgent($agent),
         ]);
     }
 
     public function update(Request $request, $id)
     {
-        $agent = Agent::where('id', $id)
-            ->orWhere('code', $id)
-            ->first();
+        $agent = $this->findAgent((string) $id);
 
-        if (!$agent) {
+        if (! $agent) {
             return response()->json([
                 'success' => false,
                 'message' => 'Agent not found',
             ], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'name' => 'sometimes|required|string|max:255',
+            'code' => ['sometimes', 'required', 'string', 'max:50', Rule::unique('agents', 'code')->where('store_id', $request->attributes->get('store_context_id'))->ignore($agent)],
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
         $data = $this->extractAgentData($request);
@@ -261,17 +304,15 @@ class AgentController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Agent updated successfully',
-            'data'    => $this->formatAgent($agent),
+            'data' => $this->formatAgent($agent),
         ]);
     }
 
     public function destroy($id)
     {
-        $agent = Agent::where('id', $id)
-            ->orWhere('code', $id)
-            ->first();
+        $agent = $this->findAgent((string) $id);
 
-        if (!$agent) {
+        if (! $agent) {
             return response()->json([
                 'success' => false,
                 'message' => 'Agent not found',

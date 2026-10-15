@@ -572,7 +572,7 @@ export const getTransactionTypeMeta = (typeId) => {
 };
 
 export const getSampleDataForTransactionType = (typeId, baseData = SAMPLE_INVOICE_DATA) => {
-  const meta = getTransactionTypeMeta(typeId);
+  const _meta = getTransactionTypeMeta(typeId);
   if (typeId === "receipt") {
     return {
       ...baseData,

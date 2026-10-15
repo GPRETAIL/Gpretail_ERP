@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Models\Product;
 use App\Models\Stock;
 use App\Services\PaginationService;
 use Illuminate\Http\Request;
@@ -22,39 +21,40 @@ class ItemLocatorController extends Controller
             ->whereHas('product', function ($q) use ($search) {
                 if ($search) {
                     $q->where('name', 'like', "%{$search}%")
-                      ->orWhere('code', 'like', "%{$search}%")
-                      ->orWhere('barcode', 'like', "%{$search}%");
+                        ->orWhere('code', 'like', "%{$search}%")
+                        ->orWhere('barcode', 'like', "%{$search}%");
                 }
             });
 
         $mapRow = fn ($s) => [
-            'id'            => $s->id,
-            'product_id'    => $s->product_id,
-            'product_name'  => $s->product?->name,
-            'code'          => $s->product?->code,
-            'barcode'       => $s->product?->barcode,
-            'brand_name'    => $s->product?->brand?->name ?? '-',
+            'id' => $s->id,
+            'product_id' => $s->product_id,
+            'product_name' => $s->product?->name,
+            'code' => $s->product?->code,
+            'barcode' => $s->product?->barcode,
+            'brand_name' => $s->product?->brand?->name ?? '-',
             'category_name' => $s->product?->category?->name ?? '-',
-            'quantity'      => $s->quantity,
-            'location_bin'  => $s->location_bin ?? 'Rack A-1',
-            'store_name'    => $s->store?->name ?? '-',
+            'quantity' => $s->quantity,
+            'location_bin' => $s->location_bin ?? 'Rack A-1',
+            'store_name' => $s->store?->name ?? '-',
             'selling_price' => $s->product?->selling_price,
-            'mrp'           => $s->product?->mrp,
+            'mrp' => $s->product?->mrp,
         ];
 
         if ($request->boolean('all')) {
             $data = $query->limit(2000)->get()->map($mapRow);
+
             return response()->json([
                 'success' => true,
-                'data'    => $data,
-                'total'   => $data->count(),
+                'data' => $data,
+                'total' => $data->count(),
             ]);
         }
 
         $result = $this->paginationService->paginate($query, 'stock_transactions', $request, [
-            'default_sort'  => 'id',
+            'default_sort' => 'id',
             'default_order' => 'desc',
-            'tie_breaker'   => 'id',
+            'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'quantity', 'created_at'],
         ]);
 

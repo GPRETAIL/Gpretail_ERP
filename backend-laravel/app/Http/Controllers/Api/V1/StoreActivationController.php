@@ -1,0 +1,58 @@
+<?php
+
+namespace App\Http\Controllers\Api\V1;
+
+use App\Http\Controllers\Controller;
+use App\Models\PlatformActivation;
+use App\Models\Store;
+use App\Models\Warehouse;
+use App\Services\PlatformActivationService;
+use App\Services\PlatformClient;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+
+class StoreActivationController extends Controller
+{
+    private function owner(Request $request): PlatformActivation
+    {
+        $activation = PlatformActivation::current();
+        $user = $request->user();
+        abort_unless($activation?->activated && $user->platform_company_code === $activation->company_code
+            && $user->role === 'admin' && ! $user->store_id
+            && strcasecmp($user->email, $activation->tenant_admin_email ?? '') === 0, 403, 'Only the registered Tenant Admin can activate stores.');
+
+        return $activation;
+    }
+
+    public function index(Request $request): JsonResponse
+    {
+        $activation = $this->owner($request);
+
+        return response()->json(['success' => true, 'data' => Store::where('platform_company_code', $activation->company_code)->get(),
+            'warehouses' => Warehouse::withoutGlobalScopes()->where('platform_company_code', $activation->company_code)->get()]);
+    }
+
+    public function sync(Request $request, PlatformActivationService $service): JsonResponse
+    {
+        $result = $service->sync($this->owner($request));
+
+        return response()->json(['success' => $result['ok'], 'message' => $result['message']], $result['ok'] ? 200 : 503);
+    }
+
+    public function activate(Request $request, PlatformClient $client, PlatformActivationService $service): JsonResponse
+    {
+        $activation = $this->owner($request);
+        $data = $request->validate(['store_code' => 'required|string|max:64', 'activation_code' => 'required|string|max:128']);
+        if (! $activation->deployment_id) {
+            $activation->update(['deployment_id' => (string) Str::uuid()]);
+        }
+        $result = $client->activateStore($activation, $data['store_code'], $data['activation_code']);
+        if (! $result['ok']) {
+            return response()->json(['success' => false, 'message' => $result['message']], $result['status'] ?: 503);
+        }
+        $sync = $service->sync($activation);
+
+        return response()->json(['success' => $sync['ok'], 'message' => $sync['ok'] ? 'Store activated. Select it before entering data.' : 'GP Admin activated the store, but sync failed. Refresh stores to recover.'], $sync['ok'] ? 200 : 503);
+    }
+}

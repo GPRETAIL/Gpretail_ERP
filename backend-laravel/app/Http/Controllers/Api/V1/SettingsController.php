@@ -6,8 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\PrinterConfig;
 use App\Models\Store;
 use App\Models\StoreLocalNode;
+use App\Services\RegisteredServerProbe;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
 
 class SettingsController extends Controller
 {
@@ -95,96 +95,30 @@ class SettingsController extends Controller
     // cloud can actually reach, not just what the admin's own browser can reach.
     public function localServerTest(Request $request)
     {
-        $storeId = (int) $request->header('X-Company-Scope-Id', 1);
-        $url = trim((string) $request->input('local_server_url', ''));
-
-        $node = StoreLocalNode::where('store_id', $storeId)->first();
-        if ($url === '') {
-            $url = (string) ($node->local_server_url ?? '');
-        }
-
-        if ($url === '' || ! preg_match('#^https?://#i', $url)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Enter a valid local server URL (must start with http:// or https://) first.',
-            ], 422);
-        }
-
-        $probeUrl = rtrim($url, '/').'/api/connector/web-config';
-        $startedAt = microtime(true);
-        $healthy = false;
-
-        try {
-            $response = Http::timeout(5)->get($probeUrl);
-            $healthy = $response->successful() && (bool) data_get($response->json(), 'data.enabled', false);
-        } catch (\Throwable $e) {
-            $healthy = false;
-        }
-
-        $latencyMs = (int) round((microtime(true) - $startedAt) * 1000);
-
-        if ($node) {
-            $node->local_healthy = $healthy;
-            $node->last_health_check_at = now();
-            $node->save();
-        }
-
-        return response()->json([
-            'success' => $healthy,
-            'message' => $healthy
-                ? 'Local server is reachable and reporting healthy.'
-                : 'Could not reach a healthy local server at that URL.',
-            'data' => [
-                'status' => $healthy ? 'ONLINE' : 'OFFLINE',
-                'latency' => $latencyMs.'ms',
-            ],
-        ]);
+        return $this->probeServer($request, true);
     }
 
-    // Cloud Server Config Test — same server-side probe pattern as localServerTest(), but the
-    // cloud install always answers connector/web-config with enabled:false (node_role is
-    // 'cloud' there, never 'local'), so reachability is judged by a successful JSON response
-    // rather than data.enabled.
     public function cloudServerTest(Request $request)
     {
-        $storeId = (int) $request->header('X-Company-Scope-Id', 1);
-        $url = trim((string) $request->input('cloud_server_url', ''));
+        return $this->probeServer($request, false);
+    }
 
-        $node = StoreLocalNode::where('store_id', $storeId)->first();
-        if ($url === '') {
-            $url = (string) ($node->cloud_server_url ?? '');
+    private function probeServer(Request $request, bool $local)
+    {
+        abort_unless(in_array($request->user()?->role, ['admin', 'super_admin'], true), 403);
+        $storeId = (int) $request->attributes->get('store_context_id', 0);
+        abort_unless($storeId > 0, 422, 'Select a store first.');
+        $node = StoreLocalNode::where('store_id', $storeId)->firstOrFail();
+        $key = $local ? 'local_server_url' : 'cloud_server_url';
+        $request->validate([$key => 'nullable|string|max:2048']);
+        $started = microtime(true);
+        $result = app(RegisteredServerProbe::class)->check((string) $node->{$key}, trim((string) $request->input($key, '')), $local);
+        $healthy = $result['healthy'];
+        if ($local) {
+            $node->update(['local_healthy' => $healthy, 'last_health_check_at' => now()]);
         }
 
-        if ($url === '' || ! preg_match('#^https?://#i', $url)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Enter a valid cloud server URL (must start with http:// or https://) first.',
-            ], 422);
-        }
-
-        $probeUrl = rtrim($url, '/').'/api/connector/web-config';
-        $startedAt = microtime(true);
-        $healthy = false;
-
-        try {
-            $response = Http::timeout(5)->get($probeUrl);
-            $healthy = $response->successful() && (bool) data_get($response->json(), 'success', false);
-        } catch (\Throwable $e) {
-            $healthy = false;
-        }
-
-        $latencyMs = (int) round((microtime(true) - $startedAt) * 1000);
-
-        return response()->json([
-            'success' => $healthy,
-            'message' => $healthy
-                ? 'Cloud server is reachable.'
-                : 'Could not reach a cloud server at that URL.',
-            'data' => [
-                'status' => $healthy ? 'ONLINE' : 'OFFLINE',
-                'latency' => $latencyMs.'ms',
-            ],
-        ]);
+        return response()->json(['success' => $healthy, 'message' => $healthy ? 'Server is reachable and healthy.' : 'Server did not report healthy.', 'data' => ['status' => $healthy ? 'ONLINE' : 'OFFLINE', 'latency' => (int) ((microtime(true) - $started) * 1000).'ms']]);
     }
 
     // Sales Customization
@@ -233,10 +167,12 @@ class SettingsController extends Controller
     // AuthController::me, which maps company_id straight from store_id) -- there is no separate
     // companies table, so {id} here is a store id.
     private const THEME_STYLES = ['classic', 'apple', 'glass'];
+
     // Must mirror FONT_OPTIONS ids in themeRegistry.js exactly -- an allowlist, not free-text, so
     // this field can't become an arbitrary-CSS-injection surface (low severity for font-family
     // specifically, but there's no reason to accept anything the frontend wouldn't ever send).
     private const FONT_FAMILIES = ['system', 'inter', 'roboto', 'poppins', 'playfair'];
+
     private const HEX_COLOR_RULE = 'regex:/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/';
 
     public function getTheme(Request $request, $id)

@@ -36,9 +36,9 @@ class SettlementController extends Controller
         }
 
         $result = $this->paginationService->paginate($query, 'settlements', $request, [
-            'default_sort'  => 'id',
+            'default_sort' => 'id',
             'default_order' => 'desc',
-            'tie_breaker'   => 'id',
+            'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'settlement_date', 'batch_no', 'created_at'],
         ]);
 

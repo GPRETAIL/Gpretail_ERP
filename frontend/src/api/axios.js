@@ -1,4 +1,5 @@
 import axios from "axios";
+import { handleStoreSelectionError } from "../utils/storeSelection";
 import {
   buildCloudRetryConfig,
   getCloudBaseUrl,
@@ -38,7 +39,7 @@ api.interceptors.request.use(
     const token = localStorage.getItem("token");
     if (token) config.headers.Authorization = `Bearer ${token}`;
 
-    const activeStoreId = localStorage.getItem("activeStoreId");
+    const activeStoreId = sessionStorage.getItem("activeStoreId");
     if (activeStoreId) {
       config.headers["X-Company-Scope-Id"] = activeStoreId;
       config.headers["X-Company-Id"] = activeStoreId;
@@ -74,6 +75,7 @@ api.interceptors.response.use(
 
     let message =
       error.response?.data?.message || error.message || "Network error";
+    handleStoreSelectionError(error);
 
     // Rewrite in place rather than toasting here too: nearly every call site already does its own
     // toast.error(err?.response?.data?.message || "..."), so a separate toast here was showing this
@@ -81,7 +83,7 @@ api.interceptors.response.use(
     // whichever call site's own toast fires shows the friendly text exactly once; call sites that
     // stay silent on error are unaffected, same as before this existed.
     if (error.response?.status === 422 && message === SELECT_STORE_MESSAGE) {
-      message = "Select anyone store first to create data";
+      message = "Select a store before creating data.";
       if (error.response?.data) {
         error.response.data.message = message;
       }

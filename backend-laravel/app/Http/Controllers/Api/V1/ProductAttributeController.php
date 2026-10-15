@@ -7,16 +7,15 @@ use App\Models\AttributeType;
 use App\Models\AttributeValue;
 use App\Services\PaginationService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
 class ProductAttributeController extends Controller
 {
     public function __construct(private readonly PaginationService $paginationService) {}
 
     private array $defaultAliases = [
-        'color'   => 'colour',
+        'color' => 'colour',
         'colours' => 'colour',
-        'colors'  => 'colour',
+        'colors' => 'colour',
     ];
 
     private array $defaultValues = [
@@ -70,9 +69,9 @@ class ProductAttributeController extends Controller
             foreach ($this->defaultValues[$normalizedCode] as $def) {
                 AttributeValue::create([
                     'attribute_type_id' => $attributeType->id,
-                    'name'              => $def['name'],
-                    'value'             => $def['value'],
-                    'is_active'         => true,
+                    'name' => $def['name'],
+                    'value' => $def['value'],
+                    'is_active' => true,
                 ]);
             }
         }
@@ -83,39 +82,40 @@ class ProductAttributeController extends Controller
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('value', 'like', "%{$search}%");
+                    ->orWhere('value', 'like', "%{$search}%");
             });
         }
 
-        $formatter = fn($item) => [
-            'id'                => $item->id,
+        $formatter = fn ($item) => [
+            'id' => $item->id,
             'attribute_type_id' => $item->attribute_type_id,
-            'name'              => $item->name,
-            'value'             => $item->value,
-            'code'              => $item->code,
-            'sort_order'        => $item->sort_order,
-            'extra_data'        => $item->extra_data,
-            'company_id'        => $item->company_id ?: 1,
-            'created_by'        => $item->created_by ?: 'Superadmin',
-            'updated_by'        => $item->updated_by,
-            'is_active'         => (bool) $item->is_active,
-            'created_at'        => $item->created_at,
-            'updated_at'        => $item->updated_at,
+            'name' => $item->name,
+            'value' => $item->value,
+            'code' => $item->code,
+            'sort_order' => $item->sort_order,
+            'extra_data' => $item->extra_data,
+            'company_id' => $item->company_id ?: 1,
+            'created_by' => $item->created_by ?: 'Superadmin',
+            'updated_by' => $item->updated_by,
+            'is_active' => (bool) $item->is_active,
+            'created_at' => $item->created_at,
+            'updated_at' => $item->updated_at,
         ];
 
         if ($request->boolean('all') || $request->input('limit') == 500 || $request->input('limit') == 1000) {
             $items = $query->orderBy('name')->limit(2000)->get()->map($formatter);
+
             return response()->json([
                 'success' => true,
-                'data'    => $items,
-                'total'   => $items->count(),
+                'data' => $items,
+                'total' => $items->count(),
             ]);
         }
 
         $result = $this->paginationService->paginate($query, 'attribute_values', $request, [
-            'default_sort'  => 'name',
+            'default_sort' => 'name',
             'default_order' => 'asc',
-            'tie_breaker'   => 'id',
+            'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'name', 'value', 'code', 'sort_order', 'created_at'],
         ]);
 
@@ -145,7 +145,7 @@ class ProductAttributeController extends Controller
         $createdBy = $request->input('created_by') ?: ($user?->name ?: ($user?->username ?: 'Superadmin'));
         $companyId = $request->input('company_id') ?: ($user?->company_id ?: 1);
 
-        if (!$name) {
+        if (! $name) {
             return response()->json([
                 'success' => false,
                 'message' => 'Attribute name or value is required',
@@ -154,20 +154,20 @@ class ProductAttributeController extends Controller
 
         $attributeValue = AttributeValue::create([
             'attribute_type_id' => $attributeType->id,
-            'name'              => $name,
-            'value'             => $value,
-            'code'              => $code,
-            'sort_order'        => $sortOrder,
-            'extra_data'        => $extraData,
-            'company_id'        => $companyId,
-            'created_by'        => $createdBy,
-            'is_active'         => $request->has('is_active') ? $request->boolean('is_active') : true,
+            'name' => $name,
+            'value' => $value,
+            'code' => $code,
+            'sort_order' => $sortOrder,
+            'extra_data' => $extraData,
+            'company_id' => $companyId,
+            'created_by' => $createdBy,
+            'is_active' => $request->has('is_active') ? $request->boolean('is_active') : true,
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Attribute value created successfully',
-            'data'    => $attributeValue,
+            'data' => $attributeValue,
         ], 201);
     }
 
@@ -175,7 +175,7 @@ class ProductAttributeController extends Controller
     {
         $attributeValue = AttributeValue::where('id', $id)->orWhere('value', $id)->first();
 
-        if (!$attributeValue) {
+        if (! $attributeValue) {
             return response()->json([
                 'success' => false,
                 'message' => 'Attribute value not found',
@@ -188,7 +188,7 @@ class ProductAttributeController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $arr,
+            'data' => $arr,
         ]);
     }
 
@@ -196,7 +196,7 @@ class ProductAttributeController extends Controller
     {
         $attributeValue = AttributeValue::where('id', $id)->orWhere('value', $id)->first();
 
-        if (!$attributeValue) {
+        if (! $attributeValue) {
             return response()->json([
                 'success' => false,
                 'message' => 'Attribute value not found',
@@ -211,19 +211,19 @@ class ProductAttributeController extends Controller
         $updatedBy = $request->input('updated_by') ?: ($request->user()?->name ?? null);
 
         $attributeValue->update([
-            'name'       => $name,
-            'value'      => $value,
-            'code'       => $code,
+            'name' => $name,
+            'value' => $value,
+            'code' => $code,
             'sort_order' => $sortOrder,
             'extra_data' => $extraData,
             'updated_by' => $updatedBy,
-            'is_active'  => $request->has('is_active') ? $request->boolean('is_active') : $attributeValue->is_active,
+            'is_active' => $request->has('is_active') ? $request->boolean('is_active') : $attributeValue->is_active,
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Attribute value updated successfully',
-            'data'    => $attributeValue,
+            'data' => $attributeValue,
         ]);
     }
 
@@ -231,7 +231,7 @@ class ProductAttributeController extends Controller
     {
         $attributeValue = AttributeValue::find($id);
 
-        if (!$attributeValue) {
+        if (! $attributeValue) {
             return response()->json([
                 'success' => false,
                 'message' => 'Attribute value not found',

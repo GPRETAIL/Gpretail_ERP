@@ -208,7 +208,7 @@ const buildPosOldSaleReceiptPayload = ({
 };
 
 /* ───────────────── COMPONENT ───────────────── */
-const POSOld = () => {
+const LegacyPosPage = () => {
   const authUser = useSelector((state) => state.auth.user);
   // Pops automatically once per login if this user has no counter assigned yet -- previously
   // they'd only discover this was required when a sale failed to save.
@@ -3501,4 +3501,4 @@ const POSOld = () => {
   );
 };
 
-export default POSOld;
+export default LegacyPosPage;

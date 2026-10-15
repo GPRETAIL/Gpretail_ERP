@@ -87,7 +87,7 @@ export default function VynerixMobileApp() {
   const isAuthenticated = useSelector((s) => s.auth.isAuthenticated);
   const authUser = useSelector((s) => s.auth.user);
   const dispatch = useDispatch();
-  const appNavigate = useNavigate();
+  const _appNavigate = useNavigate();
   const { ready, progress } = useAppInit();
   const { isOnline, wasOffline } = useNetworkStatus();
 

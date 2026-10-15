@@ -7,7 +7,6 @@ use App\Models\Tax;
 use App\Services\GroupAggregationService;
 use App\Services\PaginationService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 
 class TaxController extends Controller
 {
@@ -24,7 +23,7 @@ class TaxController extends Controller
             $s = $request->input('search');
             $query->where(function ($q) use ($s) {
                 $q->where('name', 'like', "%{$s}%")
-                  ->orWhere('code', 'like', "%{$s}%");
+                    ->orWhere('code', 'like', "%{$s}%");
             });
         }
 
@@ -35,7 +34,9 @@ class TaxController extends Controller
                 $col = $filter['field'] ?? null;
                 $op = $filter['operator'] ?? 'contains';
                 $val = $filter['value'] ?? '';
-                if (!$col || !in_array($col, $allowed)) continue;
+                if (! $col || ! in_array($col, $allowed)) {
+                    continue;
+                }
                 match ($op) {
                     'equals' => $query->where($col, $val),
                     'not_equals' => $query->where($col, '!=', $val),
@@ -54,6 +55,7 @@ class TaxController extends Controller
     public function groupedSummary(Request $request)
     {
         $result = $this->groupAggregationService->summarize($this->filteredQuery($request), 'taxes', $request);
+
         return response()->json($result, $result['success'] ? 200 : 422);
     }
 
@@ -63,42 +65,43 @@ class TaxController extends Controller
 
         $formatTax = function ($t) {
             return [
-                'id'             => $t->id,
-                'code'           => $t->code,
-                'tax_code'       => $t->code,
-                'name'           => $t->name,
-                'rate'           => (float) $t->rate,
+                'id' => $t->id,
+                'code' => $t->code,
+                'tax_code' => $t->code,
+                'name' => $t->name,
+                'rate' => (float) $t->rate,
                 'tax_percentage' => (float) $t->rate,
-                'type'           => $t->type ?: 'GST',
-                'tax_type'       => $t->type ?: 'GST',
-                'cgst'           => (float) ($t->cgst_rate ?: ($t->rate / 2)),
-                'sgst'           => (float) ($t->sgst_rate ?: ($t->rate / 2)),
-                'igst'           => (float) ($t->igst_rate ?: $t->rate),
-                'cgst_rate'      => (float) ($t->cgst_rate ?: ($t->rate / 2)),
-                'sgst_rate'      => (float) ($t->sgst_rate ?: ($t->rate / 2)),
-                'igst_rate'      => (float) ($t->igst_rate ?: $t->rate),
-                'is_sales_tax'   => true,
-                'is_purchase_tax'=> true,
-                'is_disabled'    => !$t->is_active,
-                'is_active'      => (bool) $t->is_active,
-                'extra_fields'   => [
+                'type' => $t->type ?: 'GST',
+                'tax_type' => $t->type ?: 'GST',
+                'cgst' => (float) ($t->cgst_rate ?: ($t->rate / 2)),
+                'sgst' => (float) ($t->sgst_rate ?: ($t->rate / 2)),
+                'igst' => (float) ($t->igst_rate ?: $t->rate),
+                'cgst_rate' => (float) ($t->cgst_rate ?: ($t->rate / 2)),
+                'sgst_rate' => (float) ($t->sgst_rate ?: ($t->rate / 2)),
+                'igst_rate' => (float) ($t->igst_rate ?: $t->rate),
+                'is_sales_tax' => true,
+                'is_purchase_tax' => true,
+                'is_disabled' => ! $t->is_active,
+                'is_active' => (bool) $t->is_active,
+                'extra_fields' => [
                     'cgst' => (float) ($t->cgst_rate ?: ($t->rate / 2)),
                     'sgst' => (float) ($t->sgst_rate ?: ($t->rate / 2)),
                 ],
-                'created_at'     => $t->created_at,
-                'updated_at'     => $t->updated_at,
+                'created_at' => $t->created_at,
+                'updated_at' => $t->updated_at,
             ];
         };
 
         if ($request->boolean('all')) {
             $items = $query->orderBy('name')->limit(2000)->get()->map($formatTax);
+
             return response()->json(['success' => true, 'data' => $items, 'total' => $items->count()]);
         }
 
         $result = $this->paginationService->paginate($query, 'taxes', $request, [
-            'default_sort'  => 'name',
+            'default_sort' => 'name',
             'default_order' => 'asc',
-            'tie_breaker'   => 'id',
+            'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'name', 'code', 'rate', 'created_at'],
         ]);
 
@@ -116,25 +119,25 @@ class TaxController extends Controller
 
         $rate = (float) $tax->rate;
         $data = [
-            'id'             => $tax->id,
-            'code'           => $tax->code,
-            'tax_code'       => $tax->code,
-            'name'           => $tax->name,
-            'rate'           => $rate,
+            'id' => $tax->id,
+            'code' => $tax->code,
+            'tax_code' => $tax->code,
+            'name' => $tax->name,
+            'rate' => $rate,
             'tax_percentage' => $rate,
-            'type'           => $tax->type ?: 'GST',
-            'tax_type'       => $tax->type ?: 'GST',
-            'cgst'           => (float) ($tax->cgst_rate ?: ($rate / 2)),
-            'sgst'           => (float) ($tax->sgst_rate ?: ($rate / 2)),
-            'igst'           => (float) ($tax->igst_rate ?: $rate),
-            'cgst_rate'      => (float) ($tax->cgst_rate ?: ($rate / 2)),
-            'sgst_rate'      => (float) ($tax->sgst_rate ?: ($rate / 2)),
-            'igst_rate'      => (float) ($tax->igst_rate ?: $rate),
-            'is_sales_tax'   => true,
-            'is_purchase_tax'=> true,
-            'is_disabled'    => !$tax->is_active,
-            'is_active'      => (bool) $tax->is_active,
-            'extra_fields'   => [
+            'type' => $tax->type ?: 'GST',
+            'tax_type' => $tax->type ?: 'GST',
+            'cgst' => (float) ($tax->cgst_rate ?: ($rate / 2)),
+            'sgst' => (float) ($tax->sgst_rate ?: ($rate / 2)),
+            'igst' => (float) ($tax->igst_rate ?: $rate),
+            'cgst_rate' => (float) ($tax->cgst_rate ?: ($rate / 2)),
+            'sgst_rate' => (float) ($tax->sgst_rate ?: ($rate / 2)),
+            'igst_rate' => (float) ($tax->igst_rate ?: $rate),
+            'is_sales_tax' => true,
+            'is_purchase_tax' => true,
+            'is_disabled' => ! $tax->is_active,
+            'is_active' => (bool) $tax->is_active,
+            'extra_fields' => [
                 'cgst' => (float) ($tax->cgst_rate ?: ($rate / 2)),
                 'sgst' => (float) ($tax->sgst_rate ?: ($rate / 2)),
             ],
@@ -145,21 +148,21 @@ class TaxController extends Controller
 
     public function store(Request $request)
     {
-        $code = $request->input('code') ?: $request->input('taxCode') ?: ('TAX_' . strtoupper(substr(uniqid(), -6)));
+        $code = $request->input('code') ?: $request->input('taxCode') ?: ('TAX_'.strtoupper(substr(uniqid(), -6)));
         $name = $request->input('name');
         $rate = $request->input('rate') ?? $request->input('taxPercentage') ?? 0;
         $type = $request->input('type') ?: $request->input('taxCharges') ?: $request->input('tax_type') ?: 'GST';
-        $isActive = $request->has('is_disabled') ? !$request->boolean('is_disabled') : ($request->has('isDisabled') ? !$request->boolean('isDisabled') : $request->boolean('is_active', true));
+        $isActive = $request->has('is_disabled') ? ! $request->boolean('is_disabled') : ($request->has('isDisabled') ? ! $request->boolean('isDisabled') : $request->boolean('is_active', true));
 
         $cgst = (float) ($request->input('cgst_rate') ?? $request->input('cgst') ?? ($rate / 2));
         $sgst = (float) ($request->input('sgst_rate') ?? $request->input('sgst') ?? ($rate / 2));
         $igst = (float) ($request->input('igst_rate') ?? $request->input('igst') ?? $rate);
 
         $tax = Tax::create([
-            'code'      => $code,
-            'name'      => $name,
-            'rate'      => $rate,
-            'type'      => $type,
+            'code' => $code,
+            'name' => $name,
+            'rate' => $rate,
+            'type' => $type,
             'cgst_rate' => $cgst,
             'sgst_rate' => $sgst,
             'igst_rate' => $igst,
@@ -169,7 +172,7 @@ class TaxController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Tax created successfully',
-            'data'    => $tax,
+            'data' => $tax,
         ], 201);
     }
 
@@ -180,11 +183,19 @@ class TaxController extends Controller
             ->firstOrFail();
 
         $data = [];
-        if ($request->filled('name')) $data['name'] = $request->input('name');
-        if ($request->filled('code') || $request->filled('taxCode')) $data['code'] = $request->input('code') ?: $request->input('taxCode');
-        if ($request->has('rate') || $request->has('taxPercentage')) $data['rate'] = $request->input('rate') ?? $request->input('taxPercentage');
-        if ($request->has('type') || $request->has('taxCharges') || $request->has('tax_type')) $data['type'] = $request->input('type') ?: $request->input('taxCharges') ?: $request->input('tax_type');
-        
+        if ($request->filled('name')) {
+            $data['name'] = $request->input('name');
+        }
+        if ($request->filled('code') || $request->filled('taxCode')) {
+            $data['code'] = $request->input('code') ?: $request->input('taxCode');
+        }
+        if ($request->has('rate') || $request->has('taxPercentage')) {
+            $data['rate'] = $request->input('rate') ?? $request->input('taxPercentage');
+        }
+        if ($request->has('type') || $request->has('taxCharges') || $request->has('tax_type')) {
+            $data['type'] = $request->input('type') ?: $request->input('taxCharges') ?: $request->input('tax_type');
+        }
+
         if (isset($data['rate'])) {
             $r = (float) $data['rate'];
             $data['cgst_rate'] = (float) ($request->input('cgst_rate') ?? $request->input('cgst') ?? ($r / 2));
@@ -194,7 +205,7 @@ class TaxController extends Controller
 
         if ($request->has('is_disabled') || $request->has('isDisabled')) {
             $disabled = $request->has('is_disabled') ? $request->boolean('is_disabled') : $request->boolean('isDisabled');
-            $data['is_active'] = !$disabled;
+            $data['is_active'] = ! $disabled;
         } elseif ($request->has('is_active')) {
             $data['is_active'] = $request->boolean('is_active');
         }
@@ -204,7 +215,7 @@ class TaxController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Tax updated successfully',
-            'data'    => $tax,
+            'data' => $tax,
         ]);
     }
 

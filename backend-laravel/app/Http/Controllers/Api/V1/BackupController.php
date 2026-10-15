@@ -19,7 +19,7 @@ class BackupController extends Controller
 
     public function overview(Request $request)
     {
-        $companyId = $request->input('companyId') ?: null;
+        $companyId = $request->attributes->get('store_context_id');
 
         $companies = Store::where('is_active', true)->orderBy('name')->get(['id', 'name']);
 
@@ -57,28 +57,28 @@ class BackupController extends Controller
         $lastBackup = $backups->first();
 
         $stats = [
-            'last_backup_status'    => $lastBackup?->status ?? 'never',
-            'last_backup_at'        => $lastBackup?->completed_at,
+            'last_backup_status' => $lastBackup?->status ?? 'never',
+            'last_backup_at' => $lastBackup?->completed_at,
             'next_scheduled_backup' => $setting['next_scheduled_at'] ?? null,
-            'storage_usage'         => [
+            'storage_usage' => [
                 'total_label' => $this->backups->formatBytes($totalBytes),
                 'local_label' => $this->backups->formatBytes($localBytes),
                 'cloud_label' => $this->backups->formatBytes($cloudBytes),
             ],
-            'total_backups'  => $backups->count(),
-            'success_count'  => $backups->where('status', 'success')->count(),
-            'failed_count'   => $backups->where('status', 'failed')->count(),
+            'total_backups' => $backups->count(),
+            'success_count' => $backups->where('status', 'success')->count(),
+            'failed_count' => $backups->where('status', 'failed')->count(),
         ];
 
         return response()->json([
             'success' => true,
             'data' => [
-                'companies'          => $companies,
-                'moduleOptions'      => $this->backups->moduleOptions(),
-                'setting'            => $setting,
-                'stats'              => $stats,
-                'backups'            => $backups,
-                'restores'           => $restores,
+                'companies' => $companies,
+                'moduleOptions' => $this->backups->moduleOptions(),
+                'setting' => $setting,
+                'stats' => $stats,
+                'backups' => $backups,
+                'restores' => $restores,
                 // Lets the UI show real status instead of just static setup instructions -
                 // whether the server side is ready for an external trigger to call it, and
                 // whether one ever actually has.
@@ -89,6 +89,9 @@ class BackupController extends Controller
 
     public function store(Request $request)
     {
+        if (! request()->isMethod('GET')) {
+            abort_unless(in_array(request()->user()?->role, ['admin', 'super_admin'], true), 403, 'Only administrators can manage backups.');
+        }
         $validator = Validator::make($request->all(), [
             'backupType' => 'required|in:full,incremental,module',
             'storageMode' => 'nullable|in:local,cloud,hybrid',
@@ -98,7 +101,7 @@ class BackupController extends Controller
             return response()->json(['success' => false, 'message' => 'Validation error', 'errors' => $validator->errors()], 422);
         }
 
-        $companyId   = $request->input('companyId') ?: null;
+        $companyId = $request->attributes->get('store_context_id');
         $storageMode = $request->input('storageMode', 'local');
 
         // Resolve store settings (needed for cloud credentials)
@@ -112,7 +115,7 @@ class BackupController extends Controller
             ], 422);
         }
 
-        $backupType  = $request->input('backupType');
+        $backupType = $request->input('backupType');
         $moduleNames = $backupType === 'module'
             ? ($request->input('moduleNames') ?: [])
             : ['sales', 'warehouse', 'masters', 'store', 'crm', 'finance', 'settings', 'dashboard', 'analytical'];
@@ -127,14 +130,14 @@ class BackupController extends Controller
             ], 422);
         }
 
-        $startedAt      = now();
-        $status         = 'success';
-        $statusMessage  = null;
-        $filePath       = null;
-        $cloudPath      = null;
-        $fileSize       = 0;
-        $fileName       = null;
-        $tableCounts    = [];
+        $startedAt = now();
+        $status = 'success';
+        $statusMessage = null;
+        $filePath = null;
+        $cloudPath = null;
+        $fileSize = 0;
+        $fileName = null;
+        $tableCounts = [];
 
         try {
             $since = null;
@@ -154,7 +157,7 @@ class BackupController extends Controller
             }
 
             $baseName = 'backup_'.$backupType.'_'.($companyId ?: 'all').'_'.now()->format('Ymd_His').'_'.uniqid();
-            $zipPath  = $this->backups->writeBackupArchive($exported, $manifest, $baseName);
+            $zipPath = $this->backups->writeBackupArchive($exported, $manifest, $baseName);
 
             $encryptionEnabled = $request->boolean('encryptionEnabled');
             if ($encryptionEnabled) {
@@ -179,25 +182,25 @@ class BackupController extends Controller
                 }
             }
         } catch (Throwable $e) {
-            $status        = 'failed';
+            $status = 'failed';
             $statusMessage = $e->getMessage();
         }
 
         $backup = Backup::create([
-            'file_name'          => $fileName ?? ('backup_failed_'.now()->format('Ymd_His')),
-            'backup_type'        => $backupType,
-            'storage_mode'       => $storageMode,
-            'module_names'       => $moduleNames,
-            'company_id'         => $companyId,
-            'file_path'          => $filePath,
-            'cloud_path'         => $cloudPath,
-            'file_size'          => $fileSize,
-            'file_size_label'    => $this->backups->formatBytes($fileSize),
-            'status'             => $status,
+            'file_name' => $fileName ?? ('backup_failed_'.now()->format('Ymd_His')),
+            'backup_type' => $backupType,
+            'storage_mode' => $storageMode,
+            'module_names' => $moduleNames,
+            'company_id' => $companyId,
+            'file_path' => $filePath,
+            'cloud_path' => $cloudPath,
+            'file_size' => $fileSize,
+            'file_size_label' => $this->backups->formatBytes($fileSize),
+            'status' => $status,
             'encryption_enabled' => $request->boolean('encryptionEnabled'),
-            'summary'            => ['status_message' => $statusMessage, 'tables' => $tableCounts, 'progress_percent' => 100],
-            'started_at'         => $startedAt,
-            'completed_at'       => now(),
+            'summary' => ['status_message' => $statusMessage, 'tables' => $tableCounts, 'progress_percent' => 100],
+            'started_at' => $startedAt,
+            'completed_at' => now(),
         ]);
 
         return response()->json(['success' => true, 'message' => $status === 'success' ? 'Backup created' : 'Backup failed', 'data' => $backup], 201);
@@ -205,26 +208,29 @@ class BackupController extends Controller
 
     public function settings(Request $request)
     {
+        if (! request()->isMethod('GET')) {
+            abort_unless(in_array(request()->user()?->role, ['admin', 'super_admin'], true), 403, 'Only administrators can manage backups.');
+        }
         $companyId = $request->input('companyId') ?? $request->input('company_id');
 
         if ($request->isMethod('post') || $request->isMethod('put')) {
             $settings = [
-                'storage_mode'           => $request->input('storageMode', 'local'),
-                'local_storage_enabled'  => $request->boolean('localStorageEnabled', true),
-                'cloud_storage_enabled'  => $request->boolean('cloudStorageEnabled'),
-                'encryption_enabled'     => $request->boolean('encryptionEnabled'),
-                'restore_password_hint'  => $request->input('restorePasswordHint', ''),
-                'schedule_enabled'       => $request->boolean('scheduleEnabled'),
-                'schedule_frequency'     => $request->input('scheduleFrequency', 'daily'),
-                'schedule_time'          => $request->input('scheduleTime', '02:00'),
-                'schedule_day_of_week'   => (int) $request->input('scheduleDayOfWeek', 1),
-                'schedule_day_of_month'  => (int) $request->input('scheduleDayOfMonth', 1),
-                'schedule_backup_type'   => $request->input('scheduleBackupType', 'full'),
-                'schedule_module_names'  => $request->input('scheduleModuleNames', []),
-                'retention_daily'        => (int) $request->input('retentionDaily', 7),
-                'retention_weekly'       => (int) $request->input('retentionWeekly', 4),
-                'retention_monthly'      => (int) $request->input('retentionMonthly', 12),
-                'auto_cleanup_enabled'   => $request->boolean('autoCleanupEnabled', true),
+                'storage_mode' => $request->input('storageMode', 'local'),
+                'local_storage_enabled' => $request->boolean('localStorageEnabled', true),
+                'cloud_storage_enabled' => $request->boolean('cloudStorageEnabled'),
+                'encryption_enabled' => $request->boolean('encryptionEnabled'),
+                'restore_password_hint' => $request->input('restorePasswordHint', ''),
+                'schedule_enabled' => $request->boolean('scheduleEnabled'),
+                'schedule_frequency' => $request->input('scheduleFrequency', 'daily'),
+                'schedule_time' => $request->input('scheduleTime', '02:00'),
+                'schedule_day_of_week' => (int) $request->input('scheduleDayOfWeek', 1),
+                'schedule_day_of_month' => (int) $request->input('scheduleDayOfMonth', 1),
+                'schedule_backup_type' => $request->input('scheduleBackupType', 'full'),
+                'schedule_module_names' => $request->input('scheduleModuleNames', []),
+                'retention_daily' => (int) $request->input('retentionDaily', 7),
+                'retention_weekly' => (int) $request->input('retentionWeekly', 4),
+                'retention_monthly' => (int) $request->input('retentionMonthly', 12),
+                'auto_cleanup_enabled' => $request->boolean('autoCleanupEnabled', true),
                 // Oracle Cloud Infrastructure (OCI) Object Storage credentials - no
                 // inline defaults here (region's old 'ap-mumbai-1' default silently
                 // overwrote a real saved region on any request that omitted it, since
@@ -232,11 +238,11 @@ class BackupController extends Controller
                 // submission). Left null when omitted; resolved against the existing
                 // stored value below, only falling back to a real default as a last
                 // resort for a store that's never configured OCI at all.
-                'oci_namespace'          => $request->input('ociNamespace'),
-                'oci_region'             => $request->input('ociRegion'),
-                'oci_access_key_id'      => $request->input('ociAccessKeyId'),
-                'oci_secret_access_key'  => $request->input('ociSecretAccessKey'),
-                'oci_bucket'             => $request->input('ociBucket'),
+                'oci_namespace' => $request->input('ociNamespace'),
+                'oci_region' => $request->input('ociRegion'),
+                'oci_access_key_id' => $request->input('ociAccessKeyId'),
+                'oci_secret_access_key' => $request->input('ociSecretAccessKey'),
+                'oci_bucket' => $request->input('ociBucket'),
             ];
 
             if ($settings['schedule_enabled']) {
@@ -297,14 +303,14 @@ class BackupController extends Controller
                 // (not just the secret) is preserved per-store here.
                 $stores = Store::where('is_active', true)->get();
                 foreach ($stores as $store) {
-                    $existing      = $store->backup_settings ?? [];
+                    $existing = $store->backup_settings ?? [];
                     $storeSettings = array_merge($settings, [
-                        'last_scheduled_at'      => $existing['last_scheduled_at'] ?? null,
-                        'oci_namespace'          => $existing['oci_namespace'] ?: ($settings['oci_namespace'] ?? ''),
-                        'oci_region'             => $existing['oci_region'] ?: ($settings['oci_region'] ?? 'ap-mumbai-1'),
-                        'oci_access_key_id'      => $existing['oci_access_key_id'] ?: ($settings['oci_access_key_id'] ?? ''),
-                        'oci_secret_access_key'  => $existing['oci_secret_access_key'] ?: ($settings['oci_secret_access_key'] ?? ''),
-                        'oci_bucket'             => $existing['oci_bucket'] ?: ($settings['oci_bucket'] ?? ''),
+                        'last_scheduled_at' => $existing['last_scheduled_at'] ?? null,
+                        'oci_namespace' => $existing['oci_namespace'] ?: ($settings['oci_namespace'] ?? ''),
+                        'oci_region' => $existing['oci_region'] ?: ($settings['oci_region'] ?? 'ap-mumbai-1'),
+                        'oci_access_key_id' => $existing['oci_access_key_id'] ?: ($settings['oci_access_key_id'] ?? ''),
+                        'oci_secret_access_key' => $existing['oci_secret_access_key'] ?: ($settings['oci_secret_access_key'] ?? ''),
+                        'oci_bucket' => $existing['oci_bucket'] ?: ($settings['oci_bucket'] ?? ''),
                         'encryption_password_encrypted' => $existing['encryption_password_encrypted']
                             ?? ($settings['encryption_password_encrypted'] ?? null),
                     ]);
@@ -315,7 +321,7 @@ class BackupController extends Controller
             return response()->json(['success' => true, 'message' => 'Backup settings saved']);
         }
 
-        $store   = $companyId ? Store::find($companyId) : null;
+        $store = $companyId ? Store::find($companyId) : null;
         $setting = $store?->backup_settings ?? [];
 
         // Mask the OCI secret before sending to the frontend — never expose the raw key
@@ -333,24 +339,24 @@ class BackupController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $setting,
+            'data' => $setting,
         ]);
     }
 
     public function cloudTest(Request $request)
     {
-        $companyId = $request->input('companyId') ?: null;
+        $companyId = $request->attributes->get('store_context_id');
         $store = $companyId ? Store::find($companyId) : null;
         $stored = $store?->backup_settings ?? [];
 
         // Merge submitted credentials with stored ones (secret may be masked)
         $submittedSecret = $request->input('ociSecretAccessKey');
         $creds = [
-            'oci_namespace'         => $request->input('ociNamespace')       ?: ($stored['oci_namespace'] ?? ''),
-            'oci_region'            => $request->input('ociRegion')          ?: ($stored['oci_region'] ?? 'ap-mumbai-1'),
-            'oci_access_key_id'     => $request->input('ociAccessKeyId')     ?: ($stored['oci_access_key_id'] ?? ''),
+            'oci_namespace' => $request->input('ociNamespace') ?: ($stored['oci_namespace'] ?? ''),
+            'oci_region' => $request->input('ociRegion') ?: ($stored['oci_region'] ?? 'ap-mumbai-1'),
+            'oci_access_key_id' => $request->input('ociAccessKeyId') ?: ($stored['oci_access_key_id'] ?? ''),
             'oci_secret_access_key' => ($submittedSecret && $submittedSecret !== str_repeat('*', 20)) ? $submittedSecret : ($stored['oci_secret_access_key'] ?? ''),
-            'oci_bucket'            => $request->input('ociBucket')          ?: ($stored['oci_bucket'] ?? ''),
+            'oci_bucket' => $request->input('ociBucket') ?: ($stored['oci_bucket'] ?? ''),
         ];
 
         $result = $this->backups->testCloudConnection($creds);
@@ -363,13 +369,16 @@ class BackupController extends Controller
 
     public function restore(Request $request, $id)
     {
+        if (! request()->isMethod('GET')) {
+            abort_unless(in_array(request()->user()?->role, ['admin', 'super_admin'], true), 403, 'Only administrators can manage backups.');
+        }
         $backup = Backup::find($id);
         if (! $backup) {
             return response()->json(['success' => false, 'message' => 'Backup not found'], 404);
         }
 
         $restoreType = $request->input('restoreType', 'partial');
-        $targetCompanyId = $request->input('targetCompanyId') ?: null;
+        $targetCompanyId = $request->attributes->get('store_context_id');
         $moduleNames = $restoreType === 'partial' ? ($request->input('moduleNames') ?: []) : [];
 
         $startedAt = now();
@@ -437,6 +446,9 @@ class BackupController extends Controller
 
     public function import(Request $request)
     {
+        if (! request()->isMethod('GET')) {
+            abort_unless(in_array(request()->user()?->role, ['admin', 'super_admin'], true), 403, 'Only administrators can manage backups.');
+        }
         $validator = Validator::make($request->all(), [
             'backupFile' => 'required|file',
         ]);
@@ -444,7 +456,7 @@ class BackupController extends Controller
             return response()->json(['success' => false, 'message' => 'Validation error', 'errors' => $validator->errors()], 422);
         }
 
-        $companyId = $request->input('companyId') ?: null;
+        $companyId = $request->attributes->get('store_context_id');
         $password = $request->input('password');
         $uploaded = $request->file('backupFile');
 
@@ -530,8 +542,9 @@ class BackupController extends Controller
                     ? (Store::find($backup->company_id)?->backup_settings ?? [])
                     : [];
                 $tmpCloudPath = $this->backups->downloadFromCloud($backup->cloud_path, $storeSettings);
+
                 return response()->download($tmpCloudPath, $backup->file_name, [
-                    'Content-Type'        => 'application/octet-stream',
+                    'Content-Type' => 'application/octet-stream',
                     'Content-Disposition' => 'attachment; filename="'.$backup->file_name.'"',
                 ])->deleteFileAfterSend(true);
             }
@@ -541,7 +554,7 @@ class BackupController extends Controller
                 $localPath = $backup->file_path ? storage_path('app/private/'.$backup->file_path) : null;
                 if ($localPath && file_exists($localPath)) {
                     return response()->download($localPath, $backup->file_name, [
-                        'Content-Type'        => 'application/octet-stream',
+                        'Content-Type' => 'application/octet-stream',
                         'Content-Disposition' => 'attachment; filename="'.$backup->file_name.'"',
                     ]);
                 }
@@ -550,11 +563,13 @@ class BackupController extends Controller
                         ? (Store::find($backup->company_id)?->backup_settings ?? [])
                         : [];
                     $tmpCloudPath = $this->backups->downloadFromCloud($backup->cloud_path, $storeSettings);
+
                     return response()->download($tmpCloudPath, $backup->file_name, [
-                        'Content-Type'        => 'application/octet-stream',
+                        'Content-Type' => 'application/octet-stream',
                         'Content-Disposition' => 'attachment; filename="'.$backup->file_name.'"',
                     ])->deleteFileAfterSend(true);
                 }
+
                 return response()->json(['success' => false, 'message' => 'Backup file not found locally or in cloud.'], 404);
             }
 
@@ -566,14 +581,16 @@ class BackupController extends Controller
             if (! file_exists($path)) {
                 return response()->json(['success' => false, 'message' => 'Backup file no longer exists on disk.'], 404);
             }
+
             return response()->download($path, $backup->file_name, [
-                'Content-Type'        => 'application/octet-stream',
+                'Content-Type' => 'application/octet-stream',
                 'Content-Disposition' => 'attachment; filename="'.$backup->file_name.'"',
             ]);
         } catch (Throwable $e) {
             if ($tmpCloudPath && file_exists($tmpCloudPath)) {
                 @unlink($tmpCloudPath);
             }
+
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
@@ -611,6 +628,9 @@ class BackupController extends Controller
 
     public function destroy($id)
     {
+        if (! request()->isMethod('GET')) {
+            abort_unless(in_array(request()->user()?->role, ['admin', 'super_admin'], true), 403, 'Only administrators can manage backups.');
+        }
         $backup = Backup::find($id);
         if (! $backup) {
             return response()->json(['success' => false, 'message' => 'Backup not found'], 404);
@@ -652,7 +672,7 @@ class BackupController extends Controller
             return response()->json(['success' => false, 'message' => 'Invalid or missing token'], 403);
         }
 
-        $companyId = $request->input('companyId') ?: null;
+        $companyId = $request->attributes->get('store_context_id');
         $stores = Store::whereNotNull('backup_settings')
             ->when($companyId, fn ($q) => $q->where('id', $companyId))
             ->get();

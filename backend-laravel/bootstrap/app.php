@@ -1,8 +1,11 @@
 <?php
 
 use App\Http\Middleware\AuthenticateSyncReplay;
+use App\Http\Middleware\AuthorizeBusinessAction;
 use App\Http\Middleware\CaptureSyncOutbox;
+use App\Http\Middleware\ResolveStoreContext;
 use Illuminate\Auth\Middleware\Authenticate;
+use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -43,8 +46,11 @@ return Application::configure(basePath: dirname(__DIR__))
         // Authenticate implements), not the concrete class -- pin against
         // that, or this silently sorts to run after auth and never executes.
         $middleware->prependToGroup('api', [AuthenticateSyncReplay::class]);
-        $middleware->prependToPriorityList(\Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests::class, AuthenticateSyncReplay::class);
+        $middleware->prependToPriorityList(AuthenticatesRequests::class, AuthenticateSyncReplay::class);
         $middleware->appendToGroup('api', [CaptureSyncOutbox::class]);
+        $middleware->appendToGroup('api', [ResolveStoreContext::class, AuthorizeBusinessAction::class]);
+        $middleware->appendToPriorityList(AuthenticatesRequests::class, ResolveStoreContext::class);
+        $middleware->appendToPriorityList(ResolveStoreContext::class, AuthorizeBusinessAction::class);
 
         // This is a pure JSON API + React SPA - there is no server-rendered
         // "login" web route to redirect to. Without this, Laravel's default

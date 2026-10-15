@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Services\StoreQuery;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -21,8 +22,11 @@ use Illuminate\Support\Facades\DB;
 class ProductPurchaseAnalyticsController extends Controller
 {
     private const ROW_LIMIT_DEFAULT = 50;
+
     private const ROW_LIMIT_MAX = 200;
+
     private const COL_LIMIT_DEFAULT = 12;
+
     private const COL_LIMIT_MAX = 50;
 
     /**
@@ -37,13 +41,13 @@ class ProductPurchaseAnalyticsController extends Controller
     public function supplierProductSummary(Request $request)
     {
         $rowBy = (string) $request->input('row_by', 'product');
-        if (!in_array($rowBy, ['product', 'supplier'], true)) {
+        if (! in_array($rowBy, ['product', 'supplier'], true)) {
             return response()->json(['success' => false, 'message' => 'row_by must be "product" or "supplier".'], 422);
         }
         $colBy = $rowBy === 'product' ? 'supplier' : 'product';
 
         $measure = (string) $request->input('measure', 'amount');
-        if (!in_array($measure, ['amount', 'qty'], true)) {
+        if (! in_array($measure, ['amount', 'qty'], true)) {
             return response()->json(['success' => false, 'message' => 'measure must be "amount" or "qty".'], 422);
         }
         $measureColumn = $measure === 'amount' ? 'line_total' : 'qty';
@@ -155,7 +159,7 @@ class ProductPurchaseAnalyticsController extends Controller
         $storeId = $request->input('company_id') ?: $request->header('X-Company-Scope-Id');
         $storeId = ($storeId && $storeId !== 'all') ? $storeId : null;
 
-        $direct = DB::table('direct_purchase_items as dpi')
+        $direct = StoreQuery::table('direct_purchase_items as dpi')
             ->join('direct_purchases as dp', 'dp.id', '=', 'dpi.direct_purchase_id')
             ->leftJoin('suppliers as s1', 's1.id', '=', 'dp.supplier_id')
             ->where('dpi.product_id', $productId)
@@ -170,7 +174,7 @@ class ProductPurchaseAnalyticsController extends Controller
                 dpi.total_price as line_total
             ");
 
-        $invoice = DB::table('purchase_invoice_items as pii')
+        $invoice = StoreQuery::table('purchase_invoice_items as pii')
             ->join('purchase_invoices as pi', 'pi.id', '=', 'pii.purchase_invoice_id')
             ->join('suppliers as s2', 's2.id', '=', 'pi.supplier_id')
             ->where('pii.product_id', $productId)
@@ -206,7 +210,7 @@ class ProductPurchaseAnalyticsController extends Controller
      */
     private function unifiedPurchaseQuery($storeId, $dateFrom, $dateTo)
     {
-        $direct = DB::table('direct_purchase_items as dpi')
+        $direct = StoreQuery::table('direct_purchase_items as dpi')
             ->join('direct_purchases as dp', 'dp.id', '=', 'dpi.direct_purchase_id')
             ->join('products as p1', 'p1.id', '=', 'dpi.product_id')
             ->leftJoin('suppliers as s1', 's1.id', '=', 'dp.supplier_id')
@@ -222,21 +226,21 @@ class ProductPurchaseAnalyticsController extends Controller
                 dpi.total_price as line_total
             ");
 
-        $invoice = DB::table('purchase_invoice_items as pii')
+        $invoice = StoreQuery::table('purchase_invoice_items as pii')
             ->join('purchase_invoices as pi', 'pi.id', '=', 'pii.purchase_invoice_id')
             ->join('products as p2', 'p2.id', '=', 'pii.product_id')
             ->join('suppliers as s2', 's2.id', '=', 'pi.supplier_id')
             ->when($storeId, fn ($q) => $q->where('pi.store_id', $storeId))
             ->when($dateFrom, fn ($q) => $q->whereDate('pi.invoice_date', '>=', $dateFrom))
             ->when($dateTo, fn ($q) => $q->whereDate('pi.invoice_date', '<=', $dateTo))
-            ->selectRaw("
+            ->selectRaw('
                 pii.product_id as product_id,
                 p2.name as product_label,
                 CAST(pi.supplier_id AS CHAR) as supplier_key,
                 s2.name as supplier_label,
                 pii.quantity as qty,
                 pii.total as line_total
-            ");
+            ');
 
         return $direct->unionAll($invoice);
     }

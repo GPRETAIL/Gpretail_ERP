@@ -9,7 +9,7 @@ class Tax extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
+    protected $fillable = ['store_id',
         'name',
         'code',
         'rate',

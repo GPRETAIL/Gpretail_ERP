@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import React, { useState, useEffect, useMemo, useCallback as _useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -51,7 +51,7 @@ const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15 MB
 const INDIGO = "#6366f1";
 const INDIGO_HOVER = "#4f46e5";
 
-export default function NewPage() {
+export default function InvoiceImportPage() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
 
@@ -101,7 +101,7 @@ export default function NewPage() {
 
   // Products & Line Items
   const [items, setItems] = useState([]);
-  const [catalogProducts, setCatalogProducts] = useState([]);
+  const [catalogProducts, _setCatalogProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [brands, setBrands] = useState([]);
   const [taxes, setTaxes] = useState([]);
@@ -195,7 +195,7 @@ export default function NewPage() {
     setExecutionResult(null);
 
     const isImage = file.type.startsWith("image/");
-    const isPdf = file.type === "application/pdf";
+    const _isPdf = file.type === "application/pdf";
 
     const steps = isImage
       ? [
@@ -1052,7 +1052,7 @@ export default function NewPage() {
                         alignItems: "center",
                         justifyContent: "center",
                         borderRadius: "12px",
-                        bgcolor: (theme) => alpha(INDIGO, 0.1),
+                        bgcolor: (_theme) => alpha(INDIGO, 0.1),
                         mb: 2,
                       }}
                     >
@@ -1133,7 +1133,7 @@ export default function NewPage() {
                         p: 2,
                         mb: 2,
                         borderRadius: "10px",
-                        bgcolor: (theme) => alpha(INDIGO, 0.08),
+                        bgcolor: (_theme) => alpha(INDIGO, 0.08),
                         border: "1px solid",
                         borderColor: alpha(INDIGO, 0.3),
                         display: "flex",
@@ -1181,7 +1181,7 @@ export default function NewPage() {
                         p: 2.5,
                         mb: 2,
                         borderRadius: "10px",
-                        bgcolor: (theme) => alpha(INDIGO, 0.06),
+                        bgcolor: (_theme) => alpha(INDIGO, 0.06),
                         borderColor: alpha(INDIGO, 0.35),
                         boxShadow: "0 4px 12px rgba(99, 102, 241, 0.12)",
                       }}

@@ -12,6 +12,7 @@ use App\Services\PaginationService;
 use App\Services\StockService;
 use App\Services\VariantResolverService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
@@ -22,8 +23,7 @@ class PurchaseInvoiceController extends Controller
         private readonly VariantResolverService $variantResolver,
         private readonly PaginationService $paginationService,
         private readonly GroupAggregationService $groupAggregationService,
-    ) {
-    }
+    ) {}
 
     private function filteredQuery(Request $request)
     {
@@ -39,8 +39,8 @@ class PurchaseInvoiceController extends Controller
 
         if ($request->filled('from') && $request->filled('to')) {
             $query->whereBetween('invoice_date', [
-                \Illuminate\Support\Carbon::parse($request->input('from'))->startOfDay(),
-                \Illuminate\Support\Carbon::parse($request->input('to'))->endOfDay(),
+                Carbon::parse($request->input('from'))->startOfDay(),
+                Carbon::parse($request->input('to'))->endOfDay(),
             ]);
         }
 
@@ -48,10 +48,10 @@ class PurchaseInvoiceController extends Controller
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('invoice_no', 'like', "%{$search}%")
-                  ->orWhere('supplier_invoice_no', 'like', "%{$search}%")
-                  ->orWhereHas('supplier', function ($sq) use ($search) {
-                      $sq->where('name', 'like', "%{$search}%");
-                  });
+                    ->orWhere('supplier_invoice_no', 'like', "%{$search}%")
+                    ->orWhereHas('supplier', function ($sq) use ($search) {
+                        $sq->where('name', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -68,6 +68,7 @@ class PurchaseInvoiceController extends Controller
         // config/pagination.php (that one is unused by this controller) -- matched here so
         // groupable_columns actually applies.
         $result = $this->groupAggregationService->summarize($this->filteredQuery($request), 'purchase_invoices', $request);
+
         return response()->json($result, $result['success'] ? 200 : 422);
     }
 
@@ -77,10 +78,11 @@ class PurchaseInvoiceController extends Controller
 
         if ($request->boolean('all') || $request->input('limit') == 500 || $request->input('limit') == 1000) {
             $items = $query->orderBy('invoice_date', 'desc')->limit(2000)->get();
+
             return response()->json([
                 'success' => true,
-                'data'    => $items,
-                'total'   => $items->count(),
+                'data' => $items,
+                'total' => $items->count(),
             ]);
         }
 
@@ -96,19 +98,19 @@ class PurchaseInvoiceController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'supplier_id'  => 'nullable|exists:suppliers,id',
+            'supplier_id' => 'nullable|exists:suppliers,id',
             'invoice_date' => 'nullable|date',
-            'items'        => 'required|array|min:1',
+            'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
-            'items.*.quantity'   => 'required|numeric|min:0.01',
-            'items.*.rate'       => 'required|numeric|min:0',
+            'items.*.quantity' => 'required|numeric|min:0.01',
+            'items.*.rate' => 'required|numeric|min:0',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors'  => $validator->errors(),
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -116,12 +118,12 @@ class PurchaseInvoiceController extends Controller
 
         $invoice = DB::transaction(function () use ($request, $storeId) {
             $supplierId = $request->input('supplier_id');
-            if (!$supplierId) {
+            if (! $supplierId) {
                 $defaultSupplier = Supplier::first();
                 $supplierId = $defaultSupplier ? $defaultSupplier->id : 1;
             }
 
-            $invoiceNo = $request->input('invoice_no') ?: 'PINV-' . date('Ymd') . '-' . rand(1000, 9999);
+            $invoiceNo = $request->input('invoice_no') ?: 'PINV-'.date('Ymd').'-'.rand(1000, 9999);
 
             $subtotal = 0;
             $taxAmount = 0;
@@ -138,17 +140,17 @@ class PurchaseInvoiceController extends Controller
             $grandTotal = $subtotal + $taxAmount;
 
             $purchaseInvoice = PurchaseInvoice::create([
-                'store_id'            => $storeId,
-                'supplier_id'         => $supplierId,
-                'invoice_no'          => $invoiceNo,
-                'invoice_date'        => $request->input('invoice_date') ?: now()->toDateString(),
+                'store_id' => $storeId,
+                'supplier_id' => $supplierId,
+                'invoice_no' => $invoiceNo,
+                'invoice_date' => $request->input('invoice_date') ?: now()->toDateString(),
                 'supplier_invoice_no' => $request->input('supplier_invoice_no'),
-                'subtotal'            => $subtotal,
-                'tax_amount'          => $taxAmount,
-                'grand_total'         => $grandTotal,
-                'status'              => $request->input('status', 'APPROVED'),
-                'notes'               => $request->input('notes'),
-                'created_by'          => $request->user()?->id ?? 1,
+                'subtotal' => $subtotal,
+                'tax_amount' => $taxAmount,
+                'grand_total' => $grandTotal,
+                'status' => $request->input('status', 'APPROVED'),
+                'notes' => $request->input('notes'),
+                'created_by' => $request->user()?->id ?? 1,
             ]);
 
             foreach ($itemsData as $item) {
@@ -159,14 +161,14 @@ class PurchaseInvoiceController extends Controller
 
                 PurchaseInvoiceItem::create([
                     'purchase_invoice_id' => $purchaseInvoice->id,
-                    'product_id'          => $item['product_id'],
-                    'variant_id'          => $variantId,
-                    'quantity'            => $qty,
-                    'rate'                => $rate,
-                    'tax_id'              => $item['tax_id'] ?? null,
-                    'tax_amount'          => $item['tax_amount'] ?? 0,
-                    'discount'            => $item['discount'] ?? 0,
-                    'total'               => $total,
+                    'product_id' => $item['product_id'],
+                    'variant_id' => $variantId,
+                    'quantity' => $qty,
+                    'rate' => $rate,
+                    'tax_id' => $item['tax_id'] ?? null,
+                    'tax_amount' => $item['tax_amount'] ?? 0,
+                    'discount' => $item['discount'] ?? 0,
+                    'total' => $total,
                 ]);
 
                 $this->stockService->adjust(
@@ -187,7 +189,7 @@ class PurchaseInvoiceController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Purchase invoice created successfully',
-            'data'    => $invoice->load(['supplier', 'items.product']),
+            'data' => $invoice->load(['supplier', 'items.product']),
         ], 201);
     }
 
@@ -195,7 +197,7 @@ class PurchaseInvoiceController extends Controller
     {
         $invoice = PurchaseInvoice::with(['supplier', 'items.product', 'transport'])->find($id);
 
-        if (!$invoice) {
+        if (! $invoice) {
             return response()->json([
                 'success' => false,
                 'message' => 'Purchase invoice not found',
@@ -204,7 +206,7 @@ class PurchaseInvoiceController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $invoice,
+            'data' => $invoice,
         ]);
     }
 
@@ -212,7 +214,7 @@ class PurchaseInvoiceController extends Controller
     {
         $invoice = PurchaseInvoice::find($id);
 
-        if (!$invoice) {
+        if (! $invoice) {
             return response()->json([
                 'success' => false,
                 'message' => 'Purchase invoice not found',
@@ -220,13 +222,13 @@ class PurchaseInvoiceController extends Controller
         }
 
         $invoice->update($request->only([
-            'supplier_id', 'invoice_date', 'supplier_invoice_no', 'status', 'notes'
+            'supplier_id', 'invoice_date', 'supplier_invoice_no', 'status', 'notes',
         ]));
 
         return response()->json([
             'success' => true,
             'message' => 'Purchase invoice updated successfully',
-            'data'    => $invoice->load(['supplier', 'items.product']),
+            'data' => $invoice->load(['supplier', 'items.product']),
         ]);
     }
 
@@ -234,7 +236,7 @@ class PurchaseInvoiceController extends Controller
     {
         $invoice = PurchaseInvoice::with('items')->find($id);
 
-        if (!$invoice) {
+        if (! $invoice) {
             return response()->json([
                 'success' => false,
                 'message' => 'Purchase invoice not found',
@@ -261,7 +263,7 @@ class PurchaseInvoiceController extends Controller
         } catch (InsufficientStockException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Cannot delete this invoice: reversing it would take stock negative (some of it has likely already been sold or moved). ' . $e->getMessage(),
+                'message' => 'Cannot delete this invoice: reversing it would take stock negative (some of it has likely already been sold or moved). '.$e->getMessage(),
             ], 422);
         }
 

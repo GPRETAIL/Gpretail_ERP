@@ -1,7 +1,6 @@
 import { useCallback, useState } from "react";
 import { ChevronDown, Download, FileSpreadsheet, FileText } from "lucide-react";
 import { useLocation } from "react-router-dom";
-import * as XLSX from "xlsx";
 import { Button, ListItemIcon, ListItemText, Menu, MenuItem } from "@mui/material";
 import { useTransferActivity } from "../context/TransferActivityContext";
 
@@ -315,7 +314,7 @@ export default function ExportBottomSheet({
     return [...headerRows, exportMatrix.headers, ...exportMatrix.body];
   }, [headingLines, subtitle]);
 
-  const buildWorksheet = useCallback((exportMatrix, resolvedTitle) => {
+  const buildWorksheet = useCallback((XLSX, exportMatrix, resolvedTitle) => {
     const aoa = buildExportAoA(exportMatrix, resolvedTitle);
     const ws = XLSX.utils.aoa_to_sheet(aoa);
     const columnCount = Math.max(exportMatrix.headers.length, 1);
@@ -359,7 +358,8 @@ export default function ExportBottomSheet({
       updateActivity(activityId, { progressPercent: 65, statusMessage: "Building CSV..." });
       const resolvedTitle = resolveExportTitle(sourceRows);
       const exportMatrix = buildExportMatrix(sourceRows);
-      const { ws: csv } = buildWorksheet(exportMatrix, resolvedTitle);
+      const XLSX = await import("xlsx");
+      const { ws: csv } = buildWorksheet(XLSX, exportMatrix, resolvedTitle);
       const csvText = XLSX.utils.sheet_to_csv(csv);
       updateActivity(activityId, { progressPercent: 90, statusMessage: "Downloading CSV..." });
       downloadBlob(new Blob([csvText], { type: "text/csv;charset=utf-8;" }), `${fileName}.csv`);
@@ -397,7 +397,8 @@ export default function ExportBottomSheet({
       updateActivity(activityId, { progressPercent: 65, statusMessage: "Building Excel file..." });
       const resolvedTitle = resolveExportTitle(sourceRows);
       const exportMatrix = buildExportMatrix(sourceRows);
-      const { ws } = buildWorksheet(exportMatrix, resolvedTitle);
+      const XLSX = await import("xlsx");
+      const { ws } = buildWorksheet(XLSX, exportMatrix, resolvedTitle);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, String(sheetName || "Export").slice(0, 31));
       updateActivity(activityId, { progressPercent: 90, statusMessage: "Downloading Excel file..." });
@@ -481,15 +482,15 @@ export default function ExportBottomSheet({
       <Menu anchorEl={anchorEl} open={open} onClose={() => setAnchorEl(null)} slotProps={{ list: { dense: true } }}>
         <MenuItem disabled={exporting} onClick={exportPdf}>
           <ListItemIcon><FileText size={14} /></ListItemIcon>
-          <ListItemText primaryTypographyProps={{ fontSize: 12 }}>PDF</ListItemText>
+          <ListItemText slotProps={{ primary: { fontSize: 12 } }}>PDF</ListItemText>
         </MenuItem>
         <MenuItem disabled={exporting} onClick={exportExcel}>
           <ListItemIcon><FileSpreadsheet size={14} /></ListItemIcon>
-          <ListItemText primaryTypographyProps={{ fontSize: 12 }}>EXCEL</ListItemText>
+          <ListItemText slotProps={{ primary: { fontSize: 12 } }}>EXCEL</ListItemText>
         </MenuItem>
         <MenuItem disabled={exporting} onClick={exportCsv}>
           <ListItemIcon><FileText size={14} /></ListItemIcon>
-          <ListItemText primaryTypographyProps={{ fontSize: 12 }}>CSV</ListItemText>
+          <ListItemText slotProps={{ primary: { fontSize: 12 } }}>CSV</ListItemText>
         </MenuItem>
       </Menu>
     </>

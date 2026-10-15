@@ -315,9 +315,7 @@ const Product = () => {
     pageToLoad = page,
     limitToLoad = limit,
     queryOverride = tableSearch,
-    filtersOverride = tableColumnFilters,
-    cursorToken = null,
-    appendMode = false
+    filtersOverride = tableColumnFilters
   ) => {
     try {
       setLoading(true);
@@ -325,7 +323,7 @@ const Product = () => {
       const activeColumnFilters = buildActiveColumnFilters(filtersOverride);
       const hasColumnFilters = activeColumnFilters.length > 0;
       const params = {
-        ...(cursorToken ? { cursor: cursorToken } : { page: pageToLoad }),
+        page: pageToLoad,
         limit: limitToLoad,
         search: query || undefined,
         field: query && tableSearchField !== "all" ? tableSearchField : undefined,
@@ -334,10 +332,7 @@ const Product = () => {
       };
       const res = await api.get("/products", { params });
       const rows = (res.data?.data || []).map(mapProductRow);
-      // "Load More" (cursorToken + appendMode) grows the list instead of replacing it -- every
-      // other call site (initial load, search, filter, page-size change) still replaces, since
-      // appendMode defaults to false.
-      setProducts((prev) => (cursorToken && appendMode ? [...prev, ...rows] : rows));
+      setProducts(rows);
 
       const total = Number(res.data?.total ?? res.data?.pagination?.total ?? rows.length) || 0;
       const totalPages = Math.max(
@@ -352,15 +347,6 @@ const Product = () => {
       setLoading(false);
     }
   }, [page, limit, tableSearch, tableSearchField, tableColumnFilters, forceFetchAll]);
-
-  const handleNextCursor = useCallback(
-    (cursor) => fetchProducts(page, limit, tableSearch, tableColumnFilters, cursor, true),
-    [fetchProducts, page, limit, tableSearch, tableColumnFilters]
-  );
-  const handlePreviousCursor = useCallback(
-    (cursor) => fetchProducts(page, limit, tableSearch, tableColumnFilters, cursor),
-    [fetchProducts, page, limit, tableSearch, tableColumnFilters]
-  );
 
   useEffect(() => {
     fetchProducts();
@@ -799,9 +785,6 @@ const Product = () => {
                 totalRows={pagination.total}
                 pagination={rawPagination}
                 onPageChange={setPage}
-                onNextCursor={handleNextCursor}
-                onPreviousCursor={handlePreviousCursor}
-                cursorLoadMode="append"
                 onFetchGroupSummaries={fetchProductGroupSummaries}
                 onFetchGroupRows={fetchProductGroupRows}
                 onLimitChange={(value) => {

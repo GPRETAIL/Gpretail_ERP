@@ -254,12 +254,14 @@ class PosSaleController extends Controller
     public function groupedSummary(Request $request)
     {
         $result = $this->groupAggregationService->summarize($this->filteredSalesQuery($request), 'pos_sales', $request);
+
         return response()->json($result, $result['success'] ? 200 : 422);
     }
 
     public function oldSalesGroupedSummary(Request $request)
     {
         $result = $this->groupAggregationService->summarize($this->filteredSalesQuery($request), 'pos_old_sales', $request);
+
         return response()->json($result, $result['success'] ? 200 : 422);
     }
 

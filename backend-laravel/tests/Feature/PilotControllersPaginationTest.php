@@ -2,11 +2,26 @@
 
 namespace Tests\Feature;
 
+use App\Models\CashRegisterSession;
+use App\Models\Customer;
+use App\Models\CustomerOrder;
+use App\Models\DealerInvoice;
+use App\Models\DirectPurchase;
+use App\Models\Notification;
+use App\Models\PosReturn;
 use App\Models\PosSale;
 use App\Models\Product;
+use App\Models\PurchaseInvoice;
+use App\Models\Settlement;
+use App\Models\StockOutward;
 use App\Models\Store;
+use App\Models\Supplier;
+use App\Models\SupplierPayment;
+use App\Models\Tax;
+use App\Models\Transport;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -15,6 +30,7 @@ class PilotControllersPaginationTest extends TestCase
     use RefreshDatabase;
 
     protected User $user;
+
     protected Store $store;
 
     protected function setUp(): void
@@ -22,16 +38,16 @@ class PilotControllersPaginationTest extends TestCase
         parent::setUp();
 
         $this->store = Store::create([
-            'name'  => 'Test Flagship Store',
-            'code'  => 'STR-001',
+            'name' => 'Test Flagship Store',
+            'code' => 'STR-001',
         ]);
 
         $this->user = User::create([
-            'name'     => 'Test Admin',
+            'name' => 'Test Admin',
             'username' => 'testadmin',
-            'email'    => 'admin@example.com',
+            'email' => 'admin@example.com',
             'password' => bcrypt('secret123'),
-            'role'     => 'admin',
+            'role' => 'admin',
             'store_id' => $this->store->id,
         ]);
 
@@ -42,13 +58,13 @@ class PilotControllersPaginationTest extends TestCase
     {
         // Create 12 products
         for ($i = 1; $i <= 12; $i++) {
-            Product::create([
-                'name'          => "Product {$i}",
-                'code'          => "PRD-{$i}",
-                'sku'           => "SKU-{$i}",
-                'barcode'       => "BC-{$i}",
+            Product::create(['company_id' => $this->store->id,
+                'name' => "Product {$i}",
+                'code' => "PRD-{$i}",
+                'sku' => "SKU-{$i}",
+                'barcode' => "BC-{$i}",
                 'selling_price' => $i * 50,
-                'is_active'     => true,
+                'is_active' => true,
             ]);
         }
 
@@ -89,12 +105,12 @@ class PilotControllersPaginationTest extends TestCase
         // Create 8 sales
         for ($i = 1; $i <= 8; $i++) {
             PosSale::create([
-                'store_id'    => $this->store->id,
-                'user_id'     => $this->user->id,
-                'invoice_no'  => "INV-{$i}",
-                'sale_date'   => now()->subMinutes(10 - $i),
+                'store_id' => $this->store->id,
+                'user_id' => $this->user->id,
+                'invoice_no' => "INV-{$i}",
+                'sale_date' => now()->subMinutes(10 - $i),
                 'grand_total' => $i * 100,
-                'status'      => 'COMPLETED',
+                'status' => 'COMPLETED',
             ]);
         }
 
@@ -162,12 +178,12 @@ class PilotControllersPaginationTest extends TestCase
     public function test_direct_purchases_endpoint_uses_cursor_mode(): void
     {
         for ($i = 1; $i <= 6; $i++) {
-            \App\Models\DirectPurchase::create([
-                'store_id'      => $this->store->id,
-                'company_id'    => $this->store->id,
-                'purchase_no'   => "PUR-{$i}",
+            DirectPurchase::create([
+                'store_id' => $this->store->id,
+                'company_id' => $this->store->id,
+                'purchase_no' => "PUR-{$i}",
                 'purchase_date' => now()->toDateString(),
-                'total_amount'  => $i * 500,
+                'total_amount' => $i * 500,
             ]);
         }
 
@@ -184,17 +200,17 @@ class PilotControllersPaginationTest extends TestCase
 
     public function test_customer_orders_endpoint_uses_cursor_mode(): void
     {
-        $customer = \App\Models\Customer::create([
+        $customer = Customer::create(['store_id' => $this->store->id,
             'name' => 'Test Customer',
             'code' => 'CUST-001',
         ]);
 
         for ($i = 1; $i <= 6; $i++) {
-            \App\Models\CustomerOrder::create([
-                'store_id'     => $this->store->id,
-                'customer_id'  => $customer->id,
-                'order_no'     => "ORD-{$i}",
-                'order_date'   => now()->toDateString(),
+            CustomerOrder::create([
+                'store_id' => $this->store->id,
+                'customer_id' => $customer->id,
+                'order_no' => "ORD-{$i}",
+                'order_date' => now()->toDateString(),
                 'total_amount' => $i * 200,
             ]);
         }
@@ -212,7 +228,7 @@ class PilotControllersPaginationTest extends TestCase
     public function test_customers_endpoint_uses_offset_mode(): void
     {
         for ($i = 2; $i <= 7; $i++) {
-            \App\Models\Customer::create([
+            Customer::create(['store_id' => $this->store->id,
                 'name' => "Customer {$i}",
                 'code' => "CUST-00{$i}",
                 'phone' => "987654321{$i}",
@@ -232,13 +248,13 @@ class PilotControllersPaginationTest extends TestCase
     public function test_pos_returns_endpoint_uses_cursor_mode(): void
     {
         for ($i = 1; $i <= 5; $i++) {
-            \App\Models\PosReturn::create([
-                'store_id'     => $this->store->id,
-                'user_id'      => $this->user->id,
-                'return_no'    => "RET-{$i}",
-                'return_date'  => now()->toDateString(),
+            PosReturn::create([
+                'store_id' => $this->store->id,
+                'user_id' => $this->user->id,
+                'return_no' => "RET-{$i}",
+                'return_date' => now()->toDateString(),
                 'total_refund' => $i * 50,
-                'status'       => 'COMPLETED',
+                'status' => 'COMPLETED',
             ]);
         }
 
@@ -256,7 +272,7 @@ class PilotControllersPaginationTest extends TestCase
     public function test_taxes_endpoint_uses_offset_mode(): void
     {
         for ($i = 1; $i <= 5; $i++) {
-            \App\Models\Tax::create([
+            Tax::create(['store_id' => $this->store->id,
                 'name' => "GST {$i}",
                 'code' => "GST_{$i}",
                 'rate' => $i * 5,
@@ -277,7 +293,7 @@ class PilotControllersPaginationTest extends TestCase
     public function test_transports_endpoint_uses_offset_mode(): void
     {
         for ($i = 1; $i <= 4; $i++) {
-            \App\Models\Transport::create([
+            Transport::create(['store_id' => $this->store->id,
                 'name' => "Transport {$i}",
                 'code' => "TRP-{$i}",
             ]);
@@ -295,16 +311,16 @@ class PilotControllersPaginationTest extends TestCase
 
     public function test_dealer_invoices_endpoint_uses_cursor_mode(): void
     {
-        $cust = \App\Models\Customer::create(['name' => 'Dealer Cust', 'code' => 'DC-1']);
+        $cust = Customer::create(['store_id' => $this->store->id, 'name' => 'Dealer Cust', 'code' => 'DC-1']);
 
         for ($i = 1; $i <= 5; $i++) {
-            \App\Models\DealerInvoice::create([
-                'store_id'     => $this->store->id,
-                'customer_id'  => $cust->id,
-                'invoice_no'   => "DINV-{$i}",
+            DealerInvoice::create([
+                'store_id' => $this->store->id,
+                'customer_id' => $cust->id,
+                'invoice_no' => "DINV-{$i}",
                 'invoice_date' => now()->toDateString(),
                 'total_amount' => $i * 100,
-                'created_by'   => $this->user->id,
+                'created_by' => $this->user->id,
             ]);
         }
 
@@ -321,6 +337,7 @@ class PilotControllersPaginationTest extends TestCase
 
     public function test_tenant_admin_multi_store_aggregation(): void
     {
+        $this->user->update(['store_id' => null]);
         $secondStore = Store::create([
             'name' => 'Second Store Branch',
             'code' => 'STR-002',
@@ -329,24 +346,24 @@ class PilotControllersPaginationTest extends TestCase
         // Create 3 sales in Store 1
         for ($i = 1; $i <= 3; $i++) {
             PosSale::create([
-                'store_id'    => $this->store->id,
-                'user_id'     => $this->user->id,
-                'invoice_no'  => "INV-S1-{$i}",
-                'sale_date'   => now(),
+                'store_id' => $this->store->id,
+                'user_id' => $this->user->id,
+                'invoice_no' => "INV-S1-{$i}",
+                'sale_date' => now(),
                 'grand_total' => 100,
-                'status'      => 'COMPLETED',
+                'status' => 'COMPLETED',
             ]);
         }
 
         // Create 4 sales in Store 2
         for ($i = 1; $i <= 4; $i++) {
             PosSale::create([
-                'store_id'    => $secondStore->id,
-                'user_id'     => $this->user->id,
-                'invoice_no'  => "INV-S2-{$i}",
-                'sale_date'   => now(),
+                'store_id' => $secondStore->id,
+                'user_id' => $this->user->id,
+                'invoice_no' => "INV-S2-{$i}",
+                'sale_date' => now(),
                 'grand_total' => 200,
-                'status'      => 'COMPLETED',
+                'status' => 'COMPLETED',
             ]);
         }
 
@@ -363,7 +380,7 @@ class PilotControllersPaginationTest extends TestCase
         $this->assertSame(4, $resS2->json('pagination.total'));
 
         // Company Superadmin Multi-Store Aggregated fetch ('all')
-        $resAll = $this->withHeader('X-Company-Scope-Id', 'all')
+        $resAll = $this->withoutHeader('X-Company-Scope-Id')
             ->getJson('/api/pos-sales?page=1&limit=10');
         $resAll->assertOk();
         $this->assertSame(7, $resAll->json('pagination.total'));
@@ -375,13 +392,13 @@ class PilotControllersPaginationTest extends TestCase
 
     public function test_purchase_invoices_endpoint_uses_cursor_mode(): void
     {
-        $supplier = \App\Models\Supplier::create(['name' => 'Test Supplier', 'code' => 'SUP-001']);
+        $supplier = Supplier::create(['name' => 'Test Supplier', 'code' => 'SUP-001']);
 
         for ($i = 1; $i <= 5; $i++) {
-            \App\Models\PurchaseInvoice::create([
-                'store_id'    => $this->store->id,
+            PurchaseInvoice::create([
+                'store_id' => $this->store->id,
                 'supplier_id' => $supplier->id,
-                'invoice_no'  => "PI-{$i}",
+                'invoice_no' => "PI-{$i}",
                 'invoice_date' => now()->toDateString(),
                 'grand_total' => $i * 1000,
             ]);
@@ -403,12 +420,12 @@ class PilotControllersPaginationTest extends TestCase
         $secondStore = Store::create(['name' => 'Receiving Store', 'code' => 'STR-RCV']);
 
         for ($i = 1; $i <= 4; $i++) {
-            \App\Models\StockOutward::create([
+            StockOutward::create([
                 'source_store_id' => $this->store->id,
                 'target_store_id' => $secondStore->id,
-                'outward_no'      => "SO-{$i}",
-                'outward_date'    => now()->toDateString(),
-                'status'          => 'PENDING',
+                'outward_no' => "SO-{$i}",
+                'outward_date' => now()->toDateString(),
+                'status' => 'PENDING',
             ]);
         }
 
@@ -423,15 +440,15 @@ class PilotControllersPaginationTest extends TestCase
 
     public function test_supplier_payments_endpoint_uses_cursor_mode(): void
     {
-        $supplier = \App\Models\Supplier::create(['name' => 'Payment Supplier', 'code' => 'SUP-PAY']);
+        $supplier = Supplier::create(['name' => 'Payment Supplier', 'code' => 'SUP-PAY']);
 
         for ($i = 1; $i <= 4; $i++) {
-            \App\Models\SupplierPayment::create([
-                'supplier_id'  => $supplier->id,
-                'store_id'     => $this->store->id,
-                'payment_no'   => "PAY-{$i}",
+            SupplierPayment::create([
+                'supplier_id' => $supplier->id,
+                'store_id' => $this->store->id,
+                'payment_no' => "PAY-{$i}",
                 'payment_date' => now()->toDateString(),
-                'amount'       => $i * 500,
+                'amount' => $i * 500,
             ]);
         }
 
@@ -447,11 +464,11 @@ class PilotControllersPaginationTest extends TestCase
     public function test_settlements_endpoint_uses_cursor_mode(): void
     {
         for ($i = 1; $i <= 4; $i++) {
-            \App\Models\Settlement::create([
-                'store_id'        => $this->store->id,
-                'batch_no'        => "BATCH-{$i}",
+            Settlement::create([
+                'store_id' => $this->store->id,
+                'batch_no' => "BATCH-{$i}",
                 'settlement_date' => now()->toDateString(),
-                'total_sales'     => $i * 1000,
+                'total_sales' => $i * 1000,
             ]);
         }
 
@@ -467,11 +484,11 @@ class PilotControllersPaginationTest extends TestCase
     public function test_cash_register_sessions_endpoint_uses_cursor_mode(): void
     {
         for ($i = 1; $i <= 4; $i++) {
-            \App\Models\CashRegisterSession::create([
-                'store_id'  => $this->store->id,
-                'user_id'   => $this->user->id,
+            CashRegisterSession::create([
+                'store_id' => $this->store->id,
+                'user_id' => $this->user->id,
                 'opened_at' => now()->subHours($i),
-                'status'    => 'OPEN',
+                'status' => 'OPEN',
             ]);
         }
 
@@ -505,8 +522,8 @@ class PilotControllersPaginationTest extends TestCase
             ['title' => 'Unread 2', 'read_at' => null, 'created_at' => now()->subDays(1)],
         ];
         foreach ($rows as $row) {
-            \Illuminate\Support\Facades\DB::table('app_notifications')->insert(array_merge($row, [
-                'type' => 'INFO',
+            DB::table('app_notifications')->insert(array_merge($row, [
+                'type' => 'INFO', 'store_id' => $this->store->id,
                 'updated_at' => now(),
             ]));
         }
@@ -526,7 +543,7 @@ class PilotControllersPaginationTest extends TestCase
     public function test_notifications_endpoint_default_limit_is_20(): void
     {
         for ($i = 1; $i <= 25; $i++) {
-            \App\Models\Notification::create(['type' => 'INFO', 'title' => "N{$i}"]);
+            Notification::create(['store_id' => $this->store->id, 'type' => 'INFO', 'store_id' => $this->store->id, 'title' => "N{$i}"]);
         }
 
         $res = $this->getJson('/api/notifications');

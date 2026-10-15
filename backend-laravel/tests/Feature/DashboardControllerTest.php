@@ -8,8 +8,8 @@ use App\Models\Product;
 use App\Models\Store;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -25,8 +25,11 @@ class DashboardControllerTest extends TestCase
     use RefreshDatabase;
 
     protected Store $store;
+
     protected User $user;
+
     protected Carbon $from;
+
     protected Carbon $to;
 
     protected function setUp(): void
@@ -47,11 +50,11 @@ class DashboardControllerTest extends TestCase
         $this->from = Carbon::parse('2026-01-10');
         $this->to = Carbon::parse('2026-01-12');
 
-        $widgetA = Product::create([
+        $widgetA = Product::create(['company_id' => $this->store->id,
             'name' => 'Widget A', 'code' => 'WGT-A', 'sku' => 'SKU-A', 'barcode' => 'BC-A',
             'selling_price' => 100, 'is_active' => true,
         ]);
-        $widgetB = Product::create([
+        $widgetB = Product::create(['company_id' => $this->store->id,
             'name' => 'Widget B', 'code' => 'WGT-B', 'sku' => 'SKU-B', 'barcode' => 'BC-B',
             'selling_price' => 500, 'is_active' => true,
         ]);
@@ -116,7 +119,7 @@ class DashboardControllerTest extends TestCase
     private function fetchOverview()
     {
         return $this->withHeader('X-Company-Scope-Id', (string) $this->store->id)
-            ->getJson('/api/dashboard?from=' . $this->from->toDateString() . '&to=' . $this->to->toDateString());
+            ->getJson('/api/dashboard?from='.$this->from->toDateString().'&to='.$this->to->toDateString());
     }
 
     public function test_core_metrics_match_hand_computed_totals(): void
@@ -173,7 +176,7 @@ class DashboardControllerTest extends TestCase
         $res->assertOk();
 
         $rows = collect($res->json('data.tables.settlementDetails.rows'))->keyBy('key');
-        $colKey = 'store_' . $this->store->id;
+        $colKey = 'store_'.$this->store->id;
 
         $this->assertEquals(1000.0, $rows['cash']['values'][$colKey]);
         $this->assertEquals(500.0, $rows['card']['values'][$colKey]);
@@ -197,6 +200,8 @@ class DashboardControllerTest extends TestCase
         // Stores" view. A regression that reintroduces any such loop would make query count grow
         // with store count; this test proves it no longer does, rather than asserting an
         // arbitrary absolute number.
+        $this->user->update(['store_id' => null]);
+        $this->fetchOverview()->assertOk();
         DB::enableQueryLog();
         $this->fetchOverview()->assertOk();
         $oneStoreQueryCount = count(DB::getQueryLog());
@@ -213,8 +218,8 @@ class DashboardControllerTest extends TestCase
         // Request scoped to "all" so both stores are aggregated together, exercising the
         // per-store loops (dailySalesSummary, settlementDetails) with N=2 instead of N=1.
         DB::enableQueryLog();
-        $this->withHeader('X-Company-Scope-Id', 'all')
-            ->getJson('/api/dashboard?from=' . $this->from->toDateString() . '&to=' . $this->to->toDateString())
+        $this->withoutHeader('X-Company-Scope-Id')
+            ->getJson('/api/dashboard?from='.$this->from->toDateString().'&to='.$this->to->toDateString())
             ->assertOk();
         $twoStoreQueryCount = count(DB::getQueryLog());
         DB::disableQueryLog();
@@ -223,8 +228,8 @@ class DashboardControllerTest extends TestCase
             $oneStoreQueryCount,
             $twoStoreQueryCount,
             "Expected query count to stay flat as store count grows (got {$oneStoreQueryCount} for 1 store vs "
-            . "{$twoStoreQueryCount} for 2 stores) -- a per-store loop issuing individual queries appears to "
-            . "have been reintroduced."
+            ."{$twoStoreQueryCount} for 2 stores) -- a per-store loop issuing individual queries appears to "
+            .'have been reintroduced.'
         );
     }
 }

@@ -8,8 +8,11 @@ use App\Models\CustomerOrder;
 use App\Models\LoyaltyTransaction;
 use App\Models\PosReturn;
 use App\Models\PosSale;
+use App\Models\Store;
 use App\Services\GroupAggregationService;
 use App\Services\PaginationService;
+use App\Services\StoreQuery;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -26,10 +29,10 @@ class CustomerController extends Controller
     {
         return response()->json([
             'success' => true,
-            'data'    => [
-                'totalCustomers'     => Cache::remember('summary_cust_count', 60, fn() => Customer::count()),
-                'activeCustomers'    => Cache::remember('summary_cust_active_count', 60, fn() => Customer::where('is_active', true)->count()),
-                'newCustomersMonth'  => Customer::whereMonth('created_at', now()->month)->count(),
+            'data' => [
+                'totalCustomers' => Cache::remember(StoreQuery::cacheKey('summary_cust_count'), 60, fn () => Customer::count()),
+                'activeCustomers' => Cache::remember(StoreQuery::cacheKey('summary_cust_active_count'), 60, fn () => Customer::where('is_active', true)->count()),
+                'newCustomersMonth' => Customer::whereMonth('created_at', now()->month)->count(),
                 'totalLoyaltyPoints' => Customer::sum('loyalty_points') ?? 0,
                 'totalCreditBalance' => Customer::sum('current_balance') ?? 0,
             ],
@@ -39,13 +42,13 @@ class CustomerController extends Controller
     private function filteredQuery(Request $request)
     {
         $query = Customer::query();
-        if (!$request->boolean('includeInactive')) {
+        if (! $request->boolean('includeInactive')) {
             $query->where('is_active', true);
         }
 
         // 1. FULLTEXT / Indexed Search
         if ($request->filled('search')) {
-            $s     = trim($request->input('search'));
+            $s = trim($request->input('search'));
             $field = $request->input('field');
 
             if ($field && in_array($field, ['name', 'code', 'phone', 'email'])) {
@@ -54,15 +57,15 @@ class CustomerController extends Controller
                 $cleaned = preg_replace('/[+\-><()~*\"@]+/', ' ', $s);
                 $terms = array_filter(explode(' ', trim($cleaned)));
 
-                if (!empty($terms) && strlen($s) >= 3) {
-                    $booleanQuery = '+' . implode('* +', $terms) . '*';
-                    $query->whereRaw("MATCH(name, code, phone, email) AGAINST(? IN BOOLEAN MODE)", [$booleanQuery]);
+                if (! empty($terms) && strlen($s) >= 3) {
+                    $booleanQuery = '+'.implode('* +', $terms).'*';
+                    $query->whereRaw('MATCH(name, code, phone, email) AGAINST(? IN BOOLEAN MODE)', [$booleanQuery]);
                 } else {
                     $query->where(function ($q) use ($s) {
                         $q->where('name', 'like', "{$s}%")
-                          ->orWhere('phone', 'like', "{$s}%")
-                          ->orWhere('code', 'like', "{$s}%")
-                          ->orWhere('email', 'like', "{$s}%");
+                            ->orWhere('phone', 'like', "{$s}%")
+                            ->orWhere('code', 'like', "{$s}%")
+                            ->orWhere('email', 'like', "{$s}%");
                     });
                 }
             }
@@ -74,17 +77,19 @@ class CustomerController extends Controller
             $allowed = ['code', 'name', 'phone', 'email', 'is_active'];
             foreach ($filters as $filter) {
                 $col = $filter['field'] ?? null;
-                $op  = $filter['operator'] ?? 'contains';
+                $op = $filter['operator'] ?? 'contains';
                 $val = $filter['value'] ?? '';
-                if (!$col || !in_array($col, $allowed)) continue;
+                if (! $col || ! in_array($col, $allowed)) {
+                    continue;
+                }
                 match ($op) {
-                    'equals'    => $query->where($col, $val),
-                    'not_equals'=> $query->where($col, '!=', $val),
-                    'starts'    => $query->where($col, 'like', "{$val}%"),
-                    'ends'      => $query->where($col, 'like', "%{$val}"),
-                    'blank'     => $query->whereNull($col)->orWhere($col, ''),
+                    'equals' => $query->where($col, $val),
+                    'not_equals' => $query->where($col, '!=', $val),
+                    'starts' => $query->where($col, 'like', "{$val}%"),
+                    'ends' => $query->where($col, 'like', "%{$val}"),
+                    'blank' => $query->whereNull($col)->orWhere($col, ''),
                     'not_blank' => $query->whereNotNull($col)->where($col, '!=', ''),
-                    default     => $query->where($col, 'like', "%{$val}%"),
+                    default => $query->where($col, 'like', "%{$val}%"),
                 };
             }
         }
@@ -95,6 +100,7 @@ class CustomerController extends Controller
     public function groupedSummary(Request $request)
     {
         $result = $this->groupAggregationService->summarize($this->filteredQuery($request), 'customers', $request);
+
         return response()->json($result, $result['success'] ? 200 : 422);
     }
 
@@ -105,14 +111,15 @@ class CustomerController extends Controller
         // ?all=true — for dropdowns & export
         if ($request->boolean('all') || in_array($request->input('limit'), ['500', '1000', 500, 1000])) {
             $items = $query->orderBy('name')->limit(2000)->get();
+
             return response()->json(['success' => true, 'data' => $items, 'total' => $items->count()]);
         }
 
         // 3. Adaptive Server-Side Pagination
         $result = $this->paginationService->paginate($query, 'customers', $request, [
-            'default_sort'  => 'name',
+            'default_sort' => 'name',
             'default_order' => 'asc',
-            'tie_breaker'   => 'id',
+            'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'name', 'code', 'phone', 'email', 'created_at'],
         ]);
 
@@ -122,13 +129,14 @@ class CustomerController extends Controller
     public function show($id)
     {
         $customer = Customer::with(['orders', 'loyaltyTransactions'])->findOrFail($id);
+
         return response()->json(['success' => true, 'data' => $customer]);
     }
 
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'name'  => 'required|string|max:255',
+            'name' => 'required|string|max:255',
             'phone' => 'nullable|string|max:50',
             'mobileNo' => 'nullable|string|max:50',
         ]);
@@ -139,16 +147,16 @@ class CustomerController extends Controller
 
         $data = $this->mapCustomerPayload($request);
         if (empty($data['code'])) {
-            $data['code'] = 'CUST_' . strtoupper(substr(uniqid(), -6));
+            $data['code'] = 'CUST_'.strtoupper(substr(uniqid(), -6));
         }
 
         $customer = Customer::create($data);
-        Cache::forget('customers_total_unfiltered_count');
+        Cache::forget(StoreQuery::cacheKey('customers_total_unfiltered_count'));
 
         return response()->json([
             'success' => true,
             'message' => 'Customer created successfully',
-            'data'    => $customer,
+            'data' => $customer,
         ], 201);
     }
 
@@ -160,7 +168,7 @@ class CustomerController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Customer updated successfully',
-            'data'    => $customer,
+            'data' => $customer,
         ]);
     }
 
@@ -168,7 +176,7 @@ class CustomerController extends Controller
     {
         $customer = Customer::findOrFail($id);
         $customer->delete();
-        Cache::forget('customers_total_unfiltered_count');
+        Cache::forget(StoreQuery::cacheKey('customers_total_unfiltered_count'));
 
         return response()->json([
             'success' => true,
@@ -188,42 +196,42 @@ class CustomerController extends Controller
     private function mapCustomerPayload(Request $request): array
     {
         $data = array_filter([
-            'name'                 => $request->input('name'),
-            'code'                 => $request->input('code'),
-            'phone'                => $request->input('mobileNo') ?? $request->input('phone'),
-            'email'                => $request->input('emailId') ?? $request->input('email'),
-            'address'              => $request->input('address'),
-            'city'                 => $request->input('cityId') ?? $request->input('city'),
-            'state'                => $request->input('state'),
-            'pincode'              => $request->input('pinCode') ?? $request->input('pincode'),
-            'gstin'                => $request->input('gstNo') ?? $request->input('gstin'),
-            'credit_limit'         => $request->input('creditLimit') ?? $request->input('credit_limit'),
-            'customer_type'        => $request->input('customerType'),
+            'name' => $request->input('name'),
+            'code' => $request->input('code'),
+            'phone' => $request->input('mobileNo') ?? $request->input('phone'),
+            'email' => $request->input('emailId') ?? $request->input('email'),
+            'address' => $request->input('address'),
+            'city' => $request->input('cityId') ?? $request->input('city'),
+            'state' => $request->input('state'),
+            'pincode' => $request->input('pinCode') ?? $request->input('pincode'),
+            'gstin' => $request->input('gstNo') ?? $request->input('gstin'),
+            'credit_limit' => $request->input('creditLimit') ?? $request->input('credit_limit'),
+            'customer_type' => $request->input('customerType'),
             'customer_category_id' => $request->input('customerCategoryId'),
-            'billing_name'         => $request->input('billingName'),
-            'gender'               => $request->input('gender'),
-            'date_of_birth'        => $request->input('dateOfBirth'),
-            'marriage_date'        => $request->input('marriageDate'),
-            'kids_boy'             => $request->input('kidsBoy'),
-            'kids_girl'            => $request->input('kidsGirl'),
-            'loyalty_card_number'  => $request->input('loyaltyCardNumber'),
-            'supply_type'          => $request->input('supplyType'),
-            'tan_pan'              => $request->input('tanPan'),
-            'credit_days'          => $request->input('creditDays'),
-            'credit_amount'        => $request->input('creditAmount'),
-            'district_id'          => $request->input('districtId'),
-            'state_id'             => $request->input('stateId'),
-            'country_id'           => $request->input('countryId'),
-            'registering_at_id'    => $request->input('registeringAtId'),
-            'approved_by_id'       => $request->input('approvedById'),
-            'bank_account_name'    => $request->input('bankAccountName'),
-            'account_no_ifsc'      => $request->input('accountNoIfsc'),
+            'billing_name' => $request->input('billingName'),
+            'gender' => $request->input('gender'),
+            'date_of_birth' => $request->input('dateOfBirth'),
+            'marriage_date' => $request->input('marriageDate'),
+            'kids_boy' => $request->input('kidsBoy'),
+            'kids_girl' => $request->input('kidsGirl'),
+            'loyalty_card_number' => $request->input('loyaltyCardNumber'),
+            'supply_type' => $request->input('supplyType'),
+            'tan_pan' => $request->input('tanPan'),
+            'credit_days' => $request->input('creditDays'),
+            'credit_amount' => $request->input('creditAmount'),
+            'district_id' => $request->input('districtId'),
+            'state_id' => $request->input('stateId'),
+            'country_id' => $request->input('countryId'),
+            'registering_at_id' => $request->input('registeringAtId'),
+            'approved_by_id' => $request->input('approvedById'),
+            'bank_account_name' => $request->input('bankAccountName'),
+            'account_no_ifsc' => $request->input('accountNoIfsc'),
         ], fn ($v) => $v !== null);
 
         foreach ([
-            'married'         => 'married',
-            'disableLoyalty'  => 'disable_loyalty',
-            'supportCredit'   => 'support_credit',
+            'married' => 'married',
+            'disableLoyalty' => 'disable_loyalty',
+            'supportCredit' => 'support_credit',
         ] as $inputKey => $column) {
             if ($request->has($inputKey)) {
                 $data[$column] = $request->boolean($inputKey);
@@ -250,35 +258,36 @@ class CustomerController extends Controller
             $count = 0;
             foreach ($rows as $row) {
                 $name = $row['name'] ?? null;
-                if (!$name) {
+                if (! $name) {
                     continue;
                 }
 
                 Customer::create(array_filter([
-                    'name'      => $name,
-                    'code'      => $row['code'] ?? ('CUST_' . strtoupper(substr(uniqid(), -6))),
-                    'phone'     => $row['mobile_no'] ?? $row['mobileNo'] ?? $row['phone'] ?? null,
-                    'email'     => $row['email_id'] ?? $row['emailId'] ?? $row['email'] ?? null,
-                    'address'   => $row['address'] ?? null,
-                    'city'      => $row['city_id'] ?? $row['cityId'] ?? $row['city'] ?? null,
-                    'state'     => $row['state'] ?? null,
-                    'gstin'     => $row['gst_no'] ?? $row['gstNo'] ?? $row['gstin'] ?? null,
+                    'name' => $name,
+                    'code' => $row['code'] ?? ('CUST_'.strtoupper(substr(uniqid(), -6))),
+                    'phone' => $row['mobile_no'] ?? $row['mobileNo'] ?? $row['phone'] ?? null,
+                    'email' => $row['email_id'] ?? $row['emailId'] ?? $row['email'] ?? null,
+                    'address' => $row['address'] ?? null,
+                    'city' => $row['city_id'] ?? $row['cityId'] ?? $row['city'] ?? null,
+                    'state' => $row['state'] ?? null,
+                    'gstin' => $row['gst_no'] ?? $row['gstNo'] ?? $row['gstin'] ?? null,
                     'customer_type' => $row['customer_type'] ?? null,
-                    'billing_name'  => $row['billing_name'] ?? null,
-                    'pincode'       => $row['pin_code'] ?? null,
+                    'billing_name' => $row['billing_name'] ?? null,
+                    'pincode' => $row['pin_code'] ?? null,
                     'is_active' => true,
                 ], fn ($v) => $v !== null));
                 $count++;
             }
+
             return $count;
         });
 
-        Cache::forget('customers_total_unfiltered_count');
+        Cache::forget(StoreQuery::cacheKey('customers_total_unfiltered_count'));
 
         return response()->json([
             'success' => true,
             'message' => "{$created} customer(s) imported successfully",
-            'data'    => ['imported' => $created],
+            'data' => ['imported' => $created],
         ], 201);
     }
 
@@ -298,7 +307,7 @@ class CustomerController extends Controller
         $averageAmount = $ordersCount > 0 ? $lifetimeSpend / $ordersCount : 0;
         $lastVisit = (clone $sales)->value('sale_date');
 
-        $visitDates = (clone $sales)->pluck('sale_date')->map(fn ($d) => \Carbon\Carbon::parse($d))->sortDesc()->values();
+        $visitDates = (clone $sales)->pluck('sale_date')->map(fn ($d) => Carbon::parse($d))->sortDesc()->values();
         $averageVisitGapDays = null;
         if ($visitDates->count() > 1) {
             $gaps = [];
@@ -309,7 +318,7 @@ class CustomerController extends Controller
         }
 
         $storeId = $request->header('X-Company-Scope-Id', 1);
-        $windowMonths = (int) (\App\Models\Store::where('id', $storeId)->value('loyalty_redeem_window_months') ?? 12);
+        $windowMonths = (int) (Store::where('id', $storeId)->value('loyalty_redeem_window_months') ?? 12);
         $availablePoints = (int) LoyaltyTransaction::where('customer_id', $id)
             ->where('type', 'EARN')
             ->where('created_at', '>=', now()->subMonths($windowMonths))
@@ -344,25 +353,25 @@ class CustomerController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => [
+            'data' => [
                 'customer' => $customer,
                 'highlights' => [
-                    'ordersCount'         => $ordersCount,
-                    'averageAmount'       => round($averageAmount, 2),
-                    'lifetimeSpend'       => round($lifetimeSpend, 2),
-                    'lastVisit'           => $lastVisit,
+                    'ordersCount' => $ordersCount,
+                    'averageAmount' => round($averageAmount, 2),
+                    'lifetimeSpend' => round($lifetimeSpend, 2),
+                    'lastVisit' => $lastVisit,
                     'averageVisitGapDays' => $averageVisitGapDays,
                 ],
                 'loyalty' => [
-                    'availablePoints'  => $availablePoints,
-                    'lifetimePoints'   => (int) $customer->loyalty_points,
-                    'redeemedPoints'   => $redeemedPoints,
-                    'redemptionCount'  => $redeemedCount,
-                    'lastRedemption'   => $lastRedemption,
+                    'availablePoints' => $availablePoints,
+                    'lifetimePoints' => (int) $customer->loyalty_points,
+                    'redeemedPoints' => $redeemedPoints,
+                    'redemptionCount' => $redeemedCount,
+                    'lastRedemption' => $lastRedemption,
                 ],
-                'orderHistory'    => $orderHistory,
-                'customerOrders'  => $customerOrders,
-                'returns'         => $returns,
+                'orderHistory' => $orderHistory,
+                'customerOrders' => $customerOrders,
+                'returns' => $returns,
                 'loyaltyTransactions' => $loyaltyTransactions,
             ],
         ]);

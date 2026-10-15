@@ -9,7 +9,11 @@ class Store extends Model
 {
     use HasFactory;
 
+    protected $hidden = ['platform_licence_token'];
+
     protected $fillable = [
+        'platform_store_id', 'platform_company_code', 'activation_required', 'activated_at',
+        'platform_active_till', 'platform_licence_token', 'platform_subscription',
         'name',
         'code',
         'reg_name',
@@ -56,6 +60,8 @@ class Store extends Model
     protected function casts(): array
     {
         return [
+            'activation_required' => 'boolean', 'activated_at' => 'datetime',
+            'platform_active_till' => 'datetime', 'platform_subscription' => 'array',
             'is_active' => 'boolean',
             'as_supplier' => 'boolean',
             'as_customer' => 'boolean',

@@ -9,7 +9,7 @@ class Transport extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
+    protected $fillable = ['store_id',
         'name',
         'code',
         'phone',

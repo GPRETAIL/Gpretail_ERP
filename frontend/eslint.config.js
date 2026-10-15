@@ -29,7 +29,7 @@ export default defineConfig([
       // Core no-unused-vars does not count JSX-only usage; uppercase names are
       // component bindings, so ignore them for params (Icon, Page) exactly like
       // the long-standing vars pattern already does for component imports.
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]', argsIgnorePattern: '^[A-Z_]' }],
+      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]', argsIgnorePattern: '^[A-Z_]', caughtErrorsIgnorePattern: '^_' }],
       // The React-Compiler diagnostics are new in eslint-plugin-react-hooks 7 and
       // fire ~120 times on the established "sync state from props/fetch inside
       // useEffect" pattern used across the app. Kept enabled as warnings: the
@@ -48,5 +48,13 @@ export default defineConfig([
     languageOptions: {
       globals: globals.node,
     },
+  },
+  {
+    files: ['src/**/*.{test,spec}.{js,jsx}'],
+    languageOptions: { globals: { ...globals.vitest } },
+  },
+  {
+    files: ['src/routes/protectedLayoutRoutes.jsx'],
+    rules: { 'react-refresh/only-export-components': 'off' },
   },
 ])

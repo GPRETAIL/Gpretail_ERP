@@ -18,8 +18,7 @@ class PhysicalStockController extends Controller
         private readonly StockService $stockService,
         private readonly VariantResolverService $variantResolver,
         private readonly PaginationService $paginationService
-    ) {
-    }
+    ) {}
 
     public function index(Request $request)
     {
@@ -32,17 +31,18 @@ class PhysicalStockController extends Controller
 
         if ($request->boolean('all') || $request->input('limit') == 500 || $request->input('limit') == 1000) {
             $items = $query->orderBy('audit_date', 'desc')->limit(2000)->get();
+
             return response()->json([
                 'success' => true,
-                'data'    => $items,
-                'total'   => $items->count(),
+                'data' => $items,
+                'total' => $items->count(),
             ]);
         }
 
         $result = $this->paginationService->paginate($query, 'physical_stocks', $request, [
-            'default_sort'  => 'id',
+            'default_sort' => 'id',
             'default_order' => 'desc',
-            'tie_breaker'   => 'id',
+            'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'audit_date', 'audit_no', 'created_at'],
         ]);
 
@@ -53,7 +53,7 @@ class PhysicalStockController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'audit_date' => 'nullable|date',
-            'items'      => 'required|array|min:1',
+            'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
         ]);
 
@@ -61,21 +61,21 @@ class PhysicalStockController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors'  => $validator->errors(),
+                'errors' => $validator->errors(),
             ], 422);
         }
 
         $storeId = $request->header('X-Company-Scope-Id', 1);
 
         $audit = DB::transaction(function () use ($request, $storeId) {
-            $auditNo = $request->input('audit_no') ?: 'AUD-' . date('Ymd') . '-' . rand(1000, 9999);
+            $auditNo = $request->input('audit_no') ?: 'AUD-'.date('Ymd').'-'.rand(1000, 9999);
 
             $physicalStock = PhysicalStock::create([
-                'store_id'   => $storeId,
-                'audit_no'   => $auditNo,
+                'store_id' => $storeId,
+                'audit_no' => $auditNo,
                 'audit_date' => $request->input('audit_date') ?: now()->toDateString(),
-                'status'     => $request->input('status', 'COMPLETED'),
-                'notes'      => $request->input('notes'),
+                'status' => $request->input('status', 'COMPLETED'),
+                'notes' => $request->input('notes'),
                 'created_by' => $request->user()?->id ?? 1,
             ]);
 
@@ -87,12 +87,12 @@ class PhysicalStockController extends Controller
 
                 PhysicalStockItem::create([
                     'physical_stock_id' => $physicalStock->id,
-                    'product_id'        => $item['product_id'],
-                    'variant_id'        => $variantId,
-                    'system_qty'        => $sysQty,
-                    'counted_qty'       => $countedQty,
-                    'difference_qty'    => $diff,
-                    'notes'             => $item['notes'] ?? null,
+                    'product_id' => $item['product_id'],
+                    'variant_id' => $variantId,
+                    'system_qty' => $sysQty,
+                    'counted_qty' => $countedQty,
+                    'difference_qty' => $diff,
+                    'notes' => $item['notes'] ?? null,
                 ]);
 
                 // Set stock to the counted quantity - a physical audit
@@ -116,7 +116,7 @@ class PhysicalStockController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Physical stock audit recorded successfully',
-            'data'    => $audit->load('items.product'),
+            'data' => $audit->load('items.product'),
         ], 201);
     }
 
@@ -124,7 +124,7 @@ class PhysicalStockController extends Controller
     {
         $audit = PhysicalStock::with(['items.product', 'creator'])->find($id);
 
-        if (!$audit) {
+        if (! $audit) {
             return response()->json([
                 'success' => false,
                 'message' => 'Physical stock record not found',
@@ -133,7 +133,7 @@ class PhysicalStockController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $audit,
+            'data' => $audit,
         ]);
     }
 
@@ -141,7 +141,7 @@ class PhysicalStockController extends Controller
     {
         $audit = PhysicalStock::find($id);
 
-        if (!$audit) {
+        if (! $audit) {
             return response()->json([
                 'success' => false,
                 'message' => 'Physical stock record not found',
@@ -153,7 +153,7 @@ class PhysicalStockController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Physical stock record updated successfully',
-            'data'    => $audit->load('items.product'),
+            'data' => $audit->load('items.product'),
         ]);
     }
 
@@ -161,7 +161,7 @@ class PhysicalStockController extends Controller
     {
         $audit = PhysicalStock::with('items')->find($id);
 
-        if (!$audit) {
+        if (! $audit) {
             return response()->json([
                 'success' => false,
                 'message' => 'Physical stock record not found',

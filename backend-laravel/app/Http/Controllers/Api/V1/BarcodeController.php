@@ -4,10 +4,8 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Barcode;
-use App\Models\DirectPurchase;
 use App\Models\DirectPurchaseItem;
 use App\Models\Product;
-use App\Models\ProductVariant;
 use App\Models\Stock;
 use App\Models\Store;
 use App\Services\PaginationService;
@@ -22,8 +20,7 @@ class BarcodeController extends Controller
     public function __construct(
         private readonly VariantResolverService $variantResolver,
         private readonly PaginationService $paginationService
-    ) {
-    }
+    ) {}
 
     /* ─────────────────────────────────────────────────────────────
      * GET /api/barcodes
@@ -66,27 +63,28 @@ class BarcodeController extends Controller
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('barcode', 'like', "%{$search}%")
-                  ->orWhere('batch_no', 'like', "%{$search}%")
-                  ->orWhere('product_name', 'like', "%{$search}%")
-                  ->orWhereHas('product', function ($pq) use ($search) {
-                      $pq->where('name', 'like', "%{$search}%")->orWhere('code', 'like', "%{$search}%");
-                  });
+                    ->orWhere('batch_no', 'like', "%{$search}%")
+                    ->orWhere('product_name', 'like', "%{$search}%")
+                    ->orWhereHas('product', function ($pq) use ($search) {
+                        $pq->where('name', 'like', "%{$search}%")->orWhere('code', 'like', "%{$search}%");
+                    });
             });
         }
 
         if ($request->boolean('all') || in_array($request->input('limit'), ['500', '1000', 500, 1000])) {
             $items = $query->orderBy('created_at', 'desc')->limit(2000)->get();
+
             return response()->json([
                 'success' => true,
-                'data'    => $items,
-                'total'   => $items->count(),
+                'data' => $items,
+                'total' => $items->count(),
             ]);
         }
 
         $result = $this->paginationService->paginate($query, 'barcodes', $request, [
-            'default_sort'  => 'id',
+            'default_sort' => 'id',
             'default_order' => 'desc',
-            'tie_breaker'   => 'id',
+            'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'barcode', 'batch_no', 'created_at'],
         ]);
 
@@ -105,7 +103,7 @@ class BarcodeController extends Controller
     public function generate(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'items'   => 'required|array|min:1',
+            'items' => 'required|array|min:1',
             'items.*.productId' => 'nullable|integer',
         ]);
 
@@ -113,15 +111,15 @@ class BarcodeController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors'  => $validator->errors(),
+                'errors' => $validator->errors(),
             ], 422);
         }
 
         $directPurchaseId = $request->input('directPurchaseId');
         $inventoryEntryId = $request->input('inventoryEntryId');
-        $codeType         = in_array($request->input('codeType'), ['code', 'barcode'])
+        $codeType = in_array($request->input('codeType'), ['code', 'barcode'])
                             ? $request->input('codeType') : 'barcode';
-        $prefix           = $this->resolvePrefix($request);
+        $prefix = $this->resolvePrefix($request);
 
         $created = [];
         $skipped = [];
@@ -133,29 +131,29 @@ class BarcodeController extends Controller
         ) {
 
             foreach ($request->input('items', []) as $item) {
-                $sourceItemId         = $item['sourceItemId'] ?? null;
-                $dpItemId             = $item['directPurchaseItemId'] ?? null;
-                $jumpDetailIndex      = isset($item['jumpDetailIndex']) ? (int) $item['jumpDetailIndex'] : null;
-                $invEntryId           = $item['inventoryEntryId'] ?? $inventoryEntryId;
-                $inventoryItemId      = $item['inventoryItemId'] ?? null;
-                $productId            = $item['productId'] ?? null;
-                $qty                  = max(1, (int) ($item['qty'] ?? 1));
-                $mrp                  = (float) ($item['mrp'] ?? 0);
-                $sellingPrice         = (float) ($item['sellingPrice'] ?? $mrp);
-                $discountPerc         = (float) ($item['discountPerc'] ?? 0);
-                $finalPrice           = (float) ($item['finalPrice'] ?? $sellingPrice);
-                $productName          = $item['productName'] ?? null;
-                $size                 = $item['size'] ?? null;
-                $designNo             = $item['designNo'] ?? null;
-                $colorId              = $item['colorId'] ?? $item['color_id'] ?? null;
-                $colorName            = $item['colorName'] ?? $item['color_name'] ?? null;
-                $brandId              = $item['brandId'] ?? $item['brand_id'] ?? null;
+                $sourceItemId = $item['sourceItemId'] ?? null;
+                $dpItemId = $item['directPurchaseItemId'] ?? null;
+                $jumpDetailIndex = isset($item['jumpDetailIndex']) ? (int) $item['jumpDetailIndex'] : null;
+                $invEntryId = $item['inventoryEntryId'] ?? $inventoryEntryId;
+                $inventoryItemId = $item['inventoryItemId'] ?? null;
+                $productId = $item['productId'] ?? null;
+                $qty = max(1, (int) ($item['qty'] ?? 1));
+                $mrp = (float) ($item['mrp'] ?? 0);
+                $sellingPrice = (float) ($item['sellingPrice'] ?? $mrp);
+                $discountPerc = (float) ($item['discountPerc'] ?? 0);
+                $finalPrice = (float) ($item['finalPrice'] ?? $sellingPrice);
+                $productName = $item['productName'] ?? null;
+                $size = $item['size'] ?? null;
+                $designNo = $item['designNo'] ?? null;
+                $colorId = $item['colorId'] ?? $item['color_id'] ?? null;
+                $colorName = $item['colorName'] ?? $item['color_name'] ?? null;
+                $brandId = $item['brandId'] ?? $item['brand_id'] ?? null;
 
                 // Check if barcodes already exist for this source item
                 $existingQuery = Barcode::query();
                 if ($directPurchaseId && $dpItemId !== null) {
                     $existingQuery->where('direct_purchase_id', $directPurchaseId)
-                                  ->where('direct_purchase_item_id', $dpItemId);
+                        ->where('direct_purchase_item_id', $dpItemId);
                     if ($jumpDetailIndex !== null) {
                         $existingQuery->where('jump_detail_index', $jumpDetailIndex);
                     }
@@ -170,15 +168,16 @@ class BarcodeController extends Controller
                 if ($existing->count() > 0) {
                     foreach ($existing as $row) {
                         $row->sourceItemId = $sourceItemId;
-                        $skipped[]         = $row;
+                        $skipped[] = $row;
                     }
+
                     continue;
                 }
 
                 $variantId = null;
                 $sellingMode = null;
                 if ($productId) {
-                    if (!array_key_exists($productId, $productCache)) {
+                    if (! array_key_exists($productId, $productCache)) {
                         $productCache[$productId] = Product::find($productId);
                     }
                     $product = $productCache[$productId];
@@ -204,6 +203,7 @@ class BarcodeController extends Controller
                     if ($reusable) {
                         $reusable->sourceItemId = $sourceItemId;
                         $skipped[] = $reusable;
+
                         continue;
                     }
                     $qty = 1;
@@ -214,32 +214,31 @@ class BarcodeController extends Controller
                 for ($i = 0; $i < $qty; $i++) {
                     $barcodeStr = $this->generateUniqueBarcodeString($prefix);
 
-
                     $row = Barcode::create([
-                        'product_id'              => $productId,
-                        'variant_id'              => $variantId,
-                        'direct_purchase_id'      => $directPurchaseId,
+                        'product_id' => $productId,
+                        'variant_id' => $variantId,
+                        'direct_purchase_id' => $directPurchaseId,
                         'direct_purchase_item_id' => $dpItemId,
-                        'inventory_entry_id'      => $invEntryId,
-                        'inventory_item_id'       => $inventoryItemId,
-                        'jump_detail_index'       => $jumpDetailIndex,
-                        'barcode'                 => $barcodeStr,
-                        'batch_no'                => 'B' . date('Ymd') . '-' . rand(100, 999),
-                        'mrp'                     => $mrp,
-                        'selling_price'           => $sellingPrice,
-                        'discount_perc'           => $discountPerc,
-                        'final_price'             => $finalPrice,
-                        'code_type'               => $codeType,
-                        'product_name'            => $productName,
-                        'size'                    => $size,
-                        'design_no'               => $designNo,
-                        'color_name'              => $colorName,
-                        'is_active'               => true,
+                        'inventory_entry_id' => $invEntryId,
+                        'inventory_item_id' => $inventoryItemId,
+                        'jump_detail_index' => $jumpDetailIndex,
+                        'barcode' => $barcodeStr,
+                        'batch_no' => 'B'.date('Ymd').'-'.rand(100, 999),
+                        'mrp' => $mrp,
+                        'selling_price' => $sellingPrice,
+                        'discount_perc' => $discountPerc,
+                        'final_price' => $finalPrice,
+                        'code_type' => $codeType,
+                        'product_name' => $productName,
+                        'size' => $size,
+                        'design_no' => $designNo,
+                        'color_name' => $colorName,
+                        'is_active' => true,
                     ]);
 
-                    $row->sourceItemId   = $sourceItemId;
+                    $row->sourceItemId = $sourceItemId;
                     $row->inventory_item_id = $inventoryItemId;
-                    $newRows[]           = $row;
+                    $newRows[] = $row;
                 }
                 $created = array_merge($created, $newRows);
             }
@@ -251,9 +250,9 @@ class BarcodeController extends Controller
         return response()->json([
             'success' => true,
             'message' => $totalCreated > 0
-                ? "Generated {$totalCreated} barcodes successfully" . ($totalSkipped > 0 ? " ({$totalSkipped} already existed)" : "")
+                ? "Generated {$totalCreated} barcodes successfully".($totalSkipped > 0 ? " ({$totalSkipped} already existed)" : '')
                 : "All {$totalSkipped} barcodes already existed",
-            'data'    => [
+            'data' => [
                 'created' => $created,
                 'skipped' => $skipped,
             ],
@@ -268,26 +267,26 @@ class BarcodeController extends Controller
      * ───────────────────────────────────────────────────────────── */
     public function updateSourceItem(Request $request)
     {
-        $dpItemId        = $request->input('directPurchaseItemId');
+        $dpItemId = $request->input('directPurchaseItemId');
         $jumpDetailIndex = $request->input('jumpDetailIndex');
         $inventoryItemId = $request->input('inventoryItemId');
 
-        $productId    = $request->input('productId');
-        $brandId      = $request->input('brandId');
-        $size         = $request->input('size');
-        $styleId      = $request->input('styleId');
-        $designNo     = $request->input('designNo');
-        $materialId   = $request->input('materialId');
-        $patternId    = $request->input('patternId');
-        $sleeveId     = $request->input('sleeveId');
-        $fitId        = $request->input('fitId');
-        $typeId       = $request->input('typeId');
-        $colorId      = $request->input('colorId');
-        $mrp          = $request->input('mrp');
+        $productId = $request->input('productId');
+        $brandId = $request->input('brandId');
+        $size = $request->input('size');
+        $styleId = $request->input('styleId');
+        $designNo = $request->input('designNo');
+        $materialId = $request->input('materialId');
+        $patternId = $request->input('patternId');
+        $sleeveId = $request->input('sleeveId');
+        $fitId = $request->input('fitId');
+        $typeId = $request->input('typeId');
+        $colorId = $request->input('colorId');
+        $mrp = $request->input('mrp');
         $discountPerc = $request->input('discountPerc', 0);
 
         DB::transaction(function () use (
-            $dpItemId, $jumpDetailIndex, $inventoryItemId,
+            $dpItemId, $jumpDetailIndex,
             $productId, $brandId, $size, $styleId, $designNo,
             $materialId, $patternId, $sleeveId, $fitId, $typeId, $colorId,
             $mrp, $discountPerc
@@ -298,32 +297,32 @@ class BarcodeController extends Controller
                 if ($dpItem) {
                     $updates = array_filter([
                         'product_id' => $productId ?: null,
-                        'brand_id'   => $brandId ?: null,
-                        'color_id'   => $colorId ?: null,
-                        'size'       => $size ?: null,
-                        'design_no'  => $designNo ?: null,
-                        'cost'       => $mrp ?: null,
-                    ], fn($v) => $v !== null);
+                        'brand_id' => $brandId ?: null,
+                        'color_id' => $colorId ?: null,
+                        'size' => $size ?: null,
+                        'design_no' => $designNo ?: null,
+                        'cost' => $mrp ?: null,
+                    ], fn ($v) => $v !== null);
 
                     if ($jumpDetailIndex !== null) {
                         // Update jump_details[jumpDetailIndex]
                         $jumpDetails = $dpItem->jump_details ?? [];
                         if (isset($jumpDetails[$jumpDetailIndex])) {
                             $jumpDetails[$jumpDetailIndex] = array_merge($jumpDetails[$jumpDetailIndex], array_filter([
-                                'productId'       => $productId,
-                                'brandId'         => $brandId,
-                                'colorId'         => $colorId,
-                                'size'            => $size,
-                                'designNo'        => $designNo,
-                                'styleId'         => $styleId,
-                                'materialId'      => $materialId,
-                                'patternId'       => $patternId,
-                                'sleeveId'        => $sleeveId,
-                                'fitId'           => $fitId,
-                                'typeId'          => $typeId,
-                                'mrp'             => $mrp,
+                                'productId' => $productId,
+                                'brandId' => $brandId,
+                                'colorId' => $colorId,
+                                'size' => $size,
+                                'designNo' => $designNo,
+                                'styleId' => $styleId,
+                                'materialId' => $materialId,
+                                'patternId' => $patternId,
+                                'sleeveId' => $sleeveId,
+                                'fitId' => $fitId,
+                                'typeId' => $typeId,
+                                'mrp' => $mrp,
                                 'saleDiscountPerc' => $discountPerc,
-                            ], fn($v) => $v !== null && $v !== ''));
+                            ], fn ($v) => $v !== null && $v !== ''));
                             $dpItem->jump_details = $jumpDetails;
                             $dpItem->save();
                         }
@@ -336,14 +335,14 @@ class BarcodeController extends Controller
             // Update any existing barcodes for this item
             if ($dpItemId) {
                 Barcode::where('direct_purchase_item_id', $dpItemId)
-                    ->when($jumpDetailIndex !== null, fn($q) => $q->where('jump_detail_index', $jumpDetailIndex))
+                    ->when($jumpDetailIndex !== null, fn ($q) => $q->where('jump_detail_index', $jumpDetailIndex))
                     ->update(array_filter([
-                        'product_id'   => $productId ?: null,
-                        'size'         => $size ?: null,
-                        'design_no'    => $designNo ?: null,
-                        'mrp'          => $mrp ?: null,
+                        'product_id' => $productId ?: null,
+                        'size' => $size ?: null,
+                        'design_no' => $designNo ?: null,
+                        'mrp' => $mrp ?: null,
                         'discount_perc' => $discountPerc,
-                    ], fn($v) => $v !== null));
+                    ], fn ($v) => $v !== null));
             }
         });
 
@@ -361,32 +360,32 @@ class BarcodeController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'product_id' => 'required|exists:products,id',
-            'quantity'   => 'nullable|integer|min:1|max:500',
+            'quantity' => 'nullable|integer|min:1|max:500',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors'  => $validator->errors(),
+                'errors' => $validator->errors(),
             ], 422);
         }
 
-        $product   = Product::find($request->input('product_id'));
-        $count     = $request->input('quantity', 1);
+        $product = Product::find($request->input('product_id'));
+        $count = $request->input('quantity', 1);
         $generated = [];
-        $prefix    = $this->resolvePrefix($request);
+        $prefix = $this->resolvePrefix($request);
 
         for ($i = 0; $i < $count; $i++) {
             $barcodeStr = $this->generateUniqueBarcodeString($prefix);
-            $barcode    = Barcode::create([
-                'product_id'    => $product->id,
-                'variant_id'    => $request->input('variant_id'),
-                'barcode'       => $barcodeStr,
-                'batch_no'      => 'B' . date('Ymd') . '-' . rand(100, 999),
-                'mrp'           => $product->mrp,
+            $barcode = Barcode::create([
+                'product_id' => $product->id,
+                'variant_id' => $request->input('variant_id'),
+                'barcode' => $barcodeStr,
+                'batch_no' => 'B'.date('Ymd').'-'.rand(100, 999),
+                'mrp' => $product->mrp,
                 'selling_price' => $product->selling_price,
-                'is_active'     => true,
+                'is_active' => true,
             ]);
             $generated[] = $barcode;
         }
@@ -394,7 +393,7 @@ class BarcodeController extends Controller
         return response()->json([
             'success' => true,
             'message' => "Generated {$count} barcodes successfully",
-            'data'    => $generated,
+            'data' => $generated,
         ]);
     }
 
@@ -405,19 +404,19 @@ class BarcodeController extends Controller
     public function sourceItem(Request $request)
     {
         $barcodeStr = $request->input('barcode');
-        $barcode    = Barcode::with(['product', 'variant'])->where('barcode', $barcodeStr)->first();
+        $barcode = Barcode::with(['product', 'variant'])->where('barcode', $barcodeStr)->first();
 
-        if (!$barcode) {
+        if (! $barcode) {
             $product = Product::where('barcode', $barcodeStr)->orWhere('code', $barcodeStr)->first();
             if ($product) {
                 return response()->json([
                     'success' => true,
-                    'data'    => [
-                        'product_id'    => $product->id,
-                        'product_name'  => $product->name,
-                        'code'          => $product->code,
-                        'barcode'       => $product->barcode,
-                        'mrp'           => $product->mrp,
+                    'data' => [
+                        'product_id' => $product->id,
+                        'product_name' => $product->name,
+                        'code' => $product->code,
+                        'barcode' => $product->barcode,
+                        'mrp' => $product->mrp,
                         'selling_price' => $product->selling_price,
                     ],
                 ]);
@@ -431,12 +430,12 @@ class BarcodeController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => [
-                'barcode_id'    => $barcode->id,
-                'product_id'    => $barcode->product_id,
-                'product_name'  => $barcode->product?->name,
-                'barcode'       => $barcode->barcode,
-                'mrp'           => $barcode->mrp,
+            'data' => [
+                'barcode_id' => $barcode->id,
+                'product_id' => $barcode->product_id,
+                'product_name' => $barcode->product?->name,
+                'barcode' => $barcode->barcode,
+                'mrp' => $barcode->mrp,
                 'selling_price' => $barcode->selling_price,
             ],
         ]);
@@ -465,10 +464,10 @@ class BarcodeController extends Controller
         $stockByKey = Stock::where('store_id', $storeId)
             ->whereIn('product_id', $productIds)
             ->get(['product_id', 'variant_id', 'quantity'])
-            ->keyBy(fn ($s) => $s->product_id . ':' . ($s->variant_id ?? 'null'));
+            ->keyBy(fn ($s) => $s->product_id.':'.($s->variant_id ?? 'null'));
 
         $enriched = collect($rows)->map(function ($row) use ($products, $stockByKey) {
-            $stockKey = ($row['product_id'] ?? null) . ':' . ($row['variant_id'] ?? 'null');
+            $stockKey = ($row['product_id'] ?? null).':'.($row['variant_id'] ?? 'null');
             $row['qty'] = (float) ($stockByKey->get($stockKey)->quantity ?? 0);
             $row['cost'] = (float) ($products->get($row['product_id'] ?? null)->cost_price ?? 0);
 
@@ -477,8 +476,8 @@ class BarcodeController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $enriched->values(),
-            'total'   => $enriched->count(),
+            'data' => $enriched->values(),
+            'total' => $enriched->count(),
         ]);
     }
 
@@ -501,7 +500,7 @@ class BarcodeController extends Controller
         }
 
         // Fallback: use the first active store
-        if (!$store) {
+        if (! $store) {
             $store = Store::where('is_active', true)->first();
         }
 
@@ -511,7 +510,7 @@ class BarcodeController extends Controller
         $nameLetter = preg_match('/[A-Z]/', $nameLetter) ? $nameLetter : 'X';
         $cityLetter = preg_match('/[A-Z]/', $cityLetter) ? $cityLetter : 'X';
 
-        return $nameLetter . $cityLetter;
+        return $nameLetter.$cityLetter;
     }
 
     /**
@@ -522,9 +521,9 @@ class BarcodeController extends Controller
     private function generateUniqueBarcodeString(string $prefix = 'XX'): string
     {
         // Find the highest existing number for this prefix
-        $latest = Barcode::where('barcode', 'like', $prefix . '%')
-            ->where('barcode', 'regexp', '^' . preg_quote($prefix, '/') . '[0-9]{5}$')
-            ->orderByRaw('CAST(SUBSTRING(barcode, ' . (strlen($prefix) + 1) . ') AS UNSIGNED) DESC')
+        $latest = Barcode::where('barcode', 'like', $prefix.'%')
+            ->where('barcode', 'regexp', '^'.preg_quote($prefix, '/').'[0-9]{5}$')
+            ->orderByRaw('CAST(SUBSTRING(barcode, '.(strlen($prefix) + 1).') AS UNSIGNED) DESC')
             ->value('barcode');
 
         if ($latest) {
@@ -539,13 +538,15 @@ class BarcodeController extends Controller
             $nextNum = rand(1, 99999);
         }
 
-        $candidate = $prefix . str_pad((string) $nextNum, 5, '0', STR_PAD_LEFT);
+        $candidate = $prefix.str_pad((string) $nextNum, 5, '0', STR_PAD_LEFT);
 
         // Ensure uniqueness (handles race conditions)
         while (Barcode::where('barcode', $candidate)->exists()) {
             $nextNum++;
-            if ($nextNum > 99999) $nextNum = 1;
-            $candidate = $prefix . str_pad((string) $nextNum, 5, '0', STR_PAD_LEFT);
+            if ($nextNum > 99999) {
+                $nextNum = 1;
+            }
+            $candidate = $prefix.str_pad((string) $nextNum, 5, '0', STR_PAD_LEFT);
         }
 
         return $candidate;

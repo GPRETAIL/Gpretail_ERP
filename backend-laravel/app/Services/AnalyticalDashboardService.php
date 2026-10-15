@@ -23,15 +23,16 @@ class AnalyticalDashboardService
         $role = strtolower((string) ($user?->role ?? ''));
         $isSuperAdmin = in_array($role, ['super_admin', 'superadmin'], true);
 
-        if (!empty($filters['warehouse_id']) || !empty($filters['store_id'])) {
+        if (! empty($filters['warehouse_id']) || ! empty($filters['store_id'])) {
             $requestedStoreId = (int) ($filters['warehouse_id'] ?? $filters['store_id']);
             if ($isSuperAdmin) {
                 return $requestedStoreId;
             }
+
             return (int) ($user?->store_id ?: $user?->company_id ?: $requestedStoreId);
         }
 
-        if (!$isSuperAdmin) {
+        if (! $isSuperAdmin) {
             return (int) ($user?->store_id ?: $user?->company_id ?: 0) ?: null;
         }
 
@@ -40,8 +41,8 @@ class AnalyticalDashboardService
 
     protected function resolveDateRange(array $filters): array
     {
-        $from = !empty($filters['date_from']) ? Carbon::parse($filters['date_from'])->startOfDay() : null;
-        $to = !empty($filters['date_to']) ? Carbon::parse($filters['date_to'])->endOfDay() : null;
+        $from = ! empty($filters['date_from']) ? Carbon::parse($filters['date_from'])->startOfDay() : null;
+        $to = ! empty($filters['date_to']) ? Carbon::parse($filters['date_to'])->endOfDay() : null;
 
         return [$from, $to];
     }
@@ -57,12 +58,12 @@ class AnalyticalDashboardService
         $quickLinks = $this->getQuickLinks();
 
         return [
-            'summary'          => $summary,
-            'data_quality'     => $dataQuality,
-            'insights'         => $insights,
-            'quick_links'      => $quickLinks,
-            'active_store_id'  => $storeId,
-            'last_updated'     => Carbon::now()->toIso8601String(),
+            'summary' => $summary,
+            'data_quality' => $dataQuality,
+            'insights' => $insights,
+            'quick_links' => $quickLinks,
+            'active_store_id' => $storeId,
+            'last_updated' => Carbon::now()->toIso8601String(),
         ];
     }
 
@@ -71,24 +72,24 @@ class AnalyticalDashboardService
      */
     public function getSummary(?int $storeId): array
     {
-        $productsWithStock = DB::table('stocks')
+        $productsWithStock = StoreQuery::table('stocks')
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->distinct('product_id')
             ->count('product_id');
 
-        $brandsTracked = DB::table('brands')->count();
-        $categoriesTracked = DB::table('categories')->count();
+        $brandsTracked = StoreQuery::table('brands')->count();
+        $categoriesTracked = StoreQuery::table('categories')->count();
 
-        $suppliersWithPurchases = DB::table('direct_purchases')
+        $suppliersWithPurchases = StoreQuery::table('direct_purchases')
             ->when($storeId, fn ($q) => $q->where(fn ($sq) => $sq->where('store_id', $storeId)->orWhere('company_id', $storeId)))
             ->whereNotNull('supplier_id')
             ->distinct('supplier_id')
             ->count('supplier_id');
 
         return [
-            'products_with_stock'      => $productsWithStock,
-            'brands_tracked'           => $brandsTracked,
-            'categories_tracked'       => $categoriesTracked,
+            'products_with_stock' => $productsWithStock,
+            'brands_tracked' => $brandsTracked,
+            'categories_tracked' => $categoriesTracked,
             'suppliers_with_purchases' => $suppliersWithPurchases,
         ];
     }
@@ -100,15 +101,15 @@ class AnalyticalDashboardService
      */
     public function getDataQualityFlags(?int $storeId): array
     {
-        $productsNoBrand = DB::table('products')->whereNull('brand_id')->count();
-        $productsNoCategory = DB::table('products')->whereNull('category_id')->count();
+        $productsNoBrand = StoreQuery::table('products')->whereNull('brand_id')->count();
+        $productsNoCategory = StoreQuery::table('products')->whereNull('category_id')->count();
 
-        $directPurchasesNoSupplierId = DB::table('direct_purchases')
+        $directPurchasesNoSupplierId = StoreQuery::table('direct_purchases')
             ->when($storeId, fn ($q) => $q->where(fn ($sq) => $sq->where('store_id', $storeId)->orWhere('company_id', $storeId)))
             ->whereNull('supplier_id')
             ->count();
 
-        $stocksZeroValue = DB::table('stocks')
+        $stocksZeroValue = StoreQuery::table('stocks')
             ->join('products', 'stocks.product_id', '=', 'products.id')
             ->when($storeId, fn ($q) => $q->where('stocks.store_id', $storeId))
             ->where('stocks.quantity', '>', 0)
@@ -119,39 +120,39 @@ class AnalyticalDashboardService
 
         return [
             [
-                'key'          => 'products_no_brand',
-                'label'        => 'Products Without Brand (skew brand pivots)',
-                'count'        => $productsNoBrand,
-                'severity'     => 'warning',
-                'color'        => 'orange',
-                'route'        => '/masters/product',
+                'key' => 'products_no_brand',
+                'label' => 'Products Without Brand (skew brand pivots)',
+                'count' => $productsNoBrand,
+                'severity' => 'warning',
+                'color' => 'orange',
+                'route' => '/masters/product',
                 'filter_param' => 'filter=missing_brand',
             ],
             [
-                'key'          => 'products_no_category',
-                'label'        => 'Products Without Category',
-                'count'        => $productsNoCategory,
-                'severity'     => 'warning',
-                'color'        => 'orange',
-                'route'        => '/masters/product',
+                'key' => 'products_no_category',
+                'label' => 'Products Without Category',
+                'count' => $productsNoCategory,
+                'severity' => 'warning',
+                'color' => 'orange',
+                'route' => '/masters/product',
                 'filter_param' => 'filter=missing_category',
             ],
             [
-                'key'          => 'purchases_no_supplier_id',
-                'label'        => 'Purchases With No Linked Supplier (legacy bucket)',
-                'count'        => $directPurchasesNoSupplierId,
-                'severity'     => 'info',
-                'color'        => 'yellow',
-                'route'        => '/warehouse/direct-purchase',
+                'key' => 'purchases_no_supplier_id',
+                'label' => 'Purchases With No Linked Supplier (legacy bucket)',
+                'count' => $directPurchasesNoSupplierId,
+                'severity' => 'info',
+                'color' => 'yellow',
+                'route' => '/warehouse/direct-purchase',
                 'filter_param' => 'filter=missing_supplier',
             ],
             [
-                'key'          => 'stocks_zero_value',
-                'label'        => 'In-Stock Products Priced at ₹0',
-                'count'        => $stocksZeroValue,
-                'severity'     => 'info',
-                'color'        => 'yellow',
-                'route'        => '/masters/product',
+                'key' => 'stocks_zero_value',
+                'label' => 'In-Stock Products Priced at ₹0',
+                'count' => $stocksZeroValue,
+                'severity' => 'info',
+                'color' => 'yellow',
+                'route' => '/masters/product',
                 'filter_param' => 'filter=zero_price',
             ],
         ];
@@ -164,7 +165,7 @@ class AnalyticalDashboardService
      */
     public function getCrossModuleInsights(?int $storeId, ?Carbon $from, ?Carbon $to): array
     {
-        $topBrandByStock = DB::table('stocks')
+        $topBrandByStock = StoreQuery::table('stocks')
             ->join('products', 'stocks.product_id', '=', 'products.id')
             ->leftJoin('brands', 'products.brand_id', '=', 'brands.id')
             ->when($storeId, fn ($q) => $q->where('stocks.store_id', $storeId))
@@ -173,7 +174,7 @@ class AnalyticalDashboardService
             ->orderByDesc('value')
             ->first();
 
-        $topCategoryBySales = DB::table('pos_sale_items as i')
+        $topCategoryBySales = StoreQuery::table('pos_sale_items as i')
             ->join('pos_sales as s', 's.id', '=', 'i.pos_sale_id')
             ->join('products as p', 'p.id', '=', 'i.product_id')
             ->leftJoin('categories as c', 'p.category_id', '=', 'c.id')
@@ -184,7 +185,7 @@ class AnalyticalDashboardService
             ->orderByDesc('value')
             ->first();
 
-        $topSupplierByPurchase = DB::table('direct_purchases')
+        $topSupplierByPurchase = StoreQuery::table('direct_purchases')
             ->leftJoin('suppliers', 'direct_purchases.supplier_id', '=', 'suppliers.id')
             ->when($storeId, fn ($q) => $q->where(fn ($sq) => $sq->where('direct_purchases.store_id', $storeId)->orWhere('direct_purchases.company_id', $storeId)))
             ->selectRaw('COALESCE(suppliers.name, direct_purchases.supplier_name, "(Blank)") as name, COALESCE(SUM(direct_purchases.total_amount), 0) as value')
@@ -193,9 +194,9 @@ class AnalyticalDashboardService
             ->first();
 
         return [
-            'top_brand_by_stock_value'    => ['name' => $topBrandByStock->name ?? '-', 'value' => (float) ($topBrandByStock->value ?? 0)],
-            'top_category_by_sales'       => ['name' => $topCategoryBySales->name ?? '-', 'value' => (float) ($topCategoryBySales->value ?? 0)],
-            'top_supplier_by_purchase'    => ['name' => $topSupplierByPurchase->name ?? '-', 'value' => (float) ($topSupplierByPurchase->value ?? 0)],
+            'top_brand_by_stock_value' => ['name' => $topBrandByStock->name ?? '-', 'value' => (float) ($topBrandByStock->value ?? 0)],
+            'top_category_by_sales' => ['name' => $topCategoryBySales->name ?? '-', 'value' => (float) ($topCategoryBySales->value ?? 0)],
+            'top_supplier_by_purchase' => ['name' => $topSupplierByPurchase->name ?? '-', 'value' => (float) ($topSupplierByPurchase->value ?? 0)],
         ];
     }
 

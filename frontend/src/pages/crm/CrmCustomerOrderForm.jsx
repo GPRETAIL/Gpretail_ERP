@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { ArrowLeft, PlusCircle, Printer, Save, Search, Trash2, X } from "lucide-react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
-import { alpha } from "@mui/material/styles";
+import { alpha as _alpha } from "@mui/material/styles";
 import { Box, Button, Checkbox, IconButton, Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from "@mui/material";
 import api from "../../api/axios";
 import SearchableSelect from "../../components/SearchableSelect";
@@ -108,7 +108,7 @@ const CrmCustomerOrderForm = () => {
 
   const [form, setForm] = useState(() => ({
     ...initialForm,
-    companyId: localStorage.getItem("activeStoreId") || "",
+    companyId: sessionStorage.getItem("activeStoreId") || "",
   }));
   const [orderNo, setOrderNo] = useState(1);
   const [saving, setSaving] = useState(false);

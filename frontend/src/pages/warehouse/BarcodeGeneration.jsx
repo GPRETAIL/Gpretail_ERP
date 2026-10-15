@@ -21,7 +21,7 @@ import {
   getWarehouseLabelFieldTextAlign,
   getWarehouseStickerMetrics,
   isWarehouseLabelFieldVisible,
-  loadWarehouseBarcodeCustomization,
+  loadWarehouseBarcodeCustomization as _loadWarehouseBarcodeCustomization,
   fetchWarehouseBarcodeCustomization,
   splitWarehouseLabelFieldsForCenter,
 } from "../../utils/warehouseBarcodeCustomization";

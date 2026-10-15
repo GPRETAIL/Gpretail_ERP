@@ -19,15 +19,16 @@ class MastersDashboardService
         $role = strtolower((string) ($user?->role ?? ''));
         $isSuperAdmin = in_array($role, ['super_admin', 'superadmin'], true);
 
-        if (!empty($filters['warehouse_id']) || !empty($filters['store_id'])) {
+        if (! empty($filters['warehouse_id']) || ! empty($filters['store_id'])) {
             $requestedStoreId = (int) ($filters['warehouse_id'] ?? $filters['store_id']);
             if ($isSuperAdmin) {
                 return $requestedStoreId;
             }
+
             return (int) ($user?->store_id ?: $user?->company_id ?: $requestedStoreId);
         }
 
-        if (!$isSuperAdmin) {
+        if (! $isSuperAdmin) {
             return (int) ($user?->store_id ?: $user?->company_id ?: 0) ?: null;
         }
 
@@ -46,16 +47,16 @@ class MastersDashboardService
         $stores = $this->getAvailableStores($user);
 
         return [
-            'summary'           => $summary,
-            'action_required'   => $actionRequired,
-            'breakdown'         => $breakdown,
-            'charts'            => [
+            'summary' => $summary,
+            'action_required' => $actionRequired,
+            'breakdown' => $breakdown,
+            'charts' => [
                 'products_by_category' => $categoryChart,
             ],
-            'recent_products'   => $recentProducts,
-            'stores'            => $stores,
-            'active_store_id'   => $storeId,
-            'last_updated'      => Carbon::now()->toIso8601String(),
+            'recent_products' => $recentProducts,
+            'stores' => $stores,
+            'active_store_id' => $storeId,
+            'last_updated' => Carbon::now()->toIso8601String(),
         ];
     }
 
@@ -64,32 +65,32 @@ class MastersDashboardService
      */
     public function getSummary(): array
     {
-        $totalProducts = DB::table('products')->count();
-        $activeProducts = DB::table('products')->where('is_active', true)->count();
-        $totalBrands = DB::table('brands')->count();
-        $totalCategories = DB::table('categories')->count();
-        $totalSuppliers = DB::table('suppliers')->count();
-        $activeSuppliers = DB::table('suppliers')->where('is_active', true)->count();
-        $totalTaxes = DB::table('taxes')->count();
-        $totalAgents = DB::table('agents')->count();
-        $missingHsn = DB::table('products')->where(function ($q) {
+        $totalProducts = StoreQuery::table('products')->count();
+        $activeProducts = StoreQuery::table('products')->where('is_active', true)->count();
+        $totalBrands = StoreQuery::table('brands')->count();
+        $totalCategories = StoreQuery::table('categories')->count();
+        $totalSuppliers = StoreQuery::table('suppliers')->count();
+        $activeSuppliers = StoreQuery::table('suppliers')->where('is_active', true)->count();
+        $totalTaxes = StoreQuery::table('taxes')->count();
+        $totalAgents = StoreQuery::table('agents')->count();
+        $missingHsn = StoreQuery::table('products')->where(function ($q) {
             $q->whereNull('hsn_code')->orWhere('hsn_code', '');
         })->count();
-        $missingBarcode = DB::table('products')->where(function ($q) {
+        $missingBarcode = StoreQuery::table('products')->where(function ($q) {
             $q->whereNull('barcode')->orWhere('barcode', '');
         })->count();
 
         return [
-            'total_products'    => $totalProducts,
-            'active_products'   => $activeProducts,
+            'total_products' => $totalProducts,
+            'active_products' => $activeProducts,
             'inactive_products' => $totalProducts - $activeProducts,
-            'total_brands'      => $totalBrands,
-            'total_categories'  => $totalCategories,
-            'total_suppliers'   => $totalSuppliers,
-            'active_suppliers'  => $activeSuppliers,
-            'total_taxes'       => $totalTaxes,
-            'total_agents'      => $totalAgents,
-            'missing_hsn_count'     => $missingHsn,
+            'total_brands' => $totalBrands,
+            'total_categories' => $totalCategories,
+            'total_suppliers' => $totalSuppliers,
+            'active_suppliers' => $activeSuppliers,
+            'total_taxes' => $totalTaxes,
+            'total_agents' => $totalAgents,
+            'missing_hsn_count' => $missingHsn,
             'missing_barcode_count' => $missingBarcode,
         ];
     }
@@ -99,79 +100,79 @@ class MastersDashboardService
      */
     public function getActionRequired(): array
     {
-        $missingHsn = DB::table('products')->where(function ($q) {
+        $missingHsn = StoreQuery::table('products')->where(function ($q) {
             $q->whereNull('hsn_code')->orWhere('hsn_code', '');
         })->count();
 
-        $missingBarcode = DB::table('products')->where(function ($q) {
+        $missingBarcode = StoreQuery::table('products')->where(function ($q) {
             $q->whereNull('barcode')->orWhere('barcode', '');
         })->count();
 
-        $missingTax = DB::table('products')->whereNull('tax_id')->count();
+        $missingTax = StoreQuery::table('products')->whereNull('tax_id')->count();
 
-        $inactiveProducts = DB::table('products')->where('is_active', false)->count();
+        $inactiveProducts = StoreQuery::table('products')->where('is_active', false)->count();
 
-        $suppliersNoGstin = DB::table('suppliers')
+        $suppliersNoGstin = StoreQuery::table('suppliers')
             ->where('is_active', true)
             ->where(function ($q) {
                 $q->whereNull('gstin')->orWhere('gstin', '');
             })->count();
 
-        $inactiveSuppliers = DB::table('suppliers')->where('is_active', false)->count();
+        $inactiveSuppliers = StoreQuery::table('suppliers')->where('is_active', false)->count();
 
         return [
             [
-                'key'          => 'missing_hsn',
-                'label'        => 'Products Missing HSN Code',
-                'count'        => $missingHsn,
-                'severity'     => 'critical',
-                'color'        => 'red',
-                'route'        => '/masters/product',
+                'key' => 'missing_hsn',
+                'label' => 'Products Missing HSN Code',
+                'count' => $missingHsn,
+                'severity' => 'critical',
+                'color' => 'red',
+                'route' => '/masters/product',
                 'filter_param' => 'filter=missing_hsn',
             ],
             [
-                'key'          => 'missing_tax',
-                'label'        => 'Products Without Tax Configured',
-                'count'        => $missingTax,
-                'severity'     => 'critical',
-                'color'        => 'red',
-                'route'        => '/masters/product',
+                'key' => 'missing_tax',
+                'label' => 'Products Without Tax Configured',
+                'count' => $missingTax,
+                'severity' => 'critical',
+                'color' => 'red',
+                'route' => '/masters/product',
                 'filter_param' => 'filter=missing_tax',
             ],
             [
-                'key'          => 'missing_barcode',
-                'label'        => 'Products Missing Barcode',
-                'count'        => $missingBarcode,
-                'severity'     => 'warning',
-                'color'        => 'orange',
-                'route'        => '/masters/product',
+                'key' => 'missing_barcode',
+                'label' => 'Products Missing Barcode',
+                'count' => $missingBarcode,
+                'severity' => 'warning',
+                'color' => 'orange',
+                'route' => '/masters/product',
                 'filter_param' => 'filter=missing_barcode',
             ],
             [
-                'key'          => 'suppliers_no_gstin',
-                'label'        => 'Active Suppliers Without GSTIN',
-                'count'        => $suppliersNoGstin,
-                'severity'     => 'warning',
-                'color'        => 'orange',
-                'route'        => '/masters/supplier',
+                'key' => 'suppliers_no_gstin',
+                'label' => 'Active Suppliers Without GSTIN',
+                'count' => $suppliersNoGstin,
+                'severity' => 'warning',
+                'color' => 'orange',
+                'route' => '/masters/supplier',
                 'filter_param' => 'filter=missing_gstin',
             ],
             [
-                'key'          => 'inactive_products',
-                'label'        => 'Inactive Products',
-                'count'        => $inactiveProducts,
-                'severity'     => 'info',
-                'color'        => 'yellow',
-                'route'        => '/masters/product',
+                'key' => 'inactive_products',
+                'label' => 'Inactive Products',
+                'count' => $inactiveProducts,
+                'severity' => 'info',
+                'color' => 'yellow',
+                'route' => '/masters/product',
                 'filter_param' => 'filter=inactive',
             ],
             [
-                'key'          => 'inactive_suppliers',
-                'label'        => 'Inactive Suppliers',
-                'count'        => $inactiveSuppliers,
-                'severity'     => 'info',
-                'color'        => 'yellow',
-                'route'        => '/masters/supplier',
+                'key' => 'inactive_suppliers',
+                'label' => 'Inactive Suppliers',
+                'count' => $inactiveSuppliers,
+                'severity' => 'info',
+                'color' => 'yellow',
+                'route' => '/masters/supplier',
                 'filter_param' => 'filter=inactive',
             ],
         ];
@@ -183,12 +184,12 @@ class MastersDashboardService
     public function getMasterDataBreakdown(): array
     {
         return [
-            'products'   => ['count' => DB::table('products')->count(), 'label' => 'Products'],
-            'brands'     => ['count' => DB::table('brands')->count(), 'label' => 'Brands'],
-            'categories' => ['count' => DB::table('categories')->count(), 'label' => 'Categories'],
-            'suppliers'  => ['count' => DB::table('suppliers')->count(), 'label' => 'Suppliers'],
-            'taxes'      => ['count' => DB::table('taxes')->count(), 'label' => 'Taxes'],
-            'agents'     => ['count' => DB::table('agents')->count(), 'label' => 'Agents'],
+            'products' => ['count' => StoreQuery::table('products')->count(), 'label' => 'Products'],
+            'brands' => ['count' => StoreQuery::table('brands')->count(), 'label' => 'Brands'],
+            'categories' => ['count' => StoreQuery::table('categories')->count(), 'label' => 'Categories'],
+            'suppliers' => ['count' => StoreQuery::table('suppliers')->count(), 'label' => 'Suppliers'],
+            'taxes' => ['count' => StoreQuery::table('taxes')->count(), 'label' => 'Taxes'],
+            'agents' => ['count' => StoreQuery::table('agents')->count(), 'label' => 'Agents'],
         ];
     }
 
@@ -197,7 +198,7 @@ class MastersDashboardService
      */
     public function getProductsByCategoryChart(): array
     {
-        $rows = DB::table('products')
+        $rows = StoreQuery::table('products')
             ->leftJoin('categories', 'products.category_id', '=', 'categories.id')
             ->selectRaw('COALESCE(categories.name, "Uncategorized") as category_name, COUNT(*) as count')
             ->groupBy(DB::raw('COALESCE(categories.name, "Uncategorized")'))
@@ -214,7 +215,7 @@ class MastersDashboardService
      */
     public function getRecentlyAddedProducts(int $limit = 10): array
     {
-        $rows = DB::table('products')
+        $rows = StoreQuery::table('products')
             ->leftJoin('brands', 'products.brand_id', '=', 'brands.id')
             ->select([
                 'products.id',

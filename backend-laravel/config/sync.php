@@ -2,6 +2,8 @@
 
 return [
     // 'local' on a store's on-prem install, 'cloud' on the shared dev.gpsoftware.in install.
+    'probe_allowed_endpoints' => array_values(array_filter(array_map('trim', explode(',', env('SERVER_PROBE_ALLOWED_ENDPOINTS', ''))))),
+
     'node_role' => env('SYNC_NODE_ROLE', 'cloud'),
 
     // Where a local install pushes/pulls sync traffic to/from.

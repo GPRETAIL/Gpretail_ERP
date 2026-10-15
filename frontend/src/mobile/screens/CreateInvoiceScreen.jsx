@@ -219,7 +219,7 @@ export default function CreateInvoiceScreen({ onBack }) {
       .decodeFromVideoDevice(
         undefined, // default back camera
         videoRef.current,
-        (result, err) => {
+        (result, _err) => {
           if (!active) return;
           if (result) {
             const code = result.getText();

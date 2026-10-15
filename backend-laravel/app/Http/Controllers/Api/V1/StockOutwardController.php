@@ -19,8 +19,7 @@ class StockOutwardController extends Controller
         private readonly StockService $stockService,
         private readonly VariantResolverService $variantResolver,
         private readonly PaginationService $paginationService,
-    ) {
-    }
+    ) {}
 
     public function index(Request $request)
     {
@@ -38,10 +37,11 @@ class StockOutwardController extends Controller
 
         if ($request->boolean('all') || $request->input('limit') == 500 || $request->input('limit') == 1000) {
             $items = $query->orderBy('outward_date', 'desc')->limit(2000)->get();
+
             return response()->json([
                 'success' => true,
-                'data'    => $items,
-                'total'   => $items->count(),
+                'data' => $items,
+                'total' => $items->count(),
             ]);
         }
 
@@ -68,34 +68,34 @@ class StockOutwardController extends Controller
                     }
                 },
             ],
-            'outward_date'    => 'nullable|date',
-            'items'           => 'required|array|min:1',
+            'outward_date' => 'nullable|date',
+            'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
-            'items.*.quantity'   => 'required|numeric|min:0.01',
+            'items.*.quantity' => 'required|numeric|min:0.01',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors'  => $validator->errors(),
+                'errors' => $validator->errors(),
             ], 422);
         }
 
         try {
             $outward = DB::transaction(function () use ($request, $sourceStoreId) {
-                $outwardNo = $request->input('outward_no') ?: 'OUT-' . date('Ymd') . '-' . rand(1000, 9999);
+                $outwardNo = $request->input('outward_no') ?: 'OUT-'.date('Ymd').'-'.rand(1000, 9999);
 
                 $targetStoreId = (int) $request->input('target_store_id');
 
                 $stockOutward = StockOutward::create([
                     'source_store_id' => $sourceStoreId,
                     'target_store_id' => $targetStoreId,
-                    'outward_no'      => $outwardNo,
-                    'outward_date'    => $request->input('outward_date') ?: now()->toDateString(),
-                    'status'          => $request->input('status', 'DISPATCHED'),
-                    'notes'           => $request->input('notes'),
-                    'created_by'      => $request->user()?->id ?? 1,
+                    'outward_no' => $outwardNo,
+                    'outward_date' => $request->input('outward_date') ?: now()->toDateString(),
+                    'status' => $request->input('status', 'DISPATCHED'),
+                    'notes' => $request->input('notes'),
+                    'created_by' => $request->user()?->id ?? 1,
                 ]);
 
                 foreach ($request->input('items', []) as $item) {
@@ -105,10 +105,10 @@ class StockOutwardController extends Controller
 
                     StockOutwardItem::create([
                         'stock_outward_id' => $stockOutward->id,
-                        'product_id'       => $item['product_id'],
-                        'variant_id'       => $variantId,
-                        'quantity'         => $qty,
-                        'unit_price'       => $price,
+                        'product_id' => $item['product_id'],
+                        'variant_id' => $variantId,
+                        'quantity' => $qty,
+                        'unit_price' => $price,
                     ]);
 
                     // Decrement from source - now correctly rejects (via
@@ -147,14 +147,14 @@ class StockOutwardController extends Controller
         } catch (InsufficientStockException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Cannot dispatch this transfer: ' . $e->getMessage(),
+                'message' => 'Cannot dispatch this transfer: '.$e->getMessage(),
             ], 422);
         }
 
         return response()->json([
             'success' => true,
             'message' => 'Stock outward dispatched successfully',
-            'data'    => $outward->load(['sourceStore', 'targetStore', 'items.product']),
+            'data' => $outward->load(['sourceStore', 'targetStore', 'items.product']),
         ], 201);
     }
 
@@ -162,7 +162,7 @@ class StockOutwardController extends Controller
     {
         $outward = StockOutward::with(['sourceStore', 'targetStore', 'items.product', 'creator'])->find($id);
 
-        if (!$outward) {
+        if (! $outward) {
             return response()->json([
                 'success' => false,
                 'message' => 'Stock outward record not found',
@@ -171,7 +171,7 @@ class StockOutwardController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $outward,
+            'data' => $outward,
         ]);
     }
 
@@ -179,7 +179,7 @@ class StockOutwardController extends Controller
     {
         $outward = StockOutward::with('items')->find($id);
 
-        if (!$outward) {
+        if (! $outward) {
             return response()->json([
                 'success' => false,
                 'message' => 'Stock outward record not found',
@@ -220,7 +220,7 @@ class StockOutwardController extends Controller
         } catch (InsufficientStockException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Cannot delete this transfer: the target store no longer has enough of this stock to reverse it (it has likely already been sold or moved). ' . $e->getMessage(),
+                'message' => 'Cannot delete this transfer: the target store no longer has enough of this stock to reverse it (it has likely already been sold or moved). '.$e->getMessage(),
             ], 422);
         }
 

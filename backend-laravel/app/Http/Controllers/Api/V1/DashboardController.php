@@ -4,18 +4,20 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
+use App\Models\Customer;
 use App\Models\DirectPurchase;
 use App\Models\Employee;
 use App\Models\PosSale;
-use App\Models\PurchaseInvoice;
 use App\Models\Product;
-use App\Models\Customer;
+use App\Models\PurchaseInvoice;
+use App\Models\SalesApproval;
 use App\Models\Stock;
 use App\Models\StockOutward;
 use App\Models\Store;
+use App\Services\StoreQuery;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
@@ -50,11 +52,17 @@ class DashboardController extends Controller
             $current = (float) $current;
             $previous = (float) $previous;
             if ($previous <= 0) {
-                if ($current <= 0) return ['direction' => 'flat', 'changePercent' => 0];
+                if ($current <= 0) {
+                    return ['direction' => 'flat', 'changePercent' => 0];
+                }
+
                 return ['direction' => 'up', 'changePercent' => 100];
             }
             $change = round((($current - $previous) / $previous) * 100, 1);
-            if (abs($change) < 0.05) return ['direction' => 'flat', 'changePercent' => 0];
+            if (abs($change) < 0.05) {
+                return ['direction' => 'flat', 'changePercent' => 0];
+            }
+
             return ['direction' => $change > 0 ? 'up' : 'down', 'changePercent' => abs($change)];
         };
 
@@ -78,23 +86,23 @@ class DashboardController extends Controller
         // KPI card could read the way totalBills/stockValue already can).
         $returnDateScope = fn ($q) => $q->whereBetween('return_date', [$from, $to]);
         $returnScope = fn ($q) => ($storeId && $storeId !== 'all') ? $q->where('store_id', $storeId) : $q;
-        $returnsAgg = $returnDateScope($returnScope(DB::table('pos_returns')))
+        $returnsAgg = $returnDateScope($returnScope(StoreQuery::table('pos_returns')))
             ->selectRaw('COALESCE(SUM(total_refund), 0) as total, COUNT(*) as cnt')
             ->first();
         $totalReturns = (float) $returnsAgg->total;
         $totalReturnCount = (int) $returnsAgg->cnt;
         $prevReturnDateScope = fn ($q) => $q->whereBetween('return_date', [$prevFrom, $prevTo]);
-        $prevTotalReturns = (float) ($prevReturnDateScope($returnScope(DB::table('pos_returns')))->sum('total_refund') ?? 0);
+        $prevTotalReturns = (float) ($prevReturnDateScope($returnScope(StoreQuery::table('pos_returns')))->sum('total_refund') ?? 0);
 
         // Purchase Return - goods sent back to a supplier, a real, separate
         // concept from a customer's POS return (different table entirely:
         // purchase_returns, keyed to a supplier_id/purchase_invoice_id).
-        $purchaseReturnsAgg = $returnDateScope($returnScope(DB::table('purchase_returns')))
+        $purchaseReturnsAgg = $returnDateScope($returnScope(StoreQuery::table('purchase_returns')))
             ->selectRaw('COALESCE(SUM(total_amount), 0) as total, COUNT(*) as cnt')
             ->first();
         $totalPurchaseReturns = (float) $purchaseReturnsAgg->total;
         $totalPurchaseReturnCount = (int) $purchaseReturnsAgg->cnt;
-        $prevTotalPurchaseReturns = (float) ($prevReturnDateScope($returnScope(DB::table('purchase_returns')))->sum('total_amount') ?? 0);
+        $prevTotalPurchaseReturns = (float) ($prevReturnDateScope($returnScope(StoreQuery::table('purchase_returns')))->sum('total_amount') ?? 0);
 
         // Purchases - this ERP has two independent real purchase-bill sources
         // (Direct Purchase entries, and Invoices from the Transport Entry ->
@@ -155,20 +163,20 @@ class DashboardController extends Controller
         // rather than silently understating profit as if every line item were accounted for.
         // Profit total and the missing-cost count are combined into one query via conditional
         // aggregation instead of two separate passes over the same joined row set.
-        $profitAgg = DB::table('pos_sale_items')
+        $profitAgg = StoreQuery::table('pos_sale_items')
             ->join('pos_sales', 'pos_sale_items.pos_sale_id', '=', 'pos_sales.id')
             ->whereBetween('pos_sales.sale_date', [$from, $to])
             ->when($storeId && $storeId !== 'all', fn ($q) => $q->where('pos_sales.store_id', $storeId))
             ->selectRaw(
                 'COALESCE(SUM(CASE WHEN pos_sale_items.cost_price IS NOT NULL '
-                . 'THEN pos_sale_items.quantity * (pos_sale_items.selling_price - pos_sale_items.cost_price) '
-                . 'ELSE 0 END), 0) as profit, '
-                . 'SUM(CASE WHEN pos_sale_items.cost_price IS NULL THEN 1 ELSE 0 END) as missing_cost_count'
+                .'THEN pos_sale_items.quantity * (pos_sale_items.selling_price - pos_sale_items.cost_price) '
+                .'ELSE 0 END), 0) as profit, '
+                .'SUM(CASE WHEN pos_sale_items.cost_price IS NULL THEN 1 ELSE 0 END) as missing_cost_count'
             )
             ->first();
         $grossProfit = (float) $profitAgg->profit;
         $itemsMissingCost = (int) $profitAgg->missing_cost_count;
-        $prevProfitQuery = DB::table('pos_sale_items')
+        $prevProfitQuery = StoreQuery::table('pos_sale_items')
             ->join('pos_sales', 'pos_sale_items.pos_sale_id', '=', 'pos_sales.id')
             ->whereBetween('pos_sales.sale_date', [$prevFrom, $prevTo])
             ->when($storeId && $storeId !== 'all', fn ($q) => $q->where('pos_sales.store_id', $storeId))
@@ -176,7 +184,7 @@ class DashboardController extends Controller
         $prevGrossProfit = (float) ($prevProfitQuery->sum(DB::raw('pos_sale_items.quantity * (pos_sale_items.selling_price - pos_sale_items.cost_price)')) ?? 0);
 
         // Calculate Stock Value (Qty * Product Cost Price)
-        $stockValQuery = DB::table('stocks')
+        $stockValQuery = StoreQuery::table('stocks')
             ->join('products', 'stocks.product_id', '=', 'products.id');
         if ($storeId && $storeId !== 'all') {
             $stockValQuery->where('stocks.store_id', $storeId);
@@ -185,7 +193,7 @@ class DashboardController extends Controller
 
         // Top Selling Items for Highlight Card - joined through pos_sales (previously ungrouped by
         // store or date at all, so every store's entire history fed this one global ranking).
-        $topSellingQuery = DB::table('pos_sale_items')
+        $topSellingQuery = StoreQuery::table('pos_sale_items')
             ->join('products', 'pos_sale_items.product_id', '=', 'products.id')
             ->join('pos_sales', 'pos_sale_items.pos_sale_id', '=', 'pos_sales.id')
             ->whereBetween('pos_sales.sale_date', [$from, $to])
@@ -201,13 +209,13 @@ class DashboardController extends Controller
             ->get();
 
         $topSellingRows = $topSellingQuery->map(fn ($r) => [
-            'name'    => $r->name,
+            'name' => $r->name,
             'saleQty' => (float) $r->saleQty,
-            'value'   => (float) $r->value,
+            'value' => (float) $r->value,
         ])->all();
 
         // Top Customers
-        $topCustomerQuery = DB::table('pos_sales')
+        $topCustomerQuery = StoreQuery::table('pos_sales')
             ->join('customers', 'pos_sales.customer_id', '=', 'customers.id')
             ->whereBetween('pos_sales.sale_date', [$from, $to])
             ->when($storeId && $storeId !== 'all', fn ($q) => $q->where('pos_sales.store_id', $storeId))
@@ -222,9 +230,9 @@ class DashboardController extends Controller
             ->get();
 
         $topCustomerRows = $topCustomerQuery->map(fn ($r) => [
-            'name'    => $r->name,
+            'name' => $r->name,
             'saleQty' => (float) $r->saleQty,
-            'value'   => (float) $r->value,
+            'value' => (float) $r->value,
         ])->all();
 
         // Supplier Payments (Overview) - per-invoice outstanding payables across both payable
@@ -235,7 +243,7 @@ class DashboardController extends Controller
         $overdueThresholdDays = 30;
         $todayForDays = Carbon::today();
 
-        $dpPayments = DB::table('direct_purchases as dp')
+        $dpPayments = StoreQuery::table('direct_purchases as dp')
             ->leftJoin('suppliers as s', 's.id', '=', 'dp.supplier_id')
             ->when($storeId && $storeId !== 'all', fn ($q) => $q->where(fn ($sq) => $sq->where('dp.store_id', $storeId)->orWhere('dp.company_id', $storeId)))
             ->whereRaw('dp.total_amount > dp.paid_amount')
@@ -248,7 +256,7 @@ class DashboardController extends Controller
                 (dp.total_amount - dp.paid_amount) as balance
             ');
 
-        $piPayments = DB::table('purchase_invoices as pi')
+        $piPayments = StoreQuery::table('purchase_invoices as pi')
             ->leftJoin('suppliers as s', 's.id', '=', 'pi.supplier_id')
             ->when($storeId && $storeId !== 'all', fn ($q) => $q->where('pi.store_id', $storeId))
             ->whereRaw('pi.grand_total > pi.paid_amount')
@@ -265,14 +273,15 @@ class DashboardController extends Controller
             ->map(function ($row) use ($todayForDays, $overdueThresholdDays) {
                 $invoiceDate = $row->invoice_date ? Carbon::parse($row->invoice_date) : null;
                 $days = $invoiceDate ? $invoiceDate->diffInDays($todayForDays) : null;
+
                 return [
                     'supplierName' => $row->supplier_name,
-                    'invoiceNo'    => $row->invoice_no ?: '-',
-                    'invoiceType'  => $row->invoice_type,
-                    'days'         => $days,
+                    'invoiceNo' => $row->invoice_no ?: '-',
+                    'invoiceType' => $row->invoice_type,
+                    'days' => $days,
                     'invoiceValue' => (float) $row->invoice_value,
-                    'balance'      => (float) $row->balance,
-                    'overdue'      => $days !== null && $days > $overdueThresholdDays,
+                    'balance' => (float) $row->balance,
+                    'overdue' => $days !== null && $days > $overdueThresholdDays,
                 ];
             })
             ->sortByDesc('days')
@@ -310,11 +319,11 @@ class DashboardController extends Controller
             $totalUnitsSold += $stQty;
 
             $dailySummaryRows[] = [
-                'company'  => $st->name,
+                'company' => $st->name,
                 'location' => $st->city ?? 'Main',
-                'count'    => $stCount,
+                'count' => $stCount,
                 'quantity' => $stQty,
-                'value'    => $stSales,
+                'value' => $stSales,
             ];
         }
 
@@ -343,7 +352,7 @@ class DashboardController extends Controller
             ->get()
             ->keyBy('store_id');
 
-        $returnAggByStore = $returnDateScope(DB::table('pos_returns'))
+        $returnAggByStore = $returnDateScope(StoreQuery::table('pos_returns'))
             ->whereIn('store_id', $storeIds)
             ->selectRaw('store_id, COALESCE(SUM(total_refund), 0) as total')
             ->groupBy('store_id')
@@ -361,10 +370,10 @@ class DashboardController extends Controller
         $settlementColumnTotals = [];
 
         foreach ($stores as $st) {
-            $colKey = 'store_' . $st->id;
-            $locationLabel = !empty($st->city) ? $st->city : $st->name;
+            $colKey = 'store_'.$st->id;
+            $locationLabel = ! empty($st->city) ? $st->city : $st->name;
             $settlementColumns[] = [
-                'key'   => $colKey,
+                'key' => $colKey,
                 'label' => $locationLabel,
             ];
             $settlementColumnTotals[$colKey] = 0;
@@ -387,7 +396,7 @@ class DashboardController extends Controller
             $rowTotal = 0;
 
             foreach ($stores as $st) {
-                $colKey = 'store_' . $st->id;
+                $colKey = 'store_'.$st->id;
                 $val = 0;
 
                 if ($m['type'] === 'mode') {
@@ -408,11 +417,11 @@ class DashboardController extends Controller
             }
 
             $settlementRows[] = [
-                'key'    => $m['key'],
-                'label'  => $m['label'],
-                'color'  => $m['color'],
+                'key' => $m['key'],
+                'label' => $m['label'],
+                'color' => $m['color'],
                 'values' => $rowValues,
-                'total'  => $rowTotal,
+                'total' => $rowTotal,
             ];
             $grandSettlementTotal += $rowTotal;
         }
@@ -425,6 +434,7 @@ class DashboardController extends Controller
         // hours doesn't silently vanish from the chart instead of being bucketed.
         $hourlyBuckets = array_map(function ($h) {
             $displayHour = $h % 12 === 0 ? 12 : $h % 12;
+
             return ['label' => $displayHour.($h < 12 ? ' AM' : ' PM'), 'start' => $h, 'end' => $h + 1];
         }, range(0, 23));
         // HOUR() is MySQL-specific; the test suite runs against in-memory SQLite (phpunit.xml),
@@ -450,6 +460,7 @@ class DashboardController extends Controller
                     $amount += (float) $row->amt;
                 }
             }
+
             return ['label' => $bucket['label'], 'bills' => $bills, 'salesAmount' => round($amount, 2)];
         }, $hourlyBuckets);
 
@@ -474,15 +485,15 @@ class DashboardController extends Controller
             $agg = $dailyTrendByDate->get($date);
 
             $dailyTrendPoints[] = [
-                'label'       => $label,
+                'label' => $label,
                 'salesAmount' => (float) ($agg->sales ?? 0),
-                'units'       => (float) ($agg->units ?? 0),
+                'units' => (float) ($agg->units ?? 0),
             ];
         }
 
         // Sales Person of the Day - joined through pos_sales so this respects the selected date
         // range and store scope instead of aggregating every sales-man's entire history globally.
-        $salesPersonQuery = DB::table('pos_sale_items')
+        $salesPersonQuery = StoreQuery::table('pos_sale_items')
             ->leftJoin('employees', 'pos_sale_items.sales_man_id', '=', 'employees.id')
             ->join('pos_sales', 'pos_sale_items.pos_sale_id', '=', 'pos_sales.id')
             ->whereBetween('pos_sales.sale_date', [$from, $to])
@@ -498,64 +509,64 @@ class DashboardController extends Controller
             ->get();
 
         $salesPersonRows = $salesPersonQuery->map(fn ($r) => [
-            'name'    => $r->name,
+            'name' => $r->name,
             'saleQty' => (float) $r->saleQty,
-            'value'   => (float) $r->value,
+            'value' => (float) $r->value,
         ])->all();
 
         return response()->json([
             'success' => true,
-            'data'    => [
+            'data' => [
                 // UI Contract Schema for React Dashboard.jsx
                 'metrics' => [
                     'totalBills' => [
-                        'amount'         => $totalSales,
-                        'count'          => $totalOrders,
+                        'amount' => $totalSales,
+                        'count' => $totalOrders,
                         'unsettledCount' => 0,
                         // {direction, changePercent} - MetricCard's TrendBadge expects this shape,
                         // not a plain string; a literal "+12.5%" string rendered as "undefined%"
                         // in a red down-arrow badge regardless of the real number's sign.
-                        'trend'          => $computeTrend($totalSales, $prevTotalSales),
+                        'trend' => $computeTrend($totalSales, $prevTotalSales),
                     ],
                     'settlements' => [
                         'amount' => $totalSales,
-                        'trend'  => $computeTrend($totalSales, $prevTotalSales),
+                        'trend' => $computeTrend($totalSales, $prevTotalSales),
                     ],
                     'employees' => [
                         'present' => max($presentEmployees, 1),
-                        'total'   => max($totalEmployees, 1),
+                        'total' => max($totalEmployees, 1),
                     ],
                     'stockValue' => [
                         // Point-in-time snapshot (current stock on hand) - no historical stock-value
                         // series exists to compare against, so no trend is sent rather than a fake one.
                         'amount' => $totalStockValue,
-                        'trend'  => null,
+                        'trend' => null,
                     ],
                     'returns' => [
                         'amount' => $totalReturns,
-                        'count'  => $totalReturnCount,
-                        'trend'  => $computeTrend($totalReturns, $prevTotalReturns),
+                        'count' => $totalReturnCount,
+                        'trend' => $computeTrend($totalReturns, $prevTotalReturns),
                     ],
                     'purchaseReturns' => [
                         'amount' => $totalPurchaseReturns,
-                        'count'  => $totalPurchaseReturnCount,
-                        'trend'  => $computeTrend($totalPurchaseReturns, $prevTotalPurchaseReturns),
+                        'count' => $totalPurchaseReturnCount,
+                        'trend' => $computeTrend($totalPurchaseReturns, $prevTotalPurchaseReturns),
                     ],
                     'purchases' => [
                         // Sum of Direct Purchase entries + Invoices (Transport Entry -> Invoice ->
                         // Inventory Entry flow) - two independent real sources, not just one.
                         'amount' => $totalPurchases,
-                        'count'  => $totalPurchaseCount,
-                        'trend'  => $computeTrend($totalPurchases, $prevTotalPurchases),
+                        'count' => $totalPurchaseCount,
+                        'trend' => $computeTrend($totalPurchases, $prevTotalPurchases),
                     ],
                     'gst' => [
                         'amount' => $totalTaxCollected,
-                        'trend'  => $computeTrend($totalTaxCollected, $prevTotalTax),
+                        'trend' => $computeTrend($totalTaxCollected, $prevTotalTax),
                     ],
                     'profitLoss' => [
-                        'amount'           => $grossProfit,
+                        'amount' => $grossProfit,
                         'itemsMissingCost' => $itemsMissingCost,
-                        'trend'            => $computeTrend($grossProfit, $prevGrossProfit),
+                        'trend' => $computeTrend($grossProfit, $prevGrossProfit),
                     ],
                     'receivables' => [
                         // Real customer credit balance (Customer.current_balance) - same figure
@@ -565,68 +576,68 @@ class DashboardController extends Controller
                 ],
                 'charts' => [
                     'hourlySales' => [
-                        'title'    => 'Sales Graph (Hourly)',
+                        'title' => 'Sales Graph (Hourly)',
                         'subtitle' => "Today's sales performance by hour",
-                        'points'   => $hourlyPoints,
+                        'points' => $hourlyPoints,
                     ],
                     'dailyTrend' => [
-                        'title'    => 'Business Trend (Daily)',
+                        'title' => 'Business Trend (Daily)',
                         'subtitle' => 'Sales value and units over the last 10 days',
-                        'points'   => $dailyTrendPoints,
+                        'points' => $dailyTrendPoints,
                     ],
                 ],
                 'tables' => [
                     'fastMovingSection' => [
                         'title' => 'Fast Moving Products',
-                        'rows'  => $topSellingRows,
+                        'rows' => $topSellingRows,
                     ],
                     'supplierPayments' => [
-                        'title'        => 'Supplier Payments',
-                        'rows'         => $supplierPaymentRows,
+                        'title' => 'Supplier Payments',
+                        'rows' => $supplierPaymentRows,
                         'totalBalance' => $supplierPaymentsTotalBalance,
                         'overdueCount' => $supplierPaymentsOverdueCount,
-                        'overdueDays'  => $overdueThresholdDays,
+                        'overdueDays' => $overdueThresholdDays,
                     ],
                     'salesPersonOfTheDay' => [
                         'title' => 'Sales Person of the Day',
-                        'rows'  => $salesPersonRows,
+                        'rows' => $salesPersonRows,
                     ],
                     'topSellingItems' => [
                         'title' => 'Fast Moving Products',
-                        'rows'  => $topSellingRows,
+                        'rows' => $topSellingRows,
                     ],
                     'topCustomers' => [
                         'title' => 'Top Customers',
-                        'rows'  => $topCustomerRows,
+                        'rows' => $topCustomerRows,
                     ],
                     'dailySalesSummary' => [
-                        'title'  => 'Daily Sales Summary',
-                        'rows'   => $dailySummaryRows,
+                        'title' => 'Daily Sales Summary',
+                        'rows' => $dailySummaryRows,
                         'totals' => [
-                            'count'    => $totalOrders,
+                            'count' => $totalOrders,
                             'quantity' => $totalUnitsSold,
-                            'value'    => $totalSales,
+                            'value' => $totalSales,
                         ],
                     ],
                     'settlementDetails' => [
-                        'title'        => 'Settlement Details',
-                        'columns'      => $settlementColumns,
-                        'rows'         => $settlementRows,
+                        'title' => 'Settlement Details',
+                        'columns' => $settlementColumns,
+                        'rows' => $settlementRows,
                         'columnTotals' => $settlementColumnTotals,
-                        'grandTotal'   => $grandSettlementTotal > 0 ? $grandSettlementTotal : $totalSales,
+                        'grandTotal' => $grandSettlementTotal > 0 ? $grandSettlementTotal : $totalSales,
                     ],
                 ],
                 // Legacy overview keys for backwards compatibility
                 'overview' => [
-                    'total_sales'      => $totalSales,
-                    'total_orders'     => $totalOrders,
-                    'total_products'   => $totalProducts,
-                    'total_customers'  => $totalCustomers,
-                    'total_stock_qty'  => $totalStockQty,
+                    'total_sales' => $totalSales,
+                    'total_orders' => $totalOrders,
+                    'total_products' => $totalProducts,
+                    'total_customers' => $totalCustomers,
+                    'total_stock_qty' => $totalStockQty,
                     'low_stock_alerts' => $lowStockAlerts,
                 ],
-                'recent_sales'  => PosSale::with(['customer', 'user'])->orderBy('id', 'desc')->limit(5)->get(),
-                'top_products'  => $topSellingRows,
+                'recent_sales' => PosSale::with(['customer', 'user'])->orderBy('id', 'desc')->limit(5)->get(),
+                'top_products' => $topSellingRows,
                 'monthly_trend' => $dailyTrendPoints,
             ],
         ]);
@@ -639,12 +650,12 @@ class DashboardController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => [
+            'data' => [
                 'total_items_in_stock' => (float) ($scoped(Stock::query())->sum('quantity') ?? 0),
-                'low_stock_items'      => (int) ($scoped(Stock::query())->where('quantity', '<=', 5)->count() ?? 0),
-                'out_of_stock_items'   => (int) ($scoped(Stock::query())->where('quantity', '<=', 0)->count() ?? 0),
-                'total_inventory_val'  => (float) ($scoped(
-                    DB::table('stocks')->join('products', 'stocks.product_id', '=', 'products.id')
+                'low_stock_items' => (int) ($scoped(Stock::query())->where('quantity', '<=', 5)->count() ?? 0),
+                'out_of_stock_items' => (int) ($scoped(Stock::query())->where('quantity', '<=', 0)->count() ?? 0),
+                'total_inventory_val' => (float) ($scoped(
+                    StoreQuery::table('stocks')->join('products', 'stocks.product_id', '=', 'products.id')
                 )->sum(DB::raw('stocks.quantity * COALESCE(products.cost_price, 0)')) ?? 0),
                 'recent_grns' => DirectPurchase::query()
                     ->when($storeId && $storeId !== 'all', fn ($q) => $q->where('store_id', $storeId))
@@ -669,15 +680,15 @@ class DashboardController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => [
-                'totalBillsToday'      => $todayOrders,
+            'data' => [
+                'totalBillsToday' => $todayOrders,
                 'totalSettlementToday' => $todaySales,
-                'unsettledBills'       => 0,
-                'todaySales'           => $todaySales,
-                'todayOrders'          => $todayOrders,
-                'yesterdaySales'       => 0,
-                'thisMonthSales'       => (float) (PosSale::sum('grand_total') ?? 0),
-                'averageBillValue'     => $todayOrders > 0 ? round($todaySales / $todayOrders, 2) : 0,
+                'unsettledBills' => 0,
+                'todaySales' => $todaySales,
+                'todayOrders' => $todayOrders,
+                'yesterdaySales' => 0,
+                'thisMonthSales' => (float) (PosSale::sum('grand_total') ?? 0),
+                'averageBillValue' => $todayOrders > 0 ? round($todaySales / $todayOrders, 2) : 0,
             ],
         ]);
     }
@@ -689,39 +700,39 @@ class DashboardController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => [
+            'data' => [
                 'cards' => [
                     [
-                        'key'       => 'gross_margin',
-                        'title'     => 'Gross Margin',
-                        'subtitle'  => 'Overall Margin %',
-                        'value'     => 28.5,
+                        'key' => 'gross_margin',
+                        'title' => 'Gross Margin',
+                        'subtitle' => 'Overall Margin %',
+                        'value' => 28.5,
                         'valueType' => 'percent',
-                        'trend'     => '+2.1%',
+                        'trend' => '+2.1%',
                     ],
                     [
-                        'key'       => 'avg_basket',
-                        'title'     => 'Average Basket Size',
-                        'subtitle'  => 'Per Transaction',
-                        'value'     => $totalOrders > 0 ? round($totalSales / $totalOrders, 2) : 0,
+                        'key' => 'avg_basket',
+                        'title' => 'Average Basket Size',
+                        'subtitle' => 'Per Transaction',
+                        'value' => $totalOrders > 0 ? round($totalSales / $totalOrders, 2) : 0,
                         'valueType' => 'currency',
-                        'trend'     => '+4.5%',
+                        'trend' => '+4.5%',
                     ],
                     [
-                        'key'       => 'inventory_turnover',
-                        'title'     => 'Inventory Turnover',
-                        'subtitle'  => 'Annualized Ratio',
-                        'value'     => 4.2,
+                        'key' => 'inventory_turnover',
+                        'title' => 'Inventory Turnover',
+                        'subtitle' => 'Annualized Ratio',
+                        'value' => 4.2,
                         'valueType' => 'multiple',
-                        'trend'     => '+0.3x',
+                        'trend' => '+0.3x',
                     ],
                     [
-                        'key'       => 'sales_growth',
-                        'title'     => 'Sales Growth',
-                        'subtitle'  => 'vs Last Month',
-                        'value'     => 14.8,
+                        'key' => 'sales_growth',
+                        'title' => 'Sales Growth',
+                        'subtitle' => 'vs Last Month',
+                        'value' => 14.8,
                         'valueType' => 'percent',
-                        'trend'     => '+3.2%',
+                        'trend' => '+3.2%',
                     ],
                 ],
             ],
@@ -740,13 +751,13 @@ class DashboardController extends Controller
         $scope = fn ($q) => ($storeId && $storeId !== 'all') ? $q->where('store_id', $storeId) : $q;
 
         // 1. Low Stock Alerts
-        $lowStock = (int) ($scope(\App\Models\Stock::query())->where('quantity', '<=', 5)->count() ?? 0);
+        $lowStock = (int) ($scope(Stock::query())->where('quantity', '<=', 5)->count() ?? 0);
 
         // 2. Pending Approvals
-        $pendingApprovals = (int) ($scope(\App\Models\SalesApproval::query())->where('status', 'PENDING')->count() ?? 0);
+        $pendingApprovals = (int) ($scope(SalesApproval::query())->where('status', 'PENDING')->count() ?? 0);
 
         // 3. Overdue Payables (Unpaid Purchase Bills)
-        $overduePayables = (int) ($scope(\App\Models\PurchaseInvoice::query())->where('payment_status', '!=', 'PAID')->count() ?? 0);
+        $overduePayables = (int) ($scope(PurchaseInvoice::query())->where('payment_status', '!=', 'PAID')->count() ?? 0);
 
         // 4. Employees on Leave (today)
         $employeesOnLeave = (int) (Attendance::whereDate('date', now()->toDateString())
@@ -756,10 +767,10 @@ class DashboardController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => [
-                'low_stock'          => $lowStock,
-                'pending_approvals'  => $pendingApprovals,
-                'overdue_payables'   => $overduePayables,
+            'data' => [
+                'low_stock' => $lowStock,
+                'pending_approvals' => $pendingApprovals,
+                'overdue_payables' => $overduePayables,
                 'employees_on_leave' => $employeesOnLeave,
             ],
         ]);

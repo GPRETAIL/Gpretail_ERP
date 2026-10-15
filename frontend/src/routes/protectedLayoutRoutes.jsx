@@ -42,7 +42,7 @@ const BackupCenter = lazy(() => import("../pages/settings/BackupCenter"));
 const UserAccess = lazy(() => import("../pages/settings/UserAccess"));
 const UserAccessHome = lazy(() => import("../pages/settings/UserAccessHome"));
 const WarehouseDashboard = lazy(() => import("../pages/warehouse/WarehouseDashboard"));
-const WarehouseNewPage = lazy(() => import("../pages/warehouse/NewPage"));
+const InvoiceImportPage = lazy(() => import("../pages/warehouse/InvoiceImportPage"));
 const TransportEntry = lazy(() => import("../pages/warehouse/TransportEntry"));
 const TransportEntrySearchPage = lazy(() => import("../pages/warehouse/TransportEntrySearchPage"));
 const Intray = lazy(() => import("../pages/warehouse/Intray"));
@@ -84,7 +84,7 @@ const SalesReports = lazy(() => import("../pages/sales/SalesReports"));
 const TouchSales = lazy(() => import("../pages/sales/TouchSales"));
 const CashOpening = lazy(() => import("../pages/sales/CashOpening"));
 const CashClosing = lazy(() => import("../pages/sales/CashClosing"));
-const POSOld = lazy(() => import("../pages/sales/POSOld"));
+const LegacyPosPage = lazy(() => import("../pages/sales/LegacyPosPage"));
 const Customisation = lazy(() => import("../pages/sales/Customisation"));
 const ReceiptFormatsDesigner = lazy(() => import("../pages/sales/ReceiptFormatsDesigner"));
 const StockAnalyzer = lazy(() => import("../pages/analytical/StockAnalyzer"));
@@ -138,7 +138,7 @@ export const protectedLayoutRoutes = [
   { path: "/settings/user-access", render: () => <Navigate to="/user-access" replace /> },
   { path: "/:moduleName", render: () => <ModulePage /> },
   { path: "/warehouse/dashboard", render: () => <WarehouseDashboard /> },
-  { path: "/warehouse/new-page", render: () => <WarehouseNewPage /> },
+  { path: "/warehouse/new-page", render: () => <InvoiceImportPage /> },
   { path: "/warehouse/courier", render: () => <ComingSoon /> },
   { path: "/warehouse/transport-entry", render: () => <TransportEntry /> },
   { path: "/warehouse/transport-entry/search", render: () => <TransportEntrySearchPage /> },
@@ -184,7 +184,7 @@ export const protectedLayoutRoutes = [
   { path: "/sales/touch-sales", render: () => <TouchSales /> },
   { path: "/sales/cash-opening", render: () => <CashOpening /> },
   { path: "/sales/cash-closing", render: () => <CashClosing /> },
-  { path: "/sales/pos-old", render: () => <POSOld /> },
+  { path: "/sales/pos-old", render: () => <LegacyPosPage /> },
   { path: "/sales/customisation", render: () => <Customisation /> },
   { path: "/sales/customization", render: () => <Customisation /> },
   { path: "/sales/receipt-formats", render: () => <ReceiptFormatsDesigner /> },

@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Services\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class CategoryController extends Controller
 {
@@ -25,8 +26,8 @@ class CategoryController extends Controller
                     $q->where($field, 'like', "%{$s}%");
                 } else {
                     $q->where('name', 'like', "%{$s}%")
-                      ->orWhere('code', 'like', "%{$s}%")
-                      ->orWhere('description', 'like', "%{$s}%");
+                        ->orWhere('code', 'like', "%{$s}%")
+                        ->orWhere('description', 'like', "%{$s}%");
                 }
             });
         }
@@ -35,23 +36,27 @@ class CategoryController extends Controller
         if ($request->filled('column_filters')) {
             $filters = json_decode($request->input('column_filters'), true) ?? [];
             foreach ($filters as $filter) {
-                $col   = $filter['field']    ?? null;
-                $op    = $filter['operator'] ?? 'contains';
-                $val   = $filter['value']    ?? '';
-                if (!$col) continue;
+                $col = $filter['field'] ?? null;
+                $op = $filter['operator'] ?? 'contains';
+                $val = $filter['value'] ?? '';
+                if (! $col) {
+                    continue;
+                }
 
                 // Whitelist to prevent SQL injection
                 $allowed = ['code', 'name', 'description', 'is_active', 'parent_id'];
-                if (!in_array($col, $allowed)) continue;
+                if (! in_array($col, $allowed)) {
+                    continue;
+                }
 
                 match ($op) {
-                    'equals'     => $query->where($col, $val),
+                    'equals' => $query->where($col, $val),
                     'not_equals' => $query->where($col, '!=', $val),
-                    'starts'     => $query->where($col, 'like', "{$val}%"),
-                    'ends'       => $query->where($col, 'like', "%{$val}"),
-                    'blank'      => $query->whereNull($col)->orWhere($col, ''),
-                    'not_blank'  => $query->whereNotNull($col)->where($col, '!=', ''),
-                    default      => $query->where($col, 'like', "%{$val}%"), // 'contains'
+                    'starts' => $query->where($col, 'like', "{$val}%"),
+                    'ends' => $query->where($col, 'like', "%{$val}"),
+                    'blank' => $query->whereNull($col)->orWhere($col, ''),
+                    'not_blank' => $query->whereNotNull($col)->where($col, '!=', ''),
+                    default => $query->where($col, 'like', "%{$val}%"), // 'contains'
                 };
             }
         }
@@ -59,18 +64,19 @@ class CategoryController extends Controller
         // ?all=true — return everything (for dropdowns & export), capped for safety
         if ($request->boolean('all') || in_array($request->input('limit'), ['500', '1000', 500, 1000])) {
             $items = $query->orderBy('name')->limit(2000)->get();
+
             return response()->json([
                 'success' => true,
-                'data'    => $items,
-                'total'   => $items->count(),
+                'data' => $items,
+                'total' => $items->count(),
             ]);
         }
 
         // Adaptive Server-Side Pagination
         $result = $this->paginationService->paginate($query, 'categories', $request, [
-            'default_sort'  => 'name',
+            'default_sort' => 'name',
             'default_order' => 'asc',
-            'tie_breaker'   => 'id',
+            'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'name', 'code', 'description', 'created_at'],
         ]);
 
@@ -80,9 +86,10 @@ class CategoryController extends Controller
     public function show($id)
     {
         $category = Category::with(['parent', 'children'])->findOrFail($id);
+
         return response()->json([
             'success' => true,
-            'data'    => $category,
+            'data' => $category,
         ]);
     }
 
@@ -90,7 +97,7 @@ class CategoryController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'code' => 'required|string|max:50|unique:categories,code',
+            'code' => ['required', 'string', 'max:50', Rule::unique('categories', 'code')->where('store_id', $request->attributes->get('store_context_id'))],
         ]);
 
         if ($validator->fails()) {
@@ -102,7 +109,7 @@ class CategoryController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Category created successfully',
-            'data'    => $category,
+            'data' => $category,
         ], 201);
     }
 
@@ -112,7 +119,7 @@ class CategoryController extends Controller
 
         $validator = Validator::make($request->all(), [
             'name' => 'sometimes|required|string|max:255',
-            'code' => 'sometimes|required|string|max:50|unique:categories,code,' . $id,
+            'code' => ['sometimes', 'required', 'string', 'max:50', Rule::unique('categories', 'code')->where('store_id', $request->attributes->get('store_context_id'))->ignore($category)],
         ]);
 
         if ($validator->fails()) {
@@ -124,7 +131,7 @@ class CategoryController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Category updated successfully',
-            'data'    => $category,
+            'data' => $category,
         ]);
     }
 

@@ -3,9 +3,7 @@
 namespace App\Services;
 
 use App\Models\Customer;
-use App\Models\CustomerOrder;
 use App\Models\LoyaltyTransaction;
-use App\Models\PosSale;
 use App\Models\Store;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -20,15 +18,16 @@ class CrmDashboardService
         $role = strtolower((string) ($user?->role ?? ''));
         $isSuperAdmin = in_array($role, ['super_admin', 'superadmin'], true);
 
-        if (!empty($filters['warehouse_id']) || !empty($filters['store_id'])) {
+        if (! empty($filters['warehouse_id']) || ! empty($filters['store_id'])) {
             $requestedStoreId = (int) ($filters['warehouse_id'] ?? $filters['store_id']);
             if ($isSuperAdmin) {
                 return $requestedStoreId;
             }
+
             return (int) ($user?->store_id ?: $user?->company_id ?: $requestedStoreId);
         }
 
-        if (!$isSuperAdmin) {
+        if (! $isSuperAdmin) {
             return (int) ($user?->store_id ?: $user?->company_id ?: 0) ?: null;
         }
 
@@ -40,8 +39,8 @@ class CrmDashboardService
      */
     protected function resolveDateRange(array $filters): array
     {
-        $from = !empty($filters['date_from']) ? Carbon::parse($filters['date_from'])->startOfDay() : null;
-        $to = !empty($filters['date_to']) ? Carbon::parse($filters['date_to'])->endOfDay() : null;
+        $from = ! empty($filters['date_from']) ? Carbon::parse($filters['date_from'])->startOfDay() : null;
+        $to = ! empty($filters['date_to']) ? Carbon::parse($filters['date_to'])->endOfDay() : null;
 
         return [$from, $to];
     }
@@ -65,18 +64,18 @@ class CrmDashboardService
         $performance = $this->getPerformanceMetrics($storeId, $from, $to);
 
         return [
-            'summary'          => $summary,
-            'action_required'  => $actionRequired,
-            'segmentation'     => $segmentation,
-            'order_breakdown'  => $orderStatusBreakdown,
-            'top_customers'    => $topCustomers,
-            'recent_orders'    => $recentOrders,
-            'upcoming_events'  => $upcomingEvents,
-            'charts'           => [
+            'summary' => $summary,
+            'action_required' => $actionRequired,
+            'segmentation' => $segmentation,
+            'order_breakdown' => $orderStatusBreakdown,
+            'top_customers' => $topCustomers,
+            'recent_orders' => $recentOrders,
+            'upcoming_events' => $upcomingEvents,
+            'charts' => [
                 'timeline' => $timelineChart,
             ],
-            'performance'      => $performance,
-            'last_updated'     => Carbon::now()->toIso8601String(),
+            'performance' => $performance,
+            'last_updated' => Carbon::now()->toIso8601String(),
         ];
     }
 
@@ -86,10 +85,10 @@ class CrmDashboardService
     public function getSummary(?int $storeId, ?Carbon $from, ?Carbon $to): array
     {
         // 1. Customers Count
-        $totalCustomers = DB::table('customers')->count();
-        $activeCustomers = DB::table('customers')->where('is_active', true)->count();
-        
-        $newCustQuery = DB::table('customers');
+        $totalCustomers = StoreQuery::table('customers')->count();
+        $activeCustomers = StoreQuery::table('customers')->where('is_active', true)->count();
+
+        $newCustQuery = StoreQuery::table('customers');
         if ($from && $to) {
             $newCustQuery->whereBetween('created_at', [$from, $to]);
         } else {
@@ -98,7 +97,7 @@ class CrmDashboardService
         $newCustomers = $newCustQuery->count();
 
         // 2. Customer Orders Aggregation
-        $ordersQuery = DB::table('customer_orders');
+        $ordersQuery = StoreQuery::table('customer_orders');
         if ($storeId) {
             $ordersQuery->where('store_id', $storeId);
         }
@@ -115,31 +114,31 @@ class CrmDashboardService
         ')->first();
 
         // 3. Customer Receivables / Outstanding balance
-        $totalReceivables = (float) DB::table('customers')->sum('current_balance');
-        $customersWithDues = DB::table('customers')->where('current_balance', '>', 0)->count();
+        $totalReceivables = (float) StoreQuery::table('customers')->sum('current_balance');
+        $customersWithDues = StoreQuery::table('customers')->where('current_balance', '>', 0)->count();
 
         // 4. Loyalty Program
-        $totalLoyaltyPoints = (float) DB::table('customers')->sum('loyalty_points');
-        $loyaltyMembersCount = DB::table('customers')->where('loyalty_points', '>', 0)->count();
+        $totalLoyaltyPoints = (float) StoreQuery::table('customers')->sum('loyalty_points');
+        $loyaltyMembersCount = StoreQuery::table('customers')->where('loyalty_points', '>', 0)->count();
         // 'REDEEM' (uppercase) is the real type value LoyaltyTransaction rows use
         // (see PosSaleController's EARN write and CustomerController's redemption
         // queries) -- this previously read 'redeemed' and so always summed to 0.
-        $totalPointsRedeemed = (float) DB::table('loyalty_transactions')->where('type', 'REDEEM')->sum('points');
+        $totalPointsRedeemed = (float) StoreQuery::table('loyalty_transactions')->where('type', 'REDEEM')->sum('points');
 
         return [
-            'total_customers'      => $totalCustomers,
-            'active_customers'     => $activeCustomers,
-            'new_customers'        => $newCustomers,
-            'total_orders'         => (int) ($ordersAgg->total_orders ?? 0),
-            'total_order_value'    => (float) ($ordersAgg->total_order_value ?? 0),
-            'advance_received'     => (float) ($ordersAgg->advance_received ?? 0),
-            'balance_receivable'   => (float) ($ordersAgg->balance_receivable ?? 0),
-            'avg_order_value'      => (float) ($ordersAgg->avg_order_value ?? 0),
-            'total_receivables'    => $totalReceivables,
-            'customers_with_dues'  => $customersWithDues,
+            'total_customers' => $totalCustomers,
+            'active_customers' => $activeCustomers,
+            'new_customers' => $newCustomers,
+            'total_orders' => (int) ($ordersAgg->total_orders ?? 0),
+            'total_order_value' => (float) ($ordersAgg->total_order_value ?? 0),
+            'advance_received' => (float) ($ordersAgg->advance_received ?? 0),
+            'balance_receivable' => (float) ($ordersAgg->balance_receivable ?? 0),
+            'avg_order_value' => (float) ($ordersAgg->avg_order_value ?? 0),
+            'total_receivables' => $totalReceivables,
+            'customers_with_dues' => $customersWithDues,
             'total_loyalty_points' => $totalLoyaltyPoints,
-            'loyalty_members_count'=> $loyaltyMembersCount,
-            'total_points_redeemed'=> $totalPointsRedeemed,
+            'loyalty_members_count' => $loyaltyMembersCount,
+            'total_points_redeemed' => $totalPointsRedeemed,
         ];
     }
 
@@ -151,100 +150,100 @@ class CrmDashboardService
         $todayStr = Carbon::today()->toDateString();
 
         // 1. Orders Overdue / Due Today for Delivery
-        $overdueOrdersCount = DB::table('customer_orders')
-            ->when($storeId, fn($q) => $q->where('store_id', $storeId))
+        $overdueOrdersCount = StoreQuery::table('customer_orders')
+            ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->whereDate('delivery_date', '<=', $todayStr)
             ->whereNotIn('status', ['delivered', 'completed', 'cancelled'])
             ->count();
 
         // 2. Pending Balance on Ready Orders
-        $readyPendingBalance = DB::table('customer_orders')
-            ->when($storeId, fn($q) => $q->where('store_id', $storeId))
+        $readyPendingBalance = StoreQuery::table('customer_orders')
+            ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->where('balance_due', '>', 0)
             ->whereIn('status', ['ready', 'confirmed', 'ready_for_delivery'])
             ->count();
 
         // 3. Customers Over Credit Limit
-        $overCreditLimitCount = DB::table('customers')
+        $overCreditLimitCount = StoreQuery::table('customers')
             ->where('credit_limit', '>', 0)
             ->whereRaw('current_balance > credit_limit')
             ->count();
 
         // 4. Unconfirmed / Draft Orders
-        $draftOrdersCount = DB::table('customer_orders')
-            ->when($storeId, fn($q) => $q->where('store_id', $storeId))
+        $draftOrdersCount = StoreQuery::table('customer_orders')
+            ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->whereIn('status', ['draft', 'pending'])
             ->count();
 
         // 5. Birthdays / Anniversaries Today
         $now = Carbon::now();
-        $celebrationsToday = DB::table('customers')
+        $celebrationsToday = StoreQuery::table('customers')
             ->where(function ($q) use ($now) {
-                $q->where(fn($sub) => $sub->whereMonth('date_of_birth', $now->month)->whereDay('date_of_birth', $now->day))
-                  ->orWhere(fn($sub) => $sub->whereMonth('marriage_date', $now->month)->whereDay('marriage_date', $now->day));
+                $q->where(fn ($sub) => $sub->whereMonth('date_of_birth', $now->month)->whereDay('date_of_birth', $now->day))
+                    ->orWhere(fn ($sub) => $sub->whereMonth('marriage_date', $now->month)->whereDay('marriage_date', $now->day));
             })
             ->count();
 
         // 6. High Points Inactive Customers (> 500 pts, no order in 60 days)
-        $inactivePointsMembers = DB::table('customers')
+        $inactivePointsMembers = StoreQuery::table('customers')
             ->where('loyalty_points', '>=', 500)
             ->where('is_active', true)
             ->count();
 
         return [
             [
-                'key'         => 'orders_due_today',
-                'label'       => 'Orders Due for Delivery',
-                'count'       => $overdueOrdersCount,
-                'severity'    => 'critical',
-                'color'       => 'red',
-                'route'       => '/crm/customer-orders',
-                'filter_param'=> 'delivery_filter=due_today',
+                'key' => 'orders_due_today',
+                'label' => 'Orders Due for Delivery',
+                'count' => $overdueOrdersCount,
+                'severity' => 'critical',
+                'color' => 'red',
+                'route' => '/crm/customer-orders',
+                'filter_param' => 'delivery_filter=due_today',
             ],
             [
-                'key'         => 'over_credit_limit',
-                'label'       => 'Credit Limit Exceeded',
-                'count'       => $overCreditLimitCount,
-                'severity'    => 'critical',
-                'color'       => 'red',
-                'route'       => '/crm/customer',
-                'filter_param'=> 'filter=over_limit',
+                'key' => 'over_credit_limit',
+                'label' => 'Credit Limit Exceeded',
+                'count' => $overCreditLimitCount,
+                'severity' => 'critical',
+                'color' => 'red',
+                'route' => '/crm/customer',
+                'filter_param' => 'filter=over_limit',
             ],
             [
-                'key'         => 'ready_pending_balance',
-                'label'       => 'Balance Due (Ready Orders)',
-                'count'       => $readyPendingBalance,
-                'severity'    => 'warning',
-                'color'       => 'orange',
-                'route'       => '/crm/customer-orders',
-                'filter_param'=> 'status=ready&has_balance=true',
+                'key' => 'ready_pending_balance',
+                'label' => 'Balance Due (Ready Orders)',
+                'count' => $readyPendingBalance,
+                'severity' => 'warning',
+                'color' => 'orange',
+                'route' => '/crm/customer-orders',
+                'filter_param' => 'status=ready&has_balance=true',
             ],
             [
-                'key'         => 'draft_orders',
-                'label'       => 'Unconfirmed Orders',
-                'count'       => $draftOrdersCount,
-                'severity'    => 'warning',
-                'color'       => 'orange',
-                'route'       => '/crm/customer-orders',
-                'filter_param'=> 'status=pending',
+                'key' => 'draft_orders',
+                'label' => 'Unconfirmed Orders',
+                'count' => $draftOrdersCount,
+                'severity' => 'warning',
+                'color' => 'orange',
+                'route' => '/crm/customer-orders',
+                'filter_param' => 'status=pending',
             ],
             [
-                'key'         => 'celebrations_today',
-                'label'       => 'Birthdays / Anniversaries',
-                'count'       => $celebrationsToday,
-                'severity'    => 'info',
-                'color'       => 'yellow',
-                'route'       => '/crm/customer',
-                'filter_param'=> 'event=today',
+                'key' => 'celebrations_today',
+                'label' => 'Birthdays / Anniversaries',
+                'count' => $celebrationsToday,
+                'severity' => 'info',
+                'color' => 'yellow',
+                'route' => '/crm/customer',
+                'filter_param' => 'event=today',
             ],
             [
-                'key'         => 'loyalty_club_members',
-                'label'       => 'Loyalty Club Members',
-                'count'       => $inactivePointsMembers,
-                'severity'    => 'info',
-                'color'       => 'yellow',
-                'route'       => '/crm/loyalty-management',
-                'filter_param'=> 'min_points=500',
+                'key' => 'loyalty_club_members',
+                'label' => 'Loyalty Club Members',
+                'count' => $inactivePointsMembers,
+                'severity' => 'info',
+                'color' => 'yellow',
+                'route' => '/crm/loyalty-management',
+                'filter_param' => 'min_points=500',
             ],
         ];
     }
@@ -262,7 +261,7 @@ class CrmDashboardService
      */
     public function getCustomerSegmentation(?int $storeId): array
     {
-        $rows = DB::table('pos_sales')
+        $rows = StoreQuery::table('pos_sales')
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->whereNotNull('customer_id')
             ->selectRaw('
@@ -276,12 +275,12 @@ class CrmDashboardService
 
         $labels = [
             'champions' => 'Champions',
-            'loyal'     => 'Loyal',
-            'at_risk'   => 'At Risk',
-            'lost'      => 'Lost / Inactive',
+            'loyal' => 'Loyal',
+            'at_risk' => 'At Risk',
+            'lost' => 'Lost / Inactive',
         ];
         $counts = ['champions' => 0, 'loyal' => 0, 'at_risk' => 0, 'lost' => 0];
-        $total = DB::table('customers')->count() ?: 1;
+        $total = StoreQuery::table('customers')->count() ?: 1;
 
         if ($rows->isNotEmpty()) {
             $n = $rows->count();
@@ -292,6 +291,7 @@ class CrmDashboardService
                 foreach ($sorted->values() as $i => $row) {
                     $map[$row->customer_id] = min(3, (int) floor(($i * 4) / $n));
                 }
+
                 return $map;
             };
 
@@ -321,7 +321,7 @@ class CrmDashboardService
             $result[$key] = [
                 'label' => $labels[$key],
                 'count' => $count,
-                'pct'   => round(($count / $total) * 100, 1),
+                'pct' => round(($count / $total) * 100, 1),
             ];
         }
 
@@ -333,9 +333,9 @@ class CrmDashboardService
      */
     public function getOrderStatusBreakdown(?int $storeId, ?Carbon $from, ?Carbon $to): array
     {
-        $query = DB::table('customer_orders')
-            ->when($storeId, fn($q) => $q->where('store_id', $storeId))
-            ->when($from && $to, fn($q) => $q->whereBetween('order_date', [$from->toDateString(), $to->toDateString()]));
+        $query = StoreQuery::table('customer_orders')
+            ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
+            ->when($from && $to, fn ($q) => $q->whereBetween('order_date', [$from->toDateString(), $to->toDateString()]));
 
         $pending = (clone $query)->whereIn('status', ['pending', 'draft'])->count();
         $confirmed = (clone $query)->where('status', 'confirmed')->count();
@@ -345,12 +345,12 @@ class CrmDashboardService
         $cancelled = (clone $query)->where('status', 'cancelled')->count();
 
         return [
-            'pending'     => $pending,
-            'confirmed'   => $confirmed,
+            'pending' => $pending,
+            'confirmed' => $confirmed,
             'in_progress' => $inProgress,
-            'ready'       => $ready,
-            'delivered'   => $delivered,
-            'cancelled'   => $cancelled,
+            'ready' => $ready,
+            'delivered' => $delivered,
+            'cancelled' => $cancelled,
         ];
     }
 
@@ -363,9 +363,9 @@ class CrmDashboardService
      */
     public function getTopCustomers(?int $storeId, int $limit = 5): array
     {
-        $salesSub = $storeId ? 'pos_sales.customer_id = customers.id AND pos_sales.store_id = ' . (int) $storeId : 'pos_sales.customer_id = customers.id';
+        $salesSub = $storeId ? 'pos_sales.customer_id = customers.id AND pos_sales.store_id = '.(int) $storeId : 'pos_sales.customer_id = customers.id';
 
-        $customers = DB::table('customers')
+        $customers = StoreQuery::table('customers')
             ->select([
                 'customers.id',
                 'customers.name',
@@ -390,9 +390,9 @@ class CrmDashboardService
      */
     public function getRecentOrders(?int $storeId, int $limit = 10): array
     {
-        $orders = DB::table('customer_orders')
+        $orders = StoreQuery::table('customer_orders')
             ->leftJoin('customers', 'customer_orders.customer_id', '=', 'customers.id')
-            ->when($storeId, fn($q) => $q->where('customer_orders.store_id', $storeId))
+            ->when($storeId, fn ($q) => $q->where('customer_orders.store_id', $storeId))
             ->select([
                 'customer_orders.id',
                 'customer_orders.order_no',
@@ -418,8 +418,8 @@ class CrmDashboardService
     public function getUpcomingCustomerEvents(?int $storeId, int $daysAhead = 7): array
     {
         $now = Carbon::now();
-        $events = DB::table('customers')
-            ->where(function ($q) use ($now) {
+        $events = StoreQuery::table('customers')
+            ->where(function ($q) {
                 $q->whereNotNull('date_of_birth')->orWhereNotNull('marriage_date');
             })
             ->select([
@@ -435,13 +435,13 @@ class CrmDashboardService
             ->map(function ($c) use ($now) {
                 $isBday = false;
                 $isAnniv = false;
-                if (!empty($c->date_of_birth)) {
+                if (! empty($c->date_of_birth)) {
                     $dob = Carbon::parse($c->date_of_birth);
                     if ($dob->month === $now->month && abs($dob->day - $now->day) <= 3) {
                         $isBday = true;
                     }
                 }
-                if (!empty($c->marriage_date)) {
+                if (! empty($c->marriage_date)) {
                     $m = Carbon::parse($c->marriage_date);
                     if ($m->month === $now->month && abs($m->day - $now->day) <= 3) {
                         $isAnniv = true;
@@ -449,12 +449,12 @@ class CrmDashboardService
                 }
 
                 return [
-                    'id'            => $c->id,
-                    'name'          => $c->name,
-                    'phone'         => $c->phone,
-                    'event_type'    => $isBday ? 'Birthday' : ($isAnniv ? 'Anniversary' : 'Loyalty Reward'),
-                    'event_date'    => $isBday ? Carbon::parse($c->date_of_birth)->format('M d') : ($isAnniv ? Carbon::parse($c->marriage_date)->format('M d') : 'Active'),
-                    'points'        => (float) $c->loyalty_points,
+                    'id' => $c->id,
+                    'name' => $c->name,
+                    'phone' => $c->phone,
+                    'event_type' => $isBday ? 'Birthday' : ($isAnniv ? 'Anniversary' : 'Loyalty Reward'),
+                    'event_date' => $isBday ? Carbon::parse($c->date_of_birth)->format('M d') : ($isAnniv ? Carbon::parse($c->marriage_date)->format('M d') : 'Active'),
+                    'points' => (float) $c->loyalty_points,
                 ];
             });
 
@@ -474,17 +474,17 @@ class CrmDashboardService
         while ($current->lte($endDate)) {
             $dateStr = $current->toDateString();
             $days[$dateStr] = [
-                'date'          => $current->format('M d'),
-                'raw_date'      => $dateStr,
+                'date' => $current->format('M d'),
+                'raw_date' => $dateStr,
                 'new_customers' => 0,
-                'orders_count'  => 0,
-                'order_amount'  => 0,
+                'orders_count' => 0,
+                'order_amount' => 0,
             ];
             $current->addDay();
         }
 
         // New customers count
-        $custs = DB::table('customers')
+        $custs = StoreQuery::table('customers')
             ->whereBetween('created_at', [$startDate->startOfDay(), $endDate->endOfDay()])
             ->selectRaw('DATE(created_at) as d, COUNT(*) as c')
             ->groupBy(DB::raw('DATE(created_at)'))
@@ -497,8 +497,8 @@ class CrmDashboardService
         }
 
         // Customer orders count & amount
-        $orders = DB::table('customer_orders')
-            ->when($storeId, fn($q) => $q->where('store_id', $storeId))
+        $orders = StoreQuery::table('customer_orders')
+            ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->whereBetween('order_date', [$startDate->toDateString(), $endDate->toDateString()])
             ->selectRaw('DATE(order_date) as d, COUNT(*) as c, COALESCE(SUM(total_amount), 0) as amount')
             ->groupBy(DB::raw('DATE(order_date)'))
@@ -523,24 +523,24 @@ class CrmDashboardService
      */
     public function getPerformanceMetrics(?int $storeId, ?Carbon $from, ?Carbon $to): array
     {
-        $totalDelivered = DB::table('customer_orders')
-            ->when($storeId, fn($q) => $q->where('store_id', $storeId))
+        $totalDelivered = StoreQuery::table('customer_orders')
+            ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->where('status', 'delivered')
             ->count();
 
-        $onTimeDelivered = DB::table('customer_orders')
-            ->when($storeId, fn($q) => $q->where('store_id', $storeId))
+        $onTimeDelivered = StoreQuery::table('customer_orders')
+            ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->where('status', 'delivered')
             ->whereRaw('updated_at <= delivery_date')
             ->count();
 
         $deliveryRate = $totalDelivered > 0 ? round(($onTimeDelivered / $totalDelivered) * 100, 1) : 0;
 
-        $totalOrders = DB::table('customer_orders')
-            ->when($storeId, fn($q) => $q->where('store_id', $storeId))
+        $totalOrders = StoreQuery::table('customer_orders')
+            ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->count();
-        $convertedOrders = DB::table('customer_orders')
-            ->when($storeId, fn($q) => $q->where('store_id', $storeId))
+        $convertedOrders = StoreQuery::table('customer_orders')
+            ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->whereIn('status', ['delivered', 'completed'])
             ->count();
         $conversionRate = $totalOrders > 0 ? round(($convertedOrders / $totalOrders) * 100, 1) : 0;
@@ -548,7 +548,7 @@ class CrmDashboardService
         // Real (as opposed to 'redeemed', a type value the app never actually
         // writes -- see getSummary()) -- points redeemed vs. points earned in
         // the same window.
-        $pointsQuery = fn ($type) => DB::table('loyalty_transactions')
+        $pointsQuery = fn ($type) => StoreQuery::table('loyalty_transactions')
             ->where('type', $type)
             ->when($from && $to, fn ($q) => $q->whereBetween('created_at', [$from, $to]));
         $pointsEarned = (float) $pointsQuery('EARN')->sum('points');
@@ -563,14 +563,14 @@ class CrmDashboardService
         $prevTo = $periodFrom->copy()->subSecond();
         $prevFrom = $prevTo->copy()->subDays($periodLengthDays);
 
-        $prevCustomerIds = DB::table('pos_sales')
+        $prevCustomerIds = StoreQuery::table('pos_sales')
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->whereNotNull('customer_id')
             ->whereBetween('sale_date', [$prevFrom, $prevTo])
             ->distinct()
             ->pluck('customer_id');
 
-        $retainedCount = $prevCustomerIds->isEmpty() ? 0 : DB::table('pos_sales')
+        $retainedCount = $prevCustomerIds->isEmpty() ? 0 : StoreQuery::table('pos_sales')
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->whereIn('customer_id', $prevCustomerIds)
             ->whereBetween('sale_date', [$periodFrom, $periodTo])
@@ -580,10 +580,10 @@ class CrmDashboardService
         $retentionRate = $prevCustomerIds->isNotEmpty() ? round(($retainedCount / $prevCustomerIds->count()) * 100, 1) : 0;
 
         return [
-            'on_time_delivery_rate'   => "{$deliveryRate}%",
+            'on_time_delivery_rate' => "{$deliveryRate}%",
             'loyalty_redemption_rate' => "{$redemptionRate}%",
             'customer_retention_rate' => "{$retentionRate}%",
-            'order_conversion_rate'   => "{$conversionRate}%",
+            'order_conversion_rate' => "{$conversionRate}%",
         ];
     }
 }

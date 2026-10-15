@@ -22,15 +22,16 @@ class SalesDashboardService
         $role = strtolower((string) ($user?->role ?? ''));
         $isSuperAdmin = in_array($role, ['super_admin', 'superadmin'], true);
 
-        if (!empty($filters['warehouse_id']) || !empty($filters['store_id'])) {
+        if (! empty($filters['warehouse_id']) || ! empty($filters['store_id'])) {
             $requestedStoreId = (int) ($filters['warehouse_id'] ?? $filters['store_id']);
             if ($isSuperAdmin) {
                 return $requestedStoreId;
             }
+
             return (int) ($user?->store_id ?: $user?->company_id ?: $requestedStoreId);
         }
 
-        if (!$isSuperAdmin) {
+        if (! $isSuperAdmin) {
             return (int) ($user?->store_id ?: $user?->company_id ?: 0) ?: null;
         }
 
@@ -39,8 +40,8 @@ class SalesDashboardService
 
     protected function resolveDateRange(array $filters): array
     {
-        $from = !empty($filters['date_from']) ? Carbon::parse($filters['date_from'])->startOfDay() : null;
-        $to = !empty($filters['date_to']) ? Carbon::parse($filters['date_to'])->endOfDay() : null;
+        $from = ! empty($filters['date_from']) ? Carbon::parse($filters['date_from'])->startOfDay() : null;
+        $to = ! empty($filters['date_to']) ? Carbon::parse($filters['date_to'])->endOfDay() : null;
 
         return [$from, $to];
     }
@@ -65,23 +66,23 @@ class SalesDashboardService
         $stores = $this->getAvailableStores($user);
 
         return [
-            'summary'                => $summary,
-            'action_required'        => $actionRequired,
-            'transaction_breakdown'  => $transactionBreakdown,
-            'payment_breakdown'  => $paymentBreakdown,
-            'top_products'       => $topProducts,
-            'top_sales_persons'  => $topSalesPersons,
-            'recent_sales'       => $recentSales,
-            'returns'            => $returns,
-            'sales_approvals'    => $salesApprovals,
-            'cash_registers'     => $cashRegisters,
-            'performance'        => $performance,
-            'charts'             => [
+            'summary' => $summary,
+            'action_required' => $actionRequired,
+            'transaction_breakdown' => $transactionBreakdown,
+            'payment_breakdown' => $paymentBreakdown,
+            'top_products' => $topProducts,
+            'top_sales_persons' => $topSalesPersons,
+            'recent_sales' => $recentSales,
+            'returns' => $returns,
+            'sales_approvals' => $salesApprovals,
+            'cash_registers' => $cashRegisters,
+            'performance' => $performance,
+            'charts' => [
                 'sales_trend' => $trendChart,
             ],
-            'stores'             => $stores,
-            'active_store_id'    => $storeId,
-            'last_updated'       => Carbon::now()->toIso8601String(),
+            'stores' => $stores,
+            'active_store_id' => $storeId,
+            'last_updated' => Carbon::now()->toIso8601String(),
         ];
     }
 
@@ -94,7 +95,7 @@ class SalesDashboardService
         $monthStart = Carbon::now()->startOfMonth();
         $monthEnd = Carbon::now()->endOfMonth();
 
-        $todayQuery = DB::table('pos_sales')
+        $todayQuery = StoreQuery::table('pos_sales')
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->whereDate('sale_date', $today);
 
@@ -104,7 +105,7 @@ class SalesDashboardService
             COALESCE(SUM(total_qty), 0) as qty
         ')->first();
 
-        $monthAgg = DB::table('pos_sales')
+        $monthAgg = StoreQuery::table('pos_sales')
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->whereBetween('sale_date', [$monthStart, $monthEnd])
             ->selectRaw('
@@ -112,7 +113,7 @@ class SalesDashboardService
                 COALESCE(SUM(grand_total), 0) as amount
             ')->first();
 
-        $rangeQuery = DB::table('pos_sales')
+        $rangeQuery = StoreQuery::table('pos_sales')
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->when($from && $to, fn ($q) => $q->whereBetween('sale_date', [$from, $to]));
 
@@ -125,14 +126,14 @@ class SalesDashboardService
 
         // Distinct products sold in range -- via pos_sale_items, not pos_sales
         // itself (a bill has no product dimension on its own).
-        $distinctProducts = DB::table('pos_sale_items as i')
+        $distinctProducts = StoreQuery::table('pos_sale_items as i')
             ->join('pos_sales as s', 's.id', '=', 'i.pos_sale_id')
             ->when($storeId, fn ($q) => $q->where('s.store_id', $storeId))
             ->when($from && $to, fn ($q) => $q->whereBetween('s.sale_date', [$from, $to]))
             ->distinct('i.product_id')
             ->count('i.product_id');
 
-        $returnsAgg = DB::table('pos_returns')
+        $returnsAgg = StoreQuery::table('pos_returns')
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->when($from && $to, fn ($q) => $q->whereBetween('return_date', [$from, $to]))
             ->selectRaw('COUNT(*) as count, COALESCE(SUM(total_refund), 0) as amount')
@@ -148,26 +149,26 @@ class SalesDashboardService
             ->selectRaw('COALESCE(SUM(grand_total - paid_amount), 0) as amount')
             ->value('amount');
 
-        $openRegisters = DB::table('cash_register_sessions')
+        $openRegisters = StoreQuery::table('cash_register_sessions')
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->whereNull('closed_at')
             ->count();
 
         return [
-            'today_sales_amount'   => (float) ($todayAgg->amount ?? 0),
-            'today_bills_count'    => (int) ($todayAgg->bills ?? 0),
-            'today_qty_sold'       => (float) ($todayAgg->qty ?? 0),
-            'month_sales_amount'   => (float) ($monthAgg->amount ?? 0),
-            'month_bills_count'    => (int) ($monthAgg->bills ?? 0),
-            'range_sales_amount'   => (float) ($rangeAgg->amount ?? 0),
-            'range_bills_count'    => (int) ($rangeAgg->bills ?? 0),
-            'range_qty_sold'       => (float) ($rangeAgg->qty ?? 0),
+            'today_sales_amount' => (float) ($todayAgg->amount ?? 0),
+            'today_bills_count' => (int) ($todayAgg->bills ?? 0),
+            'today_qty_sold' => (float) ($todayAgg->qty ?? 0),
+            'month_sales_amount' => (float) ($monthAgg->amount ?? 0),
+            'month_bills_count' => (int) ($monthAgg->bills ?? 0),
+            'range_sales_amount' => (float) ($rangeAgg->amount ?? 0),
+            'range_bills_count' => (int) ($rangeAgg->bills ?? 0),
+            'range_qty_sold' => (float) ($rangeAgg->qty ?? 0),
             'range_discount_total' => (float) ($rangeAgg->discount ?? 0),
             'distinct_products_sold' => (int) $distinctProducts,
-            'returns_amount'       => (float) ($returnsAgg->amount ?? 0),
-            'returns_count'        => (int) ($returnsAgg->count ?? 0),
-            'net_sales_amount'     => (float) ($rangeAgg->amount ?? 0) - (float) ($returnsAgg->amount ?? 0),
-            'credit_pending_amount'=> (float) ($creditPending ?? 0),
+            'returns_amount' => (float) ($returnsAgg->amount ?? 0),
+            'returns_count' => (int) ($returnsAgg->count ?? 0),
+            'net_sales_amount' => (float) ($rangeAgg->amount ?? 0) - (float) ($returnsAgg->amount ?? 0),
+            'credit_pending_amount' => (float) ($creditPending ?? 0),
             'open_registers_count' => $openRegisters,
         ];
     }
@@ -177,92 +178,92 @@ class SalesDashboardService
      */
     public function getActionRequired(?int $storeId, ?Carbon $from, ?Carbon $to): array
     {
-        $openRegisters = DB::table('cash_register_sessions')
+        $openRegisters = StoreQuery::table('cash_register_sessions')
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->whereNull('closed_at')
             ->count();
 
-        $registerVariances = DB::table('cash_register_sessions')
+        $registerVariances = StoreQuery::table('cash_register_sessions')
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->whereNotNull('closed_at')
             ->where('difference', '!=', 0)
             ->count();
 
-        $pendingApprovals = DB::table('sales_approvals')
+        $pendingApprovals = StoreQuery::table('sales_approvals')
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->whereIn('status', ['pending', 'PENDING'])
             ->count();
 
-        $pendingReturns = DB::table('pos_returns')
+        $pendingReturns = StoreQuery::table('pos_returns')
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->whereIn('status', ['pending', 'PENDING', 'draft', 'DRAFT'])
             ->count();
 
-        $overdueCredit = DB::table('pos_sales')
+        $overdueCredit = StoreQuery::table('pos_sales')
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->where('is_credit', true)
             ->whereRaw('grand_total > paid_amount')
             ->whereDate('sale_date', '<', Carbon::today()->subDays(7))
             ->count();
 
-        $pendingDealerInvoices = DB::table('dealer_invoices')
+        $pendingDealerInvoices = StoreQuery::table('dealer_invoices')
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->whereIn('status', ['pending', 'PENDING', 'draft', 'DRAFT'])
             ->count();
 
         return [
             [
-                'key'          => 'open_registers',
-                'label'        => 'Open Cash Registers',
-                'count'        => $openRegisters,
-                'severity'     => 'critical',
-                'color'        => 'red',
-                'route'        => '/sales/cash-closing',
+                'key' => 'open_registers',
+                'label' => 'Open Cash Registers',
+                'count' => $openRegisters,
+                'severity' => 'critical',
+                'color' => 'red',
+                'route' => '/sales/cash-closing',
                 'filter_param' => 'status=open',
             ],
             [
-                'key'          => 'register_variance',
-                'label'        => 'Cash Register Variances',
-                'count'        => $registerVariances,
-                'severity'     => 'critical',
-                'color'        => 'red',
-                'route'        => '/sales/cash-closing',
+                'key' => 'register_variance',
+                'label' => 'Cash Register Variances',
+                'count' => $registerVariances,
+                'severity' => 'critical',
+                'color' => 'red',
+                'route' => '/sales/cash-closing',
                 'filter_param' => 'filter=variance',
             ],
             [
-                'key'          => 'overdue_credit',
-                'label'        => 'Credit Sales Overdue (7+ days)',
-                'count'        => $overdueCredit,
-                'severity'     => 'warning',
-                'color'        => 'orange',
-                'route'        => '/sales/pos-sales',
+                'key' => 'overdue_credit',
+                'label' => 'Credit Sales Overdue (7+ days)',
+                'count' => $overdueCredit,
+                'severity' => 'warning',
+                'color' => 'orange',
+                'route' => '/sales/pos-sales',
                 'filter_param' => 'filter=overdue_credit',
             ],
             [
-                'key'          => 'pending_approvals',
-                'label'        => 'Pending Sales Approvals',
-                'count'        => $pendingApprovals,
-                'severity'     => 'warning',
-                'color'        => 'orange',
-                'route'        => '/sales/sales-on-approval',
+                'key' => 'pending_approvals',
+                'label' => 'Pending Sales Approvals',
+                'count' => $pendingApprovals,
+                'severity' => 'warning',
+                'color' => 'orange',
+                'route' => '/sales/sales-on-approval',
                 'filter_param' => 'status=pending',
             ],
             [
-                'key'          => 'pending_returns',
-                'label'        => 'Pending Returns',
-                'count'        => $pendingReturns,
-                'severity'     => 'info',
-                'color'        => 'yellow',
-                'route'        => '/sales/pos-sales-return',
+                'key' => 'pending_returns',
+                'label' => 'Pending Returns',
+                'count' => $pendingReturns,
+                'severity' => 'info',
+                'color' => 'yellow',
+                'route' => '/sales/pos-sales-return',
                 'filter_param' => 'status=pending',
             ],
             [
-                'key'          => 'pending_dealer_invoices',
-                'label'        => 'Pending Dealer Invoices',
-                'count'        => $pendingDealerInvoices,
-                'severity'     => 'info',
-                'color'        => 'yellow',
-                'route'        => '/sales/dealer-invoice',
+                'key' => 'pending_dealer_invoices',
+                'label' => 'Pending Dealer Invoices',
+                'count' => $pendingDealerInvoices,
+                'severity' => 'info',
+                'color' => 'yellow',
+                'route' => '/sales/dealer-invoice',
                 'filter_param' => 'status=pending',
             ],
         ];
@@ -284,7 +285,7 @@ class SalesDashboardService
      */
     public function getTransactionBreakdown(?int $storeId, ?Carbon $from, ?Carbon $to): array
     {
-        $salesQuery = DB::table('pos_sales')
+        $salesQuery = StoreQuery::table('pos_sales')
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->when($from && $to, fn ($q) => $q->whereBetween('sale_date', [$from, $to]));
 
@@ -293,7 +294,7 @@ class SalesDashboardService
         $creditSales = (clone $salesQuery)->where('is_credit', true)
             ->selectRaw('COUNT(*) as count, COALESCE(SUM(grand_total), 0) as amount')->first();
 
-        $returnsQuery = DB::table('pos_returns')
+        $returnsQuery = StoreQuery::table('pos_returns')
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->when($from && $to, fn ($q) => $q->whereBetween('return_date', [$from, $to]));
 
@@ -305,11 +306,11 @@ class SalesDashboardService
             ->selectRaw('COUNT(*) as count, COALESCE(SUM(total_refund), 0) as amount')->first();
 
         return [
-            'sales'     => ['count' => (int) ($cashSales->count ?? 0), 'amount' => (float) ($cashSales->amount ?? 0)],
-            'returns'   => ['count' => (int) ($totalReturns->count ?? 0), 'amount' => (float) ($totalReturns->amount ?? 0)],
+            'sales' => ['count' => (int) ($cashSales->count ?? 0), 'amount' => (float) ($cashSales->amount ?? 0)],
+            'returns' => ['count' => (int) ($totalReturns->count ?? 0), 'amount' => (float) ($totalReturns->amount ?? 0)],
             'exchanges' => ['count' => (int) ($exchanges->count ?? 0), 'amount' => (float) ($exchanges->amount ?? 0)],
-            'credit'    => ['count' => (int) ($creditSales->count ?? 0), 'amount' => (float) ($creditSales->amount ?? 0)],
-            'refunds'   => ['count' => (int) ($refunds->count ?? 0), 'amount' => (float) ($refunds->amount ?? 0)],
+            'credit' => ['count' => (int) ($creditSales->count ?? 0), 'amount' => (float) ($creditSales->amount ?? 0)],
+            'refunds' => ['count' => (int) ($refunds->count ?? 0), 'amount' => (float) ($refunds->amount ?? 0)],
         ];
     }
 
@@ -318,7 +319,7 @@ class SalesDashboardService
      */
     public function getPaymentModeBreakdown(?int $storeId, ?Carbon $from, ?Carbon $to): array
     {
-        $rows = DB::table('pos_sales')
+        $rows = StoreQuery::table('pos_sales')
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->when($from && $to, fn ($q) => $q->whereBetween('sale_date', [$from, $to]))
             ->selectRaw('
@@ -330,8 +331,8 @@ class SalesDashboardService
             ->orderByDesc('amount')
             ->get()
             ->map(fn ($row) => [
-                'mode'   => $row->mode,
-                'bills'  => (int) $row->bills,
+                'mode' => $row->mode,
+                'bills' => (int) $row->bills,
                 'amount' => (float) $row->amount,
             ]);
 
@@ -343,7 +344,7 @@ class SalesDashboardService
      */
     public function getTopProducts(?int $storeId, ?Carbon $from, ?Carbon $to, int $limit = 10): array
     {
-        $rows = DB::table('pos_sale_items as i')
+        $rows = StoreQuery::table('pos_sale_items as i')
             ->join('pos_sales as s', 's.id', '=', 'i.pos_sale_id')
             ->join('products as p', 'p.id', '=', 'i.product_id')
             ->when($storeId, fn ($q) => $q->where('s.store_id', $storeId))
@@ -359,10 +360,10 @@ class SalesDashboardService
             ->limit($limit)
             ->get()
             ->map(fn ($row) => [
-                'product_id'   => $row->product_id,
+                'product_id' => $row->product_id,
                 'product_name' => $row->product_name,
-                'qty'          => (float) $row->qty,
-                'amount'       => (float) $row->amount,
+                'qty' => (float) $row->qty,
+                'amount' => (float) $row->amount,
             ]);
 
         return $rows->toArray();
@@ -375,7 +376,7 @@ class SalesDashboardService
      */
     public function getTopSalesPersons(?int $storeId, ?Carbon $from, ?Carbon $to, int $limit = 5): array
     {
-        $rows = DB::table('pos_sale_items as i')
+        $rows = StoreQuery::table('pos_sale_items as i')
             ->join('pos_sales as s', 's.id', '=', 'i.pos_sale_id')
             ->when($storeId, fn ($q) => $q->where('s.store_id', $storeId))
             ->when($from && $to, fn ($q) => $q->whereBetween('s.sale_date', [$from, $to]))
@@ -390,8 +391,8 @@ class SalesDashboardService
             ->get()
             ->map(fn ($row) => [
                 'sales_man_name' => $row->sales_man_name,
-                'bills'          => (int) $row->bills,
-                'amount'         => (float) $row->amount,
+                'bills' => (int) $row->bills,
+                'amount' => (float) $row->amount,
             ]);
 
         return $rows->toArray();
@@ -402,7 +403,7 @@ class SalesDashboardService
      */
     public function getRecentSales(?int $storeId, int $limit = 10): array
     {
-        $rows = DB::table('pos_sales')
+        $rows = StoreQuery::table('pos_sales')
             ->leftJoin('customers', 'pos_sales.customer_id', '=', 'customers.id')
             ->when($storeId, fn ($q) => $q->where('pos_sales.store_id', $storeId))
             ->select([
@@ -427,7 +428,7 @@ class SalesDashboardService
      */
     public function getReturnsSummary(?int $storeId, ?Carbon $from, ?Carbon $to): array
     {
-        $query = DB::table('pos_returns')
+        $query = StoreQuery::table('pos_returns')
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId));
 
         $pending = (clone $query)->whereIn('status', ['pending', 'PENDING', 'draft', 'DRAFT'])->count();
@@ -437,9 +438,9 @@ class SalesDashboardService
             ->sum('total_refund');
 
         return [
-            'pending'         => $pending,
+            'pending' => $pending,
             'completed_today' => $completedToday,
-            'range_value'     => (float) $rangeValue,
+            'range_value' => (float) $rangeValue,
         ];
     }
 
@@ -448,7 +449,7 @@ class SalesDashboardService
      */
     public function getSalesApprovalSummary(?int $storeId): array
     {
-        $query = DB::table('sales_approvals')
+        $query = StoreQuery::table('sales_approvals')
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId));
 
         $pending = (clone $query)->whereIn('status', ['pending', 'PENDING'])->count();
@@ -456,9 +457,9 @@ class SalesDashboardService
         $expired = (clone $query)->whereIn('status', ['pending', 'PENDING'])->whereDate('valid_until', '<', Carbon::today())->count();
 
         return [
-            'pending'  => $pending,
+            'pending' => $pending,
             'approved' => $approved,
-            'expired'  => $expired,
+            'expired' => $expired,
         ];
     }
 
@@ -467,7 +468,7 @@ class SalesDashboardService
      */
     public function getCashRegisterSummary(?int $storeId): array
     {
-        $query = DB::table('cash_register_sessions')
+        $query = StoreQuery::table('cash_register_sessions')
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId));
 
         $open = (clone $query)->whereNull('closed_at')->count();
@@ -476,9 +477,9 @@ class SalesDashboardService
         $varianceAmount = (clone $query)->whereNotNull('closed_at')->sum(DB::raw('ABS(difference)'));
 
         return [
-            'open'            => $open,
-            'closed_today'    => $closedToday,
-            'variance_count'  => $varianceCount,
+            'open' => $open,
+            'closed_today' => $closedToday,
+            'variance_count' => $varianceCount,
             'variance_amount' => (float) $varianceAmount,
         ];
     }
@@ -490,7 +491,7 @@ class SalesDashboardService
      */
     public function getPerformanceMetrics(?int $storeId, ?Carbon $from, ?Carbon $to): array
     {
-        $rangeQuery = DB::table('pos_sales')
+        $rangeQuery = StoreQuery::table('pos_sales')
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->when($from && $to, fn ($q) => $q->whereBetween('sale_date', [$from, $to]));
 
@@ -508,7 +509,7 @@ class SalesDashboardService
         $discount = (float) ($agg->discount ?? 0);
         $creditAmount = (float) ($agg->credit_amount ?? 0);
 
-        $returnsAmount = (float) DB::table('pos_returns')
+        $returnsAmount = (float) StoreQuery::table('pos_returns')
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->when($from && $to, fn ($q) => $q->whereBetween('return_date', [$from, $to]))
             ->sum('total_refund');
@@ -520,8 +521,8 @@ class SalesDashboardService
 
         return [
             'avg_basket_value' => $avgBasket,
-            'discount_rate'    => "{$discountRate}%",
-            'return_rate'      => "{$returnRate}%",
+            'discount_rate' => "{$discountRate}%",
+            'return_rate' => "{$returnRate}%",
             'credit_sales_ratio' => "{$creditRatio}%",
         ];
     }
@@ -539,15 +540,15 @@ class SalesDashboardService
         while ($current->lte($endDate)) {
             $dateStr = $current->toDateString();
             $days[$dateStr] = [
-                'date'     => $current->format('M d'),
+                'date' => $current->format('M d'),
                 'raw_date' => $dateStr,
-                'sales'    => 0,
-                'returns'  => 0,
+                'sales' => 0,
+                'returns' => 0,
             ];
             $current->addDay();
         }
 
-        $sales = DB::table('pos_sales')
+        $sales = StoreQuery::table('pos_sales')
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->whereBetween('sale_date', [$startDate->copy()->startOfDay(), $endDate->copy()->endOfDay()])
             ->selectRaw('DATE(sale_date) as d, COALESCE(SUM(grand_total), 0) as amount')
@@ -560,7 +561,7 @@ class SalesDashboardService
             }
         }
 
-        $returns = DB::table('pos_returns')
+        $returns = StoreQuery::table('pos_returns')
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->whereBetween('return_date', [$startDate->copy()->startOfDay(), $endDate->copy()->endOfDay()])
             ->selectRaw('DATE(return_date) as d, COALESCE(SUM(total_refund), 0) as amount')

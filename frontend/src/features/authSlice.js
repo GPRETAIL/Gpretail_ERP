@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../api/axios";
+import { initializeStoreSelection } from "../utils/storeSelection";
 import { clearRuntimeRoutingConfig, fetchAndApplyRuntimeRoutingConfig } from "../api/runtimeRouting";
 
 export const loginUser = createAsyncThunk(
@@ -16,6 +17,7 @@ export const loginUser = createAsyncThunk(
 
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(user));
+      initializeStoreSelection(user);
       await fetchAndApplyRuntimeRoutingConfig({ apiClient: api, token, user });
       return { token, user };
     } catch (err) {
@@ -56,6 +58,7 @@ export const logoutUser = createAsyncThunk("/auth/logoutUser", async () => {
   clearRuntimeRoutingConfig();
   localStorage.removeItem("token");
   localStorage.removeItem("user");
+  sessionStorage.removeItem("activeStoreId");
 });
 
 const initialState = {
@@ -79,6 +82,7 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     loginSuccess: (state, action) => {
+      const sameUser = state.user?.id === (action.payload?.user || action.payload)?.id;
       state.token = action.payload?.token || null;
       state.user = action.payload?.user || action.payload;
       state.isAuthenticated = true;
@@ -86,6 +90,7 @@ const authSlice = createSlice({
       state.error = null;
       if (state.token) localStorage.setItem("token", state.token);
       if (state.user) localStorage.setItem("user", JSON.stringify(state.user));
+      initializeStoreSelection(state.user, { preserve: sameUser });
     },
     logout: (state) => {
       clearRuntimeRoutingConfig();
@@ -94,6 +99,7 @@ const authSlice = createSlice({
       state.isAuthenticated = false;
       localStorage.removeItem("token");
       localStorage.removeItem("user");
+      sessionStorage.removeItem("activeStoreId");
     },
   },
   extraReducers: (builder) => {

@@ -21,8 +21,7 @@ class InventoryEntryController extends Controller
         private readonly VariantResolverService $variantResolver,
         private readonly PaginationService $paginationService,
         private readonly GroupAggregationService $groupAggregationService,
-    ) {
-    }
+    ) {}
 
     private function filteredQuery(Request $request)
     {
@@ -33,7 +32,7 @@ class InventoryEntryController extends Controller
         if ($request->filled('search')) {
             $search = $request->input('search');
             $query->where('entry_no', 'like', "%{$search}%")
-                  ->orWhere('notes', 'like', "%{$search}%");
+                ->orWhere('notes', 'like', "%{$search}%");
         }
 
         if ($request->filled('status')) {
@@ -46,6 +45,7 @@ class InventoryEntryController extends Controller
     public function groupedSummary(Request $request)
     {
         $result = $this->groupAggregationService->summarize($this->filteredQuery($request), 'inventory_entries', $request);
+
         return response()->json($result, $result['success'] ? 200 : 422);
     }
 
@@ -55,17 +55,18 @@ class InventoryEntryController extends Controller
 
         if ($request->boolean('all') || $request->input('limit') == 500 || $request->input('limit') == 1000) {
             $items = $query->orderBy('entry_date', 'desc')->limit(2000)->get();
+
             return response()->json([
                 'success' => true,
-                'data'    => $items,
-                'total'   => $items->count(),
+                'data' => $items,
+                'total' => $items->count(),
             ]);
         }
 
         $result = $this->paginationService->paginate($query, 'inventory_entries', $request, [
-            'default_sort'  => 'id',
+            'default_sort' => 'id',
             'default_order' => 'desc',
-            'tie_breaker'   => 'id',
+            'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'entry_date', 'entry_no', 'status', 'created_at'],
         ]);
 
@@ -76,24 +77,24 @@ class InventoryEntryController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'entry_date' => 'nullable|date',
-            'type'       => 'nullable|string',
-            'items'      => 'required|array|min:1',
+            'type' => 'nullable|string',
+            'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
-            'items.*.quantity'   => 'required|numeric',
+            'items.*.quantity' => 'required|numeric',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors'  => $validator->errors(),
+                'errors' => $validator->errors(),
             ], 422);
         }
 
         $storeId = $request->header('X-Company-Scope-Id', 1);
 
         $entry = DB::transaction(function () use ($request, $storeId) {
-            $entryNo = $request->input('entry_no') ?: 'INV-ENT-' . date('Ymd') . '-' . rand(1000, 9999);
+            $entryNo = $request->input('entry_no') ?: 'INV-ENT-'.date('Ymd').'-'.rand(1000, 9999);
             $itemsData = $request->input('items', []);
             $totalAmount = 0;
 
@@ -104,14 +105,14 @@ class InventoryEntryController extends Controller
             }
 
             $inventoryEntry = InventoryEntry::create([
-                'store_id'     => $storeId,
-                'entry_no'     => $entryNo,
-                'entry_date'   => $request->input('entry_date') ?: now()->toDateString(),
-                'type'         => $request->input('type', 'OPENING'),
+                'store_id' => $storeId,
+                'entry_no' => $entryNo,
+                'entry_date' => $request->input('entry_date') ?: now()->toDateString(),
+                'type' => $request->input('type', 'OPENING'),
                 'total_amount' => $totalAmount,
-                'notes'        => $request->input('notes'),
-                'status'       => $request->input('status', 'COMPLETED'),
-                'created_by'   => $request->user()?->id ?? 1,
+                'notes' => $request->input('notes'),
+                'status' => $request->input('status', 'COMPLETED'),
+                'created_by' => $request->user()?->id ?? 1,
             ]);
 
             foreach ($itemsData as $item) {
@@ -122,11 +123,11 @@ class InventoryEntryController extends Controller
 
                 InventoryEntryItem::create([
                     'inventory_entry_id' => $inventoryEntry->id,
-                    'product_id'         => $item['product_id'],
-                    'variant_id'         => $variantId,
-                    'quantity'           => $qty,
-                    'unit_price'         => $price,
-                    'total_price'        => $total,
+                    'product_id' => $item['product_id'],
+                    'variant_id' => $variantId,
+                    'quantity' => $qty,
+                    'unit_price' => $price,
+                    'total_price' => $total,
                 ]);
 
                 $this->stockService->adjust(
@@ -147,7 +148,7 @@ class InventoryEntryController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Inventory entry created successfully',
-            'data'    => $entry->load('items.product'),
+            'data' => $entry->load('items.product'),
         ], 201);
     }
 
@@ -155,7 +156,7 @@ class InventoryEntryController extends Controller
     {
         $entry = InventoryEntry::with(['items.product', 'creator'])->find($id);
 
-        if (!$entry) {
+        if (! $entry) {
             return response()->json([
                 'success' => false,
                 'message' => 'Inventory entry not found',
@@ -164,7 +165,7 @@ class InventoryEntryController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $entry,
+            'data' => $entry,
         ]);
     }
 
@@ -172,7 +173,7 @@ class InventoryEntryController extends Controller
     {
         $entry = InventoryEntry::find($id);
 
-        if (!$entry) {
+        if (! $entry) {
             return response()->json([
                 'success' => false,
                 'message' => 'Inventory entry not found',
@@ -184,7 +185,7 @@ class InventoryEntryController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Inventory entry updated successfully',
-            'data'    => $entry->load('items.product'),
+            'data' => $entry->load('items.product'),
         ]);
     }
 
@@ -192,7 +193,7 @@ class InventoryEntryController extends Controller
     {
         $entry = InventoryEntry::with('items')->find($id);
 
-        if (!$entry) {
+        if (! $entry) {
             return response()->json([
                 'success' => false,
                 'message' => 'Inventory entry not found',
@@ -219,7 +220,7 @@ class InventoryEntryController extends Controller
         } catch (InsufficientStockException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Cannot delete this entry: reversing it would take stock negative (some of it has likely already been sold or moved). ' . $e->getMessage(),
+                'message' => 'Cannot delete this entry: reversing it would take stock negative (some of it has likely already been sold or moved). '.$e->getMessage(),
             ], 422);
         }
 

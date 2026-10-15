@@ -31,7 +31,7 @@ class WarehouseDashboardController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $data,
+            'data' => $data,
         ]);
     }
 
@@ -42,14 +42,14 @@ class WarehouseDashboardController extends Controller
     {
         $filters = $request->only(['warehouse_id']);
         $user = $request->user();
-        $storeId = !empty($filters['warehouse_id']) ? (int) $filters['warehouse_id'] : ($user?->store_id ?: null);
+        $storeId = ! empty($filters['warehouse_id']) ? (int) $filters['warehouse_id'] : ($user?->store_id ?: null);
 
         $inventory = $this->service->getInventoryOverview($storeId);
         $valuation = $this->service->getInventoryValuation($storeId);
 
         return response()->json([
             'success' => true,
-            'data'    => [
+            'data' => [
                 'inventory' => $inventory,
                 'valuation' => $valuation,
             ],
@@ -63,9 +63,9 @@ class WarehouseDashboardController extends Controller
     {
         $filters = $request->only(['warehouse_id', 'date_from', 'date_to']);
         $user = $request->user();
-        $storeId = !empty($filters['warehouse_id']) ? (int) $filters['warehouse_id'] : ($user?->store_id ?: null);
-        $from = !empty($filters['date_from']) ? Carbon::parse($filters['date_from'])->startOfDay() : null;
-        $to = !empty($filters['date_to']) ? Carbon::parse($filters['date_to'])->endOfDay() : null;
+        $storeId = ! empty($filters['warehouse_id']) ? (int) $filters['warehouse_id'] : ($user?->store_id ?: null);
+        $from = ! empty($filters['date_from']) ? Carbon::parse($filters['date_from'])->startOfDay() : null;
+        $to = ! empty($filters['date_to']) ? Carbon::parse($filters['date_to'])->endOfDay() : null;
 
         $incoming = $this->service->getIncomingGoods($storeId, $from, $to, 20);
         $grn = $this->service->getGrnSummary($storeId, $from, $to);
@@ -73,9 +73,9 @@ class WarehouseDashboardController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => [
-                'incoming'  => $incoming,
-                'grn'       => $grn,
+            'data' => [
+                'incoming' => $incoming,
+                'grn' => $grn,
                 'transport' => $transport,
             ],
         ]);
@@ -88,15 +88,15 @@ class WarehouseDashboardController extends Controller
     {
         $filters = $request->only(['warehouse_id', 'date_from', 'date_to']);
         $user = $request->user();
-        $storeId = !empty($filters['warehouse_id']) ? (int) $filters['warehouse_id'] : ($user?->store_id ?: null);
-        $from = !empty($filters['date_from']) ? Carbon::parse($filters['date_from'])->startOfDay() : null;
-        $to = !empty($filters['date_to']) ? Carbon::parse($filters['date_to'])->endOfDay() : null;
+        $storeId = ! empty($filters['warehouse_id']) ? (int) $filters['warehouse_id'] : ($user?->store_id ?: null);
+        $from = ! empty($filters['date_from']) ? Carbon::parse($filters['date_from'])->startOfDay() : null;
+        $to = ! empty($filters['date_to']) ? Carbon::parse($filters['date_to'])->endOfDay() : null;
 
         $outgoing = $this->service->getStockOutwardSummary($storeId, $from, $to, 20);
 
         return response()->json([
             'success' => true,
-            'data'    => $outgoing,
+            'data' => $outgoing,
         ]);
     }
 
@@ -107,13 +107,13 @@ class WarehouseDashboardController extends Controller
     {
         $filters = $request->only(['warehouse_id']);
         $user = $request->user();
-        $storeId = !empty($filters['warehouse_id']) ? (int) $filters['warehouse_id'] : ($user?->store_id ?: null);
+        $storeId = ! empty($filters['warehouse_id']) ? (int) $filters['warehouse_id'] : ($user?->store_id ?: null);
 
         $alerts = $this->service->getLowStockAlerts($storeId, 50);
 
         return response()->json([
             'success' => true,
-            'data'    => $alerts,
+            'data' => $alerts,
         ]);
     }
 
@@ -124,13 +124,13 @@ class WarehouseDashboardController extends Controller
     {
         $filters = $request->only(['warehouse_id']);
         $user = $request->user();
-        $storeId = !empty($filters['warehouse_id']) ? (int) $filters['warehouse_id'] : ($user?->store_id ?: null);
+        $storeId = ! empty($filters['warehouse_id']) ? (int) $filters['warehouse_id'] : ($user?->store_id ?: null);
 
         $activity = $this->service->getRecentActivity($storeId, 30);
 
         return response()->json([
             'success' => true,
-            'data'    => $activity,
+            'data' => $activity,
         ]);
     }
 
@@ -148,8 +148,8 @@ class WarehouseDashboardController extends Controller
         $sellingModes = $data['inventory']['selling_modes'] ?? [];
 
         $headers = [
-            'Content-Type'        => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="warehouse_dashboard_' . Carbon::now()->format('Y-m-d_His') . '.csv"',
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="warehouse_dashboard_'.Carbon::now()->format('Y-m-d_His').'.csv"',
         ];
 
         return response()->stream(function () use ($summary, $sellingModes) {

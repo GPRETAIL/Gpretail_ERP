@@ -6,11 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Agent;
 use App\Models\Employee;
 use App\Models\HrDesignation;
-use App\Models\Store;
 use App\Models\Supplier;
 use App\Models\Tax;
 use App\Models\Transport;
 use App\Services\DocumentNumberService;
+use App\Services\StoreContext;
 use Illuminate\Http\Request;
 
 class LookupController extends Controller
@@ -45,7 +45,7 @@ class LookupController extends Controller
                         // Same defense-in-depth as transports/agents/taxes below: companies (tenant
                         // stores/branches) isn't one of the confirmed ~1,000,000-row tables today, but
                         // an unbounded get() here has no ceiling if that ever changes.
-                        $data['companies'] = Store::where('is_active', true)
+                        $data['companies'] = app(StoreContext::class)->available($request->user())->where('is_active', true)
                             ->select(['id', 'name', 'code', 'gstin', 'email', 'phone'])
                             ->orderBy('name')
                             ->limit(200)

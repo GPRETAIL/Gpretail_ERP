@@ -40,6 +40,7 @@ class DealerInvoiceController extends Controller
     public function groupedSummary(Request $request)
     {
         $result = $this->groupAggregationService->summarize($this->filteredQuery($request), 'dealer_invoices', $request);
+
         return response()->json($result, $result['success'] ? 200 : 422);
     }
 
@@ -58,9 +59,9 @@ class DealerInvoiceController extends Controller
         }
 
         $result = $this->paginationService->paginate($query, 'dealer_invoices', $request, [
-            'default_sort'  => 'id',
+            'default_sort' => 'id',
             'default_order' => 'desc',
-            'tie_breaker'   => 'id',
+            'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'invoice_date', 'invoice_no', 'created_at'],
         ]);
 

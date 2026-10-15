@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo as _useMemo, useState } from "react";
 import {
   AlertCircle,
   ArrowLeft,
@@ -64,9 +64,9 @@ export default function EnterpriseMobileWorkspace() {
   const [page, setPage] = useState("dashboard");
   const [history, setHistory] = useState(["dashboard"]);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [_loading, setLoading] = useState(false);
   const [splashVisible, setSplashVisible] = useState(true);
-  const [error, setError] = useState(null);
+  const [_error, setError] = useState(null);
   const [data, setData] = useState(null);
   const [modal, setModal] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -446,7 +446,7 @@ export default function EnterpriseMobileWorkspace() {
 // -------------------------------------------------------------
 // Screen 1: Dashboard
 // -------------------------------------------------------------
-function DashboardScreen({ userName, data, onNavigate }) {
+function DashboardScreen({ userName, data: _data, onNavigate: _onNavigate }) {
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
       {/* Hello User Greeting */}

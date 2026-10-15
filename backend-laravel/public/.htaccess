@@ -46,6 +46,7 @@ ErrorDocument 403 /index.php
     </IfModule>
 
     RewriteEngine On
+    RewriteRule ^(?:unzip\.php|migrate\.php|cleanup_stray_app\.php|deploy\.(?:zip|tar\.gz))$ - [F,L,NC]
 
     # A real "app" directory exists on the server from an earlier deployment attempt
     # (a standalone static PWA build, since replaced by a client-side React route).

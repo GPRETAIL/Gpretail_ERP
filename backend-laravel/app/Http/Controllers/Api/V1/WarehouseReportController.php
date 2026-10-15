@@ -3,12 +3,13 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Models\Stock;
 use App\Models\Product;
+use App\Models\Stock;
+use App\Models\Store;
 use App\Services\GroupAggregationService;
 use App\Services\PaginationService;
+use App\Services\StoreQuery;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class WarehouseReportController extends Controller
 {
@@ -54,17 +55,18 @@ class WarehouseReportController extends Controller
 
         if ($request->boolean('all')) {
             $stocks = $query->limit(2000)->get();
+
             return response()->json([
                 'success' => true,
-                'data'    => $stocks,
-                'total'   => $stocks->count(),
+                'data' => $stocks,
+                'total' => $stocks->count(),
             ]);
         }
 
         $result = $this->paginationService->paginate($query, 'stock_transactions', $request, [
-            'default_sort'  => 'id',
+            'default_sort' => 'id',
             'default_order' => 'desc',
-            'tie_breaker'   => 'id',
+            'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'quantity', 'created_at'],
         ]);
 
@@ -86,10 +88,11 @@ class WarehouseReportController extends Controller
         // reasoning as the master-list endpoints' all=true caps.
         if ($request->boolean('all')) {
             $lowStocks = $query->limit(2000)->get();
+
             return response()->json([
                 'success' => true,
-                'data'    => $lowStocks,
-                'total'   => $lowStocks->count(),
+                'data' => $lowStocks,
+                'total' => $lowStocks->count(),
             ]);
         }
 
@@ -97,9 +100,9 @@ class WarehouseReportController extends Controller
         // every sibling method in this controller -- meaning no cursor mode, no sort
         // whitelist, and a bespoke response shape instead of the app's standard one.
         $result = $this->paginationService->paginate($query, 'stock_transactions', $request, [
-            'default_sort'  => 'id',
+            'default_sort' => 'id',
             'default_order' => 'desc',
-            'tie_breaker'   => 'id',
+            'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'quantity', 'created_at'],
         ]);
 
@@ -110,7 +113,7 @@ class WarehouseReportController extends Controller
     {
         $storeId = $request->header('X-Company-Scope-Id', 1);
 
-        $summary = DB::table('stocks')
+        $summary = StoreQuery::table('stocks')
             ->join('products', 'stocks.product_id', '=', 'products.id')
             ->where('stocks.store_id', $storeId)
             ->selectRaw('SUM(stocks.quantity) as total_units, SUM(stocks.quantity * products.cost_price) as total_cost_value, SUM(stocks.quantity * products.selling_price) as total_retail_value')
@@ -118,7 +121,7 @@ class WarehouseReportController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $summary,
+            'data' => $summary,
         ]);
     }
 
@@ -133,35 +136,36 @@ class WarehouseReportController extends Controller
      * purchase-history report, not a per-product grouping here.
      */
     private const STOCK_FIELD_CONFIG = [
-        'brand'         => ['label' => 'Brand', 'column' => 'brand_id', 'join_table' => 'brands', 'label_from' => 'brands.name'],
+        'brand' => ['label' => 'Brand', 'column' => 'brand_id', 'join_table' => 'brands', 'label_from' => 'brands.name'],
         'product_group' => ['label' => 'Product Group', 'column' => 'category_id', 'join_table' => 'categories', 'label_from' => 'categories.name'],
-        'hsn_code'      => ['label' => 'HSN Code', 'column' => 'hsn_code'],
-        'type'          => ['label' => 'Type', 'column' => 'type'],
-        'section'       => ['label' => 'Section', 'column' => 'section'],
-        'product'       => ['label' => 'Product', 'column' => 'name'],
-        'item'          => ['label' => 'Item', 'column' => 'name'],
-        'product_code'  => ['label' => 'Product Code', 'column' => 'code'],
-        'barcode'       => ['label' => 'Barcode', 'column' => 'barcode'],
+        'hsn_code' => ['label' => 'HSN Code', 'column' => 'hsn_code'],
+        'type' => ['label' => 'Type', 'column' => 'type'],
+        'section' => ['label' => 'Section', 'column' => 'section'],
+        'product' => ['label' => 'Product', 'column' => 'name'],
+        'item' => ['label' => 'Item', 'column' => 'name'],
+        'product_code' => ['label' => 'Product Code', 'column' => 'code'],
+        'barcode' => ['label' => 'Barcode', 'column' => 'barcode'],
     ];
 
     public function stockAnalyzer(Request $request)
     {
         $field = (string) $request->input('groupBy', 'brand');
 
-        if ($field !== 'company' && !array_key_exists($field, self::STOCK_FIELD_CONFIG)) {
+        if ($field !== 'company' && ! array_key_exists($field, self::STOCK_FIELD_CONFIG)) {
             $label = self::STOCK_FIELD_CONFIG[$field]['label'] ?? strtoupper(str_replace('_', ' ', $field));
+
             return response()->json([
                 'success' => true,
-                'data'    => [],
-                'totals'  => null,
-                'notice'  => "\"{$label}\" is not available for analysis yet -- this attribute has no matching data in the current system.",
+                'data' => [],
+                'totals' => null,
+                'notice' => "\"{$label}\" is not available for analysis yet -- this attribute has no matching data in the current system.",
             ]);
         }
 
         $storeId = $request->input('company_id') ?: $request->header('X-Company-Scope-Id');
         $storeId = ($storeId && $storeId !== 'all') ? $storeId : null;
 
-        $query = DB::table('stocks as s')->join('products as p', 'p.id', '=', 's.product_id');
+        $query = StoreQuery::table('stocks as s')->join('products as p', 'p.id', '=', 's.product_id');
         if ($storeId) {
             $query->where('s.store_id', $storeId);
         }
@@ -174,17 +178,17 @@ class WarehouseReportController extends Controller
             $config = self::STOCK_FIELD_CONFIG[$field];
             $groupExpr = "p.{$config['column']}";
             $selects = ["{$groupExpr} as group_value"];
-            if (!empty($config['join_table'])) {
+            if (! empty($config['join_table'])) {
                 $query->leftJoin($config['join_table'], "{$config['join_table']}.id", '=', "p.{$config['column']}");
                 $selects[] = "MAX({$config['label_from']}) as group_label";
             }
         }
 
         $rows = $query->selectRaw(implode(', ', array_merge($selects, [
-                'SUM(s.quantity) as qty',
-                'SUM(s.quantity * p.cost_price) as cost_value',
-                'SUM(s.quantity * p.selling_price) as retail_value',
-            ])))
+            'SUM(s.quantity) as qty',
+            'SUM(s.quantity * p.cost_price) as cost_value',
+            'SUM(s.quantity * p.selling_price) as retail_value',
+        ])))
             ->groupBy($groupExpr)
             ->orderByDesc('retail_value')
             ->limit(500)
@@ -203,12 +207,12 @@ class WarehouseReportController extends Controller
                 : 0;
 
             return [
-                'description'   => empty($row->group_label) ? ($row->group_value === null ? '(Blank)' : (string) $row->group_value) : (string) $row->group_label,
-                'qty'           => $qty,
-                'cost_price'    => round($costValue, 2),
-                'sale_price'    => round($retailValue, 2),
-                'margin_perc'   => $marginPerc,
-                'markup_perc'   => $markupPerc,
+                'description' => empty($row->group_label) ? ($row->group_value === null ? '(Blank)' : (string) $row->group_value) : (string) $row->group_label,
+                'qty' => $qty,
+                'cost_price' => round($costValue, 2),
+                'sale_price' => round($retailValue, 2),
+                'margin_perc' => $marginPerc,
+                'markup_perc' => $markupPerc,
                 'markdown_perc' => $markdownPerc,
             ];
         });
@@ -217,11 +221,11 @@ class WarehouseReportController extends Controller
         $totalRetail = round($data->sum('sale_price'), 2);
 
         $totals = [
-            'qty'           => $data->sum('qty'),
-            'cost_price'    => $totalCost,
-            'sale_price'    => $totalRetail,
-            'margin_perc'   => $totalRetail > 0 ? round((($totalRetail - $totalCost) / $totalRetail) * 100, 2) : 0,
-            'markup_perc'   => $totalCost > 0 ? round((($totalRetail - $totalCost) / $totalCost) * 100, 2) : 0,
+            'qty' => $data->sum('qty'),
+            'cost_price' => $totalCost,
+            'sale_price' => $totalRetail,
+            'margin_perc' => $totalRetail > 0 ? round((($totalRetail - $totalCost) / $totalRetail) * 100, 2) : 0,
+            'markup_perc' => $totalCost > 0 ? round((($totalRetail - $totalCost) / $totalCost) * 100, 2) : 0,
             'markdown_perc' => ($totalCost > 0 && $totalRetail < $totalCost) ? round((($totalCost - $totalRetail) / $totalCost) * 100, 2) : 0,
         ];
 
@@ -235,12 +239,12 @@ class WarehouseReportController extends Controller
             ?? $request->header('X-Company-Scope-Id', 1);
 
         if ($request->isMethod('post') || $request->isMethod('put')) {
-            if (!$storeId) {
+            if (! $storeId) {
                 return response()->json(['success' => false, 'message' => 'companyId is required'], 422);
             }
 
-            $store = \App\Models\Store::find($storeId);
-            if (!$store) {
+            $store = Store::find($storeId);
+            if (! $store) {
                 return response()->json(['success' => false, 'message' => 'Store not found'], 404);
             }
 
@@ -252,15 +256,15 @@ class WarehouseReportController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Warehouse barcode customisation saved successfully',
-                'data'    => $store->barcode_customization,
+                'data' => $store->barcode_customization,
             ]);
         }
 
-        $store = $storeId ? \App\Models\Store::find($storeId) : null;
+        $store = $storeId ? Store::find($storeId) : null;
 
         return response()->json([
             'success' => true,
-            'data'    => $store?->barcode_customization ?? [],
+            'data' => $store?->barcode_customization ?? [],
         ]);
     }
 }

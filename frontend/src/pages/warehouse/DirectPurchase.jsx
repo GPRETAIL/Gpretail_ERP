@@ -471,7 +471,7 @@ const createDefaultForm = (authUser = null) => ({
   lrNo: "",
   lrDate: "",
   bundles: "",
-  companyId: localStorage.getItem("activeStoreId") || "",
+  companyId: sessionStorage.getItem("activeStoreId") || "",
   retailLocation: String(authUser?.role || "").toLowerCase() === "admin" ? String(authUser?.company_name || "") : "",
   transportId: "",
   invoiceNo: "",
@@ -1508,7 +1508,7 @@ const DirectPurchase = () => {
         });
       }
       return results;
-    } catch (err) {
+    } catch (_err) {
       return [];
     }
   }, []);
@@ -1525,7 +1525,7 @@ const DirectPurchase = () => {
         });
       }
       return results;
-    } catch (err) {
+    } catch (_err) {
       return [];
     }
   }, []);
@@ -1542,7 +1542,7 @@ const DirectPurchase = () => {
         });
       }
       return results;
-    } catch (err) {
+    } catch (_err) {
       return [];
     }
   }, []);
@@ -1565,7 +1565,7 @@ const DirectPurchase = () => {
         });
       }
       return results;
-    } catch (err) {
+    } catch (_err) {
       return [];
     }
   }, []);

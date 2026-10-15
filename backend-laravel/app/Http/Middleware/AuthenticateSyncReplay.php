@@ -52,6 +52,9 @@ class AuthenticateSyncReplay
         }
 
         $syncUser = $node->resolveSyncUser();
+        abort_unless($syncUser->role === 'sync_system' && $syncUser->store_id === $node->store_id, 403, 'Invalid sync identity.');
+        $syncUser->forceFill(['platform_company_code' => $node->store?->platform_company_code])->save();
+        $request->attributes->set('authenticated_sync_replay', true);
 
         Auth::guard('sanctum')->setUser($syncUser);
         $request->setUserResolver(fn () => $syncUser);

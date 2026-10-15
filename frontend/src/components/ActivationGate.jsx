@@ -17,16 +17,11 @@ import ActivationWizard from "../pages/ActivationWizard";
 //
 // Now: always ask the server, and let a definitive answer override the cache in BOTH directions.
 // Only an unreachable server falls back to the cached yes, which is the case the cache was for.
-const ActivationGate = ({ children }) => {
-  const isMobileApp = typeof window !== "undefined" && window.location.pathname.startsWith("/app");
+const DesktopActivationGate = ({ children }) => {
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
-  const cachedActivated = localStorage.getItem("vx_activated") === "1";
+  const [cachedActivated] = useState(() => localStorage.getItem("vx_activated") === "1");
   const [phase, setPhase] = useState(cachedActivated ? "activated" : "loading");
   const [licence, setLicence] = useState(null);
-
-  if (isMobileApp) {
-    return children;
-  }
 
   const check = useCallback(async () => {
     try {
@@ -128,6 +123,11 @@ const ActivationGate = ({ children }) => {
       <Loader2 size={32} style={{ animation: "app-spin 1s linear infinite", color: "#3a6ea5" }} />
     </Box>
   );
+};
+
+const ActivationGate = ({ children }) => {
+  const isMobileApp = typeof window !== "undefined" && window.location.pathname.startsWith("/app");
+  return isMobileApp ? children : <DesktopActivationGate>{children}</DesktopActivationGate>;
 };
 
 export default ActivationGate;

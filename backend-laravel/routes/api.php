@@ -10,26 +10,23 @@ use App\Http\Controllers\Api\V1\BarcodeController;
 use App\Http\Controllers\Api\V1\BrandController;
 use App\Http\Controllers\Api\V1\CashRegisterController;
 use App\Http\Controllers\Api\V1\CategoryController;
-use App\Http\Controllers\Api\V1\CompanyController;
 use App\Http\Controllers\Api\V1\ConfigurationController;
 use App\Http\Controllers\Api\V1\CrmDashboardController;
 use App\Http\Controllers\Api\V1\CustomerController;
-use App\Http\Controllers\Api\V1\FinanceDashboardController;
-use App\Http\Controllers\Api\V1\MastersDashboardController;
-use App\Http\Controllers\Api\V1\SettingsDashboardController;
-use App\Http\Controllers\Api\V1\StoreDashboardController;
 use App\Http\Controllers\Api\V1\CustomerOrderController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DashboardLayoutController;
 use App\Http\Controllers\Api\V1\DealerInvoiceController;
 use App\Http\Controllers\Api\V1\DirectPurchaseController;
 use App\Http\Controllers\Api\V1\EmployeeController;
+use App\Http\Controllers\Api\V1\FinanceDashboardController;
 use App\Http\Controllers\Api\V1\HrConfigurationController;
 use App\Http\Controllers\Api\V1\InventoryEntryController;
 use App\Http\Controllers\Api\V1\ItemController;
 use App\Http\Controllers\Api\V1\ItemLocatorController;
 use App\Http\Controllers\Api\V1\LookupController;
 use App\Http\Controllers\Api\V1\LoyaltyController;
+use App\Http\Controllers\Api\V1\MastersDashboardController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\PhysicalStockController;
 use App\Http\Controllers\Api\V1\PosReturnController;
@@ -43,9 +40,13 @@ use App\Http\Controllers\Api\V1\SalesApprovalController;
 use App\Http\Controllers\Api\V1\SalesDashboardController;
 use App\Http\Controllers\Api\V1\SalesReportController;
 use App\Http\Controllers\Api\V1\SettingsController;
+use App\Http\Controllers\Api\V1\SettingsDashboardController;
 use App\Http\Controllers\Api\V1\SettlementController;
 use App\Http\Controllers\Api\V1\SizeController;
 use App\Http\Controllers\Api\V1\StockOutwardController;
+use App\Http\Controllers\Api\V1\StoreActivationController;
+use App\Http\Controllers\Api\V1\StoreController;
+use App\Http\Controllers\Api\V1\StoreDashboardController;
 use App\Http\Controllers\Api\V1\SupplierController;
 use App\Http\Controllers\Api\V1\SupplierPaymentController;
 use App\Http\Controllers\Api\V1\SyncController;
@@ -70,26 +71,26 @@ use Illuminate\Support\Facades\Route;
 // 1. Activation & System Gate Routes
 Route::prefix('activation')->group(function () {
     Route::get('status', [ActivationController::class, 'status']);
-    Route::post('register', [ActivationController::class, 'register']);
+    Route::post('register', [ActivationController::class, 'register'])->middleware('throttle:10,1');
     Route::post('set-password', [ActivationController::class, 'setPassword']);
     Route::get('password-setup-check', [ActivationController::class, 'passwordSetupCheck']);
 });
 
 // 2. Authentication Routes
 Route::prefix('auth')->group(function () {
-    Route::post('login', [AuthController::class, 'login']);
+    Route::post('login', [AuthController::class, 'login'])->middleware('throttle:10,1');
     Route::post('logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
     Route::get('me', [AuthController::class, 'me'])->middleware('auth:sanctum');
     Route::post('counter', [AuthController::class, 'counter'])->middleware('auth:sanctum');
     Route::get('counter', [ConfigurationController::class, 'getCounters'])->middleware('auth:sanctum');
-    Route::post('change-password', [AuthController::class, 'login']);
+    Route::post('change-password', [AuthController::class, 'changePassword'])->middleware(['auth:sanctum', 'throttle:10,1']);
 });
-Route::post('admin-auth/login', [AuthController::class, 'login']);
+Route::post('admin-auth/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
 Route::get('local-server-config', [AuthController::class, 'localServerConfig']);
-Route::put('local-server-config', [AuthController::class, 'localServerConfigUpdate']);
+Route::put('local-server-config', [AuthController::class, 'localServerConfigUpdate'])->middleware('auth:sanctum');
 Route::get('local-server-config/runtime', [AuthController::class, 'localServerConfigRuntime']);
-Route::match(['get', 'post'], 'local-server-config/test', [SettingsController::class, 'localServerTest']);
-Route::match(['get', 'post'], 'local-server-config/test-cloud', [SettingsController::class, 'cloudServerTest']);
+Route::match(['get', 'post'], 'local-server-config/test', [SettingsController::class, 'localServerTest'])->middleware(['auth:sanctum', 'throttle:10,1']);
+Route::match(['get', 'post'], 'local-server-config/test-cloud', [SettingsController::class, 'cloudServerTest'])->middleware(['auth:sanctum', 'throttle:10,1']);
 Route::get('connector/web-config', [SyncController::class, 'webConfig']);
 Route::post('sync/heartbeat', [SyncController::class, 'heartbeat']);
 Route::get('sync/outbound/next', [SyncController::class, 'outboundNext']);
@@ -103,6 +104,9 @@ Route::post('sync/outbox/retry-all', [SyncController::class, 'retryAllFailed'])-
 
 // Helper function to define all application API routes
 $registerAppRoutes = function () {
+    Route::get('company-stores', [StoreActivationController::class, 'index']);
+    Route::post('company-stores/sync', [StoreActivationController::class, 'sync']);
+    Route::post('company-stores/activate', [StoreActivationController::class, 'activate'])->middleware('throttle:10,1');
     // Identity & Profile
     Route::get('me', [AuthController::class, 'me'])->middleware('auth:sanctum');
 
@@ -121,10 +125,10 @@ $registerAppRoutes = function () {
     Route::get('dashboard', [DashboardController::class, 'index']);
 
     // Companies & Subscriptions
-    Route::get('companies/subscription/status', [CompanyController::class, 'subscriptionStatus']);
-    Route::post('companies/subscription/notices/{id}/dismiss', [CompanyController::class, 'subscriptionStatus']);
-    Route::get('companies/tenant-sync/overview', [CompanyController::class, 'index']);
-    Route::post('companies/tenant-sync/pull', [CompanyController::class, 'index']);
+    Route::get('companies/subscription/status', [StoreController::class, 'subscriptionStatus']);
+    Route::post('companies/subscription/notices/{id}/dismiss', [StoreController::class, 'subscriptionStatus']);
+    Route::get('companies/tenant-sync/overview', [StoreController::class, 'index']);
+    Route::post('companies/tenant-sync/pull', [StoreController::class, 'index']);
     Route::get('companies/{id}/theme', [SettingsController::class, 'getTheme']);
     Route::put('companies/{id}/theme', [SettingsController::class, 'updateTheme']);
     Route::get('companies/{id}/theme-presets', [SettingsController::class, 'listThemePresets']);
@@ -132,12 +136,12 @@ $registerAppRoutes = function () {
     Route::post('companies/{id}/theme-presets/{presetId}/apply', [SettingsController::class, 'applyThemePreset']);
     Route::delete('companies/{id}/theme-presets/{presetId}', [SettingsController::class, 'deleteThemePreset']);
     Route::post('companies/{id}/force-logout', [UserAccessController::class, 'forceLogout']);
-    Route::get('companies/{id}', [CompanyController::class, 'show']);
-    Route::put('companies/{id}', [CompanyController::class, 'update']);
-    Route::delete('companies/{id}', [CompanyController::class, 'destroy']);
-    Route::post('companies', [CompanyController::class, 'store']);
-    Route::get('companies', [CompanyController::class, 'index']);
-    Route::get('admin/monitoring/companies', [CompanyController::class, 'index']);
+    Route::get('companies/{id}', [StoreController::class, 'show']);
+    Route::put('companies/{id}', [StoreController::class, 'update']);
+    Route::delete('companies/{id}', [StoreController::class, 'destroy']);
+    Route::post('companies', [StoreController::class, 'store']);
+    Route::get('companies', [StoreController::class, 'index']);
+    Route::get('admin/monitoring/companies', [StoreController::class, 'index']);
     Route::post('admin/notify', [SettingsController::class, 'notify']);
 
     // Backups - real synchronous local-storage backup/restore engine

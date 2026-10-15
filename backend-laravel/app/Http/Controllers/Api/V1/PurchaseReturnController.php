@@ -46,6 +46,7 @@ class PurchaseReturnController extends Controller
     public function groupedSummary(Request $request)
     {
         $result = $this->groupAggregationService->summarize($this->filteredQuery($request), 'purchase_returns', $request);
+
         return response()->json($result, $result['success'] ? 200 : 422);
     }
 
@@ -64,9 +65,9 @@ class PurchaseReturnController extends Controller
         }
 
         $result = $this->paginationService->paginate($query, 'purchase_returns', $request, [
-            'default_sort'  => 'id',
+            'default_sort' => 'id',
             'default_order' => 'desc',
-            'tie_breaker'   => 'id',
+            'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'return_date', 'return_no', 'grand_total', 'created_at'],
         ]);
 

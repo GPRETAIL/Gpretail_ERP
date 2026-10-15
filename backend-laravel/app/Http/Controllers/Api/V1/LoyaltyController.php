@@ -26,15 +26,15 @@ class LoyaltyController extends Controller
             $s = $request->input('search');
             $query->where(function ($q) use ($s) {
                 $q->where('name', 'like', "%{$s}%")
-                  ->orWhere('phone', 'like', "%{$s}%")
-                  ->orWhere('loyalty_card_number', 'like', "%{$s}%");
+                    ->orWhere('phone', 'like', "%{$s}%")
+                    ->orWhere('loyalty_card_number', 'like', "%{$s}%");
             });
         }
 
         $result = $this->paginationService->paginate($query, 'customers', $request, [
-            'default_sort'  => 'loyalty_points',
+            'default_sort' => 'loyalty_points',
             'default_order' => 'desc',
-            'tie_breaker'   => 'id',
+            'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'name', 'phone', 'loyalty_card_number', 'loyalty_points'],
         ]);
 
@@ -57,13 +57,14 @@ class LoyaltyController extends Controller
 
         if ($request->boolean('all') || in_array($request->input('limit'), ['500', '1000', 500, 1000])) {
             $items = $query->orderByDesc('created_at')->limit(2000)->get();
+
             return response()->json(['success' => true, 'data' => $items, 'total' => $items->count()]);
         }
 
         $result = $this->paginationService->paginate($query, 'stock_transactions', $request, [
-            'default_sort'  => 'id',
+            'default_sort' => 'id',
             'default_order' => 'desc',
-            'tie_breaker'   => 'id',
+            'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'created_at'],
         ]);
 

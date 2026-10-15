@@ -1091,7 +1091,7 @@ export default function InvoiceTemplateRenderer({
                           sx={{ borderBottom: "1px solid #d1d5db", bgcolor: idx % 2 === 1 ? "rgba(249,250,251,0.6)" : "#ffffff" }}
                         >
                           {activeCols.map((col) => {
-                            let content = null;
+                            let content;
                             let cellSx = { textAlign: "right" };
 
                             switch (col.id) {

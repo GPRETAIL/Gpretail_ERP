@@ -16,8 +16,8 @@ class StoreDashboardService
 {
     protected function resolveDateRange(array $filters): array
     {
-        $from = !empty($filters['date_from']) ? Carbon::parse($filters['date_from'])->startOfDay() : null;
-        $to = !empty($filters['date_to']) ? Carbon::parse($filters['date_to'])->endOfDay() : null;
+        $from = ! empty($filters['date_from']) ? Carbon::parse($filters['date_from'])->startOfDay() : null;
+        $to = ! empty($filters['date_to']) ? Carbon::parse($filters['date_to'])->endOfDay() : null;
 
         return [$from, $to];
     }
@@ -36,6 +36,7 @@ class StoreDashboardService
         }
 
         $storeId = (int) ($user?->store_id ?: $user?->company_id ?: 0);
+
         return $storeId ? [$storeId] : [];
     }
 
@@ -50,13 +51,13 @@ class StoreDashboardService
         $salesChart = $this->getSalesByStoreChart($storeIds, $from, $to);
 
         return [
-            'summary'          => $summary,
-            'action_required'  => $actionRequired,
-            'comparison'       => $comparison,
-            'charts'           => [
+            'summary' => $summary,
+            'action_required' => $actionRequired,
+            'comparison' => $comparison,
+            'charts' => [
                 'sales_by_store' => $salesChart,
             ],
-            'last_updated'     => Carbon::now()->toIso8601String(),
+            'last_updated' => Carbon::now()->toIso8601String(),
         ];
     }
 
@@ -66,23 +67,23 @@ class StoreDashboardService
     public function getSummary(array $storeIds, ?Carbon $from, ?Carbon $to): array
     {
         $totalStores = count($storeIds);
-        $activeStores = DB::table('stores')->whereIn('id', $storeIds)->where('is_active', true)->count();
+        $activeStores = StoreQuery::table('stores')->whereIn('id', $storeIds)->where('is_active', true)->count();
 
-        $stockValue = DB::table('stocks')
+        $stockValue = StoreQuery::table('stocks')
             ->join('products', 'stocks.product_id', '=', 'products.id')
             ->whereIn('stocks.store_id', $storeIds)
             ->sum(DB::raw('stocks.quantity * COALESCE(products.selling_price, 0)'));
 
-        $salesRange = DB::table('pos_sales')
+        $salesRange = StoreQuery::table('pos_sales')
             ->whereIn('store_id', $storeIds)
             ->when($from && $to, fn ($q) => $q->whereBetween('sale_date', [$from, $to]))
             ->sum('grand_total');
 
-        $totalStaff = DB::table('employees')->whereIn('store_id', $storeIds)->where('is_active', true)->count();
+        $totalStaff = StoreQuery::table('employees')->whereIn('store_id', $storeIds)->where('is_active', true)->count();
 
         return [
-            'total_stores'      => $totalStores,
-            'active_stores'     => $activeStores,
+            'total_stores' => $totalStores,
+            'active_stores' => $activeStores,
             'consolidated_stock_value' => (float) $stockValue,
             'consolidated_sales_range' => (float) $salesRange,
             'total_active_staff' => $totalStaff,
@@ -94,23 +95,23 @@ class StoreDashboardService
      */
     public function getActionRequired(array $storeIds): array
     {
-        $inactiveStores = DB::table('stores')->whereIn('id', $storeIds)->where('is_active', false)->count();
+        $inactiveStores = StoreQuery::table('stores')->whereIn('id', $storeIds)->where('is_active', false)->count();
 
         $dormantThreshold = Carbon::today()->subDays(3);
-        $storesWithRecentSales = DB::table('pos_sales')
+        $storesWithRecentSales = StoreQuery::table('pos_sales')
             ->whereIn('store_id', $storeIds)
             ->where('sale_date', '>=', $dormantThreshold)
             ->distinct()
             ->pluck('store_id');
         $dormantStores = count(array_diff($storeIds, $storesWithRecentSales->all()));
 
-        $openRegisters = DB::table('cash_register_sessions')
+        $openRegisters = StoreQuery::table('cash_register_sessions')
             ->whereIn('store_id', $storeIds)
             ->whereNull('closed_at')
             ->where('opened_at', '<', Carbon::today())
             ->count();
 
-        $lowStockStores = DB::table('stocks')
+        $lowStockStores = StoreQuery::table('stocks')
             ->join('products', 'stocks.product_id', '=', 'products.id')
             ->whereIn('stocks.store_id', $storeIds)
             ->whereRaw('stocks.available_quantity <= COALESCE(products.min_stock, 10)')
@@ -119,39 +120,39 @@ class StoreDashboardService
 
         return [
             [
-                'key'          => 'inactive_stores',
-                'label'        => 'Inactive Stores',
-                'count'        => $inactiveStores,
-                'severity'     => 'critical',
-                'color'        => 'red',
-                'route'        => '/settings/configure-local-server',
+                'key' => 'inactive_stores',
+                'label' => 'Inactive Stores',
+                'count' => $inactiveStores,
+                'severity' => 'critical',
+                'color' => 'red',
+                'route' => '/settings/configure-local-server',
                 'filter_param' => 'filter=inactive',
             ],
             [
-                'key'          => 'stale_registers',
-                'label'        => 'Cash Registers Open Overnight',
-                'count'        => $openRegisters,
-                'severity'     => 'critical',
-                'color'        => 'red',
-                'route'        => '/sales/cash-closing',
+                'key' => 'stale_registers',
+                'label' => 'Cash Registers Open Overnight',
+                'count' => $openRegisters,
+                'severity' => 'critical',
+                'color' => 'red',
+                'route' => '/sales/cash-closing',
                 'filter_param' => 'filter=stale',
             ],
             [
-                'key'          => 'dormant_stores',
-                'label'        => 'Stores With No Sales (3+ days)',
-                'count'        => $dormantStores,
-                'severity'     => 'warning',
-                'color'        => 'orange',
-                'route'        => '/sales/pos-sales',
+                'key' => 'dormant_stores',
+                'label' => 'Stores With No Sales (3+ days)',
+                'count' => $dormantStores,
+                'severity' => 'warning',
+                'color' => 'orange',
+                'route' => '/sales/pos-sales',
                 'filter_param' => 'filter=dormant',
             ],
             [
-                'key'          => 'stores_low_stock',
-                'label'        => 'Stores With Low-Stock Items',
-                'count'        => $lowStockStores,
-                'severity'     => 'info',
-                'color'        => 'yellow',
-                'route'        => '/warehouse/stock-item',
+                'key' => 'stores_low_stock',
+                'label' => 'Stores With Low-Stock Items',
+                'count' => $lowStockStores,
+                'severity' => 'info',
+                'color' => 'yellow',
+                'route' => '/warehouse/stock-item',
                 'filter_param' => 'stock_filter=low_stock',
             ],
         ];
@@ -166,9 +167,9 @@ class StoreDashboardService
             return [];
         }
 
-        $stores = DB::table('stores')->whereIn('id', $storeIds)->select('id', 'name', 'code', 'is_active')->get();
+        $stores = StoreQuery::table('stores')->whereIn('id', $storeIds)->select('id', 'name', 'code', 'is_active')->get();
 
-        $salesByStore = DB::table('pos_sales')
+        $salesByStore = StoreQuery::table('pos_sales')
             ->whereIn('store_id', $storeIds)
             ->when($from && $to, fn ($q) => $q->whereBetween('sale_date', [$from, $to]))
             ->selectRaw('store_id, COUNT(*) as bills, COALESCE(SUM(grand_total), 0) as amount')
@@ -176,7 +177,7 @@ class StoreDashboardService
             ->get()
             ->keyBy('store_id');
 
-        $stockByStore = DB::table('stocks')
+        $stockByStore = StoreQuery::table('stocks')
             ->join('products', 'stocks.product_id', '=', 'products.id')
             ->whereIn('stocks.store_id', $storeIds)
             ->selectRaw('stocks.store_id, COALESCE(SUM(stocks.quantity * products.selling_price), 0) as value')
@@ -184,7 +185,7 @@ class StoreDashboardService
             ->get()
             ->keyBy('store_id');
 
-        $staffByStore = DB::table('employees')
+        $staffByStore = StoreQuery::table('employees')
             ->whereIn('store_id', $storeIds)
             ->where('is_active', true)
             ->selectRaw('store_id, COUNT(*) as count')
@@ -198,14 +199,14 @@ class StoreDashboardService
             $staff = $staffByStore->get($store->id);
 
             return [
-                'store_id'     => $store->id,
-                'store_name'   => $store->name,
-                'store_code'   => $store->code,
-                'is_active'    => (bool) $store->is_active,
+                'store_id' => $store->id,
+                'store_name' => $store->name,
+                'store_code' => $store->code,
+                'is_active' => (bool) $store->is_active,
                 'sales_amount' => (float) ($sales->amount ?? 0),
-                'bills_count'  => (int) ($sales->bills ?? 0),
-                'stock_value'  => (float) ($stock->value ?? 0),
-                'staff_count'  => (int) ($staff->count ?? 0),
+                'bills_count' => (int) ($sales->bills ?? 0),
+                'stock_value' => (float) ($stock->value ?? 0),
+                'staff_count' => (int) ($staff->count ?? 0),
             ];
         })->sortByDesc('sales_amount')->values()->toArray();
     }
@@ -219,7 +220,7 @@ class StoreDashboardService
             return [];
         }
 
-        $rows = DB::table('pos_sales as s')
+        $rows = StoreQuery::table('pos_sales as s')
             ->join('stores as st', 'st.id', '=', 's.store_id')
             ->whereIn('s.store_id', $storeIds)
             ->when($from && $to, fn ($q) => $q->whereBetween('s.sale_date', [$from, $to]))

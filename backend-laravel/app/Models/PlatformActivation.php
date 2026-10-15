@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 class PlatformActivation extends Model
 {
     protected $fillable = [
+        'deployment_id',
         'company_code',
         'client_id',
         'sync_token',
@@ -26,6 +27,9 @@ class PlatformActivation extends Model
         'registered_at',
         'last_synced_at',
         'last_sync_error',
+        'tenant_admin_email',
+        'onboarding_required',
+        'first_erp_login_at',
     ];
 
     protected $hidden = [
@@ -43,6 +47,8 @@ class PlatformActivation extends Model
             'licence_expires_at' => 'datetime',
             'licence_grace_until' => 'datetime',
             'registered_at' => 'datetime',
+            'first_erp_login_at' => 'datetime',
+            'onboarding_required' => 'boolean',
             'last_synced_at' => 'datetime',
         ];
     }

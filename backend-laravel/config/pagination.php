@@ -1,4 +1,5 @@
 <?php
+
 return [
     'default_mode' => env('PAGINATION_DEFAULT_MODE', 'auto'),
     'default_limit' => 50,
@@ -7,9 +8,10 @@ return [
     'max_offset' => 50000,
 
     'resources' => [
-        // Master Data Screens (Offset Mode capped at 50,000)
+        // Master data keeps page navigation at every dataset size.
         'products' => [
             'mode' => 'offset',
+            'page_only' => true,
             'default_sort' => 'name',
             'default_order' => 'asc',
             'tie_breaker' => 'id',
@@ -42,6 +44,7 @@ return [
         ],
         'customers' => [
             'mode' => 'offset',
+            'page_only' => true,
             'default_sort' => 'name',
             'default_order' => 'asc',
             'tie_breaker' => 'id',
@@ -57,6 +60,7 @@ return [
         ],
         'suppliers' => [
             'mode' => 'offset',
+            'page_only' => true,
             'default_sort' => 'name',
             'default_order' => 'asc',
             'tie_breaker' => 'id',
@@ -73,6 +77,7 @@ return [
         ],
         'employees' => [
             'mode' => 'offset',
+            'page_only' => true,
             'default_sort' => 'name',
             'default_order' => 'asc',
             'tie_breaker' => 'id',
@@ -85,6 +90,7 @@ return [
         ],
         'brands' => [
             'mode' => 'offset',
+            'page_only' => true,
             'default_sort' => 'name',
             'default_order' => 'asc',
             'tie_breaker' => 'id',
@@ -97,6 +103,7 @@ return [
         ],
         'categories' => [
             'mode' => 'offset',
+            'page_only' => true,
             'default_sort' => 'name',
             'default_order' => 'asc',
             'tie_breaker' => 'id',
@@ -104,6 +111,7 @@ return [
         ],
         'taxes' => [
             'mode' => 'offset',
+            'page_only' => true,
             'default_sort' => 'name',
             'default_order' => 'asc',
             'tie_breaker' => 'id',
@@ -116,6 +124,7 @@ return [
         ],
         'agents' => [
             'mode' => 'offset',
+            'page_only' => true,
             'default_sort' => 'name',
             'default_order' => 'asc',
             'tie_breaker' => 'id',
@@ -127,6 +136,7 @@ return [
         ],
         'transports' => [
             'mode' => 'offset',
+            'page_only' => true,
             'default_sort' => 'name',
             'default_order' => 'asc',
             'tie_breaker' => 'id',
@@ -139,6 +149,7 @@ return [
         ],
         'sizes' => [
             'mode' => 'offset',
+            'page_only' => true,
             'default_sort' => 'sort_order',
             'default_order' => 'asc',
             'tie_breaker' => 'id',
@@ -146,6 +157,7 @@ return [
         ],
         'attribute_values' => [
             'mode' => 'offset',
+            'page_only' => true,
             'default_sort' => 'name',
             'default_order' => 'asc',
             'tie_breaker' => 'id',
@@ -153,6 +165,7 @@ return [
         ],
         'users' => [
             'mode' => 'offset',
+            'page_only' => true,
             'default_sort' => 'id',
             'default_order' => 'desc',
             'tie_breaker' => 'id',

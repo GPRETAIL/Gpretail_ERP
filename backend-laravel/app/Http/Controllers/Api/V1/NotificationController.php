@@ -6,16 +6,22 @@ use App\Http\Controllers\Controller;
 use App\Models\Notification;
 use App\Models\StoreLocalNode;
 use App\Services\PaginationService;
+use App\Services\StoreQuery;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Carbon;
 
 class NotificationController extends Controller
 {
     private const DUE_SOON_TYPE = 'SUPPLIER_PAYMENT_DUE_SOON';
+
     private const OVERDUE_TYPE = 'SUPPLIER_PAYMENT_OVERDUE';
+
     private const DUE_SOON_DAYS = 30;
+
     private const OVERDUE_DAYS = 90;
+
     private const SYNC_STALE_TYPE = 'SYNC_NODE_STALE';
+
     private const SYNC_STALE_THRESHOLD_MINUTES = 5;
 
     // Same key/label/route/severity conditions the module dashboards already surface as
@@ -24,22 +30,39 @@ class NotificationController extends Controller
     // ongoing housekeeping state (a count that's basically always > 0, like "Inactive Suppliers"
     // or "Products Missing HSN Code") that would just sit unread forever and add noise.
     private const CUSTOMER_CREDIT_LIMIT_TYPE = 'CUSTOMER_CREDIT_LIMIT_EXCEEDED';
+
     private const CREDIT_SALE_DUE_SOON_TYPE = 'CREDIT_SALE_DUE_SOON';
+
     private const CREDIT_SALE_OVERDUE_TYPE = 'CREDIT_SALE_OVERDUE';
+
     private const CREDIT_SALE_DUE_SOON_DAYS = 7;
+
     private const CREDIT_SALE_OVERDUE_DAYS = 30;
+
     private const UNPAID_DEALER_INVOICE_TYPE = 'UNPAID_DEALER_INVOICE';
+
     private const PURCHASE_RETURN_REFUND_DUE_TYPE = 'PURCHASE_RETURN_REFUND_DUE';
+
     private const PHYSICAL_STOCK_VARIANCE_TYPE = 'PHYSICAL_STOCK_VARIANCE';
+
     private const LOW_STOCK_ITEM_TYPE = 'LOW_STOCK_ITEM';
+
     private const LOW_STOCK_DEFAULT_MIN = 10;
+
     private const CASH_REGISTER_VARIANCE_TYPE = 'CASH_REGISTER_VARIANCE';
+
     private const CASH_REGISTER_OPEN_OVERNIGHT_TYPE = 'CASH_REGISTER_OPEN_OVERNIGHT';
+
     private const STORE_DORMANT_TYPE = 'STORE_DORMANT';
+
     private const STORE_DORMANT_DAYS = 3;
+
     private const BACKUP_STALE_TYPE = 'BACKUP_STALE';
+
     private const BACKUP_STALE_DAYS = 7;
+
     private const BACKUP_STALE_SINGLETON_ID = 0;
+
     private const FAILED_BACKUP_TYPE = 'FAILED_BACKUP';
 
     public function __construct(private readonly PaginationService $paginationService) {}
@@ -70,11 +93,11 @@ class NotificationController extends Controller
     public function markRead($id)
     {
         $notification = Notification::find($id);
-        if (!$notification) {
+        if (! $notification) {
             return response()->json(['success' => false, 'message' => 'Notification not found'], 404);
         }
 
-        if (!$notification->read_at) {
+        if (! $notification->read_at) {
             $notification->update(['read_at' => now()]);
         }
 
@@ -116,10 +139,10 @@ class NotificationController extends Controller
     {
         $existing = Notification::whereIn('type', [self::DUE_SOON_TYPE, self::OVERDUE_TYPE])
             ->get(['type', 'reference_id'])
-            ->map(fn ($n) => $n->type . ':' . $n->reference_id)
+            ->map(fn ($n) => $n->type.':'.$n->reference_id)
             ->flip();
 
-        // Lean DB::table() + LEFT JOIN instead of Eloquent::with() -- direct_purchases alone runs
+        // Lean \App\Services\StoreQuery::table() + LEFT JOIN instead of Eloquent::with() -- direct_purchases alone runs
         // 15k+ unpaid rows in this dataset (payment_status is effectively unindexed/low-cardinality
         // here, so every row gets scanned either way), and hydrating each into a full model plus a
         // separate eager-loaded supplier query took ~12s for what boils down to a handful of rows
@@ -129,7 +152,7 @@ class NotificationController extends Controller
 
         $bills = [];
         foreach (
-            DB::table('purchase_invoices')
+            StoreQuery::table('purchase_invoices')
                 ->leftJoin('suppliers', 'purchase_invoices.supplier_id', '=', 'suppliers.id')
                 ->where('purchase_invoices.payment_status', '!=', 'PAID')
                 ->where('purchase_invoices.invoice_date', '<', $dueSoonThreshold)
@@ -148,7 +171,7 @@ class NotificationController extends Controller
             ];
         }
         foreach (
-            DB::table('direct_purchases')
+            StoreQuery::table('direct_purchases')
                 ->leftJoin('suppliers', 'direct_purchases.supplier_id', '=', 'suppliers.id')
                 ->where('direct_purchases.payment_status', '!=', 'PAID')
                 ->where('direct_purchases.purchase_date', '<', $dueSoonThreshold)
@@ -168,7 +191,7 @@ class NotificationController extends Controller
         }
 
         foreach ($bills as $bill) {
-            if ($bill['days'] >= self::OVERDUE_DAYS && !isset($existing[self::OVERDUE_TYPE . ':' . $bill['reference_id']])) {
+            if ($bill['days'] >= self::OVERDUE_DAYS && ! isset($existing[self::OVERDUE_TYPE.':'.$bill['reference_id']])) {
                 Notification::create([
                     'type' => self::OVERDUE_TYPE,
                     'title' => 'Supplier Payment Overdue',
@@ -180,7 +203,7 @@ class NotificationController extends Controller
                 ]);
             }
 
-            if ($bill['days'] >= self::DUE_SOON_DAYS && !isset($existing[self::DUE_SOON_TYPE . ':' . $bill['reference_id']])) {
+            if ($bill['days'] >= self::DUE_SOON_DAYS && ! isset($existing[self::DUE_SOON_TYPE.':'.$bill['reference_id']])) {
                 Notification::create([
                     'type' => self::DUE_SOON_TYPE,
                     'title' => 'Supplier Payment Due Soon',
@@ -251,10 +274,10 @@ class NotificationController extends Controller
      */
     private function generateCustomerCreditLimitAlerts(): void
     {
-        $overLimit = DB::table('customers')
+        $overLimit = StoreQuery::table('customers')
             ->where('credit_limit', '>', 0)
             ->whereRaw('current_balance > credit_limit')
-            ->get(['id', 'name', 'current_balance', 'credit_limit']);
+            ->get(['id', 'name', 'current_balance', 'credit_limit', 'store_id']);
 
         if ($overLimit->isEmpty()) {
             return;
@@ -275,10 +298,11 @@ class NotificationController extends Controller
             Notification::create([
                 'type' => self::CUSTOMER_CREDIT_LIMIT_TYPE,
                 'title' => 'Customer over credit limit',
-                'message' => "{$customer->name} is ₹{$over} over their credit limit (balance ₹" . number_format((float) $customer->current_balance, 2) . " / limit ₹" . number_format((float) $customer->credit_limit, 2) . ").",
+                'message' => "{$customer->name} is ₹{$over} over their credit limit (balance ₹".number_format((float) $customer->current_balance, 2).' / limit ₹'.number_format((float) $customer->credit_limit, 2).').',
                 'link' => '/crm/customer?filter=has_dues',
                 'reference_type' => 'CUSTOMER',
                 'reference_id' => $customer->id,
+                'store_id' => $customer->store_id,
             ]);
         }
     }
@@ -294,10 +318,10 @@ class NotificationController extends Controller
     {
         $existing = Notification::whereIn('type', [self::CREDIT_SALE_DUE_SOON_TYPE, self::CREDIT_SALE_OVERDUE_TYPE])
             ->get(['type', 'reference_id'])
-            ->map(fn ($n) => $n->type . ':' . $n->reference_id)
+            ->map(fn ($n) => $n->type.':'.$n->reference_id)
             ->flip();
 
-        $sales = DB::table('pos_sales')
+        $sales = StoreQuery::table('pos_sales')
             ->leftJoin('customers', 'pos_sales.customer_id', '=', 'customers.id')
             ->where('pos_sales.is_credit', true)
             ->whereRaw('pos_sales.grand_total > pos_sales.paid_amount')
@@ -312,7 +336,7 @@ class NotificationController extends Controller
             $customerName = $sale->customer_name ?? 'Walk-in customer';
             $due = number_format((float) $sale->grand_total - (float) $sale->paid_amount, 2);
 
-            if ($days >= self::CREDIT_SALE_OVERDUE_DAYS && !isset($existing[self::CREDIT_SALE_OVERDUE_TYPE . ':' . $sale->id])) {
+            if ($days >= self::CREDIT_SALE_OVERDUE_DAYS && ! isset($existing[self::CREDIT_SALE_OVERDUE_TYPE.':'.$sale->id])) {
                 Notification::create([
                     'type' => self::CREDIT_SALE_OVERDUE_TYPE,
                     'title' => 'Credit sale overdue',
@@ -324,7 +348,7 @@ class NotificationController extends Controller
                 ]);
             }
 
-            if ($days >= self::CREDIT_SALE_DUE_SOON_DAYS && !isset($existing[self::CREDIT_SALE_DUE_SOON_TYPE . ':' . $sale->id])) {
+            if ($days >= self::CREDIT_SALE_DUE_SOON_DAYS && ! isset($existing[self::CREDIT_SALE_DUE_SOON_TYPE.':'.$sale->id])) {
                 Notification::create([
                     'type' => self::CREDIT_SALE_DUE_SOON_TYPE,
                     'title' => 'Credit sale due soon',
@@ -350,7 +374,7 @@ class NotificationController extends Controller
             ->pluck('reference_id')
             ->flip();
 
-        $invoices = DB::table('dealer_invoices')
+        $invoices = StoreQuery::table('dealer_invoices')
             ->leftJoin('customers', 'dealer_invoices.customer_id', '=', 'customers.id')
             ->whereIn('dealer_invoices.status', ['pending', 'PENDING', 'draft', 'DRAFT'])
             ->get(['dealer_invoices.id', 'dealer_invoices.invoice_no', 'dealer_invoices.grand_total', 'dealer_invoices.store_id', 'customers.name as customer_name']);
@@ -365,7 +389,7 @@ class NotificationController extends Controller
             Notification::create([
                 'type' => self::UNPAID_DEALER_INVOICE_TYPE,
                 'title' => 'Dealer invoice unpaid',
-                'message' => "{$invoice->invoice_no} ({$customerName}) for ₹" . number_format((float) $invoice->grand_total, 2) . ' is still pending.',
+                'message' => "{$invoice->invoice_no} ({$customerName}) for ₹".number_format((float) $invoice->grand_total, 2).' is still pending.',
                 'link' => '/sales/dealer-invoice',
                 'reference_type' => 'DEALER_INVOICE',
                 'reference_id' => $invoice->id,
@@ -384,7 +408,7 @@ class NotificationController extends Controller
             ->pluck('reference_id')
             ->flip();
 
-        $returns = DB::table('purchase_returns')
+        $returns = StoreQuery::table('purchase_returns')
             ->leftJoin('suppliers', 'purchase_returns.supplier_id', '=', 'suppliers.id')
             ->whereIn('purchase_returns.status', ['pending', 'PENDING', 'draft', 'DRAFT', 'pending_approval'])
             ->get(['purchase_returns.id', 'purchase_returns.return_no', 'purchase_returns.total_amount', 'purchase_returns.store_id', 'suppliers.name as supplier_name']);
@@ -399,7 +423,7 @@ class NotificationController extends Controller
             Notification::create([
                 'type' => self::PURCHASE_RETURN_REFUND_DUE_TYPE,
                 'title' => 'Purchase return refund due',
-                'message' => "{$return->return_no} ({$supplierName}) for ₹" . number_format((float) $return->total_amount, 2) . ' is awaiting refund.',
+                'message' => "{$return->return_no} ({$supplierName}) for ₹".number_format((float) $return->total_amount, 2).' is awaiting refund.',
                 'link' => '/warehouse/purchase-return',
                 'reference_type' => 'PURCHASE_RETURN',
                 'reference_id' => $return->id,
@@ -419,7 +443,7 @@ class NotificationController extends Controller
             ->pluck('reference_id')
             ->flip();
 
-        $variances = DB::table('physical_stock_items')
+        $variances = StoreQuery::table('physical_stock_items')
             ->join('physical_stocks', 'physical_stock_items.physical_stock_id', '=', 'physical_stocks.id')
             ->join('products', 'physical_stock_items.product_id', '=', 'products.id')
             ->where('physical_stocks.status', '!=', 'completed')
@@ -440,7 +464,7 @@ class NotificationController extends Controller
             Notification::create([
                 'type' => self::PHYSICAL_STOCK_VARIANCE_TYPE,
                 'title' => 'Physical stock variance found',
-                'message' => "{$variance->audit_no}: {$variance->product_name} is " . number_format(abs($diff), 3) . " {$direction} against system quantity.",
+                'message' => "{$variance->audit_no}: {$variance->product_name} is ".number_format(abs($diff), 3)." {$direction} against system quantity.",
                 'link' => '/warehouse/physical-stock?status=variance',
                 'reference_type' => 'PHYSICAL_STOCK_ITEM',
                 'reference_id' => $variance->id,
@@ -457,10 +481,10 @@ class NotificationController extends Controller
      */
     private function generateLowStockAlerts(): void
     {
-        $lowStock = DB::table('stocks')
+        $lowStock = StoreQuery::table('stocks')
             ->join('products', 'stocks.product_id', '=', 'products.id')
             ->join('stores', 'stocks.store_id', '=', 'stores.id')
-            ->whereRaw('stocks.available_quantity <= COALESCE(products.min_stock, ' . self::LOW_STOCK_DEFAULT_MIN . ')')
+            ->whereRaw('stocks.available_quantity <= COALESCE(products.min_stock, '.self::LOW_STOCK_DEFAULT_MIN.')')
             ->get(['stocks.id', 'stocks.available_quantity', 'stocks.store_id', 'products.name as product_name', 'stores.name as store_name']);
 
         if ($lowStock->isEmpty()) {
@@ -480,7 +504,7 @@ class NotificationController extends Controller
             Notification::create([
                 'type' => self::LOW_STOCK_ITEM_TYPE,
                 'title' => 'Low stock',
-                'message' => "{$stock->product_name} at {$stock->store_name} is down to " . number_format((float) $stock->available_quantity, 3) . ' available.',
+                'message' => "{$stock->product_name} at {$stock->store_name} is down to ".number_format((float) $stock->available_quantity, 3).' available.',
                 'link' => '/warehouse/stock-item?stock_filter=low_stock',
                 'reference_type' => 'STOCK',
                 'reference_id' => $stock->id,
@@ -499,7 +523,7 @@ class NotificationController extends Controller
             ->pluck('reference_id')
             ->flip();
 
-        $sessions = DB::table('cash_register_sessions')
+        $sessions = StoreQuery::table('cash_register_sessions')
             ->join('stores', 'cash_register_sessions.store_id', '=', 'stores.id')
             ->leftJoin('users', 'cash_register_sessions.user_id', '=', 'users.id')
             ->whereNotNull('cash_register_sessions.closed_at')
@@ -521,7 +545,7 @@ class NotificationController extends Controller
             Notification::create([
                 'type' => self::CASH_REGISTER_VARIANCE_TYPE,
                 'title' => 'Cash register variance',
-                'message' => "{$session->store_name} register closed by {$userName} is ₹" . number_format(abs($diff), 2) . " {$direction}.",
+                'message' => "{$session->store_name} register closed by {$userName} is ₹".number_format(abs($diff), 2)." {$direction}.",
                 'link' => '/sales/cash-closing?filter=variance',
                 'reference_type' => 'CASH_REGISTER_SESSION',
                 'reference_id' => $session->id,
@@ -541,7 +565,7 @@ class NotificationController extends Controller
             ->pluck('reference_id')
             ->flip();
 
-        $sessions = DB::table('cash_register_sessions')
+        $sessions = StoreQuery::table('cash_register_sessions')
             ->join('stores', 'cash_register_sessions.store_id', '=', 'stores.id')
             ->leftJoin('users', 'cash_register_sessions.user_id', '=', 'users.id')
             ->whereNull('cash_register_sessions.closed_at')
@@ -554,7 +578,7 @@ class NotificationController extends Controller
             }
 
             $userName = $session->user_name ?? 'Unknown user';
-            $openedAgo = \Illuminate\Support\Carbon::parse($session->opened_at)->diffForHumans();
+            $openedAgo = Carbon::parse($session->opened_at)->diffForHumans();
 
             Notification::create([
                 'type' => self::CASH_REGISTER_OPEN_OVERNIGHT_TYPE,
@@ -581,7 +605,7 @@ class NotificationController extends Controller
     {
         $dormantThreshold = now()->subDays(self::STORE_DORMANT_DAYS);
 
-        $everSoldBefore = DB::table('pos_sales')
+        $everSoldBefore = StoreQuery::table('pos_sales')
             ->where('sale_date', '<', $dormantThreshold)
             ->distinct()
             ->pluck('store_id')
@@ -591,7 +615,7 @@ class NotificationController extends Controller
             return;
         }
 
-        $activeStores = DB::table('stores')
+        $activeStores = StoreQuery::table('stores')
             ->where('is_active', true)
             ->whereIn('id', $everSoldBefore->keys())
             ->get(['id', 'name']);
@@ -599,7 +623,7 @@ class NotificationController extends Controller
             return;
         }
 
-        $storesWithRecentSales = DB::table('pos_sales')
+        $storesWithRecentSales = StoreQuery::table('pos_sales')
             ->where('sale_date', '>=', $dormantThreshold)
             ->distinct()
             ->pluck('store_id')
@@ -618,7 +642,7 @@ class NotificationController extends Controller
             Notification::create([
                 'type' => self::STORE_DORMANT_TYPE,
                 'title' => 'Store has no recent sales',
-                'message' => "{$store->name} has recorded no sales in the last " . self::STORE_DORMANT_DAYS . ' days.',
+                'message' => "{$store->name} has recorded no sales in the last ".self::STORE_DORMANT_DAYS.' days.',
                 'link' => '/sales/pos-sales?filter=dormant',
                 'reference_type' => 'STORE',
                 'reference_id' => $store->id,
@@ -641,31 +665,15 @@ class NotificationController extends Controller
      */
     private function generateBackupAlerts(): void
     {
-        $hasEverAttempted = DB::table('backups')->exists();
-
-        $lastSuccess = $hasEverAttempted
-            ? DB::table('backups')->where('status', 'success')->orderByDesc('completed_at')->value('completed_at')
-            : null;
-
-        $isStale = $hasEverAttempted
-            && (!$lastSuccess || \Illuminate\Support\Carbon::parse($lastSuccess)->lt(now()->subDays(self::BACKUP_STALE_DAYS)));
-
-        if ($isStale) {
-            $alreadyAlerted = Notification::where('type', self::BACKUP_STALE_TYPE)
-                ->whereNull('read_at')
-                ->exists();
-
-            if (!$alreadyAlerted) {
-                $lastSeen = $lastSuccess ? \Illuminate\Support\Carbon::parse($lastSuccess)->diffForHumans() : 'never';
-
-                Notification::create([
-                    'type' => self::BACKUP_STALE_TYPE,
-                    'title' => 'Backup overdue',
+        foreach (request()->attributes->get('store_context_ids', []) as $storeId) {
+            $hasEverAttempted = StoreQuery::table('backups')->where('company_id', $storeId)->exists();
+            $lastSuccess = $hasEverAttempted ? StoreQuery::table('backups')->where('company_id', $storeId)->where('status', 'success')->orderByDesc('completed_at')->value('completed_at') : null;
+            $stale = $hasEverAttempted && (! $lastSuccess || Carbon::parse($lastSuccess)->lt(now()->subDays(self::BACKUP_STALE_DAYS)));
+            if ($stale && ! Notification::where('type', self::BACKUP_STALE_TYPE)->where('store_id', $storeId)->whereNull('read_at')->exists()) {
+                $lastSeen = $lastSuccess ? Carbon::parse($lastSuccess)->diffForHumans() : 'never';
+                Notification::create(['type' => self::BACKUP_STALE_TYPE, 'title' => 'Backup overdue',
                     'message' => "No successful backup has completed since {$lastSeen}. Run one from the Backup Center.",
-                    'link' => '/settings/backup?filter=overdue',
-                    'reference_type' => 'BACKUP',
-                    'reference_id' => self::BACKUP_STALE_SINGLETON_ID,
-                ]);
+                    'link' => '/settings/backup?filter=overdue', 'reference_type' => 'BACKUP', 'reference_id' => self::BACKUP_STALE_SINGLETON_ID, 'store_id' => $storeId]);
             }
         }
 
@@ -673,7 +681,7 @@ class NotificationController extends Controller
             ->pluck('reference_id')
             ->flip();
 
-        $failedBackups = DB::table('backups')->where('status', '!=', 'success')->get(['id', 'file_name', 'company_id', 'status']);
+        $failedBackups = StoreQuery::table('backups')->where('status', '!=', 'success')->get(['id', 'file_name', 'company_id', 'status']);
 
         foreach ($failedBackups as $backup) {
             if (isset($alreadyAlertedFailed[$backup->id])) {

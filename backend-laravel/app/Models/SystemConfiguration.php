@@ -9,7 +9,7 @@ class SystemConfiguration extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
+    protected $fillable = ['store_id',
         'key',
         'config_key',
         'value',

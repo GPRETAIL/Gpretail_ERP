@@ -25,7 +25,7 @@ class ActivationController extends Controller
     {
         $activation = PlatformActivation::current();
 
-        if (!$activation || !$activation->activated) {
+        if (! $activation || ! $activation->activated) {
             return response()->json([
                 'success' => true,
                 'data' => [
@@ -72,7 +72,7 @@ class ActivationController extends Controller
             $request->input('client_id'),
         );
 
-        if (!$result['ok']) {
+        if (! $result['ok']) {
             return response()->json(['success' => false, 'message' => $result['message']], 422);
         }
 

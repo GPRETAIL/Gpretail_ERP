@@ -27,7 +27,9 @@ class AuthenticateSyncReplayTest extends TestCase
     use RefreshDatabase;
 
     protected Store $store;
+
     protected Product $product;
+
     protected StoreLocalNode $node;
 
     protected function setUp(): void
@@ -36,6 +38,7 @@ class AuthenticateSyncReplayTest extends TestCase
 
         $this->store = Store::create(['name' => 'Test Flagship Store', 'code' => 'STR-001']);
         $this->product = Product::create([
+            'company_id' => $this->store->id,
             'name' => 'Test Widget', 'code' => 'WGT-1', 'sku' => 'WGT-SKU', 'barcode' => 'WGT-BC',
             'selling_price' => 100, 'is_active' => true,
         ]);

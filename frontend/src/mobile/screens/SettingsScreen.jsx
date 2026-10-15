@@ -46,7 +46,7 @@ export default function SettingsScreen({ onLogout, onTriggerPwa, appLock, biomet
   const [creatingBackup, setCreatingBackup] = useState(false);
   const [prefPaper, setPrefPaper] = useState(() => localStorage.getItem("vx_paper_width") || "3-inch");
   const [prefMode, setPrefMode] = useState(() => localStorage.getItem("vx_print_mode") || "browser");
-  const activeStoreId = localStorage.getItem("activeStoreId") || "";
+  const activeStoreId = sessionStorage.getItem("activeStoreId") || "";
 
   const loadBackupOverview = () => {
     api.get("/backups/overview", { params: { companyId: activeStoreId || undefined } })

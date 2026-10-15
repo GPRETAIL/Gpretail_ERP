@@ -16,7 +16,7 @@ const DONUT_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#6366f1", "#ef4444", "#e
 /**
  * Inventory Summary screen — fetches real data from GET /warehouse/dashboard.
  */
-export default function InventoryScreen({ onNavigate, onSelectProduct }) {
+export default function InventoryScreen({ onNavigate: _onNavigate, onSelectProduct }) {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
   const [products, setProducts] = useState([]);

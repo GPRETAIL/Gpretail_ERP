@@ -25,7 +25,9 @@ class CaptureSyncOutboxTest extends TestCase
     use RefreshDatabase;
 
     protected Store $store;
+
     protected User $user;
+
     protected Product $product;
 
     protected function setUp(): void
@@ -37,7 +39,7 @@ class CaptureSyncOutboxTest extends TestCase
             'name' => 'Test Admin', 'username' => 'testadmin', 'email' => 'admin@example.com',
             'password' => bcrypt('secret123'), 'role' => 'admin', 'store_id' => $this->store->id,
         ]);
-        $this->product = Product::create([
+        $this->product = Product::create(['company_id' => $this->store->id,
             'name' => 'Test Widget', 'code' => 'WGT-1', 'sku' => 'WGT-SKU', 'barcode' => 'WGT-BC',
             'selling_price' => 100, 'is_active' => true,
         ]);

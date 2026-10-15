@@ -2,25 +2,11 @@
 
 namespace App\Services;
 
-use App\Models\Barcode;
 use App\Models\Category;
-use App\Models\DirectPurchase;
-use App\Models\PhysicalStock;
-use App\Models\Product;
-use App\Models\ProductVariant;
-use App\Models\PurchaseInvoice;
-use App\Models\PurchaseReturn;
 use App\Models\Stock;
-use App\Models\StockBatch;
-use App\Models\StockOutward;
-use App\Models\StockTransaction;
 use App\Models\Store;
-use App\Models\Supplier;
-use App\Models\TransportEntry;
-use App\Models\TransportIssue;
 use App\Models\User;
 use Carbon\Carbon;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class WarehouseDashboardService
@@ -33,16 +19,17 @@ class WarehouseDashboardService
         $role = strtolower((string) ($user?->role ?? ''));
         $isSuperAdmin = in_array($role, ['super_admin', 'superadmin'], true);
 
-        if (!empty($filters['warehouse_id'])) {
+        if (! empty($filters['warehouse_id'])) {
             $requestedStoreId = (int) $filters['warehouse_id'];
             if ($isSuperAdmin) {
                 return $requestedStoreId;
             }
+
             // User can only view their own store if not super admin
             return (int) ($user?->store_id ?: $user?->company_id ?: $requestedStoreId);
         }
 
-        if (!$isSuperAdmin) {
+        if (! $isSuperAdmin) {
             return (int) ($user?->store_id ?: $user?->company_id ?: 0) ?: null;
         }
 
@@ -54,8 +41,8 @@ class WarehouseDashboardService
      */
     protected function resolveDateRange(array $filters): array
     {
-        $from = !empty($filters['date_from']) ? Carbon::parse($filters['date_from'])->startOfDay() : null;
-        $to = !empty($filters['date_to']) ? Carbon::parse($filters['date_to'])->endOfDay() : null;
+        $from = ! empty($filters['date_from']) ? Carbon::parse($filters['date_from'])->startOfDay() : null;
+        $to = ! empty($filters['date_to']) ? Carbon::parse($filters['date_to'])->endOfDay() : null;
 
         return [$from, $to];
     }
@@ -86,26 +73,26 @@ class WarehouseDashboardService
         $stores = $this->getAvailableStores($user);
 
         return [
-            'summary'          => $summary,
-            'action_required'  => $actionRequired,
-            'inventory'        => $inventory,
-            'valuation'        => $valuation,
-            'incoming'         => $incoming,
-            'grn'              => $grn,
-            'outgoing'         => $outgoing,
-            'transport'        => $transport,
+            'summary' => $summary,
+            'action_required' => $actionRequired,
+            'inventory' => $inventory,
+            'valuation' => $valuation,
+            'incoming' => $incoming,
+            'grn' => $grn,
+            'outgoing' => $outgoing,
+            'transport' => $transport,
             'purchase_returns' => $purchaseReturns,
-            'physical_stock'   => $physicalStock,
-            'alerts'           => $lowStock,
-            'activity'         => $activity,
-            'performance'      => $performance,
-            'charts'           => [
-                'stock_movement'    => $movementChart,
+            'physical_stock' => $physicalStock,
+            'alerts' => $lowStock,
+            'activity' => $activity,
+            'performance' => $performance,
+            'charts' => [
+                'stock_movement' => $movementChart,
                 'purchase_activity' => $purchaseChart,
             ],
-            'stores'           => $stores,
-            'active_store_id'  => $storeId,
-            'last_updated'     => Carbon::now()->toIso8601String(),
+            'stores' => $stores,
+            'active_store_id' => $storeId,
+            'last_updated' => Carbon::now()->toIso8601String(),
         ];
     }
 
@@ -115,7 +102,7 @@ class WarehouseDashboardService
     public function getSummary(?int $storeId, ?Carbon $from, ?Carbon $to): array
     {
         // 1. Total Stock & Value
-        $stockQuery = DB::table('stocks')
+        $stockQuery = StoreQuery::table('stocks')
             ->leftJoin('products', 'stocks.product_id', '=', 'products.id');
 
         if ($storeId) {
@@ -133,7 +120,7 @@ class WarehouseDashboardService
         ')->first();
 
         // 2. Incoming Purchases Count
-        $dpQuery = DB::table('direct_purchases');
+        $dpQuery = StoreQuery::table('direct_purchases');
         if ($storeId) {
             $dpQuery->where(function ($q) use ($storeId) {
                 $q->where('store_id', $storeId)->orWhere('company_id', $storeId);
@@ -147,7 +134,7 @@ class WarehouseDashboardService
         $pendingPurchases = (clone $dpQuery)->whereNotIn('status', ['completed', 'received', 'closed'])->count();
 
         // 3. Outgoing Stock Outwards
-        $soQuery = DB::table('stock_outwards');
+        $soQuery = StoreQuery::table('stock_outwards');
         if ($storeId) {
             $soQuery->where('source_store_id', $storeId);
         }
@@ -160,47 +147,47 @@ class WarehouseDashboardService
         $outwardToday = (clone $soQuery)->whereDate('outward_date', Carbon::today()->toDateString())->count();
 
         // 4. Alerts
-        $lowStockCount = DB::table('stocks')
+        $lowStockCount = StoreQuery::table('stocks')
             ->join('products', 'stocks.product_id', '=', 'products.id')
-            ->when($storeId, fn($q) => $q->where('stocks.store_id', $storeId))
+            ->when($storeId, fn ($q) => $q->where('stocks.store_id', $storeId))
             ->whereRaw('stocks.available_quantity <= COALESCE(products.min_stock, 10)')
             ->where('stocks.available_quantity', '>', 0)
             ->count();
 
-        $outOfStockCount = DB::table('stocks')
+        $outOfStockCount = StoreQuery::table('stocks')
             ->join('products', 'stocks.product_id', '=', 'products.id')
-            ->when($storeId, fn($q) => $q->where('stocks.store_id', $storeId))
+            ->when($storeId, fn ($q) => $q->where('stocks.store_id', $storeId))
             ->where('stocks.available_quantity', '<=', 0)
             ->count();
 
         // 5. Transports (transport_issues has no store_id -- transports/transport_entries are
         // store-agnostic master data in this schema, matching getTransportSummary() below)
-        $transportIssues = DB::table('transport_issues')
+        $transportIssues = StoreQuery::table('transport_issues')
             ->whereNotIn('status', ['resolved', 'closed'])
             ->count();
 
         // 6. Purchase Returns Pending
-        $pendingReturns = DB::table('purchase_returns')
-            ->when($storeId, fn($q) => $q->where('store_id', $storeId))
+        $pendingReturns = StoreQuery::table('purchase_returns')
+            ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->whereIn('status', ['pending', 'draft', 'pending_approval', 'awaiting_return'])
             ->count();
 
         return [
-            'total_stock_qty'       => (float) ($stockAgg->total_qty ?? 0),
-            'total_allocated_qty'   => (float) ($stockAgg->total_allocated ?? 0),
-            'total_available_qty'   => (float) ($stockAgg->total_available ?? 0),
-            'total_cost_value'      => (float) ($stockAgg->total_cost_value ?? 0),
-            'total_retail_value'    => (float) ($stockAgg->total_retail_value ?? 0),
-            'total_products'        => (int) ($stockAgg->total_products ?? 0),
-            'total_variants'        => (int) ($stockAgg->total_variants ?? 0),
-            'pending_purchases'     => $pendingPurchases,
-            'total_incoming'        => $totalIncomingPurchases,
-            'outward_today'         => $outwardToday,
-            'pending_dispatch'      => $pendingDispatch,
-            'total_outward'         => $totalOutward,
-            'low_stock_count'       => $lowStockCount,
-            'out_of_stock_count'    => $outOfStockCount,
-            'transport_issues_count'=> $transportIssues,
+            'total_stock_qty' => (float) ($stockAgg->total_qty ?? 0),
+            'total_allocated_qty' => (float) ($stockAgg->total_allocated ?? 0),
+            'total_available_qty' => (float) ($stockAgg->total_available ?? 0),
+            'total_cost_value' => (float) ($stockAgg->total_cost_value ?? 0),
+            'total_retail_value' => (float) ($stockAgg->total_retail_value ?? 0),
+            'total_products' => (int) ($stockAgg->total_products ?? 0),
+            'total_variants' => (int) ($stockAgg->total_variants ?? 0),
+            'pending_purchases' => $pendingPurchases,
+            'total_incoming' => $totalIncomingPurchases,
+            'outward_today' => $outwardToday,
+            'pending_dispatch' => $pendingDispatch,
+            'total_outward' => $totalOutward,
+            'low_stock_count' => $lowStockCount,
+            'out_of_stock_count' => $outOfStockCount,
+            'transport_issues_count' => $transportIssues,
             'pending_returns_count' => $pendingReturns,
         ];
     }
@@ -211,96 +198,96 @@ class WarehouseDashboardService
     public function getActionRequired(?int $storeId, ?Carbon $from, ?Carbon $to): array
     {
         // 1. Pending GRNs
-        $pendingGrnCount = DB::table('direct_purchases')
-            ->when($storeId, fn($q) => $q->where(fn($sq) => $sq->where('store_id', $storeId)->orWhere('company_id', $storeId)))
+        $pendingGrnCount = StoreQuery::table('direct_purchases')
+            ->when($storeId, fn ($q) => $q->where(fn ($sq) => $sq->where('store_id', $storeId)->orWhere('company_id', $storeId)))
             ->whereIn('status', ['pending', 'draft', 'in_transit', 'partially_received'])
             ->count();
 
         // 2. Transport Issues (no store_id column -- see getSummary() above)
-        $openTransportIssues = DB::table('transport_issues')
+        $openTransportIssues = StoreQuery::table('transport_issues')
             ->whereNotIn('status', ['resolved', 'closed'])
             ->count();
 
         // 3. Low Stock Items
-        $lowStockCount = DB::table('stocks')
+        $lowStockCount = StoreQuery::table('stocks')
             ->join('products', 'stocks.product_id', '=', 'products.id')
-            ->when($storeId, fn($q) => $q->where('stocks.store_id', $storeId))
+            ->when($storeId, fn ($q) => $q->where('stocks.store_id', $storeId))
             ->whereRaw('stocks.available_quantity <= COALESCE(products.min_stock, 10)')
             ->count();
 
         // 4. Physical Stock Variances
-        $physicalVariances = DB::table('physical_stocks')
+        $physicalVariances = StoreQuery::table('physical_stocks')
             ->join('physical_stock_items', 'physical_stocks.id', '=', 'physical_stock_items.physical_stock_id')
-            ->when($storeId, fn($q) => $q->where('physical_stocks.store_id', $storeId))
+            ->when($storeId, fn ($q) => $q->where('physical_stocks.store_id', $storeId))
             ->where('physical_stocks.status', '!=', 'completed')
             ->where('physical_stock_items.difference_qty', '!=', 0)
             ->count();
 
         // 5. Pending Purchase Returns
-        $pendingReturns = DB::table('purchase_returns')
-            ->when($storeId, fn($q) => $q->where('store_id', $storeId))
+        $pendingReturns = StoreQuery::table('purchase_returns')
+            ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->whereIn('status', ['pending', 'pending_approval', 'awaiting_return', 'draft'])
             ->count();
 
         // 6. Goods Awaiting Receipt (LR Entries not yet received)
-        $awaitingReceipt = DB::table('transport_entries')
+        $awaitingReceipt = StoreQuery::table('transport_entries')
             ->whereNotIn('status', ['received', 'completed', 'cancelled'])
             ->count();
 
         return [
             [
-                'key'         => 'grn_pending',
-                'label'       => 'GRNs Pending',
-                'count'       => $pendingGrnCount,
-                'severity'    => 'critical',
-                'color'       => 'red',
-                'route'       => '/warehouse/receive-goods',
-                'filter_param'=> 'status=pending',
+                'key' => 'grn_pending',
+                'label' => 'GRNs Pending',
+                'count' => $pendingGrnCount,
+                'severity' => 'critical',
+                'color' => 'red',
+                'route' => '/warehouse/receive-goods',
+                'filter_param' => 'status=pending',
             ],
             [
-                'key'         => 'transport_issues',
-                'label'       => 'Transport Issues',
-                'count'       => $openTransportIssues,
-                'severity'    => 'critical',
-                'color'       => 'red',
-                'route'       => '/warehouse/transport-issue',
-                'filter_param'=> 'status=open',
+                'key' => 'transport_issues',
+                'label' => 'Transport Issues',
+                'count' => $openTransportIssues,
+                'severity' => 'critical',
+                'color' => 'red',
+                'route' => '/warehouse/transport-issue',
+                'filter_param' => 'status=open',
             ],
             [
-                'key'         => 'low_stock',
-                'label'       => 'Low Stock Items',
-                'count'       => $lowStockCount,
-                'severity'    => 'warning',
-                'color'       => 'orange',
-                'route'       => '/warehouse/stock-item',
-                'filter_param'=> 'stock_filter=low_stock',
+                'key' => 'low_stock',
+                'label' => 'Low Stock Items',
+                'count' => $lowStockCount,
+                'severity' => 'warning',
+                'color' => 'orange',
+                'route' => '/warehouse/stock-item',
+                'filter_param' => 'stock_filter=low_stock',
             ],
             [
-                'key'         => 'physical_variance',
-                'label'       => 'Physical Stock Variances',
-                'count'       => $physicalVariances,
-                'severity'    => 'warning',
-                'color'       => 'orange',
-                'route'       => '/warehouse/physical-stock',
-                'filter_param'=> 'status=variance',
+                'key' => 'physical_variance',
+                'label' => 'Physical Stock Variances',
+                'count' => $physicalVariances,
+                'severity' => 'warning',
+                'color' => 'orange',
+                'route' => '/warehouse/physical-stock',
+                'filter_param' => 'status=variance',
             ],
             [
-                'key'         => 'purchase_returns',
-                'label'       => 'Purchase Returns Pending',
-                'count'       => $pendingReturns,
-                'severity'    => 'info',
-                'color'       => 'yellow',
-                'route'       => '/warehouse/purchase-return',
-                'filter_param'=> 'status=pending',
+                'key' => 'purchase_returns',
+                'label' => 'Purchase Returns Pending',
+                'count' => $pendingReturns,
+                'severity' => 'info',
+                'color' => 'yellow',
+                'route' => '/warehouse/purchase-return',
+                'filter_param' => 'status=pending',
             ],
             [
-                'key'         => 'goods_awaiting_receipt',
-                'label'       => 'Goods Awaiting Receipt',
-                'count'       => $awaitingReceipt,
-                'severity'    => 'info',
-                'color'       => 'yellow',
-                'route'       => '/warehouse/transport-receipt',
-                'filter_param'=> 'status=pending',
+                'key' => 'goods_awaiting_receipt',
+                'label' => 'Goods Awaiting Receipt',
+                'count' => $awaitingReceipt,
+                'severity' => 'info',
+                'color' => 'yellow',
+                'route' => '/warehouse/transport-receipt',
+                'filter_param' => 'status=pending',
             ],
         ];
     }
@@ -310,9 +297,9 @@ class WarehouseDashboardService
      */
     public function getInventoryOverview(?int $storeId): array
     {
-        $baseQuery = DB::table('stocks')
+        $baseQuery = StoreQuery::table('stocks')
             ->join('products', 'stocks.product_id', '=', 'products.id')
-            ->when($storeId, fn($q) => $q->where('stocks.store_id', $storeId));
+            ->when($storeId, fn ($q) => $q->where('stocks.store_id', $storeId));
 
         // Group by Selling Mode
         $sellingModes = (clone $baseQuery)
@@ -340,45 +327,45 @@ class WarehouseDashboardService
         ')->first();
 
         // In transit from transport entries
-        $inTransitQty = (float) DB::table('transport_entries')
+        $inTransitQty = (float) StoreQuery::table('transport_entries')
             ->whereIn('status', ['in_transit', 'dispatched', 'pending'])
             ->sum('packages_count');
 
         return [
             'selling_modes' => [
                 'piece' => [
-                    'label'         => 'Pieces',
-                    'unit'          => 'Pcs',
-                    'total_qty'     => (float) ($pieces->total_qty ?? 0),
+                    'label' => 'Pieces',
+                    'unit' => 'Pcs',
+                    'total_qty' => (float) ($pieces->total_qty ?? 0),
                     'available_qty' => (float) ($pieces->available_qty ?? 0),
                     'allocated_qty' => (float) ($pieces->allocated_qty ?? 0),
                     'product_count' => (int) ($pieces->product_count ?? 0),
-                    'cost_value'    => (float) ($pieces->cost_value ?? 0),
+                    'cost_value' => (float) ($pieces->cost_value ?? 0),
                 ],
                 'pack' => [
-                    'label'         => 'Packs',
-                    'unit'          => 'Packs',
-                    'total_qty'     => (float) ($packs->total_qty ?? 0),
+                    'label' => 'Packs',
+                    'unit' => 'Packs',
+                    'total_qty' => (float) ($packs->total_qty ?? 0),
                     'available_qty' => (float) ($packs->available_qty ?? 0),
                     'allocated_qty' => (float) ($packs->allocated_qty ?? 0),
                     'product_count' => (int) ($packs->product_count ?? 0),
-                    'cost_value'    => (float) ($packs->cost_value ?? 0),
+                    'cost_value' => (float) ($packs->cost_value ?? 0),
                 ],
                 'cut' => [
-                    'label'         => 'Cut Stock (Fabric/Length)',
-                    'unit'          => 'Meters',
-                    'total_qty'     => (float) ($cut->total_qty ?? 0),
+                    'label' => 'Cut Stock (Fabric/Length)',
+                    'unit' => 'Meters',
+                    'total_qty' => (float) ($cut->total_qty ?? 0),
                     'available_qty' => (float) ($cut->available_qty ?? 0),
                     'allocated_qty' => (float) ($cut->allocated_qty ?? 0),
                     'product_count' => (int) ($cut->product_count ?? 0),
-                    'cost_value'    => (float) ($cut->cost_value ?? 0),
+                    'cost_value' => (float) ($cut->cost_value ?? 0),
                 ],
             ],
             'chart' => [
-                'available'   => (float) ($overall->available ?? 0),
-                'reserved'    => (float) ($overall->reserved ?? 0),
-                'in_transit'  => $inTransitQty,
-                'blocked'     => (float) ($overall->blocked ?? 0),
+                'available' => (float) ($overall->available ?? 0),
+                'reserved' => (float) ($overall->reserved ?? 0),
+                'in_transit' => $inTransitQty,
+                'blocked' => (float) ($overall->blocked ?? 0),
             ],
         ];
     }
@@ -389,10 +376,10 @@ class WarehouseDashboardService
     public function getInventoryValuation(?int $storeId): array
     {
         // Category valuation
-        $byCategory = DB::table('stocks')
+        $byCategory = StoreQuery::table('stocks')
             ->join('products', 'stocks.product_id', '=', 'products.id')
             ->leftJoin('categories', 'products.category_id', '=', 'categories.id')
-            ->when($storeId, fn($q) => $q->where('stocks.store_id', $storeId))
+            ->when($storeId, fn ($q) => $q->where('stocks.store_id', $storeId))
             ->selectRaw('
                 COALESCE(categories.name, "Uncategorized") as category_name,
                 COALESCE(SUM(stocks.quantity), 0) as qty,
@@ -412,6 +399,7 @@ class WarehouseDashboardService
                 $row->qty = (float) $row->qty;
                 $row->cost_value = (float) $row->cost_value;
                 $row->retail_value = (float) $row->retail_value;
+
                 return $row;
             });
 
@@ -425,10 +413,10 @@ class WarehouseDashboardService
      */
     public function getIncomingGoods(?int $storeId, ?Carbon $from, ?Carbon $to, int $limit = 10): array
     {
-        $query = DB::table('direct_purchases')
+        $query = StoreQuery::table('direct_purchases')
             ->leftJoin('suppliers', 'direct_purchases.supplier_id', '=', 'suppliers.id')
-            ->when($storeId, fn($q) => $q->where(fn($sq) => $sq->where('direct_purchases.store_id', $storeId)->orWhere('direct_purchases.company_id', $storeId)))
-            ->when($from && $to, fn($q) => $q->whereBetween('direct_purchases.purchase_date', [$from->toDateString(), $to->toDateString()]))
+            ->when($storeId, fn ($q) => $q->where(fn ($sq) => $sq->where('direct_purchases.store_id', $storeId)->orWhere('direct_purchases.company_id', $storeId)))
+            ->when($from && $to, fn ($q) => $q->whereBetween('direct_purchases.purchase_date', [$from->toDateString(), $to->toDateString()]))
             ->select([
                 'direct_purchases.id',
                 'direct_purchases.purchase_no',
@@ -452,8 +440,8 @@ class WarehouseDashboardService
      */
     public function getGrnSummary(?int $storeId, ?Carbon $from, ?Carbon $to): array
     {
-        $query = DB::table('direct_purchases')
-            ->when($storeId, fn($q) => $q->where(fn($sq) => $sq->where('store_id', $storeId)->orWhere('company_id', $storeId)));
+        $query = StoreQuery::table('direct_purchases')
+            ->when($storeId, fn ($q) => $q->where(fn ($sq) => $sq->where('store_id', $storeId)->orWhere('company_id', $storeId)));
 
         $pending = (clone $query)->whereIn('status', ['pending', 'draft', 'in_transit'])->count();
         $partial = (clone $query)->where('status', 'partially_received')->count();
@@ -461,10 +449,10 @@ class WarehouseDashboardService
         $overdue = (clone $query)->whereIn('status', ['pending', 'draft'])->whereDate('purchase_date', '<', Carbon::today()->subDays(3))->count();
 
         return [
-            'pending'         => $pending,
-            'partial'         => $partial,
+            'pending' => $pending,
+            'partial' => $partial,
             'completed_today' => $completedToday,
-            'overdue'         => $overdue,
+            'overdue' => $overdue,
         ];
     }
 
@@ -473,21 +461,21 @@ class WarehouseDashboardService
      */
     public function getStockOutwardSummary(?int $storeId, ?Carbon $from, ?Carbon $to, int $limit = 10): array
     {
-        $soQuery = DB::table('stock_outwards')
-            ->when($storeId, fn($q) => $q->where('source_store_id', $storeId));
+        $soQuery = StoreQuery::table('stock_outwards')
+            ->when($storeId, fn ($q) => $q->where('source_store_id', $storeId));
 
         $counts = [
-            'today'            => (clone $soQuery)->whereDate('outward_date', Carbon::today())->count(),
-            'pending'          => (clone $soQuery)->whereIn('status', ['pending', 'draft'])->count(),
-            'ready_dispatch'   => (clone $soQuery)->where('status', 'ready_for_dispatch')->count(),
-            'dispatched'       => (clone $soQuery)->where('status', 'dispatched')->count(),
-            'pending_receipt'  => (clone $soQuery)->where('status', 'in_transit')->count(),
-            'cancelled'        => (clone $soQuery)->where('status', 'cancelled')->count(),
+            'today' => (clone $soQuery)->whereDate('outward_date', Carbon::today())->count(),
+            'pending' => (clone $soQuery)->whereIn('status', ['pending', 'draft'])->count(),
+            'ready_dispatch' => (clone $soQuery)->where('status', 'ready_for_dispatch')->count(),
+            'dispatched' => (clone $soQuery)->where('status', 'dispatched')->count(),
+            'pending_receipt' => (clone $soQuery)->where('status', 'in_transit')->count(),
+            'cancelled' => (clone $soQuery)->where('status', 'cancelled')->count(),
         ];
 
-        $recentOutwards = DB::table('stock_outwards')
+        $recentOutwards = StoreQuery::table('stock_outwards')
             ->leftJoin('stores as target_store', 'stock_outwards.target_store_id', '=', 'target_store.id')
-            ->when($storeId, fn($q) => $q->where('stock_outwards.source_store_id', $storeId))
+            ->when($storeId, fn ($q) => $q->where('stock_outwards.source_store_id', $storeId))
             ->select([
                 'stock_outwards.id',
                 'stock_outwards.outward_no',
@@ -510,21 +498,21 @@ class WarehouseDashboardService
      */
     public function getTransportSummary(?int $storeId, ?Carbon $from, ?Carbon $to): array
     {
-        $totalEntries = DB::table('transport_entries')->count();
-        $inTransit = DB::table('transport_entries')->whereIn('status', ['in_transit', 'dispatched'])->count();
-        $received = DB::table('transport_entries')->where('status', 'received')->count();
-        $openIssues = DB::table('transport_issues')->whereNotIn('status', ['resolved', 'closed'])->count();
-        $delayed = DB::table('transport_entries')
+        $totalEntries = StoreQuery::table('transport_entries')->count();
+        $inTransit = StoreQuery::table('transport_entries')->whereIn('status', ['in_transit', 'dispatched'])->count();
+        $received = StoreQuery::table('transport_entries')->where('status', 'received')->count();
+        $openIssues = StoreQuery::table('transport_issues')->whereNotIn('status', ['resolved', 'closed'])->count();
+        $delayed = StoreQuery::table('transport_entries')
             ->whereNotIn('status', ['received', 'completed', 'cancelled'])
             ->whereDate('lr_date', '<', Carbon::today()->subDays(5))
             ->count();
 
         return [
-            'entries'    => $totalEntries,
+            'entries' => $totalEntries,
             'in_transit' => $inTransit,
-            'received'   => $received,
-            'issues'     => $openIssues,
-            'delayed'    => $delayed,
+            'received' => $received,
+            'issues' => $openIssues,
+            'delayed' => $delayed,
         ];
     }
 
@@ -533,8 +521,8 @@ class WarehouseDashboardService
      */
     public function getPurchaseReturnsSummary(?int $storeId, ?Carbon $from, ?Carbon $to): array
     {
-        $query = DB::table('purchase_returns')
-            ->when($storeId, fn($q) => $q->where('store_id', $storeId));
+        $query = StoreQuery::table('purchase_returns')
+            ->when($storeId, fn ($q) => $q->where('store_id', $storeId));
 
         $pendingApproval = (clone $query)->whereIn('status', ['pending', 'draft', 'pending_approval'])->count();
         $awaitingReturn = (clone $query)->where('status', 'awaiting_return')->count();
@@ -543,9 +531,9 @@ class WarehouseDashboardService
 
         return [
             'pending_approval' => $pendingApproval,
-            'awaiting_return'  => $awaitingReturn,
-            'returned_today'   => $returnedToday,
-            'pending_value'    => $totalValue,
+            'awaiting_return' => $awaitingReturn,
+            'returned_today' => $returnedToday,
+            'pending_value' => $totalValue,
         ];
     }
 
@@ -554,15 +542,15 @@ class WarehouseDashboardService
      */
     public function getPhysicalStockSummary(?int $storeId, ?Carbon $from, ?Carbon $to): array
     {
-        $audits = DB::table('physical_stocks')
-            ->when($storeId, fn($q) => $q->where('store_id', $storeId));
+        $audits = StoreQuery::table('physical_stocks')
+            ->when($storeId, fn ($q) => $q->where('store_id', $storeId));
 
         $pendingCounts = (clone $audits)->whereIn('status', ['pending', 'in_progress', 'draft'])->count();
         $completed = (clone $audits)->where('status', 'completed')->count();
 
-        $items = DB::table('physical_stock_items')
+        $items = StoreQuery::table('physical_stock_items')
             ->join('physical_stocks', 'physical_stock_items.physical_stock_id', '=', 'physical_stocks.id')
-            ->when($storeId, fn($q) => $q->where('physical_stocks.store_id', $storeId));
+            ->when($storeId, fn ($q) => $q->where('physical_stocks.store_id', $storeId));
 
         $shortage = (clone $items)->where('physical_stock_items.difference_qty', '<', 0)->count();
         $excess = (clone $items)->where('physical_stock_items.difference_qty', '>', 0)->count();
@@ -570,10 +558,10 @@ class WarehouseDashboardService
 
         return [
             'pending_counts' => $pendingCounts,
-            'completed'      => $completed,
-            'shortage'       => $shortage,
-            'excess'         => $excess,
-            'matched'        => $matched,
+            'completed' => $completed,
+            'shortage' => $shortage,
+            'excess' => $excess,
+            'matched' => $matched,
         ];
     }
 
@@ -582,13 +570,13 @@ class WarehouseDashboardService
      */
     public function getLowStockAlerts(?int $storeId, int $limit = 10): array
     {
-        $alerts = DB::table('stocks')
+        $alerts = StoreQuery::table('stocks')
             ->join('products', 'stocks.product_id', '=', 'products.id')
             ->leftJoin('product_variants', 'stocks.variant_id', '=', 'product_variants.id')
             ->leftJoin('sizes', 'product_variants.size_id', '=', 'sizes.id')
             ->leftJoin('attribute_values as colors', 'product_variants.color_id', '=', 'colors.id')
             ->leftJoin('stores', 'stocks.store_id', '=', 'stores.id')
-            ->when($storeId, fn($q) => $q->where('stocks.store_id', $storeId))
+            ->when($storeId, fn ($q) => $q->where('stocks.store_id', $storeId))
             ->whereRaw('stocks.available_quantity <= COALESCE(products.min_stock, 10)')
             ->select([
                 'stocks.id',
@@ -614,10 +602,10 @@ class WarehouseDashboardService
      */
     public function getRecentActivity(?int $storeId, int $limit = 15): array
     {
-        $activities = DB::table('stock_transactions')
+        $activities = StoreQuery::table('stock_transactions')
             ->leftJoin('products', 'stock_transactions.product_id', '=', 'products.id')
             ->leftJoin('users', 'stock_transactions.created_by', '=', 'users.id')
-            ->when($storeId, fn($q) => $q->where('stock_transactions.store_id', $storeId))
+            ->when($storeId, fn ($q) => $q->where('stock_transactions.store_id', $storeId))
             ->select([
                 'stock_transactions.id',
                 'stock_transactions.type',
@@ -641,25 +629,25 @@ class WarehouseDashboardService
     public function getPerformanceMetrics(?int $storeId, ?Carbon $from, ?Carbon $to): array
     {
         // Stock accuracy from physical audits
-        $totalAuditedItems = DB::table('physical_stock_items')
+        $totalAuditedItems = StoreQuery::table('physical_stock_items')
             ->join('physical_stocks', 'physical_stock_items.physical_stock_id', '=', 'physical_stocks.id')
-            ->when($storeId, fn($q) => $q->where('physical_stocks.store_id', $storeId))
+            ->when($storeId, fn ($q) => $q->where('physical_stocks.store_id', $storeId))
             ->count();
 
-        $matchedAuditedItems = DB::table('physical_stock_items')
+        $matchedAuditedItems = StoreQuery::table('physical_stock_items')
             ->join('physical_stocks', 'physical_stock_items.physical_stock_id', '=', 'physical_stocks.id')
-            ->when($storeId, fn($q) => $q->where('physical_stocks.store_id', $storeId))
+            ->when($storeId, fn ($q) => $q->where('physical_stocks.store_id', $storeId))
             ->where('physical_stock_items.difference_qty', 0)
             ->count();
 
         $accuracy = $totalAuditedItems > 0 ? round(($matchedAuditedItems / $totalAuditedItems) * 100, 1) : null;
 
         return [
-            'stock_accuracy'        => $accuracy !== null ? "{$accuracy}%" : '98.5%',
+            'stock_accuracy' => $accuracy !== null ? "{$accuracy}%" : '98.5%',
             'on_time_dispatch_rate' => '96.2%',
-            'grn_avg_time'          => '2.4 hrs',
-            'return_rate'           => '1.2%',
-            'transport_issue_rate'  => '0.8%',
+            'grn_avg_time' => '2.4 hrs',
+            'return_rate' => '1.2%',
+            'transport_issue_rate' => '0.8%',
         ];
     }
 
@@ -676,7 +664,7 @@ class WarehouseDashboardService
         while ($current->lte($endDate)) {
             $dateStr = $current->toDateString();
             $days[$dateStr] = [
-                'date'     => $current->format('M d'),
+                'date' => $current->format('M d'),
                 'raw_date' => $dateStr,
                 'incoming' => 0,
                 'outgoing' => 0,
@@ -685,8 +673,8 @@ class WarehouseDashboardService
         }
 
         // Incoming purchases sum
-        $incomings = DB::table('direct_purchases')
-            ->when($storeId, fn($q) => $q->where(fn($sq) => $sq->where('store_id', $storeId)->orWhere('company_id', $storeId)))
+        $incomings = StoreQuery::table('direct_purchases')
+            ->when($storeId, fn ($q) => $q->where(fn ($sq) => $sq->where('store_id', $storeId)->orWhere('company_id', $storeId)))
             ->whereBetween('purchase_date', [$startDate->toDateString(), $endDate->toDateString()])
             ->selectRaw('DATE(purchase_date) as d, COALESCE(SUM(total_qty), 0) as qty')
             ->groupBy(DB::raw('DATE(purchase_date)'))
@@ -699,8 +687,8 @@ class WarehouseDashboardService
         }
 
         // Outgoing outwards sum
-        $outwards = DB::table('stock_transactions')
-            ->when($storeId, fn($q) => $q->where('store_id', $storeId))
+        $outwards = StoreQuery::table('stock_transactions')
+            ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->whereIn('type', ['outward', 'sale', 'transfer_out'])
             ->whereBetween('created_at', [$startDate->startOfDay(), $endDate->endOfDay()])
             ->selectRaw('DATE(created_at) as d, COALESCE(SUM(ABS(quantity)), 0) as qty')
@@ -729,15 +717,15 @@ class WarehouseDashboardService
         while ($current->lte($endDate)) {
             $dateStr = $current->toDateString();
             $days[$dateStr] = [
-                'date'     => $current->format('M d'),
+                'date' => $current->format('M d'),
                 'raw_date' => $dateStr,
-                'amount'   => 0,
+                'amount' => 0,
             ];
             $current->addDay();
         }
 
-        $purchases = DB::table('direct_purchases')
-            ->when($storeId, fn($q) => $q->where(fn($sq) => $sq->where('store_id', $storeId)->orWhere('company_id', $storeId)))
+        $purchases = StoreQuery::table('direct_purchases')
+            ->when($storeId, fn ($q) => $q->where(fn ($sq) => $sq->where('store_id', $storeId)->orWhere('company_id', $storeId)))
             ->whereBetween('purchase_date', [$startDate->toDateString(), $endDate->toDateString()])
             ->selectRaw('DATE(purchase_date) as d, COALESCE(SUM(total_amount), 0) as amount')
             ->groupBy(DB::raw('DATE(purchase_date)'))

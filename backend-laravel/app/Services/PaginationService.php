@@ -7,6 +7,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class PaginationService
 {
@@ -14,10 +15,8 @@ class PaginationService
      * Paginate a query using Laravel 13's native cursorPaginate() or paginate()
      * and normalize into the standard GPRETAIL ERP JSON response shape.
      *
-     * @param EloquentBuilder|QueryBuilder $query
-     * @param string $resource Resource name (e.g. 'products', 'pos_sales', 'sales')
-     * @param Request $request
-     * @param array $options Additional overrides (e.g. 'mode', 'default_sort', 'allowed_sorts', 'limit')
+     * @param  string  $resource  Resource name (e.g. 'products', 'pos_sales', 'sales')
+     * @param  array  $options  Additional overrides (e.g. 'mode', 'default_sort', 'allowed_sorts', 'limit')
      * @return array Standardized response array
      */
     public function paginate(
@@ -89,6 +88,11 @@ class PaginationService
         array $options,
         EloquentBuilder|QueryBuilder|null $query = null
     ): string {
+        // Master screens need stable page numbers even when the dataset grows.
+        if ($resourceConfig['page_only'] ?? false) {
+            return 'offset';
+        }
+
         // 1. Explicit cursor parameter in request always uses cursor mode
         if ($request->filled('cursor')) {
             return 'cursor';
@@ -115,7 +119,7 @@ class PaginationService
 
         // 4. No page requested and the resource is unconditionally configured for cursor mode:
         // the row-count estimate below can only ever agree, so skip that extra query entirely.
-        if (!$request->filled('page') && $configuredMode === 'cursor') {
+        if (! $request->filled('page') && $configuredMode === 'cursor') {
             return 'cursor';
         }
 
@@ -158,7 +162,7 @@ class PaginationService
         }
 
         $tableName = $this->extractTableName($query);
-        if (!$tableName) {
+        if (! $tableName) {
             return 0;
         }
 
@@ -173,8 +177,8 @@ class PaginationService
 
         // In MariaDB / MySQL, instant O(1) read from information_schema
         try {
-            $row = \Illuminate\Support\Facades\DB::selectOne(
-                "SELECT TABLE_ROWS FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?",
+            $row = DB::selectOne(
+                'SELECT TABLE_ROWS FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?',
                 [$tableName]
             );
             if ($row && $row->TABLE_ROWS !== null) {
@@ -199,6 +203,7 @@ class PaginationService
         $from = $query->from;
         if (is_string($from)) {
             $parts = preg_split('/\s+(as\s+)?/i', trim($from));
+
             return $parts[0] ?? $from;
         }
 
@@ -216,7 +221,7 @@ class PaginationService
     ): void {
         // If the query already has orders defined, preserve them
         $orders = $query instanceof EloquentBuilder ? $query->getQuery()->orders : $query->orders;
-        if (!empty($orders)) {
+        if (! empty($orders)) {
             return;
         }
 
@@ -226,7 +231,7 @@ class PaginationService
         $tieBreaker = $options['tie_breaker'] ?? $resourceConfig['tie_breaker'] ?? 'id';
 
         $sort = $request->input('sort', $defaultSort);
-        if (!in_array($sort, $allowedSorts, true)) {
+        if (! in_array($sort, $allowedSorts, true)) {
             $sort = $defaultSort;
         }
 
@@ -250,22 +255,22 @@ class PaginationService
 
         return [
             'success' => true,
-            'data'    => $items,
+            'data' => $items,
             'pagination' => [
-                'mode'         => 'offset',
-                'page'         => $currentPage,
-                'per_page'     => $limit,
-                'total'        => $total,
-                'total_pages'  => $lastPage,
-                'has_next'     => $paginator->hasMorePages(),
+                'mode' => 'offset',
+                'page' => $currentPage,
+                'per_page' => $limit,
+                'total' => $total,
+                'total_pages' => $lastPage,
+                'has_next' => $paginator->hasMorePages(),
                 'has_previous' => $currentPage > 1,
                 'current_page' => $currentPage,
-                'last_page'    => $lastPage,
+                'last_page' => $lastPage,
             ],
             // Top-level aliases for backward compatibility with existing ERP screens
-            'total'      => $total,
-            'page'       => $currentPage,
-            'limit'      => $limit,
+            'total' => $total,
+            'page' => $currentPage,
+            'limit' => $limit,
             'totalPages' => $lastPage,
         ];
     }
@@ -282,16 +287,16 @@ class PaginationService
 
         return [
             'success' => true,
-            'data'    => $items,
+            'data' => $items,
             'pagination' => [
-                'mode'            => 'cursor',
-                'limit'           => $limit,
-                'per_page'        => $limit,
-                'next_cursor'     => $nextCursor,
+                'mode' => 'cursor',
+                'limit' => $limit,
+                'per_page' => $limit,
+                'next_cursor' => $nextCursor,
                 'previous_cursor' => $prevCursor,
-                'has_more'        => $hasMore,
-                'has_next'        => $hasMore,
-                'has_previous'    => $prevCursor !== null,
+                'has_more' => $hasMore,
+                'has_next' => $hasMore,
+                'has_previous' => $prevCursor !== null,
                 // Approximate, whole-table (not filtered) -- see the comment where this is computed
                 // in paginate(). Still no exact 'total' key: an exact count is precisely the cost
                 // cursor mode exists to avoid, so this is deliberately a separate, clearly-named field
@@ -302,7 +307,7 @@ class PaginationService
             // mode's real grand total, cursor mode has no cheap way to know the true row count,
             // and reporting count($items) (<= limit) under the same key name a caller might read
             // from either mode is worse than omitting it.
-            'limit'   => $limit,
+            'limit' => $limit,
             'hasMore' => $hasMore,
         ];
     }

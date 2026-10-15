@@ -51,6 +51,7 @@ const PrintStatusFooter = () => {
   const { navigateActiveTab } = useTabs();
   const authUser = useSelector((state) => state.auth.user);
   const userRole = String(authUser?.role || "").toLowerCase();
+  const companyPortalUrl = authUser?.subscription_portal_url || COMPANY_PORTAL_LOGIN_URL;
 
   // Active-store indicator: the Navbar's Switch Store choice, or "All Stores" when a super-admin
   // hasn't switched into one yet (they read unrestricted across the whole tenant in that state --
@@ -58,7 +59,7 @@ const PrintStatusFooter = () => {
   // before choosing one from a multi-store grant, so they fall back to their own default rather
   // than "All Stores", which would be misleading for the common single-store case.
   const storeNameMap = useStoreNameMap();
-  const activeStoreId = localStorage.getItem("activeStoreId") || "";
+  const activeStoreId = sessionStorage.getItem("activeStoreId") || "";
   const defaultStoreId = userRole === "super_admin" ? "" : String(authUser?.company_id || authUser?.companyId || "");
   const effectiveStoreId = activeStoreId || defaultStoreId;
   const activeStoreLabel = effectiveStoreId ? resolveStoreName(storeNameMap, effectiveStoreId) : "All Stores";
@@ -157,7 +158,7 @@ const PrintStatusFooter = () => {
             <Chip
               size="small"
               color="warning"
-              onClick={() => window.open(COMPANY_PORTAL_LOGIN_URL, "_blank", "noopener,noreferrer")}
+              onClick={() => window.open(companyPortalUrl, "_blank", "noopener,noreferrer")}
               title={
                 subscription.soonestDaysLeft === null || subscription.soonestDaysLeft === undefined
                   ? "Free trial — activate a plan to continue"
@@ -174,13 +175,15 @@ const PrintStatusFooter = () => {
             <Chip
               size="small"
               color="error"
-              onClick={() => window.open(COMPANY_PORTAL_LOGIN_URL, "_blank", "noopener,noreferrer")}
+              onClick={() => window.open(companyPortalUrl, "_blank", "noopener,noreferrer")}
               title={`Subscription due in ${subscription.soonestDaysLeft} day(s). Click to view plans.`}
               label={`DUE · ${subscription.soonestDaysLeft}d`}
               sx={{ height: 20, fontSize: "11px", fontWeight: 600, cursor: "pointer" }}
             />
           ) : null}
 
+          {authUser?.platform_company_code && <ButtonBase href="/store-activation" sx={{ fontSize: "inherit", mr: 2 }}>Store Activation</ButtonBase>}
+          {["admin", "super_admin"].includes(userRole) && <ButtonBase onClick={() => window.open(companyPortalUrl, "_blank", "noopener,noreferrer")} sx={{ fontSize: "inherit" }}>My Subscription</ButtonBase>}
           <ButtonBase
             onClick={() => setExpanded((p) => !p)}
             sx={{

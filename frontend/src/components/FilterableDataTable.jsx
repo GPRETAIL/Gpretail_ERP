@@ -2219,7 +2219,7 @@ export default function FilterableDataTable({
                       onChange={(e) => handleSelectAll(e.target.checked)}
                       size="small"
                       sx={{ p: 0.25 }}
-                      slotProps={{ input: { title: "Select all on this page" } }}
+                      slotProps={{ input: { title: "Select all on this page", "aria-checked": somePageSelected && !allPageSelected ? "mixed" : allPageSelected } }}
                     />
                   )}
                 </Box>

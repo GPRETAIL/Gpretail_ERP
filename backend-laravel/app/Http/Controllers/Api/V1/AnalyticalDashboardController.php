@@ -28,7 +28,7 @@ class AnalyticalDashboardController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $data,
+            'data' => $data,
         ]);
     }
 }
