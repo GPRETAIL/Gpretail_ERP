@@ -13,7 +13,7 @@ import {
   Play,
   RotateCcw,
   Save,
-  Search,
+  RefreshCw,
   Shield,
   Trash2,
   Upload,
@@ -35,7 +35,7 @@ import api from "../../api/axios";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import FilterableDataTable from "../../components/FilterableDataTable";
 import PageSkeleton from "../../components/PageSkeleton";
-import { muiFieldSx } from "../../theme/formControlSizes";
+import { FIELD_HEIGHT, muiFieldSx } from "../../theme/formControlSizes";
 
 const fieldSx = muiFieldSx;
 const cardSx = { borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", boxShadow: 3, p: 2 };
@@ -822,13 +822,13 @@ export default function BackupCenter() {
               Full, incremental and module-wise backups with restore, import, scheduling, retention and audit history.
             </Typography>
           </Box>
-          <Stack direction="row" spacing={1.5} sx={{ flexWrap: "wrap", alignItems: "center" }}>
-            <Box sx={{ minWidth: 220 }}>
+          <Stack direction="row" spacing={1.5} sx={{ width: { xs: "100%", lg: "auto" }, flexShrink: 0, alignItems: "flex-end" }}>
+            <Box sx={{ flex: 1, minWidth: { xs: 0, lg: 220 } }}>
               <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Current Scope</Typography>
-              <Box sx={{ borderRadius: "4px", border: "1px solid", borderColor: "divider", bgcolor: "action.hover", color: "text.secondary", p: 1, fontSize: 12.25 }}>{selectedScopeLabel}</Box>
+              <Box sx={{ height: FIELD_HEIGHT, display: "flex", alignItems: "center", borderRadius: "4px", border: "1px solid", borderColor: "divider", bgcolor: "action.hover", color: "text.secondary", px: 1, fontSize: 12.25 }}>{selectedScopeLabel}</Box>
             </Box>
-            <Button type="button" className="glass-btn glass-btn-primary" onClick={() => loadOverview(selectedCompanyId)}>
-              <Search size={16} style={{ marginRight: 4 }} /> Refresh
+            <Button type="button" className="glass-btn glass-btn-primary" sx={{ height: FIELD_HEIGHT, minHeight: FIELD_HEIGHT, flexShrink: 0, whiteSpace: "nowrap" }} startIcon={<RefreshCw size={16} />} onClick={() => loadOverview(selectedCompanyId)}>
+              Refresh
             </Button>
           </Stack>
         </Stack>
@@ -1566,19 +1566,19 @@ export default function BackupCenter() {
           </Stack>
 
           <Box sx={{ mb: 2, display: "grid", gap: 1.5, gridTemplateColumns: { xs: "1fr", md: "repeat(2, 1fr)", xl: "repeat(5, 1fr)" } }}>
-            <TextField select size="small" fullWidth sx={fieldSx} value={historyFilters.status} onChange={(event) => setHistoryFilters((prev) => ({ ...prev, status: event.target.value }))}>
+            <TextField select size="small" fullWidth sx={fieldSx} slotProps={{ select: { displayEmpty: true, inputProps: { "aria-label": "Backup status" } } }} value={historyFilters.status} onChange={(event) => setHistoryFilters((prev) => ({ ...prev, status: event.target.value }))}>
               <MenuItem value="">All Statuses</MenuItem>
               <MenuItem value="success">Success</MenuItem>
               <MenuItem value="failed">Failed</MenuItem>
               <MenuItem value="running">Running</MenuItem>
             </TextField>
-            <TextField select size="small" fullWidth sx={fieldSx} value={historyFilters.module} onChange={(event) => setHistoryFilters((prev) => ({ ...prev, module: event.target.value }))}>
+            <TextField select size="small" fullWidth sx={fieldSx} slotProps={{ select: { displayEmpty: true, inputProps: { "aria-label": "Backup module" } } }} value={historyFilters.module} onChange={(event) => setHistoryFilters((prev) => ({ ...prev, module: event.target.value }))}>
               <MenuItem value="">All Modules</MenuItem>
               {moduleOptions.map((option) => (
                 <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
               ))}
             </TextField>
-            <TextField select size="small" fullWidth sx={fieldSx} value={historyFilters.branchCompanyId} onChange={(event) => setHistoryFilters((prev) => ({ ...prev, branchCompanyId: event.target.value }))}>
+            <TextField select size="small" fullWidth sx={fieldSx} slotProps={{ select: { displayEmpty: true, inputProps: { "aria-label": "Backup store" } } }} value={historyFilters.branchCompanyId} onChange={(event) => setHistoryFilters((prev) => ({ ...prev, branchCompanyId: event.target.value }))}>
               <MenuItem value="">All Stores</MenuItem>
               {companyOptions.map((option) => (
                 <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
