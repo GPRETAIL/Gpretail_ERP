@@ -36,7 +36,7 @@
 
 :root[data-theme-style="glass"] .rounded-xl.border,
 :root[data-theme-style="glass"] .rounded-md.border {
-  background-color: rgba(255, 255, 255, 0.6) !important;
+  background-color: rgba(255, 255, 255, 0.96) !important;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-color: rgba(255, 255, 255, 0.4) !important;
@@ -45,7 +45,7 @@
 
 :root.dark[data-theme-style="glass"] .rounded-xl.border,
 :root.dark[data-theme-style="glass"] .rounded-md.border {
-  background-color: rgba(31, 41, 55, 0.55) !important;
+  background-color: rgba(31, 41, 55, 0.96) !important;
   border-color: rgba(255, 255, 255, 0.08) !important;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
 }

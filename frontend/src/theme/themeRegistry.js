@@ -114,7 +114,7 @@ export const DEFAULT_THEME_STYLE = "classic";
 
 const glassSurface = (mode) => ({
   backgroundImage: "none",
-  backgroundColor: mode === "dark" ? "rgba(31,41,55,0.55)" : "rgba(255,255,255,0.6)",
+  backgroundColor: mode === "dark" ? "rgba(31,41,55,0.96)" : "rgba(255,255,255,0.96)",
   backdropFilter: "blur(20px)",
   WebkitBackdropFilter: "blur(20px)",
   border: `1px solid ${mode === "dark" ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.4)"}`,
@@ -130,14 +130,12 @@ const appleSurface = (mode) => ({
       : "0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)",
 });
 
-// background.paper is MUI's own semantic "surface color" token -- glass needs it to actually be
-// translucent, not just the Card/Paper/AppBar styleOverrides above, because any consumer using the
-// idiomatic `sx={{ bgcolor: "background.paper" }}` (Navbar's AppBar does) resolves straight to
-// this palette value, which otherwise wins over a components.MuiAppBar.styleOverrides background.
+// Shared paper stays opaque so pinned headers never reveal the rows beneath them.
+// Glass cards receive their decorative surface through component overrides.
 const STYLE_PALETTE = {
   classic: () => ({}),
   apple: () => ({}),
-  glass: (mode) => ({ background: { paper: glassSurface(mode).backgroundColor } }),
+  glass: (mode) => ({ background: { paper: mode === "dark" ? "#1f2937" : "#ffffff" } }),
 };
 
 const STYLE_COMPONENTS = {
@@ -151,7 +149,8 @@ const STYLE_COMPONENTS = {
   glass: (mode) => ({
     MuiCard: { styleOverrides: { root: glassSurface(mode) } },
     MuiPaper: { styleOverrides: { root: glassSurface(mode) } },
-    MuiAppBar: { styleOverrides: { root: { ...glassSurface(mode), borderRadius: 0 } } },
+    MuiAppBar: { styleOverrides: { root: { ...glassSurface(mode), backgroundColor: mode === "dark" ? "#1f2937" : "#ffffff", backdropFilter: "none", WebkitBackdropFilter: "none", borderRadius: 0 } } },
+    MuiOutlinedInput: { styleOverrides: { root: { backgroundColor: mode === "dark" ? "#1f2937" : "#ffffff" } } },
     MuiMenu: { styleOverrides: { paper: glassSurface(mode) } },
     MuiDialog: { styleOverrides: { paper: glassSurface(mode) } },
   }),
@@ -219,7 +218,9 @@ function resolveBrandTheme(brand, mode, basePalette = {}) {
   const advancedPalette = buildAdvancedPalette(brand);
   const mergedPalette = { ...baseGroups };
   for (const group of Object.keys(stylePalette)) {
-    mergedPalette[group] = { ...baseGroups[group], ...stylePalette[group] };
+    mergedPalette[group] = typeof stylePalette[group] === "object" && stylePalette[group] !== null
+      ? { ...baseGroups[group], ...stylePalette[group] }
+      : stylePalette[group];
   }
   for (const group of Object.keys(advancedPalette)) {
     mergedPalette[group] = { ...mergedPalette[group], ...advancedPalette[group] };

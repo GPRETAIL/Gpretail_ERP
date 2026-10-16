@@ -2,6 +2,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import { render, screen, waitFor } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { useTheme as useMuiTheme } from "@mui/material/styles";
+import { Table, TableBody, TableCell, TableHead, TableRow } from "@mui/material";
 import { afterEach, describe, expect, it } from "vitest";
 import authReducer from "../../features/authSlice";
 import { ThemeContext } from "../../features/theme-context";
@@ -14,7 +15,7 @@ const MuiProbe = () => {
   return <span>PRIMARY:{theme.palette.primary.main}</span>;
 };
 
-const renderWithBrand = (brand, mode = "light") => {
+const renderWithBrand = (brand, mode = "light", children = <MuiProbe />) => {
   const store = configureStore({
     reducer: { auth: authReducer },
     preloadedState: {
@@ -25,7 +26,7 @@ const renderWithBrand = (brand, mode = "light") => {
     <Provider store={store}>
       <ThemeContext.Provider value={{ theme: mode, setTheme: () => {} }}>
         <TenantThemeProvider>
-          <MuiProbe />
+          {children}
         </TenantThemeProvider>
       </ThemeContext.Provider>
     </Provider>
@@ -33,6 +34,11 @@ const renderWithBrand = (brand, mode = "light") => {
 };
 
 describe("TenantThemeProvider", () => {
+  it.each([["glassmorphism", "light"], ["glassmorphism", "dark"], ["liquid_ai", "light"], ["liquid_ai", "dark"]])("renders ERP table rows under %s in %s mode", (style, mode) => {
+    renderWithBrand({ theme_style: style }, mode,
+      <Table><TableHead><TableRow><TableCell>Product</TableCell></TableRow></TableHead><TableBody><TableRow selected><TableCell>Cotton Shirt</TableCell></TableRow></TableBody></Table>);
+    expect(screen.getByRole("cell", { name: "Cotton Shirt" })).toBeInTheDocument();
+  });
   // The effect that sets this runs after mount, same as any other useEffect -- and it's a real
   // DOM side effect on the shared jsdom document, so it must be cleared between tests, unlike
   // component state which unmounting already resets.

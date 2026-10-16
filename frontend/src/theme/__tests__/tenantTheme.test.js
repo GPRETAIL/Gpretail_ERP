@@ -87,7 +87,7 @@ describe("createTenantTheme", () => {
       const theme = createTenantTheme({ theme_style: "glass", background_color: "#111827" }, "light");
 
       expect(theme.palette.background.default).toBe("#111827");
-      expect(theme.palette.background.paper).toBe("rgba(255,255,255,0.6)");
+      expect(theme.palette.background.paper).toBe("#ffffff");
     });
   });
 
@@ -96,6 +96,8 @@ describe("createTenantTheme", () => {
       for (const mode of ["light", "dark"]) {
         const theme = createTenantTheme({ theme_style: style, primary_color: "#123456", border_radius: 8 }, mode);
         expect(theme.palette.primary.main).toBe("#123456");
+        expect(typeof theme.palette.divider).toBe("string");
+        expect(() => theme.alpha(theme.palette.divider, 0.5)).not.toThrow();
         expect(theme.shape.borderRadius).toBe(8);
         expect(theme.components.MuiCard.styleOverrides.root.backgroundColor).toBeTruthy();
         expect(theme.components.MuiTableHead.styleOverrides.root.backdropFilter).toBe("none");
@@ -126,23 +128,22 @@ describe("createTenantTheme", () => {
       const theme = createTenantTheme({ theme_style: "glass" }, "light");
 
       expect(theme.components.MuiCard.styleOverrides.root.backdropFilter).toBe("blur(20px)");
-      expect(theme.components.MuiCard.styleOverrides.root.backgroundColor).toBe("rgba(255,255,255,0.6)");
+      expect(theme.components.MuiCard.styleOverrides.root.backgroundColor).toBe("rgba(255,255,255,0.96)");
     });
 
     it("glass uses a darker translucent background in dark mode", () => {
       const theme = createTenantTheme({ theme_style: "glass" }, "dark");
 
-      expect(theme.components.MuiCard.styleOverrides.root.backgroundColor).toBe("rgba(31,41,55,0.55)");
+      expect(theme.components.MuiCard.styleOverrides.root.backgroundColor).toBe("rgba(31,41,55,0.96)");
     });
 
-    it("glass also tints palette.background.paper, not just component styleOverrides", () => {
-      // Regression: a consumer using the idiomatic sx={{ bgcolor: "background.paper" }} (Navbar's
-      // AppBar does) resolves straight to this palette value, bypassing a components.MuiAppBar
-      // styleOverrides background entirely -- confirmed live, the AppBar blurred but stayed solid
-      // white until this palette token carried the same tint the Card/Paper overrides use.
+    it("glass keeps shared paper and navigation opaque to prevent background text showing through", () => {
+      // Solid shared surfaces prevent scrolling rows from bleeding through pinned headers.
       const theme = createTenantTheme({ theme_style: "glass" }, "light");
 
-      expect(theme.palette.background.paper).toBe("rgba(255,255,255,0.6)");
+      expect(theme.palette.background.paper).toBe("#ffffff");
+      expect(theme.components.MuiAppBar.styleOverrides.root.backgroundColor).toBe("#ffffff");
+      expect(theme.components.MuiTableHead.styleOverrides.root.backdropFilter).toBe("none");
     });
 
     it("style is independent of color -- a custom primary color still applies under apple", () => {
