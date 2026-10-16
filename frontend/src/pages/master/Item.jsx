@@ -1,3 +1,5 @@
+import MasterSearchPanel from "../../components/MasterSearchPanel";
+import { masterSearchAreaSx } from "../../theme/erpUi";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { ArrowLeft, Pencil, PlusCircle, Save, Search, Trash2, Upload } from "lucide-react";
 import { toast } from "react-toastify";
@@ -625,18 +627,8 @@ export default function Item() {
           }
         />
 
-        <Box sx={{ p: 1.5, flex: 1, minHeight: 0 }}>
-          <Card
-            variant="outlined"
-            sx={{
-              height: "100%",
-              display: "flex",
-              flexDirection: "column",
-              minHeight: 0,
-              p: 1.5,
-              pb: 0.5,
-            }}
-          >
+        <Box sx={masterSearchAreaSx}>
+          <MasterSearchPanel>
             <Typography variant="h6" component="h2" sx={{ fontWeight: 700, mb: 1, fontSize: "1rem" }}>
               Item Search
             </Typography>
@@ -696,7 +688,7 @@ export default function Item() {
                 </Stack>
               )}
             />
-          </Card>
+          </MasterSearchPanel>
         </Box>
       </Box>
     );

@@ -1,3 +1,5 @@
+import MasterSearchPanel from "../../components/MasterSearchPanel";
+import { masterSearchAreaSx } from "../../theme/erpUi";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ArrowLeft,
@@ -8,7 +10,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { Box, Stack, Card, Typography, Button } from "@mui/material";
+import { Box, Stack, Typography, Button } from "@mui/material";
 import api from "../../api/axios";
 import UploadImportButton from "../../components/UploadImportButton";
 import ConfirmDialog from "../../components/ConfirmDialog";
@@ -261,8 +263,8 @@ const Tax = () => {
         }
       />
 
-      <Box sx={{ p: 1.5, flex: 1, minHeight: 0 }}>
-        <Card variant="outlined" sx={{ p: 2, height: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}>
+      <Box sx={masterSearchAreaSx}>
+        <MasterSearchPanel>
           <Typography component="h2" sx={{ fontSize: 18, fontWeight: 700, mb: 1.5 }}>
             Tax Search
           </Typography>
@@ -328,7 +330,7 @@ const Tax = () => {
               </Stack>
             )}
           />
-        </Card>
+        </MasterSearchPanel>
       </Box>
     </Box>
   );

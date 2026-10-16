@@ -1,8 +1,10 @@
+import MasterSearchPanel from "../../components/MasterSearchPanel";
+import { masterSearchAreaSx } from "../../theme/erpUi";
 import React, { useCallback, useEffect, useState } from "react";
 import { ArrowLeft, Eye, Pencil, PlusCircle, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { Box, Stack, Card, Typography, Button } from "@mui/material";
+import { Box, Stack, Typography, Button } from "@mui/material";
 import api from "../../api/axios";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import FilterableDataTable from "../../components/FilterableDataTable";
@@ -235,8 +237,8 @@ const Transport = () => {
         }
       />
 
-      <Box sx={{ p: 1.5, flex: 1, minHeight: 0 }}>
-        <Card variant="outlined" sx={{ p: 2, height: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}>
+      <Box sx={masterSearchAreaSx}>
+        <MasterSearchPanel>
           <Typography component="h2" sx={{ fontSize: 18, fontWeight: 700, mb: 1.5 }}>
             Transport Search
           </Typography>
@@ -302,7 +304,7 @@ const Transport = () => {
               </Stack>
             )}
           />
-        </Card>
+        </MasterSearchPanel>
       </Box>
     </Box>
   );

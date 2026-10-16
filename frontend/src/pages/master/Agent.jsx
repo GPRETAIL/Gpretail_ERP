@@ -1,3 +1,5 @@
+import MasterSearchPanel from "../../components/MasterSearchPanel";
+import { masterSearchAreaSx } from "../../theme/erpUi";
 import { ArrowLeft, Pencil, PlusCircle, Save, Search, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -440,7 +442,7 @@ const Agent = () => {
         }
       />
 
-      <Box sx={{ p: 1.5, flex: 1, minHeight: 0, overflowY: "auto" }}>
+      <Box sx={showSearch ? masterSearchAreaSx : { p: 1.5, flex: 1, minHeight: 0, overflowY: "auto" }}>
         {!showSearch ? (
           <Card
             variant="outlined"
@@ -481,7 +483,7 @@ const Agent = () => {
             </Box>
           </Card>
         ) : (
-          <Card variant="outlined" sx={{ p: 2, height: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}>
+          <MasterSearchPanel>
             <FilterableDataTable
               rows={searchResults.map((row, index) => ({ ...row, __serial: index + 1 }))}
               columns={tableColumns}
@@ -537,7 +539,7 @@ const Agent = () => {
                 </Stack>
               )}
             />
-          </Card>
+          </MasterSearchPanel>
         )}
       </Box>
     </Box>

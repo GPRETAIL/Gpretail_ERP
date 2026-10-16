@@ -1,3 +1,5 @@
+import MasterSearchPanel from "../../components/MasterSearchPanel";
+import { masterSearchAreaSx } from "../../theme/erpUi";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, PlusCircle, Save, Search, Trash2, Upload } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -1171,7 +1173,7 @@ const Employee = () => {
   // ─── SEARCH PAGE ───────────────────────────────────────────────────────────
 
   const renderSearchPage = () => (
-    <Card variant="outlined" sx={{ p: 2, width: "100%", height: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}>
+    <MasterSearchPanel>
       <FilterableDataTable
         rows={searchResults}
         columns={employeeColumns}
@@ -1229,7 +1231,7 @@ const Employee = () => {
           </Stack>
         )}
       />
-    </Card>
+    </MasterSearchPanel>
   );
 
   // ─── FORM PAGE ─────────────────────────────────────────────────────────────
@@ -1350,7 +1352,7 @@ const Employee = () => {
       />
 
       {/* Content */}
-      <Box sx={{ flex: 1, p: 1.5, minHeight: 0 }}>
+      <Box sx={showSearchPage ? masterSearchAreaSx : { flex: 1, p: 1.5, minHeight: 0 }}>
         {showSearchPage ? renderSearchPage() : renderForm()}
       </Box>
 

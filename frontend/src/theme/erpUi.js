@@ -16,3 +16,5 @@ export const erpControlSx = {
 export const erpActionSx = {
   "& .topbar-action-btn, & .MuiButton-root": { height: ERP_UI.actionHeight, minHeight: ERP_UI.actionHeight, boxSizing: "border-box" },
 };
+
+export const masterSearchAreaSx = { p: 0.75, flex: 1, minHeight: 0, minWidth: 0 };

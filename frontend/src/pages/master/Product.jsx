@@ -1,11 +1,12 @@
+import MasterSearchPanel from "../../components/MasterSearchPanel";
+import { masterSearchAreaSx } from "../../theme/erpUi";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, Pencil, PlusCircle, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import api from "../../api/axios";
-import { Box, Button, Card, Stack, Typography, IconButton, alpha } from "@mui/material";
+import { Box, Button, Stack, Typography, IconButton, alpha } from "@mui/material";
 import PageHeader from "../../components/PageHeader";
-import { erpControlSx } from "../../theme/erpUi";
 import { fieldBaseSx } from "../../theme/formControlSizes";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import ConfirmDialog from "../../components/ConfirmDialog";
@@ -610,19 +611,8 @@ const Product = () => {
         }
       />
 
-      <Box sx={{ p: 0.75, flex: 1, minHeight: 0, minWidth: 0 }}>
-        <Card
-          variant="outlined"
-          sx={{
-            height: "100%",
-            display: "flex",
-            flexDirection: "column",
-            minHeight: 0,
-            p: 1,
-            pb: 0.5,
-            ...erpControlSx,
-          }}
-        >
+      <Box sx={masterSearchAreaSx}>
+        <MasterSearchPanel>
           <Typography variant="h6" component="h2" sx={{ fontWeight: 700, mb: 1, fontSize: "1rem" }}>
             Product Search
           </Typography>
@@ -843,7 +833,7 @@ const Product = () => {
               />
             </Box>
           </Box>
-        </Card>
+        </MasterSearchPanel>
       </Box>
     </Box>
   );

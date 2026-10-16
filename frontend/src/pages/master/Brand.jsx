@@ -1,3 +1,5 @@
+import MasterSearchPanel from "../../components/MasterSearchPanel";
+import { masterSearchAreaSx } from "../../theme/erpUi";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, Pencil, PlusCircle, Save, Search, Trash2 } from "lucide-react";
 import { toast } from "react-toastify";
@@ -475,7 +477,7 @@ const Brand = () => {
         }
       />
 
-      <Box sx={{ p: 1.5, flex: 1, minHeight: 0, overflowY: "auto" }}>
+      <Box sx={showSearchPage ? masterSearchAreaSx : { p: 1.5, flex: 1, minHeight: 0, overflowY: "auto" }}>
         {!showSearchPage ? (
           <Card
             variant="outlined"
@@ -640,7 +642,7 @@ const Brand = () => {
             </Box>
           </Card>
         ) : (
-          <Card variant="outlined" sx={{ px: 1.5, pt: 1.5, pb: 0.5, height: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}>
+          <MasterSearchPanel>
             <Typography component="h2" sx={{ fontSize: 16, fontWeight: 700, mb: 1 }}>
               Search Brands
             </Typography>
@@ -703,7 +705,7 @@ const Brand = () => {
                 </Stack>
               )}
             />
-          </Card>
+          </MasterSearchPanel>
         )}
       </Box>
     </Box>

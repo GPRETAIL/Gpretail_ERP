@@ -1,3 +1,5 @@
+import MasterSearchPanel from "../../components/MasterSearchPanel";
+import { masterSearchAreaSx } from "../../theme/erpUi";
 import { ArrowLeft, Pencil, PlusCircle, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -128,7 +130,7 @@ const HrConfiguration = () => {
   ];
 
   return (
-    <Box sx={{ minHeight: "70vh", bgcolor: "background.default", color: "text.primary" }}>
+    <Box sx={{ height: "100%", minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden", bgcolor: "background.default", color: "text.primary" }}>
       <ConfirmDialog
         open={confirm.open}
         message={`Are you sure you want to delete this ${typeLabel.toLowerCase()} "${confirm.name}"? This action cannot be undone.`}
@@ -158,8 +160,8 @@ const HrConfiguration = () => {
         }
       />
 
-      <Box sx={{ p: 1.5, pb: 8 }}>
-        <Card variant="outlined" sx={{ p: 1.5, mb: 2 }}>
+      <Box sx={{ ...masterSearchAreaSx, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <Card variant="outlined" sx={{ p: 1, mb: 1, flexShrink: 0 }}>
           <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "repeat(12, 1fr)" }, gap: 1.5 }}>
             <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" } }}>
               <SearchableSelect
@@ -173,8 +175,9 @@ const HrConfiguration = () => {
           </Box>
         </Card>
 
-        <Box sx={{ mt: 2 }}>
+        <MasterSearchPanel>
           <FilterableDataTable
+            fillHeight
             rows={rows}
             columns={hrColumns}
             onRowClick={(row) => navigate(`/hrms/hr-configuration/new?type=${configType}&id=${row.id}`)}
@@ -216,7 +219,7 @@ const HrConfiguration = () => {
               </Stack>
             )}
           />
-        </Box>
+        </MasterSearchPanel>
       </Box>
     </Box>
   );
