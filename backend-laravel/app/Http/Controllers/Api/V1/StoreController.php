@@ -206,16 +206,16 @@ class StoreController extends Controller
         $activation = PlatformActivation::current();
         $stores = app(StoreContext::class)->available($request->user())->get()->map(function (Store $store) use ($activation): array {
             $verified = $store->platform_store_id ? app(StoreLicenceVerifier::class)->verify($store, $activation) : ['ok' => false, 'claims' => []];
-            $end = isset($verified['claims']['activeTill']) ? Carbon::createFromTimestamp($verified['claims']['activeTill']) : $store->platform_active_till;
+            $end = isset($verified['claims']['activeTill']) ? Carbon::createFromTimestamp($verified['claims']['activeTill']) : ($store->platform_active_till ?? $activation?->active_till);
             $days = $end ? (int) ceil(now()->diffInSeconds($end, false) / 86400) : null;
 
             return ['store_id' => $store->id, 'name' => $store->name, 'code' => $store->code,
                 'status' => ! $store->platform_store_id ? 'UNMANAGED' : (! $store->activated_at ? 'PENDING_ACTIVATION' : ($verified['ok'] ? 'ACTIVE' : 'ACCESS_BLOCKED')),
-                'licence_valid' => $verified['ok'], 'plan' => $store->platform_subscription['plan_name'] ?? null,
+                'licence_valid' => $verified['ok'] || ($activation && $activation->activated), 'plan' => $store->platform_subscription['plan_name'] ?? ($activation?->licence_state ?? 'TRIAL'),
                 'term_months' => $store->platform_subscription['term_months'] ?? null,
                 'expiry_date' => $end?->toIso8601String(), 'days_left' => $days,
                 'entitlements' => $verified['claims']['entitlements'] ?? [],
-                'onTrial' => $store->activated_at && (bool) ($store->platform_subscription['is_trial'] ?? false)];
+                'onTrial' => ($store->activated_at && (bool) ($store->platform_subscription['is_trial'] ?? false)) || ($activation && ($activation->licence_state === 'TRIAL' || ($days !== null && $days <= 14)))];
         });
         $soonest = $stores->pluck('days_left')->filter(fn ($value) => $value !== null)->min();
 

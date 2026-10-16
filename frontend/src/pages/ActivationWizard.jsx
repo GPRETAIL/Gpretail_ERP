@@ -24,7 +24,8 @@ const STEPS = [
 const ActivationWizard = ({ onActivated }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
-  const [form, setForm] = useState({ companyId: "", clientId: "", activationCode: "" });
+  const [mode, setMode] = useState("license"); // "license" | "manual"
+  const [form, setForm] = useState({ licenseKey: "", companyId: "", clientId: "", activationCode: "" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [phase, setPhase] = useState("form"); // "form" | "success" | "password" | "done"
@@ -42,23 +43,30 @@ const ActivationWizard = ({ onActivated }) => {
   const submit = async (event) => {
     event.preventDefault();
     setError("");
-    if (!form.companyId.trim() || !form.clientId.trim() || !form.activationCode.trim()) {
-      setError("Enter your Company ID, Client ID and Activation Code.");
-      return;
+
+    const payload = {};
+    if (mode === "license") {
+      if (!form.licenseKey.trim()) {
+        setError("Please enter your License Key or Setup Code.");
+        return;
+      }
+      payload.license_key = form.licenseKey.trim();
+    } else {
+      if (!form.companyId.trim() || !form.clientId.trim() || !form.activationCode.trim()) {
+        setError("Enter your Company ID, Client ID and Activation Code.");
+        return;
+      }
+      payload.company_code = form.companyId.trim();
+      payload.client_id = form.clientId.trim();
+      payload.one_time_password = form.activationCode.trim();
     }
+
     setBusy(true);
     try {
       const res = await fetch("/api/activation/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          // ActivationController::register() validates snake_case and marks one_time_password
-          // required -- sending camelCase here meant that field never arrived, so every real
-          // activation attempt through this form failed validation regardless of credentials.
-          company_code: form.companyId.trim(),
-          client_id: form.clientId.trim(),
-          one_time_password: form.activationCode.trim(),
-        }),
+        body: JSON.stringify(payload),
       });
       const body = await res.json().catch(() => ({}));
       if (res.ok && body?.success) {
@@ -257,8 +265,9 @@ const ActivationWizard = ({ onActivated }) => {
   return shell(
     <>
       <Typography variant="body2" sx={{ mb: 2.5, color: "text.secondary" }}>
-        This system needs activation before it can be used. Enter the details from your Vynerix
-        welcome email. Your company's configuration will be downloaded automatically.
+        {mode === "license"
+          ? "Enter your single License Key from your welcome email or Gpretail Admin portal to activate this store."
+          : "Enter the Company ID, Client ID, and Activation Code from your welcome email."}
       </Typography>
 
       {error ? (
@@ -268,23 +277,39 @@ const ActivationWizard = ({ onActivated }) => {
       ) : null}
 
       <Box component="form" sx={{ display: "flex", flexDirection: "column", gap: 2 }} onSubmit={submit}>
-        <TextField label="Company ID" value={form.companyId} onChange={set("companyId")} placeholder="e.g. CMP-16" size="small" autoFocus />
-        <TextField
-          label="Client ID"
-          value={form.clientId}
-          onChange={set("clientId")}
-          placeholder="From your welcome email"
-          size="small"
-          sx={{ "& .MuiInputBase-input": { fontFamily: "monospace", fontSize: "0.75rem" } }}
-        />
-        <TextField
-          label="Activation Code (One-Time Password)"
-          value={form.activationCode}
-          onChange={set("activationCode")}
-          placeholder="One-time password"
-          size="small"
-          sx={{ "& .MuiInputBase-input": { fontFamily: "monospace" } }}
-        />
+        {mode === "license" ? (
+          <TextField
+            label="License Key or Setup Code"
+            value={form.licenseKey}
+            onChange={set("licenseKey")}
+            placeholder="e.g. GPR-TRIAL-WG48MX-9482"
+            size="small"
+            autoFocus
+            sx={{ "& .MuiInputBase-input": { fontFamily: "monospace", fontSize: "0.875rem" } }}
+            helperText="Single copy-paste key containing your store entitlements"
+          />
+        ) : (
+          <>
+            <TextField label="Company ID" value={form.companyId} onChange={set("companyId")} placeholder="e.g. CMP-16" size="small" autoFocus />
+            <TextField
+              label="Client ID"
+              value={form.clientId}
+              onChange={set("clientId")}
+              placeholder="From your welcome email"
+              size="small"
+              sx={{ "& .MuiInputBase-input": { fontFamily: "monospace", fontSize: "0.75rem" } }}
+            />
+            <TextField
+              label="Activation Code (One-Time Password)"
+              value={form.activationCode}
+              onChange={set("activationCode")}
+              placeholder="One-time password"
+              size="small"
+              sx={{ "& .MuiInputBase-input": { fontFamily: "monospace" } }}
+            />
+          </>
+        )}
+
         <Button
           type="submit"
           disabled={busy}
@@ -293,11 +318,24 @@ const ActivationWizard = ({ onActivated }) => {
           startIcon={busy ? <Loader2 size={16} style={{ animation: "app-spin 1s linear infinite" }} /> : <KeyRound size={16} />}
           sx={{ py: 1.25, bgcolor: "#3a6ea5", fontWeight: 600, textTransform: "none", "&:hover": { bgcolor: "#345f8f" }, borderRadius: 2 }}
         >
-          {busy ? "Activating…" : "Activate"}
+          {busy ? "Activating…" : "Activate deployment"}
+        </Button>
+
+        <Button
+          type="button"
+          variant="text"
+          size="small"
+          onClick={() => {
+            setError("");
+            setMode((m) => (m === "license" ? "manual" : "license"));
+          }}
+          sx={{ textTransform: "none", fontSize: "0.8rem", color: "text.secondary" }}
+        >
+          {mode === "license" ? "Switch to manual 3-field entry (Company ID, Client ID, OTP)" : "Switch to Single License Key input"}
         </Button>
       </Box>
       <Typography variant="caption" sx={{ mt: 2, display: "block", textAlign: "center", color: "text.disabled" }}>
-        The activation code can be used once. If it fails, ask your Vynerix administrator to re-issue it.
+        Need a new license or trial extension? Contact your Gpretail administrator.
       </Typography>
     </>,
   );

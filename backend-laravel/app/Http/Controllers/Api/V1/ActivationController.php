@@ -36,12 +36,20 @@ class ActivationController extends Controller
             ]);
         }
 
+        $now = now();
+        $activeTill = $activation->active_till;
+        $daysRemaining = $activeTill ? (int) $now->diffInDays($activeTill, false) : null;
+        $isTrial = ($activation->licence_state === 'TRIAL') || ($daysRemaining !== null && $daysRemaining <= 14);
+
         return response()->json([
             'success' => true,
             'data' => [
                 'activated' => true,
                 'status' => $activation->status,
-                'active_till' => $activation->active_till?->toIso8601String(),
+                'active_till' => $activeTill?->toIso8601String(),
+                'days_remaining' => $daysRemaining !== null ? max(0, $daysRemaining) : null,
+                'is_trial' => $isTrial,
+                'plan_tier' => $activation->licence_state ?? ($isTrial ? 'TRIAL' : 'PRO'),
                 'limits' => $activation->limits,
                 'feature_flags' => $activation->feature_flags,
                 'licence' => [
@@ -57,19 +65,35 @@ class ActivationController extends Controller
 
     public function register(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'one_time_password' => 'required|string',
-            'company_code' => 'nullable|string',
-            'client_id' => 'nullable|string',
-        ]);
-        if ($validator->fails()) {
-            return response()->json(['success' => false, 'message' => 'Validation error', 'errors' => $validator->errors()], 422);
+        $licenseKey = $request->input('license_key');
+        $otp = $request->input('one_time_password');
+        $companyCode = $request->input('company_code');
+        $clientId = $request->input('client_id');
+
+        // Handle single unified license key if provided
+        if (!empty($licenseKey)) {
+            $parsed = $this->parseLicenseKey((string) $licenseKey);
+            if ($parsed) {
+                $otp = $parsed['otp'] ?? $otp;
+                $companyCode = $parsed['company_code'] ?? $companyCode;
+                $clientId = $parsed['client_id'] ?? $clientId;
+            } else {
+                $otp = trim((string) $licenseKey);
+            }
+        }
+
+        if (empty($otp)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Please provide a valid License Key or Activation Code.',
+                'errors' => ['one_time_password' => ['The activation code is required.']]
+            ], 422);
         }
 
         $result = $this->activationService->register(
-            $request->input('one_time_password'),
-            $request->input('company_code'),
-            $request->input('client_id'),
+            $otp,
+            $companyCode,
+            $clientId,
         );
 
         if (! $result['ok']) {
@@ -84,6 +108,45 @@ class ActivationController extends Controller
                 'status' => $result['activation']->status,
             ],
         ]);
+    }
+
+    /**
+     * Parse unified License Key (e.g. GPR-base64 or structured token)
+     */
+    private function parseLicenseKey(string $key): ?array
+    {
+        $raw = trim($key);
+        if (str_starts_with(strtoupper($raw), 'GPR-')) {
+            $raw = substr($raw, 4);
+        }
+
+        // Try base64 URL-safe JSON decode: {"c": company_code, "i": client_id, "o": otp}
+        $normalized = strtr($raw, '-_', '+/');
+        $decoded = base64_decode($normalized, true);
+        if ($decoded !== false) {
+            $json = json_decode($decoded, true);
+            if (is_array($json) && (!empty($json['o']) || !empty($json['otp']))) {
+                return [
+                    'company_code' => $json['c'] ?? $json['company_code'] ?? null,
+                    'client_id' => $json['i'] ?? $json['client_id'] ?? null,
+                    'otp' => $json['o'] ?? $json['otp'] ?? null,
+                ];
+            }
+        }
+
+        // Try colon-separated string: COMPANY_CODE:CLIENT_ID:OTP
+        if (str_contains($raw, ':')) {
+            $parts = explode(':', $raw);
+            if (count($parts) === 3) {
+                return [
+                    'company_code' => $parts[0],
+                    'client_id' => $parts[1],
+                    'otp' => $parts[2],
+                ];
+            }
+        }
+
+        return null;
     }
 
     public function setPassword(Request $request)

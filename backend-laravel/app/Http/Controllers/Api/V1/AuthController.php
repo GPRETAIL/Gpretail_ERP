@@ -100,7 +100,14 @@ class AuthController extends Controller
 
         if ($user->platform_company_code) {
             $activation = PlatformActivation::current();
-            if (! $activation || ! $activation->activated || $activation->company_code !== $user->platform_company_code || $activation->status !== 'active') {
+            if ($activation && $activation->activated && $activation->company_code !== $user->platform_company_code) {
+                return response()->json([
+                    'success' => false,
+                    'error_code' => 'TERMINAL_COMPANY_MISMATCH',
+                    'message' => "Terminal Conflict: This device is registered to company [{$activation->company_code}]. The user account you entered belongs to [{$user->platform_company_code}].",
+                ], 403);
+            }
+            if (! $activation || ! $activation->activated || $activation->status !== 'active') {
                 return response()->json(['success' => false, 'message' => 'Your company ERP activation is not active. Contact your administrator.'], 403);
             }
             if ($activation->onboarding_required && ! $activation->first_erp_login_at) {

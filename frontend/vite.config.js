@@ -9,14 +9,16 @@ import react from "@vitejs/plugin-react";
 // Serve dev over HTTPS when an mkcert-generated cert pair is present
 // (./certs/localhost-{cert,key}.pem). Browsers that force secure
 // connections (e.g. Edge strict mode) can then load https://localhost.
-function loadHttpsConfig() {
-  const certPath = path.resolve(process.cwd(), "certs/localhost-cert.pem");
-  const keyPath = path.resolve(process.cwd(), "certs/localhost-key.pem");
-  if (fs.existsSync(certPath) && fs.existsSync(keyPath)) {
-    return {
-      cert: fs.readFileSync(certPath),
-      key: fs.readFileSync(keyPath),
-    };
+function loadHttpsConfig(env = {}) {
+  if (env.VITE_HTTPS === "true" || process.env.VITE_HTTPS === "true") {
+    const certPath = path.resolve(process.cwd(), "certs/localhost-cert.pem");
+    const keyPath = path.resolve(process.cwd(), "certs/localhost-key.pem");
+    if (fs.existsSync(certPath) && fs.existsSync(keyPath)) {
+      return {
+        cert: fs.readFileSync(certPath),
+        key: fs.readFileSync(keyPath),
+      };
+    }
   }
   return undefined;
 }
@@ -24,8 +26,8 @@ function loadHttpsConfig() {
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
-  const proxyTarget = env.VITE_API_PROXY_TARGET || "http://localhost:8080";
-  const https = loadHttpsConfig();
+  const proxyTarget = env.VITE_API_PROXY_TARGET || "http://localhost:8001";
+  const https = loadHttpsConfig(env);
 
   return {
     plugins: [
@@ -40,14 +42,21 @@ export default defineConfig(({ mode }) => {
       include: ["src/**/*.{test,spec}.{js,jsx}"],
     },
     resolve: {
-      dedupe: ["react", "react-dom"],
+      dedupe: ["react", "react-dom", "@emotion/react", "@emotion/styled"],
     },
     optimizeDeps: {
       // Vite's dependency crawler can miss react-grid-layout's /legacy subpath (a conditional
       // export, not a static top-level import) and pre-bundle it separately from the app's own
       // react-dom, which manifests as "Invalid hook call" in dev only (the production Rollup
       // build is unaffected). Listing it explicitly forces a single, correctly-deduped bundle.
-      include: ["react-grid-layout/legacy"],
+      include: [
+        "react",
+        "react-dom",
+        "@emotion/react",
+        "@emotion/styled",
+        "@mui/material",
+        "react-grid-layout/legacy",
+      ],
     },
     server: {
       allowedHosts: ["home.gpretail.uk", "admin.gpretail.uk", "admin.home.gpretail.uk"],

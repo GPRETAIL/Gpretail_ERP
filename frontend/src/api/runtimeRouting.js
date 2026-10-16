@@ -92,7 +92,7 @@ const isRetryableSetupFailure = (error) => {
 // Every mutation path funnels through here, so this is the one place that needs to notify
 // listeners (e.g. a navbar status badge) -- no separate "did the target actually change" check,
 // since re-rendering on an identical snapshot is harmless and simpler than tracking a diff.
-const RUNTIME_ROUTING_CHANGED_EVENT = "erp:runtime-routing-changed";
+export const RUNTIME_ROUTING_CHANGED_EVENT = "erp:runtime-routing-changed";
 
 const persistState = () => {
   if (!isBrowser()) return;
@@ -410,7 +410,6 @@ export const getRuntimeRoutingSnapshot = () => ({
   blockedReason: runtimeState.blockedReason,
 });
 
-export { RUNTIME_ROUTING_CHANGED_EVENT };
 
 const storedState = readStoredState();
 if (storedState) {
