@@ -128,6 +128,7 @@ class ActivationController extends Controller
             if (is_array($json) && (!empty($json['o']) || !empty($json['otp']))) {
                 return [
                     'company_code' => $json['c'] ?? $json['company_code'] ?? null,
+                    'store_code' => $json['s'] ?? $json['store_code'] ?? null,
                     'client_id' => $json['i'] ?? $json['client_id'] ?? null,
                     'otp' => $json['o'] ?? $json['otp'] ?? null,
                 ];

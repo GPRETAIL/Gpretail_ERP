@@ -43,6 +43,24 @@ class StoreActivationController extends Controller
     public function activate(Request $request, PlatformClient $client, PlatformActivationService $service): JsonResponse
     {
         $activation = $this->owner($request);
+
+        $licenseKey = $request->input('license_key');
+        if (! empty($licenseKey)) {
+            $raw = trim((string) $licenseKey);
+            if (str_starts_with(strtoupper($raw), 'GPR-')) {
+                $raw = substr($raw, 4);
+            }
+            $decoded = json_decode(base64_decode(strtr($raw, '-_', '+/')), true);
+            if (is_array($decoded)) {
+                if (! $request->filled('store_code') && ! empty($decoded['s'])) {
+                    $request->merge(['store_code' => $decoded['s']]);
+                }
+                if (! $request->filled('activation_code') && ! empty($decoded['o'])) {
+                    $request->merge(['activation_code' => $decoded['o']]);
+                }
+            }
+        }
+
         $data = $request->validate(['store_code' => 'required|string|max:64', 'activation_code' => 'required|string|max:128']);
         if (! $activation->deployment_id) {
             $activation->update(['deployment_id' => (string) Str::uuid()]);

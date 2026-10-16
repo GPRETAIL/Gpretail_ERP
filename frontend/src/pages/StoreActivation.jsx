@@ -26,15 +26,31 @@ export default function StoreActivation() {
     } catch (e) { setError(e.response?.data?.message || 'Could not reach GP Admin.'); }
     finally { setBusy(false); }
   };
+  const handleCodeChange = (e) => {
+    const val = e.target.value;
+    setCode(val);
+    const clean = val.trim();
+    if (clean.toUpperCase().startsWith('GPR-')) {
+      try {
+        const raw = clean.substring(4).replace(/-/g, '+').replace(/_/g, '/');
+        const decoded = JSON.parse(atob(raw));
+        if (decoded.s) setStoreCode(decoded.s);
+        if (decoded.o) setCode(decoded.o);
+      } catch {
+        // fallback to literal value
+      }
+    }
+  };
+
   return <Container maxWidth="md" sx={{ py: 4 }}>
     <Stack spacing={2}>
       <Typography variant="h4">Store Activation</Typography>
-      <Typography>Use the store code and one-use activation code from the welcome email. Each store has its own subscription deadline.</Typography>
+      <Typography>Use the Store License Key or the store code and activation code from the welcome email.</Typography>
       {error && <Alert severity="error">{error}</Alert>}
       {message && <Alert severity="success">{message}</Alert>}
       <Stack component="form" spacing={2} onSubmit={e => { e.preventDefault(); run(true); }}>
         <TextField label="Store code" value={storeCode} onChange={e => setStoreCode(e.target.value)} required />
-        <TextField label="Activation code" type="password" autoComplete="off" value={code} onChange={e => setCode(e.target.value)} required />
+        <TextField label="Activation code or License Key" type="text" autoComplete="off" placeholder="Paste single GPR- license key or enter code" value={code} onChange={handleCodeChange} required />
         <Button type="submit" variant="contained" disabled={busy}>Activate store</Button>
       </Stack>
       <Button onClick={() => run(false)} disabled={busy}>Refresh from GP Admin</Button>
