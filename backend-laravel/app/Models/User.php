@@ -32,6 +32,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'google_sub',
     ];
 
     protected function casts(): array
@@ -48,7 +49,7 @@ class User extends Authenticatable
     protected static function booted(): void
     {
         static::updated(function (self $user): void {
-            if ($user->wasChanged(['password', 'role', 'store_id', 'is_active'])) {
+            if ($user->wasChanged(['password', 'role', 'store_id', 'is_active', 'google_sub'])) {
                 $user->tokens()->delete();
             }
         });

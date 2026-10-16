@@ -2,16 +2,13 @@ import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Navigate, useNavigate } from "react-router-dom";
 import { loginUser } from "../features/authSlice";
-import { FaGoogle, FaEye, FaEyeSlash } from "react-icons/fa";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { Box, Button, Card, Divider, IconButton, InputAdornment, TextField, Typography } from "@mui/material";
 import { getHomePathForUser } from "../utils/accessControl";
-import { useTheme } from "../features/theme-context";
+import GoogleSignInButton from "../components/GoogleSignInButton";
 
 const Login = () => {
-  const { theme } = useTheme() || {};
-  const isDark = theme === "dark";
   const [showPassword, setShowPassword] = useState(false);
-  const [hoverGoogle, setHoverGoogle] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
@@ -36,8 +33,11 @@ const Login = () => {
     }
   };
 
-  const handleGoogleLogin = () => {
-    alert("Google login requires backend - not available in frontend-only mode.");
+  const handleGoogleLogin = async (idToken) => {
+    const result = await dispatch(loginUser({ id_token: idToken }));
+    if (loginUser.fulfilled.match(result)) {
+      navigate(getHomePathForUser(result.payload?.user), { replace: true });
+    }
   };
 
   if (isAuthenticated) {
@@ -108,28 +108,7 @@ const Login = () => {
             </Typography>
           </Divider>
 
-          {/* Google Login */}
-          <Button
-            type="button"
-            onClick={handleGoogleLogin}
-            onMouseEnter={() => setHoverGoogle(true)}
-            onMouseLeave={() => setHoverGoogle(false)}
-            fullWidth
-            variant="outlined"
-            startIcon={<FaGoogle style={{ color: hoverGoogle ? "#fff" : "#DB4437" }} size={16} />}
-            sx={{ py: 1.5, textTransform: "none", fontWeight: 500, fontSize: "0.875rem" }}
-            style={{
-              backgroundColor: hoverGoogle ? "#4285F4" : isDark ? "#374151" : "#fff",
-              color: hoverGoogle ? "#fff" : isDark ? "#f3f4f6" : "#000",
-              transform: hoverGoogle ? "scale(1.01)" : "scale(1)",
-              boxShadow: hoverGoogle
-                ? "0 4px 10px rgba(66, 133, 244, 0.4)"
-                : "0 1px 3px rgba(0,0,0,0.1)",
-              borderColor: hoverGoogle ? "#4285F4" : isDark ? "#4b5563" : "#ccc",
-            }}
-          >
-            Login with Google
-          </Button>
+          <GoogleSignInButton onCredential={handleGoogleLogin} disabled={loading} />
         </Box>
         <Box sx={{ mt: 3, textAlign: "center" }}>
           <Typography variant="body2" sx={{ color: "text.secondary" }}>
@@ -141,16 +120,7 @@ const Login = () => {
               Set up / forgot your password?
             </Box>
           </Typography>
-          <Typography variant="body2" sx={{ mt: 1, color: "text.secondary" }}>
-            Don't have an account?{" "}
-            <Box
-              component="a"
-              href="/register"
-              sx={{ color: "primary.main", fontWeight: 500, "&:hover": { color: "primary.dark" } }}
-            >
-              Create one
-            </Box>
-          </Typography>
+
         </Box>
       </Card>
     </Box>

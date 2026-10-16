@@ -11,36 +11,43 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // 1. Create Default Store
-        $storeId = DB::table('stores')->insertGetId([
-            'name'        => 'SRI BALAJI TEXTILE',
-            'code'        => 'SBT_01',
-            'address'     => 'Main Bazaar, Retail Street',
-            'city'        => 'Chennai',
-            'state'       => 'Tamil Nadu',
-            'pincode'     => '600001',
-            'phone'       => '9876543210',
-            'email'       => 'contact@gpretail.uk',
-            'gstin'       => '33AAAAA0000A1Z5',
-            'state_code'  => '33',
-            'is_active'   => true,
-            'created_at'  => now(),
-            'updated_at'  => now(),
-        ]);
+        $store = DB::table('stores')->where('code', 'SBT_01')->first();
+        if ($store) {
+            $storeId = $store->id;
+        } else {
+            $storeId = DB::table('stores')->insertGetId([
+                'name'        => 'SRI BALAJI TEXTILE',
+                'code'        => 'SBT_01',
+                'address'     => 'Main Bazaar, Retail Street',
+                'city'        => 'Chennai',
+                'state'       => 'Tamil Nadu',
+                'pincode'     => '600001',
+                'phone'       => '9876543210',
+                'email'       => 'contact@gpretail.uk',
+                'gstin'       => '33AAAAA0000A1Z5',
+                'state_code'  => '33',
+                'is_active'   => true,
+                'created_at'  => now(),
+                'updated_at'  => now(),
+            ]);
+        }
 
-        // 2. Create Super Admin User
-        DB::table('users')->insert([
-            'name'                 => 'Super Admin',
-            'username'             => 'admin',
-            'email'                => 'admin@gpretail.uk',
-            'password'             => Hash::make('password'),
-            'role'                 => 'admin',
-            'store_id'             => $storeId,
-            'phone'                => '9876543210',
-            'is_active'            => true,
-            'must_change_password' => false,
-            'created_at'           => now(),
-            'updated_at'           => now(),
-        ]);
+        // 2. Create or Update Super Admin User
+        DB::table('users')->updateOrInsert(
+            ['username' => 'admin'],
+            [
+                'name'                 => 'Super Admin',
+                'email'                => 'admin@gpretail.uk',
+                'password'             => Hash::make('password'),
+                'role'                 => 'admin',
+                'store_id'             => $storeId,
+                'phone'                => '9876543210',
+                'is_active'            => true,
+                'must_change_password' => false,
+                'created_at'           => now(),
+                'updated_at'           => now(),
+            ]
+        );
 
         // 3. Create Standard GST Taxes
         $taxes = [
@@ -51,7 +58,9 @@ class DatabaseSeeder extends Seeder
             ['name' => 'GST 28%', 'code' => 'GST28', 'rate' => 28.00, 'type' => 'EXCLUSIVE', 'cgst_rate' => 14.00, 'sgst_rate' => 14.00, 'igst_rate' => 28.00],
         ];
         foreach ($taxes as $tax) {
-            DB::table('taxes')->insert(array_merge($tax, ['is_active' => true, 'created_at' => now(), 'updated_at' => now()]));
+            if (!DB::table('taxes')->where('code', $tax['code'])->exists()) {
+                DB::table('taxes')->insert(array_merge($tax, ['is_active' => true, 'created_at' => now(), 'updated_at' => now()]));
+            }
         }
 
         // 4. Create Default Brands
@@ -61,7 +70,9 @@ class DatabaseSeeder extends Seeder
             ['name' => 'Royal Silk', 'code' => 'ROYAL_SILK'],
         ];
         foreach ($brands as $b) {
-            DB::table('brands')->insert(array_merge($b, ['is_active' => true, 'created_at' => now(), 'updated_at' => now()]));
+            if (!DB::table('brands')->where('code', $b['code'])->exists()) {
+                DB::table('brands')->insert(array_merge($b, ['is_active' => true, 'created_at' => now(), 'updated_at' => now()]));
+            }
         }
 
         // 5. Create Default Categories
@@ -72,56 +83,70 @@ class DatabaseSeeder extends Seeder
             ['name' => 'Fabrics & Silks', 'code' => 'FABRICS'],
         ];
         foreach ($categories as $c) {
-            DB::table('categories')->insert(array_merge($c, ['is_active' => true, 'created_at' => now(), 'updated_at' => now()]));
+            if (!DB::table('categories')->where('code', $c['code'])->exists()) {
+                DB::table('categories')->insert(array_merge($c, ['is_active' => true, 'created_at' => now(), 'updated_at' => now()]));
+            }
         }
 
         // 6. Create Size Groups & Sizes
-        $sgId = DB::table('size_groups')->insertGetId([
-            'name' => 'Standard Apparel Sizes',
-            'code' => 'STD_SIZES',
-            'is_active' => true,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        $sg = DB::table('size_groups')->where('code', 'STD_SIZES')->first();
+        if (!$sg) {
+            $sgId = DB::table('size_groups')->insertGetId([
+                'name' => 'Standard Apparel Sizes',
+                'code' => 'STD_SIZES',
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } else {
+            $sgId = $sg->id;
+        }
+
         $sizes = ['S', 'M', 'L', 'XL', 'XXL', '38', '40', '42', '44'];
         foreach ($sizes as $idx => $s) {
-            DB::table('sizes')->insert([
-                'size_group_id' => $sgId,
-                'name' => $s,
-                'code' => $s,
-                'sort_order' => $idx + 1,
+            if (!DB::table('sizes')->where('size_group_id', $sgId)->where('code', $s)->exists()) {
+                DB::table('sizes')->insert([
+                    'size_group_id' => $sgId,
+                    'name' => $s,
+                    'code' => $s,
+                    'sort_order' => $idx + 1,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        }
+
+        // 7. Create Default Supplier
+        if (!DB::table('suppliers')->where('code', 'SUP_BALAJI')->exists()) {
+            DB::table('suppliers')->insert([
+                'name' => 'Sri Balaji Mills',
+                'company_name' => 'Balaji Textiles Private Limited',
+                'code' => 'SUP_BALAJI',
+                'phone' => '9845123456',
+                'email' => 'sales@balajimills.com',
+                'city' => 'Coimbatore',
+                'state' => 'Tamil Nadu',
+                'gstin' => '33BBBBB1111B1Z2',
+                'is_active' => true,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
         }
 
-        // 7. Create Default Supplier
-        DB::table('suppliers')->insert([
-            'name' => 'Sri Balaji Mills',
-            'company_name' => 'Balaji Textiles Private Limited',
-            'code' => 'SUP_BALAJI',
-            'phone' => '9845123456',
-            'email' => 'sales@balajimills.com',
-            'city' => 'Coimbatore',
-            'state' => 'Tamil Nadu',
-            'gstin' => '33BBBBB1111B1Z2',
-            'is_active' => true,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
         // 8. Create Default Customer
-        DB::table('customers')->insert([
-            'name' => 'Walk-in Retail Customer',
-            'code' => 'CUST_WALKIN',
-            'phone' => '9999999999',
-            'email' => 'walkin@gpretail.uk',
-            'city' => 'Local',
-            'state' => 'Tamil Nadu',
-            'is_active' => true,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        if (!DB::table('customers')->where('code', 'CUST_WALKIN')->exists()) {
+            DB::table('customers')->insert([
+                'name' => 'Walk-in Retail Customer',
+                'code' => 'CUST_WALKIN',
+                'phone' => '9999999999',
+                'email' => 'walkin@gpretail.uk',
+                'city' => 'Local',
+                'state' => 'Tamil Nadu',
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
 
         // 9. Create System Configurations
         $configs = [
@@ -133,36 +158,45 @@ class DatabaseSeeder extends Seeder
             ['key' => 'upi_provider', 'config_key' => 'upi_provider', 'value' => json_encode(['Google Pay', 'PhonePe', 'Paytm', 'BHIM']), 'config_value' => json_encode(['Google Pay', 'PhonePe', 'Paytm', 'BHIM']), 'group' => 'pos', 'group_name' => 'pos'],
         ];
         foreach ($configs as $cfg) {
-            DB::table('system_configurations')->insert(array_merge($cfg, ['created_at' => now(), 'updated_at' => now()]));
+            if (!DB::table('system_configurations')->where('key', $cfg['key'])->where('group', $cfg['group'])->exists()) {
+                DB::table('system_configurations')->insert(array_merge($cfg, ['created_at' => now(), 'updated_at' => now()]));
+            }
         }
 
         // 10. Create Default Product & Stock
-        $prodId = DB::table('products')->insertGetId([
-            'category_id' => 1,
-            'brand_id'    => 1,
-            'tax_id'      => 2,
-            'name'        => 'Premium Men Cotton Shirt',
-            'code'        => 'SHIRT_001',
-            'sku'         => 'SKU-MENS-001',
-            'barcode'     => '8901234567890',
-            'unit'        => 'PCS',
-            'cost_price'  => 350.00,
-            'selling_price' => 699.00,
-            'mrp'         => 899.00,
-            'min_stock'   => 5,
-            'max_stock'   => 100,
-            'is_active'   => true,
-            'created_at'  => now(),
-            'updated_at'  => now(),
-        ]);
+        $prod = DB::table('products')->where('code', 'SHIRT_001')->first();
+        if (!$prod) {
+            $catId = DB::table('categories')->where('code', 'MENS')->value('id') ?? 1;
+            $brandId = DB::table('brands')->where('code', 'VX_FASHION')->value('id') ?? 1;
+            $taxId = DB::table('taxes')->where('code', 'GST5')->value('id') ?? 2;
 
-        DB::table('stocks')->insert([
-            'product_id' => $prodId,
-            'store_id'   => $storeId,
-            'quantity'   => 50.00,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+            $prodId = DB::table('products')->insertGetId([
+                'category_id' => $catId,
+                'brand_id'    => $brandId,
+                'tax_id'      => $taxId,
+                'name'        => 'Premium Men Cotton Shirt',
+                'code'        => 'SHIRT_001',
+                'sku'         => 'SKU-MENS-001',
+                'barcode'     => '8901234567890',
+                'unit'        => 'PCS',
+                'cost_price'  => 350.00,
+                'selling_price' => 699.00,
+                'mrp'         => 899.00,
+                'min_stock'   => 5,
+                'max_stock'   => 100,
+                'is_active'   => true,
+                'created_at'  => now(),
+                'updated_at'  => now(),
+            ]);
+
+            DB::table('stocks')->insert([
+                'product_id' => $prodId,
+                'store_id'   => $storeId,
+                'quantity'   => 50.00,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
     }
 }
 

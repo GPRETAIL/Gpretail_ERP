@@ -78,6 +78,8 @@ Route::prefix('activation')->group(function () {
 
 // 2. Authentication Routes
 Route::prefix('auth')->group(function () {
+    Route::get('config', [AuthController::class, 'config'])->middleware('throttle:30,1');
+    Route::post('google', [AuthController::class, 'google'])->middleware('throttle:10,1');
     Route::post('login', [AuthController::class, 'login'])->middleware('throttle:10,1');
     Route::post('logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
     Route::get('me', [AuthController::class, 'me'])->middleware('auth:sanctum');

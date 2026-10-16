@@ -10,6 +10,9 @@ use App\Models\SyncOutboxEvent;
 use App\Models\User;
 use App\Services\PlatformClient;
 use App\Services\StoreContext;
+use App\Services\GoogleIdTokenVerifier;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -48,6 +51,46 @@ class AuthController extends Controller
             ], 401);
         }
 
+        return $this->completeLogin($user);
+    }
+
+    public function config(): JsonResponse
+    {
+        return response()->json(['success' => true, 'data' => ['google_enabled' => (bool) config('services.google.client_id'), 'google_client_id' => config('services.google.client_id')]]);
+    }
+
+    public function google(Request $request): JsonResponse
+    {
+        if (! $request->filled('id_token') && $request->filled('credential')) {
+            $request->merge(['id_token' => $request->input('credential')]);
+        }
+        $request->validate(['id_token' => 'required|string|max:16384']);
+        $claims = app(GoogleIdTokenVerifier::class)->verify($request->string('id_token')->toString());
+        if (! $claims) {
+            return response()->json(['success' => false, 'message' => 'Invalid Google identity token.'], 401);
+        }
+        return DB::transaction(function () use ($claims): JsonResponse {
+            $users = User::whereRaw('LOWER(email) = ?', [strtolower(trim($claims['email']))])->lockForUpdate()->get();
+            $user = $users->count() === 1 ? $users->first() : null;
+            if (! $user || ! $user->is_active) {
+                return response()->json(['success' => false, 'message' => 'Google sign-in is available only for an active, existing ERP user. Contact your administrator.'], 403);
+            }
+            if ($user->google_sub && $user->google_sub !== $claims['sub']) {
+                return response()->json(['success' => false, 'message' => 'Google identity does not match the linked ERP account.'], 403);
+            }
+            if (! $user->google_sub) {
+                $authoritative = str_ends_with(strtolower($claims['email']), '@gmail.com') || ! empty($claims['hd']);
+                if (! $authoritative || User::where('google_sub', $claims['sub'])->where('id', '!=', $user->id)->exists()) {
+                    return response()->json(['success' => false, 'message' => 'Use password sign-in for this email or contact your administrator.'], 403);
+                }
+                $user->forceFill(['google_sub' => $claims['sub']])->save();
+            }
+            return $this->completeLogin($user);
+        });
+    }
+
+    private function completeLogin(User $user): JsonResponse
+    {
         if (! $user->is_active) {
             return response()->json([
                 'success' => false,

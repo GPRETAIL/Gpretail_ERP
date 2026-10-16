@@ -7,7 +7,7 @@ export const loginUser = createAsyncThunk(
   "auth/loginUser",
   async (credentials, { rejectWithValue }) => {
     try {
-      const res = await api.post("/auth/login", credentials);
+      const res = await api.post(credentials.id_token ? "/auth/google" : "/auth/login", credentials);
       const token = res.data?.data?.token;
       const user = res.data?.data?.user;
 

@@ -31,3 +31,9 @@ scratch/
 # backend-laravel/tests/Feature/AuthenticateSyncReplayTest.php and SyncCycleServiceTest.php
 # for the automated coverage; this is only for manual live two-node testing.
 backend-laravel-local-node/
+
+# Audit, lint and scratch artifacts
+*-audit*.json
+*-lint*.json
+*.bak
+.claude/

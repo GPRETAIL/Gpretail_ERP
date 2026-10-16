@@ -20,7 +20,7 @@ const NO_STORES_MESSAGE = "No stores are available";
 // just an expired/invalid session - excluded below so a mistyped password on
 // the login screen doesn't get treated as "your session expired" and clear
 // storage/redirect out from under the form the user is actively typing into.
-const LOGIN_PATHS = ["/auth/login", "/admin-auth/login"];
+const LOGIN_PATHS = ["/auth/login", "/auth/google", "/admin-auth/login"];
 // A screen that fires several requests on mount can all 401 back-to-back
 // once a token goes bad - only the first should trigger the clear+redirect.
 let authExpiredHandled = false;

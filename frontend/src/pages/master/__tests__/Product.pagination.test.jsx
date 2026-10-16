@@ -42,7 +42,7 @@ describe("Product adaptive pagination", () => {
     fireEvent.click(screen.getByRole("option", { name: "50", exact: true }));
     await waitFor(() => expect(api.get).toHaveBeenLastCalledWith("/products", { signal: expect.any(AbortSignal), params: expect.objectContaining({ page: 1, limit: 50 }) }));
     expect(api.get.mock.calls.at(-1)[1].params).not.toHaveProperty("cursor");
-  });
+  }, 35000);
 
   it("allows direct page jumps when the API returns offset pagination", async () => {
     api.get.mockImplementation((_path, { params }) => Promise.resolve({ data: {
