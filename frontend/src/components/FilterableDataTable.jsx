@@ -1,3 +1,4 @@
+import TablePaginationFooter from "./TablePaginationFooter";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ERP_UI, erpControlSx } from "../theme/erpUi";
 import {
@@ -1996,33 +1997,7 @@ export default function FilterableDataTable({
     : { fontSize: { xs: 10.5, xl: 12.25 } };
   const cellBorderSx = { borderRight: 1, borderColor: "divider" };
   const rowBorderTopSx = { borderTop: 1, borderColor: "divider" };
-  const paginationTextSx = { fontSize: compact ? 8 : 10, color: "text.secondary" };
-  // Non-compact originally used h-7/h-8 (Tailwind rem-based, not the compact mode's literal h-[26px])
-  // -- at this app's 14px root that's 24.5px/28px, not the 16px-root values those names might suggest.
-  const paginationControlSx = { height: compact ? 26 : 24.5, fontSize: compact ? 7 : 10 };
-  // Pagination sits at the bottom of the table, often near the viewport edge -- anchor the popup
-  // menu to open upward off the trigger's top edge instead of MUI's downward default, and keep the
-  // menu itself dense so a handful of rows-per-page/page options don't render as a tall, loosely
-  // spaced list.
-  const paginationMenuProps = {
-    anchorOrigin: { vertical: "top", horizontal: "left" },
-    transformOrigin: { vertical: "bottom", horizontal: "left" },
-    slotProps: {
-      paper: {
-        sx: {
-          maxHeight: 220,
-          "& .MuiMenuItem-root": {
-            minHeight: "auto",
-            fontSize: compact ? 10 : 12.25,
-            py: 0.5,
-            px: 1.5,
-          },
-        },
-      },
-    },
-  };
-  const paginationButtonSx = { height: compact ? 26 : 28, minWidth: compact ? 32 : 40, fontSize: compact ? 9 : 12 };
-  const loadMoreButtonSx = { fontSize: compact ? 9 : 12, px: compact ? 2 : 2.5, py: compact ? 0.5 : 0.75 };
+
   // Every field/button in the toolbar row shared one exact height before this conversion (all keyed
   // off the same topFieldClass/compactActionClass strings) -- MUI's Select/TextField/Button don't
   // default to matching heights at the same `size`, so it's pinned explicitly here to keep the row
@@ -2946,113 +2921,30 @@ export default function FilterableDataTable({
       </Drawer>
 
       {canPaginate && (
-        <>
-          <Stack
-            direction="row"
-            spacing={1}
-            sx={{ width: "100%", alignItems: "center", justifyContent: "space-between", borderTop: 1, borderColor: "divider", py: compact ? 0.75 : 1, flexWrap: "wrap", rowGap: 0.5 }}
-          >
-            <Stack direction="row" spacing={1} sx={{ alignItems: "center", ...paginationTextSx }}>
-              <Typography component="span" sx={paginationTextSx}>Rows showing</Typography>
-              <Select
-                value={safeLimit}
-                onChange={(e) => onLimitChange(Number(e.target.value))}
-                className={compact ? "compact-pagination-select" : ""}
-                sx={paginationControlSx}
-                MenuProps={paginationMenuProps}
-              >
-                {[20, 50, 60, 100, 150].map((size) => (
-                  <MenuItem key={size} value={size}>
-                    {size}
-                  </MenuItem>
-                ))}
-              </Select>
-              <Typography component="span" sx={paginationTextSx}>
-                {isServerGrouped
-                  ? `${computedTotalRows.toLocaleString()} groups · ${(groupSummaryState.meta?.total_matching_rows ?? 0).toLocaleString()} rows total`
-                  : isCursorMode
-                    ? (pagination?.estimated_total
-                        ? `Total: ~${Number(pagination.estimated_total).toLocaleString()}`
-                        : `Showing ${rows.length} rows`)
-                    : `Total: ${computedTotalRows}`}
-              </Typography>
-            </Stack>
-            <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-            {isAppendCursorMode ? (
-              <Button
-                variant="outlined"
-                color="inherit"
-                onClick={handleNextPage}
-                disabled={!hasNext || loading}
-                startIcon={loading ? <Loader2 size={14} style={{ animation: "app-spin 1s linear infinite" }} /> : null}
-                sx={loadMoreButtonSx}
-              >
-                {hasNext ? "Load More" : "No more results"}
-              </Button>
-            ) : (
-              <>
-                <IconButton
-                  size="small"
-                  onClick={handlePrevPage}
-                  disabled={!hasPrev || paginationBusy}
-                  title="Previous"
-                  className={compact ? "compact-pagination-button" : ""}
-                  sx={{ ...paginationButtonSx, border: "1px solid", borderColor: "divider", borderRadius: "1.75px" }}
-                >
-                  {"<"}
-                </IconButton>
-                {!allowPageJump && (isServerGrouped || !isCursorMode) ? (
-                  <Typography component="span" sx={paginationTextSx}>
-                    Page {currentPage} of {safeTotalPages}
-                  </Typography>
-                ) : isServerGrouped ? (
-                  <Select
-                    value={currentPage}
-                    onChange={(e) => setGroupSummaryState((prev) => ({ ...prev, page: Number(e.target.value) }))}
-                    className={compact ? "compact-pagination-select" : ""}
-                    sx={paginationControlSx}
-                    MenuProps={paginationMenuProps}
-                  >
-                    {pageOptions.map((p) => (
-                      <MenuItem key={p} value={p}>
-                        Page {p}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                ) : isCursorMode ? (
-                  <Typography component="span" sx={{ px: 0.75, fontSize: 9, color: "text.secondary", fontWeight: 500, userSelect: "none" }}>
-                    Continuous
-                  </Typography>
-                ) : (
-                  <Select
-                    value={currentPage}
-                    onChange={(e) => onPageChange(Number(e.target.value))}
-                    className={compact ? "compact-pagination-select" : ""}
-                    sx={paginationControlSx}
-                    MenuProps={paginationMenuProps}
-                  >
-                    {pageOptions.map((p) => (
-                      <MenuItem key={p} value={p}>
-                        Page {p}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                )}
-                <IconButton
-                  size="small"
-                  onClick={handleNextPage}
-                  disabled={!hasNext || paginationBusy}
-                  title="Next"
-                  className={compact ? "compact-pagination-button" : ""}
-                  sx={{ ...paginationButtonSx, border: "1px solid", borderColor: "divider", borderRadius: "1.75px" }}
-                >
-                  {">"}
-                </IconButton>
-              </>
-            )}
-            </Stack>
-          </Stack>
-        </>
+        <TablePaginationFooter
+          limit={safeLimit}
+          onLimitChange={onLimitChange}
+          totalLabel={isServerGrouped
+            ? `${computedTotalRows.toLocaleString()} groups · ${(groupSummaryState.meta?.total_matching_rows ?? 0).toLocaleString()} rows total`
+            : isCursorMode
+              ? (pagination?.estimated_total ? `Total: ~${Number(pagination.estimated_total).toLocaleString()}` : `Showing ${rows.length} rows`)
+              : `Total: ${computedTotalRows}`}
+          page={currentPage}
+          totalPages={safeTotalPages}
+          pageOptions={pageOptions}
+          canJump={allowPageJump}
+          cursor={isCursorMode && !isServerGrouped}
+          append={isAppendCursorMode}
+          hasPrev={hasPrev}
+          hasNext={hasNext}
+          busy={paginationBusy}
+          loading={loading}
+          onPrevious={handlePrevPage}
+          onNext={handleNextPage}
+          onPageChange={isServerGrouped
+            ? (page) => setGroupSummaryState((prev) => ({ ...prev, page }))
+            : onPageChange}
+        />
       )}
 
       <Dialog
