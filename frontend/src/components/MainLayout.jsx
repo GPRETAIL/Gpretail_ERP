@@ -22,7 +22,7 @@ const MOBILE_BREAKPOINT = 768;
 
 // Plan selection lives entirely on VX-Admin's Company Portal, a separate app/session from this one --
 // there is no in-tenant plan picker to route to locally.
-const COMPANY_PORTAL_LOGIN_URL = "https://company.gpretail.uk/login";
+const COMPANY_PORTAL_LOGIN_URL = "https://company.gpsoftware.in/login";
 
 const TabbedWorkspaces = () => {
   const { tabs, activeTabId } = useTabs();

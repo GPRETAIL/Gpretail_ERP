@@ -4,7 +4,7 @@ return [
     'licence_public_keys' => ['prod' => env('PLATFORM_LICENCE_PUBLIC_KEY', '')],
     // Gpretail_Admin's base URL (the platform/control-plane side of this deployment).
     'base_url' => env('PLATFORM_BASE_URL', 'http://localhost:8000'),
-    'portal_url' => env('PLATFORM_PORTAL_URL'),
+    'portal_url' => env('PLATFORM_PORTAL_URL', 'https://company.gpsoftware.in/login'),
 
     // Issued when this company was created in Gpretail_Admin — set these once at install time.
     'company_code' => env('PLATFORM_COMPANY_CODE'),

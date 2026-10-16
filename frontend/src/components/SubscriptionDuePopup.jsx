@@ -7,7 +7,7 @@ import useSubscriptionStatus from "../hooks/useSubscriptionStatus";
 
 // Plan selection lives entirely on VX-Admin's Company Portal, a separate app/session from this one --
 // there is no in-tenant plan picker to route to locally.
-const COMPANY_PORTAL_LOGIN_URL = "https://company.gpretail.uk/login";
+const COMPANY_PORTAL_LOGIN_URL = "https://company.gpsoftware.in/login";
 
 /**
  * Bottom-right reminder for a subscription that is close to lapsing, and the activation prompt for a
