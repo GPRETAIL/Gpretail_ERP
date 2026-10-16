@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
 import { ChevronRightIcon } from "@heroicons/react/24/outline";
 import { useEffect, useRef, useState } from "react";
-import { Box, ButtonBase, Typography } from "@mui/material";
+import { Box, ButtonBase, Portal, Typography } from "@mui/material";
 import { useTabs } from "../context/TabContext";
 
 const itemSx = (isOpen) => ({
@@ -66,7 +66,7 @@ const NavItem = ({
 
       setSubmenuStyle({
         top: `${top}px`,
-        left: `${itemRect.right + 8}px`,
+        left: `${Math.max(8, Math.min(itemRect.right + 8, window.innerWidth - 216))}px`,
         maxHeight,
         overflowY: maxHeight !== "auto" ? "auto" : "visible",
       });
@@ -128,7 +128,7 @@ const NavItem = ({
           </Box>
         </ButtonBase>
       ) : (
-        <Box onClick={handleClick} sx={itemSx(isOpen)}>
+        <ButtonBase type="button" aria-expanded={isOpen} onClick={handleClick} sx={itemSx(isOpen)}>
           <Box sx={{ display: "flex", alignItems: "center" }}>
             <Icon style={{ width: 24, height: 24 }} />
             <Typography
@@ -157,19 +157,21 @@ const NavItem = ({
               }}
             />
           )}
-        </Box>
+        </ButtonBase>
       )}
 
       {/* Submenu (Floating Menu when collapsed) */}
       {subItems && isOpen && (
+        <Portal>
         <Box
           component="ul"
+          aria-label={`${name} submenu`}
           ref={submenuRef}
           style={submenuStyle}
           sx={{
             position: "fixed", bgcolor: "background.paper", boxShadow: 4,
             border: "1px solid", borderColor: "divider", borderRadius: 2,
-            p: 1, display: "flex", flexDirection: "column", gap: 0.5, zIndex: 50, width: 208,
+            p: 1, display: "flex", flexDirection: "column", gap: 0.5, zIndex: (theme) => theme.zIndex.drawer + 1, width: 208, maxWidth: "calc(100vw - 16px)",
             listStyle: "none", m: 0,
             transition: "all 0.2s",
             opacity: isOpen ? 1 : 0,
@@ -225,6 +227,7 @@ const NavItem = ({
             </Box>
           ))}
         </Box>
+        </Portal>
       )}
     </Box>
   );
