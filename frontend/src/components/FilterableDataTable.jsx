@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ERP_UI, erpControlSx } from "../theme/erpUi";
 import {
   Filter,
   GripVertical,
@@ -180,10 +181,10 @@ export default function FilterableDataTable({
   fixedHeight = true,
   // Feature 1b: Fill available page height on large screens
   fillHeight = false,
-  autoHideScrollbars = false,
-  filterPanelWidth = 380,
-  columnFilterWidth = "14rem",
-  controlBorderRadius = undefined,
+  autoHideScrollbars = ERP_UI.autoHideScrollbars,
+  filterPanelWidth = ERP_UI.filterPanelWidth,
+  columnFilterWidth = ERP_UI.columnFilterWidth,
+  controlBorderRadius = ERP_UI.controlRadius,
   compact = true,
   // Feature 1c: Row virtualization (opt-in; requires compact=true -- that's the only mode with a
   // CSS-enforced, uniform row height, see the .compact-data-table rule in index.css). No-op with a
@@ -1961,7 +1962,7 @@ export default function FilterableDataTable({
   // compact sizing applies regardless of whether searchButtonClassName is the default `.fdt-search-
   // btn` or a caller-supplied override like `.glass-btn` -- an inline style always applies over a
   // stylesheet rule, no specificity fight either way.
-  const compactActionStyle = compact ? { height: 32, padding: "0 10px", fontSize: 11 } : undefined;
+  const compactActionStyle = { height: ERP_UI.actionHeight, boxSizing: "border-box", padding: "0 10px", fontSize: compact ? 11 : 12, borderRadius: controlBorderRadius };
   // MUI's `stickyHeader` (Table prop, active whenever fixedHeight is true -- the default) forces an
   // OPAQUE background on every .MuiTableCell-stickyHeader from the ambient theme, so sticky content
   // doesn't show through while scrolling. That wins the cascade over the `bg-gray-100`/`dark:bg-
@@ -2028,11 +2029,11 @@ export default function FilterableDataTable({
   // visually unified instead of the fields/buttons drifting a few px out of alignment with each other.
   // This app's root font-size is 14px (not the usual 16px browser default -- verified live), so
   // Tailwind's h-8 (2rem) is 28px here, not 32px. Matches the native Search button's own h-8 exactly.
-  const toolbarFieldHeight = compact ? 28 : 24;
+  const toolbarFieldHeight = ERP_UI.actionHeight;
   const toolbarFieldSx = { height: toolbarFieldHeight, fontSize: compact ? 11 : 12 };
 
   return (
-    <Box sx={fillHeight ? { display: "flex", flex: 1, minHeight: 0, flexDirection: "column" } : undefined}>
+    <Box sx={{ ...erpControlSx, "& .MuiOutlinedInput-root": { borderRadius: controlBorderRadius }, ...(fillHeight ? { display: "flex", flex: 1, minHeight: 0, flexDirection: "column" } : {}) }}>
       <Stack
         direction="row"
         spacing={compact ? 0.75 : 1}

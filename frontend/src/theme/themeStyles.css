@@ -52,7 +52,6 @@
   background-color: var(--erp-glass-fill) !important;
   background-image: linear-gradient(135deg, rgba(255,255,255,.32), rgba(255,255,255,.02) 55%, rgba(255,255,255,.12));
   backdrop-filter: blur(36px) saturate(180%);
-  -webkit-backdrop-filter: blur(36px) saturate(180%);
   border-color: var(--erp-glass-edge) !important;
   box-shadow: var(--erp-glass-shadow);
 }
@@ -69,7 +68,6 @@
 }
 :root[data-theme-style="glassmorphism"] :is(.rounded-xl.border, .rounded-md.border):not(:has(table)) {
   backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
 }
 :root[data-theme-style="liquid_ai"] :is(.rounded-xl.border, .rounded-md.border):not(:has(table)) {
   background-image: radial-gradient(ellipse at top right, rgba(124,58,237,.08), transparent 65%), radial-gradient(ellipse at bottom left, rgba(6,182,212,.06), transparent 65%);
@@ -78,7 +76,6 @@
   :root:is([data-theme-style="glass"], [data-theme-style="glassmorphism"]) :is(.MuiCard-root, .MuiAppBar-root, .erp-glass-chrome, .rounded-xl.border, .rounded-md.border) {
     background-image: none !important;
     backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
     background-color: #fff !important;
   }
   :root.dark:is([data-theme-style="glass"], [data-theme-style="glassmorphism"]) :is(.MuiCard-root, .MuiAppBar-root, .erp-glass-chrome, .rounded-xl.border, .rounded-md.border) { background-color: #1e2030 !important; }

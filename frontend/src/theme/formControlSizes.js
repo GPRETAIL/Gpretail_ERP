@@ -11,6 +11,8 @@
 //
 // index.css's .topbar-action-btn min-height/padding/font-size are kept numerically in sync with
 // TOOLBAR_BUTTON_HEIGHT/etc. below by hand (CSS can't import a JS module) -- update both together.
+import { ERP_UI } from "./erpUi";
+
 export const FIELD_HEIGHT = 30;
 export const FIELD_FONT_SIZE = 11.5;
 
@@ -23,7 +25,7 @@ export const focusRingSx = {
 export const fieldBaseSx = (disabled) => ({
   border: "1px solid",
   borderColor: "divider",
-  borderRadius: "2px",
+  borderRadius: ERP_UI.controlRadius,
   // Explicit height (not just padding) so a native <select> -- whose appearance:auto chrome adds
   // ~1.5px over an <input> with identical padding -- and SearchableSelect's trigger all land on
   // exactly the same row height.
@@ -44,7 +46,7 @@ export const fieldBaseSx = (disabled) => ({
 // use the very same small TextField and must stay at their compact row height. Per-field extras go
 // in a second sx array entry so they layer on top: sx={[muiFieldSx, { width: 160 }]}.
 export const muiFieldSx = {
-  "& .MuiInputBase-root": { height: FIELD_HEIGHT, fontSize: FIELD_FONT_SIZE, borderRadius: "2px", bgcolor: "background.paper" },
+  "& .MuiInputBase-root": { height: FIELD_HEIGHT, fontSize: FIELD_FONT_SIZE, borderRadius: ERP_UI.controlRadius, bgcolor: "background.paper" },
   // Plain selector on purpose so a page's own "& .MuiInputBase-input" override (e.g. pr for overlaid
   // icons) in a later sx array entry still wins. A select keeps its chevron room regardless: MUI
   // pads .MuiSelect-select via a "&&&" specificity bump that outranks this.
@@ -62,7 +64,7 @@ export const muiFieldSx = {
 export const SEARCHABLE_TRIGGER_HEIGHT = FIELD_HEIGHT;
 export const SEARCHABLE_FONT_SIZE = FIELD_FONT_SIZE;
 
-export const SEARCHABLE_TRIGGER_SX = { height: SEARCHABLE_TRIGGER_HEIGHT, px: 1, py: 0.25, fontSize: SEARCHABLE_FONT_SIZE };
+export const SEARCHABLE_TRIGGER_SX = { height: SEARCHABLE_TRIGGER_HEIGHT, borderRadius: ERP_UI.controlRadius, px: 1, py: 0.25, fontSize: SEARCHABLE_FONT_SIZE };
 export const SEARCHABLE_INPUT_SX = { fontSize: SEARCHABLE_FONT_SIZE };
 
-export const TOOLBAR_BUTTON_HEIGHT = 24;
+export const TOOLBAR_BUTTON_HEIGHT = ERP_UI.actionHeight;

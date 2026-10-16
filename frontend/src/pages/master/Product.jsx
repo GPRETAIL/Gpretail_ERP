@@ -5,6 +5,7 @@ import { toast } from "react-toastify";
 import api from "../../api/axios";
 import { Box, Button, Card, Stack, Typography, IconButton, alpha } from "@mui/material";
 import PageHeader from "../../components/PageHeader";
+import { erpControlSx } from "../../theme/erpUi";
 import { fieldBaseSx } from "../../theme/formControlSizes";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import ConfirmDialog from "../../components/ConfirmDialog";
@@ -576,7 +577,7 @@ const Product = () => {
         }
         onBack={() => navigate(-1)}
         actions={
-          <Stack direction="row" sx={{ alignItems: "center", "& .topbar-action-btn": { height: 28, minHeight: 28, boxSizing: "border-box" } }} spacing={1.5}>
+          <Stack direction="row" sx={{ alignItems: "center" }} spacing={1.5}>
             <Button
               variant="text"
               onClick={handleNew}
@@ -619,9 +620,7 @@ const Product = () => {
             minHeight: 0,
             p: 1,
             pb: 0.5,
-            "& .MuiOutlinedInput-root": { borderRadius: "0.5rem" },
-            "& .MuiOutlinedInput-notchedOutline": { borderRadius: "inherit" },
-            "& input:not([type=checkbox]):not([type=radio]), & select": { borderRadius: "0.5rem" },
+            ...erpControlSx,
           }}
         >
           <Typography variant="h6" component="h2" sx={{ fontWeight: 700, mb: 1, fontSize: "1rem" }}>
@@ -783,7 +782,6 @@ const Product = () => {
                 loading={loading}
                 searchPlaceholder="Search in product fields..."
                 searchButtonClassName="glass-btn glass-btn-primary flex items-center px-2.5 text-[11px] disabled:opacity-50"
-                searchButtonStyle={{ height: 28, boxSizing: "border-box" }}
                 showExport={false}
                 onExportRows={handleExportRows}
                 enableColumnResize
@@ -817,10 +815,6 @@ const Product = () => {
                 rowKey={(row) => row.rowKey}
                 onRowClick={handleEdit}
                 fillHeight
-                autoHideScrollbars
-                filterPanelWidth={340}
-                columnFilterWidth={190}
-                controlBorderRadius="0.5rem"
                 renderActions={(product, { selectedCount } = {}) => (
                   <Stack direction="row" sx={{ alignItems: "center", gap: 1.5 }}>
                     <IconButton

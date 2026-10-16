@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { ERP_UI } from "../theme/erpUi";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 import TabBar from "../components/TabBar";
@@ -296,7 +297,7 @@ const MainLayout = () => {
   return (
     <TransferActivityProvider>
       <TabProvider>
-        <Box className="erp-app-shell" sx={{ display: "flex", height: "100vh", width: "100%", overflow: "hidden", bgcolor: "background.default" }}>
+        <Box className="erp-app-shell" sx={{ "--erp-control-radius": ERP_UI.controlRadius, "--erp-action-height": `${ERP_UI.actionHeight}px`, display: "flex", height: "100vh", width: "100%", overflow: "hidden", bgcolor: "background.default" }}>
           {isMobile && mobileOpen && (
             <Box
               sx={{ position: "fixed", inset: 0, zIndex: 40, bgcolor: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)", transition: "opacity 0.15s" }}
