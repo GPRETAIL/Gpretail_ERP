@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Brand;
 use App\Models\CashRegisterSession;
 use App\Models\Customer;
 use App\Models\CustomerOrder;
@@ -72,6 +73,38 @@ class PilotControllersPaginationTest extends TestCase
         $this->assertSame(array_slice($ids, 0, 2), array_column($back->json('data'), 'id'));
         $last = $this->getJson('/api/products?limit=2&cursor='.urlencode($second->json('pagination.next_cursor')))->assertOk()->assertJsonPath('pagination.has_next', false);
         $this->assertSame(array_slice($ids, 4, 1), array_column($last->json('data'), 'id'));
+    }
+
+    public function test_brands_use_cursors_with_duplicate_names_search_and_store_scope(): void
+    {
+        config()->set('pagination.cursor_threshold', 1);
+        $otherStore = Store::create(['name' => 'Other brand store', 'code' => 'OTHER-BRAND']);
+        Brand::unguarded(fn () => Brand::create(['store_id' => $otherStore->id, 'name' => 'Shared brand', 'code' => 'FOREIGN']));
+        $ids = [];
+        for ($i = 1; $i <= 5; $i++) {
+            $ids[] = Brand::unguarded(fn () => Brand::create(['store_id' => $this->store->id, 'name' => 'Shared brand', 'code' => 'BR-CURSOR-'.$i]))->id;
+        }
+        $this->withHeader('X-Company-Scope-Id', (string) $this->store->id);
+        $url = '/api/brands?limit=2&search=Shared&field=name';
+        $first = $this->getJson($url.'&page=1')->assertOk()->assertJsonPath('pagination.mode', 'cursor');
+        $this->assertSame(array_slice($ids, 0, 2), array_column($first->json('data'), 'id'));
+        $second = $this->getJson($url.'&cursor='.urlencode($first->json('pagination.next_cursor')))->assertOk();
+        $this->assertSame(array_slice($ids, 2, 2), array_column($second->json('data'), 'id'));
+        $back = $this->getJson($url.'&cursor='.urlencode($second->json('pagination.previous_cursor')))->assertOk();
+        $this->assertSame(array_slice($ids, 0, 2), array_column($back->json('data'), 'id'));
+        $last = $this->getJson($url.'&cursor='.urlencode($second->json('pagination.next_cursor')))->assertOk();
+        $this->assertSame(array_slice($ids, 4), array_column($last->json('data'), 'id'));
+        $last->assertJsonPath('pagination.has_next', false);
+    }
+
+    public function test_configuration_listing_opts_in_without_changing_lookup_responses(): void
+    {
+        $this->getJson('/api/configurations/city')->assertOk()->assertJsonMissingPath('pagination')->assertJsonCount(5, 'data');
+        $first = $this->getJson('/api/configurations/city?paginate=1&limit=2&page=1')->assertOk()
+            ->assertJsonPath('pagination.mode', 'offset')->assertJsonPath('pagination.total', 5)->assertJsonCount(2, 'data');
+        $second = $this->getJson('/api/configurations/city?paginate=1&limit=2&page=2')->assertOk();
+        $this->assertNotEquals($first->json('data.0.id'), $second->json('data.0.id'));
+        $this->getJson('/api/configurations/city?paginate=1&search=Chennai')->assertOk()->assertJsonCount(1, 'data');
     }
 
     public function test_products_endpoint_uses_offset_mode(): void

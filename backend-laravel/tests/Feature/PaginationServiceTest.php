@@ -218,21 +218,26 @@ class PaginationServiceTest extends TestCase
         $this->assertSame('cursor', $res['pagination']['mode']);
     }
 
-    public function test_master_pages_remain_numbered_above_cursor_threshold_and_deep_offsets(): void
+    public function test_master_resources_follow_the_shared_adaptive_policy(): void
     {
         foreach (['customers', 'suppliers', 'employees', 'brands', 'categories', 'taxes', 'agents', 'transports', 'sizes', 'attribute_values', 'users'] as $resource) {
             $resourceConfig = config("pagination.resources.{$resource}");
-            foreach ([['page' => 2, 'limit' => 5], ['page' => 1200, 'limit' => 50], ['cursor' => 'old-client-cursor']] as $params) {
-                $mode = $this->service->resolveMode($resource, $resourceConfig, Request::create('/test', 'GET', $params), ['estimated_count' => 60000]);
-                $this->assertSame('offset', $mode, $resource);
+            foreach ([50000 => 'offset', 50001 => 'cursor', 1000000 => 'cursor', 20000 => 'offset'] as $count => $expected) {
+                $mode = $this->service->resolveMode($resource, $resourceConfig, Request::create('/test', 'GET', ['page' => 2, 'limit' => 20]), ['estimated_count' => $count]);
+                $this->assertSame($expected, $mode, $resource);
+            }
+            foreach ([['page' => 1200, 'limit' => 50], ['cursor' => 'continuation']] as $params) {
+                $mode = $this->service->resolveMode($resource, $resourceConfig, Request::create('/test', 'GET', $params), ['estimated_count' => 10]);
+                $this->assertSame('cursor', $mode, $resource);
             }
         }
+    }
 
-        $result = $this->service->paginate(DB::table('test_pagination_items'), 'customers', Request::create('/test', 'GET', ['page' => 2, 'limit' => 5]), ['estimated_count' => 60000, 'default_sort' => 'id']);
-        $this->assertSame('offset', $result['pagination']['mode']);
-        $this->assertSame(2, $result['pagination']['page']);
-        $this->assertSame(3, $result['pagination']['total_pages']);
-        $this->assertCount(5, $result['data']);
+    public function test_expression_sorted_notifications_keep_offset_paging(): void
+    {
+        $mode = $this->service->resolveMode('notifications', config('pagination.resources.notifications'),
+            Request::create('/test', 'GET', ['page' => 1200, 'limit' => 50]), ['estimated_count' => 1000000]);
+        $this->assertSame('offset', $mode);
     }
 
     public function test_products_switch_at_the_configured_threshold_and_preserve_cursor_continuations(): void

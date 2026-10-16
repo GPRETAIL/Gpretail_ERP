@@ -5,12 +5,15 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\HrDepartment;
 use App\Models\HrDesignation;
+use App\Services\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
 class HrConfigurationController extends Controller
 {
+    public function __construct(private readonly PaginationService $paginationService) {}
+
     // Designations
     public function designationsIndex(Request $request)
     {
@@ -19,6 +22,12 @@ class HrConfigurationController extends Controller
         if ($request->filled('search')) {
             $search = $request->input('search');
             $query->where('name', 'like', "%{$search}%")->orWhere('code', 'like', "%{$search}%");
+        }
+
+        if ($request->boolean('paginate')) {
+            return response()->json($this->paginationService->paginate($query, 'hr_configurations', $request, [
+                'default_sort' => 'name', 'default_order' => 'asc', 'allowed_sorts' => ['id', 'name', 'code'],
+            ]));
         }
 
         $items = $query->orderBy('name')->get();
@@ -124,6 +133,12 @@ class HrConfigurationController extends Controller
         if ($request->filled('search')) {
             $search = $request->input('search');
             $query->where('name', 'like', "%{$search}%")->orWhere('code', 'like', "%{$search}%");
+        }
+
+        if ($request->boolean('paginate')) {
+            return response()->json($this->paginationService->paginate($query, 'hr_configurations', $request, [
+                'default_sort' => 'name', 'default_order' => 'asc', 'allowed_sorts' => ['id', 'name', 'code'],
+            ]));
         }
 
         $items = $query->orderBy('name')->get();

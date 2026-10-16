@@ -1,7 +1,8 @@
+import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
 import MasterSearchPanel from "../../components/MasterSearchPanel";
 import { masterSearchAreaSx } from "../../theme/erpUi";
 import { ArrowLeft, Pencil, PlusCircle, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { Box, Stack, Card, Typography, Button } from "@mui/material";
@@ -25,11 +26,7 @@ const typeOptions = [
 const HrConfiguration = () => {
   const navigate = useNavigate();
   const [configType, setConfigType] = useState("department");
-  const [rows, setRows] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [confirm, setConfirm] = useState({ open: false, id: null, name: "" });
-  const [tablePage, setTablePage] = useState(1);
-  const [tableLimit, setTableLimit] = useState(20);
 
   const typeLabelMap = {
     department: "Department",
@@ -57,25 +54,12 @@ const HrConfiguration = () => {
   const showRole = safeType === "designation";
   const showWorkingHourColumns = safeType === "working_hour";
 
-  const fetchList = async () => {
-    setLoading(true);
-    try {
-      const res = await api.get(baseEndpoint);
-      setRows(res.data?.data || []);
-      if ((res.data?.data || []).length === 0) toast.info(`No ${typeLabel.toLowerCase()} records found.`);
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to load HR configuration");
-      setRows([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchList("");
-    setTablePage(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [configType]);
+  const grid = useSearchGrid({
+    adapter: createSearchGridAdapter(baseEndpoint, undefined, { paginate: true }),
+    scopeKey: baseEndpoint,
+    onError: err => toast.error(err.response?.data?.message || "Failed to load HR configuration"),
+  });
+  const { rows, setRows, loading, page: tablePage, setPage: setTablePage, limit: tableLimit, setLimit: setTableLimit } = grid;
 
   const handleDeleteConfirmed = async () => {
     const { id, name } = confirm;
@@ -188,11 +172,16 @@ const HrConfiguration = () => {
             searchButtonClassName="glass-btn glass-btn-primary"
             showExport={false}
             tablePreferenceKey={`hrms.hr-configuration.${safeType}`}
-            paginationMode="client"
+            paginationMode="server"
+              enableServerSearch
+              onServerSearch={grid.onServerSearch}
+              pagination={grid.rawPagination}
+              onNextCursor={grid.navigateCursor}
+              onPreviousCursor={grid.navigateCursor}
             page={tablePage}
             limit={tableLimit}
-            totalRows={rows.length}
-            totalPages={Math.max(Math.ceil(rows.length / Math.max(tableLimit, 1)), 1)}
+            totalRows={grid.pagination.total}
+            totalPages={grid.pagination.totalPages}
             onPageChange={setTablePage}
             onLimitChange={(value) => {
               setTableLimit(value);

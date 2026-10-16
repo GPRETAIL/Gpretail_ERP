@@ -30,17 +30,17 @@ describe("Product adaptive pagination", () => {
     expect(screen.queryByRole("button", { name: "Load More" })).toBeNull();
     expect(screen.getByTitle("Previous").disabled).toBe(true);
     fireEvent.click(screen.getByTitle("Next"));
-    await waitFor(() => expect(api.get).toHaveBeenLastCalledWith("/products", { params: expect.objectContaining({ cursor: "forward-token", limit: 20 }) }));
+    await waitFor(() => expect(api.get).toHaveBeenLastCalledWith("/products", { signal: expect.any(AbortSignal), params: expect.objectContaining({ cursor: "forward-token", limit: 20 }) }));
     await waitFor(() => expect(screen.getByTitle("Previous").disabled).toBe(false));
     expect(api.get.mock.calls[1][1].params).not.toHaveProperty("page");
     expect(screen.getByTitle("Next").disabled).toBe(true);
     expect(screen.queryByText("Product 1", { exact: true })).toBeNull();
     fireEvent.click(screen.getByTitle("Previous"));
-    await waitFor(() => expect(api.get).toHaveBeenLastCalledWith("/products", { params: expect.objectContaining({ cursor: "back-token" }) }));
+    await waitFor(() => expect(api.get).toHaveBeenLastCalledWith("/products", { signal: expect.any(AbortSignal), params: expect.objectContaining({ cursor: "back-token" }) }));
     await waitFor(() => expect(screen.getByTitle("Next").disabled).toBe(false));
     fireEvent.mouseDown(screen.getByText("20", { exact: true }));
     fireEvent.click(screen.getByRole("option", { name: "50", exact: true }));
-    await waitFor(() => expect(api.get).toHaveBeenLastCalledWith("/products", { params: expect.objectContaining({ page: 1, limit: 50 }) }));
+    await waitFor(() => expect(api.get).toHaveBeenLastCalledWith("/products", { signal: expect.any(AbortSignal), params: expect.objectContaining({ page: 1, limit: 50 }) }));
     expect(api.get.mock.calls.at(-1)[1].params).not.toHaveProperty("cursor");
   });
 
@@ -53,7 +53,7 @@ describe("Product adaptive pagination", () => {
     await screen.findByText("Page 1", { exact: true });
     fireEvent.mouseDown(screen.getByText("Page 1", { exact: true }));
     fireEvent.click(screen.getByRole("option", { name: "Page 3", exact: true }));
-    await waitFor(() => expect(api.get).toHaveBeenLastCalledWith("/products", { params: expect.objectContaining({ page: 3 }) }));
+    await waitFor(() => expect(api.get).toHaveBeenLastCalledWith("/products", { signal: expect.any(AbortSignal), params: expect.objectContaining({ page: 3 }) }));
     await screen.findByText("Page 3", { exact: true });
     expect(api.get.mock.calls.at(-1)[1].params).not.toHaveProperty("cursor");
   });
@@ -69,7 +69,7 @@ describe("Product adaptive pagination", () => {
     await waitFor(() => expect(finishOldPage).toBeDefined());
     expect(screen.getByTitle("Next").disabled).toBe(true);
     fireEvent.change(screen.getByPlaceholderText("Search in product fields..."), { target: { value: "Product 9" } });
-    await waitFor(() => expect(api.get).toHaveBeenLastCalledWith("/products", { params: expect.objectContaining({ page: 1, search: "Product 9" }) }));
+    await waitFor(() => expect(api.get).toHaveBeenLastCalledWith("/products", { signal: expect.any(AbortSignal), params: expect.objectContaining({ page: 1, search: "Product 9" }) }));
     expect(api.get.mock.calls.at(-1)[1].params).not.toHaveProperty("cursor");
     await waitFor(() => expect(screen.getByTitle("Next").disabled).toBe(true));
     await act(async () => finishOldPage(cursorResponse([3, 4], "stale-next", "stale-back")));

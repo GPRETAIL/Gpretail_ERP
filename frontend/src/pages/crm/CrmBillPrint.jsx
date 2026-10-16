@@ -1,3 +1,5 @@
+import SearchGridPanel from "../../components/SearchGridPanel";
+import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ChevronDown, Printer } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -268,16 +270,6 @@ const buildInvoiceHtml = (order = {}) => {
 const CrmBillPrint = () => {
   const navigate = useNavigate();
   const { printHtml } = usePrintContext();
-  const [rows, setRows] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
-  const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
-  const [serverSearch, setServerSearch] = useState({
-    query: "",
-    field: "all",
-    fetchAll: false,
-  });
   const [printedMap, setPrintedMap] = useState(() => {
     try {
       const raw = localStorage.getItem(PRINTED_STATUS_STORAGE_KEY);
@@ -333,54 +325,13 @@ const CrmBillPrint = () => {
     );
   }, []);
 
-  const fetchBills = useCallback(
-    async (
-      pageToLoad = page,
-      limitToLoad = limit,
-      fetchAll = false,
-      query = serverSearch.query,
-      field = serverSearch.field
-    ) => {
-      try {
-        setLoading(true);
-        const trimmedQuery = String(query || "").trim();
-        const shouldFetchAll = fetchAll || trimmedQuery !== "";
-        const params = shouldFetchAll
-          ? {
-              all: "true",
-              search: trimmedQuery || undefined,
-              field: field && field !== "all" ? field : undefined,
-            }
-          : { page: pageToLoad, limit: limitToLoad };
+  const grid = useSearchGrid({
+    adapter: createSearchGridAdapter("/customer-orders", row => mapBillRow(row, !!printedMapRef.current[String(row.id)])),
+    onError: err => toast.error(err.response?.data?.message || "Failed to load bills"),
+  });
+  const { rows, setRows, loading, page, setPage, limit, setLimit, pagination } = grid;
+  const fetchBills = grid.refresh;
 
-        const res = await api.get("/customer-orders", { params });
-        const tableRows = (res.data?.data || []).map((row) =>
-          mapBillRow(row, !!printedMapRef.current[String(row.id)])
-        );
-        setRows(tableRows);
-
-        if (shouldFetchAll || !res.data?.pagination) {
-          setPagination({ total: tableRows.length, totalPages: 1 });
-        } else {
-          const p = res.data.pagination;
-          setPagination({
-            total: Number(p.total) || 0,
-            totalPages: Math.max(Number(p.totalPages) || 1, 1),
-          });
-        }
-      } catch (err) {
-        toast.error(err?.response?.data?.message || "Failed to load customer bills");
-      } finally {
-        setLoading(false);
-      }
-    },
-    [page, limit, serverSearch]
-  );
-
-  useEffect(() => {
-    const hasSearch = String(serverSearch.query || "").trim() !== "";
-    fetchBills(page, limit, hasSearch || serverSearch.fetchAll, serverSearch.query, serverSearch.field);
-  }, [fetchBills, page, limit, serverSearch]);
 
   const handlePrint = async (row, type) => {
     try {
@@ -445,7 +396,7 @@ const CrmBillPrint = () => {
   const visibleColumns = useMemo(() => BILL_COLUMNS, []);
 
   return (
-    <Box sx={{ minHeight: "70vh", bgcolor: "background.default", color: "text.primary" }}>
+    <Box sx={{ bgcolor: "background.default", color: "text.primary", height: "100%", minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 0.5, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           <IconButton size="small" onClick={() => navigate(-1)} sx={{ color: "text.secondary" }}>
@@ -461,8 +412,8 @@ const CrmBillPrint = () => {
         </Stack>
       </Stack>
 
-      <Box sx={{ p: 1.5, pb: 8 }}>
-        <Stack sx={{ bgcolor: "background.paper", boxShadow: 3, borderRadius: "7px", p: 2.5, border: "1px solid", borderColor: "divider" }}>
+      <Box sx={{ flex: 1, minHeight: 0, p: 0.75 }}>
+        <SearchGridPanel>
           <Typography sx={{ fontSize: 15.75, fontWeight: 700, mb: 1.5 }}>Bill Print Search</Typography>
           <FilterableDataTable
             rows={rows}
@@ -472,16 +423,12 @@ const CrmBillPrint = () => {
             searchPlaceholder="Search customer bills..."
             enableColumnResize
             tablePreferenceKey="crm.bill_print.list"
-            onRefresh={() =>
-              fetchBills(
-                1,
-                limit,
-                String(serverSearch.query || "").trim() !== "" || serverSearch.fetchAll,
-                serverSearch.query,
-                serverSearch.field
-              )
-            }
+            onRefresh={fetchBills}
             refreshDisabled={loading}
+            pagination={grid.rawPagination}
+            onNextCursor={grid.navigateCursor}
+            onPreviousCursor={grid.navigateCursor}
+            fillHeight
             page={page}
             limit={limit}
             totalPages={pagination.totalPages}
@@ -496,24 +443,7 @@ const CrmBillPrint = () => {
             paginationMode="server"
             enableVirtualization
             enableServerSearch
-            onServerSearch={({ query, field, fetchAll }) => {
-              const next = {
-                query: String(query || "").trim(),
-                field: field || "all",
-                fetchAll: !!fetchAll,
-              };
-              setServerSearch((prev) => {
-                if (
-                  prev.query === next.query
-                  && prev.field === next.field
-                  && prev.fetchAll === next.fetchAll
-                ) {
-                  return prev;
-                }
-                return next;
-              });
-              if (page !== 1) setPage(1);
-            }}
+            onServerSearch={grid.onServerSearch}
             onExportRows={async ({ query, field }) => {
               const params = { all: "true" };
               const trimmed = String(query || "").trim();
@@ -588,7 +518,7 @@ const CrmBillPrint = () => {
               </Box>
             </Box>
           )}
-        </Stack>
+        </SearchGridPanel>
       </Box>
     </Box>
   );

@@ -1,4 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { masterSearchAreaSx } from "../../theme/erpUi";
+import SearchGridPanel from "../../components/SearchGridPanel";
+import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
+import React, { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, PlusCircle, Save, Search, Trash2, Edit2 } from "lucide-react";
 import { toast } from "react-toastify";
 import api from "../../api/axios";
@@ -55,10 +58,6 @@ const Customer = () => {
   const [showSearchPage, setShowSearchPage] = useState(false);
   const [currentId, setCurrentId] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [searching, setSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState([]);
-  const [searchPage, setSearchPage] = useState(1);
-  const [searchLimit, setSearchLimit] = useState(10);
   const [selectedRows, setSelectedRows] = useState([]);
   const [confirmDlg, setConfirmDlg] = useState({ open: false, id: null, name: "" });
   const [bulkConfirm, setBulkConfirm] = useState({ open: false, keys: [] });
@@ -163,9 +162,6 @@ const Customer = () => {
     [cityMap, stateMap, categoryMap]
   );
 
-  const [searchPagination, setSearchPagination] = useState({ total: 0, totalPages: 1 });
-  const [tableSearch, setTableSearch] = useState("");
-  const [tableSearchField, setTableSearchField] = useState("all");
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -200,38 +196,14 @@ const Customer = () => {
     }
   };
 
-  const fetchCustomers = async (pageToLoad = searchPage, limitToLoad = searchLimit, query = tableSearch) => {
-    setSearching(true);
-    try {
-      const params = {
-        page: pageToLoad,
-        limit: limitToLoad,
-        search: query ? String(query).trim() : undefined,
-        field: tableSearchField !== "all" ? tableSearchField : undefined,
-      };
-      const res = await api.get("/customers", { params });
-      const rows = res.data?.data || [];
-      setSearchResults(rows);
-
-      const total = Number(res.data?.total ?? res.data?.pagination?.total ?? rows.length) || 0;
-      const totalPages = Math.max(
-        Number(res.data?.totalPages ?? res.data?.pagination?.last_page ?? Math.ceil(total / Math.max(limitToLoad, 1))) || 1,
-        1
-      );
-      setSearchPagination({ total, totalPages });
-    } catch {
-      toast.error("Failed to search customers");
-    } finally {
-      setSearching(false);
-    }
-  };
-
-  const handleServerSearch = useCallback(({ query, field }) => {
-    setTableSearch(query || "");
-    setTableSearchField(field || "all");
-    setSearchPage(1);
-    fetchCustomers(1, searchLimit, query);
-  }, [searchLimit]);
+  const grid = useSearchGrid({
+    adapter: createSearchGridAdapter("/customers"), enabled: showSearchPage,
+    onError: err => toast.error(err.response?.data?.message || "Failed to load customers"),
+  });
+  const { rows: searchResults, setRows: setSearchResults, loading: searching, page: searchPage, setPage: setSearchPage, limit: searchLimit, setLimit: setSearchLimit, pagination: searchPagination } = grid;
+  const tableSearch = grid.search.query;
+  const fetchCustomers = grid.refresh;
+  const handleServerSearch = grid.onServerSearch;
 
   const openSearchPage = async () => {
     setShowSearchPage(true);
@@ -331,7 +303,7 @@ const Customer = () => {
   );
 
   const renderSearchPage = () => (
-    <Box sx={{ bgcolor: "background.paper", boxShadow: 3, borderRadius: "7px", p: 2, border: "1px solid", borderColor: "divider", width: "100%" }}>
+    <SearchGridPanel>
       <FilterableDataTable
         rows={searchResults}
         columns={customerSearchColumns}
@@ -373,26 +345,23 @@ const Customer = () => {
             </Button>
           </Stack>
         )}
+        pagination={grid.rawPagination}
+        onNextCursor={grid.navigateCursor}
+        onPreviousCursor={grid.navigateCursor}
+        fillHeight
         page={searchPage}
         limit={searchLimit}
         totalPages={searchPagination.totalPages}
         totalRows={searchPagination.total}
-        onPageChange={(p) => {
-          setSearchPage(p);
-          fetchCustomers(p, searchLimit, tableSearch);
-        }}
-        onLimitChange={(value) => {
-          setSearchLimit(value);
-          setSearchPage(1);
-          fetchCustomers(1, value, tableSearch);
-        }}
+        onPageChange={setSearchPage}
+        onLimitChange={setSearchLimit}
         paginationMode="server"
       />
-    </Box>
+    </SearchGridPanel>
   );
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh", bgcolor: "background.default", color: "text.primary" }}>
+    <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh", bgcolor: "background.default", color: "text.primary", ...(showSearchPage ? { height: "100%", minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" } : {}) }}>
       <ConfirmDialog
         open={confirmDlg.open}
         message={`Are you sure you want to delete "${confirmDlg.name}"? This action cannot be undone.`}
@@ -447,7 +416,7 @@ const Customer = () => {
         </Stack>
       </Stack>
 
-      <Box sx={{ flex: 1, p: 2 }}>{showSearchPage ? renderSearchPage() : renderForm()}</Box>
+      <Box sx={showSearchPage ? masterSearchAreaSx : { flex: 1, p: 2 }}>{showSearchPage ? renderSearchPage() : renderForm()}</Box>
 
     </Box>
   );

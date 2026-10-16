@@ -1,4 +1,7 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import SearchGridPanel from "../../components/SearchGridPanel";
+import { masterSearchAreaSx } from "../../theme/erpUi";
+import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
+import { useMemo, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
@@ -14,18 +17,6 @@ const PhysicalStock = () => {
   const navigate = useNavigate();
 
   const [toast, setToast] = useState({ open: false, type: "info", message: "" });
-  const [loading, setLoading] = useState(true);
-  const [rawStockRows, setRawStockRows] = useState([]);
-  const [stats, setStats] = useState({
-    rows: 0,
-    qty: 0,
-    cost: 0,
-    net: 0,
-  });
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(20);
-  const [serverSearch, setServerSearch] = useState({ query: "", field: "all", fetchAll: false });
-  const [backendPagination, setBackendPagination] = useState({ total: 0, totalPages: 1 });
 
   const stockTableColumns = useMemo(
     () => [
@@ -82,108 +73,17 @@ const PhysicalStock = () => {
     []
   );
 
-  const isAllMode = useMemo(
-    () => Boolean(serverSearch.fetchAll) || String(serverSearch.query || "").trim() !== "",
-    [serverSearch.fetchAll, serverSearch.query]
-  );
-
-  const pagination = useMemo(() => {
-    if (!isAllMode) return backendPagination;
-    const total = rawStockRows.length;
-    const totalPages = Math.max(Math.ceil(total / Math.max(limit, 1)), 1);
-    return { total, totalPages };
-  }, [isAllMode, backendPagination, rawStockRows.length, limit]);
-
-  const buildStats = (rows) => {
-    const summary = rows.reduce(
-      (acc, row) => ({
-        rows: acc.rows + 1,
-        qty: acc.qty + (row.qty || 0),
-        cost: acc.cost + (row.cost || 0) * (row.qty || 0),
-        net: acc.net + (row.net || 0) * (row.qty || 0),
-      }),
-      { rows: 0, qty: 0, cost: 0, net: 0 }
-    );
-    setStats(summary);
-  };
-
-  const loadStockData = useCallback(async ({
-    query = "",
-    field = "all",
-    fetchAll = false,
-    pageOverride = page,
-    limitOverride = limit,
-  } = {}) => {
-    const normalizedQuery = String(query || "").trim();
-    const normalizedField = String(field || "all").trim();
-    const shouldFetchAll = Boolean(fetchAll) || normalizedQuery !== "";
-    setServerSearch({ query: normalizedQuery, field: normalizedField, fetchAll: shouldFetchAll });
-
-    const params = shouldFetchAll
-      ? { all: "true" }
-      : { page: pageOverride, limit: limitOverride };
-    if (normalizedQuery) params.search = normalizedQuery;
-    if (normalizedField && normalizedField !== "all" && shouldFetchAll) params.field = normalizedField;
-
-    const res = await api.get("/barcodes/physical-stock", { params });
-    const rows = res.data?.data || [];
-    setRawStockRows(rows);
-    buildStats(rows);
-    if (shouldFetchAll) {
-      const total = rows.length;
-      setBackendPagination({
-        total,
-        totalPages: Math.max(Math.ceil(total / Math.max(limitOverride, 1)), 1),
-      });
-    } else {
-      const p = res.data?.pagination || {};
-      const total = Number(p.total ?? rows.length) || 0;
-      const totalPages = Math.max(Number(p.totalPages ?? 1) || 1, 1);
-      setBackendPagination({ total, totalPages });
-    }
-    return rows;
-  }, [limit, page]);
-
-  useEffect(() => {
-    const init = async () => {
-      setLoading(true);
-      try {
-        await loadStockData({
-          query: "",
-          field: "all",
-          fetchAll: false,
-          pageOverride: page,
-          limitOverride: limit,
-        });
-      } catch (err) {
-        console.error("Failed to load physical stock data:", err);
-        setToast({
-          open: true,
-          type: "error",
-          message: "Failed to load physical stock data",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (isAllMode) return;
-    init();
-  }, [loadStockData, page, limit]);
-
-  const handleServerSearch = useCallback(
-    ({ query, field, fetchAll }) => {
-      setPage(1);
-      loadStockData({
-        query,
-        field,
-        fetchAll,
-        pageOverride: 1,
-        limitOverride: limit,
-      });
-    },
-    [loadStockData, limit]
-  );
+  const grid = useSearchGrid({
+    adapter: createSearchGridAdapter("/barcodes/physical-stock"),
+    onError: err => setToast({ open: true, type: "error", message: err.response?.data?.message || "Failed to load stock" }),
+  });
+  const { rows: rawStockRows, loading, page, setPage, limit, setLimit, pagination } = grid;
+  const handleServerSearch = grid.onServerSearch;
+  const loadStockData = grid.refresh;
+  const stats = rawStockRows.reduce((acc, row) => ({
+    rows: acc.rows + 1, qty: acc.qty + (row.qty || 0),
+    cost: acc.cost + (row.cost || 0) * (row.qty || 0), net: acc.net + (row.net || 0) * (row.qty || 0),
+  }), { rows: 0, qty: 0, cost: 0, net: 0 });
 
   return (
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column", bgcolor: "background.default", color: "text.primary" }} className="master-responsive">
@@ -237,8 +137,8 @@ const PhysicalStock = () => {
         </Stack>
       </Box>
 
-      <Box sx={{ flex: 1, p: 2, pt: 0, minHeight: 0 }}>
-        <Box sx={{ height: "100%", bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "7px", boxShadow: 1, overflow: "hidden", display: "flex", flexDirection: "column", p: 1.5, minHeight: 0 }}>
+      <Box sx={masterSearchAreaSx}>
+        <SearchGridPanel>
           <FilterableDataTable
             rows={rawStockRows}
             columns={stockTableColumns}
@@ -249,7 +149,7 @@ const PhysicalStock = () => {
             showExport={false}
             enableColumnResize
             tablePreferenceKey="warehouse.physical_stock.list"
-            onRefresh={() => {}}
+            onRefresh={loadStockData}
             refreshDisabled={loading}
             enableServerSearch
             onServerSearch={handleServerSearch}
@@ -262,11 +162,14 @@ const PhysicalStock = () => {
               setLimit(value);
               setPage(1);
             }}
-            paginationMode={isAllMode ? "client" : "server"}
+            paginationMode="server"
+            pagination={grid.rawPagination}
+            onNextCursor={grid.navigateCursor}
+            onPreviousCursor={grid.navigateCursor}
             fillHeight
             enableVirtualization
           />
-        </Box>
+        </SearchGridPanel>
       </Box>
 
       <Toast

@@ -1,3 +1,4 @@
+import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
 import MasterSearchPanel from "../../components/MasterSearchPanel";
 import { masterSearchAreaSx } from "../../theme/erpUi";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -282,16 +283,7 @@ const Supplier = () => {
   const initialFormRef = useRef({ id: null, sig: null });
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false); // synchronous double-submit guard
-  const [searchRows, setSearchRows] = useState([]);
-  const [searchLoading, setSearchLoading] = useState(true);
   const [selectedRows, setSelectedRows] = useState([]);
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(20);
-  const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
-  const [rawPagination, setRawPagination] = useState(null);
-  const [tableSearch, setTableSearch] = useState("");
-  const [tableSearchField, setTableSearchField] = useState("all");
-  const [forceFetchAll, setForceFetchAll] = useState(false);
 
   const handleSearchClick = () => setShowSearchPage(true);
   const handleBackClick = () => {
@@ -489,52 +481,17 @@ const Supplier = () => {
   const labelOf = (options, id) =>
     options.find((o) => o.value === String(id))?.label || "—";
 
-  const fetchSuppliers = async (queryOverride = tableSearch, cursorToken = null) => {
-    try {
-      setSearchLoading(true);
-      const query = String(queryOverride || "").trim();
-      const params = {
-        ...(cursorToken ? { cursor: cursorToken } : { page }),
-        limit,
-        search: query || undefined,
-        field: tableSearchField !== "all" ? tableSearchField : undefined,
-        ...(forceFetchAll ? { all: "true" } : {}),
-      };
-      const res = await api.get("/suppliers", { params });
-      const rows = res.data?.data || [];
-      setSearchRows(rows);
+  const grid = useSearchGrid({
+    adapter: createSearchGridAdapter("/suppliers"),
+    enabled: showSearchPage,
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to load supplier records"),
+  });
+  const { rows: searchRows, setRows: setSearchRows, loading: searchLoading, page, setPage, limit, setLimit, pagination, rawPagination } = grid;
+  const fetchSuppliers = grid.refresh;
+  const handleSupplierNextCursor = grid.navigateCursor;
+  const handleSupplierPreviousCursor = grid.navigateCursor;
+  const handleServerSearch = grid.onServerSearch;
 
-      const total = Number(res.data?.total ?? res.data?.pagination?.total ?? rows.length) || 0;
-      const totalPages = Math.max(
-        Number(
-          res.data?.totalPages ??
-          res.data?.pagination?.totalPages ??
-          Math.ceil(total / Math.max(limit, 1))
-        ) || 1,
-        1
-      );
-      setPagination({ total, totalPages });
-      setRawPagination(res.data?.pagination || null);
-    } catch (err) {
-      toast.error(err?.response?.data?.message || "Failed to load suppliers");
-    } finally {
-      setSearchLoading(false);
-    }
-  };
-
-  const handleSupplierNextCursor = (cursor) => fetchSuppliers(tableSearch, cursor);
-  const handleSupplierPreviousCursor = (cursor) => fetchSuppliers(tableSearch, cursor);
-
-  useEffect(() => {
-    if (showSearchPage) fetchSuppliers();
-  }, [showSearchPage, page, limit, tableSearch, forceFetchAll]);
-
-  const handleServerSearch = useCallback(({ query, field, fetchAll }) => {
-    setTableSearch(query);
-    setTableSearchField(field || "all");
-    setForceFetchAll(!!fetchAll);
-    setPage(1);
-  }, []);
 
   const loadSupplierForEdit = (row) => {
     setCurrentId(row.id);
@@ -1001,6 +958,8 @@ const Supplier = () => {
                   refreshDisabled={searchLoading}
                   enableServerSearch
                   onServerSearch={handleServerSearch}
+                onSortChange={grid.onSortChange}
+                serverSortFields={{ name: "name", code: "code" }}
                   page={page}
                   limit={limit}
                   totalPages={pagination.totalPages}

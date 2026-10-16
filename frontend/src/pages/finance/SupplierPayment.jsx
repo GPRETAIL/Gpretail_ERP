@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import SearchGridPanel from "../../components/SearchGridPanel";
+import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useSelector } from "react-redux";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { ArrowLeft, Search } from "lucide-react";
@@ -158,26 +160,11 @@ const SupplierPayment = () => {
   const [section, setSection] = useState("");
 
   // ─── Table state ───────────────────────────────────────────────────────────
-  const [rows, setRows] = useState([]);
-  const [totalPayable, setTotalPayable] = useState(0);
-  const [loading, setLoading] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
-  const [historyRows, setHistoryRows] = useState([]);
-  const [historyLoading, setHistoryLoading] = useState(false);
 
   // ─── Server-side search/sort (FilterableDataTable's enableServerSearch/onSortChange) ──────────
-  const [pendingSearch, setPendingSearch] = useState({ query: "", field: "all" });
-  const [pendingSort, setPendingSort] = useState({ column: null, direction: "asc" });
-  const [historySearch, setHistorySearch] = useState({ query: "", field: "all" });
-  const [historySort, setHistorySort] = useState({ column: null, direction: "asc" });
 
   // ─── Server-side pagination (FilterableDataTable's paginationMode="server") ──────────────────
-  const [pendingPage, setPendingPage] = useState(1);
-  const [pendingLimit, setPendingLimit] = useState(20);
-  const [pendingPagination, setPendingPagination] = useState({ total: 0, totalPages: 1 });
-  const [historyPage, setHistoryPage] = useState(1);
-  const [historyLimit, setHistoryLimit] = useState(20);
-  const [historyPagination, setHistoryPagination] = useState({ total: 0, totalPages: 1 });
 
   // ─── Payment form state ────────────────────────────────────────────────────
   const [paymentMode, setPaymentMode] = useState("Cash");
@@ -230,161 +217,40 @@ const SupplierPayment = () => {
     }
   }, []);
 
-  // ─── Search pending invoices ───────────────────────────────────────────────
-  // `overrides.search`/`overrides.sort` let FilterableDataTable's onServerSearch/onSortChange
-  // fire a fetch with the fresh value immediately, instead of round-tripping through state first
-  // (which would read a stale value on this same call, since setState is async). Absent an
-  // override, the currently active search/sort just carries forward -- so the "Search Pendings"
-  // button (company/date/etc. filters) doesn't silently clear whatever the user had typed into
-  // the table's own search box.
-  const handleSearch = useCallback(async (overrides = {}) => {
-    const search = overrides.search ?? pendingSearch;
-    const sort = overrides.sort ?? pendingSort;
-    const page = overrides.page ?? pendingPage;
-    const limit = overrides.limit ?? pendingLimit;
-    setLoading(true);
-    try {
-      const params = {};
-      if (companyId) params.company_id = companyId;
-      if (location) params.location = location;
-      if (agentId) params.agent_id = agentId;
-      if (fromDate) params.from_date = fromDate;
-      if (toDate) params.to_date = toDate;
-      if (cityId) params.city_id = cityId;
-      if (section) params.section = section;
-      if (search.query) {
-        params.search = search.query;
-        params.field = search.field;
-      }
-      if (sort.column) {
-        params.sort = sort.column;
-        params.dir = sort.direction;
-      }
-      params.page = page;
-      params.limit = limit;
-      // Value-compared, not blind: an unconditional setState here (even with identical content)
-      // would still be a NEW object reference every call, and that reference feeds into
-      // handlePendingServerSearch/handlePendingSortChange below -- which, without the stable-ref
-      // pattern those use, would hand FilterableDataTable's onServerSearch-dependent debounce
-      // effect a "changed" prop on every render, re-firing it forever.
-      if (overrides.search && (overrides.search.query !== pendingSearch.query || overrides.search.field !== pendingSearch.field)) {
-        setPendingSearch(overrides.search);
-      }
-      if (overrides.sort && (overrides.sort.column !== pendingSort.column || overrides.sort.direction !== pendingSort.direction)) {
-        setPendingSort(overrides.sort);
-      }
-      if (overrides.page !== undefined && overrides.page !== pendingPage) {
-        setPendingPage(overrides.page);
-      }
-      if (overrides.limit !== undefined && overrides.limit !== pendingLimit) {
-        setPendingLimit(overrides.limit);
-      }
-
-      const res = await api.get("/supplier-payments/pending", { params });
-      setRows(res.data?.data || []);
-      setTotalPayable(res.data?.totalPayable || 0);
-      setPendingPagination({
-        total: res.data?.pagination?.total || 0,
-        totalPages: res.data?.pagination?.totalPages || 1,
-      });
-      setSelectedIds(new Set());
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to load pending bills");
-      setRows([]);
-      setTotalPayable(0);
-      setPendingPagination({ total: 0, totalPages: 1 });
-    } finally {
-      setLoading(false);
-    }
-  }, [companyId, location, agentId, fromDate, toDate, cityId, section, pendingSearch, pendingSort, pendingPage, pendingLimit]);
-
-  // Stable identity (never changes reference), so FilterableDataTable's own onServerSearch/
-  // onSortChange-dependent effects never re-fire just because handleSearch itself was recreated
-  // for an unrelated reason (a filter dropdown changed, or pendingSearch/pendingSort updated) --
-  // these always call through to whatever handleSearch currently is via the ref.
-  const handleSearchRef = useRef(handleSearch);
-  useEffect(() => { handleSearchRef.current = handleSearch; }, [handleSearch]);
-
-  const handlePendingServerSearch = useCallback(({ query, field }) => {
-    handleSearchRef.current({ search: { query: query || "", field: field || "all" }, page: 1 });
-  }, []);
-
-  const handlePendingSortChange = useCallback((column, direction) => {
-    handleSearchRef.current({ sort: { column, direction }, page: 1 });
-  }, []);
-
-  const handlePendingPageChange = useCallback((newPage) => {
-    handleSearchRef.current({ page: newPage });
-  }, []);
-
-  const handlePendingLimitChange = useCallback((newLimit) => {
-    handleSearchRef.current({ limit: newLimit, page: 1 });
-  }, []);
-
-  const handleHistorySearch = useCallback(async (overrides = {}) => {
-    const search = overrides.search ?? historySearch;
-    const sort = overrides.sort ?? historySort;
-    const page = overrides.page ?? historyPage;
-    const limit = overrides.limit ?? historyLimit;
-    setHistoryLoading(true);
-    try {
-      const params = {};
-      if (search.query) {
-        params.search = search.query;
-        params.field = search.field;
-      }
-      if (sort.column) {
-        params.sort = sort.column;
-        params.dir = sort.direction;
-      }
-      params.page = page;
-      params.limit = limit;
-      if (overrides.search && (overrides.search.query !== historySearch.query || overrides.search.field !== historySearch.field)) {
-        setHistorySearch(overrides.search);
-      }
-      if (overrides.sort && (overrides.sort.column !== historySort.column || overrides.sort.direction !== historySort.direction)) {
-        setHistorySort(overrides.sort);
-      }
-      if (overrides.page !== undefined && overrides.page !== historyPage) {
-        setHistoryPage(overrides.page);
-      }
-      if (overrides.limit !== undefined && overrides.limit !== historyLimit) {
-        setHistoryLimit(overrides.limit);
-      }
-
-      const res = await api.get("/supplier-payments/history", { params });
-      setHistoryRows(res.data?.data || []);
-      setHistoryPagination({
-        total: res.data?.pagination?.total || 0,
-        totalPages: res.data?.pagination?.totalPages || 1,
-      });
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to load supplier payment history");
-      setHistoryRows([]);
-      setHistoryPagination({ total: 0, totalPages: 1 });
-    } finally {
-      setHistoryLoading(false);
-    }
-  }, [historySearch, historySort, historyPage, historyLimit]);
-
-  const handleHistorySearchRef = useRef(handleHistorySearch);
-  useEffect(() => { handleHistorySearchRef.current = handleHistorySearch; }, [handleHistorySearch]);
-
-  const handleHistoryServerSearch = useCallback(({ query, field }) => {
-    handleHistorySearchRef.current({ search: { query: query || "", field: field || "all" }, page: 1 });
-  }, []);
-
-  const handleHistorySortChange = useCallback((column, direction) => {
-    handleHistorySearchRef.current({ sort: { column, direction }, page: 1 });
-  }, []);
-
-  const handleHistoryPageChange = useCallback((newPage) => {
-    handleHistorySearchRef.current({ page: newPage });
-  }, []);
-
-  const handleHistoryLimitChange = useCallback((newLimit) => {
-    handleHistorySearchRef.current({ limit: newLimit, page: 1 });
-  }, []);
+  const [pendingRequested, setPendingRequested] = useState(false);
+  const pendingGrid = useSearchGrid({
+    adapter: createSearchGridAdapter("/supplier-payments/pending"), enabled: pendingRequested,
+    onError: err => toast.error(err.response?.data?.message || "Failed to load pending bills"),
+  });
+  const historyGrid = useSearchGrid({
+    adapter: createSearchGridAdapter("/supplier-payments/history"), enabled: showSearchPage,
+    onError: err => toast.error(err.response?.data?.message || "Failed to load payment history"),
+  });
+  const { rows, loading, page: pendingPage, limit: pendingLimit, pagination: pendingPagination } = pendingGrid;
+  const { rows: historyRows, loading: historyLoading, page: historyPage, limit: historyLimit, pagination: historyPagination } = historyGrid;
+  const totalPayable = pendingGrid.metadata?.totalPayable || 0;
+  const handleSearch = useCallback((overrides = {}) => {
+    const params = {};
+    if (companyId) params.company_id = companyId;
+    if (location) params.location = location;
+    if (agentId) params.agent_id = agentId;
+    if (fromDate) params.from_date = fromDate;
+    if (toDate) params.to_date = toDate;
+    if (cityId) params.city_id = cityId;
+    if (section) params.section = section;
+    setPendingRequested(true);
+    setSelectedIds(new Set());
+    pendingGrid.load(params, overrides.page ?? 1, overrides.limit);
+  }, [companyId, location, agentId, fromDate, toDate, cityId, section, pendingGrid.load]);
+  const handlePendingServerSearch = pendingGrid.onServerSearch;
+  const handlePendingSortChange = pendingGrid.onSortChange;
+  const handlePendingPageChange = pendingGrid.setPage;
+  const handlePendingLimitChange = pendingGrid.setLimit;
+  const handleHistorySearch = historyGrid.refresh;
+  const handleHistoryServerSearch = historyGrid.onServerSearch;
+  const handleHistorySortChange = historyGrid.onSortChange;
+  const handleHistoryPageChange = historyGrid.setPage;
+  const handleHistoryLimitChange = historyGrid.setLimit;
 
   const openSearchPage = useCallback(() => {
     setScreen("search");
@@ -696,6 +562,7 @@ const SupplierPayment = () => {
                   )}
                 </Stack>
                 <Box sx={{ display: "flex", flex: 1, minHeight: 0, minWidth: 0, flexDirection: "column", p: { xs: 1.5, sm: 2 } }}>
+                  <SearchGridPanel>
                   <FilterableDataTable
                     rows={rows}
                     columns={PENDING_TABLE_COLUMNS}
@@ -718,6 +585,9 @@ const SupplierPayment = () => {
                     onServerSearch={handlePendingServerSearch}
                     onSortChange={handlePendingSortChange}
                     paginationMode="server"
+                    pagination={pendingGrid.rawPagination}
+                    onNextCursor={pendingGrid.navigateCursor}
+                    onPreviousCursor={pendingGrid.navigateCursor}
                     page={pendingPage}
                     limit={pendingLimit}
                     totalPages={pendingPagination.totalPages}
@@ -725,6 +595,7 @@ const SupplierPayment = () => {
                     onPageChange={handlePendingPageChange}
                     onLimitChange={handlePendingLimitChange}
                   />
+                  </SearchGridPanel>
                 </Box>
 
                 {/* Total payable bar */}
@@ -763,6 +634,7 @@ const SupplierPayment = () => {
                 </Typography>
               </Box>
               <Box sx={{ display: "flex", flex: 1, minHeight: 0, minWidth: 0, flexDirection: "column", p: { xs: 1.5, sm: 2 } }}>
+                <SearchGridPanel>
                 <FilterableDataTable
                   rows={historyRows}
                   columns={HISTORY_TABLE_COLUMNS}
@@ -781,6 +653,9 @@ const SupplierPayment = () => {
                   onServerSearch={handleHistoryServerSearch}
                   onSortChange={handleHistorySortChange}
                   paginationMode="server"
+                  pagination={historyGrid.rawPagination}
+                  onNextCursor={historyGrid.navigateCursor}
+                  onPreviousCursor={historyGrid.navigateCursor}
                   page={historyPage}
                   limit={historyLimit}
                   totalPages={historyPagination.totalPages}
@@ -788,6 +663,7 @@ const SupplierPayment = () => {
                   onPageChange={handleHistoryPageChange}
                   onLimitChange={handleHistoryLimitChange}
                 />
+                </SearchGridPanel>
               </Box>
             </Card>
           </Box>

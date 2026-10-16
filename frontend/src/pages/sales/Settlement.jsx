@@ -1,3 +1,6 @@
+import { masterSearchAreaSx } from "../../theme/erpUi";
+import SearchGridPanel from "../../components/SearchGridPanel";
+import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, PlusCircle, Save, Search, Trash2, UserRound, X } from "lucide-react";
 import { toast } from "react-toastify";
@@ -92,11 +95,13 @@ const Settlement = () => {
 
   const [saving, setSaving] = useState(false);
   const [showSearchPage, setShowSearchPage] = useState(false);
-  const [searching, setSearching] = useState(false);
+  const searchGrid = useSearchGrid({
+    adapter: createSearchGridAdapter("/settlements/unpaid-bills", undefined, { paginate: true, status: "all" }),
+    enabled: showSearchPage,
+    onError: err => toast.error(err.response?.data?.message || "Failed to load bills"),
+  });
+  const { rows: unpaidBills, loading: searching, page: searchPage, setPage: setSearchPage, limit: searchLimit, setLimit: setSearchLimit, pagination: searchPagination } = searchGrid;
   const [searchTerm, setSearchTerm] = useState("");
-  const [unpaidBills, setUnpaidBills] = useState([]);
-  const [searchPage, setSearchPage] = useState(1);
-  const [searchLimit, setSearchLimit] = useState(10);
   const [selectedSearchRows, setSelectedSearchRows] = useState([]);
   const [bulkConfirm, setBulkConfirm] = useState({ open: false, keys: [] });
   const [creditDialogOpen, setCreditDialogOpen] = useState(false);
@@ -159,23 +164,10 @@ const Settlement = () => {
     }
   }, []);
 
-  const loadUnpaidBills = useCallback(async (term = "") => {
-    setSearching(true);
-    try {
-      const params = {
-        all: "true",
-        status: "all",
-      };
-      if (String(term || "").trim()) params.search = String(term).trim();
-      const res = await api.get("/settlements/unpaid-bills", { params });
-      setUnpaidBills(res.data?.data || []);
-      setSearchPage(1);
-    } catch {
-      toast.error("Failed to load bills");
-    } finally {
-      setSearching(false);
-    }
-  }, []);
+  const loadUnpaidBills = useCallback((term = "") => {
+    searchGrid.onServerSearch({ query: term });
+    searchGrid.refresh();
+  }, [searchGrid.onServerSearch, searchGrid.refresh]);
 
   useEffect(() => {
     loadPaymentOptions();
@@ -703,11 +695,6 @@ const Settlement = () => {
     []
   );
 
-  const searchPagination = useMemo(() => {
-    const total = unpaidBills.length;
-    const totalPages = Math.max(Math.ceil(total / Math.max(searchLimit, 1)), 1);
-    return { total, totalPages };
-  }, [unpaidBills.length, searchLimit]);
 
   const renderEntryPage = () => (
     <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", xl: "repeat(12, 1fr)" }, gap: 2 }}>
@@ -927,7 +914,7 @@ const Settlement = () => {
   );
 
   const renderSearchPage = () => (
-    <Box sx={{ bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "7px", boxShadow: 1, p: 2 }}>
+    <SearchGridPanel>
       <FilterableDataTable
         rows={unpaidBills}
         columns={settlementSearchColumns}
@@ -981,14 +968,18 @@ const Settlement = () => {
           setSearchLimit(value);
           setSearchPage(1);
         }}
-        paginationMode="client"
+        paginationMode="server"
+        pagination={searchGrid.rawPagination}
+        onNextCursor={searchGrid.navigateCursor}
+        onPreviousCursor={searchGrid.navigateCursor}
+        fillHeight
       />
       <Typography sx={{ fontSize: 10.5, color: "text.secondary", mt: 1 }}>Paid, settled, unsettled, credit, and cancelled bills are shown here. Only open unsettled or credit bills can be added.</Typography>
-    </Box>
+    </SearchGridPanel>
   );
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "background.default", color: "text.primary" }}>
+    <Box sx={{ minHeight: "100vh", bgcolor: "background.default", color: "text.primary", ...(showSearchPage ? { height: "100%", minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" } : {}) }}>
       <ConfirmDialog
         open={bulkConfirm.open}
         message={`Are you sure you want to delete ${bulkConfirm.keys.length} selected record(s)? This action cannot be undone.`}
@@ -1048,7 +1039,7 @@ const Settlement = () => {
         </Stack>
       </Stack>
 
-      <Stack spacing={2} sx={{ p: 2, pb: 7 }}>{showSearchPage ? renderSearchPage() : renderEntryPage()}</Stack>
+      <Stack spacing={2} sx={showSearchPage ? masterSearchAreaSx : { p: 2, pb: 7 }}>{showSearchPage ? renderSearchPage() : renderEntryPage()}</Stack>
 
       {creditDialogOpen && (
         <Box

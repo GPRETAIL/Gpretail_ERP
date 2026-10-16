@@ -474,11 +474,11 @@ class BarcodeController extends Controller
             return $row;
         });
 
-        return response()->json([
-            'success' => true,
-            'data' => $enriched->values(),
-            'total' => $enriched->count(),
-        ]);
+        // Enrichment must preserve the source list's cursor/offset metadata.
+        $payload['data'] = $enriched->values();
+
+        return response()->json($payload);
+
     }
 
     /* ─────────────────────────────────────────────────────────────

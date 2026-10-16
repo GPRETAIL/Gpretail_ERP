@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import SearchGridPanel from "../../components/SearchGridPanel";
+import useSearchGrid from "../../hooks/useSearchGrid";
+import React, { useState, useMemo } from "react";
 import { MagnifyingGlassIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -90,33 +92,21 @@ const StockAnalyzer = () => {
   const [activeField, setActiveField] = useState("brand");
   const [storeFilter, setStoreFilter] = useState("");
   const [fieldSearch, setFieldSearch] = useState("");
-  const [data, setData] = useState([]);
-  const [totals, setTotals] = useState(null);
-  const [notice, setNotice] = useState(null);
-  const [loading, setLoading] = useState(false);
 
-  const fetchData = useCallback(async (field) => {
-    setLoading(true);
-    try {
-      const res = await api.get("/stock-analyzer", {
-        params: { groupBy: field, ...(storeFilter ? { company_id: storeFilter } : {}) },
-      });
-      setData(res.data?.data || []);
-      setTotals(res.data?.totals || null);
-      setNotice(res.data?.notice || null);
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to load stock analysis");
-      setData([]);
-      setTotals(null);
-      setNotice(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [storeFilter]);
-
-  useEffect(() => {
-    fetchData(activeField);
-  }, [activeField, storeFilter, fetchData]);
+  // Aggregate reports return complete result groups and totals; page them locally.
+  const grid = useSearchGrid({
+    paginationMode: "client", scopeKey: JSON.stringify([activeField, storeFilter]),
+    adapter: async ({ signal }) => {
+      const params = { groupBy: activeField, ...(storeFilter ? { company_id: storeFilter } : {}) };
+      const { data } = await api.get("/stock-analyzer", { params, signal });
+      return { rows: data?.data || [], metadata: { totals: data?.totals, notice: data?.notice } };
+    },
+    onError: err => toast.error(err.response?.data?.message || "Failed to load report"),
+  });
+  const { rows: data, loading } = grid;
+  const totals = grid.metadata?.totals || null;
+  const notice = grid.metadata?.notice || null;
+  const fetchData = grid.refresh;
 
   const handleFieldClick = (key) => setActiveField(key);
 
@@ -156,7 +146,7 @@ const StockAnalyzer = () => {
         </Stack>
       </Stack>
 
-      <Stack direction="row" spacing={2} sx={{ flex: 1, minHeight: 0, p: 2 }}>
+      <Stack direction="row" spacing={2} sx={{ flex: 1, minHeight: 0, p: 0.75 }}>
         {/* ─── LEFT PANEL: Field selector ──────────────────────────────────── */}
         <Stack
           sx={{
@@ -211,12 +201,7 @@ const StockAnalyzer = () => {
         </Stack>
 
         {/* ─── RIGHT PANEL: Grid ───────────────────────────────────────────── */}
-        <Stack
-          sx={{
-            flex: 1, minWidth: 0, minHeight: 0, bgcolor: "background.paper", borderRadius: "7px",
-            border: "1px solid", borderColor: "divider", boxShadow: 1, px: 1.5, pt: 1.5, pb: 0.25,
-          }}
-        >
+        <SearchGridPanel sx={{ flex: 1 }}>
           <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", mb: 0.75 }}>
             <Box>
               <Typography component="h2" sx={{ fontSize: 14, fontWeight: 700, color: "text.primary" }}>360° Stock Analyzer</Typography>
@@ -272,12 +257,16 @@ const StockAnalyzer = () => {
             onRefresh={() => fetchData(activeField)}
             refreshDisabled={loading}
             paginationMode="client"
+            page={grid.page}
+            limit={grid.limit}
+            onPageChange={grid.setPage}
+            onLimitChange={grid.setLimit}
             enableVirtualization
             enableColumnResize
             fillHeight
             compact
           />
-        </Stack>
+        </SearchGridPanel>
       </Stack>
     </Box>
   );

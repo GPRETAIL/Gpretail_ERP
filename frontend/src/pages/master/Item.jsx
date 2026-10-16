@@ -1,3 +1,4 @@
+import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
 import MasterSearchPanel from "../../components/MasterSearchPanel";
 import { masterSearchAreaSx } from "../../theme/erpUi";
 import React, { useState, useEffect, useRef, useCallback } from "react";
@@ -251,15 +252,7 @@ export default function Item() {
 
   // Search/Table state
   const [showSearch, setShowSearch]         = useState(true);
-  const [searchResults, setSearchResults]   = useState([]);
-  const [searchLoading, setSearchLoading]   = useState(true);
   const [selectedRows, setSelectedRows]     = useState([]);
-  const [page, setPage]                     = useState(1);
-  const [limit, setLimit]                   = useState(20);
-  const [pagination, setPagination]         = useState({ total: 0, totalPages: 1 });
-  const [tableSearch, setTableSearch]       = useState("");
-  const [tableSearchField, setTableSearchField] = useState("all");
-  const [forceFetchAll, setForceFetchAll]   = useState(false);
 
   // Confirm dialog state
   const [confirm, setConfirm] = useState({ open: false, id: null, name: "" });
@@ -390,47 +383,17 @@ export default function Item() {
   };
 
   // ─── Fetch items for search ────────────────────────────────────────────────
-  const fetchItems = useCallback(async (queryOverride = tableSearch) => {
-    try {
-      setSearchLoading(true);
-      const query = String(queryOverride || "").trim();
-      const params = (query || forceFetchAll)
-        ? { page: 1, limit: 100000, search: query || undefined, field: tableSearchField !== "all" ? tableSearchField : undefined }
-        : { page, limit };
-      const res = await api.get("/items", { params });
-      const rows = (res.data?.data || []).map(normalizeItemRow);
-      setSearchResults(rows);
-      if (query || forceFetchAll || !res.data?.pagination) {
-        setPagination({ total: rows.length, totalPages: 1 });
-      } else {
-        const total = Number(res.data?.pagination?.total ?? res.data?.total ?? rows.length) || 0;
-        const totalPages = Math.max(
-          Number(
-            res.data?.pagination?.totalPages ??
-            res.data?.totalPages ??
-            Math.ceil(total / Math.max(limit, 1))
-          ) || 1,
-          1
-        );
-        setPagination({ total, totalPages });
-      }
-    } catch {
-      toast.error("Failed to load items");
-    } finally {
-      setSearchLoading(false);
-    }
-  }, [page, limit, tableSearch, forceFetchAll]);
+  const grid = useSearchGrid({
+    adapter: createSearchGridAdapter("/items", normalizeItemRow),
+    enabled: showSearch,
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to load item records"),
+  });
+  const { rows: searchResults, setRows: setSearchResults, loading: searchLoading, page, setPage, limit, setLimit, pagination, rawPagination } = grid;
+  const fetchItems = grid.refresh;
+  const handleItemNextCursor = grid.navigateCursor;
+  const handleItemPreviousCursor = grid.navigateCursor;
+  const handleServerSearch = grid.onServerSearch;
 
-  useEffect(() => {
-    if (showSearch) fetchItems();
-  }, [showSearch, page, limit, tableSearch, forceFetchAll, fetchItems]);
-
-  const handleServerSearch = useCallback(({ query, field, fetchAll }) => {
-    setTableSearch(query);
-    setTableSearchField(field || "all");
-    setForceFetchAll(!!fetchAll);
-    setPage(1);
-  }, []);
 
   const itemTableColumns = [
     { key: "item_code", label: "Code" },
@@ -645,10 +608,15 @@ export default function Item() {
               refreshDisabled={searchLoading}
               enableServerSearch
               onServerSearch={handleServerSearch}
+                onSortChange={grid.onSortChange}
+                serverSortFields={{ item_code: "code", selling_name: "name", sale_rate: "selling_price" }}
               page={page}
               limit={limit}
               totalPages={pagination.totalPages}
               totalRows={pagination.total}
+              pagination={rawPagination}
+              onNextCursor={handleItemNextCursor}
+              onPreviousCursor={handleItemPreviousCursor}
               onPageChange={setPage}
               onLimitChange={(value) => {
                 setLimit(value);

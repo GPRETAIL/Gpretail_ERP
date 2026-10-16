@@ -1,3 +1,6 @@
+import { masterSearchAreaSx } from "../../theme/erpUi";
+import SearchGridPanel from "../../components/SearchGridPanel";
+import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pencil, PlusCircle, Save, Search, Trash2, UserRound, X } from "lucide-react";
 import { toast } from "react-toastify";
@@ -220,16 +223,17 @@ const SalesOnApproval = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showSearchPage, setShowSearchPage] = useState(false);
-  const [searching, setSearching] = useState(false);
+  const searchGrid = useSearchGrid({
+    adapter: createSearchGridAdapter("/sales-on-approval"), enabled: showSearchPage,
+    onError: err => toast.error(err.response?.data?.message || "Failed to load records"),
+  });
+  const { rows: searchResults, loading: searching, page: searchPage, setPage: setSearchPage, limit: searchLimit, setLimit: setSearchLimit, pagination: searchPagination } = searchGrid;
   const [searchFilters, setSearchFilters] = useState({
     search: "",
     approvalNo: "",
     customerName: "",
     product: "",
   });
-  const [searchResults, setSearchResults] = useState([]);
-  const [searchPage, setSearchPage] = useState(1);
-  const [searchLimit, setSearchLimit] = useState(20);
   const [latestApprovalDoc, setLatestApprovalDoc] = useState(null);
 
   const loadNextApprovalNo = useCallback(async () => {
@@ -1034,29 +1038,15 @@ const SalesOnApproval = () => {
     return () => window.removeEventListener("keydown", handleGlobalEscape);
   }, [closeSalesManDialog, discountDialogOpen, quickCustomerDialogOpen, quickCustomerSaving, salesManDialog.open]);
 
-  const runApprovalSearch = useCallback(async (overrideFilters = null, pageOverride = 1, limitOverride = searchLimit) => {
+  const runApprovalSearch = useCallback((overrideFilters = null, pageOverride = 1, limitOverride = searchLimit) => {
     const filters = overrideFilters || searchFilters;
-    setSearching(true);
-    try {
-      const params = { page: pageOverride, limit: limitOverride };
-      if (String(filters.search || "").trim()) params.search = filters.search;
-      if (String(filters.approvalNo || "").trim()) params.approvalNo = filters.approvalNo;
-      if (String(filters.customerName || "").trim()) params.customerName = filters.customerName;
-      if (String(filters.product || "").trim()) params.product = filters.product;
-
-      const res = await api.get("/sales-on-approval", { params });
-      setSearchResults(res.data?.data || []);
-      const p = res.data?.pagination || {};
-      const total = Number(p.total ?? res.data?.total ?? 0) || 0;
-      const totalPages = Math.max(Number(p.totalPages ?? Math.ceil(total / Math.max(limitOverride, 1))) || 1, 1);
-      setSearchPagination({ total, totalPages });
-      setSearchPage(pageOverride);
-    } catch {
-      toast.error("Failed to search sales on approval");
-    } finally {
-      setSearching(false);
-    }
-  }, [searchFilters, searchLimit]);
+    const params = {};
+    if (String(filters.search || "").trim()) params.search = filters.search;
+    if (String(filters.approvalNo || "").trim()) params.approvalNo = filters.approvalNo;
+    if (String(filters.customerName || "").trim()) params.customerName = filters.customerName;
+    if (String(filters.product || "").trim()) params.product = filters.product;
+    searchGrid.load(params, pageOverride, limitOverride);
+  }, [searchGrid.load, searchLimit, searchFilters]);
 
   const loadAllApprovalSearchRows = useCallback(async (overrideFilters = null) => {
     const filters = overrideFilters || searchFilters;
@@ -1161,7 +1151,6 @@ const SalesOnApproval = () => {
     []
   );
 
-  const [searchPagination, setSearchPagination] = useState({ total: 0, totalPages: 1 });
 
   const renderEntryPage = () => (
     <Box
@@ -1606,7 +1595,7 @@ const SalesOnApproval = () => {
   );
 
   const renderSearchPage = () => (
-    <Box sx={{ bgcolor: "background.paper", border: 1, borderColor: "divider", borderRadius: "7px", boxShadow: 1, p: 2 }}>
+    <SearchGridPanel>
       <FilterableDataTable
         rows={searchResults}
         columns={approvalSearchColumns}
@@ -1621,29 +1610,25 @@ const SalesOnApproval = () => {
         onExportRows={() => loadAllApprovalSearchRows()}
         enableServerSearch
         onServerSearch={handleServerSearch}
+        pagination={searchGrid.rawPagination}
+        onNextCursor={searchGrid.navigateCursor}
+        onPreviousCursor={searchGrid.navigateCursor}
         page={searchPage}
         limit={searchLimit}
         totalPages={searchPagination.totalPages}
         totalRows={searchPagination.total}
-        onPageChange={(p) => {
-          setSearchPage(p);
-          runApprovalSearch(null, p, searchLimit);
-        }}
-        onLimitChange={(value) => {
-          setSearchLimit(value);
-          setSearchPage(1);
-          runApprovalSearch(null, 1, value);
-        }}
+        onPageChange={setSearchPage}
+        onLimitChange={setSearchLimit}
         onFetchGroupSummaries={fetchApprovalGroupSummaries}
         onFetchGroupRows={fetchApprovalGroupRows}
         paginationMode="server"
         enableVirtualization
       />
-    </Box>
+    </SearchGridPanel>
   );
 
   return (
-    <Box className="pos-sale-page" sx={{ minHeight: "100%", bgcolor: "background.default", color: "text.primary", display: "flex", flexDirection: "column" }}>
+    <Box className="pos-sale-page" sx={{ minHeight: "100%", bgcolor: "background.default", color: "text.primary", display: "flex", flexDirection: "column", ...(showSearchPage ? { height: "100%", minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" } : {}) }}>
       <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", px: 2, py: 1, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
         <Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
           <Breadcrumbs
@@ -1674,7 +1659,7 @@ const SalesOnApproval = () => {
         </Stack>
       </Stack>
 
-      <Box sx={{ flex: 1, minHeight: 0, p: 2, display: "flex", flexDirection: "column", gap: 2, pb: { xs: 14, xl: 2 } }}>
+      <Box sx={showSearchPage ? masterSearchAreaSx : { flex: 1, minHeight: 0, p: 2, display: "flex", flexDirection: "column", gap: 2, pb: { xs: 14, xl: 2 } }}>
         {showSearchPage ? renderSearchPage() : renderEntryPage()}
 
         {loading && <Typography sx={{ fontSize: 10.5, color: "text.secondary", px: 0.5 }}>Loading master data...</Typography>}

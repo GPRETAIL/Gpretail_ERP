@@ -109,6 +109,20 @@ class SettlementController extends Controller
             default => $query->whereColumn('paid_amount', '<', 'grand_total'),
         };
 
+        if ($request->boolean('paginate')) {
+            if ($request->filled('search')) {
+                $search = $request->input('search');
+                $query->where(function ($q) use ($search) {
+                    $q->where('invoice_no', 'like', "%{$search}%")
+                        ->orWhereHas('customer', fn ($customer) => $customer->where('name', 'like', "%{$search}%"));
+                });
+            }
+
+            return response()->json($this->paginationService->paginate($query, 'pos_sales', $request, [
+                'default_sort' => 'id', 'default_order' => 'desc', 'allowed_sorts' => ['id', 'invoice_no', 'sale_date'],
+            ]));
+        }
+
         $sales = $query->orderBy('sale_date', 'desc')->limit(50)->get();
 
         return response()->json([

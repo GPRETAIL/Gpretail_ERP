@@ -1,3 +1,5 @@
+import SearchGridPanel from "../../components/SearchGridPanel";
+import useSearchGrid from "../../hooks/useSearchGrid";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ChevronDown, ChevronUp, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -92,8 +94,6 @@ const ItemLocator = () => {
   const [filtersCollapsed, setFiltersCollapsed] = useState(false);
   const [rawRows, setRawRows] = useState([]);
   const [rows, setRows] = useState([]);
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
 
   const dropdownOptions = useMemo(() => {
     const buildFieldOptions = (field) =>
@@ -173,6 +173,9 @@ const ItemLocator = () => {
     ],
     []
   );
+
+  const grid = useSearchGrid({ sourceRows: rows, paginationMode: "client", scopeKey: JSON.stringify(filters) });
+  const { page, setPage, limit, setLimit } = grid;
 
   const pagination = useMemo(() => {
     const total = rows.length;
@@ -689,8 +692,8 @@ const ItemLocator = () => {
         </Box>
       </Stack>
 
-      <Box sx={{ p: 2, pt: 0 }}>
-        <Box sx={{ bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "7px", boxShadow: 1, overflow: "hidden", p: 1.5 }}>
+      <Box sx={{ flex: 1, minHeight: 0, p: 0.75 }}>
+        <SearchGridPanel>
           <FilterableDataTable
             rows={rows}
             columns={itemLocatorColumns}
@@ -713,9 +716,10 @@ const ItemLocator = () => {
               setPage(1);
             }}
             paginationMode="client"
+            fillHeight
             enableVirtualization
           />
-        </Box>
+        </SearchGridPanel>
       </Box>
 
       <Toast

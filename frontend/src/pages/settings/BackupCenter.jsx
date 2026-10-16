@@ -1,3 +1,5 @@
+import SearchGridPanel from "../../components/SearchGridPanel";
+import useSearchGrid from "../../hooks/useSearchGrid";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Archive,
@@ -352,11 +354,6 @@ export default function BackupCenter() {
   // FilterableDataTable's page-size dropdown only offers 20/60/100/150 - a
   // default outside that list still paginates correctly (safeLimit isn't
   // clamped to the list), but the dropdown shows nothing selected. Match it.
-  const DEFAULT_HISTORY_LIMIT = 20;
-  const [backupHistoryPage, setBackupHistoryPage] = useState(1);
-  const [backupHistoryLimit, setBackupHistoryLimit] = useState(DEFAULT_HISTORY_LIMIT);
-  const [restoreHistoryPage, setRestoreHistoryPage] = useState(1);
-  const [restoreHistoryLimit, setRestoreHistoryLimit] = useState(DEFAULT_HISTORY_LIMIT);
   const [restoreCardHighlighted, setRestoreCardHighlighted] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState({ open: false, row: null });
   const [importFile, setImportFile] = useState(null);
@@ -520,6 +517,11 @@ export default function BackupCenter() {
       return true;
     });
   }, [overview.backups, historyFilters]);
+
+  const backupGrid = useSearchGrid({ sourceRows: filteredBackups, paginationMode: "client", scopeKey: JSON.stringify([selectedCompanyId, historyFilters]) });
+  const restoreGrid = useSearchGrid({ sourceRows: overview.restores || [], paginationMode: "client", scopeKey: selectedCompanyId });
+  const { page: backupHistoryPage, setPage: setBackupHistoryPage, limit: backupHistoryLimit, setLimit: setBackupHistoryLimit } = backupGrid;
+  const { page: restoreHistoryPage, setPage: setRestoreHistoryPage, limit: restoreHistoryLimit, setLimit: setRestoreHistoryLimit } = restoreGrid;
 
   const backupColumns = [
     {
@@ -1561,17 +1563,6 @@ export default function BackupCenter() {
               <Typography component="h2" sx={{ fontSize: 14, fontWeight: 700, color: "text.primary" }}>Backup History</Typography>
               <Typography sx={{ fontSize: 12.25, color: "text.secondary" }}>Track created by, time, size, status, storage target, store and module scope.</Typography>
             </Box>
-            <Button
-              type="button"
-              className="glass-btn glass-btn-secondary"
-              sx={{ flexShrink: 0 }}
-              onClick={() => {
-                setBackupHistoryLimit(Math.max(filteredBackups.length, DEFAULT_HISTORY_LIMIT));
-                setBackupHistoryPage(1);
-              }}
-            >
-              View All
-            </Button>
           </Stack>
 
           <Box sx={{ mb: 2, display: "grid", gap: 1.5, gridTemplateColumns: { xs: "1fr", md: "repeat(2, 1fr)", xl: "repeat(5, 1fr)" } }}>
@@ -1611,6 +1602,7 @@ export default function BackupCenter() {
             />
           </Box>
 
+          <SearchGridPanel>
           <FilterableDataTable
             rows={filteredBackups}
             columns={backupColumns}
@@ -1647,6 +1639,7 @@ export default function BackupCenter() {
             )}
             searchButtonClassName="glass-btn glass-btn-primary"
           />
+          </SearchGridPanel>
         </Box>
 
         <Box sx={cardSx}>
@@ -1655,18 +1648,8 @@ export default function BackupCenter() {
               <Typography component="h2" sx={{ fontSize: 14, fontWeight: 700, color: "text.primary" }}>Restore History</Typography>
               <Typography sx={{ fontSize: 12.25, color: "text.secondary" }}>Audit trail of restore operations, status and affected rows.</Typography>
             </Box>
-            <Button
-              type="button"
-              className="glass-btn glass-btn-secondary"
-              sx={{ flexShrink: 0 }}
-              onClick={() => {
-                setRestoreHistoryLimit(Math.max((overview.restores || []).length, DEFAULT_HISTORY_LIMIT));
-                setRestoreHistoryPage(1);
-              }}
-            >
-              View All
-            </Button>
           </Stack>
+          <SearchGridPanel>
           <FilterableDataTable
             rows={overview.restores || []}
             columns={restoreColumns}
@@ -1687,6 +1670,7 @@ export default function BackupCenter() {
             }}
             searchButtonClassName="glass-btn glass-btn-primary"
           />
+          </SearchGridPanel>
         </Box>
       </Stack>
     </Box>

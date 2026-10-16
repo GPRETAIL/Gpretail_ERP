@@ -1,7 +1,8 @@
+import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
 import MasterSearchPanel from "../../components/MasterSearchPanel";
 import { masterSearchAreaSx } from "../../theme/erpUi";
 import { ArrowLeft, Pencil, PlusCircle, Trash2 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { Box, Stack, Card, Typography, Button } from "@mui/material";
@@ -49,10 +50,7 @@ const mockOptions = [
 
 const ProductAttributes = () => {
   const [formData, setFormData] = useState({ productType: "" });
-  const [attributeValues, setAttributeValues] = useState([]);
   const [confirm, setConfirm] = useState({ open: false, id: null, name: "" });
-  const [tablePage, setTablePage] = useState(1);
-  const [tableLimit, setTableLimit] = useState(20);
   const storeMap = useStoreNameMap();
 
   const handleChange = (e) => {
@@ -63,58 +61,20 @@ const ProductAttributes = () => {
     }));
   };
 
-  const handleSearch = async () => {
-    if (!formData.productType) {
-      toast.warning("Please select a Product Type first!");
-      return;
-    }
-    try {
-      let rows = [];
-
-      if (formData.productType === "SIZE") {
-        const res = await api.get("/sizes", { params: { all: "true" } });
-        rows = (res.data?.data || []).map((s) => ({
-          id: s.id,
-          name: s.size_name,
-          isActive: true,
-          code: s.code || "--",
-          created_by: s.created_by || s.createdByName || "Superadmin",
-          company_id: s.company_id || 1,
-        }));
-      } else if (formData.productType === "SIZEGROUP") {
-        const res = await api.get("/size-groups", { params: { all: "true" } });
-        rows = (res.data?.data || []).map((g) => ({
-          id: g.id,
-          name: g.group_name,
-          isActive: true,
-          code: (g.sizes || []).map((s) => s.size_name).join(", ") || "--",
-          created_by: g.created_by || g.createdByName || "Superadmin",
-          company_id: g.company_id || 1,
-        }));
-      } else {
-        const res = await api.get(`/attributes/${formData.productType.toLowerCase()}`, { params: { all: "true" } });
-        rows = (res.data?.data || []).map((a) => ({
-          id: a.id,
-          name: a.name,
-          isActive: a.is_active,
-          code: a.code || "--",
-          created_by: a.created_by || a.createdByName || "Superadmin",
-          company_id: a.company_id || 1,
-        }));
-      }
-
-      setAttributeValues(rows);
-      if (rows.length === 0) toast.info("No records found for this type.");
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Search failed");
-    }
-  };
-
-  useEffect(() => {
-    if (formData.productType) handleSearch();
-    setTablePage(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formData.productType]);
+  const type = formData.productType;
+  const endpoint = type === "SIZE" ? "/sizes" : type === "SIZEGROUP" ? "/size-groups" : `/attributes/${type.toLowerCase()}`;
+  const grid = useSearchGrid({
+    adapter: createSearchGridAdapter(endpoint, row => ({
+      ...row, name: row.size_name ?? row.group_name ?? row.name,
+      isActive: row.is_active ?? true,
+      code: type === "SIZEGROUP" ? (row.sizes || []).map(s => s.size_name).join(", ") || "--" : row.code || "--",
+      created_by: row.created_by || row.createdByName || "Superadmin",
+    }), { paginate: true }),
+    enabled: Boolean(type), scopeKey: type,
+    onError: err => toast.error(err.response?.data?.message || "Failed to load attributes"),
+  });
+  const { rows: attributeValues, setRows: setAttributeValues, page: tablePage, setPage: setTablePage, limit: tableLimit, setLimit: setTableLimit } = grid;
+  const handleSearch = grid.refresh;
 
   const navigate = useNavigate();
 
@@ -241,17 +201,22 @@ const ProductAttributes = () => {
               columns={attributeColumns}
               onRowClick={(row) => handleEdit(row.id)}
               enableKeyboardNav
-              loading={false}
+              loading={grid.loading}
               emptyText="No records found for this Product Type."
               searchPlaceholder="Search in attribute fields..."
               searchButtonClassName="glass-btn glass-btn-primary"
               showExport={false}
               tablePreferenceKey={`masters.product-attributes.${formData.productType.toLowerCase()}`}
-              paginationMode="client"
+              paginationMode="server"
+              enableServerSearch
+              onServerSearch={grid.onServerSearch}
+              pagination={grid.rawPagination}
+              onNextCursor={grid.navigateCursor}
+              onPreviousCursor={grid.navigateCursor}
               page={tablePage}
               limit={tableLimit}
-              totalRows={attributeValues.length}
-              totalPages={Math.max(Math.ceil(attributeValues.length / Math.max(tableLimit, 1)), 1)}
+              totalRows={grid.pagination.total}
+              totalPages={grid.pagination.totalPages}
               onPageChange={setTablePage}
               onLimitChange={(value) => {
                 setTableLimit(value);

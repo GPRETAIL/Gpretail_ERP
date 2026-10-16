@@ -100,17 +100,14 @@ class CashRegisterController extends Controller
     public function closingIndex(Request $request)
     {
         $storeId = $request->header('X-Company-Scope-Id', 1);
-        $sessions = CashRegisterSession::with('user')
+        $query = CashRegisterSession::with('user')
             ->where('store_id', $storeId)
-            ->where('status', 'CLOSED')
-            ->orderBy('closed_at', 'desc')
-            ->get();
+            ->where('status', 'CLOSED');
 
-        return response()->json([
-            'success' => true,
-            'data' => $sessions,
-            'total' => $sessions->count(),
-        ]);
+        return response()->json($this->paginationService->paginate($query, 'cash_register_sessions', $request, [
+            'default_sort' => 'id', 'default_order' => 'desc', 'tie_breaker' => 'id',
+            'allowed_sorts' => ['id', 'opened_at', 'closed_at', 'status', 'created_at'],
+        ]));
     }
 
     // Cash Closing Action

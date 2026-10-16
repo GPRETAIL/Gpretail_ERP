@@ -170,6 +170,7 @@ export default function FilterableDataTable({
   onServerSearch = null,
   serverSearchDebounceMs = 350,
   onSortChange = null,
+  serverSortFields = null,
   defaultGroupByColumn = null,
   // Server-side Group By (opt-in). When both are provided, grouping on `groupByColumn` fetches
   // paginated group summaries from the real (unfiltered-by-page-size) dataset instead of grouping
@@ -650,8 +651,8 @@ export default function FilterableDataTable({
     }
     setSortColumn(nextColumn);
     setSortDirection(nextDirection);
-    onSortChange?.(nextColumn, nextDirection);
-  }, [sortColumn, sortDirection, onSortChange]);
+    onSortChange?.(serverSortFields ? serverSortFields[nextColumn] || null : nextColumn, nextDirection);
+  }, [sortColumn, sortDirection, onSortChange, serverSortFields]);
 
   const sortRowsForDisplay = useCallback((sourceRows) => {
     const activeSortColumn = groupByColumn || sortColumn;
@@ -661,7 +662,7 @@ export default function FilterableDataTable({
     // requested order -- skip re-sorting here (mirrors how enableServerSearch blanks out client
     // search) UNLESS grouping is active, which still needs a client-side presort to cluster
     // same-value rows regardless of who owns the column sort.
-    if (onSortChange && !groupByColumn) return sourceRows || [];
+    if (onSortChange && !groupByColumn && (!serverSortFields || serverSortFields[sortColumn])) return sourceRows || [];
     const col = columns.find((c) => c.key === activeSortColumn);
     if (!col) return sourceRows || [];
     const sorted = [...(sourceRows || [])].sort((a, b) => {
@@ -675,7 +676,7 @@ export default function FilterableDataTable({
       return aStr.localeCompare(bStr);
     });
     return activeSortDirection === "desc" ? sorted.reverse() : sorted;
-  }, [groupByColumn, sortColumn, sortDirection, columns, onSortChange]);
+  }, [groupByColumn, sortColumn, sortDirection, columns, onSortChange, serverSortFields]);
 
   const sortedRows = useMemo(
     () => sortRowsForDisplay(filteredRows),

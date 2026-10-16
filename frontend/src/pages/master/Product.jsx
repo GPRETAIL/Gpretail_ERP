@@ -1,6 +1,7 @@
+import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
 import MasterSearchPanel from "../../components/MasterSearchPanel";
 import { masterSearchAreaSx } from "../../theme/erpUi";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { ArrowLeft, Pencil, PlusCircle, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -284,17 +285,12 @@ const parseSelectedProductKey = (value) => {
 const Product = () => {
   const navigate = useNavigate();
 
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const productRequestId = useRef(0);
-  const [limit, setLimit] = useState(20);
-  const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
-  const [rawPagination, setRawPagination] = useState(null);
-  const [tableSearch, setTableSearch] = useState("");
-  const [tableSearchField, setTableSearchField] = useState("all");
-  const [tableColumnFilters, setTableColumnFilters] = useState({});
-  const [forceFetchAll, setForceFetchAll] = useState(false);
+  const grid = useSearchGrid({
+    adapter: createSearchGridAdapter("/products", mapProductRow),
+    onError: err => toast.error(err.response?.data?.message || "Failed to load products"),
+  });
+  const { rows: products, loading, page, setPage, limit, setLimit, pagination, rawPagination } = grid;
+  const { query: tableSearch, field: tableSearchField, columnFilters: tableColumnFilters } = grid.search;
 
   const [selectedRows, setSelectedRows] = useState([]);
   const [confirm, setConfirm] = useState({ open: false, code: null, name: "", company_id: null });
@@ -314,65 +310,9 @@ const Product = () => {
     navigate(`/masters/product/${encodeURIComponent(product.code)}${buildProductQuerySuffix(product.company_id)}`);
   };
 
-  const fetchProducts = useCallback(async (
-    pageToLoad = page,
-    limitToLoad = limit,
-    queryOverride = tableSearch,
-    filtersOverride = tableColumnFilters,
-    cursorToken = null
-  ) => {
-    const requestId = ++productRequestId.current;
-    try {
-      setLoading(true);
-      const query = String(queryOverride || "").trim();
-      const activeColumnFilters = buildActiveColumnFilters(filtersOverride);
-      const hasColumnFilters = activeColumnFilters.length > 0;
-      const params = {
-        ...(cursorToken ? { cursor: cursorToken } : { page: pageToLoad }),
-        limit: limitToLoad,
-        search: query || undefined,
-        field: query && tableSearchField !== "all" ? tableSearchField : undefined,
-        column_filters: hasColumnFilters ? JSON.stringify(activeColumnFilters) : undefined,
-        ...(forceFetchAll ? { all: "true" } : {}),
-      };
-      const res = await api.get("/products", { params });
-      if (requestId !== productRequestId.current) return;
-      const rows = (res.data?.data || []).map(mapProductRow);
-      setProducts(rows);
-
-      const total = Number(res.data?.total ?? res.data?.pagination?.total ?? rows.length) || 0;
-      const totalPages = Math.max(
-        Number(res.data?.totalPages ?? res.data?.pagination?.last_page ?? Math.ceil(total / Math.max(limitToLoad, 1))) || 1,
-        1
-      );
-      setPagination({ total, totalPages });
-      setRawPagination(res.data?.pagination || null);
-    } catch (err) {
-      if (requestId === productRequestId.current) toast.error(err.response?.data?.message || "Failed to load products");
-    } finally {
-      if (requestId === productRequestId.current) setLoading(false);
-    }
-  }, [page, limit, tableSearch, tableSearchField, tableColumnFilters, forceFetchAll]);
-
-  const handleProductCursor = useCallback(
-    (cursor) => fetchProducts(page, limit, tableSearch, tableColumnFilters, cursor),
-    [fetchProducts, page, limit, tableSearch, tableColumnFilters]
-  );
-
-  useEffect(() => {
-    fetchProducts();
-    return () => { productRequestId.current += 1; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, limit, tableSearch, tableSearchField, tableColumnFilters, forceFetchAll]);
-
-  const handleServerSearch = useCallback(({ query, field, fetchAll, columnFilters }) => {
-    setTableSearch(query);
-    setTableSearchField(field || "all");
-    setTableColumnFilters(columnFilters || {});
-    const hasColumnFilters = buildActiveColumnFilters(columnFilters || {}).length > 0;
-    setForceFetchAll(!!fetchAll || hasColumnFilters);
-    setPage(1);
-  }, []);
+  const fetchProducts = grid.refresh;
+  const handleProductCursor = grid.navigateCursor;
+  const handleServerSearch = grid.onServerSearch;
 
   const handleExportRows = useCallback(async ({ query, field, columnFilters } = {}) => {
     const activeColumnFilters = buildActiveColumnFilters(columnFilters || tableColumnFilters);
@@ -781,6 +721,8 @@ const Product = () => {
                 refreshDisabled={loading}
                 enableServerSearch
                 onServerSearch={handleServerSearch}
+                onSortChange={grid.onSortChange}
+                serverSortFields={{ name: "name", code: "code" }}
                 page={page}
                 limit={limit}
                 totalPages={pagination.totalPages}

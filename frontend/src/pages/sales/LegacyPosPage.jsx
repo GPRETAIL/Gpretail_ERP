@@ -1,3 +1,6 @@
+import { masterSearchAreaSx } from "../../theme/erpUi";
+import SearchGridPanel from "../../components/SearchGridPanel";
+import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ChevronsLeft, Minus, Plus, Printer, X, Search, RotateCcw, Repeat, CreditCard, ScanLine, Trash2 } from "lucide-react";
 import { toast } from "react-toastify";
@@ -313,11 +316,11 @@ const LegacyPosPage = () => {
 
   // saving
   const [saving, setSaving] = useState(false);
-  const [searching, setSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState([]);
-  const [searchPage, setSearchPage] = useState(1);
-  const [searchLimit, setSearchLimit] = useState(20);
-  const [searchPagination, setSearchPagination] = useState({ total: 0, totalPages: 1 });
+  const searchGrid = useSearchGrid({
+    adapter: createSearchGridAdapter("/pos-old-sales"), enabled: showSearchPage,
+    onError: err => toast.error(err.response?.data?.message || "Failed to load records"),
+  });
+  const { rows: searchResults, loading: searching, page: searchPage, setPage: setSearchPage, limit: searchLimit, setLimit: setSearchLimit, pagination: searchPagination } = searchGrid;
   const [searchFilters, setSearchFilters] = useState({
     search: "",
     billNo: "",
@@ -2196,30 +2199,16 @@ const LegacyPosPage = () => {
     };
   }, []);
 
-  const runPosOldSearch = useCallback(async (overrideFilters = null, pageOverride = 1, limitOverride = searchLimit) => {
+  const runPosOldSearch = useCallback((overrideFilters = null, pageOverride = 1, limitOverride = searchLimit) => {
     const filters = resolvePosOldSearchFilters(overrideFilters);
-    setSearching(true);
-    try {
-      const params = { page: pageOverride, limit: limitOverride };
-      if (String(filters.search || "").trim()) params.search = filters.search;
-      if (String(filters.billNo || "").trim()) params.billNo = filters.billNo;
-      if (String(filters.customerName || "").trim()) params.customerName = filters.customerName;
-      if (String(filters.product || "").trim()) params.product = filters.product;
-      if (String(filters.barcode || "").trim()) params.barcode = filters.barcode;
-
-      const res = await api.get("/pos-old-sales", { params });
-      setSearchResults(res.data?.data || []);
-      const p = res.data?.pagination || {};
-      const total = Number(p.total ?? res.data?.total ?? 0) || 0;
-      const totalPages = Math.max(Number(p.totalPages ?? Math.ceil(total / Math.max(limitOverride, 1))) || 1, 1);
-      setSearchPagination({ total, totalPages });
-      setSearchPage(pageOverride);
-    } catch {
-      toast.error("Failed to search POS old sales");
-    } finally {
-      setSearching(false);
-    }
-  }, [resolvePosOldSearchFilters, searchLimit]);
+    const params = {};
+    if (String(filters.search || "").trim()) params.search = filters.search;
+    if (String(filters.billNo || "").trim()) params.billNo = filters.billNo;
+    if (String(filters.customerName || "").trim()) params.customerName = filters.customerName;
+    if (String(filters.product || "").trim()) params.product = filters.product;
+    if (String(filters.barcode || "").trim()) params.barcode = filters.barcode;
+    searchGrid.load(params, pageOverride, limitOverride);
+  }, [searchGrid.load, searchLimit, resolvePosOldSearchFilters]);
 
   const loadAllPosOldSearchRows = useCallback(async (overrideFilters = null) => {
     const filters = resolvePosOldSearchFilters(overrideFilters);
@@ -2268,7 +2257,7 @@ const LegacyPosPage = () => {
   }, [runPosOldSearch, searchLimit]);
 
   const renderSearchPage = () => (
-    <Box sx={{ display: "flex", flex: 1, minHeight: 0, minWidth: 0, flexDirection: "column", borderRadius: "7px", border: 1, borderColor: "divider", bgcolor: "background.paper", p: 2, boxShadow: 1 }}>
+    <SearchGridPanel>
       <FilterableDataTable
         rows={searchResults}
         columns={posOldSearchColumns}
@@ -2285,31 +2274,27 @@ const LegacyPosPage = () => {
         onExportRows={loadAllPosOldSearchRows}
         enableServerSearch
         onServerSearch={handlePosOldServerSearch}
+        pagination={searchGrid.rawPagination}
+        onNextCursor={searchGrid.navigateCursor}
+        onPreviousCursor={searchGrid.navigateCursor}
         page={searchPage}
         limit={searchLimit}
         totalPages={searchPagination.totalPages}
         totalRows={searchPagination.total}
-        onPageChange={(p) => {
-          setSearchPage(p);
-          runPosOldSearch(null, p, searchLimit);
-        }}
-        onLimitChange={(value) => {
-          setSearchLimit(value);
-          setSearchPage(1);
-          runPosOldSearch(null, 1, value);
-        }}
+        onPageChange={setSearchPage}
+        onLimitChange={setSearchLimit}
         onFetchGroupSummaries={fetchPosOldSaleGroupSummaries}
         onFetchGroupRows={fetchPosOldSaleGroupRows}
         paginationMode="server"
         enableVirtualization
         fillHeight
       />
-    </Box>
+    </SearchGridPanel>
   );
 
   /* ───────────────── RENDER ───────────────── */
   return (
-    <Box sx={{ height: "100vh", display: "flex", flexDirection: "column", bgcolor: "background.default", color: "text.primary", overflow: "hidden" }}>
+    <Box sx={{ height: "100vh", display: "flex", flexDirection: "column", bgcolor: "background.default", color: "text.primary", overflow: "hidden", ...(showSearchPage ? { height: "100%", minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" } : {}) }}>
       {/* ─── TOP BAR ─── */}
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 1.5, py: 0.75, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1, flexShrink: 0 }}>
         {/* Tabs */}
@@ -2392,7 +2377,7 @@ const LegacyPosPage = () => {
       </Stack>
 
       {/* ─── MAIN AREA ─── */}
-      {showSearchPage ? <Box sx={{ display: "flex", flex: 1, minHeight: 0, minWidth: 0, overflow: "hidden", p: 2 }}>{renderSearchPage()}</Box> : <Box sx={{ display: "flex", flex: 1, overflow: "hidden" }}>
+      {showSearchPage ? <Box sx={showSearchPage ? masterSearchAreaSx : { display: "flex", flex: 1, minHeight: 0, minWidth: 0, overflow: "hidden", p: 2 }}>{renderSearchPage()}</Box> : <Box sx={{ display: "flex", flex: 1, overflow: "hidden" }}>
         {/* ─── LEFT PANEL ─── */}
         <Box sx={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", borderRight: 1, borderColor: "divider" }}>
           {/* Customer + Barcode row */}

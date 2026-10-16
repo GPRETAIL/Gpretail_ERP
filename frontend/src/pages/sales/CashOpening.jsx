@@ -1,3 +1,6 @@
+import { masterSearchAreaSx } from "../../theme/erpUi";
+import SearchGridPanel from "../../components/SearchGridPanel";
+import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Save, Search } from "lucide-react";
 import { toast } from "react-toastify";
@@ -42,7 +45,11 @@ const CashOpening = () => {
 
   const [loadingMeta, setLoadingMeta] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [searching, setSearching] = useState(false);
+  const searchGrid = useSearchGrid({
+    adapter: createSearchGridAdapter("/cash-openings"), enabled: showSearchPage,
+    onError: err => toast.error(err.response?.data?.message || "Failed to load records"),
+  });
+  const { rows: searchResults, loading: searching, page: searchPage, setPage: setSearchPage, limit: searchLimit, setLimit: setSearchLimit, pagination: searchPagination } = searchGrid;
 
   const [options, setOptions] = useState({
     locations: [],
@@ -67,9 +74,6 @@ const CashOpening = () => {
     cashierEmployeeId: "",
     date: "",
   });
-  const [searchResults, setSearchResults] = useState([]);
-  const [searchPage, setSearchPage] = useState(1);
-  const [searchLimit, setSearchLimit] = useState(10);
   const searchFiltersRef = useRef(searchFilters);
 
   useEffect(() => {
@@ -121,10 +125,8 @@ const CashOpening = () => {
     [formData]
   );
 
-  const runSearch = useCallback(async (override = null) => {
+  const runSearch = useCallback((override = null) => {
     const filters = override || searchFiltersRef.current;
-    setSearching(true);
-    try {
       const params = {};
       if (String(filters.search || "").trim()) params.search = String(filters.search).trim();
       if (String(filters.locationId || "").trim()) params.locationId = filters.locationId;
@@ -133,15 +135,8 @@ const CashOpening = () => {
       if (String(filters.cashierEmployeeId || "").trim()) params.cashierEmployeeId = filters.cashierEmployeeId;
       if (String(filters.date || "").trim()) params.date = filters.date;
 
-      const res = await api.get("/cash-openings", { params });
-      setSearchResults(res.data?.data || []);
-      setSearchPage(1);
-    } catch {
-      toast.error("Failed to search cash openings");
-    } finally {
-      setSearching(false);
-    }
-  }, []);
+    searchGrid.load(params);
+  }, [searchGrid.load]);
 
   const openSearchPage = async () => {
     setShowSearchPage(true);
@@ -270,11 +265,6 @@ const CashOpening = () => {
     []
   );
 
-  const searchPagination = useMemo(() => {
-    const total = searchResults.length;
-    const totalPages = Math.max(Math.ceil(total / Math.max(searchLimit, 1)), 1);
-    return { total, totalPages };
-  }, [searchResults.length, searchLimit]);
 
   const renderSelect = (label, name, value, optionsList, onChange) => (
     <Stack direction="row" sx={{ alignItems: "center" }}>
@@ -415,7 +405,7 @@ const CashOpening = () => {
   );
 
   const renderSearchPage = () => (
-    <Stack spacing={2} sx={{ bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "7px", boxShadow: 1, p: 2 }}>
+    <SearchGridPanel>
       <FilterableDataTable
         rows={searchResults}
         columns={cashOpeningSearchColumns}
@@ -438,13 +428,17 @@ const CashOpening = () => {
           setSearchLimit(value);
           setSearchPage(1);
         }}
-        paginationMode="client"
+        paginationMode="server"
+        pagination={searchGrid.rawPagination}
+        onNextCursor={searchGrid.navigateCursor}
+        onPreviousCursor={searchGrid.navigateCursor}
+        fillHeight
       />
-    </Stack>
+    </SearchGridPanel>
   );
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "background.default", color: "text.primary" }}>
+    <Box sx={{ minHeight: "100vh", bgcolor: "background.default", color: "text.primary", ...(showSearchPage ? { height: "100%", minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" } : {}) }}>
       <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", px: 2, py: 1, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           <Button
@@ -484,7 +478,7 @@ const CashOpening = () => {
         </Stack>
       </Stack>
 
-      <Stack spacing={2} sx={{ p: 2, pb: 7 }}>
+      <Stack spacing={2} sx={showSearchPage ? masterSearchAreaSx : { p: 2, pb: 7 }}>
         {showSearchPage ? renderSearchPage() : renderEntryPage()}
         {loadingMeta && <Typography sx={{ fontSize: 10.5, color: "text.secondary", px: 0.5 }}>Loading options...</Typography>}
       </Stack>

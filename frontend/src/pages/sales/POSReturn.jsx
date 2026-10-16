@@ -1,3 +1,6 @@
+import { masterSearchAreaSx } from "../../theme/erpUi";
+import SearchGridPanel from "../../components/SearchGridPanel";
+import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Printer, Save, Search, Trash2 } from "lucide-react";
 import { toast } from "react-toastify";
@@ -484,7 +487,11 @@ const POSReturn = () => {
   const [deletingLatestDocument, setDeletingLatestDocument] = useState(false);
   const [loadingBill, setLoadingBill] = useState(false);
   const [showSearchPage, setShowSearchPage] = useState(false);
-  const [searching, setSearching] = useState(false);
+  const searchGrid = useSearchGrid({
+    adapter: createSearchGridAdapter("/pos-returns"), enabled: showSearchPage,
+    onError: err => toast.error(err.response?.data?.message || "Failed to load records"),
+  });
+  const { rows: searchResults, loading: searching, page: searchPage, setPage: setSearchPage, limit: searchLimit, setLimit: setSearchLimit, pagination: searchPagination } = searchGrid;
   const [searchFilters, setSearchFilters] = useState({
     search: "",
     returnNo: "",
@@ -492,10 +499,6 @@ const POSReturn = () => {
     product: "",
   });
   const searchFiltersRef = useRef(searchFilters);
-  const [searchResults, setSearchResults] = useState([]);
-  const [searchPage, setSearchPage] = useState(1);
-  const [searchLimit, setSearchLimit] = useState(20);
-  const [searchPagination, setSearchPagination] = useState({ total: 0, totalPages: 1 });
 
   useEffect(() => {
     let active = true;
@@ -1244,32 +1247,15 @@ const POSReturn = () => {
     }
   };
 
-  const runPosReturnSearch = useCallback(
-    async (overrideFilters = null, pageOverride = 1, limitOverride = searchLimit) => {
-      const filters = overrideFilters || searchFiltersRef.current;
-      setSearching(true);
-      try {
-        const params = { page: pageOverride, limit: limitOverride };
-        if (String(filters.search || "").trim()) params.search = filters.search;
-        if (String(filters.returnNo || "").trim()) params.returnNo = filters.returnNo;
-        if (String(filters.customerName || "").trim()) params.customerName = filters.customerName;
-        if (String(filters.product || "").trim()) params.product = filters.product;
-
-        const res = await api.get("/pos-returns", { params });
-        setSearchResults(res.data?.data || []);
-        const p = res.data?.pagination || {};
-        const total = Number(p.total ?? res.data?.total ?? 0) || 0;
-        const totalPages = Math.max(Number(p.totalPages ?? Math.ceil(total / Math.max(limitOverride, 1))) || 1, 1);
-        setSearchPagination({ total, totalPages });
-        setSearchPage(pageOverride);
-      } catch {
-        toast.error("Failed to search POS returns");
-      } finally {
-        setSearching(false);
-      }
-    },
-    [searchLimit]
-  );
+  const runPosReturnSearch = useCallback((overrideFilters = null, pageOverride = 1, limitOverride = searchLimit) => {
+    const filters = overrideFilters || searchFiltersRef.current;
+    const params = {};
+    if (String(filters.search || "").trim()) params.search = filters.search;
+    if (String(filters.returnNo || "").trim()) params.returnNo = filters.returnNo;
+    if (String(filters.customerName || "").trim()) params.customerName = filters.customerName;
+    if (String(filters.product || "").trim()) params.product = filters.product;
+    searchGrid.load(params, pageOverride, limitOverride);
+  }, [searchGrid.load, searchLimit]);
 
   const loadAllPosReturnSearchRows = useCallback(
     async (overrideFilters = null) => {
@@ -1693,7 +1679,7 @@ const POSReturn = () => {
   );
 
   const renderSearchPage = () => (
-    <Box sx={{ bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "7px", boxShadow: 1, p: 2 }}>
+    <SearchGridPanel>
       <FilterableDataTable
         rows={searchResults}
         columns={posReturnSearchColumns}
@@ -1713,29 +1699,25 @@ const POSReturn = () => {
         onExportRows={() => loadAllPosReturnSearchRows()}
         enableServerSearch
         onServerSearch={handleServerSearch}
+        pagination={searchGrid.rawPagination}
+        onNextCursor={searchGrid.navigateCursor}
+        onPreviousCursor={searchGrid.navigateCursor}
         page={searchPage}
         limit={searchLimit}
         totalPages={searchPagination.totalPages}
         totalRows={searchPagination.total}
-        onPageChange={(p) => {
-          setSearchPage(p);
-          runPosReturnSearch(null, p, searchLimit);
-        }}
-        onLimitChange={(value) => {
-          setSearchLimit(value);
-          setSearchPage(1);
-          runPosReturnSearch(null, 1, value);
-        }}
+        onPageChange={setSearchPage}
+        onLimitChange={setSearchLimit}
         onFetchGroupSummaries={fetchPosReturnGroupSummaries}
         onFetchGroupRows={fetchPosReturnGroupRows}
         paginationMode="server"
         enableVirtualization
       />
-    </Box>
+    </SearchGridPanel>
   );
 
   return (
-    <Box sx={{ minHeight: "100%", bgcolor: "background.default", color: "text.primary", display: "flex", flexDirection: "column" }}>
+    <Box sx={{ minHeight: "100%", bgcolor: "background.default", color: "text.primary", display: "flex", flexDirection: "column", ...(showSearchPage ? { height: "100%", minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" } : {}) }}>
       <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", px: 2, py: 1, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           <IconButton
@@ -1779,7 +1761,7 @@ const POSReturn = () => {
         </Stack>
       </Stack>
 
-      <Stack spacing={2} sx={{ flex: 1, minHeight: 0, p: 2, pb: { xs: 7, xl: 2 }, display: "flex", flexDirection: "column" }}>
+      <Stack spacing={2} sx={showSearchPage ? masterSearchAreaSx : { flex: 1, minHeight: 0, p: 2, pb: { xs: 7, xl: 2 }, display: "flex", flexDirection: "column" }}>
         {showSearchPage ? renderSearchPage() : renderEntryPage()}
 
         {loading && <Typography sx={{ fontSize: 10.5, color: "text.secondary", px: 0.5 }}>Loading master data...</Typography>}

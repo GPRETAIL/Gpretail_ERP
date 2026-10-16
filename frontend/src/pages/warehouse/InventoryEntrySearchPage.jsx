@@ -1,4 +1,7 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import SearchGridPanel from "../../components/SearchGridPanel";
+import { masterSearchAreaSx } from "../../theme/erpUi";
+import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
+import { useMemo, useState } from "react";
 import { ArrowLeft, Trash2, Pencil } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
@@ -48,12 +51,6 @@ const InventoryEntrySearchPage = () => {
   const [confirm, setConfirm] = useState({ open: false, id: null });
   const [bulkConfirm, setBulkConfirm] = useState({ open: false, keys: [] });
   const [selectedRows, setSelectedRows] = useState([]);
-  const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(20);
-  const [serverSearch, setServerSearch] = useState({ query: "", field: "all", fetchAll: false });
-  const [backendPagination, setBackendPagination] = useState({ total: 0, totalPages: 1 });
 
   const columns = useMemo(
     () => [
@@ -124,77 +121,13 @@ const InventoryEntrySearchPage = () => {
     []
   );
 
-  const isAllMode = useMemo(
-    () => Boolean(serverSearch.fetchAll) || String(serverSearch.query || "").trim() !== "",
-    [serverSearch.fetchAll, serverSearch.query]
-  );
-
-  const pagination = useMemo(() => {
-    if (!isAllMode) return backendPagination;
-    const total = results.length;
-    const totalPages = Math.max(Math.ceil(total / Math.max(limit, 1)), 1);
-    return { total, totalPages };
-  }, [isAllMode, backendPagination, results.length, limit]);
-
-  const fetchEntries = useCallback(async ({
-    query = "",
-    field = "all",
-    fetchAll = false,
-    pageOverride = page,
-    limitOverride = limit,
-  } = {}) => {
-    const normalizedQuery = String(query || "").trim();
-    const normalizedField = String(field || "all").trim();
-    const shouldFetchAll = Boolean(fetchAll) || normalizedQuery !== "";
-    setServerSearch({ query: normalizedQuery, field: normalizedField, fetchAll: shouldFetchAll });
-    setLoading(true);
-    try {
-      const params = shouldFetchAll
-        ? { all: "true" }
-        : { page: pageOverride, limit: limitOverride };
-      if (normalizedQuery) params.search = normalizedQuery;
-      if (normalizedField && normalizedField !== "all" && shouldFetchAll) params.field = normalizedField;
-      const res = await api.get("/inventory-entries", { params });
-      const rows = res.data?.data || [];
-      setResults(rows);
-      if (shouldFetchAll) {
-        const total = rows.length;
-        setBackendPagination({
-          total,
-          totalPages: Math.max(Math.ceil(total / Math.max(limitOverride, 1)), 1),
-        });
-      } else {
-        const p = res.data?.pagination || {};
-        const total = Number(p.total ?? rows.length) || 0;
-        const totalPages = Math.max(Number(p.totalPages ?? 1) || 1, 1);
-        setBackendPagination({ total, totalPages });
-      }
-    } catch (err) {
-      console.error("Failed to fetch inventory entries:", err);
-      showToast("error", "Failed to load inventory entries");
-    } finally {
-      setLoading(false);
-    }
-  }, [limit, page]);
-
-  useEffect(() => {
-    if (isAllMode) return;
-    fetchEntries({ query: "", field: "all", fetchAll: false, pageOverride: page, limitOverride: limit });
-  }, [fetchEntries, page, limit]);
-
-  const handleServerSearch = useCallback(
-    ({ query, field, fetchAll }) => {
-      setPage(1);
-      fetchEntries({
-        query,
-        field,
-        fetchAll,
-        pageOverride: 1,
-        limitOverride: limit,
-      });
-    },
-    [fetchEntries, limit]
-  );
+  const grid = useSearchGrid({
+    adapter: createSearchGridAdapter("/inventory-entries"),
+    onError: err => setToast({ open: true, type: "error", message: err.response?.data?.message || "Failed to load records" }),
+  });
+  const { rows: results, setRows: setResults, loading, page, setPage, limit, setLimit, pagination } = grid;
+  const fetchEntries = grid.refresh;
+  const handleServerSearch = grid.onServerSearch;
 
   const handleBulkDelete = (keys) => {
     setBulkConfirm({ open: true, keys });
@@ -207,7 +140,7 @@ const InventoryEntrySearchPage = () => {
       await Promise.all(keys.map((id) => api.delete(`/inventory-entries/${id}`)));
       showToast("success", `${keys.length} record(s) deleted`);
       setSelectedRows([]);
-      fetchEntries(serverSearch);
+      fetchEntries();
     } catch {
       showToast("error", "Failed to delete some records");
     }
@@ -219,7 +152,7 @@ const InventoryEntrySearchPage = () => {
       await api.delete(`/inventory-entries/${confirm.id}`);
       setResults((prev) => prev.filter((r) => r.id !== confirm.id));
       showToast("success", "Inventory entry deleted");
-      fetchEntries(serverSearch);
+      fetchEntries();
     } catch {
       showToast("error", "Failed to delete entry");
     } finally {
@@ -268,8 +201,8 @@ const InventoryEntrySearchPage = () => {
         </Stack>
       </Stack>
 
-      <Box sx={{ p: 2, flex: 1, minHeight: 0 }}>
-        <Box sx={{ bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "1.75px", p: 1.5, height: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}>
+      <Box sx={masterSearchAreaSx}>
+        <SearchGridPanel>
           <FilterableDataTable
             rows={results}
             columns={columns}
@@ -280,10 +213,13 @@ const InventoryEntrySearchPage = () => {
             showExport={false}
             enableColumnResize
             tablePreferenceKey="warehouse.inventory_entry_search.list"
-            onRefresh={() => {}}
+            onRefresh={fetchEntries}
             refreshDisabled={loading}
             enableServerSearch
             onServerSearch={handleServerSearch}
+            pagination={grid.rawPagination}
+            onNextCursor={grid.navigateCursor}
+            onPreviousCursor={grid.navigateCursor}
             page={page}
             limit={limit}
             totalPages={pagination.totalPages}
@@ -293,7 +229,7 @@ const InventoryEntrySearchPage = () => {
               setLimit(value);
               setPage(1);
             }}
-            paginationMode={isAllMode ? "client" : "server"}
+            paginationMode="server"
             enableSelection
             enableKeyboardNav
             selectedRows={selectedRows}
@@ -325,7 +261,7 @@ const InventoryEntrySearchPage = () => {
               </Stack>
             )}
           />
-        </Box>
+        </SearchGridPanel>
       </Box>
 
       <ConfirmDialog

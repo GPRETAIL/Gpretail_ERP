@@ -1,3 +1,5 @@
+import SearchGridPanel from "../../components/SearchGridPanel";
+import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
 import { useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
@@ -118,7 +120,6 @@ const UserAccess = () => {
   const [showSearchPage, setShowSearchPage] = useState(true);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [users, setUsers] = useState([]);
   const [groups, setGroups] = useState([]);
   const [companies, setCompanies] = useState([]);
   const [roles, setRoles] = useState(() => USER_ROLE_PRESET_OPTIONS.map((option) => option.value));
@@ -136,6 +137,12 @@ const UserAccess = () => {
   const [showStoreGroupsDrawer, setShowStoreGroupsDrawer] = useState(false);
 
   const activeTab = String(entity || "").toLowerCase() === "group" ? "group" : "user";
+  const userGrid = useSearchGrid({ adapter: createSearchGridAdapter("/user-access"), enabled: canManage && showSearchPage && activeTab === "user",
+    onError: err => toast.error(err.response?.data?.message || "Failed to load users"),
+  });
+  const groupGrid = useSearchGrid({ sourceRows: groups, paginationMode: "client", scopeKey: activeTab });
+  const listGrid = activeTab === "user" ? userGrid : groupGrid;
+  const users = userGrid.rows;
   const entityTitle = activeTab === "group" ? "Create Group" : "Create User";
   const listTitle = activeTab === "group" ? "Access Groups (what they can do)" : "Users";
 
@@ -260,18 +267,12 @@ const UserAccess = () => {
     // GET /user-access only ever returns a flat, paginated list of users - there is no
     // combined users+groups+companies+roles payload on the backend. Fetch each real,
     // independently-working endpoint instead of expecting a bundle that was never built.
-    const [usersRes, groupsRes, companiesRes] = await Promise.allSettled([
-      api.get("/user-access", { params: { all: true } }),
+    const [groupsRes, companiesRes] = await Promise.allSettled([
       api.get("/user-access/groups"),
       api.get("/companies", { params: { includeInactive: true, limit: 500 } }),
     ]);
 
-    if (usersRes.status === "fulfilled") {
-      setUsers(Array.isArray(usersRes.value.data?.data) ? usersRes.value.data.data : []);
-    } else {
-      setUsers([]);
-      toast.error(usersRes.reason?.response?.data?.message || "Failed to load users");
-    }
+    userGrid.refresh();
     setGroups(groupsRes.status === "fulfilled" && Array.isArray(groupsRes.value.data?.data) ? groupsRes.value.data.data : []);
     setCompanies(companiesRes.status === "fulfilled" && Array.isArray(companiesRes.value.data?.data) ? companiesRes.value.data.data : []);
     // No backend endpoint enumerates distinct account roles - the preset list is the real,
@@ -669,10 +670,24 @@ const UserAccess = () => {
               ) : null}
             </Stack>
 
+            <SearchGridPanel>
             <FilterableDataTable
               rows={activeTab === "user" ? users : groups}
               columns={activeTab === "user" ? userColumns : groupColumns}
-              loading={loading}
+              loading={loading || userGrid.loading}
+              paginationMode={activeTab === "user" ? "server" : "client"}
+              enableServerSearch={activeTab === "user"}
+              onServerSearch={userGrid.onServerSearch}
+              pagination={listGrid.rawPagination}
+              onNextCursor={listGrid.navigateCursor}
+              onPreviousCursor={listGrid.navigateCursor}
+              page={listGrid.page}
+              limit={listGrid.limit}
+              totalRows={listGrid.pagination.total}
+              totalPages={listGrid.pagination.totalPages}
+              onPageChange={listGrid.setPage}
+              onLimitChange={listGrid.setLimit}
+              fillHeight
               emptyText={activeTab === "user" ? "No users found." : "No groups found."}
               searchPlaceholder={activeTab === "user" ? "Search users..." : "Search groups..."}
               showExport={false}
@@ -714,6 +729,7 @@ const UserAccess = () => {
               )}
               searchButtonClassName="glass-btn glass-btn-primary"
             />
+            </SearchGridPanel>
           </Box>
         ) : (
           <Box sx={{ height: "100%", overflow: "hidden", borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", boxShadow: 3, p: 2 }}>

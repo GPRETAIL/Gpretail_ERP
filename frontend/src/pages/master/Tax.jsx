@@ -1,6 +1,7 @@
+import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
 import MasterSearchPanel from "../../components/MasterSearchPanel";
 import { masterSearchAreaSx } from "../../theme/erpUi";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   ArrowLeft,
   Eye,
@@ -70,63 +71,23 @@ const Tax = () => {
   const handleNew = () => {
     navigate(`/masters/tax/new`);
   };
-  const [taxData, setTaxData] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [selectedRows, setSelectedRows] = useState([]);
   const [confirmDlg, setConfirmDlg] = useState({ open: false, code: null, name: "", company_id: null });
   const [bulkConfirm, setBulkConfirm] = useState({ open: false, keys: [] });
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(20);
-  const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
-  const [rawPagination, setRawPagination] = useState(null);
-  const [tableSearch, setTableSearch] = useState("");
-  const [tableSearchField, setTableSearchField] = useState("all");
-  const [forceFetchAll, setForceFetchAll] = useState(false);
   const storeMap = useStoreNameMap();
 
-  useEffect(() => {
-    fetchTaxData();
-  }, [page, limit, tableSearch, forceFetchAll]);
 
-  const fetchTaxData = async (queryOverride = tableSearch, cursorToken = null) => {
-    try {
-      setLoading(true);
-      const query = String(queryOverride || "").trim();
-      const params = (query || forceFetchAll)
-        ? { all: "true", search: query || undefined, field: tableSearchField !== "all" ? tableSearchField : undefined }
-        : { ...(cursorToken ? { cursor: cursorToken } : { page }), limit };
-      const res = await api.get("/taxes", { params });
-      const rows = mapTaxRows(res.data?.data || []);
-      setTaxData(rows);
-      if (query) {
-        setPagination({ total: rows.length, totalPages: 1 });
-        setRawPagination(null);
-      } else {
-        const p = res.data?.pagination || {};
-        const total = Number(p.total ?? res.data?.total ?? rows.length) || 0;
-        const totalPages = Math.max(
-          Number(p.totalPages ?? res.data?.totalPages ?? Math.ceil(total / Math.max(limit, 1))) || 1,
-          1
-        );
-        setPagination({ total, totalPages });
-        setRawPagination(res.data?.pagination || null);
-      }
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to load taxes");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const grid = useSearchGrid({
+    adapter: createSearchGridAdapter("/taxes", r => mapTaxRows([r])[0]),
+    enabled: true,
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to load tax records"),
+  });
+  const { rows: taxData, loading: loading, page, setPage, limit, setLimit, pagination, rawPagination } = grid;
+  const fetchTaxData = grid.refresh;
+  const handleTaxNextCursor = grid.navigateCursor;
+  const handleTaxPreviousCursor = grid.navigateCursor;
+  const handleServerSearch = grid.onServerSearch;
 
-  const handleTaxNextCursor = (cursor) => fetchTaxData(tableSearch, cursor);
-  const handleTaxPreviousCursor = (cursor) => fetchTaxData(tableSearch, cursor);
-
-  const handleServerSearch = useCallback(({ query, field, fetchAll }) => {
-    setTableSearch(query);
-    setTableSearchField(field || "all");
-    setForceFetchAll(!!fetchAll);
-    setPage(1);
-  }, []);
 
   const columns = [
     { key: "taxCode", label: "Code" },
@@ -281,6 +242,8 @@ const Tax = () => {
             refreshDisabled={loading}
             enableServerSearch
             onServerSearch={handleServerSearch}
+                onSortChange={grid.onSortChange}
+                serverSortFields={{ name: "name", taxCode: "code" }}
             page={page}
             limit={limit}
             totalPages={pagination.totalPages}

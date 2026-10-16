@@ -1,3 +1,5 @@
+import SearchGridPanel from "../../components/SearchGridPanel";
+import useSearchGrid from "../../hooks/useSearchGrid";
 import { useEffect, useState } from "react";
 import { ArrowLeft, PlusCircle, Save, Store, Trash2, Pencil, X } from "lucide-react";
 import { toast } from "react-toastify";
@@ -29,6 +31,7 @@ const StoreGroupsDrawer = ({
   onSave,
   onDelete,
 }) => {
+  const grid = useSearchGrid({ sourceRows: groups, paginationMode: "client", scopeKey: open });
   const [view, setView] = useState("list");
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(createEmptyForm);
@@ -136,8 +139,14 @@ const StoreGroupsDrawer = ({
                 <PlusCircle size={16} style={{ marginRight: 4 }} /> New Store Group
               </Button>
             </Box>
+            <SearchGridPanel>
             <FilterableDataTable
               rows={groups}
+              paginationMode="client"
+              page={grid.page}
+              limit={grid.limit}
+              onPageChange={grid.setPage}
+              onLimitChange={grid.setLimit}
               columns={columns}
               loading={loading}
               emptyText="No store groups yet. Create one to assign multiple stores to a user at once."
@@ -168,6 +177,7 @@ const StoreGroupsDrawer = ({
               )}
               searchButtonClassName="glass-btn glass-btn-primary"
             />
+            </SearchGridPanel>
           </>
         ) : (
           <Stack spacing={2}>

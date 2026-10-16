@@ -1,4 +1,7 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import SearchGridPanel from "../../components/SearchGridPanel";
+import { masterSearchAreaSx } from "../../theme/erpUi";
+import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
+import React, { useState } from "react";
 import { ArrowLeft, Eye, Pencil, PlusCircle, Search, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -116,74 +119,16 @@ const mapCustomerRow = (c) => ({
 
 const CrmCustomer = () => {
   const navigate = useNavigate();
-  const [customers, setCustomers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
-  const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
   const [selectedRows, setSelectedRows] = useState([]);
   const [confirm, setConfirm] = useState({ open: false, id: null, name: "" });
   const [bulkConfirm, setBulkConfirm] = useState({ open: false, keys: [] });
-  const [searchQuery, setSearchQuery] = useState("");
-  const [forceFetchAll, setForceFetchAll] = useState(false);
 
-  const fetchCustomers = useCallback(
-    async (pageToLoad = page, limitToLoad = limit, fetchAll = false) => {
-      try {
-        setLoading(true);
-        const params = fetchAll
-          ? { search: searchQuery || undefined }
-          : { page: pageToLoad, limit: limitToLoad, search: searchQuery || undefined };
-        const res = await api.get("/customers", { params });
-        const rows = (res.data?.data || []).map(mapCustomerRow);
-        setCustomers(rows);
-        if (fetchAll) {
-          setPagination({ total: rows.length, totalPages: 1 });
-        } else {
-          // The backend returns total/totalPages flat on the response, not nested
-          // under a `pagination` key - `res.data?.pagination` is always undefined,
-          // so this used to always take the branch above and report "page 1 of 1"
-          // (total = current page's row count) no matter how many customers exist.
-          const p = res.data?.pagination || {};
-          const total = Number(p.total ?? res.data?.total ?? rows.length) || 0;
-          const totalPages = Math.max(
-            Number(p.totalPages ?? res.data?.totalPages ?? Math.ceil(total / Math.max(limitToLoad, 1))) || 1,
-            1
-          );
-          setPagination({ total, totalPages });
-        }
-      } catch (err) {
-        toast.error(err.response?.data?.message || "Failed to load customers");
-      } finally {
-        setLoading(false);
-      }
-    },
-    [page, limit, searchQuery]
-  );
-
-  const prevSearchQueryRef = useRef(searchQuery);
-
-  useEffect(() => {
-    const hasSearch = String(searchQuery || "").trim() !== "";
-    const searchChanged = prevSearchQueryRef.current !== searchQuery;
-    prevSearchQueryRef.current = searchQuery;
-
-    // Only debounce when the search query actually changed
-    if (searchChanged && hasSearch) {
-      const timer = setTimeout(() => {
-        if (page !== 1) setPage(1);
-        fetchCustomers(1, limit, true);
-      }, 300);
-      return () => clearTimeout(timer);
-    }
-
-    // For initial load, page/limit changes — fetch immediately
-    if (hasSearch || forceFetchAll) {
-      fetchCustomers(1, limit, true);
-    } else {
-      fetchCustomers(page, limit, false);
-    }
-  }, [fetchCustomers, page, limit, searchQuery, forceFetchAll]);
+  const grid = useSearchGrid({
+    adapter: createSearchGridAdapter("/customers", mapCustomerRow),
+    onError: err => toast.error(err.response?.data?.message || "Failed to load records"),
+  });
+  const { rows: customers, loading, page, setPage, limit, setLimit, pagination } = grid;
+  const fetchCustomers = grid.refresh;
 
   const handleDeleteConfirmed = async () => {
     const { id, name } = confirm;
@@ -253,8 +198,8 @@ const CrmCustomer = () => {
         </Stack>
       </Stack>
 
-      <Box sx={{ flex: 1, p: 2, minHeight: 0 }}>
-        <Stack sx={{ bgcolor: "background.paper", boxShadow: 3, borderRadius: "7px", p: 2.5, border: "1px solid", borderColor: "divider", width: "100%", height: "100%", minHeight: 0, overflow: "auto" }}>
+      <Box sx={masterSearchAreaSx}>
+        <SearchGridPanel>
           <Typography sx={{ fontSize: 15.75, fontWeight: 700, mb: 1.5 }}>Customer Search</Typography>
           <FilterableDataTable
             rows={customers}
@@ -264,7 +209,7 @@ const CrmCustomer = () => {
             emptyText="No customers found. Click Search to load data."
             searchPlaceholder="Search customers..."
             tablePreferenceKey="crm.customer.list"
-            onRefresh={() => fetchCustomers(page, limit, String(searchQuery || "").trim() !== "")}
+            onRefresh={grid.refresh}
             refreshDisabled={loading}
             onRowClick={(row) => navigate(`/crm/customer/${row.id}`)}
             enableKeyboardNav
@@ -273,6 +218,10 @@ const CrmCustomer = () => {
             selectedRows={selectedRows}
             onSelectionChange={setSelectedRows}
             onBulkDelete={handleBulkDelete}
+            pagination={grid.rawPagination}
+            onNextCursor={grid.navigateCursor}
+            onPreviousCursor={grid.navigateCursor}
+            fillHeight
             page={page}
             limit={limit}
             totalPages={pagination.totalPages}
@@ -287,7 +236,7 @@ const CrmCustomer = () => {
             paginationMode="server"
             enableVirtualization
             enableServerSearch
-            onServerSearch={({ query, fetchAll }) => { setSearchQuery(query); setForceFetchAll(!!fetchAll); }}
+            onServerSearch={grid.onServerSearch}
             onExportRows={async ({ query }) => {
               const params = { all: "true" };
               const trimmed = String(query || "").trim();
@@ -332,7 +281,7 @@ const CrmCustomer = () => {
               </Stack>
             )}
           />
-        </Stack>
+        </SearchGridPanel>
       </Box>
     </Box>
   );

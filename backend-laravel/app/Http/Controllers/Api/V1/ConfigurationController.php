@@ -4,10 +4,13 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\SystemConfiguration;
+use App\Services\PaginationService;
 use Illuminate\Http\Request;
 
 class ConfigurationController extends Controller
 {
+    public function __construct(private readonly PaginationService $paginationService) {}
+
     /**
      * Real counters live in system_configurations (key='counter') - the
      * same generic store the Configuration master page (type=COUNTER)
@@ -97,6 +100,49 @@ class ConfigurationController extends Controller
                 ['id' => 2, 'name' => 'Wholesale Broker', 'value' => 'BROKER'],
             ],
         ];
+
+        // The listing explicitly opts in; dropdown lookups keep their legacy response.
+        if ($request->boolean('paginate')) {
+            $query = SystemConfiguration::where(function ($q) use ($normalized) {
+                $q->where('key', $normalized)->orWhere('config_key', $normalized)
+                    ->orWhere('group', $normalized)->orWhere('group_name', $normalized);
+            });
+            if (! $query->exists() && isset($defaults[$normalized])) {
+                $rows = collect($defaults[$normalized]);
+                $search = strtolower((string) $request->input('search', ''));
+                if ($search !== '') {
+                    $rows = $rows->filter(fn ($row) => str_contains(strtolower($row['name'].' '.($row['code'] ?? '')), $search))->values();
+                }
+                $limit = max(1, min((int) $request->input('limit', 20), (int) config('pagination.max_limit', 200)));
+                $page = max(1, (int) $request->input('page', 1));
+                $total = $rows->count();
+                $pages = max(1, (int) ceil($total / $limit));
+
+                return response()->json([
+                    'success' => true, 'data' => $rows->slice(($page - 1) * $limit, $limit)->values(),
+                    'pagination' => ['mode' => 'offset', 'page' => $page, 'per_page' => $limit, 'total' => $total,
+                        'total_pages' => $pages, 'has_next' => $page < $pages, 'has_previous' => $page > 1],
+                ]);
+            }
+            if ($request->filled('search')) {
+                $search = $request->input('search');
+                $query->where(function ($q) use ($search) {
+                    $q->where('value', 'like', "%{$search}%")->orWhere('config_value', 'like', "%{$search}%")
+                        ->orWhere('code', 'like', "%{$search}%");
+                });
+            }
+            $result = $this->paginationService->paginate($query, 'configurations', $request, [
+                'default_sort' => 'id', 'default_order' => 'asc',
+                'allowed_sorts' => ['id', 'code', 'sort_order'],
+            ]);
+            $result['data'] = collect($result['data'])->map(fn ($c) => [
+                'id' => $c->id, 'name' => $c->value ?? $c->config_value,
+                'value' => $c->value ?? $c->config_value, 'key' => $c->key ?? $c->config_key,
+                'code' => $c->code, 'sort_order' => $c->sort_order, 'extra_data' => $c->extra_data,
+            ]);
+
+            return response()->json($result);
+        }
 
         // Check if exists in database
         $dbConfigs = SystemConfiguration::where('key', $normalized)

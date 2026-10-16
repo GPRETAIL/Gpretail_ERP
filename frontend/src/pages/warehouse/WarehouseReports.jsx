@@ -1,3 +1,5 @@
+import SearchGridPanel from "../../components/SearchGridPanel";
+import useSearchGrid from "../../hooks/useSearchGrid";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -957,8 +959,9 @@ const WarehouseReports = () => {
     if (uniqueNames.length > 0) return uniqueNames[0];
     return authUser?.company_id ? `Company ${authUser.company_id}` : "Company";
   }, [authUser?.company_id, resolvedExportCompanyName]);
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(20);
+
+  const grid = useSearchGrid({ sourceRows: reportRows, paginationMode: "client", scopeKey: selectedReportKey });
+  const { page, setPage, limit, setLimit } = grid;
 
   const selectedReport = selectedReportKey ? reportLookup[selectedReportKey] || null : null;
   const selectedReportSource = selectedReport ? REPORT_DATA_SOURCES[selectedReport.key] || null : null;
@@ -1145,6 +1148,7 @@ const WarehouseReports = () => {
               </Typography>
             </Box>
 
+            <SearchGridPanel>
             <FilterableDataTable
               rows={reportRows}
               columns={selectedReportSource?.columns || []}
@@ -1173,7 +1177,9 @@ const WarehouseReports = () => {
                 setPage(1);
               }}
               paginationMode="client"
+            fillHeight
             />
+            </SearchGridPanel>
           </Box>
         ) : (
           <Box sx={{ borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", boxShadow: 1, p: { xs: 2, md: 2.5 } }}>

@@ -1,4 +1,7 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import SearchGridPanel from "../../components/SearchGridPanel";
+import { masterSearchAreaSx } from "../../theme/erpUi";
+import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
+import { useMemo, useState } from "react";
 import { ArrowLeft, Trash2, Pencil } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
@@ -61,12 +64,6 @@ const formatDate = (dateStr) => {
 const TransportEntrySearchPage = () => {
   const navigate = useNavigate();
 
-  const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(20);
-  const [serverSearch, setServerSearch] = useState({ query: "", field: "all", fetchAll: false });
-  const [backendPagination, setBackendPagination] = useState({ total: 0, totalPages: 1 });
 
   const [selectedRows, setSelectedRows] = useState([]);
   const [toast, setToast] = useState({ open: false, type: "info", message: "" });
@@ -123,77 +120,13 @@ const TransportEntrySearchPage = () => {
     []
   );
 
-  const isAllMode = useMemo(
-    () => Boolean(serverSearch.fetchAll) || String(serverSearch.query || "").trim() !== "",
-    [serverSearch.fetchAll, serverSearch.query]
-  );
-
-  const pagination = useMemo(() => {
-    if (!isAllMode) return backendPagination;
-    const total = results.length;
-    const totalPages = Math.max(Math.ceil(total / Math.max(limit, 1)), 1);
-    return { total, totalPages };
-  }, [isAllMode, backendPagination, results.length, limit]);
-
-  const fetchResults = useCallback(async ({
-    query = "",
-    field = "all",
-    fetchAll = false,
-    pageOverride = page,
-    limitOverride = limit,
-  } = {}) => {
-    const normalizedQuery = String(query || "").trim();
-    const normalizedField = String(field || "all").trim();
-    const shouldFetchAll = Boolean(fetchAll) || normalizedQuery !== "";
-    setServerSearch({ query: normalizedQuery, field: normalizedField, fetchAll: shouldFetchAll });
-    setLoading(true);
-    try {
-      const params = shouldFetchAll
-        ? { all: "true" }
-        : { page: pageOverride, limit: limitOverride };
-      if (normalizedQuery) params.search = normalizedQuery;
-      if (normalizedField && normalizedField !== "all" && shouldFetchAll) params.field = normalizedField;
-      const res = await api.get("/transport-entries", { params });
-      const rows = res.data?.data || [];
-      setResults(rows);
-      if (shouldFetchAll) {
-        const total = rows.length;
-        setBackendPagination({
-          total,
-          totalPages: Math.max(Math.ceil(total / Math.max(limitOverride, 1)), 1),
-        });
-      } else {
-        const p = res.data?.pagination || {};
-        const total = Number(p.total ?? rows.length) || 0;
-        const totalPages = Math.max(Number(p.totalPages ?? 1) || 1, 1);
-        setBackendPagination({ total, totalPages });
-      }
-    } catch (err) {
-      console.error("Failed to fetch entries:", err);
-      showToast("error", "Failed to fetch entries");
-    } finally {
-      setLoading(false);
-    }
-  }, [limit, page]);
-
-  useEffect(() => {
-    if (isAllMode) return;
-    fetchResults({ query: "", field: "all", fetchAll: false, pageOverride: page, limitOverride: limit });
-  }, [fetchResults, page, limit]);
-
-  const handleServerSearch = useCallback(
-    ({ query, field, fetchAll }) => {
-      setPage(1);
-      fetchResults({
-        query,
-        field,
-        fetchAll,
-        pageOverride: 1,
-        limitOverride: limit,
-      });
-    },
-    [fetchResults, limit]
-  );
+  const grid = useSearchGrid({
+    adapter: createSearchGridAdapter("/transport-entries"),
+    onError: err => setToast({ open: true, type: "error", message: err.response?.data?.message || "Failed to load records" }),
+  });
+  const { rows: results, setRows: setResults, loading, page, setPage, limit, setLimit, pagination } = grid;
+  const fetchResults = grid.refresh;
+  const handleServerSearch = grid.onServerSearch;
 
   const handleBulkDelete = (keys) => {
     setBulkConfirm({ open: true, keys });
@@ -206,7 +139,7 @@ const TransportEntrySearchPage = () => {
       await Promise.all(keys.map((id) => api.delete(`/transport-entries/${id}`)));
       showToast("success", `${keys.length} record(s) deleted`);
       setSelectedRows([]);
-      fetchResults(serverSearch);
+      fetchResults();
     } catch {
       showToast("error", "Failed to delete some records");
     }
@@ -230,7 +163,7 @@ const TransportEntrySearchPage = () => {
       await api.delete(`/transport-entries/${entry.id}`);
       setResults((prev) => prev.filter((r) => r.id !== entry.id));
       showToast("success", `Entry #${entry.lr_entry_no || entry.id} deleted successfully`);
-      fetchResults(serverSearch);
+      fetchResults();
     } catch (err) {
       console.error("Delete failed:", err);
       showToast("error", err.response?.data?.message || "Failed to delete entry");
@@ -278,8 +211,8 @@ const TransportEntrySearchPage = () => {
         </Stack>
       </Stack>
 
-      <Box sx={{ p: 2, flex: 1, minHeight: 0 }}>
-        <Box sx={{ bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "1.75px", p: 1.5, height: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}>
+      <Box sx={masterSearchAreaSx}>
+        <SearchGridPanel>
           <FilterableDataTable
             rows={results}
             columns={tableColumns}
@@ -290,10 +223,13 @@ const TransportEntrySearchPage = () => {
             showExport={false}
             enableColumnResize
             tablePreferenceKey="warehouse.transport_entry_search.list"
-            onRefresh={() => {}}
+            onRefresh={fetchResults}
             refreshDisabled={loading}
             enableServerSearch
             onServerSearch={handleServerSearch}
+            pagination={grid.rawPagination}
+            onNextCursor={grid.navigateCursor}
+            onPreviousCursor={grid.navigateCursor}
             page={page}
             limit={limit}
             totalPages={pagination.totalPages}
@@ -306,7 +242,7 @@ const TransportEntrySearchPage = () => {
             onFetchGroupSummaries={fetchTransportEntryGroupSummaries}
             onFetchGroupRows={fetchTransportEntryGroupRows}
             enableVirtualization
-            paginationMode={isAllMode ? "client" : "server"}
+            paginationMode="server"
             enableSelection
             enableKeyboardNav
             selectedRows={selectedRows}
@@ -338,7 +274,7 @@ const TransportEntrySearchPage = () => {
               </Stack>
             )}
           />
-        </Box>
+        </SearchGridPanel>
       </Box>
 
       <Toast

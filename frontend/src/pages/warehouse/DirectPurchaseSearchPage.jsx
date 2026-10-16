@@ -1,4 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import SearchGridPanel from "../../components/SearchGridPanel";
+import { masterSearchAreaSx } from "../../theme/erpUi";
+import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
+import { useMemo, useState } from "react";
 import { ArrowLeft, Trash2, Pencil } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
@@ -113,13 +116,9 @@ const DirectPurchaseSearchPage = () => {
   const navigate = useNavigate();
 
   const [toast, setToast] = useState({ open: false, type: "info", message: "" });
-  const [loading, setLoading] = useState(true);
   const [selectedRows, setSelectedRows] = useState([]);
-  const [results, setResults] = useState([]);
   const [confirm, setConfirm] = useState({ open: false, entry: null });
   const [bulkConfirm, setBulkConfirm] = useState({ open: false, keys: [] });
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
 
   const columns = useMemo(
     () => [
@@ -207,32 +206,13 @@ const DirectPurchaseSearchPage = () => {
     []
   );
 
-  const pagination = useMemo(() => {
-    const total = results.length;
-    const totalPages = Math.max(Math.ceil(total / Math.max(limit, 1)), 1);
-    return { total, totalPages };
-  }, [results.length, limit]);
-
-  const fetchEntries = async () => {
-    setLoading(true);
-    try {
-      const res = await api.get("/direct-purchases", { params: { all: "true" } });
-      setResults(res.data?.data || []);
-    } catch (err) {
-      console.error("Failed to fetch direct purchases:", err);
-      setToast({
-        open: true,
-        type: "error",
-        message: "Failed to load direct purchases",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchEntries();
-  }, []);
+  const grid = useSearchGrid({
+    adapter: createSearchGridAdapter("/direct-purchases"),
+    onError: err => setToast({ open: true, type: "error", message: err.response?.data?.message || "Failed to load records" }),
+  });
+  const { rows: results, setRows: setResults, loading, page, setPage, limit, setLimit, pagination } = grid;
+  const fetchEntries = grid.refresh;
+  const handleServerSearch = grid.onServerSearch;
 
   const handleBulkDelete = (keys) => {
     setBulkConfirm({ open: true, keys });
@@ -275,7 +255,7 @@ const DirectPurchaseSearchPage = () => {
   };
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "background.default", color: "text.primary" }}>
+    <Box sx={{ bgcolor: "background.default", color: "text.primary", height: "100%", minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1.5, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
         <Stack direction="row" sx={{ alignItems: "center" }}>
           <IconButton onClick={() => navigate("/warehouse/direct-purchase")} aria-label="Back" sx={{ mr: 1.5, color: "text.secondary" }}>
@@ -310,9 +290,10 @@ const DirectPurchaseSearchPage = () => {
         </Stack>
       </Stack>
 
-      <Box sx={{ p: 2 }}>
-        <Box sx={{ bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "1.75px", p: 1.5 }}>
+      <Box sx={masterSearchAreaSx}>
+        <SearchGridPanel>
           <FilterableDataTable
+            fillHeight
             rows={results}
             columns={columns}
             loading={loading}
@@ -324,6 +305,11 @@ const DirectPurchaseSearchPage = () => {
             tablePreferenceKey="warehouse.direct_purchase_search.list"
             onRefresh={fetchEntries}
             refreshDisabled={loading}
+            enableServerSearch
+            onServerSearch={handleServerSearch}
+            pagination={grid.rawPagination}
+            onNextCursor={grid.navigateCursor}
+            onPreviousCursor={grid.navigateCursor}
             page={page}
             limit={limit}
             totalPages={pagination.totalPages}
@@ -336,7 +322,7 @@ const DirectPurchaseSearchPage = () => {
             onFetchGroupSummaries={fetchDirectPurchaseGroupSummaries}
             onFetchGroupRows={fetchDirectPurchaseGroupRows}
             enableVirtualization
-            paginationMode="client"
+            paginationMode="server"
             onRowClick={(entry) => navigate(`/warehouse/direct-purchase?edit=${entry.id}`)}
             enableKeyboardNav
             enableSelection
@@ -367,7 +353,7 @@ const DirectPurchaseSearchPage = () => {
               </Stack>
             )}
           />
-        </Box>
+        </SearchGridPanel>
       </Box>
 
       <ConfirmDialog

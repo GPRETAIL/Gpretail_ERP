@@ -8,7 +8,7 @@ return [
     'max_offset' => 50000,
 
     'resources' => [
-        // Product pagination switches to cursors for large datasets; other masters keep page navigation.
+        // Standard lists use page numbers for small datasets and cursors above the shared threshold.
         'products' => [
             'mode' => 'auto',
             'default_sort' => 'name',
@@ -42,8 +42,7 @@ return [
             ],
         ],
         'customers' => [
-            'mode' => 'offset',
-            'page_only' => true,
+            'mode' => 'auto',
             'default_sort' => 'name',
             'default_order' => 'asc',
             'tie_breaker' => 'id',
@@ -58,8 +57,7 @@ return [
             ],
         ],
         'suppliers' => [
-            'mode' => 'offset',
-            'page_only' => true,
+            'mode' => 'auto',
             'default_sort' => 'name',
             'default_order' => 'asc',
             'tie_breaker' => 'id',
@@ -75,8 +73,7 @@ return [
             ],
         ],
         'employees' => [
-            'mode' => 'offset',
-            'page_only' => true,
+            'mode' => 'auto',
             'default_sort' => 'name',
             'default_order' => 'asc',
             'tie_breaker' => 'id',
@@ -88,8 +85,7 @@ return [
             ],
         ],
         'brands' => [
-            'mode' => 'offset',
-            'page_only' => true,
+            'mode' => 'auto',
             'default_sort' => 'name',
             'default_order' => 'asc',
             'tie_breaker' => 'id',
@@ -101,16 +97,14 @@ return [
             ],
         ],
         'categories' => [
-            'mode' => 'offset',
-            'page_only' => true,
+            'mode' => 'auto',
             'default_sort' => 'name',
             'default_order' => 'asc',
             'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'name', 'created_at'],
         ],
         'taxes' => [
-            'mode' => 'offset',
-            'page_only' => true,
+            'mode' => 'auto',
             'default_sort' => 'name',
             'default_order' => 'asc',
             'tie_breaker' => 'id',
@@ -122,8 +116,7 @@ return [
             ],
         ],
         'agents' => [
-            'mode' => 'offset',
-            'page_only' => true,
+            'mode' => 'auto',
             'default_sort' => 'name',
             'default_order' => 'asc',
             'tie_breaker' => 'id',
@@ -134,8 +127,7 @@ return [
             ],
         ],
         'transports' => [
-            'mode' => 'offset',
-            'page_only' => true,
+            'mode' => 'auto',
             'default_sort' => 'name',
             'default_order' => 'asc',
             'tie_breaker' => 'id',
@@ -147,24 +139,21 @@ return [
             ],
         ],
         'sizes' => [
-            'mode' => 'offset',
-            'page_only' => true,
+            'mode' => 'auto',
             'default_sort' => 'sort_order',
             'default_order' => 'asc',
             'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'name', 'code', 'sort_order', 'created_at'],
         ],
         'attribute_values' => [
-            'mode' => 'offset',
-            'page_only' => true,
+            'mode' => 'auto',
             'default_sort' => 'name',
             'default_order' => 'asc',
             'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'name', 'value', 'code', 'sort_order', 'created_at'],
         ],
         'users' => [
-            'mode' => 'offset',
-            'page_only' => true,
+            'mode' => 'auto',
             'default_sort' => 'id',
             'default_order' => 'desc',
             'tie_breaker' => 'id',
@@ -175,6 +164,7 @@ return [
         // WHERE clause (it needs real column names, not an arbitrary SQL expression).
         'notifications' => [
             'mode' => 'offset',
+            'supports_cursor' => false,
             'default_limit' => 20,
             'default_sort' => 'id',
             'default_order' => 'desc',

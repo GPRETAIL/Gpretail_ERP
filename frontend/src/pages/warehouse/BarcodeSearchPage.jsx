@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import SearchGridPanel from "../../components/SearchGridPanel";
+import { masterSearchAreaSx } from "../../theme/erpUi";
+import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
+import { useMemo, useState } from "react";
 import { ArrowLeft, Printer } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import api from "../../api/axios";
 import Toast from "../../components/Toast";
 import FilterableDataTable from "../../components/FilterableDataTable";
 import Breadcrumbs from "../../components/Breadcrumbs";
@@ -23,12 +25,6 @@ const BarcodeSearchPage = () => {
   const [toast, setToast] = useState({ open: false, type: "info", message: "" });
   const showToast = (type, message) => setToast({ open: true, type, message });
 
-  const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(20);
-  const [serverSearch, setServerSearch] = useState({ query: "", field: "all", fetchAll: false });
-  const [backendPagination, setBackendPagination] = useState({ total: 0, totalPages: 1 });
 
   const columns = useMemo(
     () => [
@@ -97,75 +93,13 @@ const BarcodeSearchPage = () => {
     []
   );
 
-  const isAllMode = useMemo(
-    () => Boolean(serverSearch.fetchAll) || String(serverSearch.query || "").trim() !== "",
-    [serverSearch.fetchAll, serverSearch.query]
-  );
-
-  const pagination = useMemo(() => {
-    if (!isAllMode) return backendPagination;
-    const total = results.length;
-    const totalPages = Math.max(Math.ceil(total / Math.max(limit, 1)), 1);
-    return { total, totalPages };
-  }, [isAllMode, backendPagination, results.length, limit]);
-
-  const fetchBarcodes = useCallback(async ({
-    query = "",
-    fetchAll = false,
-    pageOverride = page,
-    limitOverride = limit,
-  } = {}) => {
-    const normalizedQuery = String(query || "").trim();
-    const shouldFetchAll = Boolean(fetchAll) || normalizedQuery !== "";
-    setServerSearch({ query: normalizedQuery, field: "all", fetchAll: shouldFetchAll });
-    setLoading(true);
-    try {
-      const params = shouldFetchAll
-        ? { all: "true" }
-        : { page: pageOverride, limit: limitOverride };
-      if (normalizedQuery) params.search = normalizedQuery;
-      const res = await api.get("/barcodes", { params });
-      const rows = res.data?.data || [];
-      setResults(rows);
-      if (shouldFetchAll) {
-        const total = rows.length;
-        setBackendPagination({
-          total,
-          totalPages: Math.max(Math.ceil(total / Math.max(limitOverride, 1)), 1),
-        });
-      } else {
-        const total = Number(res.data?.total ?? rows.length) || 0;
-        const perPage = Number(res.data?.limit ?? limitOverride) || limitOverride;
-        setBackendPagination({
-          total,
-          totalPages: Math.max(Math.ceil(total / Math.max(perPage, 1)), 1),
-        });
-      }
-    } catch (err) {
-      console.error("Failed to fetch barcodes:", err);
-      showToast("error", "Failed to load barcodes");
-    } finally {
-      setLoading(false);
-    }
-  }, [limit, page]);
-
-  useEffect(() => {
-    if (isAllMode) return;
-    fetchBarcodes({ query: "", fetchAll: false, pageOverride: page, limitOverride: limit });
-  }, [fetchBarcodes, page, limit]);
-
-  const handleServerSearch = useCallback(
-    ({ query, fetchAll }) => {
-      setPage(1);
-      fetchBarcodes({
-        query,
-        fetchAll,
-        pageOverride: 1,
-        limitOverride: limit,
-      });
-    },
-    [fetchBarcodes, limit]
-  );
+  const grid = useSearchGrid({
+    adapter: createSearchGridAdapter("/barcodes"),
+    onError: err => setToast({ open: true, type: "error", message: err.response?.data?.message || "Failed to load records" }),
+  });
+  const { rows: results, loading, page, setPage, limit, setLimit, pagination } = grid;
+  const fetchBarcodes = grid.refresh;
+  const handleServerSearch = grid.onServerSearch;
 
   const handleReprint = (row) => {
     if (row.direct_purchase_id) {
@@ -192,8 +126,8 @@ const BarcodeSearchPage = () => {
         </Stack>
       </Stack>
 
-      <Box sx={{ p: 2, flex: 1, minHeight: 0 }}>
-        <Box sx={{ bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "1.75px", p: 1.5, height: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}>
+      <Box sx={masterSearchAreaSx}>
+        <SearchGridPanel>
           <FilterableDataTable
             rows={results}
             columns={columns}
@@ -204,10 +138,13 @@ const BarcodeSearchPage = () => {
             showExport={false}
             enableColumnResize
             tablePreferenceKey="warehouse.barcode_search.list"
-            onRefresh={() => {}}
+            onRefresh={fetchBarcodes}
             refreshDisabled={loading}
             enableServerSearch
             onServerSearch={handleServerSearch}
+            pagination={grid.rawPagination}
+            onNextCursor={grid.navigateCursor}
+            onPreviousCursor={grid.navigateCursor}
             page={page}
             limit={limit}
             totalPages={pagination.totalPages}
@@ -217,7 +154,7 @@ const BarcodeSearchPage = () => {
               setLimit(value);
               setPage(1);
             }}
-            paginationMode={isAllMode ? "client" : "server"}
+            paginationMode="server"
             fillHeight
             renderActions={(row) => (
               <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -234,7 +171,7 @@ const BarcodeSearchPage = () => {
               </Box>
             )}
           />
-        </Box>
+        </SearchGridPanel>
       </Box>
 
       <Toast

@@ -1,3 +1,5 @@
+import SearchGridPanel from "../../components/SearchGridPanel";
+import useSearchGrid from "../../hooks/useSearchGrid";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Layers } from "lucide-react";
 import { toast } from "react-toastify";
@@ -2336,8 +2338,9 @@ const SalesReports = () => {
     if (uniqueNames.length > 0) return uniqueNames[0];
     return authUser?.company_id ? `Company ${authUser.company_id}` : "Company";
   }, [authUser?.company_id, resolvedExportCompanyName]);
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(20);
+
+  const grid = useSearchGrid({ sourceRows: reportRows, paginationMode: "client", scopeKey: selectedReportKey });
+  const { page, setPage, limit, setLimit } = grid;
 
   const selectedReport = selectedReportKey ? reportLookup[selectedReportKey] || null : null;
   const selectedReportSource = selectedReport ? REPORT_DATA_SOURCES[selectedReport.key] || null : null;
@@ -2652,6 +2655,7 @@ const SalesReports = () => {
               ) : null}
             </Box>
 
+            <SearchGridPanel>
             <FilterableDataTable
               key={`${selectedReport.key}${appliedSalesSummary ? `_${appliedSalesSummary.label}` : ""}`}
               rows={displayRows}
@@ -2686,6 +2690,7 @@ const SalesReports = () => {
                 setPage(1);
               }}
               paginationMode="client"
+            fillHeight
               defaultGroupByColumn={
                 appliedSalesSummary
                   ? null
@@ -2693,6 +2698,7 @@ const SalesReports = () => {
               }
               enableVirtualization
             />
+            </SearchGridPanel>
 
             {selectedReport.key === "sales_report" ? (
               <>

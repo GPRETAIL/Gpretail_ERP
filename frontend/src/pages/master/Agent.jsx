@@ -1,3 +1,4 @@
+import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
 import MasterSearchPanel from "../../components/MasterSearchPanel";
 import { masterSearchAreaSx } from "../../theme/erpUi";
 import { ArrowLeft, Pencil, PlusCircle, Save, Search, Trash2 } from "lucide-react";
@@ -73,16 +74,7 @@ const Agent = () => {
   const savingRef = useRef(false);
 
   const [showSearch, setShowSearch] = useState(true);
-  const [searchResults, setSearchResults] = useState([]);
-  const [searchLoading, setSearchLoading] = useState(true);
   const [selectedRows, setSelectedRows] = useState([]);
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(20);
-  const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
-  const [rawPagination, setRawPagination] = useState(null);
-  const [tableSearch, setTableSearch] = useState("");
-  const [tableSearchField, setTableSearchField] = useState("all");
-  const [forceFetchAll, setForceFetchAll] = useState(false);
 
   const [agentTypes, setAgentTypes] = useState([]);
   const [cities, setCities] = useState([]);
@@ -211,54 +203,18 @@ const Agent = () => {
     }
   };
 
-  const fetchSearchResults = async (queryOverride = tableSearch, cursorToken = null) => {
-    setSearchLoading(true);
-    try {
-      const query = String(queryOverride || "").trim();
-      const params = (query || forceFetchAll)
-        ? { all: "true", search: query || undefined, field: tableSearchField !== "all" ? tableSearchField : undefined }
-        : { ...(cursorToken ? { cursor: cursorToken } : { page }), limit };
-      const res = await api.get("/agents", { params });
-      const rows = res.data?.data || [];
-      setSearchResults(rows);
-      if (query) {
-        setPagination({ total: rows.length, totalPages: 1 });
-        setRawPagination(null);
-      } else {
-        const p = res.data?.pagination || {};
-        const total = Number(p.total ?? res.data?.total ?? rows.length) || 0;
-        const totalPages = Math.max(
-          Number(p.totalPages ?? res.data?.totalPages ?? Math.ceil(total / Math.max(limit, 1))) || 1,
-          1
-        );
-        setPagination({ total, totalPages });
-        setRawPagination(res.data?.pagination || null);
-      }
-    } catch {
-      toast.error("Failed to load agents");
-    } finally {
-      setSearchLoading(false);
-    }
-  };
+  const grid = useSearchGrid({
+    adapter: createSearchGridAdapter("/agents"),
+    enabled: showSearch,
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to load agent records"),
+  });
+  const { rows: searchResults, setRows: setSearchResults, loading: searchLoading, page, setPage, limit, setLimit, pagination, rawPagination } = grid;
+  const fetchSearchResults = grid.refresh;
+  const handleAgentNextCursor = grid.navigateCursor;
+  const handleAgentPreviousCursor = grid.navigateCursor;
+  const handleServerSearch = grid.onServerSearch;
+  const handleSearchOpen = () => { setShowSearch(true); grid.refresh(); };
 
-  const handleAgentNextCursor = (cursor) => fetchSearchResults(tableSearch, cursor);
-  const handleAgentPreviousCursor = (cursor) => fetchSearchResults(tableSearch, cursor);
-
-  const handleSearchOpen = () => {
-    setShowSearch(true);
-    fetchSearchResults();
-  };
-
-  useEffect(() => {
-    if (showSearch) fetchSearchResults();
-  }, [showSearch, page, limit, tableSearch, forceFetchAll]);
-
-  const handleServerSearch = useCallback(({ query, field, fetchAll }) => {
-    setTableSearch(query);
-    setTableSearchField(field || "all");
-    setForceFetchAll(!!fetchAll);
-    setPage(1);
-  }, []);
 
   const handleEditFromSearch = (row) => {
     setCurrentId(row.id);
@@ -497,6 +453,8 @@ const Agent = () => {
               refreshDisabled={searchLoading}
               enableServerSearch
               onServerSearch={handleServerSearch}
+                onSortChange={grid.onSortChange}
+                serverSortFields={{ name: "name", code: "code", email: "email" }}
               page={page}
               limit={limit}
               totalPages={pagination.totalPages}

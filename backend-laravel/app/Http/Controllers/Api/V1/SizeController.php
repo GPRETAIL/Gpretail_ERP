@@ -224,6 +224,15 @@ class SizeController extends Controller
             $query->where('name', 'like', "%{$search}%")->orWhere('code', 'like', "%{$search}%");
         }
 
+        if ($request->boolean('paginate')) {
+            $result = $this->paginationService->paginate($query, 'size_groups', $request, [
+                'default_sort' => 'name', 'default_order' => 'asc', 'allowed_sorts' => ['id', 'name', 'code'],
+            ]);
+            $result['data'] = collect($result['data'])->map(fn ($g) => $this->formatGroup($g));
+
+            return response()->json($result);
+        }
+
         $groups = $query->orderBy('name')->get();
 
         return response()->json([

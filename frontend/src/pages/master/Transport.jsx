@@ -1,6 +1,7 @@
+import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
 import MasterSearchPanel from "../../components/MasterSearchPanel";
 import { masterSearchAreaSx } from "../../theme/erpUi";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useState } from "react";
 import { ArrowLeft, Eye, Pencil, PlusCircle, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -64,63 +65,23 @@ const TRANSPORT_IMPORT_CONFIG = {
 
 const Transport = () => {
   const navigate = useNavigate();
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [selectedRows, setSelectedRows] = useState([]);
   const [confirmDlg, setConfirmDlg] = useState({ open: false, id: null, name: "" });
   const [bulkConfirm, setBulkConfirm] = useState({ open: false, keys: [] });
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(20);
-  const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
-  const [rawPagination, setRawPagination] = useState(null);
-  const [tableSearch, setTableSearch] = useState("");
-  const [tableSearchField, setTableSearchField] = useState("all");
-  const [forceFetchAll, setForceFetchAll] = useState(false);
   const storeMap = useStoreNameMap();
 
-  useEffect(() => {
-    fetchData();
-  }, [page, limit, tableSearch, forceFetchAll]);
 
-  const fetchData = async (queryOverride = tableSearch, cursorToken = null) => {
-    try {
-      setLoading(true);
-      const query = String(queryOverride || "").trim();
-      const params = (query || forceFetchAll)
-        ? { all: "true", search: query || undefined, field: tableSearchField !== "all" ? tableSearchField : undefined }
-        : { ...(cursorToken ? { cursor: cursorToken } : { page }), limit };
-      const res = await api.get("/transports", { params });
-      const rows = res.data?.data || [];
-      setData(rows);
-      if (query) {
-        setPagination({ total: rows.length, totalPages: 1 });
-        setRawPagination(null);
-      } else {
-        const p = res.data?.pagination || {};
-        const total = Number(p.total ?? res.data?.total ?? rows.length) || 0;
-        const totalPages = Math.max(
-          Number(p.totalPages ?? res.data?.totalPages ?? Math.ceil(total / Math.max(limit, 1))) || 1,
-          1
-        );
-        setPagination({ total, totalPages });
-        setRawPagination(res.data?.pagination || null);
-      }
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to load transports");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const grid = useSearchGrid({
+    adapter: createSearchGridAdapter("/transports"),
+    enabled: true,
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to load transport records"),
+  });
+  const { rows: data, loading: loading, page, setPage, limit, setLimit, pagination, rawPagination } = grid;
+  const fetchData = grid.refresh;
+  const handleTransportNextCursor = grid.navigateCursor;
+  const handleTransportPreviousCursor = grid.navigateCursor;
+  const handleServerSearch = grid.onServerSearch;
 
-  const handleTransportNextCursor = (cursor) => fetchData(tableSearch, cursor);
-  const handleTransportPreviousCursor = (cursor) => fetchData(tableSearch, cursor);
-
-  const handleServerSearch = useCallback(({ query, field, fetchAll }) => {
-    setTableSearch(query);
-    setTableSearchField(field || "all");
-    setForceFetchAll(!!fetchAll);
-    setPage(1);
-  }, []);
 
   const columns = [
     { key: "name", label: "Name" },
@@ -255,6 +216,8 @@ const Transport = () => {
             refreshDisabled={loading}
             enableServerSearch
             onServerSearch={handleServerSearch}
+                onSortChange={grid.onSortChange}
+                serverSortFields={{ name: "name", code: "code" }}
             page={page}
             limit={limit}
             totalPages={pagination.totalPages}

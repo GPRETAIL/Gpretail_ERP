@@ -1,6 +1,7 @@
+import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
 import MasterSearchPanel from "../../components/MasterSearchPanel";
 import { masterSearchAreaSx } from "../../theme/erpUi";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { ArrowLeft, PlusCircle, Save, Search, Trash2, Upload } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -284,16 +285,7 @@ const Employee = () => {
   const storeMap = useStoreNameMap();
   const [formData, setFormData] = useState(blankForm());
   const [rightTab, setRightTab] = useState("PF and ESI");
-  const [searchResults, setSearchResults] = useState([]);
   const [selectedRows, setSelectedRows] = useState([]);
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(20);
-  const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
-  const [rawPagination, setRawPagination] = useState(null);
-  const [tableSearch, setTableSearch] = useState("");
-  const [tableSearchField, setTableSearchField] = useState("all");
-  const [forceFetchAll, setForceFetchAll] = useState(false);
-  const [searchLoading, setSearchLoading] = useState(true);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [bulkConfirm, setBulkConfirm] = useState({ open: false, keys: [] });
@@ -414,50 +406,17 @@ const Employee = () => {
     }
   };
 
-  const handleSearch = async (queryOverride = tableSearch, cursorToken = null) => {
-    try {
-      setSearchLoading(true);
-      const query = String(queryOverride || "").trim();
-      const params = (query || forceFetchAll)
-        ? { all: "true", search: query || undefined, field: tableSearchField !== "all" ? tableSearchField : undefined }
-        : { ...(cursorToken ? { cursor: cursorToken } : { page }), limit };
-      const res = await api.get("/employees", { params });
-      const rows = res.data?.data || [];
-      setSearchResults(rows);
-      if (query) {
-        setPagination({ total: rows.length, totalPages: 1 });
-        setRawPagination(null);
-      } else {
-        const p = res.data?.pagination || {};
-        const total = Number(p.total ?? res.data?.total ?? rows.length) || 0;
-        const totalPages = Math.max(
-          Number(p.totalPages ?? res.data?.totalPages ?? Math.ceil(total / Math.max(limit, 1))) || 1,
-          1
-        );
-        setPagination({ total, totalPages });
-        setRawPagination(res.data?.pagination || null);
-      }
-      setShowSearchPage(true);
-    } catch {
-      toast.error("Failed to search employees");
-    } finally {
-      setSearchLoading(false);
-    }
-  };
+  const grid = useSearchGrid({
+    adapter: createSearchGridAdapter("/employees"),
+    enabled: showSearchPage,
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to load employee records"),
+  });
+  const { rows: searchResults, setRows: setSearchResults, loading: searchLoading, page, setPage, limit, setLimit, pagination, rawPagination } = grid;
+  const handleSearch = grid.refresh;
+  const handleEmployeeNextCursor = grid.navigateCursor;
+  const handleEmployeePreviousCursor = grid.navigateCursor;
+  const handleServerSearch = grid.onServerSearch;
 
-  const handleEmployeeNextCursor = (cursor) => handleSearch(tableSearch, cursor);
-  const handleEmployeePreviousCursor = (cursor) => handleSearch(tableSearch, cursor);
-
-  useEffect(() => {
-    if (showSearchPage) handleSearch();
-  }, [showSearchPage, page, limit, tableSearch, forceFetchAll]);
-
-  const handleServerSearch = useCallback(({ query, field, fetchAll }) => {
-    setTableSearch(query);
-    setTableSearchField(field || "all");
-    setForceFetchAll(!!fetchAll);
-    setPage(1);
-  }, []);
 
   const handleBackClick = () => {
     if (showSearchPage) {
@@ -1186,6 +1145,8 @@ const Employee = () => {
         onRefresh={() => handleSearch()}
         enableServerSearch
         onServerSearch={handleServerSearch}
+                onSortChange={grid.onSortChange}
+                serverSortFields={{ name: "name", code: "code" }}
         page={page}
         limit={limit}
         totalPages={pagination.totalPages}

@@ -1,7 +1,8 @@
+import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
 import MasterSearchPanel from "../../components/MasterSearchPanel";
 import { masterSearchAreaSx } from "../../theme/erpUi";
 import { ArrowLeft, Pencil, PlusCircle, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { Box, Stack, Card, Typography, Button } from "@mui/material";
@@ -70,35 +71,15 @@ const typeOptions = [
 const Configuration = () => {
   const navigate = useNavigate();
   const [configType, setConfigType] = useState("");
-  const [rows, setRows] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [confirm, setConfirm] = useState({ open: false, id: null, name: "" });
-  const [tablePage, setTablePage] = useState(1);
-  const [tableLimit, setTableLimit] = useState(20);
   const storeMap = useStoreNameMap();
 
-  const fetchList = async (type) => {
-    if (!type) return;
-    setLoading(true);
-    try {
-      const res = await api.get(`/configurations/${type.toLowerCase()}`);
-      const data = res.data?.data || [];
-      setRows(data);
-      if (data.length === 0) toast.info("No records found for this type.");
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to load list");
-      setRows([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (configType) fetchList(configType);
-    else setRows([]);
-    setTablePage(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [configType]);
+  const grid = useSearchGrid({
+    adapter: createSearchGridAdapter(`/configurations/${configType.toLowerCase()}`, undefined, { paginate: true }),
+    enabled: Boolean(configType), scopeKey: configType,
+    onError: err => toast.error(err.response?.data?.message || "Failed to load configuration"),
+  });
+  const { rows, setRows, loading, page: tablePage, setPage: setTablePage, limit: tableLimit, setLimit: setTableLimit } = grid;
 
   const handleNew = () => {
     if (!configType) { toast.warning("Please select a Configuration Type first!"); return; }
@@ -199,11 +180,16 @@ const Configuration = () => {
             searchButtonClassName="glass-btn glass-btn-primary"
             showExport={false}
             tablePreferenceKey="masters.configuration.list"
-            paginationMode="client"
+            paginationMode="server"
+              enableServerSearch
+              onServerSearch={grid.onServerSearch}
+              pagination={grid.rawPagination}
+              onNextCursor={grid.navigateCursor}
+              onPreviousCursor={grid.navigateCursor}
             page={tablePage}
             limit={tableLimit}
-            totalRows={rows.length}
-            totalPages={Math.max(Math.ceil(rows.length / Math.max(tableLimit, 1)), 1)}
+            totalRows={grid.pagination.total}
+            totalPages={grid.pagination.totalPages}
             onPageChange={setTablePage}
             onLimitChange={(value) => {
               setTableLimit(value);

@@ -1,4 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import SearchGridPanel from "../../components/SearchGridPanel";
+import { masterSearchAreaSx } from "../../theme/erpUi";
+import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
+import { useMemo, useState } from "react";
 import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
@@ -35,12 +38,8 @@ const PurchaseReturnSearchPage = () => {
   const { printHtml } = usePrintContext();
 
   const [toast, setToast] = useState({ open: false, type: "info", message: "" });
-  const [loading, setLoading] = useState(true);
   const [selectedRows, setSelectedRows] = useState([]);
   const [bulkConfirm, setBulkConfirm] = useState({ open: false, keys: [] });
-  const [results, setResults] = useState([]);
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(20);
 
   const columns = useMemo(
     () => [
@@ -87,28 +86,13 @@ const PurchaseReturnSearchPage = () => {
     []
   );
 
-  const pagination = useMemo(() => {
-    const total = results.length;
-    const totalPages = Math.max(Math.ceil(total / Math.max(limit, 1)), 1);
-    return { total, totalPages };
-  }, [results.length, limit]);
-
-  const handleSearch = async () => {
-    setLoading(true);
-    try {
-      const res = await api.get("/purchase-returns", { params: { all: "true" } });
-      setResults(res.data?.data || []);
-    } catch (err) {
-      console.error("Failed to search purchase returns:", err);
-      setToast({
-        open: true,
-        type: "error",
-        message: "Failed to search purchase returns",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const grid = useSearchGrid({
+    adapter: createSearchGridAdapter("/purchase-returns"),
+    onError: err => setToast({ open: true, type: "error", message: err.response?.data?.message || "Failed to load records" }),
+  });
+  const { rows: results, loading, page, setPage, limit, setLimit, pagination } = grid;
+  const handleSearch = grid.refresh;
+  const handleServerSearch = grid.onServerSearch;
 
   const handleBulkDelete = (keys) => {
     setBulkConfirm({ open: true, keys });
@@ -183,9 +167,6 @@ const PurchaseReturnSearchPage = () => {
     });
   };
 
-  useEffect(() => {
-    handleSearch();
-  }, []);
 
   return (
     <Box sx={{ height: "100%", bgcolor: "background.default", color: "text.primary", display: "flex", flexDirection: "column" }} className="master-responsive">
@@ -222,8 +203,8 @@ const PurchaseReturnSearchPage = () => {
         />
       </Stack>
 
-      <Box sx={{ flex: 1, p: 2, minHeight: 0 }}>
-        <Box sx={{ bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "1.75px", p: 1.5, height: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}>
+      <Box sx={masterSearchAreaSx}>
+        <SearchGridPanel>
           <FilterableDataTable
             rows={results}
             columns={columns}
@@ -235,6 +216,11 @@ const PurchaseReturnSearchPage = () => {
             tablePreferenceKey="warehouse.purchase_return_search.list"
             onRefresh={handleSearch}
             refreshDisabled={loading}
+            enableServerSearch
+            onServerSearch={handleServerSearch}
+            pagination={grid.rawPagination}
+            onNextCursor={grid.navigateCursor}
+            onPreviousCursor={grid.navigateCursor}
             page={page}
             limit={limit}
             totalPages={pagination.totalPages}
@@ -247,7 +233,7 @@ const PurchaseReturnSearchPage = () => {
             onFetchGroupSummaries={fetchPurchaseReturnGroupSummaries}
             onFetchGroupRows={fetchPurchaseReturnGroupRows}
             enableVirtualization
-            paginationMode="client"
+            paginationMode="server"
             fillHeight
             onRowClick={(entry) => navigate(`/warehouse/purchase-return?edit=${entry.id}`)}
             enableKeyboardNav
@@ -278,7 +264,7 @@ const PurchaseReturnSearchPage = () => {
               </Stack>
             )}
           />
-        </Box>
+        </SearchGridPanel>
       </Box>
 
       <Toast

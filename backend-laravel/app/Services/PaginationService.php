@@ -88,8 +88,8 @@ class PaginationService
         array $options,
         EloquentBuilder|QueryBuilder|null $query = null
     ): string {
-        // Master screens need stable page numbers even when the dataset grows.
-        if ($resourceConfig['page_only'] ?? false) {
+        // Expression-based ordering (such as unread-first notifications) cannot encode a keyset.
+        if (($resourceConfig['supports_cursor'] ?? true) === false) {
             return 'offset';
         }
 
@@ -101,7 +101,7 @@ class PaginationService
         $cursorThreshold = (int) ($resourceConfig['cursor_threshold'] ?? config('pagination.cursor_threshold', 50000));
         $maxOffset = (int) ($resourceConfig['max_offset'] ?? config('pagination.max_offset', 50000));
 
-        // 2. Protect against deep OFFSET performance collapse (> 1 Lakh records)
+        // 2. Protect against deep OFFSET performance collapse beyond the configured offset cap
         $requestedPage = max(1, (int) $request->input('page', 1));
         $requestedLimit = max(1, (int) ($request->input('limit', $request->input('per_page', 50))));
         if (($requestedPage * $requestedLimit) > $maxOffset) {
@@ -125,12 +125,12 @@ class PaginationService
 
         $estimatedRows = $this->getEstimatedRowCount($query, $options);
 
-        // 5. If client specifically requested a page number, allow offset if within 1-Lakh dataset threshold
+        // 5. If client specifically requested a page number, allow offset if within the configured dataset threshold
         if ($request->filled('page')) {
             return ($estimatedRows > $cursorThreshold) ? 'cursor' : 'offset';
         }
 
-        // 6. 1-Lakh (100,000) Automatic Threshold Detection for Auto/Offset resources
+        // 6. Automatic threshold detection for standard listing resources
         if ($estimatedRows > $cursorThreshold) {
             return 'cursor';
         }

@@ -1,4 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import SearchGridPanel from "../../components/SearchGridPanel";
+import { masterSearchAreaSx } from "../../theme/erpUi";
+import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
+import React, { useMemo, useState } from "react";
 import { ArrowLeft, Copy, Pencil, PlusCircle, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -107,66 +110,16 @@ const mapOrderRow = (row) => ({
 
 const CrmCustomerOrders = () => {
   const navigate = useNavigate();
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
-  const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
   const [selectedRows, setSelectedRows] = useState([]);
   const [confirm, setConfirm] = useState({ open: false, id: null, name: "" });
   const [bulkConfirm, setBulkConfirm] = useState({ open: false, keys: [] });
-  const [serverSearch, setServerSearch] = useState({
-    query: "",
-    field: "all",
-    fetchAll: false,
+
+  const grid = useSearchGrid({
+    adapter: createSearchGridAdapter("/customer-orders", mapOrderRow),
+    onError: err => toast.error(err.response?.data?.message || "Failed to load records"),
   });
-
-  const fetchOrders = useCallback(
-    async (
-      pageToLoad = page,
-      limitToLoad = limit,
-      fetchAll = false,
-      query = serverSearch.query,
-      field = serverSearch.field
-    ) => {
-      try {
-        setLoading(true);
-        const trimmedQuery = String(query || "").trim();
-        const shouldFetchAll = fetchAll || trimmedQuery !== "";
-        const params = shouldFetchAll
-          ? {
-              all: "true",
-              search: trimmedQuery || undefined,
-              field: field && field !== "all" ? field : undefined,
-            }
-          : { page: pageToLoad, limit: limitToLoad };
-
-        const res = await api.get("/customer-orders", { params });
-        const rows = (res.data?.data || []).map(mapOrderRow);
-        setOrders(rows);
-
-        if (shouldFetchAll || !res.data?.pagination) {
-          setPagination({ total: rows.length, totalPages: 1 });
-        } else {
-          const p = res.data.pagination;
-          setPagination({
-            total: Number(p.total) || 0,
-            totalPages: Math.max(Number(p.totalPages) || 1, 1),
-          });
-        }
-      } catch (err) {
-        toast.error(err?.response?.data?.message || "Failed to load customer orders");
-      } finally {
-        setLoading(false);
-      }
-    },
-    [page, limit, serverSearch]
-  );
-
-  useEffect(() => {
-    const hasSearch = String(serverSearch.query || "").trim() !== "";
-    fetchOrders(page, limit, hasSearch || serverSearch.fetchAll, serverSearch.query, serverSearch.field);
-  }, [fetchOrders, page, limit, serverSearch]);
+  const { rows: orders, loading, page, setPage, limit, setLimit, pagination } = grid;
+  const fetchOrders = grid.refresh;
 
   const handleDeleteConfirmed = async () => {
     const { id, name } = confirm;
@@ -200,7 +153,7 @@ const CrmCustomerOrders = () => {
   const visibleColumns = useMemo(() => ORDER_COLUMNS, []);
 
   return (
-    <Box sx={{ minHeight: "70vh", bgcolor: "background.default", color: "text.primary" }}>
+    <Box sx={{ height: "100%", minHeight: 0, display: "flex", flexDirection: "column", bgcolor: "background.default", color: "text.primary" }}>
       <ConfirmDialog
         open={confirm.open}
         message={`Are you sure you want to delete "${confirm.name}"? This action cannot be undone.`}
@@ -241,8 +194,8 @@ const CrmCustomerOrders = () => {
         </Stack>
       </Stack>
 
-      <Box sx={{ p: 1.5, pb: 8 }}>
-        <Stack sx={{ bgcolor: "background.paper", boxShadow: 3, borderRadius: "7px", p: 2.5, border: "1px solid", borderColor: "divider" }}>
+      <Box sx={masterSearchAreaSx}>
+        <SearchGridPanel>
           <Typography sx={{ fontSize: 15.75, fontWeight: 700, mb: 1.5 }}>Customer Order Search</Typography>
           <FilterableDataTable
             rows={orders}
@@ -252,20 +205,16 @@ const CrmCustomerOrders = () => {
             searchPlaceholder="Search customer orders..."
             enableColumnResize
             tablePreferenceKey="crm.customer_orders.list"
-            onRefresh={() =>
-              fetchOrders(
-                1,
-                limit,
-                String(serverSearch.query || "").trim() !== "" || serverSearch.fetchAll,
-                serverSearch.query,
-                serverSearch.field
-              )
-            }
+            onRefresh={grid.refresh}
             refreshDisabled={loading}
             enableSelection
             selectedRows={selectedRows}
             onSelectionChange={setSelectedRows}
             onBulkDelete={handleBulkDelete}
+            pagination={grid.rawPagination}
+            onNextCursor={grid.navigateCursor}
+            onPreviousCursor={grid.navigateCursor}
+            fillHeight
             page={page}
             limit={limit}
             totalPages={pagination.totalPages}
@@ -280,24 +229,7 @@ const CrmCustomerOrders = () => {
             paginationMode="server"
             enableVirtualization
             enableServerSearch
-            onServerSearch={({ query, field, fetchAll }) => {
-              const next = {
-                query: String(query || "").trim(),
-                field: field || "all",
-                fetchAll: !!fetchAll,
-              };
-              setServerSearch((prev) => {
-                if (
-                  prev.query === next.query
-                  && prev.field === next.field
-                  && prev.fetchAll === next.fetchAll
-                ) {
-                  return prev;
-                }
-                return next;
-              });
-              if (page !== 1) setPage(1);
-            }}
+            onServerSearch={grid.onServerSearch}
             onExportRows={async ({ query, field }) => {
               const params = { all: "true" };
               const trimmed = String(query || "").trim();
@@ -347,7 +279,7 @@ const CrmCustomerOrders = () => {
               </Stack>
             )}
           />
-        </Stack>
+        </SearchGridPanel>
       </Box>
     </Box>
   );
