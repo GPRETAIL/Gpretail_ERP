@@ -1,12 +1,13 @@
-/* eslint-disable no-unused-vars */
 import { ChevronRightIcon } from "@heroicons/react/24/outline";
 import { useEffect, useRef, useState } from "react";
 import { Box, ButtonBase, Portal, Typography } from "@mui/material";
 import { useTabs } from "../context/TabContext";
 
-const itemSx = (isOpen) => ({
-  display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%",
-  p: 1, borderRadius: 2, cursor: "pointer", transition: "all 0.15s", textAlign: "left",
+const itemSx = (isOpen, isExpanded) => ({
+  display: "flex", alignItems: "center", justifyContent: isExpanded ? "space-between" : "center", width: "100%",
+  minHeight: isExpanded ? 40 : 56,
+  px: isExpanded ? 1 : 0.5, py: 0.75,
+  borderRadius: 2, cursor: "pointer", transition: "all 0.15s", textAlign: isExpanded ? "left" : "center",
   bgcolor: isOpen
     ? (theme) => (theme.palette.mode === "dark" ? "rgba(49,46,129,0.4)" : "#eef2ff")
     : "transparent",
@@ -42,6 +43,16 @@ const NavItem = ({
   const isCurrentPath = isDirectLink && currentPath.startsWith(itemPath);
   const isActive = activeMenu === name;
   const isOpen = isDirectLink ? isCurrentPath : isActive;
+  const label = !isExpanded ? ({ HRMS: "HR", "User Access": "User" }[name] || name) : name;
+  const contentSx = {
+    display: "flex", alignItems: "center", flexDirection: isExpanded ? "row" : "column",
+    gap: isExpanded ? 0 : 0.5, minWidth: 0, width: isExpanded ? "auto" : "100%",
+  };
+  const labelSx = {
+    fontWeight: 500, fontSize: isExpanded ? 14 : 10.5, lineHeight: 1.2,
+    whiteSpace: isExpanded ? "nowrap" : "normal", overflowWrap: "anywhere",
+    ml: isExpanded ? 1.5 : 0, width: isExpanded ? "auto" : "100%",
+  };
 
   // --- Submenu positioning (Logic remains the same) ---
   useEffect(() => {
@@ -99,7 +110,7 @@ const NavItem = ({
   // --------------------------------------------------------
 
   return (
-    <Box component="li" sx={{ position: "relative", listStyle: "none" }} ref={itemRef}>
+    <Box component="li" sx={{ position: "relative", listStyle: "none", borderBottom: isExpanded ? 0 : 1, borderColor: "divider" }} ref={itemRef}>
       {/* Main menu item */}
       {isDirectLink ? (
         <ButtonBase
@@ -109,39 +120,28 @@ const NavItem = ({
             navigateActiveTab(path);
             onNavigate?.();
           }}
-          sx={itemSx(isOpen)}
+          aria-label={name}
+          sx={itemSx(isOpen, isExpanded)}
         >
-          <Box sx={{ display: "flex", alignItems: "center" }}>
+          <Box sx={contentSx}>
             <Icon style={{ width: 24, height: 24 }} />
             <Typography
               component="span"
-              sx={{
-                fontWeight: 500, whiteSpace: "nowrap", transition: "all 0.3s",
-                opacity: isExpanded ? 1 : 0,
-                ml: isExpanded ? 1.5 : 0,
-                width: isExpanded ? "auto" : 0,
-                overflow: "hidden",
-              }}
+              sx={labelSx}
             >
-              {name}
+              {label}
             </Typography>
           </Box>
         </ButtonBase>
       ) : (
-        <ButtonBase type="button" aria-expanded={isOpen} onClick={handleClick} sx={itemSx(isOpen)}>
-          <Box sx={{ display: "flex", alignItems: "center" }}>
+        <ButtonBase type="button" aria-label={name} aria-expanded={isOpen} onClick={handleClick} sx={itemSx(isOpen, isExpanded)}>
+          <Box sx={contentSx}>
             <Icon style={{ width: 24, height: 24 }} />
             <Typography
               component="span"
-              sx={{
-                fontWeight: 500, whiteSpace: "nowrap", transition: "all 0.3s",
-                opacity: isExpanded ? 1 : 0,
-                ml: isExpanded ? 1.5 : 0,
-                width: isExpanded ? "auto" : 0,
-                overflow: "hidden",
-              }}
+              sx={labelSx}
             >
-              {name}
+              {label}
             </Typography>
           </Box>
 

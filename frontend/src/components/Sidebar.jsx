@@ -32,6 +32,7 @@ const Sidebar = ({ isExpanded, toggleSidebar, isMobile = false, onNavigate }) =>
       <Box
         sx={{
           display: "flex", alignItems: "center", height: 64, borderBottom: 1, borderColor: "divider",
+          flexShrink: 0,
           transition: "all 0.3s",
           justifyContent: isExpanded ? "space-between" : "center",
           px: isExpanded ? 1.75 : 0,
@@ -229,8 +230,8 @@ const Sidebar = ({ isExpanded, toggleSidebar, isMobile = false, onNavigate }) =>
       </Box>
 
       {/* NAVIGATION */}
-      <Box component="nav" sx={{ flex: 1, overflowY: "auto", overflowX: "visible", p: { xs: 1.5, md: 2 } }}>
-        <Box component="ul" sx={{ display: "flex", flexDirection: "column", gap: 0.5, listStyle: "none", p: 0, m: 0 }}>
+      <Box component="nav" aria-label="Main modules" sx={{ flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden", p: isExpanded ? { xs: 1.5, md: 2 } : 0.75 }}>
+        <Box component="ul" sx={{ display: "flex", flexDirection: "column", gap: isExpanded ? 0.5 : 0.25, listStyle: "none", p: 0, m: 0 }}>
           {visibleNavItems.map((item) => (
             <NavItem
               key={item.name}
