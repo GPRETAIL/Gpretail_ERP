@@ -76,6 +76,23 @@ class SettingsThemeTest extends TestCase
             ->assertUnprocessable()->assertJsonPath('code', 'STORE_CONTEXT_MISMATCH');
     }
 
+    public function test_tenant_admin_without_a_fixed_store_receives_the_selected_stores_saved_theme(): void
+    {
+        $this->user->update(['store_id' => null]);
+        $theme = ['primary_color' => '#123456', 'border_radius' => 13];
+        $this->putJson("/api/companies/{$this->store->id}/theme", $theme)->assertOk();
+
+        $this->getJson('/api/auth/me')->assertOk()
+            ->assertJsonPath('data.company_id', $this->store->id)
+            ->assertJsonPath('data.brand', $theme);
+
+        Store::create(['name' => 'Second store', 'code' => 'THEME-SECOND', 'theme_customization' => ['border_radius' => 24]]);
+        $this->getJson('/api/auth/me')->assertOk()
+            ->assertJsonPath('data.store_selection_required', true)
+            ->assertJsonPath('data.brand', [])
+            ->assertJsonPath('data.company_id', null);
+    }
+
     public function test_update_theme_actually_persists_to_the_store(): void
     {
         $res = $this->putJson("/api/companies/{$this->store->id}/theme", [

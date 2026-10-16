@@ -49,6 +49,8 @@ class StoreContext
             'store_id' => $selected?->id,
             'company_id' => $selected?->id, // Compatibility alias; never defaults to 1.
             'company_name' => $selected?->name,
+            'brand' => $selected?->theme_customization ?: [],
+            'logo' => $selected?->logo,
             'store_ids' => $stores->pluck('id')->all(),
             'company_ids' => $stores->pluck('id')->all(), // Existing desktop/mobile switchers.
             'store_selection_required' => $stores->count() > 1,
