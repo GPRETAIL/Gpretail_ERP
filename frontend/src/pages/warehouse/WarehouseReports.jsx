@@ -1109,7 +1109,7 @@ const WarehouseReports = () => {
   };
 
   return (
-    <Box sx={{ minHeight: "100%", bgcolor: "background.default", color: "text.primary", display: "flex", flexDirection: "column" }}>
+    <Box sx={{ height: "100%", minHeight: 0, bgcolor: "background.default", color: "text.primary", display: "flex", flexDirection: "column" }}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", bgcolor: "background.paper", px: 2, py: 1, boxShadow: 1 }}>
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           <IconButton onClick={() => navigate("/warehouse")} aria-label="Back to warehouse" sx={{ color: "text.secondary" }}>
@@ -1139,16 +1139,15 @@ const WarehouseReports = () => {
         ) : null}
       </Stack>
 
-      <Box sx={{ flex: 1, minHeight: 0, overflow: "auto", p: 2 }}>
+      <Box sx={{ flex: 1, minHeight: 0, overflow: selectedReport ? "hidden" : "auto", p: selectedReport ? 0.75 : 2 }}>
         {selectedReport ? (
-          <Box sx={{ borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", boxShadow: 1, p: { xs: 1.5, md: 2 } }}>
+          <SearchGridPanel>
             <Box sx={{ mb: 1, borderBottom: 1, borderColor: "divider", pb: 1 }}>
               <Typography sx={{ fontSize: { xs: 12.25, md: 14 }, fontWeight: 600, color: "text.primary" }}>
                 {selectedReport.title}
               </Typography>
             </Box>
 
-            <SearchGridPanel>
             <FilterableDataTable
               rows={reportRows}
               columns={selectedReportSource?.columns || []}
@@ -1179,8 +1178,7 @@ const WarehouseReports = () => {
               paginationMode="client"
             fillHeight
             />
-            </SearchGridPanel>
-          </Box>
+          </SearchGridPanel>
         ) : (
           <Box sx={{ borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", boxShadow: 1, p: { xs: 2, md: 2.5 } }}>
             <Box sx={{ mb: 2, borderBottom: 1, borderColor: "divider", pb: 1.5 }}>

@@ -2556,7 +2556,7 @@ const SalesReports = () => {
   };
 
   return (
-    <Box sx={{ minHeight: "100%", bgcolor: "background.default", color: "text.primary", display: "flex", flexDirection: "column" }}>
+    <Box sx={{ height: "100%", minHeight: 0, bgcolor: "background.default", color: "text.primary", display: "flex", flexDirection: "column" }}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", bgcolor: "background.paper", px: 2, py: 1, boxShadow: 1 }}>
         <Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
           <IconButton
@@ -2636,9 +2636,9 @@ const SalesReports = () => {
         ) : null}
       </Stack>
 
-      <Box sx={{ flex: 1, minHeight: 0, overflow: "auto", p: 2 }}>
+      <Box sx={{ flex: 1, minHeight: 0, overflow: selectedReport ? "hidden" : "auto", p: selectedReport ? 0.75 : 2 }}>
         {selectedReport ? (
-          <Box sx={{ borderRadius: "7px", border: 1, borderColor: "divider", bgcolor: "background.paper", p: { xs: 1.5, md: 2 }, boxShadow: 1 }}>
+          <SearchGridPanel>
             <Box sx={{ mb: 1, borderBottom: 1, borderColor: "divider", pb: 1 }}>
               <Typography sx={{ fontSize: { xs: 12.25, md: 14 }, fontWeight: 600, color: "text.primary" }}>
                 {selectedReport.title}
@@ -2655,7 +2655,6 @@ const SalesReports = () => {
               ) : null}
             </Box>
 
-            <SearchGridPanel>
             <FilterableDataTable
               key={`${selectedReport.key}${appliedSalesSummary ? `_${appliedSalesSummary.label}` : ""}`}
               rows={displayRows}
@@ -2698,7 +2697,6 @@ const SalesReports = () => {
               }
               enableVirtualization
             />
-            </SearchGridPanel>
 
             {selectedReport.key === "sales_report" ? (
               <>
@@ -2886,7 +2884,7 @@ const SalesReports = () => {
                 </Box>
               </>
             ) : null}
-          </Box>
+          </SearchGridPanel>
         ) : (
           <Box sx={{ borderRadius: "7px", border: 1, borderColor: "divider", bgcolor: "background.paper", p: { xs: 2, md: 2.5 }, boxShadow: 1 }}>
             <Box sx={{ mb: 2, borderBottom: 1, borderColor: "divider", pb: 1.5 }}>

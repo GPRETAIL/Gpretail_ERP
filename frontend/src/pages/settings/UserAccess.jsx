@@ -609,7 +609,7 @@ const UserAccess = () => {
   }
 
   return (
-    <Box className="master-responsive" sx={{ display: "flex", height: "100%", flexDirection: "column", bgcolor: "background.default", color: "text.primary" }}>
+    <Box className="master-responsive" sx={{ display: "flex", height: "100%", minHeight: 0, flexDirection: "column", bgcolor: "background.default", color: "text.primary" }}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", bgcolor: "background.paper", px: 2, py: 1, boxShadow: 1 }}>
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           <IconButton size="small" onClick={handleBackClick} sx={{ color: "text.secondary" }} aria-label="Back">
@@ -648,9 +648,9 @@ const UserAccess = () => {
         </Stack>
       </Stack>
 
-      <Box sx={{ minHeight: 0, flex: 1, p: 2 }}>
+      <Box sx={{ minHeight: 0, flex: 1, p: showSearchPage ? 0.75 : 2 }}>
         {showSearchPage ? (
-          <Box sx={{ borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", boxShadow: 3, p: 2 }}>
+          <SearchGridPanel>
             <Stack direction="row" sx={{ mb: 2, alignItems: "center", justifyContent: "space-between" }}>
               <Box>
                 <Typography component="h2" sx={{ fontSize: 14, fontWeight: 700, color: "text.primary" }}>{listTitle}</Typography>
@@ -670,7 +670,6 @@ const UserAccess = () => {
               ) : null}
             </Stack>
 
-            <SearchGridPanel>
             <FilterableDataTable
               rows={activeTab === "user" ? users : groups}
               columns={activeTab === "user" ? userColumns : groupColumns}
@@ -729,8 +728,7 @@ const UserAccess = () => {
               )}
               searchButtonClassName="glass-btn glass-btn-primary"
             />
-            </SearchGridPanel>
-          </Box>
+          </SearchGridPanel>
         ) : (
           <Box sx={{ height: "100%", overflow: "hidden", borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", boxShadow: 3, p: 2 }}>
             <Box sx={{ display: "grid", height: "100%", minHeight: 0, gridTemplateColumns: "repeat(12, 1fr)", gap: 3 }}>

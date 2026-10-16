@@ -141,11 +141,11 @@ const SalesVsStock = () => {
         </Stack>
       </Stack>
 
-      <Stack direction="row" spacing={2} sx={{ flex: 1, minHeight: 0, p: 0.75 }}>
+      <Stack direction={{ xs: "column", lg: "row" }} spacing={1} sx={{ flex: 1, minHeight: 0, minWidth: 0, p: 0.75 }}>
         {/* ─── LEFT PANEL: Field selector ──────────────────────────────────── */}
         <Stack
           sx={{
-            width: 224, flexShrink: 0, minHeight: 0, bgcolor: "background.paper", borderRadius: "7px",
+            width: { xs: "100%", lg: 224 }, maxHeight: { xs: "min(30vh, 220px)", lg: "none" }, overflowY: "auto", flexShrink: 0, minHeight: 0, bgcolor: "background.paper", borderRadius: "7px",
             border: "1px solid", borderColor: "divider", boxShadow: 1,
           }}
         >

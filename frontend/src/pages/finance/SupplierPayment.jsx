@@ -439,7 +439,7 @@ const SupplierPayment = () => {
           <Box sx={{ flex: 1, minHeight: 0, minWidth: 0, overflow: "hidden", px: { xs: 1.5, sm: 2 }, pt: { xs: 1.5, sm: 2 } }}>
             <Stack direction={{ xs: "column", xl: "row" }} spacing={{ xs: 2, xl: 1 }} sx={{ height: "100%", minHeight: 0, minWidth: 0 }}>
               {/* ── LEFT PANEL: Filters ──────────────────────────────────────── */}
-              <Card sx={{ display: "flex", width: { xs: "100%", xl: 240 }, flexShrink: 0, flexDirection: "column", minHeight: 0, height: { xl: "100%" } }}>
+              <Card sx={{ display: "flex", width: { xs: "100%", xl: 240 }, flexShrink: 0, flexDirection: "column", minHeight: 0, height: { xs: "min(34vh, 240px)", xl: "100%" } }}>
                 <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", px: 1.5, py: 1.25 }}>
                   <Typography sx={{ fontSize: 13, fontWeight: 700, color: "text.secondary", mb: 1.5 }}>Search Filters</Typography>
                   <Stack spacing={1.5}>
