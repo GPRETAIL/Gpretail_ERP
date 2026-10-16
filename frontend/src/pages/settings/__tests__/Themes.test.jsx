@@ -144,33 +144,39 @@ describe("Themes settings page", () => {
   });
 
   describe("theme style picker", () => {
-    it("defaults to Classic when the tenant has no style saved", () => {
+    it("preserves an existing Apple customization", () => {
+      renderThemes({ company_id: 1, brand: { theme_style: "apple", primary_color: "#123456", font_family: "inter" } });
+      expect(screen.getByRole("button", { name: /apple \(saved\)/i })).toHaveAttribute("aria-pressed", "true");
+      expect(screen.getByLabelText("Primary color hex")).toHaveValue("#123456");
+      expect(screen.getByRole("button", { name: /^inter\b/i })).toHaveAttribute("aria-pressed", "true");
+    });
+    it("defaults to Default when the tenant has no style saved", () => {
       renderThemes(brandedUser);
 
-      expect(screen.getByRole("button", { name: /classic/i })).toHaveAttribute("aria-pressed", "true");
-      expect(screen.getByRole("button", { name: /apple/i })).toHaveAttribute("aria-pressed", "false");
+      expect(screen.getByRole("button", { name: /^default/i })).toHaveAttribute("aria-pressed", "true");
+      expect(screen.getByRole("button", { name: /glassmorphism/i })).toHaveAttribute("aria-pressed", "false");
     });
 
     it("shows the tenant's saved style as selected", () => {
       renderThemes({ company_id: 1, brand: { theme_style: "glass" } });
 
       expect(screen.getByRole("button", { name: /liquid glass/i })).toHaveAttribute("aria-pressed", "true");
-      expect(screen.getByRole("button", { name: /classic/i })).toHaveAttribute("aria-pressed", "false");
+      expect(screen.getByRole("button", { name: /^default/i })).toHaveAttribute("aria-pressed", "false");
     });
 
     it("selecting a style marks it pressed, shows unsaved changes, and includes it on Save", async () => {
       renderThemes(brandedUser);
 
-      fireEvent.click(screen.getByRole("button", { name: /apple/i }));
+      fireEvent.click(screen.getByRole("button", { name: /liquid ai/i }));
 
-      expect(screen.getByRole("button", { name: /apple/i })).toHaveAttribute("aria-pressed", "true");
+      expect(screen.getByRole("button", { name: /liquid ai/i })).toHaveAttribute("aria-pressed", "true");
       expect(screen.getByText(/unsaved branding changes/i)).toBeInTheDocument();
 
       fireEvent.click(screen.getByRole("button", { name: /^save$/i }));
 
       await waitFor(() => expect(mockPut).toHaveBeenCalledTimes(1));
       const [, body] = mockPut.mock.calls[0];
-      expect(body).toMatchObject({ theme_style: "apple" });
+      expect(body).toMatchObject({ theme_style: "liquid_ai" });
     });
   });
 
@@ -261,7 +267,7 @@ describe("Themes settings page", () => {
   describe("saved presets", () => {
     const samplePresets = [
       { id: 1, name: "Diwali Sale", config: { primary_color: "#f97316" } },
-      { id: 2, name: "Ocean", config: { primary_color: "#0284c7", theme_style: "apple" } },
+      { id: 2, name: "Ocean", config: { primary_color: "#0284c7", theme_style: "liquid_ai" } },
     ];
 
     it("shows an empty state when the tenant has none saved", async () => {
@@ -324,7 +330,7 @@ describe("Themes settings page", () => {
 
       await waitFor(() => expect(mockPost).toHaveBeenCalledWith("/companies/1/theme-presets/2/apply"));
       await waitFor(() => expect(screen.getByLabelText("Primary color hex")).toHaveValue("#0284c7"));
-      expect(screen.getByRole("button", { name: /apple/i })).toHaveAttribute("aria-pressed", "true");
+      expect(screen.getByRole("button", { name: /liquid ai/i })).toHaveAttribute("aria-pressed", "true");
       await waitFor(() => expect(mockCheckAuth).toHaveBeenCalledTimes(1));
     });
 

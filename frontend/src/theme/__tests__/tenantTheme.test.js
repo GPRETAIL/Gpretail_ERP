@@ -92,6 +92,16 @@ describe("createTenantTheme", () => {
   });
 
   describe("theme_style", () => {
+    it.each(["glassmorphism", "liquid_ai"])("%s supports both modes and protects data surfaces", (style) => {
+      for (const mode of ["light", "dark"]) {
+        const theme = createTenantTheme({ theme_style: style, primary_color: "#123456", border_radius: 8 }, mode);
+        expect(theme.palette.primary.main).toBe("#123456");
+        expect(theme.shape.borderRadius).toBe(8);
+        expect(theme.components.MuiCard.styleOverrides.root.backgroundColor).toBeTruthy();
+        expect(theme.components.MuiTableHead.styleOverrides.root.backdropFilter).toBe("none");
+        expect(theme.components.MuiMenu.styleOverrides.paper.backgroundColor).toBe(mode === "dark" ? "#1e2030" : "#ffffff");
+      }
+    });
     it("defaults to classic -- no pill buttons, no backdrop blur", () => {
       const theme = createTenantTheme(undefined, "light");
 

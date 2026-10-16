@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { RotateCcw, Save, Square, Apple, Droplets, Check, X, Type, Bookmark, Trash2, PlusCircle } from "lucide-react";
+import { RotateCcw, Save, Square, Apple, Droplets, Check, X, Type, Bookmark, Trash2, PlusCircle, Sparkles, Layers } from "lucide-react";
 import { toast } from "react-toastify";
 import {
   Box,
@@ -30,6 +30,8 @@ import {
   FONT_OPTIONS,
   getFontOption,
   isHexColor,
+  themeSurface,
+  THEME_STYLES,
 } from "../../theme/themeRegistry";
 
 const fieldLabelSx = { fontSize: 11, fontWeight: 600, color: "text.secondary", mb: 0.5, display: "block" };
@@ -46,9 +48,10 @@ const toSwatchHex = (value, mode) => (isHexColor(value) ? value : mode === "dark
 // one actually changes (shadow/border/blur on Card, Paper, AppBar, Dialog, Menu) and
 // themeStyles.css for the same treatment mirrored onto the Tailwind-styled dashboard cards.
 const THEME_STYLE_OPTIONS = [
-  { id: "classic", label: "Classic", description: "Flat cards, solid surfaces -- today's default look.", icon: Square },
-  { id: "apple", label: "Apple", description: "Soft shadows, fully rounded buttons, minimal borders.", icon: Apple },
-  { id: "glass", label: "Liquid Glass", description: "Translucent, blurred surfaces with a subtle glow.", icon: Droplets },
+  { id: "classic", label: "Default", description: "Flat cards, solid surfaces -- today's default look.", icon: Square },
+  { id: "glass", label: "Liquid Glass", description: "Subtle transparency, soft borders and gentle depth.", icon: Droplets },
+  { id: "glassmorphism", label: "Glassmorphism", description: "Violet frosted panels with readable, solid data surfaces.", icon: Layers },
+  { id: "liquid_ai", label: "Liquid AI", description: "Purple and cyan atmosphere with restrained depth.", icon: Sparkles },
 ];
 
 // Optional on top of primary/secondary -- unset (empty string in the form) means "use the app's
@@ -75,7 +78,7 @@ const toFormState = (brand) => ({
   primaryColor: isHexColor(brand?.primary_color) ? brand.primary_color : DEFAULT_BRAND.primary_color,
   secondaryColor: isHexColor(brand?.secondary_color) ? brand.secondary_color : DEFAULT_BRAND.secondary_color,
   borderRadius: Number.isFinite(brand?.border_radius) ? brand.border_radius : DEFAULT_BRAND.border_radius,
-  themeStyle: THEME_STYLE_OPTIONS.some((opt) => opt.id === brand?.theme_style) ? brand.theme_style : DEFAULT_THEME_STYLE,
+  themeStyle: THEME_STYLES.includes(brand?.theme_style) ? brand.theme_style : DEFAULT_THEME_STYLE,
   fontFamily: FONT_OPTIONS.some((opt) => opt.id === brand?.font_family) ? brand.font_family : DEFAULT_FONT,
   ...Object.fromEntries(
     ADVANCED_COLOR_FIELDS.map(({ field, wire }) => [field, isHexColor(brand?.[wire]) ? brand[wire] : ""])
@@ -97,6 +100,11 @@ const BrandPreviewCard = ({ fontStack }) => (
         <Chip label="Primary" color="primary" />
         <Chip label="Secondary" color="secondary" />
       </Stack>
+      <TextField size="small" label="Search products" slotProps={{ htmlInput: { readOnly: true } }} />
+      <Box component="table" aria-label="Theme preview products" sx={{ width: "100%", bgcolor: "background.paper", fontSize: 12, borderCollapse: "collapse", "& th, & td": { p: 1, textAlign: "left", borderBottom: "1px solid", borderColor: "divider" } }}>
+        <thead><tr><th>Product</th><th>Stock</th><th>Status</th></tr></thead>
+        <tbody><tr><td>Cotton Shirt</td><td>120</td><td><Chip size="small" color="success" label="Available" /></td></tr></tbody>
+      </Box>
     </Stack>
   </Card>
 );
@@ -378,10 +386,10 @@ const Themes = () => {
                 sx={{
                   display: "grid",
                   gap: 1.5,
-                  gridTemplateColumns: { xs: "1fr", sm: "repeat(3, minmax(0, 1fr))" },
+                  gridTemplateColumns: { xs: "1fr", sm: "repeat(2, minmax(0, 1fr))" },
                 }}
               >
-                {THEME_STYLE_OPTIONS.map((option) => {
+                {[...THEME_STYLE_OPTIONS, ...((savedForm.themeStyle === "apple" || form.themeStyle === "apple") ? [{ id: "apple", label: "Apple (saved)", description: "Your existing soft-shadow theme remains available.", icon: Apple }] : [])].map((option) => {
                   const Icon = option.icon;
                   const selected = form.themeStyle === option.id;
                   return (
@@ -412,6 +420,17 @@ const Themes = () => {
                         </Stack>
                         {selected && <Check size={16} aria-label="Selected" />}
                       </Stack>
+                      {savedForm.themeStyle === option.id && <Typography component="span" sx={{ fontSize: 10, color: "primary.main" }}>Active</Typography>}
+                      <Box aria-hidden="true" sx={{ ...themeSurface(option.id, mode), mt: 1.25, p: 1, borderRadius: "8px", pointerEvents: "none" }}>
+                        <Box sx={{ display: "flex", gap: 0.5, mb: 0.75 }}>
+                          <Box sx={{ bgcolor: "primary.main", color: "primary.contrastText", px: 1, borderRadius: "4px", fontSize: 10 }}>Search</Box>
+                          <Box sx={{ border: "1px solid", borderColor: "divider", px: 1, borderRadius: "4px", fontSize: 10 }}>All fields</Box>
+                        </Box>
+                        <Box sx={{ bgcolor: mode === "dark" ? "#1e2030" : "#fff", color: "text.primary", border: "1px solid", borderColor: "divider", borderRadius: "4px", fontSize: 10, p: 0.75 }}>
+                          <Box sx={{ fontWeight: 700, borderBottom: "1px solid", borderColor: "divider", pb: 0.5 }}>Product · Stock</Box>
+                          <Box sx={{ pt: 0.5 }}>Cotton Shirt · 120</Box>
+                        </Box>
+                      </Box>
                       <Typography sx={{ fontSize: 11.5, color: "text.secondary", mt: 0.75 }}>
                         {option.description}
                       </Typography>
@@ -421,7 +440,8 @@ const Themes = () => {
               </Box>
             </Card>
 
-            <Card variant="outlined" sx={{ p: 3 }}>
+            <Button component="a" href="#theme-customization" size="small">Customize selected theme</Button>
+            <Card id="theme-customization" variant="outlined" sx={{ p: 3, scrollMarginTop: 120 }}>
               <Stack direction="row" spacing={1} sx={{ alignItems: "center", mb: 0.5 }}>
                 <Type size={16} />
                 <Typography sx={{ fontSize: 13, fontWeight: 700 }}>Font</Typography>

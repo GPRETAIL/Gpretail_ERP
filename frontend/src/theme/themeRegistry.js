@@ -109,7 +109,7 @@ function buildAdvancedPalette(brand) {
 // through TenantThemeProvider, already wrapping the whole app; themeStyles.css reaches the
 // Tailwind-styled "rounded-xl/rounded-md border" card convention used throughout the rest of the
 // app the same way, off the data-theme-style attribute TenantThemeProvider sets on <html>.
-export const THEME_STYLES = ["classic", "apple", "glass"];
+export const THEME_STYLES = ["classic", "apple", "glass", "glassmorphism", "liquid_ai"];
 export const DEFAULT_THEME_STYLE = "classic";
 
 const glassSurface = (mode) => ({
@@ -157,6 +157,40 @@ const STYLE_COMPONENTS = {
   }),
 };
 
+// Decorative depth is limited to cards and navigation. Data surfaces stay opaque.
+export function themeSurface(style, mode) {
+  const dark = mode === "dark";
+  if (style === "glass") return glassSurface(mode);
+  if (style === "apple") return appleSurface(mode);
+  if (style === "glassmorphism") return {
+    backgroundColor: dark ? "rgba(30,27,48,0.88)" : "rgba(250,248,255,0.9)",
+    backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
+    border: `1px solid ${dark ? "#514369" : "#d9ccef"}`,
+    boxShadow: dark ? "0 6px 20px rgba(0,0,0,0.2)" : "0 6px 20px rgba(89,55,140,0.08)",
+  };
+  if (style === "liquid_ai") return {
+    backgroundColor: dark ? "#19182b" : "#faf9ff",
+    backgroundImage: dark
+      ? "radial-gradient(ellipse at top right, rgba(124,58,237,0.16), transparent 65%), radial-gradient(ellipse at bottom left, rgba(6,182,212,0.08), transparent 65%)"
+      : "radial-gradient(ellipse at top right, rgba(124,58,237,0.08), transparent 65%), radial-gradient(ellipse at bottom left, rgba(6,182,212,0.06), transparent 65%)",
+    border: `1px solid ${dark ? "#45405e" : "#ddd6ef"}`,
+    boxShadow: "none",
+  };
+  return {};
+}
+
+for (const style of ["glassmorphism", "liquid_ai"]) {
+  STYLE_PALETTE[style] = (mode) => ({
+    background: { default: mode === "dark" ? "#11121e" : "#f5f4fa", paper: mode === "dark" ? "#1e2030" : "#ffffff" },
+    divider: mode === "dark" ? "#45405e" : "#ddd6ef",
+  });
+  STYLE_COMPONENTS[style] = (mode) => ({
+    MuiCard: { styleOverrides: { root: themeSurface(style, mode) } },
+    MuiOutlinedInput: { styleOverrides: { root: { backgroundColor: mode === "dark" ? "#1e2030" : "#ffffff" } } },
+    MuiAppBar: { styleOverrides: { root: { ...themeSurface(style, mode), borderRadius: 0 } } },
+  });
+}
+
 // Shared by createTenantTheme (no basePalette -- brand-only, MUI's own success/warning/error/info
 // defaults) and createNamedTheme (basePalette = a PALETTES entry, e.g. "finance"'s hand-tuned
 // indigo/green/amber/red/blue -- these become the *defaults* a tenant's own choices layer over,
@@ -203,6 +237,13 @@ function resolveBrandTheme(brand, mode, basePalette = {}) {
     components: {
       ...baseThemeOptions.components,
       ...STYLE_COMPONENTS[style](mode),
+      ...(["glass", "glassmorphism", "liquid_ai"].includes(style) ? Object.fromEntries(
+        ["MuiTableContainer", "MuiTableHead", "MuiMenu", "MuiPopover", "MuiDialog", "MuiAutocomplete"].map((name) => [name, {
+          styleOverrides: { [name === "MuiMenu" || name === "MuiPopover" || name === "MuiDialog" ? "paper" : name === "MuiAutocomplete" ? "paper" : "root"]: {
+            backgroundColor: mode === "dark" ? "#1e2030" : "#ffffff", backgroundImage: "none", backdropFilter: "none", WebkitBackdropFilter: "none",
+          } },
+        }])
+      ) : {}),
     },
   });
 }

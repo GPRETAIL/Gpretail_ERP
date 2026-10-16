@@ -36,6 +36,15 @@ class SettingsThemeTest extends TestCase
         Sanctum::actingAs($this->user);
     }
 
+    public function test_new_theme_styles_can_be_saved_and_reloaded(): void
+    {
+        foreach (['glassmorphism', 'liquid_ai', 'glass', 'classic', 'apple'] as $style) {
+            $this->putJson("/api/companies/{$this->store->id}/theme", ['theme_style' => $style])->assertOk();
+            $this->getJson("/api/companies/{$this->store->id}/theme")->assertOk()->assertJsonPath('data.theme_style', $style);
+        }
+        $this->putJson("/api/companies/{$this->store->id}/theme", ['theme_style' => 'untrusted-style'])->assertUnprocessable();
+    }
+
     public function test_get_theme_returns_empty_when_nothing_saved_yet(): void
     {
         $res = $this->getJson("/api/companies/{$this->store->id}/theme");

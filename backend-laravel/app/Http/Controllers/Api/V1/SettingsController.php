@@ -166,7 +166,7 @@ class SettingsController extends Controller
     // "Company" is this app's user-facing name for what the schema calls a Store (see
     // AuthController::me, which maps company_id straight from store_id) -- there is no separate
     // companies table, so {id} here is a store id.
-    private const THEME_STYLES = ['classic', 'apple', 'glass'];
+    private const THEME_STYLES = ['classic', 'apple', 'glass', 'glassmorphism', 'liquid_ai'];
 
     // Must mirror FONT_OPTIONS ids in themeRegistry.js exactly -- an allowlist, not free-text, so
     // this field can't become an arbitrary-CSS-injection surface (low severity for font-family

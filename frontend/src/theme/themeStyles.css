@@ -49,3 +49,28 @@
   border-color: rgba(255, 255, 255, 0.08) !important;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
 }
+
+/* New styles decorate panels; grids and form controls remain solid. */
+:root[data-theme-style="glassmorphism"] { --erp-surface: rgba(250,248,255,.9); --erp-edge: #d9ccef; }
+:root.dark[data-theme-style="glassmorphism"] { --erp-surface: rgba(30,27,48,.88); --erp-edge: #514369; }
+:root[data-theme-style="liquid_ai"] { --erp-surface: #faf9ff; --erp-edge: #ddd6ef; }
+:root.dark[data-theme-style="liquid_ai"] { --erp-surface: #19182b; --erp-edge: #45405e; }
+:root:is([data-theme-style="glassmorphism"], [data-theme-style="liquid_ai"]) :is(.rounded-xl.border, .rounded-md.border):not(:has(table)) {
+  background-color: var(--erp-surface) !important;
+  border-color: var(--erp-edge) !important;
+}
+:root[data-theme-style="glassmorphism"] :is(.rounded-xl.border, .rounded-md.border):not(:has(table)) {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+:root[data-theme-style="liquid_ai"] :is(.rounded-xl.border, .rounded-md.border):not(:has(table)) {
+  background-image: radial-gradient(ellipse at top right, rgba(124,58,237,.08), transparent 65%), radial-gradient(ellipse at bottom left, rgba(6,182,212,.06), transparent 65%);
+}
+@media (prefers-reduced-transparency: reduce) {
+  :root:is([data-theme-style="glass"], [data-theme-style="glassmorphism"]) :is(.MuiCard-root, .MuiAppBar-root, .rounded-xl.border, .rounded-md.border) {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background-color: #fff !important;
+  }
+  :root.dark:is([data-theme-style="glass"], [data-theme-style="glassmorphism"]) :is(.MuiCard-root, .MuiAppBar-root, .rounded-xl.border, .rounded-md.border) { background-color: #1e2030 !important; }
+}
