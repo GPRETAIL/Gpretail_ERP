@@ -45,7 +45,6 @@ import {
   shouldShowSalesReceiptDiscountColumn,
   wrapSalesReceiptText,
 } from "../../utils/salesReceiptCustomization";
-import { buildPosSaleReceiptHtml } from "../../utils/posReceiptHtml";
 import { Box, Stack, Typography, TextField, Button, IconButton, Switch, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
 import { FIELD_HEIGHT, muiFieldSx } from "../../theme/formControlSizes";
 
@@ -516,87 +515,16 @@ const ReceiptPreview = ({ companyInfo, settings }) => {
     };
   }, [billBarcode, companyInfo.storeName, previewNetAmount, settings]);
 
-  // A4 uses a genuinely different layout (buildPosSaleReceiptHtml dispatches to the real tax-
-  // invoice template), not just a wider version of the thermal preview above - render the real
-  // generated HTML here too, so this preview never drifts from what printing/PDF actually produce.
-  const isA4Preview = String(settings.receiptWidthInches || "").toUpperCase() === "A4";
-  const a4PreviewHtml = useMemo(() => {
-    if (!isA4Preview) return "";
-    const receiptItems = previewItems.map((item) => ({
-      name: item.name,
-      qty: item.qty,
-      rate: item.rate,
-      taxPerc: item.taxPerc,
-      taxName: item.taxName,
-      taxType: item.taxType,
-      baseAmount: item.qty * item.rate - Number(item.discountAmount || 0),
-      taxAmount: item.taxAmount,
-      discountAmount: item.discountAmount,
-      amount: item.amount,
-      hsnCode: "",
-      code: "",
-    }));
-    const receiptData = {
-      storeName: sampleStoreName,
-      storeAddress: sampleAddress,
-      storePhone: samplePhone,
-      storeGstNo: sampleGst,
-      billNo: billBarcode,
-      billBarcode,
-      dateTime: sampleDate.toISOString(),
-      cashierName: "Admin",
-      counterName: "Main Counter",
-      customerName: "Walking customer",
-      paperSize: "A4",
-      items: receiptItems,
-      billAmount: grossTotal,
-      discountAmount: discount,
-      taxAmount: taxAmountTotal,
-      total: previewNetAmount,
-      paidAmount,
-      receivedAmount,
-      balanceAmount,
-      paymentMethod,
-      billCodeMarkup,
-      paymentQrMarkup,
-      message: settings.thankYouMessage,
-    };
-    return buildPosSaleReceiptHtml(receiptData, settings);
-  }, [
-    isA4Preview, previewItems, sampleStoreName, sampleAddress, samplePhone, sampleGst, billBarcode,
-    sampleDate, grossTotal, discount, taxAmountTotal, previewNetAmount, paidAmount, receivedAmount,
-    balanceAmount, paymentMethod, billCodeMarkup, paymentQrMarkup, settings,
-  ]);
-
-  if (isA4Preview) {
+  // Older installations may still print A4; keep their saved settings intact while
+  // directing sheet-layout editing to the dedicated designer.
+  if (String(settings.receiptWidthInches || "").toUpperCase() === "A4") {
     return (
-      <Box sx={{ ...baseCardSx, overflow: "hidden" }}>
-        <Box sx={{ borderBottom: 1, borderColor: "divider", bgcolor: "action.hover", px: 2, py: 1.5 }}>
-          <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 1.5 }}>
-            <Box>
-              <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Receipt Preview</Typography>
-              <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>Sample tax invoice at A4 size</Typography>
-            </Box>
-            <Eye size={16} style={{ color: "#9ca3af" }} />
-          </Stack>
-        </Box>
-        <Box sx={{ bgcolor: (theme) => (theme.palette.mode === "dark" ? alpha("#111827", 0.4) : "#eef2f7"), p: "14px" }}>
-          <Box
-            component="iframe"
-            title="A4 invoice preview"
-            srcDoc={a4PreviewHtml}
-            sx={{
-              mx: "auto",
-              display: "block",
-              width: "100%",
-              borderRadius: "14px",
-              border: "1px solid #d1d5db",
-              bgcolor: "#ffffff",
-              boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1)",
-              height: "80vh",
-            }}
-          />
-        </Box>
+      <Box sx={{ ...baseCardSx, p: 2.5 }}>
+        <Typography sx={{ fontSize: 12.25, fontWeight: 600 }}>Sheet receipt layouts</Typography>
+        <Typography sx={{ fontSize: 12, color: "text.secondary", mt: 1 }}>
+          Manage sheet sizes and previews in Receipt A4 Formats. Your saved print size is preserved.
+        </Typography>
+        <Typography component="a" href="/sales/receipt-formats" sx={{ display: "inline-block", mt: 1, color: "primary.main", fontSize: 12 }}>Open Receipt A4 Formats</Typography>
       </Box>
     );
   }
@@ -1414,7 +1342,7 @@ export default function Customisation() {
           <Box sx={{ ...baseCardSx, p: 2.5 }}>
             <Typography component="label" sx={fieldLabelSx}>Receipt Size</Typography>
             <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { sm: "1fr 1fr", xl: "repeat(4, 1fr)" } }}>
-              {SALES_RECEIPT_SIZE_OPTIONS.map((option) => (
+              {SALES_RECEIPT_SIZE_OPTIONS.filter((option) => option.value !== "A4").map((option) => (
                 <SizeOption
                   key={option.value}
                   option={option}

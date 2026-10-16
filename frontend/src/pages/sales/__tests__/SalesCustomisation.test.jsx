@@ -75,6 +75,23 @@ describe("Sales Customisation", () => {
     });
   });
 
+  it("offers thermal sizes without an A4 size option", async () => {
+    renderComponent();
+    await screen.findByText("Receipt Size");
+    expect(screen.queryByRole("button", { name: /^A4\b/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /2\.5/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /4\.0/ })).toBeInTheDocument();
+  });
+
+  it("directs saved A4 layouts to the separate designer without changing their print size", async () => {
+    api.get.mockResolvedValue({ data: { success: true, data: { receiptWidthInches: "A4" } } });
+    renderComponent();
+    expect(await screen.findByRole("link", { name: "Open Receipt A4 Formats" })).toHaveAttribute("href", "/sales/receipt-formats");
+    expect(screen.queryByTitle("A4 invoice preview")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText("Save"));
+    await waitFor(() => expect(api.put).toHaveBeenCalledWith("/sales-customization", expect.objectContaining({ receiptWidthInches: "A4" })));
+  });
+
   it("switches printing mode from Direct to Browser default print preview", async () => {
     renderComponent();
 

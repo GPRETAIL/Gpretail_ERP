@@ -93,7 +93,6 @@ const ModulePage = () => {
   }
 
   const isWarehouse = normalizedModuleName === "warehouse";
-  const isSales = normalizedModuleName === "sales";
 
   return (
     // Same fix as the "modules" hub branch above -- this is the far more common case in practice
@@ -151,34 +150,7 @@ const ModulePage = () => {
           </Card>
         )}
 
-        {isSales && (
-          <Card
-            component={Link}
-            to="/sales/receipt-formats"
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 1.5,
-              p: 2,
-              textDecoration: "none",
-              minHeight: 72,
-              backgroundImage: "linear-gradient(to right, #4f46e5, #2563eb)",
-              boxShadow: 3,
-              transition: "all 0.2s",
-              "&:hover": { backgroundImage: "linear-gradient(to right, #4338ca, #1d4ed8)", boxShadow: 4 },
-            }}
-          >
-            <Box sx={{ width: 40, height: 40, borderRadius: 1.5, bgcolor: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>
-              <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-              </svg>
-            </Box>
-            <Box>
-              <Typography component="span" sx={{ display: "block", fontWeight: 600, color: "#fff" }}>Receipt A4 Formats</Typography>
-              <Typography component="span" sx={{ display: "block", fontSize: 12, color: "#e0e7ff", mt: 0.25 }}>Portrait, Landscape &amp; Templates</Typography>
-            </Box>
-          </Card>
-        )}
+
       </Box>
 
       {/* Submenu Cards */}
