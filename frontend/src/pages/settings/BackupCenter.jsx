@@ -1602,7 +1602,7 @@ export default function BackupCenter() {
             />
           </Box>
 
-          <SearchGridPanel>
+          <SearchGridPanel sx={{ height: "auto", flexShrink: 0 }}>
           <FilterableDataTable
             rows={filteredBackups}
             columns={backupColumns}
@@ -1649,7 +1649,7 @@ export default function BackupCenter() {
               <Typography sx={{ fontSize: 12.25, color: "text.secondary" }}>Audit trail of restore operations, status and affected rows.</Typography>
             </Box>
           </Stack>
-          <SearchGridPanel>
+          <SearchGridPanel sx={{ height: "auto", flexShrink: 0 }}>
           <FilterableDataTable
             rows={overview.restores || []}
             columns={restoreColumns}
