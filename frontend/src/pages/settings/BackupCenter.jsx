@@ -13,6 +13,7 @@ import {
   Play,
   RotateCcw,
   Save,
+  Search,
   RefreshCw,
   Shield,
   Trash2,
