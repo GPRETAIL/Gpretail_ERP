@@ -15,6 +15,8 @@ describe("FilterableDataTable scrolling", () => {
     const header = screen.getByRole("columnheader", { name: /Name/ });
     expect(getComputedStyle(header).position).toBe("sticky");
     expect(getComputedStyle(header).top).toBe("0px");
+    expect(getComputedStyle(header.closest("thead")).position).toBe("sticky");
+    expect(getComputedStyle(header.closest("thead")).top).toBe("0px");
   });
 
   it("preserves non-sticky headers for tables without a fixed viewport", () => {

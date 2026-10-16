@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Http\Controllers\Api\V1\SettingsController;
 use App\Models\PlatformActivation;
 use App\Services\StoreContext;
 use App\Services\StoreLicenceVerifier;
@@ -46,9 +47,22 @@ class ResolveStoreContext
             return $this->error('STORE_ACCESS_DENIED', 'You are not assigned to this store.', 403);
         }
 
+        $themeSettings = $request->route()?->getControllerClass() === SettingsController::class
+            && in_array($request->route()->getActionMethod(), ['getTheme', 'updateTheme', 'listThemePresets', 'saveThemePreset', 'applyThemePreset', 'deleteThemePreset'], true);
+        if ($themeSettings) {
+            $themeStore = $request->route('id');
+            if (! ctype_digit((string) $themeStore) || ! in_array((int) $themeStore, $ids, true)) {
+                return $this->error('STORE_ACCESS_DENIED', 'Store not found', 404);
+            }
+            if ($candidates && $selected !== (int) $themeStore) {
+                return $this->error('STORE_CONTEXT_MISMATCH', 'The selected store does not match this form. Reopen it in the correct store.', 422);
+            }
+            $selected = (int) $themeStore;
+        }
+
         $path = preg_replace('#^api/(v1/)?#', '', $request->path());
         // Profile/preferences and subscription management do not create business records.
-        $management = $request->is('api/auth/*')
+        $management = $themeSettings || $request->is('api/auth/*')
             || preg_match('#^(company-stores(/|$)|companies/subscription/|dashboard/layout|user-table-preferences/)#', $path);
         $write = ! in_array($request->method(), ['GET', 'HEAD', 'OPTIONS'], true) && ! $management;
         if ($write && ! $selected) {

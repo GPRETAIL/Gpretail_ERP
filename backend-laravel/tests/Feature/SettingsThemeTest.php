@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\PlatformActivation;
 use App\Models\Store;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -20,6 +21,7 @@ class SettingsThemeTest extends TestCase
     use RefreshDatabase;
 
     protected Store $store;
+
     protected User $user;
 
     protected function setUp(): void
@@ -40,6 +42,38 @@ class SettingsThemeTest extends TestCase
 
         $res->assertOk();
         $this->assertSame([], $res->json('data'));
+    }
+
+    public function test_theme_preferences_work_without_a_store_token_but_business_writes_stay_blocked(): void
+    {
+        PlatformActivation::create(['company_code' => 'CMP-THEME', 'activated' => true, 'status' => 'active']);
+        $this->putJson("/api/v1/companies/{$this->store->id}/theme", ['primary_color' => '#123456'])->assertOk();
+        $this->assertSame('#123456', $this->store->fresh()->theme_customization['primary_color']);
+        $preset = $this->postJson("/api/companies/{$this->store->id}/theme-presets", ['name' => 'Theme preference', 'primary_color' => '#654321'])->assertCreated()->json('data.id');
+        $this->postJson("/api/companies/{$this->store->id}/theme-presets/{$preset}/apply")->assertOk();
+        $this->assertSame('#654321', $this->store->fresh()->theme_customization['primary_color']);
+        $this->deleteJson("/api/companies/{$this->store->id}/theme-presets/{$preset}")->assertOk();
+        $this->postJson('/api/sizes', ['name' => 'Unlicensed write'])->assertForbidden()->assertJsonPath('code', 'STORE_LICENCE_INVALID');
+        $this->assertDatabaseMissing('sizes', ['name' => 'Unlicensed write']);
+    }
+
+    public function test_theme_routes_reject_unassigned_stores_and_roles_without_settings_permission(): void
+    {
+        $other = Store::create(['name' => 'Other', 'code' => 'THEME-OTHER']);
+        $this->getJson("/api/companies/{$other->id}/theme")->assertNotFound()->assertJsonPath('code', 'STORE_ACCESS_DENIED');
+        $this->putJson("/api/companies/{$other->id}/theme", ['primary_color' => '#123456'])->assertNotFound();
+        $this->postJson("/api/companies/{$other->id}/theme-presets", ['name' => 'Forbidden'])->assertNotFound();
+        $this->user->update(['role' => 'cashier']);
+        $this->putJson("/api/companies/{$this->store->id}/theme", ['primary_color' => '#123456'])->assertForbidden()->assertJsonPath('code', 'PERMISSION_DENIED');
+        $this->assertNull($this->store->fresh()->theme_customization);
+    }
+
+    public function test_theme_target_must_match_the_explicit_selected_store(): void
+    {
+        $other = Store::create(['name' => 'Other', 'code' => 'THEME-SELECTION']);
+        $this->user->update(['store_id' => null]);
+        $this->withHeader('X-Store-Id', (string) $other->id)->putJson("/api/companies/{$this->store->id}/theme", ['primary_color' => '#123456'])
+            ->assertUnprocessable()->assertJsonPath('code', 'STORE_CONTEXT_MISMATCH');
     }
 
     public function test_update_theme_actually_persists_to_the_store(): void

@@ -182,6 +182,8 @@ export default function FilterableDataTable({
   fillHeight = false,
   autoHideScrollbars = false,
   filterPanelWidth = 380,
+  columnFilterWidth = "14rem",
+  controlBorderRadius = undefined,
   compact = true,
   // Feature 1c: Row virtualization (opt-in; requires compact=true -- that's the only mode with a
   // CSS-enforced, uniform row height, see the .compact-data-table rule in index.css). No-op with a
@@ -495,8 +497,10 @@ export default function FilterableDataTable({
         transformOrigin={{ vertical: "top", horizontal: "left" }}
         slotProps={{
           paper: {
-            className: "w-56 p-2",
+            className: "p-2",
             sx: {
+              width: columnFilterWidth,
+              maxWidth: "calc(100vw - 24px)",
               mt: "6px",
               bgcolor: "background.paper",
               border: "1px solid",
@@ -525,7 +529,7 @@ export default function FilterableDataTable({
             onChange={(e) =>
               setColumnFilter(column.key, { operator: e.target.value })
             }
-            sx={{ "& .MuiInputBase-input": { fontSize: 11 }, "& .MuiOutlinedInput-root": { borderRadius: "5.25px" } }}
+            sx={{ "& .MuiInputBase-input": { fontSize: 11 }, "& .MuiOutlinedInput-root": { borderRadius: controlBorderRadius ?? "5.25px" } }}
           >
             {FILTER_OPERATORS.map((op) => (
               <option key={op.value} value={op.value}>
@@ -543,7 +547,7 @@ export default function FilterableDataTable({
                 setColumnFilter(column.key, { value: e.target.value })
               }
               placeholder="Enter filter value"
-              sx={{ "& .MuiInputBase-input": { fontSize: 11 }, "& .MuiOutlinedInput-root": { borderRadius: "5.25px" } }}
+              sx={{ "& .MuiInputBase-input": { fontSize: 11 }, "& .MuiOutlinedInput-root": { borderRadius: controlBorderRadius ?? "5.25px" } }}
             />
           )}
         </Box>
@@ -2217,7 +2221,7 @@ export default function FilterableDataTable({
           stickyHeader={fixedHeight}
           sx={{ width: "100%", minWidth: "max-content", bgcolor: "background.paper", color: "text.secondary", ...tableTextSx }}
         >
-          <TableHead sx={{ bgcolor: (theme) => (theme.palette.mode === "dark" ? "#374151" : "#f3f4f6"), color: "text.secondary" }}>
+          <TableHead sx={{ position: fixedHeight ? "sticky" : undefined, top: fixedHeight ? 0 : undefined, zIndex: fixedHeight ? 30 : undefined, bgcolor: (theme) => (theme.palette.mode === "dark" ? "#374151" : "#f3f4f6"), color: "text.secondary" }}>
             <TableRow>
               <TableCell
                 ref={leadingHeaderRef}
@@ -2262,6 +2266,7 @@ export default function FilterableDataTable({
                     headerCellRefs.current[column.key] = node;
                   }}
                   style={{
+                    ...(fixedHeight ? { position: "sticky", top: 0 } : {}),
                     ...getStickyCellStyle(column.key, true),
                     ...(columnWidths[column.key] ? { width: columnWidths[column.key] } : null),
                   }}
@@ -2821,6 +2826,7 @@ export default function FilterableDataTable({
               width: "100%",
               maxWidth: filterPanelWidth,
               bgcolor: "background.paper",
+              ...(controlBorderRadius ? { "& .MuiOutlinedInput-root": { borderRadius: controlBorderRadius } } : {}),
             },
           },
           backdrop: {

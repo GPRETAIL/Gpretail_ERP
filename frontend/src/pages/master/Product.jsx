@@ -621,6 +621,7 @@ const Product = () => {
             pb: 0.5,
             "& .MuiOutlinedInput-root": { borderRadius: "0.5rem" },
             "& .MuiOutlinedInput-notchedOutline": { borderRadius: "inherit" },
+            "& input:not([type=checkbox]):not([type=radio]), & select": { borderRadius: "0.5rem" },
           }}
         >
           <Typography variant="h6" component="h2" sx={{ fontWeight: 700, mb: 1, fontSize: "1rem" }}>
@@ -818,6 +819,8 @@ const Product = () => {
                 fillHeight
                 autoHideScrollbars
                 filterPanelWidth={340}
+                columnFilterWidth={190}
+                controlBorderRadius="0.5rem"
                 renderActions={(product, { selectedCount } = {}) => (
                   <Stack direction="row" sx={{ alignItems: "center", gap: 1.5 }}>
                     <IconButton
