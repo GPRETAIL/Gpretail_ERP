@@ -31,7 +31,7 @@ const TabbedWorkspaces = () => {
   if (!activeTab) return null;
 
   return (
-    <Box sx={{ height: "100%", minHeight: 0, overflow: "hidden" }}>
+    <Box className="erp-workspace" sx={{ height: "100%", minHeight: 0, overflow: "hidden" }}>
       <ProtectedLayoutRouteRenderer location={location} key={activeTab.id} />
     </Box>
   );
@@ -296,7 +296,7 @@ const MainLayout = () => {
   return (
     <TransferActivityProvider>
       <TabProvider>
-        <Box sx={{ display: "flex", height: "100vh", width: "100%", overflow: "hidden", bgcolor: "background.default" }}>
+        <Box className="erp-app-shell" sx={{ display: "flex", height: "100vh", width: "100%", overflow: "hidden", bgcolor: "background.default" }}>
           {isMobile && mobileOpen && (
             <Box
               sx={{ position: "fixed", inset: 0, zIndex: 40, bgcolor: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)", transition: "opacity 0.15s" }}

@@ -113,12 +113,15 @@ export const THEME_STYLES = ["classic", "apple", "glass", "glassmorphism", "liqu
 export const DEFAULT_THEME_STYLE = "classic";
 
 const glassSurface = (mode) => ({
-  backgroundImage: "none",
-  backgroundColor: mode === "dark" ? "rgba(31,41,55,0.96)" : "rgba(255,255,255,0.96)",
-  backdropFilter: "blur(20px)",
-  WebkitBackdropFilter: "blur(20px)",
-  border: `1px solid ${mode === "dark" ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.4)"}`,
-  boxShadow: mode === "dark" ? "0 8px 32px rgba(0,0,0,0.35)" : "0 8px 32px rgba(15,23,42,0.08)",
+  backgroundImage: "linear-gradient(135deg, rgba(255,255,255,0.32), rgba(255,255,255,0.02) 55%, rgba(255,255,255,0.12))",
+  backgroundColor: mode === "dark" ? "rgba(24,35,54,0.62)" : "rgba(255,255,255,0.56)",
+  backdropFilter: "blur(36px) saturate(180%)",
+  WebkitBackdropFilter: "blur(36px) saturate(180%)",
+  border: `1px solid ${mode === "dark" ? "rgba(255,255,255,0.24)" : "rgba(255,255,255,0.78)"}`,
+  borderRadius: 18,
+  boxShadow: mode === "dark"
+    ? "inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(255,255,255,0.06), 0 12px 32px rgba(0,0,0,0.28)"
+    : "inset 0 1px 0 rgba(255,255,255,0.96), inset 0 -1px 0 rgba(255,255,255,0.3), 0 12px 32px rgba(38,66,100,0.12)",
 });
 
 const appleSurface = (mode) => ({
@@ -148,8 +151,8 @@ const STYLE_COMPONENTS = {
   }),
   glass: (mode) => ({
     MuiCard: { styleOverrides: { root: glassSurface(mode) } },
-    MuiPaper: { styleOverrides: { root: glassSurface(mode) } },
-    MuiAppBar: { styleOverrides: { root: { ...glassSurface(mode), backgroundColor: mode === "dark" ? "#1f2937" : "#ffffff", backdropFilter: "none", WebkitBackdropFilter: "none", borderRadius: 0 } } },
+
+    MuiAppBar: { styleOverrides: { root: { ...glassSurface(mode), borderRadius: 0 } } },
     MuiOutlinedInput: { styleOverrides: { root: { backgroundColor: mode === "dark" ? "#1f2937" : "#ffffff" } } },
     MuiMenu: { styleOverrides: { paper: glassSurface(mode) } },
     MuiDialog: { styleOverrides: { paper: glassSurface(mode) } },

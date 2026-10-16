@@ -541,6 +541,7 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
   return (
     <>
       <AppBar
+        className="erp-glass-chrome"
         position="static"
         elevation={0}
         sx={{ bgcolor: "background.paper", color: "text.primary", borderBottom: 1, borderColor: "divider" }}

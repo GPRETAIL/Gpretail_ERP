@@ -9,6 +9,7 @@ const TabBar = () => {
 
   return (
     <Box
+      className="erp-glass-chrome"
       sx={{
         display: "flex", alignItems: "center", bgcolor: "action.hover", borderBottom: 1, borderColor: "divider",
         px: { xs: 0.5, md: 1 }, height: { xs: 28, md: 32 }, overflowX: "auto", overflowY: "hidden", flexShrink: 0,

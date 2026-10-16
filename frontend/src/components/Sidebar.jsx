@@ -20,6 +20,7 @@ const Sidebar = ({ isExpanded, toggleSidebar, isMobile = false, onNavigate }) =>
 
   return (
     <Box
+      className="erp-glass-chrome"
       sx={{
         height: "100%", bgcolor: "background.paper", boxShadow: 8,
         borderRight: 1, borderColor: "divider", display: "flex", flexDirection: "column",

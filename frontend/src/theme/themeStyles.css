@@ -34,21 +34,29 @@
     0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
-:root[data-theme-style="glass"] .rounded-xl.border,
-:root[data-theme-style="glass"] .rounded-md.border {
-  background-color: rgba(255, 255, 255, 0.96) !important;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-color: rgba(255, 255, 255, 0.4) !important;
-  box-shadow: 0 8px 32px rgba(15, 23, 42, 0.08);
+:root[data-theme-style="glass"] {
+  --erp-glass-fill: rgba(255,255,255,.56);
+  --erp-glass-edge: rgba(255,255,255,.78);
+  --erp-glass-shadow: inset 0 1px 0 rgba(255,255,255,.96), inset 0 -1px 0 rgba(255,255,255,.3), 0 12px 32px rgba(38,66,100,.12);
+  --erp-glass-scene: radial-gradient(ellipse at 12% 18%, rgba(105,190,245,.48), transparent 55%), radial-gradient(ellipse at 88% 28%, rgba(181,154,238,.4), transparent 52%), radial-gradient(ellipse at 50% 100%, rgba(106,215,207,.35), transparent 60%);
 }
-
-:root.dark[data-theme-style="glass"] .rounded-xl.border,
-:root.dark[data-theme-style="glass"] .rounded-md.border {
-  background-color: rgba(31, 41, 55, 0.96) !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+:root.dark[data-theme-style="glass"] {
+  --erp-glass-fill: rgba(24,35,54,.62);
+  --erp-glass-edge: rgba(255,255,255,.24);
+  --erp-glass-shadow: inset 0 1px 0 rgba(255,255,255,.2), inset 0 -1px 0 rgba(255,255,255,.06), 0 12px 32px rgba(0,0,0,.28);
+  --erp-glass-scene: radial-gradient(ellipse at 12% 18%, rgba(25,99,157,.55), transparent 55%), radial-gradient(ellipse at 88% 28%, rgba(104,62,156,.45), transparent 52%), radial-gradient(ellipse at 50% 100%, rgba(20,113,119,.4), transparent 60%);
 }
+:root[data-theme-style="glass"] .erp-app-shell { background-image: var(--erp-glass-scene); }
+:root[data-theme-style="glass"] .erp-workspace > :first-child { background-color: transparent !important; }
+:root[data-theme-style="glass"] :is(.erp-glass-chrome, .rounded-xl.border, .rounded-md.border) {
+  background-color: var(--erp-glass-fill) !important;
+  background-image: linear-gradient(135deg, rgba(255,255,255,.32), rgba(255,255,255,.02) 55%, rgba(255,255,255,.12));
+  backdrop-filter: blur(36px) saturate(180%);
+  -webkit-backdrop-filter: blur(36px) saturate(180%);
+  border-color: var(--erp-glass-edge) !important;
+  box-shadow: var(--erp-glass-shadow);
+}
+:root[data-theme-style="glass"] :is(.rounded-xl.border, .rounded-md.border) { border-radius: 18px !important; }
 
 /* New styles decorate panels; grids and form controls remain solid. */
 :root[data-theme-style="glassmorphism"] { --erp-surface: rgba(250,248,255,.9); --erp-edge: #d9ccef; }
@@ -67,10 +75,16 @@
   background-image: radial-gradient(ellipse at top right, rgba(124,58,237,.08), transparent 65%), radial-gradient(ellipse at bottom left, rgba(6,182,212,.06), transparent 65%);
 }
 @media (prefers-reduced-transparency: reduce) {
-  :root:is([data-theme-style="glass"], [data-theme-style="glassmorphism"]) :is(.MuiCard-root, .MuiAppBar-root, .rounded-xl.border, .rounded-md.border) {
+  :root:is([data-theme-style="glass"], [data-theme-style="glassmorphism"]) :is(.MuiCard-root, .MuiAppBar-root, .erp-glass-chrome, .rounded-xl.border, .rounded-md.border) {
+    background-image: none !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
     background-color: #fff !important;
   }
-  :root.dark:is([data-theme-style="glass"], [data-theme-style="glassmorphism"]) :is(.MuiCard-root, .MuiAppBar-root, .rounded-xl.border, .rounded-md.border) { background-color: #1e2030 !important; }
+  :root.dark:is([data-theme-style="glass"], [data-theme-style="glassmorphism"]) :is(.MuiCard-root, .MuiAppBar-root, .erp-glass-chrome, .rounded-xl.border, .rounded-md.border) { background-color: #1e2030 !important; }
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  :root[data-theme-style="glass"] :is(.MuiCard-root, .erp-glass-chrome, .rounded-xl.border, .rounded-md.border) { background-color: #fff !important; }
+  :root.dark[data-theme-style="glass"] :is(.MuiCard-root, .erp-glass-chrome, .rounded-xl.border, .rounded-md.border) { background-color: #182336 !important; }
 }

@@ -127,22 +127,22 @@ describe("createTenantTheme", () => {
     it("glass gives MuiCard a translucent, blurred background", () => {
       const theme = createTenantTheme({ theme_style: "glass" }, "light");
 
-      expect(theme.components.MuiCard.styleOverrides.root.backdropFilter).toBe("blur(20px)");
-      expect(theme.components.MuiCard.styleOverrides.root.backgroundColor).toBe("rgba(255,255,255,0.96)");
+      expect(theme.components.MuiCard.styleOverrides.root.backdropFilter).toBe("blur(36px) saturate(180%)");
+      expect(theme.components.MuiCard.styleOverrides.root.backgroundColor).toBe("rgba(255,255,255,0.56)");
     });
 
     it("glass uses a darker translucent background in dark mode", () => {
       const theme = createTenantTheme({ theme_style: "glass" }, "dark");
 
-      expect(theme.components.MuiCard.styleOverrides.root.backgroundColor).toBe("rgba(31,41,55,0.96)");
+      expect(theme.components.MuiCard.styleOverrides.root.backgroundColor).toBe("rgba(24,35,54,0.62)");
     });
 
-    it("glass keeps shared paper and navigation opaque to prevent background text showing through", () => {
+    it("glass decorates navigation while shared data surfaces remain opaque", () => {
       // Solid shared surfaces prevent scrolling rows from bleeding through pinned headers.
       const theme = createTenantTheme({ theme_style: "glass" }, "light");
 
       expect(theme.palette.background.paper).toBe("#ffffff");
-      expect(theme.components.MuiAppBar.styleOverrides.root.backgroundColor).toBe("#ffffff");
+      expect(theme.components.MuiAppBar.styleOverrides.root.backdropFilter).toBe("blur(36px) saturate(180%)");
       expect(theme.components.MuiTableHead.styleOverrides.root.backdropFilter).toBe("none");
     });
 
