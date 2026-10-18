@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useDispatch } from "react-redux";
-import { Lock, User, LogIn, AlertCircle, ShieldCheck } from "lucide-react";
+import { Lock, User, LogIn, AlertCircle } from "lucide-react";
 import { Box, Typography } from "@mui/material";
 import { loginUser } from "../../features/authSlice";
 import ActivationWizard from "../../pages/ActivationWizard";
@@ -81,44 +81,11 @@ export default function MobileLoginScreen({ onLoginSuccess }) {
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "#f8fafc", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-      {/* Top Royal Blue Header */}
-      <Box sx={{
-        backgroundImage: "linear-gradient(135deg, #27425f, #3a6ea5)",
-        pt: 6, pb: 8, px: 3, borderBottomLeftRadius: "36px", borderBottomRightRadius: "36px",
-        color: "#fff", textAlign: "center", boxShadow: "0 20px 25px -5px rgba(30,20,60,0.2)", position: "relative", overflow: "hidden",
-      }}>
-        {/* Decorative background glow circles */}
-        <Box sx={{ pointerEvents: "none", position: "absolute", top: -40, right: -40, width: 160, height: 160, borderRadius: "50%", bgcolor: "rgba(255,255,255,0.1)", filter: "blur(40px)" }} />
-        <Box sx={{ pointerEvents: "none", position: "absolute", bottom: -40, left: -40, width: 160, height: 160, borderRadius: "50%", bgcolor: "rgba(168,85,247,0.2)", filter: "blur(40px)" }} />
-
-        {/* Centered Layered Logo Box */}
-        <Box sx={{
-          display: "inline-flex", height: 64, width: 64, alignItems: "center", justifyContent: "center", borderRadius: "16px",
-          bgcolor: "rgba(255,255,255,0.2)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.4)",
-          boxShadow: 8, mb: 1.5,
-        }}>
-          <Box component="svg" viewBox="0 0 100 100" sx={{ width: 40, height: 40, fill: "#fff", filter: "drop-shadow(0 4px 3px rgba(0,0,0,0.15))" }} aria-hidden>
-            <path d="M18 20 L38 20 L50 64 L62 20 L82 20 L59 86 L41 86 Z" />
-          </Box>
-        </Box>
-
-        <VynerixLoginBrand compact inverse />
-      </Box>
-
-      {/* Floating Login Card */}
-      <Box sx={{ position: "relative", mt: -5, px: 2.5, flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-start", maxWidth: 440, mx: "auto", width: "100%" }}>
-        <Box sx={{ bgcolor: "#fff", borderRadius: "24px", p: 3, boxShadow: "0 20px 25px -5px rgba(15,23,41,0.05)", border: "1px solid #f1f5f9" }}>
-          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
-            <Box>
-              <Typography component="h2" sx={{ fontSize: 18, fontWeight: 900, color: "#0f172a", m: 0 }}>Sign In</Typography>
-              <Typography component="p" sx={{ fontSize: 12, color: "#64748b", mt: 0.25, fontWeight: 500 }}>
-                Enter your credentials to continue
-              </Typography>
-            </Box>
-            <Box sx={{ height: 32, width: 32, borderRadius: "50%", bgcolor: "#eef2ff", color: "#4f46e5", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <ShieldCheck size={18} />
-            </Box>
-          </Box>
+      <Box sx={{ width: "100%", maxWidth: 440, mx: "auto", px: 2.5, py: 4, my: "auto" }}>
+        <Box sx={{ bgcolor: "#fff", borderRadius: "16px", p: 3, boxShadow: "0 8px 32px rgba(39,66,95,0.08)", border: "1px solid #e2e8f0" }}>
+          <Box sx={{ mb: 3 }}><VynerixLoginBrand onLight /></Box>
+          <Typography component="h2" sx={{ fontSize: 23, fontWeight: 700, color: "#0f172a" }}>Welcome back</Typography>
+          <Typography sx={{ fontSize: 14, color: "#64748b", mt: 1, mb: 3 }}>Use your company account to continue.</Typography>
 
           {error && (
             <Box sx={{ mb: 2, display: "flex", alignItems: "center", gap: 1, borderRadius: "12px", bgcolor: "#fff1f2", border: "1px solid #fecdd3", p: 1.5, fontSize: 12, fontWeight: 700, color: "#be123c" }}>
@@ -188,7 +155,7 @@ export default function MobileLoginScreen({ onLoginSuccess }) {
               disabled={loading}
               sx={{
                 width: "100%", mt: 1, py: 1.75, borderRadius: "12px",
-                backgroundImage: "linear-gradient(to right, #4f46e5, #4f46e5, #9333ea)",
+                backgroundImage: "linear-gradient(to right, #3a6ea5, #3a6ea5)",
                 fontSize: 12, fontWeight: 700, color: "#fff",
                 boxShadow: "0 10px 15px -3px rgba(99,102,241,0.3)", transition: "all 0.15s",
                 display: "flex", alignItems: "center", justifyContent: "center", gap: 1,

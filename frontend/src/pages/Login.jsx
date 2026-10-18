@@ -57,12 +57,11 @@ const Login = () => {
   }
 
   return (
-    <Box className="login-page" sx={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", gap: { md: 8, lg: 12 }, bgcolor: "background.default", px: { xs: 2, sm: 4 }, py: { xs: 3, sm: 6 } }}>
-      <Box component="aside" sx={{ display: { xs: "none", md: "block" }, maxWidth: 440 }}><VynerixLoginBrand /></Box>
-      <Card variant="outlined" sx={{ width: "100%", maxWidth: 440, p: { xs: 3, sm: 5 }, borderRadius: 3, boxShadow: 2 }}>
-        <Box sx={{ display: { xs: "block", md: "none" }, mb: 3 }}><VynerixLoginBrand compact /></Box>
+    <Box className="login-page" sx={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", bgcolor: "background.default", px: 2, py: { xs: 3, sm: 5 } }}>
+      <Card variant="outlined" sx={{ width: "100%", maxWidth: 440, p: { xs: 3, sm: 4 }, borderRadius: 3, boxShadow: "0 8px 32px rgba(39,66,95,0.08)" }}>
+        <Box sx={{ mb: 3 }}><VynerixLoginBrand /></Box>
         <Typography variant="h5" component="h2" sx={{ fontWeight: 700 }}>
-          Sign in
+          Welcome back
         </Typography>
         <Typography sx={{ mt: 1, mb: 3, fontSize: 14, color: "text.secondary" }}>Use your company account to continue.</Typography>
         <Box component="form" sx={{ display: "flex", flexDirection: "column", gap: { xs: 2, sm: 2.5 } }} onSubmit={handleLocalLogin}>
@@ -110,10 +109,11 @@ const Login = () => {
           <Button
             type="submit"
             disabled={loading}
-            className="glass-btn glass-btn-primary"
-            sx={{ mt: 1, width: "100%", py: 1.5, fontSize: { xs: "1rem", sm: "1.125rem" }, fontWeight: 600, textTransform: "none" }}
+            variant="contained"
+            disableElevation
+            sx={{ mt: 1, width: "100%", minHeight: 42, borderRadius: 2, bgcolor: "#3a6ea5", "&:hover": { bgcolor: "#345f8f" }, fontSize: 14, fontWeight: 600, textTransform: "none" }}
           >
-            {loading ? "Logging in..." : "Login"}
+            {loading ? "Signing in..." : "Sign in"}
           </Button>
 
           {/* Divider */}
