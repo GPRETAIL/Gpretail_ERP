@@ -4,6 +4,7 @@ import { Lock, User, LogIn, AlertCircle, ShieldCheck } from "lucide-react";
 import { Box, Typography } from "@mui/material";
 import { loginUser } from "../../features/authSlice";
 import ActivationWizard from "../../pages/ActivationWizard";
+import GoogleSignInButton from "../../components/GoogleSignInButton";
 
 /**
  * Premium Native Mobile Login Screen for Vynerix ERP.
@@ -56,9 +57,21 @@ export default function MobileLoginScreen({ onLoginSuccess }) {
     }
   };
 
-  const handleQuickDemo = (user, pass) => {
-    setUsername(user);
-    setPassword(pass);
+  const handleGoogleLogin = async (idToken) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await dispatch(loginUser({ id_token: idToken }));
+      if (loginUser.fulfilled.match(result)) {
+        onLoginSuccess?.();
+      } else {
+        setError(result.payload || result.error?.message || "Google sign-in failed");
+      }
+    } catch (err) {
+      setError(err.message || "Google sign-in failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (setup) {
@@ -199,20 +212,8 @@ export default function MobileLoginScreen({ onLoginSuccess }) {
             </Box>
           </Box>
 
-          {/* Quick Demo Fill Buttons for instant testing */}
-          <Box sx={{ mt: 2, pt: 2, borderTop: "1px solid #f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", gap: 1 }}>
-            <Typography component="span" sx={{ fontSize: 11, color: "#94a3b8", fontWeight: 500 }}>Quick Fill:</Typography>
-            <Box
-              component="button"
-              type="button"
-              onClick={() => handleQuickDemo("admin", "password")}
-              sx={{
-                px: 1.25, py: 0.5, borderRadius: "8px", bgcolor: "#eef2ff", color: "#4f46e5", fontSize: 11, fontWeight: 700,
-                transition: "background-color 0.15s", "&:hover": { bgcolor: "#e0e7ff" },
-              }}
-            >
-              admin / password
-            </Box>
+          <Box sx={{ mt: 2, pt: 2, borderTop: "1px solid #f1f5f9" }}>
+            <GoogleSignInButton onCredential={handleGoogleLogin} disabled={loading} />
           </Box>
         </Box>
       </Box>
