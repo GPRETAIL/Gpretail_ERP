@@ -3,7 +3,8 @@ import { render, screen } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import authReducer from "../features/authSlice";
+import authReducer, { logout } from "../features/authSlice";
+import checkAuth from "../utils/checkAuth";
 
 /**
  * Route-shape coverage for App.jsx.
@@ -105,12 +106,23 @@ afterEach(() => {
   warnSpy.mockRestore();
   errorSpy.mockRestore();
   localStorage.clear();
+  vi.unstubAllGlobals();
 });
 
 const consoleOutput = () =>
   [...warnSpy.mock.calls, ...errorSpy.mock.calls].map((args) => args.join(" ")).join("\n");
 
 describe("App route shape", () => {
+  it("validates an old session before an unactivated deployment can block the login route", async () => {
+    localStorage.removeItem("vx_activated");
+    localStorage.setItem("token", "expired-token");
+    vi.mocked(checkAuth).mockImplementationOnce(async dispatch => { dispatch(logout()); });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ data: { activated: false } }) }));
+    renderApp("/login");
+    expect(await screen.findByRole("heading", { name: "GPRetail Login" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Activate this deployment" })).not.toBeInTheDocument();
+    expect(localStorage.getItem("token")).toBeNull();
+  });
   // React Router emits this one through `warningOnce`, keyed by the parent pathname, so only the
   // FIRST render in this module can ever observe it — keep the console assertion in this first
   // test and do not rely on later tests to catch a regression.

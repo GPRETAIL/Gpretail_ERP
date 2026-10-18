@@ -1,6 +1,7 @@
 import useAsyncQuery from "../hooks/useAsyncQuery";
 import React, { useCallback, useState } from "react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { logout } from "../features/authSlice";
 import { Loader2, ServerCrash, RefreshCw } from "lucide-react";
 import { Box, Button, Typography } from "@mui/material";
 import ActivationWizard from "../pages/ActivationWizard";
@@ -19,6 +20,7 @@ import ActivationWizard from "../pages/ActivationWizard";
 // Now: always ask the server, and let a definitive answer override the cache in BOTH directions.
 // Only an unreachable server falls back to the cached yes, which is the case the cache was for.
 const DesktopActivationGate = ({ children }) => {
+  const dispatch = useDispatch();
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
   const [cachedActivated] = useState(() => localStorage.getItem("vx_activated") === "1");
   const [phase, setPhase] = useState(cachedActivated ? "activated" : "loading");
@@ -83,6 +85,9 @@ const DesktopActivationGate = ({ children }) => {
   if (phase === "required") {
     return (
       <ActivationWizard
+        onCancel={() => {
+          dispatch(logout());
+        }}
         onActivated={() => {
           localStorage.setItem("vx_activated", "1");
           setPhase("activated");

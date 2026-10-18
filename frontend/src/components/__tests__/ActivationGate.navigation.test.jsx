@@ -1,14 +1,28 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { configureStore } from "@reduxjs/toolkit";
 import { Provider } from "react-redux";
 import { afterEach, expect, it, vi } from "vitest";
 import ActivationGate from "../ActivationGate";
+import authReducer from "../../features/authSlice";
 
-vi.mock("../../pages/ActivationWizard", () => ({ default: () => <div>Activation form</div> }));
+vi.mock("../../pages/ActivationWizard", () => ({ default: ({ onCancel }) => <div>Activation form<button onClick={onCancel}>Return to login</button></div> }));
 
 afterEach(() => {
   window.history.replaceState({}, "", "/");
   vi.unstubAllGlobals();
+  localStorage.clear();
+});
+
+it("lets a signed-in user leave an unactivated installation and clears saved credentials", async () => {
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ data: { activated: false } }) }));
+  localStorage.setItem("token", "old-session");
+  localStorage.setItem("user", JSON.stringify({ id: 1 }));
+  const store = configureStore({ reducer: { auth: authReducer }, preloadedState: { auth: { isAuthenticated: true, token: "old-session", user: { id: 1 } } } });
+  render(<Provider store={store}><ActivationGate><div>Login page</div></ActivationGate></Provider>);
+  fireEvent.click(await screen.findByRole("button", { name: "Return to login" }));
+  expect(store.getState().auth.isAuthenticated).toBe(false);
+  expect(localStorage.getItem("token")).toBeNull();
+  expect(await screen.findByText("Login page")).toBeInTheDocument();
 });
 
 it("moves between mobile and desktop gates without changing hook order", async () => {

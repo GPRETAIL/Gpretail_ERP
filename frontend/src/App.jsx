@@ -31,8 +31,8 @@ function App() {
   const homePath = "/dashboard";
 
   return (
-    <ActivationGate>
-      <AuthInitializer>
+    <AuthInitializer>
+      <ActivationGate>
         {isAuthenticated && authUser?.must_change_password ? (
           <ForceChangePassword />
         ) : (
@@ -55,8 +55,8 @@ function App() {
             {isAuthenticated && <StoreSelectionDialog />}
           </>
         )}
-      </AuthInitializer>
-    </ActivationGate>
+      </ActivationGate>
+    </AuthInitializer>
   );
 }
 
