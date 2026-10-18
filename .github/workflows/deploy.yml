@@ -72,6 +72,9 @@ jobs:
       - name: Run Backend Tests
         working-directory: backend-laravel
         run: php artisan test --without-tty
+      - name: Validate Route Controller Compatibility
+        working-directory: backend-laravel
+        run: php artisan route:list --json > /dev/null
 
   deploy:
     name: Deploy through SSH

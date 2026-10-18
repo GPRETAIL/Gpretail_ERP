@@ -27,7 +27,7 @@ class SalesReportController extends Controller
      */
     public function salesPivot(Request $request)
     {
-        $storeId = $this->resolveStoreId($request);
+        $storeId = $this->resolveReportStoreId($request);
         $query = PosSale::query();
         if ($storeId) {
             $query->where('store_id', $storeId);
@@ -130,7 +130,7 @@ class SalesReportController extends Controller
         return "\"{$label}\" is not available for analysis yet -- this attribute has no matching data in the current system.";
     }
 
-    private function resolveStoreId(Request $request)
+    private function resolveReportStoreId(Request $request)
     {
         $storeId = $request->input('company_id') ?: $request->header('X-Company-Scope-Id');
 
@@ -243,7 +243,7 @@ class SalesReportController extends Controller
             return response()->json(['success' => true, 'data' => [], 'totals' => null, 'notice' => $this->fieldNotice($field)]);
         }
 
-        $storeId = $this->resolveStoreId($request);
+        $storeId = $this->resolveReportStoreId($request);
         $saleFrom = $request->input('saleFromDate');
         $saleTo = $request->input('saleToDate');
 
@@ -331,7 +331,7 @@ class SalesReportController extends Controller
             return response()->json(['success' => true, 'data' => [], 'totals' => null, 'notice' => $this->fieldNotice($field)]);
         }
 
-        $storeId = $this->resolveStoreId($request);
+        $storeId = $this->resolveReportStoreId($request);
         $saleFrom = $request->input('saleFromDate');
         $saleTo = $request->input('saleToDate');
         $purchaseFrom = $request->input('purchaseFromDate');
@@ -485,7 +485,7 @@ class SalesReportController extends Controller
             return response()->json(['success' => true, 'data' => [], 'totals' => null, 'notice' => $this->fieldNotice($field)]);
         }
 
-        $storeId = $this->resolveStoreId($request);
+        $storeId = $this->resolveReportStoreId($request);
         $dateFrom = $request->input('dateFrom');
         $dateTo = $request->input('dateTo');
 
