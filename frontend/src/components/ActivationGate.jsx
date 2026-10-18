@@ -38,6 +38,9 @@ const DesktopActivationGate = ({ children }) => {
         setPhase("activated");
       } else if (ok) {
         localStorage.removeItem("vx_activated");
+        // An unactivated installation's public login URL must remain a sign-in
+        // entry point, including when the browser still has a valid legacy session.
+        if (window.location.pathname === "/login") dispatch(logout());
         setPhase("required");
       } else setPhase(cachedActivated ? "activated" : "error");
     },

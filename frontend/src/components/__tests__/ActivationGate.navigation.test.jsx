@@ -25,6 +25,17 @@ it("lets a signed-in user leave an unactivated installation and clears saved cre
   expect(await screen.findByText("Login page")).toBeInTheDocument();
 });
 
+it("shows login at the public login URL even with a saved legacy session", async () => {
+  window.history.replaceState({}, "", "/login");
+  localStorage.removeItem("vx_activated");
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ data: { activated: false } }) }));
+  const store = configureStore({ reducer: { auth: authReducer }, preloadedState: { auth: { isAuthenticated: true, token: "legacy-token", user: { id: 1 } } } });
+  render(<Provider store={store}><ActivationGate><div>Login page</div></ActivationGate></Provider>);
+  expect(await screen.findByText("Login page")).toBeInTheDocument();
+  expect(screen.queryByText("Activation form")).not.toBeInTheDocument();
+  expect(store.getState().auth.isAuthenticated).toBe(false);
+});
+
 it("moves between mobile and desktop gates without changing hook order", async () => {
   const fetchStatus = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ data: { activated: true } }) });
   vi.stubGlobal("fetch", fetchStatus);
