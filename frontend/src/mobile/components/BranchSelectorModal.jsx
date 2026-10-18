@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from "react";
+import useAsyncQuery from "../../hooks/useAsyncQuery";
+import { EMPTY_ARRAY } from "../../utils/emptyValues";
+import React, { useState, useCallback } from "react";
 import { X, Check, Store } from "lucide-react";
 import { Box, Typography } from "@mui/material";
 import api from "../../api/axios";
@@ -18,26 +20,19 @@ import api from "../../api/axios";
  * up the new scope at once rather than trying to live-refresh each one.
  */
 export default function BranchSelectorModal({ isOpen, onClose }) {
-  const [stores, setStores] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState(() => sessionStorage.getItem("activeStoreId") || "");
 
-  useEffect(() => {
-    if (!isOpen) return;
-    setLoading(true);
-    setSelectedId(sessionStorage.getItem("activeStoreId") || "");
-    api
-      .get("/companies", { params: { limit: 500 } })
-      .then((res) => {
-        const list = (res.data?.data || []).map((c) => ({
-          id: String(c.id),
-          name: c.name || c.code || `Store ${c.id}`,
-        }));
-        setStores(list);
-      })
-      .catch(() => setStores([]))
-      .finally(() => setLoading(false));
-  }, [isOpen]);
+  const fetchStores = useCallback(async ({ signal }) => {
+    const response = await api.get("/companies", { params: { limit: 500 }, signal });
+    return (response.data?.data || []).map(store => ({ id: String(store.id), name: store.name || store.code || `Store ${store.id}` }));
+  }, []);
+  const { data, loading } = useAsyncQuery(fetchStores, { enabled: isOpen });
+  const stores = data || EMPTY_ARRAY;
+  const [previousOpen, setPreviousOpen] = useState(isOpen);
+  if (isOpen !== previousOpen) {
+    setPreviousOpen(isOpen);
+    if (isOpen) setSelectedId(sessionStorage.getItem("activeStoreId") || "");
+  }
 
   if (!isOpen) return null;
 

@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import useAsyncQuery from "../../hooks/useAsyncQuery";
+import React, { useCallback, useState } from "react";
 import { ArrowLeft, Pencil } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -36,18 +37,13 @@ const StatCard = ({ label, value }) => (
 const CrmCustomerProfile = () => {
   const navigate = useNavigate();
   const { id } = useParams();
-  const [loading, setLoading] = useState(true);
-  const [data, setData] = useState(null);
   const [activeTab, setActiveTab] = useState("overview");
 
-  useEffect(() => {
-    setLoading(true);
-    api
-      .get(`/customers/${id}/profile`)
-      .then((res) => setData(res.data?.data || null))
-      .catch(() => toast.error("Failed to load customer profile"))
-      .finally(() => setLoading(false));
+  const fetchProfile = useCallback(async ({ signal }) => {
+    const response = await api.get(`/customers/${id}/profile`, { signal });
+    return response.data?.data || null;
   }, [id]);
+  const { data, loading } = useAsyncQuery(fetchProfile, { onError: () => toast.error("Failed to load customer profile") });
 
   const customer = data?.customer;
   const highlights = data?.highlights || {};

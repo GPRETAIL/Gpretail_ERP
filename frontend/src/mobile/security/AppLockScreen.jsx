@@ -1,3 +1,4 @@
+import useAsyncQuery from "../../hooks/useAsyncQuery";
 import React, { useState, useEffect, useCallback } from "react";
 import { Fingerprint } from "lucide-react";
 import { Box, Typography } from "@mui/material";
@@ -14,10 +15,17 @@ import useHaptics from "../hooks/useHaptics";
 export default function AppLockScreen({ appLock, biometrics, onForgotPin }) {
   const [pin, setPin] = useState("");
   const [shake, setShake] = useState(false);
-  const [countdown, setCountdown] = useState(0);
+  const [clock, setClock] = useState(Date.now);
+  const countdown = appLock.lockoutUntil ? Math.max(0, Math.ceil((appLock.lockoutUntil - clock) / 1000)) : 0;
   const [biometricBusy, setBiometricBusy] = useState(false);
   const { vibrate } = useHaptics();
 
+  const verifyBiometric = biometrics?.verify;
+  const autoVerify = useCallback(() => verifyBiometric?.() ?? false, [verifyBiometric]);
+  const { loading: autoBiometricBusy } = useAsyncQuery(autoVerify, {
+    enabled: Boolean(biometrics?.isEnabled),
+    onSuccess: ok => { if (ok) { vibrate("success"); appLock.unlockWithoutPin(); } },
+  });
   const tryBiometric = useCallback(async () => {
     if (!biometrics?.isEnabled || biometricBusy) return;
     setBiometricBusy(true);
@@ -32,28 +40,10 @@ export default function AppLockScreen({ appLock, biometrics, onForgotPin }) {
     // completely normal choice, not a mistake.
   }, [biometrics, biometricBusy, appLock, vibrate]);
 
-  // Best-effort auto-prompt so unlocking feels native (open the app, see
-  // the fingerprint prompt immediately) - if the browser declines to run
-  // it without a fresh tap, this just silently no-ops and the button
-  // below still works.
   useEffect(() => {
-    if (biometrics?.isEnabled) tryBiometric();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [biometrics?.isEnabled]);
-
-  useEffect(() => {
-    if (!appLock.lockoutUntil || appLock.lockoutUntil <= Date.now()) {
-      setCountdown(0);
-      return undefined;
-    }
-    const tick = () => {
-      const remaining = Math.max(0, Math.ceil((appLock.lockoutUntil - Date.now()) / 1000));
-      setCountdown(remaining);
-    };
-    tick();
-    const id = setInterval(tick, 500);
-    return () => clearInterval(id);
-  }, [appLock.lockoutUntil]);
+    const timer = setInterval(() => setClock(Date.now()), 500);
+    return () => clearInterval(timer);
+  }, []);
 
   const submit = useCallback(
     async (candidate) => {
@@ -119,7 +109,7 @@ export default function AppLockScreen({ appLock, biometrics, onForgotPin }) {
             component="button"
             type="button"
             onClick={tryBiometric}
-            disabled={biometricBusy}
+            disabled={biometricBusy || autoBiometricBusy}
             aria-label="Unlock with fingerprint or face"
             sx={{
               mb: 3, width: 64, height: 64, borderRadius: "50%", bgcolor: "rgba(255,255,255,0.1)",

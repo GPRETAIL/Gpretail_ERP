@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import useAsyncQuery from "../../hooks/useAsyncQuery";
+import React, { useCallback, useEffect, useState } from "react";
 import { ArrowLeft, Bell } from "lucide-react";
 import { Box } from "@mui/material";
 import api from "../../api/axios";
@@ -19,12 +20,8 @@ export default function MobileHeader({
   onOpenNotifications,
   onOpenUserMenu,
 }) {
-  const [unreadCount, setUnreadCount] = useState(
-    () => window.__vx_unread_count || 0
-  );
-
-  const refreshCount = async () => {
-    try {
+  const [cachedCount] = useState(() => window.__vx_unread_count || 0);
+  const fetchCount = useCallback(async ({ signal }) => {
       // Check stored IndexedDB payment & stock alerts
       const localNotifs = await getStoredNotifications();
       const localUnread = localNotifs.filter((n) => !n.isRead).length;
@@ -32,32 +29,29 @@ export default function MobileHeader({
       // Check remote notifications
       let remoteUnread = 0;
       try {
-        const res = await api.get("/notifications/unread-count");
+        const res = await api.get("/notifications/unread-count", { signal });
         remoteUnread = res.data?.data?.count ?? res.data?.count ?? 0;
       } catch {
         // Fallback
       }
 
       const total = Math.max(localUnread, remoteUnread);
-      setUnreadCount(total);
-      window.__vx_unread_count = total;
-    } catch {
-      // Silently ignore
-    }
-  };
+    return total;
+  }, []);
+  const { data, reload: refreshCount } = useAsyncQuery(fetchCount);
+  const unreadCount = data ?? cachedCount;
+  useEffect(() => { window.__vx_unread_count = unreadCount; }, [unreadCount]);
 
   useEffect(() => {
-    refreshCount();
-
-    const handleNotifUpdate = () => refreshCount();
+    const handleNotifUpdate = () => refreshCount({ silent: true });
     window.addEventListener("vx-notifications-updated", handleNotifUpdate);
-    const interval = setInterval(refreshCount, 45000);
+    const interval = setInterval(handleNotifUpdate, 45000);
 
     return () => {
       window.removeEventListener("vx-notifications-updated", handleNotifUpdate);
       clearInterval(interval);
     };
-  }, []);
+  }, [refreshCount]);
 
   const initial = (userName || "U").charAt(0).toUpperCase();
 

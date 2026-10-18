@@ -1,3 +1,4 @@
+import useResetOnChange from "../../hooks/useResetOnChange";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Save, Search, Plus, X, ArrowLeft, ChevronDown, Pencil, Trash2 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -68,9 +69,9 @@ const AttrSelect = ({
   }, [searchable, open]);
 
   // Reset highlight when search changes
-  useEffect(() => {
+  useResetOnChange([searchTerm], () => {
     setHighlightedIndex(-1);
-  }, [searchTerm]);
+  });
 
   // Scroll highlighted item into view
   useEffect(() => {
@@ -348,7 +349,7 @@ const SearchableSizeSelect = ({ value, onChange, sizes, sizeGroups, onJump }) =>
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, [open]);
 
-  useEffect(() => { setHighlightedIndex(-1); }, [searchTerm]);
+  useResetOnChange([searchTerm], () => setHighlightedIndex(-1));
 
   useEffect(() => {
     if (highlightedIndex < 0 || !listRef.current) return;
@@ -912,8 +913,10 @@ const InventoryEntry = () => {
     transportEntryId || null
   );
   const [summaryExpanded, setSummaryExpanded] = useState(false);
-  const [transportSummary, setTransportSummary] = useState(null);
-  const [invoiceSummary, setInvoiceSummary] = useState(null);
+  const [loadedTransportSummary, setTransportSummary] = useState(null);
+  const [loadedInvoiceSummary, setInvoiceSummary] = useState(null);
+  const transportSummary = linkedTransportEntryId ? loadedTransportSummary : null;
+  const invoiceSummary = linkedTransportEntryId || invoiceId ? loadedInvoiceSummary : null;
 
   // Jump dialog
   const [jumpOpen, setJumpOpen] = useState(false);
@@ -957,9 +960,9 @@ const InventoryEntry = () => {
   const [editIndex, setEditIndex] = useState(null);
   const [itemFilters, setItemFilters] = useState(createDefaultItemFilters);
 
-  useEffect(() => {
+  useResetOnChange([queryEditEntryId], () => {
     setResolvedEditEntryId(queryEditEntryId);
-  }, [queryEditEntryId]);
+  });
 
   // Load all dropdown data on mount
   useEffect(() => {
@@ -1007,18 +1010,14 @@ const InventoryEntry = () => {
   }, []);
 
   // If transport_entry_id is provided, fetch invoice data for auto-fill
-  useEffect(() => {
+  useResetOnChange([transportEntryId], () => {
     if (!transportEntryId) return;
     setHasTransportEntry(true);
     setLinkedTransportEntryId(transportEntryId);
-  }, [transportEntryId]);
+  });
 
   useEffect(() => {
-    if (!linkedTransportEntryId && !invoiceId) {
-      setTransportSummary(null);
-      setInvoiceSummary(null);
-      return;
-    }
+    if (!linkedTransportEntryId && !invoiceId) return;
 
     const fetchLinkedSummary = async () => {
       try {
@@ -1178,7 +1177,7 @@ const InventoryEntry = () => {
   }, [editEntryId, modeParam, transportEntryId]);
 
   // When product changes, load its margin_min/margin_max and mandatory attributes
-  useEffect(() => {
+  useResetOnChange([attrs.productId, products], () => {
     if (!attrs.productId) {
       setMarginMin(null);
       setMarginMax(null);
@@ -1209,7 +1208,7 @@ const InventoryEntry = () => {
       setMandatoryFields(mf);
       setVisibleDynamicFields(vf);
     }
-  }, [attrs.productId, products]);
+  });
 
   const handleAttrChange = (e) => {
     const { name, value } = e.target;

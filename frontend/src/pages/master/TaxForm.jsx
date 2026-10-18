@@ -21,8 +21,7 @@ import Breadcrumbs from "../../components/Breadcrumbs";
 import { handleEnterKeyNavigation } from "../../utils/enterToNextField";
 import { normalizeFormSignature } from "../../utils/formSignature";
 
-const TaxForm = () => {
-  const [rangedTaxItems, setRangedTaxItems] = useState([
+const DEFAULT_RANGED_TAX_ITEMS = [
     {
       from: 0,
       to: 0,
@@ -31,7 +30,10 @@ const TaxForm = () => {
       sgstPercentage: 0,
       inCost: false,
     },
-  ]);
+  ];
+
+const TaxForm = () => {
+  const [rangedTaxItems, setRangedTaxItems] = useState(() => DEFAULT_RANGED_TAX_ITEMS.map(row => ({ ...row })));
 
   const { taxCode } = useParams();
   const location = useLocation();
@@ -248,7 +250,7 @@ const TaxForm = () => {
             sgst: t.sgst_rate ?? ((t.rate ?? 0) / 2),
           },
         };
-        const loadedRanged = t.extra_fields?.rangedtable || rangedTaxItems;
+        const loadedRanged = t.extra_fields?.rangedtable || DEFAULT_RANGED_TAX_ITEMS.map(row => ({ ...row }));
         const loadedStoreId = t.company_id != null ? String(t.company_id) : "";
         setFormData(loadedFormData);
         setStoreId(loadedStoreId);

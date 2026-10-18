@@ -1,3 +1,4 @@
+import useAsyncQuery from "../../hooks/useAsyncQuery";
 import { masterSearchAreaSx } from "../../theme/erpUi";
 import SearchGridPanel from "../../components/SearchGridPanel";
 import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
@@ -43,12 +44,12 @@ const CashOpening = () => {
   const [now, setNow] = useState(new Date());
   const [showSearchPage, setShowSearchPage] = useState(false);
 
-  const [loadingMeta, setLoadingMeta] = useState(true);
   const [saving, setSaving] = useState(false);
   const searchGrid = useSearchGrid({
     adapter: createSearchGridAdapter("/cash-openings"), enabled: showSearchPage,
     onError: err => toast.error(err.response?.data?.message || "Failed to load records"),
   });
+  const loadSearchGrid = searchGrid.load;
   const { rows: searchResults, loading: searching, page: searchPage, setPage: setSearchPage, limit: searchLimit, setLimit: setSearchLimit, pagination: searchPagination } = searchGrid;
 
   const [options, setOptions] = useState({
@@ -81,10 +82,8 @@ const CashOpening = () => {
     return () => clearInterval(timer);
   }, []);
 
-  const loadMeta = async () => {
-    setLoadingMeta(true);
-    try {
-      const res = await api.get("/cash-openings/meta");
+  const fetchMeta = useCallback(async ({ signal }) => {
+      const res = await api.get("/cash-openings/meta", { signal });
       const payload = res.data?.data || {};
 
       const mapSelect = (rows, formatter = (x) => x.name) =>
@@ -93,23 +92,18 @@ const CashOpening = () => {
           label: formatter(row),
         }));
 
-      setOptions({
+      return {
         locations: mapSelect(payload.locations),
         counters: mapSelect(payload.counters),
         paidByEmployees: mapSelect(payload.paidByEmployees, formatEmployee),
         cashiers: mapSelect(payload.cashiers, formatEmployee),
-      });
-    } catch (err) {
-      toast.error(err?.response?.data?.message || "Failed to load cash opening options");
-      setOptions({ locations: [], counters: [], paidByEmployees: [], cashiers: [] });
-    } finally {
-      setLoadingMeta(false);
-    }
-  };
-
-  useEffect(() => {
-    loadMeta();
+      };
   }, []);
+  const { loading: loadingMeta } = useAsyncQuery(fetchMeta, {
+    onSuccess: setOptions,
+    onError: error => { toast.error(error.response?.data?.message || "Failed to load cash opening options"); setOptions({ locations: [], counters: [], paidByEmployees: [], cashiers: [] }); },
+  });
+
 
   useEffect(() => {
     searchFiltersRef.current = searchFilters;
@@ -135,8 +129,8 @@ const CashOpening = () => {
       if (String(filters.cashierEmployeeId || "").trim()) params.cashierEmployeeId = filters.cashierEmployeeId;
       if (String(filters.date || "").trim()) params.date = filters.date;
 
-    searchGrid.load(params);
-  }, [searchGrid.load]);
+    loadSearchGrid(params);
+  }, [loadSearchGrid]);
 
   const openSearchPage = async () => {
     setShowSearchPage(true);
@@ -160,7 +154,7 @@ const CashOpening = () => {
       runSearch(nextFilters);
       return nextFilters;
     });
-  }, [runSearch]);
+  }, [runSearch, setSearchPage]);
 
   const handleCountChange = (key, raw) => {
     if (raw === "") {

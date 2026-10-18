@@ -1,3 +1,5 @@
+import useAsyncQuery from "../../hooks/useAsyncQuery";
+import { EMPTY_ARRAY } from "../../utils/emptyValues";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RotateCcw, Save, Square, Apple, Droplets, Check, X, Type, Bookmark, Trash2, PlusCircle, Sparkles, Layers } from "lucide-react";
@@ -125,28 +127,16 @@ const Themes = () => {
     FONT_OPTIONS.forEach((option) => ensureGoogleFontLoaded(option.google));
   }, []);
 
-  const [presets, setPresets] = useState([]);
-  const [presetsLoading, setPresetsLoading] = useState(false);
   const [presetBusyId, setPresetBusyId] = useState(null); // preset.id mid apply/delete, or "saving" while the dialog's save is in flight
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [presetName, setPresetName] = useState("");
 
-  const loadPresets = useCallback(async () => {
-    if (!companyId) return;
-    setPresetsLoading(true);
-    try {
-      const res = await api.get(`/companies/${companyId}/theme-presets`);
-      setPresets(res.data?.data || []);
-    } catch {
-      // Non-critical: the rest of the page works fully without a presets list.
-    } finally {
-      setPresetsLoading(false);
-    }
+  const fetchPresets = useCallback(async ({ signal }) => {
+    const response = await api.get(`/companies/${companyId}/theme-presets`, { signal });
+    return response.data?.data || [];
   }, [companyId]);
-
-  useEffect(() => {
-    loadPresets();
-  }, [loadPresets]);
+  const { data: presetRows, loading: presetsLoading, reload: loadPresets } = useAsyncQuery(fetchPresets, { enabled: Boolean(companyId) });
+  const presets = presetRows || EMPTY_ARRAY;
 
   const hasUnsavedChanges = useMemo(
     () => JSON.stringify(form) !== JSON.stringify(savedForm),

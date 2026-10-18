@@ -1,3 +1,5 @@
+import { useCallback } from "react";
+import useAsyncQuery from "../../hooks/useAsyncQuery";
 import { ArrowLeft, Save } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -77,7 +79,6 @@ const HrConfigurationForm = () => {
   const isEdit = !!recordId;
   const initialFormRef = useRef(null);
 
-  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false); // synchronous double-submit guard
   const [formData, setFormData] = useState({
@@ -137,15 +138,10 @@ const HrConfigurationForm = () => {
       });
   }, [showDesignationRole]);
 
-  useEffect(() => {
-    if (!isEdit) return;
-
-    setLoading(true);
-    api
-      .get(`${baseEndpoint}/${recordId}`)
-      .then((res) => {
-        const row = res.data?.data;
-        if (!row) return;
+  const fetchConfiguration = useCallback(async ({ signal }) => {
+    const response = await api.get(`${baseEndpoint}/${recordId}`, { signal });
+        const row = response.data?.data;
+        if (!row) return null;
         const loaded = {
           code: row.code || "",
           name: row.name || "",
@@ -164,23 +160,17 @@ const HrConfigurationForm = () => {
           toTime: showWorkingHour ? row.to_time || "" : "",
           workingHours: showWorkingHour ? row.working_hours || "" : "",
         };
-        setFormData(loaded);
-        initialFormRef.current = JSON.stringify(loaded); // baseline for the no-changes guard
-      })
-      .catch((err) => {
-        toast.error(err.response?.data?.message || `Failed to load ${typeLabel.toLowerCase()}`);
-      })
-      .finally(() => setLoading(false));
-  }, [
-    baseEndpoint,
-    isEdit,
-    recordId,
-    showDesignationRole,
-    showIsSales,
-    showLocation,
-    showWorkingHour,
-    typeLabel,
-  ]);
+    return loaded;
+  }, [baseEndpoint, recordId, showDesignationRole, showIsSales, showLocation, showWorkingHour]);
+  const { loading } = useAsyncQuery(fetchConfiguration, {
+    enabled: isEdit,
+    onSuccess: loaded => {
+      if (!loaded) return;
+      setFormData(loaded);
+      initialFormRef.current = JSON.stringify(loaded);
+    },
+    onError: error => toast.error(error.response?.data?.message || `Failed to load ${typeLabel.toLowerCase()}`),
+  });
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;

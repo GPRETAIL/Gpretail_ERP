@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { Box, ButtonBase, Checkbox, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
 import {
@@ -99,17 +99,12 @@ const PermissionMatrix = ({ permissions, disabled = false, entitlements = null, 
     Object.fromEntries(catalog.map((section) => [section.name, false]))
   );
 
-  useEffect(() => {
-    setExpandedSections((prev) => {
-      const next = Object.fromEntries(catalog.map((section) => [section.name, prev[section.name] ?? false]));
-      const prevKeys = Object.keys(prev);
-      const nextKeys = Object.keys(next);
-      if (prevKeys.length === nextKeys.length && nextKeys.every((key) => prev[key] === next[key])) {
-        return prev;
-      }
-      return next;
-    });
-  }, [catalog]);
+  const sectionKey = JSON.stringify(catalog.map(section => section.name));
+  const [previousSections, setPreviousSections] = useState(sectionKey);
+  if (sectionKey !== previousSections) {
+    setPreviousSections(sectionKey);
+    setExpandedSections(previous => Object.fromEntries(catalog.map(section => [section.name, previous[section.name] ?? false])));
+  }
 
   const toggleSectionExpanded = (sectionName) => {
     setExpandedSections((prev) => ({

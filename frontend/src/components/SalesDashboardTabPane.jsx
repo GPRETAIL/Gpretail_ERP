@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { EMPTY_ARRAY, EMPTY_OBJECT } from "../utils/emptyValues.js";
+import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
 import { Box, Button, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
-import api from "../api/axios";
+import useModuleDashboardSummary from "../hooks/useModuleDashboardSummary";
 import DashboardGrid from "./dashboard/DashboardGrid";
 import { TodaysSalesCard, NetSalesCard, ReturnsCard, CreditPendingCard } from "./dashboard/sales/SalesKpiSummary";
 import { MonthlySalesCard, TotalInvoicesCard, ProductsSoldCard } from "./dashboard/sales/SalesSecondaryKpi";
@@ -29,47 +30,19 @@ const QUICK_ACTIONS = [
 
 export default function SalesDashboardTabPane({ active, fromDate, toDate, companyId, privacyMode }) {
   const navigate = useNavigate();
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { data, loading, error, reload: fetchData } = useModuleDashboardSummary("/sales/dashboard", {
+    active, errorMessage: "Failed to load sales data.", params: { ...(fromDate ? { date_from: fromDate } : {}), ...(toDate ? { date_to: toDate } : {}), ...(companyId ? { warehouse_id: companyId } : {}) },
+  });
 
-  const fetchData = useCallback(async () => {
-    if (!active) return;
-    try {
-      setLoading(true);
-      setError(null);
-      const params = {};
-      if (fromDate) params.date_from = fromDate;
-      if (toDate) params.date_to = toDate;
-      if (companyId) params.warehouse_id = companyId;
-
-      const res = await api.get("/sales/dashboard", { params });
-      if (res.data?.success && res.data?.data) {
-        setData(res.data.data);
-      } else {
-        setError("Failed to load sales data.");
-      }
-    } catch (err) {
-      console.error("Sales Tab fetch error:", err);
-      setError(err.response?.data?.message || "Error communicating with server.");
-    } finally {
-      setLoading(false);
-    }
-  }, [active, fromDate, toDate, companyId]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  const summary = data?.summary || {};
-  const actionRequired = data?.action_required || [];
-  const transactionBreakdown = data?.transaction_breakdown || {};
-  const paymentBreakdown = data?.payment_breakdown || [];
-  const topProducts = data?.top_products || [];
-  const topSalesPersons = data?.top_sales_persons || [];
-  const recentSales = data?.recent_sales || [];
-  const performance = data?.performance || {};
-  const salesTrendChart = data?.charts?.sales_trend || [];
+  const summary = data?.summary || EMPTY_OBJECT;
+  const actionRequired = data?.action_required || EMPTY_ARRAY;
+  const transactionBreakdown = data?.transaction_breakdown || EMPTY_OBJECT;
+  const paymentBreakdown = data?.payment_breakdown || EMPTY_ARRAY;
+  const topProducts = data?.top_products || EMPTY_ARRAY;
+  const topSalesPersons = data?.top_sales_persons || EMPTY_ARRAY;
+  const recentSales = data?.recent_sales || EMPTY_ARRAY;
+  const performance = data?.performance || EMPTY_OBJECT;
+  const salesTrendChart = data?.charts?.sales_trend || EMPTY_ARRAY;
 
   const widgets = useMemo(
     () => [

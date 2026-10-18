@@ -48,9 +48,10 @@ export default function SubscriptionDuePopup() {
   const notices = useMemo(() => {
     if (!Array.isArray(status?.notices)) return [];
     return status.notices.filter((notice) => notice && (notice.subject || notice.message));
-  }, [status?.notices]);
+  }, [status]);
   const pushedNotice = notices.find((notice) => !dismissedIds.has(notice.id)) || null;
   const shouldWarn = Boolean(pushedNotice || (status && (status.dueSoon || status.onTrial)));
+  if (!shouldWarn && visible) setVisible(false);
   // The id, not the object. Status is refetched on a timer, so `pushedNotice` is a new object on
   // every poll; keying the effect on the object would restart the cycle -- and re-show the banner --
   // every ten minutes. The id changes only when the notice genuinely does.
@@ -77,10 +78,7 @@ export default function SubscriptionDuePopup() {
   };
 
   useEffect(() => {
-    if (!shouldWarn) {
-      setVisible(false);
-      return undefined;
-    }
+    if (!shouldWarn) return undefined;
 
     let hideTimer = null;
     let cycleTimer = null;
@@ -140,7 +138,7 @@ export default function SubscriptionDuePopup() {
     return `Your subscription is due in ${days} day${days === 1 ? "" : "s"}. Renew to avoid interruption.`;
   }, [status, pushedNotice]);
 
-  if (!visible || !message) return null;
+  if (!shouldWarn || !visible || !message) return null;
 
   return (
     <Box

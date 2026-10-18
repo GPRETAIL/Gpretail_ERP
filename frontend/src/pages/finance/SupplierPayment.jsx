@@ -1,3 +1,4 @@
+import useAsyncQuery from "../../hooks/useAsyncQuery";
 import SearchGridPanel from "../../components/SearchGridPanel";
 import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
 import React, { useState, useEffect, useCallback, useMemo } from "react";
@@ -174,7 +175,7 @@ const SupplierPayment = () => {
   const [remarks, setRemarks] = useState("");
   const [saving, setSaving] = useState(false);
   const [paymentBackScreen, setPaymentBackScreen] = useState("search");
-  const [detailLoading, setDetailLoading] = useState(false);
+  const [manualDetailLoading, setDetailLoading] = useState(false);
   const [detailData, setDetailData] = useState(null);
 
   // ─── Load dropdown data on mount ───────────────────────────────────────────
@@ -222,6 +223,7 @@ const SupplierPayment = () => {
     adapter: createSearchGridAdapter("/supplier-payments/pending"), enabled: pendingRequested,
     onError: err => toast.error(err.response?.data?.message || "Failed to load pending bills"),
   });
+  const loadPendingGrid = pendingGrid.load;
   const historyGrid = useSearchGrid({
     adapter: createSearchGridAdapter("/supplier-payments/history"), enabled: showSearchPage,
     onError: err => toast.error(err.response?.data?.message || "Failed to load payment history"),
@@ -240,8 +242,8 @@ const SupplierPayment = () => {
     if (section) params.section = section;
     setPendingRequested(true);
     setSelectedIds(new Set());
-    pendingGrid.load(params, overrides.page ?? 1, overrides.limit);
-  }, [companyId, location, agentId, fromDate, toDate, cityId, section, pendingGrid.load]);
+    loadPendingGrid(params, overrides.page ?? 1, overrides.limit);
+  }, [companyId, location, agentId, fromDate, toDate, cityId, section, loadPendingGrid]);
   const handlePendingServerSearch = pendingGrid.onServerSearch;
   const handlePendingSortChange = pendingGrid.onSortChange;
   const handlePendingPageChange = pendingGrid.setPage;
@@ -311,15 +313,17 @@ const SupplierPayment = () => {
   // Deep-link from a notification click (Navbar's bell): ?openInvoiceType=
   // direct&openInvoiceId=123 auto-opens that invoice's detail screen on
   // arrival, then clears the params so a later refresh doesn't re-trigger it.
-  useEffect(() => {
-    const type = searchParams.get("openInvoiceType");
-    const id = searchParams.get("openInvoiceId");
-    if (type && id) {
-      handlePaySingle({ invoice_type: type, id });
-      setSearchParams({}, { replace: true });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const [initialInvoice] = useState(() => ({ type: searchParams.get("openInvoiceType"), id: searchParams.get("openInvoiceId") }));
+  const fetchInitialInvoice = useCallback(async ({ signal }) => {
+    const res = await api.get(`/supplier-payments/pending/${initialInvoice.type}/${initialInvoice.id}/details`, { signal });
+    return res.data?.data || null;
+  }, [initialInvoice]);
+  const { loading: initialDetailLoading } = useAsyncQuery(fetchInitialInvoice, {
+    enabled: Boolean(initialInvoice.type && initialInvoice.id),
+    onSuccess: data => { setDetailData(data); setScreen("detail"); setSearchParams({}, { replace: true }); },
+    onError: err => { toast.error(err.response?.data?.message || "Failed to load invoice details"); setSearchParams({}, { replace: true }); },
+  });
+  const detailLoading = manualDetailLoading || initialDetailLoading;
 
   const handleAddPayment = () => {
     if (selectedRows.length === 0) {

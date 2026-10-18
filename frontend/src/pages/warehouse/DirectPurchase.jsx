@@ -1,3 +1,4 @@
+import useResetOnChange from "../../hooks/useResetOnChange";
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Save, Plus, X, ArrowLeft, Search, ChevronDown, Pencil, Trash2, Eye } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -618,10 +619,8 @@ const SizeSearchSelect = ({ value, onChange, sizes, sizeGroups, sellingMode }) =
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
-  useEffect(() => {
-    setHighlightedIndex(-1);
-    keyboardSelectionArmedRef.current = false;
-  }, [searchTerm]);
+  useResetOnChange([searchTerm], () => setHighlightedIndex(-1));
+  useEffect(() => { keyboardSelectionArmedRef.current = false; }, [searchTerm]);
   useEffect(() => {
     if (highlightedIndex < 0 || !listRef.current) return;
     const items = listRef.current.querySelectorAll("li");
@@ -823,7 +822,15 @@ const JumpSizeDialog = ({
   const [changePrice, setChangePrice] = useState(false);
   const [generatedSizes, setGeneratedSizes] = useState([]);
 
-  useEffect(() => {
+  useResetOnChange([
+    open,
+    defaultRows,
+    defaultChangePrice,
+    baseCost,
+    purchaseDiscountPerc,
+    purchaseTaxPerc,
+    saleDiscountPerc,
+  ], () => {
     if (!open) return;
     const normalizedDefaults = normalizeJumpDetails(defaultRows, {
       cost: baseCost,
@@ -834,15 +841,7 @@ const JumpSizeDialog = ({
     });
     setGeneratedSizes(normalizedDefaults);
     setChangePrice(Boolean(defaultChangePrice));
-  }, [
-    open,
-    defaultRows,
-    defaultChangePrice,
-    baseCost,
-    purchaseDiscountPerc,
-    purchaseTaxPerc,
-    saleDiscountPerc,
-  ]);
+  });
 
   const handleGenerate = () => {
     const s = parseFloat(start);
@@ -1066,11 +1065,11 @@ const CutDetailDialog = ({
   const [qty, setQty] = useState("");
   const [meter, setMeter] = useState("");
 
-  useEffect(() => {
+  useResetOnChange([open, defaultRow], () => {
     if (!open) return;
     setQty(defaultRow?.qty ? String(defaultRow.qty) : "");
     setMeter(defaultRow?.meter ? String(defaultRow.meter) : "");
-  }, [open, defaultRow]);
+  });
 
   const handleApply = () => {
     const nextQty = Math.max(0, parseInt(qty, 10) || 0);
@@ -1383,10 +1382,10 @@ const EditItemConfirmDialog = ({ open, onClose, onConfirm }) => {
 const TaxChargeTypeDialog = ({ open, value, onClose, onConfirm }) => {
   const [selectedValue, setSelectedValue] = useState(value || "");
 
-  useEffect(() => {
+  useResetOnChange([open, value], () => {
     if (!open) return;
     setSelectedValue(value || "");
-  }, [open, value]);
+  });
 
   if (!open) return null;
 
@@ -1625,7 +1624,7 @@ const DirectPurchase = () => {
     loadDropdownData();
   }, []);
 
-  useEffect(() => {
+  useResetOnChange([authUser, companies, editId, isAdmin], () => {
     if (!isAdmin || editId) return;
     setForm((prev) => {
       const retailLocation =
@@ -1637,7 +1636,7 @@ const DirectPurchase = () => {
       if (prev.retailLocation === retailLocation) return prev;
       return { ...prev, retailLocation };
     });
-  }, [authUser, companies, editId, isAdmin]);
+  });
 
   useEffect(() => {
     if (!editId) return;

@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { EMPTY_ARRAY, EMPTY_OBJECT } from "../utils/emptyValues.js";
+import React, { useMemo } from "react";
 import { AlertTriangle } from "lucide-react";
 import { Box, Button, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
-import api from "../api/axios";
+import useModuleDashboardSummary from "../hooks/useModuleDashboardSummary";
 import DashboardGrid from "./dashboard/DashboardGrid";
 import {
   StoresCard,
@@ -15,41 +16,14 @@ import StoreSalesChart from "./dashboard/store/StoreSalesChart";
 import StoreComparisonTable from "./dashboard/store/StoreComparisonTable";
 
 export default function StoreDashboardTabPane({ active, fromDate, toDate, privacyMode }) {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { data, loading, error, reload: fetchData } = useModuleDashboardSummary("/store/dashboard", {
+    active, errorMessage: "Failed to load store data.", params: { ...(fromDate ? { date_from: fromDate } : {}), ...(toDate ? { date_to: toDate } : {}) },
+  });
 
-  const fetchData = useCallback(async () => {
-    if (!active) return;
-    try {
-      setLoading(true);
-      setError(null);
-      const params = {};
-      if (fromDate) params.date_from = fromDate;
-      if (toDate) params.date_to = toDate;
-
-      const res = await api.get("/store/dashboard", { params });
-      if (res.data?.success && res.data?.data) {
-        setData(res.data.data);
-      } else {
-        setError("Failed to load store data.");
-      }
-    } catch (err) {
-      console.error("Store Tab fetch error:", err);
-      setError(err.response?.data?.message || "Error communicating with server.");
-    } finally {
-      setLoading(false);
-    }
-  }, [active, fromDate, toDate]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  const summary = data?.summary || {};
-  const actionRequired = data?.action_required || [];
-  const comparison = data?.comparison || [];
-  const salesChart = data?.charts?.sales_by_store || [];
+  const summary = data?.summary || EMPTY_OBJECT;
+  const actionRequired = data?.action_required || EMPTY_ARRAY;
+  const comparison = data?.comparison || EMPTY_ARRAY;
+  const salesChart = data?.charts?.sales_by_store || EMPTY_ARRAY;
 
   const widgets = useMemo(
     () => [

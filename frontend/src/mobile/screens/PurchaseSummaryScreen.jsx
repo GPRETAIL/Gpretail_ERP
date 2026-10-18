@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import useAsyncQuery from "../../hooks/useAsyncQuery";
+import { EMPTY_ARRAY } from "../../utils/emptyValues";
+import React, { useState, useCallback, useMemo } from "react";
 import { ChevronDown } from "lucide-react";
 import { Box, Typography } from "@mui/material";
 import api from "../../api/axios";
@@ -46,16 +48,11 @@ export default function PurchaseSummaryScreen() {
   const [showPicker, setShowPicker] = useState(false);
   const [fromDate, setFromDate] = useState(formatYmd(monthAgo));
   const [toDate, setToDate] = useState(formatYmd(today));
-  const [loading, setLoading] = useState(true);
-  const [bills, setBills] = useState([]);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
+  const fetchSummary = useCallback(async ({ signal }) => {
       const params = { all: true, from: fromDate, to: toDate };
       const [directRes, invoiceRes] = await Promise.allSettled([
-        api.get("/direct-purchases", { params }),
-        api.get("/invoices", { params }),
+        api.get("/direct-purchases", { params, signal }),
+        api.get("/invoices", { params, signal }),
       ]);
 
       const extract = (res) => {
@@ -66,17 +63,10 @@ export default function PurchaseSummaryScreen() {
 
       const directList = extract(directRes).map((b) => ({ ...b, _source: "direct" }));
       const invoiceList = extract(invoiceRes).map((b) => ({ ...b, _source: "invoice" }));
-      setBills([...directList, ...invoiceList]);
-    } catch {
-      setBills([]);
-    } finally {
-      setLoading(false);
-    }
+      return [...directList, ...invoiceList];
   }, [fromDate, toDate]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
+  const { data: response, loading } = useAsyncQuery(fetchSummary);
+  const bills = response || EMPTY_ARRAY;
 
   const activeLabel = BREAKDOWN_TYPES.find((b) => b.id === breakdownType)?.label;
 

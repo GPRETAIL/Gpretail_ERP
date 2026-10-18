@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useState } from "react";
+import useAsyncQuery from "../hooks/useAsyncQuery";
+import React, { useCallback, useState } from "react";
 import { useSelector } from "react-redux";
 import { Loader2, ServerCrash, RefreshCw } from "lucide-react";
 import { Box, Button, Typography } from "@mui/material";
@@ -23,31 +24,23 @@ const DesktopActivationGate = ({ children }) => {
   const [phase, setPhase] = useState(cachedActivated ? "activated" : "loading");
   const [licence, setLicence] = useState(null);
 
-  const check = useCallback(async () => {
-    try {
-      const res = await fetch("/api/activation/status", { headers: { Accept: "application/json" } });
-      const body = await res.json().catch(() => ({}));
+  const fetchActivation = useCallback(async ({ signal }) => {
+    const response = await fetch("/api/activation/status", { headers: { Accept: "application/json" }, signal });
+    return { ok: response.ok, body: await response.json().catch(() => ({})) };
+  }, []);
+  const { reload: check } = useAsyncQuery(fetchActivation, {
+    onSuccess: ({ ok, body }) => {
       setLicence(body?.data?.licence ?? null);
-      if (res.ok && body?.data?.activated) {
+      if (ok && body?.data?.activated) {
         localStorage.setItem("vx_activated", "1");
         setPhase("activated");
-      } else if (res.ok) {
-        // An authoritative "not activated" must revoke the cache, or the next reload trusts a flag
-        // the server has already contradicted.
+      } else if (ok) {
         localStorage.removeItem("vx_activated");
         setPhase("required");
-      } else {
-        setPhase(cachedActivated ? "activated" : "error");
-      }
-    } catch {
-      // Unreachable is the one case the cache is for: keep a known-activated deployment usable.
-      setPhase(cachedActivated ? "activated" : "error");
-    }
-  }, [cachedActivated]);
-
-  useEffect(() => {
-    check();
-  }, [check]);
+      } else setPhase(cachedActivated ? "activated" : "error");
+    },
+    onError: () => setPhase(cachedActivated ? "activated" : "error"),
+  });
 
   // A licence in its grace period is a WARNING, never a block. The deployment is still fully usable
   // -- it has simply not been able to reach the licence server for a while and has a date on which

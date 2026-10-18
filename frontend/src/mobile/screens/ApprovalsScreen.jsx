@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useCallback } from "react";
+import useAsyncQuery from "../../hooks/useAsyncQuery";
+import { EMPTY_ARRAY } from "../../utils/emptyValues";
+import React, { useState, useCallback } from "react";
 import { Search, Check, X } from "lucide-react";
 import { Box, Typography } from "@mui/material";
 import api from "../../api/axios";
@@ -30,28 +32,15 @@ const formatDate = (dateStr) => {
  */
 export default function ApprovalsScreen() {
   const [search, setSearch] = useState("");
-  const [rows, setRows] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [actingId, setActingId] = useState(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await api.get("/sales-on-approval", {
-        params: { status: "PENDING", limit: 50, search: search || undefined },
-      });
-      const data = res.data?.data;
-      setRows(Array.isArray(data) ? data : data?.data || []);
-    } catch {
-      setRows([]);
-    } finally {
-      setLoading(false);
-    }
+  const fetchApprovals = useCallback(async ({ signal }) => {
+    const response = await api.get("/sales-on-approval", { params: { status: "PENDING", limit: 50, search: search || undefined }, signal });
+    const data = response.data?.data;
+    return Array.isArray(data) ? data : data?.data || [];
   }, [search]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
+  const { data, loading, setData: setRows } = useAsyncQuery(fetchApprovals);
+  const rows = data || EMPTY_ARRAY;
 
   const handleAction = async (id, action) => {
     setActingId(id);

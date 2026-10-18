@@ -447,11 +447,11 @@ const Product = () => {
     }
   };
 
-  useEffect(() => {
-    if (selectedRows.length <= 1) {
-      resetBulkEditForm();
-    }
-  }, [selectedRows.length]);
+  const [previousSelectionCount, setPreviousSelectionCount] = useState(selectedRows.length);
+  if (selectedRows.length !== previousSelectionCount) {
+    setPreviousSelectionCount(selectedRows.length);
+    if (selectedRows.length <= 1) setBulkEditForm(BULK_EDIT_INITIAL);
+  }
 
   useEffect(() => {
     if (!showBulkEditPanel || bulkBrandOptions.length > 0) return;

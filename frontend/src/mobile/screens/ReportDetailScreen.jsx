@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import useAsyncQuery from "../../hooks/useAsyncQuery";
+import React, { useState, useCallback, useMemo } from "react";
 import { TrendingUp, FileText, Wallet, AlertTriangle } from "lucide-react";
 import { Box, Typography } from "@mui/material";
 import api from "../../api/axios";
@@ -59,8 +60,6 @@ export default function ReportDetailScreen({ reportType }) {
   const colors = COLOR_CLASSES[config.color];
 
   const [dateRange, setDateRange] = useState("month");
-  const [loading, setLoading] = useState(true);
-  const [metrics, setMetrics] = useState(null);
 
   const { fromDate, toDate } = useMemo(() => {
     const now = new Date();
@@ -84,23 +83,11 @@ export default function ReportDetailScreen({ reportType }) {
     return { fromDate: formatYmd(from), toDate: formatYmd(to) };
   }, [dateRange]);
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await api.get("/dashboard/overview", {
-        params: { from: fromDate, to: toDate, timezoneOffset: new Date().getTimezoneOffset() },
-      });
-      setMetrics(res.data?.data?.metrics || null);
-    } catch {
-      setMetrics(null);
-    } finally {
-      setLoading(false);
-    }
+  const fetchMetrics = useCallback(async ({ signal }) => {
+    const response = await api.get("/dashboard/overview", { params: { from: fromDate, to: toDate, timezoneOffset: new Date().getTimezoneOffset() }, signal });
+    return response.data?.data?.metrics || null;
   }, [fromDate, toDate]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  const { data: metrics, loading } = useAsyncQuery(fetchMetrics);
 
   const metric = metrics?.[config.metricKey];
   const hasData = metric != null;

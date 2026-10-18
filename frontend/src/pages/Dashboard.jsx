@@ -1,3 +1,5 @@
+import useAsyncQuery from "../hooks/useAsyncQuery";
+import { EMPTY_ARRAY, EMPTY_OBJECT } from "../utils/emptyValues.js";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { RefreshCw, LayoutGrid, Check, RotateCcw, Eye, EyeOff, Package, Users } from "lucide-react";
 import { useSelector } from "react-redux";
@@ -62,12 +64,6 @@ const Dashboard = () => {
   const [fromDate, setFromDate] = useState(() => formatYmd(startOfMonth(new Date())));
   const [toDate, setToDate] = useState(() => formatYmd(new Date()));
   const [companyId, setCompanyId] = useState(() => (isSuperAdmin ? "" : String(authUser?.company_id || "")));
-  const [loading, setLoading] = useState(true);
-  const [metrics, setMetrics] = useState(null);
-  const [charts, setCharts] = useState(null);
-  const [tables, setTables] = useState(null);
-  const [actionRequiredItems, setActionRequiredItems] = useState([]);
-  const [actionRequiredLoading, setActionRequiredLoading] = useState(true);
 
   // Tabs the signed-in user may actually see. canAccessPath returns true for everyone not in
   // page-permission mode, so this is a no-op for owners/admins and only narrows a permissioned user.
@@ -78,28 +74,15 @@ const Dashboard = () => {
 
   const [activeTab, setActiveTab] = useState("overview");
   // If Overview itself is not granted, land on the first tab that is, rather than an empty pane.
-  useEffect(() => {
-    if (visibleTabs.length && !visibleTabs.some((tab) => tab.id === activeTab)) {
-      setActiveTab(visibleTabs[0].id);
-    }
-  }, [visibleTabs, activeTab]);
+  if (visibleTabs.length && !visibleTabs.some(tab => tab.id === activeTab)) setActiveTab(visibleTabs[0].id);
   // Every tab's own pane stays mounted (just hidden) once opened, so its fetched data survives
   // switching away and back. This set is only ever how a pane learns it should fetch at all --
   // never re-fetch, that's each pane's own hook's job.
   const [openedTabs, setOpenedTabs] = useState(() => new Set(["overview"]));
-  useEffect(() => {
-    setOpenedTabs((prev) => (prev.has(activeTab) ? prev : new Set(prev).add(activeTab)));
-  }, [activeTab]);
+  if (!openedTabs.has(activeTab)) setOpenedTabs(previous => new Set(previous).add(activeTab));
 
-  const lockedCompanyLabel = useMemo(() => {
-    if (isSuperAdmin) return "";
-    const match = companyOptions.find((row) => row.value === String(authUser?.company_id || ""));
-    return match?.label || metrics?.company?.companyLabel || "Company";
-  }, [authUser?.company_id, companyOptions, isSuperAdmin, metrics?.company?.companyLabel]);
 
-  const loadDashboard = useCallback(async ({ silent = false } = {}) => {
-    if (!silent) setLoading(true);
-    try {
+  const fetchDashboard = useCallback(async ({ signal }) => {
       const params = {
         from: fromDate,
         to: toDate,
@@ -114,26 +97,27 @@ const Dashboard = () => {
           params.allStores = "true";
         }
       }
-      const snapshotRes = await api.get("/dashboard", { params });
+      const snapshotRes = await api.get("/dashboard", { params, signal });
       const snapshot = snapshotRes.data?.data || {};
-      setMetrics(snapshot.metrics || null);
-      setCharts(snapshot.charts || null);
-      setTables(snapshot.tables || null);
-      if (!silent && Object.keys(snapshot.errors || {}).length > 0) {
-        toast.warn("Some dashboard sections could not be loaded.");
-      }
-    } catch (err) {
-      if (!silent) {
-        toast.error(err?.response?.data?.message || "Failed to load dashboard");
-      }
-    } finally {
-      if (!silent) setLoading(false);
-    }
+    return snapshot;
   }, [companyId, fromDate, isSuperAdmin, toDate]);
+  const { data: snapshot, loading, reload: loadDashboard } = useAsyncQuery(fetchDashboard, {
+    onSuccess: (data, context) => {
+      if (!context.silent && Object.keys(data.errors || {}).length > 0) toast.warn("Some dashboard sections could not be loaded.");
+    },
+    onError: (error, context) => {
+      if (!context.silent) toast.error(error.response?.data?.message || "Failed to load dashboard");
+    },
+  });
+  const metrics = snapshot?.metrics || null;
+  const charts = snapshot?.charts || null;
+  const tables = snapshot?.tables || null;
 
-  useEffect(() => {
-    loadDashboard();
-  }, [loadDashboard]);
+  const lockedCompanyLabel = useMemo(() => {
+    if (isSuperAdmin) return "";
+    const match = companyOptions.find((row) => row.value === String(authUser?.company_id || ""));
+    return match?.label || metrics?.company?.companyLabel || "Company";
+  }, [authUser?.company_id, companyOptions, isSuperAdmin, metrics?.company?.companyLabel]);
 
   // Every module tab has its own "Action Required" banner surfacing that module's urgent
   // conditions -- Overview didn't have an equivalent, even though it's the first thing anyone
@@ -142,30 +126,19 @@ const Dashboard = () => {
   // so the two stay in sync automatically instead of drifting into two parallel definitions of
   // "urgent". Kept as its own request, independent of loadDashboard's date/company params --
   // notifications aren't range-scoped -- so it can't add to the main dashboard load's timing.
-  const loadActionRequired = useCallback(async () => {
-    setActionRequiredLoading(true);
-    try {
-      const res = await api.get("/notifications", { params: { limit: 8 } });
-      setActionRequiredItems(res.data?.data || []);
-    } catch {
-      // Non-critical widget -- a failed fetch here shouldn't block or warn over the rest of an
-      // otherwise-successful dashboard load.
-      setActionRequiredItems([]);
-    } finally {
-      setActionRequiredLoading(false);
-    }
+  const fetchActionRequired = useCallback(async ({ signal }) => {
+    const response = await api.get("/notifications", { params: { limit: 8 }, signal });
+    return response.data?.data || [];
   }, []);
-
-  useEffect(() => {
-    loadActionRequired();
-  }, [loadActionRequired]);
+  const { data: notificationItems, loading: actionRequiredLoading, reload: loadActionRequired, setData: setActionRequiredItems } = useAsyncQuery(fetchActionRequired);
+  const actionRequiredItems = notificationItems || EMPTY_ARRAY;
 
   // Optimistic local update so a clicked item's unread dot clears immediately instead of
   // waiting on a full re-fetch -- the item stays visible (it may still be genuinely unresolved),
   // just no longer marked unread.
   const handleActionRequiredItem = useCallback((id) => {
     setActionRequiredItems((prev) => prev.map((item) => (item.id === id ? { ...item, read_at: new Date().toISOString() } : item)));
-  }, []);
+  }, [setActionRequiredItems]);
 
   useDashboardRealtime({
     enabled: Boolean(authUser?.id),
@@ -173,10 +146,10 @@ const Dashboard = () => {
     onUpdate: loadDashboard,
   });
 
-  const totalBills = metrics?.totalBills || {};
-  const settlements = metrics?.settlements || {};
-  const employees = metrics?.employees || {};
-  const stockValue = metrics?.stockValue || {};
+  const totalBills = metrics?.totalBills || EMPTY_OBJECT;
+  const settlements = metrics?.settlements || EMPTY_OBJECT;
+  const employees = metrics?.employees || EMPTY_OBJECT;
+  const stockValue = metrics?.stockValue || EMPTY_OBJECT;
 
   // Every card below the KPI row -- charts, tables, leaderboards alike -- is the same height,
   // matching Sales Graph/Business Trend/Settlement Details, so the Overview grid reads as one

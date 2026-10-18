@@ -1,3 +1,4 @@
+import useAsyncQuery from "../../hooks/useAsyncQuery";
 import React, { useState, useEffect, useCallback } from "react";
 import { ArrowPathIcon } from "@heroicons/react/24/outline";
 import { ArrowLeft } from "lucide-react";
@@ -30,13 +31,8 @@ const SupplierProductAnalyzer = () => {
   const [storeFilter, setStoreFilter] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [pivot, setPivot] = useState(null);
-  const [loading, setLoading] = useState(false);
-
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await api.get("/supplier-product-analytics", {
+  const fetchPivot = useCallback(async ({ signal }) => {
+      const res = await api.get("/supplier-product-analytics", { signal,
         params: {
           row_by: rowBy,
           measure,
@@ -45,23 +41,13 @@ const SupplierProductAnalyzer = () => {
           ...(dateTo ? { dateTo } : {}),
         },
       });
-      if (res.data?.success) {
-        setPivot(res.data);
-      } else {
-        toast.error(res.data?.message || "Failed to load supplier/product analytics");
-        setPivot(null);
-      }
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to load supplier/product analytics");
-      setPivot(null);
-    } finally {
-      setLoading(false);
-    }
+    if (!res.data?.success) throw new Error(res.data?.message || "Failed to load supplier/product analytics");
+    return res.data;
   }, [rowBy, measure, storeFilter, dateFrom, dateTo]);
-
+  const { data: pivot, loading, error, reload: fetchData } = useAsyncQuery(fetchPivot);
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (error) toast.error(error.response?.data?.message || error.message || "Failed to load supplier/product analytics");
+  }, [error]);
 
   const handleBackClick = () => navigate("/analytical");
   const rowLabel = rowBy === "product" ? "Product" : "Supplier";

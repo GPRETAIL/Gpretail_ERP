@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useCallback } from "react";
+import useAsyncQuery from "../../hooks/useAsyncQuery";
+import { EMPTY_ARRAY } from "../../utils/emptyValues";
+import React, { useEffect, useCallback } from "react";
 import { ChevronRight } from "lucide-react";
 import { Box, Typography } from "@mui/material";
 import api from "../../api/axios";
@@ -17,33 +19,19 @@ const DONUT_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#6366f1", "#ef4444", "#e
  * Inventory Summary screen — fetches real data from GET /warehouse/dashboard.
  */
 export default function InventoryScreen({ onNavigate: _onNavigate, onSelectProduct }) {
-  const [loading, setLoading] = useState(true);
-  const [data, setData] = useState(null);
-  const [products, setProducts] = useState([]);
-
-  const loadInventory = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [invRes, prodRes] = await Promise.all([
-        api.get("/warehouse/dashboard"),
-        api.get("/products", { params: { limit: 10 } }),
-      ]);
-      setData(invRes.data?.data || invRes.data || {});
-      const prodData = prodRes.data?.data;
-      const prodList = Array.isArray(prodData)
-        ? prodData
-        : prodData?.data || prodData?.items || [];
-      setProducts(prodList);
-    } catch {
-      // Silently handle
-    } finally {
-      setLoading(false);
-    }
+  const fetchInventory = useCallback(async ({ signal }) => {
+    const [invRes, prodRes] = await Promise.all([
+      api.get("/warehouse/dashboard", { signal }),
+      api.get("/products", { params: { limit: 10 }, signal }),
+    ]);
+    const productData = prodRes.data?.data;
+    return { inventory: invRes.data?.data || invRes.data || {}, products: Array.isArray(productData) ? productData : productData?.data || productData?.items || [] };
   }, []);
+  const { data: response, loading, reload: loadInventory } = useAsyncQuery(fetchInventory);
+  const data = response?.inventory || null;
+  const products = response?.products || EMPTY_ARRAY;
 
   useEffect(() => {
-    loadInventory();
-
     const handleNetworkRestored = () => {
       loadInventory();
     };
@@ -181,17 +169,17 @@ export default function InventoryScreen({ onNavigate: _onNavigate, onSelectProdu
 function DonutChart({ categories, totalValue }) {
   const R = 38;
   const C = 2 * Math.PI * R; // ≈ 238.76
-  let offset = 0;
+  const segments = categories.slice(0, 6);
 
   return (
     <Box sx={{ position: "relative", width: 128, height: 128, flexShrink: 0 }}>
       <svg viewBox="0 0 100 100" style={{ width: "100%", height: "100%", transform: "rotate(-90deg)" }}>
         <circle cx="50" cy="50" r={R} fill="none" stroke="#e2e8f0" strokeWidth="18" />
-        {categories.slice(0, 6).map((cat, i) => {
-          const pct = (cat.retail_value || 0) / totalValue;
+        {segments.map((cat, i) => {
+          const pct = totalValue > 0 ? (cat.retail_value || 0) / totalValue : 0;
           const dash = pct * C;
-          const thisOffset = offset;
-          offset += dash;
+          const precedingValue = segments.slice(0, i).reduce((sum, item) => sum + (Number(item.retail_value) || 0), 0);
+          const thisOffset = totalValue > 0 ? precedingValue / totalValue * C : 0;
           return (
             <circle
               key={i}

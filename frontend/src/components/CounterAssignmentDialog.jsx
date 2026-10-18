@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+import useAsyncQuery from "../hooks/useAsyncQuery";
+import { EMPTY_ARRAY } from "../utils/emptyValues";
+import { useCallback, useEffect, useState } from "react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
@@ -15,43 +17,28 @@ export default function CounterAssignmentDialog({ open, onClose, onAssigned }) {
   const dispatch = useDispatch();
   const user = useSelector((state) => state.auth.user);
   const token = useSelector((state) => state.auth.token);
-  const [counterOptions, setCounterOptions] = useState([]);
-  const [selectedCounterId, setSelectedCounterId] = useState("");
-  const [loadingCounters, setLoadingCounters] = useState(false);
+  const [selectedCounterId, setSelectedCounterId] = useState(() => user?.counter_id ? String(user.counter_id) : "");
   const [savingCounterAssignment, setSavingCounterAssignment] = useState(false);
 
+  const role = String(user?.role || "").trim().toLowerCase();
+  const companyId = user?.company_id || user?.companyId;
+  const fetchCounters = useCallback(async ({ signal }) => {
+    const restricted = role === "admin" || role === "user";
+    const response = await api.get("/configurations/counter", { params: restricted && companyId ? { company_id: companyId } : undefined, signal });
+    const rows = Array.isArray(response.data?.data) ? response.data.data : [];
+    return rows.map(row => ({ value: String(row.id), label: String(row.name || "").trim() || `Counter ${row.id}` }));
+  }, [role, companyId]);
+  const { data, loading: loadingCounters, error } = useAsyncQuery(fetchCounters, { enabled: open });
+  const counterOptions = data || EMPTY_ARRAY;
+  const dialogKey = JSON.stringify([open, user?.counter_id, role, companyId]);
+  const [previousDialogKey, setPreviousDialogKey] = useState(dialogKey);
+  if (dialogKey !== previousDialogKey) {
+    setPreviousDialogKey(dialogKey);
+    if (open) setSelectedCounterId(user?.counter_id ? String(user.counter_id) : "");
+  }
   useEffect(() => {
-    if (!open) return;
-    setSelectedCounterId(user?.counter_id ? String(user.counter_id) : "");
-    let cancelled = false;
-    const loadCounters = async () => {
-      setLoadingCounters(true);
-      try {
-        const role = String(user?.role || "").trim().toLowerCase();
-        const isRestrictedRole = role === "admin" || role === "user";
-        const companyId = user?.company_id || user?.companyId;
-        const res = await api.get("/configurations/counter", {
-          params: isRestrictedRole && companyId ? { company_id: companyId } : undefined,
-        });
-        if (cancelled) return;
-        const rows = Array.isArray(res.data?.data) ? res.data.data : [];
-        setCounterOptions(
-          rows.map((row) => ({
-            value: String(row.id),
-            label: String(row.name || "").trim() || `Counter ${row.id}`,
-          }))
-        );
-      } catch {
-        if (!cancelled) toast.error("Failed to load counters");
-      } finally {
-        if (!cancelled) setLoadingCounters(false);
-      }
-    };
-    loadCounters();
-    return () => {
-      cancelled = true;
-    };
-  }, [open, user?.counter_id, user?.role, user?.company_id, user?.companyId]);
+    if (error) toast.error("Failed to load counters");
+  }, [error]);
 
   if (!open) return null;
 

@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import useAsyncQuery from "../hooks/useAsyncQuery";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   BarChart3, Bell, Box as BoxIcon, ChevronRight, ClipboardList, FileBarChart, Home, Menu,
   MoreHorizontal, Package, Plus, Search, Settings, ShoppingCart, Store, Users,
@@ -31,9 +32,6 @@ export default function MobileWorkspace() {
   const [page, setPage] = useState("dashboard");
   const [menu, setMenu] = useState(false);
   const [installPrompt, setInstallPrompt] = useState(null);
-  const [data, setData] = useState(null);
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
 
   const userName = authUser?.name || authUser?.username || "Admin";
 
@@ -50,14 +48,11 @@ export default function MobileWorkspace() {
     settings: async () => ({ settings: true }),
   }), []);
 
-  const load = async (target = page) => {
-    const loader = loaders[target];
-    setLoading(true); setError(null);
-    const result = await loadMobilePage(loader, { page: 1, per_page: 20 });
-    setData(result.data); setError(result.error); setLoading(false);
-  };
+  const fetchPage = useCallback(() => loadMobilePage(loaders[page], { page: 1, per_page: 20 }), [page, loaders]);
+  const { data: response, error: requestError, loading, reload: load } = useAsyncQuery(fetchPage);
+  const data = response?.data ?? null;
+  const error = response?.error || requestError?.message || null;
 
-  useEffect(() => { load(page); }, [page]);
   useEffect(() => {
     const handler = (e) => { e.preventDefault(); setInstallPrompt(e); };
     window.addEventListener("beforeinstallprompt", handler);

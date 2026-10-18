@@ -171,18 +171,13 @@ const SearchableSelect = ({
     setTimeout(() => focusNextField(), 0);
   };
 
-  useEffect(() => {
-    if (!open) return;
-    if (selectableOptions.length === 0) {
-      setHighlightIndex(-1);
-      return;
+  if (open) {
+    const selectedIndex = selectableOptions.findIndex(option => option.value === value);
+    const nextIndex = selectableOptions.length === 0 ? -1 : selectedIndex >= 0 ? selectedIndex : 0;
+    if ((highlightIndex < 0 || highlightIndex >= selectableOptions.length) && highlightIndex !== nextIndex) {
+      setHighlightIndex(nextIndex);
     }
-    setHighlightIndex((prev) => {
-      if (prev >= 0 && prev < selectableOptions.length) return prev;
-      const selectedIdx = selectableOptions.findIndex((o) => o.value === value);
-      return selectedIdx >= 0 ? selectedIdx : 0;
-    });
-  }, [open, selectableOptions, value]);
+  }
 
   const handleKeyboardNavigation = (e) => {
     if (e.key === "ArrowDown") {

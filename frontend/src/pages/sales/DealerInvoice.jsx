@@ -1,3 +1,4 @@
+import useResetOnChange from "../../hooks/useResetOnChange";
 import { masterSearchAreaSx } from "../../theme/erpUi";
 import SearchGridPanel from "../../components/SearchGridPanel";
 import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
@@ -134,10 +135,10 @@ const buildTaxRow = (line, taxes) => {
 const TaxChargeTypeDialog = ({ open, value, onClose, onConfirm }) => {
   const [selectedValue, setSelectedValue] = useState(value || "");
 
-  useEffect(() => {
+  useResetOnChange([open, value], () => {
     if (!open) return;
     setSelectedValue(value || "");
-  }, [open, value]);
+  });
 
   if (!open) return null;
 
@@ -207,6 +208,7 @@ const DealerInvoice = () => {
     adapter: createSearchGridAdapter("/dealer-invoices"), enabled: showSearchPage,
     onError: err => toast.error(err.response?.data?.message || "Failed to load records"),
   });
+  const loadSearchGrid = searchGrid.load;
   const { rows: searchResults, loading: searching, page: searchPage, setPage: setSearchPage, limit: searchLimit, setLimit: setSearchLimit, pagination: searchPagination } = searchGrid;
   const [searchFilters, setSearchFilters] = useState({
     search: "",
@@ -691,8 +693,8 @@ const DealerInvoice = () => {
     if (String(filters.billNo || "").trim()) params.billNo = filters.billNo;
     if (String(filters.customerName || "").trim()) params.customerName = filters.customerName;
     if (String(filters.product || "").trim()) params.product = filters.product;
-    searchGrid.load(params, pageOverride, limitOverride);
-  }, [searchGrid.load, searchLimit, searchFilters]);
+    loadSearchGrid(params, pageOverride, limitOverride);
+  }, [loadSearchGrid, searchLimit, searchFilters]);
 
   const loadAllDealerInvoiceSearchRows = useCallback(async (overrideFilters = null) => {
     const filters = overrideFilters || searchFilters;
@@ -721,7 +723,7 @@ const DealerInvoice = () => {
       return nextFilters;
     });
     setSearchPage(1);
-  }, [searchLimit, runDealerInvoiceSearch]);
+  }, [setSearchPage, runDealerInvoiceSearch, searchLimit]);
 
   const dealerInvoiceSearchColumns = useMemo(
     () => [

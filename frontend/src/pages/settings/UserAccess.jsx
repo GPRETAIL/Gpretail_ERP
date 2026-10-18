@@ -1,6 +1,7 @@
+import useAsyncQuery from "../../hooks/useAsyncQuery";
 import SearchGridPanel from "../../components/SearchGridPanel";
 import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, LogOut, Pencil, PlusCircle, Save, Search, Store, Trash2 } from "lucide-react";
@@ -118,7 +119,7 @@ const UserAccess = () => {
   const canManage = isSuperAdmin || isAdmin;
 
   const [showSearchPage, setShowSearchPage] = useState(true);
-  const [loading, setLoading] = useState(true);
+  const [manualLoading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [groups, setGroups] = useState([]);
   const [companies, setCompanies] = useState([]);
@@ -132,7 +133,7 @@ const UserAccess = () => {
   // access to every store in the group at once. Kept separate from `groups` (Access Groups) above,
   // which are about page permissions, not stores. Managed via the StoreGroupsDrawer overlay.
   const [storeGroups, setStoreGroups] = useState([]);
-  const [loadingStoreGroups, setLoadingStoreGroups] = useState(false);
+  const [manualLoadingStoreGroups, setLoadingStoreGroups] = useState(false);
   const [savingStoreGroup, setSavingStoreGroup] = useState(false);
   const [showStoreGroupsDrawer, setShowStoreGroupsDrawer] = useState(false);
 
@@ -256,35 +257,32 @@ const UserAccess = () => {
     [selectedAccessGroup, userForm.manualPermissions]
   );
 
-  useEffect(() => {
-    if (!userForm.accessGroupId) return;
-    if (availableGroups.some((group) => String(group.id) === String(userForm.accessGroupId))) return;
-    setUserForm((prev) => ({ ...prev, accessGroupId: "" }));
-  }, [availableGroups, userForm.accessGroupId]);
+  if (userForm.accessGroupId && !availableGroups.some(group => String(group.id) === String(userForm.accessGroupId))) {
+    setUserForm(previous => ({ ...previous, accessGroupId: "" }));
+  }
 
+  const refreshUsers = userGrid.refresh;
+  const fetchRows = useCallback(async ({ signal } = {}) => {
+    const [groupsRes, companiesRes] = await Promise.allSettled([
+      api.get("/user-access/groups", { signal }),
+      api.get("/companies", { signal, params: { includeInactive: true, limit: 500 } }),
+    ]);
+    return {
+      groups: groupsRes.status === "fulfilled" && Array.isArray(groupsRes.value.data?.data) ? groupsRes.value.data.data : [],
+      companies: companiesRes.status === "fulfilled" && Array.isArray(companiesRes.value.data?.data) ? companiesRes.value.data.data : [],
+    };
+  }, []);
+  const applyRows = useCallback(data => {
+    setGroups(data.groups); setCompanies(data.companies);
+    setRoles(USER_ROLE_PRESET_OPTIONS.map(option => option.value));
+  }, []);
+  const { loading: initialRowsLoading } = useAsyncQuery(fetchRows, { enabled: canManage, onSuccess: applyRows });
   const loadRows = async () => {
     setLoading(true);
-    // GET /user-access only ever returns a flat, paginated list of users - there is no
-    // combined users+groups+companies+roles payload on the backend. Fetch each real,
-    // independently-working endpoint instead of expecting a bundle that was never built.
-    const [groupsRes, companiesRes] = await Promise.allSettled([
-      api.get("/user-access/groups"),
-      api.get("/companies", { params: { includeInactive: true, limit: 500 } }),
-    ]);
-
-    userGrid.refresh();
-    setGroups(groupsRes.status === "fulfilled" && Array.isArray(groupsRes.value.data?.data) ? groupsRes.value.data.data : []);
-    setCompanies(companiesRes.status === "fulfilled" && Array.isArray(companiesRes.value.data?.data) ? companiesRes.value.data.data : []);
-    // No backend endpoint enumerates distinct account roles - the preset list is the real,
-    // already-established source of truth for this (see userRolePresets.js).
-    setRoles(USER_ROLE_PRESET_OPTIONS.map((option) => option.value));
-    setLoading(false);
+    try { applyRows(await fetchRows()); refreshUsers(); }
+    finally { setLoading(false); }
   };
-
-  useEffect(() => {
-    if (!canManage) return;
-    loadRows();
-  }, [canManage]);
+  const loading = manualLoading || initialRowsLoading;
 
   const loadStoreGroups = async () => {
     try {
@@ -298,11 +296,15 @@ const UserAccess = () => {
     }
   };
 
-  // Store Groups are a super-admin-only concept (a single-store admin has nothing to group).
-  useEffect(() => {
-    if (!isSuperAdmin) return;
-    loadStoreGroups();
-  }, [isSuperAdmin]);
+  const fetchStoreGroups = useCallback(async ({ signal }) => {
+    const res = await api.get("/user-access/store-groups", { signal });
+    return Array.isArray(res.data?.data) ? res.data.data : [];
+  }, []);
+  const { loading: initialGroupsLoading } = useAsyncQuery(fetchStoreGroups, {
+    enabled: isSuperAdmin, onSuccess: setStoreGroups,
+    onError: err => toast.error(err.response?.data?.message || "Failed to load store groups"),
+  });
+  const loadingStoreGroups = manualLoadingStoreGroups || initialGroupsLoading;
 
   const resetUserEditor = () => {
     setEditingUserId(null);

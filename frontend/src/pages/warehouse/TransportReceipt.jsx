@@ -1,3 +1,4 @@
+import useResetOnChange from "../../hooks/useResetOnChange";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Save, Search } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -86,7 +87,8 @@ const TransportReceipt = () => {
   const [searchParams] = useSearchParams();
   const transportEntryId = searchParams.get("transport_entry_id");
 
-  const [loading, setLoading] = useState(true);
+  const [sourceLoading, setLoading] = useState(true);
+  const loading = Boolean(transportEntryId) && sourceLoading;
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState({ open: false, type: "info", message: "" });
   const [transportEntry, setTransportEntry] = useState(null);
@@ -133,10 +135,7 @@ const TransportReceipt = () => {
   };
 
   useEffect(() => {
-    if (!transportEntryId) {
-      setLoading(false);
-      return;
-    }
+    if (!transportEntryId) return;
 
     const fetchData = async () => {
       try {
@@ -213,7 +212,7 @@ const TransportReceipt = () => {
     );
   }, [filters, receiptItems]);
 
-  useEffect(() => {
+  useResetOnChange([form.loadingChargeAmount, form.freightChargeAmount, form.otherCharges], () => {
     setForm((prev) => {
       const totalCharges =
         toNumber(prev.loadingChargeAmount) +
@@ -222,7 +221,7 @@ const TransportReceipt = () => {
       if (toNumber(prev.totalCharges) === totalCharges) return prev;
       return { ...prev, totalCharges };
     });
-  }, [form.loadingChargeAmount, form.freightChargeAmount, form.otherCharges]);
+  });
 
   const handleFieldChange = (name, value) => {
     setForm((prev) => ({ ...prev, [name]: value }));

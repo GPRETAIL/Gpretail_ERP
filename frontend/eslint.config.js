@@ -30,12 +30,8 @@ export default defineConfig([
       // component bindings, so ignore them for params (Icon, Page) exactly like
       // the long-standing vars pattern already does for component imports.
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]', argsIgnorePattern: '^[A-Z_]', caughtErrorsIgnorePattern: '^_' }],
-      // The React-Compiler diagnostics are new in eslint-plugin-react-hooks 7 and
-      // fire ~120 times on the established "sync state from props/fetch inside
-      // useEffect" pattern used across the app. Kept enabled as warnings: the
-      // proper fixes change render/data-flow behaviour and belong in their own
-      // refactor, not an upgrade sweep. All other new compiler rules (purity,
-      // set-state-in-render, error-boundaries, ...) stay at error strength.
+      // Keep compiler diagnostics visible at their established severity. The lint
+      // command enforces zero warnings after the state/data-flow cleanup.
       'react-hooks/set-state-in-effect': 'warn',
       'react-hooks/preserve-manual-memoization': 'warn',
       'react-hooks/immutability': 'warn',

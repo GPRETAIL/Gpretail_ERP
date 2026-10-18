@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { FaEye, FaEyeSlash, FaGoogle } from "react-icons/fa";
 import { Box, Button, Card, Divider, IconButton, InputAdornment, TextField, Typography } from "@mui/material";
 import { useTheme } from "../features/theme-context";
@@ -18,9 +18,9 @@ const Register = () => {
   });
 
   const [error, setError] = useState("");
-  const [passwordError, setPasswordError] = useState("");
+  const passwordError = form.password !== form.confirmPassword ? "Passwords do not match" : "";
   const [loading, setLoading] = useState(false);
-  const [formValid, setFormValid] = useState(false);
+  const formValid = !passwordError && [form.name, form.email, form.password, form.confirmPassword].every(value => value.trim() !== "");
 
   const togglePassword = () => setShowPassword((prev) => !prev);
 
@@ -32,24 +32,6 @@ const Register = () => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  // Live validation
-  useEffect(() => {
-    if (form.password !== form.confirmPassword) {
-      setPasswordError("Passwords do not match");
-      setFormValid(false);
-    } else if (
-      form.name.trim() === "" ||
-      form.email.trim() === "" ||
-      form.password.trim() === "" ||
-      form.confirmPassword.trim() === ""
-    ) {
-      setPasswordError("");
-      setFormValid(false);
-    } else {
-      setPasswordError("");
-      setFormValid(true);
-    }
-  }, [form]);
 
   const handleRegister = async (e) => {
     e.preventDefault();

@@ -108,6 +108,7 @@ const DealerInvoiceReturn = () => {
     adapter: createSearchGridAdapter("/dealer-invoice-returns"), enabled: showSearchPage,
     onError: err => toast.error(err.response?.data?.message || "Failed to load records"),
   });
+  const loadSearchGrid = searchGrid.load;
   const { rows: searchResults, loading: searching, page: searchPage, setPage: setSearchPage, limit: searchLimit, setLimit: setSearchLimit, pagination: searchPagination } = searchGrid;
   const [searchFilters, setSearchFilters] = useState({
     search: "",
@@ -548,8 +549,8 @@ const DealerInvoiceReturn = () => {
     if (String(filters.returnNo || "").trim()) params.returnNo = filters.returnNo;
     if (String(filters.customerName || "").trim()) params.customerName = filters.customerName;
     if (String(filters.product || "").trim()) params.product = filters.product;
-    searchGrid.load(params, pageOverride, limitOverride);
-  }, [searchGrid.load, searchLimit, searchFilters]);
+    loadSearchGrid(params, pageOverride, limitOverride);
+  }, [loadSearchGrid, searchLimit, searchFilters]);
 
   const loadAllDealerInvoiceReturnSearchRows = useCallback(
     async (overrideFilters = null) => {
@@ -581,7 +582,7 @@ const DealerInvoiceReturn = () => {
       return nextFilters;
     });
     setSearchPage(1);
-  }, [runDealerInvoiceReturnSearch, searchLimit]);
+  }, [runDealerInvoiceReturnSearch, searchLimit, setSearchPage]);
 
   const dealerInvoiceReturnSearchColumns = useMemo(
     () => [

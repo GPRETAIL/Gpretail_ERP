@@ -1,3 +1,4 @@
+import useResetOnChange from "../../hooks/useResetOnChange";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Search, Save, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -414,7 +415,7 @@ const PurchaseReturn = () => {
     load();
   }, [loadReferenceData, loadStockRows]);
 
-  useEffect(() => {
+  useResetOnChange([authUser, companies], () => {
     const userRole = String(authUser?.role || "").toLowerCase();
     if (userRole !== "admin") return;
 
@@ -431,9 +432,9 @@ const PurchaseReturn = () => {
 
       return { ...prev, stockLocation };
     });
-  }, [authUser, companies]);
+  });
 
-  useEffect(() => {
+  useResetOnChange([selectedTaxPerc], () => {
     setGridRows((prev) =>
       prev.map((row) => ({
         ...row,
@@ -441,7 +442,7 @@ const PurchaseReturn = () => {
         taxAmount: calculateTaxAmount(row.stock, row.rate, row.discountPerc, selectedTaxPerc),
       }))
     );
-  }, [selectedTaxPerc]);
+  });
 
   const handleHeaderChange = (e) => {
     const { name, value } = e.target;

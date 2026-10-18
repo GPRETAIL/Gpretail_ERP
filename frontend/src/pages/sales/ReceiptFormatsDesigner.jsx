@@ -95,12 +95,9 @@ export default function ReceiptFormatsDesigner() {
     settings.pdfFormat === "thermal" || settings.templateType === "standard_thermal";
   const availableTemplates = isThermalFormat ? THERMAL_TEMPLATE_TYPES : A4_TEMPLATE_TYPES;
 
-  useEffect(() => {
-    // Keep orientation and template synchronized if landscape dual chosen
-    if (settings.template === "landscape_dual" && settings.orientation !== "landscape") {
-      setSettings((prev) => ({ ...prev, orientation: "landscape" }));
-    }
-  }, [settings.template]);
+  if (settings.template === "landscape_dual" && settings.orientation !== "landscape") {
+    setSettings(previous => ({ ...previous, orientation: "landscape" }));
+  }
 
   const handleSave = () => {
     const success = savePrintFormatSettings(settings);

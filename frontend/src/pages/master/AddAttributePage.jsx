@@ -48,11 +48,7 @@ const mockOptions = [
   { label: "COMPANY TYPE", value: "COMPANYTYPE" },
 ];
 
-const AddAttributePage = () => {
-  const [searchParams] = useSearchParams();
-  const initialType = searchParams.get("type") || "";
-  const editingId = searchParams.get("id");
-  const createInitialFormData = (productType = "") => ({
+const createInitialFormData = (productType = "") => ({
     productType,
     code: "",
     name: "",
@@ -86,10 +82,7 @@ const AddAttributePage = () => {
     category: "",
   });
 
-  const [formData, setFormData] = useState(createInitialFormData(initialType));
-  const [loadingRecord, setLoadingRecord] = useState(false);
-
-  const mapAttributeToForm = (record, productType) => {
+const mapAttributeToForm = (record, productType) => {
     const extra = record?.extra_data || record?.extraData || {};
     const base = createInitialFormData(productType);
     return {
@@ -120,6 +113,26 @@ const AddAttributePage = () => {
       Costing: !!extra.costing,
     };
   };
+
+const AddAttributePage = () => {
+  const [searchParams] = useSearchParams();
+  const initialType = searchParams.get("type") || "";
+  const editingId = searchParams.get("id");
+
+  const [formData, setFormData] = useState(createInitialFormData(initialType));
+  const [loadingRecord, setLoadingRecord] = useState(false);
+
+
+  // Baseline snapshot for the "No changes detected" guard — captured once after the edit record loads.
+  const initialFormRef = useRef(null);
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false); // synchronous double-submit guard
+
+  // ─── Size Group state ────────────────────────────────────────────────────────
+  const [availableSizes, setAvailableSizes] = useState([]);
+  const [selectedSizeId, setSelectedSizeId] = useState("");
+  const [sizeList, setSizeList] = useState([]);
+
 
   useEffect(() => {
     if (!editingId || !initialType) return;
@@ -176,16 +189,6 @@ const AddAttributePage = () => {
 
     loadRecord();
   }, [editingId, initialType]);
-
-  // Baseline snapshot for the "No changes detected" guard — captured once after the edit record loads.
-  const initialFormRef = useRef(null);
-  const [saving, setSaving] = useState(false);
-  const savingRef = useRef(false); // synchronous double-submit guard
-
-  // ─── Size Group state ────────────────────────────────────────────────────────
-  const [availableSizes, setAvailableSizes] = useState([]);
-  const [selectedSizeId, setSelectedSizeId] = useState("");
-  const [sizeList, setSizeList] = useState([]);
 
   // NOTE: the baseline is captured inside loadRecord() from the freshly-loaded values, NOT in an
   // effect. An effect gated on `!loadingRecord` fires on the very first render (loadingRecord

@@ -1,3 +1,5 @@
+import useAsyncQuery from "../../hooks/useAsyncQuery";
+import { EMPTY_ARRAY } from "../../utils/emptyValues";
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Search, Filter, Plus, LayoutGrid } from "lucide-react";
 import { Box, Typography } from "@mui/material";
@@ -54,8 +56,6 @@ const isCreditSale = (sale) => sale.payment_mode === "CREDIT" || sale.is_credit 
 export default function SalesScreen({ onNavigate }) {
   const [filter, setFilter] = useState("All");
   const [search, setSearch] = useState("");
-  const [sales, setSales] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState("all");
   const [showDateFilter, setShowDateFilter] = useState(false);
 
@@ -73,27 +73,20 @@ export default function SalesScreen({ onNavigate }) {
     return { from: formatYmd(from), to: formatYmd(new Date()) };
   }, [dateRange]);
 
-  const loadSales = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await api.get("/pos-sales", {
+  const fetchList = useCallback(async ({ signal }) => {
+      const res = await api.get("/pos-sales", { signal,
         params: { page: 1, limit: 30, search: search || undefined, ...dateParams },
       });
       const data = res.data?.data;
       const list = Array.isArray(data)
         ? data
         : data?.data || data?.items || data?.results || [];
-      setSales(list);
-    } catch {
-      setSales([]);
-    } finally {
-      setLoading(false);
-    }
+      return list;
   }, [search, dateParams]);
+  const { data: response, loading, reload: loadSales } = useAsyncQuery(fetchList);
+  const sales = response || EMPTY_ARRAY;
 
   useEffect(() => {
-    loadSales();
-
     const handleNetworkRestored = () => {
       loadSales();
     };

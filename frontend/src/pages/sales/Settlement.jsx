@@ -1,3 +1,4 @@
+import useAsyncQuery from "../../hooks/useAsyncQuery";
 import { masterSearchAreaSx } from "../../theme/erpUi";
 import SearchGridPanel from "../../components/SearchGridPanel";
 import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
@@ -78,7 +79,7 @@ const Settlement = () => {
   const navigate = useNavigate();
   const authUser = useSelector((state) => state.auth.user);
   const companyId = authUser?.company_id;
-  const { connected: printerConnected, printHtml: queuePrintHtml } = usePrintContext();
+  const { printHtml: queuePrintHtml } = usePrintContext();
 
   const [now, setNow] = useState(new Date());
   const [billInput, setBillInput] = useState("");
@@ -100,6 +101,8 @@ const Settlement = () => {
     enabled: showSearchPage,
     onError: err => toast.error(err.response?.data?.message || "Failed to load bills"),
   });
+  const refreshSearchGrid = searchGrid.refresh;
+  const searchServerSearch = searchGrid.onServerSearch;
   const { rows: unpaidBills, loading: searching, page: searchPage, setPage: setSearchPage, limit: searchLimit, setLimit: setSearchLimit, pagination: searchPagination } = searchGrid;
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSearchRows, setSelectedSearchRows] = useState([]);
@@ -110,7 +113,6 @@ const Settlement = () => {
   const [creditResults, setCreditResults] = useState([]);
   const [creditSelectedCustomerId, setCreditSelectedCustomerId] = useState("");
   const [creditSaving, setCreditSaving] = useState(false);
-  const [previewSettlementNo, setPreviewSettlementNo] = useState("");
 
   const cardTypeSelectRef = useRef(null);
   const upiProviderSelectRef = useRef(null);
@@ -122,29 +124,16 @@ const Settlement = () => {
     return () => clearInterval(timer);
   }, []);
 
-  useEffect(() => {
-    if (!companyId || showSearchPage) {
-      setPreviewSettlementNo("");
-      return undefined;
-    }
-    let cancelled = false;
-    const loadPreview = async () => {
-      try {
-        const res = await api.get("/settlements/next-settlement-number", {
-          params: { company_id: companyId, settledAt: new Date().toISOString() },
-        });
-        if (!cancelled) setPreviewSettlementNo(res.data?.data?.settlementNo || "");
-      } catch {
-        if (!cancelled) setPreviewSettlementNo("");
-      }
-    };
-    loadPreview();
-    return () => {
-      cancelled = true;
-    };
-  }, [companyId, showSearchPage]);
+  const fetchPreview = useCallback(async ({ signal }) => {
+    const res = await api.get("/settlements/next-settlement-number", { signal,
+      params: { company_id: companyId, settledAt: new Date().toISOString() },
+    });
+    return res.data?.data?.settlementNo || "";
+  }, [companyId]);
+  const { data: previewNumber } = useAsyncQuery(fetchPreview, { enabled: Boolean(companyId) && !showSearchPage });
+  const previewSettlementNo = !showSearchPage ? previewNumber || "" : "";
 
-  const loadPaymentOptions = useCallback(async () => {
+  const fetchPaymentOptions = useCallback(async ({ signal }) => {
     try {
       const mapRows = (rows) =>
         (rows || []).map((row) => ({
@@ -153,25 +142,24 @@ const Settlement = () => {
         }));
 
       const [cardRes, upiRes] = await Promise.all([
-        api.get("/configurations/card_types").catch(() => ({ data: { data: [] } })),
-        api.get("/configurations/upi_provider").catch(() => ({ data: { data: [] } })),
+        api.get("/configurations/card_types", { signal }).catch(() => ({ data: { data: [] } })),
+        api.get("/configurations/upi_provider", { signal }).catch(() => ({ data: { data: [] } })),
       ]);
 
-      setCardTypes(mapRows(cardRes.data?.data));
-      setUpiProviders(mapRows(upiRes.data?.data));
+      return { cards: mapRows(cardRes.data?.data), upi: mapRows(upiRes.data?.data) };
     } catch {
       toast.error("Failed to load card/UPI configuration");
     }
   }, []);
 
   const loadUnpaidBills = useCallback((term = "") => {
-    searchGrid.onServerSearch({ query: term });
-    searchGrid.refresh();
-  }, [searchGrid.onServerSearch, searchGrid.refresh]);
+    searchServerSearch({ query: term });
+    refreshSearchGrid();
+  }, [searchServerSearch, refreshSearchGrid]);
 
-  useEffect(() => {
-    loadPaymentOptions();
-  }, [loadPaymentOptions]);
+  useAsyncQuery(fetchPaymentOptions, { onSuccess: options => {
+    if (options) { setCardTypes(options.cards); setUpiProviders(options.upi); }
+  } });
 
   const addBillToSelection = (bill) => {
     if (!bill?.id) {
@@ -344,7 +332,7 @@ const Settlement = () => {
     }
 
     browserPrintHtml(receiptHtml, { copies: 1 });
-  }, [authUser?.company_id, authUser?.company_name, authUser?.email, authUser?.name, now, printerConnected, queuePrintHtml]);
+  }, [authUser?.company_id, authUser?.company_name, authUser?.email, authUser?.name, now, queuePrintHtml]);
 
   const handleCashAmountKeyDown = (event) => {
     if (event.key !== "Enter") return;
@@ -587,7 +575,7 @@ const Settlement = () => {
     setSearchTerm(query);
     setSearchPage(1);
     loadUnpaidBills(query);
-  }, [loadUnpaidBills]);
+  }, [loadUnpaidBills, setSearchPage]);
 
   const settlementSearchColumns = useMemo(
     () => [

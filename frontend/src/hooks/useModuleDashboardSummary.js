@@ -1,35 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback } from "react";
 import api from "../api/axios";
+import useAsyncQuery from "./useAsyncQuery";
 
-// Fetches one module's dashboard-summary endpoint on demand. `active` should only be true while
-// the tab showing it is actually open -- with 8 module tabs on one page, fetching all of them
-// eagerly on mount would fire 8 requests nobody may ever look at. Once loaded, the result is
-// cached for the life of this hook instance, so switching away and back doesn't refetch.
-export default function useModuleDashboardSummary(endpoint, { active = false } = {}) {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const fetchedRef = useRef(false);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await api.get(endpoint);
-      setData(res.data?.data || res.data || null);
-      fetchedRef.current = true;
-    } catch (err) {
-      setError(err?.response?.data?.message || "Failed to load");
-    } finally {
-      setLoading(false);
-    }
-  }, [endpoint]);
-
-  useEffect(() => {
-    if (active && !fetchedRef.current) {
-      load();
-    }
-  }, [active, load]);
-
-  return { data, loading, error, reload: load };
+export default function useModuleDashboardSummary(endpoint, { active = false, params = {}, errorMessage = "Failed to load dashboard data." } = {}) {
+  const queryKey = JSON.stringify([endpoint, params]);
+  const loadSummary = useCallback(async ({ signal }) => {
+    const [path, queryParams] = JSON.parse(queryKey);
+    const response = await api.get(path, { params: queryParams, signal });
+    if (!response.data?.success || !response.data?.data) throw new Error(errorMessage);
+    return response.data.data;
+  }, [queryKey, errorMessage]);
+  const result = useAsyncQuery(loadSummary, { enabled: active });
+  return { ...result, error: result.error ? result.error.response?.data?.message || result.error.message || "Error communicating with server." : null };
 }

@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo as _useMemo, useState } from "react";
+import useAsyncQuery from "../hooks/useAsyncQuery";
+import React, { useCallback, useEffect, useMemo as _useMemo, useState } from "react";
 import {
   AlertCircle,
   ArrowLeft,
@@ -64,10 +65,7 @@ export default function EnterpriseMobileWorkspace() {
   const [page, setPage] = useState("dashboard");
   const [history, setHistory] = useState(["dashboard"]);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [_loading, setLoading] = useState(false);
   const [splashVisible, setSplashVisible] = useState(true);
-  const [_error, setError] = useState(null);
-  const [data, setData] = useState(null);
   const [modal, setModal] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
 
@@ -106,10 +104,7 @@ export default function EnterpriseMobileWorkspace() {
     }
   };
 
-  const loadData = async () => {
-    setLoading(true);
-    setError(null);
-    try {
+  const fetchPage = useCallback(async () => {
       let result;
       if (page === "dashboard") result = await mobileApi.dashboard({});
       else if (page === "sales") result = await mobileApi.sales({ page: 1, limit: 30 });
@@ -121,17 +116,9 @@ export default function EnterpriseMobileWorkspace() {
       else if (page === "expenses") result = await mobileApi.expenses({ page: 1, limit: 30 });
       else if (page === "reports") result = await mobileApi.reports({});
       else result = {};
-      setData(result);
-    } catch (e) {
-      setError(e?.response?.data?.message || e?.message || "Unable to load data");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadData();
+    return result;
   }, [page]);
+  const { data, reload: loadData } = useAsyncQuery(fetchPage);
 
   const triggerInstall = () => {
     window.dispatchEvent(new CustomEvent("pwa-show-install-prompt"));

@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from "react";
+import useAsyncQuery from "../../hooks/useAsyncQuery";
+import { EMPTY_ARRAY } from "../../utils/emptyValues";
+import React, { useCallback, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -27,31 +29,18 @@ const TABS = [
 const CrmLoyaltyManagement = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("balances");
-  const [loading, setLoading] = useState(true);
-  const [balances, setBalances] = useState([]);
-  const [totalPoints, setTotalPoints] = useState(0);
-  const [transactions, setTransactions] = useState([]);
   const [search, setSearch] = useState("");
 
-  useEffect(() => {
-    setLoading(true);
-    const request =
-      activeTab === "balances"
-        ? api.get("/loyalty/balances", { params: { search, limit: 50 } })
-        : api.get("/loyalty/transactions", { params: { limit: 50 } });
-
-    request
-      .then((res) => {
-        if (activeTab === "balances") {
-          setBalances(res.data?.data || []);
-          setTotalPoints(toNum(res.data?.totalPoints, 0));
-        } else {
-          setTransactions(res.data?.data || []);
-        }
-      })
-      .catch(() => toast.error("Failed to load loyalty data"))
-      .finally(() => setLoading(false));
+  const fetchLoyalty = useCallback(async ({ signal }) => {
+    const response = activeTab === "balances"
+      ? await api.get("/loyalty/balances", { params: { search, limit: 50 }, signal })
+      : await api.get("/loyalty/transactions", { params: { limit: 50 }, signal });
+    return response.data;
   }, [activeTab, search]);
+  const { data, loading } = useAsyncQuery(fetchLoyalty, { onError: () => toast.error("Failed to load loyalty data") });
+  const balances = activeTab === "balances" ? data?.data || EMPTY_ARRAY : EMPTY_ARRAY;
+  const transactions = activeTab === "balances" ? EMPTY_ARRAY : data?.data || EMPTY_ARRAY;
+  const totalPoints = toNum(data?.totalPoints, 0);
 
   return (
     <Box className="master-responsive" sx={{ display: "flex", flexDirection: "column", height: "100%", bgcolor: "background.default", color: "text.primary", fontSize: 11 }}>

@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useCallback } from "react";
+import useAsyncQuery from "../../hooks/useAsyncQuery";
+import { EMPTY_ARRAY } from "../../utils/emptyValues";
+import React, { useCallback } from "react";
 import { Box, Typography } from "@mui/material";
 import api from "../../api/axios";
 import { SkeletonTransList } from "../components/SkeletonCards";
@@ -15,29 +17,15 @@ const money = (n) =>
  * tables.fastMovingSection (top sellers by quantity for the current month).
  */
 export default function FastMovingScreen() {
-  const [rows, setRows] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const now = new Date();
-      const from = new Date(now.getFullYear(), now.getMonth(), 1);
-      const fmt = (d) => d.toISOString().slice(0, 10);
-      const res = await api.get("/dashboard/overview", {
-        params: { from: fmt(from), to: fmt(now), timezoneOffset: new Date().getTimezoneOffset() },
-      });
-      setRows(res.data?.data?.tables?.fastMovingSection?.rows || []);
-    } catch {
-      setRows([]);
-    } finally {
-      setLoading(false);
-    }
+  const fetchProducts = useCallback(async ({ signal }) => {
+    const now = new Date();
+    const from = new Date(now.getFullYear(), now.getMonth(), 1);
+    const fmt = value => value.toISOString().slice(0, 10);
+    const res = await api.get("/dashboard/overview", { params: { from: fmt(from), to: fmt(now), timezoneOffset: now.getTimezoneOffset() }, signal });
+    return res.data?.data?.tables?.fastMovingSection?.rows || [];
   }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
+  const { data, loading } = useAsyncQuery(fetchProducts);
+  const rows = data || EMPTY_ARRAY;
 
   return (
     <Box>

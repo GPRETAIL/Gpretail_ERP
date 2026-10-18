@@ -7,21 +7,19 @@ import { Box, Button, Stack, Typography } from "@mui/material";
 // as a copy-able manual-entry fallback. Shared by the login-time enrollment step and the Security
 // Settings MFA card. The secret never leaves the browser except to our own backend.
 const TotpQr = ({ otpauthUri, secret }) => {
-  const [dataUrl, setDataUrl] = useState("");
+  const [qr, setQr] = useState(null);
+  const dataUrl = qr?.uri === otpauthUri ? qr.url : "";
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     let active = true;
-    if (!otpauthUri) {
-      setDataUrl("");
-      return undefined;
-    }
+    if (!otpauthUri) return undefined;
     QRCode.toDataURL(otpauthUri, { margin: 1, width: 200, errorCorrectionLevel: "M" })
       .then((url) => {
-        if (active) setDataUrl(url);
+        if (active) setQr({ uri: otpauthUri, url });
       })
       .catch(() => {
-        if (active) setDataUrl("");
+        if (active) setQr({ uri: otpauthUri, url: "" });
       });
     return () => {
       active = false;

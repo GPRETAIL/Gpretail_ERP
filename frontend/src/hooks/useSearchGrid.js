@@ -22,7 +22,8 @@ export function createSearchGridAdapter(endpoint, mapRow = identity, extraParams
 
 export default function useSearchGrid({ adapter, enabled = true, scopeKey = "", onError, initialLimit = 20, paginationMode = "server", sourceRows }) {
   const [rows, setRows] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loadedKey, setLoadedKey] = useState(null);
+  const [previousEnabled, setPreviousEnabled] = useState(enabled);
   const [error, setError] = useState(null);
   const [rawPagination, setRawPagination] = useState(null);
   const [metadata, setMetadata] = useState(null);
@@ -35,7 +36,15 @@ export default function useSearchGrid({ adapter, enabled = true, scopeKey = "", 
   const latest = useRef({ adapter, onError });
   useEffect(() => { latest.current = { adapter, onError }; });
   const contextKey = JSON.stringify([scopeKey, search, requestParams]);
-  const previousContext = useRef(contextKey);
+  const [navigationContext, setNavigationContext] = useState(contextKey);
+  if (navigationContext !== contextKey) {
+    setNavigationContext(contextKey);
+    if (navigation.cursor || navigation.page !== 1) setNavigation(value => ({ ...value, page: 1, cursor: null }));
+  }
+  if (previousEnabled !== enabled) {
+    setPreviousEnabled(enabled);
+    setLoadedKey(null);
+  }
   const requestKey = JSON.stringify([scopeKey, paginationMode === "client" ? null : [search, navigation], requestParams, revision, enabled]);
 
   const invalidate = useCallback(() => {
@@ -78,18 +87,10 @@ export default function useSearchGrid({ adapter, enabled = true, scopeKey = "", 
   }, [invalidate]);
 
   useEffect(() => {
-    // Never reuse another store/type's cursor.
-    if (previousContext.current !== contextKey) {
-      previousContext.current = contextKey;
-      if (navigation.cursor || navigation.page !== 1) {
-        setNavigation(n => ({ ...n, page: 1, cursor: null }));
-        if (paginationMode === "server") return;
-      }
-    }
     // Composite reports and controlled Settings drawers are assembled by their parent.
     // They share navigation without issuing another HTTP request.
     if (sourceRows !== undefined) return;
-    if (!enabled) { setRows([]); setMetadata(null); setRawPagination(null); setLoading(false); return; }
+    if (!enabled) return;
     const id = ++generation.current;
     const abort = new AbortController();
     controller.current = abort;
@@ -103,34 +104,37 @@ export default function useSearchGrid({ adapter, enabled = true, scopeKey = "", 
       column_filters: filters.length ? JSON.stringify(filters) : undefined,
       ...(search.sort ? { sort: search.sort, order: search.order, dir: search.order } : {}),
     };
-    setLoading(true);
-    setError(null);
-    setRows([]);
     Promise.resolve().then(() => latest.current.adapter({ params, signal: abort.signal }))
       .then(result => {
         if (id !== generation.current || abort.signal.aborted) return;
+        setLoadedKey(requestKey);
+        setError(null);
         setRows(result.rows || []);
         setRawPagination(result.pagination || null);
         setMetadata(result.metadata || null);
       }).catch(err => {
         if (id !== generation.current || abort.signal.aborted) return;
+        setLoadedKey(requestKey);
+        setRows([]);
         setError(err);
         setRawPagination(null);
         setMetadata(null);
         latest.current.onError?.(err);
-      }).finally(() => {
-        if (id === generation.current && !abort.signal.aborted) setLoading(false);
       });
     return () => { abort.abort(); generation.current += 1; };
     // Adapter identity is not a query key. Dynamic endpoints supply scopeKey.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requestKey]);
 
-  const effectiveRows = sourceRows ?? rows;
-  const total = Number(rawPagination?.total ?? effectiveRows.length) || 0;
-  const totalPages = Math.max(1, Number(rawPagination?.total_pages ?? rawPagination?.last_page ?? rawPagination?.totalPages ?? Math.ceil(total / navigation.limit)) || 1);
+  const currentResult = enabled && loadedKey === requestKey;
+  const loading = sourceRows === undefined && enabled && !currentResult;
+  const effectiveRows = sourceRows ?? (currentResult ? rows : []);
+  const paginationResult = currentResult ? rawPagination : null;
+  const currentMetadata = currentResult ? metadata : null;
+  const total = Number(paginationResult?.total ?? effectiveRows.length) || 0;
+  const totalPages = Math.max(1, Number(paginationResult?.total_pages ?? paginationResult?.last_page ?? paginationResult?.totalPages ?? Math.ceil(total / navigation.limit)) || 1);
   return {
-    rows: effectiveRows, setRows, loading, error, metadata, rawPagination, pagination: { total, totalPages },
+    rows: effectiveRows, setRows, loading, error: currentResult ? error : null, metadata: currentMetadata, rawPagination: paginationResult, pagination: { total, totalPages },
     page: navigation.page, limit: navigation.limit, setPage, setLimit,
     search, refresh, load, onServerSearch, onSortChange, navigateCursor,
   };

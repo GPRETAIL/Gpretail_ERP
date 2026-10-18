@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useCallback } from "react";
+import useAsyncQuery from "../../hooks/useAsyncQuery";
+import { EMPTY_ARRAY } from "../../utils/emptyValues";
+import React, { useState, useCallback } from "react";
 import { Settings2, LogIn, LogOut, CalendarOff } from "lucide-react";
 import { Box, Typography } from "@mui/material";
 import api from "../../api/axios";
@@ -27,35 +29,20 @@ const fmtTime = (t) => {
  * there's no link between the logged-in user and an Employee record).
  */
 export default function AttendanceScreen() {
-  const [rows, setRows] = useState([]);
-  const [summary, setSummary] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [actionEmployeeId, setActionEmployeeId] = useState(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsForm, setSettingsForm] = useState({ shift_start: "09:30", late_cutoff: "10:00" });
   const [savingSettings, setSavingSettings] = useState(false);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await api.get("/attendance/today");
-      const data = res.data?.data || {};
-      setRows(data.rows || []);
-      setSummary(data.summary || null);
-      setSettingsForm({
-        shift_start: data.settings?.shift_start || "09:30",
-        late_cutoff: data.settings?.late_cutoff || "10:00",
-      });
-    } catch {
-      setRows([]);
-    } finally {
-      setLoading(false);
-    }
+  const fetchAttendance = useCallback(async ({ signal }) => {
+    const response = await api.get("/attendance/today", { signal });
+    return response.data?.data || {};
   }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
+  const { data, loading, reload: load } = useAsyncQuery(fetchAttendance, {
+    onSuccess: result => setSettingsForm({ shift_start: result.settings?.shift_start || "09:30", late_cutoff: result.settings?.late_cutoff || "10:00" }),
+  });
+  const rows = data?.rows || EMPTY_ARRAY;
+  const summary = data?.summary ?? null;
 
   const doAction = async (employeeId, action) => {
     setActionEmployeeId(employeeId);

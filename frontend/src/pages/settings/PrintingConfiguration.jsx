@@ -1,3 +1,6 @@
+import { useCallback } from "react";
+import useAsyncQuery from "../../hooks/useAsyncQuery";
+import useResetOnChange from "../../hooks/useResetOnChange";
 import { useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
 import { CheckCircle2, Download, RefreshCw, Save, Unplug } from "lucide-react";
@@ -55,7 +58,7 @@ export default function PrintingConfiguration() {
   const deviceId = useMemo(() => getPrintConfigDeviceId(), []);
   const [installerMeta, setInstallerMeta] = useState(null);
   const [servicePresent, setServicePresent] = useState(false);
-  const [checkingService, setCheckingService] = useState(false);
+  const [manualCheckingService, setCheckingService] = useState(false);
   const [downloadingInstaller, setDownloadingInstaller] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [savingRouting, setSavingRouting] = useState(false);
@@ -64,11 +67,9 @@ export default function PrintingConfiguration() {
 
   const detectedPrinters = Array.isArray(printer?.printers) ? printer.printers : [];
   const selectedPrinterName = String(printer?.selectedPrinterName || "").trim();
-  const selectedPrinterNames = Array.isArray(printer?.selectedPrinterNames)
+  const selectedPrinterNames = useMemo(() => Array.isArray(printer?.selectedPrinterNames)
     ? printer.selectedPrinterNames
-    : selectedPrinterName
-      ? [selectedPrinterName]
-      : [];
+    : selectedPrinterName ? [selectedPrinterName] : [], [printer, selectedPrinterName]);
   const selectedTransport = String(printer?.selectedTransport || "printer").trim() || "printer";
   const selectedBluetoothDeviceName = String(printer?.selectedBluetoothDeviceName || "").trim();
 
@@ -96,10 +97,13 @@ export default function PrintingConfiguration() {
     }
   };
 
-  useEffect(() => {
-    handleRefreshInstallerMeta();
-    checkServicePresence();
-  }, []);
+  const detectService = useCallback(() => detectLocalPrinterService({ timeoutMs: 1800 }), []);
+  const { loading: initialCheckingService } = useAsyncQuery(detectService, { onSuccess: setServicePresent, onError: () => setServicePresent(false) });
+  const checkingService = manualCheckingService || initialCheckingService;
+  useAsyncQuery(getLocalPrinterServiceInstallerMeta, {
+    onSuccess: meta => setInstallerMeta(meta || null),
+    onError: error => { setInstallerMeta(null); toast.error(error.response?.data?.message || "Unable to load printer connector package details"); },
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -118,15 +122,15 @@ export default function PrintingConfiguration() {
     };
   }, []);
 
-  useEffect(() => {
+  useResetOnChange([serviceDetected], () => {
     if (serviceDetected) {
       setServicePresent(true);
     }
-  }, [serviceDetected]);
+  });
 
-  useEffect(() => {
+  useResetOnChange([printer?.printerRoutes], () => {
     setPrinterRoutes(Array.isArray(printer?.printerRoutes) ? printer.printerRoutes : []);
-  }, [printer?.printerRoutes]);
+  });
 
   const handleConnectService = async () => {
     setConnecting(true);

@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import useAsyncQuery from "../../hooks/useAsyncQuery";
+import React, { useCallback } from "react";
 import { Box, Typography } from "@mui/material";
 import api from "../../api/axios";
 
@@ -13,22 +14,12 @@ const money = (n) =>
  * Product Detail screen — fetches full product from GET /products/{id}.
  */
 export default function ProductDetailScreen({ product, onBack }) {
-  const [p, setP] = useState(product || null);
-  const [loading, setLoading] = useState(!product);
-
-  useEffect(() => {
-    if (product?.id && !product?.hsn) {
-      // Fetch full details
-      setLoading(true);
-      api
-        .get(`/products/${product.id}`)
-        .then((res) => {
-          setP(res.data?.data || res.data || product);
-        })
-        .catch(() => {})
-        .finally(() => setLoading(false));
-    }
+  const fetchProduct = useCallback(async ({ signal }) => {
+    const response = await api.get(`/products/${product.id}`, { signal });
+    return response.data?.data || response.data || product;
   }, [product]);
+  const { data, loading } = useAsyncQuery(fetchProduct, { enabled: Boolean(product?.id && !product?.hsn) });
+  const p = data || product || null;
 
   if (loading || !p) {
     return (

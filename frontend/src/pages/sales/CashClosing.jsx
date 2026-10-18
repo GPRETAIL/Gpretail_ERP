@@ -1,3 +1,4 @@
+import useAsyncQuery from "../../hooks/useAsyncQuery";
 import { masterSearchAreaSx } from "../../theme/erpUi";
 import SearchGridPanel from "../../components/SearchGridPanel";
 import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
@@ -57,13 +58,12 @@ const CashClosing = () => {
   const authUser = useSelector((state) => state.auth.user);
   const [now, setNow] = useState(new Date());
   const [showSearchPage, setShowSearchPage] = useState(false);
-  const [loadingMeta, setLoadingMeta] = useState(true);
-  const [loadingOpening, setLoadingOpening] = useState(false);
   const [saving, setSaving] = useState(false);
   const searchGrid = useSearchGrid({
     adapter: createSearchGridAdapter("/cash-closings"), enabled: showSearchPage,
     onError: err => toast.error(err.response?.data?.message || "Failed to load records"),
   });
+  const loadSearchGrid = searchGrid.load;
   const { rows: searchResults, loading: searching, page: searchPage, setPage: setSearchPage, limit: searchLimit, setLimit: setSearchLimit, pagination: searchPagination } = searchGrid;
 
   const [options, setOptions] = useState({
@@ -72,7 +72,7 @@ const CashClosing = () => {
     cashiers: [],
   });
   const [closingBillNo, setClosingBillNo] = useState(1);
-  const [openingAmount, setOpeningAmount] = useState(0);
+  const [loadedOpeningAmount, setOpeningAmount] = useState(0);
 
   const [formData, setFormData] = useState({
     counterId: "",
@@ -98,10 +98,8 @@ const CashClosing = () => {
     return () => clearInterval(timer);
   }, []);
 
-  const loadMeta = async () => {
-    setLoadingMeta(true);
-    try {
-      const res = await api.get("/cash-closings/meta");
+  const fetchMeta = useCallback(async ({ signal }) => {
+      const res = await api.get("/cash-closings/meta", { signal });
       const payload = res.data?.data || {};
       const mapSelect = (rows, formatter = (x) => x.name) =>
         (rows || []).map((row) => ({
@@ -109,18 +107,16 @@ const CashClosing = () => {
           label: formatter(row),
         }));
 
-      setOptions({
+      return {
         counters: mapSelect(payload.counters),
         receivedByEmployees: mapSelect(payload.receivedByEmployees, formatEmployee),
         cashiers: mapSelect(payload.cashiers, formatEmployee),
-      });
-    } catch (err) {
-      toast.error(err?.response?.data?.message || "Failed to load cash closing options");
-      setOptions({ counters: [], receivedByEmployees: [], cashiers: [] });
-    } finally {
-      setLoadingMeta(false);
-    }
-  };
+      };
+  }, []);
+  const { loading: loadingMeta } = useAsyncQuery(fetchMeta, {
+    onSuccess: setOptions,
+    onError: error => { toast.error(error.response?.data?.message || "Failed to load cash closing options"); setOptions({ counters: [], receivedByEmployees: [], cashiers: [] }); },
+  });
 
   const loadNextBillNo = async () => {
     try {
@@ -131,32 +127,20 @@ const CashClosing = () => {
     }
   };
 
-  const loadOpeningAmount = async (counterId) => {
-    if (!counterId) {
-      setOpeningAmount(0);
-      return;
-    }
-    setLoadingOpening(true);
-    try {
-      const res = await api.get("/cash-closings/opening-amount", {
-        params: { counterId },
-      });
-      setOpeningAmount(toNum(res.data?.data?.openingAmount, 0));
-    } catch {
-      setOpeningAmount(0);
-    } finally {
-      setLoadingOpening(false);
-    }
-  };
-
-  useEffect(() => {
-    loadMeta();
-    loadNextBillNo();
+  const fetchNextBillNo = useCallback(async ({ signal }) => {
+    const response = await api.get("/cash-closings/next-bill-no", { signal });
+    return toInt(response.data?.data?.billNo, 1);
   }, []);
-
-  useEffect(() => {
-    loadOpeningAmount(formData.counterId);
-  }, [formData.counterId]);
+  useAsyncQuery(fetchNextBillNo, { onSuccess: setClosingBillNo, onError: () => setClosingBillNo(1) });
+  const counterId = formData.counterId;
+  const openingAmount = counterId ? loadedOpeningAmount : 0;
+  const fetchOpeningAmount = useCallback(async ({ signal }) => {
+    const response = await api.get("/cash-closings/opening-amount", { params: { counterId }, signal });
+    return toNum(response.data?.data?.openingAmount, 0);
+  }, [counterId]);
+  const { loading: loadingOpening, reload: loadOpeningAmount } = useAsyncQuery(fetchOpeningAmount, {
+    enabled: Boolean(counterId), onSuccess: setOpeningAmount, onError: () => setOpeningAmount(0),
+  });
 
   useEffect(() => {
     searchFiltersRef.current = searchFilters;
@@ -200,8 +184,8 @@ const CashClosing = () => {
         params.cashierEmployeeId = filters.cashierEmployeeId;
       }
 
-    searchGrid.load(params);
-  }, [searchGrid.load]);
+    loadSearchGrid(params);
+  }, [loadSearchGrid]);
 
   const openSearchPage = async () => {
     setShowSearchPage(true);
@@ -225,7 +209,7 @@ const CashClosing = () => {
       runSearch(nextFilters);
       return nextFilters;
     });
-  }, [runSearch]);
+  }, [runSearch, setSearchPage]);
 
   const handleCountChange = (key, raw) => {
     if (raw === "") {

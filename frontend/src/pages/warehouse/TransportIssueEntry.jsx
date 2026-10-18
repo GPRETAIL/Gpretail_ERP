@@ -72,7 +72,8 @@ const TransportIssueEntry = () => {
   const [searchParams] = useSearchParams();
   const transportEntryId = searchParams.get("transport_entry_id");
 
-  const [loading, setLoading] = useState(true);
+  const [sourceLoading, setLoading] = useState(true);
+  const loading = Boolean(transportEntryId) && sourceLoading;
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState({ open: false, type: "info", message: "" });
   const [transportEntry, setTransportEntry] = useState(null);
@@ -115,10 +116,7 @@ const TransportIssueEntry = () => {
   };
 
   useEffect(() => {
-    if (!transportEntryId) {
-      setLoading(false);
-      return;
-    }
+    if (!transportEntryId) return;
 
     const fetchData = async () => {
       try {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Send, X } from "lucide-react";
 import { toast } from "react-toastify";
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Stack, TextField, Typography } from "@mui/material";
@@ -8,16 +8,16 @@ import api from "../../api/axios";
 //   { companyId, storeId?, warehouseId?, label, scope?, defaultSubject?, defaultMessage? }
 // It emails the resolved contact (company/store/warehouse) + the platform inbox. `onClose` hides it.
 const NotifyModal = ({ target, onClose }) => {
-  const [subject, setSubject] = useState("");
-  const [message, setMessage] = useState("");
+  const [subject, setSubject] = useState(() => target?.defaultSubject || "");
+  const [message, setMessage] = useState(() => target?.defaultMessage || "");
   const [sending, setSending] = useState(false);
 
-  useEffect(() => {
-    if (target) {
-      setSubject(target.defaultSubject || "");
-      setMessage(target.defaultMessage || "");
-    }
-  }, [target]);
+  const [previousTarget, setPreviousTarget] = useState(target);
+  if (target !== previousTarget) {
+    setPreviousTarget(target);
+    setSubject(target?.defaultSubject || "");
+    setMessage(target?.defaultMessage || "");
+  }
 
   if (!target) return null;
 

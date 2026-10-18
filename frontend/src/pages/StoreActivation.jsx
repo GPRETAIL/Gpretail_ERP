@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import useAsyncQuery from "../hooks/useAsyncQuery";
+import React, { useCallback, useState } from 'react';
 import { Alert, Box, Button, Container, Paper, Stack, TextField, Typography } from '@mui/material';
 import api from '../api/axios';
 
@@ -10,12 +11,17 @@ export default function StoreActivation() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-  const load = async () => {
-    const response = await api.get('/company-stores');
+  const fetchStores = useCallback(async ({ signal } = {}) => {
+    const response = await api.get('/company-stores', { signal });
+    return response.data;
+  }, []);
+  const applyStores = useCallback((data) => {
+    const response = { data };
     setStores(response.data?.data || []);
     setWarehouses(response.data?.warehouses || []);
-  };
-  useEffect(() => { load().catch(e => setError(e.response?.data?.message || 'Could not load stores.')); }, []);
+  }, []);
+  useAsyncQuery(fetchStores, { onSuccess: applyStores, onError: e => setError(e.response?.data?.message || 'Could not load stores.') });
+  const load = async () => applyStores(await fetchStores());
   const run = async (activate) => {
     setBusy(true); setError(''); setMessage('');
     try {

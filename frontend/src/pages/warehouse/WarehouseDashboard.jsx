@@ -354,6 +354,47 @@ const isDirectPurchaseBarcodeStage = (entry) =>
   entry?.entry_source === "direct_purchase"
   && ["barcode_generated", "completed"].includes(String(entry?.status || "").trim().toLowerCase());
 
+const getCellValue = (entry, colKey) => {
+    switch (colKey) {
+      case "workflow_icons":
+        return STATUS_LABELS[entry.status] || entry.status || "-";
+      case "company":
+        return entry.company?.name || "-";
+      case "supplier":
+        return entry.supplier?.name || "-";
+      case "purchase_manager":
+        return entry.purchase_manager || "-";
+      case "agent":
+        return entry.agent?.name || "-";
+      case "no_of_pieces":
+        return entry.no_of_pieces ?? 0;
+      case "no_of_boxes":
+        return entry.no_of_boxes ?? 0;
+      case "fromCity":
+        return entry.fromCity?.name || "-";
+      case "receivingCity":
+        return entry.receivingCity?.name || "-";
+      case "lr_date":
+        return entry.lr_date
+          ? new Date(entry.lr_date).toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" })
+          : "-";
+      case "pay_mode":
+        return entry.pay_mode || "-";
+      case "invoice_pay_mode":
+        return entry.invoice_pay_mode || "-";
+      case "goods_value":
+        return entry.goods_value ? Number(entry.goods_value).toFixed(2) : "0.00";
+      case "status":
+        return null; // handled separately with badge
+      case "files": {
+        const totalFiles = Array.isArray(entry.attachments) ? entry.attachments.length : 0;
+        return totalFiles > 0 ? `${totalFiles} file(s)` : "-";
+      }
+      default:
+        return entry[colKey] ?? "-";
+    }
+  };
+
 const WarehouseDashboard = () => {
   const navigate = useNavigate();
   const [entries, setEntries] = useState([]);
@@ -619,9 +660,12 @@ const WarehouseDashboard = () => {
   ]);
 
   // Reset page when filters/tab/search change
-  useEffect(() => {
+  const pageScope = JSON.stringify([activeTab, searchText, searchField, columnFilters]);
+  const [previousPageScope, setPreviousPageScope] = useState(pageScope);
+  if (pageScope !== previousPageScope) {
+    setPreviousPageScope(pageScope);
     setPage(1);
-  }, [activeTab, searchText, searchField, columnFilters]);
+  }
 
   // Pagination computed values
   const totalRows = filteredEntries.length;
@@ -993,46 +1037,6 @@ const WarehouseDashboard = () => {
     }
   }, []);
 
-  const getCellValue = (entry, colKey) => {
-    switch (colKey) {
-      case "workflow_icons":
-        return STATUS_LABELS[entry.status] || entry.status || "-";
-      case "company":
-        return entry.company?.name || "-";
-      case "supplier":
-        return entry.supplier?.name || "-";
-      case "purchase_manager":
-        return entry.purchase_manager || "-";
-      case "agent":
-        return entry.agent?.name || "-";
-      case "no_of_pieces":
-        return entry.no_of_pieces ?? 0;
-      case "no_of_boxes":
-        return entry.no_of_boxes ?? 0;
-      case "fromCity":
-        return entry.fromCity?.name || "-";
-      case "receivingCity":
-        return entry.receivingCity?.name || "-";
-      case "lr_date":
-        return entry.lr_date
-          ? new Date(entry.lr_date).toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" })
-          : "-";
-      case "pay_mode":
-        return entry.pay_mode || "-";
-      case "invoice_pay_mode":
-        return entry.invoice_pay_mode || "-";
-      case "goods_value":
-        return entry.goods_value ? Number(entry.goods_value).toFixed(2) : "0.00";
-      case "status":
-        return null; // handled separately with badge
-      case "files": {
-        const totalFiles = Array.isArray(entry.attachments) ? entry.attachments.length : 0;
-        return totalFiles > 0 ? `${totalFiles} file(s)` : "-";
-      }
-      default:
-        return entry[colKey] ?? "-";
-    }
-  };
 
   const handleBackClick = () => {
     if (window.history.state?.idx > 0) {

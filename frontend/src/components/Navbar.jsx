@@ -1,5 +1,6 @@
+import { EMPTY_ARRAY } from "../utils/emptyValues";
 // Navbar.js
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Bars3Icon,
   BellIcon,
@@ -154,7 +155,7 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
 
   const [anchorEl, setAnchorEl] = useState(null);
   const menuOpen = Boolean(anchorEl);
-  const closeMenu = () => setAnchorEl(null);
+  const closeMenu = useCallback(() => setAnchorEl(null), []);
 
   const selectedPrinterNames = useMemo(() => {
     const primary = String(printer?.selectedPrinterName || "").trim();
@@ -166,22 +167,22 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
           .filter(Boolean)
       )
     );
-  }, [printer?.selectedPrinterName, printer?.selectedPrinterNames]);
+  }, [printer]);
 
   const selectedPrinterNameSet = useMemo(
     () => new Set(selectedPrinterNames.map((value) => value.toLowerCase())),
     [selectedPrinterNames]
   );
 
-  const printerRoutes = Array.isArray(printer?.printerRoutes) ? printer.printerRoutes : [];
-  const connectorPrinters = Array.isArray(printer?.printers) ? printer.printers : [];
+  const printerRoutes = Array.isArray(printer?.printerRoutes) ? printer.printerRoutes : EMPTY_ARRAY;
+  const connectorPrinters = Array.isArray(printer?.printers) ? printer.printers : EMPTY_ARRAY;
   const currentUserId =
     user?.id === undefined || user?.id === null || user?.id === ""
       ? null
       : Number(user.id) || null;
   const currentUserName = String(user?.name || "").trim().toLowerCase();
 
-  const isRouteOwnedByCurrentUser = (route) => {
+  const isRouteOwnedByCurrentUser = useCallback((route) => {
     if (currentUserId && Number(route?.user_id) === currentUserId) return true;
     if (
       currentUserName &&
@@ -192,7 +193,7 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
       return true;
     }
     return false;
-  };
+  }, [currentUserId, currentUserName]);
 
   const isRouteAssignedToAnyUser = (route) =>
     Boolean(
@@ -232,10 +233,12 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
         };
       })
       .filter(Boolean);
-  }, [connectorPrinters, printerRoutes, selectedPrinterNameSet]);
+  }, [connectorPrinters, printerRoutes, selectedPrinterNameSet, isRouteOwnedByCurrentUser]);
 
-  useEffect(() => {
-    if (!printerDialogOpen) return;
+  const [assignmentSource, setAssignmentSource] = useState({ open: printerDialogOpen, printers: availableSelfAssignmentPrinters });
+  if (assignmentSource.open !== printerDialogOpen || assignmentSource.printers !== availableSelfAssignmentPrinters) {
+    setAssignmentSource({ open: printerDialogOpen, printers: availableSelfAssignmentPrinters });
+    if (printerDialogOpen) {
     const nextAssignments = {};
     availableSelfAssignmentPrinters.forEach(({ name, route, ownedByCurrentUser }) => {
       nextAssignments[name] = {
@@ -245,7 +248,9 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
       };
     });
     setPrinterAssignments(nextAssignments);
-  }, [availableSelfAssignmentPrinters, printerDialogOpen]);
+    }
+  }
+
 
   useEffect(() => {
     if (!isApprovalInboxRoute) {
@@ -464,7 +469,7 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
   };
 
 
-  const openStoreDialog = async () => {
+  const openStoreDialog = useCallback(async () => {
     closeMenu();
     setStoreDialogOpen(true);
     setLoadingStores(true);
@@ -489,7 +494,7 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
     } finally {
       setLoadingStores(false);
     }
-  };
+  }, [closeMenu]);
 
   // Lets the footer's "All Stores" indicator (MainLayout.jsx, a sibling far outside this component's
   // own tree) open this SAME dialog instead of duplicating the fetch/selection logic above. A plain
@@ -500,7 +505,7 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
     const handler = () => openStoreDialog();
     window.addEventListener("vx:open-store-switch", handler);
     return () => window.removeEventListener("vx:open-store-switch", handler);
-  }, [canSwitchStore]);
+  }, [canSwitchStore, openStoreDialog]);
 
   const toggleStoreSelection = (id) => {
     setSelectedStoreIds((prev) => {

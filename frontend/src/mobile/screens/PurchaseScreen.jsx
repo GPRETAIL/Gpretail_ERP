@@ -1,3 +1,5 @@
+import useAsyncQuery from "../../hooks/useAsyncQuery";
+import { EMPTY_ARRAY } from "../../utils/emptyValues";
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Search, Filter, Plus, LayoutGrid } from "lucide-react";
 import { Box, Typography } from "@mui/material";
@@ -47,8 +49,6 @@ const mapStatus = (bill) => (bill.payment_status || bill.status || "unpaid").toL
 export default function PurchaseScreen({ onNavigate }) {
   const [filter, setFilter] = useState("All");
   const [search, setSearch] = useState("");
-  const [bills, setBills] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState("all");
   const [showDateFilter, setShowDateFilter] = useState(false);
 
@@ -66,13 +66,11 @@ export default function PurchaseScreen({ onNavigate }) {
     return { from: formatYmd(from), to: formatYmd(new Date()) };
   }, [dateRange]);
 
-  const loadBills = useCallback(async () => {
-    setLoading(true);
-    try {
+  const fetchList = useCallback(async ({ signal }) => {
       const params = { page: 1, limit: 30, search: search || undefined, ...dateParams };
       const [directRes, invoiceRes] = await Promise.allSettled([
-        api.get("/direct-purchases", { params }),
-        api.get("/invoices", { params }),
+        api.get("/direct-purchases", { params, signal }),
+        api.get("/invoices", { params, signal }),
       ]);
 
       const extract = (res) => {
@@ -90,17 +88,12 @@ export default function PurchaseScreen({ onNavigate }) {
         return db - da;
       });
 
-      setBills(merged);
-    } catch {
-      setBills([]);
-    } finally {
-      setLoading(false);
-    }
+      return merged;
   }, [search, dateParams]);
+  const { data: response, loading, reload: loadBills } = useAsyncQuery(fetchList);
+  const bills = response || EMPTY_ARRAY;
 
   useEffect(() => {
-    loadBills();
-
     const handleNetworkRestored = () => {
       loadBills();
     };

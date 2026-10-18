@@ -1,3 +1,4 @@
+import useAsyncQuery from "../../hooks/useAsyncQuery";
 import SearchGridPanel from "../../components/SearchGridPanel";
 import useSearchGrid from "../../hooks/useSearchGrid";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -319,7 +320,7 @@ export default function BackupCenter() {
   const authUser = useSelector((state) => state.auth.user);
   const userRole = String(authUser?.role || "").toLowerCase();
   const isSuperAdmin = userRole === "super_admin";
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setLoading] = useState(true);
   const [selectedCompanyId, setSelectedCompanyId] = useState("");
   const [overview, setOverview] = useState({
     companies: [],
@@ -381,23 +382,12 @@ export default function BackupCenter() {
 
   const formatElapsed = (ms) => `${(ms / 1000).toFixed(1)}s`;
 
-  const loadOverviewAbortRef = useRef(null);
-
-  const loadOverview = useCallback(async (companyId = "") => {
-    // The single-company auto-select below changes selectedCompanyId, which
-    // re-triggers the effect that calls this - so an unscoped load is almost
-    // always immediately followed by a second, scoped one. Cancel any load
-    // still in flight so the two never race/overlap against the backend.
-    loadOverviewAbortRef.current?.abort();
-    const controller = new AbortController();
-    loadOverviewAbortRef.current = controller;
-    try {
-      setLoading(true);
-      const response = await api.get("/backups/overview", {
-        params: companyId ? { companyId } : {},
-        signal: controller.signal,
-      });
-      const data = response.data?.data || {};
+  const fetchOverview = useCallback(async ({ signal }) => {
+    const response = await api.get("/backups/overview", { signal, params: selectedCompanyId ? { companyId: selectedCompanyId } : {} });
+    return response.data?.data || {};
+  }, [selectedCompanyId]);
+  const { loading: overviewLoading, reload: refreshOverview } = useAsyncQuery(fetchOverview, {
+    onSuccess: data => {
       const normalizedSetting = normalizeSetting(data.setting || {});
       setOverview({
         companies: Array.isArray(data.companies)
@@ -417,26 +407,15 @@ export default function BackupCenter() {
         encryptionEnabled: !!normalizedSetting.encryptionEnabled,
         restorePasswordHint: normalizedSetting.restorePasswordHint || "",
       }));
-      if (!companyId && data.companies?.length === 1) {
+      if (!selectedCompanyId && data.companies?.length === 1) {
         setSelectedCompanyId(String(data.companies[0].id));
       }
-    } catch (err) {
-      // A superseded request being cancelled is expected, not a real failure
-      if (err.code !== "ERR_CANCELED" && !api.isCancel?.(err)) {
-        toast.error(err.response?.data?.message || "Failed to load backup center");
-      }
-    } finally {
-      // Only the still-current request should clear the loading state - an
-      // aborted, superseded one finishing late shouldn't flip it back off.
-      if (loadOverviewAbortRef.current === controller) {
-        setLoading(false);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    loadOverview(selectedCompanyId);
-  }, [selectedCompanyId, loadOverview]);
+      setLoading(false);
+    },
+    onError: err => { setLoading(false); toast.error(err.response?.data?.message || "Failed to load backup center"); },
+  });
+  const loading = initialLoading || overviewLoading;
+  const loadOverview = async () => { refreshOverview(); };
 
   const companyOptions = useMemo(
     () => (overview.companies || []).map((company) => ({ value: String(company.id), label: company.name })),
@@ -457,7 +436,7 @@ export default function BackupCenter() {
     if (selectedCompanyId) return companyNameById[String(selectedCompanyId)] || `Store ${selectedCompanyId}`;
     if (authUser?.company_id) return companyNameById[String(authUser.company_id)] || authUser?.company_name || `Store ${authUser.company_id}`;
     return companyOptions[0]?.label || "Current Store";
-  }, [authUser?.company_id, authUser?.company_name, companyNameById, companyOptions, selectedCompanyId]);
+  }, [authUser, companyNameById, companyOptions, selectedCompanyId]);
 
   const selectedScopeLabel = useMemo(() => {
     if (isSuperAdmin) {
@@ -475,27 +454,18 @@ export default function BackupCenter() {
 
   const restoreModuleLocked = selectedBackupRecord?.backup_type === "module";
 
-  useEffect(() => {
-    if (createForm.backupType !== "module" && createForm.moduleNames.length) {
-      setCreateForm((prev) => ({ ...prev, moduleNames: [] }));
+  if (createForm.backupType !== "module" && createForm.moduleNames.length) {
+    setCreateForm(previous => ({ ...previous, moduleNames: [] }));
+  }
+  if (settingsForm.scheduleBackupType !== "module" && settingsForm.scheduleModuleNames.length) {
+    setSettingsForm(previous => ({ ...previous, scheduleModuleNames: [] }));
+  }
+  if (restoreModuleLocked) {
+    const selectedModules = selectedBackupRecord.module_names || [];
+    if (restoreForm.moduleNames.length !== selectedModules.length || restoreForm.moduleNames.some((entry, index) => entry !== selectedModules[index])) {
+      setRestoreForm(previous => ({ ...previous, moduleNames: selectedModules }));
     }
-  }, [createForm.backupType, createForm.moduleNames.length]);
-
-  useEffect(() => {
-    if (settingsForm.scheduleBackupType !== "module" && settingsForm.scheduleModuleNames.length) {
-      setSettingsForm((prev) => ({ ...prev, scheduleModuleNames: [] }));
-    }
-  }, [settingsForm.scheduleBackupType, settingsForm.scheduleModuleNames.length]);
-
-  useEffect(() => {
-    if (!selectedBackupRecord || selectedBackupRecord.backup_type !== "module") return;
-    const selectedModules = Array.isArray(selectedBackupRecord.module_names) ? selectedBackupRecord.module_names : [];
-    setRestoreForm((prev) => {
-      const sameLength = prev.moduleNames.length === selectedModules.length;
-      const sameItems = sameLength && prev.moduleNames.every((entry, index) => entry === selectedModules[index]);
-      return sameItems ? prev : { ...prev, moduleNames: selectedModules };
-    });
-  }, [selectedBackupRecord]);
+  }
 
   const filteredBackups = useMemo(() => {
     return (overview.backups || []).filter((row) => {

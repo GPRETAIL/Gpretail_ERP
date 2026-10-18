@@ -1,6 +1,6 @@
 import SearchGridPanel from "../../components/SearchGridPanel";
 import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ChevronDown, Printer } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -280,13 +280,9 @@ const CrmBillPrint = () => {
       return {};
     }
   });
-  const printedMapRef = useRef(printedMap);
   const [openPrintMenu, setOpenPrintMenu] = useState(null);
   const [printingId, setPrintingId] = useState(null);
 
-  useEffect(() => {
-    printedMapRef.current = printedMap;
-  }, [printedMap]);
 
   useEffect(() => {
     const closeMenu = () => setOpenPrintMenu(null);
@@ -320,16 +316,14 @@ const CrmBillPrint = () => {
       return next;
     });
 
-    setRows((prev) =>
-      prev.map((row) => (String(row.id) === key ? { ...row, printedStatus: "Printed" } : row))
-    );
   }, []);
 
   const grid = useSearchGrid({
-    adapter: createSearchGridAdapter("/customer-orders", row => mapBillRow(row, !!printedMapRef.current[String(row.id)])),
+    adapter: createSearchGridAdapter("/customer-orders", row => mapBillRow(row, false)),
     onError: err => toast.error(err.response?.data?.message || "Failed to load bills"),
   });
-  const { rows, setRows, loading, page, setPage, limit, setLimit, pagination } = grid;
+  const { rows: loadedRows, loading, page, setPage, limit, setLimit, pagination } = grid;
+  const rows = useMemo(() => loadedRows.map(row => ({ ...row, printedStatus: printedMap[String(row.id)] ? "Printed" : "Not Printed" })), [loadedRows, printedMap]);
   const fetchBills = grid.refresh;
 
 
@@ -451,7 +445,7 @@ const CrmBillPrint = () => {
               if (field && field !== "all") params.field = field;
               const res = await api.get("/customer-orders", { params });
               return (res.data?.data || []).map((row) =>
-                mapBillRow(row, !!printedMapRef.current[String(row.id)])
+                mapBillRow(row, !!printedMap[String(row.id)])
               );
             }}
             renderActions={(row) => (

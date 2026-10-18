@@ -52,7 +52,7 @@ const PivotTable = ({
     const body = rows.map((r) => {
       const row = { dimension: r.label, total: fmtRaw(rowTotals[r.key]) };
       columns.forEach((c) => {
-        row[c.key] = fmtRaw(cellValue(r.key, c.key));
+        row[c.key] = fmtRaw(cells?.[r.key]?.[c.key]);
       });
       return row;
     });

@@ -1,6 +1,6 @@
 import SearchGridPanel from "../../components/SearchGridPanel";
 import useSearchGrid from "../../hooks/useSearchGrid";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ArrowLeft, PlusCircle, Save, Store, Trash2, Pencil, X } from "lucide-react";
 import { toast } from "react-toastify";
 import { Box, Button, Drawer, IconButton, Stack, Typography } from "@mui/material";
@@ -36,13 +36,15 @@ const StoreGroupsDrawer = ({
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(createEmptyForm);
 
-  // Always land back on the list when the drawer is (re)opened.
-  useEffect(() => {
-    if (!open) return;
-    setView("list");
-    setEditingId(null);
-    setForm(createEmptyForm());
-  }, [open]);
+  const [previousOpen, setPreviousOpen] = useState(open);
+  if (open !== previousOpen) {
+    setPreviousOpen(open);
+    if (open) {
+      setView("list");
+      setEditingId(null);
+      setForm(createEmptyForm());
+    }
+  }
 
   const handleNew = () => {
     setEditingId(null);

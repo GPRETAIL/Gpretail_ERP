@@ -1,3 +1,4 @@
+import useStoreDisplayName from "../../hooks/useStoreDisplayName";
 import { masterSearchAreaSx } from "../../theme/erpUi";
 import SearchGridPanel from "../../components/SearchGridPanel";
 import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
@@ -465,10 +466,8 @@ const POSReturn = () => {
   const navigate = useNavigate();
   const billInputRef = useRef(null);
   const authUser = useSelector((state) => state.auth.user);
-  const { connected: printerConnected, printHtml: queuePrintHtml } = usePrintContext();
-  const [resolvedExportCompanyName, setResolvedExportCompanyName] = useState(
-    () => String(authUser?.company_name || "").trim()
-  );
+  const { printHtml: queuePrintHtml } = usePrintContext();
+  const resolvedExportCompanyName = useStoreDisplayName(authUser);
 
   const [now, setNow] = useState(new Date());
   const [returnNo, setReturnNo] = useState(1);
@@ -491,6 +490,7 @@ const POSReturn = () => {
     adapter: createSearchGridAdapter("/pos-returns"), enabled: showSearchPage,
     onError: err => toast.error(err.response?.data?.message || "Failed to load records"),
   });
+  const loadSearchGrid = searchGrid.load;
   const { rows: searchResults, loading: searching, page: searchPage, setPage: setSearchPage, limit: searchLimit, setLimit: setSearchLimit, pagination: searchPagination } = searchGrid;
   const [searchFilters, setSearchFilters] = useState({
     search: "",
@@ -500,39 +500,7 @@ const POSReturn = () => {
   });
   const searchFiltersRef = useRef(searchFilters);
 
-  useEffect(() => {
-    let active = true;
-    const fallbackName = String(authUser?.company_name || "").trim();
-    if (fallbackName) {
-      setResolvedExportCompanyName(fallbackName);
-      return () => {
-        active = false;
-      };
-    }
 
-    const companyId = Number(authUser?.company_id || 0);
-    if (!companyId) {
-      setResolvedExportCompanyName("");
-      return () => {
-        active = false;
-      };
-    }
-
-    const loadCompanyName = async () => {
-      try {
-        const res = await api.get(`/companies/${companyId}`);
-        const companyName = String(res.data?.data?.name || res.data?.name || "").trim();
-        if (active) setResolvedExportCompanyName(companyName);
-      } catch {
-        if (active) setResolvedExportCompanyName("");
-      }
-    };
-
-    loadCompanyName();
-    return () => {
-      active = false;
-    };
-  }, [authUser?.company_id, authUser?.company_name]);
 
   const resolveExportCompanyTitle = useCallback((sourceRows = []) => {
     const uniqueNames = Array.from(
@@ -554,7 +522,7 @@ const POSReturn = () => {
     if (resolvedExportCompanyName) return resolvedExportCompanyName;
     if (uniqueNames.length > 0) return uniqueNames[0];
     return authUser?.company_id ? `Company ${authUser.company_id}` : "Company";
-  }, [authUser?.company_id, resolvedExportCompanyName]);
+  }, [authUser, resolvedExportCompanyName]);
 
   useEffect(() => {
     searchFiltersRef.current = searchFilters;
@@ -719,7 +687,7 @@ const POSReturn = () => {
       applyCustomerFromSource(data);
       setCart(nextCart);
     },
-    [applyCustomerFromSource, mapApiItemsToCartLines, sourceSale?.standalone]
+    [applyCustomerFromSource, mapApiItemsToCartLines, sourceSale]
   );
 
   const mergeStandaloneBarcodeIntoCart = useCallback(
@@ -818,7 +786,7 @@ const POSReturn = () => {
         setLoadingBill(false);
       }
     },
-    [mergeStandaloneBarcodeIntoCart, replaceBillCart, sourceSale?.standalone]
+    [mergeStandaloneBarcodeIntoCart, replaceBillCart, sourceSale]
   );
 
   const handleCustomerNumberChange = (value) => {
@@ -984,24 +952,7 @@ const POSReturn = () => {
         printWindow.print();
       };
     },
-    [
-      authUser?.company_id,
-      authUser?.company_name,
-      authUser?.counter_name,
-      authUser?.email,
-      authUser?.name,
-      cartWithTotals,
-      newCustomer.name,
-      now,
-      printerConnected,
-      queuePrintHtml,
-      returnNo,
-      returnReasons,
-      selectedReturnReasonId,
-      sourceSale?.billNo,
-      summary.amount,
-      summary.totalDiscount,
-    ]
+    [authUser?.company_id, authUser?.company_name, authUser?.counter_name, authUser?.email, authUser?.name, newCustomer.name, now, queuePrintHtml, returnNo, returnReasons, selectedReturnReasonId, sourceSale.billNo]
   );
 
   const printSaleReceipt = useCallback(
@@ -1136,7 +1087,7 @@ const POSReturn = () => {
         printWindow.print();
       };
     },
-    [authUser?.company_id, authUser?.company_name, authUser?.counter_name, authUser?.email, authUser?.name, now, printerConnected, queuePrintHtml]
+    [authUser?.company_id, authUser?.company_name, authUser?.counter_name, authUser?.email, authUser?.name, now, queuePrintHtml]
   );
 
   const handlePrintLatestPosDocument = async () => {
@@ -1254,8 +1205,8 @@ const POSReturn = () => {
     if (String(filters.returnNo || "").trim()) params.returnNo = filters.returnNo;
     if (String(filters.customerName || "").trim()) params.customerName = filters.customerName;
     if (String(filters.product || "").trim()) params.product = filters.product;
-    searchGrid.load(params, pageOverride, limitOverride);
-  }, [searchGrid.load, searchLimit]);
+    loadSearchGrid(params, pageOverride, limitOverride);
+  }, [loadSearchGrid, searchLimit]);
 
   const loadAllPosReturnSearchRows = useCallback(
     async (overrideFilters = null) => {
@@ -1290,7 +1241,7 @@ const POSReturn = () => {
       });
       setSearchPage(1);
     },
-    [runPosReturnSearch, searchLimit]
+    [runPosReturnSearch, searchLimit, setSearchPage]
   );
 
   const posReturnSearchColumns = useMemo(
@@ -1371,18 +1322,7 @@ const POSReturn = () => {
                   type="text"
                   value={billLookup}
                   onChange={(e) => setBillLookup(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      const shortcut = String(billLookup || "").trim();
-                      if (shortcut === "0") {
-                        setBillLookup("");
-                        handleSaveReturn();
-                        return;
-                      }
-                      loadBillOrBarcode(billLookup);
-                    }
-                  }}
+                  onKeyDown={handleBillKeyDown}
                   placeholder="Bill (SB/…) or product barcode"
                   size="small"
                   fullWidth
@@ -1715,6 +1655,19 @@ const POSReturn = () => {
       />
     </SearchGridPanel>
   );
+
+  function handleBillKeyDown(e) {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      const shortcut = String(billLookup || "").trim();
+                      if (shortcut === "0") {
+                        setBillLookup("");
+                        handleSaveReturn();
+                        return;
+                      }
+                      loadBillOrBarcode(billLookup);
+                    }
+                  }
 
   return (
     <Box sx={{ minHeight: "100%", bgcolor: "background.default", color: "text.primary", display: "flex", flexDirection: "column", ...(showSearchPage ? { height: "100%", minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" } : {}) }}>

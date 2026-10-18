@@ -227,6 +227,7 @@ const SalesOnApproval = () => {
     adapter: createSearchGridAdapter("/sales-on-approval"), enabled: showSearchPage,
     onError: err => toast.error(err.response?.data?.message || "Failed to load records"),
   });
+  const loadSearchGrid = searchGrid.load;
   const { rows: searchResults, loading: searching, page: searchPage, setPage: setSearchPage, limit: searchLimit, setLimit: setSearchLimit, pagination: searchPagination } = searchGrid;
   const [searchFilters, setSearchFilters] = useState({
     search: "",
@@ -683,9 +684,9 @@ const SalesOnApproval = () => {
     });
   };
 
-  const closeSalesManDialog = () => {
+  const closeSalesManDialog = useCallback(() => {
     setSalesManDialog({ open: false, lineId: null, value: "" });
-  };
+  }, []);
 
   const saveSalesManDialog = async () => {
     if (!salesManDialog.lineId) return;
@@ -1045,8 +1046,8 @@ const SalesOnApproval = () => {
     if (String(filters.approvalNo || "").trim()) params.approvalNo = filters.approvalNo;
     if (String(filters.customerName || "").trim()) params.customerName = filters.customerName;
     if (String(filters.product || "").trim()) params.product = filters.product;
-    searchGrid.load(params, pageOverride, limitOverride);
-  }, [searchGrid.load, searchLimit, searchFilters]);
+    loadSearchGrid(params, pageOverride, limitOverride);
+  }, [loadSearchGrid, searchLimit, searchFilters]);
 
   const loadAllApprovalSearchRows = useCallback(async (overrideFilters = null) => {
     const filters = overrideFilters || searchFilters;
@@ -1080,7 +1081,7 @@ const SalesOnApproval = () => {
       return nextFilters;
     });
     setSearchPage(1);
-  }, [searchLimit, runApprovalSearch]);
+  }, [setSearchPage, runApprovalSearch, searchLimit]);
 
   const openLatestApprovalInSearch = useCallback(async () => {
     if (!latestApprovalDoc?.approval_no) return;
@@ -1094,7 +1095,7 @@ const SalesOnApproval = () => {
     };
     setSearchFilters(nextFilters);
     await runApprovalSearch(nextFilters, 1, searchLimit);
-  }, [latestApprovalDoc, runApprovalSearch, searchLimit]);
+  }, [latestApprovalDoc.approval_no, runApprovalSearch, searchLimit, setSearchPage]);
 
   const approvalSearchColumns = useMemo(
     () => [
@@ -1191,28 +1192,7 @@ const SalesOnApproval = () => {
                   type="text"
                   value={addBarcode}
                   onChange={(e) => setAddBarcode(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      const shortcut = String(addBarcode || "").trim().toUpperCase();
-                      if (shortcut === "C") {
-                        setAddBarcode("");
-                        openQuickCustomerDialog();
-                        return;
-                      }
-                      if (shortcut === "D") {
-                        setAddBarcode("");
-                        openDiscountDialog();
-                        return;
-                      }
-                      if (shortcut === "0") {
-                        setAddBarcode("");
-                        handleSaveSale();
-                        return;
-                      }
-                      handleAddLine();
-                    }
-                  }}
+                  onKeyDown={handleBarcodeKeyDown}
                   placeholder="Scan / enter barcode"
                   size="small"
                   fullWidth
@@ -1626,6 +1606,29 @@ const SalesOnApproval = () => {
       />
     </SearchGridPanel>
   );
+
+  function handleBarcodeKeyDown(e) {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      const shortcut = String(addBarcode || "").trim().toUpperCase();
+                      if (shortcut === "C") {
+                        setAddBarcode("");
+                        openQuickCustomerDialog();
+                        return;
+                      }
+                      if (shortcut === "D") {
+                        setAddBarcode("");
+                        openDiscountDialog();
+                        return;
+                      }
+                      if (shortcut === "0") {
+                        setAddBarcode("");
+                        handleSaveSale();
+                        return;
+                      }
+                      handleAddLine();
+                    }
+                  }
 
   return (
     <Box className="pos-sale-page" sx={{ minHeight: "100%", bgcolor: "background.default", color: "text.primary", display: "flex", flexDirection: "column", ...(showSearchPage ? { height: "100%", minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" } : {}) }}>

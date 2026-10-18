@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { EMPTY_ARRAY, EMPTY_OBJECT } from "../utils/emptyValues.js";
+import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
 import { Box, Button, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
-import api from "../api/axios";
+import useModuleDashboardSummary from "../hooks/useModuleDashboardSummary";
 import DashboardGrid from "./dashboard/DashboardGrid";
 import {
   PayablesOutstandingCard,
@@ -27,44 +28,16 @@ const QUICK_ACTIONS = [
 
 export default function FinanceDashboardTabPane({ active, fromDate, toDate, companyId, privacyMode }) {
   const navigate = useNavigate();
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { data, loading, error, reload: fetchData } = useModuleDashboardSummary("/finance/dashboard", {
+    active, errorMessage: "Failed to load finance data.", params: { ...(fromDate ? { date_from: fromDate } : {}), ...(toDate ? { date_to: toDate } : {}), ...(companyId ? { warehouse_id: companyId } : {}) },
+  });
 
-  const fetchData = useCallback(async () => {
-    if (!active) return;
-    try {
-      setLoading(true);
-      setError(null);
-      const params = {};
-      if (fromDate) params.date_from = fromDate;
-      if (toDate) params.date_to = toDate;
-      if (companyId) params.warehouse_id = companyId;
-
-      const res = await api.get("/finance/dashboard", { params });
-      if (res.data?.success && res.data?.data) {
-        setData(res.data.data);
-      } else {
-        setError("Failed to load finance data.");
-      }
-    } catch (err) {
-      console.error("Finance Tab fetch error:", err);
-      setError(err.response?.data?.message || "Error communicating with server.");
-    } finally {
-      setLoading(false);
-    }
-  }, [active, fromDate, toDate, companyId]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  const summary = data?.summary || {};
-  const actionRequired = data?.action_required || [];
-  const breakdown = data?.breakdown || {};
-  const topPayables = data?.top_payables || [];
-  const recentPayments = data?.recent_payments || [];
-  const trendChart = data?.charts?.purchase_payment_trend || [];
+  const summary = data?.summary || EMPTY_OBJECT;
+  const actionRequired = data?.action_required || EMPTY_ARRAY;
+  const breakdown = data?.breakdown || EMPTY_OBJECT;
+  const topPayables = data?.top_payables || EMPTY_ARRAY;
+  const recentPayments = data?.recent_payments || EMPTY_ARRAY;
+  const trendChart = data?.charts?.purchase_payment_trend || EMPTY_ARRAY;
 
   const widgets = useMemo(
     () => [

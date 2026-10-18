@@ -1,3 +1,5 @@
+import useResetOnChange from "../../hooks/useResetOnChange";
+import useStoreDisplayName from "../../hooks/useStoreDisplayName";
 import SearchGridPanel from "../../components/SearchGridPanel";
 import useSearchGrid from "../../hooks/useSearchGrid";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
@@ -2207,9 +2209,7 @@ const REPORT_GRID_COLUMNS = [
 const SalesReports = () => {
   const navigate = useNavigate();
   const authUser = useSelector((state) => state.auth.user);
-  const [resolvedExportCompanyName, setResolvedExportCompanyName] = useState(
-    () => String(authUser?.company_name || "").trim()
-  );
+  const resolvedExportCompanyName = useStoreDisplayName(authUser);
 
   const groupLookup = useMemo(
     () => REPORT_GROUPS.reduce((acc, group) => ({ ...acc, [group.key]: group }), {}),
@@ -2262,9 +2262,9 @@ const SalesReports = () => {
 
   const isSuperAdminUser = String(authUser?.role || "").trim().toLowerCase() === "super_admin";
 
-  useEffect(() => {
+  useResetOnChange([selectedReportKey], () => {
     setAppliedSalesSummary(null);
-  }, [selectedReportKey]);
+  });
 
   useEffect(() => {
     if (!salesSummaryDrawerOpen || !isSuperAdminUser) return;
@@ -2283,39 +2283,7 @@ const SalesReports = () => {
     };
   }, [salesSummaryDrawerOpen, isSuperAdminUser]);
 
-  useEffect(() => {
-    let active = true;
-    const fallbackName = String(authUser?.company_name || "").trim();
-    if (fallbackName) {
-      setResolvedExportCompanyName(fallbackName);
-      return () => {
-        active = false;
-      };
-    }
 
-    const companyId = Number(authUser?.company_id || 0);
-    if (!companyId) {
-      setResolvedExportCompanyName("");
-      return () => {
-        active = false;
-      };
-    }
-
-    const loadCompanyName = async () => {
-      try {
-        const res = await api.get(`/companies/${companyId}`);
-        const companyName = String(res.data?.data?.name || res.data?.name || "").trim();
-        if (active) setResolvedExportCompanyName(companyName);
-      } catch {
-        if (active) setResolvedExportCompanyName("");
-      }
-    };
-
-    loadCompanyName();
-    return () => {
-      active = false;
-    };
-  }, [authUser?.company_id, authUser?.company_name]);
 
   const resolveExportCompanyTitle = useCallback((sourceRows = []) => {
     const uniqueNames = Array.from(
@@ -2337,7 +2305,7 @@ const SalesReports = () => {
     if (resolvedExportCompanyName) return resolvedExportCompanyName;
     if (uniqueNames.length > 0) return uniqueNames[0];
     return authUser?.company_id ? `Company ${authUser.company_id}` : "Company";
-  }, [authUser?.company_id, resolvedExportCompanyName]);
+  }, [authUser, resolvedExportCompanyName]);
 
   const grid = useSearchGrid({ sourceRows: reportRows, paginationMode: "client", scopeKey: selectedReportKey });
   const { page, setPage, limit, setLimit } = grid;
@@ -2451,7 +2419,7 @@ const SalesReports = () => {
     return () => {
       cancelled = true;
     };
-  }, [selectedReport, selectedReportSource, appliedSalesSummary]);
+  }, [selectedReport, selectedReportSource, appliedSalesSummary, setPage]);
 
   const toggleGroup = (groupKey) => {
     setExpandedGroups((prev) => ({

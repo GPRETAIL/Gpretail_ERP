@@ -1,3 +1,5 @@
+import useAsyncQuery from "../../hooks/useAsyncQuery";
+import { EMPTY_ARRAY } from "../../utils/emptyValues";
 import React, { useState, useEffect, useCallback } from "react";
 import { X, RefreshCw, Trash2, CloudOff, Check } from "lucide-react";
 import { Box, Typography } from "@mui/material";
@@ -28,21 +30,14 @@ const formatWhen = (ts) => {
  * earlier) opens this instead of just being an inert count.
  */
 export default function SyncCenterModal({ isOpen, onClose }) {
-  const [queue, setQueue] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [retrying, setRetrying] = useState(false);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    const items = await getSyncQueue();
-    setQueue(items.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)));
-    setLoading(false);
-  }, []);
+  const fetchQueue = useCallback(async () => [...await getSyncQueue()].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)), []);
+  const { data, loading, reload: load } = useAsyncQuery(fetchQueue, { enabled: isOpen });
+  const queue = data || EMPTY_ARRAY;
 
   useEffect(() => {
     if (!isOpen) return;
-    load();
-
     const handleUpdate = () => load();
     window.addEventListener("vx-sync-queue-updated", handleUpdate);
     window.addEventListener("vx-sync-completed", handleUpdate);

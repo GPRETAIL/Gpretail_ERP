@@ -1,3 +1,5 @@
+import useAsyncQuery from "../../hooks/useAsyncQuery";
+import useStoreDisplayName from "../../hooks/useStoreDisplayName";
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   TrendingUp,
@@ -49,13 +51,7 @@ const formatYmd = (date) => {
 
 export default function DashboardScreen({ onNavigate, onOpenSearch, onOpenSyncCenter, authUser }) {
   const [dateRange, setDateRange] = useState("today"); // 'today' | 'yesterday' | 'week' | 'month'
-  const [_loading, setLoading] = useState(true);
-  const [overviewData, setOverviewData] = useState(null);
-  const [, setSummaryData] = useState(null);
-  const [attentionData, setAttentionData] = useState(null);
-  const [supplierDues, setSupplierDues] = useState(null);
   const [branchModalOpen, setBranchModalOpen] = useState(false);
-  const [overrideStoreName, setOverrideStoreName] = useState(null);
 
   // Same gate desktop's Navbar "Switch Store" uses, so the pill only
   // becomes tappable for users who actually have somewhere else to switch
@@ -75,18 +71,9 @@ export default function DashboardScreen({ onNavigate, onOpenSearch, onOpenSyncCe
   // the user's own store), otherwise the user's own store name from their
   // login response (already present, no extra fetch needed for the
   // common no-override case).
-  useEffect(() => {
-    if (!activeStoreId || String(authUser?.company_id) === String(activeStoreId)) {
-      setOverrideStoreName(null);
-      return;
-    }
-    api
-      .get(`/companies/${activeStoreId}`)
-      .then((res) => setOverrideStoreName(res.data?.data?.name || null))
-      .catch(() => setOverrideStoreName(null));
-  }, [activeStoreId, authUser?.company_id]);
-
-  const branchLabel = overrideStoreName || authUser?.company_name || "My Store";
+  const branchName = useStoreDisplayName({ company_id: activeStoreId || authUser?.company_id,
+    company_name: !activeStoreId || String(authUser?.company_id) === String(activeStoreId) ? authUser?.company_name : "" });
+  const branchLabel = branchName || authUser?.company_name || "My Store";
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
 
   // Compute date range dates
@@ -112,8 +99,7 @@ export default function DashboardScreen({ onNavigate, onOpenSearch, onOpenSyncCe
     return { fromDate: formatYmd(from), toDate: formatYmd(to) };
   }, [dateRange]);
 
-  const loadDashboardData = useCallback(async ({ silent = false } = {}) => {
-    if (!silent) setLoading(true);
+  const fetchDashboardData = useCallback(async () => {
     try {
       const [overviewRes, summaryRes, purchasesRes, attentionRes, duesRes] = await Promise.allSettled([
         api.get("/dashboard/overview", {
@@ -149,29 +135,23 @@ export default function DashboardScreen({ onNavigate, onOpenSearch, onOpenSyncCe
         dues,
       };
 
-      setOverviewData(ov);
-      setSummaryData(sm);
-      setAttentionData(att);
-      setSupplierDues(dues);
 
       // Cache locally in IndexedDB for offline viewing
       setCachedData(`dashboard_${dateRange}`, combined);
+      return combined;
     } catch {
       // Fallback to IndexedDB cached data
       const cached = await getCachedData(`dashboard_${dateRange}`);
-      if (cached) {
-        setOverviewData(cached.overview);
-        setSummaryData(cached.summary);
-        setAttentionData(cached.attention);
-        setSupplierDues(cached.dues);
-      }
-    } finally {
-      if (!silent) setLoading(false);
+      return cached || null;
     }
   }, [fromDate, toDate, dateRange]);
 
+  const { data: dashboard, reload: loadDashboardData } = useAsyncQuery(fetchDashboardData);
+  const overviewData = dashboard?.overview;
+  const attentionData = dashboard?.attention;
+  const supplierDues = dashboard?.dues;
+
   useEffect(() => {
-    loadDashboardData();
 
     const handleRestored = () => loadDashboardData();
     window.addEventListener("vx-network-restored", handleRestored);

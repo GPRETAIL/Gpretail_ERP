@@ -14,10 +14,13 @@ import { Box, Button, IconButton, Typography } from "@mui/material";
 export default function PwaInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isInstallable, setIsInstallable] = useState(false);
-  const [isIos, setIsIos] = useState(false);
+  const [isIos] = useState(() => /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase()) && !window.MSStream);
   const [showIosGuide, setShowIosGuide] = useState(false);
-  const [isStandalone, setIsStandalone] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(() => window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true || document.referrer.includes("android-app://"));
+  const [dismissed, setDismissed] = useState(() => {
+    const dismissedAt = Number(localStorage.getItem("gpretail_pwa_dismissed_at") || 0);
+    return dismissedAt > 0 && Date.now() - dismissedAt < 2 * 24 * 60 * 60 * 1000;
+  });
   const [installedSuccessfully, setInstalledSuccessfully] = useState(false);
   const [manualTriggerRequested, setManualTriggerRequested] = useState(false);
 
@@ -39,24 +42,7 @@ export default function PwaInstallPrompt() {
       setIsStandalone(Boolean(isStandaloneMode));
     };
 
-    checkStandalone();
     window.matchMedia("(display-mode: standalone)").addEventListener("change", checkStandalone);
-
-    // 2. Check if iOS device
-    const userAgent = window.navigator.userAgent.toLowerCase();
-    const isIosDevice =
-      /iphone|ipad|ipod/.test(userAgent) && !window.MSStream;
-    setIsIos(isIosDevice);
-
-    // 3. Check dismissal memory (re-show after 2 days if dismissed)
-    const lastDismissedTime = localStorage.getItem("gpretail_pwa_dismissed_at");
-    if (lastDismissedTime) {
-      const daysSinceDismissed =
-        (Date.now() - parseInt(lastDismissedTime, 10)) / (1000 * 60 * 60 * 24);
-      if (daysSinceDismissed < 2) {
-        setDismissed(true);
-      }
-    }
 
     // 4. Capture native beforeinstallprompt (Android / Chrome / Edge)
     const handleBeforeInstallPrompt = (e) => {
@@ -110,6 +96,7 @@ export default function PwaInstallPrompt() {
     window.addEventListener("pwa-show-install-prompt", handleCustomTrigger);
 
     return () => {
+      window.matchMedia("(display-mode: standalone)").removeEventListener("change", checkStandalone);
       window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
       window.removeEventListener("appinstalled", handleAppInstalled);
       window.removeEventListener("pwa-show-install-prompt", handleCustomTrigger);

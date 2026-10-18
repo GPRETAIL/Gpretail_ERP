@@ -1,3 +1,4 @@
+import useCounterAssignmentPrompt from "../../hooks/useCounterAssignmentPrompt";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
@@ -89,16 +90,12 @@ const getAppliedReturnItemTotal = (item) => {
 const TouchSales = () => {
   const navigate = useNavigate();
   const authUser = useSelector((state) => state.auth.user);
-  const { printerConnected, queuePrintHtml } = usePrintContext();
+  const { queuePrintHtml } = usePrintContext();
 
   // Pops automatically once per login if this user has no counter assigned yet -- previously
   // they'd only discover this was required when a sale failed to save.
-  const [counterAssignmentOpen, setCounterAssignmentOpen] = useState(false);
-  useEffect(() => {
-    if (authUser && !authUser.counter_id) {
-      setCounterAssignmentOpen(true);
-    }
-  }, [authUser?.id]);
+  const [counterAssignmentOpen, setCounterAssignmentOpen] = useCounterAssignmentPrompt(authUser);
+
 
   const [now, setNow] = useState(new Date());
   const [billNo, setBillNo] = useState(1);
@@ -283,7 +280,7 @@ const TouchSales = () => {
       refundDue,
       netAmount,
     };
-  }, [cart, appliedReturn?.amount]);
+  }, [cart, appliedReturn]);
 
   const appliedReturnDisplayLines = useMemo(() => {
     const returnItems = appliedReturn?.items || [];
@@ -315,9 +312,7 @@ const TouchSales = () => {
     [appliedReturnDisplayLines, cart]
   );
 
-  useEffect(() => {
-    if (billSummary.netAmount >= 0) setRefundApproved(false);
-  }, [billSummary.netAmount]);
+  if (billSummary.netAmount >= 0 && refundApproved) setRefundApproved(false);
 
   const clearAppliedReturn = useCallback(() => {
     setAppliedReturn(null);
@@ -625,21 +620,7 @@ const TouchSales = () => {
         win.print();
       };
     },
-    [
-      authUser?.company_id,
-      authUser?.company_name,
-      authUser?.counter_name,
-      authUser?.email,
-      authUser?.name,
-      billNo,
-      customerMobile,
-      appliedReturn?.id,
-      appliedReturn?.items,
-      appliedReturn?.displayReturnNo,
-      appliedReturn?.returnNo,
-      printerConnected,
-      queuePrintHtml,
-    ]
+    [authUser?.company_id, authUser?.company_name, authUser?.counter_name, authUser?.email, authUser?.name, billNo, customerMobile, appliedReturn, queuePrintHtml]
   );
 
   const saveTouchSale = async ({ shouldPrint = false } = {}) => {

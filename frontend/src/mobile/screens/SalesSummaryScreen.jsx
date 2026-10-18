@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import useAsyncQuery from "../../hooks/useAsyncQuery";
+import { EMPTY_ARRAY } from "../../utils/emptyValues";
+import React, { useState, useCallback, useMemo } from "react";
 import { ChevronDown } from "lucide-react";
 import { Box, Typography } from "@mui/material";
 import api from "../../api/axios";
@@ -59,35 +61,22 @@ export default function SalesSummaryScreen() {
   const [showPicker, setShowPicker] = useState(false);
   const [fromDate, setFromDate] = useState(formatYmd(monthAgo));
   const [toDate, setToDate] = useState(formatYmd(today));
-  const [loading, setLoading] = useState(true);
-  const [overview, setOverview] = useState(null);
-  const [rawSales, setRawSales] = useState([]);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
+  const fetchSummary = useCallback(async ({ signal }) => {
       const [overviewRes, salesRes] = await Promise.allSettled([
         api.get("/dashboard/overview", {
-          params: { from: fromDate, to: toDate, timezoneOffset: new Date().getTimezoneOffset() },
+          signal, params: { from: fromDate, to: toDate, timezoneOffset: new Date().getTimezoneOffset() },
         }),
         api.get("/sales-reports", {
-          params: { all: true, start_date: fromDate, end_date: toDate },
+          signal, params: { all: true, start_date: fromDate, end_date: toDate },
         }),
       ]);
-      setOverview(overviewRes.status === "fulfilled" ? overviewRes.value.data?.data : null);
+      const overview = overviewRes.status === "fulfilled" ? overviewRes.value.data?.data : null;
       const salesData = salesRes.status === "fulfilled" ? salesRes.value.data?.data : [];
-      setRawSales(Array.isArray(salesData) ? salesData : []);
-    } catch {
-      setOverview(null);
-      setRawSales([]);
-    } finally {
-      setLoading(false);
-    }
+      return { overview, rawSales: Array.isArray(salesData) ? salesData : [] };
   }, [fromDate, toDate]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
+  const { data: response, loading } = useAsyncQuery(fetchSummary);
+  const overview = response?.overview ?? null;
+  const rawSales = response?.rawSales || EMPTY_ARRAY;
 
   const activeLabel = BREAKDOWN_TYPES.find((b) => b.id === breakdownType)?.label;
 

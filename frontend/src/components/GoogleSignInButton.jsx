@@ -13,7 +13,6 @@ export default function GoogleSignInButton({ onCredential, disabled = false, the
   useEffect(() => { callback.current = onCredential; }, [onCredential]);
   useEffect(() => {
     let active = true;
-    setStatus("loading");
     api.get("/auth/config").then((response) => {
       if (!active) return;
       const data = response.data?.data || {};
@@ -65,6 +64,9 @@ export default function GoogleSignInButton({ onCredential, disabled = false, the
   }, [clientId, theme, attempt]);
 
   const retry = () => {
+    setStatus("loading");
+    setClientId("");
+    host.current?.replaceChildren();
     if (!window.google?.accounts?.id) document.getElementById(SCRIPT_ID)?.remove();
     setAttempt((value) => value + 1);
   };

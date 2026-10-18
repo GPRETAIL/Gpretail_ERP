@@ -1,3 +1,6 @@
+import useAsyncQuery from "../../hooks/useAsyncQuery";
+import useResetOnChange from "../../hooks/useResetOnChange";
+import { EMPTY_ARRAY } from "../../utils/emptyValues";
 import React, { useState, useEffect } from "react";
 import {
   X,
@@ -26,7 +29,6 @@ const NOTIF_COLORS = {
 };
 
 export default function NotificationsModal({ isOpen, onClose }) {
-  const [notifications, setNotifications] = useState([]);
   const [hasPush, setHasPush] = useState(hasNotificationPermission());
   const [permissionState, setPermissionState] = useState(
     typeof window !== "undefined" && "Notification" in window
@@ -34,21 +36,14 @@ export default function NotificationsModal({ isOpen, onClose }) {
       : "default"
   );
 
-  const loadNotifs = async () => {
-    const list = await getStoredNotifications();
-    setNotifications(list);
-  };
-
+  const { data, reload: loadNotifs } = useAsyncQuery(getStoredNotifications, { enabled: isOpen });
+  const notifications = data || EMPTY_ARRAY;
+  useResetOnChange([isOpen], () => { if (isOpen) setHasPush(hasNotificationPermission()); });
   useEffect(() => {
-    if (isOpen) {
-      loadNotifs();
-      setHasPush(hasNotificationPermission());
-    }
-
-    const handleUpdate = () => loadNotifs();
+    const handleUpdate = () => loadNotifs({ silent: true });
     window.addEventListener("vx-notifications-updated", handleUpdate);
     return () => window.removeEventListener("vx-notifications-updated", handleUpdate);
-  }, [isOpen]);
+  }, [loadNotifs]);
 
   const handleEnablePush = async () => {
     const perm = await requestNotificationPermission();

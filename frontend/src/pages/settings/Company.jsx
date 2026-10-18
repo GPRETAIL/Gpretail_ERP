@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import useAsyncQuery from "../../hooks/useAsyncQuery";
+import React, { useCallback, useEffect, useState } from "react";
 import { LogOut, PlusCircle, RefreshCw, Save, Search, Trash2 } from "lucide-react";
 import { toast } from "react-toastify";
 import { alpha } from "@mui/material/styles";
@@ -203,6 +204,16 @@ const CompanySettings = () => {
     }
   };
 
+  const fetchOverview = useCallback(async ({ signal } = {}) => {
+    const response = await api.get("/companies/tenant-sync/overview", { signal });
+    return response.data?.data || {};
+  }, []);
+  const applyOverview = useCallback(data => setOverview({ stores: Array.isArray(data.stores) ? data.stores : [], warehouses: Array.isArray(data.warehouses) ? data.warehouses : [] }), []);
+  useAsyncQuery(fetchOverview, { onSuccess: applyOverview });
+  const loadOverview = async () => {
+    try { applyOverview(await fetchOverview()); } catch { /* Non-critical summary. */ }
+  };
+
   useEffect(() => {
     let mounted = true;
 
@@ -227,7 +238,6 @@ const CompanySettings = () => {
     };
 
     load();
-    loadOverview();
 
     return () => {
       mounted = false;
@@ -246,7 +256,6 @@ const CompanySettings = () => {
     }, 300);
 
     return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showSearchPage, searchQuery]);
 
   const setField = (name) => (e) => {
@@ -294,18 +303,6 @@ const CompanySettings = () => {
   };
 
   // Read-only rollup of the synced stores + warehouses (with store tagging) for this super-admin.
-  const loadOverview = async () => {
-    try {
-      const res = await api.get("/companies/tenant-sync/overview");
-      const data = res.data?.data || {};
-      setOverview({
-        stores: Array.isArray(data.stores) ? data.stores : [],
-        warehouses: Array.isArray(data.warehouses) ? data.warehouses : [],
-      });
-    } catch {
-      /* non-fatal — the panel just stays empty */
-    }
-  };
 
   // Manual "Sync now": pull the latest subscription/limits/login-password config from VX-Admin instead
   // of waiting for the background loop. Reloads the currently open store so any changes show immediately.

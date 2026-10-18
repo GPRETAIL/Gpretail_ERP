@@ -1,3 +1,5 @@
+import useResetOnChange from "../../hooks/useResetOnChange";
+import useQrSources from "../../hooks/useQrSources";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { ArrowLeft, Search, Save, Printer, Eye, X } from "lucide-react";
 import QRCode from "qrcode";
@@ -1930,7 +1932,8 @@ const BarcodeGeneration = () => {
   const [toast, setToast] = useState({ open: false, type: "info", message: "" });
   const showToast = (type, message) => setToast({ open: true, type, message });
 
-  const [loading, setLoading] = useState(true);
+  const [sourceLoading, setLoading] = useState(true);
+  const loading = Boolean(transportEntryId || directPurchaseId) && sourceLoading;
   const [saving, setSaving] = useState(false);
   const [updatingRow, setUpdatingRow] = useState(false);
 
@@ -1955,9 +1958,6 @@ const BarcodeGeneration = () => {
   const [itemFilters, setItemFilters] = useState(createDefaultItemFilters);
   const [labelCustomization, setLabelCustomization] = useState(DEFAULT_WAREHOUSE_BARCODE_CUSTOMIZATION);
   const [previewOpen, setPreviewOpen] = useState(false);
-  const [previewLabels, setPreviewLabels] = useState([]);
-  const [qrSources, setQrSources] = useState({});
-  const [qrLoading, setQrLoading] = useState(false);
   const [directPrinting, setDirectPrinting] = useState(false);
 
   useEffect(() => {
@@ -2025,7 +2025,7 @@ const BarcodeGeneration = () => {
     };
   }, []);
 
-  useEffect(() => {
+  useResetOnChange([allItems, activeEditorId], () => {
     if (!activeEditorId) return;
     const activeItem = allItems.find((item) => item.sourceItemId === activeEditorId);
     if (activeItem) {
@@ -2034,13 +2034,10 @@ const BarcodeGeneration = () => {
     }
     setActiveEditorId(null);
     setEditForm(buildEditForm(null));
-  }, [allItems, activeEditorId]);
+  });
 
   useEffect(() => {
-    if (!transportEntryId && !directPurchaseId) {
-      setLoading(false);
-      return;
-    }
+    if (!transportEntryId && !directPurchaseId) return;
 
     const fetchData = async () => {
       try {
@@ -2386,61 +2383,11 @@ const BarcodeGeneration = () => {
   const allItemsHaveBarcodes = allItems.length > 0
     && allItems.every((item) => Boolean(barcodeForItem(barcodeMap, item.sourceItemId)));
 
-  useEffect(() => {
-    if (!previewOpen || previewItems.length === 0) {
-      setPreviewLabels([]);
-      return;
-    }
-    setPreviewLabels(
-      previewItems.flatMap((item) =>
-        buildStickerLabels({
-          item,
-          barcodeRows: getItemBarcodeRows(item, barcodeValuesMap, barcodeMap),
-          customization: labelCustomization,
-        })
-      )
-    );
-  }, [previewOpen, previewItems, barcodeValuesMap, barcodeMap, labelCustomization]);
+  const previewLabels = useMemo(() => !previewOpen ? [] : previewItems.flatMap(item => buildStickerLabels({
+    item, barcodeRows: getItemBarcodeRows(item, barcodeValuesMap, barcodeMap), customization: labelCustomization,
+  })), [previewOpen, previewItems, barcodeValuesMap, barcodeMap, labelCustomization]);
+  const { sources: qrSources, loading: qrLoading } = useQrSources(previewLabels, { enabled: previewOpen, width: 360 });
 
-  useEffect(() => {
-    const qrLabels = previewLabels.filter((label) => label.codeType === "code");
-    if (!previewOpen || qrLabels.length === 0) {
-      setQrSources({});
-      setQrLoading(false);
-      return;
-    }
-
-    let cancelled = false;
-    const buildQrSources = async () => {
-      setQrLoading(true);
-      try {
-        const entries = await Promise.all(
-          qrLabels.map(async (label) => [
-            label.key,
-            await QRCode.toDataURL(label.codeValue, {
-              margin: 1,
-              width: 360,
-              errorCorrectionLevel: "M",
-            }),
-          ])
-        );
-        if (cancelled) return;
-        setQrSources(Object.fromEntries(entries));
-      } catch (err) {
-        if (!cancelled) {
-          console.error("Failed to build QR preview:", err);
-          showToast("error", "Failed to build QR preview");
-        }
-      } finally {
-        if (!cancelled) setQrLoading(false);
-      }
-    };
-
-    buildQrSources();
-    return () => {
-      cancelled = true;
-    };
-  }, [previewOpen, previewLabels]);
 
   const handleToggle = (item) => {
     if (isGeneratedItem(generatedIds, item.sourceItemId)) return;

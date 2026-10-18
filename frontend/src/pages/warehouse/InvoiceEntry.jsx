@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { calculatePurchaseInvoiceTotals } from "../../utils/purchaseInvoiceTotals";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { ArrowLeft, Search, Save, Plus, Printer, X, Pencil, Check } from "lucide-react";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import api from "../../api/axios";
@@ -266,7 +267,7 @@ const InvoiceEntry = () => {
   });
 
   // Right side totals
-  const [totals, setTotals] = useState({
+  const [totalsInputs, setTotals] = useState({
     baseAmount: 0,
     discount: 0,
     pcsDiscount: 0,
@@ -275,6 +276,8 @@ const InvoiceEntry = () => {
     rounding: 0,
     netAmount: 0,
   });
+
+  const totals = useMemo(() => calculatePurchaseInvoiceTotals(items, totalsInputs.pcsDiscount, totalsInputs.rounding), [items, totalsInputs.pcsDiscount, totalsInputs.rounding]);
 
   // Inverse Calculation
   const [inverseCalc, setInverseCalc] = useState({
@@ -435,36 +438,6 @@ const InvoiceEntry = () => {
     loadInvoices();
   }, [pageMode, initialTransportEntryId, selectedInvoiceId, mapApiInvoiceToLocal]);
 
-  // Recalculate totals when items change
-  const recalcTotals = useCallback((itemsList, pcsDiscount, rounding) => {
-    let baseAmount = 0;
-    let discountTotal = 0;
-    let taxCharges = 0;
-
-    for (const item of itemsList) {
-      baseAmount += parseFloat(item.amountOn) || 0;
-      discountTotal += parseFloat(item.discount) || 0;
-      taxCharges += ((parseFloat(item.amountOn) || 0) - (parseFloat(item.discount) || 0)) * ((parseFloat(item.taxPerc) || 0) / 100);
-    }
-
-    const afterDiscount = baseAmount - discountTotal - (parseFloat(pcsDiscount) || 0);
-    const grossAmount = afterDiscount + taxCharges;
-    const netAmount = grossAmount + (parseFloat(rounding) || 0);
-
-    setTotals({
-      baseAmount: Math.round(baseAmount * 100) / 100,
-      discount: Math.round(discountTotal * 100) / 100,
-      pcsDiscount: parseFloat(pcsDiscount) || 0,
-      taxCharges: Math.round(taxCharges * 100) / 100,
-      grossAmount: Math.round(grossAmount * 100) / 100,
-      rounding: parseFloat(rounding) || 0,
-      netAmount: Math.round(netAmount * 100) / 100,
-    });
-  }, []);
-
-  useEffect(() => {
-    recalcTotals(items, totals.pcsDiscount, totals.rounding);
-  }, [items]);
 
   const handleFormChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -901,12 +874,12 @@ const InvoiceEntry = () => {
 
   const handlePcsDiscountChange = (val) => {
     const v = parseFloat(val) || 0;
-    recalcTotals(items, v, totals.rounding);
+    setTotals(prev => ({ ...prev, pcsDiscount: v }));
   };
 
   const handleRoundingChange = (val) => {
     const v = parseFloat(val) || 0;
-    recalcTotals(items, totals.pcsDiscount, v);
+    setTotals(prev => ({ ...prev, rounding: v }));
   };
 
   // Inverse Calculation handlers

@@ -1,3 +1,5 @@
+import abortableDelay from "../../utils/abortableDelay";
+import useAsyncQuery from "../../hooks/useAsyncQuery";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useSelector } from "react-redux";
 import {
@@ -53,7 +55,6 @@ export default function CreateInvoiceScreen({ onBack }) {
   const [customers, setCustomers] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState("");
   const [customerSearchTerm, setCustomerSearchTerm] = useState("");
-  const [customerSearching, setCustomerSearching] = useState(false);
   const [, setNextBillNo] = useState("");
   const [catalog, setCatalog] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -120,29 +121,20 @@ export default function CreateInvoiceScreen({ onBack }) {
   // Only the first 300 customers are preloaded (real table can hold ~1,000,000 rows) -- this is a
   // progressive enhancement, not a hard requirement: when offline the request just fails silently
   // and the picker below still works with whatever's cached/preloaded, same as before this fix.
-  useEffect(() => {
-    const query = customerSearchTerm.trim();
-    if (query.length < 3) return undefined;
-    setCustomerSearching(true);
-    const timer = setTimeout(async () => {
-      try {
-        const res = await api.get("/customers", { params: { search: query, limit: 30 } });
-        const results = res.data?.data || [];
-        if (results.length) {
-          setCustomers((prev) => {
-            const existingIds = new Set(prev.map((c) => String(c.id)));
-            const newOnes = results.filter((c) => !existingIds.has(String(c.id)));
-            return newOnes.length ? [...prev, ...newOnes] : prev;
-          });
-        }
-      } catch {
-        // Offline or request failed -- silently keep whatever's already loaded/cached.
-      } finally {
-        setCustomerSearching(false);
-      }
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [customerSearchTerm]);
+  const customerQuery = customerSearchTerm.trim();
+  const searchCustomers = useCallback(async ({ signal }) => {
+    await abortableDelay(300, signal);
+    const res = await api.get("/customers", { signal, params: { search: customerQuery, limit: 30 } });
+    return res.data?.data || [];
+  }, [customerQuery]);
+  const { loading: customerSearching } = useAsyncQuery(searchCustomers, {
+    enabled: customerQuery.length >= 3,
+    onSuccess: results => setCustomers(prev => {
+      const existing = new Set(prev.map(c => String(c.id)));
+      const added = results.filter(c => !existing.has(String(c.id)));
+      return added.length ? [...prev, ...added] : prev;
+    }),
+  });
 
   // Real "Scan to Pay" UPI ID from the Sales Customization settings - was
   // previously a hardcoded gpsoftware@okaxis, which routed every mobile

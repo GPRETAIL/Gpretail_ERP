@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from "react";
+import useAsyncQuery from "../../hooks/useAsyncQuery";
+import useResetOnChange from "../../hooks/useResetOnChange";
+import React, { useCallback, useState, useEffect } from "react";
 import {
   X,
   User,
@@ -32,36 +34,28 @@ export default function UserProfileModal({
   onLogout,
   onTriggerPwa,
 }) {
-  const [syncCount, setSyncCount] = useState(0);
-  const [draftsCount, setDraftsCount] = useState(0);
   const [syncing, setSyncing] = useState(false);
   const [syncSuccess, setSyncSuccess] = useState(false);
   const { theme, setTheme } = useTheme();
   const isDark = theme === "dark";
 
-  const loadStorageStats = async () => {
-    try {
-      const [queue, drafts] = await Promise.all([getSyncQueue(), getDrafts()]);
-      setSyncCount(queue.length);
-      setDraftsCount(drafts.length);
-    } catch {
-      // Ignore
-    }
-  };
-
+  const fetchStorageStats = useCallback(async () => {
+    const [queue, drafts] = await Promise.all([getSyncQueue(), getDrafts()]);
+    return { syncCount: queue.length, draftsCount: drafts.length };
+  }, []);
+  const { data: storage, reload: loadStorageStats } = useAsyncQuery(fetchStorageStats, { enabled: isOpen });
+  const syncCount = storage?.syncCount ?? 0;
+  const draftsCount = storage?.draftsCount ?? 0;
+  useResetOnChange([isOpen], () => { if (isOpen) setSyncSuccess(false); });
   useEffect(() => {
-    if (isOpen) {
-      loadStorageStats();
-      setSyncSuccess(false);
-    }
-    const handleUpdate = () => loadStorageStats();
+    const handleUpdate = () => loadStorageStats({ silent: true });
     window.addEventListener("vx-sync-queue-updated", handleUpdate);
     window.addEventListener("vx-sync-completed", handleUpdate);
     return () => {
       window.removeEventListener("vx-sync-queue-updated", handleUpdate);
       window.removeEventListener("vx-sync-completed", handleUpdate);
     };
-  }, [isOpen]);
+  }, [loadStorageStats]);
 
   const handleManualSync = async () => {
     setSyncing(true);

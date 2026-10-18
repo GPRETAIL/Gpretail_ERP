@@ -280,7 +280,7 @@ export const PrintProvider = ({ children }) => {
       processingRef.current = false;
       setTimeout(cleanupJobs, 10000);
     },
-    [authUser?.email, authUser?.id, authUser?.name, cleanupJobs, updateJob]
+    [authUser, cleanupJobs, updateJob]
   );
 
   const enqueue = useCallback(

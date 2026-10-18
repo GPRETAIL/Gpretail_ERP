@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import useAsyncQuery from "../../hooks/useAsyncQuery";
+import React, { useCallback, useEffect, useState } from "react";
 import { ArrowLeft, Save } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -68,7 +69,6 @@ const CrmCustomerForm = () => {
 
   const [formData, setFormData] = useState({ ...blankForm });
   const [saving, setSaving] = useState(false);
-  const [loadingRecord, setLoadingRecord] = useState(false);
   const [opts, setOpts] = useState({
     customerCategories: [],
     cities: [],
@@ -110,13 +110,14 @@ const CrmCustomerForm = () => {
     });
   }, []);
 
-  useEffect(() => {
-    if (!isEdit) return;
-    setLoadingRecord(true);
-    api
-      .get(`/customers/${id}`)
-      .then((res) => {
-        const c = res.data?.data;
+  const fetchCustomer = useCallback(async ({ signal }) => {
+    const response = await api.get(`/customers/${id}`, { signal });
+    return response.data?.data;
+  }, [id]);
+  const { loading: loadingRecord } = useAsyncQuery(fetchCustomer, {
+    enabled: isEdit,
+    onSuccess: response => {
+        const c = response;
         if (!c) return;
         setFormData({
           customerType: c.customer_type || "",
@@ -154,10 +155,9 @@ const CrmCustomerForm = () => {
           disableLoyalty: !!c.disable_loyalty,
           active: c.is_active ?? true,
         });
-      })
-      .catch(() => toast.error("Failed to load customer"))
-      .finally(() => setLoadingRecord(false));
-  }, [id, isEdit]);
+    },
+    onError: () => toast.error("Failed to load customer"),
+  });
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;

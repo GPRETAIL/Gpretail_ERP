@@ -1,6 +1,7 @@
+import useQrSources from "../../hooks/useQrSources";
+import { EMPTY_ARRAY } from "../../utils/emptyValues.js";
 import { useEffect, useMemo, useState } from "react";
 import { Eye, RotateCcw, Save } from "lucide-react";
-import QRCode from "qrcode";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import {
@@ -524,19 +525,14 @@ const StickerCard = ({ label, settings, storeName, qrSrc = "" }) => {
 
 export default function WarehouseCustomisation() {
   const authUser = useSelector((state) => state.auth.user);
-  const companyOptions = useCompanyOptions() || [];
+  const companyOptions = useCompanyOptions() || EMPTY_ARRAY;
   const [companyId, setCompanyId] = useState(() => authUser?.company_id ? String(authUser.company_id) : "");
   const [settings, setSettings] = useState(DEFAULT_WAREHOUSE_BARCODE_CUSTOMIZATION);
   const [savedSettings, setSavedSettings] = useState(DEFAULT_WAREHOUSE_BARCODE_CUSTOMIZATION);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [qrSources, setQrSources] = useState({});
 
-  useEffect(() => {
-    if (!companyId && authUser?.company_id) {
-      setCompanyId(String(authUser.company_id));
-    }
-  }, [authUser?.company_id, companyId]);
+  if (!companyId && authUser?.company_id) setCompanyId(String(authUser.company_id));
 
   const selectedStoreName = useMemo(() => {
     if (companyId && companyOptions.length > 0) {
@@ -569,36 +565,7 @@ export default function WarehouseCustomisation() {
     };
   }, [companyId, authUser?.company_id]);
 
-  useEffect(() => {
-    if (settings.codeType !== "code") {
-      setQrSources({});
-      return;
-    }
-
-    let cancelled = false;
-    const buildQr = async () => {
-      try {
-        const entries = await Promise.all(
-          previewLabels.map(async (label) => [
-            label.key,
-            await QRCode.toDataURL(label.codeValue, {
-              margin: 1,
-              width: 180,
-              errorCorrectionLevel: "M",
-            }),
-          ])
-        );
-        if (!cancelled) setQrSources(Object.fromEntries(entries));
-      } catch {
-        if (!cancelled) setQrSources({});
-      }
-    };
-
-    buildQr();
-    return () => {
-      cancelled = true;
-    };
-  }, [settings.codeType]);
+  const { sources: qrSources } = useQrSources(previewLabels, { enabled: settings.codeType === "code", onlyQr: false });
 
   const hasUnsavedChanges = useMemo(
     () => JSON.stringify(settings) !== JSON.stringify(savedSettings),

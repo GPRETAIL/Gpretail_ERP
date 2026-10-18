@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import useAsyncQuery from "../../hooks/useAsyncQuery";
+import React, { useCallback, useMemo, useState } from "react";
 import { ArrowLeft, CheckCircle2, Eye, RotateCcw, Search, X } from "lucide-react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
@@ -38,9 +39,7 @@ const ApprovalInbox = () => {
   });
   const [customers, setCustomers] = useState([]);
   const [products, setProducts] = useState([]);
-  const [rows, setRows] = useState([]);
-  const [searching, setSearching] = useState(false);
-  const [loadingFilters, setLoadingFilters] = useState(true);
+  const [appliedFilters, setAppliedFilters] = useState({ product: "", customerId: "", status: "" });
 
   const [viewOpen, setViewOpen] = useState(false);
   const [selectedSale, setSelectedSale] = useState(null);
@@ -78,15 +77,14 @@ const ApprovalInbox = () => {
     []
   );
 
-  const loadFilters = useCallback(async () => {
-    setLoadingFilters(true);
+  const fetchFilters = useCallback(async ({ signal }) => {
     try {
       const [customersRes, barcodeRes] = await Promise.all([
-        api.get("/customers", { params: { limit: 300 } }).catch(() => ({ data: { data: [] } })),
-        api.get("/barcodes").catch(() => ({ data: { data: [] } })),
+        api.get("/customers", { signal, params: { limit: 300 } }).catch(() => ({ data: { data: [] } })),
+        api.get("/barcodes", { signal }).catch(() => ({ data: { data: [] } })),
       ]);
 
-      setCustomers((customersRes.data?.data || []).map(mapCustomerOption));
+      const customerOptions = (customersRes.data?.data || []).map(mapCustomerOption);
 
       const seen = new Set();
       const productRows = [];
@@ -98,31 +96,31 @@ const ApprovalInbox = () => {
         productRows.push({ value: name, label: name });
       });
       productRows.sort((a, b) => a.label.localeCompare(b.label));
-      setProducts(productRows);
+      return { customers: customerOptions, products: productRows };
     } catch {
       toast.error("Failed to load inbox filters");
-    } finally {
-      setLoadingFilters(false);
     }
   }, []);
 
-  const runSearch = useCallback(async (overrideFilters = null) => {
-    const activeFilters = overrideFilters || filters;
-    setSearching(true);
-    try {
-      const params = { all: true };
-      if (activeFilters.product) params.product = activeFilters.product;
-      if (activeFilters.customerId) params.customerId = activeFilters.customerId;
-      if (activeFilters.status) params.status = activeFilters.status;
-
-      const res = await api.get("/sales-on-approval", { params });
-      setRows(res.data?.data || []);
-    } catch {
-      toast.error("Failed to search approval inbox");
-    } finally {
-      setSearching(false);
-    }
-  }, [filters]);
+  const { loading: loadingFilters } = useAsyncQuery(fetchFilters, { onSuccess: options => {
+    if (options) { setCustomers(options.customers); setProducts(options.products); }
+  } });
+  const fetchSales = useCallback(async ({ signal }) => {
+    const params = { all: true };
+    if (appliedFilters.product) params.product = appliedFilters.product;
+    if (appliedFilters.customerId) params.customerId = appliedFilters.customerId;
+    if (appliedFilters.status) params.status = appliedFilters.status;
+    const res = await api.get("/sales-on-approval", { signal, params });
+    return res.data?.data || [];
+  }, [appliedFilters]);
+  const { data: resultRows, loading: searching, reload: reloadSales } = useAsyncQuery(fetchSales, {
+    onError: () => toast.error("Failed to search approval inbox"),
+  });
+  const rows = resultRows || [];
+  const runSearch = (overrideFilters = null) => {
+    setAppliedFilters({ ...(overrideFilters || filters) });
+    reloadSales();
+  };
 
   const loadDetails = useCallback(async (id) => {
     if (!id) return;
@@ -138,14 +136,6 @@ const ApprovalInbox = () => {
     }
   }, []);
 
-  useEffect(() => {
-    loadFilters();
-    runSearch({
-      product: "",
-      customerId: "",
-      status: "",
-    });
-  }, [loadFilters, runSearch]);
 
   const handleResetFilters = async () => {
     const nextFilters = { product: "", customerId: "", status: "" };

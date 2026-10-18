@@ -1,7 +1,8 @@
+import useCounterAssignmentPrompt from "../../hooks/useCounterAssignmentPrompt";
 import { masterSearchAreaSx } from "../../theme/erpUi";
 import SearchGridPanel from "../../components/SearchGridPanel";
 import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffectEvent, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ChevronsLeft, Minus, Plus, Printer, X, Search, RotateCcw, Repeat, CreditCard, ScanLine, Trash2 } from "lucide-react";
 import { toast } from "react-toastify";
 import { useSelector } from "react-redux";
@@ -215,13 +216,9 @@ const LegacyPosPage = () => {
   const authUser = useSelector((state) => state.auth.user);
   // Pops automatically once per login if this user has no counter assigned yet -- previously
   // they'd only discover this was required when a sale failed to save.
-  const [counterAssignmentOpen, setCounterAssignmentOpen] = useState(false);
-  useEffect(() => {
-    if (authUser && !authUser.counter_id) {
-      setCounterAssignmentOpen(true);
-    }
-  }, [authUser?.id]);
-  const { printerConnected, queuePrintHtml } = usePrintContext();
+  const [counterAssignmentOpen, setCounterAssignmentOpen] = useCounterAssignmentPrompt(authUser);
+
+  const { queuePrintHtml } = usePrintContext();
   const barcodeRef = useRef(null);
   const returnBillInputRef = useRef(null);
   const returnReasonSelectWrapRef = useRef(null);
@@ -320,6 +317,7 @@ const LegacyPosPage = () => {
     adapter: createSearchGridAdapter("/pos-old-sales"), enabled: showSearchPage,
     onError: err => toast.error(err.response?.data?.message || "Failed to load records"),
   });
+  const loadSearchGrid = searchGrid.load;
   const { rows: searchResults, loading: searching, page: searchPage, setPage: setSearchPage, limit: searchLimit, setLimit: setSearchLimit, pagination: searchPagination } = searchGrid;
   const [searchFilters, setSearchFilters] = useState({
     search: "",
@@ -780,7 +778,6 @@ const LegacyPosPage = () => {
     if (scannerVideoRef.current) {
       scannerVideoRef.current.srcObject = null;
     }
-    setScannerLoading(false);
   }, []);
 
   const handleBarcodeValue = useCallback((value, options = {}) => {
@@ -824,6 +821,7 @@ const LegacyPosPage = () => {
 
   const handleCloseScanner = useCallback(() => {
     setShowScanner(false);
+    setScannerLoading(false);
     stopScanner();
   }, [stopScanner]);
 
@@ -1108,7 +1106,7 @@ const LegacyPosPage = () => {
       win.focus();
       win.print();
     };
-  }, [printerConnected, queuePrintHtml]);
+  }, [queuePrintHtml]);
 
   const handlePrintReturnReceipt = useCallback(async (savedReturn, printOpts = {}) => {
     if (!savedReturn) return;
@@ -1213,15 +1211,7 @@ const LegacyPosPage = () => {
       win.focus();
       win.print();
     };
-  }, [
-    authUser?.company_id,
-    authUser?.company_name,
-    authUser?.counter_name,
-    authUser?.email,
-    authUser?.name,
-    printerConnected,
-    queuePrintHtml,
-  ]);
+  }, [authUser?.company_id, authUser?.company_name, authUser?.counter_name, authUser?.email, authUser?.name, queuePrintHtml]);
 
   // customers is only ever seeded with a small batch (see the loadDropdownData-style effect
   // above) -- this hits /customers' own ?search= endpoint for anything beyond that, and merges
@@ -1425,8 +1415,7 @@ const LegacyPosPage = () => {
     });
   };
 
-  useEffect(() => {
-    const handleKeydown = (event) => {
+  const onGlobalShortcut = useEffectEvent((event) => {
       if (event.defaultPrevented || event.repeat) return;
 
       if (event.key === "F4") {
@@ -1439,11 +1428,13 @@ const LegacyPosPage = () => {
         event.preventDefault();
         void handleSave();
       }
-    };
+    });
 
+  useEffect(() => {
+    const handleKeydown = event => onGlobalShortcut(event);
     window.addEventListener("keydown", handleKeydown);
     return () => window.removeEventListener("keydown", handleKeydown);
-  }, [handleSave, handleCancel]);
+  }, []);
 
   /* ─── close register ─── */
   const handleOpenCloseRegister = async () => {
@@ -2207,8 +2198,8 @@ const LegacyPosPage = () => {
     if (String(filters.customerName || "").trim()) params.customerName = filters.customerName;
     if (String(filters.product || "").trim()) params.product = filters.product;
     if (String(filters.barcode || "").trim()) params.barcode = filters.barcode;
-    searchGrid.load(params, pageOverride, limitOverride);
-  }, [searchGrid.load, searchLimit, resolvePosOldSearchFilters]);
+    loadSearchGrid(params, pageOverride, limitOverride);
+  }, [loadSearchGrid, searchLimit, resolvePosOldSearchFilters]);
 
   const loadAllPosOldSearchRows = useCallback(async (overrideFilters = null) => {
     const filters = resolvePosOldSearchFilters(overrideFilters);
@@ -2254,7 +2245,7 @@ const LegacyPosPage = () => {
       return nextFilters;
     });
     setSearchPage(1);
-  }, [runPosOldSearch, searchLimit]);
+  }, [runPosOldSearch, searchLimit, setSearchPage]);
 
   const renderSearchPage = () => (
     <SearchGridPanel>

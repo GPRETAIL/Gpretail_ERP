@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { AlertTriangle, X } from "lucide-react";
 import {
   Box,
@@ -20,10 +20,12 @@ const ConfirmModal = ({ config, onClose }) => {
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
+  const [previousTarget, setPreviousTarget] = useState(config);
+  if (config !== previousTarget) {
+    setPreviousTarget(config);
     setText("");
     setBusy(false);
-  }, [config]);
+  }
 
   if (!config) return null;
 

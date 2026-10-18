@@ -1,4 +1,5 @@
-import { Fragment, useEffect, useState } from "react";
+import useAsyncQuery from "../../hooks/useAsyncQuery";
+import { Fragment, useCallback, useEffect, useEffectEvent, useState } from "react";
 import {
   AlertCircle,
   CheckCircle2,
@@ -52,16 +53,28 @@ export default function ConfigureLocalServer() {
   const [retryingId, setRetryingId] = useState(null);
   const [retryingAllStoreId, setRetryingAllStoreId] = useState(null);
 
+  const fetchConfig = useCallback(async ({ signal } = {}) => {
+    const res = await api.get("/local-server-config", { signal });
+    return res.data?.data || {};
+  }, []);
+  const applyConfig = useCallback(next => {
+    setConfig(next);
+    setLocalServerUrl(String(next.local_server_url || "").trim());
+    setCloudServerUrl(String(next.cloud_server_url || "").trim());
+  }, []);
+  const fetchNodes = useCallback(async ({ signal } = {}) => {
+    const res = await api.get("/sync/nodes", { signal });
+    return res.data?.data?.nodes || [];
+  }, []);
+  useAsyncQuery(fetchConfig, { onSuccess: next => { applyConfig(next); setLoading(false); },
+    onError: err => { setLoading(false); toast.error(err.response?.data?.message || "Failed to load local server configuration"); } });
+  useAsyncQuery(fetchNodes, { onSuccess: setNodes });
   const loadConfig = async ({ silent = false } = {}) => {
     try {
       if (silent) setRefreshing(true);
       else setLoading(true);
 
-      const res = await api.get("/local-server-config");
-      const next = res.data?.data || {};
-      setConfig(next);
-      setLocalServerUrl(String(next.local_server_url || "").trim());
-      setCloudServerUrl(String(next.cloud_server_url || "").trim());
+      applyConfig(await fetchConfig());
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to load local server configuration");
     } finally {
@@ -72,8 +85,7 @@ export default function ConfigureLocalServer() {
 
   const loadNodes = async () => {
     try {
-      const res = await api.get("/sync/nodes");
-      setNodes(res.data?.data?.nodes || []);
+      setNodes(await fetchNodes());
     } catch {
       // Non-critical: leave the health table blank rather than surfacing another toast.
     }
@@ -127,14 +139,16 @@ export default function ConfigureLocalServer() {
     }
   };
 
+  const pollConfiguration = useEffectEvent(() => {
+    loadConfig({ silent: true });
+    loadNodes();
+  });
+
   useEffect(() => {
     let alive = true;
-    loadConfig();
-    loadNodes();
     const timer = setInterval(() => {
       if (alive) {
-        loadConfig({ silent: true });
-        loadNodes();
+        pollConfiguration();
       }
     }, 20000);
     return () => {

@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useCallback } from "react";
+import useAsyncQuery from "../../hooks/useAsyncQuery";
+import { EMPTY_ARRAY } from "../../utils/emptyValues";
+import React, { useState, useCallback } from "react";
 import { Search } from "lucide-react";
 import { Box, Typography } from "@mui/material";
 import api from "../../api/axios";
@@ -39,28 +41,13 @@ const daysOutstandingColors = (days) => {
  */
 export default function SupplierDuesScreen() {
   const [search, setSearch] = useState("");
-  const [rows, setRows] = useState([]);
-  const [totalPayable, setTotalPayable] = useState(0);
-  const [loading, setLoading] = useState(true);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await api.get("/supplier-payments/pending", {
-        params: { limit: 100, search: search || undefined },
-      });
-      setRows(res.data?.data || []);
-      setTotalPayable(res.data?.totalPayable ?? 0);
-    } catch {
-      setRows([]);
-    } finally {
-      setLoading(false);
-    }
+  const fetchDues = useCallback(async ({ signal }) => {
+    const res = await api.get("/supplier-payments/pending", { params: { limit: 100, search: search || undefined }, signal });
+    return { rows: res.data?.data || [], totalPayable: res.data?.totalPayable ?? 0 };
   }, [search]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
+  const { data, loading } = useAsyncQuery(fetchDues);
+  const rows = data?.rows || EMPTY_ARRAY;
+  const totalPayable = data?.totalPayable ?? 0;
 
   return (
     <Box>

@@ -1,6 +1,8 @@
+import useAsyncQuery from "../hooks/useAsyncQuery";
+import { EMPTY_ARRAY } from "../utils/emptyValues";
 import { ChevronDown, Search } from "lucide-react";
 import { createPortal } from "react-dom";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Box } from "@mui/material";
 import { useTheme, alpha } from "@mui/material/styles";
 import { SEARCHABLE_TRIGGER_SX, SEARCHABLE_INPUT_SX } from "../theme/formControlSizes";
@@ -31,11 +33,24 @@ const AsyncSearchSelect = ({ name, value, onChange, options, onAsyncSearch, plac
   const dropdownPortalRef = useRef(null);
   const keyboardSelectionArmedRef = useRef(false);
   const [open, setOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, updateSearchTerm] = useState("");
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
-  const [asyncResults, setAsyncResults] = useState([]);
-  const [isSearching, setIsSearching] = useState(false);
   const [dropdownPlacement, setDropdownPlacement] = useState(null);
+
+  const setSearchTerm = useCallback(value => {
+    updateSearchTerm(value);
+    setHighlightedIndex(-1);
+    keyboardSelectionArmedRef.current = false;
+  }, []);
+  const searchQuery = searchTerm.trim().toLowerCase();
+  const fetchOptions = useCallback(({ signal }) => new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      Promise.resolve().then(() => onAsyncSearch(searchQuery)).then(resolve, reject);
+    }, 250);
+    signal.addEventListener("abort", () => { clearTimeout(timer); reject(new DOMException("Search cancelled", "AbortError")); }, { once: true });
+  }), [onAsyncSearch, searchQuery]);
+  const { data: foundOptions, loading: isSearching } = useAsyncQuery(fetchOptions, { enabled: Boolean(onAsyncSearch && open && searchQuery) });
+  const asyncResults = Array.isArray(foundOptions) ? foundOptions : EMPTY_ARRAY;
 
   // Rendered via a document.body portal (see below) so the panel is never clipped by an
   // ancestor's `overflow: hidden` (e.g. a Card, which MUI clips by default).
@@ -81,6 +96,7 @@ const AsyncSearchSelect = ({ name, value, onChange, options, onAsyncSearch, plac
   // (barcode/sku for products, phone/email/gstin/company_name for suppliers, vehicle_no for
   // transports, printing_name, contact_person, ...) so a cached item isn't missed just because
   // this check is narrower than the server's.
+  const filtered = useMemo(() => {
   const matchesLocally = (opt) => {
     const haystack = [
       opt?.name, opt?.label, opt?.code, opt?.barcode, opt?.sku,
@@ -89,7 +105,6 @@ const AsyncSearchSelect = ({ name, value, onChange, options, onAsyncSearch, plac
     ].filter(Boolean).join(" ").toLowerCase();
     return haystack.includes(normalizedSearch);
   };
-  const filtered = useMemo(() => {
     if (!normalizedSearch) return safeOptions;
     const localMatches = safeOptions.filter(matchesLocally);
     if (!onAsyncSearch) return localMatches;
@@ -109,29 +124,6 @@ const AsyncSearchSelect = ({ name, value, onChange, options, onAsyncSearch, plac
   }, [combinedOptions, value]);
 
   useEffect(() => {
-    if (!onAsyncSearch || !open || normalizedSearch.length < 1) {
-      setAsyncResults([]);
-      setIsSearching(false);
-      return;
-    }
-    setIsSearching(true);
-    const timer = setTimeout(async () => {
-      try {
-        const results = await onAsyncSearch(normalizedSearch);
-        if (Array.isArray(results)) {
-          setAsyncResults(results);
-        }
-      } catch (err) {
-        console.error("Async search failed:", err);
-      } finally {
-        setIsSearching(false);
-      }
-    }, 250);
-
-    return () => clearTimeout(timer);
-  }, [onAsyncSearch, open, normalizedSearch]);
-
-  useEffect(() => {
     if (!open) return;
     const handler = (e) => {
       const target = e.target;
@@ -141,12 +133,8 @@ const AsyncSearchSelect = ({ name, value, onChange, options, onAsyncSearch, plac
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
+  }, [open, setSearchTerm]);
 
-  useEffect(() => {
-    setHighlightedIndex(-1);
-    keyboardSelectionArmedRef.current = false;
-  }, [searchTerm]);
   useEffect(() => {
     if (highlightedIndex < 0 || !listRef.current) return;
     const items = listRef.current.querySelectorAll("li");

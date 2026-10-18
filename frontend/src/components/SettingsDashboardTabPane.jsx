@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { EMPTY_ARRAY, EMPTY_OBJECT } from "../utils/emptyValues.js";
+import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
 import { Box, Button, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
-import api from "../api/axios";
+import useModuleDashboardSummary from "../hooks/useModuleDashboardSummary";
 import DashboardGrid from "./dashboard/DashboardGrid";
 import {
   UsersCard,
@@ -26,40 +27,14 @@ const QUICK_ACTIONS = [
 
 export default function SettingsDashboardTabPane({ active, companyId, privacyMode }) {
   const navigate = useNavigate();
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { data, loading, error, reload: fetchData } = useModuleDashboardSummary("/settings/dashboard", {
+    active, errorMessage: "Failed to load settings data.", params: { ...(companyId ? { warehouse_id: companyId } : {}) },
+  });
 
-  const fetchData = useCallback(async () => {
-    if (!active) return;
-    try {
-      setLoading(true);
-      setError(null);
-      const params = {};
-      if (companyId) params.warehouse_id = companyId;
-
-      const res = await api.get("/settings/dashboard", { params });
-      if (res.data?.success && res.data?.data) {
-        setData(res.data.data);
-      } else {
-        setError("Failed to load settings data.");
-      }
-    } catch (err) {
-      console.error("Settings Tab fetch error:", err);
-      setError(err.response?.data?.message || "Error communicating with server.");
-    } finally {
-      setLoading(false);
-    }
-  }, [active, companyId]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  const summary = data?.summary || {};
-  const actionRequired = data?.action_required || [];
-  const breakdown = data?.breakdown || {};
-  const recentBackups = data?.recent_backups || [];
+  const summary = data?.summary || EMPTY_OBJECT;
+  const actionRequired = data?.action_required || EMPTY_ARRAY;
+  const breakdown = data?.breakdown || EMPTY_OBJECT;
+  const recentBackups = data?.recent_backups || EMPTY_ARRAY;
 
   const widgets = useMemo(
     () => [

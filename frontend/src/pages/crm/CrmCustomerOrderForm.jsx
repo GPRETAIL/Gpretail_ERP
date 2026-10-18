@@ -1,3 +1,4 @@
+import useAsyncQuery from "../../hooks/useAsyncQuery";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, PlusCircle, Printer, Save, Search, Trash2, X } from "lucide-react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -112,7 +113,6 @@ const CrmCustomerOrderForm = () => {
   }));
   const [orderNo, setOrderNo] = useState(1);
   const [saving, setSaving] = useState(false);
-  const [loadingMasters, setLoadingMasters] = useState(true);
   const [loadingSource, setLoadingSource] = useState(Boolean(sourceOrderId));
   const [customerSelectionMode, setCustomerSelectionMode] = useState("manual-mobile");
 
@@ -144,10 +144,7 @@ const CrmCustomerOrderForm = () => {
     return found?.label || "";
   }, []);
 
-  const loadMasterData = useCallback(async () => {
-    try {
-      setLoadingMasters(true);
-
+  const fetchMasterData = useCallback(async () => {
       const [
         companyRes,
         locationRes,
@@ -203,7 +200,7 @@ const CrmCustomerOrderForm = () => {
       }));
       const banks = toSelectOptions(bankRes.data?.data || [], "id", "name");
 
-      setOptions({
+    return { options: {
         companies,
         locations,
         cities,
@@ -216,19 +213,12 @@ const CrmCustomerOrderForm = () => {
         counters,
         employees,
         banks,
-      });
-
-      setOrderNo(toNum(nextOrderNoRes.data?.data?.orderNo, 1));
-    } catch (err) {
-      toast.error(err?.response?.data?.message || "Failed to load customer order master data");
-    } finally {
-      setLoadingMasters(false);
-    }
+      }, orderNo: toNum(nextOrderNoRes.data?.data?.orderNo, 1) };
   }, []);
-
-  useEffect(() => {
-    loadMasterData();
-  }, [loadMasterData]);
+  const { loading: loadingMasters } = useAsyncQuery(fetchMasterData, {
+    onSuccess: data => { setOptions(data.options); setOrderNo(data.orderNo); },
+    onError: error => toast.error(error.response?.data?.message || "Failed to load customer order master data"),
+  });
 
   // Preloads above are capped batches -- these hit each resource's own ?search= endpoint so
   // AsyncSearchSelect can find anything beyond that initial batch.

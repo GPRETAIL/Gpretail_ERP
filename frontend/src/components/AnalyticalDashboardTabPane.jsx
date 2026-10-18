@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { EMPTY_ARRAY, EMPTY_OBJECT } from "../utils/emptyValues.js";
+import React, { useMemo } from "react";
 import { AlertTriangle } from "lucide-react";
 import { Box, Button, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
-import api from "../api/axios";
+import useModuleDashboardSummary from "../hooks/useModuleDashboardSummary";
 import DashboardGrid from "./dashboard/DashboardGrid";
 import {
   ProductsWithStockCard,
@@ -15,42 +16,14 @@ import AnalyticalInsightsPanel from "./dashboard/analytical/AnalyticalInsightsPa
 import AnalyticalLaunchpad from "./dashboard/analytical/AnalyticalLaunchpad";
 
 export default function AnalyticalDashboardTabPane({ active, fromDate, toDate, companyId, privacyMode }) {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { data, loading, error, reload: fetchData } = useModuleDashboardSummary("/analytical/dashboard", {
+    active, errorMessage: "Failed to load analytical data.", params: { ...(fromDate ? { date_from: fromDate } : {}), ...(toDate ? { date_to: toDate } : {}), ...(companyId ? { warehouse_id: companyId } : {}) },
+  });
 
-  const fetchData = useCallback(async () => {
-    if (!active) return;
-    try {
-      setLoading(true);
-      setError(null);
-      const params = {};
-      if (fromDate) params.date_from = fromDate;
-      if (toDate) params.date_to = toDate;
-      if (companyId) params.warehouse_id = companyId;
-
-      const res = await api.get("/analytical/dashboard", { params });
-      if (res.data?.success && res.data?.data) {
-        setData(res.data.data);
-      } else {
-        setError("Failed to load analytical data.");
-      }
-    } catch (err) {
-      console.error("Analytical Tab fetch error:", err);
-      setError(err.response?.data?.message || "Error communicating with server.");
-    } finally {
-      setLoading(false);
-    }
-  }, [active, fromDate, toDate, companyId]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  const summary = data?.summary || {};
-  const dataQuality = data?.data_quality || [];
-  const insights = data?.insights || {};
-  const quickLinks = data?.quick_links || [];
+  const summary = data?.summary || EMPTY_OBJECT;
+  const dataQuality = data?.data_quality || EMPTY_ARRAY;
+  const insights = data?.insights || EMPTY_OBJECT;
+  const quickLinks = data?.quick_links || EMPTY_ARRAY;
 
   const widgets = useMemo(
     () => [

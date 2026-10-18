@@ -1,3 +1,5 @@
+import useCounterAssignmentPrompt from "../../hooks/useCounterAssignmentPrompt";
+import useStoreDisplayName from "../../hooks/useStoreDisplayName";
 import { masterSearchAreaSx } from "../../theme/erpUi";
 import SearchGridPanel from "../../components/SearchGridPanel";
 import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
@@ -98,18 +100,12 @@ const POSSales = () => {
   const { connected: _printerConnected, printHtml: queuePrintHtml } = usePrintContext();
   const barcodeInputRef = useRef(null);
   const quickCustomerFieldRefs = useRef({});
-  const [resolvedExportCompanyName, setResolvedExportCompanyName] = useState(
-    () => String(authUser?.company_name || "").trim()
-  );
+  const resolvedExportCompanyName = useStoreDisplayName(authUser);
 
   // Pops automatically once per login if this user has no counter assigned yet -- previously they'd
   // only discover this was required when a sale failed to save.
-  const [counterAssignmentOpen, setCounterAssignmentOpen] = useState(false);
-  useEffect(() => {
-    if (authUser && !authUser.counter_id) {
-      setCounterAssignmentOpen(true);
-    }
-  }, [authUser?.id]);
+  const [counterAssignmentOpen, setCounterAssignmentOpen] = useCounterAssignmentPrompt(authUser);
+
 
   const [now, setNow] = useState(new Date());
   const [billNo, setBillNo] = useState(1);
@@ -154,6 +150,7 @@ const POSSales = () => {
     adapter: createSearchGridAdapter("/pos-sales"), enabled: showSearchPage,
     onError: err => toast.error(err.response?.data?.message || "Failed to load records"),
   });
+  const loadSearchGrid = searchGrid.load;
   const { rows: searchResults, loading: searching, page: searchPage, setPage: setSearchPage, limit: searchLimit, setLimit: setSearchLimit, pagination: searchPagination } = searchGrid;
   const [searchFilters, setSearchFilters] = useState({
     search: "",
@@ -280,39 +277,7 @@ const POSSales = () => {
   );
 
 
-  useEffect(() => {
-    let active = true;
-    const fallbackName = String(authUser?.company_name || "").trim();
-    if (fallbackName) {
-      setResolvedExportCompanyName(fallbackName);
-      return () => {
-        active = false;
-      };
-    }
 
-    const companyId = Number(authUser?.company_id || 0);
-    if (!companyId) {
-      setResolvedExportCompanyName("");
-      return () => {
-        active = false;
-      };
-    }
-
-    const loadCompanyName = async () => {
-      try {
-        const res = await api.get(`/companies/${companyId}`);
-        const companyName = String(res.data?.data?.name || res.data?.name || "").trim();
-        if (active) setResolvedExportCompanyName(companyName);
-      } catch {
-        if (active) setResolvedExportCompanyName("");
-      }
-    };
-
-    loadCompanyName();
-    return () => {
-      active = false;
-    };
-  }, [authUser?.company_id, authUser?.company_name]);
 
   const resolveExportCompanyTitle = useCallback((sourceRows = []) => {
     const uniqueNames = Array.from(
@@ -334,7 +299,7 @@ const POSSales = () => {
     if (resolvedExportCompanyName) return resolvedExportCompanyName;
     if (uniqueNames.length > 0) return uniqueNames[0];
     return authUser?.company_id ? `Company ${authUser.company_id}` : "Company";
-  }, [authUser?.company_id, resolvedExportCompanyName]);
+  }, [authUser, resolvedExportCompanyName]);
 
   const loadNextBillNo = useCallback(async () => {
     try {
@@ -777,7 +742,7 @@ const POSSales = () => {
   }, [appliedReturn?.amount, cartWithTotals, posAddnlSummary]);
   const paymentTotals = useMemo(
     () => computePaymentTotalsFromForm(paymentForm, summary),
-    [paymentForm, summary.amount, summary.billsAmount, summary.refundDue]
+    [paymentForm, summary]
   );
   const paymentDisplayTotals = useMemo(() => {
     if (!paymentForm.refundApproved || paymentTotals.refundAmount <= 0) {
@@ -835,7 +800,7 @@ const POSSales = () => {
       upiProviderId: "",
       refundApproved: false,
     };
-  }, [creditEnabled, summary.amount]);
+  }, [creditEnabled, summary.amount, summary.refundDue]);
   const hasCreditEligibleCustomer = useMemo(
     () =>
       Boolean(
@@ -851,12 +816,11 @@ const POSSales = () => {
     searchFiltersRef.current = searchFilters;
   }, [searchFilters]);
 
-  useEffect(() => {
-    if (!hasCreditEligibleCustomer && creditEnabled) {
-      setCreditEnabled(false);
-      setCreditRemarks("");
-    }
-  }, [creditEnabled, hasCreditEligibleCustomer]);
+  if (!hasCreditEligibleCustomer && creditEnabled) {
+    setCreditEnabled(false);
+    setCreditRemarks("");
+  }
+
 
   const filteredCartLines = useMemo(() => {
     const activeFilters = Object.entries(lineFilters).filter(([, value]) => String(value || "").trim() !== "");
@@ -2339,8 +2303,8 @@ const POSSales = () => {
     if (String(filters.customerName || "").trim()) params.customerName = filters.customerName;
     if (String(filters.product || "").trim()) params.product = filters.product;
     if (String(filters.barcode || "").trim()) params.barcode = filters.barcode;
-    searchGrid.load(params, pageOverride, limitOverride);
-  }, [searchGrid.load, searchLimit, resolvePosSearchFilters]);
+    loadSearchGrid(params, pageOverride, limitOverride);
+  }, [loadSearchGrid, searchLimit, resolvePosSearchFilters]);
 
   const loadAllPosSearchRows = useCallback(async (overrideFilters = null) => {
     const filters = resolvePosSearchFilters(overrideFilters);
@@ -2386,7 +2350,7 @@ const POSSales = () => {
       return nextFilters;
     });
     setSearchPage(1);
-  }, [runPosSearch, searchLimit]);
+  }, [runPosSearch, searchLimit, setSearchPage]);
 
   const renderEntryPage = () => (
     <Box
@@ -2426,30 +2390,7 @@ const POSSales = () => {
                   value={addBarcode}
                   disabled={applyingReturn}
                   onChange={(e) => setAddBarcode(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      const shortcut = String(addBarcode || "").trim().toUpperCase();
-                      if (shortcut === "C") {
-                        setAddBarcode("");
-                        openQuickCustomerDialog();
-                        return;
-                      }
-                      if (shortcut === "D") {
-                        setAddBarcode("");
-                        openDiscountDialog();
-                        return;
-                      }
-                      if (shortcut === "0") {
-                        setAddBarcode("");
-                        if (!validateSaleEntry()) return;
-                        handleSaveSale({ shouldPrint: true, paymentFormOverride: buildQuickPaymentFormSnapshot() });
-                        return;
-                      }
-                      handleAddLine();
-                      focusBarcodeInput();
-                    }
-                  }}
+                  onKeyDown={handleBarcodeKeyDown}
                   placeholder={applyingReturn ? "Fetching return..." : "Scan / enter barcode"}
                   size="small"
                   fullWidth
@@ -3016,6 +2957,31 @@ const POSSales = () => {
       />
     </SearchGridPanel>
   );
+
+  function handleBarcodeKeyDown(e) {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      const shortcut = String(addBarcode || "").trim().toUpperCase();
+                      if (shortcut === "C") {
+                        setAddBarcode("");
+                        openQuickCustomerDialog();
+                        return;
+                      }
+                      if (shortcut === "D") {
+                        setAddBarcode("");
+                        openDiscountDialog();
+                        return;
+                      }
+                      if (shortcut === "0") {
+                        setAddBarcode("");
+                        if (!validateSaleEntry()) return;
+                        handleSaveSale({ shouldPrint: true, paymentFormOverride: buildQuickPaymentFormSnapshot() });
+                        return;
+                      }
+                      handleAddLine();
+                      focusBarcodeInput();
+                    }
+                  }
 
   return (
     <Box className="pos-sale-page" sx={{ minHeight: "100%", bgcolor: "background.default", color: "text.primary", display: "flex", flexDirection: "column", ...(showSearchPage ? { height: "100%", minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" } : {}) }}>

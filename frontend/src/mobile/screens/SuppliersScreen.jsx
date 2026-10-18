@@ -1,3 +1,5 @@
+import useAsyncQuery from "../../hooks/useAsyncQuery";
+import { EMPTY_ARRAY } from "../../utils/emptyValues";
 import React, { useState, useEffect, useCallback } from "react";
 import { Search, Phone, Wallet } from "lucide-react";
 import { Box, Typography } from "@mui/material";
@@ -19,27 +21,15 @@ const money = (n) =>
  */
 export default function SuppliersScreen({ onNavigate }) {
   const [search, setSearch] = useState("");
-  const [suppliers, setSuppliers] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await api.get("/suppliers", {
-        params: { limit: 100, search: search || undefined },
-      });
-      const data = res.data?.data;
-      setSuppliers(Array.isArray(data) ? data : data?.data || []);
-    } catch {
-      setSuppliers([]);
-    } finally {
-      setLoading(false);
-    }
+  const fetchSuppliers = useCallback(async ({ signal }) => {
+    const res = await api.get("/suppliers", { params: { limit: 100, search: search || undefined }, signal });
+    const data = res.data?.data;
+    return Array.isArray(data) ? data : data?.data || [];
   }, [search]);
+  const { data: supplierRows, loading, reload: load } = useAsyncQuery(fetchSuppliers);
+  const suppliers = supplierRows || EMPTY_ARRAY;
 
   useEffect(() => {
-    load();
-
     const handleRestored = () => load();
     window.addEventListener("vx-network-restored", handleRestored);
     window.addEventListener("vx-pull-refresh", handleRestored);

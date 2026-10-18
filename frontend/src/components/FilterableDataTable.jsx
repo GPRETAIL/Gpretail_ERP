@@ -1,3 +1,4 @@
+import useResetOnChange from "../hooks/useResetOnChange";
 import TablePaginationFooter from "./TablePaginationFooter";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ERP_UI, erpControlSx } from "../theme/erpUi";
@@ -44,7 +45,7 @@ import {
   Typography,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
-import { useVirtualizer } from "@tanstack/react-virtual";
+import useRowVirtualization from "../hooks/useRowVirtualization";
 import ExportBottomSheet from "./ExportBottomSheet";
 import { fetchTablePreference, saveTablePreference } from "../utils/tablePreferences";
 
@@ -230,7 +231,7 @@ export default function FilterableDataTable({
     stableSchemaColumnsRef.current = columns;
   }, [columnKeysSignature, columns]);
 
-  useEffect(() => {
+  useResetOnChange([defaultGroupByColumn], () => {
     const normalizedDefault = String(defaultGroupByColumn || "").trim() || null;
     setGroupByColumn((prev) => {
       const normalizedPrev = String(prev || "").trim() || null;
@@ -238,10 +239,10 @@ export default function FilterableDataTable({
       return normalizedDefault;
     });
     setExpandedGroups({});
-  }, [defaultGroupByColumn]);
+  });
 
-  useEffect(() => {
-    const schemaColumns = stableSchemaColumnsRef.current;
+  useResetOnChange([columnKeysSignature], () => {
+    const schemaColumns = columns;
     setVisibleColumns((prev) => {
       const valid = prev.filter((key) => schemaColumns.some((column) => column.key === key));
       if (valid.length > 0) return valid;
@@ -258,11 +259,11 @@ export default function FilterableDataTable({
       const newKeys = allKeys.filter((key) => !valid.includes(key));
       return [...valid, ...newKeys];
     });
-  }, [columnKeysSignature]);
+  });
 
-  useEffect(() => {
+  useResetOnChange([columnKeysSignature, enableColumnResize], () => {
     if (!enableColumnResize) return;
-    const schemaColumns = stableSchemaColumnsRef.current;
+    const schemaColumns = columns;
     const validKeys = new Set(schemaColumns.map((column) => column.key));
     setColumnWidths((prev) => {
       const next = {};
@@ -276,7 +277,7 @@ export default function FilterableDataTable({
       });
       return changed ? next : prev;
     });
-  }, [columnKeysSignature, enableColumnResize]);
+  });
 
   useEffect(() => {
     let active = true;
@@ -619,11 +620,11 @@ export default function FilterableDataTable({
     [filteredRows, sortRowsForDisplay]
   );
 
-  useEffect(() => {
+  useResetOnChange([groupByColumn], () => {
     setExpandedGroups({});
     setGroupRowsState({});
     setGroupSummaryState({ loading: false, page: 1, data: [], pagination: null, meta: null, unsupported: false });
-  }, [groupByColumn]);
+  });
 
   // Fetch paginated group summaries from the server whenever grouping (in server mode) is active,
   // the group-summary page changes, or the active search/filters change (mirrors shouldLoadAllRowsSource's
@@ -1109,14 +1110,14 @@ export default function FilterableDataTable({
     });
     setSelectedHighlight(key);
     setAvailableHighlight(null);
-  }, []);
+  }, [setDraftVisibleColumns, setDraftSelectedOrder, setSelectedHighlight, setAvailableHighlight]);
 
   const moveKeyToAvailable = useCallback((key) => {
     setDraftVisibleColumns((prev) => (prev.length <= 1 ? prev : prev.filter((k) => k !== key)));
     setDraftSelectedOrder((prev) => (prev.length <= 1 ? prev : prev.filter((k) => k !== key)));
     setAvailableHighlight(key);
     setSelectedHighlight(null);
-  }, []);
+  }, [setDraftVisibleColumns, setDraftSelectedOrder, setSelectedHighlight, setAvailableHighlight]);
 
   const reorderSelected = useCallback((key, beforeKey) => {
     if (key === beforeKey) return;
@@ -1125,7 +1126,7 @@ export default function FilterableDataTable({
       const idx = beforeKey ? withoutKey.indexOf(beforeKey) : -1;
       return idx === -1 ? [...withoutKey, key] : [...withoutKey.slice(0, idx), key, ...withoutKey.slice(idx)];
     });
-  }, []);
+  }, [setDraftSelectedOrder]);
 
   const onListItemDragStart = useCallback((e, key, from) => {
     dragListItemRef.current = { key, from };
@@ -1477,10 +1478,10 @@ export default function FilterableDataTable({
     [minColumnWidthPx, maxColumnWidthPx]
   );
 
-  const handleResizeMouseUp = useCallback(() => {
+  const handleResizeMouseUp = useCallback(function finishResize() {
     const active = resizingRef.current;
     window.removeEventListener("mousemove", handleResizeMouseMove);
-    window.removeEventListener("mouseup", handleResizeMouseUp);
+    window.removeEventListener("mouseup", finishResize);
     document.body.style.cursor = "";
     document.body.style.userSelect = "";
     setResizingColumnKey(null);
@@ -1628,7 +1629,7 @@ export default function FilterableDataTable({
 
       return items;
     });
-  }, [groupByColumn, isServerGrouped, unpinnedRowEntries, paginatedGroupUnits, expandedGroups, groupRowsState]);
+  }, [groupByColumn, unpinnedRowEntries, paginatedGroupUnits, expandedGroups, groupRowsState]);
 
   // --- Row virtualization (opt-in, see `enableVirtualization` above) ---
   const virtualizationActive = enableVirtualization && compact;
@@ -1642,17 +1643,17 @@ export default function FilterableDataTable({
     }
   }, [enableVirtualization, compact]);
 
-  const rowVirtualizer = useVirtualizer({
+  const rowVirtualizer = useRowVirtualization({
     count: virtualizationActive ? displayRows.length : 0,
     getScrollElement: () => tableContainerRef.current,
     estimateSize: () => ROW_HEIGHT_PX,
     overscan: 8,
   });
 
-  const virtualItems = virtualizationActive ? rowVirtualizer.getVirtualItems() : [];
+  const virtualItems = virtualizationActive ? rowVirtualizer.virtualItems : [];
   const virtualPaddingTop = virtualItems.length > 0 ? virtualItems[0].start : 0;
   const virtualPaddingBottom = virtualItems.length > 0
-    ? rowVirtualizer.getTotalSize() - virtualItems[virtualItems.length - 1].end
+    ? rowVirtualizer.totalSize - virtualItems[virtualItems.length - 1].end
     : 0;
   const rowsToRender = virtualizationActive
     ? virtualItems.map((virtualItem) => ({ item: displayRows[virtualItem.index], displayIndex: virtualItem.index }))
@@ -1686,19 +1687,17 @@ export default function FilterableDataTable({
   // Reset the active-row cursor on real navigational changes -- reuses the same signature as the
   // scroll-reset effect above, plus `currentPage` (pagination swaps `displayRows` content that
   // signature doesn't cover). Deliberately excludes `expandedGroups`, same reasoning as above.
-  useEffect(() => {
-    setActiveRowIndex(null);
-  }, [virtualResetSignature, currentPage]);
+  useResetOnChange([virtualResetSignature, currentPage], () => setActiveRowIndex(null));
 
   // Re-clamp (not reset) when the row count merely shrinks, so e.g. collapsing a group the user is
   // sitting inside doesn't blow away their keyboard position entirely.
-  useEffect(() => {
+  useResetOnChange([displayRows.length], () => {
     setActiveRowIndex((prev) => {
       if (prev === null) return prev;
       if (displayRows.length === 0) return null;
       return Math.min(prev, displayRows.length - 1);
     });
-  }, [displayRows.length]);
+  });
 
   const moveActiveRowTo = useCallback(
     (nextIndex) => {

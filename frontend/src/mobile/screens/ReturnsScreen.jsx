@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import useAsyncQuery from "../../hooks/useAsyncQuery";
+import { EMPTY_ARRAY } from "../../utils/emptyValues";
+import React, { useState, useCallback, useMemo } from "react";
 import { Search, Filter } from "lucide-react";
 import { Box, Typography } from "@mui/material";
 import api from "../../api/axios";
@@ -41,8 +43,6 @@ const DATE_RANGE_OPTIONS = [
  */
 export default function ReturnsScreen() {
   const [search, setSearch] = useState("");
-  const [returns, setReturns] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState("all");
   const [showDateFilter, setShowDateFilter] = useState(false);
 
@@ -60,25 +60,13 @@ export default function ReturnsScreen() {
     return { from: formatYmd(from), to: formatYmd(new Date()) };
   }, [dateRange]);
 
-  const loadReturns = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await api.get("/pos-returns", {
-        params: { page: 1, limit: 30, search: search || undefined, ...dateParams },
-      });
-      const data = res.data?.data;
-      const list = Array.isArray(data) ? data : data?.data || data?.items || [];
-      setReturns(list);
-    } catch {
-      setReturns([]);
-    } finally {
-      setLoading(false);
-    }
+  const fetchReturns = useCallback(async ({ signal }) => {
+    const res = await api.get("/pos-returns", { params: { page: 1, limit: 30, search: search || undefined, ...dateParams }, signal });
+    const data = res.data?.data;
+    return Array.isArray(data) ? data : data?.data || data?.items || [];
   }, [search, dateParams]);
-
-  useEffect(() => {
-    loadReturns();
-  }, [loadReturns]);
+  const { data, loading } = useAsyncQuery(fetchReturns);
+  const returns = data || EMPTY_ARRAY;
 
   return (
     <Box>

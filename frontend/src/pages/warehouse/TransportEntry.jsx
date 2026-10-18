@@ -1,3 +1,5 @@
+import abortableDelay from "../../utils/abortableDelay";
+import useAsyncQuery from "../../hooks/useAsyncQuery";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { ArrowLeft, Eye, PlusCircle, Save, Search, Upload, Trash2 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -134,7 +136,7 @@ const TransportEntry = () => {
   const paramId = searchParams.get("id");
   const paramMode = searchParams.get("mode"); // "view" or "edit"
   const isViewMode = paramMode === "view";
-  const today = new Date().toISOString().split("T")[0];
+  const [today] = useState(() => new Date().toISOString().split("T")[0]);
 
   const initialFormData = {
     companyId: "",
@@ -178,8 +180,6 @@ const TransportEntry = () => {
 
   const [formData, setFormData] = useState(initialFormData);
   const [attachments, setAttachments] = useState([]);
-  const [duplicateLrEntries, setDuplicateLrEntries] = useState([]);
-  const [duplicateLrLoading, setDuplicateLrLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [editId, setEditId] = useState(null);
@@ -444,37 +444,19 @@ const TransportEntry = () => {
       }
     };
     loadEntry();
-  }, [paramId]);
+  }, [paramId, today]);
 
-  useEffect(() => {
-    const lrNo = String(formData.lrNo || "").trim();
-    if (!lrNo) {
-      setDuplicateLrEntries([]);
-      setDuplicateLrLoading(false);
-      return undefined;
-    }
-
-    const timer = window.setTimeout(async () => {
-      setDuplicateLrLoading(true);
-      try {
-        const res = await api.get("/transport-entries/duplicates", {
-          params: {
-            lrNo,
-            companyId: formData.companyId || undefined,
-            excludeId: editId || undefined,
-          },
-        });
-        setDuplicateLrEntries(Array.isArray(res.data?.data) ? res.data.data : []);
-      } catch (err) {
-        console.error("Failed to fetch duplicate LR entries:", err);
-        setDuplicateLrEntries([]);
-      } finally {
-        setDuplicateLrLoading(false);
-      }
-    }, 350);
-
-    return () => window.clearTimeout(timer);
-  }, [formData.lrNo, formData.companyId, editId]);
+  const duplicateLrNo = String(formData.lrNo || "").trim();
+  const duplicateCompanyId = formData.companyId;
+  const fetchDuplicateLrs = useCallback(async ({ signal }) => {
+    await abortableDelay(350, signal);
+    const res = await api.get("/transport-entries/duplicates", {
+      signal, params: { lrNo: duplicateLrNo, companyId: duplicateCompanyId || undefined, excludeId: editId || undefined },
+    });
+    return Array.isArray(res.data?.data) ? res.data.data : [];
+  }, [duplicateLrNo, duplicateCompanyId, editId]);
+  const { data: duplicateResults, loading: duplicateLrLoading, setData: setDuplicateLrEntries } = useAsyncQuery(fetchDuplicateLrs, { enabled: Boolean(duplicateLrNo) });
+  const duplicateLrEntries = duplicateResults || [];
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
