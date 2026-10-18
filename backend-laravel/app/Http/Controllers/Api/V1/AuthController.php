@@ -8,13 +8,14 @@ use App\Models\Store;
 use App\Models\StoreLocalNode;
 use App\Models\SyncOutboxEvent;
 use App\Models\User;
+use App\Services\GoogleIdTokenVerifier;
+use App\Services\PlatformBootstrap;
 use App\Services\PlatformClient;
 use App\Services\StoreContext;
-use App\Services\GoogleIdTokenVerifier;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -41,14 +42,26 @@ class AuthController extends Controller
         $password = (string) $request->input('password');
 
         $user = User::where('username', $loginId)
-            ->orWhere('email', $loginId)
+            ->orWhereRaw('LOWER(email) = ?', [strtolower($loginId)])
             ->first();
+
+        if (! $user && ! PlatformActivation::current()?->activated) {
+            $setup = app(PlatformBootstrap::class)->issue(strtolower($loginId), $password);
+
+            return response()->json($setup['ok']
+                ? ['success' => true, 'message' => 'Company verified. Activate this installation to continue.', 'data' => $setup['data']]
+                : ['success' => false, 'message' => $setup['message']], $setup['ok'] ? 200 : $setup['status']);
+        }
 
         if (! $user || ! Hash::check($password, $user->password)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid username or password.',
             ], 401);
+        }
+
+        if ($setup = app(PlatformBootstrap::class)->resume($user)) {
+            return response()->json(['success' => true, 'data' => $setup['data']]);
         }
 
         return $this->completeLogin($user);
@@ -69,6 +82,7 @@ class AuthController extends Controller
         if (! $claims) {
             return response()->json(['success' => false, 'message' => 'Invalid Google identity token.'], 401);
         }
+
         return DB::transaction(function () use ($claims): JsonResponse {
             $users = User::whereRaw('LOWER(email) = ?', [strtolower(trim($claims['email']))])->lockForUpdate()->get();
             $user = $users->count() === 1 ? $users->first() : null;
@@ -85,6 +99,7 @@ class AuthController extends Controller
                 }
                 $user->forceFill(['google_sub' => $claims['sub']])->save();
             }
+
             return $this->completeLogin($user);
         });
     }

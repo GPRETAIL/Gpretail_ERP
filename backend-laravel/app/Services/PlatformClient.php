@@ -14,6 +14,21 @@ use Illuminate\Support\Facades\Http;
  */
 class PlatformClient
 {
+    public function authenticateTenant(string $email, string $password): array
+    {
+        $url = $this->baseUrl();
+        if (! str_starts_with($url, 'https://') && ! (app()->environment(['local', 'testing'])
+            && in_array(parse_url($url, PHP_URL_HOST), ['localhost', '127.0.0.1', '::1'], true))) {
+            return ['ok' => false, 'status' => 0, 'data' => [], 'message' => 'GP Admin requires HTTPS.'];
+        }
+        try {
+            return $this->parse(Http::timeout((int) config('platform.http_timeout_seconds'))
+                ->withoutRedirecting()->post($url.'/api/v1/tenant/authenticate', compact('email', 'password')));
+        } catch (ConnectionException $exception) {
+            return ['ok' => false, 'status' => 0, 'data' => [], 'message' => 'Could not reach GP Admin.'];
+        }
+    }
+
     public function activateStore(PlatformActivation $activation, string $storeCode, string $code): array
     {
         try {
@@ -89,7 +104,7 @@ class PlatformClient
      *
      * @return array{ok: bool, status: int, data: array, message: ?string}
      */
-    public function passwordAdopted(string $companyCode, ?string $syncToken, int $version): array
+    public function passwordAdopted(string $companyCode, ?string $syncToken, int $version, ?string $storeCode = null): array
     {
         $request = Http::timeout((int) config('platform.http_timeout_seconds'));
 
@@ -102,7 +117,8 @@ class PlatformClient
         try {
             $response = $request->post($this->baseUrl().'/api/v1/tenant/'.$companyCode.'/password-adopted', [
                 'version' => $version,
-                'scope' => 'tenant',
+                'scope' => $storeCode ? 'store' : 'tenant',
+                'store_code' => $storeCode,
             ]);
         } catch (ConnectionException $e) {
             return ['ok' => false, 'status' => 0, 'data' => [], 'message' => 'Could not reach the platform: '.$e->getMessage()];

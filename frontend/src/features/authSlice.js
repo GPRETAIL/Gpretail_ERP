@@ -8,6 +8,13 @@ export const loginUser = createAsyncThunk(
   async (credentials, { rejectWithValue }) => {
     try {
       const res = await api.post(credentials.id_token ? "/auth/google" : "/auth/login", credentials);
+      if (res.data?.data?.activation_required && res.data.data.setup_token) {
+        clearRuntimeRoutingConfig();
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        sessionStorage.removeItem("activeStoreId");
+        return { setup: res.data.data };
+      }
       const token = res.data?.data?.token;
       const user = res.data?.data?.user;
 
@@ -110,6 +117,12 @@ const authSlice = createSlice({
       })
       .addCase(loginUser.fulfilled, (state, action) => {
         state.loading = false;
+        if (action.payload.setup) {
+          state.token = null;
+          state.user = null;
+          state.isAuthenticated = false;
+          return;
+        }
         state.token = action.payload.token;
         state.user = action.payload.user;
         state.isAuthenticated = true;

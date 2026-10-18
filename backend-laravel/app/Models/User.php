@@ -27,6 +27,7 @@ class User extends Authenticatable
         'dashboard_layouts',
         'platform_company_code',
         'platform_password_version',
+        'platform_identity',
     ];
 
     protected $hidden = [
@@ -49,7 +50,7 @@ class User extends Authenticatable
     protected static function booted(): void
     {
         static::updated(function (self $user): void {
-            if ($user->wasChanged(['password', 'role', 'store_id', 'is_active', 'google_sub'])) {
+            if ($user->wasChanged(['password', 'email', 'role', 'store_id', 'is_active', 'google_sub'])) {
                 $user->tokens()->delete();
             }
         });

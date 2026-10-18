@@ -22,7 +22,7 @@ class PlatformActivationService
     /**
      * @return array{ok: bool, message: ?string, activation: ?PlatformActivation}
      */
-    public function register(string $oneTimePassword, ?string $companyCode = null, ?string $clientId = null): array
+    public function register(string $oneTimePassword, ?string $companyCode = null, ?string $clientId = null, ?string $expectedTenantEmail = null): array
     {
         $companyCode = $companyCode ?: (string) config('platform.company_code');
         $clientId = $clientId ?: (string) config('platform.client_id');
@@ -39,7 +39,7 @@ class PlatformActivationService
             return ['ok' => false, 'message' => 'This ERP installation is already bound to another company.', 'activation' => null];
         }
         if ($existing && $existing->sync_token && $existing->client_id === $clientId) {
-            $sync = $this->sync($existing);
+            $sync = $this->sync($existing, $expectedTenantEmail);
             if ($sync['ok']) {
                 $existing->update(['activated' => true]);
             }
@@ -65,7 +65,7 @@ class PlatformActivationService
         // Pull the full configuration immediately rather than making the installer wait for the
         // next scheduled platform:sync — registering and then showing "not activated" until a
         // cron fires would look broken even though it isn't.
-        $sync = $this->sync($activation);
+        $sync = $this->sync($activation, $expectedTenantEmail);
         if ($sync['ok']) {
             $activation->update(['activated' => true]);
         }
@@ -79,7 +79,7 @@ class PlatformActivationService
      * the error for status() to surface, rather than blanking out a working activation because the
      * platform was briefly unreachable.
      */
-    public function sync(?PlatformActivation $activation = null): array
+    public function sync(?PlatformActivation $activation = null, ?string $expectedTenantEmail = null): array
     {
         $activation ??= PlatformActivation::current();
         if (! $activation) {
@@ -96,6 +96,10 @@ class PlatformActivationService
         $company = $result['data']['company'] ?? [];
         if (($company['company_code'] ?? null) !== $activation->company_code) {
             return ['ok' => false, 'message' => 'GP Admin returned configuration for a different company.'];
+        }
+        if ($expectedTenantEmail && (strcasecmp((string) ($company['tenant_admin_email'] ?? ''), $expectedTenantEmail) !== 0
+            || ($company['status'] ?? '') !== 'active')) {
+            return ['ok' => false, 'message' => 'The company snapshot does not match the verified Tenant Admin.'];
         }
         $licenceToken = $result['data']['licence'] ?? null;
         $licenceClaims = $this->decodeLicenceClaims($licenceToken);
@@ -126,6 +130,11 @@ class PlatformActivationService
             $this->importStores($activation, $result['data']['stores'] ?? []);
             $this->importWarehouses($activation, $result['data']['warehouses'] ?? []);
             $this->adoptTenantPassword($activation, $company);
+            $this->importStoreAdministrators($activation, $result['data']['stores'] ?? []);
+            if ($expectedTenantEmail && ! User::whereRaw('LOWER(email) = ?', [strtolower($expectedTenantEmail)])
+                ->where('platform_company_code', $activation->company_code)->whereNull('store_id')->where('role', 'admin')->where('is_active', true)->exists()) {
+                throw new \RuntimeException('Tenant Admin credentials are not available for this installation. Request fresh setup details from GP Admin.');
+            }
         } catch (\RuntimeException $exception) {
             $activation->update(['last_sync_error' => $exception->getMessage()]);
 
@@ -234,7 +243,7 @@ class PlatformActivationService
         $mustChange = (bool) ($company['tenant_password_must_change'] ?? false);
         $user = User::whereRaw('LOWER(email) = ?', [$email])->first();
 
-        if ($user && $user->platform_company_code !== $activation->company_code) {
+        if ($user && ($user->platform_company_code !== $activation->company_code || $user->store_id)) {
             throw new \RuntimeException('The tenant email conflicts with an existing local account. Resolve its company ownership before activation.');
         }
         if ($user && (int) $user->platform_password_version >= (int) $version) {
@@ -265,6 +274,85 @@ class PlatformActivationService
         }
 
         $this->client->passwordAdopted($activation->company_code, $activation->sync_token, (int) $version);
+    }
+
+    private function importStoreAdministrators(PlatformActivation $activation, array $stores): void
+    {
+        $seen = [];
+        $acknowledgements = [];
+        DB::transaction(function () use ($activation, $stores, &$seen, &$acknowledgements): void {
+            foreach ($stores as $source) {
+                $store = Store::where('platform_company_code', $activation->company_code)
+                    ->where('platform_store_id', $source['store_id'] ?? 0)->first();
+                if (! $store) {
+                    continue;
+                }
+                $identity = 'store:'.$store->platform_store_id;
+                $seen[] = $identity;
+                $email = strtolower(trim((string) ($source['admin_email'] ?? '')));
+                $user = User::where('platform_company_code', $activation->company_code)->where('platform_identity', $identity)->first();
+                if ($email === '') {
+                    $user?->update(['is_active' => false]);
+
+                    continue;
+                }
+                $emailUser = User::whereRaw('LOWER(email) = ?', [$email])->first();
+                if ($emailUser && $emailUser->platform_company_code === $activation->company_code
+                    && ! $emailUser->store_id && $emailUser->role === 'admin'
+                    && strcasecmp($email, $activation->tenant_admin_email ?? '') === 0) {
+                    $user?->update(['is_active' => false]);
+
+                    continue;
+                }
+                if ($emailUser && ($emailUser->platform_company_code !== $activation->company_code
+                    || (int) $emailUser->store_id !== (int) $store->id || ($user && $emailUser->id !== $user->id))) {
+                    throw new \RuntimeException('A store administrator email conflicts with another ERP account. Resolve ownership before sync.');
+                }
+                $user ??= $emailUser;
+                $hash = $source['admin_password_hash'] ?? null;
+                $version = (int) ($source['admin_password_version'] ?? 0);
+                if ($hash && (! is_string($hash) || (password_get_info($hash)['algoName'] ?? 'unknown') === 'unknown' || $version < 1)) {
+                    throw new \RuntimeException('GP Admin returned invalid store administrator credentials.');
+                }
+                if ($user && strcasecmp($user->email, $email) !== 0 && (! $hash || $version <= (int) $user->platform_password_version)) {
+                    $user->update(['is_active' => false]);
+
+                    continue;
+                }
+                if (! $user && ! $hash) {
+                    continue;
+                }
+                if (! $user) {
+                    $username = trim((string) ($source['admin_username'] ?? ''));
+                    if ($username !== '' && User::where('username', $username)->exists()) {
+                        throw new \RuntimeException('A store administrator username conflicts with another ERP account. Resolve it before sync.');
+                    }
+                    $user = new User(['username' => $username !== '' ? $username : $this->uniqueUsernameFor($email)]);
+                }
+                $user->fill([
+                    'name' => $source['admin_name'] ?? $source['name'], 'email' => $email,
+                    'role' => 'admin', 'store_id' => $store->id, 'platform_company_code' => $activation->company_code,
+                    'platform_identity' => $identity, 'is_active' => $store->is_active,
+                ]);
+                if ($hash && (! $user->exists || $version > (int) $user->platform_password_version)) {
+                    $user->password = $hash;
+                    $user->platform_password_version = $version;
+                    $user->must_change_password = (bool) ($source['admin_password_must_change'] ?? false);
+                }
+                if ($user->isDirty('email') && $user->exists) {
+                    $user->google_sub = null;
+                }
+                $user->save();
+                if ($hash) {
+                    $acknowledgements[] = [$version, $store->code];
+                }
+            }
+            User::where('platform_company_code', $activation->company_code)->where('platform_identity', 'like', 'store:%')
+                ->whereNotIn('platform_identity', $seen)->get()->each(fn (User $user) => $user->update(['is_active' => false]));
+        });
+        foreach ($acknowledgements as [$version, $storeCode]) {
+            $this->client->passwordAdopted($activation->company_code, $activation->sync_token, $version, $storeCode);
+        }
     }
 
     private function uniqueUsernameFor(string $email): string

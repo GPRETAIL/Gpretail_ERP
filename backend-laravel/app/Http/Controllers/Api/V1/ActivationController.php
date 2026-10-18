@@ -5,17 +5,15 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\PlatformActivation;
 use App\Services\PlatformActivationService;
+use App\Services\PlatformBootstrap;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * This deployment's registration/status gate with the platform (Gpretail_Admin). Talks to it via
  * PlatformActivationService -> PlatformClient over Gpretail_Admin's /api/v1/tenant/* endpoints.
  *
- * set-password / password-setup-check are deliberately no-ops: unlike vynorix's tenant identity
- * service, GPRETAIL_ERP seeds its own local admin accounts at install time (see the
- * 2026_08_21_000001_seed_super_admin_user migration) rather than adopting a platform-issued
- * password, so there is nothing for the platform to set up here.
+ * First-login setup uses an expiring, company-scoped bootstrap token, never a business session.
  */
 class ActivationController extends Controller
 {
@@ -65,13 +63,19 @@ class ActivationController extends Controller
 
     public function register(Request $request)
     {
+        $request->validate([
+            'license_key' => 'nullable|string|max:16384',
+            'company_code' => 'nullable|string|max:128',
+            'client_id' => 'nullable|string|max:255',
+            'one_time_password' => 'nullable|string|max:128',
+        ]);
         $licenseKey = $request->input('license_key');
         $otp = $request->input('one_time_password');
         $companyCode = $request->input('company_code');
         $clientId = $request->input('client_id');
 
         // Handle single unified license key if provided
-        if (!empty($licenseKey)) {
+        if (! empty($licenseKey)) {
             $parsed = $this->parseLicenseKey((string) $licenseKey);
             if ($parsed) {
                 $otp = $parsed['otp'] ?? $otp;
@@ -86,14 +90,19 @@ class ActivationController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Please provide a valid License Key or Activation Code.',
-                'errors' => ['one_time_password' => ['The activation code is required.']]
+                'errors' => ['one_time_password' => ['The activation code is required.']],
             ], 422);
         }
 
+        $setup = $request->attributes->get('platform_setup_identity');
+        if ($setup && $companyCode && $companyCode !== $setup['company_code']) {
+            return response()->json(['success' => false, 'message' => 'The activation key belongs to a different company.'], 403);
+        }
         $result = $this->activationService->register(
             $otp,
-            $companyCode,
+            $setup['company_code'] ?? $companyCode,
             $clientId,
+            $setup['email'] ?? null,
         );
 
         if (! $result['ok']) {
@@ -108,6 +117,29 @@ class ActivationController extends Controller
                 'status' => $result['activation']->status,
             ],
         ]);
+    }
+
+    public function bootstrapRegister(Request $request, PlatformBootstrap $bootstrap)
+    {
+        $token = $request->bearerToken() ?? '';
+        $identity = $bootstrap->identity($token);
+        if (! $identity) {
+            return response()->json(['success' => false, 'message' => 'Company setup session expired. Sign in again.'], 401);
+        }
+
+        return Cache::lock('erp-company-activation', 60)->get(function () use ($request, $bootstrap, $token, $identity) {
+            $existing = PlatformActivation::current();
+            if ($existing?->activated || ($existing && $existing->company_code !== $identity['company_code'])) {
+                return response()->json(['success' => false, 'message' => 'This installation is already registered. Return to login.'], 409);
+            }
+            $request->attributes->set('platform_setup_identity', $identity);
+            $response = $this->register($request);
+            if ($response->isSuccessful()) {
+                $bootstrap->forget($token);
+            }
+
+            return $response;
+        }) ?: response()->json(['success' => false, 'message' => 'Activation is already in progress. Retry shortly.'], 409);
     }
 
     /**
@@ -125,7 +157,7 @@ class ActivationController extends Controller
         $decoded = base64_decode($normalized, true);
         if ($decoded !== false) {
             $json = json_decode($decoded, true);
-            if (is_array($json) && (!empty($json['o']) || !empty($json['otp']))) {
+            if (is_array($json) && (! empty($json['o']) || ! empty($json['otp']))) {
                 return [
                     'company_code' => $json['c'] ?? $json['company_code'] ?? null,
                     'store_code' => $json['s'] ?? $json['store_code'] ?? null,

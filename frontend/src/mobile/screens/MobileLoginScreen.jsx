@@ -3,6 +3,7 @@ import { useDispatch } from "react-redux";
 import { Lock, User, LogIn, AlertCircle, ShieldCheck } from "lucide-react";
 import { Box, Typography } from "@mui/material";
 import { loginUser } from "../../features/authSlice";
+import ActivationWizard from "../../pages/ActivationWizard";
 
 /**
  * Premium Native Mobile Login Screen for Vynerix ERP.
@@ -15,6 +16,7 @@ export default function MobileLoginScreen({ onLoginSuccess }) {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [setup, setSetup] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -32,6 +34,11 @@ export default function MobileLoginScreen({ onLoginSuccess }) {
       );
 
       if (loginUser.fulfilled.match(resultAction)) {
+        if (resultAction.payload.setup) {
+          setPassword("");
+          setSetup(resultAction.payload.setup);
+          return;
+        }
         if (typeof onLoginSuccess === "function") {
           onLoginSuccess();
         }
@@ -53,6 +60,10 @@ export default function MobileLoginScreen({ onLoginSuccess }) {
     setUsername(user);
     setPassword(pass);
   };
+
+  if (setup) {
+    return <ActivationWizard setup={setup} onCancel={() => setSetup(null)} onActivated={() => window.location.reload()} />;
+  }
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "#f8fafc", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>

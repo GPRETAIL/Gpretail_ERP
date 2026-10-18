@@ -3,16 +3,8 @@ import { KeyRound, ShieldCheck, Loader2, CheckCircle2, Circle, Lock } from "luci
 import { Alert, Box, Card, Stack, Typography, Button, TextField, useTheme } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 
-// Tenant activation wizard. Shown before anyone can log in, while this deployment is in
-// "Activation Required" mode. Collects Company ID + Client ID + Activation Code (OTP) and calls the
-// public /api/activation/register, which handshakes with VX-Admin and pulls the first snapshot
-// (owner details, subscription status, expiry, entitlements) and provisions the tenant super-admin.
-// Uses fetch (not the axios instance) so a 401 "invalid credentials" is shown inline instead of
-// triggering the app's session-expired redirect.
-//
-// Flow: form → stepped success (connect → download → apply → done) → (if a fresh super-admin was
-// provisioned) set-password → hand off to login. The register call did the sync work synchronously,
-// so the steps reflect the real outcome; set-password uses the short-lived setup token it returned.
+// First-login setup tokens stay in component memory and authorize only installation activation.
+// They are never stored or used as ERP business sessions.
 
 const STEPS = [
   { key: "connect", label: "Connecting to Vynerix control plane" },
@@ -21,11 +13,11 @@ const STEPS = [
   { key: "done", label: "Activation complete" },
 ];
 
-const ActivationWizard = ({ onActivated }) => {
+const ActivationWizard = ({ onActivated, setup, onCancel }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
   const [mode, setMode] = useState("license"); // "license" | "manual"
-  const [form, setForm] = useState({ licenseKey: "", companyId: "", clientId: "", activationCode: "" });
+  const [form, setForm] = useState({ licenseKey: "", companyId: setup?.company_code || "", clientId: "", activationCode: "" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [phase, setPhase] = useState("form"); // "form" | "success" | "password" | "done"
@@ -63,9 +55,9 @@ const ActivationWizard = ({ onActivated }) => {
 
     setBusy(true);
     try {
-      const res = await fetch("/api/activation/register", {
+      const res = await fetch(setup ? "/api/activation/bootstrap-register" : "/api/activation/register", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(setup ? { Authorization: `Bearer ${setup.setup_token}` } : {}) },
         body: JSON.stringify(payload),
       });
       const body = await res.json().catch(() => ({}));
@@ -151,7 +143,9 @@ const ActivationWizard = ({ onActivated }) => {
             </Typography>
           </Box>
         </Stack>
+        {setup && phase === "form" && <Alert severity="info" sx={{ mb: 2 }}>Company verified: {setup.company_name}. Enter the company activation key from your welcome email. Business access starts after activation and sign-in.</Alert>}
         {children}
+        {onCancel && phase === "form" && <Button onClick={onCancel} disabled={busy} sx={{ mt: 2 }}>Return to login</Button>}
       </Card>
     </Box>
   );
@@ -266,7 +260,7 @@ const ActivationWizard = ({ onActivated }) => {
     <>
       <Typography variant="body2" sx={{ mb: 2.5, color: "text.secondary" }}>
         {mode === "license"
-          ? "Enter your single License Key from your welcome email or Gpretail Admin portal to activate this store."
+          ? "Enter the company activation key from your welcome email or GP Admin to activate this installation."
           : "Enter the Company ID, Client ID, and Activation Code from your welcome email."}
       </Typography>
 
@@ -286,7 +280,7 @@ const ActivationWizard = ({ onActivated }) => {
             size="small"
             autoFocus
             sx={{ "& .MuiInputBase-input": { fontFamily: "monospace", fontSize: "0.875rem" } }}
-            helperText="Single copy-paste key containing your store entitlements"
+            helperText="Use the company setup key. Store activation is managed after sign-in."
           />
         ) : (
           <>

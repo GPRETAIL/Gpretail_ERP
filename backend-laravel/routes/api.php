@@ -72,6 +72,7 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('activation')->group(function () {
     Route::get('status', [ActivationController::class, 'status']);
     Route::post('register', [ActivationController::class, 'register'])->middleware('throttle:10,1');
+    Route::post('bootstrap-register', [ActivationController::class, 'bootstrapRegister'])->middleware('throttle:10,1');
     Route::post('set-password', [ActivationController::class, 'setPassword'])->middleware('throttle:10,1');
     Route::get('password-setup-check', [ActivationController::class, 'passwordSetupCheck']);
 });

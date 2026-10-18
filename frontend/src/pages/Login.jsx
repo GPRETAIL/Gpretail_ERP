@@ -6,11 +6,13 @@ import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { Box, Button, Card, Divider, IconButton, InputAdornment, TextField, Typography } from "@mui/material";
 import { getHomePathForUser } from "../utils/accessControl";
 import GoogleSignInButton from "../components/GoogleSignInButton";
+import ActivationWizard from "./ActivationWizard";
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [setup, setSetup] = useState(null);
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -29,6 +31,11 @@ const Login = () => {
     const result = await dispatch(loginUser({ email: username, password }));
 
     if (loginUser.fulfilled.match(result)) {
+      if (result.payload.setup) {
+        setPassword("");
+        setSetup(result.payload.setup);
+        return;
+      }
       navigate(getHomePathForUser(result.payload?.user), { replace: true });
     }
   };
@@ -39,6 +46,10 @@ const Login = () => {
       navigate(getHomePathForUser(result.payload?.user), { replace: true });
     }
   };
+
+  if (setup) {
+    return <ActivationWizard setup={setup} onCancel={() => setSetup(null)} onActivated={() => window.location.reload()} />;
+  }
 
   if (isAuthenticated) {
     return <Navigate to={getHomePathForUser(authUser)} replace />;
