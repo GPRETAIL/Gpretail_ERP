@@ -39,6 +39,11 @@ class SeedMasterBulkCommand extends Command
 
     public function handle(): int
     {
+        if (app()->environment('production')) {
+            $this->error('Bulk stress-test seeding is disabled in production.');
+            return self::FAILURE;
+        }
+
         if (!in_array(DB::connection()->getDriverName(), ['mysql', 'mariadb'], true)) {
             $this->error('This command relies on UUID_SHORT() and is MySQL/MariaDB-only.');
             return self::FAILURE;

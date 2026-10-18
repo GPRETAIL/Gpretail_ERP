@@ -8,6 +8,7 @@ use App\Models\HrDepartment;
 use App\Services\GroupAggregationService;
 use App\Services\PaginationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
@@ -212,19 +213,60 @@ class EmployeeController extends Controller
 
     public function uploadDocument(Request $request, $id)
     {
+        $employee = Employee::find($id);
+        if (! $employee) {
+            return response()->json(['success' => false, 'message' => 'Employee not found'], 404);
+        }
+
+        $files = $request->allFiles();
+        if (empty($files)) {
+            return response()->json(['success' => false, 'message' => 'No document file uploaded'], 422);
+        }
+
+        $fieldName = (string) array_key_first($files);
+        $request->validate([
+            $fieldName => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:5120'],
+        ]);
+
+        $path = $request->file($fieldName)->store("employees/{$employee->id}/documents", 'public');
+        $url = Storage::url($path);
+
         return response()->json([
             'success' => true,
             'message' => 'Document uploaded successfully',
-            'data' => ['id' => rand(100, 999), 'url' => '/files/sample_doc.pdf'],
+            'path' => $url,
+            'data' => [
+                'id' => $employee->id,
+                'url' => $url,
+                'path' => $url,
+                $fieldName => $url,
+            ],
         ]);
     }
 
     public function educationCertificate(Request $request, $id)
     {
+        $employee = Employee::find($id);
+        if (! $employee) {
+            return response()->json(['success' => false, 'message' => 'Employee not found'], 404);
+        }
+
+        $request->validate([
+            'certificate' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:5120'],
+        ]);
+
+        $path = $request->file('certificate')->store("employees/{$employee->id}/certificates", 'public');
+        $url = Storage::url($path);
+
         return response()->json([
             'success' => true,
             'message' => 'Education certificate uploaded successfully',
-            'data' => ['id' => rand(100, 999), 'url' => '/files/certificate.pdf'],
+            'path' => $url,
+            'data' => [
+                'id' => $employee->id,
+                'url' => $url,
+                'path' => $url,
+            ],
         ]);
     }
 }

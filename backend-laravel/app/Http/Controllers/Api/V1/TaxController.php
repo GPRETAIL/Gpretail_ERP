@@ -7,6 +7,8 @@ use App\Models\Tax;
 use App\Services\GroupAggregationService;
 use App\Services\PaginationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class TaxController extends Controller
 {
@@ -149,6 +151,13 @@ class TaxController extends Controller
     public function store(Request $request)
     {
         $code = $request->input('code') ?: $request->input('taxCode') ?: ('TAX_'.strtoupper(substr(uniqid(), -6)));
+        $storeScopeId = $this->resolveStoreId($request, 1);
+        $validator = Validator::make(['code' => $code], [
+            'code' => ['required', 'string', 'max:50', Rule::unique('taxes', 'code')->where('store_id', $storeScopeId)],
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'message' => 'Validation error', 'errors' => $validator->errors()], 422);
+        }
         $name = $request->input('name');
         $rate = $request->input('rate') ?? $request->input('taxPercentage') ?? 0;
         $type = $request->input('type') ?: $request->input('taxCharges') ?: $request->input('tax_type') ?: 'GST';

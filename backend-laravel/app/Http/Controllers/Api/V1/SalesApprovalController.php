@@ -88,7 +88,7 @@ class SalesApprovalController extends Controller
             ], 422);
         }
 
-        $storeId = $request->header('X-Company-Scope-Id', 1);
+        $storeId = $this->resolveStoreId($request, 1);
 
         $approval = DB::transaction(function () use ($request, $storeId) {
             $customerId = $request->input('customer_id');
@@ -199,7 +199,7 @@ class SalesApprovalController extends Controller
 
     public function nextApprovalNo(Request $request)
     {
-        $storeId = (int) $request->header('X-Company-Scope-Id', 1);
+        $storeId = (int) $this->resolveStoreId($request, 1);
         $nextNo = DocumentNumberService::peek($storeId, 'APP');
 
         return response()->json([

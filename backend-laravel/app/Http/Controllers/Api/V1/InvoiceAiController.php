@@ -10,6 +10,9 @@ use App\Models\Product;
 use App\Models\PurchaseInvoice;
 use App\Models\PurchaseInvoiceItem;
 use App\Models\Supplier;
+use App\Models\SystemConfiguration;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Schema;
 use App\Models\Transport;
 use App\Models\TransportEntry;
 use App\Services\DocumentNumberService;
@@ -64,16 +67,35 @@ class InvoiceAiController extends Controller
         }
     }
 
+    public static function resolveStoredApiKey(string $configKey, string $fallbackConfigPath, string $envName): string
+    {
+        if (Schema::hasTable('system_configurations')) {
+            $record = SystemConfiguration::withoutGlobalScopes()
+                ->where('group', 'invoice_ai')
+                ->where('key', $configKey)
+                ->first();
+            if ($record && ! empty($record->value)) {
+                try {
+                    return (string) Crypt::decryptString($record->value);
+                } catch (Throwable) {
+                    return (string) $record->value;
+                }
+            }
+        }
+
+        return (string) (config($fallbackConfigPath) ?: env($envName, ''));
+    }
+
     public function getEngineConfig(Request $request)
     {
         if ($forbidden = $this->ensureAdmin($request)) {
             return $forbidden;
         }
 
-        $geminiKey = (string) (config('services.gemini.key') ?: env('GEMINI_API_KEY'));
-        $spaceOcrKey = (string) (config('services.space_ocr.key') ?: env('SPACE_OCR_API_KEY'));
-        $openaiKey = (string) (config('services.openai.key') ?: env('OPENAI_API_KEY'));
-        $ocrSpaceKey = (string) (config('ocr_space.key') ?: env('OCR_SPACE_API_KEY'));
+        $geminiKey = self::resolveStoredApiKey('gemini_api_key', 'services.gemini.key', 'GEMINI_API_KEY');
+        $spaceOcrKey = self::resolveStoredApiKey('space_ocr_api_key', 'services.space_ocr.key', 'SPACE_OCR_API_KEY');
+        $openaiKey = self::resolveStoredApiKey('openai_api_key', 'services.openai.key', 'OPENAI_API_KEY');
+        $ocrSpaceKey = self::resolveStoredApiKey('ocr_space_api_key', 'ocr_space.key', 'OCR_SPACE_API_KEY');
 
         $activeEngine = 'in_app_builtin_engine';
         if ($geminiKey !== '') {
@@ -161,7 +183,26 @@ class InvoiceAiController extends Controller
             }
         }
 
-        file_put_contents($envFile, $envContent);
+        if (Schema::hasTable('system_configurations')) {
+            foreach (['gemini_api_key', 'space_ocr_api_key', 'ocr_space_api_key'] as $keyName) {
+                if ($request->has($keyName)) {
+                    $rawVal = trim((string) $request->input($keyName, ''));
+                    SystemConfiguration::withoutGlobalScopes()->updateOrCreate(
+                        ['group' => 'invoice_ai', 'key' => $keyName],
+                        [
+                            'config_key' => $keyName,
+                            'group_name' => 'invoice_ai',
+                            'value' => $rawVal !== '' ? Crypt::encryptString($rawVal) : null,
+                            'config_value' => $rawVal !== '' ? 'encrypted' : null,
+                        ]
+                    );
+                }
+            }
+        }
+
+        if (is_writable($envFile)) {
+            @file_put_contents($envFile, $envContent, LOCK_EX);
+        }
 
         return response()->json([
             'success' => true,
@@ -185,7 +226,7 @@ class InvoiceAiController extends Controller
             ], 422);
         }
 
-        $storeId = (int) $request->header('X-Company-Scope-Id', 1);
+        $storeId = (int) $this->resolveStoreId($request, 1);
 
         try {
             $result = DB::transaction(function () use ($request, $storeId) {
@@ -447,7 +488,7 @@ class InvoiceAiController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to process purchase entry flow: '.$e->getMessage(),
+                'message' => config('app.debug') ? 'Failed to process purchase entry flow: '.$e->getMessage() : 'Failed to process purchase entry flow.',
             ], 422);
         }
     }

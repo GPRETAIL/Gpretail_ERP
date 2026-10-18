@@ -9,6 +9,7 @@ use App\Services\DocumentNumberService;
 use App\Services\GroupAggregationService;
 use App\Services\PaginationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
 class TransportEntryController extends Controller
@@ -103,7 +104,7 @@ class TransportEntryController extends Controller
         // transport_entries has no store_id column (a pre-existing schema gap, unrelated
         // to this fix) -- the scope header is used purely as the counter's key so LR
         // numbers stay collision-safe between a store's local install and cloud.
-        $storeId = (int) $request->header('X-Company-Scope-Id', 1);
+        $storeId = (int) $this->resolveStoreId($request, 1);
         $lrNo = $request->input('lr_no') ?: DocumentNumberService::resolve($request, $storeId, 'LR');
 
         $entry = TransportEntry::create([
@@ -186,7 +187,7 @@ class TransportEntryController extends Controller
 
     public function nextLrNumber(Request $request)
     {
-        $storeId = (int) $request->header('X-Company-Scope-Id', 1);
+        $storeId = (int) $this->resolveStoreId($request, 1);
         $nextNo = DocumentNumberService::peek($storeId, 'LR');
 
         return response()->json([
@@ -209,10 +210,45 @@ class TransportEntryController extends Controller
 
     public function storeAttachment(Request $request, $id)
     {
+        $entry = TransportEntry::find($id);
+        if (! $entry) {
+            return response()->json(['success' => false, 'message' => 'Transport entry not found'], 404);
+        }
+
+        $uploadedFiles = $request->file('files');
+        if (! $uploadedFiles) {
+            return response()->json(['success' => false, 'message' => 'No attachment files provided'], 422);
+        }
+        $files = is_array($uploadedFiles) ? $uploadedFiles : [$uploadedFiles];
+
+        $validator = Validator::make(['files' => $files], [
+            'files.*' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:10240'],
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'message' => 'Validation error', 'errors' => $validator->errors()], 422);
+        }
+
+        $fileType = (string) $request->input('file_type', 'Other');
+        $savedAttachments = [];
+
+        foreach ($files as $idx => $file) {
+            $storedPath = $file->store("transport-entries/{$entry->id}", 'public');
+            $url = Storage::url($storedPath);
+            $savedAttachments[] = [
+                'id' => (int) (now()->timestamp . $idx),
+                'transport_entry_id' => $entry->id,
+                'file_name' => $file->getClientOriginalName(),
+                'file_type' => $fileType,
+                'file_path' => basename($storedPath),
+                'file_url' => $url,
+                'url' => $url,
+            ];
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Attachment uploaded successfully',
-            'data' => ['id' => rand(100, 999), 'url' => ''],
+            'data' => $savedAttachments,
         ]);
     }
 
@@ -226,7 +262,7 @@ class TransportEntryController extends Controller
 
     public function nextIssueNumber(Request $request)
     {
-        $storeId = (int) $request->header('X-Company-Scope-Id', 1);
+        $storeId = (int) $this->resolveStoreId($request, 1);
         $nextNo = DocumentNumberService::peek($storeId, 'ISSUE');
 
         return response()->json([
@@ -238,7 +274,7 @@ class TransportEntryController extends Controller
 
     public function nextReceiptNumber(Request $request)
     {
-        $storeId = (int) $request->header('X-Company-Scope-Id', 1);
+        $storeId = (int) $this->resolveStoreId($request, 1);
         $nextNo = DocumentNumberService::peek($storeId, 'RCPT');
 
         return response()->json([

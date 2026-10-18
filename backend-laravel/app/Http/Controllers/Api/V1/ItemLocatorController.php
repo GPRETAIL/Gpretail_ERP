@@ -14,7 +14,7 @@ class ItemLocatorController extends Controller
     public function index(Request $request)
     {
         $search = $request->input('search') ?? $request->input('q') ?? '';
-        $storeId = $request->header('X-Company-Scope-Id', 1);
+        $storeId = $this->resolveStoreId($request, 1);
 
         $query = Stock::with(['product.brand', 'product.category', 'store'])
             ->where('store_id', $storeId)

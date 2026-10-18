@@ -114,7 +114,7 @@ class PurchaseInvoiceController extends Controller
             ], 422);
         }
 
-        $storeId = $request->header('X-Company-Scope-Id', 1);
+        $storeId = $this->resolveStoreId($request, 1);
 
         $invoice = DB::transaction(function () use ($request, $storeId) {
             $supplierId = $request->input('supplier_id');

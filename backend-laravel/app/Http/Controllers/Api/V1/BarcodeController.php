@@ -460,7 +460,7 @@ class BarcodeController extends Controller
         $productIds = collect($rows)->pluck('product_id')->filter()->unique()->values();
         $products = Product::whereIn('id', $productIds)->get(['id', 'cost_price'])->keyBy('id');
 
-        $storeId = $request->header('X-Company-Scope-Id', 1);
+        $storeId = $this->resolveStoreId($request, 1);
         $stockByKey = Stock::where('store_id', $storeId)
             ->whereIn('product_id', $productIds)
             ->get(['product_id', 'variant_id', 'quantity'])

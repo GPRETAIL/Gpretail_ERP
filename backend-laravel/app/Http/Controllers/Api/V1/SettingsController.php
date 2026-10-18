@@ -14,7 +14,7 @@ class SettingsController extends Controller
     // Printer Configs Resolve
     public function printerConfigsResolve(Request $request)
     {
-        $storeId = $request->header('X-Company-Scope-Id', 1);
+        $storeId = $this->resolveStoreId($request, 1);
         $config = PrinterConfig::where('store_id', $storeId)->where('is_default', true)->first();
 
         return response()->json([

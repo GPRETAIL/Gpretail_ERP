@@ -19,6 +19,9 @@ class StoreController extends Controller
     protected function formatStore(Store $store): array
     {
         $data = $store->toArray();
+        if (! in_array(request()->user()?->role, ['admin', 'super_admin'], true)) {
+            unset($data['einvoice_password'], $data['gst_access_key']);
+        }
 
         // Provide camelCase aliases alongside snake_case for UI components
         $data['regName'] = $store->reg_name;
@@ -95,8 +98,11 @@ class StoreController extends Controller
         abort_if(PlatformActivation::current()?->activated, 403, 'Create stores in GP Admin, then activate them here.');
         $data = $request->all();
 
-        // Handle uploaded logo file
+        // Validate and handle uploaded logo file
         if ($request->hasFile('logo')) {
+            $request->validate([
+                'logo' => ['file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            ]);
             $path = $request->file('logo')->store('companies', 'public');
             $data['logo'] = Storage::url($path);
         }
@@ -130,8 +136,11 @@ class StoreController extends Controller
 
         $data = $request->all();
 
-        // Handle uploaded logo file
+        // Validate and handle uploaded logo file
         if ($request->hasFile('logo')) {
+            $request->validate([
+                'logo' => ['file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            ]);
             $path = $request->file('logo')->store('companies', 'public');
             $data['logo'] = Storage::url($path);
         }

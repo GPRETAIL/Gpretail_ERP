@@ -23,7 +23,7 @@ class SupplierPaymentController extends Controller
 
     public function dashboardSummary(Request $request)
     {
-        $storeId = $request->header('X-Company-Scope-Id', 1);
+        $storeId = $this->resolveStoreId($request, 1);
 
         $totalPaidMonth = (float) SupplierPayment::where('store_id', $storeId)
             ->whereMonth('payment_date', now()->month)
@@ -97,7 +97,7 @@ class SupplierPaymentController extends Controller
             ], 422);
         }
 
-        $storeId = $request->header('X-Company-Scope-Id', 1);
+        $storeId = $this->resolveStoreId($request, 1);
 
         $payment = DB::transaction(function () use ($request, $storeId) {
             $paymentNo = 'PAY-'.date('Ymd').'-'.rand(1000, 9999);
@@ -147,7 +147,7 @@ class SupplierPaymentController extends Controller
 
     public function pending(Request $request)
     {
-        $storeId = $request->header('X-Company-Scope-Id', 1);
+        $storeId = $this->resolveStoreId($request, 1);
         $search = trim((string) $request->input('search', ''));
 
         $invoiceQuery = PurchaseInvoice::with('supplier')

@@ -60,7 +60,7 @@ class SettlementController extends Controller
             ], 422);
         }
 
-        $storeId = $request->header('X-Company-Scope-Id', 1);
+        $storeId = $this->resolveStoreId($request, 1);
         $batchNo = $request->input('batch_no') ?: DocumentNumberService::resolve($request, (int) $storeId, 'SETTLE');
 
         $settlement = Settlement::create([
@@ -84,7 +84,7 @@ class SettlementController extends Controller
 
     public function nextSettlementNumber(Request $request)
     {
-        $storeId = (int) $request->header('X-Company-Scope-Id', 1);
+        $storeId = (int) $this->resolveStoreId($request, 1);
         $nextNo = DocumentNumberService::peek($storeId, 'SETTLE');
 
         return response()->json([
@@ -96,7 +96,7 @@ class SettlementController extends Controller
 
     public function unpaidBills(Request $request)
     {
-        $storeId = $request->header('X-Company-Scope-Id', 1);
+        $storeId = $this->resolveStoreId($request, 1);
         $status = $request->input('status', 'all');
 
         $query = PosSale::with(['customer', 'payments'])

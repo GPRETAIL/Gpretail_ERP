@@ -53,7 +53,7 @@ DB_HOST=127.0.0.1
 DB_PORT=3306
 DB_DATABASE=u597975289_Dev
 DB_USERNAME=u597975289_Dev
-DB_PASSWORD=Saran@1300!
+DB_PASSWORD=<inject-via-github-secrets>
 ```
 
 ### 3. Run Migrations & Cache Optimization

@@ -9,7 +9,7 @@ class Store extends Model
 {
     use HasFactory;
 
-    protected $hidden = ['platform_licence_token'];
+    protected $hidden = ['platform_licence_token', 'admin_password', 'backup_settings'];
 
     protected $fillable = [
         'platform_store_id', 'platform_company_code', 'activation_required', 'activated_at',

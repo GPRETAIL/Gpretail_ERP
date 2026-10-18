@@ -48,7 +48,7 @@ class WarehouseReportController extends Controller
 
     public function stockLedger(Request $request)
     {
-        $storeId = $request->header('X-Company-Scope-Id', 1);
+        $storeId = $this->resolveStoreId($request, 1);
 
         $query = Stock::with(['product.category', 'product.brand', 'store'])
             ->where('store_id', $storeId);
@@ -75,7 +75,7 @@ class WarehouseReportController extends Controller
 
     public function lowStock(Request $request)
     {
-        $storeId = $request->header('X-Company-Scope-Id', 1);
+        $storeId = $this->resolveStoreId($request, 1);
 
         $query = Stock::with(['product', 'store'])
             ->where('store_id', $storeId)
@@ -111,7 +111,7 @@ class WarehouseReportController extends Controller
 
     public function valuation(Request $request)
     {
-        $storeId = $request->header('X-Company-Scope-Id', 1);
+        $storeId = $this->resolveStoreId($request, 1);
 
         $summary = StoreQuery::table('stocks')
             ->join('products', 'stocks.product_id', '=', 'products.id')
@@ -236,7 +236,7 @@ class WarehouseReportController extends Controller
     {
         $storeId = $request->input('company_id')
             ?? $request->input('companyId')
-            ?? $request->header('X-Company-Scope-Id', 1);
+            ?? $this->resolveStoreId($request, 1);
 
         if ($request->isMethod('post') || $request->isMethod('put')) {
             if (! $storeId) {

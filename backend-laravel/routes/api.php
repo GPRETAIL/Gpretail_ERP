@@ -72,7 +72,7 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('activation')->group(function () {
     Route::get('status', [ActivationController::class, 'status']);
     Route::post('register', [ActivationController::class, 'register'])->middleware('throttle:10,1');
-    Route::post('set-password', [ActivationController::class, 'setPassword']);
+    Route::post('set-password', [ActivationController::class, 'setPassword'])->middleware('throttle:10,1');
     Route::get('password-setup-check', [ActivationController::class, 'passwordSetupCheck']);
 });
 
@@ -88,17 +88,17 @@ Route::prefix('auth')->group(function () {
     Route::post('change-password', [AuthController::class, 'changePassword'])->middleware(['auth:sanctum', 'throttle:10,1']);
 });
 Route::post('admin-auth/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
-Route::get('local-server-config', [AuthController::class, 'localServerConfig']);
+Route::get('local-server-config', [AuthController::class, 'localServerConfig'])->middleware('auth:sanctum');
 Route::put('local-server-config', [AuthController::class, 'localServerConfigUpdate'])->middleware('auth:sanctum');
-Route::get('local-server-config/runtime', [AuthController::class, 'localServerConfigRuntime']);
+Route::get('local-server-config/runtime', [AuthController::class, 'localServerConfigRuntime'])->middleware('auth:sanctum');
 Route::match(['get', 'post'], 'local-server-config/test', [SettingsController::class, 'localServerTest'])->middleware(['auth:sanctum', 'throttle:10,1']);
 Route::match(['get', 'post'], 'local-server-config/test-cloud', [SettingsController::class, 'cloudServerTest'])->middleware(['auth:sanctum', 'throttle:10,1']);
-Route::get('connector/web-config', [SyncController::class, 'webConfig']);
-Route::post('sync/heartbeat', [SyncController::class, 'heartbeat']);
-Route::get('sync/outbound/next', [SyncController::class, 'outboundNext']);
-Route::post('sync/outbound/ack', [SyncController::class, 'outboundAck']);
-Route::match(['get', 'post'], 'sync/run-cycle', [SyncController::class, 'runCycle']);
-Route::get('sync/catch-up-export', [SyncController::class, 'catchUpExport']);
+Route::get('connector/web-config', [SyncController::class, 'webConfig'])->middleware('throttle:60,1');
+Route::post('sync/heartbeat', [SyncController::class, 'heartbeat'])->middleware('throttle:60,1');
+Route::get('sync/outbound/next', [SyncController::class, 'outboundNext'])->middleware('throttle:60,1');
+Route::post('sync/outbound/ack', [SyncController::class, 'outboundAck'])->middleware('throttle:60,1');
+Route::match(['get', 'post'], 'sync/run-cycle', [SyncController::class, 'runCycle'])->middleware('throttle:10,1');
+Route::get('sync/catch-up-export', [SyncController::class, 'catchUpExport'])->middleware('throttle:10,1');
 Route::get('sync/nodes', [SyncController::class, 'nodes'])->middleware('auth:sanctum');
 Route::get('sync/outbox', [SyncController::class, 'outboxEvents'])->middleware('auth:sanctum');
 Route::post('sync/outbox/{id}/retry', [SyncController::class, 'retryOutboxEvent'])->middleware('auth:sanctum');

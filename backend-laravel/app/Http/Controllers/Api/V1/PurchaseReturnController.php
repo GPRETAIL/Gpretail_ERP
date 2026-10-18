@@ -92,7 +92,7 @@ class PurchaseReturnController extends Controller
             ], 422);
         }
 
-        $storeId = $request->header('X-Company-Scope-Id', 1);
+        $storeId = $this->resolveStoreId($request, 1);
 
         try {
             $return = DB::transaction(function () use ($request, $storeId) {
@@ -229,7 +229,7 @@ class PurchaseReturnController extends Controller
     public function stockSearch(Request $request)
     {
         $search = $request->input('search') ?? $request->input('q') ?? '';
-        $storeId = $request->header('X-Company-Scope-Id', 1);
+        $storeId = $this->resolveStoreId($request, 1);
 
         $stocks = Stock::with(['product.brand', 'product.category', 'product.tax'])
             ->where('store_id', $storeId)

@@ -57,7 +57,7 @@ class PosSaleController extends Controller
             return response()->json(['success' => true, 'data' => []]);
         }
 
-        $storeId = $request->header('X-Company-Scope-Id', 1);
+        $storeId = $this->resolveStoreId($request, 1);
 
         // Per-unit/per-variant barcode first - this is what Direct Purchase
         // + Barcode Generation actually produce (PIECE: one row per unit,
@@ -135,7 +135,7 @@ class PosSaleController extends Controller
     public function stockProducts(Request $request)
     {
         $search = $request->input('search') ?? $request->input('q') ?? '';
-        $storeId = $request->header('X-Company-Scope-Id', 1);
+        $storeId = $this->resolveStoreId($request, 1);
 
         $query = Stock::with(['product.brand', 'product.category', 'product.tax'])
             ->where('store_id', $storeId)
@@ -721,7 +721,7 @@ class PosSaleController extends Controller
 
     public function summaryReport(Request $request)
     {
-        $storeId = $request->input('company_id') ?: $request->header('X-Company-Scope-Id', 1);
+        $storeId = $request->input('company_id') ?: $this->resolveStoreId($request, 1);
         $mode = $request->input('mode');
 
         // Fallback for simple dashboard summary if mode is omitted
@@ -1072,7 +1072,7 @@ class PosSaleController extends Controller
 
     public function lastReceipt(Request $request)
     {
-        $storeId = $request->header('X-Company-Scope-Id', 1);
+        $storeId = $this->resolveStoreId($request, 1);
         $sale = PosSale::with(['customer', 'items.product', 'payments'])
             ->where('store_id', $storeId)
             ->latest('id')

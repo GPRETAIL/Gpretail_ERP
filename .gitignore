@@ -37,3 +37,6 @@ backend-laravel-local-node/
 *-lint*.json
 *.bak
 .claude/
+# Deployment archives
+*.zip
+*.tar.gz

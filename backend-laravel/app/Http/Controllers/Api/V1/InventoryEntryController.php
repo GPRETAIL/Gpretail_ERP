@@ -91,7 +91,7 @@ class InventoryEntryController extends Controller
             ], 422);
         }
 
-        $storeId = $request->header('X-Company-Scope-Id', 1);
+        $storeId = $this->resolveStoreId($request, 1);
 
         $entry = DB::transaction(function () use ($request, $storeId) {
             $entryNo = $request->input('entry_no') ?: 'INV-ENT-'.date('Ymd').'-'.rand(1000, 9999);

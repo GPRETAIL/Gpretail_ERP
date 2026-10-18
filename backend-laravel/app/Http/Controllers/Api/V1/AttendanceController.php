@@ -13,7 +13,7 @@ class AttendanceController extends Controller
 {
     public function today(Request $request)
     {
-        $storeId = $request->header('X-Company-Scope-Id', 1);
+        $storeId = $this->resolveStoreId($request, 1);
         $today = now()->toDateString();
         $nowTime = now()->format('H:i:s');
 

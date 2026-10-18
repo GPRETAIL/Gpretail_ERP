@@ -13,6 +13,7 @@ use App\Services\StoreQuery;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class ProductController extends Controller
 {
@@ -344,9 +345,10 @@ class ProductController extends Controller
     {
         $data = $this->extractProductData($request);
 
+        $storeScopeId = $this->resolveStoreId($request, 1);
         $validator = Validator::make($data, [
             'name' => 'required|string|max:255',
-            'code' => 'required|string|max:50|unique:products,code',
+            'code' => ['required', 'string', 'max:50', Rule::unique('products', 'code')->where('company_id', $storeScopeId)],
         ]);
 
         if ($validator->fails()) {
@@ -371,9 +373,10 @@ class ProductController extends Controller
 
         $data = $this->extractProductData($request, true);
 
+        $storeScopeId = $this->resolveStoreId($request, (int) ($product->company_id ?: 1));
         $validator = Validator::make($data, [
             'name' => 'sometimes|required|string|max:255',
-            'code' => 'sometimes|required|string|max:50|unique:products,code,'.$product->id,
+            'code' => ['sometimes', 'required', 'string', 'max:50', Rule::unique('products', 'code')->where('company_id', $storeScopeId)->ignore($product->id)],
         ]);
 
         if ($validator->fails()) {

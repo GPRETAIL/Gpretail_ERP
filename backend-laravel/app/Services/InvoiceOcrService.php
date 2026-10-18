@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Http\Controllers\Api\V1\InvoiceAiController;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
@@ -18,7 +19,7 @@ class InvoiceOcrService
     public function extract(UploadedFile $file): array
     {
         // 1. Google Gemini Vision (Recommended for Hostinger shared hosting)
-        $geminiKey = (string) config('services.gemini.key');
+        $geminiKey = InvoiceAiController::resolveStoredApiKey('gemini_api_key', 'services.gemini.key', 'GEMINI_API_KEY');
         if ($geminiKey !== '') {
             try {
                 return $this->extractWithGemini($file, $geminiKey);
@@ -28,7 +29,7 @@ class InvoiceOcrService
         }
 
         // 2. Space OCR (https://space-ocr.com Markdown & Table Engine)
-        $spaceOcrKey = (string) config('services.space_ocr.key');
+        $spaceOcrKey = InvoiceAiController::resolveStoredApiKey('space_ocr_api_key', 'services.space_ocr.key', 'SPACE_OCR_API_KEY');
         if ($spaceOcrKey !== '') {
             try {
                 return $this->extractWithSpaceOcr($file, $spaceOcrKey);
@@ -38,7 +39,7 @@ class InvoiceOcrService
         }
 
         // 3. OpenAI Vision API (Alternative high-precision AI vision)
-        $openaiKey = (string) config('services.openai.key');
+        $openaiKey = InvoiceAiController::resolveStoredApiKey('openai_api_key', 'services.openai.key', 'OPENAI_API_KEY');
         if ($openaiKey !== '') {
             try {
                 return $this->extractWithOpenAi($file, $openaiKey);
@@ -48,7 +49,7 @@ class InvoiceOcrService
         }
 
         // 4. OCR.space Pro / Table Engine (Cloud OCR fallback)
-        $ocrSpaceKey = (string) config('ocr_space.key');
+        $ocrSpaceKey = InvoiceAiController::resolveStoredApiKey('ocr_space_api_key', 'ocr_space.key', 'OCR_SPACE_API_KEY');
         if ($ocrSpaceKey !== '') {
             return $this->extractWithOcrSpace($file, $ocrSpaceKey);
         }

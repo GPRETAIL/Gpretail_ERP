@@ -317,7 +317,7 @@ class CustomerController extends Controller
             $averageVisitGapDays = round(array_sum($gaps) / count($gaps), 1);
         }
 
-        $storeId = $request->header('X-Company-Scope-Id', 1);
+        $storeId = $this->resolveStoreId($request, 1);
         $windowMonths = (int) (Store::where('id', $storeId)->value('loyalty_redeem_window_months') ?? 12);
         $availablePoints = (int) LoyaltyTransaction::where('customer_id', $id)
             ->where('type', 'EARN')

@@ -104,7 +104,7 @@ class PosReturnController extends Controller
             ], 422);
         }
 
-        $storeId = $request->header('X-Company-Scope-Id', 1);
+        $storeId = $this->resolveStoreId($request, 1);
         $standalone = $request->boolean('standalone');
         $sourcePosSaleId = $request->input('sourcePosSaleId');
         $itemsData = $request->input('items', []);
@@ -238,7 +238,7 @@ class PosReturnController extends Controller
 
     public function nextReturnNo(Request $request)
     {
-        $storeId = (int) $request->header('X-Company-Scope-Id', 1);
+        $storeId = (int) $this->resolveStoreId($request, 1);
         $nextNo = DocumentNumberService::peek($storeId, 'RET');
 
         return response()->json([
@@ -375,7 +375,7 @@ class PosReturnController extends Controller
 
     public function lookupCredit(Request $request)
     {
-        $storeId = $request->header('X-Company-Scope-Id', 1);
+        $storeId = $this->resolveStoreId($request, 1);
         $raw = trim((string) $request->input('returnNo', ''));
         $id = (int) preg_replace('/^r[ro]\//i', '', $raw);
 

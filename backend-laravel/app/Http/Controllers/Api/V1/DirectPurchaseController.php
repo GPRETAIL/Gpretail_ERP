@@ -607,7 +607,7 @@ class DirectPurchaseController extends Controller
                 }
 
                 DirectPurchase::create([
-                    'store_id' => $request->header('X-Company-Scope-Id', 1),
+                    'store_id' => $this->resolveStoreId($request, 1),
                     'company_id' => $row['company_id'] ?? 1,
                     'company_name' => $row['company'] ?? 'SBT Store',
                     'supplier_id' => $supplier->id,

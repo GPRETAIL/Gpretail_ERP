@@ -137,7 +137,7 @@ class LookupController extends Controller
 
                     case 'next_lr':
                         $data['next_lr'] = DocumentNumberService::peek(
-                            (int) $request->header('X-Company-Scope-Id', 1),
+                            (int) $this->resolveStoreId($request, 1),
                             'LR'
                         );
                         break;

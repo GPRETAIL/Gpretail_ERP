@@ -48,86 +48,22 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import ExportBottomSheet from "./ExportBottomSheet";
 import { fetchTablePreference, saveTablePreference } from "../utils/tablePreferences";
 
-const FILTER_OPERATORS = [
-  { value: "contains", label: "Contain" },
-  { value: "not_contains", label: "Does not contain" },
-  { value: "equal", label: "Equal" },
-  { value: "not_equal", label: "Does not equal" },
-  { value: "begins_with", label: "Begins with" },
-  { value: "ends_with", label: "Ends With" },
-  { value: "blank", label: "Blank" },
-  { value: "not_blank", label: "Not blank" },
-];
-
-const FILTER_DEFAULT = { operator: "contains", value: "" };
-const INPUT_FREE_OPERATORS = new Set(["blank", "not_blank"]);
-
-const ROW_HEIGHT_PX = 33;
-const HEADER_HEIGHT_PX = 37;
-const FIXED_TABLE_HEIGHT = ROW_HEIGHT_PX * 12 + HEADER_HEIGHT_PX;
-
-const DEFAULT_MIN_COLUMN_WIDTH_PX = 64;
-const DEFAULT_MAX_COLUMN_WIDTH_PX = 640;
-
-const toText = (value, fallback = "--") => {
-  if (value === null || value === undefined) return fallback;
-  const text = String(value).trim();
-  return text === "" ? fallback : text;
-};
-
-const normalize = (value) => String(value ?? "").toLowerCase().trim();
-const isEffectivelyBlank = (value) => {
-  if (value === null || value === undefined) return true;
-  const text = String(value).trim();
-  if (text === "") return true;
-  return text === "--" || text === "-";
-};
-
-const passesColumnFilter = (rawValue, filter) => {
-  const value = normalize(rawValue);
-  const query = normalize(filter.value);
-
-  switch (filter.operator) {
-    case "contains":
-      return query === "" ? true : value.includes(query);
-    case "not_contains":
-      return query === "" ? true : !value.includes(query);
-    case "equal":
-      return query === "" ? true : value === query;
-    case "not_equal":
-      return query === "" ? true : value !== query;
-    case "begins_with":
-      return query === "" ? true : value.startsWith(query);
-    case "ends_with":
-      return query === "" ? true : value.endsWith(query);
-    case "blank":
-      return isEffectivelyBlank(rawValue);
-    case "not_blank":
-      return !isEffectivelyBlank(rawValue);
-    default:
-      return true;
-  }
-};
-
-const defaultCell = (value) => toText(value);
-
-const normalizeFilterMap = (source = {}, schemaColumns = []) => {
-  const next = {};
-  schemaColumns.forEach((column) => {
-    const filter = source?.[column.key] || FILTER_DEFAULT;
-    next[column.key] = {
-      operator: filter?.operator || FILTER_DEFAULT.operator,
-      value: String(filter?.value || ""),
-    };
-  });
-  return next;
-};
-
-const isFilterStateActive = (filter) => {
-  if (!filter) return false;
-  if (filter.operator === "blank" || filter.operator === "not_blank") return true;
-  return String(filter.value || "").trim() !== "";
-};
+import {
+  FILTER_OPERATORS,
+  FILTER_DEFAULT,
+  INPUT_FREE_OPERATORS,
+  ROW_HEIGHT_PX,
+  HEADER_HEIGHT_PX,
+  FIXED_TABLE_HEIGHT,
+  DEFAULT_MIN_COLUMN_WIDTH_PX,
+  DEFAULT_MAX_COLUMN_WIDTH_PX,
+  toText,
+  normalize,
+  passesColumnFilter,
+  defaultCell,
+  normalizeFilterMap,
+  isFilterStateActive,
+} from "./filterableDataTableUtils";
 
 export default function FilterableDataTable({
   rows = [],

@@ -58,19 +58,19 @@ class BackupService
             'transport_receipts' => ['scope' => 'none'],
         ],
         'masters' => [
-            'brands' => ['scope' => 'none'],
-            'categories' => ['scope' => 'none'],
-            'attribute_types' => ['scope' => 'none'],
-            'attribute_values' => ['scope' => 'none'],
-            'size_groups' => ['scope' => 'none'],
-            'sizes' => ['scope' => 'none'],
-            'taxes' => ['scope' => 'none'],
-            'tax_slabs' => ['scope' => 'none'],
-            'suppliers' => ['scope' => 'none'],
-            'agents' => ['scope' => 'none'],
-            'transports' => ['scope' => 'none'],
-            'products' => ['scope' => 'none'],
-            'product_variants' => ['scope' => 'none'],
+            'brands' => ['scope' => 'store_id_or_company_id'],
+            'categories' => ['scope' => 'store_id_or_company_id'],
+            'attribute_types' => ['scope' => 'store_id_or_company_id'],
+            'attribute_values' => ['scope' => 'store_id_or_company_id'],
+            'size_groups' => ['scope' => 'store_id_or_company_id'],
+            'sizes' => ['scope' => 'store_id_or_company_id'],
+            'taxes' => ['scope' => 'store_id_or_company_id'],
+            'tax_slabs' => ['scope' => 'via_parent', 'parent' => 'taxes', 'local_fk' => 'tax_id'],
+            'suppliers' => ['scope' => 'store_id_or_company_id'],
+            'agents' => ['scope' => 'store_id_or_company_id'],
+            'transports' => ['scope' => 'store_id_or_company_id'],
+            'products' => ['scope' => 'store_id_or_company_id'],
+            'product_variants' => ['scope' => 'via_parent', 'parent' => 'products', 'local_fk' => 'product_id'],
         ],
         'store' => [
             'stores' => ['scope' => 'self_id'],
@@ -84,12 +84,12 @@ class BackupService
             'user_table_preferences' => ['scope' => 'via_parent', 'parent' => 'users', 'local_fk' => 'user_id'],
         ],
         'crm' => [
-            'customers' => ['scope' => 'none'],
+            'customers' => ['scope' => 'store_id_or_company_id'],
             'customer_orders' => ['scope' => 'store_id'],
             'customer_order_items' => ['scope' => 'via_parent', 'parent' => 'customer_orders', 'local_fk' => 'customer_order_id'],
             'customer_order_communications' => ['scope' => 'via_parent', 'parent' => 'customer_orders', 'local_fk' => 'customer_order_id'],
-            'loyalty_transactions' => ['scope' => 'none'],
-            'credit_ledgers' => ['scope' => 'none'],
+            'loyalty_transactions' => ['scope' => 'via_parent', 'parent' => 'customers', 'local_fk' => 'customer_id'],
+            'credit_ledgers' => ['scope' => 'via_parent', 'parent' => 'customers', 'local_fk' => 'customer_id'],
         ],
         'finance' => [
             'supplier_payments' => ['scope' => 'store_id'],
@@ -97,9 +97,9 @@ class BackupService
             'general_ledgers' => ['scope' => 'store_id'],
         ],
         'settings' => [
-            'system_configurations' => ['scope' => 'none'],
-            'hr_departments' => ['scope' => 'none'],
-            'hr_designations' => ['scope' => 'none'],
+            'system_configurations' => ['scope' => 'store_id_or_company_id'],
+            'hr_departments' => ['scope' => 'store_id_or_company_id'],
+            'hr_designations' => ['scope' => 'store_id_or_company_id'],
             'employees' => ['scope' => 'store_id'],
             'attendances' => ['scope' => 'via_parent', 'parent' => 'employees', 'local_fk' => 'employee_id'],
             'app_notifications' => ['scope' => 'store_id'],
@@ -261,19 +261,23 @@ class BackupService
         return $zipPath;
     }
 
+    private const ENC_MAGIC_V2 = "VXENC2";
+
     public function encryptArchive(string $zipPath, string $password): string
     {
         $data = file_get_contents($zipPath);
-        $key = hash('sha256', $password, true);
-        $iv = random_bytes(16);
-        $cipher = openssl_encrypt($data, 'aes-256-cbc', $key, OPENSSL_RAW_DATA, $iv);
+        $salt = random_bytes(16);
+        $iv = random_bytes(12);
+        $key = hash_pbkdf2('sha256', $password, $salt, 100000, 32, true);
+        $tag = '';
+        $cipher = openssl_encrypt($data, 'aes-256-gcm', $key, OPENSSL_RAW_DATA, $iv, $tag, '', 16);
 
         if ($cipher === false) {
             throw new RuntimeException('Failed to encrypt backup archive.');
         }
 
         $encPath = $zipPath.'.enc';
-        file_put_contents($encPath, $iv.$cipher);
+        file_put_contents($encPath, self::ENC_MAGIC_V2.$salt.$iv.$tag.$cipher);
         @unlink($zipPath);
 
         return $encPath;
@@ -281,11 +285,22 @@ class BackupService
 
     public function decryptArchive(string $encPath, string $password): string
     {
-        $blob = file_get_contents($encPath);
-        $iv = substr($blob, 0, 16);
-        $cipher = substr($blob, 16);
-        $key = hash('sha256', $password, true);
-        $plain = openssl_decrypt($cipher, 'aes-256-cbc', $key, OPENSSL_RAW_DATA, $iv);
+        $blob = (string) file_get_contents($encPath);
+        if (str_starts_with($blob, self::ENC_MAGIC_V2)) {
+            $offset = strlen(self::ENC_MAGIC_V2);
+            $salt = substr($blob, $offset, 16);
+            $iv = substr($blob, $offset + 16, 12);
+            $tag = substr($blob, $offset + 28, 16);
+            $cipher = substr($blob, $offset + 44);
+            $key = hash_pbkdf2('sha256', $password, $salt, 100000, 32, true);
+            $plain = openssl_decrypt($cipher, 'aes-256-gcm', $key, OPENSSL_RAW_DATA, $iv, $tag);
+        } else {
+            // Backward compatibility for legacy AES-256-CBC archives
+            $iv = substr($blob, 0, 16);
+            $cipher = substr($blob, 16);
+            $key = hash('sha256', $password, true);
+            $plain = openssl_decrypt($cipher, 'aes-256-cbc', $key, OPENSSL_RAW_DATA, $iv);
+        }
 
         if ($plain === false) {
             throw new RuntimeException('Incorrect password or corrupted backup file.');

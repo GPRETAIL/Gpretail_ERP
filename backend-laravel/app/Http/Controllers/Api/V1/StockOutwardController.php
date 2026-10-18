@@ -56,7 +56,7 @@ class StockOutwardController extends Controller
 
     public function store(Request $request)
     {
-        $sourceStoreId = $request->header('X-Company-Scope-Id', 1);
+        $sourceStoreId = $this->resolveStoreId($request, 1);
 
         $validator = Validator::make($request->all(), [
             'target_store_id' => [

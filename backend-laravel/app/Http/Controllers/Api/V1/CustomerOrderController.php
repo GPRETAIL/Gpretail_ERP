@@ -372,7 +372,7 @@ class CustomerOrderController extends Controller
         // See CustomerController::bulk() - UploadImportButton posts the
         // row array as the raw JSON body, not wrapped in {rows: [...]}.
         $rows = $request->input('rows') ?? $request->all();
-        $storeId = $request->header('X-Company-Scope-Id', 1);
+        $storeId = $this->resolveStoreId($request, 1);
 
         $created = DB::transaction(function () use ($rows, $storeId) {
             $count = 0;
@@ -421,7 +421,7 @@ class CustomerOrderController extends Controller
 
     public function nextOrderNo(Request $request)
     {
-        $storeId = (int) $request->header('X-Company-Scope-Id', 1);
+        $storeId = (int) $this->resolveStoreId($request, 1);
 
         return response()->json([
             'success' => true,
@@ -491,7 +491,7 @@ class CustomerOrderController extends Controller
 
     public function stockAvailability(Request $request)
     {
-        $storeId = $request->header('X-Company-Scope-Id', 1);
+        $storeId = $this->resolveStoreId($request, 1);
         $productId = $request->input('productId') ?: $request->input('product_id');
 
         $stock = Stock::where('store_id', $storeId)

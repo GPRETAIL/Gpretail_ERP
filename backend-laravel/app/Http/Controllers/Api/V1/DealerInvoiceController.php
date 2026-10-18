@@ -87,7 +87,7 @@ class DealerInvoiceController extends Controller
             ], 422);
         }
 
-        $storeId = $request->header('X-Company-Scope-Id', 1);
+        $storeId = $this->resolveStoreId($request, 1);
 
         $invoice = DB::transaction(function () use ($request, $storeId) {
             $customerId = $request->input('customer_id');
@@ -148,7 +148,7 @@ class DealerInvoiceController extends Controller
 
     public function nextBillNo(Request $request)
     {
-        $storeId = (int) $request->header('X-Company-Scope-Id', 1);
+        $storeId = (int) $this->resolveStoreId($request, 1);
         $nextNo = DocumentNumberService::peek($storeId, 'DINV');
 
         return response()->json([
@@ -174,7 +174,7 @@ class DealerInvoiceController extends Controller
         // returnsStore() delegates straight to store(), which always mints from the
         // DINV counter (there's no separate DRET persistence path) -- preview the same
         // counter so this doesn't show a number that will never actually be assigned.
-        $storeId = (int) $request->header('X-Company-Scope-Id', 1);
+        $storeId = (int) $this->resolveStoreId($request, 1);
         $nextNo = DocumentNumberService::peek($storeId, 'DINV');
 
         return response()->json([

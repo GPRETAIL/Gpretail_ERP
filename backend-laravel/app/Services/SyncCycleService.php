@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\PlatformActivation;
+use App\Models\Store;
 use App\Models\StoreLocalNode;
 use App\Models\SyncOutboxEvent;
 use Illuminate\Http\Client\Response;
@@ -31,6 +33,15 @@ class SyncCycleService
         $node = StoreLocalNode::where('enabled', true)->first();
         if (! $node) {
             return ['ran' => false, 'reason' => 'No enabled local-server configuration found.'];
+        }
+
+        $store = Store::find($node->store_id);
+        $activation = PlatformActivation::current();
+        if ($store && ($store->platform_store_id || $activation?->activated)) {
+            $licence = app(StoreLicenceVerifier::class)->verify($store, $activation);
+            if (! $licence['ok']) {
+                return ['ran' => false, 'reason' => $licence['message'] ?? 'Store licence is invalid or expired.'];
+            }
         }
 
         $cloudApi = rtrim((string) config('sync.cloud_api_base_url'), '/');

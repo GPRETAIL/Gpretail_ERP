@@ -18,7 +18,7 @@ class CashRegisterController extends Controller
     // Cash Opening List
     public function openingIndex(Request $request)
     {
-        $storeId = $request->header('X-Company-Scope-Id', 1);
+        $storeId = $this->resolveStoreId($request, 1);
         $query = CashRegisterSession::with('user')
             ->where('store_id', $storeId);
 
@@ -57,7 +57,7 @@ class CashRegisterController extends Controller
             ], 422);
         }
 
-        $storeId = $request->header('X-Company-Scope-Id', 1);
+        $storeId = $this->resolveStoreId($request, 1);
         $userId = $request->user()?->id ?? 1;
 
         // Close any existing open session or create new
@@ -81,7 +81,7 @@ class CashRegisterController extends Controller
 
     public function openingMeta(Request $request)
     {
-        $storeId = $request->header('X-Company-Scope-Id', 1);
+        $storeId = $this->resolveStoreId($request, 1);
         $lastSession = CashRegisterSession::where('store_id', $storeId)
             ->orderBy('id', 'desc')
             ->first();
@@ -99,7 +99,7 @@ class CashRegisterController extends Controller
     // Cash Closing List
     public function closingIndex(Request $request)
     {
-        $storeId = $request->header('X-Company-Scope-Id', 1);
+        $storeId = $this->resolveStoreId($request, 1);
         $query = CashRegisterSession::with('user')
             ->where('store_id', $storeId)
             ->where('status', 'CLOSED');
@@ -125,7 +125,7 @@ class CashRegisterController extends Controller
             ], 422);
         }
 
-        $storeId = $request->header('X-Company-Scope-Id', 1);
+        $storeId = $this->resolveStoreId($request, 1);
         $session = CashRegisterSession::where('store_id', $storeId)
             ->where('status', 'OPEN')
             ->orderBy('id', 'desc')
@@ -169,7 +169,7 @@ class CashRegisterController extends Controller
 
     public function closingMeta(Request $request)
     {
-        $storeId = $request->header('X-Company-Scope-Id', 1);
+        $storeId = $this->resolveStoreId($request, 1);
         $session = CashRegisterSession::where('store_id', $storeId)
             ->where('status', 'OPEN')
             ->orderBy('id', 'desc')
@@ -196,7 +196,7 @@ class CashRegisterController extends Controller
     {
         // Previews the same counter PosSaleController::store() actually mints from
         // (prefix INV), not a separate BILL- sequence that would drift from reality.
-        $storeId = (int) $request->header('X-Company-Scope-Id', 1);
+        $storeId = (int) $this->resolveStoreId($request, 1);
         $nextNo = DocumentNumberService::peek($storeId, 'INV');
 
         return response()->json([
@@ -208,7 +208,7 @@ class CashRegisterController extends Controller
 
     public function openingAmount(Request $request)
     {
-        $storeId = $request->header('X-Company-Scope-Id', 1);
+        $storeId = $this->resolveStoreId($request, 1);
         $session = CashRegisterSession::where('store_id', $storeId)
             ->where('status', 'OPEN')
             ->orderBy('id', 'desc')

@@ -59,9 +59,10 @@ class ProductAttributeController extends Controller
             $normalizedCode = $this->defaultAliases[$normalizedCode];
         }
 
+        $storeScopeId = $this->resolveStoreId($request, 1);
         $attributeType = AttributeType::firstOrCreate(
-            ['code' => $normalizedCode],
-            ['name' => ucwords(str_replace('_', ' ', $normalizedCode)), 'is_active' => true]
+            ['code' => $normalizedCode, 'store_id' => $storeScopeId],
+            ['name' => ucwords(str_replace('_', ' ', $normalizedCode)), 'is_active' => true, 'store_id' => $storeScopeId]
         );
 
         // Seed defaults if empty
@@ -131,9 +132,10 @@ class ProductAttributeController extends Controller
             $normalizedCode = $this->defaultAliases[$normalizedCode];
         }
 
+        $storeScopeId = $this->resolveStoreId($request, 1);
         $attributeType = AttributeType::firstOrCreate(
-            ['code' => $normalizedCode],
-            ['name' => ucwords(str_replace('_', ' ', $normalizedCode)), 'is_active' => true]
+            ['code' => $normalizedCode, 'store_id' => $storeScopeId],
+            ['name' => ucwords(str_replace('_', ' ', $normalizedCode)), 'is_active' => true, 'store_id' => $storeScopeId]
         );
 
         $name = $request->input('name') ?? $request->input('value') ?? $request->input('attribute_value');
@@ -143,7 +145,7 @@ class ProductAttributeController extends Controller
         $extraData = $request->input('extra_data') ?: null;
         $user = $request->user();
         $createdBy = $request->input('created_by') ?: ($user?->name ?: ($user?->username ?: 'Superadmin'));
-        $companyId = $request->input('company_id') ?: ($user?->company_id ?: 1);
+        $companyId = $this->resolveStoreId($request, (int) ($user?->store_id ?: 1));
 
         if (! $name) {
             return response()->json([

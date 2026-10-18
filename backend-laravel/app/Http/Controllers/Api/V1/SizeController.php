@@ -136,7 +136,7 @@ class SizeController extends Controller
 
         $user = $request->user();
         $createdBy = $request->input('created_by') ?: ($user?->name ?: ($user?->username ?: 'Superadmin'));
-        $companyId = $request->input('company_id') ?: ($user?->company_id ?: 1);
+        $companyId = $this->resolveStoreId($request, (int) ($user?->store_id ?: 1));
 
         $size = Size::create([
             'size_group_id' => $sizeGroupId,
@@ -272,7 +272,7 @@ class SizeController extends Controller
 
         $user = $request->user();
         $createdBy = $request->input('created_by') ?: ($user?->name ?: ($user?->username ?: 'Superadmin'));
-        $companyId = $request->input('company_id') ?: ($user?->company_id ?: 1);
+        $companyId = $this->resolveStoreId($request, (int) ($user?->store_id ?: 1));
         $code = $request->input('code') ?: 'SG_'.strtoupper(substr(uniqid(), -6));
 
         $group = SizeGroup::create([

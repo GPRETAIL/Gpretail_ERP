@@ -338,23 +338,56 @@ class UserAccessController extends Controller
     // User Table Preferences
     public function getTablePreferences(Request $request, $tableKey)
     {
+        $user = $request->user();
+        $allPrefs = $user?->dashboard_layouts['_table_preferences'] ?? [];
+        $saved = is_array($allPrefs[$tableKey] ?? null) ? $allPrefs[$tableKey] : [];
+
         return response()->json([
             'success' => true,
             'data' => [
                 'table_key' => $tableKey,
-                'preferences' => [],
+                'visible_columns' => $saved['visible_columns'] ?? null,
+                'column_order' => $saved['column_order'] ?? null,
+                'pinned_column_keys' => $saved['pinned_column_keys'] ?? [],
+                'preferences' => $saved,
             ],
         ]);
     }
 
     public function updateTablePreferences(Request $request, $tableKey)
     {
+        $request->validate([
+            'visibleColumns' => ['nullable', 'array'],
+            'visible_columns' => ['nullable', 'array'],
+            'columnOrder' => ['nullable', 'array'],
+            'column_order' => ['nullable', 'array'],
+            'pinnedColumnKeys' => ['nullable', 'array'],
+            'pinned_column_keys' => ['nullable', 'array'],
+        ]);
+
+        $saved = [
+            'visible_columns' => $request->input('visibleColumns', $request->input('visible_columns')),
+            'column_order' => $request->input('columnOrder', $request->input('column_order')),
+            'pinned_column_keys' => $request->input('pinnedColumnKeys', $request->input('pinned_column_keys', [])),
+        ];
+
+        $user = $request->user();
+        if ($user) {
+            $layouts = $user->dashboard_layouts ?? [];
+            $tablePrefs = is_array($layouts['_table_preferences'] ?? null) ? $layouts['_table_preferences'] : [];
+            $tablePrefs[$tableKey] = $saved;
+            $layouts['_table_preferences'] = $tablePrefs;
+            $user->dashboard_layouts = $layouts;
+            $user->save();
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Table preferences saved',
             'data' => [
                 'table_key' => $tableKey,
-                'preferences' => $request->all(),
+                ...$saved,
+                'preferences' => $saved,
             ],
         ]);
     }

@@ -65,7 +65,7 @@ class PhysicalStockController extends Controller
             ], 422);
         }
 
-        $storeId = $request->header('X-Company-Scope-Id', 1);
+        $storeId = $this->resolveStoreId($request, 1);
 
         $audit = DB::transaction(function () use ($request, $storeId) {
             $auditNo = $request->input('audit_no') ?: 'AUD-'.date('Ymd').'-'.rand(1000, 9999);
