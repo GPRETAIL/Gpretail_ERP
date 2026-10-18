@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import api from "../api/axios";
+import { Box, Button, Typography } from "@mui/material";
+import { FaGoogle } from "react-icons/fa";
 
 const SCRIPT_ID = "google-gsi";
 const SCRIPT_URL = "https://accounts.google.com/gsi/client";
@@ -36,7 +38,9 @@ export default function GoogleSignInButton({ onCredential, disabled = false, the
         }, auto_select: false });
         host.current.replaceChildren();
         window.google.accounts.id.renderButton(host.current, {
-          theme, size: "large", text: "signin_with",
+          // Medium keeps Google's standard label instead of the personalized account card.
+          type: "standard", theme, size: "medium", text: "signin_with",
+          shape: "rectangular", logo_alignment: "left",
           width: Math.max(200, Math.min(400, Math.floor(host.current.clientWidth || 336))),
         });
         setStatus("ready");
@@ -70,10 +74,10 @@ export default function GoogleSignInButton({ onCredential, disabled = false, the
     if (!window.google?.accounts?.id) document.getElementById(SCRIPT_ID)?.remove();
     setAttempt((value) => value + 1);
   };
-  return <div className="w-full">
-    <div ref={host} inert={disabled} aria-busy={disabled} className={disabled ? "pointer-events-none opacity-50" : ""} />
-    {status !== "ready" ? <button type="button" disabled={disabled || status !== "failed"} onClick={retry} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 disabled:opacity-60">{status === "failed" ? "Retry Google sign-in" : "Sign in with Google"}</button> : null}
-    {status === "unavailable" ? <p className="mt-2 text-center text-xs text-slate-500">Google sign-in is unavailable. Use email and password.</p> : null}
-    {status === "failed" ? <p role="status" className="mt-2 text-center text-xs text-slate-500">Google sign-in could not load. Retry or use email and password.</p> : null}
-  </div>;
+  return <Box sx={{ width: "100%" }}>
+    <Box ref={host} inert={disabled} aria-busy={disabled} sx={{ width: "100%", display: status === "ready" ? "flex" : "block", justifyContent: "center", opacity: disabled ? 0.5 : 1, pointerEvents: disabled ? "none" : "auto" }} />
+    {status !== "ready" ? <Button type="button" fullWidth variant="outlined" disabled={disabled || status !== "failed"} onClick={retry} startIcon={<FaGoogle color="#DB4437" size={16} />} sx={{ minHeight: 32, textTransform: "none", fontWeight: 500, color: "text.primary", borderColor: "divider", bgcolor: "background.paper" }}>{status === "failed" ? "Retry Google sign-in" : "Sign in with Google"}</Button> : null}
+    {status === "unavailable" ? <Typography sx={{ mt: 1, textAlign: "center", fontSize: 12, color: "text.secondary" }}>Google sign-in is unavailable. Use email and password.</Typography> : null}
+    {status === "failed" ? <Typography role="status" sx={{ mt: 1, textAlign: "center", fontSize: 12, color: "text.secondary" }}>Google sign-in could not load. Retry or use email and password.</Typography> : null}
+  </Box>;
 }
