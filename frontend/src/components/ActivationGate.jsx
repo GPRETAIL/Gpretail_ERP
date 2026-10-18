@@ -22,6 +22,7 @@ import ActivationWizard from "../pages/ActivationWizard";
 const DesktopActivationGate = ({ children }) => {
   const dispatch = useDispatch();
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
+  const [enteredOnLogin] = useState(() => window.location.pathname === "/login");
   const [cachedActivated] = useState(() => localStorage.getItem("vx_activated") === "1");
   const [phase, setPhase] = useState(cachedActivated ? "activated" : "loading");
   const [licence, setLicence] = useState(null);
@@ -40,7 +41,7 @@ const DesktopActivationGate = ({ children }) => {
         localStorage.removeItem("vx_activated");
         // An unactivated installation's public login URL must remain a sign-in
         // entry point, including when the browser still has a valid legacy session.
-        if (window.location.pathname === "/login") dispatch(logout());
+        if (enteredOnLogin) dispatch(logout());
         setPhase("required");
       } else setPhase(cachedActivated ? "activated" : "error");
     },

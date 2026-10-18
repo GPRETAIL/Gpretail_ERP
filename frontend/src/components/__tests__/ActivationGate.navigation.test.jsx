@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { configureStore } from "@reduxjs/toolkit";
 import { Provider } from "react-redux";
 import { afterEach, expect, it, vi } from "vitest";
@@ -34,6 +34,21 @@ it("shows login at the public login URL even with a saved legacy session", async
   expect(await screen.findByText("Login page")).toBeInTheDocument();
   expect(screen.queryByText("Activation form")).not.toBeInTheDocument();
   expect(store.getState().auth.isAuthenticated).toBe(false);
+});
+
+it("remembers login entry when an old activation cache briefly redirects the saved session", async () => {
+  window.history.replaceState({}, "", "/login");
+  localStorage.setItem("vx_activated", "1");
+  let finish;
+  const fetchStatus = vi.fn(() => new Promise(resolve => { finish = resolve; }));
+  vi.stubGlobal("fetch", fetchStatus);
+  const store = configureStore({ reducer: { auth: authReducer }, preloadedState: { auth: { isAuthenticated: true, token: "legacy-token", user: { id: 1 } } } });
+  render(<Provider store={store}><ActivationGate><div>Login page</div></ActivationGate></Provider>);
+  await waitFor(() => expect(fetchStatus).toHaveBeenCalled());
+  window.history.replaceState({}, "", "/dashboard");
+  await act(async () => finish({ ok: true, json: async () => ({ data: { activated: false } }) }));
+  expect(store.getState().auth.isAuthenticated).toBe(false);
+  expect(screen.queryByText("Activation form")).not.toBeInTheDocument();
 });
 
 it("moves between mobile and desktop gates without changing hook order", async () => {
