@@ -53,6 +53,12 @@ const brandedUser = {
 };
 
 describe("Themes settings page", () => {
+  it("explains store activation and prevents theme writes when no store exists", () => {
+    renderThemes({ role: "admin", is_tenant_admin: true, store_ids: [] });
+    expect(screen.getByText(/No store is available yet/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^save$/i })).toBeDisabled();
+    expect(screen.getByRole("link", { name: "Store Activation" })).toHaveAttribute("href", "/store-activation");
+  });
   it("shows the tenant's saved brand colors and radius as the initial form values", () => {
     renderThemes(brandedUser);
 

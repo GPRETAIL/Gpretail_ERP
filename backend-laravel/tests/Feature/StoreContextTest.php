@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\PlatformActivation;
 use App\Models\Size;
 use App\Models\SizeGroup;
 use App\Models\Store;
@@ -23,6 +24,56 @@ class StoreContextTest extends TestCase
     private function store(string $code): Store
     {
         return Store::create(['name' => $code, 'code' => $code, 'is_active' => true]);
+    }
+
+    public function test_registered_tenant_identity_is_independent_of_selected_store(): void
+    {
+        $owner = $this->owner();
+        $owner->update(['platform_company_code' => 'CMP-OWNER']);
+        PlatformActivation::create(['company_code' => 'CMP-OWNER', 'activated' => true,
+            'status' => 'active', 'tenant_admin_email' => $owner->email]);
+        Sanctum::actingAs($owner);
+        $this->getJson('/api/auth/me')->assertOk()->assertJsonPath('data.is_tenant_admin', true)
+            ->assertJsonPath('data.role', 'admin')->assertJsonCount(0, 'data.store_ids');
+        $one = $this->store('TENANT-ONE');
+        $one->update(['platform_company_code' => 'CMP-OWNER']);
+        $this->getJson('/api/auth/me')->assertJsonPath('data.is_tenant_admin', true)
+            ->assertJsonPath('data.store_id', $one->id);
+        $two = $this->store('TENANT-TWO');
+        $two->update(['platform_company_code' => 'CMP-OWNER']);
+        $this->withHeader('X-Company-Scope-Id', (string) $two->id)->getJson('/api/auth/me')
+            ->assertOk()->assertJsonPath('data.is_tenant_admin', true)->assertJsonPath('data.company_id', $two->id);
+        $owner->update(['store_id' => $two->id]);
+        $this->getJson('/api/auth/me')->assertJsonPath('data.is_tenant_admin', false);
+    }
+
+    public function test_another_email_or_company_cannot_claim_tenant_admin_identity(): void
+    {
+        $owner = $this->owner();
+        $owner->update(['platform_company_code' => 'CMP-OWNER']);
+        $activation = PlatformActivation::create(['company_code' => 'CMP-OWNER', 'activated' => true,
+            'status' => 'active', 'tenant_admin_email' => 'different@example.test']);
+        Sanctum::actingAs($owner);
+        $this->getJson('/api/auth/me')->assertJsonPath('data.is_tenant_admin', false);
+        $activation->update(['company_code' => 'CMP-OTHER', 'tenant_admin_email' => $owner->email]);
+        $this->getJson('/api/auth/me')->assertJsonPath('data.is_tenant_admin', false);
+    }
+
+    public function test_tenant_theme_administration_cannot_cross_company_boundaries(): void
+    {
+        $owner = $this->owner();
+        $owner->update(['platform_company_code' => 'CMP-OWNER']);
+        PlatformActivation::create(['company_code' => 'CMP-OWNER', 'activated' => true,
+            'status' => 'active', 'tenant_admin_email' => $owner->email]);
+        $own = $this->store('OWN-THEME');
+        $own->update(['platform_company_code' => 'CMP-OWNER']);
+        $other = $this->store('OTHER-THEME');
+        $other->update(['platform_company_code' => 'CMP-OTHER']);
+        Sanctum::actingAs($owner);
+        $this->putJson('/api/companies/'.$own->id.'/theme', ['primary_color' => '#112233'])->assertOk();
+        $this->putJson('/api/companies/'.$other->id.'/theme', ['primary_color' => '#445566'])->assertNotFound();
+        $this->getJson('/api/companies')->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $own->id);
+        $this->assertNull($other->fresh()->theme_customization);
     }
 
     public function test_owner_without_stores_cannot_create_data(): void

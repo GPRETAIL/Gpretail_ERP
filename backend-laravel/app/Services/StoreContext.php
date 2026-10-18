@@ -42,9 +42,19 @@ class StoreContext
     public function authFields(User $user): array
     {
         $stores = $this->stores($user);
-        $selected = $stores->count() === 1 ? $stores->first() : null;
+        // ResolveStoreContext has already checked this selection against this user's stores.
+        $selected = $stores->firstWhere('id', request()->attributes->get('store_context_id'))
+            ?? ($stores->count() === 1 ? $stores->first() : null);
+        $activation = PlatformActivation::current();
+        // A selected store in the response is not the account's fixed store assignment.
+        // Issue the tenant identity explicitly, using the registered company administrator.
+        $tenantAdmin = $user->is_active && $user->role === 'admin' && ! $user->store_id
+            && $user->platform_company_code && $activation?->activated
+            && $user->platform_company_code === $activation->company_code
+            && strcasecmp($user->email, $activation->tenant_admin_email ?? '') === 0;
 
         return [
+            'is_tenant_admin' => (bool) $tenantAdmin,
             'platform_company_code' => $user->platform_company_code,
             'store_id' => $selected?->id,
             'company_id' => $selected?->id, // Compatibility alias; never defaults to 1.

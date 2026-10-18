@@ -98,12 +98,7 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
   const isApprovalInboxRoute = String(activeTabPath || "").startsWith("/sales/approval-inbox");
   const isOwner = String(user?.role || "").toLowerCase() === "owner";
 
-  // The Settings menu item below used to hardcode "/settings/company", but that page is gated to
-  // isSuperAdmin only (see accessControl.js) -- for every other role it silently bounced back to
-  // /dashboard via ProtectedRoute with no explanation, looking exactly like a dead/broken link.
-  // Mirror the Sidebar's own capability filtering (getVisibleNavItems) so the click always lands
-  // on the first Settings sub-page this user can actually open, and hide the item entirely when
-  // they can't open any of them.
+  // Use the same company administration and plan permissions as the sidebar.
   const settingsLandingPath = useMemo(() => {
     const sourceNavItems = isOwner ? ownerNavItems : navItems;
     const settingsModule = getVisibleNavItems(sourceNavItems, user).find((item) => item.name === "Settings");

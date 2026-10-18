@@ -6,6 +6,7 @@ import { RotateCcw, Save, Square, Apple, Droplets, Check, X, Type, Bookmark, Tra
 import { toast } from "react-toastify";
 import {
   Box,
+  Alert,
   Button,
   Card,
   Chip,
@@ -351,7 +352,7 @@ const Themes = () => {
                     color="error"
                     startIcon={<RotateCcw size={16} />}
                     onClick={handleResetToDefault}
-                    disabled={saving}
+                    disabled={saving || !companyId}
                   >
                     Reset to Default
                   </Button>
@@ -359,12 +360,18 @@ const Themes = () => {
                     variant="contained"
                     startIcon={<Save size={16} />}
                     onClick={handleSave}
-                    disabled={saving || !primaryValid || !secondaryValid || !radiusValid || !advancedFieldsValid}
+                    disabled={saving || !companyId || !primaryValid || !secondaryValid || !radiusValid || !advancedFieldsValid}
                   >
                     {saving ? "Saving..." : "Save"}
                   </Button>
                 </Stack>
               </Stack>
+              {!companyId && <Alert severity="info" sx={{ mt: 2 }}>
+                {authUser?.store_ids?.length > 1
+                  ? "Select a store using Switch Store before editing its theme."
+                  : "No store is available yet. Create a store in GP Admin, then refresh and activate it in Store Activation."}
+                <Button href="/store-activation" size="small">Store Activation</Button>
+              </Alert>}
             </Card>
 
             <Card variant="outlined" sx={{ p: 3 }}>
@@ -631,7 +638,7 @@ const Themes = () => {
                   variant="outlined"
                   startIcon={<PlusCircle size={14} />}
                   onClick={handleOpenSaveDialog}
-                  disabled={presetBusyId !== null}
+                  disabled={presetBusyId !== null || !companyId}
                 >
                   Save Current
                 </Button>

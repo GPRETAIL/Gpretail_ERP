@@ -10,7 +10,8 @@ import { handleEnterKeyNavigation } from "../utils/enterToNextField";
 import { usePrintContext } from "../context/PrintContext";
 import { useSyncStatus } from "../context/SyncStatusContext";
 import { Printer, Store, Server, Cloud, X, Loader2, CheckCircle2, AlertCircle, Upload, Download } from "lucide-react";
-import { Box, ButtonBase, Chip, Stack, Typography } from "@mui/material";
+import { Alert, Box, ButtonBase, Chip, Stack, Typography } from "@mui/material";
+import { isTenantAdmin } from "../utils/accessControl";
 import SubscriptionDuePopup from "./SubscriptionDuePopup";
 import useSubscriptionStatus from "../hooks/useSubscriptionStatus";
 import useStoreNameMap, { resolveStoreName } from "../hooks/useStoreNameMap";
@@ -273,6 +274,7 @@ const PrintStatusFooter = () => {
 };
 
 const MainLayout = () => {
+  const authUser = useSelector((state) => state.auth.user);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < MOBILE_BREAKPOINT);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -326,6 +328,13 @@ const MainLayout = () => {
           <Box sx={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", width: "100%", minWidth: 0, transition: "all 0.3s ease-in-out" }}>
             <Navbar sidebarExpanded={isExpanded} isMobile={isMobile} toggleSidebar={toggleSidebar} />
             <TabBar />
+            {isTenantAdmin(authUser) && authUser?.store_ids?.length === 0 && (
+              <Alert severity="info" sx={{ borderRadius: 0 }}>
+                Tenant Administrator · {authUser.platform_company_code}. No stores are available in this deployment yet.
+                Create your stores in GP Admin, then <ButtonBase href="/store-activation" sx={{ textDecoration: "underline" }}>refresh and activate stores</ButtonBase>.
+                Company management and Settings remain available. Data entry requires an activated store.
+              </Alert>
+            )}
 
             <Box
               component="main"

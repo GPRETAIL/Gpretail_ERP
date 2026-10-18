@@ -2,6 +2,17 @@ import { describe, expect, it } from "vitest";
 import { canAccessPath, getVisibleNavItems } from "../accessControl";
 
 describe("accessControl -- /settings/themes gate", () => {
+  const tenant = { role: "admin", is_tenant_admin: true, store_ids: [], entitlements: { sections: {} } };
+
+  it("allows registered tenant administration without unlocking licensed business modules", () => {
+    for (const path of ["/settings", "/settings/company", "/settings/themes", "/settings/branding"]) {
+      expect(canAccessPath(path, tenant)).toBe(true);
+    }
+    expect(canAccessPath("/owner/dashboard", tenant)).toBe(false);
+    expect(canAccessPath("/masters/product", tenant)).toBe(false);
+    expect(canAccessPath("/settings/backup", tenant)).toBe(false);
+    expect(canAccessPath("/settings/themes", { ...tenant, role: "user" })).toBe(false);
+  });
   it("canAccessPath allows only super_admin", () => {
     expect(canAccessPath("/settings/themes", { role: "super_admin" })).toBe(true);
     expect(canAccessPath("/settings/themes", { role: "admin" })).toBe(false);
@@ -26,6 +37,12 @@ describe("accessControl -- /settings/themes gate", () => {
       ],
     },
   ];
+
+  it("keeps Company and Themes visible for a tenant with zero stores or a restricted plan", () => {
+    const visible = getVisibleNavItems(navItems, tenant);
+    expect(visible[0]?.subItems.map(item => item.name)).toEqual(["Company", "Themes"]);
+    expect(canAccessPath("/settings/themes", { ...tenant, store_ids: [10], store_id: 10 })).toBe(true);
+  });
 
   it("getVisibleNavItems includes the Themes subItem for a super_admin", () => {
     const visible = getVisibleNavItems(navItems, { role: "super_admin" });

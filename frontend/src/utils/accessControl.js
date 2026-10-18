@@ -25,6 +25,13 @@ const firstSegment = (pathname) => {
   return path.startsWith("/") ? path.slice(1).split("/")[0] : "";
 };
 
+export const isTenantAdmin = (user) =>
+  user?.role === USER_ROLE.ADMIN && user?.is_tenant_admin === true;
+
+// Account administration remains reachable when no store or business plan is active.
+const isTenantManagementPath = (user, path) => isTenantAdmin(user) &&
+  ["/settings", "/settings/company", "/settings/themes", "/settings/branding"].includes(path);
+
 const getEntitlementSections = (user) => {
   const entitlements = user?.entitlements;
   const sections = entitlements && typeof entitlements === "object" ? entitlements.sections : null;
@@ -38,6 +45,7 @@ const isSectionEntitled = (sections, slug) => {
 };
 
 export const isPathEntitled = (user, pathname) => {
+  if (isTenantManagementPath(user, String(pathname || "").toLowerCase().replace(/\/+$/, ""))) return true;
   const sections = getEntitlementSections(user);
   if (!sections) return true;
   const slug = firstSegment(pathname);
@@ -56,9 +64,10 @@ const filterNavByEntitlement = (items, user) => {
   return (items || [])
     .map((item) => {
       const slug = firstSegment(item.path);
-      if (MODULE_SLUGS.has(slug) && !isSectionEntitled(sections, slug)) return null;
       const originalSubItems = item.subItems || [];
-      if (originalSubItems.length === 0) return item;
+      if (originalSubItems.length === 0) {
+        return MODULE_SLUGS.has(slug) && !isSectionEntitled(sections, slug) ? null : item;
+      }
       const subItems = originalSubItems.filter((subItem) => isPathEntitled(user, subItem.path));
       if (subItems.length === 0) return null;
       return { ...item, subItems };
@@ -103,6 +112,7 @@ const getCapability = (user) => {
     isOwner,
     isSuperAdmin,
     isAdmin,
+    canManageCompany: isSuperAdmin || isTenantAdmin(user),
     canAll: isSuperAdmin || isAdmin || isManager,
     canWarehouse: isSuperAdmin || isAdmin || isManager || hasWarehouse || hasPurchase,
     canSales: isSuperAdmin || isAdmin || isManager || hasSales,
@@ -168,11 +178,11 @@ export const canAccessPath = (pathname, user) => {
   if (path === "/user-access") return canAccessUserAccess(user);
   if (path.startsWith("/user-access")) return canAccessUserAccess(user);
 
-  if (path.startsWith("/settings/company")) return cap.isSuperAdmin;
+  if (path.startsWith("/settings/company")) return cap.canManageCompany;
   // /settings/branding redirects to /settings/themes (RedirectPreservingQuery in
   // protectedLayoutRoutes.jsx) -- both must gate identically, or an old bookmarked link 302s into
   // a second bounce once ProtectedRoute re-checks the destination path.
-  if (path.startsWith("/settings/branding") || path.startsWith("/settings/themes")) return cap.isSuperAdmin;
+  if (path.startsWith("/settings/branding") || path.startsWith("/settings/themes")) return cap.canManageCompany;
   if (path.startsWith("/settings/configure-local-server")) return cap.canSettings;
   if (path.startsWith("/settings")) return cap.canSettings;
   if (cap.canAll) return true;
@@ -238,8 +248,8 @@ export const getVisibleNavItems = (items, user) => {
 
       const subItems = (item.subItems || []).filter((subItem) => {
         const subPath = String(subItem.path || "").toLowerCase();
-        if (subPath === "/settings/company") return cap.isSuperAdmin;
-        if (subPath === "/settings/themes") return cap.isSuperAdmin;
+        if (subPath === "/settings/company") return cap.canManageCompany;
+        if (subPath === "/settings/themes") return cap.canManageCompany;
         return cap.canSettings;
       });
 
