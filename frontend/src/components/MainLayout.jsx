@@ -331,7 +331,7 @@ const MainLayout = () => {
             {isTenantAdmin(authUser) && authUser?.store_ids?.length === 0 && (
               <Alert severity="info" sx={{ borderRadius: 0 }}>
                 Tenant Administrator · {authUser.platform_company_code}. No stores are available in this deployment yet.
-                Create your stores in GP Admin, then <ButtonBase href="/store-activation" sx={{ textDecoration: "underline" }}>refresh and activate stores</ButtonBase>.
+                Create your stores in Vynerix Admin, then <ButtonBase href="/store-activation" sx={{ textDecoration: "underline" }}>refresh and activate stores</ButtonBase>.
                 Company management and Settings remain available. Data entry requires an activated store.
               </Alert>
             )}

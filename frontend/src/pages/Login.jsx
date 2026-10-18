@@ -7,6 +7,7 @@ import { Box, Button, Card, Divider, IconButton, InputAdornment, TextField, Typo
 import { getHomePathForUser } from "../utils/accessControl";
 import GoogleSignInButton from "../components/GoogleSignInButton";
 import ActivationWizard from "./ActivationWizard";
+import VynerixLoginBrand from "../components/auth/VynerixLoginBrand";
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -56,11 +57,14 @@ const Login = () => {
   }
 
   return (
-    <Box className="login-page" sx={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", bgcolor: "background.default", px: 2, py: { xs: 3, sm: 5 } }}>
-      <Card variant="outlined" sx={{ width: "100%", maxWidth: 448, p: { xs: 3, sm: 5 }, borderRadius: { xs: 2, sm: 4 }, boxShadow: 4, transition: "all 0.3s" }}>
-        <Typography variant="h4" component="h2" sx={{ mb: { xs: 3, sm: 4 }, textAlign: "center", fontWeight: 800, color: "text.primary", fontSize: { xs: "1.5rem", sm: "1.875rem" } }}>
-          GPRetail Login
+    <Box className="login-page" sx={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", gap: { md: 8, lg: 12 }, bgcolor: "background.default", px: { xs: 2, sm: 4 }, py: { xs: 3, sm: 6 } }}>
+      <Box component="aside" sx={{ display: { xs: "none", md: "block" }, maxWidth: 440 }}><VynerixLoginBrand /></Box>
+      <Card variant="outlined" sx={{ width: "100%", maxWidth: 440, p: { xs: 3, sm: 5 }, borderRadius: 3, boxShadow: 2 }}>
+        <Box sx={{ display: { xs: "block", md: "none" }, mb: 3 }}><VynerixLoginBrand compact /></Box>
+        <Typography variant="h5" component="h2" sx={{ fontWeight: 700 }}>
+          Sign in
         </Typography>
+        <Typography sx={{ mt: 1, mb: 3, fontSize: 14, color: "text.secondary" }}>Use your company account to continue.</Typography>
         <Box component="form" sx={{ display: "flex", flexDirection: "column", gap: { xs: 2, sm: 2.5 } }} onSubmit={handleLocalLogin}>
           {/* Username */}
           <TextField

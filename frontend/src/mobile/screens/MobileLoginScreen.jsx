@@ -5,6 +5,7 @@ import { Box, Typography } from "@mui/material";
 import { loginUser } from "../../features/authSlice";
 import ActivationWizard from "../../pages/ActivationWizard";
 import GoogleSignInButton from "../../components/GoogleSignInButton";
+import VynerixLoginBrand from "../../components/auth/VynerixLoginBrand";
 
 /**
  * Premium Native Mobile Login Screen for Vynerix ERP.
@@ -82,7 +83,7 @@ export default function MobileLoginScreen({ onLoginSuccess }) {
     <Box sx={{ minHeight: "100vh", bgcolor: "#f8fafc", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
       {/* Top Royal Blue Header */}
       <Box sx={{
-        backgroundImage: "linear-gradient(to bottom right, #4f46e5, #4338ca, #6b21a8)",
+        backgroundImage: "linear-gradient(135deg, #27425f, #3a6ea5)",
         pt: 6, pb: 8, px: 3, borderBottomLeftRadius: "36px", borderBottomRightRadius: "36px",
         color: "#fff", textAlign: "center", boxShadow: "0 20px 25px -5px rgba(30,20,60,0.2)", position: "relative", overflow: "hidden",
       }}>
@@ -101,12 +102,7 @@ export default function MobileLoginScreen({ onLoginSuccess }) {
           </Box>
         </Box>
 
-        <Typography component="h1" sx={{ fontSize: 24, fontWeight: 900, letterSpacing: "-0.02em", color: "#fff", m: 0 }}>
-          Vynerix <Box component="span" sx={{ color: "#c7d2fe" }}>ERP</Box>
-        </Typography>
-        <Typography component="p" sx={{ fontSize: 12, color: "rgba(224,231,255,0.8)", mt: 0.5, fontWeight: 500, letterSpacing: "0.02em" }}>
-          Smart. Secure. Simplified.
-        </Typography>
+        <VynerixLoginBrand compact inverse />
       </Box>
 
       {/* Floating Login Card */}
@@ -206,7 +202,7 @@ export default function MobileLoginScreen({ onLoginSuccess }) {
               ) : (
                 <>
                   <LogIn size={16} />
-                  <Box component="span">Sign In to Mobile ERP</Box>
+                  <Box component="span">Sign in</Box>
                 </>
               )}
             </Box>

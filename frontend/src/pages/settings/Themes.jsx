@@ -369,7 +369,7 @@ const Themes = () => {
               {!companyId && <Alert severity="info" sx={{ mt: 2 }}>
                 {authUser?.store_ids?.length > 1
                   ? "Select a store using Switch Store before editing its theme."
-                  : "No store is available yet. Create a store in GP Admin, then refresh and activate it in Store Activation."}
+                  : "No store is available yet. Create a store in Vynerix Admin, then refresh and activate it in Store Activation."}
                 <Button href="/store-activation" size="small">Store Activation</Button>
               </Alert>}
             </Card>

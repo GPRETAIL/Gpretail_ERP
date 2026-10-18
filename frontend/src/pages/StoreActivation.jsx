@@ -29,7 +29,7 @@ export default function StoreActivation() {
       await load();
       if (activate) setCode('');
       setMessage(response.data?.message || 'Stores refreshed.');
-    } catch (e) { setError(e.response?.data?.message || 'Could not reach GP Admin.'); }
+    } catch (e) { setError(e.response?.data?.message || 'Could not reach Vynerix Admin.'); }
     finally { setBusy(false); }
   };
   const handleCodeChange = (e) => {
@@ -59,8 +59,8 @@ export default function StoreActivation() {
         <TextField label="Activation code or License Key" type="text" autoComplete="off" placeholder="Paste single GPR- license key or enter code" value={code} onChange={handleCodeChange} required />
         <Button type="submit" variant="contained" disabled={busy}>Activate store</Button>
       </Stack>
-      <Button onClick={() => run(false)} disabled={busy}>Refresh from GP Admin</Button>
-      {!stores.length && <Alert severity="info">No stores have been provisioned. Ask GP Admin to create one, then refresh.</Alert>}
+      <Button onClick={() => run(false)} disabled={busy}>Refresh from Vynerix Admin</Button>
+      {!stores.length && <Alert severity="info">No stores have been provisioned. Ask Vynerix Admin to create one, then refresh.</Alert>}
       {stores.map(store => <Paper key={store.id} variant="outlined" sx={{ p: 2 }}>
         <Typography fontWeight={600}>{store.name} · {store.code}</Typography>
         <Typography>{store.activated_at ? (!store.is_active ? 'Inactive' : (store.platform_active_till && new Date(store.platform_active_till) <= new Date() ? 'Subscription expired' : 'Activated')) : 'Pending activation'}</Typography>

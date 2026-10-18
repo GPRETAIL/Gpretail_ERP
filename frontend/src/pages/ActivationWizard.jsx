@@ -260,7 +260,7 @@ const ActivationWizard = ({ onActivated, setup, onCancel }) => {
     <>
       <Typography variant="body2" sx={{ mb: 2.5, color: "text.secondary" }}>
         {mode === "license"
-          ? "Enter the company activation key from your welcome email or GP Admin to activate this installation."
+          ? "Enter the company activation key from your welcome email or Vynerix Admin to activate this installation."
           : "Enter the Company ID, Client ID, and Activation Code from your welcome email."}
       </Typography>
 
