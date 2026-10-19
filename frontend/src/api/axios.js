@@ -65,6 +65,9 @@ api.interceptors.response.use(
     }
 
     const requestUrl = error.config?.url || "";
+    if (error.response?.status === 403 && ["MOBILE_SUBSCRIPTION_REQUIRED", "STORE_SUBSCRIPTION_REQUIRED", "STORE_LICENCE_INVALID", "STORE_INACTIVE", "MOBILE_USER_ACCESS_DENIED", "CLIENT_ACCESS_DENIED"].includes(error.response?.data?.code)) {
+      window.dispatchEvent(new CustomEvent("vx:mobile-access-denied"));
+    }
     const isLoginRequest = LOGIN_PATHS.some((path) => requestUrl.includes(path));
     if (error.response?.status === 401 && !isLoginRequest && !authExpiredHandled) {
       authExpiredHandled = true;

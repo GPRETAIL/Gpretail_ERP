@@ -10,12 +10,14 @@ it("sends the setup token only to company activation and reports expired session
   const onActivated = vi.fn();
   render(<ActivationWizard setup={{ setup_token: "setup-only", company_code: "CMP-FIRST", company_name: "First Company" }} onActivated={onActivated} />);
   expect(screen.getByText(/Company verified: First Company/)).toBeTruthy();
-  fireEvent.change(screen.getByLabelText("License Key or Setup Code"), { target: { value: "GPR-company-key" } });
+  expect(screen.queryByLabelText("License Key or Setup Code")).toBeNull();
+  expect(screen.queryByLabelText("Client ID")).toBeNull();
+  expect(screen.queryByLabelText("Activation Code (One-Time Password)")).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "Activate deployment" }));
   await screen.findByText("Company setup session expired. Sign in again.");
   expect(fetch).toHaveBeenCalledWith("/api/activation/bootstrap-register", expect.objectContaining({
     method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer setup-only" },
-    body: JSON.stringify({ license_key: "GPR-company-key" }),
+    body: JSON.stringify({}),
   }));
   expect(onActivated).not.toHaveBeenCalled();
 });

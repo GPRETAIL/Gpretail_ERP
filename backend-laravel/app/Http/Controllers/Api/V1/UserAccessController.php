@@ -7,7 +7,9 @@ use App\Models\Permission;
 use App\Models\Role;
 use App\Models\Store;
 use App\Models\User;
+use App\Services\MobileAccess;
 use App\Services\PaginationService;
+use App\Services\StoreContext;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -35,6 +37,38 @@ class UserAccessController extends Controller
     }
 
     // Users Management
+    public function clientAccess(Request $request, int $id)
+    {
+        $this->authorizeAdministration();
+        $user = $this->scopedUsers()->findOrFail($id);
+        $access = app(MobileAccess::class);
+        $store = app(StoreContext::class)->available($request->user())->findOrFail($user->store_id);
+        $status = $access->storeStatus($user, $store);
+        if ($request->isMethod('put')) {
+            $data = $request->validate([
+                'web_access' => 'required|boolean', 'mobile_access' => 'required|boolean',
+                'module_permissions' => 'present|array:'.implode(',', $access::MODULES),
+                'module_permissions.*' => 'array:'.implode(',', $access::ACTIONS),
+                'module_permissions.*.*' => 'boolean',
+            ]);
+            foreach ($data['module_permissions'] as $module => $actions) {
+                foreach ($actions as $action => $enabled) {
+                    if ($enabled) {
+                        abort_unless($status['action_limits'][$module][$action] ?? false, 422, 'This store subscription does not include the requested module action.');
+                    }
+                }
+            }
+            abort_if($data['mobile_access'] && (! $store->is_active || ! $status['mobile_entitled']), 422, 'The store needs an active subscription that includes mobile before granting access.');
+            $data['module_permissions'] = array_map(fn ($actions) => array_map(fn ($value) => (bool) $value, $actions), $data['module_permissions']);
+            $user->update($data);
+        }
+
+        return response()->json(['success' => true, 'data' => [
+            'user' => $user->only(['id', 'name', 'email', 'web_access', 'mobile_access', 'module_permissions']),
+            'store' => $status, 'modules' => $access::MODULES, 'actions' => $access::ACTIONS,
+        ]]);
+    }
+
     public function index(Request $request)
     {
         $query = $this->scopedUsers()->with('store');

@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { Box } from "@mui/material";
 import { isRestrictedRole } from "../utils/rolePermissions";
+import { canOpenMobileScreen, useMobileAccess } from "../utils/mobileAccessContext";
 
 const TABS = [
   { key: "dashboard", label: "Dashboard", icon: Home },
@@ -21,7 +22,8 @@ const TABS = [
  * Fixed 5-tab bottom navigation bar matching the Vynerix reference design.
  */
 export default function BottomNav({ activePage, onNavigate, authUser }) {
-  const tabs = isRestrictedRole(authUser?.role)
+  const access = useMobileAccess();
+  const tabs = !access && isRestrictedRole(authUser?.role)
     ? TABS.filter((t) => t.key !== "purchase")
     : TABS;
 
@@ -35,7 +37,7 @@ export default function BottomNav({ activePage, onNavigate, authUser }) {
 
   return (
     <Box component="nav" className="vx-bottom">
-      {tabs.map(({ key, label, icon: Icon }) => (
+      {tabs.filter(tab => canOpenMobileScreen(access?.screens, tab.key)).map(({ key, label, icon: Icon }) => (
         <Box
           component="button"
           key={key}

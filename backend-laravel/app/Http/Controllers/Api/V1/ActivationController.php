@@ -86,7 +86,7 @@ class ActivationController extends Controller
             }
         }
 
-        if (empty($otp)) {
+        if (empty($otp) && ! $request->attributes->get('platform_registration_ticket') && ! $request->attributes->get('platform_setup_resume')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Please provide a valid License Key or Activation Code.',
@@ -99,10 +99,11 @@ class ActivationController extends Controller
             return response()->json(['success' => false, 'message' => 'The activation key belongs to a different company.'], 403);
         }
         $result = $this->activationService->register(
-            $otp,
+            $otp ?? '',
             $setup['company_code'] ?? $companyCode,
             $clientId,
             $setup['email'] ?? null,
+            $request->attributes->get('platform_registration_ticket'),
         );
 
         if (! $result['ok']) {
@@ -133,6 +134,17 @@ class ActivationController extends Controller
                 return response()->json(['success' => false, 'message' => 'This installation is already registered. Return to login.'], 409);
             }
             $request->attributes->set('platform_setup_identity', $identity);
+            if (! empty($identity['registration_ticket'])) {
+                if ($request->input('company_code') && $request->input('company_code') !== $identity['company_code']) {
+                    return response()->json(['success' => false, 'message' => 'This setup session belongs to a different company.'], 403);
+                }
+                $request->merge(['company_code' => $identity['company_code'], 'client_id' => $identity['client_id']]);
+                $request->attributes->set('platform_registration_ticket', $identity['registration_ticket']);
+            }
+            if ($existing?->sync_token && empty($identity['registration_ticket'])) {
+                $request->merge(['company_code' => $identity['company_code'], 'client_id' => $existing->client_id]);
+                $request->attributes->set('platform_setup_resume', true);
+            }
             $response = $this->register($request);
             if ($response->isSuccessful()) {
                 $bootstrap->forget($token);

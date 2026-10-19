@@ -11,7 +11,7 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
-    protected $attributes = ['is_active' => true];
+    protected $attributes = ['is_active' => true, 'web_access' => true, 'mobile_access' => false];
 
     protected $fillable = [
         'name',
@@ -28,6 +28,7 @@ class User extends Authenticatable
         'platform_company_code',
         'platform_password_version',
         'platform_identity',
+        'web_access', 'mobile_access', 'module_permissions',
     ];
 
     protected $hidden = [
@@ -44,13 +45,14 @@ class User extends Authenticatable
             'is_active' => 'boolean',
             'must_change_password' => 'boolean',
             'dashboard_layouts' => 'array',
+            'web_access' => 'boolean', 'mobile_access' => 'boolean', 'module_permissions' => 'array',
         ];
     }
 
     protected static function booted(): void
     {
         static::updated(function (self $user): void {
-            if ($user->wasChanged(['password', 'email', 'role', 'store_id', 'is_active', 'google_sub'])) {
+            if ($user->wasChanged(['password', 'email', 'role', 'store_id', 'is_active', 'google_sub', 'web_access', 'mobile_access', 'module_permissions'])) {
                 $user->tokens()->delete();
             }
         });

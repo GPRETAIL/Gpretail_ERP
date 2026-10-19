@@ -22,7 +22,7 @@ class PlatformActivationService
     /**
      * @return array{ok: bool, message: ?string, activation: ?PlatformActivation}
      */
-    public function register(string $oneTimePassword, ?string $companyCode = null, ?string $clientId = null, ?string $expectedTenantEmail = null): array
+    public function register(string $oneTimePassword, ?string $companyCode = null, ?string $clientId = null, ?string $expectedTenantEmail = null, ?string $registrationTicket = null): array
     {
         $companyCode = $companyCode ?: (string) config('platform.company_code');
         $clientId = $clientId ?: (string) config('platform.client_id');
@@ -47,7 +47,7 @@ class PlatformActivationService
             return ['ok' => $sync['ok'], 'message' => $sync['message'] ?? null, 'activation' => $existing->fresh()];
         }
 
-        $result = $this->client->register($companyCode, $clientId, $oneTimePassword);
+        $result = $this->client->register($companyCode, $clientId, $oneTimePassword, $registrationTicket);
         if (! $result['ok']) {
             return ['ok' => false, 'message' => $result['message'] ?? 'Registration was rejected by the platform.', 'activation' => null];
         }

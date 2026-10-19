@@ -23,7 +23,7 @@ class PlatformClient
         }
         try {
             return $this->parse(Http::timeout((int) config('platform.http_timeout_seconds'))
-                ->withoutRedirecting()->post($url.'/api/v1/tenant/authenticate', compact('email', 'password')));
+                ->withoutRedirecting()->post($url.'/api/v1/tenant/authenticate', array_merge(compact('email', 'password'), ['prepare_registration' => true])));
         } catch (ConnectionException $exception) {
             return ['ok' => false, 'status' => 0, 'data' => [], 'message' => 'Could not reach GP Admin.'];
         }
@@ -54,7 +54,7 @@ class PlatformClient
      *
      * @return array{ok: bool, status: int, data: array, message: ?string}
      */
-    public function register(string $companyCode, string $clientId, string $oneTimePassword): array
+    public function register(string $companyCode, string $clientId, string $oneTimePassword, ?string $registrationTicket = null): array
     {
         try {
             $response = Http::timeout((int) config('platform.http_timeout_seconds'))
@@ -62,6 +62,7 @@ class PlatformClient
                     'company_code' => $companyCode,
                     'client_id' => $clientId,
                     'one_time_password' => $oneTimePassword,
+                    'registration_ticket' => $registrationTicket,
                 ]);
         } catch (ConnectionException $e) {
             return ['ok' => false, 'status' => 0, 'data' => [], 'message' => 'Could not reach the platform: '.$e->getMessage()];

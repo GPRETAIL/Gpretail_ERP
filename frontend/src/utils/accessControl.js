@@ -88,6 +88,7 @@ const getPagePermissions = (user) =>
   normalizeStoredPagePermissions(user?.effective_page_permissions || user?.page_permissions);
 
 const hasPagePermissionMode = (user) => {
+  if (user?.module_permissions) return false;
   const role = String(user?.role || "").toLowerCase();
   if (role !== USER_ROLE.USER) return false;
   return Object.keys(getPagePermissions(user)).length > 0;
@@ -135,6 +136,10 @@ export const canAccessUserAccess = (user) => {
 export const getHomePathForUser = (user) => {
   const role = String(user?.role || "").toLowerCase();
   if (role === USER_ROLE.OWNER) return "/owner/dashboard";
+  if (user?.module_permissions) {
+    const homes = { dashboard: "/dashboard", masters: "/masters/product", sales: "/sales/pos-sales", warehouse: "/warehouse/invoice", crm: "/crm/customer", finance: "/finance/supplier-payment", store: "/store/dashboard", analytical: "/analytical/dashboard", hrms: "/hrms/attendance", settings: "/settings/application-settings" };
+    return Object.entries(homes).find(([module, path]) => user.module_permissions[module]?.view && canAccessPath(path, user))?.[1] || "/profile";
+  }
   if (hasPagePermissionMode(user)) {
     const visibleSections = getVisiblePermissionSections(user);
     if (visibleSections.length > 1) return "/modules";
@@ -174,9 +179,14 @@ export const canAccessPath = (pathname, user) => {
   if (path === "/profile") return true;
   if (path.startsWith("/owner")) return cap.isOwner;
   if (cap.isOwner) return false;
-  if (path === "/" || path === "/dashboard") return true;
+  if (path === "/" || path === "/dashboard") return !user?.module_permissions || user.module_permissions.dashboard?.view === true;
   if (path === "/user-access") return canAccessUserAccess(user);
   if (path.startsWith("/user-access")) return canAccessUserAccess(user);
+  const module = firstSegment(path);
+  if (user?.module_permissions && module === "settings" && !user.module_permissions.settings?.view && !isTenantManagementPath(user, path)) return false;
+  if (user?.module_permissions && MODULE_SLUGS.has(module) && module !== "settings") {
+    return user.module_permissions[module]?.view === true;
+  }
 
   if (path.startsWith("/settings/company")) return cap.canManageCompany;
   // /settings/branding redirects to /settings/themes (RedirectPreservingQuery in
@@ -221,6 +231,13 @@ export const getVisibleNavItems = (items, user) => {
 
   if (cap.isOwner) {
     return items;
+  }
+  if (user?.module_permissions) {
+    return filterNavByEntitlement((items || []).map(item => {
+      if (!item.subItems?.length) return canAccessPath(item.path, user) ? item : null;
+      const subItems = item.subItems.filter(subItem => canAccessPath(subItem.path, user));
+      return subItems.length ? { ...item, subItems } : null;
+    }).filter(Boolean), user);
   }
 
   const allowedTopByName = new Set(

@@ -17,6 +17,9 @@ class BusinessPermissions
     {
         $controller = class_basename($request->route()?->getControllerClass() ?? '');
         $action = $request->route()?->getActionMethod() ?? '';
+        if ($controller === 'MobileAccessController') {
+            return 'personal';
+        }
         $read = in_array($request->method(), ['GET', 'HEAD', 'OPTIONS'], true);
         if ($controller === 'AuthController') {
             return str_starts_with($action, 'localServer') ? 'settings.manage' : 'personal';

@@ -31,6 +31,7 @@ import {
 } from "../../utils/userRolePresets";
 import { TextInput, SelectInput, MultiSelectInput } from "./userAccessFormControls";
 import StoreGroupsDrawer from "./StoreGroupsDrawer";
+import ClientAccessDialog from "./ClientAccessDialog";
 
 // Intersects two entitlement `sections` maps: a module survives only when both grant it, and page
 // lists are intersected ("all" acts as the full set for that section). Drives the multi-store cap so a
@@ -125,6 +126,7 @@ const UserAccess = () => {
   const [companies, setCompanies] = useState([]);
   const [roles, setRoles] = useState(() => USER_ROLE_PRESET_OPTIONS.map((option) => option.value));
   const [editingUserId, setEditingUserId] = useState(null);
+  const [clientAccessUser, setClientAccessUser] = useState(null);
   const [editingGroupId, setEditingGroupId] = useState(null);
   const [userForm, setUserForm] = useState(() => createDefaultUserForm(authUser));
   const [groupForm, setGroupForm] = useState(createDefaultGroupForm);
@@ -586,6 +588,7 @@ const UserAccess = () => {
   };
 
   const userColumns = [
+    { key: "mobile_access", label: "Mobile access", render: value => value ? "Enabled" : "Disabled" },
     { key: "name", label: "User Name", render: (_, row) => row.name || row.email || "--" },
     { key: "company", label: "Company", render: (_, row) => getUserCompanyNames(row), searchValue: (row) => getUserCompanyNames(row) },
     {
@@ -695,6 +698,7 @@ const UserAccess = () => {
               tablePreferenceKey={activeTab === "user" ? "user-access-users" : "user-access-groups"}
               renderActions={(row) => (
                 <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                  {activeTab === "user" && <Button size="small" onClick={() => setClientAccessUser(row)}>Web / Mobile access</Button>}
                   <Button
                     type="button"
                     onClick={() => (activeTab === "user" ? handleEditUser(row) : handleEditGroup(row))}
@@ -876,6 +880,7 @@ const UserAccess = () => {
         )}
       </Box>
 
+      {clientAccessUser && <ClientAccessDialog key={clientAccessUser.id} user={clientAccessUser} onClose={() => setClientAccessUser(null)} onSaved={loadRows} />}
       {isSuperAdmin ? (
         <StoreGroupsDrawer
           open={showStoreGroupsDrawer}

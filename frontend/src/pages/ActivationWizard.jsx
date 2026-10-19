@@ -16,8 +16,7 @@ const STEPS = [
 const ActivationWizard = ({ onActivated, setup, onCancel }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
-  const [mode, setMode] = useState("license"); // "license" | "manual"
-  const [form, setForm] = useState({ licenseKey: "", companyId: setup?.company_code || "", clientId: "", activationCode: "" });
+  const [form, setForm] = useState({ licenseKey: "" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [phase, setPhase] = useState("form"); // "form" | "success" | "password" | "done"
@@ -37,20 +36,12 @@ const ActivationWizard = ({ onActivated, setup, onCancel }) => {
     setError("");
 
     const payload = {};
-    if (mode === "license") {
+    if (!setup) {
       if (!form.licenseKey.trim()) {
-        setError("Please enter your License Key or Setup Code.");
+        setError("Please enter your setup key.");
         return;
       }
       payload.license_key = form.licenseKey.trim();
-    } else {
-      if (!form.companyId.trim() || !form.clientId.trim() || !form.activationCode.trim()) {
-        setError("Enter your Company ID, Client ID and Activation Code.");
-        return;
-      }
-      payload.company_code = form.companyId.trim();
-      payload.client_id = form.clientId.trim();
-      payload.one_time_password = form.activationCode.trim();
     }
 
     setBusy(true);
@@ -143,7 +134,7 @@ const ActivationWizard = ({ onActivated, setup, onCancel }) => {
             </Typography>
           </Box>
         </Stack>
-        {setup && phase === "form" && <Alert severity="info" sx={{ mb: 2 }}>Company verified: {setup.company_name}. Enter the company activation key from your welcome email. Business access starts after activation and sign-in.</Alert>}
+        {setup && phase === "form" && <Alert severity="info" sx={{ mb: 2 }}>Company verified: {setup.company_name}. Continue to download your company configuration. No Client ID, OTP or setup key is needed. Business access starts after activation and sign-in.</Alert>}
         {children}
         {onCancel && phase === "form" && <Button onClick={onCancel} disabled={busy} sx={{ mt: 2 }}>Return to login</Button>}
       </Card>
@@ -259,9 +250,8 @@ const ActivationWizard = ({ onActivated, setup, onCancel }) => {
   return shell(
     <>
       <Typography variant="body2" sx={{ mb: 2.5, color: "text.secondary" }}>
-        {mode === "license"
-          ? "Enter the company activation key from your welcome email or Vynerix Admin to activate this installation."
-          : "Enter the Company ID, Client ID, and Activation Code from your welcome email."}
+        {setup ? "Your company credentials have been verified. Continue to set up this installation."
+          : "Enter the company setup key supplied by your administrator, or return to login and use your welcome-email credentials."}
       </Typography>
 
       {error ? (
@@ -271,38 +261,14 @@ const ActivationWizard = ({ onActivated, setup, onCancel }) => {
       ) : null}
 
       <Box component="form" sx={{ display: "flex", flexDirection: "column", gap: 2 }} onSubmit={submit}>
-        {mode === "license" ? (
-          <TextField
-            label="License Key or Setup Code"
-            value={form.licenseKey}
-            onChange={set("licenseKey")}
-            placeholder="e.g. GPR-TRIAL-WG48MX-9482"
-            size="small"
-            autoFocus
-            sx={{ "& .MuiInputBase-input": { fontFamily: "monospace", fontSize: "0.875rem" } }}
-            helperText="Use the company setup key. Store activation is managed after sign-in."
-          />
-        ) : (
-          <>
-            <TextField label="Company ID" value={form.companyId} onChange={set("companyId")} placeholder="e.g. CMP-16" size="small" autoFocus />
-            <TextField
-              label="Client ID"
-              value={form.clientId}
-              onChange={set("clientId")}
-              placeholder="From your welcome email"
-              size="small"
-              sx={{ "& .MuiInputBase-input": { fontFamily: "monospace", fontSize: "0.75rem" } }}
-            />
-            <TextField
-              label="Activation Code (One-Time Password)"
-              value={form.activationCode}
-              onChange={set("activationCode")}
-              placeholder="One-time password"
-              size="small"
-              sx={{ "& .MuiInputBase-input": { fontFamily: "monospace" } }}
-            />
-          </>
-        )}
+        {!setup && <TextField
+          label="License Key or Setup Code"
+          value={form.licenseKey}
+          onChange={set("licenseKey")}
+          size="small"
+          autoFocus
+          helperText="Alternatively, return to login and sign in with your company welcome-email credentials."
+        />}
 
         <Button
           type="submit"
@@ -315,18 +281,6 @@ const ActivationWizard = ({ onActivated, setup, onCancel }) => {
           {busy ? "Activating…" : "Activate deployment"}
         </Button>
 
-        <Button
-          type="button"
-          variant="text"
-          size="small"
-          onClick={() => {
-            setError("");
-            setMode((m) => (m === "license" ? "manual" : "license"));
-          }}
-          sx={{ textTransform: "none", fontSize: "0.8rem", color: "text.secondary" }}
-        >
-          {mode === "license" ? "Switch to manual 3-field entry (Company ID, Client ID, OTP)" : "Switch to Single License Key input"}
-        </Button>
       </Box>
       <Typography variant="caption" sx={{ mt: 2, display: "block", textAlign: "center", color: "text.disabled" }}>
         Need a new license or trial extension? Contact your Gpretail administrator.

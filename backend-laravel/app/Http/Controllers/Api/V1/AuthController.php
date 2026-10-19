@@ -9,6 +9,7 @@ use App\Models\StoreLocalNode;
 use App\Models\SyncOutboxEvent;
 use App\Models\User;
 use App\Services\GoogleIdTokenVerifier;
+use App\Services\MobileAccess;
 use App\Services\PlatformBootstrap;
 use App\Services\PlatformClient;
 use App\Services\StoreContext;
@@ -77,7 +78,7 @@ class AuthController extends Controller
         if (! $request->filled('id_token') && $request->filled('credential')) {
             $request->merge(['id_token' => $request->input('credential')]);
         }
-        $request->validate(['id_token' => 'required|string|max:16384']);
+        $request->validate(['id_token' => 'required|string|max:16384', 'client' => 'sometimes|in:web,mobile']);
         $claims = app(GoogleIdTokenVerifier::class)->verify($request->string('id_token')->toString());
         if (! $claims) {
             return response()->json(['success' => false, 'message' => 'Invalid Google identity token.'], 401);
@@ -88,6 +89,9 @@ class AuthController extends Controller
             $user = $users->count() === 1 ? $users->first() : null;
             if (! $user || ! $user->is_active) {
                 return response()->json(['success' => false, 'message' => 'Google sign-in is available only for an active, existing ERP user. Contact your administrator.'], 403);
+            }
+            if (! app(MobileAccess::class)->canLogin($user, request()->input('client', 'web'))) {
+                return response()->json(['success' => false, 'message' => 'Your administrator has not enabled this sign-in channel for your account.'], 403);
             }
             if ($user->google_sub && $user->google_sub !== $claims['sub']) {
                 return response()->json(['success' => false, 'message' => 'Google identity does not match the linked ERP account.'], 403);
@@ -106,6 +110,11 @@ class AuthController extends Controller
 
     private function completeLogin(User $user): JsonResponse
     {
+        request()->validate(['client' => 'sometimes|in:web,mobile']);
+        $client = request()->input('client', 'web');
+        if (! app(MobileAccess::class)->canLogin($user, $client)) {
+            return response()->json(['success' => false, 'message' => 'Your administrator has not enabled this sign-in channel for your account.'], 403);
+        }
         if (! $user->is_active) {
             return response()->json([
                 'success' => false,
@@ -138,7 +147,7 @@ class AuthController extends Controller
         }
 
         // Create Sanctum Token
-        $token = $user->createToken('auth-token')->plainTextToken;
+        $token = $user->createToken($client.'-token', ['client:'.$client])->plainTextToken;
 
         return response()->json([
             'success' => true,
@@ -166,6 +175,7 @@ class AuthController extends Controller
                     'logo' => $user->store?->logo,
                     'must_change_password' => (bool) $user->must_change_password,
                     ...app(StoreContext::class)->authFields($user),
+                    'auth_client' => $client,
                 ],
             ],
         ]);
@@ -180,7 +190,8 @@ class AuthController extends Controller
             abort_unless(Hash::check((string) $request->input('currentPassword', ''), $user->password), 422, 'Current password is incorrect.');
         }
         $user->update(['password' => $request->input('newPassword'), 'must_change_password' => false]);
-        $token = $user->createToken('auth-token')->plainTextToken;
+        $client = in_array('client:mobile', $user->currentAccessToken()?->abilities ?? [], true) ? 'mobile' : 'web';
+        $token = $user->createToken($client.'-token', ['client:'.$client])->plainTextToken;
 
         return response()->json(['success' => true, 'data' => ['token' => $token], 'message' => 'Password updated. Other sessions have been signed out.']);
     }

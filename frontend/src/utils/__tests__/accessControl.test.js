@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { canAccessPath, getVisibleNavItems } from "../accessControl";
+import { canAccessPath, getHomePathForUser, getVisibleNavItems } from "../accessControl";
+
+it("uses tenant-assigned module grants for staff navigation without opening administration", () => {
+  const user = { role: "user", module_permissions: { masters: { view: true }, sales: { view: false } } };
+  expect(canAccessPath("/masters/product", user)).toBe(true);
+  expect(canAccessPath("/sales/pos-sales", user)).toBe(false);
+  expect(canAccessPath("/dashboard", user)).toBe(false);
+  expect(canAccessPath("/settings/company", user)).toBe(false);
+  expect(getHomePathForUser(user)).toBe("/masters/product");
+});
 
 describe("accessControl -- /settings/themes gate", () => {
   const tenant = { role: "admin", is_tenant_admin: true, store_ids: [], entitlements: { sections: {} } };

@@ -35,7 +35,7 @@ class PlatformBootstrap
             return ['ok' => false, 'status' => 401, 'message' => 'Invalid company credentials for this installation.'];
         }
 
-        return $this->create($company, $email, $identity['company_name'] ?? $company);
+        return $this->create($company, $email, $identity['company_name'] ?? $company, array_intersect_key($identity, array_flip(['client_id', 'registration_ticket'])));
     }
 
     public function resume(User $user): ?array
@@ -50,10 +50,10 @@ class PlatformBootstrap
         return $this->create($activation->company_code, $user->email, $activation->company_code);
     }
 
-    private function create(string $company, string $email, string $name): array
+    private function create(string $company, string $email, string $name, array $registration = []): array
     {
         $token = Str::random(64);
-        Cache::put($this->key($token), ['company_code' => $company, 'email' => strtolower($email)], now()->addMinutes(15));
+        Cache::put($this->key($token), array_merge($registration, ['company_code' => $company, 'email' => strtolower($email)]), now()->addMinutes(15));
 
         return ['ok' => true, 'data' => [
             'activation_required' => true, 'setup_token' => $token, 'expires_in_seconds' => 900,

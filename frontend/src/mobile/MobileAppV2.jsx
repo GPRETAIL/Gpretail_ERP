@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { RefreshCw } from "lucide-react";
-import { Box, Typography } from "@mui/material";
+import { Alert, Box, Button, Typography } from "@mui/material";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { logoutUser } from "../features/authSlice";
@@ -44,6 +44,8 @@ import usePullToRefresh from "./hooks/usePullToRefresh";
 import useHaptics from "./hooks/useHaptics";
 import useDisplayPrefs from "./hooks/useDisplayPrefs";
 import { isPageGatedForRole } from "./utils/rolePermissions";
+import MobileAccessGate from "./components/MobileAccessGate";
+import { canOpenMobileScreen, useMobileAccess } from "./utils/mobileAccessContext";
 import "./workspace.css";
 
 // Screen title map
@@ -83,7 +85,8 @@ const ROOT_SCREENS = new Set(["dashboard", "modules"]);
 /**
  * Vynerix ERP — Dedicated Mobile Application Root
  */
-export default function VynerixMobileApp() {
+function MobileWorkspace() {
+  const mobileAccess = useMobileAccess();
   const isAuthenticated = useSelector((s) => s.auth.isAuthenticated);
   const authUser = useSelector((s) => s.auth.user);
   const dispatch = useDispatch();
@@ -202,13 +205,13 @@ export default function VynerixMobileApp() {
     // a restricted role shouldn't see, but Dashboard quick-action buttons
     // and a couple of other shortcuts still link straight to these pages -
     // this is the single choke-point that catches those too.
-    const safeTarget = isPageGatedForRole(target, authUser?.role) ? "dashboard" : target;
+    const safeTarget = (!mobileAccess && isPageGatedForRole(target, authUser?.role)) || !canOpenMobileScreen(mobileAccess?.screens, target) ? "modules" : target;
     const nextDepth = depthRef.current + 1;
     depthRef.current = nextDepth;
     window.history.pushState({ vxPage: safeTarget, vxDepth: nextDepth }, "");
     setPage(safeTarget);
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [authUser]);
+  }, [authUser, mobileAccess]);
 
   const goBack = useCallback(() => {
     if (depthRef.current > 0) window.history.back();
@@ -293,12 +296,13 @@ export default function VynerixMobileApp() {
   // being on a non-root screen implies there's always something to go back
   // to -- no separate depth check needed here.
   const canGoBack = !ROOT_SCREENS.has(page);
+  const visiblePage = canOpenMobileScreen(mobileAccess?.screens, page) ? page : "modules";
 
   return (
     <Box className={workspaceClass} style={workspaceStyle}>
       {/* Mobile Header */}
       <MobileHeader
-        title={TITLES[page] || "Vynerix ERP"}
+        title={TITLES[visiblePage] || "Vynerix ERP"}
         canGoBack={canGoBack}
         onBack={goBack}
         userName={userName}
@@ -308,6 +312,10 @@ export default function VynerixMobileApp() {
 
       {/* Offline Banner */}
       <OfflineBanner isOnline={isOnline} wasOffline={wasOffline} />
+      {mobileAccess?.store.renewal_due && <Alert severity="warning">
+        Store subscription expires on {new Date(mobileAccess.store.expires_at).toLocaleDateString()}.
+        {authUser?.is_tenant_admin ? <Button size="small" href={mobileAccess.portalUrl || "https://company.gpsoftware.in/login"}>Renew subscription</Button> : " Contact your Tenant Administrator to renew."}
+      </Alert>}
 
       {/* PWA Update Notification */}
       <PwaUpdateBanner />
@@ -357,7 +365,7 @@ export default function VynerixMobileApp() {
 
       {/* Main Content Area */}
       <Box component="main" className="vx-ws-main" style={{ paddingBottom: 80 }}>
-        {page === "dashboard" && (
+        {visiblePage === "dashboard" && (
           <DashboardScreen
             onNavigate={navigateTo}
             onOpenSearch={() => setIsSearchOpen(true)}
@@ -366,25 +374,25 @@ export default function VynerixMobileApp() {
           />
         )}
 
-        {page === "modules" && (
+        {visiblePage === "modules" && (
           <ModulesScreen onNavigate={navigateTo} authUser={authUser} />
         )}
 
-        {page === "sales" && (
+        {visiblePage === "sales" && (
           <SalesScreen onNavigate={navigateTo} />
         )}
 
-        {page === "create_invoice" && (
+        {visiblePage === "create_invoice" && (
           <CreateInvoiceScreen onBack={goBack} />
         )}
 
-        {page === "purchase" && (
+        {visiblePage === "purchase" && (
           <PurchaseScreen onNavigate={navigateTo} />
         )}
 
-        {page === "returns" && <ReturnsScreen />}
+        {visiblePage === "returns" && <ReturnsScreen />}
 
-        {page === "inventory" && (
+        {visiblePage === "inventory" && (
           <InventoryScreen
             onNavigate={navigateTo}
             onSelectProduct={(p) => {
@@ -394,29 +402,29 @@ export default function VynerixMobileApp() {
           />
         )}
 
-        {page === "product_details" && (
+        {visiblePage === "product_details" && (
           <ProductDetailScreen product={selectedProduct} onBack={goBack} />
         )}
 
-        {page === "suppliers" && <SuppliersScreen onNavigate={navigateTo} />}
+        {visiblePage === "suppliers" && <SuppliersScreen onNavigate={navigateTo} />}
 
-        {page === "supplier_dues" && <SupplierDuesScreen />}
+        {visiblePage === "supplier_dues" && <SupplierDuesScreen />}
 
-        {page === "fast_moving" && <FastMovingScreen />}
+        {visiblePage === "fast_moving" && <FastMovingScreen />}
 
-        {page === "sales_summary" && <SalesSummaryScreen />}
+        {visiblePage === "sales_summary" && <SalesSummaryScreen />}
 
-        {page === "purchase_summary" && <PurchaseSummaryScreen />}
+        {visiblePage === "purchase_summary" && <PurchaseSummaryScreen />}
 
-        {page === "attendance" && <AttendanceScreen />}
+        {visiblePage === "attendance" && <AttendanceScreen />}
 
-        {page === "reports" && <ReportsScreen onNavigate={navigateTo} />}
+        {visiblePage === "reports" && <ReportsScreen onNavigate={navigateTo} />}
 
-        {(page === "report_profit_loss" || page === "report_gst" || page === "report_receivables") && (
+        {(visiblePage === "report_profit_loss" || visiblePage === "report_gst" || visiblePage === "report_receivables") && (
           <ReportDetailScreen reportType={page.replace("report_", "")} />
         )}
 
-        {page === "settings" && (
+        {visiblePage === "settings" && (
           <SettingsScreen
             onLogout={handleLogout}
             onTriggerPwa={triggerInstall}
@@ -428,7 +436,7 @@ export default function VynerixMobileApp() {
           />
         )}
 
-        {page === "approvals" && <ApprovalsScreen />}
+        {visiblePage === "approvals" && <ApprovalsScreen />}
       </Box>
 
       {/* "Press back again to exit" -- shown for 2s after a back press at
@@ -451,4 +459,13 @@ export default function VynerixMobileApp() {
       <PrivacyScreen visible={appLock.isHidden} />
     </Box>
   );
+}
+
+export default function VynerixMobileApp() {
+  const authenticated = useSelector(state => state.auth.isAuthenticated);
+  const user = useSelector(state => state.auth.user);
+  if (authenticated && user?.auth_client !== "mobile") {
+    return <Box className="vx-workspace"><MobileLoginScreen /></Box>;
+  }
+  return authenticated ? <MobileAccessGate><MobileWorkspace /></MobileAccessGate> : <MobileWorkspace />;
 }

@@ -26,14 +26,14 @@ class FirstCompanyLoginTest extends TestCase
         Http::preventStrayRequests();
     }
 
-    private function fakePlatform(array $snapshot = []): void
+    private function fakePlatform(array $snapshot = [], array $registration = []): void
     {
         Http::swap(new Factory);
         Http::preventStrayRequests();
         Http::fake([
-            'https://platform.test/api/v1/tenant/authenticate' => Http::response(['success' => true, 'data' => [
+            'https://platform.test/api/v1/tenant/authenticate' => Http::response(['success' => true, 'data' => array_merge([
                 'authenticated' => true, 'email' => 'owner@example.test', 'company_code' => 'CMP-FIRST', 'company_name' => 'First Company',
-            ]]),
+            ], $registration)]),
             'https://platform.test/api/v1/tenant/register' => Http::response(['success' => true, 'data' => ['sync_token' => 'registered-sync']]),
             'https://platform.test/api/v1/tenant/CMP-FIRST/snapshot' => Http::response(['success' => true, 'data' => array_replace([
                 'company' => ['company_code' => 'CMP-FIRST', 'name' => 'First Company', 'status' => 'active',
@@ -65,6 +65,18 @@ class FirstCompanyLoginTest extends TestCase
         $this->assertSame('CMP-FIRST', $owner->platform_company_code);
         Http::fake(fn () => throw new \RuntimeException('Normal login must not contact GP Admin'));
         $this->postJson('/api/auth/login', ['email' => $owner->email, 'password' => 'Welcome-12345'])->assertOk()->assertJsonStructure(['data' => ['token', 'user']]);
+    }
+
+    public function test_verified_registration_ticket_activates_without_client_id_or_otp_input(): void
+    {
+        $this->fakePlatform([], ['registration_ticket' => 'verified-registration-ticket', 'client_id' => 'client-first']);
+        $setup = $this->postJson('/api/auth/login', ['email' => 'owner@example.test', 'password' => 'Welcome-12345'])
+            ->assertOk()->assertJsonMissingPath('data.registration_ticket')->assertJsonMissingPath('data.client_id');
+        $token = $setup->json('data.setup_token');
+        $this->withToken($token)->postJson('/api/activation/bootstrap-register', [])->assertOk()->assertJsonPath('data.activated', true);
+        Http::assertSent(fn ($request) => str_ends_with($request->url(), '/tenant/register')
+            && $request['registration_ticket'] === 'verified-registration-ticket' && $request['client_id'] === 'client-first');
+        $this->withToken($token)->postJson('/api/activation/bootstrap-register', [])->assertUnauthorized();
     }
 
     public function test_wrong_existing_password_never_falls_back_to_platform_credentials(): void

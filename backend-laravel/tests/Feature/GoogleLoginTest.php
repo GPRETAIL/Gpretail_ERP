@@ -113,4 +113,13 @@ class GoogleLoginTest extends TestCase
         $this->getJson('/api/auth/config')->assertOk()->assertJsonPath('data.google_enabled', false);
         $this->postJson('/api/auth/google', ['id_token' => $this->token()])->assertStatus(503);
     }
+
+    public function test_denied_mobile_google_login_does_not_link_or_revoke_an_existing_web_session(): void
+    {
+        $user = $this->user(['mobile_access' => false]);
+        $existing = $user->createToken('web', ['client:web']);
+        $this->postJson('/api/auth/google', ['id_token' => $this->token(), 'client' => 'mobile'])->assertForbidden();
+        $this->assertNull($user->fresh()->google_sub);
+        $this->assertDatabaseHas('personal_access_tokens', ['id' => $existing->accessToken->id]);
+    }
 }

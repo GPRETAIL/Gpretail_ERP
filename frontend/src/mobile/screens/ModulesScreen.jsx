@@ -14,6 +14,7 @@ import {
 import { Box, Typography } from "@mui/material";
 import api from "../../api/axios";
 import { isRestrictedRole } from "../utils/rolePermissions";
+import { canOpenMobileScreen, useMobileAccess } from "../utils/mobileAccessContext";
 
 const money = (n) =>
   "₹ " +
@@ -41,8 +42,9 @@ const MODULE_TILES = [
 const RESTRICTED_TILE_KEYS = new Set(["purchase", "suppliers", "reports"]);
 
 export default function ModulesScreen({ onNavigate, authUser }) {
+  const access = useMobileAccess();
   const [activities, setActivities] = useState([]);
-  const tiles = isRestrictedRole(authUser?.role)
+  const tiles = !access && isRestrictedRole(authUser?.role)
     ? MODULE_TILES.filter((t) => !RESTRICTED_TILE_KEYS.has(t.key))
     : MODULE_TILES;
 
@@ -65,7 +67,7 @@ export default function ModulesScreen({ onNavigate, authUser }) {
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
       {/* 3x3 Grid */}
       <Box className="vx-modules-grid">
-        {tiles.map((tile, i) => {
+        {tiles.filter(tile => canOpenMobileScreen(access?.screens, tile.key)).map((tile, i) => {
           const Icon = tile.icon;
           return (
             <Box

@@ -25,6 +25,7 @@ import api from "../../api/axios";
 import SecurityPinSettings from "../security/SecurityPinSettings";
 import DisplayAccessibilitySettings from "./DisplayAccessibilitySettings";
 import { isRestrictedRole } from "../utils/rolePermissions";
+import { useMobileAccess } from "../utils/mobileAccessContext";
 
 const formatDateTime = (value) => {
   if (!value) return "--";
@@ -38,7 +39,10 @@ const formatDateTime = (value) => {
  */
 export default function SettingsScreen({ onLogout, onTriggerPwa, appLock, biometrics, onOpenSyncCenter, authUser, displayPrefs }) {
   const [activeModal, setActiveModal] = useState(null); // 'profile' | 'users' | 'roles' | 'security' | 'preferences' | 'display' | 'backup' | 'about'
-  const isRestricted = isRestrictedRole(authUser?.role);
+  const mobileAccess = useMobileAccess();
+  const isRestricted = mobileAccess
+    ? !["admin", "super_admin"].includes(authUser?.role) || !mobileAccess.store.sections.settings || authUser?.module_permissions?.settings?.view === false
+    : isRestrictedRole(authUser?.role);
   const [profile, setProfile] = useState(null);
   const [employees, setEmployees] = useState([]);
   const [roles, setRoles] = useState([]);

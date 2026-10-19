@@ -55,6 +55,10 @@ class StoreContext
 
         return [
             'is_tenant_admin' => (bool) $tenantAdmin,
+            'web_access' => (bool) $user->web_access,
+            'mobile_access' => (bool) $user->mobile_access,
+            'module_permissions' => $user->module_permissions,
+            'auth_client' => in_array('client:mobile', $user->currentAccessToken()?->abilities ?? [], true) ? 'mobile' : 'web',
             'platform_company_code' => $user->platform_company_code,
             'store_id' => $selected?->id,
             'company_id' => $selected?->id, // Compatibility alias; never defaults to 1.

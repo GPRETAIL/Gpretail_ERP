@@ -1,3 +1,4 @@
+import { useMobileAccess, canOpenMobileScreen } from "../utils/mobileAccessContext";
 import useAsyncQuery from "../../hooks/useAsyncQuery";
 import { EMPTY_ARRAY } from "../../utils/emptyValues";
 import React, { useEffect, useCallback } from "react";
@@ -19,14 +20,16 @@ const DONUT_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#6366f1", "#ef4444", "#e
  * Inventory Summary screen — fetches real data from GET /warehouse/dashboard.
  */
 export default function InventoryScreen({ onNavigate: _onNavigate, onSelectProduct }) {
+  const access = useMobileAccess();
+  const showSummary = canOpenMobileScreen(access?.screens, "inventory_summary");
   const fetchInventory = useCallback(async ({ signal }) => {
     const [invRes, prodRes] = await Promise.all([
-      api.get("/warehouse/dashboard", { signal }),
+      showSummary ? api.get("/warehouse/dashboard", { signal }) : Promise.resolve(null),
       api.get("/products", { params: { limit: 10 }, signal }),
     ]);
     const productData = prodRes.data?.data;
-    return { inventory: invRes.data?.data || invRes.data || {}, products: Array.isArray(productData) ? productData : productData?.data || productData?.items || [] };
-  }, []);
+    return { inventory: invRes?.data?.data || invRes?.data || null, products: Array.isArray(productData) ? productData : productData?.data || productData?.items || [] };
+  }, [showSummary]);
   const { data: response, loading, reload: loadInventory } = useAsyncQuery(fetchInventory);
   const data = response?.inventory || null;
   const products = response?.products || EMPTY_ARRAY;
@@ -61,7 +64,7 @@ export default function InventoryScreen({ onNavigate: _onNavigate, onSelectProdu
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
       {/* 4 Summary Cards */}
-      {loading ? (
+      {showSummary && (loading ? (
         <SkeletonKpiGrid />
       ) : (
         <Box className="vx-kpis-grid">
@@ -82,10 +85,10 @@ export default function InventoryScreen({ onNavigate: _onNavigate, onSelectProdu
             <Box component="span" className="vx-kpi-val" sx={{ fontSize: { xs: "0.75rem", sm: "1rem" } }}>{money(totalSellingPrice)}</Box>
           </Box>
         </Box>
-      )}
+      ))}
 
       {/* Purchase Price & Margin */}
-      {!loading && (
+      {showSummary && !loading && (
         <Box className="vx-kpis-grid" style={{ marginTop: "-4px" }}>
           <Box className="vx-kpi-card">
             <Box component="span" className="vx-kpi-label">Total Purchase Price</Box>
@@ -126,7 +129,7 @@ export default function InventoryScreen({ onNavigate: _onNavigate, onSelectProdu
       )}
 
       {/* Fallback static donut if no categories from API */}
-      {categories.length === 0 && !loading && (
+      {showSummary && categories.length === 0 && !loading && (
         <Box className="vx-card">
           <Typography component="h3" className="vx-card-title" sx={{ mb: 2 }}>Stock by Category</Typography>
           <Typography component="p" sx={{ fontSize: 12, textAlign: "center", color: "#94a3b8", py: 2 }}>

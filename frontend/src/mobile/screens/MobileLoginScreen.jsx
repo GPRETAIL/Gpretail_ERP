@@ -32,7 +32,7 @@ export default function MobileLoginScreen({ onLoginSuccess }) {
 
     try {
       const resultAction = await dispatch(
-        loginUser({ username: username.trim(), password })
+        loginUser({ username: username.trim(), password, client: "mobile" })
       );
 
       if (loginUser.fulfilled.match(resultAction)) {
@@ -62,7 +62,7 @@ export default function MobileLoginScreen({ onLoginSuccess }) {
     setLoading(true);
     setError(null);
     try {
-      const result = await dispatch(loginUser({ id_token: idToken }));
+      const result = await dispatch(loginUser({ id_token: idToken, client: "mobile" }));
       if (loginUser.fulfilled.match(result)) {
         onLoginSuccess?.();
       } else {

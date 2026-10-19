@@ -27,7 +27,7 @@ it("uses the shared Google authentication flow and opens mobile ERP on success",
   const store = show(onSuccess);
   fireEvent.click(screen.getByRole("button", { name: "Sign in with Google" }));
   await waitFor(() => expect(onSuccess).toHaveBeenCalledOnce());
-  expect(post).toHaveBeenCalledWith("/auth/google", { id_token: "google-credential" });
+  expect(post).toHaveBeenCalledWith("/auth/google", { id_token: "google-credential", client: "mobile" });
   expect(store.getState().auth.isAuthenticated).toBe(true);
   expect(screen.queryByText("admin / password")).not.toBeInTheDocument();
 });

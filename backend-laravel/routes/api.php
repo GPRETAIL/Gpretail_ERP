@@ -27,6 +27,7 @@ use App\Http\Controllers\Api\V1\ItemLocatorController;
 use App\Http\Controllers\Api\V1\LookupController;
 use App\Http\Controllers\Api\V1\LoyaltyController;
 use App\Http\Controllers\Api\V1\MastersDashboardController;
+use App\Http\Controllers\Api\V1\MobileAccessController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\PhysicalStockController;
 use App\Http\Controllers\Api\V1\PosReturnController;
@@ -107,6 +108,8 @@ Route::post('sync/outbox/retry-all', [SyncController::class, 'retryAllFailed'])-
 
 // Helper function to define all application API routes
 $registerAppRoutes = function () {
+    Route::get('mobile/access', [MobileAccessController::class, 'status']);
+    Route::match(['get', 'put'], 'user-access/{id}/client-access', [UserAccessController::class, 'clientAccess']);
     Route::get('company-stores', [StoreActivationController::class, 'index']);
     Route::post('company-stores/sync', [StoreActivationController::class, 'sync']);
     Route::post('company-stores/activate', [StoreActivationController::class, 'activate'])->middleware('throttle:10,1');
