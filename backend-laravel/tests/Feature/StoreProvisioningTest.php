@@ -140,6 +140,12 @@ class StoreProvisioningTest extends TestCase
         $source['deployment_id'] = $activation->deployment_id;
         $this->assertTrue($service->sync($activation)['ok']);
         $this->assertTrue($warehouse->fresh()->is_active);
+        $owner = User::create(['name' => 'Owner', 'username' => 'warehouse-owner', 'email' => $activation->tenant_admin_email, 'password' => 'secret', 'role' => 'admin', 'platform_company_code' => $activation->company_code]);
+        Sanctum::actingAs($owner);
+        $this->getJson('/api/companies/tenant-sync/overview')->assertOk()
+            ->assertJsonPath('data.stores.0.status', 'active')
+            ->assertJsonPath('data.warehouses.0.status', 'active')
+            ->assertJsonPath('data.warehouses.0.store_tags.0.name', 'Parent');
         $source['status'] = 'suspended';
         $this->assertTrue($service->sync($activation)['ok']);
         $this->assertFalse($warehouse->fresh()->is_active);

@@ -37,7 +37,16 @@ class StoreActivationController extends Controller
     {
         $response = $this->index($request)->getData(true);
 
-        return response()->json(['success' => true, 'data' => ['stores' => $response['data'], 'warehouses' => $response['warehouses']]]);
+        $stores = collect($response['data'])->map(fn (array $store) => array_merge($store, ['status' => $store['is_active'] ? 'active' : 'inactive']));
+        $parents = $stores->keyBy('id');
+        $warehouses = collect($response['warehouses'])->map(function (array $warehouse) use ($parents): array {
+            $parent = $parents->get($warehouse['store_id']);
+
+            return array_merge($warehouse, ['status' => $warehouse['is_active'] ? 'active' : 'inactive',
+                'store_tags' => $parent ? [['id' => $parent['id'], 'name' => $parent['name'], 'code' => $parent['code']]] : []]);
+        });
+
+        return response()->json(['success' => true, 'data' => ['stores' => $stores->values(), 'warehouses' => $warehouses->values()]]);
     }
 
     public function sync(Request $request, PlatformActivationService $service): JsonResponse
