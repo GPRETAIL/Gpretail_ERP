@@ -7,6 +7,7 @@ use App\Models\Notification;
 use App\Models\StoreLocalNode;
 use App\Services\NotificationInbox;
 use App\Services\PaginationService;
+use App\Services\PlatformNotificationSync;
 use App\Services\StoreContext;
 use App\Services\StoreQuery;
 use Illuminate\Http\Request;
@@ -72,6 +73,7 @@ class NotificationController extends Controller
 
     public function index(Request $request)
     {
+        app(PlatformNotificationSync::class)->syncIfStale();
         $this->generateAllAlerts();
 
         // orderByRaw() here (not applySorting()'s allowed_sorts) because "unread first, then
@@ -97,9 +99,20 @@ class NotificationController extends Controller
 
     public function unreadCount(Request $request)
     {
+        app(PlatformNotificationSync::class)->syncIfStale();
         $this->generateAllAlerts();
 
         return response()->json(['success' => true, 'data' => ['count' => app(NotificationInbox::class)->unread($request->user())->count()]]);
+    }
+
+    public function banners(Request $request)
+    {
+        app(PlatformNotificationSync::class)->syncIfStale();
+        $rows = app(NotificationInbox::class)->unread($request->user())
+            ->whereNotNull('platform_message_uuid')->orderByRaw("priority = 'high' DESC")
+            ->orderByDesc('app_notifications.id')->limit(3)->get();
+
+        return response()->json(['success' => true, 'data' => $rows])->header('Cache-Control', 'private, no-store');
     }
 
     public function markRead(Request $request, int $id)

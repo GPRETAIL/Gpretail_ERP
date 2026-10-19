@@ -351,6 +351,7 @@ $registerAppRoutes = function () {
     Route::get('notification-preferences', [NotificationPreferenceController::class, 'show']);
     Route::put('notification-preferences', [NotificationPreferenceController::class, 'update']);
     Route::get('notifications', [NotificationController::class, 'index']);
+    Route::get('notifications/banners', [NotificationController::class, 'banners']);
     Route::get('notifications/unread-count', [NotificationController::class, 'unreadCount']);
     Route::post('notifications/{id}/read', [NotificationController::class, 'markRead']);
     Route::post('notifications/read-all', [NotificationController::class, 'markAllRead']);

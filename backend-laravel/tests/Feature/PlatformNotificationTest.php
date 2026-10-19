@@ -19,6 +19,12 @@ class PlatformNotificationTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Http::fake(['*' => Http::response(['success' => false], 503)]);
+    }
+
     private function fixture(): array
     {
         $activation = PlatformActivation::create(['company_code' => 'CMP-NOTIFY', 'activated' => true, 'sync_token' => 'sync-only', 'status' => 'active', 'tenant_admin_email' => 'owner@example.test', 'deployment_id' => (string) Str::uuid()]);
@@ -84,5 +90,34 @@ class PlatformNotificationTest extends TestCase
         $this->assertNotContains('Offer', $inbox->visible($owner)->pluck('title')->all());
         DB::table('notification_preferences')->insert(['user_id' => $owner->id, 'marketing' => true]);
         $this->assertContains('Offer', $inbox->visible($owner)->pluck('title')->all());
+    }
+
+    public function test_banner_request_recovers_without_scheduler_and_throttles_feed_checks(): void
+    {
+        [$activation,$owner] = $this->fixture();
+        config(['platform.base_url' => 'https://admin.example.test']);
+        $message = $this->message(['priority' => 'normal', 'category' => 'service']);
+        Http::swap(new Factory);
+        Http::fake(['*/notifications*' => Http::response(['success' => true, 'data' => ['messages' => [$message], 'cursor' => 1]])]);
+        Sanctum::actingAs($owner);
+        $this->getJson('/api/notifications/banners')->assertOk()->assertJsonPath('data.0.platform_message_uuid', $message['uuid']);
+        $this->getJson('/api/notifications/banners')->assertOk();
+        Http::assertSentCount(1);
+        $this->assertDatabaseHas('platform_notification_syncs', ['company_code' => $activation->company_code, 'cursor' => 1]);
+    }
+
+    public function test_closing_a_banner_is_personal_and_keeps_the_message_in_the_inbox(): void
+    {
+        [$activation,$owner] = $this->fixture();
+        $message = $this->message(['category' => 'service']);
+        $id = DB::table('app_notifications')->insertGetId(['type' => 'PLATFORM_SERVICE', 'title' => 'Service notice', 'platform_message_uuid' => $message['uuid'], 'platform_company_code' => $activation->company_code, 'audience' => 'all', 'category' => 'service', 'priority' => 'normal', 'expires_at' => now()->addDay(), 'created_at' => now(), 'updated_at' => now()]);
+        $other = User::create(['name' => 'Other', 'username' => 'banner-other', 'email' => 'other@example.test', 'password' => 'Welcome123', 'role' => 'admin', 'platform_company_code' => $activation->company_code]);
+        Sanctum::actingAs($owner);
+        $this->getJson('/api/notifications/banners')->assertOk()->assertJsonCount(1, 'data');
+        $this->postJson('/api/notifications/'.$id.'/read')->assertOk();
+        $this->getJson('/api/notifications/banners')->assertOk()->assertJsonCount(0, 'data');
+        $this->getJson('/api/notifications')->assertOk()->assertJsonCount(1, 'data');
+        Sanctum::actingAs($other);
+        $this->getJson('/api/notifications/banners')->assertOk()->assertJsonCount(1, 'data');
     }
 }

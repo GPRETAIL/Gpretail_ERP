@@ -12,6 +12,7 @@ import BottomNav from "./components/BottomNav";
 import OfflineBanner from "./components/OfflineBanner";
 import PwaUpdateBanner from "./components/PwaUpdateBanner";
 import NotificationsModal from "./components/NotificationsModal";
+import PlatformNotificationBanner from "../components/PlatformNotificationBanner";
 import UserProfileModal from "./components/UserProfileModal";
 import GlobalSearchModal from "./components/GlobalSearchModal";
 import SyncCenterModal from "./components/SyncCenterModal";
@@ -307,6 +308,8 @@ function MobileWorkspace() {
         onOpenNotifications={() => setIsNotificationsOpen(true)}
         onOpenUserMenu={() => setIsUserMenuOpen(true)}
       />
+
+      {!appLock.isHidden && <PlatformNotificationBanner onView={() => setIsNotificationsOpen(true)} />}
 
       {/* Offline Banner */}
       <OfflineBanner isOnline={isOnline} wasOffline={wasOffline} />

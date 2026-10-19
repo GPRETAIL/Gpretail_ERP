@@ -1,5 +1,5 @@
 import React from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 
 import Login from "./pages/Login";
@@ -16,10 +16,12 @@ import PwaInstallPrompt from "./components/PwaInstallPrompt";
 import StoreSelectionDialog from "./components/StoreSelectionDialog";
 import NotificationInboxPanel from "./components/NotificationInboxPanel";
 import StoreActivation from "./pages/StoreActivation";
+import PlatformNotificationBanner from "./components/PlatformNotificationBanner";
 
 function App() {
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
   const authUser = useSelector((state) => state.auth.user);
+  const isMobileRoute = useLocation().pathname.toLowerCase().startsWith("/app");
 
   // Normalize capital /App path to lowercase /app for case-insensitive mobile routing
   if (window.location.pathname.toLowerCase() === "/app" || window.location.pathname.toLowerCase().startsWith("/app/")) {
@@ -53,6 +55,7 @@ function App() {
               </Route>
               <Route path="/" element={isAuthenticated ? <Navigate to={homePath} replace /> : <Navigate to="/login" replace />} />
             </Routes>
+            {isAuthenticated && !isMobileRoute && <PlatformNotificationBanner />}
             {isAuthenticated && <PwaInstallPrompt />}
             {isAuthenticated && <StoreSelectionDialog />}
           </>

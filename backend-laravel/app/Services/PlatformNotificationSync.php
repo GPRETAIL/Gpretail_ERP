@@ -11,7 +11,23 @@ use Illuminate\Support\Facades\Validator;
 
 class PlatformNotificationSync
 {
-    public function sync(): array
+    public function syncIfStale(): void
+    {
+        $activation = PlatformActivation::current();
+        if (! $activation?->activated || ! $activation->sync_token || ! $activation->deployment_id) {
+            return;
+        }
+        $last = DB::table('platform_notification_syncs')->where('company_code', $activation->company_code)->value('last_synced_at');
+        if ($last && Carbon::parse($last)->greaterThan(now()->subSeconds(30))) {
+            return;
+        }
+        if (! Cache::add('platform-notification-attempt:'.$activation->company_code, true, 30)) {
+            return;
+        }
+        $this->sync(6);
+    }
+
+    public function sync(int $timeout = 15): array
     {
         $activation = PlatformActivation::current();
         if (! $activation?->activated || ! $activation->sync_token || ! $activation->deployment_id) {
@@ -21,19 +37,19 @@ class PlatformNotificationSync
         if (! str_starts_with($url, 'https://') && ! (app()->environment(['local', 'testing']) && in_array(parse_url($url, PHP_URL_HOST), ['localhost', '127.0.0.1', '::1'], true))) {
             return ['ok' => false, 'message' => 'Notification sync requires HTTPS.'];
         }
-        $result = Cache::lock('platform-notification-sync', 60)->get(function () use ($activation, $url) {
+        $result = Cache::lock('platform-notification-sync', 60)->get(function () use ($activation, $url, $timeout) {
             DB::table('platform_notification_syncs')->insertOrIgnore(['company_code' => $activation->company_code, 'cursor' => 0]);
             try {
                 $state = DB::table('platform_notification_syncs')->where('company_code', $activation->company_code)->first();
                 $pending = json_decode($state->pending_acks ?? '[]', true) ?: [];
                 if ($pending) {
-                    $ack = Http::timeout(15)->withoutRedirecting()->withToken($activation->sync_token)->post($url.'/api/v1/tenant/'.$activation->company_code.'/notifications/ack', ['deployment_id' => $activation->deployment_id, 'sequences' => $pending]);
+                    $ack = Http::connectTimeout(min(3, $timeout))->timeout($timeout)->withoutRedirecting()->withToken($activation->sync_token)->post($url.'/api/v1/tenant/'.$activation->company_code.'/notifications/ack', ['deployment_id' => $activation->deployment_id, 'sequences' => $pending]);
                     if (! $ack->successful() || ! $ack->json('success')) {
                         throw new \RuntimeException('Notification import acknowledgment was rejected.');
                     }
                     DB::table('platform_notification_syncs')->where('company_code', $activation->company_code)->update(['pending_acks' => null]);
                 }
-                $response = Http::timeout(15)->withoutRedirecting()->withToken($activation->sync_token)->get($url.'/api/v1/tenant/'.$activation->company_code.'/notifications', ['after' => $state->cursor]);
+                $response = Http::connectTimeout(min(3, $timeout))->timeout($timeout)->withoutRedirecting()->withToken($activation->sync_token)->get($url.'/api/v1/tenant/'.$activation->company_code.'/notifications', ['after' => $state->cursor]);
                 if (! $response->successful() || ! $response->json('success')) {
                     throw new \RuntimeException('Notification feed could not be reached or authorized.');
                 }

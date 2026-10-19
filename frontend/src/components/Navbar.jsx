@@ -295,10 +295,12 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
 
     loadUnreadCount();
     const intervalId = setInterval(loadUnreadCount, 30000);
+    window.addEventListener("vx-notifications-updated", loadUnreadCount);
 
     return () => {
       active = false;
       clearInterval(intervalId);
+      window.removeEventListener("vx-notifications-updated", loadUnreadCount);
     };
   }, []);
 
