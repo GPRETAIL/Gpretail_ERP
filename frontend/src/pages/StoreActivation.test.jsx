@@ -1,9 +1,14 @@
+import { Provider } from "react-redux";
+import { configureStore } from "@reduxjs/toolkit";
+import checkAuth from "../utils/checkAuth";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import api from "../api/axios";
 import StoreActivation from "./StoreActivation";
 
 vi.mock("../api/axios", () => ({ default: { get: vi.fn(), post: vi.fn() } }));
+vi.mock("../utils/checkAuth", () => ({ default: vi.fn().mockResolvedValue(undefined) }));
+
 afterEach(() => { cleanup(); vi.resetAllMocks(); });
 
 it("loads provisioned stores and refreshes them after activation succeeds", async () => {
@@ -11,7 +16,7 @@ it("loads provisioned stores and refreshes them after activation succeeds", asyn
   api.get.mockResolvedValueOnce({ data: { data: [store] } })
     .mockResolvedValueOnce({ data: { data: [{ ...store, activated_at: "2026-10-18", is_active: true }] } });
   api.post.mockResolvedValue({ data: { message: "Store activated" } });
-  render(<StoreActivation />);
+  render(<Provider store={configureStore({ reducer: () => ({}) })}><StoreActivation /></Provider>);
   await screen.findByText("Pending activation");
   fireEvent.change(screen.getByLabelText("Store code", { exact: false }), { target: { value: "STR-1" } });
   fireEvent.change(screen.getByLabelText("Activation code or License Key", { exact: false }), { target: { value: "activation" } });
@@ -20,10 +25,11 @@ it("loads provisioned stores and refreshes them after activation succeeds", asyn
   expect(api.post).toHaveBeenCalledWith("/company-stores/activate", { store_code: "STR-1", activation_code: "activation" });
   await screen.findByText("Activated");
   expect(api.get).toHaveBeenCalledTimes(2);
+  expect(checkAuth).toHaveBeenCalledOnce();
 });
 
 it("shows the server error when initial store loading fails", async () => {
   api.get.mockRejectedValue({ response: { data: { message: "Company unavailable" } } });
-  render(<StoreActivation />);
+  render(<Provider store={configureStore({ reducer: () => ({}) })}><StoreActivation /></Provider>);
   await waitFor(() => expect(screen.getByText("Company unavailable")).toBeTruthy());
 });

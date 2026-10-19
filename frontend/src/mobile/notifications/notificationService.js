@@ -132,6 +132,7 @@ export async function checkSupplierPaymentAlerts() {
  * Seeds initial demo supplier payment alerts if no real bills are currently unpaid.
  */
 export async function seedDemoPaymentAlerts() {
+  if (!import.meta.env.DEV || import.meta.env.VITE_DEMO_NOTIFICATIONS !== "true") return;
   const alerts = [
     {
       id: "alert_pay_1",

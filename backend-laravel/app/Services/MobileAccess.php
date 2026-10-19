@@ -176,6 +176,9 @@ class MobileAccess
         if (! $this->canLogin($user, $mobile ? 'mobile' : 'web')) {
             return ['code' => 'CLIENT_ACCESS_DENIED', 'message' => 'Your administrator has disabled this sign-in channel.'];
         }
+        if (in_array($controller, ['NotificationController', 'NotificationPreferenceController', 'PushSubscriptionController'], true)) {
+            return null;
+        }
         $page = $this->page($request);
         if ($mobile) {
             $id = $request->attributes->get('store_context_id');

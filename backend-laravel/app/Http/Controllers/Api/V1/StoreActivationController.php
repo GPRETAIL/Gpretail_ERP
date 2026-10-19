@@ -33,6 +33,13 @@ class StoreActivationController extends Controller
             'warehouses' => Warehouse::withoutGlobalScopes()->where('platform_company_code', $activation->company_code)->get()]);
     }
 
+    public function overview(Request $request): JsonResponse
+    {
+        $response = $this->index($request)->getData(true);
+
+        return response()->json(['success' => true, 'data' => ['stores' => $response['data'], 'warehouses' => $response['warehouses']]]);
+    }
+
     public function sync(Request $request, PlatformActivationService $service): JsonResponse
     {
         $result = $service->sync($this->owner($request));
@@ -71,6 +78,6 @@ class StoreActivationController extends Controller
         }
         $sync = $service->sync($activation);
 
-        return response()->json(['success' => $sync['ok'], 'message' => $sync['ok'] ? 'Store activated. Select it before entering data.' : 'GP Admin activated the store, but sync failed. Refresh stores to recover.'], $sync['ok'] ? 200 : 503);
+        return response()->json(['success' => $sync['ok'], 'message' => $sync['ok'] ? 'Store activated. Select it before entering data.' : 'Vynerix Admin activated the store, but ERP sync failed: '.($sync['message'] ?? 'Unknown verification error').' Refresh stores after the issue is resolved; the activation code has already been consumed.'], $sync['ok'] ? 200 : 503);
     }
 }

@@ -46,7 +46,7 @@ class BusinessPermissions
         if ($read) {
             return 'read';
         }
-        if (in_array($controller, ['NotificationController', 'DashboardLayoutController'], true)) {
+        if (in_array($controller, ['NotificationController', 'NotificationPreferenceController', 'PushSubscriptionController', 'DashboardLayoutController'], true)) {
             return 'personal';
         }
         if (in_array($controller, self::MASTERS, true)) {

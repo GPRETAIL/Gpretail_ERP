@@ -34,7 +34,6 @@ import ReportsScreen from "./screens/ReportsScreen";
 import ReportDetailScreen from "./screens/ReportDetailScreen";
 import SettingsScreen from "./screens/SettingsScreen";
 import MobileLoginScreen from "./screens/MobileLoginScreen";
-import { checkSupplierPaymentAlerts } from "./notifications/notificationService";
 import { processSyncQueue } from "./offline/syncManager";
 import useAppLock from "./security/useAppLock";
 import useBiometrics from "./security/useBiometrics";
@@ -114,7 +113,6 @@ function MobileWorkspace() {
   // Check supplier payment alerts and process pending sync queue on startup
   useEffect(() => {
     if (ready && isAuthenticated) {
-      checkSupplierPaymentAlerts();
       processSyncQueue();
     }
   }, [ready, isAuthenticated]);

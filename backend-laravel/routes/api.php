@@ -29,6 +29,7 @@ use App\Http\Controllers\Api\V1\LoyaltyController;
 use App\Http\Controllers\Api\V1\MastersDashboardController;
 use App\Http\Controllers\Api\V1\MobileAccessController;
 use App\Http\Controllers\Api\V1\NotificationController;
+use App\Http\Controllers\Api\V1\NotificationPreferenceController;
 use App\Http\Controllers\Api\V1\PhysicalStockController;
 use App\Http\Controllers\Api\V1\PosReturnController;
 use App\Http\Controllers\Api\V1\PosSaleController;
@@ -37,6 +38,7 @@ use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\ProductPurchaseAnalyticsController;
 use App\Http\Controllers\Api\V1\PurchaseInvoiceController;
 use App\Http\Controllers\Api\V1\PurchaseReturnController;
+use App\Http\Controllers\Api\V1\PushSubscriptionController;
 use App\Http\Controllers\Api\V1\SalesApprovalController;
 use App\Http\Controllers\Api\V1\SalesDashboardController;
 use App\Http\Controllers\Api\V1\SalesReportController;
@@ -133,8 +135,8 @@ $registerAppRoutes = function () {
     // Companies & Subscriptions
     Route::get('companies/subscription/status', [StoreController::class, 'subscriptionStatus']);
     Route::post('companies/subscription/notices/{id}/dismiss', [StoreController::class, 'subscriptionStatus']);
-    Route::get('companies/tenant-sync/overview', [StoreController::class, 'index']);
-    Route::post('companies/tenant-sync/pull', [StoreController::class, 'index']);
+    Route::get('companies/tenant-sync/overview', [StoreActivationController::class, 'overview']);
+    Route::post('companies/tenant-sync/pull', [StoreActivationController::class, 'sync']);
     Route::get('companies/{id}/theme', [SettingsController::class, 'getTheme']);
     Route::put('companies/{id}/theme', [SettingsController::class, 'updateTheme']);
     Route::get('companies/{id}/theme-presets', [SettingsController::class, 'listThemePresets']);
@@ -343,6 +345,11 @@ $registerAppRoutes = function () {
     Route::get('supplier-payments', [SupplierPaymentController::class, 'index']);
     Route::post('supplier-payments', [SupplierPaymentController::class, 'store']);
 
+    Route::get('notifications/push/config', [PushSubscriptionController::class, 'config']);
+    Route::post('notifications/push/subscription', [PushSubscriptionController::class, 'store']);
+    Route::delete('notifications/push/subscription', [PushSubscriptionController::class, 'destroy']);
+    Route::get('notification-preferences', [NotificationPreferenceController::class, 'show']);
+    Route::put('notification-preferences', [NotificationPreferenceController::class, 'update']);
     Route::get('notifications', [NotificationController::class, 'index']);
     Route::get('notifications/unread-count', [NotificationController::class, 'unreadCount']);
     Route::post('notifications/{id}/read', [NotificationController::class, 'markRead']);

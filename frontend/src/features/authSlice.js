@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../api/axios";
 import { initializeStoreSelection } from "../utils/storeSelection";
+import { disableWebPush } from "../utils/webPush";
 import { clearRuntimeRoutingConfig, fetchAndApplyRuntimeRoutingConfig } from "../api/runtimeRouting";
 
 export const loginUser = createAsyncThunk(
@@ -57,6 +58,7 @@ export const platformLoginUser = createAsyncThunk(
 );
 
 export const logoutUser = createAsyncThunk("/auth/logoutUser", async () => {
+  try { await disableWebPush(); } catch { /* Browser unsubscription still runs; server cleanup retries after token revocation. */ }
   try {
     await api.post("/auth/logout");
   } catch {

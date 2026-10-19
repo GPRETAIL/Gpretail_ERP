@@ -7,9 +7,11 @@ use App\Models\Store;
 use App\Models\User;
 use App\Models\Warehouse;
 use App\Services\PlatformActivationService;
+use App\Services\StoreLicenceVerifier;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class StoreProvisioningTest extends TestCase
@@ -40,6 +42,25 @@ class StoreProvisioningTest extends TestCase
         }
 
         return ['success' => true, 'data' => ['company' => ['company_code' => $activation->company_code, 'status' => 'active', 'tenant_admin_email' => $activation->tenant_admin_email], 'stores' => [$store]]];
+    }
+
+    public function test_company_page_sync_pulls_platform_stores_before_any_store_is_assigned(): void
+    {
+        $activation = $this->activation();
+        $owner = User::create(['name' => 'Owner', 'username' => 'sync-owner', 'email' => 'owner@example.test', 'password' => 'Welcome123', 'role' => 'admin', 'platform_company_code' => $activation->company_code]);
+        Http::fake(['*/snapshot' => Http::response($this->snapshot($activation, ['store_id' => 991, 'name' => 'Pending branch', 'code' => 'STR-PENDING-991', 'activation_required' => true]))]);
+        Sanctum::actingAs($owner);
+        $this->postJson('/api/companies/tenant-sync/pull')->assertOk()->assertJsonPath('success', true);
+        $this->assertDatabaseHas('stores', ['platform_store_id' => 991, 'platform_company_code' => $activation->company_code]);
+        $this->getJson('/api/companies/tenant-sync/overview')->assertOk()->assertJsonPath('data.stores.0.code', 'STR-PENDING-991');
+    }
+
+    public function test_production_trust_check_rejects_a_missing_or_development_key(): void
+    {
+        config(['platform.licence_public_keys.prod' => '']);
+        $this->artisan('platform:verify-trust --production')->assertFailed();
+        config(['platform.licence_public_keys.prod' => StoreLicenceVerifier::DEV_PUBLIC_KEY]);
+        $this->artisan('platform:verify-trust --production')->assertFailed();
     }
 
     public function test_pending_store_is_imported_once_and_only_activated_for_this_deployment(): void

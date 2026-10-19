@@ -32,7 +32,7 @@ class StoreLicenceVerifier
         }
         $public = $keys[$kid] ?? null;
         if (! is_string($public) || $public === '' || ($claims['kid'] ?? '') !== $kid) {
-            return $invalid;
+            return ['ok' => false, 'message' => 'The store licence signing key is not configured for this ERP server. Ask your administrator to pin the verified Vynerix Admin production public key, then refresh stores.', 'claims' => []];
         }
         $pem = "-----BEGIN PUBLIC KEY-----\n".chunk_split($public, 64, "\n").'-----END PUBLIC KEY-----';
         $key = openssl_pkey_get_public($pem);

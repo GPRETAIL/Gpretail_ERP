@@ -5,10 +5,13 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\Notification;
 use App\Models\StoreLocalNode;
+use App\Services\NotificationInbox;
 use App\Services\PaginationService;
+use App\Services\StoreContext;
 use App\Services\StoreQuery;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class NotificationController extends Controller
 {
@@ -75,44 +78,54 @@ class NotificationController extends Controller
         // newest" is fixed product behavior, not a user-choosable column -- the same pattern
         // every other controller's "export all" branch relies on: a query already carrying its
         // own orders is left untouched by PaginationService::applySorting().
-        $query = Notification::orderByRaw('read_at IS NOT NULL')
-            ->orderByDesc('created_at');
+        $request->validate(['category' => 'nullable|in:all,account,service,offer']);
+        $query = app(NotificationInbox::class)->query($request->user())
+            ->orderByRaw('COALESCE(recipient.read_at, app_notifications.read_at) IS NOT NULL')
+            ->orderByDesc('app_notifications.id');
 
+        if ($request->input('category') === 'account') {
+            $query->whereIn('category', ['subscription', 'billing']);
+        } elseif ($request->input('category') === 'offer') {
+            $query->where('category', 'offer');
+        } elseif ($request->input('category') === 'service') {
+            $query->where(fn ($scope) => $scope->where('category', 'service')->orWhereNull('category'));
+        }
         $result = $this->paginationService->paginate($query, 'notifications', $request);
 
         return response()->json($result);
     }
 
-    public function unreadCount()
+    public function unreadCount(Request $request)
     {
         $this->generateAllAlerts();
 
-        return response()->json(['success' => true, 'data' => ['count' => Notification::unread()->count()]]);
+        return response()->json(['success' => true, 'data' => ['count' => app(NotificationInbox::class)->unread($request->user())->count()]]);
     }
 
-    public function markRead($id)
+    public function markRead(Request $request, int $id)
     {
-        $notification = Notification::find($id);
-        if (! $notification) {
-            return response()->json(['success' => false, 'message' => 'Notification not found'], 404);
-        }
+        app(NotificationInbox::class)->markRead($request->user(), $id);
 
-        if (! $notification->read_at) {
-            $notification->update(['read_at' => now()]);
-        }
-
-        return response()->json(['success' => true, 'data' => $notification]);
+        return response()->json(['success' => true]);
     }
 
-    public function markAllRead()
+    public function markAllRead(Request $request)
     {
-        Notification::unread()->update(['read_at' => now()]);
+        $inbox = app(NotificationInbox::class);
+        $inbox->visible($request->user())->orderBy('id')->chunkById(200, function ($rows) use ($request) {
+            foreach ($rows as $row) {
+                DB::table('notification_receipts')->insertOrIgnore(['notification_id' => $row->id, 'user_id' => $request->user()->id, 'read_at' => now()]);
+            }
+        });
 
         return response()->json(['success' => true]);
     }
 
     private function generateAllAlerts(): void
     {
+        if (! app(StoreContext::class)->stores(request()->user())->count()) {
+            return;
+        }
         $this->generateSupplierPaymentAlerts();
         $this->generateSyncStaleAlerts();
         $this->generateCustomerCreditLimitAlerts();

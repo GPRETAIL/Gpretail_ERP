@@ -18,6 +18,8 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import { useDispatch } from "react-redux";
+import checkAuth from "../../utils/checkAuth";
 import api from "../../api/axios";
 import { muiFieldSx } from "../../theme/formControlSizes";
 
@@ -111,6 +113,7 @@ const InputField = ({ label, required = false, children, sx }) => (
 );
 
 const CompanySettings = () => {
+  const dispatch = useDispatch();
   const [form, setForm] = useState(emptyForm);
   const [currentId, setCurrentId] = useState(null);
 
@@ -187,7 +190,7 @@ const CompanySettings = () => {
   const loadSearchResults = async (query = "") => {
     try {
       setSearchLoading(true);
-      // Active only. Stores here mirror what VX-Admin says exists; one it removed is deactivated
+      // Active only. Stores here mirror what Vynerix Admin says exists; one it removed is deactivated
       // locally and cannot be edited or re-activated from the tenant anyway (the next sync would
       // just flip it back), so listing it only invites confusion.
       const res = await api.get("/companies", {
@@ -304,19 +307,14 @@ const CompanySettings = () => {
 
   // Read-only rollup of the synced stores + warehouses (with store tagging) for this super-admin.
 
-  // Manual "Sync now": pull the latest subscription/limits/login-password config from VX-Admin instead
+  // Manual "Sync now": pull the latest subscription/limits/login-password config from Vynerix Admin instead
   // of waiting for the background loop. Reloads the currently open store so any changes show immediately.
   const handleSyncFromAdmin = async () => {
     try {
       setSyncing(true);
       const res = await api.post("/companies/tenant-sync/pull");
-      const data = res.data?.data || {};
-      const applied = Number(data.applied || 0);
-      toast.success(
-        applied > 0
-          ? `Synced from VX-Admin — ${applied} company update${applied === 1 ? "" : "s"} applied.`
-          : "Synced from VX-Admin — already up to date."
-      );
+      toast.success(res.data?.message || "Stores refreshed from Vynerix Admin.");
+      await checkAuth(dispatch);
       if (currentId) {
         await loadCompanyById(currentId);
       }
@@ -325,7 +323,7 @@ const CompanySettings = () => {
       }
       await loadOverview();
     } catch (err) {
-      toast.error(err.response?.data?.message || "Sync from VX-Admin failed");
+      toast.error(err.response?.data?.message || "Sync from Vynerix Admin failed");
     } finally {
       setSyncing(false);
     }
@@ -486,11 +484,11 @@ const CompanySettings = () => {
             color="inherit"
             onClick={handleSyncFromAdmin}
             disabled={syncing}
-            title="Pull the latest subscription, limits and login password from VX-Admin"
+            title="Pull the latest subscription, limits and login password from Vynerix Admin"
             startIcon={<RefreshCw size={16} style={syncing ? { animation: "app-spin 1s linear infinite" } : undefined} />}
             sx={{ fontSize: 12.25, color: "text.secondary" }}
           >
-            {syncing ? "Syncing…" : "Sync from VX-Admin"}
+            {syncing ? "Syncing…" : "Sync from Vynerix Admin"}
           </Button>
           <Button
             type="button"
@@ -524,7 +522,7 @@ const CompanySettings = () => {
       {(overview.stores.length > 0 || overview.warehouses.length > 0) && (
         <Box sx={{ ...cardSx, p: 1.5 }}>
           <Typography component="h2" sx={{ fontSize: 13, fontWeight: 600, color: "text.primary", mb: 1 }}>
-            Stores &amp; Warehouses <Box component="span" sx={{ fontSize: 10.5, fontWeight: 400, color: "text.disabled" }}>(synced from VX-Admin)</Box>
+            Stores &amp; Warehouses <Box component="span" sx={{ fontSize: 10.5, fontWeight: 400, color: "text.disabled" }}>(synced from Vynerix Admin)</Box>
           </Typography>
           {/* One table rather than two side-by-side lists: a warehouse is a location under the same
               company as the stores, so it belongs in the same list distinguished by Store Type.
@@ -695,8 +693,8 @@ const CompanySettings = () => {
                 }}
               >
                 Name, Reg. Name, Contact Person, Contact No, GST No, City, PIN Code and State are set by your
-                platform administrator (VX-Admin) for this store — view only here. To change one, reach out to
-                VX-Admin.
+                platform administrator (Vynerix Admin) for this store — view only here. To change one, reach out to
+                Vynerix Admin.
               </Typography>
             ) : null}
             <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { md: "repeat(2, 1fr)" } }}>

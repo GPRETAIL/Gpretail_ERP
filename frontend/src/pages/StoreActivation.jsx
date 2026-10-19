@@ -1,9 +1,12 @@
 import useAsyncQuery from "../hooks/useAsyncQuery";
 import React, { useCallback, useState } from 'react';
 import { Alert, Box, Button, Container, Paper, Stack, TextField, Typography } from '@mui/material';
+import { useDispatch } from 'react-redux';
+import checkAuth from '../utils/checkAuth';
 import api from '../api/axios';
 
 export default function StoreActivation() {
+  const dispatch = useDispatch();
   const [stores, setStores] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
   const [code, setCode] = useState('');
@@ -27,6 +30,7 @@ export default function StoreActivation() {
     try {
       const response = await api.post(activate ? '/company-stores/activate' : '/company-stores/sync', activate ? { store_code: storeCode.trim(), activation_code: code.trim() } : {});
       await load();
+      await checkAuth(dispatch);
       if (activate) setCode('');
       setMessage(response.data?.message || 'Stores refreshed.');
     } catch (e) { setError(e.response?.data?.message || 'Could not reach Vynerix Admin.'); }

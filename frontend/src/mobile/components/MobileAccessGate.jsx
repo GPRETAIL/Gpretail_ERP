@@ -5,10 +5,12 @@ import api from "../../api/axios";
 import { logoutUser } from "../../features/authSlice";
 import useAsyncQuery from "../../hooks/useAsyncQuery";
 import VynerixLoginBrand from "../../components/auth/VynerixLoginBrand";
+import NotificationsModal from "./NotificationsModal";
 import { MobileAccessContext } from "../utils/mobileAccessContext";
 
 export default function MobileAccessGate({ children }) {
   const dispatch = useDispatch();
+  const [inboxOpen, setInboxOpen] = useState(false);
   const [storeId, setStoreId] = useState(() => sessionStorage.getItem("activeStoreId") || "");
   const fetchAccess = useCallback(async ({ signal }) => (await api.get("/mobile/access", { signal })).data.data, []);
   const { data, error, loading, reload } = useAsyncQuery(fetchAccess);
@@ -58,6 +60,8 @@ export default function MobileAccessGate({ children }) {
           <Button href="/store-activation">Refresh or activate stores</Button>
         </> : <Typography color="#475569" fontSize={13}>Contact your Tenant Administrator to enable access or renew the store subscription.</Typography>}
       </>}
+      <Button onClick={() => setInboxOpen(true)}>Account notifications</Button>
+      <NotificationsModal isOpen={inboxOpen} onClose={() => setInboxOpen(false)} />
       <Button onClick={() => reload()}>Check access again</Button>
       <Button onClick={() => dispatch(logoutUser())}>Sign out</Button>
     </Stack>

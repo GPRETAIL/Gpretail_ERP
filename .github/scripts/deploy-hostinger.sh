@@ -48,6 +48,7 @@ test -s "$CODE_BACKUP"
 "$PHP" artisan down --retry=60
 (umask 022; tar -xzf "$ARCHIVE")
 "$PHP" artisan config:clear
+"$PHP" artisan platform:verify-trust
 "$PHP" artisan migrate --force --no-interaction
 "$PHP" artisan config:cache
 "$PHP" artisan route:cache

@@ -209,8 +209,11 @@ class PlatformActivationService
                     'platform_licence_token' => $source['licence'] ?? null,
                     'platform_subscription' => $source['subscription'] ?? null,
                 ]);
-                if ($local->is_active && ! app(StoreLicenceVerifier::class)->verify($local, $activation)['ok']) {
-                    throw new \RuntimeException('GP Admin returned a store licence that this installation cannot verify. Check the pinned public key and refresh.');
+                if ($local->is_active) {
+                    $verification = app(StoreLicenceVerifier::class)->verify($local, $activation);
+                    if (! $verification['ok']) {
+                        throw new \RuntimeException($verification['message']);
+                    }
                 }
                 $local->save();
                 $seen[] = $id;

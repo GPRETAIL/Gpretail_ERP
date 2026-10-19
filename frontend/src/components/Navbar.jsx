@@ -328,7 +328,9 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
       // Navigation should still proceed even if marking read fails.
     }
     setUnreadNotifCount((prev) => Math.max(0, prev - (notification.read_at ? 0 : 1)));
-    if (notification.link) {
+    if (notification.platform_message_uuid) {
+      navigate("/notifications");
+    } else if (notification.link) {
       navigateActiveTab(notification.link);
     }
   };
@@ -638,6 +640,7 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
             >
               <Box sx={{ px: 2, py: 1, borderBottom: 1, borderColor: "divider" }}>
                 <Typography sx={{ fontSize: 13, fontWeight: 700 }}>Notifications</Typography>
+                <Button size="small" onClick={() => { closeNotifMenu(); navigate("/notifications"); }}>View inbox & preferences</Button>
               </Box>
               {notifLoading ? (
                 <MenuItem disabled>

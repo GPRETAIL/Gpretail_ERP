@@ -9,7 +9,7 @@
  * 5. Lifecycle Updates — skipWaiting and client claim support
  */
 
-const CACHE_VERSION = "vynerix-pwa-v3.0.2";
+const CACHE_VERSION = "vynerix-pwa-v3.0.3";
 const CACHE_STATIC = `vynerix-static-${CACHE_VERSION}`;
 const CACHE_API = `vynerix-api-${CACHE_VERSION}`;
 
@@ -37,7 +37,6 @@ const CACHEABLE_API_PATTERNS = [
   "/api/products",
   "/api/customers",
   "/api/suppliers",
-  "/api/notifications",
   "/api/auth/me"
 ];
 
@@ -185,4 +184,22 @@ self.addEventListener("message", (event) => {
     console.log("[PWA SW] Skipping waiting and activating new version");
     self.skipWaiting();
   }
+});
+
+// Payload-free Web Push: keep subscription/account details off locked screens.
+self.addEventListener("push", event => {
+  event.waitUntil(self.registration.showNotification("Vynerix", {
+    body: "An account or service update is available. Open ERP to review it.",
+    icon: "/pwa-icon.svg", badge: "/pwa-icon.svg", tag: "vynerix-inbox",
+  }));
+});
+self.addEventListener("notificationclick", event => {
+  event.notification.close();
+  event.waitUntil((async () => {
+    const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    const existing = windows.find(client => new URL(client.url).origin === self.location.origin);
+    const target = self.location.origin + "/notifications";
+    if (existing) { await existing.navigate(target); return existing.focus(); }
+    return self.clients.openWindow(target);
+  })());
 });

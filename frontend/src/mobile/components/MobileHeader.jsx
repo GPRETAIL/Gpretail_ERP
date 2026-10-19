@@ -3,7 +3,6 @@ import React, { useCallback, useEffect, useState } from "react";
 import { ArrowLeft, Bell } from "lucide-react";
 import { Box } from "@mui/material";
 import api from "../../api/axios";
-import { getStoredNotifications } from "../offline/db";
 
 /**
  * Mobile top header bar with:
@@ -22,11 +21,6 @@ export default function MobileHeader({
 }) {
   const [cachedCount] = useState(() => window.__vx_unread_count || 0);
   const fetchCount = useCallback(async ({ signal }) => {
-      // Check stored IndexedDB payment & stock alerts
-      const localNotifs = await getStoredNotifications();
-      const localUnread = localNotifs.filter((n) => !n.isRead).length;
-
-      // Check remote notifications
       let remoteUnread = 0;
       try {
         const res = await api.get("/notifications/unread-count", { signal });
@@ -35,7 +29,7 @@ export default function MobileHeader({
         // Fallback
       }
 
-      const total = Math.max(localUnread, remoteUnread);
+      const total = remoteUnread;
     return total;
   }, []);
   const { data, reload: refreshCount } = useAsyncQuery(fetchCount);

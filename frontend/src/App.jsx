@@ -14,6 +14,7 @@ import ForceChangePassword from "./pages/ForceChangePassword";
 import VynerixMobileApp from "./mobile/MobileAppV2";
 import PwaInstallPrompt from "./components/PwaInstallPrompt";
 import StoreSelectionDialog from "./components/StoreSelectionDialog";
+import NotificationInboxPanel from "./components/NotificationInboxPanel";
 import StoreActivation from "./pages/StoreActivation";
 
 function App() {
@@ -45,6 +46,7 @@ function App() {
               <Route path="/login" element={isAuthenticated ? <Navigate to={homePath} replace /> : <Login />} />
               <Route path="/set-password" element={<SetPassword />} />
               <Route path="/app/*" element={<VynerixMobileApp />} />
+              <Route path="/notifications" element={isAuthenticated ? <NotificationInboxPanel standalone /> : <Navigate to="/login" replace />} />
               <Route element={<ProtectedRoute />}>
                 <Route path="/store-activation" element={<StoreActivation />} />
                 <Route path="*" element={<MainLayout />} />
