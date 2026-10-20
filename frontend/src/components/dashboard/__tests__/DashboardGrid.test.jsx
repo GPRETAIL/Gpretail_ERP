@@ -1,6 +1,8 @@
 import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+const gridState = vi.hoisted(() => ({ mounted: true, width: 1200, props: null }));
+
 const mockGet = vi.fn(() => Promise.resolve({ data: { data: {} } }));
 const mockPut = vi.fn(() => Promise.resolve({ data: { success: true } }));
 vi.mock("../../../api/axios", () => ({
@@ -11,14 +13,18 @@ vi.mock("../../../api/axios", () => ({
 // keeps this test focused on DashboardGrid's own hide/restore/merge logic (what this suite
 // guards) rather than the third-party grid's drag mechanics -- the exposed "fire-layout-change"
 // button lets a test simulate exactly what a real drag/resize reports back.
-vi.mock("react-grid-layout/legacy", () => ({
-  Responsive: ({ children, onLayoutChange, layouts }) => (
+vi.mock("react-grid-layout", () => ({
+  Responsive: (props) => {
+    gridState.props = props;
+    const { children, onLayoutChange, layouts } = props;
+    return (
     <div data-testid="grid">
       {children}
       <button onClick={() => onLayoutChange(layouts.lg)}>fire-layout-change</button>
     </div>
-  ),
-  WidthProvider: (Component) => Component,
+    );
+  },
+  useContainerWidth: () => ({ width: gridState.width, containerRef: { current: null }, mounted: gridState.mounted }),
 }));
 
 import DashboardGrid from "../DashboardGrid";
@@ -49,6 +55,9 @@ const renderGrid = (savedLayout) => {
 };
 
 beforeEach(() => {
+  gridState.mounted = true;
+  gridState.width = 1200;
+  gridState.props = null;
   mockGet.mockClear();
   mockPut.mockClear();
 });
@@ -131,5 +140,34 @@ describe("DashboardGrid hide/restore", () => {
         }
       )
     );
+  });
+});
+
+
+describe("DashboardGrid container measurement", () => {
+  it("waits for measurement before rendering widgets", () => {
+    gridState.mounted = false;
+    renderGrid();
+    expect(screen.queryByTestId("grid")).not.toBeInTheDocument();
+    expect(screen.queryByText("Alpha content")).not.toBeInTheDocument();
+  });
+
+  it("preserves grid sizing and restricts dragging and resizing to edit mode", async () => {
+    gridState.width = 860;
+    renderGrid();
+    await screen.findByText("Alpha content");
+    expect(gridState.props.width).toBe(860);
+    expect(gridState.props.rowHeight).toBe(72);
+    expect(gridState.props.margin).toEqual([16, 16]);
+    expect(gridState.props.breakpoints).toEqual({ lg: 1024, md: 768, sm: 480, xs: 0 });
+    expect(gridState.props.cols).toEqual({ lg: 12, md: 12, sm: 6, xs: 1 });
+    expect(gridState.props.dragConfig).toEqual({ enabled: false, handle: ".dashboard-tile-handle" });
+    expect(gridState.props.resizeConfig).toEqual({ enabled: false });
+    fireEvent.click(screen.getByText("Customize"));
+    expect(gridState.props.dragConfig.enabled).toBe(true);
+    expect(gridState.props.resizeConfig.enabled).toBe(true);
+    fireEvent.click(screen.getByText("Done"));
+    expect(gridState.props.dragConfig.enabled).toBe(false);
+    expect(gridState.props.resizeConfig.enabled).toBe(false);
   });
 });

@@ -1,13 +1,11 @@
 import React, { useCallback, useMemo } from "react";
-import { Responsive, WidthProvider } from "react-grid-layout/legacy";
+import { Responsive, useContainerWidth } from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 import { GripVertical, X, Plus } from "lucide-react";
 import { Box, Chip, IconButton, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { useDashboardLayout } from "../../context/DashboardLayoutContext";
-
-const ResponsiveGridLayout = WidthProvider(Responsive);
 
 const BREAKPOINTS = { lg: 1024, md: 768, sm: 480, xs: 0 };
 const COLS = { lg: 12, md: 12, sm: 6, xs: 1 };
@@ -37,6 +35,7 @@ const COLS = { lg: 12, md: 12, sm: 6, xs: 1 };
  */
 export default function DashboardGrid({ tabKey, widgets }) {
   const { layouts, editMode, saveLayout } = useDashboardLayout();
+  const { width, containerRef, mounted } = useContainerWidth();
   const savedLayout = layouts?.[tabKey];
 
   // Every widget's layout entry, including hidden ones -- react-grid-layout only ever sees the
@@ -108,17 +107,17 @@ export default function DashboardGrid({ tabKey, widgets }) {
   );
 
   return (
-    <div>
-      <ResponsiveGridLayout
+    <div ref={containerRef}>
+      {mounted && <Responsive
+        width={width}
         className="dashboard-grid"
         layouts={{ lg: visibleLayout }}
         breakpoints={BREAKPOINTS}
         cols={COLS}
         rowHeight={72}
         margin={[16, 16]}
-        isDraggable={editMode}
-        isResizable={editMode}
-        draggableHandle=".dashboard-tile-handle"
+        dragConfig={{ enabled: editMode, handle: ".dashboard-tile-handle" }}
+        resizeConfig={{ enabled: editMode }}
         onLayoutChange={handleLayoutChange}
       >
         {visibleWidgets.map((w) => (
@@ -167,7 +166,7 @@ export default function DashboardGrid({ tabKey, widgets }) {
             </Box>
           </Box>
         ))}
-      </ResponsiveGridLayout>
+      </Responsive>}
 
       {editMode && hiddenWidgets.length > 0 && (
         <Box sx={{ mt: 2, borderRadius: "10.5px", border: "1px dashed", borderColor: "divider", bgcolor: "action.hover", p: 1.5 }}>

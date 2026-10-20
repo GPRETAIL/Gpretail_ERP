@@ -45,17 +45,12 @@ export default defineConfig(({ mode }) => {
       dedupe: ["react", "react-dom", "@emotion/react", "@emotion/styled"],
     },
     optimizeDeps: {
-      // Vite's dependency crawler can miss react-grid-layout's /legacy subpath (a conditional
-      // export, not a static top-level import) and pre-bundle it separately from the app's own
-      // react-dom, which manifests as "Invalid hook call" in dev only (the production Rollup
-      // build is unaffected). Listing it explicitly forces a single, correctly-deduped bundle.
       include: [
         "react",
         "react-dom",
         "@emotion/react",
         "@emotion/styled",
         "@mui/material",
-        "react-grid-layout/legacy",
       ],
     },
     server: {
