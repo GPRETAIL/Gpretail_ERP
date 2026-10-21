@@ -89,6 +89,9 @@ class MasterFormData
         foreach (self::ALIASES[$model->getTable()] ?? [] as $alias => $canonical) {
             $data[$alias] = $data[$canonical] ?? null;
         }
+        if ($model->getTable() === 'employees') {
+            $data['date_of_joining'] = $model->joining_date?->format('Y-m-d');
+        }
         $data['company_id'] ??= $data['store_id'] ?? null;
 
         return $data;

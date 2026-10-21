@@ -86,7 +86,7 @@ class MasterFormRoundTripTest extends TestCase
 
     public function test_employee_details_and_collections_are_not_silently_discarded(): void
     {
-        $id = $this->postJson('/api/employees', ['employee_code' => 'EMP-RT', 'name' => 'Employee', 'contact_no' => '123456', 'email_id' => 'employee@example.test', 'surname' => 'Test', 'gross_pay' => '12000', 'pf_no' => 'PF-RT', 'families' => [['name' => 'Family']], 'additionalInfos' => [['name' => 'Remark', 'value' => 'Test']]])->assertCreated()->json('data.id');
-        $this->getJson('/api/employees/'.$id)->assertOk()->assertJsonPath('data.employee_code', 'EMP-RT')->assertJsonPath('data.contact_no', '123456')->assertJsonPath('data.surname', 'Test')->assertJsonPath('data.pf_no', 'PF-RT')->assertJsonPath('data.families.0.name', 'Family')->assertJsonPath('data.additionalInfos.0.name', 'Remark')->assertJsonPath('data.created_by', 'Master Owner');
+        $id = $this->postJson('/api/employees', ['employee_code' => 'EMP-RT', 'name' => 'Employee', 'contact_no' => '123456', 'email_id' => 'employee@example.test', 'surname' => 'Test', 'gross_pay' => '12000', 'date_of_joining' => '2026-10-01', 'pf_no' => 'PF-RT', 'families' => [['name' => 'Family']], 'additionalInfos' => [['name' => 'Remark', 'value' => 'Test']]])->assertCreated()->json('data.id');
+        $this->getJson('/api/employees/'.$id)->assertOk()->assertJsonPath('data.employee_code', 'EMP-RT')->assertJsonPath('data.contact_no', '123456')->assertJsonPath('data.date_of_joining', '2026-10-01')->assertJsonPath('data.surname', 'Test')->assertJsonPath('data.pf_no', 'PF-RT')->assertJsonPath('data.families.0.name', 'Family')->assertJsonPath('data.additionalInfos.0.name', 'Remark')->assertJsonPath('data.created_by', 'Master Owner');
     }
 }
