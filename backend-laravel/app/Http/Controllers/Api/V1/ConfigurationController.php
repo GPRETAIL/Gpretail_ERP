@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Controllers\Concerns\ImportsMasterRows;
 use App\Http\Controllers\Controller;
 use App\Models\SystemConfiguration;
 use App\Services\PaginationService;
@@ -9,6 +10,8 @@ use Illuminate\Http\Request;
 
 class ConfigurationController extends Controller
 {
+    use ImportsMasterRows;
+
     public function __construct(private readonly PaginationService $paginationService) {}
 
     /**

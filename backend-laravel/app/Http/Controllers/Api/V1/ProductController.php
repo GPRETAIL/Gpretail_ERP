@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Controllers\Concerns\ImportsMasterRows;
 use App\Http\Controllers\Controller;
 use App\Models\Brand;
 use App\Models\Product;
@@ -17,6 +18,8 @@ use Illuminate\Validation\Rule;
 
 class ProductController extends Controller
 {
+    use ImportsMasterRows;
+
     public function __construct(
         protected PaginationService $paginationService,
         protected GroupAggregationService $groupAggregationService,

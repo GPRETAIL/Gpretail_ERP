@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Controllers\Concerns\ImportsMasterRows;
 use App\Http\Controllers\Controller;
 use App\Models\Brand;
 use App\Services\GroupAggregationService;
@@ -15,6 +16,8 @@ use Illuminate\Validation\Rule;
 
 class BrandController extends Controller
 {
+    use ImportsMasterRows;
+
     public function __construct(
         private readonly PaginationService $paginationService,
         private readonly GroupAggregationService $groupAggregationService,
@@ -127,7 +130,7 @@ class BrandController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+            return response()->json(['success' => false, 'message' => $validator->errors()->first(), 'errors' => $validator->errors()], 422);
         }
 
         $brand = Brand::create(MasterFormData::prepare($request, new Brand));
@@ -150,7 +153,7 @@ class BrandController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+            return response()->json(['success' => false, 'message' => $validator->errors()->first(), 'errors' => $validator->errors()], 422);
         }
 
         $brand->update(MasterFormData::prepare($request, $brand));

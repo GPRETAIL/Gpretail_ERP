@@ -66,6 +66,14 @@ class MasterFormData
             }
         }
         unset($value);
+        if ($table === 'products') {
+            // Optional blank form inputs must not override NOT NULL database defaults.
+            foreach (['cost_price', 'selling_price', 'mrp', 'min_stock', 'max_stock'] as $field) {
+                if (array_key_exists($field, $data) && ($data[$field] === null || $data[$field] === '')) {
+                    $data[$field] = 0;
+                }
+            }
+        }
         if ($table === 'employees') {
             if (array_key_exists('salary', $data) && ($data['salary'] === '' || $data['salary'] === null)) {
                 $data['salary'] = 0;

@@ -7,6 +7,7 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { Box, Stack, Card, Typography, Button, Table, TableBody, TableRow, TableCell, IconButton, alpha } from "@mui/material";
 import api from "../../api/axios";
+import { apiErrorMessage } from "../../utils/apiErrorMessage";
 import FilterableDataTable from "../../components/FilterableDataTable";
 import { createGroupFetchers } from "../../utils/serverGrouping";
 import ExportBottomSheet from "../../components/ExportBottomSheet";
@@ -216,12 +217,14 @@ const Brand = () => {
       } else {
         const res = await api.post("/brands", payload);
         const newId = res.data.data.id;
+        const savedCode = res.data.data.code || code;
+        setCode(savedCode);
         setCurrentId(newId);
-        initialFormRef.current = { id: newId, sig: buildBrandSig(currentState) };
+        initialFormRef.current = { id: newId, sig: buildBrandSig({ ...currentState, code: savedCode }) };
         toast.success("Brand created successfully");
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || "Save failed");
+      toast.error(apiErrorMessage(err));
     } finally {
       savingRef.current = false;
       setSaving(false);

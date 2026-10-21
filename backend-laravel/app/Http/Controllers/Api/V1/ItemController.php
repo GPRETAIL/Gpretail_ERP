@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Controllers\Concerns\ImportsMasterRows;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\Stock;
@@ -16,6 +17,8 @@ use Illuminate\Validation\ValidationException;
 
 class ItemController extends Controller
 {
+    use ImportsMasterRows;
+
     public function __construct(
         private readonly PaginationService $paginationService,
         private readonly GroupAggregationService $groupAggregationService,
@@ -60,6 +63,10 @@ class ItemController extends Controller
 
     private function extractItemData(Request $request, ?Product $item = null): array
     {
+        $request->validate(array_fill_keys(
+            ['pur_rate', 'cost_price', 'sale_rate', 'selling_price', 'mrp', 'reorder_min', 'reorder_max', 'min_stock', 'max_stock'],
+            'nullable|numeric|min:0'
+        ));
         $data = $request->all();
 
         // Name mapping: selling_name or printing_name or name
@@ -195,6 +202,8 @@ class ItemController extends Controller
             ->firstOrFail();
 
         $data = $this->extractItemData($request, $item);
+        $request->merge($data);
+        $request->validate(['name' => 'required|string|max:255', 'code' => ['required', 'string', 'max:50', Rule::unique('products', 'code')->where('company_id', $request->attributes->get('store_context_id'))->ignore($item->id)]]);
         $item->update($data);
 
         return response()->json([

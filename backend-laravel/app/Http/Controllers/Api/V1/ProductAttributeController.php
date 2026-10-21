@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Controllers\Concerns\ImportsMasterRows;
 use App\Http\Controllers\Controller;
 use App\Models\AttributeType;
 use App\Models\AttributeValue;
@@ -10,6 +11,8 @@ use Illuminate\Http\Request;
 
 class ProductAttributeController extends Controller
 {
+    use ImportsMasterRows;
+
     public function __construct(private readonly PaginationService $paginationService) {}
 
     private array $defaultAliases = [

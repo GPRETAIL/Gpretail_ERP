@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Controllers\Concerns\ImportsMasterRows;
 use App\Http\Controllers\Controller;
 use App\Models\Employee;
 use App\Models\HrDepartment;
@@ -15,6 +16,8 @@ use Illuminate\Validation\Rule;
 
 class EmployeeController extends Controller
 {
+    use ImportsMasterRows;
+
     public function __construct(
         private readonly PaginationService $paginationService,
         private readonly GroupAggregationService $groupAggregationService,

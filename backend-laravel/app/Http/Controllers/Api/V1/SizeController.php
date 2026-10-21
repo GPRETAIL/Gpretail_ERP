@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Controllers\Concerns\ImportsMasterRows;
 use App\Http\Controllers\Controller;
 use App\Models\Size;
 use App\Models\SizeGroup;
@@ -10,6 +11,8 @@ use Illuminate\Http\Request;
 
 class SizeController extends Controller
 {
+    use ImportsMasterRows;
+
     public function __construct(private readonly PaginationService $paginationService) {}
 
     private function formatSize($size)

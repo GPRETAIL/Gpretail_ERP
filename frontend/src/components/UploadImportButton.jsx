@@ -19,6 +19,7 @@ import { toast } from "react-toastify";
 import { Box, Typography } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import api from "../api/axios";
+import { apiErrorMessage } from "../utils/apiErrorMessage";
 import { useTransferActivity } from "../context/TransferActivityContext";
 
 /** Strip spaces, underscores, dashes, parens, slashes → lowercase for fuzzy matching */
@@ -125,6 +126,7 @@ export default function UploadImportButton({
         const row = {};
         for (const [rawKey, fieldName] of Object.entries(headerMap)) {
           let val = rawRow[rawKey];
+          if (val == null || String(val).trim() === "") continue;
           if ((fieldConfig.boolFields || []).includes(fieldName)) {
             val =
               val === 1 ||
@@ -137,12 +139,13 @@ export default function UploadImportButton({
         return row;
       });
 
-      // Drop rows where any required field is empty
-      const validRows = parsedRows.filter((row) =>
-        (fieldConfig.required || []).every(
-          (f) => row[f] != null && String(row[f]).trim() !== ""
-        )
+      const validRows = parsedRows.filter((row) => Object.keys(row).length > 0);
+      const invalidIndex = validRows.findIndex((row) =>
+        (fieldConfig.required || []).some((f) => row[f] == null || String(row[f]).trim() === "")
       );
+      if (invalidIndex >= 0) {
+        throw new Error(`Excel row ${parsedRows.indexOf(validRows[invalidIndex]) + 2}: fill all required fields (${fieldConfig.required.join(", ")}).`);
+      }
 
       if (validRows.length === 0) {
         finishActivity(activityId, {
@@ -186,9 +189,9 @@ export default function UploadImportButton({
       finishActivity(activityId, {
         status: STATUS.FAILED,
         progressPercent: 100,
-        statusMessage: err?.response?.data?.message || "Import failed",
+        statusMessage: apiErrorMessage(err, err.message || "Import failed"),
       });
-      toast.error(err?.response?.data?.message || "Import failed");
+      toast.error(apiErrorMessage(err, err.message || "Import failed"));
     }
   };
 

@@ -10,6 +10,7 @@ import PageHeader from "../../components/PageHeader";
 import { fieldBaseSx } from "../../theme/formControlSizes";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import api from "../../api/axios";
+import { apiErrorMessage } from "../../utils/apiErrorMessage";
 import FilterableDataTable from "../../components/FilterableDataTable";
 import { createGroupFetchers } from "../../utils/serverGrouping";
 import UploadImportButton from "../../components/UploadImportButton";
@@ -528,7 +529,7 @@ export default function Item() {
       }
       handleNew();
     } catch (err) {
-      toast.error(err.response?.data?.message || "Save failed");
+      toast.error(apiErrorMessage(err));
     } finally {
       savingRef.current = false;
       setSaving(false);

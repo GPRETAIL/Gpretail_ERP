@@ -173,6 +173,16 @@ $registerAppRoutes = function () {
     Route::get('local-printer-service/installer', [SettingsController::class, 'localPrinterInstaller']);
 
     // Configurations & Counters
+    // Keep each resource's controller identity so module/action authorization also applies to imports.
+    foreach (['brands' => BrandController::class, 'items' => ItemController::class,
+        'products' => ProductController::class, 'suppliers' => SupplierController::class,
+        'transports' => TransportController::class, 'agents' => AgentController::class,
+        'taxes' => TaxController::class, 'employees' => EmployeeController::class,
+        'sizes' => SizeController::class, 'size-groups' => SizeController::class] as $resource => $controller) {
+        Route::post($resource.'/bulk', [$controller, 'bulkImport'])->defaults('resource', $resource);
+    }
+    Route::post('attributes/{type}/bulk', [ProductAttributeController::class, 'bulkImport'])->defaults('resource', 'attributes');
+    Route::post('configurations/{type}/bulk', [ConfigurationController::class, 'bulkImport'])->defaults('resource', 'configurations');
     Route::get('configurations/counter', [ConfigurationController::class, 'getCounters']);
     Route::get('configurations/{key}', [ConfigurationController::class, 'show']);
     Route::post('configurations/{type}', [ConfigurationController::class, 'storeType']);
