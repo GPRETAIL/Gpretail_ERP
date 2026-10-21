@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Employee;
 use App\Models\HrDepartment;
 use App\Services\GroupAggregationService;
+use App\Services\MasterFormData;
 use App\Services\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -124,19 +125,10 @@ class EmployeeController extends Controller
         $code = $request->input('code') ?: 'EMP_'.strtoupper(substr(uniqid(), -6));
         $storeId = $request->header('X-Company-Scope-Id');
 
-        $employee = Employee::create([
-            'store_id' => ($storeId && $storeId !== 'all') ? $storeId : null,
-            'name' => $request->input('name'),
-            'code' => $code,
-            'email' => $request->input('email'),
-            'phone' => $request->input('phone'),
-            'address' => $request->input('address'),
-            'department_id' => $request->input('department_id'),
-            'designation_id' => $request->input('designation_id'),
-            'salary' => $request->input('salary', 0),
-            'joining_date' => $request->input('joining_date') ?: now()->toDateString(),
-            'is_active' => $request->boolean('is_active', true),
-        ]);
+        $data = MasterFormData::prepare($request, new Employee);
+        $data['code'] = $data['code'] ?? $code;
+        $data['joining_date'] = $data['joining_date'] ?? now()->toDateString();
+        $employee = Employee::create($data);
 
         return response()->json([
             'success' => true,
@@ -181,9 +173,7 @@ class EmployeeController extends Controller
             return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
-        $employee->update($request->only([
-            'name', 'code', 'email', 'phone', 'address', 'department_id', 'designation_id', 'salary', 'joining_date', 'is_active',
-        ]));
+        $employee->update(MasterFormData::prepare($request, $employee));
 
         return response()->json([
             'success' => true,

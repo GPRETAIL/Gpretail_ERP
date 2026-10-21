@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasMasterDetails;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Transport extends Model
 {
     use HasFactory;
+    use HasMasterDetails;
 
     protected $fillable = ['store_id',
         'name',

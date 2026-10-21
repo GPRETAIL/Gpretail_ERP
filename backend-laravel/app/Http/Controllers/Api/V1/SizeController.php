@@ -30,8 +30,8 @@ class SizeController extends Controller
         $arr['is_variant'] = (bool) ($size->is_variant ?? false);
         $arr['isVariant'] = (bool) ($size->is_variant ?? false);
         $arr['is_active'] = (bool) ($size->is_active ?? true);
-        $arr['company_id'] = $size->company_id ?? 1;
-        $arr['created_by'] = $size->created_by ?: 'Superadmin';
+        $arr['company_id'] = $size->company_id;
+        $arr['created_by'] = $size->created_by;
         $arr['updated_by'] = $size->updated_by ?? null;
 
         return $arr;
@@ -46,8 +46,8 @@ class SizeController extends Controller
         $arr['enableSizeRatio'] = (bool) ($group->enable_size_ratio ?? false);
         $arr['sort_order'] = (int) ($group->sort_order ?? 0);
         $arr['sortOrder'] = (int) ($group->sort_order ?? 0);
-        $arr['company_id'] = $group->company_id ?? 1;
-        $arr['created_by'] = $group->created_by ?: 'Superadmin';
+        $arr['company_id'] = $group->company_id;
+        $arr['created_by'] = $group->created_by;
         $arr['updated_by'] = $group->updated_by ?? null;
         if (isset($group->sizes)) {
             $arr['sizes'] = collect($group->sizes)->map(fn ($s) => $this->formatSize($s))->values()->all();
@@ -135,7 +135,7 @@ class SizeController extends Controller
         $code = $request->input('code') ?: strtoupper($name);
 
         $user = $request->user();
-        $createdBy = $request->input('created_by') ?: ($user?->name ?: ($user?->username ?: 'Superadmin'));
+        $createdBy = $user?->name ?: $user?->username;
         $companyId = $this->resolveStoreId($request, (int) ($user?->store_id ?: 1));
 
         $size = Size::create([
@@ -271,7 +271,7 @@ class SizeController extends Controller
         }
 
         $user = $request->user();
-        $createdBy = $request->input('created_by') ?: ($user?->name ?: ($user?->username ?: 'Superadmin'));
+        $createdBy = $user?->name ?: $user?->username;
         $companyId = $this->resolveStoreId($request, (int) ($user?->store_id ?: 1));
         $code = $request->input('code') ?: 'SG_'.strtoupper(substr(uniqid(), -6));
 

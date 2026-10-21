@@ -9,7 +9,15 @@ class Tax extends Model
 {
     use HasFactory;
 
+    protected static function booted(): void
+    {
+        static::creating(function (self $model): void {
+            $model->created_by = auth()->user()?->name ?? auth()->user()?->username;
+        });
+    }
+
     protected $fillable = ['store_id',
+        'is_sales_tax', 'is_purchase_tax', 'extra_fields',
         'name',
         'code',
         'rate',
@@ -23,6 +31,7 @@ class Tax extends Model
     protected function casts(): array
     {
         return [
+            'is_sales_tax' => 'boolean', 'is_purchase_tax' => 'boolean', 'extra_fields' => 'array',
             'rate' => 'decimal:2',
             'cgst_rate' => 'decimal:2',
             'sgst_rate' => 'decimal:2',

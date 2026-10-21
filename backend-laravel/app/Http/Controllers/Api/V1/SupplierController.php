@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\Supplier;
 use App\Services\GroupAggregationService;
+use App\Services\MasterFormData;
 use App\Services\PaginationService;
 use App\Services\StoreQuery;
 use Illuminate\Http\Request;
@@ -21,7 +22,7 @@ class SupplierController extends Controller
 
     private function filteredQuery(Request $request)
     {
-        $query = Supplier::query()->where('is_active', true);
+        $query = Supplier::query();
 
         // FULLTEXT / Indexed Search
         if ($request->filled('search')) {
@@ -123,7 +124,7 @@ class SupplierController extends Controller
             return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
-        $data = $request->all();
+        $data = MasterFormData::prepare($request, new Supplier);
         if (empty($data['code'])) {
             $data['code'] = 'SUP_'.strtoupper(substr(uniqid(), -6));
         }
@@ -151,7 +152,7 @@ class SupplierController extends Controller
             return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
-        $supplier->update($request->all());
+        $supplier->update(MasterFormData::prepare($request, $supplier));
 
         return response()->json([
             'success' => true,

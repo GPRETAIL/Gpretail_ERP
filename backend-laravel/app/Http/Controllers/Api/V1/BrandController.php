@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\Brand;
 use App\Services\GroupAggregationService;
+use App\Services\MasterFormData;
 use App\Services\PaginationService;
 use App\Services\StoreQuery;
 use Illuminate\Http\Request;
@@ -28,11 +29,8 @@ class BrandController extends Controller
             $s = trim($request->input('search'));
             $field = $request->input('field');
 
-            // 'printing_name' was allow-listed here and referenced below, but brands has no such
-            // column (Schema::getColumnListing('brands') -- only id/name/code/logo/description/
-            // is_active/timestamps exist) -- any search hitting that branch threw a 500. Dropped
-            // rather than migrated in: nothing else in this controller/model backs that field.
-            if ($field && in_array($field, ['name', 'code'])) {
+            $field = $field === 'printing_name' ? 'master_details->printing_name' : $field;
+            if ($field && in_array($field, ['name', 'code', 'master_details->printing_name'])) {
                 $query->where($field, 'like', "%{$s}%");
             } else {
                 $cleaned = preg_replace('/[+\-><()~*\"@]+/', ' ', $s);
@@ -53,12 +51,7 @@ class BrandController extends Controller
         // Column-level filters
         if ($request->filled('column_filters')) {
             $filters = json_decode($request->input('column_filters'), true) ?? [];
-            // printing_name/brand_type/discount_type/min_margin/max_margin were allow-listed here
-            // (and in allowed_sorts below) but brands has no such columns (Schema::getColumnListing
-            // confirms only id/name/code/logo/description/is_active/timestamps) -- same class of bug
-            // already fixed for the search path above, just missed here. Any filter/sort against one
-            // of those threw a 500.
-            $allowed = ['code', 'name', 'is_active'];
+            $allowed = ['code', 'name', 'is_active', 'printing_name', 'brand_type', 'discount_type', 'min_margin', 'max_margin'];
             foreach ($filters as $filter) {
                 $col = $filter['field'] ?? null;
                 $op = $filter['operator'] ?? 'contains';
@@ -67,6 +60,7 @@ class BrandController extends Controller
                     continue;
                 }
 
+                $col = in_array($col, ['code', 'name', 'is_active'], true) ? $col : 'master_details->'.$col;
                 match ($op) {
                     'equals' => $query->where($col, $val),
                     'not_equals' => $query->where($col, '!=', $val),
@@ -124,6 +118,9 @@ class BrandController extends Controller
 
     public function store(Request $request)
     {
+        if (! $request->filled('code')) {
+            $request->merge(['code' => 'BR_'.strtoupper(substr(uniqid(), -8))]);
+        }
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'code' => ['required', 'string', 'max:50', Rule::unique('brands', 'code')->where('store_id', $request->attributes->get('store_context_id'))],
@@ -133,7 +130,7 @@ class BrandController extends Controller
             return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
-        $brand = Brand::create($request->all());
+        $brand = Brand::create(MasterFormData::prepare($request, new Brand));
         Cache::forget(StoreQuery::cacheKey('brands_total_unfiltered_count'));
 
         return response()->json([
@@ -156,7 +153,7 @@ class BrandController extends Controller
             return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
-        $brand->update($request->all());
+        $brand->update(MasterFormData::prepare($request, $brand));
 
         return response()->json([
             'success' => true,

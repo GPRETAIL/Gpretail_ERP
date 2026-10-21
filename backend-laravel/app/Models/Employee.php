@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasMasterDetails;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Employee extends Model
 {
     use HasFactory;
+    use HasMasterDetails;
 
     protected $fillable = [
         'store_id',
@@ -26,9 +28,9 @@ class Employee extends Model
     protected function casts(): array
     {
         return [
-            'salary'       => 'decimal:2',
+            'salary' => 'decimal:2',
             'joining_date' => 'date',
-            'is_active'    => 'boolean',
+            'is_active' => 'boolean',
         ];
     }
 

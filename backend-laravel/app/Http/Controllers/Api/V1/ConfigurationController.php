@@ -19,6 +19,9 @@ class ConfigurationController extends Controller
      */
     public function getCounters(Request $request)
     {
+        if ($request->boolean('paginate')) {
+            return $this->show($request, 'counter');
+        }
         $rows = SystemConfiguration::where('key', 'counter')
             ->orWhere('config_key', 'counter')
             ->orWhere('group', 'counter')
@@ -108,7 +111,7 @@ class ConfigurationController extends Controller
                     ->orWhere('group', $normalized)->orWhere('group_name', $normalized);
             });
             if (! $query->exists() && isset($defaults[$normalized])) {
-                $rows = collect($defaults[$normalized]);
+                $rows = collect($defaults[$normalized])->map(fn ($row) => array_replace(['is_active' => true, 'created_by' => null, 'company_id' => null], $row));
                 $search = strtolower((string) $request->input('search', ''));
                 if ($search !== '') {
                     $rows = $rows->filter(fn ($row) => str_contains(strtolower($row['name'].' '.($row['code'] ?? '')), $search))->values();
@@ -138,6 +141,7 @@ class ConfigurationController extends Controller
             $result['data'] = collect($result['data'])->map(fn ($c) => [
                 'id' => $c->id, 'name' => $c->value ?? $c->config_value,
                 'value' => $c->value ?? $c->config_value, 'key' => $c->key ?? $c->config_key,
+                'is_active' => $c->is_active, 'created_by' => $c->created_by, 'company_id' => $c->store_id, 'store_id' => $c->store_id,
                 'code' => $c->code, 'sort_order' => $c->sort_order, 'extra_data' => $c->extra_data,
             ]);
 
@@ -158,6 +162,10 @@ class ConfigurationController extends Controller
                     'name' => $c->value ?? $c->config_value,
                     'value' => $c->value ?? $c->config_value,
                     'key' => $c->key ?? $c->config_key,
+                    'is_active' => $c->is_active,
+                    'created_by' => $c->created_by,
+                    'company_id' => $c->store_id,
+                    'store_id' => $c->store_id,
                     'code' => $c->code,
                     'sort_order' => $c->sort_order,
                     'extra_data' => $c->extra_data,
@@ -199,7 +207,8 @@ class ConfigurationController extends Controller
             'config_value' => is_array($val) ? json_encode($val) : (string) $val,
             'group' => $group,
             'group_name' => $group,
-            'code' => $request->input('code'),
+            'code' => $request->input('code') ?: strtoupper(substr($key, 0, 5)).'_'.strtoupper(substr(uniqid(), -8)),
+            'is_active' => $request->boolean('is_active', true),
             'sort_order' => $request->input('sort_order', 0),
             'extra_data' => $request->input('extra_data'),
         ]);
@@ -220,13 +229,20 @@ class ConfigurationController extends Controller
 
     public function updateType(Request $request, $type, $id)
     {
-        $config = SystemConfiguration::find($id);
+        $config = SystemConfiguration::where(function ($query) use ($type): void {
+            $normalized = strtolower(str_replace('-', '_', $type));
+            $query->where('key', $normalized)->orWhere('config_key', $normalized)->orWhere('group', $normalized)->orWhere('group_name', $normalized);
+        })->find($id);
+        if (! $config) {
+            return response()->json(['success' => false, 'message' => 'Configuration not found'], 404);
+        }
         if ($config) {
             $val = $request->input('value') ?? $request->input('config_value') ?? $request->input('name') ?? $config->value;
             $config->update([
                 'value' => is_array($val) ? json_encode($val) : (string) $val,
                 'config_value' => is_array($val) ? json_encode($val) : (string) $val,
                 'code' => $request->input('code', $config->code),
+                'is_active' => $request->has('is_active') ? $request->boolean('is_active') : $config->is_active,
                 'sort_order' => $request->input('sort_order', $config->sort_order),
                 'extra_data' => $request->input('extra_data', $config->extra_data),
             ]);
@@ -246,7 +262,10 @@ class ConfigurationController extends Controller
      */
     public function showType(Request $request, $type, $id)
     {
-        $config = SystemConfiguration::find($id);
+        $config = SystemConfiguration::where(function ($query) use ($type): void {
+            $normalized = strtolower(str_replace('-', '_', $type));
+            $query->where('key', $normalized)->orWhere('config_key', $normalized)->orWhere('group', $normalized)->orWhere('group_name', $normalized);
+        })->find($id);
         if (! $config) {
             return response()->json(['success' => false, 'message' => 'Configuration not found'], 404);
         }
@@ -255,6 +274,10 @@ class ConfigurationController extends Controller
             'success' => true,
             'data' => [
                 'id' => $config->id,
+                'is_active' => $config->is_active,
+                'created_by' => $config->created_by,
+                'company_id' => $config->store_id,
+                'store_id' => $config->store_id,
                 'code' => $config->code,
                 'name' => $config->value ?? $config->config_value,
                 'sort_order' => $config->sort_order,
@@ -265,7 +288,10 @@ class ConfigurationController extends Controller
 
     public function destroyType(Request $request, $type, $id)
     {
-        $config = SystemConfiguration::find($id);
+        $config = SystemConfiguration::where(function ($query) use ($type): void {
+            $normalized = strtolower(str_replace('-', '_', $type));
+            $query->where('key', $normalized)->orWhere('config_key', $normalized)->orWhere('group', $normalized)->orWhere('group_name', $normalized);
+        })->find($id);
         if ($config) {
             $config->delete();
         }

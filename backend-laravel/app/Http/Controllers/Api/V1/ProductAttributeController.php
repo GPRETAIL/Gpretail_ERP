@@ -95,8 +95,8 @@ class ProductAttributeController extends Controller
             'code' => $item->code,
             'sort_order' => $item->sort_order,
             'extra_data' => $item->extra_data,
-            'company_id' => $item->company_id ?: 1,
-            'created_by' => $item->created_by ?: 'Superadmin',
+            'company_id' => $item->company_id,
+            'created_by' => $item->created_by,
             'updated_by' => $item->updated_by,
             'is_active' => (bool) $item->is_active,
             'created_at' => $item->created_at,
@@ -144,7 +144,7 @@ class ProductAttributeController extends Controller
         $sortOrder = $request->has('sort_order') ? $request->integer('sort_order') : ($request->has('display_order') ? $request->integer('display_order') : 0);
         $extraData = $request->input('extra_data') ?: null;
         $user = $request->user();
-        $createdBy = $request->input('created_by') ?: ($user?->name ?: ($user?->username ?: 'Superadmin'));
+        $createdBy = $user?->name ?: $user?->username;
         $companyId = $this->resolveStoreId($request, (int) ($user?->store_id ?: 1));
 
         if (! $name) {

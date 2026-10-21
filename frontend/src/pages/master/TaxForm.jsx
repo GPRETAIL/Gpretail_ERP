@@ -230,7 +230,7 @@ const TaxForm = () => {
   };
 
   useEffect(() => {
-    if (!isEdit || !taxCode) return;
+    if (!taxCode) return;
     const load = async () => {
       try {
         const res = await api.get(`/taxes/${taxCode}`, {

@@ -545,6 +545,17 @@ const Supplier = () => {
       renamed: row.renamed_to || "",
       interstateSale: !!row.interstate_sale,
       internalTransfer: !!row.internal_transfer,
+      advanceAddressType: row.advance_address_type ?? "",
+      advanceContactNo: row.advance_contact_no ?? "",
+      advanceAddress: row.advance_address ?? "",
+      advanceCity: row.advance_city ?? "",
+      advanceState: row.advance_state ?? "",
+      advanceCountry: row.advance_country ?? "",
+      advancePincode: row.advance_pincode ?? "",
+      advanceProductName: row.advance_product_name ?? "",
+      advanceBrandName: row.advance_brand_name ?? "",
+      advanceRemarks: row.advance_remarks ?? "",
+      advanceAttachmentType: row.advance_attachment_type ?? "",
       active: row.is_active !== false,
     };
     setFormData(loadedData);

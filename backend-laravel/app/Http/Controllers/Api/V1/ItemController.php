@@ -6,10 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\Stock;
 use App\Services\GroupAggregationService;
+use App\Services\MasterFormData;
 use App\Services\PaginationService;
 use App\Services\StoreQuery;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class ItemController extends Controller
 {
@@ -45,36 +48,35 @@ class ItemController extends Controller
         $arr['item_code'] = $item->code;
         $arr['selling_name'] = $item->name;
         $arr['printing_name'] = $item->description ?: $item->name;
-        $arr['product_id'] = $item->category_id;
+        $arr['product_id'] = $item->parent_product_id;
         $arr['pur_rate'] = (float) $item->cost_price;
         $arr['sale_rate'] = (float) $item->selling_price;
         $arr['mrp'] = (float) $item->mrp;
         $arr['active'] = (bool) $item->is_active;
-        $arr['product'] = $item->category;
+        $arr['product'] = $item->itemProduct;
 
         return $arr;
     }
 
-    private function extractItemData(Request $request): array
+    private function extractItemData(Request $request, ?Product $item = null): array
     {
         $data = $request->all();
 
         // Name mapping: selling_name or printing_name or name
         if (empty($data['name'])) {
-            $data['name'] = $data['selling_name'] ?? $data['printing_name'] ?? ('Item '.($data['item_code'] ?? $data['code'] ?? ''));
+            $data['name'] = $data['selling_name'] ?? $data['printing_name'] ?? $item?->name ?? ('Item '.($data['item_code'] ?? $data['code'] ?? ''));
         }
 
         // Code mapping: item_code or code
         if (empty($data['code'])) {
-            $data['code'] = ! empty($data['item_code']) ? $data['item_code'] : (! empty($data['sku']) ? $data['sku'] : ('ITM_'.strtoupper(substr(uniqid(), -6))));
+            $data['code'] = ! empty($data['item_code']) ? $data['item_code'] : (! empty($data['sku']) ? $data['sku'] : ($item?->code ?? 'ITM_'.strtoupper(substr(uniqid(), -6))));
         }
         if (empty($data['barcode'])) {
-            $data['barcode'] = $data['code'];
+            $data['barcode'] = $item?->barcode ?? $data['code'];
         }
 
-        // Category / Product mapping
-        if (empty($data['category_id']) && ! empty($data['product_id'])) {
-            $data['category_id'] = $data['product_id'];
+        if (array_key_exists('product_id', $data)) {
+            $data['parent_product_id'] = $data['product_id'] ?: null;
         }
 
         // Prices mapping
@@ -101,15 +103,13 @@ class ItemController extends Controller
             $data['is_active'] = filter_var($data['active'], FILTER_VALIDATE_BOOLEAN);
         }
 
-        // Validate foreign keys
-        if (! empty($data['tax_id']) && ! StoreQuery::table('taxes')->where('id', $data['tax_id'])->exists()) {
-            $data['tax_id'] = null;
-        }
-        if (! empty($data['category_id']) && ! StoreQuery::table('categories')->where('id', $data['category_id'])->exists()) {
-            $data['category_id'] = null;
-        }
-        if (! empty($data['brand_id']) && ! StoreQuery::table('brands')->where('id', $data['brand_id'])->exists()) {
-            $data['brand_id'] = null;
+        foreach (['tax_id' => 'taxes', 'category_id' => 'categories', 'brand_id' => 'brands', 'parent_product_id' => 'products'] as $field => $table) {
+            if (! empty($data[$field]) && ! StoreQuery::table($table)->where('id', $data[$field])->exists()) {
+                throw ValidationException::withMessages([$field => 'Select a valid record from this store.']);
+            }
+            if (array_key_exists($field, $data) && $data[$field] === '') {
+                $data[$field] = null;
+            }
         }
 
         // Handle image upload if present
@@ -118,12 +118,14 @@ class ItemController extends Controller
             $data['image'] = '/storage/'.$path;
         }
 
-        return $data;
+        $request->merge($data);
+
+        return MasterFormData::prepare($request, $item ?? new Product);
     }
 
     private function filteredQuery(Request $request)
     {
-        $query = Product::with(['category', 'brand', 'tax', 'stocks']);
+        $query = Product::with(['category', 'brand', 'tax', 'stocks', 'itemProduct']);
 
         if ($request->has('search') && $request->search != '') {
             $s = $request->search;
@@ -164,7 +166,7 @@ class ItemController extends Controller
 
     public function show($id)
     {
-        $item = Product::with(['category', 'brand', 'tax', 'stocks', 'variants'])
+        $item = Product::with(['category', 'brand', 'tax', 'stocks', 'variants', 'itemProduct'])
             ->where('id', $id)
             ->orWhere('code', $id)
             ->firstOrFail();
@@ -175,6 +177,8 @@ class ItemController extends Controller
     public function store(Request $request)
     {
         $data = $this->extractItemData($request);
+        $request->merge($data);
+        $request->validate(['name' => 'required|string|max:255', 'code' => ['required', 'string', 'max:50', Rule::unique('products', 'code')->where('company_id', $request->attributes->get('store_context_id'))]]);
         $item = Product::create($data);
 
         return response()->json([
@@ -190,7 +194,7 @@ class ItemController extends Controller
             ->orWhere('code', $id)
             ->firstOrFail();
 
-        $data = $this->extractItemData($request);
+        $data = $this->extractItemData($request, $item);
         $item->update($data);
 
         return response()->json([

@@ -9,7 +9,15 @@ class SystemConfiguration extends Model
 {
     use HasFactory;
 
+    protected static function booted(): void
+    {
+        static::creating(function (self $model): void {
+            $model->created_by = auth()->user()?->name ?? auth()->user()?->username;
+        });
+    }
+
     protected $fillable = ['store_id',
+        'is_active',
         'key',
         'config_key',
         'value',
@@ -23,5 +31,6 @@ class SystemConfiguration extends Model
 
     protected $casts = [
         'extra_data' => 'array',
+        'is_active' => 'boolean',
     ];
 }

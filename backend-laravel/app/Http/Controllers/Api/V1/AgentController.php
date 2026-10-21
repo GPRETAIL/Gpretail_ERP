@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\Agent;
 use App\Services\GroupAggregationService;
+use App\Services\MasterFormData;
 use App\Services\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -57,6 +58,9 @@ class AgentController extends Controller
             'pincode' => $a->pincode,
             'is_active' => (bool) $a->is_active,
             'active' => (bool) $a->is_active,
+            'created_by' => $a->created_by,
+            'store_id' => $a->store_id,
+            'company_id' => $a->store_id,
             'created_at' => $a->created_at,
             'updated_at' => $a->updated_at,
         ];
@@ -64,6 +68,7 @@ class AgentController extends Controller
 
     private function extractAgentData(Request $request): array
     {
+        $request->merge(MasterFormData::normalize($request->all()));
         $data = [];
         if ($request->has('name')) {
             $data['name'] = $request->input('name');

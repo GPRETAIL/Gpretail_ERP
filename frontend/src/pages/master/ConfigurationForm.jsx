@@ -247,7 +247,7 @@ const ConfigurationForm = () => {
   const savingRef = useRef(false); // synchronous double-submit guard
 
   const [formData, setFormData] = useState({
-    code: "", name: "", sort_order: "0",
+    code: "", name: "", sort_order: "0", is_active: true,
     // LOCATION / DELIVERY_LOCATION
     company_id: "", address: "", city_id: "", state_id: "", pincode: "",
     is_warehouse: false, single_window_settlement: false,
@@ -355,6 +355,7 @@ const ConfigurationForm = () => {
             code: rec.code || "",
             name: rec.name || "",
             sort_order: String(rec.sort_order ?? 0),
+            is_active: rec.is_active ?? true,
             ...(rec.extra_data || {}),
           };
           // Baseline for the "No changes detected" guard on save.
@@ -386,6 +387,7 @@ const ConfigurationForm = () => {
       code: formData.code.trim() || null,
       name: formData.name.trim(),
       sort_order: parseInt(formData.sort_order) || 0,
+      is_active: formData.is_active,
       extra_data: buildExtraData(typeKey, formData),
     };
 
@@ -715,6 +717,7 @@ const ConfigurationForm = () => {
             <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 1 }}>
               <TextInput label="Type" name="type_display" value={typeLabel} onChange={() => {}} disabled />
               <TextInput label="Code" name="code" value={formData.code} onChange={handleChange} />
+              <CheckboxInput label="Active" name="is_active" checked={formData.is_active} onChange={handleChange} />
               <TextInput label="Name" name="name" required value={formData.name} onChange={handleChange} />
               <TextInput label="Sort Order" name="sort_order" value={formData.sort_order} onChange={handleChange} />
             </Box>

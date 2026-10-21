@@ -2,36 +2,43 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasMasterDetails;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Product extends Model
 {
     use HasFactory;
+    use HasMasterDetails;
 
     protected $guarded = ['id', 'created_at', 'updated_at'];
 
     protected function casts(): array
     {
         return [
-            'cost_price'                => 'decimal:2',
-            'selling_price'             => 'decimal:2',
-            'mrp'                       => 'decimal:2',
-            'discount_mode_value'       => 'decimal:2',
-            'margin_min'                => 'decimal:2',
-            'margin_max'                => 'decimal:2',
-            'cess_value'                => 'decimal:2',
-            'min_stock'                 => 'integer',
-            'max_stock'                 => 'integer',
-            'is_active'                 => 'boolean',
-            'dumping'                   => 'boolean',
-            'cess'                      => 'boolean',
-            'daily_price'               => 'boolean',
-            'is_core'                   => 'boolean',
-            'exclude_reward'            => 'boolean',
-            'auto_po'                   => 'boolean',
+            'cost_price' => 'decimal:2',
+            'selling_price' => 'decimal:2',
+            'mrp' => 'decimal:2',
+            'discount_mode_value' => 'decimal:2',
+            'margin_min' => 'decimal:2',
+            'margin_max' => 'decimal:2',
+            'cess_value' => 'decimal:2',
+            'min_stock' => 'integer',
+            'max_stock' => 'integer',
+            'is_active' => 'boolean',
+            'dumping' => 'boolean',
+            'cess' => 'boolean',
+            'daily_price' => 'boolean',
+            'is_core' => 'boolean',
+            'exclude_reward' => 'boolean',
+            'auto_po' => 'boolean',
             'purchase_entry_attributes' => 'array',
         ];
+    }
+
+    public function itemProduct()
+    {
+        return $this->belongsTo(self::class, 'parent_product_id');
     }
 
     public function category()

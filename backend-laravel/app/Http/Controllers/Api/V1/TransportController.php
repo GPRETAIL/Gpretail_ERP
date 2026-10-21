@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\Transport;
 use App\Services\GroupAggregationService;
+use App\Services\MasterFormData;
 use App\Services\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -107,14 +108,9 @@ class TransportController extends Controller
 
         $code = $request->input('code') ?: 'TRP_'.strtoupper(substr(uniqid(), -6));
 
-        $transport = Transport::create([
-            'name' => $request->input('name'),
-            'code' => $code,
-            'phone' => $request->input('phone'),
-            'vehicle_no' => $request->input('vehicle_no'),
-            'contact_person' => $request->input('contact_person'),
-            'is_active' => $request->boolean('is_active', true),
-        ]);
+        $data = MasterFormData::prepare($request, new Transport);
+        $data['code'] = $code;
+        $transport = Transport::create($data);
 
         return response()->json([
             'success' => true,
@@ -167,9 +163,7 @@ class TransportController extends Controller
             ], 422);
         }
 
-        $transport->update($request->only([
-            'name', 'code', 'phone', 'vehicle_no', 'contact_person', 'is_active',
-        ]));
+        $transport->update(MasterFormData::prepare($request, $transport));
 
         return response()->json([
             'success' => true,
