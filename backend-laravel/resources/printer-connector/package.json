@@ -11,5 +11,8 @@
     "ws": "^8.18.0"
   },
   "author": "GP Retail",
-  "license": "ISC"
+  "license": "ISC",
+  "engines": {
+    "node": ">=20.0.0"
+  }
 }

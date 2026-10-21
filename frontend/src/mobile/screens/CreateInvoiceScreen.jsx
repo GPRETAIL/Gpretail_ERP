@@ -20,7 +20,6 @@ import {
   Building,
 } from "lucide-react";
 import { Box, Typography } from "@mui/material";
-import { BrowserMultiFormatReader } from "@zxing/browser";
 import api from "../../api/axios";
 import { saveDraft, addToSyncQueue, getCachedData, setCachedData } from "../offline/db";
 import { fetchSalesReceiptCustomization, buildUpiPaymentUri } from "../../utils/salesReceiptCustomization";
@@ -194,7 +193,7 @@ export default function CreateInvoiceScreen({ onBack }) {
     }
   }, [catalog, vibrate]);
 
-  // 2. Barcode Scanning Logic
+  // 2. Barcode Scanning Logic (Native BarcodeDetector first, lazy @zxing/browser fallback)
   useEffect(() => {
     if (step !== "billing" || !cameraOn) {
       if (controlsRef.current) {
@@ -204,34 +203,106 @@ export default function CreateInvoiceScreen({ onBack }) {
       return;
     }
 
-    let codeReader = new BrowserMultiFormatReader();
     let active = true;
+    let rafId = null;
+    let nativeStream = null;
+    const scannerVideo = videoRef.current;
 
-    codeReader
-      .decodeFromVideoDevice(
-        undefined, // default back camera
-        videoRef.current,
-        (result, _err) => {
-          if (!active) return;
-          if (result) {
-            const code = result.getText();
-            handleScanBarcode(code);
+    const stopNativeStream = () => {
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+      const stream = nativeStream;
+      nativeStream = null;
+      if (stream) stream.getTracks().forEach((track) => track.stop());
+      if (stream && scannerVideo?.srcObject === stream) scannerVideo.srcObject = null;
+    };
+
+    const startCameraScanner = async () => {
+      const DetectorClass = typeof window !== "undefined" ? window.BarcodeDetector : undefined;
+
+      if (DetectorClass && navigator?.mediaDevices?.getUserMedia) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: "environment" } },
+            audio: false,
+          });
+          if (!active) {
+            stream.getTracks().forEach((track) => track.stop());
+            return;
           }
+          nativeStream = stream;
+          const videoEl = scannerVideo;
+          if (!videoEl) {
+            stopNativeStream();
+            return;
+          }
+          videoEl.srcObject = stream;
+          await videoEl.play();
+          if (!active) { stopNativeStream(); return; }
+
+          const detector = new DetectorClass({
+            formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128", "code_39", "itf", "qr_code"],
+          });
+
+          controlsRef.current = { stop: stopNativeStream };
+
+          const scanFrame = async () => {
+            if (!active) return;
+            try {
+              if (videoEl.readyState >= 2) {
+                const results = await detector.detect(videoEl);
+                if (active && results?.length && results[0]?.rawValue) {
+                  handleScanBarcode(results[0].rawValue);
+                }
+              }
+            } catch {
+              // Ignore transient frame decode errors
+            }
+            if (active) {
+              rafId = requestAnimationFrame(() => {
+                void scanFrame();
+              });
+            }
+          };
+
+          void scanFrame();
+          return;
+        } catch (err) {
+          stopNativeStream();
+          console.warn("Native BarcodeDetector init failed, falling back to ZXing: ", err);
         }
-      )
-      .then((controls) => {
+      }
+
+      try {
+        const { BrowserMultiFormatReader } = await import("@zxing/browser");
+        if (!active) return;
+        const codeReader = new BrowserMultiFormatReader();
+        const controls = await codeReader.decodeFromVideoDevice(
+          undefined,
+          scannerVideo,
+          (result) => {
+            if (!active || !result) return;
+            const code = result.getText ? result.getText() : result.text;
+            if (code) handleScanBarcode(code);
+          }
+        );
         if (active) {
           controlsRef.current = controls;
         } else {
           controls.stop();
         }
-      })
-      .catch((err) => {
+      } catch (err) {
         console.warn("Camera init failed: ", err);
-      });
+      }
+    };
+
+    void startCameraScanner();
 
     return () => {
       active = false;
+      stopNativeStream();
       if (controlsRef.current) {
         controlsRef.current.stop();
         controlsRef.current = null;
@@ -409,7 +480,7 @@ export default function CreateInvoiceScreen({ onBack }) {
   };
 
   // "Share Receipt" also saves first, same reasoning as Print -- then renders the
-  // exact same receipt template as a PDF (via the shared html2pdf pipeline
+  // exact same receipt template as a PDF (via the shared html2canvas + jsPDF pipeline
   // htmlToPdf.js already uses for the desktop "Download PDF" button) and hands it
   // to the OS share sheet, so a cashier can send it straight to a customer's
   // WhatsApp/SMS/email without printing anything.

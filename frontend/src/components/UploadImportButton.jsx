@@ -16,7 +16,6 @@ import { useMemo, useRef, useState } from "react";
 import { Upload, X } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
-import * as XLSX from "xlsx";
 import { Box, Typography } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import api from "../api/axios";
@@ -48,15 +47,20 @@ export default function UploadImportButton({
 
   const sampleFileName = fieldConfig?.sampleFileName || `${endpoint.replace(/\//g, "_")}_sample.xlsx`;
 
-  const downloadSample = () => {
+  const downloadSample = async () => {
     if (!sampleHeaders.length) {
       toast.error("Sample headers are not configured for this screen.");
       return;
     }
-    const ws = XLSX.utils.aoa_to_sheet([sampleHeaders]);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Sample");
-    XLSX.writeFile(wb, sampleFileName);
+    try {
+      const XLSX = await import("xlsx");
+      const ws = XLSX.utils.aoa_to_sheet([sampleHeaders]);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Sample");
+      XLSX.writeFile(wb, sampleFileName);
+    } catch {
+      toast.error("Could not download the sample spreadsheet. Please retry.");
+    }
   };
 
   const handleFile = async (e) => {
@@ -73,7 +77,7 @@ export default function UploadImportButton({
     });
 
     try {
-      const buffer = await file.arrayBuffer();
+      const [buffer, XLSX] = await Promise.all([file.arrayBuffer(), import("xlsx")]);
       updateActivity(activityId, { progressPercent: 20, statusMessage: "Parsing spreadsheet..." });
       const wb = XLSX.read(buffer, { type: "array" });
       const ws = wb.Sheets[wb.SheetNames[0]];
