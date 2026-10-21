@@ -13,7 +13,7 @@ import {
 } from "../../components/CustomInputs";
 import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
-import { Box, Stack, Card, Typography, Button } from "@mui/material";
+import { Alert, Box, Stack, Card, Typography, Button } from "@mui/material";
 import TaxRangeTable from "../../components/RangedTaxTable";
 import api from "../../api/axios";
 import PageHeader from "../../components/PageHeader";
@@ -44,6 +44,11 @@ const TaxForm = () => {
   const isEdit = location.pathname.includes("/edit/");
   const isView = !!taxCode && !isEdit;
   const isAdd = !taxCode;
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  const recordKey = `${taxCode || ""}|${companyIdParam || ""}|${isEdit}|${loadAttempt}`;
+  const [loadState, setLoadState] = useState({ key: "", status: "idle", error: "" });
+  const recordLoading = !isAdd && loadState.key !== recordKey;
+  const loadError = !isAdd && loadState.key === recordKey && loadState.status === "error" ? loadState.error : "";
 
   const initialFormRef = useRef({ id: null, sig: null });
   const [saving, setSaving] = useState(false);
@@ -231,12 +236,15 @@ const TaxForm = () => {
 
   useEffect(() => {
     if (!taxCode) return;
+    let cancelled = false;
     const load = async () => {
       try {
-        const res = await api.get(`/taxes/${taxCode}`, {
+        const res = await api.get(`/taxes/${encodeURIComponent(taxCode)}`, {
           params: companyIdParam ? { company_id: companyIdParam } : undefined,
         });
-        const t = res.data.data;
+        if (cancelled) return;
+        const t = res.data?.data;
+        if (!t || t.id == null) throw new Error("The tax record could not be loaded. Please retry.");
         const loadedFormData = {
           taxCode: t.tax_code ?? t.code ?? "",
           name: t.name ?? "",
@@ -250,6 +258,7 @@ const TaxForm = () => {
             sgst: t.sgst_rate ?? ((t.rate ?? 0) / 2),
           },
         };
+        setLoadState({ key: recordKey, status: "loaded", error: "" });
         const loadedRanged = t.extra_fields?.rangedtable || DEFAULT_RANGED_TAX_ITEMS.map(row => ({ ...row }));
         const loadedStoreId = t.company_id != null ? String(t.company_id) : "";
         setFormData(loadedFormData);
@@ -264,11 +273,13 @@ const TaxForm = () => {
           };
         }
       } catch (err) {
-        toast.error(err.response?.data?.message || "Failed to load tax");
+        if (cancelled) return;
+        setLoadState({ key: recordKey, status: "error", error: err.response?.data?.message || err.message || "Failed to load tax" });
       }
     };
     load();
-  }, [isAdd, taxCode, isEdit, companyIdParam]);
+    return () => { cancelled = true; };
+  }, [taxCode, isEdit, companyIdParam, recordKey, loadAttempt]);
 
   const renderDynamicFields = () => {
     switch (formData.taxCharges) {
@@ -361,7 +372,7 @@ const TaxForm = () => {
                 <Typography sx={{ color: "text.secondary" }}>|</Typography>
                 <Button
                   onClick={handleSave}
-                  disabled={saving}
+                  disabled={saving || recordLoading || Boolean(loadError)}
                   className="glass-btn glass-btn-success"
                   startIcon={<Save size={12} />}
                   size="small"
@@ -373,7 +384,8 @@ const TaxForm = () => {
 
             {isView && (
               <Button
-                onClick={() => navigate(`/masters/tax/edit/${taxCode}`)}
+                onClick={() => navigate(`/masters/tax/edit/${encodeURIComponent(taxCode)}${location.search}`)}
+                disabled={recordLoading || Boolean(loadError)}
                 className="glass-btn glass-btn-primary"
                 startIcon={<Pencil size={12} />}
                 size="small"
@@ -386,7 +398,13 @@ const TaxForm = () => {
       />
 
       <Box sx={{ p: 1.5, flex: 1, minHeight: 0 }}>
-        <Card
+        {recordLoading ? (
+          <Typography role="status" sx={{ p: 2 }}>Loading tax record…</Typography>
+        ) : loadError ? (
+          <Alert severity="error" action={<Button onClick={() => setLoadAttempt((attempt) => attempt + 1)}>Retry</Button>}>
+            {loadError}
+          </Alert>
+        ) : <Card
           variant="outlined"
           sx={{ p: 1.5, height: "100%" }}
           data-enter-scope="true"
@@ -482,7 +500,7 @@ const TaxForm = () => {
             </Box>
             {renderDynamicFields()}
           </Box>
-        </Card>
+        </Card>}
       </Box>
     </Box>
   );
