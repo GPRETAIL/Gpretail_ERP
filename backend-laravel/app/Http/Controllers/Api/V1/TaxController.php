@@ -164,7 +164,7 @@ class TaxController extends Controller
             return response()->json(['success' => false, 'message' => 'Validation error', 'errors' => $validator->errors()], 422);
         }
         $name = $request->input('name');
-        $rate = $request->input('rate') ?? $request->input('taxPercentage') ?? 0;
+        $rate = $request->input('rate') ?? $request->input('taxPercentage') ?? $request->input('tax_percentage') ?? 0;
         $type = $request->input('type') ?: $request->input('taxCharges') ?: $request->input('tax_type') ?: 'GST';
         $isActive = $request->has('is_disabled') ? ! $request->boolean('is_disabled') : ($request->has('isDisabled') ? ! $request->boolean('isDisabled') : $request->boolean('is_active', true));
 

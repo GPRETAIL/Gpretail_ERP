@@ -80,7 +80,7 @@ export default function UploadImportButton({
     try {
       const [buffer, XLSX] = await Promise.all([file.arrayBuffer(), import("xlsx")]);
       updateActivity(activityId, { progressPercent: 20, statusMessage: "Parsing spreadsheet..." });
-      const wb = XLSX.read(buffer, { type: "array" });
+      const wb = XLSX.read(buffer, { type: "array", cellDates: true });
       const ws = wb.Sheets[wb.SheetNames[0]];
       const rawRows = XLSX.utils.sheet_to_json(ws, { defval: "" });
 
@@ -103,7 +103,9 @@ export default function UploadImportButton({
 
       const headerMap = {};
       for (const rawKey of Object.keys(rawRows[0])) {
-        const mapped = aliasMap[norm(rawKey)];
+        const mapped = aliasMap[norm(rawKey)] || (fieldConfig.preserveUnknown
+          ? String(rawKey).trim().replace(/([a-z0-9])([A-Z])/g, "$1_$2").replace(/[\s-]+/g, "_").toLowerCase()
+          : null);
         if (mapped) headerMap[rawKey] = mapped;
       }
       updateActivity(activityId, { progressPercent: 35, statusMessage: "Validating headers..." });
@@ -127,6 +129,7 @@ export default function UploadImportButton({
         for (const [rawKey, fieldName] of Object.entries(headerMap)) {
           let val = rawRow[rawKey];
           if (val == null || String(val).trim() === "") continue;
+          if (val instanceof Date) val = val.toISOString().slice(0, 10);
           if ((fieldConfig.boolFields || []).includes(fieldName)) {
             val =
               val === 1 ||

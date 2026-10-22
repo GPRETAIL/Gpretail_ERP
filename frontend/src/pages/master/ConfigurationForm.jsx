@@ -23,14 +23,18 @@ const CFG_IMPORT_CONFIG = {
   aliases: {
     code: "code", name: "name",
     sortorder: "sortOrder", sort_order: "sortOrder", order: "sortOrder",
+    active: "is_active", isactive: "is_active",
   },
   required: ["name"],
-  boolFields: [],
+  boolFields: ["is_active"],
+  preserveUnknown: true,
 };
 const CFG_IMPORT_TRANSFORM = (r) => ({
   name:       String(r.name).trim(),
   code:       r.code || null,
   sort_order: r.sortOrder ? parseInt(r.sortOrder) : 0,
+  ...(r.is_active != null ? { is_active: r.is_active } : {}),
+  extra_data: Object.fromEntries(Object.entries(r).filter(([key]) => !["name", "code", "sortOrder", "is_active"].includes(key))),
 });
 
 // ─── Type → display label ─────────────────────────────────────────────────────
@@ -700,7 +704,10 @@ const ConfigurationForm = () => {
                 <Typography sx={{ color: "text.secondary" }}>|</Typography>
                 <UploadImportButton
                   endpoint={`/configurations/${typeKey.toLowerCase()}/bulk`}
-                  fieldConfig={CFG_IMPORT_CONFIG}
+                  fieldConfig={{ ...CFG_IMPORT_CONFIG,
+                    sampleHeaders: ["code", "name", "sort_order", "is_active", ...Object.keys(buildExtraData(typeKey, {}))],
+                    boolFields: [...CFG_IMPORT_CONFIG.boolFields, ...Object.entries(buildExtraData(typeKey, {})).filter(([, value]) => typeof value === "boolean").map(([key]) => key)],
+                  }}
                   transform={CFG_IMPORT_TRANSFORM}
                   className="text-xs font-medium"
                 />

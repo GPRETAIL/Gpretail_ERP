@@ -8,13 +8,13 @@ vi.mock("react-toastify", () => ({ toast: { error: mocks.error, success: mocks.s
 vi.mock("../../context/TransferActivityContext", () => ({ useTransferActivity: () => ({ startActivity: () => "upload", updateActivity: vi.fn(), finishActivity: mocks.finish, TYPE: { IMPORT: "import" }, STATUS: { FAILED: "failed", SUCCESS: "success" } }) }));
 import UploadImportButton from "../UploadImportButton";
 const config = { sampleHeaders: ["code", "name", "printing_name", "is_active"], aliases: { code: "code", name: "name", printingname: "printing_name", isactive: "is_active" }, required: ["name"], boolFields: ["is_active"] };
-function upload(rows) {
+function upload(rows, options = {}) {
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(rows), "Import");
   const bytes = XLSX.write(workbook, { type: "array", bookType: "xlsx" });
   const file = new File([bytes], "test-brands.xlsx");
   file.arrayBuffer = async () => bytes;
-  const { container } = render(<MemoryRouter><UploadImportButton endpoint="/brands/bulk" fieldConfig={config} onDone={mocks.done} /></MemoryRouter>);
+  const { container } = render(<MemoryRouter><UploadImportButton endpoint="/brands/bulk" fieldConfig={{ ...config, ...options }} onDone={mocks.done} /></MemoryRouter>);
   fireEvent.change(container.querySelector('input[type="file"]'), { target: { files: [file] } });
 }
 beforeEach(() => { cleanup(); vi.clearAllMocks(); mocks.post.mockResolvedValue({ data: { created: 1 } }); });
@@ -36,4 +36,10 @@ it("shows the backend spreadsheet row validation error", async () => {
   upload([{ code: "0001", name: "Duplicate" }]);
   await waitFor(() => expect(mocks.error).toHaveBeenCalledWith("Excel row 2: The code has already been taken."));
   expect(mocks.done).not.toHaveBeenCalled();
+});
+
+it("keeps configuration-specific fields and converts Excel date cells to ISO dates", async () => {
+  upload([{ name: "Season", enabled: "no", date_from: new Date("2026-10-22T00:00:00Z"), floor: "First" }], { preserveUnknown: true, boolFields: ["enabled"] });
+  await waitFor(() => expect(mocks.post).toHaveBeenCalledOnce());
+  expect(mocks.post.mock.calls[0][1]).toEqual([{ name: "Season", enabled: false, date_from: "2026-10-22", floor: "First" }]);
 });

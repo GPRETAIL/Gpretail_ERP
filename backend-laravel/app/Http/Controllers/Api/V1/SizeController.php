@@ -6,6 +6,7 @@ use App\Http\Controllers\Concerns\ImportsMasterRows;
 use App\Http\Controllers\Controller;
 use App\Models\Size;
 use App\Models\SizeGroup;
+use App\Services\MasterFormData;
 use App\Services\PaginationService;
 use Illuminate\Http\Request;
 
@@ -14,6 +15,24 @@ class SizeController extends Controller
     use ImportsMasterRows;
 
     public function __construct(private readonly PaginationService $paginationService) {}
+
+    private function options(Request $request, bool $group = false): array
+    {
+        $input = MasterFormData::normalize($request->all());
+        $booleans = $group ? ['enable_size_ratio', 'is_active'] : ['is_combo_size', 'is_meter_size', 'is_variant', 'is_active'];
+        $data = array_intersect_key($input, array_flip(array_merge($booleans, $group ? ['sort_order'] : ['measurement', 'age_set', 'uom', 'sort_order'])));
+        foreach ($data as $key => &$value) {
+            if (in_array($key, $booleans, true)) {
+                $value = filter_var($value, FILTER_VALIDATE_BOOLEAN);
+            } elseif ($key === 'sort_order') {
+                $value = (int) $value;
+            } elseif ($value !== null) {
+                $value = (string) $value;
+            }
+        }
+
+        return $data;
+    }
 
     private function formatSize($size)
     {
@@ -141,14 +160,14 @@ class SizeController extends Controller
         $createdBy = $user?->name ?: $user?->username;
         $companyId = $this->resolveStoreId($request, (int) ($user?->store_id ?: 1));
 
-        $size = Size::create([
+        $size = Size::create(array_replace($this->options($request), [
             'size_group_id' => $sizeGroupId,
             'name' => $name,
             'code' => $code,
-            'sort_order' => $request->input('sort_order', 0),
+            'sort_order' => $request->input('sort_order', $request->input('sortOrder', 0)),
             'company_id' => $companyId,
             'created_by' => $createdBy,
-        ]);
+        ]));
 
         return response()->json([
             'success' => true,
@@ -171,7 +190,7 @@ class SizeController extends Controller
         $user = $request->user();
         $updatedBy = $request->input('updated_by') ?: ($user?->name ?: ($user?->username ?: 'Superadmin'));
 
-        $data = ['updated_by' => $updatedBy];
+        $data = array_replace($this->options($request), ['updated_by' => $updatedBy]);
         $name = $request->input('size_name') ?? $request->input('name') ?? $request->input('sizeName');
         if ($name !== null) {
             $data['name'] = $name;
@@ -278,14 +297,14 @@ class SizeController extends Controller
         $companyId = $this->resolveStoreId($request, (int) ($user?->store_id ?: 1));
         $code = $request->input('code') ?: 'SG_'.strtoupper(substr(uniqid(), -6));
 
-        $group = SizeGroup::create([
+        $group = SizeGroup::create(array_replace($this->options($request, true), [
             'name' => $name,
             'code' => $code,
             'description' => $request->input('description'),
             'company_id' => $companyId,
             'created_by' => $createdBy,
             'is_active' => $request->boolean('is_active', true),
-        ]);
+        ]));
 
         return response()->json([
             'success' => true,
@@ -308,7 +327,7 @@ class SizeController extends Controller
         $user = $request->user();
         $updatedBy = $request->input('updated_by') ?: ($user?->name ?: ($user?->username ?: 'Superadmin'));
 
-        $data = ['updated_by' => $updatedBy];
+        $data = array_replace($this->options($request, true), ['updated_by' => $updatedBy]);
         $name = $request->input('group_name') ?? $request->input('name') ?? $request->input('groupName');
         if ($name !== null) {
             $data['name'] = $name;
