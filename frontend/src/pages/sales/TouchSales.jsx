@@ -486,7 +486,7 @@ const TouchSales = () => {
 
   const printPosSaleReceipt = useCallback(
     async (savedSale) => {
-      const receiptCompanyId = getReceiptCompanyId(savedSale, authUser);
+      const receiptCompanyId = getReceiptCompanyId(savedSale, { company_id: authUser?.company_id });
       const receiptCustomization = loadSalesReceiptCustomization(receiptCompanyId || "default");
       const billNumber = savedSale?.bill_no ?? billNo;
       const displayBillNo = getPosBillBarcodeValue(billNumber);
@@ -618,7 +618,7 @@ const TouchSales = () => {
         win.print();
       };
     },
-    [authUser?.company_id, authUser?.company_name, authUser?.counter_name, authUser?.email, authUser?.name, billNo, customerMobile, appliedReturn, queuePrintHtml]
+    [authUser?.company_id, authUser?.counter_name, authUser?.email, authUser?.name, billNo, customerMobile, appliedReturn, queuePrintHtml]
   );
 
   const saveTouchSale = async ({ shouldPrint = false } = {}) => {
@@ -659,7 +659,8 @@ const TouchSales = () => {
       const saved = res.data?.data;
       toast.success(`Sale saved (Bill #${formatSaleBillNo(saved?.bill_no)})`);
       if (shouldPrint) {
-        await printPosSaleReceipt(saved);
+        try { await printPosSaleReceipt(saved); }
+        catch (error) { toast.error(`Sale saved, but receipt was not printed. ${error.message || "Please retry printing."}`); }
       }
       resetDraftAndCart();
       await Promise.all([loadMasterData(), loadNextBillNo()]);

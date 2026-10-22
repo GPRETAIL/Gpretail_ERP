@@ -1880,7 +1880,7 @@ const POSSales = () => {
       0
     );
     const [companyInfo, linkedReturnRes] = await Promise.all([
-      fetchReceiptCompanyInfo(getReceiptCompanyId(savedSale, authUser)),
+      fetchReceiptCompanyInfo(getReceiptCompanyId(savedSale, { company_id: authUser?.company_id })),
       appliedReturnId
         ? api.get(`/pos-returns/${appliedReturnId}`).catch(() => ({ data: { data: null } }))
         : Promise.resolve({ data: { data: null } }),
@@ -2023,7 +2023,7 @@ const POSSales = () => {
     }
 
     const receiptCustomization = loadSalesReceiptCustomization(authUser?.company_id || "default");
-    const companyInfo = await fetchReceiptCompanyInfo(getReceiptCompanyId(detail, authUser));
+    const companyInfo = await fetchReceiptCompanyInfo(getReceiptCompanyId(detail, { company_id: authUser?.company_id }));
     const displayReturnNo = getPosReturnBarcodeValue(
       detail?.display_return_no || detail?.return_no || detail?.id
     );
@@ -2141,7 +2141,7 @@ const POSSales = () => {
       }
 
       const receiptCustomization = loadSalesReceiptCustomization(authUser?.company_id || "default");
-      const companyInfo = await fetchReceiptCompanyInfo(getReceiptCompanyId(saved, authUser));
+      const companyInfo = await fetchReceiptCompanyInfo(getReceiptCompanyId(saved, { company_id: authUser?.company_id }));
       const savedBillNo = saved.bill_no ?? billNo;
       const displayBillNo = getPosBillBarcodeValue(savedBillNo);
 
@@ -2247,7 +2247,8 @@ const POSSales = () => {
       setLatestPosDocument(saved ? { type: "sale", ...saved } : null);
       toast.success(`POS saved successfully (Bill #${formatSaleBillNo(savedBillNo)})`);
       if (shouldPrint) {
-        await printSaleReceipt(saved);
+        try { await printSaleReceipt(saved); }
+        catch (error) { toast.error(`Sale saved, but receipt was not printed. ${error.message || "Please retry printing."}`); }
       }
       handleResetEntry();
       await Promise.all([loadMasterData(), loadNextBillNo(), refreshLatestPosDocument()]);

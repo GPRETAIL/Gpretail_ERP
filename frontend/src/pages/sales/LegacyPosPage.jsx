@@ -113,7 +113,7 @@ const buildPosOldSaleReceiptPayload = ({
   paymentMethod = "Cash",
   customerNameOverride = "",
 }) => {
-  const receiptCompanyId = getReceiptCompanyId(sale, authUser);
+  const receiptCompanyId = getReceiptCompanyId(sale, { company_id: authUser?.company_id });
   const savedBillNo = sale?.bill_no ?? sale?.billNo;
   const displayBillNo = getPosBillBarcodeValue(savedBillNo);
   // A re-fetched historical sale (last-receipt/lookup-sale) returns the
@@ -1110,7 +1110,7 @@ const LegacyPosPage = () => {
     if (!savedReturn) return;
 
     const receiptCustomization = loadSalesReceiptCustomization(authUser?.company_id || "default");
-    const companyInfo = await fetchReceiptCompanyInfo(getReceiptCompanyId(savedReturn, authUser));
+    const companyInfo = await fetchReceiptCompanyInfo(getReceiptCompanyId(savedReturn, { company_id: authUser?.company_id }));
     const displayReturnNo = getPosReturnBarcodeValue(
       savedReturn?.display_return_no || savedReturn?.return_no || savedReturn?.id
     );
@@ -1207,7 +1207,7 @@ const LegacyPosPage = () => {
       win.focus();
       win.print();
     };
-  }, [authUser?.company_id, authUser?.company_name, authUser?.counter_name, authUser?.email, authUser?.name, queuePrintHtml]);
+  }, [authUser?.company_id, authUser?.counter_name, authUser?.email, authUser?.name, queuePrintHtml]);
 
   // customers is only ever seeded with a small batch (see the loadDropdownData-style effect
   // above) -- this hits /customers' own ?search= endpoint for anything beyond that, and merges
@@ -1357,7 +1357,8 @@ const LegacyPosPage = () => {
       toast.success(`Sale saved (Bill #${getPosBillBarcodeValue(savedBillNo)})`);
 
       // print receipt
-      const receiptCompanyId = getReceiptCompanyId(saved, authUser);
+      try {
+      const receiptCompanyId = getReceiptCompanyId(saved, { company_id: authUser?.company_id });
       const receiptCustomization = loadSalesReceiptCustomization(receiptCompanyId || "default");
       const companyInfo = await fetchReceiptCompanyInfo(receiptCompanyId);
       const selectedCustomer = customers.find((row) => String(row.value) === String(activeTab.existingCustomerId || ""));
@@ -1383,6 +1384,9 @@ const LegacyPosPage = () => {
         customerNameOverride: receiptCustomerName,
       }));
 
+      } catch (error) {
+        toast.error(`Sale saved, but receipt was not printed. ${error.message || "Please retry printing."}`);
+      }
       // reset tab
       updateActiveTab({ cart: [], paidCash: "", returnSaleId: null, returnBillNo: null, returnSaleType: null, returnAmount: 0, isExchange: false });
       await Promise.all([loadMasterData(), loadNextBillNo()]);
@@ -1775,7 +1779,8 @@ const LegacyPosPage = () => {
           `Return saved${data?.display_return_no ? ` (${data.display_return_no})` : ""}. Rs.${formatMoney(Math.abs(toNum(data?.amount, 0)))}`
         );
         if (shouldPrint) {
-          await handlePrintReturnReceipt(data, { returnReasonLabel: reasonLabel });
+          try { await handlePrintReturnReceipt(data, { returnReasonLabel: reasonLabel }); }
+          catch (error) { toast.error(`Return saved, but receipt was not printed. ${error.message || "Please retry printing."}`); }
         }
         setShowReturnLinesDialog(false);
         setShowReturnDialog(false);
@@ -2320,7 +2325,7 @@ const LegacyPosPage = () => {
                       toast.error("No previous sale found");
                       return;
                     }
-                    const receiptCompanyId = getReceiptCompanyId(sale, authUser);
+                    const receiptCompanyId = getReceiptCompanyId(sale, { company_id: authUser?.company_id });
                     const receiptCustomization = loadSalesReceiptCustomization(receiptCompanyId || "default");
                     const companyInfo = await fetchReceiptCompanyInfo(receiptCompanyId);
                     await handlePrintReceipt(buildPosOldSaleReceiptPayload({

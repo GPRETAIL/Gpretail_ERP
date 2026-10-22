@@ -841,7 +841,7 @@ const POSReturn = () => {
     async (savedReturn) => {
       const savedItems = savedReturn?.items || [];
       const receiptCustomization = loadSalesReceiptCustomization(authUser?.company_id || "default");
-      const [companyInfo] = await Promise.all([fetchReceiptCompanyInfo(getReceiptCompanyId(savedReturn, authUser))]);
+      const [companyInfo] = await Promise.all([fetchReceiptCompanyInfo(getReceiptCompanyId(savedReturn, { company_id: authUser?.company_id }))]);
       const displayReturnNo = getPosReturnBarcodeValue(
         savedReturn?.display_return_no || savedReturn?.return_no || returnNo
       );
@@ -950,7 +950,7 @@ const POSReturn = () => {
         printWindow.print();
       };
     },
-    [authUser?.company_id, authUser?.company_name, authUser?.counter_name, authUser?.email, authUser?.name, newCustomer.name, now, queuePrintHtml, returnNo, returnReasons, selectedReturnReasonId, sourceSale.billNo]
+    [authUser?.company_id, authUser?.counter_name, authUser?.email, authUser?.name, newCustomer.name, now, queuePrintHtml, returnNo, returnReasons, selectedReturnReasonId, sourceSale.billNo]
   );
 
   const printSaleReceipt = useCallback(
@@ -966,7 +966,7 @@ const POSReturn = () => {
       const receiptCustomization = loadSalesReceiptCustomization(authUser?.company_id || "default");
       const appliedReturnId = toNum(detail?.applied_pos_return_id ?? detail?.appliedPosReturnId, 0);
       const [companyInfo, linkedReturnRes] = await Promise.all([
-        fetchReceiptCompanyInfo(getReceiptCompanyId(detail, authUser)),
+        fetchReceiptCompanyInfo(getReceiptCompanyId(detail, { company_id: authUser?.company_id })),
         appliedReturnId
           ? api.get(`/pos-returns/${appliedReturnId}`).catch(() => ({ data: { data: null } }))
           : Promise.resolve({ data: { data: null } }),
@@ -1083,7 +1083,7 @@ const POSReturn = () => {
         printWindow.print();
       };
     },
-    [authUser?.company_id, authUser?.company_name, authUser?.counter_name, authUser?.email, authUser?.name, now, queuePrintHtml]
+    [authUser?.company_id, authUser?.counter_name, authUser?.email, authUser?.name, now, queuePrintHtml]
   );
 
   const handlePrintLatestPosDocument = async () => {
@@ -1151,7 +1151,8 @@ const POSReturn = () => {
       const res = await api.post("/pos-returns", payload);
       const saved = res.data?.data;
       setLatestPosDocument(saved ? { type: "return", ...saved } : null);
-      await printReturnReceipt(saved);
+      try { await printReturnReceipt(saved); }
+      catch (error) { toast.error(`Return saved, but receipt was not printed. ${error.message || "Please retry printing."}`); }
       toast.success(`POS return saved successfully (Return #${saved?.display_return_no || formatReturnNo(saved?.return_no)})`);
       handleResetEntry();
       await Promise.all([loadMasterData(), loadNextReturnNo(), refreshLatestPosDocument()]);
