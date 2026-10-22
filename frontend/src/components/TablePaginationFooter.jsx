@@ -8,9 +8,9 @@ export default function TablePaginationFooter({
   canJump = true, cursor = false, append = false, hasPrev, hasNext,
   busy, loading, onPrevious, onNext, onPageChange, onLimitChange,
 }) {
-  const textSx = { fontSize: 8, color: "text.secondary" };
-  const controlSx = { height: 26, fontSize: 7, borderRadius: ERP_UI.controlRadius };
-  const buttonSx = { height: 26, minWidth: 32, fontSize: 9, border: "1px solid", borderColor: "divider", borderRadius: "1.75px" };
+  const textSx = { fontSize: { xs: 11, md: 8 }, color: "text.secondary" };
+  const controlSx = { height: { xs: 36, md: 26 }, fontSize: { xs: 11, md: 7 }, borderRadius: ERP_UI.controlRadius };
+  const buttonSx = { height: { xs: 36, md: 26 }, minWidth: 36, fontSize: { xs: 12, md: 9 }, border: "1px solid", borderColor: "divider", borderRadius: "1.75px" };
   const menuProps = {
     anchorOrigin: { vertical: "top", horizontal: "left" },
     transformOrigin: { vertical: "bottom", horizontal: "left" },
