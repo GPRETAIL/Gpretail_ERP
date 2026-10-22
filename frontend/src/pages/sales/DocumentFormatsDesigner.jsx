@@ -282,7 +282,7 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
             </Box>
           </Stack>
           <Typography sx={{ fontSize: 10.5, color: isDark ? "#94a3b8" : "#64748b", mt: "1.75px" }}>
-            Configure A4/A5 document invoices and thermal POS receipts with live preview & print styling
+              Configure A4/A5 and other sheet invoice layouts with live preview and print styling.
           </Typography>
         </Box>
 
