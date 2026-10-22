@@ -25,9 +25,10 @@ import MastersDashboardTabPane from "../components/MastersDashboardTabPane";
 import SettingsDashboardTabPane from "../components/SettingsDashboardTabPane";
 import AnalyticalDashboardTabPane from "../components/AnalyticalDashboardTabPane";
 import useCompanyOptions from "../utils/useCompanyOptions";
+import { setActiveStoreSelection } from "../utils/storeSelection";
 import useDashboardRealtime from "../hooks/useDashboardRealtime";
 import { DASHBOARD_PAGES } from "../utils/dashboardModuleTabs";
-import { USER_ROLE, canAccessPath } from "../utils/accessControl";
+import { canAccessPath, canSwitchStores } from "../utils/accessControl";
 import { DashboardLayoutProvider, useDashboardLayout } from "../context/DashboardLayoutContext";
 import { Box, Button, MenuItem, Stack, Tab, Tabs, TextField, Typography } from "@mui/material";
 
@@ -47,11 +48,10 @@ const DASHBOARD_TABS = DASHBOARD_PAGES.map((page) => ({ id: page.id, label: page
 const Dashboard = () => {
   const { editMode, setEditMode, resetLayout } = useDashboardLayout();
   const authUser = useSelector((state) => state.auth.user);
-  const role = String(authUser?.role || "").toLowerCase();
-  const isSuperAdmin = role === USER_ROLE.SUPER_ADMIN;
+  const canChooseStore = canSwitchStores(authUser);
   const companyOptions = useCompanyOptions({
-    includeAll: isSuperAdmin,
-    allLabel: "All Store",
+    includeAll: canChooseStore,
+    allLabel: "All Stores",
   });
 
   // Blurs currency/quantity figures across the dashboard for screen-sharing -- persisted so it
@@ -63,7 +63,7 @@ const Dashboard = () => {
 
   const [fromDate, setFromDate] = useState(() => formatYmd(startOfMonth(new Date())));
   const [toDate, setToDate] = useState(() => formatYmd(new Date()));
-  const [companyId, setCompanyId] = useState(() => (isSuperAdmin ? "" : String(authUser?.company_id || "")));
+  const [companyId, setCompanyId] = useState(() => (canChooseStore ? sessionStorage.getItem("activeStoreId") || "" : String(authUser?.company_id || "")));
 
   // Tabs the signed-in user may actually see. canAccessPath returns true for everyone not in
   // page-permission mode, so this is a no-op for owners/admins and only narrows a permissioned user.
@@ -88,19 +88,19 @@ const Dashboard = () => {
         to: toDate,
         timezoneOffset: new Date().getTimezoneOffset(),
       };
-      if (isSuperAdmin) {
+      if (canChooseStore) {
         if (companyId) {
           params.company_id = companyId;
         } else {
-          // "All companies" selected: an explicit override so this always reads unrestricted, even
-          // if the Navbar's Switch Store has scoped every other request down to one store.
+          // All Stores clears the shared selection. The server still limits reads
+          // to stores assigned to this tenant. Business writes require one store.
           params.allStores = "true";
         }
       }
       const snapshotRes = await api.get("/dashboard", { params, signal });
       const snapshot = snapshotRes.data?.data || {};
     return snapshot;
-  }, [companyId, fromDate, isSuperAdmin, toDate]);
+  }, [companyId, fromDate, canChooseStore, toDate]);
   const { data: snapshot, loading, reload: loadDashboard } = useAsyncQuery(fetchDashboard, {
     onSuccess: (data, context) => {
       if (!context.silent && Object.keys(data.errors || {}).length > 0) toast.warn("Some dashboard sections could not be loaded.");
@@ -114,10 +114,10 @@ const Dashboard = () => {
   const tables = snapshot?.tables || null;
 
   const lockedCompanyLabel = useMemo(() => {
-    if (isSuperAdmin) return "";
+    if (canChooseStore) return "";
     const match = companyOptions.find((row) => row.value === String(authUser?.company_id || ""));
     return match?.label || metrics?.company?.companyLabel || "Company";
-  }, [authUser?.company_id, companyOptions, isSuperAdmin, metrics?.company?.companyLabel]);
+  }, [authUser?.company_id, companyOptions, canChooseStore, metrics?.company?.companyLabel]);
 
   // Every module tab has its own "Action Required" banner surfacing that module's urgent
   // conditions -- Overview didn't have an equivalent, even though it's the first thing anyone
@@ -142,7 +142,7 @@ const Dashboard = () => {
 
   useDashboardRealtime({
     enabled: Boolean(authUser?.id),
-    companyId: isSuperAdmin ? companyId : String(authUser?.company_id || ""),
+    companyId: canChooseStore ? companyId : String(authUser?.company_id || ""),
     onUpdate: loadDashboard,
   });
 
@@ -380,14 +380,21 @@ const Dashboard = () => {
         </Stack>
 
         <Box sx={{ width: "100%", maxWidth: { lg: 288 } }}>
-          {isSuperAdmin ? (
+          {canChooseStore ? (
             <TextField
               select
               label="Company"
               size="small"
               fullWidth
               value={companyId}
-              onChange={(event) => setCompanyId(event.target.value)}
+              onChange={(event) => {
+                const nextStore = event.target.value;
+                setActiveStoreSelection(nextStore);
+                setCompanyId(nextStore);
+                // Same full context switch as the navbar: refetch auth, entitlements,
+                // routing and all opened dashboard modules for the selected store.
+                window.location.reload();
+              }}
               slotProps={{ inputLabel: { shrink: true } }}
             >
               {companyOptions.map((row) => (

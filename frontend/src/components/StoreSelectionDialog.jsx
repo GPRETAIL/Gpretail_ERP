@@ -1,3 +1,4 @@
+import { setActiveStoreSelection } from "../utils/storeSelection";
 import React, { useEffect, useState } from "react";
 import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, TextField } from "@mui/material";
 import api from "../api/axios";
@@ -35,7 +36,7 @@ export default function StoreSelectionDialog() {
 
   const select = () => {
     if (!stores.some((store) => String(store.id) === selected && store.active !== false && store.is_active !== false)) return;
-    sessionStorage.setItem("activeStoreId", selected);
+    setActiveStoreSelection(selected);
     // Reopen the form after selecting. Never silently resubmit a failed transaction into another store.
     window.location.reload();
   };

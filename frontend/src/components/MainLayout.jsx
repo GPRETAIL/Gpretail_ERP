@@ -11,7 +11,7 @@ import { usePrintContext } from "../context/PrintContext";
 import { useSyncStatus } from "../context/SyncStatusContext";
 import { Printer, Store, Server, Cloud, X, Loader2, CheckCircle2, AlertCircle, Upload, Download } from "lucide-react";
 import { Alert, Box, ButtonBase, Chip, Stack, Typography } from "@mui/material";
-import { isTenantAdmin } from "../utils/accessControl";
+import { isTenantAdmin, canSwitchStores } from "../utils/accessControl";
 import SubscriptionDuePopup from "./SubscriptionDuePopup";
 import useSubscriptionStatus from "../hooks/useSubscriptionStatus";
 import useStoreNameMap, { resolveStoreName } from "../hooks/useStoreNameMap";
@@ -55,20 +55,13 @@ const PrintStatusFooter = () => {
   const userRole = String(authUser?.role || "").toLowerCase();
   const companyPortalUrl = authUser?.subscription_portal_url || COMPANY_PORTAL_LOGIN_URL;
 
-  // Active-store indicator: the Navbar's Switch Store choice, or "All Stores" when a super-admin
-  // hasn't switched into one yet (they read unrestricted across the whole tenant in that state --
-  // see GatewayAuthFilter.resolveCompanyScope). A non-super-admin always has a real store even
-  // before choosing one from a multi-store grant, so they fall back to their own default rather
-  // than "All Stores", which would be misleading for the common single-store case.
+  const canSwitchStore = canSwitchStores(authUser);
   const storeNameMap = useStoreNameMap();
   const activeStoreId = sessionStorage.getItem("activeStoreId") || "";
-  const defaultStoreId = userRole === "super_admin" ? "" : String(authUser?.company_id || authUser?.companyId || "");
+  // Switchable accounts with no selection are viewing all of their assigned stores.
+  const defaultStoreId = canSwitchStore ? "" : String(authUser?.company_id || authUser?.companyId || "");
   const effectiveStoreId = activeStoreId || defaultStoreId;
   const activeStoreLabel = effectiveStoreId ? resolveStoreName(storeNameMap, effectiveStoreId) : "All Stores";
-  // Mirrors Navbar's own canSwitchStore -- only offer the shortcut to whoever actually has a dialog
-  // to open. A single-store user clicking it would open a picker with nothing useful in it.
-  const canSwitchStore =
-    userRole === "super_admin" || (Array.isArray(authUser?.company_ids) && authUser.company_ids.length > 1);
   // Trial / due marker sits with the store indicator: the footer is already where "which context am
   // I working in" lives, so subscription state belongs beside it rather than in a new chrome slot.
   const subscription = useSubscriptionStatus();

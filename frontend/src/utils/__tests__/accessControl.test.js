@@ -1,5 +1,20 @@
 import { describe, expect, it } from "vitest";
-import { canAccessPath, getHomePathForUser, getVisibleNavItems } from "../accessControl";
+import { canAccessPath, canSwitchStores, getHomePathForUser, getVisibleNavItems } from "../accessControl";
+
+describe("shared store-switch permission", () => {
+  it.each([
+    [{ role: "super_admin" }, true],
+    [{ role: "admin", is_tenant_admin: true }, true],
+    [{ role: "admin", store_ids: [2] }, false],
+    [{ role: "user", store_ids: [2, 3] }, true],
+    [{ role: "user", store_ids: [2, 2] }, false],
+    [{ role: "user", store_ids: [2], company_ids: [2, 3] }, false],
+    [{ role: "user", can_switch_stores: true, store_ids: [2, 3] }, true],
+    [{ role: "super_admin", can_switch_stores: false }, false],
+  ])("uses authorized capability and assignments for %j", (user, expected) => {
+    expect(canSwitchStores(user)).toBe(expected);
+  });
+});
 
 it("uses tenant-assigned module grants for staff navigation without opening administration", () => {
   const user = { role: "user", module_permissions: { masters: { view: true }, sales: { view: false } } };

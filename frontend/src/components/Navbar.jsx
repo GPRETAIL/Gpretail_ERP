@@ -1,3 +1,4 @@
+import { setActiveStoreSelection } from "../utils/storeSelection";
 import { EMPTY_ARRAY } from "../utils/emptyValues";
 // Navbar.js
 import React, { useCallback, useEffect, useMemo, useState } from "react";
@@ -56,7 +57,7 @@ import { usePrintContext } from "../context/PrintContext";
 import { savePrinterRouting } from "../utils/localPrinterService";
 import CounterAssignmentDialog from "./CounterAssignmentDialog";
 import { navItems, ownerNavItems } from "../utils/navItems";
-import { getVisibleNavItems } from "../utils/accessControl";
+import { canSwitchStores, getVisibleNavItems } from "../utils/accessControl";
 
 const PRINTER_FUNCTION_OPTIONS = [
   { value: "", label: "Select function" },
@@ -104,13 +105,7 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
     const settingsModule = getVisibleNavItems(sourceNavItems, user).find((item) => item.name === "Settings");
     return settingsModule?.subItems?.[0]?.path || null;
   }, [isOwner, user]);
-  const isSuperAdmin = String(user?.role || "").toLowerCase() === "super_admin";
-  // A manager/user provisioned with 2+ stores (Company multi-select or a Store Group on the User
-  // Access page) gets the same switcher a super-admin does -- company_ids is the tenant admin's
-  // FULL grant for this account, sent on every login (see SanitizedUserResponse), not just their
-  // one default store.
-  const hasMultipleStores = Array.isArray(user?.company_ids) && user.company_ids.length > 1;
-  const canSwitchStore = isSuperAdmin || hasMultipleStores;
+  const canSwitchStore = canSwitchStores(user);
 
   // Tracks the real browser fullscreen state (not just "did we click the button") so the icon
   // stays correct if the user exits with Esc or a browser control instead of clicking it again.
@@ -531,10 +526,10 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
     // already applies whenever no store is actively switched. A write still needs exactly one
     // store, same as always (StoreAssignment 422s "Select a store first" if it can't tell which).
     if (selectedStoreIds.has(ALL_STORES_ID) || specificIds.length !== 1) {
-      sessionStorage.removeItem("activeStoreId");
+      setActiveStoreSelection("");
       toast.success("Now viewing all your stores");
     } else {
-      sessionStorage.setItem("activeStoreId", specificIds[0]);
+      setActiveStoreSelection(specificIds[0]);
       const label = storeOptions.find((option) => option.value === specificIds[0])?.label || "the selected store";
       toast.success(`Switched active store context to ${label}`);
     }

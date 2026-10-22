@@ -55,13 +55,15 @@ class StoreContextTest extends TestCase
         $one = $this->store('TENANT-ONE');
         $one->update(['platform_company_code' => 'CMP-OWNER']);
         $this->getJson('/api/auth/me')->assertJsonPath('data.is_tenant_admin', true)
+            ->assertJsonPath('data.can_switch_stores', true)
             ->assertJsonPath('data.store_id', $one->id);
         $two = $this->store('TENANT-TWO');
         $two->update(['platform_company_code' => 'CMP-OWNER']);
         $this->withHeader('X-Company-Scope-Id', (string) $two->id)->getJson('/api/auth/me')
             ->assertOk()->assertJsonPath('data.is_tenant_admin', true)->assertJsonPath('data.company_id', $two->id);
         $owner->update(['store_id' => $two->id]);
-        $this->getJson('/api/auth/me')->assertJsonPath('data.is_tenant_admin', false);
+        $this->getJson('/api/auth/me')->assertJsonPath('data.is_tenant_admin', false)
+            ->assertJsonPath('data.can_switch_stores', false);
     }
 
     public function test_another_email_or_company_cannot_claim_tenant_admin_identity(): void

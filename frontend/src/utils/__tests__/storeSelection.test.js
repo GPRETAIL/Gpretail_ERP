@@ -1,9 +1,22 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { handleStoreSelectionError, initializeStoreSelection } from "../storeSelection";
+import { handleStoreSelectionError, initializeStoreSelection, setActiveStoreSelection } from "../storeSelection";
 
 beforeEach(() => { localStorage.clear(); sessionStorage.clear(); });
 
 describe("store selection", () => {
+  it("switches the shared request scope and clears it for All Stores", () => {
+    localStorage.setItem("activeStoreId", "99");
+    setActiveStoreSelection("3");
+    expect(sessionStorage.getItem("activeStoreId")).toBe("3");
+    expect(localStorage.getItem("activeStoreId")).toBeNull();
+    setActiveStoreSelection("");
+    expect(sessionStorage.getItem("activeStoreId")).toBeNull();
+  });
+
+  it.each(["all", "-1", "2,3", "0"])("rejects malformed store context %s", (id) => {
+    expect(() => setActiveStoreSelection(id)).toThrow("Invalid store selection");
+    expect(sessionStorage.getItem("activeStoreId")).toBeNull();
+  });
   it("automatically selects the only assigned store", () => {
     initializeStoreSelection({ store_ids: [42] });
     expect(sessionStorage.getItem("activeStoreId")).toBe("42");

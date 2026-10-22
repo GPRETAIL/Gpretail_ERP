@@ -1,3 +1,12 @@
+// Shared by dashboard, navbar and the required-store dialog. The server validates ownership.
+export function setActiveStoreSelection(storeId) {
+  const selected = String(storeId ?? "");
+  if (selected && !/^[1-9]\d*$/.test(selected)) throw new Error("Invalid store selection");
+  localStorage.removeItem("activeStoreId");
+  if (selected) sessionStorage.setItem("activeStoreId", selected);
+  else sessionStorage.removeItem("activeStoreId");
+}
+
 // A new login must never inherit another user's store selection.
 export function initializeStoreSelection(user, { preserve = false } = {}) {
   const selected = sessionStorage.getItem("activeStoreId");

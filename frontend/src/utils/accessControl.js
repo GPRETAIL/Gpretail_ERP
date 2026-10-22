@@ -28,6 +28,14 @@ const firstSegment = (pathname) => {
 export const isTenantAdmin = (user) =>
   user?.role === USER_ROLE.ADMIN && user?.is_tenant_admin === true;
 
+// The API's capability is authoritative; older sessions use only their assigned store IDs.
+export const canSwitchStores = (user) => {
+  if (typeof user?.can_switch_stores === "boolean") return user.can_switch_stores;
+  if (String(user?.role || "").toLowerCase() === USER_ROLE.SUPER_ADMIN || isTenantAdmin(user)) return true;
+  const ids = Array.isArray(user?.store_ids) ? user.store_ids : user?.company_ids;
+  return Array.isArray(ids) && new Set(ids.map(String).filter((id) => /^[1-9]\d*$/.test(id))).size > 1;
+};
+
 // Account administration remains reachable when no store or business plan is active.
 const isTenantManagementPath = (user, path) => isTenantAdmin(user) &&
   ["/settings", "/settings/company", "/settings/themes", "/settings/branding"].includes(path);

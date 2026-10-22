@@ -56,6 +56,7 @@ class StoreContext
 
         return [
             'is_tenant_admin' => (bool) $tenantAdmin,
+            'can_switch_stores' => $user->is_active && ($user->role === 'super_admin' || $tenantAdmin || $stores->count() > 1),
             'web_access' => (bool) $user->web_access,
             'mobile_access' => (bool) $user->mobile_access,
             'module_permissions' => $user->module_permissions,
