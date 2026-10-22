@@ -135,4 +135,16 @@ class ThemeGovernanceTest extends TestCase
         $this->putJson('/api/companies/'.$this->one->id, ['theme_customization' => ['primary_color' => '#ffffff']])->assertUnprocessable();
         $this->assertSame('#123456', $this->one->fresh()->theme_customization['primary_color']);
     }
+
+    public function test_additional_fonts_round_trip_through_company_store_and_presets(): void
+    {
+        $revision = 0;
+        foreach (['segoe_ui', 'manrope', 'ibm_plex_sans', 'source_sans_3'] as $font) {
+            $response = $this->putJson('/api/tenant/theme', ['font_family' => $font, 'expected_revision' => $revision])->assertOk()->assertJsonPath('data.font_family', $font);
+            $revision = $response->json('meta.revision');
+            $this->assertSame($font, app(TenantThemes::class)->effective($this->two, 'CMP-THEME')['font_family']);
+            $this->putJson('/api/companies/'.$this->one->id.'/theme', ['font_family' => $font])->assertOk()->assertJsonPath('data.font_family', $font);
+            $this->postJson('/api/tenant/theme-presets', ['name' => $font, 'font_family' => $font])->assertCreated()->assertJsonPath('data.config.font_family', $font);
+        }
+    }
 }

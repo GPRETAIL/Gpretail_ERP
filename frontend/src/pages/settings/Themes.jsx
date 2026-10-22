@@ -117,7 +117,7 @@ function ThemeEditor({ snapshot, prefix, companyScope, mode, reload, token, onBu
             {section === 2 && <>
               <Typography component="h2" sx={{ fontSize: 13, fontWeight: 700 }}>Typography</Typography>
               <Typography sx={{ fontSize: 12 }}>System Default works offline. Web fonts fall back to installed fonts when the internet is unavailable.</Typography>
-              {FONT_OPTIONS.filter(font => font.id !== "playfair" || original.font_family === "playfair").map(font => <Button key={font.id} aria-pressed={draft.font_family === font.id} variant={draft.font_family === font.id ? "outlined" : "text"} disabled={!editable || busy} onClick={() => change("font_family", font.id)} sx={{ justifyContent: "flex-start" }}>{font.label}</Button>)}
+              {FONT_OPTIONS.filter(font => font.id !== "playfair" || original.font_family === "playfair").map(font => <Button key={font.id} aria-label={font.label} aria-pressed={draft.font_family === font.id} variant={draft.font_family === font.id ? "outlined" : "text"} disabled={!editable || busy} onClick={() => change("font_family", font.id)} sx={{ justifyContent: "flex-start", textAlign: "left", p: 1.25 }}><Box><Typography sx={{ fontSize: 13, fontWeight: 600 }}>{font.label}</Typography>{font.description && <Typography sx={{ fontSize: 12, color: "text.secondary", mt: 0.25 }}>{font.description}</Typography>}</Box></Button>)}
             </>}
             {section === 3 && <>
               <Typography component="h2" sx={{ fontSize: 13, fontWeight: 700 }}>Store Overrides</Typography>

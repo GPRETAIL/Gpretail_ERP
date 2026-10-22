@@ -60,7 +60,7 @@ class TenantThemes
         $rules = ['primary_color' => $hex, 'secondary_color' => $hex,
             'border_radius' => ['nullable', 'integer', 'min:0', 'max:32'],
             'theme_style' => ['nullable', 'in:'.implode(',', self::STYLES)],
-            'font_family' => ['nullable', 'in:system,inter,roboto,poppins,playfair']];
+            'font_family' => ['nullable', 'in:system,segoe_ui,manrope,ibm_plex_sans,source_sans_3,inter,roboto,poppins,playfair']];
         foreach (self::COLORS as $color) {
             $rules[$color] = $hex;
         }

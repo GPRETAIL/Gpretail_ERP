@@ -81,6 +81,12 @@ it("preserves saved Apple and Playfair configurations", async () => {
   expect(screen.getByRole("button", { name: /Apple \(saved\)/ })).toHaveAttribute("aria-pressed", "true");
   tab("Typography"); expect(screen.getByRole("button", { name: "Playfair Display" })).toHaveAttribute("aria-pressed", "true");
 });
+it.each(["Segoe UI", "Manrope", "IBM Plex Sans", "Source Sans 3"])("offers %s and keeps font selection as a draft", async label => {
+  show(); await ready(); tab("Typography");
+  fireEvent.click(screen.getByRole("button", { name: label, exact: true }));
+  expect(screen.getByRole("button", { name: label, exact: true })).toHaveAttribute("aria-pressed", "true");
+  expect(api.put).not.toHaveBeenCalled();
+});
 it("sends explicit scope when managing a different store", async () => {
   show(); await ready(); fireEvent.mouseDown(screen.getByRole("combobox", { name: "Theme scope" })); fireEvent.click(screen.getByRole("option", { name: "Store Override" }));
   fireEvent.mouseDown(screen.getByRole("combobox", { name: "Store", exact: true })); fireEvent.click(screen.getByRole("option", { name: "Coffee 2" }));
