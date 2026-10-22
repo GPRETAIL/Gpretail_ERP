@@ -1944,7 +1944,7 @@ export default function FilterableDataTable({
   const toolbarFieldSx = { height: toolbarFieldHeight, fontSize: compact ? 11 : 12 };
 
   return (
-    <Box sx={{ ...erpControlSx, "& .MuiOutlinedInput-root": { borderRadius: controlBorderRadius }, ...(fillHeight ? { display: "flex", flex: 1, minHeight: 0, flexDirection: "column" } : {}) }}>
+    <Box sx={{ minWidth: 0, ...erpControlSx, "& .MuiOutlinedInput-root": { borderRadius: controlBorderRadius }, ...(fillHeight ? { display: "flex", flex: 1, minHeight: 0, flexDirection: "column" } : {}) }}>
       <Stack
         direction="row"
         spacing={compact ? 0.75 : 1}

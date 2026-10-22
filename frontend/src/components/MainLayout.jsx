@@ -105,11 +105,13 @@ const PrintStatusFooter = () => {
           justifyContent: "space-between", alignItems: "center",
           px: { xs: 1.5, md: 3, lg: 4 }, py: 0.5,
           fontSize: { xs: 10, md: 12 }, color: "text.secondary",
+          minWidth: 0, gap: 2, whiteSpace: "nowrap", overflowX: "auto",
+          "& > *": { flexShrink: 0 },
         }}
       >
         <Typography component="span" sx={{ fontSize: "inherit" }}>© Vynerix Pvt Ltd.</Typography>
 
-        <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+        <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", "& > *": { flexShrink: 0 }, "& .MuiButtonBase-root": { minHeight: { xs: 32, md: 20 } } }}>
           {footerTransfer ? (
             <ButtonBase
               onClick={handleOpenTransferScreen}
@@ -299,7 +301,7 @@ const MainLayout = () => {
   return (
     <TransferActivityProvider>
       <TabProvider>
-        <Box className="erp-app-shell" sx={{ "--erp-control-radius": ERP_UI.controlRadius, "--erp-action-height": `${ERP_UI.actionHeight}px`, display: "flex", height: "100vh", width: "100%", overflow: "hidden", bgcolor: "background.default" }}>
+        <Box className="erp-app-shell" sx={{ "--erp-control-radius": ERP_UI.controlRadius, "--erp-action-height": `${ERP_UI.actionHeight}px`, display: "flex", height: "100dvh", width: "100%", overflow: "hidden", bgcolor: "background.default" }}>
           {isMobile && mobileOpen && (
             <Box
               sx={{ position: "fixed", inset: 0, zIndex: 40, bgcolor: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)", transition: "opacity 0.15s" }}

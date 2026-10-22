@@ -5,7 +5,7 @@ import { erpControlSx } from "../theme/erpUi";
 export default function SearchGridPanel({ children, sx, ...props }) {
   return (
     <Card {...props} className={`erp-search-grid-panel erp-master-search-panel ${props.className || ""}`} variant="outlined" sx={{
-      height: "100%", width: "100%", display: "flex", flexDirection: "column", minHeight: 0, minWidth: 0,
+      height: "100%", width: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column", minHeight: 0, minWidth: 0,
       p: 1, pb: 0.5, ...erpControlSx,
       "& > h2": { fontWeight: 700, mb: 1, fontSize: "1rem" }, ...sx,
     }}>{children}</Card>

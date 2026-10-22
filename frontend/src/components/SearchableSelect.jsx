@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Box } from "@mui/material";
 import { useTheme, alpha } from "@mui/material/styles";
 import { SEARCHABLE_TRIGGER_SX, SEARCHABLE_INPUT_SX } from "../theme/formControlSizes";
+import { dropdownPlacement as getDropdownPlacement } from "../utils/dropdownPlacement";
 
 /**
  * SearchableSelect — drop-in replacement for a plain <select>.
@@ -76,14 +77,7 @@ const SearchableSelect = ({
   const measurePortalPlacement = () => {
     const el = triggerRef.current;
     if (!el) return null;
-    const r = el.getBoundingClientRect();
-    const spaceBelow = window.innerHeight - r.bottom - 8;
-    return {
-      top: r.bottom + 4,
-      left: r.left,
-      width: Math.max(r.width, 220),
-      maxHeight: Math.min(320, Math.max(160, spaceBelow)),
-    };
+    return getDropdownPlacement(el.getBoundingClientRect(), window.innerWidth, window.innerHeight);
   };
 
   const closeDropdownCompletely = () => {
@@ -420,6 +414,7 @@ const SearchableSelect = ({
                 top: dropdownPlacement.top,
                 left: dropdownPlacement.left,
                 width: dropdownPlacement.width,
+                boxSizing: "border-box",
                 zIndex: 10060,
               }}
             >

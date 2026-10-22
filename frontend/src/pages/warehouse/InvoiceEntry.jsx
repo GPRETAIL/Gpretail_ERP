@@ -1147,7 +1147,7 @@ const InvoiceEntry = () => {
   }
 
   return (
-    <Box sx={{ height: "100vh", display: "flex", flexDirection: "column", bgcolor: "background.default", color: "text.primary" }} className="master-responsive">
+    <Box sx={{ height: "100%", display: "flex", flexDirection: "column", bgcolor: "background.default", color: "text.primary" }} className="master-responsive">
       {/* Header Bar */}
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 0.75, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
         <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
@@ -1173,10 +1173,10 @@ const InvoiceEntry = () => {
       </Stack>
 
       {/* Main Content */}
-      <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden", px: 0.75, pb: 0.5, pt: 0.25 }}>
-        <Stack direction={{ xs: "column", xl: "row" }} spacing={0.75} sx={{ height: "100%", xl: { alignItems: "stretch" } }}>
+      <Box sx={{ flex: 1, minHeight: 0, overflow: { xs: "auto", xl: "hidden" }, px: 0.75, pb: 0.5, pt: 0.25 }}>
+        <Stack direction={{ xs: "column", xl: "row" }} spacing={0.75} sx={{ height: { xs: "auto", xl: "100%" }, alignItems: "stretch" }}>
           {/* LEFT SIDE */}
-          <Box sx={{ minWidth: 0, flex: 1, border: "1px solid", borderColor: "divider", bgcolor: "background.paper", display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" }}>
+          <Box sx={{ minWidth: 0, flex: { xs: "none", xl: 1 }, border: "1px solid", borderColor: "divider", bgcolor: "background.paper", display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" }}>
             {/* Top Form */}
             <Box sx={{ p: 0.75, flexShrink: 0 }}>
               {!hasLinkedTransportEntry && !selectedInvoiceId && (
@@ -1392,7 +1392,7 @@ const InvoiceEntry = () => {
             </Box>
 
             {/* Items Table */}
-            <Box sx={{ borderTop: 1, borderColor: "divider", flex: 1, minHeight: 0, overflow: "hidden" }}>
+            <Box sx={{ borderTop: 1, borderColor: "divider", flex: { xs: "none", xl: 1 }, height: { xs: 200, xl: "auto" }, minHeight: 0, overflow: "hidden" }}>
               <Box sx={{ overflowX: "auto", height: "100%" }}>
                 <Box sx={{ minWidth: 860, height: "100%", display: "flex", flexDirection: "column" }}>
                   <Stack direction="row" sx={{ bgcolor: "action.hover", fontSize: 9, fontWeight: 600, color: "text.secondary", borderBottom: 1, borderColor: "divider", flexShrink: 0 }}>
@@ -1657,7 +1657,7 @@ const InvoiceEntry = () => {
           </Box>
 
           {/* RIGHT SIDE - Calculation Summary */}
-          <Box sx={{ width: { xs: "100%", xl: 288 }, flexShrink: { xl: 0 }, border: "1px solid", borderColor: "divider", bgcolor: "background.paper", overflowY: "auto" }}>
+          <Box sx={{ width: { xs: "100%", xl: 288 }, boxSizing: "border-box", flexShrink: 0, border: "1px solid", borderColor: "divider", bgcolor: "background.paper", overflowY: { xs: "visible", xl: "auto" } }}>
             <Stack spacing={0.75} sx={{ p: 1 }}>
               <Stack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "space-between" }}>
                 <Typography sx={{ fontSize: 12.25, color: "text.secondary" }}>LR No</Typography>
