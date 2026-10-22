@@ -1,7 +1,8 @@
+import PageHeader from "../../components/PageHeader";
 import abortableDelay from "../../utils/abortableDelay";
 import useAsyncQuery from "../../hooks/useAsyncQuery";
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { ArrowLeft, Eye, PlusCircle, Save, Search, Upload, Trash2 } from "lucide-react";
+import { Eye, PlusCircle, Save, Search, Upload, Trash2 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../../api/axios";
 import Toast from "../../components/Toast";
@@ -652,20 +653,19 @@ const TransportEntry = () => {
   return (
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column", bgcolor: "background.default", color: "text.primary" }} className="master-responsive">
       {/* Header */}
-      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", bgcolor: "background.paper", px: 1.5, py: 0.75, boxShadow: 1 }}>
-        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-          <IconButton onClick={handleBackClick} type="button" aria-label="Back to warehouse module" sx={{ color: "text.secondary" }}>
-            <ArrowLeft size={16} />
-          </IconButton>
+      <PageHeader
+        onBack={handleBackClick}
+        backLabel="Back to warehouse module"
+        title={<>
           <Breadcrumbs
-            sx={{ fontSize: 12.25, fontWeight: 600 }}
             items={[
               { label: "Warehouse", onClick: () => navigate("/warehouse") },
               { label: `Transport Entry${isViewMode ? " (View)" : paramMode === "edit" ? " (Edit)" : ""}` },
             ]}
           />
-        </Stack>
-        <Stack direction="row" spacing={0.75} sx={{ flexWrap: "wrap", alignItems: "center", justifyContent: "flex-end", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>
+        </>}
+        actions={<>
+          <Stack direction="row" spacing={0.75} sx={{ flexWrap: "wrap", alignItems: "center", justifyContent: "flex-end", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>
           <Button className="topbar-action-btn topbar-action-new" onClick={handleNew} startIcon={<PlusCircle size={14} />} sx={{ fontSize: 10.5 }}>
             New
           </Button>
@@ -686,7 +686,8 @@ const TransportEntry = () => {
             Search
           </Button>
         </Stack>
-      </Stack>
+        </>}
+      />
 
       {/* Main Form */}
       <Box sx={{ flex: 1, minHeight: 0, p: 1.5 }}>

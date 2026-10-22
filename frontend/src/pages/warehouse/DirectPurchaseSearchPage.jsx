@@ -1,8 +1,9 @@
+import PageHeader from "../../components/PageHeader";
 import SearchGridPanel from "../../components/SearchGridPanel";
 import { masterSearchAreaSx } from "../../theme/erpUi";
 import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
 import { useMemo, useState } from "react";
-import { ArrowLeft, Trash2, Pencil } from "lucide-react";
+import { Trash2, Pencil } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 import Toast from "../../components/Toast";
@@ -13,6 +14,8 @@ import { createGroupFetchers } from "../../utils/serverGrouping";
 import ExportBottomSheet from "../../components/ExportBottomSheet";
 import UploadImportButton from "../../components/UploadImportButton";
 import { Box, Stack, IconButton, Button } from "@mui/material";
+
+// Matches config('pagination.resources.direct_purchases.groupable_columns') on the backend.
 
 // Matches config('pagination.resources.direct_purchases.groupable_columns') on the backend.
 const { onFetchGroupSummaries: fetchDirectPurchaseGroupSummaries, onFetchGroupRows: fetchDirectPurchaseGroupRows } =
@@ -256,21 +259,19 @@ const DirectPurchaseSearchPage = () => {
 
   return (
     <Box sx={{ bgcolor: "background.default", color: "text.primary", height: "100%", minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1.5, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
-        <Stack direction="row" sx={{ alignItems: "center" }}>
-          <IconButton onClick={() => navigate("/warehouse/direct-purchase")} aria-label="Back" sx={{ mr: 1.5, color: "text.secondary" }}>
-            <ArrowLeft size={16} />
-          </IconButton>
+      <PageHeader
+        onBack={() => navigate("/warehouse/direct-purchase")}
+        backLabel="Back"
+        title={<>
           <Breadcrumbs
-            sx={{ fontSize: 12.25, fontWeight: 600 }}
             items={[
               { label: "Warehouse", onClick: () => navigate("/warehouse") },
               { label: "Direct Purchase Search" },
             ]}
           />
-        </Stack>
-
-        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+        </>}
+        actions={<>
+          <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           <UploadImportButton
             endpoint="/direct-purchases/bulk"
             fieldConfig={DIRECT_PURCHASE_IMPORT_CONFIG}
@@ -288,7 +289,8 @@ const DirectPurchaseSearchPage = () => {
             buttonClassName="topbar-action-btn topbar-action-export"
           />
         </Stack>
-      </Stack>
+        </>}
+      />
 
       <Box sx={masterSearchAreaSx}>
         <SearchGridPanel>

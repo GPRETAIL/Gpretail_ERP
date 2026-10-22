@@ -1,9 +1,10 @@
+import PageHeader from "../../components/PageHeader";
 import useResetOnChange from "../../hooks/useResetOnChange";
 import useStoreDisplayName from "../../hooks/useStoreDisplayName";
 import SearchGridPanel from "../../components/SearchGridPanel";
 import useSearchGrid from "../../hooks/useSearchGrid";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Layers } from "lucide-react";
+import { Layers } from "lucide-react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
@@ -2525,18 +2526,11 @@ const SalesReports = () => {
 
   return (
     <Box sx={{ height: "100%", minHeight: 0, bgcolor: "background.default", color: "text.primary", display: "flex", flexDirection: "column" }}>
-      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", bgcolor: "background.paper", px: 2, py: 1, boxShadow: 1 }}>
-        <Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
-          <IconButton
-            onClick={() => navigate("/sales")}
-            size="small"
-            aria-label="Back to sales"
-            sx={{ color: "text.secondary", "&:hover": { color: "text.primary" } }}
-          >
-            <ArrowLeft size={16} />
-          </IconButton>
+      <PageHeader
+        onBack={() => navigate("/sales")}
+        backLabel="Back to sales"
+        title={<>
           <Breadcrumbs
-            sx={{ fontSize: { xs: 12.25, md: 14 }, fontWeight: 600 }}
             items={
               selectedReport
                 ? [
@@ -2550,9 +2544,9 @@ const SalesReports = () => {
                   ]
             }
           />
-        </Stack>
-
-        {selectedReport ? (
+        </>}
+        actions={<>
+          {selectedReport ? (
           <Stack direction="row" sx={{ flexShrink: 0, alignItems: "center", gap: 1 }}>
             {selectedReport.key === "sales_report" ? (
               <>
@@ -2602,7 +2596,8 @@ const SalesReports = () => {
             />
           </Stack>
         ) : null}
-      </Stack>
+        </>}
+      />
 
       <Box sx={{ flex: 1, minHeight: 0, overflow: selectedReport ? "hidden" : "auto", p: selectedReport ? 0.75 : 2 }}>
         {selectedReport ? (

@@ -1,7 +1,7 @@
 import useResetOnChange from "../../hooks/useResetOnChange";
 import useQrSources from "../../hooks/useQrSources";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { ArrowLeft, Search, Save, Printer, Eye, X } from "lucide-react";
+import { Search, Save, Printer, Eye, X } from "lucide-react";
 import QRCode from "qrcode";
 import { useSelector } from "react-redux";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -9,6 +9,7 @@ import api from "../../api/axios";
 import Toast from "../../components/Toast";
 import PageSkeleton from "../../components/PageSkeleton";
 import Breadcrumbs from "../../components/Breadcrumbs";
+import PageHeader from "../../components/PageHeader";
 import AsyncSearchSelect from "../../components/AsyncSearchSelect";
 import { usePrintContext } from "../../context/PrintContext";
 import { buildCode39SvgMarkup } from "../../utils/salesReceiptCustomization";
@@ -27,22 +28,7 @@ import {
   fetchWarehouseBarcodeCustomization,
   splitWarehouseLabelFieldsForCenter,
 } from "../../utils/warehouseBarcodeCustomization";
-import {
-  Box,
-  Stack,
-  Typography,
-  TextField,
-  MenuItem,
-  IconButton,
-  Button,
-  Checkbox,
-  Table,
-  TableHead,
-  TableBody,
-  TableRow,
-  TableCell,
-  alpha,
-} from "@mui/material";
+import { Box, Stack, Typography, TextField, MenuItem, Button, Checkbox, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
 
 /* ── Resizable column hook ─────────────────────────────────────── */
 const useResizableColumns = (initialWidths) => {
@@ -2819,22 +2805,15 @@ const BarcodeGeneration = () => {
 
   return (
     <Box sx={{ height: "100%", overflow: "hidden", bgcolor: "background.default", display: "flex", flexDirection: "column" }}>
-      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1.25, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
-        <Stack direction="row" sx={{ alignItems: "center" }}>
-          <IconButton
-            onClick={() => navigate(-1)}
-            sx={{ color: "text.secondary", mr: 1.5 }}
-          >
-            <ArrowLeft size={16} />
-          </IconButton>
-          <Breadcrumbs
-            sx={{ fontSize: 12.25, fontWeight: 600 }}
-            items={[
-              { label: "Warehouse", onClick: () => navigate("/warehouse") },
-              { label: "Barcode Generation" },
-            ]}
-          />
-        </Stack>
+      <PageHeader
+        onBack={() => navigate(-1)}
+        title={
+          <Breadcrumbs items={[
+            { label: "Warehouse", onClick: () => navigate("/warehouse") },
+            { label: "Barcode Generation" },
+          ]} />
+        }
+        actions={
         <Stack direction="row" spacing={1} sx={{ alignItems: "center", fontSize: 12.25 }}>
           <Button
             type="button"
@@ -2885,7 +2864,8 @@ const BarcodeGeneration = () => {
             <Search size={16} style={{marginRight: 4}} /> Search
           </Button>
         </Stack>
-      </Stack>
+        }
+      />
 
       <Stack direction="row" sx={{ flex: 1, minHeight: 0, overflow: "hidden", p: 2, gap: 2 }}>
         <Box sx={{ width: 300, minHeight: 0, flexShrink: 0 }}>

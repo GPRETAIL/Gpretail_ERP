@@ -1,8 +1,9 @@
+import PageHeader from "../../components/PageHeader";
 import { masterSearchAreaSx } from "../../theme/erpUi";
 import SearchGridPanel from "../../components/SearchGridPanel";
 import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
 import React, { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, PlusCircle, Save, Search, Trash2, Edit2 } from "lucide-react";
+import { PlusCircle, Save, Search, Trash2, Edit2 } from "lucide-react";
 import { toast } from "react-toastify";
 import api from "../../api/axios";
 import { useNavigate } from "react-router-dom";
@@ -374,25 +375,19 @@ const Customer = () => {
         onConfirm={handleBulkDeleteConfirmed}
         onCancel={() => setBulkConfirm({ open: false, keys: [] })}
       />
-      <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", px: 2, py: 1, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
-        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-          <Button
-            onClick={showSearchPage ? () => setShowSearchPage(false) : () => navigate("/sales")}
-            sx={{ color: "text.secondary", minWidth: 0, p: 0.5 }}
-            aria-label={showSearchPage ? "Back to customer entry" : "Back to sales"}
-          >
-            <ArrowLeft size={16} />
-          </Button>
+      <PageHeader
+        onBack={showSearchPage ? () => setShowSearchPage(false) : () => navigate("/sales")}
+        backLabel={showSearchPage ? "Back to customer entry" : "Back to sales"}
+        title={<>
           <Breadcrumbs
-            sx={{ fontSize: 12.25, fontWeight: 600 }}
             items={[
               { label: "Sales", onClick: () => navigate("/sales") },
               { label: `Customer ${currentId ? `(Edit: #${currentId})` : ""}` },
             ]}
           />
-        </Stack>
-
-        <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>
+        </>}
+        actions={<>
+          <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>
           <Button className="topbar-action-btn topbar-action-new" onClick={handleNew}>
             <PlusCircle size={16} style={{marginRight: 4}} /> New
           </Button>
@@ -414,7 +409,8 @@ const Customer = () => {
             <Search size={16} style={{marginRight: 4}} /> {showSearchPage ? "Back" : "Search"}
           </Button>
         </Stack>
-      </Stack>
+        </>}
+      />
 
       <Box sx={showSearchPage ? masterSearchAreaSx : { flex: 1, p: 2 }}>{showSearchPage ? renderSearchPage() : renderForm()}</Box>
 

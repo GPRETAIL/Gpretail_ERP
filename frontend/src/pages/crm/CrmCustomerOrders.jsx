@@ -1,11 +1,12 @@
+import PageHeader from "../../components/PageHeader";
 import SearchGridPanel from "../../components/SearchGridPanel";
 import { masterSearchAreaSx } from "../../theme/erpUi";
 import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
 import React, { useMemo, useState } from "react";
-import { ArrowLeft, Copy, Pencil, PlusCircle, Trash2 } from "lucide-react";
+import { Copy, Pencil, PlusCircle, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { Box, Button, IconButton, Stack, Typography } from "@mui/material";
+import { Box, Button, Stack, Typography } from "@mui/material";
 import api from "../../api/axios";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import FilterableDataTable from "../../components/FilterableDataTable";
@@ -167,21 +168,18 @@ const CrmCustomerOrders = () => {
         onCancel={() => setBulkConfirm({ open: false, keys: [] })}
       />
 
-      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 0.5, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
-        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-          <IconButton size="small" onClick={() => navigate(-1)} sx={{ color: "text.secondary" }}>
-            <ArrowLeft size={16} />
-          </IconButton>
+      <PageHeader
+        onBack={() => navigate(-1)}
+        title={<>
           <Breadcrumbs
-            sx={{ fontSize: 13, fontWeight: 600 }}
             items={[
               { label: "CRM", onClick: () => navigate("/crm") },
               { label: "Customer Orders" },
             ]}
           />
-        </Stack>
-
-        <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>
+        </>}
+        actions={<>
+          <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>
           <Button onClick={() => navigate("/crm/customer-orders/new")} className="topbar-action-btn topbar-action-new">
             <PlusCircle size={12} style={{marginRight: 4}} /> New
           </Button>
@@ -192,7 +190,8 @@ const CrmCustomerOrders = () => {
             onDone={() => fetchOrders()}
           />
         </Stack>
-      </Stack>
+        </>}
+      />
 
       <Box sx={masterSearchAreaSx}>
         <SearchGridPanel>

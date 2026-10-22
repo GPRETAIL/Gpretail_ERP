@@ -1,9 +1,10 @@
+import PageHeader from "../../components/PageHeader";
 import useAsyncQuery from "../../hooks/useAsyncQuery";
 import { masterSearchAreaSx } from "../../theme/erpUi";
 import SearchGridPanel from "../../components/SearchGridPanel";
 import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, PlusCircle, Save, Search, Trash2, UserRound, X } from "lucide-react";
+import { PlusCircle, Save, Search, Trash2, UserRound, X } from "lucide-react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
@@ -974,25 +975,19 @@ const Settlement = () => {
         onConfirm={handleBulkDeleteConfirmed}
         onCancel={() => setBulkConfirm({ open: false, keys: [] })}
       />
-      <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", px: 2, py: 1, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
-        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-          <IconButton
-            onClick={showSearchPage ? () => setShowSearchPage(false) : () => navigate("/sales")}
-            sx={{ color: "text.secondary" }}
-            aria-label={showSearchPage ? "Back to settlement entry" : "Back to sales"}
-          >
-            <ArrowLeft size={16} />
-          </IconButton>
+      <PageHeader
+        onBack={showSearchPage ? () => setShowSearchPage(false) : () => navigate("/sales")}
+        backLabel={showSearchPage ? "Back to settlement entry" : "Back to sales"}
+        title={<>
           <Breadcrumbs
-            sx={{ fontSize: 12.25, fontWeight: 600 }}
             items={[
               { label: "Sales", onClick: () => navigate("/sales") },
               { label: "Settlement" },
             ]}
           />
-        </Stack>
-
-        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+        </>}
+        actions={<>
+          <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           <UploadImportButton
             endpoint="/settlements/bulk"
             fieldConfig={SETTLEMENT_IMPORT_CONFIG}
@@ -1025,7 +1020,8 @@ const Settlement = () => {
             {showSearchPage ? "Back" : "Search"}
           </Button>
         </Stack>
-      </Stack>
+        </>}
+      />
 
       <Stack spacing={2} sx={showSearchPage ? masterSearchAreaSx : { p: 2, pb: 7 }}>{showSearchPage ? renderSearchPage() : renderEntryPage()}</Stack>
 

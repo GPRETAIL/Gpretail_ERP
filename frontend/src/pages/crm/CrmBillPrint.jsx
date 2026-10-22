@@ -1,10 +1,11 @@
+import PageHeader from "../../components/PageHeader";
 import SearchGridPanel from "../../components/SearchGridPanel";
 import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ChevronDown, Printer } from "lucide-react";
+import { ChevronDown, Printer } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { Box, Button, IconButton, Stack, Typography } from "@mui/material";
+import { Box, Button, Typography } from "@mui/material";
 import api from "../../api/axios";
 import FilterableDataTable from "../../components/FilterableDataTable";
 import Breadcrumbs from "../../components/Breadcrumbs";
@@ -391,20 +392,17 @@ const CrmBillPrint = () => {
 
   return (
     <Box sx={{ bgcolor: "background.default", color: "text.primary", height: "100%", minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 0.5, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
-        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-          <IconButton size="small" onClick={() => navigate(-1)} sx={{ color: "text.secondary" }}>
-            <ArrowLeft size={16} />
-          </IconButton>
+      <PageHeader
+        onBack={() => navigate(-1)}
+        title={<>
           <Breadcrumbs
-            sx={{ fontSize: 13, fontWeight: 600 }}
             items={[
               { label: "CRM", onClick: () => navigate("/crm") },
               { label: "Bill Print" },
             ]}
           />
-        </Stack>
-      </Stack>
+        </>}
+      />
 
       <Box sx={{ flex: 1, minHeight: 0, p: 0.75 }}>
         <SearchGridPanel>

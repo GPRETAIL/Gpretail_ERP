@@ -1,10 +1,11 @@
+import PageHeader from "../../components/PageHeader";
 import useAsyncQuery from "../../hooks/useAsyncQuery";
 import SearchGridPanel from "../../components/SearchGridPanel";
 import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useSelector } from "react-redux";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
-import { ArrowLeft, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../../api/axios";
 import { toast } from "react-toastify";
@@ -15,27 +16,7 @@ import AsyncSearchSelect from "../../components/AsyncSearchSelect";
 import { useTheme as useAppTheme } from "../../features/theme-context";
 import { createNamedTheme, TONES } from "../../theme/themeRegistry";
 import { StatusChip } from "../../theme/StatusChip";
-import {
-  ThemeProvider,
-  Box,
-  Stack,
-  Card,
-  Typography,
-  Breadcrumbs,
-  Link,
-  IconButton,
-  Button,
-  TextField,
-  Select,
-  MenuItem,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Divider,
-} from "@mui/material";
+import { ThemeProvider, Box, Stack, Card, Typography, Breadcrumbs, Link, Button, TextField, Select, MenuItem, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Divider } from "@mui/material";
 import { muiFieldSx, SEARCHABLE_TRIGGER_SX } from "../../theme/formControlSizes";
 
 const fmt = (val) => {
@@ -379,29 +360,22 @@ const SupplierPayment = () => {
         }}
       >
         {/* ── Breadcrumb header ──────────────────────────────────────────────── */}
-        <Box
-          sx={{
-            display: "flex", justifyContent: "space-between", alignItems: "center",
-            px: 2, py: 1, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider",
-            boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
-          }}
-        >
-          <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-            <IconButton
-              size="small"
-              sx={{ color: "text.secondary" }}
-              onClick={() => {
+        <PageHeader
+        onBack={() => {
                 if (screen === "payment") { setScreen(paymentBackScreen); return; }
                 if (screen === "detail") { setScreen("search"); return; }
                 if (showSearchPage) { setShowSearchPage(false); return; }
                 navigate("/finance");
               }}
-            >
-              <ArrowLeft size={16} />
-            </IconButton>
-            <Breadcrumbs
+        title={<>
+          <Breadcrumbs
               separator="/"
-              sx={{ fontSize: 13, "& .MuiBreadcrumbs-separator": { color: "text.disabled", mx: 0.5 } }}
+              sx={{
+  "& .MuiBreadcrumbs-separator": {
+    color: "text.disabled",
+    mx: 0.5
+  }
+}}
             >
               <Link component="button" type="button" underline="hover" color="primary" onClick={() => navigate("/finance")} sx={{ fontSize: 13, fontWeight: 600 }}>
                 Finance
@@ -420,7 +394,8 @@ const SupplierPayment = () => {
               {screen === "detail" && <Typography sx={{ fontSize: 13, fontWeight: 600, color: "primary.main" }}>Invoice Details</Typography>}
               {screen === "payment" && <Typography sx={{ fontSize: 13, fontWeight: 600, color: "primary.main" }}>Make Payment</Typography>}
             </Breadcrumbs>
-          </Stack>
+        </>}
+        actions={<>
           <Box>
             {isHistoryView ? (
               <ExportBottomSheet
@@ -436,7 +411,8 @@ const SupplierPayment = () => {
               </Button>
             )}
           </Box>
-        </Box>
+        </>}
+      />
 
         {/* ═══════════════ SCREEN 1: SEARCH PENDING BILLS ═══════════════════════ */}
         {screen === "search" && !showSearchPage && (

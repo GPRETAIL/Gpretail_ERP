@@ -1,10 +1,11 @@
+import PageHeader from "../../components/PageHeader";
 import useAsyncQuery from "../../hooks/useAsyncQuery";
 import { EMPTY_ARRAY } from "../../utils/emptyValues";
 import React, { useCallback, useState } from "react";
-import { ArrowLeft } from "lucide-react";
+
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { Box, Button, IconButton, Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from "@mui/material";
+import { Box, Button, Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from "@mui/material";
 import api from "../../api/axios";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import { muiFieldSx } from "../../theme/formControlSizes";
@@ -44,25 +45,24 @@ const CrmLoyaltyManagement = () => {
 
   return (
     <Box className="master-responsive" sx={{ display: "flex", flexDirection: "column", height: "100%", bgcolor: "background.default", color: "text.primary", fontSize: 11 }}>
-      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1, flexShrink: 0 }}>
-        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-          <IconButton size="small" onClick={() => navigate(-1)} sx={{ color: "text.secondary" }}>
-            <ArrowLeft size={16} />
-          </IconButton>
+      <PageHeader
+        onBack={() => navigate(-1)}
+        title={<>
           <Breadcrumbs
-            sx={{ fontSize: 13, fontWeight: 600 }}
             items={[
               { label: "CRM", onClick: () => navigate("/crm") },
               { label: "Loyalty Management" },
             ]}
           />
-        </Stack>
-        {activeTab === "balances" && (
+        </>}
+        actions={<>
+          {activeTab === "balances" && (
           <Typography sx={{ fontSize: "inherit", color: "text.secondary" }}>
             Total points across customers: <Box component="span" sx={{ fontWeight: 600, color: "text.primary" }}>{totalPoints}</Box>
           </Typography>
         )}
-      </Stack>
+        </>}
+      />
 
       <Stack spacing={1.5} sx={{ flex: 1, minHeight: 0, p: 2 }}>
         <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between" }}>

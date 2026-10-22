@@ -1,6 +1,7 @@
+import PageHeader from "../../components/PageHeader";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Truck, FileText, Package, Barcode, Eye, Pencil, Trash2 } from "lucide-react";
+import { Truck, FileText, Package, Barcode, Eye, Pencil, Trash2 } from "lucide-react";
 import api from "../../api/axios";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import Toast from "../../components/Toast";
@@ -599,20 +600,19 @@ const WarehouseDashboard = () => {
         onCancel={() => setDeleteConfirm({ open: false, entry: null })}
       />
       {/* Header */}
-      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 1, flexShrink: 0, px: 2, py: 1, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
-        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-          <IconButton onClick={handleBackClick} type="button" aria-label="Back to warehouse module" sx={{ color: "text.secondary" }}>
-            <ArrowLeft size={16} />
-          </IconButton>
+      <PageHeader
+        onBack={handleBackClick}
+        backLabel="Back to warehouse module"
+        title={<>
           <Breadcrumbs
-            sx={{ fontSize: 12.25, fontWeight: 600 }}
             items={[
               { label: "Warehouse", onClick: () => navigate("/warehouse") },
               { label: "Dashboard" },
             ]}
           />
-        </Stack>
-        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+        </>}
+        actions={<>
+          <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           {selectedEntry && selectedEntry.status === "barcode_generated" && (
             <>
               <Button
@@ -637,7 +637,8 @@ const WarehouseDashboard = () => {
           )}
           <Typography sx={{ fontSize: 12.25, color: "text.secondary" }}>{entries.length} entries</Typography>
         </Stack>
-      </Stack>
+        </>}
+      />
 
       {/* Workflow Action Bar */}
       <Stack direction="row" useFlexGap spacing={1.5} sx={{ flexWrap: "wrap", flexShrink: 0, alignItems: "center", px: 2, py: 1.5, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider" }}>

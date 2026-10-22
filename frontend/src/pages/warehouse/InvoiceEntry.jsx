@@ -1,6 +1,7 @@
+import PageHeader from "../../components/PageHeader";
 import { calculatePurchaseInvoiceTotals } from "../../utils/purchaseInvoiceTotals";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { ArrowLeft, Search, Save, Plus, Printer, X, Pencil, Check } from "lucide-react";
+import { Search, Save, Plus, Printer, X, Pencil, Check } from "lucide-react";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import api from "../../api/axios";
 import Toast from "../../components/Toast";
@@ -1149,20 +1150,18 @@ const InvoiceEntry = () => {
   return (
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column", bgcolor: "background.default", color: "text.primary" }} className="master-responsive">
       {/* Header Bar */}
-      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 0.75, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
-        <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
-          <IconButton onClick={() => navigate("/warehouse")} sx={{ color: "text.secondary" }}>
-            <ArrowLeft size={16} />
-          </IconButton>
+      <PageHeader
+        onBack={() => navigate("/warehouse")}
+        title={<>
           <Breadcrumbs
-            sx={{ fontSize: 12.25, fontWeight: 600 }}
             items={[
               { label: "Warehouse", onClick: () => navigate("/warehouse") },
               { label: `Invoice${isViewMode ? " (View)" : pageMode === "edit" ? " (Edit)" : ""}` },
             ]}
           />
-        </Stack>
-        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+        </>}
+        actions={<>
+          <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           <Button onClick={() => navigate("/warehouse/invoice/search")} className="glass-btn glass-btn-primary" startIcon={<Search size={16} />}>
             Search
           </Button>
@@ -1170,7 +1169,8 @@ const InvoiceEntry = () => {
             Print
           </Button>
         </Stack>
-      </Stack>
+        </>}
+      />
 
       {/* Main Content */}
       <Box sx={{ flex: 1, minHeight: 0, overflow: { xs: "auto", xl: "hidden" }, px: 0.75, pb: 0.5, pt: 0.25 }}>

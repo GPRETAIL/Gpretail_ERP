@@ -1,7 +1,8 @@
+import PageHeader from "../../components/PageHeader";
 import SearchGridPanel from "../../components/SearchGridPanel";
 import useSearchGrid from "../../hooks/useSearchGrid";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ChevronDown, ChevronUp, Search } from "lucide-react";
+import { ChevronDown, ChevronUp, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 import Toast from "../../components/Toast";
@@ -9,7 +10,7 @@ import FilterableDataTable from "../../components/FilterableDataTable";
 import ExportBottomSheet from "../../components/ExportBottomSheet";
 import PageSkeleton from "../../components/PageSkeleton";
 import Breadcrumbs from "../../components/Breadcrumbs";
-import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, Radio } from "@mui/material";
+import { Box, Stack, Typography, TextField, MenuItem, Button, Radio } from "@mui/material";
 import { muiFieldSx } from "../../theme/formControlSizes";
 
 const filterRowSx = { display: "grid", gridTemplateColumns: "160px minmax(0, 1fr)", alignItems: "center", gap: 1 };
@@ -396,20 +397,19 @@ const ItemLocator = () => {
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "background.default" }}>
-      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1.5, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
-        <Stack direction="row" sx={{ alignItems: "center" }}>
-          <IconButton onClick={() => navigate(-1)} aria-label="Back" sx={{ mr: 1.5, color: "text.secondary" }}>
-            <ArrowLeft size={16} />
-          </IconButton>
+      <PageHeader
+        onBack={() => navigate(-1)}
+        backLabel="Back"
+        title={<>
           <Breadcrumbs
-            sx={{ fontSize: 12.25, fontWeight: 600 }}
             items={[
               { label: "Warehouse", onClick: () => navigate("/warehouse") },
               { label: "Item Locator" },
             ]}
           />
-        </Stack>
-        <ExportBottomSheet
+        </>}
+        actions={<>
+          <ExportBottomSheet
           columns={itemLocatorColumns}
           rows={rows}
           onExportRows={async () => {
@@ -419,7 +419,8 @@ const ItemLocator = () => {
           fileName="item_locator"
           buttonClassName="topbar-action-btn topbar-action-export"
         />
-      </Stack>
+        </>}
+      />
 
       <Stack spacing={1.5} sx={{ p: 2 }}>
         <Box sx={{ bgcolor: "background.paper", p: 2, borderRadius: "7px", boxShadow: 3, border: "1px solid", borderColor: "divider" }}>

@@ -1,8 +1,9 @@
+import PageHeader from "../../components/PageHeader";
 import SearchGridPanel from "../../components/SearchGridPanel";
 import { masterSearchAreaSx } from "../../theme/erpUi";
 import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
 import { useMemo, useState } from "react";
-import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 import Toast from "../../components/Toast";
@@ -176,21 +177,19 @@ const PurchaseReturnSearchPage = () => {
         onConfirm={handleBulkDeleteConfirmed}
         onCancel={() => setBulkConfirm({ open: false, keys: [] })}
       />
-      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1.5, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
-        <Stack direction="row" sx={{ alignItems: "center" }}>
-          <IconButton onClick={() => navigate("/warehouse/purchase-return")} aria-label="Back" sx={{ mr: 1.5, color: "text.secondary" }}>
-            <ArrowLeft size={16} />
-          </IconButton>
+      <PageHeader
+        onBack={() => navigate("/warehouse/purchase-return")}
+        backLabel="Back"
+        title={<>
           <Breadcrumbs
-            sx={{ fontSize: 12.25, fontWeight: 600 }}
             items={[
               { label: "Warehouse", onClick: () => navigate("/warehouse") },
               { label: "Purchase Return Search" },
             ]}
           />
-        </Stack>
-
-        <ExportBottomSheet
+        </>}
+        actions={<>
+          <ExportBottomSheet
           columns={columns}
           rows={results}
           selectedRowKeys={selectedRows}
@@ -201,7 +200,8 @@ const PurchaseReturnSearchPage = () => {
           fileName="purchase_return_search"
           buttonClassName="topbar-action-btn topbar-action-export"
         />
-      </Stack>
+        </>}
+      />
 
       <Box sx={masterSearchAreaSx}>
         <SearchGridPanel>

@@ -1,8 +1,9 @@
+import PageHeader from "../../components/PageHeader";
 import SearchGridPanel from "../../components/SearchGridPanel";
 import { masterSearchAreaSx } from "../../theme/erpUi";
 import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
 import { useMemo, useState } from "react";
-import { ArrowLeft, Trash2, Pencil } from "lucide-react";
+import { Trash2, Pencil } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 import Toast from "../../components/Toast";
@@ -13,6 +14,10 @@ import { createGroupFetchers } from "../../utils/serverGrouping";
 import ExportBottomSheet from "../../components/ExportBottomSheet";
 import UploadImportButton from "../../components/UploadImportButton";
 import { Box, Stack, IconButton, Button } from "@mui/material";
+
+// Matches config('pagination.resources.purchase_invoices.groupable_columns') on the backend
+// (the /invoices route is backed by PurchaseInvoiceController, which pages the
+// 'purchase_invoices' resource key, not the unused 'invoices' key).
 
 // Matches config('pagination.resources.purchase_invoices.groupable_columns') on the backend
 // (the /invoices route is backed by PurchaseInvoiceController, which pages the
@@ -196,14 +201,12 @@ const InvoiceSearchPage = () => {
 
   return (
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column", bgcolor: "background.default", color: "text.primary" }} className="master-responsive">
-      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
-        <Stack direction="row" sx={{ alignItems: "center" }}>
-          <IconButton onClick={() => navigate("/warehouse/invoice")} aria-label="Back" sx={{ mr: 1.5, color: "text.secondary" }}>
-            <ArrowLeft size={16} />
-          </IconButton>
+      <PageHeader
+        onBack={() => navigate("/warehouse/invoice")}
+        backLabel="Back"
+        title={<>
           <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
             <Breadcrumbs
-              sx={{ fontSize: 12.25, fontWeight: 600 }}
               items={[
                 { label: "Warehouse", onClick: () => navigate("/warehouse") },
                 { label: "Invoice Search" },
@@ -213,9 +216,9 @@ const InvoiceSearchPage = () => {
               | {results.length} Results
             </Box>
           </Stack>
-        </Stack>
-
-        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+        </>}
+        actions={<>
+          <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           <UploadImportButton
             endpoint="/invoices/bulk"
             fieldConfig={INVOICE_IMPORT_CONFIG}
@@ -238,7 +241,8 @@ const InvoiceSearchPage = () => {
             buttonClassName="topbar-action-btn topbar-action-export"
           />
         </Stack>
-      </Stack>
+        </>}
+      />
 
       <Box sx={masterSearchAreaSx}>
         <SearchGridPanel>

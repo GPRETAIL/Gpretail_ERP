@@ -1,3 +1,4 @@
+import PageHeader from "../../components/PageHeader";
 import useResetOnChange from "../../hooks/useResetOnChange";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Save, Search, Plus, X, ArrowLeft, ChevronDown, Pencil, Trash2 } from "lucide-react";
@@ -1672,25 +1673,19 @@ const InventoryEntry = () => {
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "background.default", display: "flex", flexDirection: "column" }}>
       {/* Header */}
-      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1.25, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
-        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-          <IconButton
-            onClick={() => navigate(-1)}
-            sx={{ color: "text.secondary" }}
-            type="button"
-            aria-label="Back to previous page"
-          >
-            <ArrowLeft size={16} />
-          </IconButton>
+      <PageHeader
+        onBack={() => navigate(-1)}
+        backLabel="Back to previous page"
+        title={<>
           <Breadcrumbs
-            sx={{ fontSize: 12.25, fontWeight: 600 }}
             items={[
               { label: "Warehouse", onClick: () => navigate("/warehouse") },
               { label: isViewMode ? "View Inventory Entry" : "Inventory Entry" },
             ]}
           />
-        </Stack>
-        <Stack direction="row" spacing={1} sx={{ alignItems: "center", fontSize: 12.25 }}>
+        </>}
+        actions={<>
+          <Stack direction="row" spacing={1} sx={{ alignItems: "center", fontSize: 12.25 }}>
           {!isViewMode && (
             <>
               <Button
@@ -1724,7 +1719,8 @@ const InventoryEntry = () => {
             <ArrowLeft size={16} style={{marginRight: 4}} /> Back
           </Button>
         </Stack>
-      </Stack>
+        </>}
+      />
 
       {/* Main Content */}
       <Box sx={{ flex: 1, p: 2, overflowY: "auto" }}>

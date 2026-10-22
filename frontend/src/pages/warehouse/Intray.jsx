@@ -1,8 +1,9 @@
+import PageHeader from "../../components/PageHeader";
 import React, { useState } from "react";
-import { ArrowLeft, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import useCompanyOptions from "../../utils/useCompanyOptions";
-import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, alpha } from "@mui/material";
+import { Box, Stack, Typography, TextField, MenuItem, Button, alpha } from "@mui/material";
 import { muiFieldSx } from "../../theme/formControlSizes";
 
 // Mock data structure for the list
@@ -84,17 +85,18 @@ const Intray = () => {
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "background.default", color: "text.primary" }}>
       {/* --- Header Section --- */}
-      <Stack direction="row" sx={{ alignItems: "center", px: 2, py: 1, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
-        <IconButton aria-label="Back" onClick={handleBackClick} sx={{ mr: 1.5, color: "text.secondary" }}>
-          <ArrowLeft size={16} />
-        </IconButton>
-        <Typography component="h1" sx={{ fontSize: 12.25, fontWeight: 600 }}>
+      <PageHeader
+        onBack={handleBackClick}
+        backLabel="Back"
+        title={<>
+          <Typography component="span">
           Intray
           <Box component="span" sx={{ fontSize: 12.25, fontWeight: 400, color: "text.secondary", ml: 1 }}>
             | {entries.length} Entries
           </Box>
         </Typography>
-      </Stack>
+        </>}
+      />
 
       {/* --- Filters Section --- */}
       <Box sx={{ p: 2, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider" }}>

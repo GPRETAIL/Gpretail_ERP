@@ -1,8 +1,9 @@
+import PageHeader from "../../components/PageHeader";
 import React, { useState } from "react";
-import { ArrowLeft, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import useCompanyOptions from "../../utils/useCompanyOptions";
-import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, Radio, alpha } from "@mui/material";
+import { Box, Stack, Typography, TextField, MenuItem, Button, Radio, alpha } from "@mui/material";
 import { muiFieldSx } from "../../theme/formControlSizes";
 
 // Reusable SelectInput helper component (simplified)
@@ -129,22 +130,20 @@ const StockOutwardSearchPage = () => {
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "background.default", color: "text.primary" }}>
       {/* --- Header Section (Back/Search) --- */}
-      <Stack
-        direction="row"
-        sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1.5, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1, position: "sticky", top: 0, zIndex: 10 }}
-      >
-        <Stack direction="row" sx={{ alignItems: "center" }}>
-          <IconButton onClick={handleBackClick} aria-label="Back" sx={{ mr: 1.5, color: "text.secondary" }}>
-            <ArrowLeft size={16} />
-          </IconButton>
-          <Typography component="h1" sx={{ fontSize: 12.25, fontWeight: 600 }}>
+      <PageHeader
+        onBack={handleBackClick}
+        backLabel="Back"
+        title={<>
+          <Typography component="span">
             Warehouse / Stock Outward Search
           </Typography>
-        </Stack>
-        <Button onClick={handleSearch} className="glass-btn glass-btn-primary" startIcon={<Search size={16} />}>
+        </>}
+        actions={<>
+          <Button onClick={handleSearch} className="glass-btn glass-btn-primary" startIcon={<Search size={16} />}>
           Search
         </Button>
-      </Stack>
+        </>}
+      />
 
       {/* --- Filters Section --- */}
       <Box sx={{ p: 2, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider" }}>

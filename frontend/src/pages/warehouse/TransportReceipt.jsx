@@ -1,13 +1,14 @@
+import PageHeader from "../../components/PageHeader";
 import useResetOnChange from "../../hooks/useResetOnChange";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Save, Search } from "lucide-react";
+import { Save, Search } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../../api/axios";
 import Toast from "../../components/Toast";
 import PageSkeleton from "../../components/PageSkeleton";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import AsyncSearchSelect from "../../components/AsyncSearchSelect";
-import { Box, Stack, Typography, TextField, IconButton, Button, Checkbox, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
+import { Box, Stack, Typography, TextField, Button, Checkbox, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
 import { muiFieldSx } from "../../theme/formControlSizes";
 
 const SKY = "#0284c7";
@@ -284,20 +285,19 @@ const TransportReceipt = () => {
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "background.default", display: "flex", flexDirection: "column" }}>
-      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1.25, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
-        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-          <IconButton onClick={() => navigate(-1)} aria-label="Back" sx={{ color: "text.secondary" }}>
-            <ArrowLeft size={16} />
-          </IconButton>
+      <PageHeader
+        onBack={() => navigate(-1)}
+        backLabel="Back"
+        title={<>
           <Breadcrumbs
-            sx={{ fontSize: 12.25, fontWeight: 600 }}
             items={[
               { label: "Warehouse", onClick: () => navigate("/warehouse") },
               { label: "Transport Receipt" },
             ]}
           />
-        </Stack>
-        <Stack direction="row" spacing={1} sx={{ fontSize: 12.25 }}>
+        </>}
+        actions={<>
+          <Stack direction="row" spacing={1} sx={{ fontSize: 12.25 }}>
           <Button onClick={() => persistReceipt(false)} disabled={saving} className="glass-btn glass-btn-success" startIcon={<Save size={16} />} sx={{ opacity: saving ? 0.5 : 1 }}>
             {saving ? "Saving..." : "Save"}
           </Button>
@@ -308,7 +308,8 @@ const TransportReceipt = () => {
             Search
           </Button>
         </Stack>
-      </Stack>
+        </>}
+      />
 
       <Stack direction="row" spacing={2} sx={{ flex: 1, p: 2, overflow: "hidden" }}>
         <Box sx={{ width: "30rem", maxWidth: "34%", minWidth: 300, bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "7px", boxShadow: 1, p: 2, overflowY: "auto" }}>

@@ -1,8 +1,9 @@
+import PageHeader from "../../components/PageHeader";
 import React, { useState } from "react";
-import { ArrowLeft, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import useCompanyOptions from "../../utils/useCompanyOptions";
-import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, alpha } from "@mui/material";
+import { Box, Stack, Typography, TextField, MenuItem, Button, alpha } from "@mui/material";
 import { muiFieldSx } from "../../theme/formControlSizes";
 
 // Mock Data for Intray results
@@ -120,22 +121,20 @@ const BarcodeGenerationSearch = () => {
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "background.default", display: "flex", flexDirection: "column" }}>
       {/* --- Header Section --- */}
-      <Stack
-        direction="row"
-        sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1.5, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1, position: "sticky", top: 0, zIndex: 10 }}
-      >
-        <Stack direction="row" sx={{ alignItems: "center" }}>
-          <IconButton onClick={() => navigate(-1)} aria-label="Back" sx={{ mr: 1.5, color: "text.secondary" }}>
-            <ArrowLeft size={16} />
-          </IconButton>
-          <Typography component="h1" sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>
+      <PageHeader
+        onBack={() => navigate(-1)}
+        backLabel="Back"
+        title={<>
+          <Typography component="span" sx={{
+  color: "text.primary"
+}}>
             Intray
             <Box component="span" sx={{ fontSize: 12.25, fontWeight: 400, color: "text.secondary", ml: 1 }}>
               | {results.length} Entries
             </Box>
           </Typography>
-        </Stack>
-      </Stack>
+        </>}
+      />
 
       {/* --- Main Filter Row --- */}
       <Box sx={{ p: 2, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider" }}>

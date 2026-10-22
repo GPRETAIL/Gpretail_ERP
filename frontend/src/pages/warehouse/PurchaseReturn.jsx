@@ -1,6 +1,7 @@
+import PageHeader from "../../components/PageHeader";
 import useResetOnChange from "../../hooks/useResetOnChange";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Search, Save, Trash2 } from "lucide-react";
+import { Search, Save, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import api from "../../api/axios";
@@ -891,24 +892,19 @@ const PurchaseReturn = () => {
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "background.default", display: "flex", flexDirection: "column" }}>
-      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1.5, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
-        <Stack direction="row" sx={{ alignItems: "center" }}>
-          <Button
-            onClick={() => navigate(-1)}
-            aria-label="Back"
-            sx={{ minWidth: "auto", mr: 1.5, p: 0.5, color: "text.secondary" }}
-          >
-            <ArrowLeft size={16} />
-          </Button>
+      <PageHeader
+        onBack={() => navigate(-1)}
+        backLabel="Back"
+        title={<>
           <Breadcrumbs
-            sx={{ fontSize: 12.25, fontWeight: 600 }}
             items={[
               { label: "Warehouse", onClick: () => navigate("/warehouse") },
               { label: "Purchase Return" },
             ]}
           />
-        </Stack>
-        <Stack direction="row" spacing={1} sx={{ fontSize: 12.25 }}>
+        </>}
+        actions={<>
+          <Stack direction="row" spacing={1} sx={{ fontSize: 12.25 }}>
           <Button onClick={() => saveReturn(false)} disabled={saving} className="glass-btn glass-btn-success" startIcon={<Save size={16} />} sx={{ opacity: saving ? 0.6 : 1 }}>
             Return & Save
           </Button>
@@ -919,7 +915,8 @@ const PurchaseReturn = () => {
             Search
           </Button>
         </Stack>
-      </Stack>
+        </>}
+      />
 
       <Stack direction="row" spacing={1} sx={{ flex: 1, p: 2, overflowY: "auto" }}>
         <Stack spacing={2} sx={{ width: "25%" }}>

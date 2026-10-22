@@ -1,13 +1,14 @@
+import PageHeader from "../../components/PageHeader";
 import useAsyncQuery from "../../hooks/useAsyncQuery";
 import SearchGridPanel from "../../components/SearchGridPanel";
 import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
 import { useCallback, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, LogOut, Pencil, PlusCircle, Save, Search, Store, Trash2 } from "lucide-react";
+import { LogOut, Pencil, PlusCircle, Save, Search, Store, Trash2 } from "lucide-react";
 import { toast } from "react-toastify";
 import { alpha } from "@mui/material/styles";
-import { Box, Button, Checkbox, FormControlLabel, IconButton, Stack, Typography } from "@mui/material";
+import { Box, Button, Checkbox, FormControlLabel, Stack, Typography } from "@mui/material";
 import api from "../../api/axios";
 import { apiErrorMessage } from "../../utils/apiErrorMessage";
 import { canSwitchStores } from "../../utils/accessControl";
@@ -620,21 +621,19 @@ const UserAccess = () => {
 
   return (
     <Box className="master-responsive" sx={{ display: "flex", height: "100%", minHeight: 0, flexDirection: "column", bgcolor: "background.default", color: "text.primary" }}>
-      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", bgcolor: "background.paper", px: 2, py: 1, boxShadow: 1 }}>
-        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-          <IconButton size="small" onClick={handleBackClick} sx={{ color: "text.secondary" }} aria-label="Back">
-            <ArrowLeft size={16} />
-          </IconButton>
+      <PageHeader
+        onBack={handleBackClick}
+        backLabel="Back"
+        title={<>
           <Breadcrumbs
-            sx={{ fontSize: 13, fontWeight: 600 }}
             items={[
               { label: "User Access", onClick: () => navigate("/user-access") },
               { label: entityTitle },
             ]}
           />
-        </Stack>
-
-        <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>
+        </>}
+        actions={<>
+          <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>
           <Button className="topbar-action-btn topbar-action-new" onClick={handleNew} type="button">
             <PlusCircle size={16} style={{ marginRight: 4 }} /> New
           </Button>
@@ -656,7 +655,8 @@ const UserAccess = () => {
             <Search size={16} style={{ marginRight: 4 }} /> Search
           </Button>
         </Stack>
-      </Stack>
+        </>}
+      />
 
       <Box sx={{ minHeight: 0, flex: 1, p: showSearchPage ? 0.75 : 2 }}>
         {showSearchPage ? (

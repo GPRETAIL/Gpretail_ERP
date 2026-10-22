@@ -1,6 +1,7 @@
+import PageHeader from "../../components/PageHeader";
 import useResetOnChange from "../../hooks/useResetOnChange";
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { Save, Plus, X, ArrowLeft, Search, ChevronDown, Pencil, Trash2, Eye } from "lucide-react";
+import { Save, Plus, X, Search, ChevronDown, Pencil, Trash2, Eye } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import api from "../../api/axios";
@@ -2541,20 +2542,18 @@ const DirectPurchase = () => {
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "background.default", display: "flex", flexDirection: "column" }}>
-      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
-        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-          <IconButton onClick={() => navigate("/warehouse")} sx={{ color: "text.secondary" }}>
-            <ArrowLeft size={16} />
-          </IconButton>
+      <PageHeader
+        onBack={() => navigate("/warehouse")}
+        title={<>
           <Breadcrumbs
-            sx={{ fontSize: 12.25, fontWeight: 600 }}
             items={[
               { label: "Warehouse", onClick: () => navigate("/warehouse") },
               { label: "Direct Purchase" },
             ]}
           />
-        </Stack>
-        <Stack direction="row" spacing={1} sx={{ alignItems: "center", fontSize: 12.25 }}>
+        </>}
+        actions={<>
+          <Stack direction="row" spacing={1} sx={{ alignItems: "center", fontSize: 12.25 }}>
           <Button onClick={handleNew} className="glass-btn glass-btn-secondary">New</Button>
           <Button onClick={handleOpenQuickAttribute} className="glass-btn glass-btn-secondary" sx={{ display: "flex", alignItems: "center" }}>
             <Plus size={16} style={{marginRight: 4}} /> Attribute
@@ -2567,7 +2566,8 @@ const DirectPurchase = () => {
             <Search size={16} style={{marginRight: 4}} /> Search
           </Button>
         </Stack>
-      </Stack>
+        </>}
+      />
 
       {/* Main Content */}
       <Stack direction="row" sx={{ flex: 1, overflow: "hidden" }}>

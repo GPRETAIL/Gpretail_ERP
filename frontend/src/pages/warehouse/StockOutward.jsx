@@ -1,5 +1,6 @@
+import PageHeader from "../../components/PageHeader";
 import React, { useState } from "react";
-import { ArrowLeft, Search, Save, Plus, X } from "lucide-react";
+import { Search, Save, Plus, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import useCompanyOptions from "../../utils/useCompanyOptions";
 import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, alpha } from "@mui/material";
@@ -61,19 +62,18 @@ const StockOutward = () => {
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "background.default", display: "flex", flexDirection: "column" }}>
       {/* --- Header & Action Bar --- */}
-      <Stack
-        direction="row"
-        sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1.5, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1, position: "sticky", top: 0, zIndex: 10 }}
-      >
-        <Stack direction="row" sx={{ alignItems: "center" }}>
-          <IconButton onClick={handleBackClick} aria-label="Back" sx={{ mr: 1.5, color: "text.secondary" }}>
-            <ArrowLeft size={16} />
-          </IconButton>
-          <Typography component="h1" sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>
+      <PageHeader
+        onBack={handleBackClick}
+        backLabel="Back"
+        title={<>
+          <Typography component="span" sx={{
+  color: "text.primary"
+}}>
             Warehouse / Stock Outward
           </Typography>
-        </Stack>
-        <Stack direction="row" spacing={1} sx={{ fontSize: 12.25 }}>
+        </>}
+        actions={<>
+          <Stack direction="row" spacing={1} sx={{ fontSize: 12.25 }}>
           <Typography sx={{ fontSize: 12.25, fontWeight: 500, color: "success.main", alignSelf: "center" }}>
             Last Saved
           </Typography>
@@ -87,7 +87,8 @@ const StockOutward = () => {
             Search
           </Button>
         </Stack>
-      </Stack>
+        </>}
+      />
 
       {/* --- Main Content Area (Form & Grids) --- */}
       <Box sx={{ flex: 1, p: 2, overflowY: "auto" }}>

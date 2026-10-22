@@ -1,9 +1,10 @@
+import PageHeader from "../../components/PageHeader";
 import useAsyncQuery from "../../hooks/useAsyncQuery";
 import React, { useCallback, useState } from "react";
-import { ArrowLeft, Pencil } from "lucide-react";
+import { Pencil } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
-import { Box, Button, IconButton, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
+import { Box, Button, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
 import api from "../../api/axios";
 import Breadcrumbs from "../../components/Breadcrumbs";
 
@@ -51,24 +52,23 @@ const CrmCustomerProfile = () => {
 
   return (
     <Box className="master-responsive" sx={{ display: "flex", flexDirection: "column", height: "100%", bgcolor: "background.default", color: "text.primary", fontSize: 11 }}>
-      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1, flexShrink: 0 }}>
-        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-          <IconButton size="small" onClick={() => navigate(-1)} sx={{ color: "text.secondary" }}>
-            <ArrowLeft size={16} />
-          </IconButton>
+      <PageHeader
+        onBack={() => navigate(-1)}
+        title={<>
           <Breadcrumbs
-            sx={{ fontSize: 13, fontWeight: 600 }}
             items={[
               { label: "CRM", onClick: () => navigate("/crm") },
               { label: "Customer", onClick: () => navigate("/crm/customer") },
               { label: "Profile" },
             ]}
           />
-        </Stack>
-        <Button className="glass-btn glass-btn-primary" onClick={() => navigate(`/crm/customer/${id}`)}>
+        </>}
+        actions={<>
+          <Button className="glass-btn glass-btn-primary" onClick={() => navigate(`/crm/customer/${id}`)}>
           <Pencil size={12} style={{marginRight: 4}} /> Edit
         </Button>
-      </Stack>
+        </>}
+      />
 
       <Box sx={{ flex: 1, p: 2, minHeight: 0, overflow: "auto" }}>
         {loading ? (

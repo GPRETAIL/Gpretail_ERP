@@ -1,9 +1,10 @@
+import PageHeader from "../../components/PageHeader";
 import useAsyncQuery from "../../hooks/useAsyncQuery";
 import React, { useCallback, useEffect, useState } from "react";
-import { ArrowLeft, Save } from "lucide-react";
+import { Save } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
-import { Box, Button, IconButton, Stack, Typography } from "@mui/material";
+import { Box, Button, Stack, Typography } from "@mui/material";
 import api from "../../api/axios";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import { TextInput, SelectInput, CheckboxInput } from "../../components/CustomInputs";
@@ -197,21 +198,19 @@ const CrmCustomerForm = () => {
 
   return (
     <Box className="master-responsive" sx={{ display: "flex", flexDirection: "column", height: "100%", bgcolor: "background.default", color: "text.primary" }}>
-      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1, flexShrink: 0 }}>
-        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-          <IconButton size="small" onClick={() => navigate(-1)} sx={{ color: "text.secondary" }}>
-            <ArrowLeft size={16} />
-          </IconButton>
+      <PageHeader
+        onBack={() => navigate(-1)}
+        title={<>
           <Breadcrumbs
-            sx={{ fontSize: 13, fontWeight: 600 }}
             items={[
               { label: "CRM", onClick: () => navigate("/crm") },
               { label: "Customer", onClick: () => navigate("/crm/customer") },
               { label: isEdit ? "Edit" : "New" },
             ]}
           />
-        </Stack>
-        <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>
+        </>}
+        actions={<>
+          <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>
           <Button
             className="glass-btn glass-btn-success"
             onClick={handleSave}
@@ -220,7 +219,8 @@ const CrmCustomerForm = () => {
             <Save size={12} style={{marginRight: 4}} /> {saving ? "Saving..." : "Save"}
           </Button>
         </Stack>
-      </Stack>
+        </>}
+      />
 
       <Box sx={{ flex: 1, p: 2, minHeight: 0 }}>
         <Stack sx={{ bgcolor: "background.paper", boxShadow: 3, borderRadius: "7px", border: "1px solid", borderColor: "divider", width: "100%", height: "100%", minHeight: 0, overflow: "auto", px: 2.5, py: 2 }}>

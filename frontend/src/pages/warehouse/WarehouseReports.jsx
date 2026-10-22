@@ -1,14 +1,15 @@
+import PageHeader from "../../components/PageHeader";
 import useStoreDisplayName from "../../hooks/useStoreDisplayName";
 import SearchGridPanel from "../../components/SearchGridPanel";
 import useSearchGrid from "../../hooks/useSearchGrid";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft } from "lucide-react";
+
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import api from "../../api/axios";
 import FilterableDataTable from "../../components/FilterableDataTable";
 import Breadcrumbs from "../../components/Breadcrumbs";
-import { Box, Stack, Typography, IconButton, Button, alpha } from "@mui/material";
+import { Box, Stack, Typography, Button, alpha } from "@mui/material";
 
 const formatDate = (dateStr) => {
   if (!dateStr) return "-";
@@ -1077,13 +1078,11 @@ const WarehouseReports = () => {
 
   return (
     <Box sx={{ height: "100%", minHeight: 0, bgcolor: "background.default", color: "text.primary", display: "flex", flexDirection: "column" }}>
-      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", bgcolor: "background.paper", px: 2, py: 1, boxShadow: 1 }}>
-        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-          <IconButton onClick={() => navigate("/warehouse")} aria-label="Back to warehouse" sx={{ color: "text.secondary" }}>
-            <ArrowLeft size={16} />
-          </IconButton>
+      <PageHeader
+        onBack={() => navigate("/warehouse")}
+        backLabel="Back to warehouse"
+        title={<>
           <Breadcrumbs
-            sx={{ fontSize: { xs: 12.25, md: 14 }, fontWeight: 600 }}
             items={
               selectedReport
                 ? [
@@ -1097,14 +1096,15 @@ const WarehouseReports = () => {
                   ]
             }
           />
-        </Stack>
-
-        {selectedReport ? (
+        </>}
+        actions={<>
+          {selectedReport ? (
           <Box sx={{ display: { xs: "none", md: "block" }, fontSize: 10.5, color: "text.secondary" }}>
             {reportLoading ? "Loading report..." : `${reportRows.length} row(s)`}
           </Box>
         ) : null}
-      </Stack>
+        </>}
+      />
 
       <Box sx={{ flex: 1, minHeight: 0, overflow: selectedReport ? "hidden" : "auto", p: selectedReport ? 0.75 : 2 }}>
         {selectedReport ? (

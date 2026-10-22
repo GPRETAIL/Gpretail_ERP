@@ -7,7 +7,7 @@ import { erpActionSx } from "../theme/erpUi";
 // CrmCustomer.jsx, InvoiceSearchPage.jsx) -- one place to fix instead of ~90 near-identical Stacks.
 // `title` can be a plain string or a composed node (e.g. a breadcrumb) -- this component only owns
 // the shell, not breadcrumb structure, so callers keep full control of what the title contains.
-const PageHeader = ({ title, onBack, actions }) => (
+const PageHeader = ({ title, onBack, actions, backLabel = "Back" }) => (
   <Stack
     direction="row"
     sx={{
@@ -19,6 +19,7 @@ const PageHeader = ({ title, onBack, actions }) => (
       minWidth: 0,
       px: 2,
       py: 0.75,
+      bgcolor: "background.paper",
       borderBottom: 1,
       borderColor: "divider",
       boxShadow: "0 1px 2px 0 rgba(0,0,0,0.05)", // matches Tailwind's shadow-sm exactly
@@ -27,7 +28,7 @@ const PageHeader = ({ title, onBack, actions }) => (
   >
     <Stack direction="row" spacing={1} sx={{ alignItems: "center", minWidth: 0 }}>
       {onBack && (
-        <IconButton size="small" onClick={onBack} aria-label="Back" sx={{ color: "text.secondary" }}>
+        <IconButton size="small" onClick={onBack} aria-label={backLabel} sx={{ color: "text.secondary" }}>
           <ArrowLeft size={16} />
         </IconButton>
       )}

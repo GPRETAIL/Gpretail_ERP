@@ -1,10 +1,11 @@
+import PageHeader from "../../components/PageHeader";
 import useCounterAssignmentPrompt from "../../hooks/useCounterAssignmentPrompt";
 import useStoreDisplayName from "../../hooks/useStoreDisplayName";
 import { masterSearchAreaSx } from "../../theme/erpUi";
 import SearchGridPanel from "../../components/SearchGridPanel";
 import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, FileText, Pencil, PlusCircle, Printer, Save, Search, Trash2, UserRound, X } from "lucide-react";
+import { FileText, Pencil, PlusCircle, Printer, Save, Search, Trash2, UserRound, X } from "lucide-react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
@@ -50,6 +51,8 @@ import {
   shouldShowSalesReceiptDiscountColumn as _shouldShowSalesReceiptDiscountColumn,
   wrapSalesReceiptText as _wrapSalesReceiptText,
 } from "../../utils/salesReceiptCustomization";
+
+// Matches config('pagination.resources.pos_sales.groupable_columns') on the backend.
 
 // Matches config('pagination.resources.pos_sales.groupable_columns') on the backend.
 const { onFetchGroupSummaries: fetchPosSaleGroupSummaries, onFetchGroupRows: fetchPosSaleGroupRows } =
@@ -2981,17 +2984,15 @@ const POSSales = () => {
 
   return (
     <Box className="pos-sale-page" sx={{ minHeight: "100%", bgcolor: "background.default", color: "text.primary", display: "flex", flexDirection: "column", ...(showSearchPage ? { height: "100%", minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" } : {}) }}>
-      <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", px: 2, py: 1, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
-        <Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
-          <IconButton
-            onClick={() => navigate("/sales")}
-            size="small"
-            aria-label="Back to sales"
-            sx={{ color: "text.secondary", "&:hover": { color: "text.primary" } }}
-          >
-            <ArrowLeft size={16} />
-          </IconButton>
-          <Typography component="h1" className="pos-sale-page-title" sx={{ fontSize: 12.25, fontWeight: 600, display: "flex", alignItems: "center", gap: 0.5 }}>
+      <PageHeader
+        onBack={() => navigate("/sales")}
+        backLabel="Back to sales"
+        title={<>
+          <Typography component="span" className="pos-sale-page-title" sx={{
+  display: "flex",
+  alignItems: "center",
+  gap: 0.5
+}}>
             <Breadcrumbs
               items={[
                 { label: "Sales", onClick: () => navigate("/sales") },
@@ -2999,9 +3000,9 @@ const POSSales = () => {
               ]}
             />
           </Typography>
-        </Stack>
-
-        <Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
+        </>}
+        actions={<>
+          <Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
           {!showSearchPage && (
             <>
               <Button
@@ -3067,7 +3068,8 @@ const POSSales = () => {
             {showSearchPage ? "Back" : "Search"}
           </Button>
         </Stack>
-      </Stack>
+        </>}
+      />
 
       <Box sx={showSearchPage ? masterSearchAreaSx : { flex: 1, minHeight: 0, p: 2, display: "flex", flexDirection: "column", gap: 2, pb: { xs: 14, xl: 2 } }}>
         {showSearchPage ? renderSearchPage() : renderEntryPage()}

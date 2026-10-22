@@ -1,11 +1,12 @@
+import PageHeader from "../../components/PageHeader";
 import SearchGridPanel from "../../components/SearchGridPanel";
 import useSearchGrid from "../../hooks/useSearchGrid";
 import React, { useState, useMemo } from "react";
 import { MagnifyingGlassIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
-import { ArrowLeft } from "lucide-react";
+
 import { useNavigate } from "react-router-dom";
 import { alpha } from "@mui/material/styles";
-import { Box, Button, IconButton, Stack, TextField, Typography } from "@mui/material";
+import { Box, Button, Stack, TextField, Typography } from "@mui/material";
 import api from "../../api/axios";
 import StoreFilterSelect from "../../components/StoreFilterSelect";
 import FilterableDataTable from "../../components/FilterableDataTable";
@@ -143,20 +144,18 @@ const SalesComparer = () => {
 
   return (
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column", bgcolor: "background.default", color: "text.primary" }}>
-      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
-        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-          <IconButton size="small" onClick={handleBackClick} sx={{ color: "text.secondary" }} aria-label="Back to analytical">
-            <ArrowLeft size={16} />
-          </IconButton>
+      <PageHeader
+        onBack={handleBackClick}
+        backLabel="Back to analytical"
+        title={<>
           <Breadcrumbs
-            sx={{ fontSize: 13, fontWeight: 600 }}
             items={[
               { label: "Analytical", onClick: handleBackClick },
               { label: "Sales Comparer" },
             ]}
           />
-        </Stack>
-      </Stack>
+        </>}
+      />
 
       <Stack direction={{ xs: "column", lg: "row" }} spacing={1} sx={{ flex: 1, minHeight: 0, minWidth: 0, p: 0.75 }}>
         {/* ─── LEFT PANEL: Field selector ──────────────────────────────────── */}

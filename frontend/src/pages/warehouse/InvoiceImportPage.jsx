@@ -1,22 +1,7 @@
+import PageHeader from "../../components/PageHeader";
 import React, { useState, useEffect, useMemo, useCallback as _useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  ArrowLeft,
-  CheckCircle2,
-  FileText,
-  Image as ImageIcon,
-  Loader2,
-  Package,
-  Plus,
-  Printer,
-  Receipt,
-  RotateCcw,
-  Sparkles,
-  Tag,
-  Truck,
-  UploadCloud,
-  X,
-} from "lucide-react";
+import { CheckCircle2, FileText, Image as ImageIcon, Loader2, Package, Plus, Printer, Receipt, RotateCcw, Sparkles, Tag, Truck, UploadCloud, X } from "lucide-react";
 import {
   Box,
   Stack,
@@ -730,62 +715,41 @@ export default function InvoiceImportPage() {
       }}
     >
       {/* Top Navigation Bar */}
-      <Stack
-        direction={{ xs: "column", sm: "row" }}
-        spacing={1.5}
-        sx={{
-          alignItems: { xs: "stretch", sm: "center" },
-          justifyContent: "space-between",
-          mb: { xs: 2, md: 2.5 },
-        }}
-      >
-        <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", minWidth: 0 }}>
-          <IconButton
-            onClick={() => navigate("/warehouse")}
-            aria-label="Back to Warehouse"
-            sx={{
-              height: { xs: 34, sm: 38 },
-              width: { xs: 34, sm: 38 },
-              flexShrink: 0,
-              border: "1px solid",
-              borderColor: "divider",
-              borderRadius: "8px",
-              bgcolor: "background.paper",
-            }}
-          >
-            <ArrowLeft size={16} />
-          </IconButton>
+      <PageHeader
+        onBack={() => navigate("/warehouse")}
+        backLabel="Back to Warehouse"
+        title={<>
           <Box sx={{ minWidth: 0 }}>
             <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
               <Sparkles size={18} style={{ color: INDIGO, flexShrink: 0 }} />
               <Typography
-                component="h1"
+                component="span"
                 sx={{
-                  fontSize: { xs: 16, sm: 18, md: 22 },
-                  fontWeight: 700,
-                  color: "text.primary",
-                  lineHeight: 1.25,
-                }}
+  color: "text.primary",
+  lineHeight: 1.25
+}}
               >
                 AI Purchase Invoice Inwarding
               </Typography>
             </Stack>
-            <Typography
+            <Typography component="span"
               sx={{
-                mt: 0.25,
-                fontSize: { xs: 11, sm: 12.5 },
-                color: "text.secondary",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: { xs: "nowrap", sm: "normal" },
-              }}
+  mt: 0.25,
+  color: "text.secondary",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: {
+    xs: "nowrap",
+    sm: "normal"
+  }
+}}
             >
               Extract invoice → Manual review & product check → Automated Transport, Invoice & Inventory Entry → Barcode Generation
             </Typography>
           </Box>
-        </Stack>
-
-        <Stack
+        </>}
+        actions={<>
+          <Stack
           direction="row"
           spacing={1}
           sx={{
@@ -815,7 +779,8 @@ export default function InvoiceImportPage() {
             sx={{ fontWeight: 600, fontSize: { xs: 10.5, sm: 11 } }}
           />
         </Stack>
-      </Stack>
+        </>}
+      />
 
       {/* Error Banner */}
       {error && (

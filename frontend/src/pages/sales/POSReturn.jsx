@@ -1,9 +1,10 @@
+import PageHeader from "../../components/PageHeader";
 import useStoreDisplayName from "../../hooks/useStoreDisplayName";
 import { masterSearchAreaSx } from "../../theme/erpUi";
 import SearchGridPanel from "../../components/SearchGridPanel";
 import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Printer, Save, Search, Trash2 } from "lucide-react";
+import { Printer, Save, Search, Trash2 } from "lucide-react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
@@ -1668,25 +1669,19 @@ const POSReturn = () => {
 
   return (
     <Box sx={{ minHeight: "100%", bgcolor: "background.default", color: "text.primary", display: "flex", flexDirection: "column", ...(showSearchPage ? { height: "100%", minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" } : {}) }}>
-      <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", px: 2, py: 1, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
-        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-          <IconButton
-            onClick={showSearchPage ? () => setShowSearchPage(false) : () => navigate("/sales")}
-            sx={{ color: "text.secondary" }}
-            aria-label={showSearchPage ? "Back to POS return entry" : "Back to sales"}
-          >
-            <ArrowLeft size={16} />
-          </IconButton>
+      <PageHeader
+        onBack={showSearchPage ? () => setShowSearchPage(false) : () => navigate("/sales")}
+        backLabel={showSearchPage ? "Back to POS return entry" : "Back to sales"}
+        title={<>
           <Breadcrumbs
-            sx={{ fontSize: 12.25, fontWeight: 600 }}
             items={[
               { label: "Sales", onClick: () => navigate("/sales") },
               { label: "POS Return" },
             ]}
           />
-        </Stack>
-
-        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+        </>}
+        actions={<>
+          <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           <UploadImportButton
             endpoint="/pos-returns/bulk"
             fieldConfig={POS_RETURN_IMPORT_CONFIG}
@@ -1709,7 +1704,8 @@ const POSReturn = () => {
             {showSearchPage ? "Back" : "Search"}
           </Button>
         </Stack>
-      </Stack>
+        </>}
+      />
 
       <Stack spacing={2} sx={showSearchPage ? masterSearchAreaSx : { flex: 1, minHeight: 0, p: 2, pb: { xs: 7, xl: 2 }, display: "flex", flexDirection: "column" }}>
         {showSearchPage ? renderSearchPage() : renderEntryPage()}

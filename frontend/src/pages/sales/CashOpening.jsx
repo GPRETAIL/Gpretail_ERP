@@ -1,9 +1,10 @@
+import PageHeader from "../../components/PageHeader";
 import useAsyncQuery from "../../hooks/useAsyncQuery";
 import { masterSearchAreaSx } from "../../theme/erpUi";
 import SearchGridPanel from "../../components/SearchGridPanel";
 import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Save, Search } from "lucide-react";
+import { Save, Search } from "lucide-react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
@@ -433,25 +434,19 @@ const CashOpening = () => {
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "background.default", color: "text.primary", ...(showSearchPage ? { height: "100%", minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" } : {}) }}>
-      <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", px: 2, py: 1, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
-        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-          <Button
-            onClick={showSearchPage ? () => setShowSearchPage(false) : () => navigate("/sales")}
-            sx={{ color: "text.secondary", minWidth: 0, p: 0.5 }}
-            aria-label={showSearchPage ? "Back to cash opening entry" : "Back to sales"}
-          >
-            <ArrowLeft size={16} />
-          </Button>
+      <PageHeader
+        onBack={showSearchPage ? () => setShowSearchPage(false) : () => navigate("/sales")}
+        backLabel={showSearchPage ? "Back to cash opening entry" : "Back to sales"}
+        title={<>
           <Breadcrumbs
-            sx={{ fontSize: 12.25, fontWeight: 600 }}
             items={[
               { label: "Sales", onClick: () => navigate("/sales") },
               { label: "Cash Opening" },
             ]}
           />
-        </Stack>
-
-        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+        </>}
+        actions={<>
+          <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           <Button
             onClick={handleSave}
             disabled={saving || showSearchPage || loadingMeta}
@@ -470,7 +465,8 @@ const CashOpening = () => {
             {showSearchPage ? "Back" : "Search"}
           </Button>
         </Stack>
-      </Stack>
+        </>}
+      />
 
       <Stack spacing={2} sx={showSearchPage ? masterSearchAreaSx : { p: 2, pb: 7 }}>
         {showSearchPage ? renderSearchPage() : renderEntryPage()}

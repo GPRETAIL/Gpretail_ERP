@@ -1,9 +1,10 @@
+import PageHeader from "../../components/PageHeader";
 import useAsyncQuery from "../../hooks/useAsyncQuery";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, PlusCircle, Printer, Save, Search, Trash2, X } from "lucide-react";
+import { PlusCircle, Printer, Save, Search, Trash2, X } from "lucide-react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
-import { alpha as _alpha } from "@mui/material/styles";
+
 import { Box, Button, Checkbox, IconButton, Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from "@mui/material";
 import api from "../../api/axios";
 import SearchableSelect from "../../components/SearchableSelect";
@@ -794,22 +795,19 @@ const CrmCustomerOrderForm = () => {
       onKeyDown={handleEnterToNextField}
       sx={{ height: "100%", minHeight: 0, bgcolor: "background.default", color: "text.primary", overflow: "hidden", display: "flex", flexDirection: "column", fontSize: 10 }}
     >
-      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 0.5, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
-        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-          <IconButton size="small" onClick={() => navigate(-1)} sx={{ color: "text.secondary" }}>
-            <ArrowLeft size={16} />
-          </IconButton>
+      <PageHeader
+        onBack={() => navigate(-1)}
+        title={<>
           <Breadcrumbs
-            sx={{ fontSize: 13, fontWeight: 600 }}
             items={[
               { label: "CRM", onClick: () => navigate("/crm") },
               { label: "Customer Orders", onClick: () => navigate("/crm/customer-orders") },
               { label: "New" },
             ]}
           />
-        </Stack>
-
-        <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", fontSize: "inherit", fontWeight: 500, color: "text.secondary" }}>
+        </>}
+        actions={<>
+          <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", fontSize: "inherit", fontWeight: 500, color: "text.secondary" }}>
           <Box component="span" sx={{ color: "text.secondary" }}>Order No: <Box component="b">{orderNo}</Box></Box>
           <Button
             className="glass-btn glass-btn-success"
@@ -819,7 +817,8 @@ const CrmCustomerOrderForm = () => {
             <Save size={12} style={{marginRight: 4}} /> {saving ? "Saving..." : "Save"}
           </Button>
         </Stack>
-      </Stack>
+        </>}
+      />
 
       <Box sx={{ flex: 1, minHeight: 0, p: 1, overflow: "hidden" }}>
         <Box sx={{ height: "100%", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1 }}>

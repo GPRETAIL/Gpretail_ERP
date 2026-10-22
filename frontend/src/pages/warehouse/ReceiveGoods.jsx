@@ -1,5 +1,6 @@
+import PageHeader from "../../components/PageHeader";
 import React, { useState } from "react";
-import { ArrowLeft, Search, User } from "lucide-react";
+import { Search, User } from "lucide-react";
 import { Box, Stack, Typography, TextField, IconButton, alpha } from "@mui/material";
 
 const ReceiveGoods = () => {
@@ -64,37 +65,25 @@ const ReceiveGoods = () => {
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "background.default", display: "flex", flexDirection: "column" }}>
       {/* --- Header --- */}
-      <Stack
-        direction="row"
-        sx={{
-          alignItems: "center",
-          justifyContent: "space-between",
-          px: 2,
-          py: 1.5,
-          bgcolor: "background.paper",
-          borderBottom: 1,
-          borderColor: "divider",
-          boxShadow: 1,
-          position: "sticky",
-          top: 0,
-          zIndex: 10,
-        }}
-      >
-        <Stack direction="row" sx={{ alignItems: "center" }}>
-          <IconButton onClick={handleBackClick} aria-label="Back" sx={{ mr: 1.5, color: "text.secondary" }}>
-            <ArrowLeft size={16} />
-          </IconButton>
-          <Typography component="h1" sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>
+      <PageHeader
+        onBack={handleBackClick}
+        backLabel="Back"
+        title={<>
+          <Typography component="span" sx={{
+  color: "text.primary"
+}}>
             Warehouse / Receive Goods
           </Typography>
-        </Stack>
-        <Stack direction="row" spacing={1} sx={{ alignItems: "center", fontSize: 12.25, color: "text.secondary" }}>
+        </>}
+        actions={<>
+          <Stack direction="row" spacing={1} sx={{ alignItems: "center", fontSize: 12.25, color: "text.secondary" }}>
           <User size={20} />
           <Typography component="span" sx={{ fontSize: 12.25, fontWeight: 500 }}>
             User: Admin
           </Typography>
         </Stack>
-      </Stack>
+        </>}
+      />
 
       {/* --- Main Content Area (Input/Search) --- */}
       <Box sx={{ flex: 1, p: 4 }}>

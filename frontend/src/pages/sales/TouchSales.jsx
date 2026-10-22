@@ -1,3 +1,4 @@
+import PageHeader from "../../components/PageHeader";
 import useCounterAssignmentPrompt from "../../hooks/useCounterAssignmentPrompt";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -673,21 +674,22 @@ const TouchSales = () => {
 
   return (
     <Stack sx={{ height: "100%", minHeight: 0, bgcolor: "background.default", color: "text.primary" }}>
-      <Stack direction="row" sx={{ flexShrink: 0, alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", bgcolor: "background.paper", px: { xs: 1.5, sm: 2 }, py: 1, boxShadow: 1 }}>
-        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-          <IconButton onClick={() => navigate("/sales")} sx={{ color: "text.secondary" }} aria-label="Back">
-            <ArrowLeft size={16} />
-          </IconButton>
-          <Typography component="h1" sx={{ fontSize: 12.25, fontWeight: 600 }}>Sales / Touch Sale</Typography>
-        </Stack>
-        <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+      <PageHeader
+        onBack={() => navigate("/sales")}
+        backLabel="Back"
+        title={<>
+          <Typography component="span">Sales / Touch Sale</Typography>
+        </>}
+        actions={<>
+          <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
           <UploadImportButton
             endpoint="/touch-sales/bulk"
             fieldConfig={TOUCH_SALE_IMPORT_CONFIG}
           />
           <Typography sx={{ fontSize: 12.25, color: "text.secondary" }}>Next bill: <Box component="b">{formatSaleBillNo(billNo)}</Box></Typography>
         </Stack>
-      </Stack>
+        </>}
+      />
 
       <Stack sx={{ minHeight: 0, flex: 1, p: { xs: 1.5, sm: 2 } }}>
         <Box sx={{ display: "grid", height: "100%", minHeight: 0, gridTemplateColumns: { xs: "1fr", lg: "repeat(12, 1fr)" }, gap: { xs: 1.5, sm: 2 } }}>

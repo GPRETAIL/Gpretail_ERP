@@ -1,6 +1,7 @@
+import PageHeader from "../../components/PageHeader";
 import useAsyncQuery from "../../hooks/useAsyncQuery";
 import React, { useCallback, useMemo, useState } from "react";
-import { ArrowLeft, CheckCircle2, Eye, RotateCcw, Search, X } from "lucide-react";
+import { CheckCircle2, Eye, RotateCcw, Search, X } from "lucide-react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
@@ -202,18 +203,13 @@ const ApprovalInbox = () => {
 
   return (
     <Stack spacing={2} sx={{ minHeight: "100vh", bgcolor: "background.default", color: "text.primary" }}>
-      <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", px: 2, py: 1, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
-        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-          <IconButton
-            onClick={() => navigate(-1)}
-            sx={{ color: "text.secondary" }}
-            aria-label="Back"
-          >
-            <ArrowLeft size={16} />
-          </IconButton>
-          <Typography component="h1" sx={{ fontSize: 12.25, fontWeight: 600 }}>Sales Approval Inbox</Typography>
-        </Stack>
-      </Stack>
+      <PageHeader
+        onBack={() => navigate(-1)}
+        backLabel="Back"
+        title={<>
+          <Typography component="span">Sales Approval Inbox</Typography>
+        </>}
+      />
 
       <Stack spacing={2} sx={{ p: 2, pb: 6 }}>
         <Box sx={{ bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "7px", boxShadow: 1, p: 2 }}>

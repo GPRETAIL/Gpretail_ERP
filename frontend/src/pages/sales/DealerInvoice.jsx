@@ -1,9 +1,10 @@
+import PageHeader from "../../components/PageHeader";
 import useResetOnChange from "../../hooks/useResetOnChange";
 import { masterSearchAreaSx } from "../../theme/erpUi";
 import SearchGridPanel from "../../components/SearchGridPanel";
 import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Pencil, PlusCircle, Save, Search, Trash2 } from "lucide-react";
+import { Pencil, PlusCircle, Save, Search, Trash2 } from "lucide-react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
@@ -1373,25 +1374,19 @@ const DealerInvoice = () => {
 
   return (
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column", overflow: "hidden", bgcolor: "background.default", color: "text.primary", ...(showSearchPage ? { height: "100%", minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" } : {}) }}>
-      <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", px: 2, py: 1, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
-        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-          <IconButton
-            onClick={showSearchPage ? () => setShowSearchPage(false) : () => navigate("/sales")}
-            sx={{ color: "text.secondary" }}
-            aria-label={showSearchPage ? "Back to dealer invoice entry" : "Back to sales"}
-          >
-            <ArrowLeft size={16} />
-          </IconButton>
+      <PageHeader
+        onBack={showSearchPage ? () => setShowSearchPage(false) : () => navigate("/sales")}
+        backLabel={showSearchPage ? "Back to dealer invoice entry" : "Back to sales"}
+        title={<>
           <Breadcrumbs
-            sx={{ fontSize: 12.25, fontWeight: 600 }}
             items={[
               { label: "Sales", onClick: () => navigate("/sales") },
               { label: "Dealer Invoice" },
             ]}
           />
-        </Stack>
-
-        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+        </>}
+        actions={<>
+          <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           <Button
             onClick={handleSave}
             disabled={saving || showSearchPage}
@@ -1411,7 +1406,8 @@ const DealerInvoice = () => {
             {showSearchPage ? "Back" : "Search"}
           </Button>
         </Stack>
-      </Stack>
+        </>}
+      />
 
       <Box sx={showSearchPage ? masterSearchAreaSx : { p: 2, flex: 1, minHeight: 0, overflow: { xs: "auto", xl: "hidden" } }}>
         {showSearchPage ? renderSearchPage() : renderEntryPage()}
