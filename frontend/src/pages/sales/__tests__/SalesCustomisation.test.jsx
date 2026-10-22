@@ -64,69 +64,27 @@ describe("Sales Customisation", () => {
       </Provider>
     );
 
-  it("renders Sales Customisation controls and Printing Mode options", async () => {
+  it("keeps sales behaviour and links to the single receipt editor", async () => {
     renderComponent();
-
-    await waitFor(() => {
-      expect(screen.getByText("Sales Customisation")).toBeDefined();
-      expect(screen.getByText(/Printing Mode/i)).toBeDefined();
-      expect(screen.getByText("Direct / Silent Printing")).toBeDefined();
-      expect(screen.getByText("Browser Default Print (Preview)")).toBeDefined();
-    });
+    await screen.findByText("Sales Customisation");
+    expect(screen.getByText("Sales number reset")).toBeInTheDocument();
+    expect(screen.getByText("POS checkout")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Edit Receipt Format" })).toHaveAttribute("href", "/sales/receipt-formats?section=thermal");
+    expect(screen.queryByText("Receipt Size")).not.toBeInTheDocument();
+    expect(screen.queryByText("Receipt Barcode")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Printing Mode/)).not.toBeInTheDocument();
   });
 
-  it("offers thermal sizes without an A4 size option", async () => {
+  it("sends only sales fields and preserves saved receipt settings", async () => {
+    api.get.mockResolvedValue({ data: { data: { receiptWidthInches: "3.5", thankYouMessage: "Keep this" } } });
     renderComponent();
-    await screen.findByText("Receipt Size");
-    expect(screen.queryByRole("button", { name: /^A4\b/ })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /2\.5/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /4\.0/ })).toBeInTheDocument();
-  });
-
-  it("directs saved A4 layouts to the separate designer without changing their print size", async () => {
-    api.get.mockResolvedValue({ data: { success: true, data: { receiptWidthInches: "A4" } } });
-    renderComponent();
-    expect(await screen.findByRole("link", { name: "Open Receipt A4 Formats" })).toHaveAttribute("href", "/sales/receipt-formats");
-    expect(screen.queryByTitle("A4 invoice preview")).not.toBeInTheDocument();
+    await screen.findByRole("link", { name: "Edit Receipt Format" });
     fireEvent.click(screen.getByText("Save"));
-    await waitFor(() => expect(api.put).toHaveBeenCalledWith("/sales-customization", expect.objectContaining({ receiptWidthInches: "A4" })));
-  });
-
-  it("switches printing mode from Direct to Browser default print preview", async () => {
-    renderComponent();
-
-    await waitFor(() => {
-      expect(screen.getByText("Browser Default Print (Preview)")).toBeDefined();
-    });
-
-    const browserRadio = screen.getByLabelText(/Browser Default Print/i);
-    expect(browserRadio).toBeDefined();
-
-    fireEvent.click(browserRadio);
-    expect(browserRadio.checked).toBe(true);
-  });
-
-  it("saves customization settings including printMode to backend", async () => {
-    renderComponent();
-
-    await waitFor(() => {
-      expect(screen.getByText("Save")).toBeDefined();
-    });
-
-    const browserRadio = screen.getByLabelText(/Browser Default Print/i);
-    fireEvent.click(browserRadio);
-
-    const saveBtn = screen.getByText("Save");
-    fireEvent.click(saveBtn);
-
-    await waitFor(() => {
-      expect(api.put).toHaveBeenCalledWith(
-        "/sales-customization",
-        expect.objectContaining({
-          companyId: "1",
-          printMode: "browser",
-        })
-      );
-    });
+    await waitFor(() => expect(api.put).toHaveBeenCalled());
+    const payload = api.put.mock.calls[0][1];
+    expect(payload.settingsSection).toBe("sales");
+    expect(payload.companyId).toBe("1");
+    expect(payload).not.toHaveProperty("receiptWidthInches");
+    expect(payload).not.toHaveProperty("printMode");
   });
 });

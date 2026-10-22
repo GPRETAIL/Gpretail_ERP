@@ -70,7 +70,8 @@ describe("ReceiptFormatsDesigner", () => {
   it("renders page title, controls, and invoice preview container", () => {
     renderComponent();
 
-    expect(screen.getByText("Invoice & Receipt Print Formats")).toBeInTheDocument();
+    expect(screen.getByText("Print Formats")).toBeInTheDocument();
+    expect(screen.getByText("Document Invoice Formats")).toBeInTheDocument();
     expect(screen.getByText("Test Print")).toBeInTheDocument();
     expect(screen.getByText("Save Format")).toBeInTheDocument();
     expect(screen.getByText("Template Type")).toBeInTheDocument();

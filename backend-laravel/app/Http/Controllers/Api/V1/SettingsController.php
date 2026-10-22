@@ -8,6 +8,7 @@ use App\Models\Store;
 use App\Models\StoreLocalNode;
 use App\Services\RegisteredServerProbe;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class SettingsController extends Controller
 {
@@ -135,6 +136,7 @@ class SettingsController extends Controller
         $storeId = $request->input('companyId') ?? $request->input('company_id');
 
         if ($request->isMethod('post') || $request->isMethod('put')) {
+            $request->validate(['settingsSection' => ['sometimes', 'in:sales,receipt']]);
             if (! $storeId) {
                 return response()->json(['success' => false, 'message' => 'companyId is required'], 422);
             }
@@ -144,13 +146,24 @@ class SettingsController extends Controller
                 return response()->json(['success' => false, 'message' => 'Store not found'], 404);
             }
 
-            $store->update([
-                'receipt_customization' => $request->except(['companyId', 'company_id']),
-            ]);
+            $data = DB::transaction(function () use ($request, $store) {
+                $locked = Store::whereKey($store->id)->lockForUpdate()->firstOrFail();
+                $incoming = $request->except(['companyId', 'company_id', 'settingsSection']);
+                if ($request->has('settingsSection')) {
+                    $salesKeys = ['billNumberReset', 'billNumberOverride', 'settlementNumberReset', 'settlementNumberOverride', 'saleSaveAs', 'posPaymentDialogVisible'];
+                    $receiptKeys = ['showBarcodeOnBill', 'showBarcodeOnReturnSlip', 'receiptCodeType', 'showDiscountOnReceipt', 'discountDisplayMode', 'showTaxTableOnReceipt', 'receiptWidthInches', 'thankYouMessage', 'receiptFontFamily', 'receiptFormat', 'printMode', 'paymentQrMode', 'paymentUpiId', 'paymentQrImageUrl', 'paymentQrSize', 'posReceiptPrintCopies', 'generalFields', 'taxFields', 'productFields'];
+                    $allowed = $request->input('settingsSection') === 'sales' ? $salesKeys : $receiptKeys;
+                    $incoming = array_intersect_key($incoming, array_flip($allowed));
+                    $incoming = array_replace($locked->receipt_customization ?? [], $incoming);
+                }
+                $locked->update(['receipt_customization' => $incoming]);
+                return $incoming;
+            });
 
             return response()->json([
                 'success' => true,
                 'message' => 'POS customization settings updated',
+                'data' => $data,
             ]);
         }
 

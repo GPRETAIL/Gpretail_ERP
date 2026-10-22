@@ -234,7 +234,7 @@ export const navItems = [
         icon: DocumentTextIcon,
       },
       {
-        name: "Receipt A4 Formats",
+        name: "Print Formats",
         path: "/sales/receipt-formats",
         icon: PrinterIcon,
       },

@@ -13,11 +13,11 @@ const createMockStore = (userRole = "super_admin") =>
   });
 
 describe("ModulePage", () => {
-  it("keeps one standard Receipt A4 Formats entry in Sales", () => {
+  it("keeps one shared Print Formats entry in Sales", () => {
     render(<Provider store={createMockStore()}><MemoryRouter initialEntries={["/sales"]}><Routes>
       <Route path="/:moduleName" element={<ModulePage />} />
     </Routes></MemoryRouter></Provider>);
-    expect(screen.getAllByRole("link", { name: /Receipt A4 Formats/i })).toHaveLength(1);
+    expect(screen.getAllByRole("link", { name: /Print Formats/i })).toHaveLength(1);
     expect(screen.queryByText("Portrait, Landscape & Templates")).not.toBeInTheDocument();
   });
   it("displays HRMS card on the All Modules hub page (/modules)", () => {
