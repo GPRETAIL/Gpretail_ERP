@@ -9,6 +9,7 @@ import { toast } from "react-toastify";
 import { alpha } from "@mui/material/styles";
 import { Box, Button, Checkbox, FormControlLabel, IconButton, Stack, Typography } from "@mui/material";
 import api from "../../api/axios";
+import { apiErrorMessage } from "../../utils/apiErrorMessage";
 import { canSwitchStores } from "../../utils/accessControl";
 import FilterableDataTable from "../../components/FilterableDataTable";
 import PermissionMatrix from "../../components/PermissionMatrix";
@@ -499,7 +500,7 @@ const UserAccess = () => {
       resetUserEditor();
       await loadRows();
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to save user");
+      toast.error(apiErrorMessage(err, "Failed to save user"));
     } finally {
       setSaving(false);
     }

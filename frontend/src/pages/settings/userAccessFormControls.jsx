@@ -18,7 +18,7 @@ export const TextInput = ({ label, value, onChange, type = "text", required = fa
       {required ? <Box component="span" sx={{ mr: 0.5, color: "error.main" }}>*</Box> : null}
       {label}
     </Typography>
-    <TextField slotProps={{ htmlInput: { "aria-label": label } }} type={type} value={value} onChange={onChange} size="small" fullWidth sx={[muiFieldSx, { ml: 1.5 }]} />
+    <TextField autoComplete={type === "password" ? "new-password" : "off"} slotProps={{ htmlInput: { "aria-label": label } }} type={type} value={value} onChange={onChange} size="small" fullWidth sx={[muiFieldSx, { ml: 1.5 }]} />
   </Stack>
 );
 
