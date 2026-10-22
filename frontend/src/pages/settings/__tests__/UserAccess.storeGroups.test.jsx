@@ -97,6 +97,31 @@ const renderUserAccess = (authUserOverrides = {}) => {
 };
 
 describe("UserAccess store groups", () => {
+  it("lets a Tenant Administrator choose a store and submits the identity and explicit request scope", async () => {
+    renderUserAccess({ role: "admin", is_tenant_admin: true, can_switch_stores: true, company_id: null, store_ids: [1, 2] });
+    await screen.findByText("Users");
+    fireEvent.click(screen.getByRole("button", { name: "New" }));
+    const picker = await screen.findByRole("combobox", { name: "Company / Store" });
+    fireEvent.mouseDown(picker);
+    fireEvent.click(await screen.findByRole("option", { name: "GP2" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Name", exact: true }), { target: { value: "New staff" } });
+    fireEvent.change(screen.getByRole("textbox", { name: "Email", exact: true }), { target: { value: "staff@example.test" } });
+    fireEvent.change(screen.getByLabelText("Password", { exact: true }), { target: { value: "local-test-only" } });
+    fireEvent.mouseDown(screen.getByRole("combobox", { name: "Role", exact: true }));
+    fireEvent.click(await screen.findByRole("option", { name: "Manager", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "Save", exact: true }));
+    await waitFor(() => expect(mockPost).toHaveBeenCalledWith("/user-access", expect.objectContaining({
+      username: "staff@example.test", email: "staff@example.test", store_id: 2, companyId: "2", is_active: true,
+    }), { storeScopeId: "2" }));
+  });
+
+  it("keeps the user-store field fixed for a store-bound administrator", async () => {
+    renderUserAccess({ role: "admin", is_tenant_admin: false, can_switch_stores: false, company_id: 1, store_ids: [1] });
+    await screen.findByText("Users");
+    fireEvent.click(screen.getByRole("button", { name: "New" }));
+    expect(await screen.findByText("GP1")).toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "Company / Store" })).not.toBeInTheDocument();
+  });
   it("mounts without crashing for a super_admin operator", async () => {
     expect(() => renderUserAccess()).not.toThrow();
     await screen.findByText("Users");

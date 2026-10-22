@@ -1,0 +1,16 @@
+import { beforeEach, expect, it } from "vitest";
+import api from "./axios";
+beforeEach(() => { sessionStorage.clear(); localStorage.clear(); });
+it("uses an explicit authorized-form scope without overwriting the active workspace store", async () => {
+  sessionStorage.setItem("activeStoreId", "2");
+  let sent;
+  await api.post("/user-access", { store_id: 3 }, { storeScopeId: "3", adapter: async (config) => { sent = config; return { data: {}, status: 200, statusText: "OK", headers: {}, config }; } });
+  for (const header of ["X-Company-Scope-Id", "X-Company-Id", "X-Store-Id"]) expect(sent.headers.get(header)).toBe("3");
+  expect(sessionStorage.getItem("activeStoreId")).toBe("2");
+});
+it("keeps ordinary requests in the active workspace store", async () => {
+  sessionStorage.setItem("activeStoreId", "2");
+  let sent;
+  await api.get("/products", { adapter: async (config) => { sent = config; return { data: {}, status: 200, statusText: "OK", headers: {}, config }; } });
+  expect(sent.headers.get("X-Company-Scope-Id")).toBe("2");
+});

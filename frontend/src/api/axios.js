@@ -39,10 +39,14 @@ api.interceptors.request.use(
     const token = localStorage.getItem("token");
     if (token) config.headers.Authorization = `Bearer ${token}`;
 
-    const activeStoreId = sessionStorage.getItem("activeStoreId");
+    // A form may provision a user in another authorized store without changing all open tabs.
+    // The API checks this explicit scope against the operator's assignments.
+    const activeStoreId = config.storeScopeId == null ? sessionStorage.getItem("activeStoreId") : String(config.storeScopeId);
+    if (activeStoreId && !/^[1-9]\d*$/.test(activeStoreId)) throw new Error("Invalid store selection");
     if (activeStoreId) {
       config.headers["X-Company-Scope-Id"] = activeStoreId;
       config.headers["X-Company-Id"] = activeStoreId;
+      config.headers["X-Store-Id"] = activeStoreId;
     }
     return prepareRoutingForRequest(config);
   },

@@ -18,7 +18,7 @@ export const TextInput = ({ label, value, onChange, type = "text", required = fa
       {required ? <Box component="span" sx={{ mr: 0.5, color: "error.main" }}>*</Box> : null}
       {label}
     </Typography>
-    <TextField type={type} value={value} onChange={onChange} size="small" fullWidth sx={[muiFieldSx, { ml: 1.5 }]} />
+    <TextField slotProps={{ htmlInput: { "aria-label": label } }} type={type} value={value} onChange={onChange} size="small" fullWidth sx={[muiFieldSx, { ml: 1.5 }]} />
   </Stack>
 );
 
@@ -28,7 +28,7 @@ export const SelectInput = ({ label, value, onChange, options = [], required = f
       {required ? <Box component="span" sx={{ mr: 0.5, color: "error.main" }}>*</Box> : null}
       {label}
     </Typography>
-    <TextField select value={value} onChange={onChange} size="small" fullWidth sx={[muiFieldSx, { ml: 1.5 }]}>
+    <TextField select slotProps={{ select: { inputProps: { "aria-label": label } } }} value={value} onChange={onChange} size="small" fullWidth sx={[muiFieldSx, { ml: 1.5 }]}>
       {options.map((option) => (
         <MenuItem key={option.value} value={option.value} disabled={!!option.disabled}>
           {option.label}

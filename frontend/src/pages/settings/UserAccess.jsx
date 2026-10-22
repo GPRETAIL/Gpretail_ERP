@@ -9,6 +9,7 @@ import { toast } from "react-toastify";
 import { alpha } from "@mui/material/styles";
 import { Box, Button, Checkbox, FormControlLabel, IconButton, Stack, Typography } from "@mui/material";
 import api from "../../api/axios";
+import { canSwitchStores } from "../../utils/accessControl";
 import FilterableDataTable from "../../components/FilterableDataTable";
 import PermissionMatrix from "../../components/PermissionMatrix";
 import Breadcrumbs from "../../components/Breadcrumbs";
@@ -87,7 +88,7 @@ const intersectStoreEntitlements = (list) => {
 };
 
 const createDefaultUserForm = (authUser) => ({
-  companyId: String(authUser?.role || "").toLowerCase() === "admin" ? String(authUser?.company_id || "") : "",
+  companyId: sessionStorage.getItem("activeStoreId") || String(authUser?.company_id || ""),
   companyIds: String(authUser?.role || "").toLowerCase() === "admin" && authUser?.company_id ? [String(authUser.company_id)] : [],
   name: "",
   email: "",
@@ -118,6 +119,7 @@ const UserAccess = () => {
   const isSuperAdmin = role === "super_admin";
   const isAdmin = role === "admin";
   const canManage = isSuperAdmin || isAdmin;
+  const canChooseUserStore = canManage && canSwitchStores(authUser);
 
   const [showSearchPage, setShowSearchPage] = useState(true);
   const [manualLoading, setLoading] = useState(false);
@@ -459,8 +461,9 @@ const UserAccess = () => {
       toast.error("Email and password are required");
       return;
     }
-    if (isSuperAdmin && !userForm.companyIds.length) {
-      toast.error("Select at least one company");
+    const companyIds = isSuperAdmin ? userForm.companyIds : userForm.companyId ? [userForm.companyId] : [];
+    if (companyIds.length !== 1) {
+      toast.error("Select one store for this user. Multi-store user assignment requires explicit provisioning.");
       return;
     }
     if (!userForm.accessGroupId && !hasAnyViewPermission(userForm.manualPermissions)) {
@@ -468,15 +471,16 @@ const UserAccess = () => {
       return;
     }
 
-    const companyIds = isSuperAdmin ? userForm.companyIds : userForm.companyId ? [userForm.companyId] : [];
-
     const payload = {
       companyId: companyIds[0] || "",
       companyIds,
-      name: userForm.name.trim(),
+      name: userForm.name.trim() || userForm.email.trim(),
+      username: userForm.email.trim(),
       email: userForm.email.trim(),
       password: userForm.password,
-      role: userForm.role,
+      role: editingStoreAdmin ? "admin" : userForm.role,
+      store_id: Number(companyIds[0]),
+      is_active: userForm.isActive === "active",
       accessGroupId: userForm.accessGroupId || null,
       storeGroupId: userForm.storeGroupId ? Number(userForm.storeGroupId) : null,
       pagePermissions: selectedAccessGroup ? {} : normalizePagePermissions(userForm.manualPermissions),
@@ -486,10 +490,10 @@ const UserAccess = () => {
     try {
       setSaving(true);
       if (editingUserId) {
-        await api.put(`/user-access/${editingUserId}`, payload);
+        await api.put(`/user-access/${editingUserId}`, payload, { storeScopeId: companyIds[0] });
         toast.success("User updated");
       } else {
-        await api.post("/user-access", payload);
+        await api.post("/user-access", payload, { storeScopeId: companyIds[0] });
         toast.success("User created");
       }
       resetUserEditor();
@@ -773,6 +777,14 @@ const UserAccess = () => {
                           </Typography>
                         ) : null}
                       </>
+                    ) : canChooseUserStore && !editingUserId ? (
+                      <SelectInput
+                        label="Company / Store"
+                        required
+                        value={userForm.companyId}
+                        onChange={(event) => setUserForm((prev) => ({ ...prev, companyId: event.target.value, companyIds: [event.target.value], accessGroupId: "" }))}
+                        options={[{ value: "", label: "Select store" }, ...selectableCompanies.map((company) => ({ value: String(company.id), label: company.name }))]}
+                      />
                     ) : (
                       <Stack direction="row" sx={{ alignItems: "center" }}>
                         <Typography component="label" sx={{ width: "33.333%", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Company</Typography>
