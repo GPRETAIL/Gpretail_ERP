@@ -1,6 +1,6 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { Provider } from "react-redux";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 import authReducer from "../../../features/authSlice";
 import ReceiptFormatsDesigner from "../ReceiptFormatsDesigner";
@@ -56,4 +56,33 @@ it("keeps an unsaved receipt draft when switching editors is cancelled", async (
   expect(screen.getByText("Receipt Size")).toBeInTheDocument();
   expect(api.put).not.toHaveBeenCalled();
   confirm.mockRestore();
+});
+
+it("shows UPI setup, updates the payment QR at its selected size, and saves the store's choice", async () => {
+  renderEditor();
+  await waitFor(() => expect(screen.getByPlaceholderText("Enter the closing message shown at the end of the receipt").value).toBe("Existing shop message"));
+  fireEvent.click(screen.getByRole("radio", { name: "UPI ID (auto-fills the bill amount)", exact: true }));
+  const upi = screen.getByLabelText("UPI ID", { exact: true });
+  expect(upi.value).toBe("");
+  expect(screen.queryByRole("region", { name: "Payment QR preview" })).not.toBeInTheDocument();
+  fireEvent.change(upi, { target: { value: "test-store@example" } });
+  const qr = await screen.findByRole("region", { name: "Payment QR preview" });
+  expect(qr.querySelector("img").getAttribute("src")).toMatch(/^data:image\/png;base64,/);
+  expect(qr.querySelector("img").style.width).toBe("120px");
+  fireEvent.click(screen.getByRole("button", { name: "Increase QR size" }));
+  await waitFor(() => expect(qr.querySelector("img").style.width).toBe("130px"));
+  fireEvent.click(screen.getByRole("button", { name: "Save", exact: true }));
+  await waitFor(() => expect(api.put).toHaveBeenCalledWith("/sales-customization", expect.objectContaining({ paymentQrMode: "upi", paymentUpiId: "test-store@example", paymentQrSize: 130 })));
+});
+
+it("opens an expanded, scrollable receipt preview without changing saved settings", async () => {
+  renderEditor();
+  await waitFor(() => expect(screen.getByPlaceholderText("Enter the closing message shown at the end of the receipt").value).toBe("Existing shop message"));
+  fireEvent.click(screen.getByRole("button", { name: "Preview Receipt", exact: true }));
+  const dialog = screen.getByRole("dialog");
+  expect(within(dialog).getByRole("region", { name: "Receipt preview contents" })).toBeInTheDocument();
+  expect(within(dialog).getByText("Existing shop message")).toBeInTheDocument();
+  fireEvent.click(within(dialog).getByRole("button", { name: "Close receipt preview" }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+  expect(api.put).not.toHaveBeenCalled();
 });

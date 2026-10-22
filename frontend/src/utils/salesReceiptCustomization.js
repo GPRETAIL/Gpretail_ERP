@@ -281,7 +281,7 @@ export const DEFAULT_SALES_RECEIPT_CUSTOMIZATION = {
   /** "none" | "upi" | "image" -- see buildPaymentQrMarkup. Only "upi" bakes the actual bill amount
    * into the QR; an uploaded image is a fixed picture with no way to encode a per-bill amount. */
   paymentQrMode: "upi",
-  paymentUpiId: "9876543210@upi",
+  paymentUpiId: "",
   /** Data URL (small uploaded image, stored inline like the other Sales Customisation settings --
    * no separate file-storage dependency needed for something this small). */
   paymentQrImageUrl: "",
@@ -1038,10 +1038,11 @@ export const buildPaymentQrMarkup = async (customization, { billAmount, billNo, 
   if (mode === "none") return "";
   const size = normalizePaymentQrSize(customization?.paymentQrSize);
   if (mode === "upi" || !mode) {
-    const upiId = String(customization?.paymentUpiId || "").trim() || "9876543210@upi";
+    const upiId = String(customization?.paymentUpiId || "").trim();
+    if (!upiId) return "";
     const upiUri = buildUpiPaymentUri({
       upiId,
-      payeeName: storeName || "SRI BALAJI TEXTILE",
+      payeeName: storeName || "Vynerix",
       amount: billAmount,
       transactionNote: billNo ? `Bill ${billNo}` : "",
     });

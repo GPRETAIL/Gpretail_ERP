@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Eye, RotateCcw, Save, Minus, Plus } from "lucide-react";
+import { Eye, RotateCcw, Save, Minus, Plus, X } from "lucide-react";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import api from "../../api/axios";
@@ -47,7 +47,7 @@ import {
   shouldShowSalesReceiptDiscountColumn,
   wrapSalesReceiptText,
 } from "../../utils/salesReceiptCustomization";
-import { Box, Stack, Typography, TextField, Button, IconButton, Switch, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
+import { Box, Stack, Typography, TextField, Button, IconButton, Switch, Table, TableHead, TableBody, TableRow, TableCell, Dialog, DialogTitle, DialogContent, alpha } from "@mui/material";
 import { FIELD_HEIGHT, muiFieldSx } from "../../theme/formControlSizes";
 
 const fieldLabelSx = { mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" };
@@ -532,8 +532,8 @@ const ReceiptPreview = ({ companyInfo, settings }) => {
   }
 
   return (
-    <Box sx={{ ...baseCardSx, overflow: "hidden" }}>
-      <Box sx={{ borderBottom: 1, borderColor: "divider", bgcolor: "action.hover", px: 2, py: 1.5 }}>
+    <Box sx={{ ...baseCardSx, height: "100%", minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <Box sx={{ flexShrink: 0, borderBottom: 1, borderColor: "divider", bgcolor: "action.hover", px: 2, py: 1.5 }}>
         <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 1.5 }}>
           <Box>
             <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Receipt Preview</Typography>
@@ -545,7 +545,7 @@ const ReceiptPreview = ({ companyInfo, settings }) => {
         </Stack>
       </Box>
 
-      <Box sx={{ bgcolor: (theme) => (theme.palette.mode === "dark" ? alpha("#111827", 0.4) : "#eef2f7"), p: "14px" }}>
+      <Box role="region" aria-label="Receipt preview contents" tabIndex={0} sx={{ flex: 1, minHeight: 0, overflow: "auto", bgcolor: (theme) => (theme.palette.mode === "dark" ? alpha("#111827", 0.4) : "#eef2f7"), p: "14px" }}>
         <style>{buildReceiptFormatCss(settings.receiptFormat)}</style>
         {/* This element's own "receipt"/"space-y-1"/"line"/"title"/"totals-row"/"grand" classNames are
             NOT Tailwind -- they're selector hooks for buildReceiptFormatCss's injected <style> above
@@ -557,12 +557,12 @@ const ReceiptPreview = ({ companyInfo, settings }) => {
           className="receipt"
           sx={{
             mx: "auto",
-            maxWidth: "100%",
+            maxWidth: "none",
             border: "1px solid #d1d5db",
             bgcolor: "#ffffff",
             p: "14px",
             boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1)",
-            width: `min(100%, ${widthCss})`,
+            width: widthCss,
             fontFamily: getSalesReceiptFontCss(settings.receiptFontFamily),
           }}
         >
@@ -772,13 +772,14 @@ const ReceiptPreview = ({ companyInfo, settings }) => {
             <>
               <Box className="line" />
               <Box
+                role="region" aria-label="Payment QR preview"
                 sx={{
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
                   justifyContent: "center",
                   overflow: "hidden",
-                  "& img": { height: 84, width: 84, maxWidth: "100%", objectFit: "contain" },
+                  "& img": { maxWidth: "100%", objectFit: "contain" },
                   "& svg": { height: "auto", width: "100%", maxWidth: "100%" },
                 }}
                 dangerouslySetInnerHTML={{ __html: paymentQrMarkup }}
@@ -803,6 +804,7 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
   const [savedSettings, setSavedSettings] = useState(DEFAULT_SALES_RECEIPT_CUSTOMIZATION);
   const [loadedCompanyId, setLoadedCompanyId] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [companyInfo, setCompanyInfo] = useState({
     storeName: "",
     storeAddress: "",
@@ -1001,12 +1003,12 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
   };
 
   return (
-    <Box sx={{ height: "100%", minHeight: 0, overflow: { xs: "auto", xl: "hidden" }, bgcolor: "background.default", px: 2, py: 2, color: "text.primary" }}>
-      <Box sx={{ display: "grid", height: { xs: "auto", xl: "100%" }, gap: 2, gridTemplateColumns: { xl: receiptOnly ? "minmax(0,1fr) 420px" : "minmax(0,1fr)" } }}>
+    <Box sx={{ height: "100%", minHeight: 0, overflow: "hidden", bgcolor: "background.default", px: 2, py: 2, color: "text.primary" }}>
+      <Box sx={{ display: "grid", height: "100%", minHeight: 0, gridTemplateRows: "minmax(0,1fr)", gap: 2, gridTemplateColumns: { xs: "minmax(0,1fr)", lg: receiptOnly ? "minmax(0,1fr) minmax(300px,420px)" : "minmax(0,1fr)" } }}>
         {/* Children must not shrink: this is a scrolling flex column, and the receipt field tables use
             overflow:hidden (for their rounded corners), which drops their automatic min-height to 0 --
             so flexbox squeezed them to a 2px border line instead of letting the column scroll. */}
-        <Stack spacing={2} sx={{ minHeight: 0, overflowY: { xs: "visible", xl: "auto" }, pr: 0.5, "& > *": { flexShrink: 0 } }}>
+        <Stack spacing={2} role="region" aria-label={receiptOnly ? "Thermal receipt settings" : "Sales settings"} tabIndex={0} sx={{ minHeight: 0, minWidth: 0, overflowY: "auto", pr: 0.5, "& > *": { flexShrink: 0 } }}>
           {/* Sticky so the header - title, description, and Save/Reset - stays reachable while
               scrolling through the settings below, instead of scrolling away with them. */}
           <Box sx={{ ...baseCardSx, position: "sticky", top: 0, zIndex: 20, px: 2.5, py: 2.5 }}>
@@ -1018,6 +1020,7 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
                 </Typography>
               </Box>
               <Stack direction="row" sx={{ flexWrap: "wrap", gap: 1 }}>
+                {receiptOnly && <Button type="button" onClick={() => setPreviewOpen(true)} startIcon={<Eye size={16} />} variant="outlined">Preview Receipt</Button>}
                 <Button
                   type="button"
                   onClick={handleReset}
@@ -1184,6 +1187,149 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
           </> : null}
           {receiptOnly ? <>
           <Box sx={{ ...baseCardSx, p: 2.5 }}>
+            <Typography component="label" sx={fieldLabelSx}>Receipt Size</Typography>
+            <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { sm: "1fr 1fr", xl: "repeat(4, 1fr)" } }}>
+              {SALES_RECEIPT_SIZE_OPTIONS.filter((option) => option.value !== "A4").map((option) => (
+                <SizeOption
+                  key={option.value}
+                  option={option}
+                  selected={settings.receiptWidthInches === option.value}
+                  onSelect={(value) => updateSetting({ receiptWidthInches: value })}
+                />
+              ))}
+            </Box>
+            <Typography sx={{ mt: 1.5, borderRadius: "10.5px", border: "1px dashed", borderColor: "divider", bgcolor: "action.hover", px: 2, py: 1.5, fontSize: 10.5, lineHeight: 1.4, color: "text.secondary" }}>
+              Leave all sizes unselected to keep the current default receipt size.
+            </Typography>
+          </Box>
+
+          <Box sx={{ ...baseCardSx, p: 2.5 }}>
+            <Typography component="label" sx={fieldLabelSx}>Payment QR</Typography>
+            <Typography sx={{ mb: 1.5, maxWidth: 768, fontSize: 12.25, lineHeight: 1.7, color: "text.secondary" }}>
+              Prints a &ldquo;Scan to Pay&rdquo; QR at the end of the receipt. Only the UPI ID option can carry the bill amount -- an uploaded image is a fixed picture, so the customer types the amount themselves.
+            </Typography>
+            <Stack direction="row" sx={{ flexWrap: "wrap", gap: 1.5 }}>
+              {PAYMENT_QR_MODE_OPTIONS.map((option) => (
+                <Stack
+                  component="label"
+                  key={option.value}
+                  direction="row"
+                  spacing={1}
+                  sx={radioPillSx(settings.paymentQrMode === option.value)}
+                >
+                  <Box
+                    component="input"
+                    type="radio"
+                    name="payment-qr-mode"
+                    value={option.value}
+                    checked={settings.paymentQrMode === option.value}
+                    onChange={() => updateSetting({ paymentQrMode: option.value })}
+                    sx={{ height: 16, width: 16 }}
+                  />
+                  <Box component="span">{option.label}</Box>
+                </Stack>
+              ))}
+            </Stack>
+
+            {settings.paymentQrMode !== "none" ? (
+              <Box sx={{ mt: 2 }}>
+                <Typography component="label" sx={fieldLabelSx}>QR Size</Typography>
+                <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+                  <IconButton
+                    type="button"
+                    onClick={() => handlePaymentQrSizeStep(-PAYMENT_QR_SIZE_STEP)}
+                    disabled={settings.paymentQrSize <= PAYMENT_QR_SIZE_MIN}
+                    sx={{ height: 36, width: 36, borderRadius: "7px", border: "1px solid", borderColor: "divider", color: "text.secondary" }}
+                    aria-label="Decrease QR size"
+                  >
+                    <Minus size={16} />
+                  </IconButton>
+                  <Typography sx={{ minWidth: 64, textAlign: "center", fontSize: 12.25, fontWeight: 500, color: "text.primary" }}>
+                    {settings.paymentQrSize}px
+                  </Typography>
+                  <IconButton
+                    type="button"
+                    onClick={() => handlePaymentQrSizeStep(PAYMENT_QR_SIZE_STEP)}
+                    disabled={settings.paymentQrSize >= PAYMENT_QR_SIZE_MAX}
+                    sx={{ height: 36, width: 36, borderRadius: "7px", border: "1px solid", borderColor: "divider", color: "text.secondary" }}
+                    aria-label="Increase QR size"
+                  >
+                    <Plus size={16} />
+                  </IconButton>
+                  <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>
+                    Recommended: {PAYMENT_QR_SIZE_MIN}-{PAYMENT_QR_SIZE_MAX}px
+                  </Typography>
+                </Stack>
+              </Box>
+            ) : null}
+
+            {settings.paymentQrMode === "upi" ? (
+              <Box sx={{ mt: 2 }}>
+                <Typography component="label" htmlFor="sales-payment-upi-id" sx={fieldLabelSx}>
+                  UPI ID
+                </Typography>
+                <TextField
+                  id="sales-payment-upi-id"
+                  type="text"
+                  value={settings.paymentUpiId}
+                  onChange={(event) => updateSetting({ paymentUpiId: event.target.value })}
+                  placeholder="yourstore@okicici"
+                  slotProps={{ htmlInput: { autoComplete: "off", spellCheck: false } }}
+                  sx={[muiFieldSx, { width: "100%", maxWidth: 448 }]}
+                />
+                {settings.paymentUpiId.trim() ? null : (
+                  <Typography sx={{ mt: 1, fontSize: 10.5, lineHeight: 1.4, color: "warning.dark" }}>
+                    Enter your store’s UPI ID to display and print a payment QR.
+                  </Typography>
+                )}
+              </Box>
+            ) : null}
+
+            {settings.paymentQrMode === "image" ? (
+              <Box sx={{ mt: 2 }}>
+                <Typography component="label" htmlFor="sales-payment-qr-image" sx={fieldLabelSx}>
+                  QR Image
+                </Typography>
+                <Stack direction="row" sx={{ flexWrap: "wrap", alignItems: "flex-start", gap: 2 }}>
+                  <Box
+                    component="input"
+                    id="sales-payment-qr-image"
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePaymentQrImageChange}
+                    sx={{ maxWidth: 448, fontSize: 12.25, color: "text.secondary" }}
+                  />
+                  {settings.paymentQrImageUrl ? (
+                    <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+                      <Box
+                        component="img"
+                        src={settings.paymentQrImageUrl}
+                        alt="Payment QR preview"
+                        sx={{ height: 96, width: 96, borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", objectFit: "contain", p: 0.5 }}
+                      />
+                      <Button
+                        type="button"
+                        onClick={() => updateSetting({ paymentQrImageUrl: "" })}
+                        sx={{ borderRadius: "7px", border: "1px solid", borderColor: "divider", px: 1.5, py: 0.75, fontSize: 10.5, fontWeight: 500, color: "text.secondary", textTransform: "none" }}
+                      >
+                        Remove
+                      </Button>
+                    </Stack>
+                  ) : (
+                    <Typography sx={{ fontSize: 10.5, lineHeight: 1.4, color: "warning.dark" }}>
+                      Upload a QR image -- without one, no QR is printed and this setting saves as &ldquo;None&rdquo;.
+                    </Typography>
+                  )}
+                </Stack>
+                <Typography sx={{ mt: 1.5, borderRadius: "10.5px", border: "1px dashed", borderColor: "divider", bgcolor: "action.hover", px: 2, py: 1.5, fontSize: 10.5, lineHeight: 1.4, color: "text.secondary" }}>
+                  The image is resized to 512px and stored with these settings. Thermal printers render QR codes best in plain black on white.
+                </Typography>
+              </Box>
+            ) : null}
+          </Box>
+
+
+          <Box sx={{ ...baseCardSx, p: 2.5 }}>
             <Typography component="label" sx={fieldLabelSx}>Printing Mode (Direct / Silent vs Browser Default)</Typography>
             <Typography sx={{ mb: 1.5, maxWidth: 768, fontSize: 12.25, lineHeight: 1.7, color: "text.secondary" }}>
               Choose whether sales receipts, return slips, and settlement summaries print directly to your thermal printer in the background (no popup) or open the browser print preview dialog.
@@ -1322,23 +1468,6 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
           />
 
           <Box sx={{ ...baseCardSx, p: 2.5 }}>
-            <Typography component="label" sx={fieldLabelSx}>Receipt Size</Typography>
-            <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { sm: "1fr 1fr", xl: "repeat(4, 1fr)" } }}>
-              {SALES_RECEIPT_SIZE_OPTIONS.filter((option) => option.value !== "A4").map((option) => (
-                <SizeOption
-                  key={option.value}
-                  option={option}
-                  selected={settings.receiptWidthInches === option.value}
-                  onSelect={(value) => updateSetting({ receiptWidthInches: value })}
-                />
-              ))}
-            </Box>
-            <Typography sx={{ mt: 1.5, borderRadius: "10.5px", border: "1px dashed", borderColor: "divider", bgcolor: "action.hover", px: 2, py: 1.5, fontSize: 10.5, lineHeight: 1.4, color: "text.secondary" }}>
-              Leave all sizes unselected to keep the current default receipt size.
-            </Typography>
-          </Box>
-
-          <Box sx={{ ...baseCardSx, p: 2.5 }}>
             <Typography component="label" sx={fieldLabelSx}>Receipt Font</Typography>
             <Typography sx={{ mb: 1.5, maxWidth: 768, fontSize: 12.25, lineHeight: 1.7, color: "text.secondary" }}>
               Applies to the printed receipt (and thermal printers) as well as the preview on the right. The monospace options keep amount columns aligned on narrow thermal paper.
@@ -1417,131 +1546,6 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
             </Typography>
           </Box>
 
-          <Box sx={{ ...baseCardSx, p: 2.5 }}>
-            <Typography component="label" sx={fieldLabelSx}>Payment QR</Typography>
-            <Typography sx={{ mb: 1.5, maxWidth: 768, fontSize: 12.25, lineHeight: 1.7, color: "text.secondary" }}>
-              Prints a &ldquo;Scan to Pay&rdquo; QR at the end of the receipt. Only the UPI ID option can carry the bill amount -- an uploaded image is a fixed picture, so the customer types the amount themselves.
-            </Typography>
-            <Stack direction="row" sx={{ flexWrap: "wrap", gap: 1.5 }}>
-              {PAYMENT_QR_MODE_OPTIONS.map((option) => (
-                <Stack
-                  component="label"
-                  key={option.value}
-                  direction="row"
-                  spacing={1}
-                  sx={radioPillSx(settings.paymentQrMode === option.value)}
-                >
-                  <Box
-                    component="input"
-                    type="radio"
-                    name="payment-qr-mode"
-                    value={option.value}
-                    checked={settings.paymentQrMode === option.value}
-                    onChange={() => updateSetting({ paymentQrMode: option.value })}
-                    sx={{ height: 16, width: 16 }}
-                  />
-                  <Box component="span">{option.label}</Box>
-                </Stack>
-              ))}
-            </Stack>
-
-            {settings.paymentQrMode !== "none" ? (
-              <Box sx={{ mt: 2 }}>
-                <Typography component="label" sx={fieldLabelSx}>QR Size</Typography>
-                <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
-                  <IconButton
-                    type="button"
-                    onClick={() => handlePaymentQrSizeStep(-PAYMENT_QR_SIZE_STEP)}
-                    disabled={settings.paymentQrSize <= PAYMENT_QR_SIZE_MIN}
-                    sx={{ height: 36, width: 36, borderRadius: "7px", border: "1px solid", borderColor: "divider", color: "text.secondary" }}
-                    aria-label="Decrease QR size"
-                  >
-                    <Minus size={16} />
-                  </IconButton>
-                  <Typography sx={{ minWidth: 64, textAlign: "center", fontSize: 12.25, fontWeight: 500, color: "text.primary" }}>
-                    {settings.paymentQrSize}px
-                  </Typography>
-                  <IconButton
-                    type="button"
-                    onClick={() => handlePaymentQrSizeStep(PAYMENT_QR_SIZE_STEP)}
-                    disabled={settings.paymentQrSize >= PAYMENT_QR_SIZE_MAX}
-                    sx={{ height: 36, width: 36, borderRadius: "7px", border: "1px solid", borderColor: "divider", color: "text.secondary" }}
-                    aria-label="Increase QR size"
-                  >
-                    <Plus size={16} />
-                  </IconButton>
-                  <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>
-                    Recommended: {PAYMENT_QR_SIZE_MIN}-{PAYMENT_QR_SIZE_MAX}px
-                  </Typography>
-                </Stack>
-              </Box>
-            ) : null}
-
-            {settings.paymentQrMode === "upi" ? (
-              <Box sx={{ mt: 2 }}>
-                <Typography component="label" htmlFor="sales-payment-upi-id" sx={fieldLabelSx}>
-                  UPI ID
-                </Typography>
-                <TextField
-                  id="sales-payment-upi-id"
-                  type="text"
-                  value={settings.paymentUpiId}
-                  onChange={(event) => updateSetting({ paymentUpiId: event.target.value })}
-                  placeholder="yourstore@okicici"
-                  slotProps={{ htmlInput: { autoComplete: "off", spellCheck: false } }}
-                  sx={[muiFieldSx, { width: "100%", maxWidth: 448 }]}
-                />
-                {settings.paymentUpiId.trim() ? null : (
-                  <Typography sx={{ mt: 1, fontSize: 10.5, lineHeight: 1.4, color: "warning.dark" }}>
-                    Enter a UPI ID -- without one, no QR is printed and this setting saves as &ldquo;None&rdquo;.
-                  </Typography>
-                )}
-              </Box>
-            ) : null}
-
-            {settings.paymentQrMode === "image" ? (
-              <Box sx={{ mt: 2 }}>
-                <Typography component="label" htmlFor="sales-payment-qr-image" sx={fieldLabelSx}>
-                  QR Image
-                </Typography>
-                <Stack direction="row" sx={{ flexWrap: "wrap", alignItems: "flex-start", gap: 2 }}>
-                  <Box
-                    component="input"
-                    id="sales-payment-qr-image"
-                    type="file"
-                    accept="image/*"
-                    onChange={handlePaymentQrImageChange}
-                    sx={{ maxWidth: 448, fontSize: 12.25, color: "text.secondary" }}
-                  />
-                  {settings.paymentQrImageUrl ? (
-                    <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
-                      <Box
-                        component="img"
-                        src={settings.paymentQrImageUrl}
-                        alt="Payment QR preview"
-                        sx={{ height: 96, width: 96, borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", objectFit: "contain", p: 0.5 }}
-                      />
-                      <Button
-                        type="button"
-                        onClick={() => updateSetting({ paymentQrImageUrl: "" })}
-                        sx={{ borderRadius: "7px", border: "1px solid", borderColor: "divider", px: 1.5, py: 0.75, fontSize: 10.5, fontWeight: 500, color: "text.secondary", textTransform: "none" }}
-                      >
-                        Remove
-                      </Button>
-                    </Stack>
-                  ) : (
-                    <Typography sx={{ fontSize: 10.5, lineHeight: 1.4, color: "warning.dark" }}>
-                      Upload a QR image -- without one, no QR is printed and this setting saves as &ldquo;None&rdquo;.
-                    </Typography>
-                  )}
-                </Stack>
-                <Typography sx={{ mt: 1.5, borderRadius: "10.5px", border: "1px dashed", borderColor: "divider", bgcolor: "action.hover", px: 2, py: 1.5, fontSize: 10.5, lineHeight: 1.4, color: "text.secondary" }}>
-                  The image is resized to 512px and stored with these settings. Thermal printers render QR codes best in plain black on white.
-                </Typography>
-              </Box>
-            ) : null}
-          </Box>
-
           </> : null}
           {hasUnsavedChanges ? (
             <Typography sx={{ borderRadius: "10.5px", border: "1px solid", borderColor: (theme) => alpha(theme.palette.warning.main, 0.4), bgcolor: (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.16 : 0.08), px: 2, py: 1.5, fontSize: 12.25, color: "warning.dark" }}>
@@ -1550,10 +1554,14 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
           ) : null}
         </Stack>
 
-        {receiptOnly ? <Box sx={{ position: { xl: "sticky" }, top: { xl: 16 }, alignSelf: { xl: "flex-start" } }}>
+        {receiptOnly ? <Box sx={{ display: { xs: "none", lg: "block" }, height: "100%", minHeight: 0, minWidth: 0, overflow: "hidden" }}>
           <ReceiptPreview companyInfo={companyInfo} settings={settings} />
         </Box> : null}
       </Box>
+      <Dialog open={previewOpen} onClose={() => setPreviewOpen(false)} fullWidth maxWidth="sm" slotProps={{ paper: { sx: { height: "90dvh", maxHeight: "90dvh", minHeight: 0 } } }}>
+        <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>Receipt Preview<IconButton aria-label="Close receipt preview" onClick={() => setPreviewOpen(false)}><X size={18} /></IconButton></DialogTitle>
+        <DialogContent sx={{ p: 0, minHeight: 0, overflow: "hidden" }}><ReceiptPreview companyInfo={companyInfo} settings={settings} /></DialogContent>
+      </Dialog>
     </Box>
   );
 }
