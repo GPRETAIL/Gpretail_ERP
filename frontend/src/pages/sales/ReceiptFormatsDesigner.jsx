@@ -21,6 +21,8 @@ import {
   Sparkles,
 } from "lucide-react";
 import { toast } from "react-toastify";
+import { useSelector } from "react-redux";
+import { fetchReceiptCompanyInfo } from "../../utils/receiptCompanyInfo";
 import { Box, Stack, Typography, Button, IconButton, TextField, Checkbox, MenuItem } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import InvoiceTemplateRenderer from "../../components/printing/InvoiceTemplateRenderer";
@@ -41,6 +43,16 @@ import {
 
 export default function ReceiptFormatsDesigner() {
   const theme = useTheme();
+  const authUser = useSelector(state => state.auth.user);
+  const storeId = sessionStorage.getItem("activeStoreId") || authUser?.company_id || "";
+  const [previewStore, setPreviewStore] = useState(null);
+  useEffect(() => {
+    let active = true;
+    fetchReceiptCompanyInfo(storeId).then(info => {
+      if (active) setPreviewStore({ id: String(storeId), ...info });
+    });
+    return () => { active = false; };
+  }, [storeId]);
   const isDark = theme.palette.mode === "dark";
   const [settings, setSettings] = useState(loadPrintFormatSettings);
   const [activeDrawer, setActiveDrawer] = useState(null); // 'template' | 'customise' | 'header' | 'table' | 'footer' | null
@@ -64,8 +76,22 @@ export default function ReceiptFormatsDesigner() {
   );
 
   const sampleDataForPreview = useMemo(
-    () => getSampleDataForTransactionType(settings.transactionType, SAMPLE_INVOICE_DATA),
-    [settings.transactionType]
+    () => {
+      const info = previewStore?.id === String(storeId) ? previewStore : null;
+      return getSampleDataForTransactionType(settings.transactionType, {
+        ...SAMPLE_INVOICE_DATA,
+        company: {
+          ...SAMPLE_INVOICE_DATA.company,
+          name: info?.storeName || "Vynerix",
+          tradeName: "",
+          address: info?.storeAddress || "",
+          phone: info?.storePhone || "",
+          gstin: info?.storeGstNo || "",
+          email: "", pan: "", state: "", stateCode: "",
+        },
+      });
+    },
+    [settings.transactionType, previewStore, storeId]
   );
 
   const handleSelectTransactionType = (typeId) => {
@@ -117,6 +143,10 @@ export default function ReceiptFormatsDesigner() {
   };
 
   const handlePrint = () => {
+    if (previewStore?.id !== String(storeId) || !previewStore?.storeName) {
+      toast.error("Select a store and load its details before printing.");
+      return;
+    }
     const printContent = document.getElementById("vynerix-printable-invoice");
     if (!printContent) {
       window.print();

@@ -15,6 +15,16 @@ const importFresh = async () => {
 describe("fetchReceiptCompanyInfo", () => {
   beforeEach(() => {
     getMock.mockReset();
+    sessionStorage.clear();
+  });
+
+  it("uses the saved document store ahead of the selected store and tenant account", async () => {
+    const { getReceiptCompanyId, requireReceiptStoreName } = await importFresh();
+    sessionStorage.setItem("activeStoreId", "9");
+    expect(getReceiptCompanyId({ company_id: 7 }, { company_id: 1 })).toBe(7);
+    expect(getReceiptCompanyId(null, { company_id: 1 })).toBe("9");
+    expect(requireReceiptStoreName({ storeName: " Coffee Branch " })).toBe("Coffee Branch");
+    expect(() => requireReceiptStoreName({ storeName: "" })).toThrow("Store name is unavailable");
   });
 
   it("returns blank info without calling the API when there is no company id", async () => {

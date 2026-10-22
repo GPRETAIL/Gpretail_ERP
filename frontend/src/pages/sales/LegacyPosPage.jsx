@@ -7,7 +7,7 @@ import { ArrowLeft, ChevronsLeft, Minus, Plus, Printer, X, Search, RotateCcw, Re
 import { toast } from "react-toastify";
 import { useSelector } from "react-redux";
 import api from "../../api/axios";
-import { fetchReceiptCompanyInfo } from "../../utils/receiptCompanyInfo";
+import { fetchReceiptCompanyInfo, requireReceiptStoreName, getReceiptCompanyId } from "../../utils/receiptCompanyInfo";
 import FilterableDataTable from "../../components/FilterableDataTable";
 import { createGroupFetchers } from "../../utils/serverGrouping";
 import SearchableSelect from "../../components/SearchableSelect";
@@ -113,7 +113,7 @@ const buildPosOldSaleReceiptPayload = ({
   paymentMethod = "Cash",
   customerNameOverride = "",
 }) => {
-  const receiptCompanyId = sale?.company_id || authUser?.company_id || null;
+  const receiptCompanyId = getReceiptCompanyId(sale, authUser);
   const savedBillNo = sale?.bill_no ?? sale?.billNo;
   const displayBillNo = getPosBillBarcodeValue(savedBillNo);
   // A re-fetched historical sale (last-receipt/lookup-sale) returns the
@@ -177,9 +177,7 @@ const buildPosOldSaleReceiptPayload = ({
     companyId: receiptCompanyId,
     receiptCustomization,
     storeName:
-      String(authUser?.company_name || "").trim()
-      || String(authUser?.name || "").trim()
-      || "Store",
+      requireReceiptStoreName(companyInfo),
     storeAddress: companyInfo?.storeAddress || "",
     storePhone: companyInfo?.storePhone || "",
     storeGstNo: companyInfo?.storeGstNo || "",
@@ -1112,7 +1110,7 @@ const LegacyPosPage = () => {
     if (!savedReturn) return;
 
     const receiptCustomization = loadSalesReceiptCustomization(authUser?.company_id || "default");
-    const companyInfo = await fetchReceiptCompanyInfo(authUser?.company_id || null);
+    const companyInfo = await fetchReceiptCompanyInfo(getReceiptCompanyId(savedReturn, authUser));
     const displayReturnNo = getPosReturnBarcodeValue(
       savedReturn?.display_return_no || savedReturn?.return_no || savedReturn?.id
     );
@@ -1153,9 +1151,7 @@ const LegacyPosPage = () => {
     const receiptData = {
       receiptCustomization,
       storeName:
-        String(authUser?.company_name || "").trim()
-        || String(authUser?.name || "").trim()
-        || "Store",
+        requireReceiptStoreName(companyInfo),
       storeAddress: companyInfo.storeAddress,
       storePhone: companyInfo.storePhone,
       storeGstNo: companyInfo.storeGstNo,
@@ -1361,7 +1357,7 @@ const LegacyPosPage = () => {
       toast.success(`Sale saved (Bill #${getPosBillBarcodeValue(savedBillNo)})`);
 
       // print receipt
-      const receiptCompanyId = saved?.company_id || authUser?.company_id || null;
+      const receiptCompanyId = getReceiptCompanyId(saved, authUser);
       const receiptCustomization = loadSalesReceiptCustomization(receiptCompanyId || "default");
       const companyInfo = await fetchReceiptCompanyInfo(receiptCompanyId);
       const selectedCustomer = customers.find((row) => String(row.value) === String(activeTab.existingCustomerId || ""));
@@ -2324,7 +2320,7 @@ const LegacyPosPage = () => {
                       toast.error("No previous sale found");
                       return;
                     }
-                    const receiptCompanyId = sale?.company_id || authUser?.company_id || null;
+                    const receiptCompanyId = getReceiptCompanyId(sale, authUser);
                     const receiptCustomization = loadSalesReceiptCustomization(receiptCompanyId || "default");
                     const companyInfo = await fetchReceiptCompanyInfo(receiptCompanyId);
                     await handlePrintReceipt(buildPosOldSaleReceiptPayload({

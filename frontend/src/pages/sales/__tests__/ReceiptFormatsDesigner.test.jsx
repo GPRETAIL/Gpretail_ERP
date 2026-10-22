@@ -1,10 +1,13 @@
 import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
 import authReducer from "../../../features/authSlice";
 import ReceiptFormatsDesigner from "../ReceiptFormatsDesigner";
 import { toast } from "react-toastify";
+import { fetchReceiptCompanyInfo } from "../../../utils/receiptCompanyInfo";
+
+vi.mock("../../../utils/receiptCompanyInfo", () => ({ fetchReceiptCompanyInfo: vi.fn() }));
 
 vi.mock("react-toastify", () => ({
   toast: {
@@ -34,6 +37,8 @@ describe("ReceiptFormatsDesigner", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+    sessionStorage.clear();
+    fetchReceiptCompanyInfo.mockResolvedValue({ storeName: "Coffee Branch", storeAddress: "Store Road", storePhone: "1234567890", storeGstNo: "TEST-GST" });
     store = createTestStore();
   });
 
@@ -43,6 +48,24 @@ describe("ReceiptFormatsDesigner", () => {
         <ReceiptFormatsDesigner />
       </Provider>
     );
+
+  it("previews the selected store instead of sample company names or the tenant administrator", async () => {
+    sessionStorage.setItem("activeStoreId", "7");
+    localStorage.setItem("vynerix_print_format_settings_v1", JSON.stringify({ footer: { signatoryFirm: "For Vinoth Enterprises Pvt Ltd" } }));
+    const { container } = renderComponent();
+    await waitFor(() => expect(container.querySelector("#vynerix-printable-invoice").textContent).toContain("Coffee Branch"));
+    expect(fetchReceiptCompanyInfo).toHaveBeenCalledWith("7");
+    expect(container.querySelector("#vynerix-printable-invoice").textContent).not.toContain("Vinoth Enterprises");
+    expect(container.querySelector("#vynerix-printable-invoice").textContent).toContain("For Coffee Branch");
+  });
+
+  it("uses Vynerix for an unconfigured preview and prevents printing it as a store", async () => {
+    fetchReceiptCompanyInfo.mockResolvedValue({ storeName: "" });
+    const { container } = renderComponent();
+    expect(container.querySelector("#vynerix-printable-invoice").textContent).toContain("Vynerix");
+    fireEvent.click(screen.getByText("Test Print"));
+    expect(toast.error).toHaveBeenCalledWith("Select a store and load its details before printing.");
+  });
 
   it("renders page title, controls, and invoice preview container", () => {
     renderComponent();

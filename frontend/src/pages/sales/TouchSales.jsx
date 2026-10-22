@@ -14,7 +14,7 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import api from "../../api/axios";
-import { fetchReceiptCompanyInfo } from "../../utils/receiptCompanyInfo";
+import { fetchReceiptCompanyInfo, requireReceiptStoreName, getReceiptCompanyId } from "../../utils/receiptCompanyInfo";
 import CounterAssignmentDialog from "../../components/CounterAssignmentDialog";
 import UploadImportButton from "../../components/UploadImportButton";
 import { usePrintContext } from "../../context/PrintContext";
@@ -486,7 +486,7 @@ const TouchSales = () => {
 
   const printPosSaleReceipt = useCallback(
     async (savedSale) => {
-      const receiptCompanyId = savedSale?.company_id || authUser?.company_id || null;
+      const receiptCompanyId = getReceiptCompanyId(savedSale, authUser);
       const receiptCustomization = loadSalesReceiptCustomization(receiptCompanyId || "default");
       const billNumber = savedSale?.bill_no ?? billNo;
       const displayBillNo = getPosBillBarcodeValue(billNumber);
@@ -543,9 +543,7 @@ const TouchSales = () => {
       }));
 
       const storeName =
-        String(authUser?.company_name || "").trim()
-        || String(authUser?.name || "").trim()
-        || "Store";
+        requireReceiptStoreName(companyInfo);
       const receiptData = {
         companyId: receiptCompanyId,
         receiptCustomization,

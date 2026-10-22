@@ -10,6 +10,15 @@ const cache = new Map(); // companyId -> { data, fetchedAt }
 
 const EMPTY_INFO = { storeName: "", storeAddress: "", storePhone: "", storeGstNo: "" };
 
+export const getReceiptCompanyId = (record, user) =>
+  record?.company_id || record?.companyId || sessionStorage.getItem("activeStoreId") || user?.company_id || null;
+
+export const requireReceiptStoreName = (companyInfo) => {
+  const name = String(companyInfo?.storeName || "").trim();
+  if (!name) throw new Error("Store name is unavailable. Refresh the store details before printing.");
+  return name;
+};
+
 export const fetchReceiptCompanyInfo = async (companyId) => {
   const id = Number(companyId || 0);
   if (!id) return { ...EMPTY_INFO };

@@ -1,4 +1,4 @@
-import { fetchReceiptCompanyInfo } from "./receiptCompanyInfo";
+import { fetchReceiptCompanyInfo, requireReceiptStoreName, getReceiptCompanyId } from "./receiptCompanyInfo";
 import { buildPosSaleReceiptHtml } from "./posReceiptHtml";
 import {
   fetchSalesReceiptCustomization,
@@ -112,7 +112,7 @@ export const buildSimplePosSaleReceiptData = async (
   const billNumber = savedSale?.bill_no ?? savedSale?.id;
   const displayBillNo = getPosBillBarcodeValue(billNumber);
   const storeName =
-    String(companyInfo?.storeName || authUser?.company_name || "").trim() || "SRI BALAJI TEXTILE";
+    requireReceiptStoreName(companyInfo);
   const grandTotal = round2(toNum(savedSale?.grand_total, 0));
 
   const receiptItems = items.map((item) => {
@@ -203,7 +203,7 @@ export const buildPosSaleReceiptHtmlForSale = async (
   savedSale,
   { api, authUser, customerName } = {}
 ) => {
-  const companyId = authUser?.company_id;
+  const companyId = getReceiptCompanyId(savedSale, authUser);
   const [companyInfo, receiptCustomization] = await Promise.all([
     fetchReceiptCompanyInfo(companyId),
     fetchSalesReceiptCustomization(api, companyId, { fallbackToLocal: true }),

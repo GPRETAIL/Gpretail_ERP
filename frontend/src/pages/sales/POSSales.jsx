@@ -9,7 +9,7 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import api from "../../api/axios";
-import { fetchReceiptCompanyInfo } from "../../utils/receiptCompanyInfo";
+import { fetchReceiptCompanyInfo, requireReceiptStoreName, getReceiptCompanyId } from "../../utils/receiptCompanyInfo";
 import FilterableDataTable from "../../components/FilterableDataTable";
 import { createGroupFetchers } from "../../utils/serverGrouping";
 import UploadImportButton from "../../components/UploadImportButton";
@@ -1880,15 +1880,14 @@ const POSSales = () => {
       0
     );
     const [companyInfo, linkedReturnRes] = await Promise.all([
-      fetchReceiptCompanyInfo(authUser?.company_id),
+      fetchReceiptCompanyInfo(getReceiptCompanyId(savedSale, authUser)),
       appliedReturnId
         ? api.get(`/pos-returns/${appliedReturnId}`).catch(() => ({ data: { data: null } }))
         : Promise.resolve({ data: { data: null } }),
     ]);
     const linkedReturn = linkedReturnRes?.data?.data || null;
     const storeName =
-      String(companyInfo?.storeName || authUser?.company_name || "").trim()
-      || "SRI BALAJI TEXTILE";
+      requireReceiptStoreName(companyInfo);
     const cashierName = String(authUser?.name || authUser?.email || "").trim();
     const receiptCustomerName =
       String(savedSale?.customer_name || savedSale?.customer?.name || "").trim()
@@ -2024,15 +2023,13 @@ const POSSales = () => {
     }
 
     const receiptCustomization = loadSalesReceiptCustomization(authUser?.company_id || "default");
-    const companyInfo = await fetchReceiptCompanyInfo(authUser?.company_id);
+    const companyInfo = await fetchReceiptCompanyInfo(getReceiptCompanyId(detail, authUser));
     const displayReturnNo = getPosReturnBarcodeValue(
       detail?.display_return_no || detail?.return_no || detail?.id
     );
     const sourceBillNo = detail?.pos_sale?.id ? formatSaleBillNo(detail.pos_sale.id) : "";
     const storeName =
-      String(authUser?.company_name || "").trim()
-      || String(authUser?.name || "").trim()
-      || "Store";
+      requireReceiptStoreName(companyInfo);
     const cashierName = String(authUser?.name || authUser?.email || "").trim();
     const receiptItems = (detail?.items || []).map((item) => {
       const qty = Math.max(0, toNum(item.quantity, 0));
@@ -2144,7 +2141,7 @@ const POSSales = () => {
       }
 
       const receiptCustomization = loadSalesReceiptCustomization(authUser?.company_id || "default");
-      const companyInfo = await fetchReceiptCompanyInfo(authUser?.company_id);
+      const companyInfo = await fetchReceiptCompanyInfo(getReceiptCompanyId(saved, authUser));
       const savedBillNo = saved.bill_no ?? billNo;
       const displayBillNo = getPosBillBarcodeValue(savedBillNo);
 
@@ -2174,9 +2171,7 @@ const POSSales = () => {
       });
 
       const storeName =
-        String(authUser?.company_name || "").trim()
-        || String(authUser?.name || "").trim()
-        || "Store";
+        requireReceiptStoreName(companyInfo);
 
       const receiptData = {
         storeName,

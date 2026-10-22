@@ -1380,7 +1380,7 @@ export default function InvoiceTemplateRenderer({
               {footer.showSignatory && (
                 <Box sx={{ textAlign: "center", width: 182 }}>
                   <Box sx={{ fontWeight: 700, fontSize: 10.5, color: "#1f2937" }}>
-                    {footer.signatoryFirm || `For ${data.company.name}`}
+                    {`For ${data.company.name}`}
                   </Box>
                   <Box sx={{ height: 42, display: "flex", alignItems: "center", justifyContent: "center", color: "#d1d5db", fontStyle: "italic", fontSize: 10 }}>
                     [Authorized Signatory & Seal]
