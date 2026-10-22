@@ -71,6 +71,7 @@ const typeOptions = [
 const Configuration = () => {
   const navigate = useNavigate();
   const [configType, setConfigType] = useState("");
+  const [selectedRows, setSelectedRows] = useState([]);
   const [confirm, setConfirm] = useState({ open: false, id: null, name: "" });
   const storeMap = useStoreNameMap();
 
@@ -97,6 +98,7 @@ const Configuration = () => {
       await api.delete(`/configurations/${configType.toLowerCase()}/${id}`);
       toast.success(`"${name}" deleted successfully.`);
       setRows((prev) => prev.filter((r) => r.id !== id));
+      setSelectedRows((prev) => prev.filter((key) => key !== id));
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to delete record");
     }
@@ -161,7 +163,10 @@ const Configuration = () => {
                 name="configType"
                 options={typeOptions}
                 value={configType}
-                onChange={(e) => setConfigType(e.target.value)}
+                onChange={(e) => {
+                  setSelectedRows([]);
+                  setConfigType(e.target.value);
+                }}
               />
             </Box>
           </Box>
@@ -172,6 +177,9 @@ const Configuration = () => {
             fillHeight
             rows={rows}
             columns={configColumns}
+            enableSelection
+            selectedRows={selectedRows}
+            onSelectionChange={setSelectedRows}
             onRowClick={(row) => handleEdit(row.id)}
             enableKeyboardNav
             loading={loading}

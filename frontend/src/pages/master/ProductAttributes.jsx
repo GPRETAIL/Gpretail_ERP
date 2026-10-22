@@ -50,11 +50,13 @@ const mockOptions = [
 
 const ProductAttributes = () => {
   const [formData, setFormData] = useState({ productType: "" });
+  const [selectedRows, setSelectedRows] = useState([]);
   const [confirm, setConfirm] = useState({ open: false, id: null, name: "" });
   const storeMap = useStoreNameMap();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    setSelectedRows([]);
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -100,6 +102,7 @@ const ProductAttributes = () => {
       await api.delete(getDeleteEndpoint(formData.productType, id));
       toast.success(`"${name}" deleted successfully.`);
       setAttributeValues((prev) => prev.filter((r) => r.id !== id));
+      setSelectedRows((prev) => prev.filter((key) => key !== id));
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to delete record");
     }
@@ -199,6 +202,9 @@ const ProductAttributes = () => {
             fillHeight
               rows={attributeValues}
               columns={attributeColumns}
+              enableSelection
+              selectedRows={selectedRows}
+              onSelectionChange={setSelectedRows}
               onRowClick={(row) => handleEdit(row.id)}
               enableKeyboardNav
               loading={grid.loading}
