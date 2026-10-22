@@ -1,4 +1,5 @@
 import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
+import useMasterBulkDelete from "../../hooks/useMasterBulkDelete";
 import MasterSearchPanel from "../../components/MasterSearchPanel";
 import { masterSearchAreaSx } from "../../theme/erpUi";
 import { ArrowLeft, Pencil, PlusCircle, Trash2 } from "lucide-react";
@@ -81,6 +82,7 @@ const Configuration = () => {
     onError: err => toast.error(err.response?.data?.message || "Failed to load configuration"),
   });
   const { rows, setRows, loading, page: tablePage, setPage: setTablePage, limit: tableLimit, setLimit: setTableLimit } = grid;
+  const bulkDelete = useMasterBulkDelete({ endpoint: `/configurations/${configType.toLowerCase()}`, setSelectedRows, onDeleted: grid.refresh });
 
   const handleNew = () => {
     if (!configType) { toast.warning("Please select a Configuration Type first!"); return; }
@@ -125,6 +127,12 @@ const Configuration = () => {
 
   return (
     <Box sx={{ height: "100%", minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden", bgcolor: "background.default", color: "text.primary" }}>
+      <ConfirmDialog
+        open={Boolean(bulkDelete.confirmation)}
+        message={`Delete ${bulkDelete.confirmation?.keys.length ?? 0} selected record(s)? This action cannot be undone.`}
+        onConfirm={bulkDelete.confirmDelete}
+        onCancel={bulkDelete.cancelDelete}
+      />
       <ConfirmDialog
         open={confirm.open}
         message={`Are you sure you want to delete "${confirm.name}"? This action cannot be undone.`}
@@ -180,6 +188,7 @@ const Configuration = () => {
             enableSelection
             selectedRows={selectedRows}
             onSelectionChange={setSelectedRows}
+            onBulkDelete={bulkDelete.requestDelete}
             onRowClick={(row) => handleEdit(row.id)}
             enableKeyboardNav
             loading={loading}

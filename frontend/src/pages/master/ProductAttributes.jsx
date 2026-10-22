@@ -1,4 +1,5 @@
 import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
+import useMasterBulkDelete from "../../hooks/useMasterBulkDelete";
 import MasterSearchPanel from "../../components/MasterSearchPanel";
 import { masterSearchAreaSx } from "../../theme/erpUi";
 import { ArrowLeft, Pencil, PlusCircle, Trash2 } from "lucide-react";
@@ -77,6 +78,7 @@ const ProductAttributes = () => {
   });
   const { rows: attributeValues, setRows: setAttributeValues, page: tablePage, setPage: setTablePage, limit: tableLimit, setLimit: setTableLimit } = grid;
   const handleSearch = grid.refresh;
+  const bulkDelete = useMasterBulkDelete({ endpoint, setSelectedRows, onDeleted: grid.refresh });
 
   const navigate = useNavigate();
 
@@ -136,6 +138,12 @@ const ProductAttributes = () => {
 
   return (
     <Box sx={{ height: "100%", minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden", bgcolor: "background.default", color: "text.primary" }}>
+      <ConfirmDialog
+        open={Boolean(bulkDelete.confirmation)}
+        message={`Delete ${bulkDelete.confirmation?.keys.length ?? 0} selected record(s)? This action cannot be undone.`}
+        onConfirm={bulkDelete.confirmDelete}
+        onCancel={bulkDelete.cancelDelete}
+      />
       <ConfirmDialog
         open={confirm.open}
         message={`Are you sure you want to delete "${confirm.name}"? This action cannot be undone.`}
@@ -205,6 +213,7 @@ const ProductAttributes = () => {
               enableSelection
               selectedRows={selectedRows}
               onSelectionChange={setSelectedRows}
+              onBulkDelete={bulkDelete.requestDelete}
               onRowClick={(row) => handleEdit(row.id)}
               enableKeyboardNav
               loading={grid.loading}
