@@ -636,8 +636,8 @@ const DealerInvoiceReturn = () => {
 
 
   const renderEntryPage = () => (
-    <Box sx={{ display: "grid", height: "100%", minHeight: 0, gridTemplateColumns: { xs: "1fr", xl: "repeat(12, 1fr)" }, gap: 1.5 }}>
-      <Stack spacing={1.5} sx={{ gridColumn: { xl: "span 3" }, height: "100%", minHeight: 0, overflowY: "auto", overflowX: "hidden", borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", p: 1.5, boxShadow: 1, fontSize: 12.25 }}>
+    <Box sx={{ display: "grid", height: { xs: "auto", xl: "100%" }, minHeight: 0, gridTemplateColumns: { xs: "minmax(0, 1fr)", xl: "repeat(12, minmax(0, 1fr))" }, gap: 1.5 }}>
+      <Stack spacing={1.5} sx={{ gridColumn: { xl: "span 3" }, height: { xs: "auto", xl: "100%" }, minWidth: 0, minHeight: 0, overflowY: "auto", overflowX: "hidden", borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", p: 1.5, boxShadow: 1, fontSize: 12.25 }}>
         <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 0.75, fontSize: 11 }}>
           <Box sx={{ borderRadius: "3.5px", border: "1px solid", borderColor: "divider", px: 1, py: 0.75 }}>
             <Typography sx={{ fontSize: 9, color: "text.secondary" }}>Return No</Typography>
@@ -835,7 +835,7 @@ const DealerInvoiceReturn = () => {
         </Box>
       </Stack>
 
-      <Stack spacing={1.5} sx={{ gridColumn: { xl: "span 9" }, minHeight: 0 }}>
+      <Stack spacing={1.5} sx={{ gridColumn: { xl: "span 9" }, minWidth: 0, minHeight: { xs: 400, xl: 0 } }}>
         <Box sx={{ borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", px: 1.5, py: 1.25, boxShadow: 1 }}>
           <Typography component="h2" sx={{ mb: 1, fontSize: 12.25, fontWeight: 600, color: "text.secondary" }}>Add Product</Typography>
           <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(12, 1fr)" }, gap: 0.75, alignItems: "end" }}>
@@ -1190,7 +1190,7 @@ const DealerInvoiceReturn = () => {
   );
 
   return (
-    <Box sx={{ height: "100vh", overflow: "hidden", bgcolor: "background.default", color: "text.primary", ...(showSearchPage ? { height: "100%", minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" } : {}) }}>
+    <Box sx={{ height: "100%", display: "flex", flexDirection: "column", overflow: "hidden", bgcolor: "background.default", color: "text.primary", ...(showSearchPage ? { height: "100%", minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" } : {}) }}>
       <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", px: 2, py: 1, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           <IconButton
@@ -1231,7 +1231,7 @@ const DealerInvoiceReturn = () => {
         </Stack>
       </Stack>
 
-      <Box sx={showSearchPage ? masterSearchAreaSx : { height: "calc(100vh - 53px)", overflow: "hidden", p: 2 }}>
+      <Box sx={showSearchPage ? masterSearchAreaSx : { flex: 1, minHeight: 0, overflow: { xs: "auto", xl: "hidden" }, p: 2 }}>
         {showSearchPage ? renderSearchPage() : renderEntryPage()}
         {loading && <Typography sx={{ fontSize: 10.5, color: "text.secondary", px: 0.5 }}>Loading master data...</Typography>}
       </Box>

@@ -2818,7 +2818,7 @@ const BarcodeGeneration = () => {
   );
 
   return (
-    <Box sx={{ height: "100vh", overflow: "hidden", bgcolor: "background.default", display: "flex", flexDirection: "column" }}>
+    <Box sx={{ height: "100%", overflow: "hidden", bgcolor: "background.default", display: "flex", flexDirection: "column" }}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1.25, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1 }}>
         <Stack direction="row" sx={{ alignItems: "center" }}>
           <IconButton
