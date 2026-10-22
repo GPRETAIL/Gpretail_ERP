@@ -1527,7 +1527,7 @@ const InvoiceEntry = () => {
             <Box sx={{ borderTop: 1, borderColor: "divider", flex: 1, minHeight: 0, overflowY: "auto" }}>
               <Box sx={{ overflowX: "auto" }}>
                 <Table sx={{ minWidth: 860 }}>
-                  <TableHead>
+                  <TableHead sx={{ "& .MuiTableCell-head": { fontSize: 11.5, fontWeight: 600, color: "text.secondary", lineHeight: 1.4 } }}>
                     <TableRow sx={(theme) => ({ bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08), fontSize: 9, fontWeight: 600, color: "text.secondary", textTransform: "uppercase" })}>
                       <TableCell sx={{ px: 1, py: 0.5, textAlign: "left" }}>Company</TableCell>
                       <TableCell sx={{ px: 1, py: 0.5, textAlign: "left" }}>Invoice No</TableCell>
