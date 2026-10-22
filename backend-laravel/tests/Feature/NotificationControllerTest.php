@@ -48,6 +48,20 @@ class NotificationControllerTest extends TestCase
         return $this->getJson('/api/notifications');
     }
 
+    public function test_dashboard_tasks_exclude_admin_broadcasts_and_messages_without_actions(): void
+    {
+        $task = Notification::create(['store_id' => $this->store->id, 'type' => 'LOW_STOCK_ITEM',
+            'title' => 'Reorder stock', 'message' => 'Low stock', 'link' => '/warehouse/stock-item']);
+        Notification::create(['store_id' => $this->store->id, 'type' => 'INFO', 'title' => 'FYI', 'message' => 'Notice']);
+        $broadcast = Notification::create(['store_id' => $this->store->id, 'type' => 'PLATFORM_SERVICE',
+            'title' => 'PAYMENT DUE', 'message' => 'Admin message', 'link' => '/notifications']);
+        DB::table('app_notifications')->where('id', $broadcast->id)->update(['platform_message_uuid' => (string) \Illuminate\Support\Str::uuid()]);
+        $rows = collect($this->getJson('/api/notifications?action_required=1')->assertOk()->json('data'));
+        $this->assertTrue($rows->contains('id', $task->id));
+        $this->assertFalse($rows->contains('title', 'PAYMENT DUE'));
+        $this->assertFalse($rows->contains('title', 'FYI'));
+    }
+
     public function test_customer_over_credit_limit_creates_one_notification(): void
     {
         Customer::create(['store_id' => $this->store->id,

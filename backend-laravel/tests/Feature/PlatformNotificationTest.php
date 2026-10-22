@@ -38,6 +38,20 @@ class PlatformNotificationTest extends TestCase
         return array_merge(['sequence' => 1, 'uuid' => (string) Str::uuid(), 'revision' => 1, 'active' => true, 'company_code' => 'CMP-NOTIFY', 'audience' => 'admins', 'category' => 'subscription', 'priority' => 'high', 'title' => 'Renewal', 'message' => 'Review your subscription', 'action' => 'subscription', 'expires_at' => now()->addDays(3)->toIso8601String(), 'created_at' => now()->toIso8601String()], $changes);
     }
 
+    public function test_admin_payment_message_stays_in_inbox_but_is_not_an_operational_task(): void
+    {
+        [$activation, $owner] = $this->fixture();
+        DB::table('app_notifications')->insert(['type' => 'PLATFORM_SERVICE', 'title' => 'PAYMENT DUE',
+            'message' => 'A manually authored Admin message', 'platform_message_uuid' => (string) Str::uuid(),
+            'platform_company_code' => $activation->company_code, 'audience' => 'admins', 'category' => 'service',
+            'expires_at' => now()->addDay(), 'created_at' => now(), 'updated_at' => now()]);
+        Sanctum::actingAs($owner);
+        $inbox = collect($this->getJson('/api/notifications')->assertOk()->json('data'));
+        $this->assertTrue($inbox->contains('title', 'PAYMENT DUE'));
+        $tasks = collect($this->getJson('/api/notifications?action_required=1')->assertOk()->json('data'));
+        $this->assertFalse($tasks->contains('title', 'PAYMENT DUE'));
+    }
+
     public function test_import_is_durable_idempotent_and_advances_only_after_validation(): void
     {
         [$activation,$owner] = $this->fixture();

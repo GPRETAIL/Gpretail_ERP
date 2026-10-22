@@ -15,6 +15,23 @@ class StoreContextTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_activated_deployment_does_not_expose_legacy_stores_to_unlinked_admins(): void
+    {
+        $owner = $this->owner();
+        $this->store('LEGACY');
+        PlatformActivation::create(['company_code' => 'CMP-OWNER', 'activated' => true, 'status' => 'active']);
+        $this->assertCount(0, app(\App\Services\StoreContext::class)->stores($owner));
+        $owner->update(['role' => 'super_admin']);
+        $this->assertCount(0, app(\App\Services\StoreContext::class)->stores($owner));
+    }
+
+    public function test_demo_seeding_cannot_recreate_a_legacy_store_after_activation(): void
+    {
+        PlatformActivation::create(['company_code' => 'CMP-OWNER', 'activated' => true, 'status' => 'active']);
+        $this->seed(\Database\Seeders\DatabaseSeeder::class);
+        $this->assertDatabaseMissing('stores', ['code' => 'SBT_01']);
+    }
+
     private function owner(): User
     {
         return User::create(['name' => 'Tenant owner', 'username' => 'tenant-owner', 'email' => 'owner@example.test',

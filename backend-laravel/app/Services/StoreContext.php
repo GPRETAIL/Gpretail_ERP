@@ -17,7 +17,8 @@ class StoreContext
         if ($user->platform_company_code) {
             $query->where('platform_company_code', $user->platform_company_code);
         } elseif (PlatformActivation::current()?->activated) {
-            $query->whereNull('platform_company_code');
+            // Legacy/unlinked accounts cannot operate a platform-managed tenant.
+            $query->whereRaw('1 = 0');
         }
         // A tenant owner has no fixed store. Store-bound admins remain store-bound.
         if ($user->role === 'super_admin' || ($user->role === 'admin' && ! $user->store_id)) {

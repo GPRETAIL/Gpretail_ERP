@@ -24,7 +24,7 @@ class SettingsController extends Controller
                 'printer_name' => $config?->name ?? 'POS Thermal Printer',
                 'printer_type' => $config?->printer_type ?? 'THERMAL',
                 'paper_size' => $config?->paper_size ?? '80mm',
-                'header_text' => $config?->header_text ?? 'SRI BALAJI TEXTILE',
+                'header_text' => $config?->header_text ?? Store::find($storeId)?->name ?? 'Vynerix',
                 'footer_text' => $config?->footer_text ?? 'Thank you for shopping with us!',
             ],
         ]);

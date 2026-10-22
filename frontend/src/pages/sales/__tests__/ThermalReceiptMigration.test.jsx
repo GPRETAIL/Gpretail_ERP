@@ -61,6 +61,7 @@ it("keeps an unsaved receipt draft when switching editors is cancelled", async (
 it("shows UPI setup, updates the payment QR at its selected size, and saves the store's choice", async () => {
   renderEditor();
   await waitFor(() => expect(screen.getByPlaceholderText("Enter the closing message shown at the end of the receipt").value).toBe("Existing shop message"));
+  fireEvent.click(screen.getByRole("tab", { name: "Footer Settings" }));
   fireEvent.click(screen.getByRole("radio", { name: "UPI ID (auto-fills the bill amount)", exact: true }));
   const upi = screen.getByLabelText("UPI ID", { exact: true });
   expect(upi.value).toBe("");
@@ -73,6 +74,23 @@ it("shows UPI setup, updates the payment QR at its selected size, and saves the 
   await waitFor(() => expect(qr.querySelector("img").style.width).toBe("130px"));
   fireEvent.click(screen.getByRole("button", { name: "Save", exact: true }));
   await waitFor(() => expect(api.put).toHaveBeenCalledWith("/sales-customization", expect.objectContaining({ paymentQrMode: "upi", paymentUpiId: "test-store@example", paymentQrSize: 130 })));
+});
+
+it("organizes existing controls in tabs and preserves the draft across header, table and footer", async () => {
+  renderEditor();
+  await screen.findByText("Receipt Size");
+  expect(screen.getByRole("tab", { name: "Receipt Template" })).toHaveAttribute("aria-selected", "true");
+  fireEvent.click(screen.getByRole("radio", { name: "Classic Solid rules, boxed total." }));
+  fireEvent.click(screen.getByRole("tab", { name: "Header Settings" }));
+  expect(screen.getByRole("tabpanel")).toHaveTextContent("Header and Bill Details");
+  fireEvent.click(screen.getByRole("tab", { name: "Table Settings" }));
+  expect(screen.getByRole("tabpanel")).toHaveTextContent("Item Table Columns");
+  fireEvent.click(screen.getByRole("tab", { name: "Customize Format" }));
+  fireEvent.click(screen.getByRole("radio", { name: "Verdana", exact: true }));
+  fireEvent.click(screen.getByRole("tab", { name: "Footer Settings" }));
+  fireEvent.change(screen.getByRole("textbox", { name: "Receipt Thank You Message" }), { target: { value: "Coffee closing message" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save", exact: true }));
+  await waitFor(() => expect(api.put).toHaveBeenCalledWith("/sales-customization", expect.objectContaining({ receiptFormat: "classic", receiptFontFamily: "verdana", thankYouMessage: "Coffee closing message" })));
 });
 
 it("opens an expanded, scrollable receipt preview without changing saved settings", async () => {

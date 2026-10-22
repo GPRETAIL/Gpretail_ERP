@@ -27,13 +27,12 @@ export default function OverviewActionRequiredCard({ items = [], loading, onItem
   const navigate = useNavigate();
 
   const handleClick = async (item) => {
+    navigate(item.link || "/notifications");
+    onItemHandled?.(item.id);
     try {
       if (!item.read_at) await api.post(`/notifications/${item.id}/read`);
     } catch {
       // Navigating still matters even if the read-receipt fails to save.
-    } finally {
-      onItemHandled?.(item.id);
-      if (item.link) navigate(item.link);
     }
   };
 

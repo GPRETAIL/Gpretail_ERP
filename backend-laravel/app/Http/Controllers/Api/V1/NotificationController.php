@@ -85,6 +85,11 @@ class NotificationController extends Controller
             ->orderByRaw('COALESCE(recipient.read_at, app_notifications.read_at) IS NOT NULL')
             ->orderByDesc('app_notifications.id');
 
+        // Admin broadcasts are messages, not computed operational debts or tasks.
+        if ($request->boolean('action_required')) {
+            $query->whereNull('platform_message_uuid')->whereNotNull('link');
+        }
+
         if ($request->input('category') === 'account') {
             $query->whereIn('category', ['subscription', 'billing']);
         } elseif ($request->input('category') === 'offer') {

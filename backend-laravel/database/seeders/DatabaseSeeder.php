@@ -10,6 +10,13 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        // Demo fixtures must never repopulate a hosted or activated customer deployment.
+        if (! app()->environment(['local', 'testing']) || \App\Models\PlatformActivation::current()?->activated) {
+            $this->command?->warn('Demo seeding skipped for this deployment.');
+
+            return;
+        }
+
         // 1. Create Default Store
         $store = DB::table('stores')->where('code', 'SBT_01')->first();
         if ($store) {

@@ -47,7 +47,7 @@ import {
   shouldShowSalesReceiptDiscountColumn,
   wrapSalesReceiptText,
 } from "../../utils/salesReceiptCustomization";
-import { Box, Stack, Typography, TextField, Button, IconButton, Switch, Table, TableHead, TableBody, TableRow, TableCell, Dialog, DialogTitle, DialogContent, alpha } from "@mui/material";
+import { Box, Stack, Typography, TextField, Button, IconButton, Switch, Table, TableHead, TableBody, TableRow, TableCell, Dialog, DialogTitle, DialogContent, Tabs, Tab, alpha } from "@mui/material";
 import { FIELD_HEIGHT, muiFieldSx } from "../../theme/formControlSizes";
 
 const fieldLabelSx = { mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" };
@@ -82,6 +82,7 @@ const formatMoney = (value) =>
 const receiptTableHeadSx = { bgcolor: "#165da8", px: 1.5, py: 1.5, textAlign: "left", fontSize: 12.25, fontWeight: 600, color: "#fff" };
 const receiptTableCellSx = { border: "1px solid", borderColor: "divider", px: 1.5, py: 1.5, verticalAlign: "middle", fontSize: 12.25, color: "text.secondary" };
 const receiptTableInputSx = muiFieldSx;
+const footerFieldKeys = new Set(["paid", "receivedAmount", "balanceAmt", "youSaved", "tax"]);
 
 const RadioCell = ({ name, checked, onChange }) => (
   <Box component="label" sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -805,6 +806,7 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
   const [loadedCompanyId, setLoadedCompanyId] = useState(null);
   const [saving, setSaving] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [receiptTab, setReceiptTab] = useState("template");
   const [companyInfo, setCompanyInfo] = useState({
     storeName: "",
     storeAddress: "",
@@ -1041,6 +1043,13 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
                 </Button>
               </Stack>
             </Stack>
+            {receiptOnly && <Tabs value={receiptTab} onChange={(_event, value) => setReceiptTab(value)} variant="scrollable" scrollButtons="auto" aria-label="Thermal receipt customization" sx={{ mt: 2, minHeight: 40 }}>
+              <Tab value="template" id="thermal-tab-template" aria-controls="thermal-panel-template" label="Receipt Template" sx={{ textTransform: "none", minHeight: 40 }} />
+              <Tab value="customise" id="thermal-tab-customise" aria-controls="thermal-panel-customise" label="Customize Format" sx={{ textTransform: "none", minHeight: 40 }} />
+              <Tab value="header" id="thermal-tab-header" aria-controls="thermal-panel-header" label="Header Settings" sx={{ textTransform: "none", minHeight: 40 }} />
+              <Tab value="table" id="thermal-tab-table" aria-controls="thermal-panel-table" label="Table Settings" sx={{ textTransform: "none", minHeight: 40 }} />
+              <Tab value="footer" id="thermal-tab-footer" aria-controls="thermal-panel-footer" label="Footer Settings" sx={{ textTransform: "none", minHeight: 40 }} />
+            </Tabs>}
           </Box>
 
           {!receiptOnly ? <>
@@ -1186,6 +1195,8 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
           <Box sx={{ ...baseCardSx, p: 2.5 }}><Typography sx={{ mb: 1 }}>Receipt sizes, layout, fonts, barcode and payment QR settings are managed in Print Formats.</Typography><Button href="/sales/receipt-formats?section=thermal" variant="outlined">Edit Receipt Format</Button></Box>
           </> : null}
           {receiptOnly ? <>
+          <Stack role="tabpanel" id="thermal-panel-template" aria-labelledby="thermal-tab-template" hidden={receiptTab !== "template"} spacing={2} sx={{ display: receiptTab === "template" ? "flex" : "none", "& > *": { flexShrink: 0 } }}>
+
           <Box sx={{ ...baseCardSx, p: 2.5 }}>
             <Typography component="label" sx={fieldLabelSx}>Receipt Size</Typography>
             <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { sm: "1fr 1fr", xl: "repeat(4, 1fr)" } }}>
@@ -1203,6 +1214,223 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
             </Typography>
           </Box>
 
+          <Box sx={{ ...baseCardSx, p: 2.5 }}>
+            <Typography component="label" sx={fieldLabelSx}>Receipt / Invoice Format</Typography>
+            <Typography sx={{ mb: 1.5, maxWidth: 768, fontSize: 12.25, lineHeight: 1.7, color: "text.secondary" }}>
+              Choose the overall look of the printed receipt -- border and divider style, spacing, and how the header and total are emphasised. Applies to the preview on the right and every POS print.
+            </Typography>
+            <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { sm: "1fr 1fr", xl: "repeat(5, 1fr)" } }}>
+              {RECEIPT_FORMAT_OPTIONS.map((option) => (
+                <Stack
+                  component="label"
+                  key={option.value}
+                  spacing={0.5}
+                  sx={{ cursor: "pointer", borderRadius: "7px", border: "1px solid", borderColor: settings.receiptFormat === option.value ? "primary.main" : "divider", bgcolor: settings.receiptFormat === option.value ? (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08) : "background.paper", color: settings.receiptFormat === option.value ? "primary.main" : "text.secondary", px: 2, py: 1.5, fontSize: 11.5 }}
+                >
+                  <Stack direction="row" spacing={1} sx={{ alignItems: "center", fontWeight: 500 }}>
+                    <Box
+                      component="input"
+                      type="radio"
+                      name="receipt-format"
+                      value={option.value}
+                      checked={settings.receiptFormat === option.value}
+                      onChange={() => updateSetting({ receiptFormat: option.value })}
+                      sx={{ height: 16, width: 16 }}
+                    />
+                    {option.label}
+                  </Stack>
+                  <Box component="span" sx={{ fontSize: 10.5, lineHeight: 1.4, color: "text.secondary" }}>{option.description}</Box>
+                </Stack>
+              ))}
+            </Box>
+          </Box>
+
+
+          </Stack>
+          <Stack role="tabpanel" id="thermal-panel-customise" aria-labelledby="thermal-tab-customise" hidden={receiptTab !== "customise"} spacing={2} sx={{ display: receiptTab === "customise" ? "flex" : "none", "& > *": { flexShrink: 0 } }}>
+          <Box sx={{ ...baseCardSx, p: 2.5 }}>
+            <Typography component="label" sx={fieldLabelSx}>Printing Mode (Direct / Silent vs Browser Default)</Typography>
+            <Typography sx={{ mb: 1.5, maxWidth: 768, fontSize: 12.25, lineHeight: 1.7, color: "text.secondary" }}>
+              Choose whether sales receipts, return slips, and settlement summaries print directly to your thermal printer in the background (no popup) or open the browser print preview dialog.
+            </Typography>
+            <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { sm: "1fr 1fr" } }}>
+              {PRINT_MODE_OPTIONS.map((option) => (
+                <Stack
+                  component="label"
+                  key={option.value}
+                  spacing={0}
+                  sx={{
+                    cursor: "pointer",
+                    justifyContent: "space-between",
+                    borderRadius: "10.5px",
+                    border: "1px solid",
+                    borderColor: settings.printMode === option.value ? "primary.main" : "divider",
+                    bgcolor: settings.printMode === option.value ? (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08) : "background.paper",
+                    boxShadow: settings.printMode === option.value ? 1 : 0,
+                    p: 2,
+                    "&:hover": { borderColor: settings.printMode === option.value ? "primary.main" : "text.disabled" },
+                  }}
+                >
+                  <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+                    <Box
+                      component="input"
+                      type="radio"
+                      name="sales-print-mode"
+                      value={option.value}
+                      checked={settings.printMode === option.value}
+                      onChange={() => updateSetting({ printMode: option.value })}
+                      sx={{ height: 16, width: 16, accentColor: "primary.main" }}
+                    />
+                    <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>
+                      {option.label}
+                    </Typography>
+                  </Stack>
+                  <Typography sx={{ mt: 1, fontSize: 10.5, lineHeight: 1.4, color: "text.secondary" }}>
+                    {option.description}
+                  </Typography>
+                </Stack>
+              ))}
+            </Box>
+          </Box>
+
+          <PosReceiptCopiesTable
+            copies={settings.posReceiptPrintCopies ?? 1}
+            onChangeCopies={(n) => updateSetting({ posReceiptPrintCopies: n })}
+          />
+
+          <Box sx={{ ...baseCardSx, p: 2.5 }}>
+            <Typography component="label" sx={fieldLabelSx}>Receipt Font</Typography>
+            <Typography sx={{ mb: 1.5, maxWidth: 768, fontSize: 12.25, lineHeight: 1.7, color: "text.secondary" }}>
+              Applies to the printed receipt (and thermal printers) as well as the preview on the right. The monospace options keep amount columns aligned on narrow thermal paper.
+            </Typography>
+            <Stack direction="row" sx={{ flexWrap: "wrap", gap: 2 }}>
+              {RECEIPT_FONT_OPTIONS.map((option) => (
+                <Stack
+                  component="label"
+                  key={option.value}
+                  direction="row"
+                  spacing={1}
+                  sx={{ ...radioPillSx(settings.receiptFontFamily === option.value), fontFamily: option.cssStack }}
+                >
+                  <Box
+                    component="input"
+                    type="radio"
+                    name="receipt-font-family"
+                    value={option.value}
+                    checked={settings.receiptFontFamily === option.value}
+                    onChange={() => updateSetting({ receiptFontFamily: option.value })}
+                    sx={{ height: 16, width: 16 }}
+                  />
+                  <Box component="span">{option.label}</Box>
+                </Stack>
+              ))}
+            </Stack>
+          </Box>
+
+
+          </Stack>
+          <Stack role="tabpanel" id="thermal-panel-header" aria-labelledby="thermal-tab-header" hidden={receiptTab !== "header"} spacing={2} sx={{ display: receiptTab === "header" ? "flex" : "none", "& > *": { flexShrink: 0 } }}>
+          <ReceiptFieldTable
+            title="Header and Bill Details"
+            rows={generalFieldRows.filter((row) => !footerFieldKeys.has(row.key))}
+            onToggleVisible={(key, visible) => updateGeneralField(key, { visible })}
+            onPositionChange={(key, position) => updateGeneralField(key, { position })}
+            onLineChange={(key, line) => updateGeneralField(key, { line })}
+          />
+
+
+          </Stack>
+          <Stack role="tabpanel" id="thermal-panel-table" aria-labelledby="thermal-tab-table" hidden={receiptTab !== "table"} spacing={2} sx={{ display: receiptTab === "table" ? "flex" : "none", "& > *": { flexShrink: 0 } }}>
+          <Box sx={{ ...baseCardSx, p: 2.5 }}>
+            <Typography component="label" sx={fieldLabelSx}>Receipt Barcode</Typography>
+            <Stack spacing={1.5}>
+              <ToggleCard
+                label="Show barcode on bill"
+                hint="Print a scannable barcode at the bottom of the POS bill using the formatted bill number, for example SB/29."
+                checked={settings.showBarcodeOnBill}
+                onChange={(checked) => updateSetting({ showBarcodeOnBill: checked })}
+              />
+              <ToggleCard
+                label="Show barcode on return slip"
+                hint="Store a separate preference for return-slip barcode printing inside the sales module."
+                checked={settings.showBarcodeOnReturnSlip}
+                onChange={(checked) => updateSetting({ showBarcodeOnReturnSlip: checked })}
+              />
+              <Box sx={{ pt: 0.5 }}>
+                <Typography sx={fieldLabelSx}>Show barcode or QR code</Typography>
+                <Typography sx={{ mb: 1.5, fontSize: 12.25, lineHeight: 1.7, color: "text.secondary" }}>
+                  Applies to sale and return slips when the barcode options above are enabled.
+                </Typography>
+                <Stack direction="row" sx={{ flexWrap: "wrap", gap: 1.5 }}>
+                  {RECEIPT_CODE_TYPE_OPTIONS.map((option) => (
+                    <Stack
+                      component="label"
+                      key={option.value}
+                      direction="row"
+                      spacing={1}
+                      sx={radioPillSx(settings.receiptCodeType === option.value)}
+                    >
+                      <Box
+                        component="input"
+                        type="radio"
+                        name="receipt-code-type"
+                        value={option.value}
+                        checked={settings.receiptCodeType === option.value}
+                        onChange={() => updateSetting({ receiptCodeType: option.value })}
+                        sx={{ height: 16, width: 16 }}
+                      />
+                      <Box component="span">{option.label}</Box>
+                    </Stack>
+                  ))}
+                </Stack>
+              </Box>
+              <ToggleCard
+                label="Show discount on receipt"
+                hint="Show the discount row in the printed POS receipt totals section."
+                checked={settings.showDiscountOnReceipt}
+                onChange={(checked) => updateSetting({ showDiscountOnReceipt: checked })}
+              />
+              <ToggleCard
+                label="Show GST table on receipt"
+                hint="Print a grouped tax summary table near the end of the POS receipt."
+                checked={settings.showTaxTableOnReceipt}
+                onChange={(checked) => updateSetting({ showTaxTableOnReceipt: checked })}
+              />
+            </Stack>
+          </Box>
+
+          <DiscountDisplayCard
+            value={settings.discountDisplayMode}
+            onChange={(discountDisplayMode) => updateSetting({ discountDisplayMode })}
+          />
+
+          <ReceiptVisibilityTable
+            title="Tax"
+            rows={taxFieldRows}
+            onToggleVisible={(key, visible) => {
+              updateTaxField(key, { visible });
+              if (key === "title") {
+                updateSetting({ showTaxTableOnReceipt: visible });
+              }
+            }}
+          />
+
+          <ReceiptVisibilityTable
+            title="Item Table Columns"
+            rows={productFieldRows}
+            onToggleVisible={(key, visible) => updateProductField(key, { visible })}
+          />
+
+
+          </Stack>
+          <Stack role="tabpanel" id="thermal-panel-footer" aria-labelledby="thermal-tab-footer" hidden={receiptTab !== "footer"} spacing={2} sx={{ display: receiptTab === "footer" ? "flex" : "none", "& > *": { flexShrink: 0 } }}>
+          <ReceiptFieldTable
+            title="Footer Totals"
+            rows={generalFieldRows.filter((row) => footerFieldKeys.has(row.key))}
+            onToggleVisible={(key, visible) => updateGeneralField(key, { visible })}
+            onPositionChange={(key, position) => updateGeneralField(key, { position })}
+            onLineChange={(key, line) => updateGeneralField(key, { line })}
+          />
           <Box sx={{ ...baseCardSx, p: 2.5 }}>
             <Typography component="label" sx={fieldLabelSx}>Payment QR</Typography>
             <Typography sx={{ mb: 1.5, maxWidth: 768, fontSize: 12.25, lineHeight: 1.7, color: "text.secondary" }}>
@@ -1330,204 +1558,6 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
 
 
           <Box sx={{ ...baseCardSx, p: 2.5 }}>
-            <Typography component="label" sx={fieldLabelSx}>Printing Mode (Direct / Silent vs Browser Default)</Typography>
-            <Typography sx={{ mb: 1.5, maxWidth: 768, fontSize: 12.25, lineHeight: 1.7, color: "text.secondary" }}>
-              Choose whether sales receipts, return slips, and settlement summaries print directly to your thermal printer in the background (no popup) or open the browser print preview dialog.
-            </Typography>
-            <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { sm: "1fr 1fr" } }}>
-              {PRINT_MODE_OPTIONS.map((option) => (
-                <Stack
-                  component="label"
-                  key={option.value}
-                  spacing={0}
-                  sx={{
-                    cursor: "pointer",
-                    justifyContent: "space-between",
-                    borderRadius: "10.5px",
-                    border: "1px solid",
-                    borderColor: settings.printMode === option.value ? "primary.main" : "divider",
-                    bgcolor: settings.printMode === option.value ? (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08) : "background.paper",
-                    boxShadow: settings.printMode === option.value ? 1 : 0,
-                    p: 2,
-                    "&:hover": { borderColor: settings.printMode === option.value ? "primary.main" : "text.disabled" },
-                  }}
-                >
-                  <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
-                    <Box
-                      component="input"
-                      type="radio"
-                      name="sales-print-mode"
-                      value={option.value}
-                      checked={settings.printMode === option.value}
-                      onChange={() => updateSetting({ printMode: option.value })}
-                      sx={{ height: 16, width: 16, accentColor: "primary.main" }}
-                    />
-                    <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>
-                      {option.label}
-                    </Typography>
-                  </Stack>
-                  <Typography sx={{ mt: 1, fontSize: 10.5, lineHeight: 1.4, color: "text.secondary" }}>
-                    {option.description}
-                  </Typography>
-                </Stack>
-              ))}
-            </Box>
-          </Box>
-
-          <Box sx={{ ...baseCardSx, p: 2.5 }}>
-            <Typography component="label" sx={fieldLabelSx}>Receipt Barcode</Typography>
-            <Stack spacing={1.5}>
-              <ToggleCard
-                label="Show barcode on bill"
-                hint="Print a scannable barcode at the bottom of the POS bill using the formatted bill number, for example SB/29."
-                checked={settings.showBarcodeOnBill}
-                onChange={(checked) => updateSetting({ showBarcodeOnBill: checked })}
-              />
-              <ToggleCard
-                label="Show barcode on return slip"
-                hint="Store a separate preference for return-slip barcode printing inside the sales module."
-                checked={settings.showBarcodeOnReturnSlip}
-                onChange={(checked) => updateSetting({ showBarcodeOnReturnSlip: checked })}
-              />
-              <Box sx={{ pt: 0.5 }}>
-                <Typography sx={fieldLabelSx}>Show barcode or QR code</Typography>
-                <Typography sx={{ mb: 1.5, fontSize: 12.25, lineHeight: 1.7, color: "text.secondary" }}>
-                  Applies to sale and return slips when the barcode options above are enabled.
-                </Typography>
-                <Stack direction="row" sx={{ flexWrap: "wrap", gap: 1.5 }}>
-                  {RECEIPT_CODE_TYPE_OPTIONS.map((option) => (
-                    <Stack
-                      component="label"
-                      key={option.value}
-                      direction="row"
-                      spacing={1}
-                      sx={radioPillSx(settings.receiptCodeType === option.value)}
-                    >
-                      <Box
-                        component="input"
-                        type="radio"
-                        name="receipt-code-type"
-                        value={option.value}
-                        checked={settings.receiptCodeType === option.value}
-                        onChange={() => updateSetting({ receiptCodeType: option.value })}
-                        sx={{ height: 16, width: 16 }}
-                      />
-                      <Box component="span">{option.label}</Box>
-                    </Stack>
-                  ))}
-                </Stack>
-              </Box>
-              <ToggleCard
-                label="Show discount on receipt"
-                hint="Show the discount row in the printed POS receipt totals section."
-                checked={settings.showDiscountOnReceipt}
-                onChange={(checked) => updateSetting({ showDiscountOnReceipt: checked })}
-              />
-              <ToggleCard
-                label="Show GST table on receipt"
-                hint="Print a grouped tax summary table near the end of the POS receipt."
-                checked={settings.showTaxTableOnReceipt}
-                onChange={(checked) => updateSetting({ showTaxTableOnReceipt: checked })}
-              />
-            </Stack>
-          </Box>
-
-          <DiscountDisplayCard
-            value={settings.discountDisplayMode}
-            onChange={(discountDisplayMode) => updateSetting({ discountDisplayMode })}
-          />
-
-          <ReceiptFieldTable
-            title="General"
-            rows={generalFieldRows}
-            onToggleVisible={(key, visible) => updateGeneralField(key, { visible })}
-            onPositionChange={(key, position) => updateGeneralField(key, { position })}
-            onLineChange={(key, line) => updateGeneralField(key, { line })}
-          />
-
-          <ReceiptVisibilityTable
-            title="Tax"
-            rows={taxFieldRows}
-            onToggleVisible={(key, visible) => {
-              updateTaxField(key, { visible });
-              if (key === "title") {
-                updateSetting({ showTaxTableOnReceipt: visible });
-              }
-            }}
-          />
-
-          <ReceiptVisibilityTable
-            title="Product"
-            rows={productFieldRows}
-            onToggleVisible={(key, visible) => updateProductField(key, { visible })}
-          />
-
-          <PosReceiptCopiesTable
-            copies={settings.posReceiptPrintCopies ?? 1}
-            onChangeCopies={(n) => updateSetting({ posReceiptPrintCopies: n })}
-          />
-
-          <Box sx={{ ...baseCardSx, p: 2.5 }}>
-            <Typography component="label" sx={fieldLabelSx}>Receipt Font</Typography>
-            <Typography sx={{ mb: 1.5, maxWidth: 768, fontSize: 12.25, lineHeight: 1.7, color: "text.secondary" }}>
-              Applies to the printed receipt (and thermal printers) as well as the preview on the right. The monospace options keep amount columns aligned on narrow thermal paper.
-            </Typography>
-            <Stack direction="row" sx={{ flexWrap: "wrap", gap: 2 }}>
-              {RECEIPT_FONT_OPTIONS.map((option) => (
-                <Stack
-                  component="label"
-                  key={option.value}
-                  direction="row"
-                  spacing={1}
-                  sx={{ ...radioPillSx(settings.receiptFontFamily === option.value), fontFamily: option.cssStack }}
-                >
-                  <Box
-                    component="input"
-                    type="radio"
-                    name="receipt-font-family"
-                    value={option.value}
-                    checked={settings.receiptFontFamily === option.value}
-                    onChange={() => updateSetting({ receiptFontFamily: option.value })}
-                    sx={{ height: 16, width: 16 }}
-                  />
-                  <Box component="span">{option.label}</Box>
-                </Stack>
-              ))}
-            </Stack>
-          </Box>
-
-          <Box sx={{ ...baseCardSx, p: 2.5 }}>
-            <Typography component="label" sx={fieldLabelSx}>Receipt / Invoice Format</Typography>
-            <Typography sx={{ mb: 1.5, maxWidth: 768, fontSize: 12.25, lineHeight: 1.7, color: "text.secondary" }}>
-              Choose the overall look of the printed receipt -- border and divider style, spacing, and how the header and total are emphasised. Applies to the preview on the right and every POS print.
-            </Typography>
-            <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { sm: "1fr 1fr", xl: "repeat(5, 1fr)" } }}>
-              {RECEIPT_FORMAT_OPTIONS.map((option) => (
-                <Stack
-                  component="label"
-                  key={option.value}
-                  spacing={0.5}
-                  sx={{ cursor: "pointer", borderRadius: "7px", border: "1px solid", borderColor: settings.receiptFormat === option.value ? "primary.main" : "divider", bgcolor: settings.receiptFormat === option.value ? (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08) : "background.paper", color: settings.receiptFormat === option.value ? "primary.main" : "text.secondary", px: 2, py: 1.5, fontSize: 11.5 }}
-                >
-                  <Stack direction="row" spacing={1} sx={{ alignItems: "center", fontWeight: 500 }}>
-                    <Box
-                      component="input"
-                      type="radio"
-                      name="receipt-format"
-                      value={option.value}
-                      checked={settings.receiptFormat === option.value}
-                      onChange={() => updateSetting({ receiptFormat: option.value })}
-                      sx={{ height: 16, width: 16 }}
-                    />
-                    {option.label}
-                  </Stack>
-                  <Box component="span" sx={{ fontSize: 10.5, lineHeight: 1.4, color: "text.secondary" }}>{option.description}</Box>
-                </Stack>
-              ))}
-            </Box>
-          </Box>
-
-          <Box sx={{ ...baseCardSx, p: 2.5 }}>
             <Typography component="label" htmlFor="sales-thank-you-message" sx={fieldLabelSx}>
               Receipt Thank You Message
             </Typography>
@@ -1546,6 +1576,8 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
             </Typography>
           </Box>
 
+
+          </Stack>
           </> : null}
           {hasUnsavedChanges ? (
             <Typography sx={{ borderRadius: "10.5px", border: "1px solid", borderColor: (theme) => alpha(theme.palette.warning.main, 0.4), bgcolor: (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.16 : 0.08), px: 2, py: 1.5, fontSize: 12.25, color: "warning.dark" }}>

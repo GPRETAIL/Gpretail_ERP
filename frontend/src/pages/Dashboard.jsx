@@ -127,7 +127,7 @@ const Dashboard = () => {
   // "urgent". Kept as its own request, independent of loadDashboard's date/company params --
   // notifications aren't range-scoped -- so it can't add to the main dashboard load's timing.
   const fetchActionRequired = useCallback(async ({ signal }) => {
-    const response = await api.get("/notifications", { params: { limit: 8 }, signal });
+    const response = await api.get("/notifications", { params: { limit: 8, action_required: true }, signal });
     return response.data?.data || [];
   }, []);
   const { data: notificationItems, loading: actionRequiredLoading, reload: loadActionRequired, setData: setActionRequiredItems } = useAsyncQuery(fetchActionRequired);
