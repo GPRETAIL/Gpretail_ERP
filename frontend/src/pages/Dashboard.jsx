@@ -395,7 +395,7 @@ const Dashboard = () => {
                 // routing and all opened dashboard modules for the selected store.
                 window.location.reload();
               }}
-              slotProps={{ inputLabel: { shrink: true } }}
+              slotProps={{ inputLabel: { shrink: true }, select: { displayEmpty: true } }}
             >
               {companyOptions.map((row) => (
                 <MenuItem key={row.value || "all"} value={row.value}>

@@ -30,3 +30,9 @@ it("keeps a store-bound administrator locked to their assigned store", async () 
   await waitFor(() => expect(screen.getByRole("textbox", { name: "Company" })).toHaveValue("Coffee 1"));
   expect(screen.queryByRole("combobox", { name: "Company" })).not.toBeInTheDocument();
 });
+
+it("labels the combined scope All Stores instead of leaving the selector blank", async () => {
+  showDashboard({ id: 1, role: "admin", is_tenant_admin: true, store_ids: [2, 3] });
+  expect(screen.getByRole("combobox", { name: "Company" })).toHaveTextContent("All Stores");
+  await waitFor(() => expect(api.get).toHaveBeenCalledWith("/dashboard", expect.objectContaining({ params: expect.objectContaining({ allStores: "true" }) })));
+});
