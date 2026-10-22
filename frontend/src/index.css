@@ -577,13 +577,14 @@ main > .p-6 {
 }
 
 /* ── Master page responsive scaling (desktop) ──
+   Shared PageHeader titles retain their common size at every desktop breakpoint.
    Headings and tables only. Form controls deliberately get no rule here: their size comes from
    CustomInputs.jsx (fieldBaseSx / muiFieldSx) and formControlSizes.js so every page's fields match.
    An `.master-responsive input/select/textarea/button` rule used to live here and, being more
    specific than an sx class, silently enlarged every field and SearchableSelect trigger on just
    the pages carrying this class. */
 @media (min-width: 1280px) {
-  .master-responsive h1 {
+  .master-responsive h1:not(.erp-page-title) {
     font-size: 1.2rem;
     line-height: 1.25;
   }
@@ -605,7 +606,7 @@ main > .p-6 {
 }
 
 @media (min-width: 1536px) {
-  .master-responsive h1 {
+  .master-responsive h1:not(.erp-page-title) {
     font-size: 1.32rem;
   }
 
@@ -619,7 +620,7 @@ main > .p-6 {
 }
 
 @media (min-height: 900px) and (min-width: 1024px) {
-  .master-responsive h1 {
+  .master-responsive h1:not(.erp-page-title) {
     font-size: 1.26rem;
     line-height: 1.25;
   }
@@ -651,7 +652,7 @@ main > .p-6 {
 }
 
 @media (min-height: 1050px) and (min-width: 1280px) {
-  .master-responsive h1 {
+  .master-responsive h1:not(.erp-page-title) {
     font-size: 1.4rem;
   }
 

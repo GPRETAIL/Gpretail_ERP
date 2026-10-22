@@ -32,7 +32,7 @@ const PageHeader = ({ title, onBack, actions, backLabel = "Back" }) => (
           <ArrowLeft size={16} />
         </IconButton>
       )}
-      <Typography component="h1" sx={{ fontSize: 13, fontWeight: 600, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 0.5 }}>
+      <Typography component="h1" className="erp-page-title" sx={{ fontSize: 13, fontWeight: 600, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 0.5 }}>
         {title}
       </Typography>
     </Stack>
