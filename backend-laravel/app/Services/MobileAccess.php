@@ -183,6 +183,9 @@ class MobileAccess
         if (in_array($controller, ['NotificationController', 'NotificationPreferenceController', 'PushSubscriptionController'], true)) {
             return null;
         }
+        if ($controller === 'ThemeWorkspaceController' || ($controller === 'SettingsController' && in_array($request->route()?->getActionMethod(), ['getTheme', 'updateTheme', 'listThemePresets', 'saveThemePreset', 'applyThemePreset', 'deleteThemePreset'], true))) {
+            return null; // Controller enforces theme administration; business licences remain separate.
+        }
         $page = $this->page($request);
         $ownMetadata = in_array($controller, ['StoreController', 'CompanyController'], true)
             && in_array($request->route()?->getActionMethod(), ['index', 'show', 'subscriptionStatus'], true)

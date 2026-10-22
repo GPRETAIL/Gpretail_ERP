@@ -85,3 +85,12 @@
   :root[data-theme-style="glass"] :is(.MuiCard-root, .erp-glass-chrome, .rounded-xl.border, .rounded-md.border) { background-color: #fff !important; }
   :root.dark[data-theme-style="glass"] :is(.MuiCard-root, .erp-glass-chrome, .rounded-xl.border, .rounded-md.border) { background-color: #182336 !important; }
 }
+
+/* Shared surfaces remain readable when decorative effects are unavailable or unwanted. */
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme-style] :is(.MuiCard-root, .MuiAppBar-root, .erp-glass-chrome, .rounded-xl.border, .rounded-md.border) { animation: none !important; transition: none !important; }
+}
+@supports not (backdrop-filter: blur(1px)) {
+  :root[data-theme-style="glassmorphism"] :is(.MuiCard-root, .erp-glass-chrome, .rounded-xl.border, .rounded-md.border) { background-color: #fff !important; }
+  :root.dark[data-theme-style="glassmorphism"] :is(.MuiCard-root, .erp-glass-chrome, .rounded-xl.border, .rounded-md.border) { background-color: #1e2030 !important; }
+}

@@ -96,6 +96,7 @@ class StoreController extends Controller
     public function store(Request $request)
     {
         abort_if(PlatformActivation::current()?->activated, 403, 'Create stores in GP Admin, then activate them here.');
+        abort_if($request->has('theme_customization'), 422, 'Manage branding through the dedicated theme endpoint so permissions, contrast and history are enforced.');
         $data = $request->all();
 
         // Validate and handle uploaded logo file
@@ -134,6 +135,7 @@ class StoreController extends Controller
             ], 404);
         }
 
+        abort_if($request->has('theme_customization'), 422, 'Manage branding through the dedicated theme endpoint so permissions, contrast and history are enforced.');
         $data = $request->all();
 
         // Validate and handle uploaded logo file

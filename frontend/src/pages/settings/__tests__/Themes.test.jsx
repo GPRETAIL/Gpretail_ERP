@@ -1,367 +1,129 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { Provider } from "react-redux";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, expect, it, vi } from "vitest";
 import authReducer from "../../../features/authSlice";
 import { ThemeContext } from "../../../features/theme-context";
 import Themes from "../Themes";
 
-const mockPut = vi.fn(() => Promise.resolve({ data: { data: {} } }));
-const mockPost = vi.fn(() => Promise.resolve({ data: { data: {} } }));
-const mockDelete = vi.fn(() => Promise.resolve({ data: {} }));
-// Defaults to an empty presets list -- most tests don't care about it; the ones that do override
-// this per-test with mockGet.mockResolvedValueOnce(...) rather than every other test needing to
-// know about the presets endpoint at all.
-const mockGet = vi.fn(() => Promise.resolve({ data: { data: [] } }));
-vi.mock("../../../api/axios", () => ({
-  default: {
-    get: (...args) => mockGet(...args),
-    post: (...args) => mockPost(...args),
-    put: (...args) => mockPut(...args),
-    delete: (...args) => mockDelete(...args),
-  },
-}));
+const api = vi.hoisted(() => ({ get: vi.fn(), put: vi.fn(), post: vi.fn(), delete: vi.fn() }));
+vi.mock("../../../api/axios", () => ({ default: api }));
+vi.mock("react-toastify", () => ({ toast: { success: vi.fn(), error: vi.fn(), warn: vi.fn() } }));
+vi.mock("../../../components/ThemeWorkspacePreview", () => ({ default: ({ brand, mode }) => <div aria-label="Preview probe">{mode}:{brand.theme_style}:{brand.font_family}</div> }));
+import { toast } from "react-toastify";
 
-vi.mock("react-toastify", () => ({
-  toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warn: vi.fn(), warning: vi.fn() },
-}));
-
-// checkAuth independently round-trips /auth/me -- out of scope here, mocked wholesale so this
-// file only asserts that Themes.jsx calls it after a successful save/reset.
-const mockCheckAuth = vi.fn(async () => {});
-vi.mock("../../../utils/checkAuth", () => ({ default: (...args) => mockCheckAuth(...args) }));
-
-const renderThemes = (user) => {
-  const store = configureStore({
-    reducer: { auth: authReducer },
-    preloadedState: {
-      auth: { token: "t", user, isAuthenticated: true, loading: false, error: null },
-    },
+const owner = { id: 1, role: "admin", is_tenant_admin: true, platform_company_code: "CMP-ONE", company_id: null };
+const saved = { primary_color: "#123456", font_family: "inter", theme_style: "classic" };
+let snapshot, presets, history;
+beforeEach(() => {
+  vi.clearAllMocks();
+  snapshot = { data: saved, meta: { revision: 2, effective: saved, source: "company", override_allowed: true, allowed_store_ids: [], stores: [{ id: 2, name: "Coffee 1" }, { id: 3, name: "Coffee 2" }] } };
+  presets = []; history = [];
+  api.get.mockImplementation(async url => {
+    if (url.endsWith("/theme-presets")) return { data: { data: presets } };
+    if (url.endsWith("/theme-history")) return { data: { data: history } };
+    if (url === "/companies") return { data: { data: snapshot.meta.stores } };
+    if (url === "/auth/me") return { data: { data: { ...owner, brand: saved } } };
+    return { data: snapshot };
   });
-  return render(
-    <Provider store={store}>
-      <ThemeContext.Provider value={{ theme: "light", setTheme: () => {} }}>
-        <Themes />
-      </ThemeContext.Provider>
-    </Provider>
-  );
-};
-
-const brandedUser = {
-  company_id: 1,
-  brand: { primary_color: "#111111", secondary_color: "#222222", border_radius: 8 },
-};
-
-describe("Themes settings page", () => {
-  it("explains store activation and prevents theme writes when no store exists", () => {
-    renderThemes({ role: "admin", is_tenant_admin: true, store_ids: [] });
-    expect(screen.getByText(/No store is available yet/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /^save$/i })).toBeDisabled();
-    expect(screen.getByRole("link", { name: "Store Activation" })).toHaveAttribute("href", "/store-activation");
-  });
-  it("shows the tenant's saved brand colors and radius as the initial form values", () => {
-    renderThemes(brandedUser);
-
-    expect(screen.getByLabelText("Primary color hex")).toHaveValue("#111111");
-    expect(screen.getByLabelText("Secondary color hex")).toHaveValue("#222222");
-    expect(screen.getByLabelText("Corner radius value")).toHaveValue(8);
-  });
-
-  it("falls back to the default brand values when the tenant has none set", () => {
-    renderThemes({ company_id: 1 });
-
-    expect(screen.getByLabelText("Primary color hex")).toHaveValue("#3a6ea5");
-    expect(screen.getByLabelText("Secondary color hex")).toHaveValue("#10b981");
-    expect(screen.getByLabelText("Corner radius value")).toHaveValue(12);
-  });
-
-  it("flags an invalid hex color and disables Save until it's fixed", () => {
-    renderThemes(brandedUser);
-    const primaryField = screen.getByLabelText("Primary color hex");
-
-    fireEvent.change(primaryField, { target: { value: "notacolor" } });
-    expect(screen.getByText(/enter a valid hex color/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /^save$/i })).toBeDisabled();
-
-    fireEvent.change(primaryField, { target: { value: "#654321" } });
-    expect(screen.queryByText(/enter a valid hex color/i)).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /^save$/i })).not.toBeDisabled();
-  });
-
-  it("saves the edited colors to the dedicated theme endpoint and refreshes the live app theme", async () => {
-    renderThemes(brandedUser);
-
-    fireEvent.change(screen.getByLabelText("Primary color hex"), { target: { value: "#654321" } });
-    fireEvent.click(screen.getByRole("button", { name: /^save$/i }));
-
-    await waitFor(() => expect(mockPut).toHaveBeenCalledTimes(1));
-    const [url, body] = mockPut.mock.calls[0];
-    // A dedicated theme-only endpoint, not the general PUT /companies/{id} -- that one requires an
-    // admin email (from the body or an existing admin-role user row), which a branding-only save
-    // has no reason to satisfy. See SettingsController::updateTheme.
-    expect(url).toBe("/companies/1/theme");
-    expect(body).toEqual({
-      primary_color: "#654321",
-      secondary_color: "#222222",
-      border_radius: 8,
-      theme_style: "classic",
-      font_family: "system",
-      background_color: null,
-      text_color: null,
-      success_color: null,
-      warning_color: null,
-      error_color: null,
-    });
-    await waitFor(() => expect(mockCheckAuth).toHaveBeenCalledTimes(1));
-  });
-
-  it("resets to default by sending an empty theme object, after confirmation", async () => {
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
-    renderThemes(brandedUser);
-
-    fireEvent.click(screen.getByRole("button", { name: /reset to default/i }));
-
-    await waitFor(() => expect(mockPut).toHaveBeenCalledTimes(1));
-    const [url, body] = mockPut.mock.calls[0];
-    expect(url).toBe("/companies/1/theme");
-    expect(body).toEqual({});
-    await waitFor(() => expect(mockCheckAuth).toHaveBeenCalledTimes(1));
-
-    confirmSpy.mockRestore();
-  });
-
-  it("does not save when the reset confirmation is declined", () => {
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
-    renderThemes(brandedUser);
-
-    fireEvent.click(screen.getByRole("button", { name: /reset to default/i }));
-
-    expect(mockPut).not.toHaveBeenCalled();
-    confirmSpy.mockRestore();
-  });
-
-  it("shows an unsaved-changes banner only once a field has been edited", () => {
-    renderThemes(brandedUser);
-
-    expect(screen.queryByText(/unsaved branding changes/i)).not.toBeInTheDocument();
-
-    fireEvent.change(screen.getByLabelText("Primary color hex"), { target: { value: "#654321" } });
-    expect(screen.getByText(/unsaved branding changes/i)).toBeInTheDocument();
-  });
-
-  describe("theme style picker", () => {
-    it("preserves an existing Apple customization", () => {
-      renderThemes({ company_id: 1, brand: { theme_style: "apple", primary_color: "#123456", font_family: "inter" } });
-      expect(screen.getByRole("button", { name: /apple \(saved\)/i })).toHaveAttribute("aria-pressed", "true");
-      expect(screen.getByLabelText("Primary color hex")).toHaveValue("#123456");
-      expect(screen.getByRole("button", { name: /^inter\b/i })).toHaveAttribute("aria-pressed", "true");
-    });
-    it("defaults to Default when the tenant has no style saved", () => {
-      renderThemes(brandedUser);
-
-      expect(screen.getByRole("button", { name: /^default/i })).toHaveAttribute("aria-pressed", "true");
-      expect(screen.getByRole("button", { name: /glassmorphism/i })).toHaveAttribute("aria-pressed", "false");
-    });
-
-    it("shows the tenant's saved style as selected", () => {
-      renderThemes({ company_id: 1, brand: { theme_style: "glass" } });
-
-      expect(screen.getByRole("button", { name: /liquid glass/i })).toHaveAttribute("aria-pressed", "true");
-      expect(screen.getByRole("button", { name: /^default/i })).toHaveAttribute("aria-pressed", "false");
-    });
-
-    it("selecting a style marks it pressed, shows unsaved changes, and includes it on Save", async () => {
-      renderThemes(brandedUser);
-
-      fireEvent.click(screen.getByRole("button", { name: /liquid ai/i }));
-
-      expect(screen.getByRole("button", { name: /liquid ai/i })).toHaveAttribute("aria-pressed", "true");
-      expect(screen.getByText(/unsaved branding changes/i)).toBeInTheDocument();
-
-      fireEvent.click(screen.getByRole("button", { name: /^save$/i }));
-
-      await waitFor(() => expect(mockPut).toHaveBeenCalledTimes(1));
-      const [, body] = mockPut.mock.calls[0];
-      expect(body).toMatchObject({ theme_style: "liquid_ai" });
-    });
-  });
-
-  describe("advanced colors", () => {
-    it("starts blank when the tenant hasn't set any", () => {
-      renderThemes(brandedUser);
-
-      expect(screen.getByLabelText("Background color hex")).toHaveValue("");
-      expect(screen.getByLabelText("Success color hex")).toHaveValue("");
-    });
-
-    it("shows the tenant's saved advanced colors", () => {
-      renderThemes({ company_id: 1, brand: { success_color: "#16a34a" } });
-
-      expect(screen.getByLabelText("Success color hex")).toHaveValue("#16a34a");
-    });
-
-    it("flags an invalid value but allows an empty one", () => {
-      renderThemes(brandedUser);
-      const errorField = screen.getByLabelText("Error color hex");
-
-      fireEvent.change(errorField, { target: { value: "notacolor" } });
-      expect(screen.getByText(/enter a valid hex color/i)).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /^save$/i })).toBeDisabled();
-
-      fireEvent.change(errorField, { target: { value: "" } });
-      expect(screen.queryByText(/enter a valid hex color/i)).not.toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /^save$/i })).not.toBeDisabled();
-    });
-
-    it("Clear resets a set field to blank and re-enables Save", () => {
-      renderThemes({ company_id: 1, brand: { warning_color: "#ca8a04" } });
-
-      fireEvent.click(screen.getByRole("button", { name: /clear/i }));
-
-      expect(screen.getByLabelText("Warning color hex")).toHaveValue("");
-    });
-
-    it("sends set colors as their hex value and untouched ones as null, not empty string", async () => {
-      renderThemes(brandedUser);
-
-      fireEvent.change(screen.getByLabelText("Background color hex"), { target: { value: "#111827" } });
-      fireEvent.click(screen.getByRole("button", { name: /^save$/i }));
-
-      await waitFor(() => expect(mockPut).toHaveBeenCalledTimes(1));
-      const [, body] = mockPut.mock.calls[0];
-      expect(body).toMatchObject({
-        background_color: "#111827",
-        text_color: null,
-        success_color: null,
-        warning_color: null,
-        error_color: null,
-      });
-    });
-  });
-
-  describe("font picker", () => {
-    it("defaults to System Default when the tenant has none saved", () => {
-      renderThemes(brandedUser);
-
-      expect(screen.getByRole("button", { name: /system default/i })).toHaveAttribute("aria-pressed", "true");
-      expect(screen.getByRole("button", { name: /^inter\b/i })).toHaveAttribute("aria-pressed", "false");
-    });
-
-    it("shows the tenant's saved font as selected", () => {
-      renderThemes({ company_id: 1, brand: { font_family: "poppins" } });
-
-      expect(screen.getByRole("button", { name: /poppins/i })).toHaveAttribute("aria-pressed", "true");
-      expect(screen.getByRole("button", { name: /system default/i })).toHaveAttribute("aria-pressed", "false");
-    });
-
-    it("selecting a font marks it pressed, shows unsaved changes, and includes it on Save", async () => {
-      renderThemes(brandedUser);
-
-      fireEvent.click(screen.getByRole("button", { name: /^inter\b/i }));
-
-      expect(screen.getByRole("button", { name: /^inter\b/i })).toHaveAttribute("aria-pressed", "true");
-      expect(screen.getByText(/unsaved branding changes/i)).toBeInTheDocument();
-
-      fireEvent.click(screen.getByRole("button", { name: /^save$/i }));
-
-      await waitFor(() => expect(mockPut).toHaveBeenCalledTimes(1));
-      const [, body] = mockPut.mock.calls[0];
-      expect(body).toMatchObject({ font_family: "inter" });
-    });
-  });
-
-  describe("saved presets", () => {
-    const samplePresets = [
-      { id: 1, name: "Diwali Sale", config: { primary_color: "#f97316" } },
-      { id: 2, name: "Ocean", config: { primary_color: "#0284c7", theme_style: "liquid_ai" } },
-    ];
-
-    it("shows an empty state when the tenant has none saved", async () => {
-      renderThemes(brandedUser);
-
-      expect(await screen.findByText(/no saved presets yet/i)).toBeInTheDocument();
-    });
-
-    it("lists saved presets once loaded", async () => {
-      mockGet.mockResolvedValueOnce({ data: { data: samplePresets } });
-      renderThemes(brandedUser);
-
-      expect(await screen.findByText("Diwali Sale")).toBeInTheDocument();
-      expect(screen.getByText("Ocean")).toBeInTheDocument();
-    });
-
-    it("blocks opening the save dialog while a field is invalid", async () => {
-      renderThemes(brandedUser);
-      await screen.findByText(/no saved presets yet/i);
-
-      fireEvent.change(screen.getByLabelText("Primary color hex"), { target: { value: "notacolor" } });
-      fireEvent.click(screen.getByRole("button", { name: /save current/i }));
-
-      expect(screen.queryByText("Save Current Theme As...")).not.toBeInTheDocument();
-    });
-
-    it("saves the current theme as a new named preset", async () => {
-      renderThemes(brandedUser);
-      await screen.findByText(/no saved presets yet/i);
-
-      fireEvent.click(screen.getByRole("button", { name: /save current/i }));
-      fireEvent.change(screen.getByLabelText("Preset name"), { target: { value: "Diwali Sale" } });
-      // The page's own Save button stays mounted behind the MUI dialog, so scope to the dialog --
-      // both it and the dialog's own action are named exactly "Save".
-      fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: /^save$/i }));
-
-      await waitFor(() => expect(mockPost).toHaveBeenCalledTimes(1));
-      const [url, body] = mockPost.mock.calls[0];
-      expect(url).toBe("/companies/1/theme-presets");
-      expect(body).toMatchObject({ name: "Diwali Sale", primary_color: "#111111" });
-      await waitFor(() => expect(screen.queryByText("Save Current Theme As...")).not.toBeInTheDocument());
-    });
-
-    it("requires a name before saving a preset", async () => {
-      renderThemes(brandedUser);
-      await screen.findByText(/no saved presets yet/i);
-
-      fireEvent.click(screen.getByRole("button", { name: /save current/i }));
-      fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: /^save$/i }));
-
-      expect(mockPost).not.toHaveBeenCalled();
-    });
-
-    it("applying a preset calls the apply endpoint, updates the form, and refreshes the live theme", async () => {
-      mockGet.mockResolvedValueOnce({ data: { data: samplePresets } });
-      renderThemes(brandedUser);
-      await screen.findByText("Ocean");
-
-      fireEvent.click(screen.getAllByRole("button", { name: /^apply$/i })[1]); // Ocean is the 2nd row
-
-      await waitFor(() => expect(mockPost).toHaveBeenCalledWith("/companies/1/theme-presets/2/apply"));
-      await waitFor(() => expect(screen.getByLabelText("Primary color hex")).toHaveValue("#0284c7"));
-      expect(screen.getByRole("button", { name: /liquid ai/i })).toHaveAttribute("aria-pressed", "true");
-      await waitFor(() => expect(mockCheckAuth).toHaveBeenCalledTimes(1));
-    });
-
-    it("deletes a preset after confirmation", async () => {
-      const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
-      mockGet.mockResolvedValueOnce({ data: { data: samplePresets } });
-      renderThemes(brandedUser);
-      await screen.findByText("Diwali Sale");
-
-      fireEvent.click(screen.getByRole("button", { name: /delete diwali sale/i }));
-
-      await waitFor(() => expect(mockDelete).toHaveBeenCalledWith("/companies/1/theme-presets/1"));
-      confirmSpy.mockRestore();
-    });
-
-    it("does not delete when the confirmation is declined", async () => {
-      const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
-      mockGet.mockResolvedValueOnce({ data: { data: samplePresets } });
-      renderThemes(brandedUser);
-      await screen.findByText("Diwali Sale");
-
-      fireEvent.click(screen.getByRole("button", { name: /delete diwali sale/i }));
-
-      expect(mockDelete).not.toHaveBeenCalled();
-      confirmSpy.mockRestore();
-    });
-  });
+  api.put.mockResolvedValue({ data: snapshot }); api.post.mockResolvedValue({ data: {} }); api.delete.mockResolvedValue({ data: {} });
+});
+function show(user = owner, mode = "light") {
+  const store = configureStore({ reducer: { auth: authReducer }, preloadedState: { auth: { token: "test", user, isAuthenticated: true } } });
+  render(<Provider store={store}><ThemeContext.Provider value={{ theme: mode, setTheme: vi.fn() }}><Themes /></ThemeContext.Provider></Provider>);
+  return store;
+}
+const ready = () => screen.findByRole("button", { name: "Apply Theme", exact: true });
+const tab = label => fireEvent.click(screen.getByRole("tab", { name: label, exact: true }));
+const apply = () => { fireEvent.click(screen.getByRole("button", { name: "Apply Theme", exact: true })); fireEvent.click(screen.getByRole("button", { name: "Confirm Apply" })); };
+
+it("loads company branding without a store and has no duplicate mode control", async () => {
+  show(); await ready();
+  expect(api.get).toHaveBeenCalledWith("/tenant/theme", expect.any(Object));
+  expect(screen.getByRole("combobox", { name: "Theme scope" })).toHaveTextContent("Company Default");
+  expect(screen.queryByRole("switch")).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: /^light$|^dark$|^system$/i })).not.toBeInTheDocument();
+  tab("Brand Colors"); expect(screen.getByLabelText("Primary color hex")).toHaveValue("#123456");
+});
+it("isolates drafts, confirms affected stores, and publishes with the loaded revision", async () => {
+  show(); await ready(); fireEvent.click(screen.getByRole("button", { name: /Liquid AI/i }));
+  expect(screen.getByLabelText("Preview probe")).toHaveTextContent("liquid_ai"); expect(api.put).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Apply Theme", exact: true }));
+  expect(screen.getByRole("dialog")).toHaveTextContent("Coffee 1, Coffee 2");
+  fireEvent.click(screen.getByRole("button", { name: "Confirm Apply" }));
+  await waitFor(() => expect(api.put).toHaveBeenCalledWith("/tenant/theme", expect.objectContaining({ theme_style: "liquid_ai", expected_revision: 2, allowed_store_ids: [] }), expect.any(Object)));
+});
+it("discards a draft without publishing", async () => {
+  show(); await ready(); fireEvent.click(screen.getByRole("button", { name: /Liquid AI/i })); fireEvent.click(screen.getByRole("button", { name: "Discard" }));
+  expect(screen.getByLabelText("Preview probe")).toHaveTextContent("classic"); expect(api.put).not.toHaveBeenCalled();
+});
+it("reloads the saved theme after confirming draft discard even when its revision is unchanged", async () => {
+  vi.spyOn(window, "confirm").mockReturnValueOnce(true);
+  show(); await ready(); fireEvent.click(screen.getByRole("button", { name: /Liquid AI/i }));
+  fireEvent.click(screen.getByRole("button", { name: "Reload saved theme" }));
+  await waitFor(() => expect(screen.getByLabelText("Preview probe")).toHaveTextContent("classic"));
+  expect(api.put).not.toHaveBeenCalled();
+});
+it("blocks invalid hex and low contrast", async () => {
+  show(); await ready(); tab("Brand Colors");
+  fireEvent.change(screen.getByLabelText("Primary color hex"), { target: { value: "invalid" } }); expect(screen.getByRole("button", { name: "Apply Theme", exact: true })).toBeDisabled();
+  fireEvent.change(screen.getByLabelText("Primary color hex"), { target: { value: "#123456" } });
+  fireEvent.change(screen.getByLabelText("Text color hex"), { target: { value: "#ffffff" } });
+  expect(screen.getByText(/4.5:1 contrast/)).toBeInTheDocument(); expect(screen.getByRole("button", { name: "Apply Theme", exact: true })).toBeDisabled();
+});
+it("uses the header-selected dark mode without overwriting light colors", async () => {
+  snapshot.meta.effective = { ...saved, light_colors: { text_color: "#111111" }, dark_colors: { text_color: "#eeeeee" } };
+  show(owner, "dark"); await ready(); tab("Brand Colors"); expect(screen.getByLabelText("Text color hex")).toHaveValue("#eeeeee"); apply();
+  await waitFor(() => expect(api.put).toHaveBeenCalledWith("/tenant/theme", expect.objectContaining({ light_colors: { text_color: "#111111" }, dark_colors: { text_color: "#eeeeee" } }), expect.any(Object)));
+});
+it("preserves saved Apple and Playfair configurations", async () => {
+  snapshot.meta.effective = { ...saved, theme_style: "apple", font_family: "playfair" }; show(); await ready();
+  expect(screen.getByRole("button", { name: /Apple \(saved\)/ })).toHaveAttribute("aria-pressed", "true");
+  tab("Typography"); expect(screen.getByRole("button", { name: "Playfair Display" })).toHaveAttribute("aria-pressed", "true");
+});
+it("sends explicit scope when managing a different store", async () => {
+  show(); await ready(); fireEvent.mouseDown(screen.getByRole("combobox", { name: "Theme scope" })); fireEvent.click(screen.getByRole("option", { name: "Store Override" }));
+  fireEvent.mouseDown(screen.getByRole("combobox", { name: "Store", exact: true })); fireEvent.click(screen.getByRole("option", { name: "Coffee 2" }));
+  await waitFor(() => expect(api.get).toHaveBeenCalledWith("/companies/3/theme", expect.objectContaining({ storeScopeId: "3" })));
+  await ready(); apply(); await waitFor(() => expect(api.put).toHaveBeenCalledWith("/companies/3/theme", expect.any(Object), { storeScopeId: "3" }));
+});
+it("locks inherited store branding when overrides are disabled", async () => {
+  snapshot.meta.override_allowed = false; show({ id: 2, role: "admin", company_id: 2 }); await ready();
+  expect(screen.getByRole("button", { name: "Apply Theme", exact: true })).toBeDisabled(); expect(screen.getByText(/locked to company branding/)).toBeInTheDocument();
+});
+it("publishes override policy only after company confirmation", async () => {
+  show(); await ready(); tab("Store Overrides"); fireEvent.click(screen.getByRole("checkbox", { name: "Coffee 1" })); expect(api.put).not.toHaveBeenCalled(); apply();
+  await waitFor(() => expect(api.put).toHaveBeenCalledWith("/tenant/theme", expect.objectContaining({ allowed_store_ids: [2] }), expect.any(Object)));
+});
+it("previews presets without applying them and saves named presets separately", async () => {
+  presets = [{ id: 8, name: "Ocean", config: { theme_style: "glass" } }]; show(); await ready(); tab("Presets & History"); await screen.findByText("Ocean");
+  fireEvent.click(screen.getByRole("button", { name: "Preview Preset" })); expect(screen.getByLabelText("Preview probe")).toHaveTextContent("glass"); expect(api.post).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Save Preset", exact: true })); fireEvent.change(screen.getByLabelText("Preset name"), { target: { value: "Corporate" } });
+  fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Save Preset" }));
+  await waitFor(() => expect(api.post).toHaveBeenCalledWith("/tenant/theme-presets", expect.objectContaining({ name: "Corporate" }), expect.any(Object))); expect(api.put).not.toHaveBeenCalled();
+});
+it("restores history through a confirmed revision-checked endpoint", async () => {
+  history = [{ id: 9, revision: 1, operation: "baseline", author: "Owner", created_at: "2026-10-23 12:00:00" }]; show(); await ready(); tab("Presets & History");
+  fireEvent.click(await screen.findByRole("button", { name: "Restore", exact: true })); expect(api.post).not.toHaveBeenCalled(); fireEvent.click(screen.getByRole("button", { name: "Confirm Apply" }));
+  await waitFor(() => expect(api.post).toHaveBeenCalledWith("/tenant/theme-history/9/restore", { expected_revision: 2 }, expect.any(Object)));
+});
+it("keeps the account signed in when workspace refresh fails after saving", async () => {
+  const previous = api.get.getMockImplementation(); api.get.mockImplementation(url => url === "/auth/me" ? Promise.reject(new Error("offline")) : previous(url));
+  const store = show(); await ready(); apply(); await waitFor(() => expect(toast.warn).toHaveBeenCalledWith(expect.stringContaining("Workspace refresh failed"))); expect(store.getState().auth.token).toBe("test");
+});
+it("reports conflicts without discarding the draft", async () => {
+  api.put.mockRejectedValue({ response: { status: 409 } }); show(); await ready(); fireEvent.click(screen.getByRole("button", { name: /Liquid AI/i })); apply();
+  await waitFor(() => expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("Another administrator"))); expect(screen.getByLabelText("Preview probe")).toHaveTextContent("liquid_ai");
+});
+it("loads earlier history without hiding the current revisions", async () => {
+  const previous = api.get.getMockImplementation();
+  api.get.mockImplementation((url, config) => url.endsWith("/theme-history") ? Promise.resolve({ data: {
+    data: [{ id: config?.params ? 1 : 51, revision: config?.params ? 1 : 51, operation: "apply", author: "Owner" }],
+    meta: { next_before: config?.params ? null : 2 },
+  } }) : previous(url, config));
+  show(); await ready(); tab("Presets & History");
+  fireEvent.click(await screen.findByRole("button", { name: "Load Earlier Revisions" }));
+  await waitFor(() => expect(api.get).toHaveBeenCalledWith("/tenant/theme-history", expect.objectContaining({ params: { before_revision: 2 } })));
+  await waitFor(() => expect(screen.getAllByRole("button", { name: "Restore", exact: true })).toHaveLength(2));
+  expect(screen.queryByRole("button", { name: "Load Earlier Revisions" })).not.toBeInTheDocument();
 });

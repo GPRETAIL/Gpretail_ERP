@@ -1,12 +1,15 @@
 import { configureStore } from "@reduxjs/toolkit";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { useTheme as useMuiTheme } from "@mui/material/styles";
 import { Table, TableBody, TableCell, TableHead, TableRow } from "@mui/material";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import api from "../../api/axios";
 import authReducer from "../../features/authSlice";
 import { ThemeContext } from "../../features/theme-context";
 import TenantThemeProvider from "../TenantThemeProvider";
+
+vi.mock("../../api/axios", () => ({ default: { get: vi.fn() } }));
 
 // Reads the ambient MUI theme and renders its primary color as text -- the automated version of
 // "any MUI component anywhere picks up the tenant's brand", independent of any one page's markup.
@@ -34,6 +37,19 @@ const renderWithBrand = (brand, mode = "light", children = <MuiProbe />) => {
 };
 
 describe("TenantThemeProvider", () => {
+  it("refreshes published branding on focus and preserves it when offline", async () => {
+    const user = { id: 3, brand: { primary_color: "#123456" } };
+    const store = configureStore({ reducer: { auth: authReducer }, preloadedState: { auth: { token: "t", user, isAuthenticated: true } } });
+    render(<Provider store={store}><ThemeContext.Provider value={{ theme: "light" }}><TenantThemeProvider><MuiProbe /></TenantThemeProvider></ThemeContext.Provider></Provider>);
+    api.get.mockResolvedValueOnce({ data: { data: { ...user, brand: { primary_color: "#345678" }, theme_source: "company" } } });
+    fireEvent.focus(window);
+    await screen.findByText("PRIMARY:#345678");
+    api.get.mockRejectedValueOnce(new Error("offline"));
+    fireEvent(window, new Event("online"));
+    await waitFor(() => expect(api.get).toHaveBeenCalledTimes(2));
+    expect(store.getState().auth.token).toBe("t");
+    expect(screen.getByText("PRIMARY:#345678")).toBeInTheDocument();
+  });
   it.each([["glassmorphism", "light"], ["glassmorphism", "dark"], ["liquid_ai", "light"], ["liquid_ai", "dark"]])("renders ERP table rows under %s in %s mode", (style, mode) => {
     renderWithBrand({ theme_style: style }, mode,
       <Table><TableHead><TableRow><TableCell>Product</TableCell></TableRow></TableHead><TableBody><TableRow selected><TableCell>Cotton Shirt</TableCell></TableRow></TableBody></Table>);

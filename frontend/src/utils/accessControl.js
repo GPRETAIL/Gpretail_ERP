@@ -36,6 +36,8 @@ export const canSwitchStores = (user) => {
   return Array.isArray(ids) && new Set(ids.map(String).filter((id) => /^[1-9]\d*$/.test(id))).size > 1;
 };
 
+const canManageThemes = user => isTenantAdmin(user) || user?.role === USER_ROLE.SUPER_ADMIN || (user?.role === USER_ROLE.ADMIN && user?.theme_override_allowed === true);
+
 // Account administration remains reachable when no store or business plan is active.
 const isTenantManagementPath = (user, path) => isTenantAdmin(user) &&
   ["/settings", "/settings/company", "/settings/themes", "/settings/branding"].includes(path);
@@ -53,6 +55,7 @@ const isSectionEntitled = (sections, slug) => {
 };
 
 export const isPathEntitled = (user, pathname) => {
+  if (canManageThemes(user) && ["/settings", "/settings/themes", "/settings/branding"].includes(String(pathname || "").toLowerCase().replace(/\/+$/, ""))) return true;
   if (isTenantManagementPath(user, String(pathname || "").toLowerCase().replace(/\/+$/, ""))) return true;
   const sections = getEntitlementSections(user);
   if (!sections) return true;
@@ -163,6 +166,7 @@ export const getHomePathForUser = (user) => {
 
 export const canAccessPath = (pathname, user) => {
   const path = String(pathname || "").toLowerCase();
+  if (["/settings", "/settings/themes", "/settings/branding"].includes(path) && canManageThemes(user)) return true;
   // Company module entitlement gates every module path, regardless of RBAC.
   if (!isPathEntitled(user, path)) return false;
   if (hasPagePermissionMode(user)) {
@@ -205,7 +209,7 @@ export const canAccessPath = (pathname, user) => {
   // /settings/branding redirects to /settings/themes (RedirectPreservingQuery in
   // protectedLayoutRoutes.jsx) -- both must gate identically, or an old bookmarked link 302s into
   // a second bounce once ProtectedRoute re-checks the destination path.
-  if (path.startsWith("/settings/branding") || path.startsWith("/settings/themes")) return cap.canManageCompany;
+  if (path.startsWith("/settings/branding") || path.startsWith("/settings/themes")) return canManageThemes(user);
   if (path.startsWith("/settings/configure-local-server")) return cap.canSettings;
   if (path.startsWith("/settings")) return cap.canSettings;
   if (cap.canAll) return true;
@@ -237,6 +241,15 @@ export const getVisibleNavItems = (items, user) => {
         };
       })
       .filter(Boolean);
+    if (canManageThemes(user)) {
+      const settings = (items || []).find(item => item.path === "/settings");
+      const themes = settings?.subItems?.find(item => item.path === "/settings/themes");
+      if (settings && themes) {
+        const existing = permitted.find(item => item.path === settings.path);
+        if (existing && !existing.subItems.some(item => item.path === themes.path)) existing.subItems.push(themes);
+        else if (!existing) permitted.push({ ...settings, subItems: [themes] });
+      }
+    }
     return filterNavByEntitlement(permitted, user);
   }
 
@@ -279,7 +292,7 @@ export const getVisibleNavItems = (items, user) => {
       const subItems = (item.subItems || []).filter((subItem) => {
         const subPath = String(subItem.path || "").toLowerCase();
         if (subPath === "/settings/company") return cap.canManageCompany;
-        if (subPath === "/settings/themes") return cap.canManageCompany;
+        if (subPath === "/settings/themes") return canManageThemes(user);
         return cap.canSettings;
       });
 

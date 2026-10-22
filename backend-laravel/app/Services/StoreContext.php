@@ -68,7 +68,9 @@ class StoreContext
             'store_id' => $selected?->id,
             'company_id' => $selected?->id, // Compatibility alias; never defaults to 1.
             'company_name' => $selected?->name,
-            'brand' => $selected?->theme_customization ?: [],
+            'brand' => app(TenantThemes::class)->effective($selected, $user->platform_company_code),
+            'theme_override_allowed' => $selected ? app(TenantThemes::class)->overrideAllowed($selected) : false,
+            'theme_source' => $selected?->theme_customization && app(TenantThemes::class)->overrideAllowed($selected) ? 'store' : (app(TenantThemes::class)->company($user->platform_company_code) ? 'company' : 'default'),
             'logo' => $selected?->logo,
             'store_ids' => $stores->pluck('id')->all(),
             'company_ids' => $stores->pluck('id')->all(), // Existing desktop/mobile switchers.

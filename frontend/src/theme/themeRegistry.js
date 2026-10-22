@@ -88,6 +88,7 @@ export function isHexColor(value) {
 // clobbering the paths a tenant left untouched.
 const ADVANCED_COLOR_FIELDS = {
   background_color: ["background", "default"],
+  surface_color: ["background", "paper"],
   text_color: ["text", "primary"],
   success_color: ["success", "main"],
   warning_color: ["warning", "main"],
@@ -98,7 +99,7 @@ function buildAdvancedPalette(brand) {
   const palette = {};
   for (const [wireKey, [group, token]] of Object.entries(ADVANCED_COLOR_FIELDS)) {
     if (!isHexColor(brand?.[wireKey])) continue;
-    palette[group] = { ...palette[group], [token]: brand[wireKey] };
+    palette[group] = { ...palette[group], [token]: brand[wireKey].trim() };
   }
   return palette;
 }
@@ -205,10 +206,10 @@ function resolveBrandTheme(brand, mode, basePalette = {}) {
   const modeTokens = (mode === "dark" ? dark : light) || {};
 
   const primaryColor = isHexColor(brand?.primary_color)
-    ? brand.primary_color
+    ? brand.primary_color.trim()
     : modeIndependent.primary?.main || DEFAULT_BRAND.primary_color;
   const secondaryColor = isHexColor(brand?.secondary_color)
-    ? brand.secondary_color
+    ? brand.secondary_color.trim()
     : modeIndependent.secondary?.main || DEFAULT_BRAND.secondary_color;
   const borderRadius = Number.isFinite(brand?.border_radius) ? brand.border_radius : DEFAULT_BRAND.border_radius;
   const style = THEME_STYLES.includes(brand?.theme_style) ? brand.theme_style : DEFAULT_THEME_STYLE;
@@ -218,7 +219,7 @@ function resolveBrandTheme(brand, mode, basePalette = {}) {
   delete baseGroups.secondary;
 
   const stylePalette = STYLE_PALETTE[style](mode);
-  const advancedPalette = buildAdvancedPalette(brand);
+  const advancedPalette = buildAdvancedPalette({ ...brand, ...brand?.[`${mode}_colors`] });
   const mergedPalette = { ...baseGroups };
   for (const group of Object.keys(stylePalette)) {
     mergedPalette[group] = typeof stylePalette[group] === "object" && stylePalette[group] !== null
@@ -234,6 +235,7 @@ function resolveBrandTheme(brand, mode, basePalette = {}) {
     shape: { borderRadius },
     palette: {
       mode,
+      contrastThreshold: 4.5,
       primary: { main: primaryColor },
       secondary: { main: secondaryColor },
       ...mergedPalette,
@@ -241,13 +243,15 @@ function resolveBrandTheme(brand, mode, basePalette = {}) {
     components: {
       ...baseThemeOptions.components,
       ...STYLE_COMPONENTS[style](mode),
-      ...(["glass", "glassmorphism", "liquid_ai"].includes(style) ? Object.fromEntries(
+      MuiButton: { ...STYLE_COMPONENTS[style](mode).MuiButton, styleOverrides: { root: { ...STYLE_COMPONENTS[style](mode).MuiButton?.styleOverrides?.root, borderRadius: "0.5rem" } } },
+      MuiOutlinedInput: { styleOverrides: { root: { ...STYLE_COMPONENTS[style](mode).MuiOutlinedInput?.styleOverrides?.root, borderRadius: "0.5rem", backgroundColor: advancedPalette.background?.paper || (mode === "dark" ? "#1e2030" : "#ffffff") } } },
+      ...Object.fromEntries(
         ["MuiTableContainer", "MuiTableHead", "MuiMenu", "MuiPopover", "MuiDialog", "MuiAutocomplete"].map((name) => [name, {
           styleOverrides: { [name === "MuiMenu" || name === "MuiPopover" || name === "MuiDialog" ? "paper" : name === "MuiAutocomplete" ? "paper" : "root"]: {
-            backgroundColor: mode === "dark" ? "#1e2030" : "#ffffff", backgroundImage: "none", backdropFilter: "none", WebkitBackdropFilter: "none",
+            backgroundColor: advancedPalette.background?.paper || (mode === "dark" ? "#1e2030" : "#ffffff"), backgroundImage: "none", backdropFilter: "none", WebkitBackdropFilter: "none",
           } },
         }])
-      ) : {}),
+      ),
     },
   });
 }

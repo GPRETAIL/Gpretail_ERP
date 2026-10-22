@@ -1,7 +1,9 @@
-import { useEffect, useMemo } from "react";
-import { useSelector } from "react-redux";
+import { useEffect, useEffectEvent, useMemo } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { ThemeProvider as MuiThemeProvider } from "@mui/material/styles";
 import { useTheme as useAppTheme } from "../features/theme-context";
+import api from "../api/axios";
+import { loginSuccess } from "../features/authSlice";
 import { createTenantTheme, DEFAULT_THEME_STYLE, THEME_STYLES, getFontOption, ensureGoogleFontLoaded } from "./themeRegistry";
 
 // Wraps the whole app in a dynamic MUI theme fed by the logged-in tenant's brand payload
@@ -19,7 +21,24 @@ import { createTenantTheme, DEFAULT_THEME_STYLE, THEME_STYLES, getFontOption, en
 // change.
 export default function TenantThemeProvider({ children }) {
   const { theme: mode } = useAppTheme();
-  const brand = useSelector((state) => state.auth.user?.brand);
+  const dispatch = useDispatch();
+  const user = useSelector(state => state.auth.user);
+  const token = useSelector(state => state.auth.token);
+  const brand = user?.brand;
+  const refresh = useEffectEvent(async (signal) => {
+    if (!user?.id || !token || document.visibilityState === "hidden") return;
+    try {
+      const response = await api.get("/auth/me", { signal });
+      if (!signal.aborted && response.data?.data && JSON.stringify([response.data.data.brand, response.data.data.theme_source, response.data.data.theme_override_allowed]) !== JSON.stringify([brand, user.theme_source, user.theme_override_allowed])) dispatch(loginSuccess({ token, user: response.data.data }));
+    } catch { /* Offline and transient failures retain the last saved appearance. */ }
+  });
+  useEffect(() => {
+    const controller = new AbortController();
+    const update = () => refresh(controller.signal);
+    window.addEventListener("focus", update);
+    window.addEventListener("online", update);
+    return () => { controller.abort(); window.removeEventListener("focus", update); window.removeEventListener("online", update); };
+  }, []);
   const muiTheme = useMemo(() => createTenantTheme(brand, mode), [brand, mode]);
 
   useEffect(() => {

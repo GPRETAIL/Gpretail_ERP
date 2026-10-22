@@ -107,20 +107,20 @@ describe("createTenantTheme", () => {
     it("defaults to classic -- no pill buttons, no backdrop blur", () => {
       const theme = createTenantTheme(undefined, "light");
 
-      expect(theme.components.MuiButton?.styleOverrides?.root).toBeUndefined();
+      expect(theme.components.MuiButton?.styleOverrides?.root.borderRadius).toBe("0.5rem");
       expect(theme.components.MuiCard?.styleOverrides?.root?.backdropFilter).toBeUndefined();
     });
 
     it("falls back to classic for an unrecognized style value", () => {
       const theme = createTenantTheme({ theme_style: "enterprise" }, "light");
 
-      expect(theme.components.MuiButton?.styleOverrides?.root).toBeUndefined();
+      expect(theme.components.MuiButton?.styleOverrides?.root.borderRadius).toBe("0.5rem");
     });
 
-    it("apple gives MuiCard a soft shadow and MuiButton a pill radius", () => {
+    it("apple preserves soft surfaces while controls keep the common ERP radius", () => {
       const theme = createTenantTheme({ theme_style: "apple" }, "light");
 
-      expect(theme.components.MuiButton.styleOverrides.root.borderRadius).toBe(999);
+      expect(theme.components.MuiButton.styleOverrides.root.borderRadius).toBe("0.5rem");
       expect(theme.components.MuiCard.styleOverrides.root.boxShadow).toContain("rgba(0,0,0,0.06)");
     });
 
@@ -150,7 +150,7 @@ describe("createTenantTheme", () => {
       const theme = createTenantTheme({ theme_style: "apple", primary_color: "#e11d48" }, "light");
 
       expect(theme.palette.primary.main).toBe("#e11d48");
-      expect(theme.components.MuiButton.styleOverrides.root.borderRadius).toBe(999);
+      expect(theme.components.MuiButton.styleOverrides.root.borderRadius).toBe("0.5rem");
     });
   });
 });

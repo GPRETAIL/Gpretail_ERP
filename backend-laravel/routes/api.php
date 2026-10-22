@@ -54,6 +54,7 @@ use App\Http\Controllers\Api\V1\SupplierController;
 use App\Http\Controllers\Api\V1\SupplierPaymentController;
 use App\Http\Controllers\Api\V1\SyncController;
 use App\Http\Controllers\Api\V1\TaxController;
+use App\Http\Controllers\Api\V1\ThemeWorkspaceController;
 use App\Http\Controllers\Api\V1\TransportController;
 use App\Http\Controllers\Api\V1\TransportEntryController;
 use App\Http\Controllers\Api\V1\UserAccessController;
@@ -137,6 +138,16 @@ $registerAppRoutes = function () {
     Route::post('companies/subscription/notices/{id}/dismiss', [StoreController::class, 'subscriptionStatus']);
     Route::get('companies/tenant-sync/overview', [StoreActivationController::class, 'overview']);
     Route::post('companies/tenant-sync/pull', [StoreActivationController::class, 'sync']);
+    foreach (['tenant' => '', 'companies/{id}' => 'store'] as $prefix => $scope) {
+        Route::get($prefix.'/theme-history', [ThemeWorkspaceController::class, 'history']);
+        Route::post($prefix.'/theme-history/{revisionId}/restore', [ThemeWorkspaceController::class, 'restore']);
+    }
+    Route::get('tenant/theme', [ThemeWorkspaceController::class, 'index']);
+    Route::put('tenant/theme', [ThemeWorkspaceController::class, 'update']);
+    Route::get('tenant/theme-presets', [ThemeWorkspaceController::class, 'presets']);
+    Route::post('tenant/theme-presets', [ThemeWorkspaceController::class, 'savePreset']);
+    Route::post('tenant/theme-presets/{presetId}/apply', [ThemeWorkspaceController::class, 'applyPreset']);
+    Route::delete('tenant/theme-presets/{presetId}', [ThemeWorkspaceController::class, 'deletePreset']);
     Route::get('companies/{id}/theme', [SettingsController::class, 'getTheme']);
     Route::put('companies/{id}/theme', [SettingsController::class, 'updateTheme']);
     Route::get('companies/{id}/theme-presets', [SettingsController::class, 'listThemePresets']);

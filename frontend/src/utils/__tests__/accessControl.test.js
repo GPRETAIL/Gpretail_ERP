@@ -28,6 +28,15 @@ it("uses tenant-assigned module grants for staff navigation without opening admi
 describe("accessControl -- /settings/themes gate", () => {
   const tenant = { role: "admin", is_tenant_admin: true, store_ids: [], entitlements: { sections: {} } };
 
+  it("lets only approved store administrators reach Themes even with restricted page grants", () => {
+    const storeAdmin = { role: "admin", theme_override_allowed: true, page_permissions: {}, entitlements: { sections: {} } };
+    expect(canAccessPath("/settings", storeAdmin)).toBe(true);
+    expect(canAccessPath("/settings/themes", storeAdmin)).toBe(true);
+    expect(canAccessPath("/settings/company", storeAdmin)).toBe(false);
+    expect(canAccessPath("/settings/themes", { ...storeAdmin, theme_override_allowed: false })).toBe(false);
+    expect(canAccessPath("/settings/themes", { ...storeAdmin, role: "manager" })).toBe(false);
+  });
+
   it("allows registered tenant administration without unlocking licensed business modules", () => {
     for (const path of ["/settings", "/settings/company", "/settings/themes", "/settings/branding"]) {
       expect(canAccessPath(path, tenant)).toBe(true);
