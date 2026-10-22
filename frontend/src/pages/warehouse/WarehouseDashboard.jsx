@@ -8,6 +8,7 @@ import Breadcrumbs from "../../components/Breadcrumbs";
 import FilterableDataTable from "../../components/FilterableDataTable";
 import SearchGridPanel from "../../components/SearchGridPanel";
 import { masterSearchAreaSx } from "../../theme/erpUi";
+import useSearchGrid from "../../hooks/useSearchGrid";
 import { Box, Stack, Typography, IconButton, Button, alpha } from "@mui/material";
 // Workflow steps in order
 const WORKFLOW_STEPS = [
@@ -318,8 +319,6 @@ const WarehouseDashboard = () => {
   const [toast, setToast] = useState({ open: false, type: "info", message: "" });
   const [activeTab, setActiveTab] = useState("all");
   const [statusUpdatingId, setStatusUpdatingId] = useState(null);
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(20);
   useEffect(() => {
     const fetchEntries = async () => {
       try {
@@ -374,6 +373,8 @@ const WarehouseDashboard = () => {
 
   const handleRowSelect = key => setSelectedRowKey(previous => previous === key ? null : key);
   const rows = useMemo(() => entries.filter(entry => matchesTab(entry, activeTab)), [entries, matchesTab, activeTab]);
+  const grid = useSearchGrid({ sourceRows: rows, paginationMode: "client", scopeKey: activeTab });
+  const { page, limit, setPage, setLimit } = grid;
 
   const handleWorkflowClick = (stepIndex) => {
     const step = workflowSteps[stepIndex];
@@ -694,7 +695,7 @@ const WarehouseDashboard = () => {
               </Button>
             ))}
           </Stack>
-          <FilterableDataTable rows={rows} columns={tableColumns} rowKey="dashboardKey" loading={loading}
+          <FilterableDataTable rows={grid.rows} columns={tableColumns} rowKey="dashboardKey" loading={loading}
             tablePreferenceKey="warehouse-dashboard" emptyText="No entries found for current filters."
             searchPlaceholder="Search warehouse entries..." exportFileName="warehouse_dashboard"
             fillHeight enableColumnResize paginationMode="client" page={page} limit={limit}
