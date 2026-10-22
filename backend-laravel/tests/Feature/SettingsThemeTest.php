@@ -55,6 +55,9 @@ class SettingsThemeTest extends TestCase
 
     public function test_theme_preferences_work_without_a_store_token_but_business_writes_stay_blocked(): void
     {
+        // This is an owned tenant store lacking a licence, not an unlinked demo store.
+        $this->user->update(['platform_company_code' => 'CMP-THEME']);
+        $this->store->update(['platform_company_code' => 'CMP-THEME']);
         PlatformActivation::create(['company_code' => 'CMP-THEME', 'activated' => true, 'status' => 'active']);
         $this->putJson("/api/v1/companies/{$this->store->id}/theme", ['primary_color' => '#123456'])->assertOk();
         $this->assertSame('#123456', $this->store->fresh()->theme_customization['primary_color']);
