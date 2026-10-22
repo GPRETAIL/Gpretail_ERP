@@ -232,4 +232,25 @@ class DashboardControllerTest extends TestCase
             .'have been reintroduced.'
         );
     }
+
+    public function test_all_stores_aggregates_assigned_branches_without_leaking_unassigned_sales(): void
+    {
+        $second = Store::create(['name' => 'Second branch', 'code' => 'SECOND']);
+        $foreign = Store::create(['name' => 'Unassigned branch', 'code' => 'FOREIGN']);
+        foreach ([[$second, 700], [$foreign, 9000]] as [$store, $amount]) {
+            PosSale::create(['store_id' => $store->id, 'user_id' => $this->user->id, 'invoice_no' => 'BRANCH-'.$store->id,
+                'sale_date' => $this->from, 'grand_total' => $amount, 'total_qty' => 1,
+                'payment_mode' => 'CASH', 'is_credit' => false, 'status' => 'COMPLETED']);
+        }
+        $this->user->update(['role' => 'manager', 'page_permissions' => ['/dashboard' => ['view' => true]],
+            'module_permissions' => ['dashboard' => ['view' => true]]]);
+        $this->user->assignedStores()->sync([$this->store->id, $second->id]);
+        Sanctum::actingAs($this->user->fresh());
+        $response = $this->getJson('/api/dashboard?from='.$this->from->toDateString().'&to='.$this->to->toDateString())
+            ->assertOk()->assertJsonPath('data.metrics.totalBills.amount', 2700);
+        $names = collect($response->json('data.tables.dailySalesSummary.rows'))->pluck('company')->all();
+        $this->assertContains('Second branch', $names);
+        $this->assertContains('Test Flagship Store', $names);
+        $this->assertNotContains('Unassigned branch', $names);
+    }
 }

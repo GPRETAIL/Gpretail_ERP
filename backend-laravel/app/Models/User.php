@@ -28,7 +28,7 @@ class User extends Authenticatable
         'platform_company_code',
         'platform_password_version',
         'platform_identity',
-        'web_access', 'mobile_access', 'module_permissions',
+        'web_access', 'mobile_access', 'module_permissions', 'page_permissions',
     ];
 
     protected $hidden = [
@@ -45,17 +45,22 @@ class User extends Authenticatable
             'is_active' => 'boolean',
             'must_change_password' => 'boolean',
             'dashboard_layouts' => 'array',
-            'web_access' => 'boolean', 'mobile_access' => 'boolean', 'module_permissions' => 'array',
+            'web_access' => 'boolean', 'mobile_access' => 'boolean', 'module_permissions' => 'array', 'page_permissions' => 'array',
         ];
     }
 
     protected static function booted(): void
     {
         static::updated(function (self $user): void {
-            if ($user->wasChanged(['password', 'email', 'role', 'store_id', 'is_active', 'google_sub', 'web_access', 'mobile_access', 'module_permissions'])) {
+            if ($user->wasChanged(['password', 'email', 'role', 'store_id', 'is_active', 'google_sub', 'web_access', 'mobile_access', 'module_permissions', 'page_permissions'])) {
                 $user->tokens()->delete();
             }
         });
+    }
+
+    public function assignedStores()
+    {
+        return $this->belongsToMany(Store::class, 'user_store_access');
     }
 
     public function store()

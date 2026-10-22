@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\Store;
 use App\Models\User;
+use App\Services\PagePermissions;
+use App\Services\StoreContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -56,5 +58,52 @@ class StoreUserAccessTest extends TestCase
         Sanctum::actingAs($this->storeUser($one, 'admin'));
         $this->getJson('/api/user-access/'.$other->id)->assertNotFound();
         $this->putJson('/api/user-access/'.$other->id, ['name' => 'Changed'])->assertNotFound();
+    }
+
+    public function test_multiple_store_assignments_and_page_permissions_round_trip_and_revoke(): void
+    {
+        $one = Store::create(['name' => 'One', 'code' => 'MULTI-ONE']);
+        $two = Store::create(['name' => 'Two', 'code' => 'MULTI-TWO']);
+        $other = Store::create(['name' => 'Other', 'code' => 'MULTI-OTHER']);
+        $owner = User::create(['name' => 'Owner', 'username' => 'multi-owner', 'email' => 'multi-owner@example.test',
+            'password' => 'secret123', 'role' => 'super_admin']);
+        Sanctum::actingAs($owner);
+        $pages = ['/masters/product' => ['view' => true, 'add' => false, 'edit' => false, 'delete' => false]];
+        $response = $this->withHeader('X-Store-Id', (string) $one->id)->postJson('/api/user-access', [
+            'name' => 'Manager', 'username' => 'multi-manager', 'password' => 'secret123', 'role' => 'manager',
+            'companyIds' => [$one->id, $two->id], 'pagePermissions' => $pages,
+        ])->assertCreated()->assertJsonPath('data.company_ids', [$one->id, $two->id])
+            ->assertJsonPath('data.page_permissions', $pages);
+        $id = $response->json('data.id');
+        $this->getJson('/api/user-access?limit=500')->assertOk()
+            ->assertJsonFragment(['effective_page_permissions' => $pages]);
+        $this->getJson('/api/user-access/'.$id)->assertOk()->assertJsonPath('data.company_ids', [$one->id, $two->id]);
+        $manager = User::findOrFail($id);
+        $manager->createToken('old-session');
+        $fields = app(StoreContext::class)->authFields($manager);
+        $this->assertSame([$one->id, $two->id], $fields['store_ids']);
+        $this->assertTrue($fields['can_switch_stores']);
+        Sanctum::actingAs($manager);
+        $this->withHeader('X-Store-Id', (string) $two->id)->getJson('/api/products')->assertOk();
+        $this->postJson('/api/products', ['name' => 'Denied'])->assertForbidden()->assertJsonPath('code', 'PAGE_ACCESS_DENIED');
+        $this->getJson('/api/brands')->assertForbidden()->assertJsonPath('code', 'PAGE_ACCESS_DENIED');
+        $this->withHeader('X-Store-Id', (string) $other->id)->getJson('/api/products')->assertForbidden();
+        Sanctum::actingAs($owner);
+        $this->withHeader('X-Store-Id', (string) $one->id)->putJson('/api/user-access/'.$id, [
+            'companyIds' => [$one->id], 'pagePermissions' => [],
+        ])->assertOk()->assertJsonPath('data.company_ids', [$one->id]);
+        $this->assertSame(0, $manager->tokens()->count());
+        $this->assertDatabaseMissing('user_store_access', ['user_id' => $id, 'store_id' => $two->id]);
+    }
+
+    public function test_legacy_manager_receives_preset_but_explicit_empty_permissions_stay_empty(): void
+    {
+        $store = Store::create(['name' => 'Branch', 'code' => 'PRESET']);
+        $manager = $this->storeUser($store, 'manager');
+        $service = app(PagePermissions::class);
+        $this->assertTrue($service->effective($manager)['/masters/product']['view']);
+        $manager->update(['page_permissions' => []]);
+        $this->assertSame([], $service->effective($manager->fresh()));
+        $this->assertFalse($service->allows($manager->fresh(), '/masters/product', 'view'));
     }
 }

@@ -4,12 +4,15 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Permission;
+use App\Models\PlatformActivation;
 use App\Models\Role;
 use App\Models\Store;
 use App\Models\User;
 use App\Services\MobileAccess;
+use App\Services\PagePermissions;
 use App\Services\PaginationService;
 use App\Services\StoreContext;
+use App\Services\StoreLicenceVerifier;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -27,7 +30,9 @@ class UserAccessController extends Controller
 
     private function scopedUsers(): Builder
     {
-        $query = User::query()->whereIn('store_id', request()->attributes->get('store_context_ids', []));
+        $ids = app(StoreContext::class)->available(request()->user())->pluck('id')->all();
+        $query = User::query()->where(fn ($q) => $q->whereIn('store_id', $ids)
+            ->orWhereHas('assignedStores', fn ($stores) => $stores->whereIn('stores.id', $ids)));
         $code = request()->user()?->platform_company_code;
         if ($code) {
             $query->where('platform_company_code', $code);
@@ -71,7 +76,7 @@ class UserAccessController extends Controller
 
     public function index(Request $request)
     {
-        $query = $this->scopedUsers()->with('store');
+        $query = $this->scopedUsers()->with(['store', 'assignedStores:id']);
 
         if ($request->filled('search')) {
             $search = $request->input('search');
@@ -87,7 +92,7 @@ class UserAccessController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $items,
+                'data' => $items->map(fn ($user) => $this->presentUser($user)),
                 'total' => $items->count(),
             ]);
         }
@@ -99,63 +104,93 @@ class UserAccessController extends Controller
             'allowed_sorts' => ['id', 'name', 'username', 'email', 'created_at'],
         ]);
 
+        $result['data'] = collect($result['data'])->map(fn ($user) => $this->presentUser($user))->all();
+
         return response()->json($result);
+    }
+
+    private function presentUser(User $user): array
+    {
+        $user->loadMissing('assignedStores:id');
+        $data = $user->toArray();
+        unset($data['assigned_stores']);
+        $data['company_ids'] = array_values(array_unique(array_filter([$user->store_id, ...$user->assignedStores->pluck('id')->all()])));
+        $data['effective_page_permissions'] = app(PagePermissions::class)->effective($user);
+
+        return $data;
+    }
+
+    private function assignments(Request $request, ?User $user = null): array
+    {
+        $request->validate(['companyIds' => 'sometimes|array|min:1|max:100', 'companyIds.*' => 'integer|min:1|distinct',
+            'pagePermissions' => 'sometimes|array|max:1000', 'pagePermissions.*' => 'array:view,add,edit,delete', 'pagePermissions.*.*' => 'boolean']);
+        $ids = $request->input('companyIds', $request->filled('store_id') ? [$request->integer('store_id')]
+            : ($user ? $this->presentUser($user)['company_ids'] : [$request->attributes->get('store_context_id')]));
+        $ids = array_values(array_unique(array_map('intval', $ids)));
+        $allowed = app(StoreContext::class)->available($request->user())->pluck('id')->all();
+        abort_unless($ids && ! array_diff($ids, $allowed), 403, 'Assign only stores available to your account.');
+        if ($user) {
+            abort_if(array_diff($this->presentUser($user)['company_ids'], $allowed), 403, 'You cannot modify assignments outside your store access.');
+            abort_if($user->role === 'admin' && $ids !== [$user->store_id], 403, 'Store administrator assignments are managed by provisioning.');
+        }
+        $stores = Store::whereIn('id', $ids)->orderBy('id')->lockForUpdate()->get();
+        abort_if($stores->pluck('platform_company_code')->unique()->count() > 1, 422, 'All assigned stores must belong to the same company.');
+        $active = $request->has('is_active') ? $request->boolean('is_active') : ($user?->is_active ?? true);
+        foreach ($stores as $store) {
+            abort_unless($store->is_active, 422, 'Assign an active store.');
+            $limit = 0;
+            if ($store->platform_store_id || PlatformActivation::current()?->activated) {
+                $licence = app(StoreLicenceVerifier::class)->verify($store);
+                abort_unless($licence['ok'], 422, $licence['message']);
+                $limit = (int) ($licence['claims']['limits']['maxUsers'] ?? 0);
+            }
+            $count = User::where('is_active', true)->when($user, fn ($q) => $q->whereKeyNot($user->id))
+                ->where(fn ($q) => $q->where('store_id', $store->id)->orWhereHas('assignedStores', fn ($sq) => $sq->where('stores.id', $store->id)))->count();
+            abort_if($active && $limit > 0 && $count >= $limit, 422, 'An assigned store has reached its licensed user limit.');
+        }
+        if ($request->filled('accessGroupId') || $request->filled('storeGroupId')) {
+            abort(422, 'Select stores and page permissions directly for this user.');
+        }
+        if ($request->has('pagePermissions')) {
+            $permissions = app(PagePermissions::class)->normalize($request->input('pagePermissions'));
+            foreach ($permissions as $path => $actions) {
+                foreach ($actions as $action => $enabled) {
+                    abort_if($enabled && (! app(PagePermissions::class)->allows($request->user(), $path, $action)
+                        || ! app(MobileAccess::class)->userAllows($request->user(), explode('/', trim($path, '/'))[0], $action)), 403, 'You cannot grant permissions beyond your own access.');
+                }
+            }
+        } else {
+            $permissions = $user?->page_permissions;
+        }
+
+        return [$ids, $stores->first()?->platform_company_code, $permissions];
     }
 
     public function store(Request $request)
     {
         $this->authorizeAdministration();
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'username' => 'required|string|max:50|unique:users,username',
-            'email' => 'nullable|email|max:255|unique:users,email',
-            'password' => 'required|string|min:6',
-            'role' => 'nullable|string|max:50',
-            'store_id' => 'nullable|exists:stores,id',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
-        abort_if($request->user()?->role !== 'super_admin' && $request->input('role') === 'super_admin', 403, 'Tenant users cannot create platform administrators.');
+        $request->validate(['name' => 'required|string|max:255', 'username' => 'required|string|max:255|unique:users,username',
+            'email' => 'nullable|email|max:255|unique:users,email', 'password' => 'required|string|min:6',
+            'role' => 'nullable|in:user,staff,manager,cashier,accountant,warehouse_user,store_user,admin,super_admin', 'store_id' => 'nullable|exists:stores,id']);
+        abort_if($request->user()->role !== 'super_admin' && $request->input('role') === 'super_admin', 403, 'Tenant users cannot create platform administrators.');
         $user = DB::transaction(function () use ($request): User {
-            $selected = $request->attributes->get('store_context_id');
-            Store::whereKey($selected)->lockForUpdate()->firstOrFail();
-            $claims = $request->attributes->get('store_licence_claims', []);
-            $limit = (int) ($claims['limits']['maxUsers'] ?? 0);
-            if ($request->boolean('is_active', true) && $limit > 0 && User::where('store_id', $selected)->where('is_active', true)->count() >= $limit) {
-                abort(422, 'This store has reached its licensed user limit.');
-            }
+            [$ids, $company, $permissions] = $this->assignments($request);
+            $user = User::create(['name' => $request->input('name'), 'username' => $request->input('username'),
+                'email' => $request->input('email') ?: $request->input('username').'@gpretail.uk', 'password' => Hash::make($request->input('password')),
+                'role' => $request->input('role', 'staff'), 'store_id' => $ids[0], 'platform_company_code' => $company,
+                'phone' => $request->input('phone'), 'is_active' => $request->boolean('is_active', true),
+                'must_change_password' => $request->boolean('must_change_password', false), 'page_permissions' => $permissions]);
+            $user->assignedStores()->sync($ids);
 
-            return User::create([
-                'name' => $request->input('name'),
-                'username' => $request->input('username'),
-                'email' => $request->input('email') ?: $request->input('username').'@gpretail.uk',
-                'password' => Hash::make($request->input('password')),
-                'role' => $request->input('role', 'staff'),
-                'store_id' => $request->attributes->get('store_context_id'),
-                'platform_company_code' => Store::find($request->attributes->get('store_context_id'))?->platform_company_code,
-                'phone' => $request->input('phone'),
-                'is_active' => $request->boolean('is_active', true),
-                'must_change_password' => $request->boolean('must_change_password', false),
-            ]);
+            return $user;
         });
 
-        return response()->json([
-            'success' => true,
-            'message' => 'User created successfully',
-            'data' => $user->load('store'),
-        ], 201);
+        return response()->json(['success' => true, 'message' => 'User created successfully', 'data' => $this->presentUser($user->load('store'))], 201);
     }
 
     public function show($id)
     {
-        $user = $this->scopedUsers()->with('store')->find($id);
+        $user = $this->scopedUsers()->with(['store', 'assignedStores:id'])->find($id);
 
         if (! $user) {
             return response()->json([
@@ -166,58 +201,29 @@ class UserAccessController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $user,
+            'data' => $this->presentUser($user),
         ]);
     }
 
     public function update(Request $request, $id)
     {
         $this->authorizeAdministration();
-        $user = $this->scopedUsers()->find($id);
-
-        if (! $user) {
-            return response()->json([
-                'success' => false,
-                'message' => 'User not found',
-            ], 404);
-        }
-
-        $validator = Validator::make($request->all(), [
-            'name' => 'sometimes|required|string|max:255',
-            'username' => 'sometimes|required|string|max:50|unique:users,username,'.$id,
-            'email' => 'nullable|email|max:255|unique:users,email,'.$id,
-            'password' => 'nullable|string|min:6',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
-        $data = $request->only(['name', 'username', 'email', 'role', 'store_id', 'phone', 'is_active', 'must_change_password']);
-        if ($request->filled('password')) {
-            $data['password'] = Hash::make($request->input('password'));
-        }
-
-        abort_if($request->has('store_id') && (int) $request->input('store_id') !== $user->store_id, 403, 'User store reassignment requires explicit provisioning.');
-        abort_if($request->user()?->role !== 'super_admin' && $request->input('role') === 'super_admin', 403, 'Tenant users cannot become platform administrators.');
-        DB::transaction(function () use ($request, $user, $data): void {
-            Store::whereKey($user->store_id)->lockForUpdate()->firstOrFail();
-            $limit = (int) ($request->attributes->get('store_licence_claims', [])['limits']['maxUsers'] ?? 0);
-            if (! $user->is_active && $request->boolean('is_active') && $limit > 0 && User::where('store_id', $user->store_id)->where('is_active', true)->count() >= $limit) {
-                abort(422, 'This store has reached its licensed user limit.');
+        $user = $this->scopedUsers()->findOrFail($id);
+        $request->validate(['name' => 'sometimes|required|string|max:255', 'email' => 'nullable|email|max:255|unique:users,email,'.$id,
+            'password' => 'nullable|string|min:6', 'role' => 'sometimes|in:user,staff,manager,cashier,accountant,warehouse_user,store_user,admin,super_admin']);
+        abort_if($request->user()->role !== 'super_admin' && $request->input('role') === 'super_admin', 403, 'Tenant users cannot become platform administrators.');
+        DB::transaction(function () use ($request, $user): void {
+            [$ids, $company, $permissions] = $this->assignments($request, $user);
+            $data = $request->only(['name', 'email', 'role', 'phone', 'is_active', 'must_change_password']);
+            if ($request->filled('password')) {
+                $data['password'] = Hash::make($request->input('password'));
             }
-            $user->update($data);
+            $user->update([...$data, 'store_id' => $ids[0], 'platform_company_code' => $company, 'page_permissions' => $permissions]);
+            $user->assignedStores()->sync($ids);
+            $user->tokens()->delete();
         });
 
-        return response()->json([
-            'success' => true,
-            'message' => 'User updated successfully',
-            'data' => $user->load('store'),
-        ]);
+        return response()->json(['success' => true, 'message' => 'User updated successfully', 'data' => $this->presentUser($user->fresh('store'))]);
     }
 
     public function destroy($id)

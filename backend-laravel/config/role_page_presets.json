@@ -1,0 +1,1092 @@
+{
+  "manager": {
+    "/warehouse/dashboard": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/warehouse/courier": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/warehouse/transport-entry": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/warehouse/invoice": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/warehouse/inventory-entry": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/warehouse/grn": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/warehouse/barcode": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/warehouse/customisation": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/warehouse/transport-issue": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/warehouse/transport-receipt": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/warehouse/stock-outward": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/warehouse/receive-goods": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/warehouse/physical-stock": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/warehouse/purchase-return": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/warehouse/direct-purchase": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/warehouse/stock-item": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/warehouse/job-work": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/warehouse/reports": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/crm/customer": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/crm/customer-orders": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/crm/bill-print": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/crm/loyalty-management": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/crm/gift-voucher": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/crm/gift-coupon": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/crm/analyser": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/crm/send-sms": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/crm/feedback-dashboard": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/crm/feedback-questions": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/crm/feedback-report": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/crm/feedback-form-config": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/crm/customer-divert": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/sales/pos-sales": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/sales/pos-old": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/sales/pos-sales-return": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/sales/dealer-invoice": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/sales/dealer-invoice-return": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/sales/touch-sales": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/sales/settlement": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/sales/delivery": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/sales/gift-delivery": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/sales/gift-delivery-issue": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/sales/gift-coupon-issue": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/sales/alteration": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/sales/sales-on-approval": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/sales/stock-item-locator": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/sales/cash-opening": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/sales/cash-closing": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/sales/employee-sticker": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/sales/promotion-activator": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/sales/b2b-inbox": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/sales/receipt-formats": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/sales/customisation": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/sales/reports": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/hrms/employee": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/hrms/employee-in-out": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/hrms/hr-configuration": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/hrms/salary-management": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/finance/daybook": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/finance/payable": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/finance/receivable": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/finance/trial-balance": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/finance/trading-account": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/finance/p-l-account": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/finance/balance-sheet": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/finance/incentive-report": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/masters/product": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    }
+  },
+  "cashier": {
+    "/sales/pos-sales": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/sales/pos-sales-return": {
+      "view": true,
+      "add": true,
+      "edit": false,
+      "delete": false
+    },
+    "/sales/cash-opening": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/sales/cash-closing": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/sales/settlement": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/crm/bill-print": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/crm/customer": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/crm/loyalty-management": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/crm/gift-voucher": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/crm/gift-coupon": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    }
+  },
+  "accountant": {
+    "/finance/supplier-payment": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/finance/transport-payment": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/finance/credit-sale-collection": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/finance/gst-inbox": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/finance/manage-ledger": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/finance/voucher-entry": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/finance/petty-cash": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/finance/cheque-book": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/finance/daybook": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/finance/payable": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/finance/receivable": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/finance/trial-balance": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/finance/trading-account": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/finance/p-l-account": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/finance/balance-sheet": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/finance/loan-reconciliation": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/finance/incentive-report": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/finance/tally-integration": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/finance/tally-configuration": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/finance/opening-balance": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/sales/pos-sales": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/sales/pos-old": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/sales/pos-sales-return": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/sales/dealer-invoice": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/sales/dealer-invoice-return": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/sales/touch-sales": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/sales/settlement": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/sales/delivery": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/sales/gift-delivery": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/sales/gift-delivery-issue": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/sales/gift-coupon-issue": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/sales/alteration": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/sales/sales-on-approval": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/sales/stock-item-locator": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/sales/cash-opening": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/sales/cash-closing": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/sales/employee-sticker": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/sales/promotion-activator": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/sales/b2b-inbox": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/sales/receipt-formats": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/sales/customisation": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/sales/reports": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/warehouse/dashboard": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/warehouse/courier": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/warehouse/transport-entry": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/warehouse/invoice": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/warehouse/inventory-entry": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/warehouse/grn": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/warehouse/barcode": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/warehouse/customisation": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/warehouse/transport-issue": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/warehouse/transport-receipt": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/warehouse/stock-outward": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/warehouse/receive-goods": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/warehouse/physical-stock": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/warehouse/purchase-return": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/warehouse/direct-purchase": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/warehouse/stock-item": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/warehouse/job-work": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/warehouse/reports": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/hrms/salary-management": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/settings/printing-configuration": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    }
+  },
+  "warehouse_user": {
+    "/warehouse/dashboard": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/warehouse/courier": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/warehouse/transport-entry": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/warehouse/invoice": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/warehouse/inventory-entry": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/warehouse/grn": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/warehouse/barcode": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/warehouse/customisation": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/warehouse/transport-issue": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/warehouse/transport-receipt": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/warehouse/stock-outward": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/warehouse/receive-goods": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/warehouse/physical-stock": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/warehouse/purchase-return": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/warehouse/direct-purchase": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/warehouse/stock-item": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/warehouse/job-work": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/warehouse/reports": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/store/stock-inward": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/store/transfer-goods": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/masters/product": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/sales/delivery": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    }
+  },
+  "store_user": {
+    "/store/stock-inward": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/store/transfer-goods": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/store/bill-edit": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/store/job-work-inbox": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/store/tailoring-order": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/store/split-barcode": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/store/gift-pack-creation": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/store/last-bit-conversion": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/store/price-changer": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/store/stock-marker": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/store/direct-stock-entry": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/store/physical-stock-audit": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/store/sale-promotion-sch": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/store/purchase-request": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/store/purchase-request-que": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/store/purchase-order": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/store/store-transaction": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/store/dumping": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/store/daily-price": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/warehouse/physical-stock": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    }
+  }
+}

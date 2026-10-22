@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\PlatformActivation;
 use App\Models\Store;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -35,7 +36,7 @@ class MobileAccess
         'PhysicalStockController' => '/warehouse/physical-stock', 'StockOutwardController' => '/warehouse/stock-outward',
         'WarehouseReportController' => '/warehouse/reports', 'WarehouseDashboardController' => '/warehouse/dashboard',
         'TransportEntryController' => '/warehouse/transport-entry', 'BarcodeController' => '/warehouse/barcode',
-        'ProductController' => '/masters/product', 'ItemController' => '/masters/product', 'LookupController' => '/masters/product',
+        'ProductController' => '/masters/product', 'ItemController' => '/masters/item', 'LookupController' => '/masters/product',
         'BrandController' => '/masters/brand', 'CategoryController' => '/masters/category', 'TaxController' => '/masters/tax',
         'SizeController' => '/masters/size', 'ProductAttributeController' => '/masters/attribute',
         'SupplierController' => '/masters/supplier', 'AgentController' => '/masters/agent', 'TransportController' => '/masters/transport',
@@ -103,6 +104,9 @@ class MobileAccess
 
     public function pathAllowed(User $user, array $entitlements, string $path, string $action): bool
     {
+        if (! app(PagePermissions::class)->allows($user, $path, $action)) {
+            return false;
+        }
         $module = explode('/', trim($path, '/'))[0];
         $section = $entitlements['sections'][$module] ?? null;
         if ($section !== 'all' && (! is_array($section) || ! in_array($path, $section, true))) {
@@ -169,7 +173,7 @@ class MobileAccess
         $user = $request->user();
         $controller = class_basename($request->route()?->getControllerClass() ?? '');
         if (in_array($controller, ['AuthController', 'MobileAccessController', 'StoreActivationController'], true)
-            || ($controller === 'UserAccessController' && $request->route()?->getActionMethod() === 'clientAccess')) {
+            || ($controller === 'UserAccessController' && in_array($request->route()?->getActionMethod(), ['clientAccess', 'getTablePreferences', 'updateTablePreferences'], true))) {
             return null;
         }
         $mobile = $this->isMobile($request);
@@ -180,6 +184,15 @@ class MobileAccess
             return null;
         }
         $page = $this->page($request);
+        $ownMetadata = in_array($controller, ['StoreController', 'CompanyController'], true)
+            && in_array($request->route()?->getActionMethod(), ['index', 'show', 'subscriptionStatus'], true)
+            && in_array($request->method(), ['GET', 'HEAD'], true);
+        if ($controller === 'DashboardLayoutController' || $ownMetadata) {
+            return null;
+        }
+        if ($page && ! app(PagePermissions::class)->allows($user, $page, $this->action($request))) {
+            return ['code' => 'PAGE_ACCESS_DENIED', 'message' => 'Your assigned page permissions do not allow this action.'];
+        }
         if ($mobile) {
             $id = $request->attributes->get('store_context_id');
             $store = $id ? app(StoreContext::class)->available($user)->find($id) : null;
@@ -196,12 +209,25 @@ class MobileAccess
             if (! $page && $controller !== 'NotificationController') {
                 return ['code' => 'MODULE_ACCESS_DENIED', 'message' => 'This API is not available to mobile sessions.'];
             }
-        } elseif ($page && $user->module_permissions !== null) {
-            $store = app(StoreContext::class)->available($user)->find($request->attributes->get('store_context_id'));
-            $licence = $store ? app(StoreLicenceVerifier::class)->verify($store) : ['ok' => false];
-            if (! $store?->is_active || ! $licence['ok'] || ! $this->pathAllowed($user, $licence['claims']['entitlements'] ?? [], $page, $this->action($request))) {
+        } elseif ($page && ($user->module_permissions !== null || $user->page_permissions !== null)) {
+            $selected = $request->attributes->get('store_context_id');
+            $stores = app(StoreContext::class)->available($user)->whereIn('id', $request->attributes->get('store_context_ids', []))->get();
+            $allowed = $stores->filter(function ($store) use ($user, $page, $request) {
+                if (! $store->is_active) {
+                    return false;
+                }
+                if (! $store->platform_store_id && ! PlatformActivation::current()?->activated) {
+                    return $this->userAllows($user, explode('/', trim($page, '/'))[0], $this->action($request));
+                }
+                $licence = app(StoreLicenceVerifier::class)->verify($store);
+
+                return $licence['ok'] && $this->pathAllowed($user, $licence['claims']['entitlements'] ?? [], $page, $this->action($request));
+            });
+            if ($allowed->isEmpty() || ($selected && ! $allowed->contains('id', $selected))) {
                 return ['code' => 'MODULE_ACCESS_DENIED', 'message' => 'Your subscription or user permissions do not allow this module or action.'];
             }
+            // Combined read views aggregate only stores permitted for this page and subscription.
+            $request->attributes->set('store_context_ids', $allowed->pluck('id')->all());
         }
 
         return null;

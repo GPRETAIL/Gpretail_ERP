@@ -90,7 +90,7 @@ const intersectStoreEntitlements = (list) => {
 
 const createDefaultUserForm = (authUser) => ({
   companyId: sessionStorage.getItem("activeStoreId") || String(authUser?.company_id || ""),
-  companyIds: String(authUser?.role || "").toLowerCase() === "admin" && authUser?.company_id ? [String(authUser.company_id)] : [],
+  companyIds: (sessionStorage.getItem("activeStoreId") || authUser?.company_id) ? [String(sessionStorage.getItem("activeStoreId") || authUser.company_id)] : [],
   name: "",
   email: "",
   password: "",
@@ -153,9 +153,9 @@ const UserAccess = () => {
   const listTitle = activeTab === "group" ? "Access Groups (what they can do)" : "Users";
 
   const selectedCompanyIds = useMemo(() => {
-    if (isSuperAdmin) return userForm.companyIds;
+    if (canChooseUserStore) return userForm.companyIds;
     return userForm.companyId ? [userForm.companyId] : [];
-  }, [isSuperAdmin, userForm.companyId, userForm.companyIds]);
+  }, [canChooseUserStore, userForm.companyId, userForm.companyIds]);
 
   const companyNameById = useMemo(
     () => new Map(companies.map((company) => [String(company.id), company.name])),
@@ -360,10 +360,10 @@ const UserAccess = () => {
       name: row.name || "",
       email: row.email || "",
       password: "",
-      role: extractUserRolePreset(row.access_roles),
+      role: USER_ROLE_PRESET_OPTIONS.some((option) => option.value === row.role) ? row.role : extractUserRolePreset(row.access_roles),
       accessGroupId: row.access_group_id ? String(row.access_group_id) : "",
       storeGroupId: row.store_group_id ? String(row.store_group_id) : "",
-      manualPermissions: normalizePagePermissions(row.page_permissions),
+      manualPermissions: normalizePagePermissions(row.page_permissions ?? row.effective_page_permissions ?? getUserRolePresetPermissions(row.role)),
       isActive: row.is_active ? "active" : "inactive",
       accountRole: String(row.role || "user").toLowerCase(),
     });
@@ -462,9 +462,9 @@ const UserAccess = () => {
       toast.error("Email and password are required");
       return;
     }
-    const companyIds = isSuperAdmin ? userForm.companyIds : userForm.companyId ? [userForm.companyId] : [];
-    if (companyIds.length !== 1) {
-      toast.error("Select one store for this user. Multi-store user assignment requires explicit provisioning.");
+    const companyIds = canChooseUserStore ? userForm.companyIds : userForm.companyId ? [userForm.companyId] : [];
+    if (!companyIds.length) {
+      toast.error("Select at least one store for this user.");
       return;
     }
     if (!userForm.accessGroupId && !hasAnyViewPermission(userForm.manualPermissions)) {
@@ -482,9 +482,9 @@ const UserAccess = () => {
       role: editingStoreAdmin ? "admin" : userForm.role,
       store_id: Number(companyIds[0]),
       is_active: userForm.isActive === "active",
-      accessGroupId: userForm.accessGroupId || null,
+      accessGroupId: null,
       storeGroupId: userForm.storeGroupId ? Number(userForm.storeGroupId) : null,
-      pagePermissions: selectedAccessGroup ? {} : normalizePagePermissions(userForm.manualPermissions),
+      pagePermissions: normalizePagePermissions(displayedUserPermissions),
       isActive: userForm.isActive,
     };
 
@@ -748,10 +748,10 @@ const UserAccess = () => {
 
                 {activeTab === "user" ? (
                   <>
-                    {isSuperAdmin ? (
+                    {canChooseUserStore && !editingStoreAdmin ? (
                       <>
                         <MultiSelectInput
-                          label="Company"
+                          label="Company / Stores"
                           required
                           value={userForm.companyIds}
                           onChange={(nextCompanyIds) =>
@@ -763,7 +763,8 @@ const UserAccess = () => {
                             }))
                           }
                           options={selectableCompanies.map((company) => ({ value: String(company.id), label: company.name }))}
-                          helperText="Use Ctrl/Cmd to select multiple companies."
+                          placeholder="Select stores"
+                          helperText="Select one or more stores. Access is limited to the selected stores and their subscriptions."
                         />
                         {selectedStoresDifferInModules ? (
                           <Typography
@@ -778,14 +779,6 @@ const UserAccess = () => {
                           </Typography>
                         ) : null}
                       </>
-                    ) : canChooseUserStore && !editingUserId ? (
-                      <SelectInput
-                        label="Company / Store"
-                        required
-                        value={userForm.companyId}
-                        onChange={(event) => setUserForm((prev) => ({ ...prev, companyId: event.target.value, companyIds: [event.target.value], accessGroupId: "" }))}
-                        options={[{ value: "", label: "Select store" }, ...selectableCompanies.map((company) => ({ value: String(company.id), label: company.name }))]}
-                      />
                     ) : (
                       <Stack direction="row" sx={{ alignItems: "center" }}>
                         <Typography component="label" sx={{ width: "33.333%", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Company</Typography>

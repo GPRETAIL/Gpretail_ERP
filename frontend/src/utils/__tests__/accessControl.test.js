@@ -118,3 +118,15 @@ describe("accessControl -- /settings/configure-local-server gate", () => {
     expect(settings?.subItems.map((s) => s.name)).toContain("Configure Local Server");
   });
 });
+
+
+it("keeps manager page grants, module restrictions and the home page consistent", () => {
+  const user = { role: "manager", effective_page_permissions: {
+    "/masters/product": { view: true }, "/sales/pos-sales": { view: true },
+  }, module_permissions: { masters: { view: true }, sales: { view: false } } };
+  expect(canAccessPath("/masters/product", user)).toBe(true);
+  expect(canAccessPath("/masters/brand", user)).toBe(false);
+  expect(canAccessPath("/sales/pos-sales", user)).toBe(false);
+  expect(getHomePathForUser(user)).toBe("/masters/product");
+  expect(getHomePathForUser({ role: "manager", page_permissions: {} })).toBe("/profile");
+});

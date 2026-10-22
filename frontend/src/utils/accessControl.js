@@ -92,14 +92,18 @@ export const normalizeAccessRoles = (input) => {
   )];
 };
 
-const getPagePermissions = (user) =>
-  normalizeStoredPagePermissions(user?.effective_page_permissions || user?.page_permissions);
+const getPagePermissions = (user) => {
+  const permissions = normalizeStoredPagePermissions(user?.effective_page_permissions ?? user?.page_permissions);
+  return Object.fromEntries(Object.entries(permissions).filter(([path]) =>
+    isPathEntitled(user, path) && (!user?.module_permissions || user.module_permissions[firstSegment(path)]?.view === true)
+  ));
+};
 
 const hasPagePermissionMode = (user) => {
-  if (user?.module_permissions) return false;
   const role = String(user?.role || "").toLowerCase();
-  if (role !== USER_ROLE.USER) return false;
-  return Object.keys(getPagePermissions(user)).length > 0;
+  if (role === USER_ROLE.SUPER_ADMIN || role === USER_ROLE.OWNER || isTenantAdmin(user)) return false;
+  const explicit = user?.effective_page_permissions ?? user?.page_permissions;
+  return explicit != null || (role === USER_ROLE.USER && Object.keys(getPagePermissions(user)).length > 0);
 };
 
 const getVisiblePermissionSections = (user) =>
@@ -111,7 +115,7 @@ const getCapability = (user) => {
   const isOwner = role === USER_ROLE.OWNER;
   const isSuperAdmin = role === USER_ROLE.SUPER_ADMIN;
   const isAdmin = role === USER_ROLE.ADMIN;
-  const isManager = access.has("manager");
+  const isManager = role === "manager" || access.has("manager");
   const hasWarehouse = access.has("warehouse");
   const hasSales = access.has("sales");
   const hasPurchase = access.has("purchase");
@@ -144,14 +148,15 @@ export const canAccessUserAccess = (user) => {
 export const getHomePathForUser = (user) => {
   const role = String(user?.role || "").toLowerCase();
   if (role === USER_ROLE.OWNER) return "/owner/dashboard";
+  if (hasPagePermissionMode(user)) {
+    const visibleSections = getVisiblePermissionSections(user);
+    if (!visibleSections.length) return "/profile";
+    if (visibleSections.length > 1) return "/modules";
+    return getUserDefaultPathFromPermissions(getPagePermissions(user));
+  }
   if (user?.module_permissions) {
     const homes = { dashboard: "/dashboard", masters: "/masters/product", sales: "/sales/pos-sales", warehouse: "/warehouse/invoice", crm: "/crm/customer", finance: "/finance/supplier-payment", store: "/store/dashboard", analytical: "/analytical/dashboard", hrms: "/hrms/attendance", settings: "/settings/application-settings" };
     return Object.entries(homes).find(([module, path]) => user.module_permissions[module]?.view && canAccessPath(path, user))?.[1] || "/profile";
-  }
-  if (hasPagePermissionMode(user)) {
-    const visibleSections = getVisiblePermissionSections(user);
-    if (visibleSections.length > 1) return "/modules";
-    return getUserDefaultPathFromPermissions(getPagePermissions(user));
   }
   return "/dashboard";
 };

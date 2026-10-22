@@ -20,7 +20,7 @@ class AuthorizeBusinessAction
             }
             $permissions = app(BusinessPermissions::class);
             $ability = $permissions->ability($request);
-            $explicitGrant = $user->is_active && $user->module_permissions !== null && $access->page($request)
+            $explicitGrant = $user->is_active && ($user->module_permissions !== null || $user->page_permissions !== null) && $access->page($request)
                 && in_array($ability, ['read', 'masters.write', 'sales.post', 'purchases.post', 'transactions.delete', 'transactions.approve', 'reports.export'], true);
             if (! $explicitGrant && ! $permissions->allows($user, $ability, $request->attributes->get('authenticated_sync_replay', false))) {
                 return response()->json(['success' => false, 'code' => 'PERMISSION_DENIED', 'message' => 'Your role does not permit this action.', 'required_permission' => $ability], 403);

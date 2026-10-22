@@ -101,9 +101,9 @@ describe("UserAccess store groups", () => {
     renderUserAccess({ role: "admin", is_tenant_admin: true, can_switch_stores: true, company_id: null, store_ids: [1, 2] });
     await screen.findByText("Users");
     fireEvent.click(screen.getByRole("button", { name: "New" }));
-    const picker = await screen.findByRole("combobox", { name: "Company / Store" });
-    fireEvent.mouseDown(picker);
-    fireEvent.click(await screen.findByRole("option", { name: "GP2" }));
+    fireEvent.click(await screen.findByText("Select stores"));
+    fireEvent.click(screen.getByRole("checkbox", { name: "GP2" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "GP1" }));
     fireEvent.change(screen.getByRole("textbox", { name: "Name", exact: true }), { target: { value: "New staff" } });
     fireEvent.change(screen.getByRole("textbox", { name: "Email", exact: true }), { target: { value: "staff@example.test" } });
     fireEvent.change(screen.getByLabelText("Password", { exact: true }), { target: { value: "local-test-only" } });
@@ -111,7 +111,7 @@ describe("UserAccess store groups", () => {
     fireEvent.click(await screen.findByRole("option", { name: "Manager", exact: true }));
     fireEvent.click(screen.getByRole("button", { name: "Save", exact: true }));
     await waitFor(() => expect(mockPost).toHaveBeenCalledWith("/user-access", expect.objectContaining({
-      username: "staff@example.test", email: "staff@example.test", store_id: 2, companyId: "2", is_active: true,
+      username: "staff@example.test", email: "staff@example.test", store_id: 2, companyId: "2", companyIds: ["2", "1"], is_active: true,
     }), { storeScopeId: "2" }));
   });
 

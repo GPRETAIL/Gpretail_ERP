@@ -293,10 +293,8 @@ class DashboardController extends Controller
         $supplierPaymentsOverdueCount = collect($supplierPaymentRows)->where('overdue', true)->count();
 
         // Store List
-        $stores = Store::when($storeId && $storeId !== 'all', fn ($q) => $q->where('id', $storeId))->get();
-        if ($stores->isEmpty()) {
-            $stores = Store::all();
-        }
+        $stores = app(\App\Services\StoreContext::class)->available($request->user())
+            ->whereIn('id', $request->attributes->get('store_context_ids', []))->get();
 
         // Daily Summary Rows - one grouped query across every visible store instead of 3 separate
         // queries (sum, count, sum) run once per store (previously up to 3xN round trips).

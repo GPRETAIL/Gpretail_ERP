@@ -25,7 +25,8 @@ class StoreContext
             return $query;
         }
 
-        return $query->whereKey($user->store_id ?? 0);
+        return $query->where(fn ($scope) => $scope->whereKey($user->store_id ?? 0)
+            ->orWhereIn('id', $user->assignedStores()->select('stores.id')));
     }
 
     public function stores(User $user): Collection
@@ -60,6 +61,8 @@ class StoreContext
             'web_access' => (bool) $user->web_access,
             'mobile_access' => (bool) $user->mobile_access,
             'module_permissions' => $user->module_permissions,
+            'page_permissions' => $user->page_permissions,
+            'effective_page_permissions' => app(PagePermissions::class)->effective($user),
             'auth_client' => in_array('client:mobile', $user->currentAccessToken()?->abilities ?? [], true) ? 'mobile' : 'web',
             'platform_company_code' => $user->platform_company_code,
             'store_id' => $selected?->id,
