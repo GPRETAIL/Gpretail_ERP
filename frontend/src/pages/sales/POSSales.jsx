@@ -1,3 +1,4 @@
+import { runPosCheckout } from "../../utils/posCheckout";
 import PageHeader from "../../components/PageHeader";
 import useCounterAssignmentPrompt from "../../hooks/useCounterAssignmentPrompt";
 import useStoreDisplayName from "../../hooks/useStoreDisplayName";
@@ -1739,7 +1740,7 @@ const POSSales = () => {
     }
   };
 
-  const buildSavePayload = (formSnapshot = undefined, { allowUnsettledWithoutPayment = false } = {}) => {
+  const buildSavePayload = (formSnapshot = undefined, { allowUnsettledWithoutPayment = posCheckoutPrefs.saleSaveAs === "unsettled" } = {}) => {
     if (!validateSaleEntry()) return null;
 
     const pf = formSnapshot === undefined ? paymentForm : formSnapshot;
@@ -1819,6 +1820,7 @@ const POSSales = () => {
     }
 
     return {
+      saleSaveAs: posCheckoutPrefs.saleSaveAs,
       customerMode: effectiveCustomerMode,
       customerId: effectiveCustomerMode === "existing" ? existingCustomerId : null,
       customerName: effectiveCustomerName,
@@ -2226,11 +2228,14 @@ const POSSales = () => {
     }
   };
 
+  const saveInFlight = useRef(false);
+
   const handleSaveSale = async ({
     shouldPrint = false,
     paymentFormOverride,
-    allowUnsettledWithoutPayment = false,
+    allowUnsettledWithoutPayment = posCheckoutPrefs.saleSaveAs === "unsettled",
   } = {}) => {
+    if (saveInFlight.current) return;
     if (!authUser?.counter_id) {
       setCounterAssignmentOpen(true);
       toast.error("Please assign a counter before checkout");
@@ -2242,6 +2247,7 @@ const POSSales = () => {
         : buildSavePayload(undefined, { allowUnsettledWithoutPayment });
     if (!payload) return;
 
+    saveInFlight.current = true;
     setSaving(true);
     try {
       const res = await api.post("/pos-sales", payload);
@@ -2258,8 +2264,15 @@ const POSSales = () => {
     } catch (err) {
       toast.error(err?.response?.data?.message || "Failed to save POS sale");
     } finally {
+      saveInFlight.current = false;
       setSaving(false);
     }
+  };
+
+  const requestCheckout = (shouldPrint = false) => {
+    if (saving || saveInFlight.current || !validateSaleEntry()) return;
+    return runPosCheckout({ prefs: posCheckoutPrefs, shouldPrint, openPaymentDialog,
+      saveSale: handleSaveSale, quickPaymentForm: buildQuickPaymentFormSnapshot });
   };
 
   const handleDeleteLastSavedSale = async () => {
@@ -2973,8 +2986,7 @@ const POSSales = () => {
                       }
                       if (shortcut === "0") {
                         setAddBarcode("");
-                        if (!validateSaleEntry()) return;
-                        handleSaveSale({ shouldPrint: true, paymentFormOverride: buildQuickPaymentFormSnapshot() });
+                        requestCheckout(true);
                         return;
                       }
                       handleAddLine();
@@ -3014,19 +3026,7 @@ const POSSales = () => {
                 PDF
               </Button>
               <Button
-                onClick={() => {
-                  if (!validateSaleEntry()) return;
-                  if (posCheckoutPrefs.paymentDialogVisible) {
-                    openPaymentDialog();
-                    return;
-                  }
-                  const isUnsettledSave = posCheckoutPrefs.saleSaveAs === "unsettled";
-                  handleSaveSale({
-                    shouldPrint: false,
-                    paymentFormOverride: buildQuickPaymentFormSnapshot({ unsettled: isUnsettledSave }),
-                    allowUnsettledWithoutPayment: isUnsettledSave,
-                  });
-                }}
+                onClick={() => requestCheckout(false)}
                 disabled={saving}
                 className="glass-btn glass-btn-success"
                 startIcon={<Save size={16} />}
@@ -3036,15 +3036,7 @@ const POSSales = () => {
               {!posCheckoutPrefs.paymentDialogVisible ? (
                 <Button
                   type="button"
-                  onClick={() => {
-                    if (!validateSaleEntry()) return;
-                    const isUnsettledSave = posCheckoutPrefs.saleSaveAs === "unsettled";
-                    handleSaveSale({
-                      shouldPrint: true,
-                      paymentFormOverride: buildQuickPaymentFormSnapshot({ unsettled: isUnsettledSave }),
-                      allowUnsettledWithoutPayment: isUnsettledSave,
-                    });
-                  }}
+                  onClick={() => requestCheckout(true)}
                   disabled={saving}
                   className="glass-btn glass-btn-primary"
                   startIcon={<Printer size={16} />}

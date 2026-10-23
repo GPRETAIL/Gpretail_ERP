@@ -7,6 +7,17 @@ export function setActiveStoreSelection(storeId) {
   else sessionStorage.removeItem("activeStoreId");
 }
 
+export async function refreshStoreSelection(apiClient, storeId) {
+  const selected = String(storeId ?? "");
+  const response = await apiClient.get("/auth/me", { storeScopeId: selected });
+  const user = response.data?.data;
+  if (!user?.id || (selected && !user.store_ids?.some(id => String(id) === selected))) {
+    throw new Error("Unable to verify access to the selected store");
+  }
+  setActiveStoreSelection(selected);
+  return user;
+}
+
 // A new login must never inherit another user's store selection.
 export function initializeStoreSelection(user, { preserve = false } = {}) {
   const selected = sessionStorage.getItem("activeStoreId");

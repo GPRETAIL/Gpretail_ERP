@@ -48,6 +48,7 @@ class StoreContext
         $selected = $stores->firstWhere('id', request()->attributes->get('store_context_id'))
             ?? ($stores->count() === 1 ? $stores->first() : null);
         $activation = PlatformActivation::current();
+        $counter = PosCounter::find($user->counter_id, $selected?->id);
         // A selected store in the response is not the account's fixed store assignment.
         // Issue the tenant identity explicitly, using the registered company administrator.
         $tenantAdmin = $user->is_active && $user->role === 'admin' && ! $user->store_id
@@ -56,6 +57,8 @@ class StoreContext
             && strcasecmp($user->email, $activation->tenant_admin_email ?? '') === 0;
 
         return [
+            'counter_id' => $counter?->id,
+            'counter_name' => $counter?->value ?? $counter?->config_value,
             'is_tenant_admin' => (bool) $tenantAdmin,
             'can_switch_stores' => $user->is_active && ($user->role === 'super_admin' || $tenantAdmin || $stores->count() > 1),
             'web_access' => (bool) $user->web_access,

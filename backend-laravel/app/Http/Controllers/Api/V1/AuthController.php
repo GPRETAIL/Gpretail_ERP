@@ -12,6 +12,7 @@ use App\Services\GoogleIdTokenVerifier;
 use App\Services\MobileAccess;
 use App\Services\PlatformBootstrap;
 use App\Services\PlatformClient;
+use App\Services\PosCounter;
 use App\Services\StoreContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -356,7 +357,10 @@ class AuthController extends Controller
             ], 401);
         }
 
-        $user->update(['counter_id' => $counterId]);
+        $request->validate(['counterId' => 'required|integer|min:1']);
+        $counter = PosCounter::find((int) $counterId, $this->resolveStoreId($request, null));
+        abort_unless($counter, 422, 'Select an active counter in the current store.');
+        $user->update(['counter_id' => $counter->id]);
 
         return response()->json([
             'success' => true,

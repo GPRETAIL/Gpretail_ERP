@@ -1,4 +1,4 @@
-import { setActiveStoreSelection } from "../utils/storeSelection";
+import { refreshStoreSelection } from "../utils/storeSelection";
 import { EMPTY_ARRAY } from "../utils/emptyValues";
 // Navbar.js
 import React, { useCallback, useEffect, useMemo, useState } from "react";
@@ -44,12 +44,13 @@ import {
   TableRow,
   Select,
   Checkbox,
+  Radio,
   FormControlLabel,
 } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { logoutUser } from "../features/authSlice";
+import { loginSuccess, logoutUser } from "../features/authSlice";
 import { useTheme } from "../features/theme-context";
 import api from "../api/axios";
 import { useTabs } from "../context/TabContext";
@@ -88,11 +89,9 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
   const [storeDialogOpen, setStoreDialogOpen] = useState(false);
   const [loadingStores, setLoadingStores] = useState(false);
   const [storeOptions, setStoreOptions] = useState([]);
-  const { user } = useSelector((state) => state.auth);
-  // Checkbox selection in the Switch Store dialog. ALL_STORES_ID is a pseudo-entry alongside real
-  // store ids in the same Set, not a separate boolean -- keeps "checking All Stores clears specific
-  // picks" and "picking a specific store clears All Stores" as one rule instead of two states that
-  // could drift out of sync.
+  const { user, token } = useSelector((state) => state.auth);
+  const [switchingStore, setSwitchingStore] = useState(false);
+  // One active store, or the combined read-only All Stores scope.
   const [selectedStoreIds, setSelectedStoreIds] = useState(() => new Set());
   const { theme, setTheme } = useTheme();
 
@@ -501,40 +500,23 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
     return () => window.removeEventListener("vx:open-store-switch", handler);
   }, [canSwitchStore, openStoreDialog]);
 
-  const toggleStoreSelection = (id) => {
-    setSelectedStoreIds((prev) => {
-      const next = new Set(prev);
-      if (id === ALL_STORES_ID) {
-        // Toggling All Stores always replaces whatever specific picks existed -- the two are
-        // mutually exclusive, not additive.
-        return next.has(ALL_STORES_ID) ? new Set() : new Set([ALL_STORES_ID]);
-      }
-      next.delete(ALL_STORES_ID);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  };
+  const toggleStoreSelection = (id) => setSelectedStoreIds(new Set([id]));
 
-  const handleSaveStoreSwitch = () => {
-    const specificIds = [...selectedStoreIds].filter((id) => id !== ALL_STORES_ID);
-    // All Stores checked, nothing checked, or several stores checked all resolve the same way:
-    // clear the switch and read unrestricted across the whole tenant -- the same default that
-    // already applies whenever no store is actively switched. A write still needs exactly one
-    // store, same as always (StoreAssignment 422s "Select a store first" if it can't tell which).
-    if (selectedStoreIds.has(ALL_STORES_ID) || specificIds.length !== 1) {
-      setActiveStoreSelection("");
-      toast.success("Now viewing all your stores");
-    } else {
-      setActiveStoreSelection(specificIds[0]);
-      const label = storeOptions.find((option) => option.value === specificIds[0])?.label || "the selected store";
-      toast.success(`Switched active store context to ${label}`);
+  const handleSaveStoreSwitch = async () => {
+    if (!canSwitchStore || switchingStore || selectedStoreIds.size !== 1) return;
+    const selected = [...selectedStoreIds][0];
+    const storeId = selected === ALL_STORES_ID ? "" : selected;
+    setSwitchingStore(true);
+    try {
+      const refreshedUser = await refreshStoreSelection(api, storeId);
+      dispatch(loginSuccess({ token, user: refreshedUser }));
+      setStoreDialogOpen(false);
+      window.location.reload();
+    } catch (error) {
+      toast.error(error.response?.data?.message || error.message || "Unable to switch store");
+    } finally {
+      setSwitchingStore(false);
     }
-    setStoreDialogOpen(false);
-    window.location.reload();
   };
 
   return (
@@ -931,14 +913,13 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
             <Stack spacing={1}>
               <Typography sx={{ fontSize: 13, fontWeight: 600 }}>Active Store Location</Typography>
               <Typography sx={{ fontSize: 11.5, color: "text.secondary" }}>
-                Pick exactly one store to create/edit data there. All Stores or multiple stores
-                together only let you view combined data across them.
+                Pick one store to create or edit data there. All Stores shows combined data across your authorised stores.
               </Typography>
               <Box sx={{ maxHeight: 256, overflowY: "auto", border: 1, borderColor: "divider", borderRadius: 1.5, p: 1 }}>
                 <FormControlLabel
                   sx={{ display: "flex", mx: 0, borderRadius: 1, px: 1, py: 0.5, "&:hover": { bgcolor: "action.hover" } }}
                   control={
-                    <Checkbox
+                    <Radio
                       size="small"
                       checked={selectedStoreIds.has(ALL_STORES_ID)}
                       onChange={() => toggleStoreSelection(ALL_STORES_ID)}
@@ -951,7 +932,7 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
                     key={option.value}
                     sx={{ display: "flex", mx: 0, borderRadius: 1, px: 1, py: 0.5, "&:hover": { bgcolor: "action.hover" } }}
                     control={
-                      <Checkbox
+                      <Radio
                         size="small"
                         checked={selectedStoreIds.has(option.value)}
                         onChange={() => toggleStoreSelection(option.value)}
@@ -972,7 +953,7 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
           <Button
             variant="contained"
             onClick={handleSaveStoreSwitch}
-            disabled={loadingStores || selectedStoreIds.size === 0}
+            disabled={loadingStores || switchingStore || selectedStoreIds.size !== 1}
           >
             Switch Store
           </Button>

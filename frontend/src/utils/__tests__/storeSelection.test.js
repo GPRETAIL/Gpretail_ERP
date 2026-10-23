@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { handleStoreSelectionError, initializeStoreSelection, setActiveStoreSelection } from "../storeSelection";
+import { handleStoreSelectionError, initializeStoreSelection, setActiveStoreSelection, refreshStoreSelection } from "../storeSelection";
 
 beforeEach(() => { localStorage.clear(); sessionStorage.clear(); });
 
@@ -57,4 +57,24 @@ describe("store selection", () => {
     expect(show).not.toHaveBeenCalled();
     window.removeEventListener("vx:store-selection-required", show);
   });
+});
+
+it("refreshes the selected store identity before changing scope", async () => {
+  setActiveStoreSelection("2");
+  const user = { id: 1, store_ids: [2, 3], company_id: 3, counter_id: null };
+  const api = { get: vi.fn().mockResolvedValue({ data: { data: user } }) };
+  expect(await refreshStoreSelection(api, "3")).toEqual(user);
+  expect(api.get).toHaveBeenCalledWith("/auth/me", { storeScopeId: "3" });
+  expect(sessionStorage.getItem("activeStoreId")).toBe("3");
+  await refreshStoreSelection(api, "");
+  expect(sessionStorage.getItem("activeStoreId")).toBeNull();
+});
+it("preserves the workspace if switching fails or access is denied", async () => {
+  setActiveStoreSelection("2");
+  const api = { get: vi.fn().mockResolvedValue({ data: { data: { id: 1, store_ids: [2] } } }) };
+  await expect(refreshStoreSelection(api, "3")).rejects.toThrow();
+  expect(sessionStorage.getItem("activeStoreId")).toBe("2");
+  api.get.mockRejectedValue(new Error("Network error"));
+  await expect(refreshStoreSelection(api, "3")).rejects.toThrow();
+  expect(sessionStorage.getItem("activeStoreId")).toBe("2");
 });

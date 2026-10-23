@@ -1,0 +1,104 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Customer;
+use App\Models\PosPayment;
+use App\Models\PosSale;
+use App\Models\Product;
+use App\Models\Settlement;
+use App\Models\Stock;
+use App\Models\Store;
+use App\Models\SystemConfiguration;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
+use Tests\TestCase;
+
+class PosCheckoutSettlementTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private Store $store;
+
+    private User $user;
+
+    private Product $product;
+
+    private SystemConfiguration $counter;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->store = Store::create(['name' => 'Coffee', 'code' => 'COFFEE', 'is_active' => true]);
+        $this->counter = SystemConfiguration::create(['store_id' => $this->store->id, 'key' => 'counter', 'value' => 'Till One', 'is_active' => true]);
+        $this->user = User::create(['name' => 'Manager', 'username' => 'manager', 'email' => 'manager@example.test', 'password' => 'secret123', 'role' => 'admin', 'store_id' => $this->store->id, 'is_active' => true, 'counter_id' => $this->counter->id]);
+        $this->product = Product::create(['company_id' => $this->store->id, 'name' => 'Coffee', 'code' => 'P1', 'selling_price' => 100, 'is_active' => true]);
+        Stock::create(['store_id' => $this->store->id, 'product_id' => $this->product->id, 'quantity' => 100, 'available_quantity' => 100]);
+        Sanctum::actingAs($this->user);
+    }
+
+    private function sale(string $mode, float $cash = 0, array $extra = [])
+    {
+        return $this->postJson('/api/pos-sales', array_merge(['saleSaveAs' => $mode, 'cashAmount' => $cash,
+            'items' => [['productId' => $this->product->id, 'qty' => 1, 'price' => 100]]], $extra));
+    }
+
+    public function test_paid_invoice_keeps_counter_snapshot_and_is_not_open(): void
+    {
+        $id = $this->sale('paid_settled', 100)->assertCreated()->assertJsonPath('data.status', 'PAID')->assertJsonPath('data.counter_name', 'Till One')->json('data.id');
+        $this->counter->update(['value' => 'Renamed']);
+        $this->getJson('/api/pos-sales?all=true')->assertJsonPath('data.0.counter_name', 'Till One');
+        $this->getJson('/api/settlements/unpaid-bills')->assertJsonCount(0, 'data');
+        $this->getJson('/api/settlements/unpaid-bills?status=all')->assertJsonCount(1, 'data');
+        $this->postJson('/api/settlements', ['action' => 'settle', 'billIds' => [$id], 'cashAmount' => 100])->assertUnprocessable();
+        $this->sale('paid_settled', 0)->assertUnprocessable();
+        $this->assertSame(1, PosSale::count());
+    }
+
+    public function test_unsettled_invoice_can_be_settled_once_with_server_calculated_change(): void
+    {
+        $id = $this->sale('unsettled')->assertCreated()->assertJsonPath('data.status', 'UNSETTLED')->json('data.id');
+        $this->getJson('/api/settlements/unpaid-bills')->assertJsonPath('data.0.remaining_amount', 100);
+        $this->postJson('/api/settlements', ['action' => 'settle', 'billIds' => [$id], 'cashAmount' => 99])->assertUnprocessable();
+        $payload = ['action' => 'settle', 'billIds' => [$id], 'cashAmount' => 120];
+        $this->postJson('/api/settlements', $payload)->assertCreated()->assertJsonPath('data.return_amount', 20)->assertJsonPath('data.net_amount', 100);
+        $this->assertDatabaseHas('pos_sales', ['id' => $id, 'status' => 'SETTLED', 'paid_amount' => 100]);
+        $this->postJson('/api/settlements', $payload)->assertUnprocessable();
+        $this->assertSame(1, Settlement::count());
+        $this->assertEquals(100, PosPayment::sum('amount'));
+        $this->getJson('/api/settlements/unpaid-bills')->assertJsonCount(0, 'data');
+    }
+
+    public function test_multiple_bills_allocate_split_tenders_without_double_collection(): void
+    {
+        $one = $this->sale('unsettled', 20)->assertCreated()->json('data.id');
+        $two = $this->sale('unsettled')->assertCreated()->json('data.id');
+        $this->postJson('/api/settlements', ['action' => 'settle', 'billIds' => [$one, $two], 'cashAmount' => 80, 'cardAmount' => 100, 'cardTypeId' => 1])->assertCreated();
+        $this->assertEquals(100, PosPayment::where('pos_sale_id', $one)->sum('amount'));
+        $this->assertEquals(100, PosPayment::where('pos_sale_id', $two)->sum('amount'));
+    }
+
+    public function test_foreign_store_invoice_and_counter_are_rejected(): void
+    {
+        $other = Store::create(['name' => 'Other', 'code' => 'OTHER', 'is_active' => true]);
+        $counter = SystemConfiguration::create(['store_id' => $other->id, 'key' => 'counter', 'value' => 'Foreign', 'is_active' => true]);
+        $this->postJson('/api/auth/counter', ['counterId' => $counter->id])->assertUnprocessable();
+        $this->assertEquals($this->counter->id, $this->user->fresh()->counter_id);
+        $this->postJson('/api/auth/counter', ['counterId' => $this->counter->id])->assertOk()->assertJsonPath('data.user.counter_name', 'Till One');
+        $foreignId = $this->sale('unsettled')->assertCreated()->json('data.id');
+        \Illuminate\Support\Facades\DB::table('pos_sales')->where('id', $foreignId)->update(['store_id' => $other->id]);
+        $this->postJson('/api/settlements', ['action' => 'settle', 'billIds' => [$foreignId], 'cashAmount' => 100])->assertUnprocessable();
+        $this->assertDatabaseHas('pos_sales', ['id' => $foreignId, 'status' => 'UNSETTLED']);
+        $this->assertSame(0, Settlement::count());
+    }
+
+    public function test_credit_invoice_settlement_reconciles_customer_balance(): void
+    {
+        $customer = Customer::create(['name' => 'Customer', 'code' => 'C1', 'store_id' => $this->store->id, 'current_balance' => 0]);
+        $id = $this->sale('unsettled', 0, ['customerId' => $customer->id, 'isCredit' => true])->assertCreated()->json('data.id');
+        $this->assertEquals(100, $customer->fresh()->current_balance);
+        $this->postJson('/api/settlements', ['action' => 'settle', 'billIds' => [$id], 'cashAmount' => 100])->assertCreated();
+        $this->assertEquals(0, $customer->fresh()->current_balance);
+    }
+}

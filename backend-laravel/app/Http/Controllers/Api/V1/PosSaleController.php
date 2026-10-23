@@ -21,6 +21,7 @@ use App\Services\DashboardBroadcastService;
 use App\Services\DocumentNumberService;
 use App\Services\GroupAggregationService;
 use App\Services\PaginationService;
+use App\Services\PosCounter;
 use App\Services\StockService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -206,7 +207,7 @@ class PosSaleController extends Controller
 
     public function posOldSales(Request $request)
     {
-        $query = PosSale::with(['customer', 'user', 'items.product', 'items.barcode']);
+        $query = PosSale::with(['appliedReturn', 'settlement', 'customer', 'user', 'items.product', 'items.barcode']);
 
         if ($request->boolean('all') || in_array($request->input('limit'), ['500', '1000', 500, 1000], true)) {
             $sales = $query->orderByDesc('id')->limit(2000)->get();
@@ -231,7 +232,7 @@ class PosSaleController extends Controller
     {
         $storeId = $request->header('X-Company-Scope-Id');
 
-        return PosSale::with(['customer', 'user', 'items.product', 'items.barcode', 'payments'])
+        return PosSale::with(['appliedReturn', 'settlement', 'customer', 'user', 'items.product', 'items.barcode', 'payments'])
             ->when($storeId && $storeId !== 'all', fn ($q) => $q->where('store_id', $storeId))
             // The mobile Sales screen's search box has always sent this param, but nothing here
             // ever read it - every keystroke silently no-opped and kept showing the same
@@ -302,7 +303,7 @@ class PosSaleController extends Controller
 
     public function show($id)
     {
-        $sale = PosSale::with(['customer', 'user', 'items.product', 'payments'])->findOrFail($id);
+        $sale = PosSale::with(['appliedReturn', 'settlement', 'customer', 'user', 'items.product', 'payments'])->findOrFail($id);
 
         return response()->json([
             'success' => true,
@@ -364,6 +365,7 @@ class PosSaleController extends Controller
             'cashAmount' => 'nullable|numeric|min:0',
             'cardAmount' => 'nullable|numeric|min:0',
             'upiAmount' => 'nullable|numeric|min:0',
+            'saleSaveAs' => 'nullable|in:paid_settled,unsettled',
         ]);
 
         if ($validator->fails()) {
@@ -374,6 +376,10 @@ class PosSaleController extends Controller
             return DB::transaction(function () use ($request) {
                 $user = $request->user();
                 $storeId = $request->header('X-Company-Scope-Id') ?: ($user->store_id ?? $request->input('store_id', 1));
+                $counter = PosCounter::find($user?->counter_id, (int) $storeId);
+                if ($user?->counter_id && ! $counter) {
+                    return response()->json(['message' => 'Select an active counter in this store before saving.'], 422);
+                }
 
                 // Resolve customer: an existing id, or a lightweight walk-in
                 // record from the ad-hoc {name, mobileNo} the UI collects for
@@ -438,15 +444,20 @@ class PosSaleController extends Controller
                 $isCredit = $request->boolean('isCredit');
                 $paid = $cashAmount + $cardAmount + $upiAmount;
                 $change = max(0, $paid - $netPayable);
+                if ($request->input('saleSaveAs') === 'paid_settled' && ! $isCredit && round($paid, 2) < round($netPayable, 2)) {
+                    return response()->json(['message' => 'Full payment is required to save a paid invoice.'], 422);
+                }
 
                 $paymentMode = $isCredit || $paid <= 0
-                    ? 'CREDIT'
+                    ? ($isCredit ? 'CREDIT' : 'UNSETTLED')
                     : ($cashAmount > 0 ? 'CASH' : ($cardAmount > 0 ? 'CARD' : 'UPI'));
 
                 $invoiceNo = DocumentNumberService::resolve($request, (int) $storeId, 'INV');
 
                 $sale = PosSale::create([
                     'store_id' => $storeId,
+                    'counter_id' => $counter?->id,
+                    'counter_name' => $counter?->value ?? $counter?->config_value,
                     'customer_id' => $customerId,
                     'user_id' => $user->id ?? 1,
                     'invoice_no' => $invoiceNo,
@@ -461,7 +472,7 @@ class PosSaleController extends Controller
                     'paid_amount' => $paid,
                     'change_amount' => $change,
                     'payment_mode' => $paymentMode,
-                    'status' => 'COMPLETED',
+                    'status' => $isCredit ? 'CREDIT' : ($request->input('saleSaveAs') === 'unsettled' || round($paid, 2) < round($netPayable, 2) ? 'UNSETTLED' : 'PAID'),
                     'is_credit' => $isCredit,
                     'igst' => $request->boolean('igst'),
                     'place_of_supply_state_id' => $request->input('placeOfSupplyStateId'),
@@ -571,12 +582,13 @@ class PosSaleController extends Controller
                     }
 
                     if ($customer && $isCredit) {
-                        $newCreditBalance = (float) $customer->current_balance + $grandTotal;
+                        $creditDue = max(0, $netPayable - $paid);
+                        $newCreditBalance = (float) $customer->current_balance + $creditDue;
                         CreditLedger::create([
                             'customer_id' => $customerId,
                             'reference_type' => 'POS_SALE',
                             'reference_id' => $sale->id,
-                            'debit' => $grandTotal,
+                            'debit' => $creditDue,
                             'credit' => 0,
                             'balance' => $newCreditBalance,
                             'description' => "POS sale {$invoiceNo}",
@@ -758,7 +770,7 @@ class PosSaleController extends Controller
         $from = $request->input('from') ?: now()->subDays(30)->toDateString();
         $to = $request->input('to') ?: now()->toDateString();
 
-        $query = PosSale::with(['customer', 'store', 'items.product', 'payments'])
+        $query = PosSale::with(['appliedReturn', 'settlement', 'customer', 'store', 'items.product', 'payments'])
             ->whereDate('sale_date', '>=', $from)
             ->whereDate('sale_date', '<=', $to);
 
@@ -1073,7 +1085,7 @@ class PosSaleController extends Controller
     public function lastReceipt(Request $request)
     {
         $storeId = $this->resolveStoreId($request, 1);
-        $sale = PosSale::with(['customer', 'items.product', 'payments'])
+        $sale = PosSale::with(['appliedReturn', 'settlement', 'customer', 'items.product', 'payments'])
             ->where('store_id', $storeId)
             ->latest('id')
             ->first();
@@ -1087,7 +1099,7 @@ class PosSaleController extends Controller
     public function lookupSale(Request $request)
     {
         $billNo = $request->input('bill_no') ?? $request->input('invoice_no');
-        $sale = PosSale::with(['customer', 'items.product', 'payments'])
+        $sale = PosSale::with(['appliedReturn', 'settlement', 'customer', 'items.product', 'payments'])
             ->where('invoice_no', $billNo)
             ->first();
 

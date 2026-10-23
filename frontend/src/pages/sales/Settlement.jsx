@@ -97,8 +97,10 @@ const Settlement = () => {
 
   const [saving, setSaving] = useState(false);
   const [showSearchPage, setShowSearchPage] = useState(false);
+  const [invoiceStatus, setInvoiceStatus] = useState("open");
   const searchGrid = useSearchGrid({
-    adapter: createSearchGridAdapter("/settlements/unpaid-bills", undefined, { paginate: true, status: "all" }),
+    scopeKey: invoiceStatus,
+    adapter: createSearchGridAdapter("/settlements/unpaid-bills", undefined, { paginate: true, status: invoiceStatus }),
     enabled: showSearchPage,
     onError: err => toast.error(err.response?.data?.message || "Failed to load bills"),
   });
@@ -172,28 +174,20 @@ const Settlement = () => {
       return false;
     }
     const normalizedStatus = String(bill?.status || "").toLowerCase();
-    if (normalizedStatus === "paid" || normalizedStatus === "settled") {
+    if (["paid", "settled", "returned"].includes(normalizedStatus) || (normalizedStatus === "completed" && toNum(bill.remaining_amount, 0) <= 0)) {
       toast.info("Closed bill cannot be added");
       return false;
     }
 
-    let added = false;
-    setSelectedBills((prev) => {
-      if (prev.some((row) => row.id === bill.id)) return prev;
-      added = true;
-      return [...prev, bill];
-    });
-
-    if (added) {
-      toast.success(`Bill #${bill.bill_no} added`);
-      setShowSearchPage(false);
-      setSelectedSearchRows([]);
-      return true;
+    if (selectedBills.some((row) => row.id === bill.id)) {
+      toast.info(`Bill #${bill.bill_no} is already selected`);
+      return false;
     }
-
-    toast.info(`Bill #${bill.bill_no} is already selected`);
+    setSelectedBills((previous) => [...previous, bill]);
+    toast.success(`Bill #${bill.bill_no} added`);
     setShowSearchPage(false);
-    return false;
+    setSelectedSearchRows([]);
+    return true;
   };
 
   const handleGoBill = async () => {
@@ -460,12 +454,16 @@ const Settlement = () => {
       toast.success(
         settlementNo ? `Settlement saved (${settlementNo})` : "Settlement saved successfully"
       );
-      await printSettlementSlip({
-        settlement: res.data?.data,
-        billsSnapshot,
-        cardTypeName,
-        upiProviderName,
-      });
+      try {
+        await printSettlementSlip({
+          settlement: res.data?.data,
+          billsSnapshot,
+          cardTypeName,
+          upiProviderName,
+        });
+      } catch {
+        toast.error("Settlement saved, but printing failed. Do not submit the payment again.");
+      }
       setSelectedBills([]);
       resetPayment();
       await loadUnpaidBills(searchTerm);
@@ -621,7 +619,7 @@ const Settlement = () => {
       {
         key: "status",
         label: "Status",
-        valueGetter: (row) => row.status || (row.is_paid ? "paid" : "unpaid"),
+        valueGetter: (row) => String(row.status).toUpperCase() === "COMPLETED" && toNum(row.remaining_amount, 0) <= 0 ? "paid" : row.status || (row.is_paid ? "paid" : "unpaid"),
         render: (value) => {
           const normalized = String(value || "unpaid").toLowerCase();
           const statusColor = normalized === "paid"
@@ -904,6 +902,13 @@ const Settlement = () => {
 
   const renderSearchPage = () => (
     <SearchGridPanel>
+      <Box sx={{ mb: 1 }}>
+        <TextField select label="Invoices" size="small" value={invoiceStatus}
+          onChange={(event) => { setInvoiceStatus(event.target.value); setSelectedSearchRows([]); }} sx={{ minWidth: 240 }}>
+          <MenuItem value="open">Awaiting settlement</MenuItem>
+          <MenuItem value="all">All invoices</MenuItem>
+        </TextField>
+      </Box>
       <FilterableDataTable
         rows={unpaidBills}
         columns={settlementSearchColumns}
@@ -963,7 +968,7 @@ const Settlement = () => {
         onPreviousCursor={searchGrid.navigateCursor}
         fillHeight
       />
-      <Typography sx={{ fontSize: 10.5, color: "text.secondary", mt: 1 }}>Paid, settled, unsettled, credit, and cancelled bills are shown here. Only open unsettled or credit bills can be added.</Typography>
+      <Typography sx={{ fontSize: 10.5, color: "text.secondary", mt: 1 }}>Awaiting settlement shows open unsettled and credit invoices. All invoices includes closed invoices for reference; they cannot be settled again.</Typography>
     </SearchGridPanel>
   );
 

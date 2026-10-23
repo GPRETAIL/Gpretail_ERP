@@ -21,7 +21,7 @@ export default function CounterAssignmentDialog({ open, onClose, onAssigned }) {
   const [savingCounterAssignment, setSavingCounterAssignment] = useState(false);
 
   const role = String(user?.role || "").trim().toLowerCase();
-  const companyId = user?.company_id || user?.companyId;
+  const companyId = sessionStorage.getItem("activeStoreId") || user?.company_id || user?.companyId;
   const fetchCounters = useCallback(async ({ signal }) => {
     const restricted = role === "admin" || role === "user";
     const response = await api.get("/configurations/counter", { params: restricted && companyId ? { company_id: companyId } : undefined, signal });

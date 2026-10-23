@@ -91,7 +91,7 @@ class SalesReportController extends Controller
         $date = $request->input('date', date('Y-m-d'));
 
         $summary = PosSale::whereDate('sale_date', $date)
-            ->where('status', 'COMPLETED')
+            ->whereIn('status', ['COMPLETED', 'PAID', 'SETTLED', 'UNSETTLED', 'CREDIT'])
             ->selectRaw('COUNT(id) as total_invoices, SUM(total_qty) as total_items_sold, SUM(subtotal) as subtotal, SUM(tax_amount) as tax_total, SUM(discount_amount) as discount_total, SUM(grand_total) as grand_total')
             ->first();
 

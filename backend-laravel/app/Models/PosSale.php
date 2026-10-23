@@ -9,8 +9,38 @@ class PosSale extends Model
 {
     use HasFactory;
 
+    protected $appends = ['bill_no', 'net_amount', 'remaining_amount', 'settlement_amount', 'customer_name', 'settlement_no', 'user_name'];
+
+    public function getBillNoAttribute(): string
+    {
+        return (string) $this->invoice_no;
+    }
+
+    public function getNetAmountAttribute(): float
+    {
+        return (float) $this->grand_total;
+    }
+
+    public function getRemainingAmountAttribute(): float
+    {
+        return round(max(0, (float) $this->grand_total - (float) $this->paid_amount - (float) ($this->appliedReturn?->total_refund ?? 0)), 2);
+    }
+
+    public function getSettlementAmountAttribute(): float
+    {
+        return $this->remaining_amount;
+    }
+
+    public function getCustomerNameAttribute(): string
+    {
+        return $this->customer?->name ?? 'Walk-in Customer';
+    }
+
     protected $fillable = [
         'store_id',
+        'counter_id',
+        'counter_name',
+        'settlement_id',
         'cash_session_id',
         'customer_id',
         'user_id',
@@ -49,6 +79,21 @@ class PosSale extends Model
             'is_credit' => 'boolean',
             'igst' => 'boolean',
         ];
+    }
+
+    public function getSettlementNoAttribute(): ?string
+    {
+        return $this->settlement?->batch_no;
+    }
+
+    public function getUserNameAttribute(): ?string
+    {
+        return $this->user?->name;
+    }
+
+    public function settlement()
+    {
+        return $this->belongsTo(Settlement::class);
     }
 
     public function store()
