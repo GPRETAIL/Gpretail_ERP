@@ -491,7 +491,7 @@ class BackupController extends Controller
             abort_unless(in_array(request()->user()?->role, ['admin', 'super_admin'], true), 403, 'Only administrators can manage backups.');
         }
         $validator = Validator::make($request->all(), [
-            'backupFile' => 'required|file',
+            'backupFile' => 'required|file|max:102400',
         ]);
         if ($validator->fails()) {
             return response()->json(['success' => false, 'message' => 'Validation error', 'errors' => $validator->errors()], 422);
@@ -501,14 +501,16 @@ class BackupController extends Controller
         abort_unless($companyId && in_array($companyId, $this->authorizedStoreIds($request), true), 422, 'Select one authorized store before importing a backup.');
         $password = $request->input('password');
         $uploaded = $request->file('backupFile');
+        abort_unless(in_array(strtolower($uploaded->getClientOriginalExtension()), ['zip', 'enc'], true), 422, 'Upload a .zip or .enc backup file.');
 
         $fileName = 'imported_'.now()->format('Ymd_His').'_'.uniqid().'.'.($uploaded->getClientOriginalExtension() ?: 'zip');
         $dir = storage_path('app/private/backups');
         if (! is_dir($dir)) {
-            mkdir($dir, 0755, true);
+            mkdir($dir, 0700, true);
         }
         $uploaded->move($dir, $fileName);
         $savedPath = $dir.DIRECTORY_SEPARATOR.$fileName;
+        @chmod($savedPath, 0600);
 
         $backup = Backup::create([
             'file_name' => $fileName,
@@ -547,6 +549,14 @@ class BackupController extends Controller
             if ($decryptedTempPath && file_exists($decryptedTempPath)) {
                 @unlink($decryptedTempPath);
             }
+        }
+
+        if ($status === 'failed') {
+            @unlink($savedPath);
+            $backup->delete();
+            report(new \RuntimeException($statusMessage ?? 'Backup import failed'));
+
+            return response()->json(['success' => false, 'message' => 'Backup could not be restored. Check the archive, password and selected store.'], 422);
         }
 
         $restore = BackupRestore::create([

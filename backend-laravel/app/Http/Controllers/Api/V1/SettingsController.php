@@ -50,7 +50,7 @@ class SettingsController extends Controller
     public function localPrinterInstaller(Request $request)
     {
         $connectorDir = resource_path('printer-connector');
-        $tempZipPath = storage_path('app/erp-printer-connector-'.time().'.zip');
+        $tempZipPath = storage_path('app/'.uniqid('erp-printer-connector-', true).'.zip');
 
         if (! is_dir(storage_path('app'))) {
             @mkdir(storage_path('app'), 0755, true);
@@ -68,6 +68,10 @@ class SettingsController extends Controller
                     if (! $file->isDir()) {
                         $filePath = $file->getRealPath();
                         $relativePath = substr($filePath, strlen($connectorDir) + 1);
+                        $relativePath = str_replace('\\', '/', $relativePath);
+                        if ($file->isLink() || str_contains('/'.$relativePath, '/node_modules/') || basename($relativePath) === 'printer_config.json' || str_ends_with(strtolower($relativePath), '.log')) {
+                            continue;
+                        }
                         $zip->addFile($filePath, $relativePath);
                     }
                 }
@@ -156,6 +160,10 @@ class SettingsController extends Controller
                     $allowed = $request->input('settingsSection') === 'sales' ? $salesKeys : $receiptKeys;
                     $incoming = array_intersect_key($incoming, array_flip($allowed));
                     $incoming = array_replace($locked->receipt_customization ?? [], $incoming);
+                }
+                if (array_key_exists('paymentQrImageUrl', $incoming)) {
+                    $image = trim((string) $incoming['paymentQrImageUrl']);
+                    $incoming['paymentQrImageUrl'] = preg_match('~^data:image/(png|jpeg|jpg|webp);base64,[A-Za-z0-9+/=]+$~iD', $image) ? $image : '';
                 }
                 $locked->update(['receipt_customization' => $incoming]);
 

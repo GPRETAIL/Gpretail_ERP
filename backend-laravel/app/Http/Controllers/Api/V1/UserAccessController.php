@@ -313,6 +313,8 @@ class UserAccessController extends Controller
             ], 404);
         }
 
+        abort_if(in_array($role->name, ['super_admin', 'admin', 'manager', 'cashier', 'viewer', 'accountant', 'inventory_manager', 'sales_executive'], true), 403, 'Built-in system roles cannot be changed or deleted.');
+
         $role->update($request->only(['name', 'display_name', 'description']));
 
         return response()->json([
@@ -333,6 +335,8 @@ class UserAccessController extends Controller
                 'message' => 'Role group not found',
             ], 404);
         }
+
+        abort_if(in_array($role->name, ['super_admin', 'admin', 'manager', 'cashier', 'viewer', 'accountant', 'inventory_manager', 'sales_executive'], true), 403, 'Built-in system roles cannot be changed or deleted.');
 
         $role->delete();
 

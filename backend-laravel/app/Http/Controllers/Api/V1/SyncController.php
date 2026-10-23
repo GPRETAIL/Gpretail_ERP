@@ -156,7 +156,7 @@ class SyncController extends Controller
         $since = $request->filled('since') ? Carbon::parse($request->input('since')) : null;
 
         $backupService = app(BackupService::class);
-        $exported = $backupService->exportTablesToJson($backupService->fullTableManifest(), $node->store_id, $since);
+        $exported = $backupService->exportTablesToJson($backupService->stripSensitiveTables($backupService->fullTableManifest()), $node->store_id, $since);
 
         return response()->json([
             'success' => true,

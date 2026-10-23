@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\Backup;
-use App\Models\PlatformActivation;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -385,75 +384,93 @@ class BackupService
         $restoredRows = 0;
         $tableCounts = [];
 
-        DB::transaction(function () use ($zip, $tables, $targetCompanyId, $originalCompanyId, &$restoredRows, &$tableCounts) {
-            foreach ($tables as $table) {
-                if (in_array($table, ['platform_activations', 'personal_access_tokens', 'store_local_nodes'], true)) {
-                    continue;
-                }
-                if (! Schema::hasTable($table)) {
-                    continue;
-                }
-                $raw = $zip->getFromName("tables/{$table}.json");
-                $rows = $raw === false ? [] : (json_decode($raw, true) ?? []);
-                if (! $rows) {
-                    $tableCounts[$table] = 0;
-
-                    continue;
-                }
-
-                // Never blindly rewrite the stores table itself when restoring into a
-                // different target - would clobber the target store's own profile.
-                if ($table === 'stores') {
-                    $tableCounts[$table] = 0;
-
-                    continue;
-                }
-
-                if ($targetCompanyId && $originalCompanyId && $targetCompanyId !== $originalCompanyId) {
-                    $rows = $this->rewriteScopeColumn($table, $rows, $originalCompanyId, $targetCompanyId);
-                }
-
-                if ($targetCompanyId && PlatformActivation::current()?->activated) {
-                    $columns = Schema::getColumnListing($table);
-                    $ownership = array_values(array_intersect(['store_id', 'company_id'], $columns));
-                    if (! $ownership) {
-                        throw new RuntimeException('Restore for indirectly owned or global tables needs a validated tenant migration: '.$table);
+        try {
+            DB::transaction(function () use ($zip, $tables, $targetCompanyId, $originalCompanyId, &$restoredRows, &$tableCounts) {
+                foreach ($tables as $table) {
+                    if (in_array($table, ['platform_activations', 'personal_access_tokens', 'store_local_nodes'], true)) {
+                        continue;
                     }
-                    foreach ($rows as $row) {
-                        foreach ($ownership as $column) {
-                            if ((int) ($row[$column] ?? 0) !== $targetCompanyId) {
-                                throw new RuntimeException('Archive contains records outside the selected store.');
+                    if (! Schema::hasTable($table)) {
+                        continue;
+                    }
+                    $raw = $zip->getFromName("tables/{$table}.json");
+                    $rows = $raw === false ? [] : (json_decode($raw, true) ?? []);
+                    if (! $rows) {
+                        $tableCounts[$table] = 0;
+
+                        continue;
+                    }
+
+                    // Never blindly rewrite the stores table itself when restoring into a
+                    // different target - would clobber the target store's own profile.
+                    if ($table === 'stores') {
+                        $tableCounts[$table] = 0;
+
+                        continue;
+                    }
+
+                    if ($targetCompanyId && $originalCompanyId && $targetCompanyId !== $originalCompanyId) {
+                        $rows = $this->rewriteScopeColumn($table, $rows, $originalCompanyId, $targetCompanyId);
+                    }
+
+                    $rows = $this->filterImportConfigurationRows($table, $rows);
+                    if (! $rows) {
+                        $tableCounts[$table] = 0;
+
+                        continue;
+                    }
+                    if ($table === 'users') {
+                        foreach ($rows as $row) {
+                            if (($row['role'] ?? '') === 'super_admin'
+                                || (isset($row['id']) && DB::table('users')->where('id', $row['id'])->where('role', 'super_admin')->exists())) {
+                                throw new RuntimeException('Platform administrators cannot be restored through tenant backups.');
                             }
                         }
-                        if (isset($row['id'])) {
-                            $existing = DB::table($table)->where('id', $row['id'])->first();
+                    }
+
+                    if ($targetCompanyId) {
+                        $columns = Schema::getColumnListing($table);
+                        $ownership = array_values(array_intersect(['store_id', 'company_id'], $columns));
+                        if (! $ownership) {
+                            throw new RuntimeException('Restore for indirectly owned or global tables needs a validated tenant migration: '.$table);
+                        }
+                        foreach ($rows as $row) {
                             foreach ($ownership as $column) {
-                                if ($existing && (int) ($existing->$column ?? 0) !== $targetCompanyId) {
-                                    throw new RuntimeException('Archive record IDs conflict with another store.');
+                                if ((int) ($row[$column] ?? 0) !== $targetCompanyId) {
+                                    throw new RuntimeException('Archive contains records outside the selected store.');
                                 }
                             }
-                        }
-                        if ($table === 'users' && ($row['role'] ?? '') === 'super_admin') {
-                            throw new RuntimeException('Platform administrators cannot be restored through tenant backups.');
+                            if (isset($row['id'])) {
+                                $existing = DB::table($table)->where('id', $row['id'])->first();
+                                foreach ($ownership as $column) {
+                                    if ($existing && (int) ($existing->$column ?? 0) !== $targetCompanyId) {
+                                        throw new RuntimeException('Archive record IDs conflict with another store.');
+                                    }
+                                }
+                            }
+                            if ($table === 'users' && ($row['role'] ?? '') === 'super_admin') {
+                                throw new RuntimeException('Platform administrators cannot be restored through tenant backups.');
+                            }
                         }
                     }
+
+                    $uniqueBy = $table === 'role_permissions' ? ['role_id', 'permission_id'] : ['id'];
+                    $updateColumns = array_values(array_diff(array_keys($rows[0]), $uniqueBy));
+
+                    // Larger batches = fewer round trips to the DB, which is what actually
+                    // dominates restore time (not PHP-side JSON decoding).
+                    foreach (array_chunk($rows, 1000) as $chunk) {
+                        DB::table($table)->upsert($chunk, $uniqueBy, $updateColumns);
+                    }
+
+                    $tableCounts[$table] = count($rows);
+                    $restoredRows += count($rows);
                 }
+            });
 
-                $uniqueBy = $table === 'role_permissions' ? ['role_id', 'permission_id'] : ['id'];
-                $updateColumns = array_values(array_diff(array_keys($rows[0]), $uniqueBy));
-
-                // Larger batches = fewer round trips to the DB, which is what actually
-                // dominates restore time (not PHP-side JSON decoding).
-                foreach (array_chunk($rows, 1000) as $chunk) {
-                    DB::table($table)->upsert($chunk, $uniqueBy, $updateColumns);
-                }
-
-                $tableCounts[$table] = count($rows);
-                $restoredRows += count($rows);
-            }
-        });
-
-        $zip->close();
+        } finally {
+            $zip->close();
+        }
 
         return ['restoredRows' => $restoredRows, 'tables' => $tableCounts];
     }
@@ -486,12 +503,13 @@ class BackupService
 
         DB::transaction(function () use ($exportedData, &$mergedRows, &$tableCounts) {
             foreach ($exportedData as $table => $rows) {
-                if (in_array($table, ['platform_activations', 'personal_access_tokens', 'store_local_nodes'], true)) {
+                if (in_array($table, ['users', 'auth_sessions', 'audit_logs', 'sync_checkpoints', 'platform_activations', 'personal_access_tokens', 'store_local_nodes'], true)) {
                     continue;
                 }
+                $rows = $this->filterImportConfigurationRows($table, $rows);
                 if ($table === 'stores') {
                     foreach ($rows as &$storeRow) {
-                        foreach (['platform_store_id', 'platform_company_code', 'platform_active_till', 'platform_subscription', 'platform_licence_token', 'activation_required', 'activated_at', 'is_active', 'code'] as $field) {
+                        foreach (['admin_password', 'einvoice_password', 'gst_access_key', 'backup_settings', 'platform_store_id', 'platform_company_code', 'platform_active_till', 'platform_subscription', 'platform_licence_token', 'activation_required', 'activated_at', 'is_active', 'code'] as $field) {
                             unset($storeRow[$field]);
                         }
                     }
@@ -521,6 +539,33 @@ class BackupService
         });
 
         return ['mergedRows' => $mergedRows, 'tables' => $tableCounts];
+    }
+
+    private function filterImportConfigurationRows(string $table, array $rows): array
+    {
+        if ($table !== 'system_configurations') {
+            return $rows;
+        }
+        $internalKeys = ['invoice_ai', 'gemini_api_key', 'space_ocr_api_key', 'openai_api_key', 'ocr_space_api_key'];
+        $columns = array_intersect(['group', 'group_name', 'key', 'config_key'], Schema::getColumnListing($table));
+        $protectedIds = DB::table($table)->where(function ($query) use ($columns, $internalKeys) {
+            foreach ($columns as $column) {
+                $query->orWhereIn($column, $internalKeys);
+            }
+        })->pluck('id')->all();
+
+        return array_values(array_filter($rows, function ($row) use ($columns, $internalKeys, $protectedIds) {
+            if (in_array((int) ($row['id'] ?? 0), $protectedIds, true)) {
+                return false;
+            }
+            foreach ($columns as $column) {
+                if (in_array(strtolower((string) ($row[$column] ?? '')), $internalKeys, true)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }));
     }
 
     private function filterNewerRows(string $table, array $rows, array $uniqueBy): array

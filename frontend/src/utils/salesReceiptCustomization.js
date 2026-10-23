@@ -453,7 +453,7 @@ const normalizePaymentQrMode = (value) => {
  * receipt never depends on a remote host being reachable at print time. */
 const normalizePaymentQrImageUrl = (value) => {
   const raw = String(value || "").trim();
-  return /^data:image\//i.test(raw) ? raw : "";
+  return /^data:image\/(png|jpeg|jpg|webp);base64,[A-Za-z0-9+/=]+$/i.test(raw) ? raw : "";
 };
 
 const normalizeReceiptFontFamily = (value) => {
@@ -896,13 +896,14 @@ export const RECEIPT_QR_CODE_DISPLAY_PX = 96;
 export const RECEIPT_QR_CODE_DATA_WIDTH = 480;
 
 export const buildReceiptQrCodeImgMarkup = (dataUrl, { label = "", fontSize = 13, size = RECEIPT_QR_CODE_DISPLAY_PX } = {}) => {
+  dataUrl = normalizePaymentQrImageUrl(dataUrl);
   if (!dataUrl) return "";
   const displaySize = Math.max(64, Number(size) || RECEIPT_QR_CODE_DISPLAY_PX);
   const caption = String(label || "").trim();
   const captionNode = caption
     ? `<div style="margin-top:6px;text-align:center;font-family:monospace;font-size:${Math.max(10, Number(fontSize) || 13)}px;color:#111827;">${escapeMarkup(caption)}</div>`
     : "";
-  return `<img src="${dataUrl}" alt="" width="${displaySize}" height="${displaySize}" style="display:block;margin:0 auto;width:${displaySize}px;height:${displaySize}px;max-width:100%;object-fit:contain;" />${captionNode}`;
+  return `<img src="${escapeMarkup(dataUrl)}" alt="" width="${displaySize}" height="${displaySize}" style="display:block;margin:0 auto;width:${displaySize}px;height:${displaySize}px;max-width:100%;object-fit:contain;" />${captionNode}`;
 };
 
 export const createReceiptQrCodeDataUrl = async (value, { width = RECEIPT_QR_CODE_DATA_WIDTH } = {}) => {

@@ -13,6 +13,7 @@ use App\Services\VariantResolverService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 
 class BarcodeController extends Controller
@@ -44,18 +45,26 @@ class BarcodeController extends Controller
         if ($request->filled('transport_entry_id')) {
             // Barcodes linked via inventory_entry → inventory_items that belong to this transport entry
             $teId = $request->input('transport_entry_id');
-            $query->whereHas('inventoryItem', function ($q) use ($teId) {
-                $q->whereHas('inventoryEntry', function ($q2) use ($teId) {
-                    $q2->where('transport_entry_id', $teId);
+            // Older warehouse schemas have no transport-to-inventory link.
+            // A requested filter must never silently return every barcode.
+            if (! Schema::hasColumn('inventory_entries', 'transport_entry_id')) {
+                $query->whereRaw('1 = 0');
+            } else {
+                $query->where(function ($query) use ($teId) {
+                    $query->whereHas('inventoryItem', function ($q) use ($teId) {
+                        $q->whereHas('inventoryEntry', function ($q2) use ($teId) {
+                            $q2->where('transport_entry_id', $teId);
+                        });
+                    })->orWhere(function ($q) use ($teId) {
+                        // Also match by direct inventory_entry_id stored on the barcode row
+                        $q->whereIn('inventory_entry_id', function ($sub) use ($teId) {
+                            $sub->select('id')
+                                ->from('inventory_entries')
+                                ->where('transport_entry_id', $teId);
+                        });
+                    });
                 });
-            })->orWhere(function ($q) use ($teId) {
-                // Also match by direct inventory_entry_id stored on the barcode row
-                $q->whereIn('inventory_entry_id', function ($sub) use ($teId) {
-                    $sub->select('id')
-                        ->from('inventory_entries')
-                        ->where('transport_entry_id', $teId);
-                });
-            });
+            }
         }
 
         // --- Text search ---

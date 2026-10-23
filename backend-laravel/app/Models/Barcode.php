@@ -35,18 +35,23 @@ class Barcode extends Model
     protected function casts(): array
     {
         return [
-            'mrp'                     => 'decimal:2',
-            'selling_price'           => 'decimal:2',
-            'discount_perc'           => 'decimal:2',
-            'final_price'             => 'decimal:2',
-            'printed_count'           => 'integer',
-            'jump_detail_index'       => 'integer',
-            'direct_purchase_id'      => 'integer',
+            'mrp' => 'decimal:2',
+            'selling_price' => 'decimal:2',
+            'discount_perc' => 'decimal:2',
+            'final_price' => 'decimal:2',
+            'printed_count' => 'integer',
+            'jump_detail_index' => 'integer',
+            'direct_purchase_id' => 'integer',
             'direct_purchase_item_id' => 'integer',
-            'inventory_entry_id'      => 'integer',
-            'inventory_item_id'       => 'integer',
-            'is_active'               => 'boolean',
+            'inventory_entry_id' => 'integer',
+            'inventory_item_id' => 'integer',
+            'is_active' => 'boolean',
         ];
+    }
+
+    public function inventoryItem()
+    {
+        return $this->belongsTo(InventoryEntryItem::class, 'inventory_item_id');
     }
 
     public function product()
