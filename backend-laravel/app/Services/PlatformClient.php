@@ -14,13 +14,33 @@ use Illuminate\Support\Facades\Http;
  */
 class PlatformClient
 {
-    public function authenticateTenant(string $email, string $password): array
+    private function preflight(string $companyCode = '', ?string $syncToken = null, bool $requireToken = false, ?string $storeCode = null): ?array
     {
+        if (($companyCode !== '' && preg_match('/\A[A-Za-z0-9_-]{1,64}\z/', $companyCode) !== 1)
+            || ($storeCode !== null && preg_match('/\A[A-Za-z0-9_-]{1,64}\z/', $storeCode) !== 1)) {
+            return ['ok' => false, 'status' => 422, 'data' => [], 'message' => 'Invalid company or store code format.'];
+        }
+        if ($requireToken && ($companyCode === '' || trim((string) $syncToken) === '')) {
+            return ['ok' => false, 'status' => 401, 'data' => [], 'message' => 'Missing platform sync token.'];
+        }
         $url = $this->baseUrl();
-        if (! str_starts_with($url, 'https://') && ! (app()->environment(['local', 'testing'])
-            && in_array(parse_url($url, PHP_URL_HOST), ['localhost', '127.0.0.1', '::1'], true))) {
+        $parts = parse_url($url);
+        if (! is_array($parts) || empty($parts['host']) || isset($parts['user']) || isset($parts['pass'])
+            || isset($parts['query']) || isset($parts['fragment'])
+            || (strtolower($parts['scheme'] ?? '') !== 'https' && ! (app()->environment(['local', 'testing'])
+                && strtolower($parts['scheme'] ?? '') === 'http' && in_array($parts['host'], ['localhost', '127.0.0.1', '[::1]'], true)))) {
             return ['ok' => false, 'status' => 0, 'data' => [], 'message' => 'GP Admin requires HTTPS.'];
         }
+
+        return null;
+    }
+
+    public function authenticateTenant(string $email, string $password): array
+    {
+        if ($error = $this->preflight()) {
+            return $error;
+        }
+        $url = $this->baseUrl();
         try {
             return $this->parse(Http::timeout((int) config('platform.http_timeout_seconds'))
                 ->withoutRedirecting()->post($url.'/api/v1/tenant/authenticate', array_merge(compact('email', 'password'), ['prepare_registration' => true])));
@@ -31,9 +51,12 @@ class PlatformClient
 
     public function activateStore(PlatformActivation $activation, string $storeCode, string $code): array
     {
+        if ($error = $this->preflight((string) $activation->company_code, $activation->sync_token, true, $storeCode)) {
+            return $error;
+        }
         try {
             $response = Http::timeout((int) config('platform.http_timeout_seconds'))->withToken($activation->sync_token)
-                ->post($this->baseUrl().'/api/v1/tenant/'.$activation->company_code.'/stores/activate', [
+                ->withoutRedirecting()->post($this->baseUrl().'/api/v1/tenant/'.$activation->company_code.'/stores/activate', [
                     'store_code' => $storeCode, 'activation_code' => $code, 'deployment_id' => $activation->deployment_id,
                 ]);
         } catch (ConnectionException $exception) {
@@ -56,9 +79,15 @@ class PlatformClient
      */
     public function register(string $companyCode, string $clientId, string $oneTimePassword, ?string $registrationTicket = null): array
     {
+        if ($companyCode === '') {
+            return ['ok' => false, 'status' => 422, 'data' => [], 'message' => 'Invalid company code format.'];
+        }
+        if ($error = $this->preflight($companyCode)) {
+            return $error;
+        }
         try {
             $response = Http::timeout((int) config('platform.http_timeout_seconds'))
-                ->post($this->baseUrl().'/api/v1/tenant/register', [
+                ->withoutRedirecting()->post($this->baseUrl().'/api/v1/tenant/register', [
                     'company_code' => $companyCode,
                     'client_id' => $clientId,
                     'one_time_password' => $oneTimePassword,
@@ -74,23 +103,21 @@ class PlatformClient
     /**
      * Pulls this company's configuration from the platform: status, active_till, entitlement
      * limits, feature flags, and a signed licence. Authenticated by the sync token issued at
-     * registration; falls back to the shared platform-service token only when no sync token is
-     * stored yet (a co-located, trusted-network Gpretail_Admin).
+     * registration. Shared service tokens are never accepted as a fallback.
      *
      * @return array{ok: bool, status: int, data: array, message: ?string}
      */
     public function pullSnapshot(string $companyCode, ?string $syncToken): array
     {
+        if ($error = $this->preflight($companyCode, $syncToken, true)) {
+            return $error;
+        }
         $request = Http::timeout((int) config('platform.http_timeout_seconds'));
 
-        if ($syncToken) {
-            $request = $request->withToken($syncToken);
-        } elseif (config('platform.service_token')) {
-            $request = $request->withHeaders(['X-Platform-Service-Token' => config('platform.service_token')]);
-        }
+        $request = $request->withToken(trim((string) $syncToken));
 
         try {
-            $response = $request->get($this->baseUrl().'/api/v1/tenant/'.$companyCode.'/snapshot');
+            $response = $request->withoutRedirecting()->get($this->baseUrl().'/api/v1/tenant/'.$companyCode.'/snapshot');
         } catch (ConnectionException $e) {
             return ['ok' => false, 'status' => 0, 'data' => [], 'message' => 'Could not reach the platform: '.$e->getMessage()];
         }
@@ -107,16 +134,15 @@ class PlatformClient
      */
     public function passwordAdopted(string $companyCode, ?string $syncToken, int $version, ?string $storeCode = null): array
     {
+        if ($error = $this->preflight($companyCode, $syncToken, true, $storeCode)) {
+            return $error;
+        }
         $request = Http::timeout((int) config('platform.http_timeout_seconds'));
 
-        if ($syncToken) {
-            $request = $request->withToken($syncToken);
-        } elseif (config('platform.service_token')) {
-            $request = $request->withHeaders(['X-Platform-Service-Token' => config('platform.service_token')]);
-        }
+        $request = $request->withToken(trim((string) $syncToken));
 
         try {
-            $response = $request->post($this->baseUrl().'/api/v1/tenant/'.$companyCode.'/password-adopted', [
+            $response = $request->withoutRedirecting()->post($this->baseUrl().'/api/v1/tenant/'.$companyCode.'/password-adopted', [
                 'version' => $version,
                 'scope' => $storeCode ? 'store' : 'tenant',
                 'store_code' => $storeCode,
@@ -142,9 +168,12 @@ class PlatformClient
 
     public function firstEntry(string $companyCode, string $syncToken): array
     {
+        if ($error = $this->preflight($companyCode, $syncToken, true)) {
+            return $error;
+        }
         try {
             return $this->parse(Http::timeout((int) config('platform.http_timeout_seconds'))->withToken($syncToken)
-                ->post($this->baseUrl().'/api/v1/tenant/'.$companyCode.'/first-entry'));
+                ->withoutRedirecting()->post($this->baseUrl().'/api/v1/tenant/'.$companyCode.'/first-entry'));
         } catch (ConnectionException $exception) {
             return ['ok' => false, 'status' => 0, 'data' => [], 'message' => 'Could not validate company onboarding. Check the connection to GP Admin and retry.'];
         }

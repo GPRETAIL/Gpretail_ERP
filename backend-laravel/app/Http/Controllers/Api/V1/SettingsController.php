@@ -7,6 +7,7 @@ use App\Models\PrinterConfig;
 use App\Models\Store;
 use App\Models\StoreLocalNode;
 use App\Services\RegisteredServerProbe;
+use App\Services\StoreContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -133,7 +134,7 @@ class SettingsController extends Controller
      */
     public function salesCustomization(Request $request)
     {
-        $storeId = $request->input('companyId') ?? $request->input('company_id');
+        $storeId = $this->resolveStoreId($request, null);
 
         if ($request->isMethod('post') || $request->isMethod('put')) {
             $request->validate(['settingsSection' => ['sometimes', 'in:sales,receipt']]);
@@ -141,7 +142,7 @@ class SettingsController extends Controller
                 return response()->json(['success' => false, 'message' => 'companyId is required'], 422);
             }
 
-            $store = Store::find($storeId);
+            $store = app(StoreContext::class)->available($request->user())->find($storeId);
             if (! $store) {
                 return response()->json(['success' => false, 'message' => 'Store not found'], 404);
             }
@@ -168,7 +169,8 @@ class SettingsController extends Controller
             ]);
         }
 
-        $store = $storeId ? Store::find($storeId) : null;
+        $store = $storeId ? app(StoreContext::class)->available($request->user())->find($storeId) : null;
+        abort_if($storeId && ! $store, 404, 'Store not found');
 
         return response()->json([
             'success' => true,

@@ -12,12 +12,48 @@ const http = require('http');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
-const { exec, spawn } = require('child_process');
+const { execFile } = require('child_process');
 const os = require('os');
 const EventEmitter = require('events');
 
 const PORT = process.env.PORT || 5001;
 const CONFIG_FILE = path.join(__dirname, 'printer_config.json');
+// Maximum WebSocket frame/message size (16 MB) to prevent unbounded memory exhaustion
+const MAX_WS_PAYLOAD_BYTES = 16 * 1024 * 1024;
+
+// Allowed browser origins matching backend-laravel/config/cors.php
+const STATIC_ALLOWED_ORIGINS = new Set([
+  'https://dev.gpsoftware.in',
+  'https://company.gpsoftware.in',
+  ...(process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean)
+    : []),
+]);
+
+const ALLOWED_ORIGIN_PATTERNS = [
+  /^https?:\/\/localhost(:\d+)?$/i,
+  /^https?:\/\/127\.0\.0\.1(:\d+)?$/i,
+  /^https?:\/\/192\.168\.\d{1,3}\.\d{1,3}(:\d+)?$/i,
+  /^https?:\/\/10\.\d{1,3}\.\d{1,3}\.\d{1,3}(:\d+)?$/i,
+  /^https?:\/\/172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}(:\d+)?$/i,
+];
+
+function isAllowedOrigin(origin) {
+  // Non-browser local callers (e.g. CLI health checks or configure.js) omit Origin
+  if (!origin) return true;
+  const normalized = String(origin).trim().replace(/\/+$/, '');
+  if (STATIC_ALLOWED_ORIGINS.has(normalized)) return true;
+  const cfg = loadConfig();
+  if (Array.isArray(cfg.allowedOrigins) && cfg.allowedOrigins.includes(normalized)) {
+    return true;
+  }
+  return ALLOWED_ORIGIN_PATTERNS.some((pattern) => pattern.test(normalized));
+}
+
+function sanitizePrinterName(name) {
+  return String(name || '').replace(/[\r\n\0]/g, '').trim();
+}
+
 // The connector normally runs as a hidden background process (install_autostart.bat /
 // start_background.bat) with no visible console, so console.log alone is invisible to whoever's
 // debugging a real print job - append to a real file next to the script instead.
@@ -79,10 +115,15 @@ function fetchSystemPrintersUncached() {
     const isWindows = os.platform() === 'win32';
 
     if (isWindows) {
-      const psCommand = `powershell -NoProfile -Command "Get-CimInstance Win32_Printer | Select-Object Name, Default, WorkOffline, Local | ConvertTo-Json -Compress"`;
-      exec(psCommand, { timeout: 8000 }, (error, stdout) => {
+      const psArgs = [
+        '-NoProfile',
+        '-NonInteractive',
+        '-Command',
+        'Get-CimInstance Win32_Printer | Select-Object Name, Default, WorkOffline, Local | ConvertTo-Json -Compress',
+      ];
+      execFile('powershell', psArgs, { timeout: 8000, windowsHide: true }, (error, stdout) => {
         if (error || !stdout || !stdout.trim()) {
-          exec('wmic printer get name,default,workoffline /format:csv', { timeout: 6000 }, (wmicErr, wmicOut) => {
+          execFile('wmic', ['printer', 'get', 'name,default,workoffline', '/format:csv'], { timeout: 6000, windowsHide: true }, (wmicErr, wmicOut) => {
             if (wmicErr || !wmicOut || !wmicOut.trim()) {
               resolve([]);
               return;
@@ -122,7 +163,7 @@ function fetchSystemPrintersUncached() {
         }
       });
     } else {
-      exec('lpstat -p -d', { timeout: 6000 }, (error, stdout) => {
+      execFile('lpstat', ['-p', '-d'], { timeout: 6000 }, (error, stdout) => {
         if (error || !stdout) {
           resolve([]);
           return;
@@ -164,6 +205,36 @@ async function getSystemPrinters({ forceRefresh = false } = {}) {
   return printers;
 }
 
+// Helper to execute a PowerShell script with a JSON metadata file passed via $args[0]
+// so zero untrusted strings are ever interpolated into PowerShell source code.
+function runPowerShellWithMeta(psScript, metaObj, { tempDir, prefix, timestamp, timeoutMs = 25000, extraCleanupPaths = [] }) {
+  return new Promise((resolve, reject) => {
+    const tempPs1 = path.join(tempDir, `${prefix}_${timestamp}.ps1`);
+    const tempMeta = path.join(tempDir, `${prefix}_${timestamp}_meta.json`);
+    try {
+      fs.writeFileSync(tempMeta, JSON.stringify(metaObj), 'utf8');
+      fs.writeFileSync(tempPs1, psScript, 'utf8');
+    } catch (writeErr) {
+      try { if (fs.existsSync(tempPs1)) fs.unlinkSync(tempPs1); } catch {}
+      try { if (fs.existsSync(tempMeta)) fs.unlinkSync(tempMeta); } catch {}
+      extraCleanupPaths.forEach((p) => { try { if (fs.existsSync(p)) fs.unlinkSync(p); } catch {} });
+      return reject(writeErr);
+    }
+
+    const args = ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', tempPs1, tempMeta];
+    execFile('powershell', args, { timeout: timeoutMs, windowsHide: true }, (err, stdout, stderr) => {
+      try { if (fs.existsSync(tempPs1)) fs.unlinkSync(tempPs1); } catch {}
+      try { if (fs.existsSync(tempMeta)) fs.unlinkSync(tempMeta); } catch {}
+      extraCleanupPaths.forEach((p) => { try { if (fs.existsSync(p)) fs.unlinkSync(p); } catch {} });
+      if (err) {
+        reject(Object.assign(err, { stderr }));
+      } else {
+        resolve({ stdout, stderr });
+      }
+    });
+  });
+}
+
 // Silent print execution without print preview
 async function executeSilentPrint(payload) {
   const isWindows = os.platform() === 'win32';
@@ -178,11 +249,12 @@ async function executeSilentPrint(payload) {
 
   const systemPrinters = await getSystemPrinters();
 
-  let targetPrinterName = 
+  let targetPrinterName = sanitizePrinterName(
     payload.Printer?.PrinterName || 
     payload.PrinterName || 
     payload.printerName || 
-    '';
+    ''
+  );
 
   // Check function routing (e.g. printer_function === "receipt")
   if (!targetPrinterName && Array.isArray(config.printerRoutes)) {
@@ -192,23 +264,23 @@ async function executeSilentPrint(payload) {
         (!isReceiptOrLabel && String(r.printer_function).toLowerCase() === 'a4')
       )
     );
-    if (route?.printer_name) targetPrinterName = route.printer_name;
+    if (route?.printer_name) targetPrinterName = sanitizePrinterName(route.printer_name);
   }
 
   if (!targetPrinterName && config.selectedPrinterName) {
-    targetPrinterName = config.selectedPrinterName;
+    targetPrinterName = sanitizePrinterName(config.selectedPrinterName);
   }
 
   // Auto-detect thermal printer for receipts if not explicitly picked
   if (!targetPrinterName && isReceiptOrLabel && systemPrinters.length > 0) {
     const thermal = systemPrinters.find(p => /rp3200|tvs|pos|thermal|tm-t|receipt|tsp|te244|zebra|tsc/i.test(p.name));
-    if (thermal) targetPrinterName = thermal.name;
+    if (thermal) targetPrinterName = sanitizePrinterName(thermal.name);
   }
 
   // Fallback to system default printer
   if (!targetPrinterName && systemPrinters.length > 0) {
     const defaultP = systemPrinters.find(p => p.isDefault) || systemPrinters[0];
-    targetPrinterName = defaultP?.name || '';
+    targetPrinterName = sanitizePrinterName(defaultP?.name || '');
   }
 
   console.log(`[Connector] Silent Print Target: "${targetPrinterName}"`);
@@ -249,24 +321,16 @@ async function executeSilentPrint(payload) {
     const printableWHundredths = firstPage.pageWidthMm ? Math.max(50, mmToHundredthsInch(firstPage.pageWidthMm)) : 275;
     const pageHHundredths = firstPage.pageHeightMm ? Math.max(50, mmToHundredthsInch(firstPage.pageHeightMm)) : 400;
     // Print-time calibration offset (from the Warehouse Customisation "print margin" settings) -
-    // for compensating a printer's own print-head-vs-gap-sensor offset. The physical label size is
-    // fixed regardless of what we ask for, so the page size itself is NOT changed by this - only
-    // where the (unchanged-size) content gets drawn within that fixed page shifts. A negative
-    // offset naturally clips the leading edge and leaves a gap at the trailing edge (and vice
-    // versa for positive) rather than growing/shrinking the page, since resizing the page would
-    // just rescale the whole image rather than truly shifting it relative to the real label.
+    // for compensating a printer's own print-head-vs-gap-sensor offset.
     const marginTopHundredths = mmToHundredthsInch(labelData?.marginTopMm || 0);
     const marginLeftHundredths = mmToHundredthsInch(labelData?.marginLeftMm || 0);
 
-    return new Promise((resolve, reject) => {
-      const imagePathsLiteral = pageImagePaths
-        .map((p) => `"${p.replace(/\\/g, '\\\\')}"`)
-        .join(', ');
-      const psScript = `
+    const psScript = `
 Add-Type -AssemblyName System.Drawing
 
-$targetPrinter = "${targetPrinterName.replace(/"/g, '`"')}"
-$imagePaths = @(${imagePathsLiteral})
+$meta = Get-Content -LiteralPath $args[0] -Raw -Encoding UTF8 | ConvertFrom-Json
+$targetPrinter = [string]$meta.targetPrinter
+$imagePaths = @($meta.imagePaths)
 
 $doc = New-Object System.Drawing.Printing.PrintDocument
 $doc.PrintController = New-Object System.Drawing.Printing.StandardPrintController
@@ -280,11 +344,6 @@ if (-not $doc.PrinterSettings.IsValid) {
     exit 1
 }
 
-# GDI/the driver otherwise silently picks whatever resolution profile it defaults to (often a
-# conservative "Normal"/lower-DPI preset, not the print head's real native maximum) - the app has
-# to explicitly ask for the highest one the driver reports, or a print can look soft even with a
-# high-resolution source image, since the actual dots on the label are capped by this setting
-# regardless of source detail.
 try {
     $bestRes = $doc.PrinterSettings.PrinterResolutions | Sort-Object X -Descending | Select-Object -First 1
     if ($bestRes) {
@@ -295,17 +354,12 @@ try {
 $doc.DefaultPageSettings.Margins = New-Object System.Drawing.Printing.Margins(0, 0, 0, 0)
 $doc.OriginAtMargins = $false
 
-$printableW = ${printableWHundredths}
-$pageH = ${pageHHundredths}
-$offsetX = ${marginLeftHundredths}
-$offsetY = ${marginTopHundredths}
+$printableW = [int]$meta.printableW
+$pageH = [int]$meta.pageH
+$offsetX = [int]$meta.offsetX
+$offsetY = [int]$meta.offsetY
 
 try {
-    # Exact page size, no extra buffer - on gap-sensing label media the printer's own sensor
-    # paces each physical label using its real pitch. Any extra height added here (a previous
-    # "+20 hundredths-inch bleed" attempt) makes the driver think each page is taller than one
-    # real label, so it advances past additional blank labels to resync with the next detected
-    # gap - visible as labels being skipped between printed ones.
     $rollSize = New-Object System.Drawing.Printing.PaperSize("CustomLabel", [int]$printableW, [int]$pageH)
     $doc.DefaultPageSettings.PaperSize = $rollSize
 } catch {}
@@ -314,12 +368,7 @@ $script:pageIndex = 0
 
 $doc.add_PrintPage({
     param($sender, $e)
-    $img = [System.Drawing.Image]::FromFile($imagePaths[$script:pageIndex])
-    # Bicubic/high-quality smoothing is meant for photographic gradients - on monochrome thermal
-    # output it introduces grey anti-aliased pixels at every text/QR edge, which the printer then
-    # has to threshold/dither down to pure black-and-white, turning crisp edges into a blurred/
-    # fuzzy look. NearestNeighbor with no smoothing keeps edges hard, which prints far more legibly
-    # on 1-bit thermal hardware even though it would look worse for a real photo.
+    $img = [System.Drawing.Image]::FromFile([string]$imagePaths[$script:pageIndex])
     $e.Graphics.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::NearestNeighbor
     $e.Graphics.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::Half
     $e.Graphics.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::None
@@ -332,46 +381,36 @@ $doc.add_PrintPage({
 $doc.Print()
 $doc.Dispose()
 `;
-      const tempPs1 = path.join(tempDir, `print_job_${timestamp}.ps1`);
-      fs.writeFileSync(tempPs1, psScript, 'utf8');
-
-      exec(`powershell -NoProfile -ExecutionPolicy Bypass -File "${tempPs1}"`, { timeout: 30000 }, (err, out, stderr) => {
-        try { fs.unlinkSync(tempPs1); } catch {}
-        pageImagePaths.forEach((p) => { try { fs.unlinkSync(p); } catch {} });
-        if (err) {
-          console.error('[Connector] Multi-page label print error:', err.message, stderr);
-          reject(new Error(`Silent print failed: ${err.message}`));
-        } else {
-          console.log(`[Connector] ${labelPages.length}-page label sheet printed directly to "${targetPrinterName}"`);
-          resolve({ success: true, message: `${labelPages.length}-page document printed silently to ${targetPrinterName}` });
-        }
-      });
-    });
+    try {
+      await runPowerShellWithMeta(
+        psScript,
+        {
+          targetPrinter: targetPrinterName,
+          imagePaths: pageImagePaths,
+          printableW: printableWHundredths,
+          pageH: pageHHundredths,
+          offsetX: marginLeftHundredths,
+          offsetY: marginTopHundredths,
+        },
+        { tempDir, prefix: 'print_job_labels', timestamp, timeoutMs: 30000, extraCleanupPaths: pageImagePaths }
+      );
+      console.log(`[Connector] ${labelPages.length}-page label sheet printed directly to "${targetPrinterName}"`);
+      return { success: true, message: `${labelPages.length}-page document printed silently to ${targetPrinterName}` };
+    } catch (err) {
+      console.error('[Connector] Multi-page label print error:', err.message, err.stderr || '');
+      throw new Error(`Silent print failed: ${err.message}`);
+    }
   }
 
-  // ESC/POS raw byte print (GDI-free fast path for receipts) - checked ahead of the rendered-image
-  // branch so it takes priority when present. Unlike every other branch in this function, this one
-  // deliberately never loads System.Drawing/GDI+ - the whole point is skipping that assembly-load
-  // cost (and all image rasterization) entirely, writing the already-built byte stream straight to
-  // the printer via the spooler's RAW datatype (OpenPrinter/StartDocPrinter/WritePrinter/
-  // EndDocPrinter from winspool.drv - the standard "RawPrinterHelper" P/Invoke pattern). On any
-  // failure this throws/rejects the same way Branch 1 does, which is what lets the frontend's
-  // queue-level catch fall back cleanly to the rendered-image path rather than the job vanishing.
+  // ESC/POS raw byte print (GDI-free fast path for receipts)
   if (isWindows && labelData?.kind === 'escpos_raw_v1' && typeof labelData.dataBase64 === 'string' && labelData.dataBase64) {
-    // Many receipt-printer vendors only ship a GDI-oriented driver (built for the rendered-image
-    // path, not for raw ESC/POS bytes) - even with datatype "RAW", that kind of driver can still
-    // intercept and reprocess the byte stream through its own font/rendering logic instead of
-    // passing it straight to the printer. config.escposPrinterName lets this branch target a
-    // separate queue (e.g. a "Generic / Text Only" queue on the same port) that's a genuine raw
-    // passthrough, without disturbing targetPrinterName used by every other (image-based) branch.
-    const escposTargetPrinterName = config.escposPrinterName || targetPrinterName;
+    const escposTargetPrinterName = sanitizePrinterName(config.escposPrinterName || targetPrinterName);
     logDebug(`Branch ESC/POS (raw bytes) selected: ~${labelData.byteLength || labelData.dataBase64.length} bytes, printer="${escposTargetPrinterName}"`);
     const rawBuffer = Buffer.from(labelData.dataBase64, 'base64');
     const tempPrnPath = path.join(tempDir, `print_job_${timestamp}.prn`);
     fs.writeFileSync(tempPrnPath, rawBuffer);
 
-    return new Promise((resolve, reject) => {
-      const psScript = `
+    const psScript = `
 Add-Type -TypeDefinition @"
 using System;
 using System.Runtime.InteropServices;
@@ -425,8 +464,9 @@ public class RawPrinterHelper {
 }
 "@
 
-$targetPrinter = "${escposTargetPrinterName.replace(/"/g, '`"')}"
-$bytes = [System.IO.File]::ReadAllBytes("${tempPrnPath.replace(/\\/g, '\\\\')}")
+$meta = Get-Content -LiteralPath $args[0] -Raw -Encoding UTF8 | ConvertFrom-Json
+$targetPrinter = [string]$meta.targetPrinter
+$bytes = [System.IO.File]::ReadAllBytes([string]$meta.prnPath)
 
 if (-not $targetPrinter) {
     Write-Error "No target printer resolved"
@@ -439,23 +479,20 @@ if (-not $ok) {
     exit 1
 }
 `;
-      const tempPs1 = path.join(tempDir, `print_job_${timestamp}_escpos.ps1`);
-      fs.writeFileSync(tempPs1, psScript, 'utf8');
-
-      exec(`powershell -NoProfile -ExecutionPolicy Bypass -File "${tempPs1}"`, { timeout: 15000 }, (err, out, stderr) => {
-        try { fs.unlinkSync(tempPs1); } catch {}
-        try { fs.unlinkSync(tempPrnPath); } catch {}
-        if (err) {
-          logDebug(`Branch ESC/POS failed: ${err.message} ${stderr}`);
-          console.error('[Connector] ESC/POS raw print error:', err.message, stderr);
-          reject(new Error(`Silent print failed: ${err.message}`));
-        } else {
-          logDebug('Branch ESC/POS succeeded');
-          console.log(`[Connector] ESC/POS receipt (${rawBuffer.length} bytes) printed directly to "${escposTargetPrinterName}"`);
-          resolve({ success: true, message: `Receipt printed silently to ${escposTargetPrinterName}` });
-        }
-      });
-    });
+    try {
+      await runPowerShellWithMeta(
+        psScript,
+        { targetPrinter: escposTargetPrinterName, prnPath: tempPrnPath },
+        { tempDir, prefix: 'print_job_escpos', timestamp, timeoutMs: 15000, extraCleanupPaths: [tempPrnPath] }
+      );
+      logDebug('Branch ESC/POS succeeded');
+      console.log(`[Connector] ESC/POS receipt (${rawBuffer.length} bytes) printed directly to "${escposTargetPrinterName}"`);
+      return { success: true, message: `Receipt printed silently to ${escposTargetPrinterName}` };
+    } catch (err) {
+      logDebug(`Branch ESC/POS failed: ${err.message} ${err.stderr || ''}`);
+      console.error('[Connector] ESC/POS raw print error:', err.message, err.stderr || '');
+      throw new Error(`Silent print failed: ${err.message}`);
+    }
   }
 
   // 1. Image-based print (pixel-perfect rendered receipt sheet, barcodes, labels)
@@ -466,26 +503,17 @@ if (-not $ok) {
     const tempImgPath = path.join(tempDir, `print_job_${timestamp}.png`);
     fs.writeFileSync(tempImgPath, imgBuffer);
 
-    // The physical print width/height must match the REAL page the image was rendered for (a
-    // receipt roll and a multi-label barcode sheet are very different widths), not a fixed
-    // assumption - otherwise the whole image gets scaled to fit the wrong physical size, and on a
-    // pre-die-cut label roll the printer's own gap sensor advances to the REAL label boundaries
-    // regardless, so the (wrongly-scaled) content drifts further out of alignment with each row.
-    // buildBarcodeSheetMarkup/renderPrintableHtmlToImageJob already compute the real intended
-    // sheetWidthMm/sheetHeightMm and send them through as pageWidthMm/pageHeightMm on the label
-    // payload - use them directly when present instead of the old fixed "80mm roll" guess.
     const mmToHundredthsInch = (mm) => Math.round((Number(mm) || 0) * 100 / 25.4);
     const explicitWidthHundredths = labelData?.pageWidthMm ? Math.max(50, mmToHundredthsInch(labelData.pageWidthMm)) : 0;
     const explicitHeightHundredths = labelData?.pageHeightMm ? Math.max(50, mmToHundredthsInch(labelData.pageHeightMm)) : 0;
 
-    return new Promise((resolve, reject) => {
-      if (isWindows) {
-        // Silent print with StandardPrintController (NO Windows print popup/taskbar dialog)
-        const psScript = `
+    if (isWindows) {
+      const psScript = `
 Add-Type -AssemblyName System.Drawing
 
-$targetPrinter = "${targetPrinterName.replace(/"/g, '`"')}"
-$imgPath = "${tempImgPath.replace(/\\/g, '\\\\')}"
+$meta = Get-Content -LiteralPath $args[0] -Raw -Encoding UTF8 | ConvertFrom-Json
+$targetPrinter = [string]$meta.targetPrinter
+$imgPath = [string]$meta.imgPath
 
 $doc = New-Object System.Drawing.Printing.PrintDocument
 $doc.PrintController = New-Object System.Drawing.Printing.StandardPrintController
@@ -499,11 +527,6 @@ if (-not $doc.PrinterSettings.IsValid) {
     exit 1
 }
 
-# GDI/the driver otherwise silently picks whatever resolution profile it defaults to (often a
-# conservative "Normal"/lower-DPI preset, not the print head's real native maximum) - the app has
-# to explicitly ask for the highest one the driver reports, or a print can look soft even with a
-# high-resolution source image, since the actual dots on the page are capped by this setting
-# regardless of source detail.
 try {
     $bestRes = $doc.PrinterSettings.PrinterResolutions | Sort-Object X -Descending | Select-Object -First 1
     if ($bestRes) {
@@ -516,20 +539,14 @@ $doc.OriginAtMargins = $false
 
 $image = [System.Drawing.Image]::FromFile($imgPath)
 
-# Printable bounds (units: 1/100 inch) - use the real page size the image was rendered for when
-# available (barcode sheets and receipts have very different widths), falling back to the old
-# fixed 80mm-roll assumption only when the caller didn't provide one.
-$printableW = ${explicitWidthHundredths || 275}
-${explicitHeightHundredths
-  ? `$pageH = ${explicitHeightHundredths}`
-  : `$ratio = $image.Height / $image.Width\n$pageH = [int]($printableW * $ratio)`}
+$printableW = if ([int]$meta.explicitW -gt 0) { [int]$meta.explicitW } else { 275 }
+if ([int]$meta.explicitH -gt 0) {
+    $pageH = [int]$meta.explicitH
+} else {
+    $ratio = $image.Height / $image.Width
+    $pageH = [int]($printableW * $ratio)
+}
 
-# The rendered content's own width can be a hair wider than what the printer's driver actually
-# registers as its paper/print-head width (a "3 inch" roll's real printable area is very often
-# narrower than the nominal 3.00in, e.g. this driver reports "80(76)mm" media as 2.83in) -
-# requesting a custom page wider than that doesn't make the printer wider, it just prints past
-# where the head can reach and the excess is lost, clipping the right edge. Cap to the driver's
-# own reported maximum (with a small safety margin) instead of trusting the source content's width.
 try {
     $maxPaperW = ($doc.PrinterSettings.PaperSizes | Measure-Object -Property Width -Maximum).Maximum
     if ($maxPaperW -gt 0 -and $printableW -gt ($maxPaperW - 3)) {
@@ -538,18 +555,12 @@ try {
 } catch {}
 
 try {
-    # Exact page size, no extra buffer - a previous "+8/+20 hundredths-inch bleed" attempt made the
-    # driver think the page was larger than the real media, which (on gap-sensing label stock) was
-    # the root cause of skipped labels; kept exact here for the same reason and because any padding
-    # only makes the already-tight right-edge fit worse.
     $rollSize = New-Object System.Drawing.Printing.PaperSize("CustomReceipt", [int]$printableW, [int]$pageH)
     $doc.DefaultPageSettings.PaperSize = $rollSize
 } catch {}
 
 $doc.add_PrintPage({
     param($sender, $e)
-    # See the label-print branch above for why: bicubic/smoothing is for photographic content,
-    # but on 1-bit thermal output it turns crisp text/barcode edges into a blurred, dithered look.
     $e.Graphics.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::NearestNeighbor
     $e.Graphics.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::Half
     $e.Graphics.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::None
@@ -561,29 +572,33 @@ $doc.Print()
 $image.Dispose()
 $doc.Dispose()
 `;
-        const tempPs1 = path.join(tempDir, `print_job_${timestamp}.ps1`);
-        fs.writeFileSync(tempPs1, psScript, 'utf8');
-
-        exec(`powershell -NoProfile -ExecutionPolicy Bypass -File "${tempPs1}"`, { timeout: 25000 }, (err, stdout, stderr) => {
-          try { fs.unlinkSync(tempPs1); } catch {}
-          try { fs.unlinkSync(tempImgPath); } catch {}
-          if (err) {
-            console.error('[Connector] Silent image print error:', err.message, stderr);
-            reject(new Error(`Silent print failed: ${err.message}`));
-          } else {
-            console.log(`[Connector] Pixel-perfect receipt printed directly to "${targetPrinterName}"`);
-            resolve({ success: true, message: `Document printed silently to ${targetPrinterName}` });
-          }
-        });
-      } else {
-        const lpCmd = targetPrinterName ? `lp -d "${targetPrinterName}" "${tempImgPath}"` : `lp "${tempImgPath}"`;
-        exec(lpCmd, (err) => {
+      try {
+        await runPowerShellWithMeta(
+          psScript,
+          {
+            targetPrinter: targetPrinterName,
+            imgPath: tempImgPath,
+            explicitW: explicitWidthHundredths,
+            explicitH: explicitHeightHundredths,
+          },
+          { tempDir, prefix: 'print_job_img', timestamp, timeoutMs: 25000, extraCleanupPaths: [tempImgPath] }
+        );
+        console.log(`[Connector] Pixel-perfect receipt printed directly to "${targetPrinterName}"`);
+        return { success: true, message: `Document printed silently to ${targetPrinterName}` };
+      } catch (err) {
+        console.error('[Connector] Silent image print error:', err.message, err.stderr || '');
+        throw new Error(`Silent print failed: ${err.message}`);
+      }
+    } else {
+      return new Promise((resolve, reject) => {
+        const lpArgs = targetPrinterName ? ['-d', targetPrinterName, tempImgPath] : [tempImgPath];
+        execFile('lp', lpArgs, (err) => {
           try { fs.unlinkSync(tempImgPath); } catch {}
           if (err) reject(new Error(`Silent print failed: ${err.message}`));
           else resolve({ success: true, message: `Document printed silently to ${targetPrinterName}` });
         });
-      }
-    });
+      });
+    }
   }
 
   // 2. Structured Receipt Print (Fallback)
@@ -613,14 +628,19 @@ $doc.Dispose()
         const browserExe = browserPaths.find(p => p && fs.existsSync(p));
 
         if (browserExe && targetPrinterName) {
-          const cmd = `"${browserExe}" --headless=new --disable-gpu --no-pdf-header-footer --print-to-printer="${targetPrinterName}" "${tempHtmlPath}"`;
-          exec(cmd, { timeout: 20000 }, (err) => {
+          const browserArgs = [
+            '--headless=new',
+            '--disable-gpu',
+            '--no-pdf-header-footer',
+            `--print-to-printer=${targetPrinterName}`,
+            tempHtmlPath,
+          ];
+          execFile(browserExe, browserArgs, { timeout: 20000, windowsHide: true }, (err) => {
             setTimeout(() => {
               try { if (fs.existsSync(tempHtmlPath)) fs.unlinkSync(tempHtmlPath); } catch {}
             }, 3000);
             if (err) {
               console.error(`[Connector] Browser silent print notice: ${err.message}`);
-              // Fallback to powershell print if browser failed
               fallbackWindowsPrint(tempHtmlPath, targetPrinterName, resolve, reject);
             } else {
               console.log(`[Connector] HTML receipt printed silently to "${targetPrinterName}"`);
@@ -631,8 +651,8 @@ $doc.Dispose()
           fallbackWindowsPrint(tempHtmlPath, targetPrinterName, resolve, reject);
         }
       } else {
-        const lpCmd = targetPrinterName ? `lp -d "${targetPrinterName}" "${tempHtmlPath}"` : `lp "${tempHtmlPath}"`;
-        exec(lpCmd, (err) => {
+        const lpArgs = targetPrinterName ? ['-d', targetPrinterName, tempHtmlPath] : [tempHtmlPath];
+        execFile('lp', lpArgs, (err) => {
           try { fs.unlinkSync(tempHtmlPath); } catch {}
           if (err) reject(new Error(`Silent print failed: ${err.message}`));
           else resolve({ success: true, message: `Document printed silently to ${targetPrinterName}` });
@@ -650,77 +670,74 @@ function fallbackWindowsPrint(filePath, printerName, resolve, reject) {
     resolve({ success: true, message: 'Print job dispatched' });
     return;
   }
-  const psCmd = printerName 
-    ? `powershell -NoProfile -Command "Start-Process -FilePath '${filePath}' -Verb PrintTo -ArgumentList '${printerName}' -PassThru | Wait-Process -Timeout 10"`
-    : `powershell -NoProfile -Command "Start-Process -FilePath '${filePath}' -Verb Print -PassThru | Wait-Process -Timeout 10"`;
-  
-  exec(psCmd, (err) => {
-    try { if (fs.existsSync(filePath)) fs.unlinkSync(filePath); } catch {}
-    if (err) {
-      console.warn(`[Connector] Fallback notice: ${err.message}`);
-      resolve({ success: true, message: 'Print command sent to Windows spooler' });
-    } else {
-      resolve({ success: true, message: 'Print job dispatched' });
-    }
-  });
+  const safePrinter = sanitizePrinterName(printerName);
+  const psScript = `
+$ErrorActionPreference = 'Stop'
+$meta = Get-Content -LiteralPath $args[0] -Raw -Encoding UTF8 | ConvertFrom-Json
+if ($meta.printerName) {
+  $printerArgument = '"' + ([string]$meta.printerName).Replace('"', '\\"') + '"'
+  Start-Process -FilePath ([string]$meta.filePath) -Verb PrintTo -ArgumentList $printerArgument -PassThru | Wait-Process -Timeout 10
+} else {
+  Start-Process -FilePath ([string]$meta.filePath) -Verb Print -PassThru | Wait-Process -Timeout 10
+}`;
+  runPowerShellWithMeta(psScript, { filePath, printerName: safePrinter }, {
+    tempDir: os.tmpdir(), prefix: 'print_fallback', timestamp: crypto.randomUUID(), timeoutMs: 15000,
+    extraCleanupPaths: [filePath],
+  }).then(() => resolve({ success: true, message: 'Print job dispatched' }))
+    .catch(err => reject(new Error(`Windows fallback print failed: ${err.message}`)));
 }
 
-function printReceiptViaGdi(receipt, targetPrinterName, timestamp, tempDir) {
-  return new Promise((resolve, reject) => {
-    if (!isWindows) {
-      return resolve({ success: true, message: 'Non-Windows receipt print' });
-    }
+async function printReceiptViaGdi(receipt, targetPrinterName, timestamp, tempDir) {
+  if (!isWindows) {
+    return { success: true, message: 'Non-Windows receipt print' };
+  }
 
-    const storeName = String(receipt.StoreName || receipt.storeName || 'GP RETAIL ERP').trim();
-    const storeAddress = String(receipt.StoreAddress || receipt.storeAddress || '').trim();
-    const storePhone = String(receipt.StorePhone || receipt.storePhone || '').trim();
-    const storeGst = String(receipt.StoreGstNo || receipt.storeGstNo || '').trim();
-    const billNo = String(receipt.BillNo || receipt.billNo || '').trim();
-    const cashier = String(receipt.CashierName || receipt.cashierName || '').trim();
-    const customer = String(receipt.CustomerName || receipt.customerName || 'Walking customer').trim();
-    const payMode = String(receipt.PaymentMethod || receipt.paymentMethod || 'Cash').trim();
-    const rawItems = receipt.Items || receipt.items || [];
-    const items = Array.isArray(rawItems) ? rawItems : [];
+  const storeName = String(receipt.StoreName || receipt.storeName || 'GP RETAIL ERP').trim();
+  const storeAddress = String(receipt.StoreAddress || receipt.storeAddress || '').trim();
+  const storePhone = String(receipt.StorePhone || receipt.storePhone || '').trim();
+  const storeGst = String(receipt.StoreGstNo || receipt.storeGstNo || '').trim();
+  const billNo = String(receipt.BillNo || receipt.billNo || '').trim();
+  const cashier = String(receipt.CashierName || receipt.cashierName || '').trim();
+  const customer = String(receipt.CustomerName || receipt.customerName || 'Walking customer').trim();
+  const payMode = String(receipt.PaymentMethod || receipt.paymentMethod || 'Cash').trim();
+  const rawItems = receipt.Items || receipt.items || [];
+  const items = (Array.isArray(rawItems) ? rawItems : []).map((it) => {
+    const name = String(it.Name || it.name || it.productName || it.ProductName || 'Item');
+    const qty = Number(it.Qty || it.qty || it.quantity || 1) || 1;
+    const rate = Number(it.Rate || it.rate || it.price || it.Price || 0) || 0;
+    const amount = Number(it.Amount || it.amount || (qty * rate) || 0) || 0;
+    return { Name: name, Qty: qty, Rate: rate, Amount: amount };
+  });
 
-    const gross = Number(receipt.SubTotal || receipt.subTotal || receipt.billAmount || receipt.BillAmount || 0) || 0;
-    const discount = Number(receipt.DiscountAmount || receipt.discountAmount || 0) || 0;
-    const tax = Number(receipt.TaxAmount || receipt.taxAmount || 0) || 0;
-    const netTotal = Number(receipt.Total || receipt.total || receipt.grandTotal || (gross - discount + tax)) || 0;
-    const paid = Number(receipt.PaidAmount || receipt.paidAmount || receipt.receivedAmount || receipt.ReceivedAmount || 0) || 0;
-    const change = Number(receipt.ChangeAmount || receipt.changeAmount || 0) || 0;
-    const message = String(receipt.Message || receipt.message || receipt.FooterNote || receipt.footerNote || '* Thank You! Visit Again *').trim();
+  const gross = Number(receipt.SubTotal || receipt.subTotal || receipt.billAmount || receipt.BillAmount || 0) || 0;
+  const discount = Number(receipt.DiscountAmount || receipt.discountAmount || 0) || 0;
+  const tax = Number(receipt.TaxAmount || receipt.taxAmount || 0) || 0;
+  const netTotal = Number(receipt.Total || receipt.total || receipt.grandTotal || (gross - discount + tax)) || 0;
+  const paid = Number(receipt.PaidAmount || receipt.paidAmount || receipt.receivedAmount || receipt.ReceivedAmount || 0) || 0;
+  const change = Number(receipt.ChangeAmount || receipt.changeAmount || 0) || 0;
+  const message = String(receipt.Message || receipt.message || receipt.FooterNote || receipt.footerNote || '* Thank You! Visit Again *').trim();
 
-    const psItemsCode = items.map(it => {
-      const name = String(it.Name || it.name || it.productName || it.ProductName || 'Item').replace(/"/g, '`"');
-      const qty = Number(it.Qty || it.qty || it.quantity || 1) || 1;
-      const rate = Number(it.Rate || it.rate || it.price || it.Price || 0) || 0;
-      const amount = Number(it.Amount || it.amount || (qty * rate) || 0) || 0;
-      return `    [PSCustomObject]@{ Name = "${name}"; Qty = ${qty}; Rate = ${rate}; Amount = ${amount} }`;
-    }).join(",\n");
-
-    const psScript = `
+  const psScript = `
 Add-Type -AssemblyName System.Drawing
 
-$targetPrinter = "${targetPrinterName.replace(/"/g, '`"')}"
-$storeName = "${storeName.replace(/"/g, '`"')}"
-$storeAddress = "${storeAddress.replace(/"/g, '`"')}"
-$storePhone = "${storePhone.replace(/"/g, '`"')}"
-$storeGst = "${storeGst.replace(/"/g, '`"')}"
-$billNo = "${billNo.replace(/"/g, '`"')}"
-$cashier = "${cashier.replace(/"/g, '`"')}"
-$customer = "${customer.replace(/"/g, '`"')}"
-$payMode = "${payMode.replace(/"/g, '`"')}"
-$gross = ${gross}
-$discount = ${discount}
-$tax = ${tax}
-$netTotal = ${netTotal}
-$paid = ${paid}
-$change = ${change}
-$message = "${message.replace(/"/g, '`"').replace(/\n/g, '`n')}"
-
-$items = @(
-${psItemsCode}
-)
+$meta = Get-Content -LiteralPath $args[0] -Raw -Encoding UTF8 | ConvertFrom-Json
+$targetPrinter = [string]$meta.targetPrinter
+$storeName = [string]$meta.storeName
+$storeAddress = [string]$meta.storeAddress
+$storePhone = [string]$meta.storePhone
+$storeGst = [string]$meta.storeGst
+$billNo = [string]$meta.billNo
+$cashier = [string]$meta.cashier
+$customer = [string]$meta.customer
+$payMode = [string]$meta.payMode
+$gross = [double]$meta.gross
+$discount = [double]$meta.discount
+$tax = [double]$meta.tax
+$netTotal = [double]$meta.netTotal
+$paid = [double]$meta.paid
+$change = [double]$meta.change
+$message = [string]$meta.message
+$items = @($meta.items)
 
 $doc = New-Object System.Drawing.Printing.PrintDocument
 $doc.PrintController = New-Object System.Drawing.Printing.StandardPrintController
@@ -881,20 +898,36 @@ $doc.Print()
 $doc.Dispose()
 `;
 
-    const tempPs1 = path.join(tempDir, `receipt_gdi_${timestamp}.ps1`);
-    fs.writeFileSync(tempPs1, psScript, 'utf8');
-
-    exec(`powershell -NoProfile -ExecutionPolicy Bypass -File "${tempPs1}"`, { timeout: 20000 }, (err, stdout, stderr) => {
-      try { fs.unlinkSync(tempPs1); } catch {}
-      if (err) {
-        console.error('[Connector] Receipt GDI print error:', err.message, stderr);
-        reject(new Error(`Receipt print failed: ${err.message}`));
-      } else {
-        console.log(`[Connector] Receipt printed directly to "${targetPrinterName}" via GDI engine`);
-        resolve({ success: true, message: `Receipt printed successfully to ${targetPrinterName}` });
-      }
-    });
-  });
+  try {
+    await runPowerShellWithMeta(
+      psScript,
+      {
+        targetPrinter: targetPrinterName,
+        storeName,
+        storeAddress,
+        storePhone,
+        storeGst,
+        billNo,
+        cashier,
+        customer,
+        payMode,
+        gross,
+        discount,
+        tax,
+        netTotal,
+        paid,
+        change,
+        message,
+        items,
+      },
+      { tempDir, prefix: 'receipt_gdi', timestamp, timeoutMs: 20000 }
+    );
+    console.log(`[Connector] Receipt printed directly to "${targetPrinterName}" via GDI engine`);
+    return { success: true, message: `Receipt printed successfully to ${targetPrinterName}` };
+  } catch (err) {
+    console.error('[Connector] Receipt GDI print error:', err.message, err.stderr || '');
+    throw new Error(`Receipt print failed: ${err.message}`);
+  }
 }
 
 // Native Standalone WebSocket Server Implementation (RFC 6455)
@@ -904,21 +937,33 @@ class SimpleWebSocketConnection extends EventEmitter {
     this.socket = socket;
     this.buffer = Buffer.alloc(0);
     // Reassembly state for fragmented messages (FIN=0 frames followed by opcode 0x0 continuations).
-    // Large payloads - e.g. the base64 print-image data barcode/receipt jobs send - can arrive
-    // split across multiple frames. Without this, only the first fragment was ever read (and
-    // handed to JSON.parse incomplete, so it always failed and silently fell through to the
-    // generic "Acknowledged" reply below instead of actually attempting the print), while the
-    // remaining fragments were dropped entirely.
     this.fragmentChunks = null;
     this.fragmentOpcode = null;
+    this.fragmentBytes = 0;
 
     socket.on('data', (chunk) => {
+      if (this.buffer.length + chunk.length > MAX_WS_PAYLOAD_BYTES) {
+        this.rejectOversizedPayload();
+        return;
+      }
       this.buffer = Buffer.concat([this.buffer, chunk]);
       this.parseFrames();
     });
 
     socket.on('close', () => this.emit('close'));
     socket.on('error', (err) => this.emit('error', err));
+  }
+
+  rejectOversizedPayload() {
+    this.buffer = Buffer.alloc(0);
+    this.fragmentChunks = null;
+    this.fragmentBytes = 0;
+    try {
+      // RFC 6455 status code 1009 (0x03f1): Message Too Big
+      this.sendFrame(0x8, Buffer.from([0x03, 0xf1]));
+      this.socket.end();
+    } catch {}
+    this.emit('close');
   }
 
   parseFrames() {
@@ -937,8 +982,18 @@ class SimpleWebSocketConnection extends EventEmitter {
         offset += 2;
       } else if (payloadLen === 127) {
         if (this.buffer.length < offset + 8) return;
-        payloadLen = Number(this.buffer.readBigUInt64BE(offset));
+        const bigLen = this.buffer.readBigUInt64BE(offset);
+        if (bigLen > BigInt(MAX_WS_PAYLOAD_BYTES)) {
+          this.rejectOversizedPayload();
+          return;
+        }
+        payloadLen = Number(bigLen);
         offset += 8;
+      }
+
+      if (payloadLen > MAX_WS_PAYLOAD_BYTES) {
+        this.rejectOversizedPayload();
+        return;
       }
 
       let maskKey = null;
@@ -975,15 +1030,22 @@ class SimpleWebSocketConnection extends EventEmitter {
         } else {
           this.fragmentChunks = [payload];
           this.fragmentOpcode = opcode;
+          this.fragmentBytes = payload.length;
         }
       } else if (opcode === 0x0) {
         // Continuation of a fragmented message
         if (this.fragmentChunks) {
+          if (this.fragmentBytes + payload.length > MAX_WS_PAYLOAD_BYTES) {
+            this.rejectOversizedPayload();
+            return;
+          }
           this.fragmentChunks.push(payload);
+          this.fragmentBytes += payload.length;
           if (isFin) {
             const full = Buffer.concat(this.fragmentChunks);
             this.fragmentChunks = null;
             this.fragmentOpcode = null;
+            this.fragmentBytes = 0;
             this.emit('message', full.toString('utf8'));
           }
         }
@@ -1020,7 +1082,17 @@ class SimpleWebSocketConnection extends EventEmitter {
 
 // HTTP Server
 const server = http.createServer((req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const origin = req.headers.origin;
+  if (origin && !isAllowedOrigin(origin)) {
+    res.writeHead(403, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Origin not allowed' }));
+    return;
+  }
+
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+  }
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
@@ -1047,7 +1119,17 @@ const server = http.createServer((req, res) => {
 });
 
 // Handle WebSocket Upgrade
-server.on('upgrade', (req, socket, head) => {
+server.on('upgrade', (req, socket, _head) => {
+  const origin = req.headers.origin;
+  if (origin && !isAllowedOrigin(origin)) {
+    console.warn(`[Connector] Rejected WebSocket upgrade from untrusted origin: "${origin}"`);
+    try {
+      socket.write('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n');
+    } catch {}
+    socket.destroy();
+    return;
+  }
+
   const key = req.headers['sec-websocket-key'];
   if (!key) {
     socket.destroy();
@@ -1078,12 +1160,6 @@ function handleClientConnection(ws) {
       message = { action: 'unknown' };
     }
 
-    // Normalize away underscores/hyphens too: localPrinterService.js's action-candidate lists
-    // include spellings like "print_label"/"print_receipt" that didn't match this comparison
-    // before, silently falling through to the generic "Acknowledged" reply below instead of
-    // actually attempting the print - and since the client stops at the first action that reports
-    // Success:true, that fake acknowledgment was masking real print failures for every job whose
-    // candidate list reaches an unrecognized spelling before a recognized one.
     const action = String(message.Action || message.action || '').trim().toLowerCase().replace(/[_-]/g, '');
     const requestId = message.RequestId || message.requestId || `resp-${Date.now()}`;
 
@@ -1101,9 +1177,6 @@ function handleClientConnection(ws) {
     // 2. Discover Printers
     if (action === 'getprinters' || action === 'listprinters' || action === 'printers') {
       const config = loadConfig();
-      // Explicit user-initiated "list printers" action (Settings > Printing Configuration) - force
-      // a fresh read so a newly-connected printer shows up immediately, unlike the print-job path
-      // which deliberately uses the cache to avoid paying the ~1.3s WMI query on every print.
       const printers = await getSystemPrinters({ forceRefresh: true });
 
       ws.send(JSON.stringify({
@@ -1123,8 +1196,14 @@ function handleClientConnection(ws) {
     // 3. Save Printer Routing
     if (action === 'saveprinterrouting' || action === 'setprinterrouting') {
       const config = loadConfig();
-      const routes = message.PrinterRoutes || message.printerRoutes || [];
-      config.printerRoutes = routes;
+      const rawRoutes = Array.isArray(message.PrinterRoutes || message.printerRoutes)
+        ? (message.PrinterRoutes || message.printerRoutes)
+        : [];
+      config.printerRoutes = rawRoutes.map((r) => ({
+        ...r,
+        printer_name: sanitizePrinterName(r?.printer_name),
+        printer_function: String(r?.printer_function || '').trim(),
+      }));
       saveConfig(config);
       console.log('[Connector] Printer routing updated');
 
@@ -1170,10 +1249,20 @@ function handleClientConnection(ws) {
   });
 }
 
-server.listen(PORT, '127.0.0.1', () => {
-  console.log('================================================================');
-  console.log(`  GP Retail ERP Silent Printer Connector v${VERSION}`);
-  console.log(`  WebSocket Server running on: ws://127.0.0.1:${PORT}`);
-  console.log(`  Status: Ready for Silent Printing`);
-  console.log('================================================================');
-});
+if (require.main === module) {
+  server.listen(PORT, '127.0.0.1', () => {
+    console.log('================================================================');
+    console.log(`  GP Retail ERP Silent Printer Connector v${VERSION}`);
+    console.log(`  WebSocket Server running on: ws://127.0.0.1:${PORT}`);
+    console.log(`  Status: Ready for Silent Printing`);
+    console.log('================================================================');
+  });
+}
+
+module.exports = {
+  server,
+  isAllowedOrigin,
+  sanitizePrinterName,
+  SimpleWebSocketConnection,
+  MAX_WS_PAYLOAD_BYTES,
+};

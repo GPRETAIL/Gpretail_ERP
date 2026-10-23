@@ -8,6 +8,8 @@ use App\Services\LegacyTenantOwnerLink;
 use App\Services\PlatformActivationService;
 use App\Services\PlatformClient;
 use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Storage;
 
 class LinkLegacyTenantOwner extends Command
@@ -28,7 +30,16 @@ class LinkLegacyTenantOwner extends Command
                 throw new \RuntimeException($result['message'] ?? 'GP Admin is unavailable.');
             }
             $user = User::whereRaw('LOWER(email) = ?', [strtolower($this->argument('email'))])->firstOrFail();
-            Storage::disk('local')->put('deployment-upgrades/owner-'.$user->id.'-before.json', json_encode($user->getAttributes()));
+            $safeSnapshot = Arr::except($user->getAttributes(), [
+                'password',
+                'remember_token',
+                'two_factor_secret',
+                'two_factor_recovery_codes',
+            ]);
+            Storage::disk('local')->put(
+                'deployment-upgrades/owner-'.$user->id.'-before.json.enc',
+                Crypt::encryptString((string) json_encode($safeSnapshot))
+            );
             $linker->link($this->argument('email'), $result['data']['company']);
             $synced = $sync->sync($activation);
             if (! $synced['ok']) {

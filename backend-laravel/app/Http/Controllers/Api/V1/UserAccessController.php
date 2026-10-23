@@ -345,13 +345,7 @@ class UserAccessController extends Controller
     // Store Groups
     public function storeGroupsIndex(Request $request)
     {
-        $stores = Store::where('is_active', true)->get();
-
-        return response()->json([
-            'success' => true,
-            'data' => $stores,
-            'total' => $stores->count(),
-        ]);
+        return app(StoreController::class)->index($request);
     }
 
     public function storeGroupsStore(Request $request)

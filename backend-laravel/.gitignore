@@ -28,3 +28,10 @@ Homestead.yaml
 Thumbs.db
 composer.phar
 test_oci.php
+
+# Private backup artifacts
+.env.backup*
+.env.backup*
+storage/app/private/backups/*
+storage/app/private/config-backups/*
+storage/app/private/deployment-upgrades/*

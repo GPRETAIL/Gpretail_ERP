@@ -7,8 +7,6 @@ use App\Models\Store;
 
 class StoreLicenceVerifier
 {
-    public const DEV_PUBLIC_KEY = 'MCowBQYDK2VwAyEAj5cKxJkJKAyG3zFVAiwZL0xyiWeCvfIzOpUoCrrgvfA=';
-
     public function verify(Store $store, ?PlatformActivation $activation = null): array
     {
         $activation ??= PlatformActivation::current();
@@ -26,15 +24,20 @@ class StoreLicenceVerifier
             return $invalid;
         }
         $kid = $header['kid'] ?? '';
-        $keys = config('platform.licence_public_keys', []);
-        if (app()->environment(['local', 'testing'])) {
-            $keys['dev'] ??= self::DEV_PUBLIC_KEY;
+        if (! is_string($kid)) {
+            return $invalid;
         }
-        $public = $keys[$kid] ?? null;
-        if (! is_string($public) || $public === '' || ($claims['kid'] ?? '') !== $kid) {
+        if ($kid === '' || (app()->environment('production') && $kid === 'dev')) {
+            return $invalid;
+        }
+        $keys = (array) config('platform.licence_public_keys', []);
+        $public = isset($keys[$kid]) && is_string($keys[$kid]) ? trim($keys[$kid]) : '';
+        if ($public === '' || ($claims['kid'] ?? '') !== $kid) {
             return ['ok' => false, 'message' => 'The store licence signing key is not configured for this ERP server. Ask your administrator to pin the verified Vynerix Admin production public key, then refresh stores.', 'claims' => []];
         }
-        $pem = "-----BEGIN PUBLIC KEY-----\n".chunk_split($public, 64, "\n").'-----END PUBLIC KEY-----';
+        $pem = str_contains($public, 'BEGIN PUBLIC KEY')
+            ? $public
+            : "-----BEGIN PUBLIC KEY-----\n".chunk_split($public, 64, "\n").'-----END PUBLIC KEY-----';
         $key = openssl_pkey_get_public($pem);
         $signature = $this->decode($parts[2]);
         if (! $key || $signature === false || openssl_verify($parts[0].'.'.$parts[1], $signature, $key, null) !== 1) {

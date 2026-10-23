@@ -7,6 +7,8 @@ use App\Models\Backup;
 use App\Models\BackupRestore;
 use App\Models\Store;
 use App\Services\BackupService;
+use App\Services\StoreContext;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Crypt;
@@ -17,18 +19,39 @@ class BackupController extends Controller
 {
     public function __construct(private BackupService $backups) {}
 
+    private function authorizedStores(Request $request): Builder
+    {
+        return app(StoreContext::class)->available($request->user());
+    }
+
+    private function authorizedStoreIds(Request $request): array
+    {
+        return array_values(array_map('intval', (array) $request->attributes->get('store_context_ids', [])));
+    }
+
+    private function findAuthorizedBackup(Request $request, $id): ?Backup
+    {
+        $storeIds = $this->authorizedStoreIds($request);
+        if ($storeIds === []) {
+            return null;
+        }
+
+        return Backup::whereIn('company_id', $storeIds)->find($id);
+    }
+
     public function overview(Request $request)
     {
-        $companyId = $request->attributes->get('store_context_id');
+        $companyId = $this->resolveStoreId($request, null);
+        $authorizedIds = $this->authorizedStoreIds($request);
 
-        $companies = Store::where('is_active', true)->orderBy('name')->get(['id', 'name']);
+        $companies = $this->authorizedStores($request)->where('is_active', true)->orderBy('name')->get(['id', 'name']);
 
-        $setting = $companyId ? (Store::find($companyId)?->backup_settings ?? []) : [];
+        $setting = $companyId ? ($this->authorizedStores($request)->find($companyId)?->backup_settings ?? []) : [];
         // Expose whether OCI cloud storage is configured so the frontend can enable/disable options
         $cloudConfigured = BackupService::isCloudConfigured($setting);
         $setting['cloud_configured'] = $cloudConfigured;
 
-        $backupsQuery = Backup::query()->orderByDesc('created_at');
+        $backupsQuery = Backup::query()->whereIn('company_id', $authorizedIds)->orderByDesc('created_at');
         $restoresQuery = BackupRestore::query()->orderByDesc('created_at');
         if ($companyId) {
             $backupsQuery->where('company_id', $companyId);
@@ -42,6 +65,14 @@ class BackupController extends Controller
                     ->orWhere(function ($q2) use ($companyId) {
                         $q2->whereNull('target_company_id')
                             ->whereHas('backup', fn ($b) => $b->where('company_id', $companyId));
+                    });
+            });
+        } else {
+            $restoresQuery->where(function ($q) use ($authorizedIds) {
+                $q->whereIn('target_company_id', $authorizedIds)
+                    ->orWhere(function ($q2) use ($authorizedIds) {
+                        $q2->whereNull('target_company_id')
+                            ->whereHas('backup', fn ($b) => $b->whereIn('company_id', $authorizedIds));
                     });
             });
         }
@@ -101,11 +132,12 @@ class BackupController extends Controller
             return response()->json(['success' => false, 'message' => 'Validation error', 'errors' => $validator->errors()], 422);
         }
 
-        $companyId = $request->attributes->get('store_context_id');
+        $companyId = $this->resolveStoreId($request, null);
+        abort_unless($companyId && in_array($companyId, $this->authorizedStoreIds($request), true), 422, 'Select one authorized store before creating a backup.');
         $storageMode = $request->input('storageMode', 'local');
 
         // Resolve store settings (needed for cloud credentials)
-        $storeSettings = $companyId ? (Store::find($companyId)?->backup_settings ?? []) : [];
+        $storeSettings = $companyId ? ($this->authorizedStores($request)->find($companyId)?->backup_settings ?? []) : [];
 
         // Validate cloud mode is configured before accepting the request
         if (in_array($storageMode, ['cloud', 'hybrid']) && ! BackupService::isCloudConfigured($storeSettings)) {
@@ -211,7 +243,7 @@ class BackupController extends Controller
         if (! request()->isMethod('GET')) {
             abort_unless(in_array(request()->user()?->role, ['admin', 'super_admin'], true), 403, 'Only administrators can manage backups.');
         }
-        $companyId = $request->input('companyId') ?? $request->input('company_id');
+        $companyId = $this->resolveStoreId($request, null);
 
         if ($request->isMethod('post') || $request->isMethod('put')) {
             $settings = [
@@ -267,7 +299,7 @@ class BackupController extends Controller
             }
 
             if ($companyId) {
-                $store = Store::find($companyId);
+                $store = $this->authorizedStores($request)->find($companyId);
                 if (! $store) {
                     return response()->json(['success' => false, 'message' => 'Store not found'], 404);
                 }
@@ -296,12 +328,14 @@ class BackupController extends Controller
                 $settings['last_scheduled_at'] = $existing['last_scheduled_at'] ?? null;
                 $store->update(['backup_settings' => $settings]);
             } else {
-                // Super Admin: apply schedule/retention as a global default across all
-                // active stores. OCI credentials are inherently per-store (each store's
-                // own bucket) - a global save must never overwrite one store's real
-                // credentials with another's blank/default values, so every OCI field
-                // (not just the secret) is preserved per-store here.
-                $stores = Store::where('is_active', true)->get();
+                abort_unless(
+                    $request->user()?->role === 'super_admin' || ($request->user()?->role === 'admin' && ! $request->user()?->store_id),
+                    403,
+                    'Select a store before saving backup settings.'
+                );
+                // Multi-store owner / Super Admin: apply schedule/retention across
+                // authorized active stores only. OCI credentials are preserved per-store.
+                $stores = $this->authorizedStores($request)->where('is_active', true)->get();
                 foreach ($stores as $store) {
                     $existing = $store->backup_settings ?? [];
                     $storeSettings = array_merge($settings, [
@@ -321,7 +355,14 @@ class BackupController extends Controller
             return response()->json(['success' => true, 'message' => 'Backup settings saved']);
         }
 
-        $store = $companyId ? Store::find($companyId) : null;
+        if ($companyId) {
+            $store = $this->authorizedStores($request)->find($companyId);
+            if (! $store) {
+                return response()->json(['success' => false, 'message' => 'Store not found'], 404);
+            }
+        } else {
+            $store = null;
+        }
         $setting = $store?->backup_settings ?? [];
 
         // Mask the OCI secret before sending to the frontend — never expose the raw key
@@ -345,8 +386,8 @@ class BackupController extends Controller
 
     public function cloudTest(Request $request)
     {
-        $companyId = $request->attributes->get('store_context_id');
-        $store = $companyId ? Store::find($companyId) : null;
+        $companyId = $this->resolveStoreId($request, null);
+        $store = $companyId ? $this->authorizedStores($request)->find($companyId) : null;
         $stored = $store?->backup_settings ?? [];
 
         // Merge submitted credentials with stored ones (secret may be masked)
@@ -372,7 +413,7 @@ class BackupController extends Controller
         if (! request()->isMethod('GET')) {
             abort_unless(in_array(request()->user()?->role, ['admin', 'super_admin'], true), 403, 'Only administrators can manage backups.');
         }
-        $backup = Backup::find($id);
+        $backup = $this->findAuthorizedBackup($request, $id);
         if (! $backup) {
             return response()->json(['success' => false, 'message' => 'Backup not found'], 404);
         }
@@ -456,7 +497,8 @@ class BackupController extends Controller
             return response()->json(['success' => false, 'message' => 'Validation error', 'errors' => $validator->errors()], 422);
         }
 
-        $companyId = $request->attributes->get('store_context_id');
+        $companyId = $this->resolveStoreId($request, null);
+        abort_unless($companyId && in_array($companyId, $this->authorizedStoreIds($request), true), 422, 'Select one authorized store before importing a backup.');
         $password = $request->input('password');
         $uploaded = $request->file('backupFile');
 
@@ -526,9 +568,9 @@ class BackupController extends Controller
         return response()->json(['success' => true, 'message' => 'Backup imported', 'data' => $restore], 201);
     }
 
-    public function download($id)
+    public function download(Request $request, $id)
     {
-        $backup = Backup::find($id);
+        $backup = $this->findAuthorizedBackup($request, $id);
         if (! $backup) {
             return response()->json(['success' => false, 'message' => 'Backup not found'], 404);
         }
@@ -539,7 +581,7 @@ class BackupController extends Controller
             // Cloud-only backup: fetch from OCI to a temp file, then stream
             if ($backup->storage_mode === 'cloud' && $backup->cloud_path) {
                 $storeSettings = $backup->company_id
-                    ? (Store::find($backup->company_id)?->backup_settings ?? [])
+                    ? ($this->authorizedStores($request)->find($backup->company_id)?->backup_settings ?? [])
                     : [];
                 $tmpCloudPath = $this->backups->downloadFromCloud($backup->cloud_path, $storeSettings);
 
@@ -560,7 +602,7 @@ class BackupController extends Controller
                 }
                 if ($backup->cloud_path) {
                     $storeSettings = $backup->company_id
-                        ? (Store::find($backup->company_id)?->backup_settings ?? [])
+                        ? ($this->authorizedStores($request)->find($backup->company_id)?->backup_settings ?? [])
                         : [];
                     $tmpCloudPath = $this->backups->downloadFromCloud($backup->cloud_path, $storeSettings);
 
@@ -595,9 +637,9 @@ class BackupController extends Controller
         }
     }
 
-    public function logs($id)
+    public function logs(Request $request, $id)
     {
-        $backup = Backup::find($id);
+        $backup = $this->findAuthorizedBackup($request, $id);
         if (! $backup) {
             return response()->json(['success' => false, 'message' => 'Backup not found'], 404);
         }
@@ -626,12 +668,12 @@ class BackupController extends Controller
         ]);
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         if (! request()->isMethod('GET')) {
             abort_unless(in_array(request()->user()?->role, ['admin', 'super_admin'], true), 403, 'Only administrators can manage backups.');
         }
-        $backup = Backup::find($id);
+        $backup = $this->findAuthorizedBackup($request, $id);
         if (! $backup) {
             return response()->json(['success' => false, 'message' => 'Backup not found'], 404);
         }
@@ -648,7 +690,7 @@ class BackupController extends Controller
         if ($backup->cloud_path && in_array($backup->storage_mode, ['cloud', 'hybrid'])) {
             try {
                 $storeSettings = $backup->company_id
-                    ? (Store::find($backup->company_id)?->backup_settings ?? [])
+                    ? ($this->authorizedStores($request)->find($backup->company_id)?->backup_settings ?? [])
                     : [];
                 if (BackupService::isCloudConfigured($storeSettings)) {
                     $this->backups->deleteFromCloud($backup->cloud_path, $storeSettings);

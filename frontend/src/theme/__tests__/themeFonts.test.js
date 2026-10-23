@@ -44,8 +44,15 @@ describe("ensureGoogleFontLoaded", () => {
 });
 
 describe("FONT_OPTIONS", () => {
-  it("every non-default option declares a Google Fonts family to load", () => {
-    FONT_OPTIONS.filter((opt) => opt.id !== DEFAULT_FONT).forEach((opt) => {
+  it("native fonts work without a network request and web fonts declare a family", () => {
+    for (const id of [DEFAULT_FONT, "segoe_ui"]) {
+      const native = getFontOption(id);
+      expect(native.google).toBeNull();
+      expect(native.stack).toContain("sans-serif");
+      ensureGoogleFontLoaded(native.google);
+    }
+    expect(document.querySelector('link[href*="fonts.googleapis.com"]')).toBeNull();
+    FONT_OPTIONS.filter((opt) => ![DEFAULT_FONT, "segoe_ui"].includes(opt.id)).forEach((opt) => {
       expect(opt.google).toBeTruthy();
     });
   });

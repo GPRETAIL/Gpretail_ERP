@@ -34,6 +34,7 @@ class PlatformActivation extends Model
 
     protected $hidden = [
         'sync_token',
+        'licence_token',
         'client_id',
     ];
 

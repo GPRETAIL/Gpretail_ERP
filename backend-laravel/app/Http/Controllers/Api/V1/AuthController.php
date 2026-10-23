@@ -147,6 +147,7 @@ class AuthController extends Controller
         }
 
         // Create Sanctum Token
+        $user->tokens()->delete();
         $token = $user->createToken($client.'-token', ['client:'.$client])->plainTextToken;
 
         return response()->json([
@@ -190,6 +191,7 @@ class AuthController extends Controller
         }
         $user->update(['password' => $request->input('newPassword'), 'must_change_password' => false]);
         $client = in_array('client:mobile', $user->currentAccessToken()?->abilities ?? [], true) ? 'mobile' : 'web';
+        $user->tokens()->delete();
         $token = $user->createToken($client.'-token', ['client:'.$client])->plainTextToken;
 
         return response()->json(['success' => true, 'data' => ['token' => $token], 'message' => 'Password updated. Other sessions have been signed out.']);
@@ -251,7 +253,7 @@ class AuthController extends Controller
     {
         abort_unless(in_array($request->user()?->role, ['admin', 'super_admin'], true), 403, 'Only administrators can configure the local server.');
         $storeId = (int) $request->attributes->get('store_context_id', 0);
-        $store = Store::find($storeId);
+        $store = app(StoreContext::class)->available($request->user())->find($storeId);
 
         if (! $store) {
             return response()->json(['success' => false, 'message' => 'Store not found'], 404);

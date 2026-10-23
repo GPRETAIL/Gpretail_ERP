@@ -11,8 +11,6 @@ use App\Models\PurchaseInvoice;
 use App\Models\PurchaseInvoiceItem;
 use App\Models\Supplier;
 use App\Models\SystemConfiguration;
-use Illuminate\Support\Facades\Crypt;
-use Illuminate\Support\Facades\Schema;
 use App\Models\Transport;
 use App\Models\TransportEntry;
 use App\Services\DocumentNumberService;
@@ -20,7 +18,9 @@ use App\Services\InvoiceOcrService;
 use App\Services\StockService;
 use App\Services\VariantResolverService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 use Symfony\Component\HttpFoundation\Response as HttpResponse;
 use Throwable;
@@ -86,6 +86,23 @@ class InvoiceAiController extends Controller
         return (string) (config($fallbackConfigPath) ?: env($envName, ''));
     }
 
+    private static function maskApiKey(string $key): string
+    {
+        if ($key === '') {
+            return '';
+        }
+        if (strlen($key) < 12) {
+            return str_repeat('*', 20);
+        }
+
+        return substr($key, 0, 4).str_repeat('*', 16);
+    }
+
+    private static function isMaskedPlaceholder(string $value): bool
+    {
+        return $value !== '' && (str_contains($value, '****') || preg_match('/^[A-Za-z0-9_-]{2,6}\.{3}[A-Za-z0-9_-]{2,4}$/', $value) === 1);
+    }
+
     public function getEngineConfig(Request $request)
     {
         if ($forbidden = $this->ensureAdmin($request)) {
@@ -114,20 +131,20 @@ class InvoiceAiController extends Controller
             'gemini' => [
                 'configured' => $geminiKey !== '',
                 'model' => config('services.gemini.model', 'gemini-3.6-flash'),
-                'masked_key' => $geminiKey ? substr($geminiKey, 0, 4).'...'.substr($geminiKey, -4) : '',
+                'masked_key' => self::maskApiKey($geminiKey),
             ],
             'space_ocr' => [
                 'configured' => $spaceOcrKey !== '',
-                'masked_key' => $spaceOcrKey ? substr($spaceOcrKey, 0, 6).'...'.substr($spaceOcrKey, -4) : '',
+                'masked_key' => self::maskApiKey($spaceOcrKey),
             ],
             'openai' => [
                 'configured' => $openaiKey !== '',
                 'model' => config('services.openai.model', 'gpt-4o-mini'),
-                'masked_key' => $openaiKey ? substr($openaiKey, 0, 4).'...'.substr($openaiKey, -4) : '',
+                'masked_key' => self::maskApiKey($openaiKey),
             ],
             'ocr_space' => [
                 'configured' => $ocrSpaceKey !== '',
-                'masked_key' => $ocrSpaceKey ? substr($ocrSpaceKey, 0, 4).'...'.substr($ocrSpaceKey, -4) : '',
+                'masked_key' => self::maskApiKey($ocrSpaceKey),
             ],
         ]);
     }
@@ -138,55 +155,21 @@ class InvoiceAiController extends Controller
             return $forbidden;
         }
 
-        // regex excludes newlines/carriage returns -- without this, a value like
-        // "x\nDB_PASSWORD=whatever" gets spliced straight into .env below via preg_replace/
-        // file_put_contents and silently adds (or overwrites) an unrelated env var, since a
-        // "nullable|string" rule alone doesn't reject control characters.
         $noNewlines = 'regex:/^[^\r\n]*$/';
         $request->validate([
-            'gemini_api_key' => ['nullable', 'string', $noNewlines],
-            'space_ocr_api_key' => ['nullable', 'string', $noNewlines],
-            'ocr_space_api_key' => ['nullable', 'string', $noNewlines],
+            'gemini_api_key' => ['nullable', 'string', 'max:512', $noNewlines],
+            'space_ocr_api_key' => ['nullable', 'string', 'max:512', $noNewlines],
+            'openai_api_key' => ['nullable', 'string', 'max:512', $noNewlines],
+            'ocr_space_api_key' => ['nullable', 'string', 'max:512', $noNewlines],
         ]);
 
-        $envFile = base_path('.env');
-        if (! file_exists($envFile)) {
-            return response()->json(['success' => false, 'message' => '.env file not found.'], 500);
-        }
-
-        $envContent = file_get_contents($envFile);
-
-        if ($request->has('gemini_api_key')) {
-            $val = trim($request->input('gemini_api_key', ''));
-            if (preg_match('/^GEMINI_API_KEY=.*$/m', $envContent)) {
-                $envContent = preg_replace('/^GEMINI_API_KEY=.*$/m', "GEMINI_API_KEY={$val}", $envContent);
-            } else {
-                $envContent .= "\nGEMINI_API_KEY={$val}";
-            }
-        }
-
-        if ($request->has('space_ocr_api_key')) {
-            $val = trim($request->input('space_ocr_api_key', ''));
-            if (preg_match('/^SPACE_OCR_API_KEY=.*$/m', $envContent)) {
-                $envContent = preg_replace('/^SPACE_OCR_API_KEY=.*$/m', "SPACE_OCR_API_KEY={$val}", $envContent);
-            } else {
-                $envContent .= "\nSPACE_OCR_API_KEY={$val}";
-            }
-        }
-
-        if ($request->has('ocr_space_api_key')) {
-            $val = trim($request->input('ocr_space_api_key', ''));
-            if (preg_match('/^OCR_SPACE_API_KEY=.*$/m', $envContent)) {
-                $envContent = preg_replace('/^OCR_SPACE_API_KEY=.*$/m', "OCR_SPACE_API_KEY={$val}", $envContent);
-            } else {
-                $envContent .= "\nOCR_SPACE_API_KEY={$val}";
-            }
-        }
-
         if (Schema::hasTable('system_configurations')) {
-            foreach (['gemini_api_key', 'space_ocr_api_key', 'ocr_space_api_key'] as $keyName) {
+            foreach (['gemini_api_key', 'space_ocr_api_key', 'openai_api_key', 'ocr_space_api_key'] as $keyName) {
                 if ($request->has($keyName)) {
                     $rawVal = trim((string) $request->input($keyName, ''));
+                    if (self::isMaskedPlaceholder($rawVal)) {
+                        continue;
+                    }
                     SystemConfiguration::withoutGlobalScopes()->updateOrCreate(
                         ['group' => 'invoice_ai', 'key' => $keyName],
                         [
@@ -198,10 +181,6 @@ class InvoiceAiController extends Controller
                     );
                 }
             }
-        }
-
-        if (is_writable($envFile)) {
-            @file_put_contents($envFile, $envContent, LOCK_EX);
         }
 
         return response()->json([

@@ -40,3 +40,10 @@ backend-laravel-local-node/
 # Deployment archives
 *.zip
 *.tar.gz
+
+# Private backup artifacts
+.env.backup*
+backend-laravel/.env.backup*
+backend-laravel/storage/app/private/backups/*
+backend-laravel/storage/app/private/config-backups/*
+backend-laravel/storage/app/private/deployment-upgrades/*

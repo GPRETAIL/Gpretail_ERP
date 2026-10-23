@@ -13,6 +13,16 @@ class MobileAccessTest extends TestCase
 {
     use RefreshDatabase;
 
+    private string $privateKeyPem = '';
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $key = openssl_pkey_new(['private_key_type' => OPENSSL_KEYTYPE_ED25519, 'config' => base_path('tests/Fixtures/openssl.cnf')]);
+        openssl_pkey_export($key, $this->privateKeyPem, null, ['config' => base_path('tests/Fixtures/openssl.cnf')]);
+        config(['platform.licence_public_keys' => ['dev' => openssl_pkey_get_details($key)['key']]]);
+    }
+
     private function fixture(bool $mobile = true): array
     {
         $activation = PlatformActivation::create(['company_code' => 'CMP-MOBILE', 'activated' => true,
@@ -36,7 +46,7 @@ class MobileAccessTest extends TestCase
     {
         $encode = fn ($value) => rtrim(strtr(base64_encode(json_encode($value)), '+/', '-_'), '=');
         $input = $encode(['alg' => 'EdDSA', 'typ' => 'JWT', 'kid' => 'dev']).'.'.$encode($claims);
-        openssl_sign($input, $signature, "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEINIdxVHA20b/T5WcZmglwQISdQm5m1Ek8wwKNoH6VO4a\n-----END PRIVATE KEY-----", null);
+        openssl_sign($input, $signature, $this->privateKeyPem, null);
 
         return $input.'.'.rtrim(strtr(base64_encode($signature), '+/', '-_'), '=');
     }

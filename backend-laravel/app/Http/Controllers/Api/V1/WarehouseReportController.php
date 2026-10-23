@@ -8,6 +8,7 @@ use App\Models\Stock;
 use App\Models\Store;
 use App\Services\GroupAggregationService;
 use App\Services\PaginationService;
+use App\Services\StoreContext;
 use App\Services\StoreQuery;
 use Illuminate\Http\Request;
 
@@ -234,16 +235,15 @@ class WarehouseReportController extends Controller
 
     public function warehouseCustomization(Request $request)
     {
-        $storeId = $request->input('company_id')
-            ?? $request->input('companyId')
-            ?? $this->resolveStoreId($request, 1);
+        $storeId = $this->resolveStoreId($request, null);
+        $authorizedStores = app(StoreContext::class)->available($request->user());
 
         if ($request->isMethod('post') || $request->isMethod('put')) {
             if (! $storeId) {
                 return response()->json(['success' => false, 'message' => 'companyId is required'], 422);
             }
 
-            $store = Store::find($storeId);
+            $store = $authorizedStores->find($storeId);
             if (! $store) {
                 return response()->json(['success' => false, 'message' => 'Store not found'], 404);
             }
@@ -260,7 +260,14 @@ class WarehouseReportController extends Controller
             ]);
         }
 
-        $store = $storeId ? Store::find($storeId) : null;
+        if ($storeId) {
+            $store = $authorizedStores->find($storeId);
+            if (! $store) {
+                return response()->json(['success' => false, 'message' => 'Store not found'], 404);
+            }
+        } else {
+            $store = null;
+        }
 
         return response()->json([
             'success' => true,

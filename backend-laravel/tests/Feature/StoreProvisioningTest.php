@@ -7,7 +7,6 @@ use App\Models\Store;
 use App\Models\User;
 use App\Models\Warehouse;
 use App\Services\PlatformActivationService;
-use App\Services\StoreLicenceVerifier;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -17,6 +16,16 @@ use Tests\TestCase;
 class StoreProvisioningTest extends TestCase
 {
     use RefreshDatabase;
+
+    private string $privateKeyPem = '';
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $key = openssl_pkey_new(['private_key_type' => OPENSSL_KEYTYPE_ED25519, 'config' => base_path('tests/Fixtures/openssl.cnf')]);
+        openssl_pkey_export($key, $this->privateKeyPem, null, ['config' => base_path('tests/Fixtures/openssl.cnf')]);
+        config(['platform.licence_public_keys' => ['dev' => openssl_pkey_get_details($key)['key']]]);
+    }
 
     private function activation(): PlatformActivation
     {
@@ -37,7 +46,7 @@ class StoreProvisioningTest extends TestCase
                 'status' => 'active', 'subscription_status' => 'active', 'iat' => now()->timestamp, 'exp' => now()->addDay()->timestamp,
                 'activeTill' => now()->addMonth()->timestamp, 'offline_until' => now()->addDays(2)->timestamp];
             $input = $encode(json_encode(['alg' => 'EdDSA', 'typ' => 'JWT', 'kid' => 'dev'])).'.'.$encode(json_encode($claims));
-            openssl_sign($input, $signature, "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEINIdxVHA20b/T5WcZmglwQISdQm5m1Ek8wwKNoH6VO4a\n-----END PRIVATE KEY-----", null);
+            openssl_sign($input, $signature, $this->privateKeyPem, null);
             $store['licence'] = $input.'.'.$encode($signature);
         }
 
@@ -59,7 +68,7 @@ class StoreProvisioningTest extends TestCase
     {
         config(['platform.licence_public_keys.prod' => '']);
         $this->artisan('platform:verify-trust --production')->assertFailed();
-        config(['platform.licence_public_keys.prod' => StoreLicenceVerifier::DEV_PUBLIC_KEY]);
+        config(['platform.licence_public_keys.prod' => 'MCowBQYDK2VwAyEAj5cKxJkJKAyG3zFVAiwZL0xyiWeCvfIzOpUoCrrgvfA=']);
         $this->artisan('platform:verify-trust --production')->assertFailed();
     }
 

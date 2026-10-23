@@ -17,6 +17,8 @@ use Illuminate\Support\Str;
  */
 class PlatformActivationService
 {
+    private const BCRYPT_HASH_PATTERN = '/^\$2[ayb]\$\d{2}\$[.\/A-Za-z0-9]{53}$/';
+
     public function __construct(private PlatformClient $client) {}
 
     /**
@@ -243,10 +245,14 @@ class PlatformActivationService
             return;
         }
 
+        if (! is_string($hash) || preg_match(self::BCRYPT_HASH_PATTERN, $hash) !== 1 || (int) $version < 1) {
+            throw new \RuntimeException('Platform returned an invalid tenant password hash format.');
+        }
+
         $mustChange = (bool) ($company['tenant_password_must_change'] ?? false);
         $user = User::whereRaw('LOWER(email) = ?', [$email])->first();
 
-        if ($user && ($user->platform_company_code !== $activation->company_code || $user->store_id)) {
+        if ($user && ($user->platform_company_code !== $activation->company_code || $user->store_id || $user->role === 'super_admin')) {
             throw new \RuntimeException('The tenant email conflicts with an existing local account. Resolve its company ownership before activation.');
         }
         if ($user && (int) $user->platform_password_version >= (int) $version) {
@@ -261,6 +267,7 @@ class PlatformActivationService
             $user->is_active = true;
             $user->platform_password_version = (int) $version;
             $user->save();
+            $user->tokens()->delete();
         } else {
             User::create([
                 'name' => $company['name'] ?? 'Tenant Administrator',
@@ -314,7 +321,7 @@ class PlatformActivationService
                 $user ??= $emailUser;
                 $hash = $source['admin_password_hash'] ?? null;
                 $version = (int) ($source['admin_password_version'] ?? 0);
-                if ($hash && (! is_string($hash) || (password_get_info($hash)['algoName'] ?? 'unknown') === 'unknown' || $version < 1)) {
+                if ($hash && (! is_string($hash) || preg_match(self::BCRYPT_HASH_PATTERN, $hash) !== 1 || $version < 1)) {
                     throw new \RuntimeException('GP Admin returned invalid store administrator credentials.');
                 }
                 if ($user && strcasecmp($user->email, $email) !== 0 && (! $hash || $version <= (int) $user->platform_password_version)) {
@@ -345,7 +352,11 @@ class PlatformActivationService
                 if ($user->isDirty('email') && $user->exists) {
                     $user->google_sub = null;
                 }
+                $passwordChanged = $user->isDirty('password');
                 $user->save();
+                if ($passwordChanged) {
+                    $user->tokens()->delete();
+                }
                 if ($hash) {
                     $acknowledgements[] = [$version, $store->code];
                 }

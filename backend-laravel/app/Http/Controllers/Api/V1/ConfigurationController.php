@@ -6,11 +6,24 @@ use App\Http\Controllers\Concerns\ImportsMasterRows;
 use App\Http\Controllers\Controller;
 use App\Models\SystemConfiguration;
 use App\Services\PaginationService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 
 class ConfigurationController extends Controller
 {
     use ImportsMasterRows;
+
+    private const INTERNAL_KEYS = ['invoice_ai', 'gemini_api_key', 'space_ocr_api_key', 'openai_api_key', 'ocr_space_api_key'];
+
+    private function userConfigs(): Builder
+    {
+        $query = SystemConfiguration::query();
+        foreach (['group', 'group_name', 'key', 'config_key'] as $column) {
+            $query->where(fn ($q) => $q->whereNull($column)->orWhereNotIn($column, self::INTERNAL_KEYS));
+        }
+
+        return $query;
+    }
 
     public function __construct(private readonly PaginationService $paginationService) {}
 
@@ -25,11 +38,10 @@ class ConfigurationController extends Controller
         if ($request->boolean('paginate')) {
             return $this->show($request, 'counter');
         }
-        $rows = SystemConfiguration::where('key', 'counter')
+        $rows = $this->userConfigs()->where(fn ($q) => $q->where('key', 'counter')
             ->orWhere('config_key', 'counter')
             ->orWhere('group', 'counter')
-            ->orWhere('group_name', 'counter')
-            ->get()
+            ->orWhere('group_name', 'counter'))->get()
             ->map(fn ($c) => [
                 'id' => $c->id,
                 'name' => $c->value ?? $c->config_value,
@@ -44,7 +56,7 @@ class ConfigurationController extends Controller
 
     public function index(Request $request)
     {
-        $configs = SystemConfiguration::all();
+        $configs = $this->userConfigs()->get();
 
         return response()->json([
             'success' => true,
@@ -56,6 +68,9 @@ class ConfigurationController extends Controller
     public function show(Request $request, $key)
     {
         $normalized = strtolower(str_replace('-', '_', $key));
+        if (in_array($normalized, self::INTERNAL_KEYS, true)) {
+            return response()->json(['success' => true, 'data' => [], 'total' => 0]);
+        }
 
         // Default lookups for common configuration types
         $defaults = [
@@ -109,7 +124,7 @@ class ConfigurationController extends Controller
 
         // The listing explicitly opts in; dropdown lookups keep their legacy response.
         if ($request->boolean('paginate')) {
-            $query = SystemConfiguration::where(function ($q) use ($normalized) {
+            $query = $this->userConfigs()->where(function ($q) use ($normalized) {
                 $q->where('key', $normalized)->orWhere('config_key', $normalized)
                     ->orWhere('group', $normalized)->orWhere('group_name', $normalized);
             });
@@ -152,11 +167,10 @@ class ConfigurationController extends Controller
         }
 
         // Check if exists in database
-        $dbConfigs = SystemConfiguration::where('key', $normalized)
+        $dbConfigs = $this->userConfigs()->where(fn ($q) => $q->where('key', $normalized)
             ->orWhere('config_key', $normalized)
             ->orWhere('group', $normalized)
-            ->orWhere('group_name', $normalized)
-            ->get();
+            ->orWhere('group_name', $normalized))->get();
 
         if ($dbConfigs->isNotEmpty()) {
             $data = $dbConfigs->map(function ($c) {
@@ -203,6 +217,10 @@ class ConfigurationController extends Controller
         $val = $request->input('value') ?? $request->input('config_value') ?? $request->input('name');
         $group = $request->input('group') ?? $request->input('group_name') ?? $key;
 
+        foreach ([$key, $group] as $identity) {
+            abort_if(in_array(strtolower(str_replace('-', '_', trim((string) $identity))), self::INTERNAL_KEYS, true), 403, 'Cannot modify internal system configurations here.');
+        }
+
         $config = SystemConfiguration::create([
             'key' => $key,
             'config_key' => $key,
@@ -232,7 +250,7 @@ class ConfigurationController extends Controller
 
     public function updateType(Request $request, $type, $id)
     {
-        $config = SystemConfiguration::where(function ($query) use ($type): void {
+        $config = $this->userConfigs()->where(function ($query) use ($type): void {
             $normalized = strtolower(str_replace('-', '_', $type));
             $query->where('key', $normalized)->orWhere('config_key', $normalized)->orWhere('group', $normalized)->orWhere('group_name', $normalized);
         })->find($id);
@@ -265,7 +283,7 @@ class ConfigurationController extends Controller
      */
     public function showType(Request $request, $type, $id)
     {
-        $config = SystemConfiguration::where(function ($query) use ($type): void {
+        $config = $this->userConfigs()->where(function ($query) use ($type): void {
             $normalized = strtolower(str_replace('-', '_', $type));
             $query->where('key', $normalized)->orWhere('config_key', $normalized)->orWhere('group', $normalized)->orWhere('group_name', $normalized);
         })->find($id);
@@ -291,7 +309,7 @@ class ConfigurationController extends Controller
 
     public function destroyType(Request $request, $type, $id)
     {
-        $config = SystemConfiguration::where(function ($query) use ($type): void {
+        $config = $this->userConfigs()->where(function ($query) use ($type): void {
             $normalized = strtolower(str_replace('-', '_', $type));
             $query->where('key', $normalized)->orWhere('config_key', $normalized)->orWhere('group', $normalized)->orWhere('group_name', $normalized);
         })->find($id);

@@ -20,6 +20,7 @@ import { Box, Typography } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import api from "../api/axios";
 import { apiErrorMessage } from "../utils/apiErrorMessage";
+import { ALLOWED_IMPORT_EXTENSIONS, MAX_IMPORT_FILE_BYTES, MAX_IMPORT_ROWS, isSafeImportKey } from "../utils/importSafety";
 import { useTransferActivity } from "../context/TransferActivityContext";
 
 /** Strip spaces, underscores, dashes, parens, slashes → lowercase for fuzzy matching */
@@ -69,6 +70,14 @@ export default function UploadImportButton({
     if (!file) return;
     e.target.value = ""; // allow re-picking same file
     setOpen(false);
+    if (!ALLOWED_IMPORT_EXTENSIONS.test(file.name)) {
+      toast.error("Only .xlsx and .csv files are supported for import.");
+      return;
+    }
+    if (file.size > MAX_IMPORT_FILE_BYTES) {
+      toast.error("Import file exceeds the 5 MB maximum size limit.");
+      return;
+    }
     const activityId = startActivity({
       type: TYPE.IMPORT,
       label: file.name || "Import",
@@ -80,9 +89,20 @@ export default function UploadImportButton({
     try {
       const [buffer, XLSX] = await Promise.all([file.arrayBuffer(), import("xlsx")]);
       updateActivity(activityId, { progressPercent: 20, statusMessage: "Parsing spreadsheet..." });
-      const wb = XLSX.read(buffer, { type: "array", cellDates: true });
+      const wb = XLSX.read(buffer, {
+        type: "array", cellDates: true, cellFormula: false, cellHTML: false,
+        dense: true, sheetRows: MAX_IMPORT_ROWS + 2,
+      });
       const ws = wb.Sheets[wb.SheetNames[0]];
+      if (!ws) throw new Error("File does not contain a worksheet.");
+      // A truncated worksheet must be rejected rather than partially imported.
+      if (ws["!fullref"] && ws["!fullref"] !== ws["!ref"]) {
+        throw new Error(`Import supports a maximum of ${MAX_IMPORT_ROWS.toLocaleString("en-US")} rows. Split the file and retry.`);
+      }
       const rawRows = XLSX.utils.sheet_to_json(ws, { defval: "" });
+      if (rawRows.length > MAX_IMPORT_ROWS) {
+        throw new Error(`Import supports a maximum of ${MAX_IMPORT_ROWS.toLocaleString("en-US")} rows. Split the file and retry.`);
+      }
 
       if (rawRows.length === 0) {
         finishActivity(activityId, {
@@ -95,18 +115,23 @@ export default function UploadImportButton({
       }
 
       // Build mapping:  fileColumnKey → formFieldName
-      const aliasMap = { ...(fieldConfig.aliases || {}) };
+      const aliasMap = Object.create(null);
+      for (const [key, value] of Object.entries(fieldConfig.aliases || {})) {
+        if (isSafeImportKey(key) && isSafeImportKey(value)) aliasMap[norm(key)] = value;
+      }
       sampleHeaders.forEach((h) => {
+        if (!isSafeImportKey(h)) return;
         const key = norm(h);
         if (!aliasMap[key]) aliasMap[key] = h;
       });
 
-      const headerMap = {};
+      const headerMap = Object.create(null);
       for (const rawKey of Object.keys(rawRows[0])) {
+        if (!isSafeImportKey(rawKey)) continue;
         const mapped = aliasMap[norm(rawKey)] || (fieldConfig.preserveUnknown
           ? String(rawKey).trim().replace(/([a-z0-9])([A-Z])/g, "$1_$2").replace(/[\s-]+/g, "_").toLowerCase()
           : null);
-        if (mapped) headerMap[rawKey] = mapped;
+        if (mapped && isSafeImportKey(mapped)) headerMap[rawKey] = mapped;
       }
       updateActivity(activityId, { progressPercent: 35, statusMessage: "Validating headers..." });
 
@@ -125,7 +150,7 @@ export default function UploadImportButton({
 
       // Parse each row
       const parsedRows = rawRows.map((rawRow) => {
-        const row = {};
+        const row = Object.create(null);
         for (const [rawKey, fieldName] of Object.entries(headerMap)) {
           let val = rawRow[rawKey];
           if (val == null || String(val).trim() === "") continue;

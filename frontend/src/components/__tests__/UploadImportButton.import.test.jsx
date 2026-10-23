@@ -43,3 +43,10 @@ it("keeps configuration-specific fields and converts Excel date cells to ISO dat
   await waitFor(() => expect(mocks.post).toHaveBeenCalledOnce());
   expect(mocks.post.mock.calls[0][1]).toEqual([{ name: "Season", enabled: false, date_from: "2026-10-22", floor: "First" }]);
 });
+
+
+it("rejects an actual workbook exceeding the row limit without partial insertion", async () => {
+  upload(Array.from({ length: 5003 }, (_, i) => ({ name: `Brand ${i}` })));
+  await waitFor(() => expect(mocks.error).toHaveBeenCalledWith(expect.stringContaining("5,000 rows")));
+  expect(mocks.post).not.toHaveBeenCalled();
+});

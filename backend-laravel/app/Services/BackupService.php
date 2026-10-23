@@ -174,11 +174,33 @@ class BackupService
             }
             $this->applyScope($query, $table, $spec, $companyId, $manifest);
 
+            if ($table === 'system_configurations') {
+                $internalKeys = ['invoice_ai', 'gemini_api_key', 'space_ocr_api_key', 'openai_api_key', 'ocr_space_api_key'];
+                foreach (['group', 'group_name', 'key', 'config_key'] as $column) {
+                    if (Schema::hasColumn($table, $column)) {
+                        $query->where(fn ($q) => $q->whereNull($column)->orWhereNotIn($column, $internalKeys));
+                    }
+                }
+            }
+
             if ($since && Schema::hasColumn($table, 'updated_at')) {
                 $query->where('updated_at', '>', $since);
             }
 
-            $exported[$table] = $query->get()->map(fn ($row) => (array) $row)->all();
+            $exported[$table] = $query->get()->map(function ($row) use ($table) {
+                $arr = (array) $row;
+                if ($table === 'stores') {
+                    unset(
+                        $arr['platform_licence_token'],
+                        $arr['admin_password'],
+                        $arr['einvoice_password'],
+                        $arr['gst_access_key'],
+                        $arr['backup_settings']
+                    );
+                }
+
+                return $arr;
+            })->all();
         }
 
         return $exported;
@@ -232,8 +254,9 @@ class BackupService
     {
         $dir = storage_path('app/private/backups');
         if (! is_dir($dir)) {
-            mkdir($dir, 0755, true);
+            mkdir($dir, 0700, true);
         }
+        chmod($dir, 0700);
 
         $zipPath = $dir.DIRECTORY_SEPARATOR.$baseName.'.zip';
         $zip = new ZipArchive;
@@ -257,11 +280,12 @@ class BackupService
         ];
         $zip->addFromString('manifest.json', json_encode($manifestJson, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
         $zip->close();
+        @chmod($zipPath, 0600);
 
         return $zipPath;
     }
 
-    private const ENC_MAGIC_V2 = "VXENC2";
+    private const ENC_MAGIC_V2 = 'VXENC2';
 
     public function encryptArchive(string $zipPath, string $password): string
     {
@@ -277,7 +301,11 @@ class BackupService
         }
 
         $encPath = $zipPath.'.enc';
-        file_put_contents($encPath, self::ENC_MAGIC_V2.$salt.$iv.$tag.$cipher);
+        $encrypted = self::ENC_MAGIC_V2.$salt.$iv.$tag.$cipher;
+        if (file_put_contents($encPath, $encrypted) !== strlen($encrypted)) {
+            throw new RuntimeException('Failed to persist encrypted backup archive. The original archive was retained.');
+        }
+        @chmod($encPath, 0600);
         @unlink($zipPath);
 
         return $encPath;
@@ -308,10 +336,12 @@ class BackupService
 
         $tmpDir = storage_path('app/private/backups/tmp');
         if (! is_dir($tmpDir)) {
-            mkdir($tmpDir, 0755, true);
+            mkdir($tmpDir, 0700, true);
         }
+        chmod($tmpDir, 0700);
         $tmpZip = $tmpDir.DIRECTORY_SEPARATOR.'decrypt_'.uniqid().'.zip';
         file_put_contents($tmpZip, $plain);
+        chmod($tmpZip, 0600);
 
         $zip = new ZipArchive;
         if ($zip->open($tmpZip) !== true) {
@@ -683,9 +713,10 @@ class BackupService
         $disk = $this->buildOciDisk($settings);
         $tmpDir = storage_path('app/private/backups/tmp');
         if (! is_dir($tmpDir)) {
-            mkdir($tmpDir, 0755, true);
+            mkdir($tmpDir, 0700, true);
         }
 
+        chmod($tmpDir, 0700);
         $tmpPath = $tmpDir.DIRECTORY_SEPARATOR.'cloud_dl_'.uniqid().'_'.basename($remotePath);
         $stream = $disk->readStream($remotePath);
 
@@ -695,6 +726,7 @@ class BackupService
 
         try {
             file_put_contents($tmpPath, $stream);
+            chmod($tmpPath, 0600);
         } finally {
             if (is_resource($stream)) {
                 fclose($stream);

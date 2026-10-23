@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\StoreLocalNode;
 use App\Models\SyncOutboxEvent;
 use App\Services\BackupService;
+use App\Services\RegisteredServerProbe;
 use App\Services\SyncCycleService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Symfony\Component\HttpFoundation\IpUtils;
 
 class SyncController extends Controller
 {
@@ -57,7 +59,14 @@ class SyncController extends Controller
         $node->local_healthy = $request->boolean('local_healthy', true);
         $node->last_heartbeat_at = now();
         if ($request->filled('advertised_local_server_url')) {
-            $node->advertised_local_server_url = $request->input('advertised_local_server_url');
+            $normalizedUrl = app(RegisteredServerProbe::class)->normalize((string) $request->input('advertised_local_server_url'));
+            $host = trim((string) parse_url($normalizedUrl, PHP_URL_HOST), '[]');
+            abort_unless(
+                filter_var($host, FILTER_VALIDATE_IP) && IpUtils::checkIp($host, ['10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16', 'fc00::/7']),
+                422,
+                'Advertised local server URL must be an approved private LAN IP.'
+            );
+            $node->advertised_local_server_url = $normalizedUrl;
         }
         $node->save();
 
@@ -167,17 +176,25 @@ class SyncController extends Controller
      * stops draining a batch on the first 5xx), which last_heartbeat_at alone can't
      * surface.
      */
+    private function authorizedStoreIds(Request $request): array
+    {
+        return array_values(array_map('intval', (array) $request->attributes->get('store_context_ids', [])));
+    }
+
     public function nodes(Request $request)
     {
         $staleThreshold = now()->subMinutes(5);
+        $authorizedIds = $this->authorizedStoreIds($request);
 
         $outboxCounts = SyncOutboxEvent::selectRaw('store_id, status, COUNT(*) as total')
+            ->whereIn('store_id', $authorizedIds)
             ->whereIn('status', ['pending', 'failed'])
             ->groupBy('store_id', 'status')
             ->get()
             ->groupBy('store_id');
 
         $nodes = StoreLocalNode::with('store:id,name,code')
+            ->whereIn('store_id', $authorizedIds)
             ->orderBy('store_id')
             ->get()
             ->map(function (StoreLocalNode $node) use ($staleThreshold, $outboxCounts) {
@@ -210,9 +227,14 @@ class SyncController extends Controller
      */
     public function outboxEvents(Request $request)
     {
-        $storeId = (int) $request->input('store_id');
+        $storeId = (int) ($request->input('store_id') ?: $this->resolveStoreId($request, 0));
         if (! $storeId) {
             return response()->json(['success' => false, 'message' => 'store_id is required'], 422);
+        }
+
+        $authorizedIds = $this->authorizedStoreIds($request);
+        if (! in_array($storeId, $authorizedIds, true)) {
+            return response()->json(['success' => false, 'code' => 'STORE_ACCESS_DENIED', 'message' => 'You are not assigned to this store.'], 403);
         }
 
         $query = SyncOutboxEvent::where('store_id', $storeId);
@@ -235,7 +257,8 @@ class SyncController extends Controller
      */
     public function retryOutboxEvent(Request $request, $id)
     {
-        $event = SyncOutboxEvent::find($id);
+        $authorizedIds = $this->authorizedStoreIds($request);
+        $event = SyncOutboxEvent::whereIn('store_id', $authorizedIds)->find($id);
         if (! $event) {
             return response()->json(['success' => false, 'message' => 'Sync event not found'], 404);
         }
@@ -252,9 +275,14 @@ class SyncController extends Controller
      */
     public function retryAllFailed(Request $request)
     {
-        $storeId = (int) $request->input('store_id');
+        $storeId = (int) ($request->input('store_id') ?: $this->resolveStoreId($request, 0));
         if (! $storeId) {
             return response()->json(['success' => false, 'message' => 'store_id is required'], 422);
+        }
+
+        $authorizedIds = $this->authorizedStoreIds($request);
+        if (! in_array($storeId, $authorizedIds, true)) {
+            return response()->json(['success' => false, 'code' => 'STORE_ACCESS_DENIED', 'message' => 'You are not assigned to this store.'], 403);
         }
 
         $count = SyncOutboxEvent::where('store_id', $storeId)

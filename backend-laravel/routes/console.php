@@ -11,3 +11,5 @@ Artisan::command('inspire', function () {
 Schedule::command('platform:sync')->everyFiveMinutes()->withoutOverlapping();
 
 Schedule::command('platform:notifications-sync')->everyMinute()->withoutOverlapping();
+
+Schedule::command('security:purge-plaintext-snapshots --encrypt')->dailyAt('03:15')->withoutOverlapping();
