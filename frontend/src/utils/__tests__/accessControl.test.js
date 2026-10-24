@@ -1,6 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { canAccessPath, canSwitchStores, getHomePathForUser, getVisibleNavItems } from "../accessControl";
 
+describe("account workspace routes", () => {
+  it("keeps personal notifications accessible to staff without module or page grants", () => {
+    expect(canAccessPath("/notifications", { role: "user", page_permissions: {}, entitlements: { sections: {} } })).toBe(true);
+    expect(canAccessPath("/notifications", null)).toBe(false);
+  });
+  it("keeps activation available to the tenant owner before provisioning, without allowing staff to activate", () => {
+    expect(canAccessPath("/store-activation", { role: "admin", is_tenant_admin: true, store_ids: [], entitlements: { sections: {} } })).toBe(true);
+    expect(canAccessPath("/store-activation", { role: "admin", store_ids: [1] })).toBe(false);
+    expect(canAccessPath("/store-activation", { role: "user", page_permissions: { "/store-activation": { view: true } } })).toBe(false);
+  });
+});
+
 describe("shared store-switch permission", () => {
   it.each([
     [{ role: "super_admin" }, true],

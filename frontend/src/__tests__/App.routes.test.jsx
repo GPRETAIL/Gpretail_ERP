@@ -68,15 +68,22 @@ vi.mock("../components/MainLayout", async () => {
 
 import App from "../App";
 
+vi.mock("../mobile/MobileAppV2", async () => {
+  const { useLocation } = await import("react-router-dom");
+  const { createElement } = await import("react");
+  const MobileWorkspaceProbe = () => { const location = useLocation(); return createElement("div", null, `MOBILE@${location.pathname}${location.search}`); };
+  return { default: MobileWorkspaceProbe };
+});
+
 const AUTHED_USER = { role: "super_admin", access_roles: [] };
 
-const renderApp = (path, { authenticated = true } = {}) => {
+const renderApp = (path, { authenticated = true, user = AUTHED_USER } = {}) => {
   const store = configureStore({
     reducer: { auth: authReducer },
     preloadedState: {
       auth: {
         token: authenticated ? "test-token" : null,
-        user: authenticated ? AUTHED_USER : null,
+        user: authenticated ? user : null,
         isAuthenticated: authenticated,
         loading: false,
         error: null,
@@ -113,6 +120,17 @@ const consoleOutput = () =>
   [...warnSpy.mock.calls, ...errorSpy.mock.calls].map((args) => args.join(" ")).join("\n");
 
 describe("App route shape", () => {
+  it.each(["/notifications", "/notifications?tab=preferences", "/store-activation", "/profile"])("keeps %s inside the ERP layout", async path => {
+    renderApp(path);
+    expect(await screen.findByText(`LAYOUT@${path.split("?")[0]}`)).toBeInTheDocument();
+    expect(screen.queryByText("Return to ERP")).not.toBeInTheDocument();
+  });
+
+  it("opens a mobile-only push notification in the mobile workspace", async () => {
+    renderApp("/notifications", { user: { ...AUTHED_USER, web_access: false } });
+    expect(await screen.findByText("MOBILE@/app?notifications=1")).toBeInTheDocument();
+    expect(screen.queryByText(/^LAYOUT@/)).not.toBeInTheDocument();
+  });
   it("validates an old session before an unactivated deployment can block the login route", async () => {
     localStorage.removeItem("vx_activated");
     localStorage.setItem("token", "expired-token");

@@ -17,6 +17,8 @@ const Dashboard = lazy(() => import("../pages/Dashboard"));
 const ComingSoon = lazy(() => import("../pages/ComingSoon"));
 const ModulePage = lazy(() => import("../pages/ModulePage"));
 const Profile = lazy(() => import("../pages/Profile"));
+const Notifications = lazy(() => import("../pages/Notifications"));
+const StoreActivation = lazy(() => import("../pages/StoreActivation"));
 const Brand = lazy(() => import("../pages/master/Brand"));
 const Tax = lazy(() => import("../pages/master/Tax"));
 const TaxForm = lazy(() => import("../pages/master/TaxForm"));
@@ -124,6 +126,8 @@ export const protectedLayoutRoutes = [
   { path: "/masters/product-attributes", render: () => <ProductAttributes /> },
   { path: "/masters/product-attributes/new", render: () => <AddAttributePage /> },
   { path: "/profile", render: () => <Profile /> },
+  { path: "/notifications", render: () => <Notifications /> },
+  { path: "/store-activation", render: () => <StoreActivation /> },
   { path: "/dashboard", render: () => <Dashboard /> },
   { path: "/settings/company", render: () => <CompanySettings /> },
   { path: "/settings/themes", render: () => <Themes /> },

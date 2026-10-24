@@ -5,6 +5,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import NotificationsOutlinedIcon from "@mui/icons-material/NotificationsOutlined";
 import api from "../api/axios";
 import useAsyncQuery from "../hooks/useAsyncQuery";
+import { Link } from "react-router-dom";
 
 export default function PlatformNotificationBanner({ onView } = {}) {
   const user = useSelector(state => state.auth.user);
@@ -49,7 +50,7 @@ export default function PlatformNotificationBanner({ onView } = {}) {
       </Stack>
       <Typography variant="body2" sx={{ mt: 1, whiteSpace: "pre-wrap", overflowWrap: "anywhere", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{notification.message}</Typography>
       {failure && <Typography role="alert" color="error" variant="caption">{failure}</Typography>}
-      <Button size="small" href={onView ? undefined : "/notifications"} onClick={onView} sx={{ mt: 0.5 }}>View inbox</Button>
+      <Button size="small" component={onView ? "button" : Link} to={onView ? undefined : "/notifications"} onClick={onView} sx={{ mt: 0.5 }}>View inbox</Button>
     </Paper>
   </Box>;
 }

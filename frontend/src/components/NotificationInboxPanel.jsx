@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { useSelector } from "react-redux";
 import { Alert, Box, Button, Checkbox, Chip, Divider, FormControlLabel, Paper, Skeleton, Stack, Tab, Tabs, TextField, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
-import { ArrowLeft, Bell, CheckCheck, RefreshCw, Settings2 } from "lucide-react";
+import { Bell, CheckCheck, RefreshCw, Settings2 } from "lucide-react";
 import { enableWebPush, disableWebPush, pushDeviceState } from "../utils/webPush";
 import api from "../api/axios";
 import useAsyncQuery from "../hooks/useAsyncQuery";
@@ -65,18 +65,19 @@ function NotificationPreferences() {
   </Stack>;
 }
 
-export default function NotificationInboxPanel({ standalone = false }) {
+export default function NotificationInboxPanel({ showHeading = true, section: controlledSection, onSectionChange, onOpen }) {
   const user = useSelector(state => state.auth.user);
-  const [section, setSection] = useState(() => standalone && new URLSearchParams(window.location.search).get("tab") === "preferences" ? "preferences" : "inbox");
+  const [localSection, setLocalSection] = useState("inbox");
+  const section = controlledSection ?? localSection;
+  const setSection = value => { setLocalSection(value); onSectionChange?.(value); };
   const [category, setCategory] = useState("all");
   const [unread, setUnread] = useState(false);
   const [page, setPage] = useState(1);
   const feed = useNotificationFeed({ category, unread, page, enabled: section === "inbox" });
   const total = feed.data?.pagination?.total;
-  return <Box sx={{ minHeight: standalone ? "100dvh" : undefined, bgcolor: standalone ? "background.default" : undefined, p: { xs: 1.5, sm: 3 } }}>
+  return <Box sx={{ p: { xs: 1.5, sm: 2 } }}>
     <Stack spacing={2.5} sx={{ maxWidth: 1000, mx: "auto", minWidth: 0 }}>
-      {standalone && <Button startIcon={<ArrowLeft size={16} />} href={user?.web_access === false ? "/app" : "/dashboard"} sx={{ alignSelf: "flex-start" }}>Return to ERP</Button>}
-      <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}><Box sx={{ p: 1.25, bgcolor: "action.hover", color: "primary.main", borderRadius: 2, display: "flex" }}><Bell size={24} /></Box><Box><Typography component="h1" sx={{ fontSize: { xs: 20, sm: 24 }, fontWeight: 700 }}>Notifications</Typography><Typography variant="body2" color="text.secondary">Account messages, service alerts and store updates in one place.</Typography></Box></Stack>
+      {showHeading ? <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}><Box sx={{ p: 1.25, bgcolor: "action.hover", color: "primary.main", borderRadius: 2, display: "flex" }}><Bell size={24} /></Box><Box><Typography component="h1" sx={{ fontSize: { xs: 20, sm: 24 }, fontWeight: 700 }}>Notifications</Typography><Typography variant="body2" color="text.secondary">Account messages, service alerts and store updates in one place.</Typography></Box></Stack> : <Typography variant="body2" color="text.secondary">Account messages, service alerts and store updates in one place.</Typography>}
       <Paper variant="outlined" sx={{ borderRadius: 3, overflow: "hidden", bgcolor: "background.paper", backgroundImage: "none" }}>
         <Tabs value={section} onChange={(_, value) => setSection(value)} aria-label="Notification sections" sx={{ px: 2, borderBottom: 1, borderColor: "divider" }}><Tab value="inbox" icon={<Bell size={16} />} iconPosition="start" label="Inbox" id="notification-inbox-tab" aria-controls="notification-inbox-panel" /><Tab value="preferences" icon={<Settings2 size={16} />} iconPosition="start" label="Preferences" id="notification-preferences-tab" aria-controls="notification-preferences-panel" /></Tabs>
         <Box role="tabpanel" id={`notification-${section}-panel`} aria-labelledby={`notification-${section}-tab`} sx={{ p: { xs: 1.5, sm: 2.5 } }}>
@@ -92,7 +93,7 @@ export default function NotificationInboxPanel({ standalone = false }) {
             </Stack>
             {(feed.error || feed.failure) && <Alert severity="warning" action={<Button color="inherit" onClick={() => feed.reload()}>Retry</Button>}>{feed.failure || "Notifications are unavailable. Connect to your ERP server and retry."}</Alert>}
             <Stack spacing={1.25} aria-busy={feed.loading}>
-              {feed.loading ? [0, 1, 2].map(id => <Skeleton key={id} variant="rounded" height={115} />) : !feed.error && feed.rows.length === 0 ? <Stack spacing={1} sx={{ alignItems: "center", py: 5, textAlign: "center" }} role="status"><Bell size={32} /><Typography sx={{ fontWeight: 600 }}>{unread ? "You're all caught up" : "No notifications in this category"}</Typography><Typography variant="body2" color="text.secondary">{unread ? "You have no unread messages here." : "New updates will appear here when available."}</Typography>{category === "offer" && <Button onClick={() => setSection("preferences")}>Review offer preferences</Button>}</Stack> : feed.rows.map(row => <NotificationCard key={row.id} notification={row} pending={feed.pending !== null} onRead={feed.markRead} subscriptionUrl={user?.subscription_portal_url} />)}
+              {feed.loading ? [0, 1, 2].map(id => <Skeleton key={id} variant="rounded" height={115} />) : !feed.error && feed.rows.length === 0 ? <Stack spacing={1} sx={{ alignItems: "center", py: 5, textAlign: "center" }} role="status"><Bell size={32} /><Typography sx={{ fontWeight: 600 }}>{unread ? "You're all caught up" : "No notifications in this category"}</Typography><Typography variant="body2" color="text.secondary">{unread ? "You have no unread messages here." : "New updates will appear here when available."}</Typography>{category === "offer" && <Button onClick={() => setSection("preferences")}>Review offer preferences</Button>}</Stack> : feed.rows.map(row => <NotificationCard key={row.id} notification={row} pending={feed.pending !== null} onRead={feed.markRead} subscriptionUrl={user?.subscription_portal_url} onOpen={onOpen} />)}
             </Stack>
             <Divider />
             <Stack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "space-between" }}><Button disabled={page === 1 || feed.loading} onClick={() => setPage(value => value - 1)}>Previous</Button><Chip variant="outlined" size="small" label={`Page ${page}`} /><Button disabled={!feed.hasNext || feed.loading || Boolean(feed.error)} onClick={() => setPage(value => value + 1)}>Next</Button></Stack>

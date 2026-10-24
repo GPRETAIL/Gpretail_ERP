@@ -3,6 +3,7 @@ import { useSelector } from "react-redux";
 import { EnvelopeIcon, PhoneIcon } from "@heroicons/react/24/outline";
 import { Avatar, Box, Card, Stack, Typography } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
+import PageHeader from "../components/PageHeader";
 
 const Profile = () => {
   const theme = useTheme();
@@ -17,11 +18,9 @@ const Profile = () => {
   const userPicture = user?.picture || "https://i.pravatar.cc/150?img=68";
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "background.default", color: "text.primary", p: 3 }}>
-      {/* Page Header */}
-      <Typography variant="h5" component="h1" sx={{ fontWeight: 600, mb: 3, color: "text.primary" }}>
-        Profile
-      </Typography>
+    <Box sx={{ height: "100%", minHeight: 0, display: "flex", flexDirection: "column", bgcolor: "background.default", color: "text.primary" }}>
+      <PageHeader title="Profile" />
+      <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", p: { xs: 1.5, sm: 3 } }}>
 
       {/* Profile Card */}
       <Card
@@ -75,11 +74,11 @@ const Profile = () => {
           Account Information
         </Typography>
         <Typography variant="body2" sx={{ color: "text.secondary", lineHeight: 1.6 }}>
-          You can view and manage your account details here. Add functionality
-          such as editing profile information, changing passwords, or managing
-          linked accounts as needed.
+          Your account and assigned access are managed by your tenant administrator.
+          Contact them to update your details or store assignments.
         </Typography>
       </Card>
+      </Box>
     </Box>
   );
 };

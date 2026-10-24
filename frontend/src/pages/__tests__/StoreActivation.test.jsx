@@ -30,6 +30,7 @@ it('shows a sync failure while retaining the code for a safe retry', async () =>
   get.mockResolvedValue({ data: { data: [] } });
   post.mockRejectedValue({ response: { data: { message: 'Code expired' } } });
   render(<Provider store={configureStore({ reducer: () => ({}) })}><StoreActivation /></Provider>);
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Activate store' })).toBeEnabled());
   fireEvent.change(screen.getByLabelText(/Store code/), { target: { value: 'STR-2' } });
   fireEvent.change(screen.getByLabelText(/Activation code/), { target: { value: 'expired-code' } });
   fireEvent.click(screen.getByRole('button', { name: 'Activate store' }));

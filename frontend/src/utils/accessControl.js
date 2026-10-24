@@ -166,6 +166,10 @@ export const getHomePathForUser = (user) => {
 
 export const canAccessPath = (pathname, user) => {
   const path = String(pathname || "").toLowerCase();
+  // A personal inbox is available without a business module grant, including during expiry.
+  if (path === "/notifications") return Boolean(user);
+  // Match the API's registered tenant-owner gate; it must work before any store exists.
+  if (path === "/store-activation") return isTenantAdmin(user);
   if (["/settings", "/settings/themes", "/settings/branding"].includes(path) && canManageThemes(user)) return true;
   // Company module entitlement gates every module path, regardless of RBAC.
   if (!isPathEntitled(user, path)) return false;

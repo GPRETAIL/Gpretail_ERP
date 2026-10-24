@@ -10,7 +10,7 @@ const MAX_TABS = 8;
 
 // Build a flat lookup: path -> name from navItems
 const buildPathNameMap = () => {
-  const map = {};
+  const map = { "/notifications": "Notifications", "/store-activation": "Store Activation", "/profile": "Profile" };
   for (const module of navItems) {
     if (module.path) map[module.path] = module.name;
     if (module.subItems) {

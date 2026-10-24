@@ -16,7 +16,7 @@ import SubscriptionDuePopup from "./SubscriptionDuePopup";
 import useSubscriptionStatus from "../hooks/useSubscriptionStatus";
 import useStoreNameMap, { resolveStoreName } from "../hooks/useStoreNameMap";
 import { ProtectedLayoutRouteRenderer } from "../routes/protectedLayoutRoutes";
-import { useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import PrintQueueTray from "./PrintQueueTray";
 
 const MOBILE_BREAKPOINT = 768;
@@ -179,7 +179,7 @@ const PrintStatusFooter = () => {
             />
           ) : null}
 
-          {authUser?.platform_company_code && <ButtonBase href="/store-activation" sx={{ fontSize: "inherit", mr: 2 }}>Store Activation</ButtonBase>}
+          {isTenantAdmin(authUser) && <ButtonBase component={Link} to="/store-activation" sx={{ fontSize: "inherit", mr: 2 }}>Store Activation</ButtonBase>}
           {["admin", "super_admin"].includes(userRole) && <ButtonBase onClick={() => window.open(companyPortalUrl, "_blank", "noopener,noreferrer")} sx={{ fontSize: "inherit" }}>My Subscription</ButtonBase>}
           <ButtonBase
             onClick={() => setExpanded((p) => !p)}
@@ -362,7 +362,7 @@ const MainLayout = () => {
             {isTenantAdmin(authUser) && authUser?.store_ids?.length === 0 && (
               <Alert severity="info" sx={{ borderRadius: 0 }}>
                 Tenant Administrator · {authUser.platform_company_code}. No stores are available in this deployment yet.
-                Create your stores in Vynerix Admin, then <ButtonBase href="/store-activation" sx={{ textDecoration: "underline" }}>refresh and activate stores</ButtonBase>.
+                Create your stores in Vynerix Admin, then <ButtonBase component={Link} to="/store-activation" sx={{ textDecoration: "underline" }}>refresh and activate stores</ButtonBase>.
                 Company management and Settings remain available. Data entry requires an activated store.
               </Alert>
             )}

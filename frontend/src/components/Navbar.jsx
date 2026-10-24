@@ -526,7 +526,7 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
 
             <HeaderNotifications
               onNavigate={navigateActiveTab}
-              onOpenInbox={(preferences) => navigate(preferences ? "/notifications?tab=preferences" : "/notifications")}
+              onOpenInbox={(preferences) => navigateActiveTab(preferences ? "/notifications?tab=preferences" : "/notifications")}
             />
 
             {/* USER DROPDOWN */}

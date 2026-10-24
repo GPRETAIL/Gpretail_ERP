@@ -97,7 +97,7 @@ function MobileWorkspace() {
   // Navigation state
   const [page, setPage] = useState("dashboard");
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(() => new URLSearchParams(window.location.search).get("notifications") === "1");
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSyncCenterOpen, setIsSyncCenterOpen] = useState(false);
