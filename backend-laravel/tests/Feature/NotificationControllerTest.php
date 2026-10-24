@@ -8,6 +8,7 @@ use App\Models\Store;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -48,6 +49,28 @@ class NotificationControllerTest extends TestCase
         return $this->getJson('/api/notifications');
     }
 
+    public function test_unread_filter_uses_personal_receipts_before_pagination_and_keeps_store_scope(): void
+    {
+        $unread = Notification::create(['store_id' => $this->store->id, 'type' => 'INFO', 'title' => 'Unread', 'message' => 'Test']);
+        $read = Notification::create(['store_id' => $this->store->id, 'type' => 'INFO', 'title' => 'Read', 'message' => 'Test']);
+        $legacyRead = Notification::create(['store_id' => $this->store->id, 'type' => 'INFO', 'title' => 'Legacy read', 'message' => 'Test', 'read_at' => now()]);
+        $otherStore = Store::create(['name' => 'Other Store', 'code' => 'STR-OTHER']);
+        Notification::create(['store_id' => $otherStore->id, 'type' => 'INFO', 'title' => 'Other store', 'message' => 'Private']);
+        $otherUser = User::create(['name' => 'Colleague', 'username' => 'colleague', 'email' => 'colleague@example.com', 'password' => bcrypt('secret123'), 'role' => 'admin', 'store_id' => $this->store->id]);
+        DB::table('notification_receipts')->insert([
+            ['notification_id' => $read->id, 'user_id' => $this->user->id, 'read_at' => now()],
+            ['notification_id' => $unread->id, 'user_id' => $otherUser->id, 'read_at' => now()],
+        ]);
+
+        $result = $this->getJson('/api/notifications?unread=1&page=1&limit=1')->assertOk();
+        $result->assertJsonPath('data.0.id', $unread->id)->assertJsonPath('pagination.has_next', false);
+        $this->assertCount(1, $result->json('data'));
+        $all = collect($this->getJson('/api/notifications?unread=0')->assertOk()->json('data'));
+        $this->assertTrue($all->contains('id', $read->id));
+        $this->assertTrue($all->contains('id', $legacyRead->id));
+        $this->getJson('/api/notifications?unread=invalid')->assertUnprocessable();
+    }
+
     public function test_dashboard_tasks_exclude_admin_broadcasts_and_messages_without_actions(): void
     {
         $task = Notification::create(['store_id' => $this->store->id, 'type' => 'LOW_STOCK_ITEM',
@@ -55,7 +78,7 @@ class NotificationControllerTest extends TestCase
         Notification::create(['store_id' => $this->store->id, 'type' => 'INFO', 'title' => 'FYI', 'message' => 'Notice']);
         $broadcast = Notification::create(['store_id' => $this->store->id, 'type' => 'PLATFORM_SERVICE',
             'title' => 'PAYMENT DUE', 'message' => 'Admin message', 'link' => '/notifications']);
-        DB::table('app_notifications')->where('id', $broadcast->id)->update(['platform_message_uuid' => (string) \Illuminate\Support\Str::uuid()]);
+        DB::table('app_notifications')->where('id', $broadcast->id)->update(['platform_message_uuid' => (string) Str::uuid()]);
         $rows = collect($this->getJson('/api/notifications?action_required=1')->assertOk()->json('data'));
         $this->assertTrue($rows->contains('id', $task->id));
         $this->assertFalse($rows->contains('title', 'PAYMENT DUE'));

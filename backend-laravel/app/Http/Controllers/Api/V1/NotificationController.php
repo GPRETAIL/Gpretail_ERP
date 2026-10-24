@@ -80,10 +80,17 @@ class NotificationController extends Controller
         // newest" is fixed product behavior, not a user-choosable column -- the same pattern
         // every other controller's "export all" branch relies on: a query already carrying its
         // own orders is left untouched by PaginationService::applySorting().
-        $request->validate(['category' => 'nullable|in:all,account,service,offer']);
+        $request->validate([
+            'category' => 'nullable|in:all,account,service,offer',
+            'unread' => 'nullable|boolean',
+        ]);
         $query = app(NotificationInbox::class)->query($request->user())
             ->orderByRaw('COALESCE(recipient.read_at, app_notifications.read_at) IS NOT NULL')
             ->orderByDesc('app_notifications.id');
+
+        if ($request->boolean('unread')) {
+            $query->whereNull('recipient.read_at')->whereNull('app_notifications.read_at');
+        }
 
         // Admin broadcasts are messages, not computed operational debts or tasks.
         if ($request->boolean('action_required')) {

@@ -5,7 +5,6 @@ import { EMPTY_ARRAY } from "../utils/emptyValues";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Bars3Icon,
-  BellIcon,
   BuildingStorefrontIcon,
   InboxIcon,
   Cog6ToothIcon,
@@ -58,6 +57,7 @@ import { useTabs } from "../context/TabContext";
 import { usePrintContext } from "../context/PrintContext";
 import { savePrinterRouting } from "../utils/localPrinterService";
 import CounterAssignmentDialog from "./CounterAssignmentDialog";
+import HeaderNotifications from "./HeaderNotifications";
 import { navItems, ownerNavItems } from "../utils/navItems";
 import { canSwitchStores, getVisibleNavItems } from "../utils/accessControl";
 
@@ -79,10 +79,6 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
   const { printer, sessionConnected, connectPrinter } = usePrintContext();
   const [imageError, setImageError] = useState(false);
   const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
-  const [notifAnchorEl, setNotifAnchorEl] = useState(null);
-  const [notifications, setNotifications] = useState([]);
-  const [unreadNotifCount, setUnreadNotifCount] = useState(0);
-  const [notifLoading, setNotifLoading] = useState(false);
   const [printerDialogOpen, setPrinterDialogOpen] = useState(false);
   const [counterDialogOpen, setCounterDialogOpen] = useState(false);
   const [savingPrinterAssignments, setSavingPrinterAssignments] = useState(false);
@@ -260,77 +256,6 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
       window.removeEventListener("sales-on-approval-updated", onApprovalUpdated);
     };
   }, [isApprovalInboxRoute]);
-
-  // Global bell badge - unlike Approval Inbox's count (only polled while on
-  // that page), this polls everywhere so the badge is always current.
-  useEffect(() => {
-    let active = true;
-
-    const loadUnreadCount = async () => {
-      try {
-        const res = await api.get("/notifications/unread-count");
-        if (!active) return;
-        const count = Number(res.data?.data?.count);
-        setUnreadNotifCount(Number.isFinite(count) ? count : 0);
-      } catch {
-        if (active) setUnreadNotifCount(0);
-      }
-    };
-
-    loadUnreadCount();
-    const intervalId = setInterval(loadUnreadCount, 30000);
-    window.addEventListener("vx-notifications-updated", loadUnreadCount);
-
-    return () => {
-      active = false;
-      clearInterval(intervalId);
-      window.removeEventListener("vx-notifications-updated", loadUnreadCount);
-    };
-  }, []);
-
-  const openNotifMenu = async (event) => {
-    setNotifAnchorEl(event.currentTarget);
-    setNotifLoading(true);
-    try {
-      const res = await api.get("/notifications");
-      const list = res.data?.data || [];
-      // Computed once here (at fetch time), not during render, per this
-      // project's React Compiler purity rule against Date.now() in JSX.
-      setNotifications(list.map((n) => ({ ...n, _timeAgo: notifTimeAgo(n.created_at) })));
-    } catch {
-      setNotifications([]);
-    } finally {
-      setNotifLoading(false);
-    }
-  };
-
-  const closeNotifMenu = () => setNotifAnchorEl(null);
-
-  const handleNotificationClick = async (notification) => {
-    closeNotifMenu();
-    try {
-      await api.post(`/notifications/${notification.id}/read`);
-    } catch {
-      // Navigation should still proceed even if marking read fails.
-    }
-    setUnreadNotifCount((prev) => Math.max(0, prev - (notification.read_at ? 0 : 1)));
-    if (notification.platform_message_uuid) {
-      navigate("/notifications");
-    } else if (notification.link) {
-      navigateActiveTab(notification.link);
-    }
-  };
-
-  const notifTimeAgo = (createdAt) => {
-    if (!createdAt) return "";
-    const diffMs = Date.now() - new Date(createdAt).getTime();
-    const days = Math.floor(diffMs / 86400000);
-    if (days >= 1) return `${days}d ago`;
-    const hours = Math.floor(diffMs / 3600000);
-    if (hours >= 1) return `${hours}h ago`;
-    const mins = Math.max(1, Math.floor(diffMs / 60000));
-    return `${mins}m ago`;
-  };
 
   const openPrinterDialog = async () => {
     closeMenu();
@@ -599,59 +524,10 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
               </IconButton>
             ) : null}
 
-            {/* 🔔 Notification Button */}
-            <IconButton size="small" onClick={openNotifMenu} title="Notifications" sx={{ color: "text.secondary" }}>
-              <Badge badgeContent={unreadNotifCount} color="error" showZero={false} overlap="circular">
-                <BellIcon style={{ width: 20, height: 20 }} />
-              </Badge>
-            </IconButton>
-            <Menu
-              anchorEl={notifAnchorEl}
-              open={Boolean(notifAnchorEl)}
-              onClose={closeNotifMenu}
-              anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-              transformOrigin={{ vertical: "top", horizontal: "right" }}
-              slotProps={{ paper: { sx: { width: 340, maxHeight: 420 } } }}
-            >
-              <Box sx={{ px: 2, py: 1, borderBottom: 1, borderColor: "divider" }}>
-                <Typography sx={{ fontSize: 13, fontWeight: 700 }}>Notifications</Typography>
-                <Button size="small" onClick={() => { closeNotifMenu(); navigate("/notifications"); }}>View inbox & preferences</Button>
-              </Box>
-              {notifLoading ? (
-                <MenuItem disabled>
-                  <ListItemText primary="Loading..." />
-                </MenuItem>
-              ) : notifications.length === 0 ? (
-                <MenuItem disabled>
-                  <ListItemText primary="No notifications" />
-                </MenuItem>
-              ) : (
-                notifications.map((n) => (
-                  <MenuItem
-                    key={n.id}
-                    onClick={() => handleNotificationClick(n)}
-                    sx={{ whiteSpace: "normal", alignItems: "flex-start", py: 1 }}
-                  >
-                    <Box sx={{ width: "100%" }}>
-                      <Box sx={{ display: "flex", justifyContent: "space-between", gap: 1 }}>
-                        <Typography sx={{ fontSize: 12.5, fontWeight: n.read_at ? 500 : 700 }}>
-                          {n.title}
-                        </Typography>
-                        {!n.read_at && (
-                          <Box sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: "error.main", mt: 0.6, flexShrink: 0 }} />
-                        )}
-                      </Box>
-                      <Typography sx={{ fontSize: 11.5, color: "text.secondary", mt: 0.25 }}>
-                        {n.message}
-                      </Typography>
-                      <Typography sx={{ fontSize: 10.5, color: "text.disabled", mt: 0.25 }}>
-                        {n._timeAgo}
-                      </Typography>
-                    </Box>
-                  </MenuItem>
-                ))
-              )}
-            </Menu>
+            <HeaderNotifications
+              onNavigate={navigateActiveTab}
+              onOpenInbox={(preferences) => navigate(preferences ? "/notifications?tab=preferences" : "/notifications")}
+            />
 
             {/* USER DROPDOWN */}
             <ButtonBase
