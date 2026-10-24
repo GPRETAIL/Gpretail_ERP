@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { lazy, Suspense, useState, useEffect } from "react";
 import {
   User,
   Users,
@@ -19,6 +19,7 @@ import {
   Play,
   Lock,
   Type,
+  Headphones,
 } from "lucide-react";
 import { Box, Typography } from "@mui/material";
 import api from "../../api/axios";
@@ -26,6 +27,8 @@ import SecurityPinSettings from "../security/SecurityPinSettings";
 import DisplayAccessibilitySettings from "./DisplayAccessibilitySettings";
 import { isRestrictedRole } from "../utils/rolePermissions";
 import { useMobileAccess } from "../utils/mobileAccessContext";
+
+const RemoteSupport = lazy(() => import("../../pages/settings/RemoteSupport"));
 
 const formatDateTime = (value) => {
   if (!value) return "--";
@@ -163,6 +166,7 @@ export default function SettingsScreen({ onLogout, onTriggerPwa, appLock, biomet
           Other
         </Typography>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+          <MenuItem icon={Headphones} title="Remote Support" subtitle="Request help for this phone, tablet or POS" onClick={() => setActiveModal("support")} />
           {!isRestricted && (
             <MenuItem icon={Database} title="Backup & Restore" onClick={() => setActiveModal("backup")} />
           )}
@@ -203,6 +207,9 @@ export default function SettingsScreen({ onLogout, onTriggerPwa, appLock, biomet
       </Box>
 
       {/* ─── MODALS & DRAWERS ─── */}
+      {activeModal === "support" && <SettingsDrawer title="Remote Support" onClose={() => setActiveModal(null)}>
+        <Suspense fallback={<Typography>Loading remote support…</Typography>}><RemoteSupport /></Suspense>
+      </SettingsDrawer>}
 
       {/* Business Profile Modal */}
       {activeModal === "profile" && (

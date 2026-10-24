@@ -180,7 +180,9 @@ class MobileAccess
         if (! $this->canLogin($user, $mobile ? 'mobile' : 'web')) {
             return ['code' => 'CLIENT_ACCESS_DENIED', 'message' => 'Your administrator has disabled this sign-in channel.'];
         }
-        if (in_array($controller, ['NotificationController', 'NotificationPreferenceController', 'PushSubscriptionController'], true)) {
+        if (in_array($controller, ['NotificationController', 'NotificationPreferenceController', 'PushSubscriptionController', 'RemoteSupportController'], true)) {
+            // Support is a shared account service, including when a mobile token is used on the website.
+            // Its controller still enforces the deployment/company and requester identity.
             return null;
         }
         if ($controller === 'ThemeWorkspaceController' || ($controller === 'SettingsController' && in_array($request->route()?->getActionMethod(), ['getTheme', 'updateTheme', 'listThemePresets', 'saveThemePreset', 'applyThemePreset', 'deleteThemePreset'], true))) {

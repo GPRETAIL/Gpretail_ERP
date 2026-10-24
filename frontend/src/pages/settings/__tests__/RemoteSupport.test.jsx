@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import RemoteSupport from "../RemoteSupport";
+import SettingsScreen from "../../../mobile/screens/SettingsScreen";
 import * as support from "../../../api/remoteSupportApi";
 
 vi.mock("../../../api/remoteSupportApi", () => ({
@@ -30,5 +31,32 @@ describe("Remote support", () => {
     expect(await screen.findByText("Printer setup")).toBeVisible();
     expect(screen.getByText(/Close the client to stop screen access/)).toBeVisible();
     expect(screen.queryByText("Support Engineers Online")).not.toBeInTheDocument();
+  });
+
+  it("offers Android instructions and sends the device type with the request", async () => {
+    support.requestRemoteSupport.mockResolvedValue({ id: 9, status: "waiting" });
+    render(<RemoteSupport />);
+    fireEvent.mouseDown(screen.getByLabelText("Device needing support"));
+    fireEvent.click(screen.getByRole("option", { name: "Android phone / tablet" }));
+    expect(screen.getByRole("link", { name: "Get Android app (official)" })).toHaveAttribute("href", "https://github.com/rustdesk/rustdesk/releases/latest");
+    expect(screen.queryByRole("button", { name: "Download (.exe)" })).not.toBeInTheDocument();
+    expect(screen.getByText("Screen Capture", { exact: true })).toBeVisible();
+    fireEvent.change(screen.getByLabelText(/Vynerix Client ID/), { target: { value: "123456789" } });
+    fireEvent.click(screen.getByRole("button", { name: "Request Remote Assistance" }));
+    await waitFor(() => expect(support.requestRemoteSupport).toHaveBeenCalledWith(expect.objectContaining({ client_id: "123456789", system_os: "Android" })));
+  });
+
+  it("makes support available to mobile staff through the shared page", async () => {
+    render(<SettingsScreen authUser={{ role: "cashier" }} />);
+    fireEvent.click(screen.getByText("Remote Support", { exact: true }));
+    expect(await screen.findByLabelText("Device needing support")).toBeVisible();
+    expect(support.getActiveRemoteSupportSession).toHaveBeenCalled();
+  });
+
+  it("does not claim that accepting a ticket proves a remote desktop connection", async () => {
+    support.getActiveRemoteSupportSession.mockResolvedValue({ id: 1, status: "connected", technician: { name: "Support Engineer" } });
+    render(<RemoteSupport />);
+    expect(await screen.findByText("Support Engineer Accepted Your Request")).toBeVisible();
+    expect(screen.queryByText("Support Engineer Connected — Session Active")).not.toBeInTheDocument();
   });
 });

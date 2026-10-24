@@ -77,6 +77,7 @@ export default function RemoteSupport() {
   const [category, setCategory] = useState("printing");
   const [priority, setPriority] = useState("normal");
   const [issueDescription, setIssueDescription] = useState("");
+  const [supportDevice, setSupportDevice] = useState(() => /Android/i.test(navigator.userAgent) ? "android" : "windows");
   const [requestLoading, setRequestLoading] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
 
@@ -206,6 +207,7 @@ export default function RemoteSupport() {
         category,
         priority,
         issue_description: issueDescription.trim() || undefined,
+        system_os: supportDevice === "android" ? "Android" : "Windows",
       });
       setClientPassword("");
       toast.success("Remote support request submitted! An engineer will connect shortly.");
@@ -330,7 +332,7 @@ export default function RemoteSupport() {
                   Active Support Status
                 </Typography>
                 <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                  {activeSession ? (activeSession.status === "connected" ? "Engineer Connected" : "Waiting in Queue") : "Ready to Request"}
+                  {activeSession ? (activeSession.status === "connected" ? "Request accepted" : "Waiting in Queue") : "Ready to Request"}
                 </Typography>
               </Box>
             </CardContent>
@@ -368,6 +370,10 @@ export default function RemoteSupport() {
               </Typography>
 
               <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+                <TextField select label="Device needing support" value={supportDevice} onChange={event => setSupportDevice(event.target.value)} size="small" fullWidth>
+                  <MenuItem value="windows">Windows computer</MenuItem>
+                  <MenuItem value="android">Android phone / tablet</MenuItem>
+                </TextField>
                 {/* Step 1 */}
                 <Box sx={{ display: "flex", gap: 2 }}>
                   <Box
@@ -392,10 +398,10 @@ export default function RemoteSupport() {
                       Download Remote Support Client
                     </Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-                      Signed RustDesk portable client (~25 MB). Run it only when you need support.
+                      {supportDevice === "android" ? "Get the Android APK from the official RustDesk releases. Choose the build for your device." : "Signed RustDesk portable client (~25 MB). Run it only when you need support."}
                     </Typography>
                     <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap", alignItems: "center" }}>
-                      <Button
+                      {supportDevice === "android" ? <Button component="a" href="https://github.com/rustdesk/rustdesk/releases/latest" target="_blank" rel="noopener noreferrer" variant="contained" size="small" startIcon={<Download size={16} />}>Get Android app (official)</Button> : <Button
                         variant="contained"
                         size="small"
                         startIcon={<Download size={16} />}
@@ -403,7 +409,7 @@ export default function RemoteSupport() {
                         sx={{ textTransform: "none", borderRadius: "6px", fontWeight: 700 }}
                       >
                         Download (.exe)
-                      </Button>
+                      </Button>}
 
                     </Box>
                   </Box>
@@ -433,8 +439,9 @@ export default function RemoteSupport() {
                       Open the Tool & Note Details
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Open the downloaded file. It displays your <strong>Client ID</strong> (e.g. <code>413 593 273</code>) and temporary <strong>Password</strong>.
+                      {supportDevice === "android" ? <>Open RustDesk, choose <strong>Share Screen</strong>, allow <strong>Screen Capture</strong> and start the service. Enable <strong>Input Control</strong> yourself in Android Accessibility settings only if you want the technician to control the device. Then copy the phone&apos;s <strong>Client ID</strong> and temporary <strong>Password</strong>.</> : <>Open the downloaded file. It displays your <strong>Client ID</strong> (e.g. <code>123 456 789</code>) and temporary <strong>Password</strong>.</>}
                     </Typography>
+                    {supportDevice === "android" && <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>Android may ask for screen-sharing approval again after restarting the app. Protected screens may appear blank. Stop sharing in RustDesk or Android to end access; closing this ERP page does not stop it.</Typography>}
                     <Typography variant="caption" sx={{ color: "primary.main", fontWeight: 600, display: "block", mt: 0.5 }}>
                       💡 Tip: Click the three dots [ ⋮ ] next to ID to copy your ID.
                     </Typography>
@@ -492,12 +499,12 @@ export default function RemoteSupport() {
                   >
                     <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
                       {activeSession.status === "connected"
-                        ? "Support Engineer Connected — Session Active"
+                        ? "Support Engineer Accepted Your Request"
                         : "Support Request Sent — Waiting in Support Queue"}
                     </Typography>
                     <Typography variant="body2">
                       {activeSession.status === "connected"
-                        ? `Connected with ${activeSession.technician?.name || "Vynerix Support Engineer"}. Assistance is currently in progress.`
+                        ? `${activeSession.technician?.name || "Vynerix Support Engineer"} is handling your request. Keep the remote app open; it will show the actual screen-sharing connection.`
                         : "Your request has been dispatched to Vynerix technical support. Please keep the Vynerix Remote Tool open."}
                     </Typography>
                   </Alert>
