@@ -32,6 +32,7 @@ describe("ERP fullscreen", () => {
   it("requests Escape-only lock and releases it after browser fullscreen exit", async () => {
     const { result } = renderHook(() => useErpFullscreen());
     await act(() => result.current.toggleFullscreen());
+    expect(document.documentElement.requestFullscreen).toHaveBeenCalledWith({ keyboardLock: "browser", navigationUI: "hide" });
     expect(lock).toHaveBeenCalledWith(["Escape"]);
     expect(result.current.escapeLocked).toBe(true);
     await act(() => document.exitFullscreen());
@@ -41,12 +42,23 @@ describe("ERP fullscreen", () => {
   });
 
   it("keeps normal fullscreen when keyboard permission is denied", async () => {
-    lock.mockRejectedValue(new Error("Denied"));
+    lock.mockRejectedValueOnce(new Error("Denied"));
     const { result } = renderHook(() => useErpFullscreen());
     await act(() => result.current.toggleFullscreen());
     expect(result.current.isFullscreen).toBe(true);
     expect(result.current.escapeLocked).toBe(false);
+    expect(result.current.lockMessage).toMatch(/Allow keyboard lock/);
+    await act(() => result.current.enableEscapeLock());
+    expect(result.current.escapeLocked).toBe(true);
+    expect(result.current.lockMessage).toBe("");
     await act(() => result.current.toggleFullscreen());
     expect(result.current.isFullscreen).toBe(false);
+  });
+  it("explains the fallback when keyboard lock is unavailable", async () => {
+    vi.stubGlobal("navigator", Object.assign(Object.create(navigator), { keyboard: undefined }));
+    const { result } = renderHook(() => useErpFullscreen());
+    await act(() => result.current.toggleFullscreen());
+    expect(result.current.lockMessage).toMatch(/browser does not expose/);
+    expect(result.current.escapeLocked).toBe(false);
   });
 });

@@ -107,9 +107,12 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
   }, [isOwner, user]);
   const canSwitchStore = canSwitchStores(user);
 
-  const { isFullscreen, escapeLocked, changing: fullscreenChanging, toggleFullscreen } = useErpFullscreen(
+  const { isFullscreen, escapeLocked, lockMessage, enableEscapeLock, changing: fullscreenChanging, toggleFullscreen } = useErpFullscreen(
     () => toast.error("Fullscreen isn't available in this browser/tab."),
   );
+  useEffect(() => {
+    if (lockMessage) toast.info(lockMessage, { toastId: "fullscreen-keyboard-permission" });
+  }, [lockMessage]);
 
   const handleLogout = async () => {
     await dispatch(logoutUser());
@@ -577,6 +580,11 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
                 <ArrowsPointingOutIcon style={{ width: 20, height: 20 }} />
               )}
             </IconButton>
+
+              {isFullscreen ? (
+                escapeLocked ? <Typography variant="caption" sx={{ color: "text.secondary", whiteSpace: "nowrap" }}>Hold Esc to exit</Typography>
+                  : <Button size="small" disabled={fullscreenChanging} onClick={enableEscapeLock} title={lockMessage || "Allow keyboard permission for hold-to-exit fullscreen"}>Enable hold Esc exit</Button>
+              ) : null}
 
             {!isOwner ? (
               <IconButton

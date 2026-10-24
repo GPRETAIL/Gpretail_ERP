@@ -226,6 +226,7 @@ export default function RemoteSupport() {
       await cancelRemoteSupportSession(activeSession.id);
       setActiveSession(null);
       toast.info("Support request cancelled");
+      loadActiveSession();
       loadHistory();
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to cancel request");
@@ -240,7 +241,8 @@ export default function RemoteSupport() {
     try {
       await endRemoteSupportSession(activeSession.id, "Customer closed session");
       setActiveSession(null);
-      toast.info("Remote support session ended");
+      toast.info("Support request closed. Close the remote client to stop screen sharing.");
+      loadActiveSession();
       loadHistory();
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to end session");
@@ -574,7 +576,7 @@ export default function RemoteSupport() {
                         onClick={handleEndSession}
                         sx={{ borderRadius: "8px", textTransform: "none" }}
                       >
-                        End Support Session
+                        Close support request
                       </Button>
                     )}
                     <Button
@@ -687,7 +689,7 @@ export default function RemoteSupport() {
                       <TextField
                         fullWidth
                         label="Store / Contact Person Name"
-                        placeholder="e.g. Balaji Textiles - Cashier"
+                        placeholder="e.g. Store name - Contact person"
                         value={customerName}
                         onChange={(e) => setCustomerName(e.target.value)}
                       />

@@ -5,11 +5,6 @@ export const getRemoteSupportConfig = async () => {
   return res.data?.data || {};
 };
 
-export const updateRemoteSupportConfig = async (payload) => {
-  const res = await api.put("/remote-support/config", payload);
-  return res.data?.data || {};
-};
-
 export const requestRemoteSupport = async (payload) => {
   const res = await api.post("/remote-support/request", payload);
   return res.data?.data || {};
@@ -28,11 +23,6 @@ export const cancelRemoteSupportSession = async (id) => {
 export const getRemoteSupportSessions = async (params = {}) => {
   const res = await api.get("/remote-support/sessions", { params });
   return res.data || {};
-};
-
-export const connectRemoteSupportSession = async (id) => {
-  const res = await api.post(`/remote-support/${id}/connect`);
-  return res.data?.data || {};
 };
 
 export const endRemoteSupportSession = async (id, notes = "") => {
