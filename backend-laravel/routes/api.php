@@ -39,6 +39,7 @@ use App\Http\Controllers\Api\V1\ProductPurchaseAnalyticsController;
 use App\Http\Controllers\Api\V1\PurchaseInvoiceController;
 use App\Http\Controllers\Api\V1\PurchaseReturnController;
 use App\Http\Controllers\Api\V1\PushSubscriptionController;
+use App\Http\Controllers\Api\V1\RemoteSupportController;
 use App\Http\Controllers\Api\V1\SalesApprovalController;
 use App\Http\Controllers\Api\V1\SalesDashboardController;
 use App\Http\Controllers\Api\V1\SalesReportController;
@@ -506,6 +507,16 @@ $registerAppRoutes = function () {
     Route::delete('user-access/{id}', [UserAccessController::class, 'destroy']);
     Route::get('user-table-preferences/{tableKey}', [UserAccessController::class, 'getTablePreferences']);
     Route::put('user-table-preferences/{tableKey}', [UserAccessController::class, 'updateTablePreferences']);
+
+    // Remote Support (RustDesk)
+    Route::prefix('remote-support')->group(function () {
+        Route::get('config', [RemoteSupportController::class, 'config']);
+        Route::post('request', [RemoteSupportController::class, 'requestSession']);
+        Route::get('active', [RemoteSupportController::class, 'activeSession']);
+        Route::post('{id}/cancel', [RemoteSupportController::class, 'cancelSession']);
+        Route::get('sessions', [RemoteSupportController::class, 'index']);
+        Route::post('{id}/end', [RemoteSupportController::class, 'endSession']);
+    });
 };
 
 // Register directly on /api/...

@@ -1,4 +1,5 @@
 import { refreshStoreSelection } from "../utils/storeSelection";
+import useErpFullscreen from "../hooks/useErpFullscreen";
 import { EMPTY_ARRAY } from "../utils/emptyValues";
 // Navbar.js
 import React, { useCallback, useEffect, useMemo, useState } from "react";
@@ -106,23 +107,9 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
   }, [isOwner, user]);
   const canSwitchStore = canSwitchStores(user);
 
-  // Tracks the real browser fullscreen state (not just "did we click the button") so the icon
-  // stays correct if the user exits with Esc or a browser control instead of clicking it again.
-  const [isFullscreen, setIsFullscreen] = useState(() => Boolean(document.fullscreenElement));
-  useEffect(() => {
-    const onFullscreenChange = () => setIsFullscreen(Boolean(document.fullscreenElement));
-    document.addEventListener("fullscreenchange", onFullscreenChange);
-    return () => document.removeEventListener("fullscreenchange", onFullscreenChange);
-  }, []);
-  const toggleFullscreen = () => {
-    if (document.fullscreenElement) {
-      document.exitFullscreen?.();
-    } else {
-      document.documentElement.requestFullscreen?.().catch(() => {
-        toast.error("Fullscreen isn't available in this browser/tab.");
-      });
-    }
-  };
+  const { isFullscreen, escapeLocked, changing: fullscreenChanging, toggleFullscreen } = useErpFullscreen(
+    () => toast.error("Fullscreen isn't available in this browser/tab."),
+  );
 
   const handleLogout = async () => {
     await dispatch(logoutUser());
@@ -580,7 +567,8 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
             <IconButton
               size="small"
               onClick={toggleFullscreen}
-              title={isFullscreen ? "Exit full screen" : "Full screen"}
+              disabled={fullscreenChanging}
+              title={isFullscreen ? (escapeLocked ? "Exit full screen (hold Esc for 2 seconds)" : "Exit full screen") : "Full screen"}
               sx={{ color: "text.secondary" }}
             >
               {isFullscreen ? (

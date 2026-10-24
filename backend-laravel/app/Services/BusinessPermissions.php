@@ -17,7 +17,7 @@ class BusinessPermissions
     {
         $controller = class_basename($request->route()?->getControllerClass() ?? '');
         $action = $request->route()?->getActionMethod() ?? '';
-        if ($controller === 'MobileAccessController') {
+        if (in_array($controller, ['MobileAccessController', 'RemoteSupportController'], true)) {
             return 'personal';
         }
         $read = in_array($request->method(), ['GET', 'HEAD', 'OPTIONS'], true);

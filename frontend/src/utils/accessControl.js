@@ -193,7 +193,7 @@ export const canAccessPath = (pathname, user) => {
 
   const cap = getCapability(user);
 
-  if (path === "/profile") return true;
+  if (path === "/profile" || path === "/remote-support" || path === "/settings/remote-support") return true;
   if (path.startsWith("/owner")) return cap.isOwner;
   if (cap.isOwner) return false;
   if (path === "/" || path === "/dashboard") return !user?.module_permissions || user.module_permissions.dashboard?.view === true;

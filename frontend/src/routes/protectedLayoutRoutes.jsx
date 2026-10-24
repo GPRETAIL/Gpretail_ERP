@@ -39,6 +39,7 @@ const Themes = lazy(() => import("../pages/settings/Themes"));
 const ConfigureLocalServer = lazy(() => import("../pages/settings/ConfigureLocalServer"));
 const PrintingConfiguration = lazy(() => import("../pages/settings/PrintingConfiguration"));
 const BackupCenter = lazy(() => import("../pages/settings/BackupCenter"));
+const RemoteSupport = lazy(() => import("../pages/settings/RemoteSupport"));
 const UserAccess = lazy(() => import("../pages/settings/UserAccess"));
 const UserAccessHome = lazy(() => import("../pages/settings/UserAccessHome"));
 const WarehouseDashboard = lazy(() => import("../pages/warehouse/WarehouseDashboard"));
@@ -131,6 +132,8 @@ export const protectedLayoutRoutes = [
   { path: "/settings/configure-local-server", render: () => <ConfigureLocalServer /> },
   { path: "/settings/printing-configuration", render: () => <PrintingConfiguration /> },
   { path: "/settings/backup", render: () => <BackupCenter /> },
+  { path: "/settings/remote-support", render: () => <RemoteSupport /> },
+  { path: "/remote-support", render: () => <RemoteSupport /> },
   { path: "/user-access", render: () => <UserAccessHome /> },
   { path: "/user-access/:entity", render: () => <UserAccess /> },
   { path: "/user-access/:entity/create", render: () => <UserAccess /> },

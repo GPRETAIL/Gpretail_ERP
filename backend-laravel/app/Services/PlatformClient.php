@@ -66,6 +66,23 @@ class PlatformClient
         return $this->parse($response);
     }
 
+    public function remoteSupport(PlatformActivation $activation, string $operation, array $payload): array
+    {
+        if ($error = $this->preflight((string) $activation->company_code, $activation->sync_token, true)) {
+            return $error;
+        }
+        if (! in_array($operation, ['request', 'active', 'sessions', 'cancel', 'end'], true)) {
+            return ['ok' => false, 'status' => 422, 'data' => [], 'message' => 'Invalid support operation.'];
+        }
+        try {
+            return $this->parse(Http::timeout(10)->withToken($activation->sync_token)->withoutRedirecting()
+                ->post($this->baseUrl().'/api/v1/tenant/'.$activation->company_code.'/remote-support/'.$operation,
+                    array_merge($payload, ['deployment_id' => $activation->deployment_id])));
+        } catch (ConnectionException $exception) {
+            return ['ok' => false, 'status' => 0, 'data' => [], 'message' => 'Could not reach Vynerix Support. Please retry.'];
+        }
+    }
+
     private function baseUrl(): string
     {
         return rtrim((string) config('platform.base_url'), '/');

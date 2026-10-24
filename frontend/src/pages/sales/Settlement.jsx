@@ -133,7 +133,7 @@ const Settlement = () => {
     });
     return res.data?.data?.settlementNo || "";
   }, [companyId]);
-  const { data: previewNumber, reload: reloadSettlementPreview } = useAsyncQuery(fetchPreview, { enabled: Boolean(companyId) && !showSearchPage });
+  const { data: previewNumber, error: previewError, loading: previewLoading, reload: reloadSettlementPreview } = useAsyncQuery(fetchPreview, { enabled: Boolean(companyId) && !showSearchPage });
   const previewSettlementNo = !showSearchPage ? previewNumber || "" : "";
 
   const fetchPaymentOptions = useCallback(async ({ signal }) => {
@@ -754,7 +754,7 @@ const Settlement = () => {
         <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 1, fontSize: 12.25 }}>
           <Box sx={{ ...SETTLEMENT_SUMMARY_ROW_SX, gridColumn: { md: "span 2" } }}>
             <Box component="span" sx={{ color: "text.secondary" }}>Next settlement no.</Box>
-            <Box component="span" sx={{ fontWeight: 600, fontFamily: "monospace", letterSpacing: "-0.01em" }}>{previewSettlementNo || "—"}</Box>
+            {previewError ? <Button size="small" onClick={() => reloadSettlementPreview()}>Retry number</Button> : <Box component="span" sx={{ fontWeight: 600, fontFamily: "monospace", letterSpacing: "-0.01em" }}>{previewLoading ? "Loading…" : previewSettlementNo || "—"}</Box>}
           </Box>
           <Box sx={SETTLEMENT_SUMMARY_ROW_SX}>
             <Box component="span" sx={{ color: "text.secondary" }}>Date</Box>

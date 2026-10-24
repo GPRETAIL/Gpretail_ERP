@@ -9,7 +9,7 @@ import { TransferActivityProvider, useTransferActivity } from "../context/Transf
 import { handleEnterKeyNavigation } from "../utils/enterToNextField";
 import { usePrintContext } from "../context/PrintContext";
 import { useSyncStatus } from "../context/SyncStatusContext";
-import { Printer, Store, Server, Cloud, X, Loader2, CheckCircle2, AlertCircle, Upload, Download } from "lucide-react";
+import { Printer, Store, Server, Cloud, X, Loader2, CheckCircle2, AlertCircle, Upload, Download, Headphones } from "lucide-react";
 import { Alert, Box, ButtonBase, Chip, Stack, Typography } from "@mui/material";
 import { isTenantAdmin, canSwitchStores } from "../utils/accessControl";
 import SubscriptionDuePopup from "./SubscriptionDuePopup";
@@ -258,6 +258,42 @@ const PrintStatusFooter = () => {
               )}
             </ButtonBase>
           ) : null}
+
+          <ButtonBase
+            onClick={() => navigateActiveTab("/settings/remote-support")}
+            title="Request Instant Remote Screen Share & Technical Assistance"
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 0.75,
+              fontSize: "inherit",
+              fontWeight: 600,
+              color: "primary.main",
+              bgcolor: (theme) =>
+                theme.palette.mode === "dark"
+                  ? "rgba(59, 130, 246, 0.15)"
+                  : "rgba(37, 99, 235, 0.08)",
+              px: 1.25,
+              py: 0.35,
+              borderRadius: "6px",
+              border: "1px solid",
+              borderColor: (theme) =>
+                theme.palette.mode === "dark"
+                  ? "rgba(59, 130, 246, 0.3)"
+                  : "rgba(37, 99, 235, 0.25)",
+              "&:hover": {
+                bgcolor: "primary.main",
+                color: "common.white",
+                borderColor: "primary.main",
+              },
+              transition: "all 0.15s ease",
+            }}
+          >
+            <Headphones size={13} style={{ flexShrink: 0 }} />
+            <Typography component="span" sx={{ fontSize: "inherit", fontWeight: "inherit", color: "inherit" }}>
+              Help & Support
+            </Typography>
+          </ButtonBase>
 
           <Typography component="span" sx={{ fontSize: "inherit" }}>
             Customer Care <b>+91 123456789</b>

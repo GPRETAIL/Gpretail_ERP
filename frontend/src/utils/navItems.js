@@ -23,6 +23,7 @@ import {
   ClockIcon,
   SwatchIcon,
   PrinterIcon,
+  ComputerDesktopIcon,
 } from "@heroicons/react/24/outline";
 
 // Note: Paths are placeholders (e.g., /module/item-name)
@@ -598,6 +599,11 @@ export const navItems = [
         name: "Backup Center",
         path: "/settings/backup",
         icon: ArchiveBoxIcon,
+      },
+      {
+        name: "Remote Support",
+        path: "/settings/remote-support",
+        icon: ComputerDesktopIcon,
       },
       {
         name: "Margin Controller",

@@ -28,6 +28,7 @@ class CaptureSyncOutbox
      */
     private const EXCLUDED_PATH_FRAGMENTS = [
         'auth/',
+        'remote-support/',
         'sync/',
         'local-server-config',
         'connector/',
