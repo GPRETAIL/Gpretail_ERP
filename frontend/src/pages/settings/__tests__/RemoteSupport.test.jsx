@@ -58,5 +58,7 @@ describe("Remote support", () => {
     render(<RemoteSupport />);
     expect(await screen.findByText("Support Engineer Accepted Your Request")).toBeVisible();
     expect(screen.queryByText("Support Engineer Connected — Session Active")).not.toBeInTheDocument();
+    expect(screen.getByText("ACCEPTED", { exact: true })).toBeVisible();
+    expect(screen.queryByText("CONNECTED", { exact: true })).not.toBeInTheDocument();
   });
 });

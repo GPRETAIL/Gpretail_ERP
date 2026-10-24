@@ -545,7 +545,7 @@ export default function RemoteSupport() {
                         <Box sx={{ mt: 0.5 }}>
                           <Chip
                             size="small"
-                            label={activeSession.status.toUpperCase()}
+                            label={activeSession.status === "connected" ? "ACCEPTED" : activeSession.status.toUpperCase()}
                             color={activeSession.status === "connected" ? "success" : "warning"}
                             sx={{ fontWeight: 700 }}
                           />
@@ -888,7 +888,7 @@ export default function RemoteSupport() {
                         <TableCell>
                           <Chip
                             size="small"
-                            label={sess.status.toUpperCase()}
+                            label={isConnected ? "ACCEPTED" : sess.status.toUpperCase()}
                             color={isConnected ? "success" : isWaiting ? "warning" : isEnded ? "default" : "error"}
                             sx={{ fontWeight: 700, fontSize: "0.75rem" }}
                           />
