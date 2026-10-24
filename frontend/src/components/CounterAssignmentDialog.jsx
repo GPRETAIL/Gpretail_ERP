@@ -21,14 +21,14 @@ export default function CounterAssignmentDialog({ open, onClose, onAssigned }) {
   const [savingCounterAssignment, setSavingCounterAssignment] = useState(false);
 
   const role = String(user?.role || "").trim().toLowerCase();
-  const companyId = sessionStorage.getItem("activeStoreId") || user?.company_id || user?.companyId;
+  const companyId = sessionStorage.getItem("activeStoreId") || (!user?.store_selection_required ? user?.company_id || user?.companyId || user?.store_id : null);
   const fetchCounters = useCallback(async ({ signal }) => {
     const restricted = role === "admin" || role === "user";
-    const response = await api.get("/configurations/counter", { params: restricted && companyId ? { company_id: companyId } : undefined, signal });
+    const response = await api.get("/configurations/counter", { storeScopeId: companyId, params: restricted && companyId ? { company_id: companyId } : undefined, signal });
     const rows = Array.isArray(response.data?.data) ? response.data.data : [];
     return rows.map(row => ({ value: String(row.id), label: String(row.name || "").trim() || `Counter ${row.id}` }));
   }, [role, companyId]);
-  const { data, loading: loadingCounters, error } = useAsyncQuery(fetchCounters, { enabled: open });
+  const { data, loading: loadingCounters, error } = useAsyncQuery(fetchCounters, { enabled: open && Boolean(companyId) });
   const counterOptions = data || EMPTY_ARRAY;
   const dialogKey = JSON.stringify([open, user?.counter_id, role, companyId]);
   const [previousDialogKey, setPreviousDialogKey] = useState(dialogKey);
@@ -43,13 +43,14 @@ export default function CounterAssignmentDialog({ open, onClose, onAssigned }) {
   if (!open) return null;
 
   const handleSave = async () => {
+    if (!companyId) { toast.error("Choose one store before assigning a counter."); return; }
     if (!selectedCounterId) {
       toast.error("Counter is required");
       return;
     }
     setSavingCounterAssignment(true);
     try {
-      const res = await api.post("/auth/counter", { counterId: selectedCounterId });
+      const res = await api.post("/auth/counter", { counterId: selectedCounterId }, { storeScopeId: companyId });
       const payload = res.data?.data;
       const updatedUser = payload?.user || payload;
       const refreshedToken = payload?.token || token;
@@ -85,6 +86,10 @@ export default function CounterAssignmentDialog({ open, onClose, onAssigned }) {
         </Box>
 
         <Box sx={{ px: 2.5, py: 2 }}>
+          {!companyId && <Box sx={{ mb: 2 }}>
+            <Typography sx={{ fontSize: 13, mb: 1 }}>Choose one store before assigning a counter. All Stores is for combined viewing.</Typography>
+            <Button variant="outlined" onClick={() => { onClose?.(); window.dispatchEvent(new Event("vx:open-store-switch")); }}>Choose store</Button>
+          </Box>}
           {loadingCounters ? (
             <Box sx={{ borderRadius: 2, border: "1px solid", borderColor: "divider", bgcolor: "action.hover", px: 2, py: 1.5, fontSize: 14, color: "text.secondary" }}>
               Loading counters...
@@ -119,7 +124,7 @@ export default function CounterAssignmentDialog({ open, onClose, onAssigned }) {
           </Button>
           <Button
             onClick={handleSave}
-            disabled={loadingCounters || savingCounterAssignment}
+            disabled={!companyId || !selectedCounterId || loadingCounters || savingCounterAssignment}
             variant="contained"
             sx={{ textTransform: "none" }}
           >
