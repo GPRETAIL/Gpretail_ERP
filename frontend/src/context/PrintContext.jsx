@@ -278,6 +278,7 @@ export const PrintProvider = ({ children }) => {
       }
 
       processingRef.current = false;
+      setJobs(previous => [...previous]);
       setTimeout(cleanupJobs, 10000);
     },
     [authUser, cleanupJobs, updateJob]
@@ -311,19 +312,17 @@ export const PrintProvider = ({ children }) => {
         createdAt: Date.now(),
       };
 
-      setJobs((prev) => {
-        const next = [...prev, job];
-        const queued = next.filter((j) => j.status === STATUS.QUEUED);
-        if (!processingRef.current && queued.length > 0) {
-          setTimeout(() => processQueue(queued), 0);
-        }
-        return next;
-      });
+      setJobs(previous => [...previous, job]);
 
       return job.id;
     },
-    [processQueue]
+    []
   );
+
+  useEffect(() => {
+    const queued = jobs.filter(job => job.status === STATUS.QUEUED);
+    if (!processingRef.current && queued.length) void processQueue(queued);
+  }, [jobs, processQueue]);
 
   const printReceipt = useCallback(
     async (

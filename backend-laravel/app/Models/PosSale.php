@@ -9,11 +9,38 @@ class PosSale extends Model
 {
     use HasFactory;
 
-    protected $appends = ['bill_no', 'net_amount', 'remaining_amount', 'settlement_amount', 'customer_name', 'settlement_no', 'user_name'];
+    protected $appends = ['bill_no', 'net_amount', 'remaining_amount', 'settlement_amount', 'customer_name', 'settlement_no', 'user_name', 'sale_type', 'amount'];
 
     public function getBillNoAttribute(): string
     {
-        return (string) $this->invoice_no;
+        $number = (string) $this->invoice_no;
+
+        return preg_match('/^INV-.+-(\d{8})-(C?\d+)$/', $number, $parts)
+            ? substr($parts[1], 2).'-'.$parts[2] : $number;
+    }
+
+    public function getSaleTypeAttribute(): string
+    {
+        return $this->is_credit ? 'Credit' : 'POS Sale';
+    }
+
+    public function getAmountAttribute(): float
+    {
+        return (float) $this->grand_total;
+    }
+
+    public function scopeBillNumber($query, string $number)
+    {
+        $number = trim($number);
+
+        return $query->where(function ($query) use ($number) {
+            $query->where('invoice_no', $number);
+            if (preg_match('/^(\d{6})-(C?\d+)$/i', $number, $parts)) {
+                $query->orWhere('invoice_no', 'like', '%-20'.$parts[1].'-'.strtoupper($parts[2]));
+            } elseif (preg_match('/^(?:SB\/)?(\d+)$/i', $number, $parts)) {
+                $query->orWhere('id', (int) $parts[1]);
+            }
+        });
     }
 
     public function getNetAmountAttribute(): float

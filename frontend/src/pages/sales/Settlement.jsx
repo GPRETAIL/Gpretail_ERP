@@ -79,7 +79,7 @@ const SETTLEMENT_FIELD_LABEL_SX = { fontSize: FIELD_FONT_SIZE, fontWeight: 500, 
 const Settlement = () => {
   const navigate = useNavigate();
   const authUser = useSelector((state) => state.auth.user);
-  const companyId = authUser?.company_id;
+  const companyId = sessionStorage.getItem("activeStoreId") || authUser?.company_id || authUser?.store_id;
   const { printHtml: queuePrintHtml } = usePrintContext();
 
   const [now, setNow] = useState(new Date());
@@ -133,7 +133,7 @@ const Settlement = () => {
     });
     return res.data?.data?.settlementNo || "";
   }, [companyId]);
-  const { data: previewNumber } = useAsyncQuery(fetchPreview, { enabled: Boolean(companyId) && !showSearchPage });
+  const { data: previewNumber, reload: reloadSettlementPreview } = useAsyncQuery(fetchPreview, { enabled: Boolean(companyId) && !showSearchPage });
   const previewSettlementNo = !showSearchPage ? previewNumber || "" : "";
 
   const fetchPaymentOptions = useCallback(async ({ signal }) => {
@@ -466,6 +466,7 @@ const Settlement = () => {
       }
       setSelectedBills([]);
       resetPayment();
+      reloadSettlementPreview();
       await loadUnpaidBills(searchTerm);
     } catch (err) {
       toast.error(err?.response?.data?.message || "Failed to save settlement");
@@ -586,7 +587,7 @@ const Settlement = () => {
           const no = String(row?.settlement_no || "").trim();
           return (
             <Box component="span" sx={{ fontFamily: "monospace", fontSize: 11, letterSpacing: "-0.01em", color: "text.primary" }}>
-              {no || "—"}
+              {no || (["PAID", "COMPLETED"].includes(String(row?.status).toUpperCase()) && toNum(row?.remaining_amount, 0) <= 0 ? "Paid at checkout" : "Pending")}
             </Box>
           );
         },
@@ -604,7 +605,7 @@ const Settlement = () => {
       {
         key: "sale_type",
         label: "Sale Type",
-        valueGetter: (row) => row.sale_type || "-",
+        valueGetter: (row) => row.sale_type || (row.is_credit ? "Credit" : "POS Sale"),
       },
       {
         key: "user_name",
@@ -663,7 +664,7 @@ const Settlement = () => {
       {
         key: "settlement_amount",
         label: "Amount",
-        valueGetter: (row) => toNum((row.settlement_amount ?? row.remaining_amount ?? row.amount) || 0),
+        valueGetter: (row) => toNum(row.amount ?? row.grand_total ?? row.net_amount, 0),
         render: (value) => <Box sx={{ textAlign: "right" }}>{formatMoney(value || 0)}</Box>,
       },
       {

@@ -251,9 +251,9 @@ class PosReturnController extends Controller
     public function sourceBill(Request $request)
     {
         $billNo = $request->input('billNo') ?? $request->input('bill_no') ?? $request->input('invoice_no');
-        $id = (int) preg_replace('/^sb\//i', '', trim((string) $billNo));
-
-        $sale = PosSale::with(['items.product', 'customer'])->find($id);
+        $matches = PosSale::with(['items.product', 'customer'])->billNumber((string) $billNo)->get();
+        abort_if($matches->count() > 1, 422, 'Select a store before looking up this bill number.');
+        $sale = $matches->first();
 
         if (! $sale) {
             return response()->json([
@@ -291,7 +291,7 @@ class PosReturnController extends Controller
             'success' => true,
             'data' => [
                 'id' => $sale->id,
-                'billNo' => $sale->id,
+                'billNo' => $sale->bill_no,
                 'invoiceNo' => $sale->invoice_no,
                 'customerId' => $sale->customer_id,
                 'customerName' => $sale->customer?->name,

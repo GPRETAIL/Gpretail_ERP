@@ -12,6 +12,7 @@ use App\Models\Store;
 use App\Models\SystemConfiguration;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -87,7 +88,7 @@ class PosCheckoutSettlementTest extends TestCase
         $this->assertEquals($this->counter->id, $this->user->fresh()->counter_id);
         $this->postJson('/api/auth/counter', ['counterId' => $this->counter->id])->assertOk()->assertJsonPath('data.user.counter_name', 'Till One');
         $foreignId = $this->sale('unsettled')->assertCreated()->json('data.id');
-        \Illuminate\Support\Facades\DB::table('pos_sales')->where('id', $foreignId)->update(['store_id' => $other->id]);
+        DB::table('pos_sales')->where('id', $foreignId)->update(['store_id' => $other->id]);
         $this->postJson('/api/settlements', ['action' => 'settle', 'billIds' => [$foreignId], 'cashAmount' => 100])->assertUnprocessable();
         $this->assertDatabaseHas('pos_sales', ['id' => $foreignId, 'status' => 'UNSETTLED']);
         $this->assertSame(0, Settlement::count());
@@ -100,5 +101,47 @@ class PosCheckoutSettlementTest extends TestCase
         $this->assertEquals(100, $customer->fresh()->current_balance);
         $this->postJson('/api/settlements', ['action' => 'settle', 'billIds' => [$id], 'cashAmount' => 100])->assertCreated();
         $this->assertEquals(0, $customer->fresh()->current_balance);
+    }
+
+    public function test_short_bill_number_lookup_and_settlement_list_fields_remain_consistent(): void
+    {
+        $created = $this->sale('unsettled')->assertCreated();
+        $bill = $created->json('data.bill_no');
+        $id = $created->json('data.id');
+        $this->assertMatchesRegularExpression('/^\d{6}-C?\d{4,}$/', $bill);
+        $this->getJson('/api/settlements/bill/'.$bill)->assertOk()->assertJsonPath('data.id', $id)->assertJsonPath('data.sale_type', 'POS Sale')->assertJsonPath('data.amount', 100);
+        $this->getJson('/api/pos-sales?search='.$bill)->assertOk()->assertJsonPath('data.0.id', $id);
+        $this->getJson('/api/pos-old-sales/lookup-sale?bill_no='.$bill)->assertOk()->assertJsonPath('data.id', $id);
+        $this->getJson('/api/pos-returns/source-bill?billNo='.$bill)->assertOk()->assertJsonPath('data.id', $id)->assertJsonPath('data.billNo', $bill);
+        $settlementNo = $this->postJson('/api/settlements', ['action' => 'settle', 'billIds' => [$id], 'cashAmount' => 100])->assertCreated()->json('data.settlement_no');
+        $this->getJson('/api/settlements/unpaid-bills?status=all')->assertOk()->assertJsonPath('data.0.settlement_no', $settlementNo)->assertJsonPath('data.0.amount', 100)->assertJsonPath('data.0.remaining_amount', 0);
+        $this->assertNotEmpty($this->getJson('/api/settlements/next-settlement-number')->assertOk()->json('data.settlementNo'));
+    }
+
+    public function test_cloud_short_bill_marker_preserves_independent_offline_numbering(): void
+    {
+        $sale = new PosSale(['invoice_no' => 'INV-STR-ABC-20261024-C0001']);
+        $this->assertSame('261024-C0001', $sale->bill_no);
+        $sale->invoice_no = 'INV-STR-ABC-20261024-0001';
+        $this->assertSame('261024-0001', $sale->bill_no);
+        $sale->invoice_no = 'SB/29';
+        $this->assertSame('SB/29', $sale->bill_no);
+    }
+
+    public function test_combined_store_scope_never_guesses_between_matching_short_bill_numbers(): void
+    {
+        $created = $this->sale('unsettled')->assertCreated();
+        $bill = $created->json('data.bill_no');
+        $other = Store::create(['name' => 'Second', 'code' => 'SECOND', 'is_active' => true]);
+        $row = (array) DB::table('pos_sales')->find($created->json('data.id'));
+        unset($row['id']);
+        $row['store_id'] = $other->id;
+        $row['invoice_no'] = str_replace('INV-COFFEE-', 'INV-SECOND-', $row['invoice_no']);
+        DB::table('pos_sales')->insert($row);
+        $this->user->update(['role' => 'super_admin', 'store_id' => null]);
+        Sanctum::actingAs($this->user->fresh());
+        $this->getJson('/api/settlements/bill/'.$bill)->assertUnprocessable();
+        $this->getJson('/api/pos-old-sales/lookup-sale?bill_no='.$bill)->assertUnprocessable();
+        $this->getJson('/api/pos-returns/source-bill?billNo='.$bill)->assertUnprocessable();
     }
 }

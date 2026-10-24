@@ -1,3 +1,4 @@
+import LiveDateTime from "../../components/LiveDateTime";
 import { runPosCheckout } from "../../utils/posCheckout";
 import PageHeader from "../../components/PageHeader";
 import useCounterAssignmentPrompt from "../../hooks/useCounterAssignmentPrompt";
@@ -111,7 +112,6 @@ const POSSales = () => {
   const [counterAssignmentOpen, setCounterAssignmentOpen] = useCounterAssignmentPrompt(authUser);
 
 
-  const [now, setNow] = useState(new Date());
   const [billNo, setBillNo] = useState(1);
   const [existingCustomerId, setExistingCustomerId] = useState("");
   const [newCustomer, setNewCustomer] = useState({ ...blankCustomer });
@@ -149,6 +149,7 @@ const POSSales = () => {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [pendingScans, setPendingScans] = useState(0);
   const [showSearchPage, setShowSearchPage] = useState(false);
   const searchGrid = useSearchGrid({
     adapter: createSearchGridAdapter("/pos-sales"), enabled: showSearchPage,
@@ -305,10 +306,14 @@ const POSSales = () => {
     return authUser?.company_id ? `Company ${authUser.company_id}` : "Company";
   }, [authUser, resolvedExportCompanyName]);
 
+  useEffect(() => {
+    void fetchReceiptCompanyInfo(getReceiptCompanyId(null, authUser));
+  }, [authUser]);
+
   const loadNextBillNo = useCallback(async () => {
     try {
       const res = await api.get("/pos-sales/next-bill-no");
-      setBillNo(toNum(res.data?.data?.billNo, 1));
+      setBillNo(res.data?.data?.billNo || res.data?.data?.bill_no || "");
     } catch {
       setBillNo(1);
     }
@@ -435,11 +440,6 @@ const POSSales = () => {
     } catch {
       setLatestPosDocument(null);
     }
-  }, []);
-
-  useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(timer);
   }, []);
 
   useEffect(() => {
@@ -850,9 +850,9 @@ const POSSales = () => {
   }, [displayCartLines, lineFilters]);
 
   useEffect(() => {
-    if (showSearchPage || loading) return;
+    if (showSearchPage || loading || paymentDialogOpen) return;
     barcodeInputRef.current?.focus();
-  }, [showSearchPage, loading]);
+  }, [showSearchPage, loading, paymentDialogOpen]);
 
   const handleCustomerNumberLookup = useCallback(async (rawValue) => {
     const query = String(rawValue || "").trim();
@@ -1332,123 +1332,130 @@ const POSSales = () => {
     }
   }, [applyCustomerPanelRow, customers, focusBarcodeInput]);
 
-  const handleAddLine = async () => {
-    const quantity = Math.floor(toNum(addQty, 0));
+  const handleAddLine = async ({ barcode = addBarcode, product = addProductKey, quantityInput = addQty } = {}) => {
+    setPendingScans(count => count + 1);
+    try {
+      const quantity = Math.floor(toNum(quantityInput, 0));
 
-    const barcodeQuery = normalize(addBarcode);
-    const productQuery = normalize(addProductKey);
-    if (barcodeQuery.startsWith("rr/") || barcodeQuery.startsWith("ro/")) {
-      await applyReturnCredit(addBarcode);
-      return;
-    }
+      const barcodeQuery = normalize(barcode);
+      const productQuery = normalize(product);
+      if (barcodeQuery.startsWith("rr/") || barcodeQuery.startsWith("ro/")) {
+        await applyReturnCredit(barcode);
+        return;
+      }
 
-    if (!quantity || quantity <= 0) {
-      toast.error("Quantity must be greater than 0");
+      if (!quantity || quantity <= 0) {
+        toast.error("Quantity must be greater than 0");
+        focusBarcodeInput();
+        return;
+      }
+
+      if (!barcodeQuery && !productQuery) {
+        toast.error("Enter a barcode or select a product");
+        focusBarcodeInput();
+        return;
+      }
+
+      setAddBarcode("");
       focusBarcodeInput();
-      return;
-    }
+      let source = null;
+      if (barcodeQuery) {
+        try {
+          const res = await api.get("/pos-sales/barcode-lookup", { params: { barcode: barcode.trim() } });
+          const found = res.data?.data;
+          source = found
+            ? {
+                id: String(found.id),
+                barcode: found.barcode || "",
+                productName: found.name || "Unknown Product",
+                qty: toNum(found.stock_qty, 0),
+                cost: 0,
+                price: toNum(found.selling_price || found.mrp, 0),
+                tax: toNum(found.tax_rate, 0),
+                taxName: "",
+                taxType: "",
+                sellingMode: found.sellingMode || "Piece",
+                variantId: found.variantId ?? null,
+                barcodeId: found.barcodeId ?? null,
+                requiresQuantityPrompt: !!found.requiresQuantityPrompt,
+              }
+            : null;
+        } catch {
+          source = null;
+        }
 
-    if (!barcodeQuery && !productQuery) {
-      toast.error("Enter a barcode or select a product");
+        if (!source) {
+          toast.error("Barcode not found in stock");
+          focusBarcodeInput();
+          return;
+        }
+        const used = usedQtyByBarcode.get(source.id) || 0;
+        const remaining = source.qty - used;
+        if (quantity > remaining) {
+          toast.error(`Quantity exceeds stock. Available: ${Math.max(remaining, 0)} pcs`);
+          focusBarcodeInput();
+          return;
+        }
+      } else {
+        const candidates = stockRows
+          .filter((row) => normalize(row.productName) === productQuery)
+          .map((row) => ({
+            row,
+            remaining: row.qty - (usedQtyByBarcode.get(row.id) || 0),
+          }))
+          .filter((row) => row.remaining > 0)
+          .sort((a, b) => b.remaining - a.remaining);
+
+        source = candidates.find((c) => c.remaining >= quantity)?.row || null;
+        if (!source) {
+          toast.error("Selected quantity is higher than available stock for this product");
+          focusBarcodeInput();
+          return;
+        }
+      }
+
+      setCart((prev) => {
+        const index = prev.findIndex((line) => line.stockId === source.id);
+        if (index === -1) {
+          return [
+            ...prev,
+            {
+              lineId: `${source.id}-${Date.now()}`,
+              stockId: source.id,
+              barcode: source.barcode,
+              productName: source.productName,
+              qty: quantity,
+              price: source.price,
+              tax: source.tax,
+              taxName: source.taxName || "",
+              taxType: source.taxType || "",
+              cost: source.cost,
+              discount: 0,
+              discountSource: null,
+              salesManId: "",
+              salesManName: "",
+              sellingMode: source.sellingMode || "Piece",
+              variantId: source.variantId ?? null,
+              barcodeId: source.barcodeId ?? null,
+            },
+          ];
+        }
+
+        const next = [...prev];
+        next[index] = {
+          ...next[index],
+          qty: toNum(next[index].qty, 0) + quantity,
+        };
+        return next;
+      });
+
+      setAddProductKey("");
+      setAddQty("1");
       focusBarcodeInput();
-      return;
+    } finally {
+      setPendingScans(count => count - 1);
+      focusBarcodeInput();
     }
-
-    let source = null;
-    if (barcodeQuery) {
-      try {
-        const res = await api.get("/pos-sales/barcode-lookup", { params: { barcode: addBarcode.trim() } });
-        const found = res.data?.data;
-        source = found
-          ? {
-              id: String(found.id),
-              barcode: found.barcode || "",
-              productName: found.name || "Unknown Product",
-              qty: toNum(found.stock_qty, 0),
-              cost: 0,
-              price: toNum(found.selling_price || found.mrp, 0),
-              tax: toNum(found.tax_rate, 0),
-              taxName: "",
-              taxType: "",
-              sellingMode: found.sellingMode || "Piece",
-              variantId: found.variantId ?? null,
-              barcodeId: found.barcodeId ?? null,
-              requiresQuantityPrompt: !!found.requiresQuantityPrompt,
-            }
-          : null;
-      } catch {
-        source = null;
-      }
-
-      if (!source) {
-        toast.error("Barcode not found in stock");
-        focusBarcodeInput();
-        return;
-      }
-      const used = usedQtyByBarcode.get(source.id) || 0;
-      const remaining = source.qty - used;
-      if (quantity > remaining) {
-        toast.error(`Quantity exceeds stock. Available: ${Math.max(remaining, 0)} pcs`);
-        focusBarcodeInput();
-        return;
-      }
-    } else {
-      const candidates = stockRows
-        .filter((row) => normalize(row.productName) === productQuery)
-        .map((row) => ({
-          row,
-          remaining: row.qty - (usedQtyByBarcode.get(row.id) || 0),
-        }))
-        .filter((row) => row.remaining > 0)
-        .sort((a, b) => b.remaining - a.remaining);
-
-      source = candidates.find((c) => c.remaining >= quantity)?.row || null;
-      if (!source) {
-        toast.error("Selected quantity is higher than available stock for this product");
-        focusBarcodeInput();
-        return;
-      }
-    }
-
-    setCart((prev) => {
-      const index = prev.findIndex((line) => line.stockId === source.id);
-      if (index === -1) {
-        return [
-          ...prev,
-          {
-            lineId: `${source.id}-${Date.now()}`,
-            stockId: source.id,
-            barcode: source.barcode,
-            productName: source.productName,
-            qty: quantity,
-            price: source.price,
-            tax: source.tax,
-            taxName: source.taxName || "",
-            taxType: source.taxType || "",
-            cost: source.cost,
-            discount: 0,
-            discountSource: null,
-            salesManId: "",
-            salesManName: "",
-            sellingMode: source.sellingMode || "Piece",
-            variantId: source.variantId ?? null,
-            barcodeId: source.barcodeId ?? null,
-          },
-        ];
-      }
-
-      const next = [...prev];
-      next[index] = {
-        ...next[index],
-        qty: toNum(next[index].qty, 0) + quantity,
-      };
-      return next;
-    });
-
-    setAddBarcode("");
-    setAddProductKey("");
-    setAddQty("1");
-    focusBarcodeInput();
   };
 
   const handleLineValueChange = (lineId, field, raw) => {
@@ -1614,6 +1621,7 @@ const POSSales = () => {
   const closePaymentDialog = () => {
     if (saving) return;
     setPaymentDialogOpen(false);
+    focusBarcodeInput();
   };
 
   useEffect(() => {
@@ -1835,7 +1843,7 @@ const POSSales = () => {
       igst: igstEnabled,
       placeOfSupplyStateId: igstEnabled ? placeOfSupplyStateId || null : null,
       addnlLines: sanitizedAddnlLines,
-      saleAt: now.toISOString(),
+      saleAt: new Date().toISOString(),
       cashAmount,
       cardAmount,
       cardTypeId: pf.cardTypeId || null,
@@ -1877,7 +1885,7 @@ const POSSales = () => {
     const savedItems = savedSale?.items || [];
     const billNumber = savedSale?.bill_no || billNo;
     const displayBillNo = getPosBillBarcodeValue(billNumber);
-    const saleAt = savedSale?.sale_date || now.toISOString();
+    const saleAt = savedSale?.sale_date || new Date().toISOString();
     const receiptCustomization = loadSalesReceiptCustomization(authUser?.company_id || "default");
     const printCopies = clampReceiptCopies(receiptCustomization.posReceiptPrintCopies);
     const appliedReturnId = toNum(
@@ -2068,7 +2076,7 @@ const POSSales = () => {
       storeGstNo: companyInfo.storeGstNo,
       billNo: displayReturnNo,
       billBarcode: displayReturnNo,
-      dateTime: detail?.return_date || now.toISOString(),
+      dateTime: detail?.return_date || new Date().toISOString(),
       cashierName,
       counterName: String(authUser?.counter_name || "").trim(),
       customerName: String(detail?.customer?.name || "").trim() || WALKING_CUSTOMER_NAME,
@@ -2255,12 +2263,13 @@ const POSSales = () => {
       const savedBillNo = saved?.bill_no;
       setLatestPosDocument(saved ? { type: "sale", ...saved } : null);
       toast.success(`POS saved successfully (Bill #${formatSaleBillNo(savedBillNo)})`);
-      if (shouldPrint) {
-        try { await printSaleReceipt(saved); }
-        catch (error) { toast.error(`Sale saved, but receipt was not printed. ${error.message || "Please retry printing."}`); }
-      }
+      const printing = shouldPrint ? printSaleReceipt(saved) : Promise.resolve();
+      printing.catch(error => toast.error(`Sale saved, but receipt was not printed. ${error.message || "Please retry printing."}`));
+      const sold = new Map();
+      cart.forEach(line => sold.set(line.stockId, (sold.get(line.stockId) || 0) + toNum(line.qty, 0)));
+      setStockRows(rows => rows.map(row => ({ ...row, qty: Math.max(0, row.qty - (sold.get(row.id) || 0)) })));
       handleResetEntry();
-      await Promise.all([loadMasterData(), loadNextBillNo(), refreshLatestPosDocument()]);
+      void loadNextBillNo();
     } catch (err) {
       toast.error(err?.response?.data?.message || "Failed to save POS sale");
     } finally {
@@ -2270,6 +2279,7 @@ const POSSales = () => {
   };
 
   const requestCheckout = (shouldPrint = false) => {
+    if (pendingScans > 0) { toast.info("Please wait for the scanned product to finish loading."); return; }
     if (saving || saveInFlight.current || !validateSaleEntry()) return;
     return runPosCheckout({ prefs: posCheckoutPrefs, shouldPrint, openPaymentDialog,
       saveSale: handleSaveSale, quickPaymentForm: buildQuickPaymentFormSnapshot });
@@ -2710,14 +2720,7 @@ const POSSales = () => {
         <Box sx={{ width: "100%", bgcolor: "background.paper", border: 1, borderColor: "grey.300", borderRadius: "7px", boxShadow: 1, p: 1.5, display: { xl: "flex" }, height: { xl: "100%" }, flexDirection: { xl: "column" } }}>
           <Box sx={{ borderBottom: 1, borderColor: "divider", pb: 1 }}>
             <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 1.5, fontSize: 10 }}>
-              <Stack direction="row" sx={{ alignItems: "center", gap: 0.75 }}>
-                <Box component="span" sx={{ fontWeight: 600, color: "text.secondary" }}>Date</Box>
-                <Box component="span" sx={{ color: "text.primary" }}>{now.toLocaleDateString()}</Box>
-              </Stack>
-              <Stack direction="row" sx={{ alignItems: "center", gap: 0.75 }}>
-                <Box component="span" sx={{ fontWeight: 600, color: "text.secondary" }}>Time</Box>
-                <Box component="span" sx={{ color: "text.primary" }}>{now.toLocaleTimeString()}</Box>
-              </Stack>
+              <LiveDateTime />
             </Stack>
           </Box>
 
@@ -3027,7 +3030,7 @@ const POSSales = () => {
               </Button>
               <Button
                 onClick={() => requestCheckout(false)}
-                disabled={saving}
+                disabled={saving || pendingScans > 0}
                 className="glass-btn glass-btn-success"
                 startIcon={<Save size={16} />}
               >
@@ -3037,7 +3040,7 @@ const POSSales = () => {
                 <Button
                   type="button"
                   onClick={() => requestCheckout(true)}
-                  disabled={saving}
+                  disabled={saving || pendingScans > 0}
                   className="glass-btn glass-btn-primary"
                   startIcon={<Printer size={16} />}
                 >
@@ -3646,7 +3649,8 @@ const POSSales = () => {
                   <Typography sx={{ fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Cash</Typography>
                   <TextField
                     type="number"
-                    slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
+                    autoFocus
+                    slotProps={{ htmlInput: { min: 0, step: 0.01, "aria-label": "Cash received" } }}
                     value={paymentForm.cashAmount}
                     onChange={(event) => handlePaymentFieldChange("cashAmount", event.target.value)}
                     onKeyDown={handlePaymentAmountKeyDown}

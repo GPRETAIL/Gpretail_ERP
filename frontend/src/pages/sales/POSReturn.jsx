@@ -1,3 +1,4 @@
+import { formatSaleBillNo } from "../../utils/posBillNumbers";
 import PageHeader from "../../components/PageHeader";
 import useStoreDisplayName from "../../hooks/useStoreDisplayName";
 import { masterSearchAreaSx } from "../../theme/erpUi";
@@ -83,7 +84,7 @@ const formatMoney = (value) =>
     maximumFractionDigits: 2,
   });
 
-const formatSaleBillNo = (value) => `SB/${toInt(value, 0)}`;
+
 const isLikelySaleBillInput = (value) => /^(?:sb\/)?\d+$/i.test(String(value || "").trim());
 const isLikelyReturnNoInput = (value) => /^(?:rr|ro)\/?\d+$/i.test(String(value || "").trim());
 const formatReturnNo = (value) => {

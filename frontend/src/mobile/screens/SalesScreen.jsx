@@ -1,3 +1,4 @@
+import SaleInvoiceDetails from "../components/SaleInvoiceDetails";
 import useAsyncQuery from "../../hooks/useAsyncQuery";
 import { EMPTY_ARRAY } from "../../utils/emptyValues";
 import React, { useState, useEffect, useCallback, useMemo } from "react";
@@ -23,8 +24,8 @@ const DATE_RANGE_OPTIONS = [
 const money = (n) =>
   "₹ " +
   Number(n || 0).toLocaleString("en-IN", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   });
 
 const formatDate = (dateStr) => {
@@ -38,22 +39,19 @@ const formatDate = (dateStr) => {
   }
 };
 
-const mapStatus = (sale) => {
-  if (sale.status) return sale.status.toLowerCase();
-  if (sale.paymentStatus) return sale.paymentStatus.toLowerCase();
-  return "paid";
+const mapStatus = sale => {
+  const status = String(sale.status || "").toLowerCase();
+  if (["paid", "settled", "cancelled", "returned"].includes(status)) return status;
+  if (sale.is_credit || sale.payment_mode === "CREDIT") return "credit";
+  return Number(sale.remaining_amount ?? Number(sale.grand_total || 0) - Number(sale.paid_amount || 0)) > 0 || status === "unsettled" ? "unsettled" : "paid";
 };
-
-// Every POS sale's `status` is always "COMPLETED" (there's no draft/sent
-// workflow for a POS bill - it's created and completed in one step), so
-// filter tabs built around that field could never match anything. The one
-// real, data-backed distinction on a sale is how it was paid.
-const isCreditSale = (sale) => sale.payment_mode === "CREDIT" || sale.is_credit === true;
+const isCreditSale = sale => mapStatus(sale) === "credit";
 
 /**
  * Sales Invoices list screen — fetches real data from GET /pos-sales.
  */
 export default function SalesScreen({ onNavigate }) {
+  const [selectedSaleId, setSelectedSaleId] = useState(null);
   const [filter, setFilter] = useState("All");
   const [search, setSearch] = useState("");
   const [dateRange, setDateRange] = useState("all");
@@ -103,8 +101,9 @@ export default function SalesScreen({ onNavigate }) {
   // every sale's `status` is always COMPLETED (no draft/sent workflow
   // exists for a POS bill) and could never distinguish anything.
   const filtered = sales.filter((s) => {
-    if (filter === "Paid" && isCreditSale(s)) return false;
+    if (filter === "Paid" && !["paid", "settled"].includes(mapStatus(s))) return false;
     if (filter === "Credit" && !isCreditSale(s)) return false;
+    if (filter === "Unsettled" && mapStatus(s) !== "unsettled") return false;
     return true;
   });
 
@@ -170,7 +169,7 @@ export default function SalesScreen({ onNavigate }) {
 
       {/* Filter Tabs */}
       <Box className="vx-filter-tabs">
-        {["All", "Paid", "Credit"].map((t) => (
+        {["All", "Paid", "Credit", "Unsettled"].map((t) => (
           <Box
             component="button"
             key={t}
@@ -193,14 +192,14 @@ export default function SalesScreen({ onNavigate }) {
       ) : (
         <Box>
           {filtered.map((inv) => {
-            const id = inv.invoice_no || `INV-${inv.id}`;
+            const id = inv.bill_no || inv.invoice_no || `INV-${inv.id}`;
             const customer = inv.customer?.name || "Customer";
             const date = formatDate(inv.sale_date || inv.created_at);
             const amount = inv.grand_total || 0;
             const status = mapStatus(inv);
 
             return (
-              <Box key={inv.id || id} className="vx-trans-card">
+              <Box component="button" type="button" key={inv.id || id} className="vx-trans-card" aria-label={`View invoice ${id}`} onClick={() => setSelectedSaleId(inv.id)} sx={{ width: "100%", textAlign: "left", cursor: "pointer" }}>
                 <Box className="vx-trans-left">
                   <Box component="span" className="vx-trans-id">{id}</Box>
                   <Box component="span" className="vx-trans-meta">{customer}</Box>
@@ -215,6 +214,8 @@ export default function SalesScreen({ onNavigate }) {
           })}
         </Box>
       )}
+
+      {selectedSaleId && <SaleInvoiceDetails saleId={selectedSaleId} onClose={() => setSelectedSaleId(null)} />}
 
       {/* FAB */}
       <Box

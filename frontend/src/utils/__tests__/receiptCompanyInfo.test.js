@@ -101,4 +101,14 @@ describe("fetchReceiptCompanyInfo", () => {
     expect(recovered.storeName).toBe("Recovered");
     expect(getMock).toHaveBeenCalledTimes(2);
   });
+  it("shares a preloaded company request with checkout printing", async () => {
+    const { fetchReceiptCompanyInfo } = await importFresh();
+    let resolve;
+    getMock.mockReturnValue(new Promise(done => { resolve = done; }));
+    const prefetch = fetchReceiptCompanyInfo(91);
+    const printing = fetchReceiptCompanyInfo(91);
+    expect(getMock).toHaveBeenCalledTimes(1);
+    resolve({ data: { data: { name: "Coffee" } } });
+    expect(await prefetch).toEqual(await printing);
+  });
 });

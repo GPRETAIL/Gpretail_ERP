@@ -787,8 +787,7 @@ export const getPosBillBarcodeValue = (billNo) => {
   const raw = String(billNo ?? "").trim().toUpperCase();
   if (!raw) return "";
   if (raw.startsWith("SB/")) return raw;
-  const digits = raw.replace(/[^\d]/g, "");
-  return digits ? `SB/${digits}` : raw;
+  return /^\d+$/.test(raw) ? `SB/${raw}` : raw;
 };
 
 export const getPosReturnBarcodeValue = (returnNo) => {

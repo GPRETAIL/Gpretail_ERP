@@ -1,3 +1,4 @@
+import { formatSaleBillNo } from "./posBillNumbers";
 import api from "../api/axios";
 
 const toNum = (value, fallback = 0) => {
@@ -10,7 +11,7 @@ const toTimestamp = (value) => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
-const formatSaleBillNo = (value) => `SB/${toNum(value, 0)}`;
+
 
 const formatReturnNo = (value) => {
   const raw = String(value || "").trim().toUpperCase();

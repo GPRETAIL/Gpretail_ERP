@@ -140,7 +140,7 @@ export const formatMoney = (value) =>
     maximumFractionDigits: 2,
   });
 
-export const formatSaleBillNo = (value) => `SB/${toNum(value, 0)}`;
+export { formatSaleBillNo } from "../../utils/posBillNumbers";
 export const formatReturnNo = (value) => {
   const raw = String(value || "").trim().toUpperCase();
   if (raw.startsWith("RR/") || raw.startsWith("RO/")) return raw;

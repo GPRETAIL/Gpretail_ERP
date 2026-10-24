@@ -141,9 +141,12 @@ class SettlementController extends Controller
     public function getBill(Request $request, $billNo)
     {
         $sale = PosSale::with(['customer', 'payments', 'items.product', 'appliedReturn', 'settlement', 'user'])
-            ->where('invoice_no', $billNo)
+            ->billNumber((string) $billNo)
             ->whereIn('store_id', $request->attributes->get('store_context_ids', []))
-            ->first();
+            ->get();
+
+        abort_if($sale->count() > 1, 422, 'Select a store before looking up this bill number.');
+        $sale = $sale->first();
 
         if (! $sale) {
             return response()->json([

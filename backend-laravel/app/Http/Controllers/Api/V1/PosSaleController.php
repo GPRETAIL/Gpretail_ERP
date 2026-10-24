@@ -44,6 +44,7 @@ class PosSaleController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
+                'billNo' => preg_match('/^INV-.+-(\d{8})-(C?\d+)$/', $billNo, $parts) ? substr($parts[1], 2).'-'.$parts[2] : $billNo,
                 'bill_no' => $billNo,
                 'invoice_no' => $billNo,
                 'date' => now()->toIso8601String(),
@@ -243,10 +244,11 @@ class PosSaleController extends Controller
                     Carbon::parse($request->input('to'))->endOfDay(),
                 ]);
             })
+            ->when($request->filled('billNo'), fn ($query) => $query->billNumber((string) $request->input('billNo')))
             ->when($request->filled('search'), function ($q) use ($request) {
                 $s = trim($request->input('search'));
                 $q->where(function ($sub) use ($s) {
-                    $sub->where('invoice_no', 'like', "%{$s}%")
+                    $sub->where(fn ($number) => $number->billNumber($s)->orWhere('invoice_no', 'like', "%{$s}%"))
                         ->orWhereHas('customer', fn ($cq) => $cq->where('name', 'like', "%{$s}%"));
                 });
             });
@@ -598,7 +600,7 @@ class PosSaleController extends Controller
                     }
                 }
 
-                DashboardBroadcastService::salesUpdated((int) $storeId);
+                DB::afterCommit(fn () => \Illuminate\Support\defer(fn () => DashboardBroadcastService::salesUpdated((int) $storeId)));
 
                 return response()->json([
                     'success' => true,
@@ -622,7 +624,7 @@ class PosSaleController extends Controller
     private function withBillNo(PosSale $sale): array
     {
         $data = $sale->toArray();
-        $data['bill_no'] = $sale->id;
+        $data['bill_no'] = $sale->bill_no;
         $data['applied_return_no'] = $sale->applied_pos_return_id ? ('RR/'.$sale->applied_pos_return_id) : null;
 
         return $data;
@@ -1100,8 +1102,10 @@ class PosSaleController extends Controller
     {
         $billNo = $request->input('bill_no') ?? $request->input('invoice_no');
         $sale = PosSale::with(['appliedReturn', 'settlement', 'customer', 'items.product', 'payments'])
-            ->where('invoice_no', $billNo)
-            ->first();
+            ->billNumber((string) $billNo)
+            ->get();
+        abort_if($sale->count() > 1, 422, 'Select a store before looking up this bill number.');
+        $sale = $sale->first();
 
         if (! $sale) {
             return response()->json([

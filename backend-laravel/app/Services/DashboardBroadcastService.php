@@ -78,6 +78,7 @@ class DashboardBroadcastService
         self::$client = new Pusher($key, $secret, $appId, [
             'cluster' => $cluster,
             'useTLS' => true,
+            'timeout' => 2,
         ]);
 
         return self::$client;
