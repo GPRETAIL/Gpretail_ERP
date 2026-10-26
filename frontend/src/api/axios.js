@@ -63,6 +63,9 @@ api.interceptors.response.use(
     return response;
   },
   async (error) => {
+    // Navigation and superseded searches deliberately abort requests.
+    // Preserve cancellation for callers without retrying or reporting an outage.
+    if (axios.isCancel(error) || error?.code === "ERR_CANCELED") return Promise.reject(error);
     if (shouldRetryOnCloud(error)) {
       const retryConfig = buildCloudRetryConfig(error.config);
       return api.request(retryConfig);

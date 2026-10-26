@@ -1,6 +1,8 @@
 import LiveDateTime from "../../components/LiveDateTime";
 import { runPosCheckout } from "../../utils/posCheckout";
 import { prepareCheckoutAttempt } from "./posCheckoutAttempt";
+import { mapPosStockRow, posStockOptions, mergePosStockRows } from "./posStockCatalog";
+import AsyncSearchSelect from "../../components/AsyncSearchSelect";
 import PageHeader from "../../components/PageHeader";
 import useCounterAssignmentPrompt from "../../hooks/useCounterAssignmentPrompt";
 import useStoreDisplayName from "../../hooks/useStoreDisplayName";
@@ -333,14 +335,14 @@ const POSSales = () => {
           )
           .catch(() => []);
 
-      const [customersRes, stockProductsRes, productsRes, cities, states, customerCategories, areas] =
+      const [customersRes, stockProductsRes, cities, states, customerCategories, areas] =
         await Promise.all([
           // Was {all:true} (capped 2000, unconditional on every page load). Customer now has real
           // async search (handleAsyncCustomerSearch below) covering the ~1,000,000-row real table,
           // so this only needs to seed a small initial/instant-match cache.
           api.get("/customers", { params: { limit: 300 } }).catch(() => ({ data: { data: [] } })),
           api.get("/pos-sales/stock-products").catch(() => ({ data: { data: [] } })),
-          api.get("/products", { params: { limit: 500 } }).catch(() => ({ data: { data: [] } })),
+
           cfg("city"),
           cfg("state"),
           cfg("customer_category"),
@@ -352,66 +354,20 @@ const POSSales = () => {
       setCustomers(customerRows.map((row) => mapCustomerRow(row, areaMap)));
       setCustomerConfigOptions({ cities, states, customerCategories, areas });
 
-      const products = productsRes.data?.data || [];
-      const productTaxMap = new Map();
-      const productSellingModeMap = new Map();
-      products.forEach((p) => {
-        const key = normalize(p.name);
-        if (!key) return;
-        productTaxMap.set(key, {
-          taxPerc: toNum(p?.salesTax?.tax_percentage, 0),
-          taxName: String(p?.salesTax?.name || "").trim(),
-          taxType: String(p?.salesTax?.tax_type || "").trim(),
-        });
-        productSellingModeMap.set(key, String(p?.selling_mode || "Piece").trim() || "Piece");
-      });
-
-      const stock = (stockProductsRes.data?.data || [])
-        .map((row) => {
-          const productName = row.productName || "Unknown Product";
-          const taxInfo = productTaxMap.get(normalize(productName)) || {};
-          return {
-            id: String(row.id),
-            barcode: row.barcode || "",
-            productName,
-            qty: Math.max(0, toNum(row.qty, 0)),
-            cost: toNum(row.cost, 0),
-            price: toNum(row.price || row.mrp, 0),
-            tax: toNum(taxInfo.taxPerc ?? row.tax, 0),
-            taxName: taxInfo.taxName || row.taxName || "",
-            taxType: taxInfo.taxType || row.taxType || "",
-            sellingMode: row.sellingMode || productSellingModeMap.get(normalize(productName)) || "Piece",
-            variantId: row.variantId ?? null,
-            requiresQuantityPrompt: !!row.requiresQuantityPrompt,
-          };
-        })
-        .filter((row) => row.qty > 0);
-
+      const stock = (stockProductsRes.data?.data || []).map(mapPosStockRow).filter(row => row.qty > 0);
       setStockRows(stock);
-
-      const groupedProducts = new Map();
-      stock.forEach((row) => {
-        const key = normalize(row.productName);
-        if (!key) return;
-        const current = groupedProducts.get(key) || {
-          value: key,
-          label: row.productName,
-          stockQty: 0,
-        };
-        current.stockQty += row.qty;
-        groupedProducts.set(key, current);
-      });
-
-      const productList = Array.from(groupedProducts.values())
-        .sort((a, b) => a.label.localeCompare(b.label))
-        .map((row) => ({
-          value: row.value,
-          label: `${row.label} (Stock: ${row.stockQty})`,
-        }));
-      setProductOptions(productList);
+      setProductOptions(posStockOptions(stock));
     } catch {
       toast.error("Failed to load POS sales data");
     }
+  }, []);
+
+  const searchStockProducts = useCallback(async search => {
+    const response = await api.get("/pos-sales/stock-products", { params: { search } });
+    const rows = (response.data?.data || []).map(mapPosStockRow).filter(row => row.qty > 0);
+    setStockRows(previous => mergePosStockRows(previous, rows));
+    setProductOptions(previous => Array.from(new Map([...previous, ...posStockOptions(rows)].map(row => [row.value, row])).values()));
+    return posStockOptions(rows);
   }, []);
 
   const loadPaymentOptions = useCallback(async () => {
@@ -562,7 +518,7 @@ const POSSales = () => {
     const byProduct = normalize(addProductKey);
     if (byProduct) {
       const total = stockRows
-        .filter((s) => normalize(s.productName) === byProduct)
+        .filter((s) => s.id === byProduct)
         .reduce((sum, s) => sum + Math.max(0, s.qty - (usedQtyByBarcode.get(s.id) || 0)), 0);
       return `Available stock for selected product: ${total} pcs`;
     }
@@ -1364,23 +1320,7 @@ const POSSales = () => {
         try {
           const res = await api.get("/pos-sales/barcode-lookup", { params: { barcode: barcode.trim() } });
           const found = res.data?.data;
-          source = found
-            ? {
-                id: String(found.id),
-                barcode: found.barcode || "",
-                productName: found.name || "Unknown Product",
-                qty: toNum(found.stock_qty, 0),
-                cost: 0,
-                price: toNum(found.selling_price || found.mrp, 0),
-                tax: toNum(found.tax_rate, 0),
-                taxName: "",
-                taxType: "",
-                sellingMode: found.sellingMode || "Piece",
-                variantId: found.variantId ?? null,
-                barcodeId: found.barcodeId ?? null,
-                requiresQuantityPrompt: !!found.requiresQuantityPrompt,
-              }
-            : null;
+          source = found ? mapPosStockRow(found) : null;
         } catch {
           source = null;
         }
@@ -1399,7 +1339,7 @@ const POSSales = () => {
         }
       } else {
         const candidates = stockRows
-          .filter((row) => normalize(row.productName) === productQuery)
+          .filter((row) => row.id === productQuery)
           .map((row) => ({
             row,
             remaining: row.qty - (usedQtyByBarcode.get(row.id) || 0),
@@ -1415,6 +1355,7 @@ const POSSales = () => {
         }
       }
 
+      setStockRows(previous => mergePosStockRows(previous, [source]));
       setCart((prev) => {
         const index = prev.findIndex((line) => line.stockId === source.id);
         if (index === -1) {
@@ -1423,6 +1364,7 @@ const POSSales = () => {
             {
               lineId: `${source.id}-${Date.now()}`,
               stockId: source.id,
+              productId: source.productId,
               barcode: source.barcode,
               productName: source.productName,
               qty: quantity,
@@ -1864,7 +1806,7 @@ const POSSales = () => {
           ? Number(appliedReturn.billId)
           : null,
       items: cartWithTotals.map((line) => ({
-        productId: line.stockId,
+        productId: line.productId ?? line.stockId,
         variantId: line.variantId ?? null,
         barcodeId: line.barcodeId ?? null,
         barcode: line.barcode,
@@ -2430,21 +2372,15 @@ const POSSales = () => {
               </Box>
               <Box sx={{ width: "100%", minWidth: { md: 280 }, flex: 1.3 }}>
                 <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 10.5, fontWeight: 700, color: "error.main" }}>Product (In Stock)</Typography>
-                <TextField
-                  select
+                <AsyncSearchSelect
+                  name="posProduct"
                   value={addProductKey}
-                  onChange={(e) => setAddProductKey(e.target.value)}
-                  size="small"
-                  fullWidth
-                  sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.75 } }}
-                >
-                  <MenuItem value="">Select product</MenuItem>
-                  {productOptions.map((row) => (
-                    <MenuItem key={row.value} value={row.value}>
-                      {row.label}
-                    </MenuItem>
-                  ))}
-                </TextField>
+                  onChange={e => setAddProductKey(e.target.value)}
+                  options={productOptions}
+                  onAsyncSearch={searchStockProducts}
+                  placeholder="Select product"
+                  searchPlaceholder="Search product, code or barcode"
+                />
               </Box>
               <Box sx={{ width: 112 }}>
                 <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 10.5, fontWeight: 700, color: "error.main" }}>Qty</Typography>

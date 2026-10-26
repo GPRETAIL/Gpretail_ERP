@@ -1,0 +1,159 @@
+{
+  "catalog_products": 10000,
+  "samples": [
+    {
+      "basket": 1,
+      "run": 1,
+      "http_ms": 1077.22,
+      "server_timing": "pos-checkout;dur=228.27, api;dur=280.01, db;dur=53.68;desc=\"34 queries\"",
+      "replayed": false
+    },
+    {
+      "basket": 1,
+      "run": 2,
+      "http_ms": 592.01,
+      "server_timing": "pos-checkout;dur=94.03, api;dur=124.05, db;dur=35.22;desc=\"33 queries\"",
+      "replayed": false
+    },
+    {
+      "basket": 1,
+      "run": 3,
+      "http_ms": 477.5,
+      "server_timing": "pos-checkout;dur=93.87, api;dur=117.27, db;dur=34.16;desc=\"33 queries\"",
+      "replayed": false
+    },
+    {
+      "basket": 10,
+      "run": 1,
+      "http_ms": 513.55,
+      "server_timing": "pos-checkout;dur=116.27, api;dur=133.52, db;dur=25.55;desc=\"33 queries\"",
+      "replayed": false
+    },
+    {
+      "basket": 10,
+      "run": 2,
+      "http_ms": 673.01,
+      "server_timing": "pos-checkout;dur=173.56, api;dur=203.68, db;dur=54.28;desc=\"33 queries\"",
+      "replayed": false
+    },
+    {
+      "basket": 10,
+      "run": 3,
+      "http_ms": 1235.04,
+      "server_timing": "pos-checkout;dur=158.96, api;dur=213.63, db;dur=77.82;desc=\"34 queries\"",
+      "replayed": false
+    },
+    {
+      "basket": 100,
+      "run": 1,
+      "http_ms": 1217.49,
+      "server_timing": "pos-checkout;dur=565.07, api;dur=633.28, db;dur=139.51;desc=\"34 queries\"",
+      "replayed": false
+    },
+    {
+      "basket": 100,
+      "run": 2,
+      "http_ms": 1000.7,
+      "server_timing": "pos-checkout;dur=457.72, api;dur=522.61, db;dur=113.05;desc=\"34 queries\"",
+      "replayed": false
+    },
+    {
+      "basket": 100,
+      "run": 3,
+      "http_ms": 969.52,
+      "server_timing": "pos-checkout;dur=469.87, api;dur=537.51, db;dur=119.23;desc=\"34 queries\"",
+      "replayed": false
+    },
+    {
+      "basket": 200,
+      "run": 1,
+      "http_ms": 1090.73,
+      "server_timing": "pos-checkout;dur=300.83, api;dur=336.83, db;dur=88.69;desc=\"34 queries\"",
+      "replayed": false
+    },
+    {
+      "basket": 200,
+      "run": 2,
+      "http_ms": 628.48,
+      "server_timing": "pos-checkout;dur=301.46, api;dur=314.23, db;dur=62.87;desc=\"33 queries\"",
+      "replayed": false
+    },
+    {
+      "basket": 200,
+      "run": 3,
+      "http_ms": 688.56,
+      "server_timing": "pos-checkout;dur=281.05, api;dur=336.57, db;dur=103.06;desc=\"34 queries\"",
+      "replayed": false
+    },
+    {
+      "basket": 1000,
+      "run": 1,
+      "http_ms": 1717.01,
+      "server_timing": "pos-checkout;dur=1292.76, api;dur=1305.69, db;dur=231.52;desc=\"53 queries\"",
+      "replayed": false
+    },
+    {
+      "basket": 1000,
+      "run": 2,
+      "http_ms": 1615.75,
+      "server_timing": "pos-checkout;dur=1224.76, api;dur=1256.97, db;dur=242.83;desc=\"53 queries\"",
+      "replayed": false
+    },
+    {
+      "basket": 1000,
+      "run": 3,
+      "http_ms": 1684.62,
+      "server_timing": "pos-checkout;dur=1263.95, api;dur=1303.18, db;dur=301.26;desc=\"53 queries\"",
+      "replayed": false
+    }
+  ],
+  "lookups": [
+    {
+      "path": "/pos-sales/stock-products",
+      "http_ms": 443.66,
+      "server_timing": "api;dur=198.34, db;dur=38.41;desc=\"7 queries\"",
+      "replayed": false
+    },
+    {
+      "path": "/pos-sales/stock-products?search=TEMP-LOAD-10000",
+      "http_ms": 308.71,
+      "server_timing": "api;dur=123.94, db;dur=86.42;desc=\"7 queries\"",
+      "replayed": false
+    },
+    {
+      "path": "/pos-sales/barcode-lookup?barcode=TEMP-LOAD-10000",
+      "http_ms": 298.46,
+      "server_timing": "api;dur=115.04, db;dur=34;desc=\"8 queries\"",
+      "replayed": false
+    },
+    {
+      "path": "/pos-sales/latest-document",
+      "http_ms": 268.89,
+      "server_timing": "api;dur=43.09, db;dur=12.01;desc=\"6 queries\"",
+      "replayed": false
+    }
+  ],
+  "simultaneous_retry": {
+    "same_invoice": true,
+    "stock_decrement": 1,
+    "responses": [
+      {
+        "http_ms": 627.06,
+        "server_timing": "pos-checkout;dur=68.88, api;dur=92.35, db;dur=29.4;desc=\"33 queries\"",
+        "replayed": false
+      },
+      {
+        "http_ms": 200.95,
+        "server_timing": "pos-checkout;dur=68.81, api;dur=83.21, db;dur=45.02;desc=\"12 queries\"",
+        "replayed": true
+      }
+    ]
+  },
+  "median_http_ms": {
+    "1": 592.01,
+    "10": 673.01,
+    "100": 1000.7,
+    "200": 688.56,
+    "1000": 1684.62
+  }
+}

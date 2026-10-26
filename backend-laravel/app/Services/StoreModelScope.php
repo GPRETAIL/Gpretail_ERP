@@ -4,7 +4,6 @@ namespace App\Services;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 /** Applies the validated HTTP context to directly store-owned Eloquent records. */
@@ -21,7 +20,7 @@ class StoreModelScope
     {
         $key = ($model->getConnectionName() ?? config('database.default')).':'.$table;
 
-        return $this->tableColumns[$key] ??= Schema::connection($model->getConnectionName())->getColumnListing($table);
+        return $this->tableColumns[$key] ??= app(StoreSchema::class)->columns($table, $model->getConnectionName());
     }
 
     public function columns(Model $model): array
@@ -70,7 +69,7 @@ class StoreModelScope
         }
         $table = $model->getTable();
         $key = ($model->getConnectionName() ?? 'default').':'.$table;
-        $foreignKeys = $this->foreignKeys[$key] ??= Schema::connection($model->getConnectionName())->getForeignKeys($table);
+        $foreignKeys = $this->foreignKeys[$key] ??= app(StoreSchema::class)->foreignKeys($table, $model->getConnectionName());
         foreach ($foreignKeys as $foreign) {
             if (in_array($foreign['foreign_table'], ['stores', 'users'], true)) {
                 continue;

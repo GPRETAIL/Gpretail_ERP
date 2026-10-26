@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   buildEscposReceiptBytes,
   buildEscposReceiptJob,
@@ -82,6 +82,23 @@ describe("isEscposReceiptEligible", () => {
 });
 
 describe("buildEscposReceiptBytes", () => {
+  it("only emits opted-in layout diagnostics and omits QR contents", () => {
+    const log = vi.spyOn(console, "debug").mockImplementation(() => {});
+    const data = baseReceiptData();
+    const customization = { ...defaultCustomization(), receiptCodeType: "qr_code", showBarcodeOnBill: true };
+    try {
+      sessionStorage.removeItem("vynerix:print-debug");
+      buildEscposReceiptBytes(data, customization, { kind: "sale" });
+      expect(log).not.toHaveBeenCalled();
+      sessionStorage.setItem("vynerix:print-debug", "1");
+      buildEscposReceiptBytes(data, customization, { kind: "sale" });
+      expect(log).toHaveBeenCalled();
+      expect(JSON.stringify(log.mock.calls)).not.toContain(data.billNo);
+    } finally {
+      sessionStorage.removeItem("vynerix:print-debug");
+      log.mockRestore();
+    }
+  });
   it("starts with the ESC/POS init sequence and ends with a partial cut", () => {
     const bytes = buildEscposReceiptBytes(baseReceiptData(), defaultCustomization(), { kind: "sale" });
     expect(Array.from(bytes.slice(0, 2))).toEqual([0x1b, 0x40]); // ESC @

@@ -12,7 +12,6 @@ use App\Models\LoyaltyTransaction;
 use App\Models\PosPayment;
 use App\Models\PosReturn;
 use App\Models\PosSale;
-use App\Models\PosSaleItem;
 use App\Models\Product;
 use App\Models\Stock;
 use App\Models\Store;
@@ -20,8 +19,10 @@ use App\Models\User;
 use App\Services\DashboardBroadcastService;
 use App\Services\DocumentNumberService;
 use App\Services\GroupAggregationService;
+use App\Services\PagePermissions;
 use App\Services\PaginationService;
 use App\Services\PosCheckoutAttempt;
+use App\Services\PosCheckoutWriter;
 use App\Services\PosCounter;
 use App\Services\StockService;
 use Illuminate\Http\Request;
@@ -52,6 +53,24 @@ class PosSaleController extends Controller
                 'date' => now()->toIso8601String(),
             ],
         ]);
+    }
+
+    public function latestDocument(Request $request)
+    {
+        $sale = PosSale::select(['id', 'store_id', 'invoice_no', 'grand_total', 'created_at'])->latest('id')->first();
+        $return = app(PagePermissions::class)->allows($request->user(), '/sales/pos-sales-return', 'view')
+            ? PosReturn::select(['id', 'store_id', 'return_no', 'total_refund', 'created_at'])->latest('id')->first() : null;
+        $document = null;
+        if ($sale) {
+            $document = ['id' => $sale->id, 'type' => 'sale', 'store_id' => $sale->store_id, 'bill_no' => $sale->bill_no,
+                'grand_total' => (float) $sale->grand_total, 'documentAt' => $sale->created_at?->toIso8601String()];
+        }
+        if ($return && (! $sale || $return->created_at->greaterThanOrEqualTo($sale->created_at))) {
+            $document = ['id' => $return->id, 'type' => 'return', 'store_id' => $return->store_id, 'return_no' => $return->return_no,
+                'total_refund' => (float) $return->total_refund, 'documentAt' => $return->created_at?->toIso8601String()];
+        }
+
+        return response()->json(['success' => true, 'data' => $document]);
     }
 
     public function barcodes(Request $request)
@@ -362,9 +381,10 @@ class PosSaleController extends Controller
     {
         $startedAt = hrtime(true);
         $validator = Validator::make($request->all(), [
-            'items' => 'required|array|min:1',
+            'items' => 'required|array|list|min:1|max:1000',
             'items.*.productId' => 'required|integer',
             'items.*.barcodeId' => 'nullable|integer',
+            'items.*.variantId' => 'nullable|integer|min:1',
             'items.*.qty' => 'required|numeric|min:0.01',
             'items.*.price' => 'required|numeric|min:0',
             'customerId' => 'nullable|exists:customers,id',
@@ -434,7 +454,7 @@ class PosSaleController extends Controller
                 // These queries retain the normal tenant/store model scopes.
                 $products = Product::whereKey(array_unique(array_column($itemsData, 'productId')))->get()->keyBy('id');
                 $barcodeIds = array_values(array_filter(array_column($itemsData, 'barcodeId')));
-                $barcodes = $barcodeIds ? Barcode::whereKey(array_unique($barcodeIds))->lockForUpdate()->get()->keyBy('id') : collect();
+                $barcodes = $barcodeIds ? Barcode::whereKey(array_unique($barcodeIds))->orderBy('id')->lockForUpdate()->get()->keyBy('id') : collect();
                 $pieceBarcodes = [];
                 foreach ($itemsData as $index => $item) {
                     $product = $products->get($item['productId']);
@@ -443,7 +463,7 @@ class PosSaleController extends Controller
                     }
                     if (! empty($item['barcodeId'])) {
                         $barcode = $barcodes->get($item['barcodeId']);
-                        if (! $barcode || (int) $barcode->product_id !== (int) $product->id || (isset($item['variantId']) && (int) $barcode->variant_id !== (int) $item['variantId'])) {
+                        if (! $barcode || (int) $barcode->product_id !== (int) $product->id || (int) $barcode->variant_id !== (int) ($item['variantId'] ?? 0)) {
                             throw ValidationException::withMessages(["items.$index.barcodeId" => 'This barcode does not match the selected product and variant.']);
                         }
                         if (strtoupper((string) ($product->selling_mode ?: 'PIECE')) === 'PIECE') {
@@ -518,61 +538,7 @@ class PosSaleController extends Controller
                     'applied_pos_return_id' => $appliedReturn?->id,
                 ]);
 
-                foreach ($itemsData as $item) {
-                    $qty = (float) $item['qty'];
-                    $price = (float) $item['price'];
-                    $disc = (float) ($item['discount'] ?? 0);
-                    $taxRate = (float) ($item['tax'] ?? 0);
-                    $lineSub = ($qty * $price) - $disc;
-                    $lineTax = ($lineSub * $taxRate) / 100;
-                    $barcodeId = isset($item['barcodeId']) ? (int) $item['barcodeId'] : null;
-
-                    PosSaleItem::create([
-                        'pos_sale_id' => $sale->id,
-                        'product_id' => $item['productId'],
-                        'variant_id' => $item['variantId'] ?? null,
-                        'barcode_id' => $barcodeId,
-                        'quantity' => $qty,
-                        'unit_mrp' => $item['mrp'] ?? $price,
-                        'selling_price' => $price,
-                        'discount' => $disc,
-                        'tax_rate' => $taxRate,
-                        'tax_amount' => $lineTax,
-                        'subtotal' => $lineSub + $lineTax,
-                        'tax_name' => $item['taxName'] ?? null,
-                        'tax_type' => $item['taxType'] ?? null,
-                        'cost_price' => $item['cost'] ?? null,
-                        'sales_man_id' => $item['salesManId'] ?? null,
-                        'sales_man_name' => $item['salesManName'] ?? null,
-                    ]);
-
-                    // Locked, audited decrement - rejects the whole sale
-                    // (via InsufficientStockException, caught below) rather
-                    // than letting stock go negative as it silently did before.
-                    $this->stockService->adjust(
-                        storeId: (int) $storeId,
-                        productId: (int) $item['productId'],
-                        variantId: isset($item['variantId']) ? (int) $item['variantId'] : null,
-                        delta: -$qty,
-                        referenceType: 'POS_SALE',
-                        referenceId: $sale->id,
-                        costPrice: $price,
-                        userId: $user->id ?? null,
-                    );
-
-                    // PIECE barcodes are one physical unit each - selling it
-                    // takes that specific label out of circulation so it
-                    // can't be scanned again. PACK/CUT's shared barcode
-                    // stays active (more stock of the same variant may still
-                    // be on the shelf under the same label).
-                    if ($barcodeId) {
-                        $scannedBarcode = $barcodes->get($barcodeId);
-                        $mode = strtoupper((string) ($products->get($item['productId'])->selling_mode ?: 'PIECE'));
-                        if ($mode === 'PIECE') {
-                            $scannedBarcode->update(['is_active' => false]);
-                        }
-                    }
-                }
+                app(PosCheckoutWriter::class)->write($sale, $itemsData, $products, $barcodes);
 
                 foreach ([
                     ['mode' => 'CASH', 'amount' => $cashAmount, 'extra' => []],
@@ -683,26 +649,26 @@ class PosSaleController extends Controller
         }
 
         DB::transaction(function () use ($sale) {
-            foreach ($sale->items as $item) {
+            foreach ($sale->items->groupBy(fn ($item) => $item->product_id.':'.($item->variant_id ?: 0)) as $items) {
+                $item = $items->first();
+                $quantity = (float) $items->sum('quantity');
                 // A sale reversal only ever increments stock back, so this
                 // can't itself throw InsufficientStockException.
                 $this->stockService->adjust(
                     storeId: (int) $sale->store_id,
                     productId: (int) $item->product_id,
                     variantId: $item->variant_id ? (int) $item->variant_id : null,
-                    delta: (float) $item->quantity,
+                    delta: $quantity,
                     referenceType: 'POS_SALE',
                     referenceId: $sale->id,
-                    costPrice: (float) $item->selling_price,
+                    costPrice: $quantity > 0 ? $items->sum(fn ($line) => (float) $line->selling_price * (float) $line->quantity) / $quantity : 0,
                 );
 
                 // Undo whatever the sale did to the scanned barcode - a
                 // no-op for PACK/CUT (their shared barcode was never
                 // deactivated), reactivates the specific unit for PIECE.
-                if ($item->barcode_id) {
-                    Barcode::where('id', $item->barcode_id)->update(['is_active' => true]);
-                }
             }
+            Barcode::whereIn('id', $sale->items->pluck('barcode_id')->filter()->unique())->update(['is_active' => true]);
 
             if ($sale->applied_pos_return_id) {
                 PosReturn::where('id', $sale->applied_pos_return_id)->update([

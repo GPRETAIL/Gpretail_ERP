@@ -1,6 +1,15 @@
-import { beforeEach, expect, it } from "vitest";
+import { beforeEach, expect, it, vi } from "vitest";
+import axios from "axios";
 import api from "./axios";
 beforeEach(() => { sessionStorage.clear(); localStorage.clear(); });
+it("preserves intentional cancellation without logging an API failure", async () => {
+  const log = vi.spyOn(console, "error").mockImplementation(() => {});
+  const canceled = new axios.CanceledError("canceled");
+  try {
+    await expect(api.get("/products", { adapter: () => Promise.reject(canceled) })).rejects.toBe(canceled);
+    expect(log).not.toHaveBeenCalled();
+  } finally { log.mockRestore(); }
+});
 it("uses an explicit authorized-form scope without overwriting the active workspace store", async () => {
   sessionStorage.setItem("activeStoreId", "2");
   let sent;

@@ -3,9 +3,11 @@
 use App\Http\Middleware\AuthenticateSyncReplay;
 use App\Http\Middleware\AuthorizeBusinessAction;
 use App\Http\Middleware\CaptureSyncOutbox;
+use App\Http\Middleware\MeasureApiPerformance;
 use App\Http\Middleware\ResolveStoreContext;
 use Illuminate\Auth\Middleware\Authenticate;
 use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
+use Illuminate\Database\QueryException;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -45,8 +47,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests (which
         // Authenticate implements), not the concrete class -- pin against
         // that, or this silently sorts to run after auth and never executes.
-        $middleware->prependToGroup('api', [AuthenticateSyncReplay::class]);
+        $middleware->prependToGroup('api', [MeasureApiPerformance::class, AuthenticateSyncReplay::class]);
         $middleware->prependToPriorityList(AuthenticatesRequests::class, AuthenticateSyncReplay::class);
+        $middleware->prependToPriorityList(AuthenticateSyncReplay::class, MeasureApiPerformance::class);
         $middleware->appendToGroup('api', [CaptureSyncOutbox::class]);
         $middleware->appendToGroup('api', [ResolveStoreContext::class, AuthorizeBusinessAction::class]);
         $middleware->appendToPriorityList(AuthenticatesRequests::class, ResolveStoreContext::class);
@@ -79,6 +82,15 @@ return Application::configure(basePath: dirname(__DIR__))
                 'success' => false,
                 'message' => 'This record already exists.',
             ], 409);
+        });
+
+        $exceptions->render(function (QueryException $e, Request $request) {
+            if (! $request->is('api/*') || ! in_array((int) ($e->errorInfo[1] ?? 0), [2002, 2003, 2006, 2013, 1040, 1203, 1226], true)) {
+                return null;
+            }
+
+            return response()->json(['success' => false, 'code' => 'DATABASE_TEMPORARILY_UNAVAILABLE',
+                'message' => 'The database is temporarily unavailable. If you were saving a sale, check sales history or retry the unchanged checkout to confirm its status.'], 503)->header('Retry-After', '3');
         });
     })
     ->create();

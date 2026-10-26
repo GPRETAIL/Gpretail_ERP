@@ -376,6 +376,7 @@ export const prepareRoutingForRequest = async (config = {}) => {
 };
 
 export const shouldRetryOnCloud = (error) => {
+  if (error?.code === "ERR_CANCELED" || error?.__CANCEL__) return false;
   const requestConfig = error?.config || {};
   // A timeout does not mean a write failed. Keep POS retries on their
   // original database; a second node cannot yet know whether it committed.

@@ -3,6 +3,9 @@ import { applyRuntimeRoutingConfig, clearRuntimeRoutingConfig, prepareRoutingFor
 
 beforeEach(() => applyRuntimeRoutingConfig({ enabled: true, currentTarget: "local", localBaseUrl: "http://127.0.0.1:8130/api", cloudBaseUrl: "https://dev.gpsoftware.in/api", localHealthy: true }));
 afterEach(() => clearRuntimeRoutingConfig());
+it("never falls back to cloud for an intentionally canceled search", () => {
+  expect(shouldRetryOnCloud({ code: "ERR_CANCELED", config: { method: "get", url: "/pos-sales/stock-products", __routingTarget: "local" } })).toBe(false);
+});
 
 it("never automatically resends an ambiguous POS write to a different database", () => {
   for (const url of ["/pos-sales", "/pos-old-sales", "/api/pos-sales?retry=1"]) {

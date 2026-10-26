@@ -4,7 +4,6 @@ namespace App\Services;
 
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 class StoreQuery
 {
@@ -36,7 +35,7 @@ class StoreQuery
         }
         $visited[] = $table;
         $cacheId = DB::getDefaultConnection().':'.$table;
-        $columns = self::$columns[$cacheId] ??= Schema::getColumnListing($table);
+        $columns = self::$columns[$cacheId] ??= app(StoreSchema::class)->columns($table);
         $ownership = $table === 'stores' ? ['id'] : array_intersect(['store_id', 'company_id'], $columns);
         if ($ownership) {
             self::ownership($query, $alias, array_values($ownership), $ids);
@@ -46,7 +45,7 @@ class StoreQuery
         if (in_array($table, ['users', 'personal_access_tokens', 'platform_activations'], true)) {
             return false;
         }
-        $foreignKeys = self::$foreignKeys[$cacheId] ??= Schema::getForeignKeys($table);
+        $foreignKeys = self::$foreignKeys[$cacheId] ??= app(StoreSchema::class)->foreignKeys($table);
         $scoped = false;
         $anchors = [];
         foreach ($foreignKeys as $index => $foreign) {

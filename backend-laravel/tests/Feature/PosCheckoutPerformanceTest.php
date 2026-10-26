@@ -33,7 +33,7 @@ class PosCheckoutPerformanceTest extends TestCase
                 $response->assertCreated()->assertJsonPath('data.status', 'PAID')->assertJsonPath('data.counter_name', 'TEMP Performance Till')->assertJsonCount($size, 'data.items');
                 $this->assertEquals($size * 100, $response->json('data.grand_total'));
                 $this->assertNotEmpty($response->json('data.items.0.product.name'));
-                $this->assertLessThan($size * 20 + 100, count($queries), 'Checkout query count regressed.');
+                $this->assertLessThan(150, count($queries), 'Checkout must use batch queries, not per-item writes.');
                 $this->assertLessThan(60, $metrics[array_key_last($metrics)]['schema_queries'], 'Schema metadata must not be queried for every item.');
             }
         }

@@ -6,6 +6,7 @@ use App\Models\Barcode;
 use App\Models\PosPayment;
 use App\Models\PosSale;
 use App\Models\Product;
+use App\Models\StockBatch;
 use App\Models\Store;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -82,5 +83,36 @@ class PosCheckoutRetryTest extends TestCase
         $this->postJson('/api/pos-sales', $mismatch)->assertUnprocessable();
         $this->assertDatabaseCount('pos_sales', 0);
         $this->assertDatabaseCount('pos_checkout_requests', 0);
+    }
+
+    public function test_duplicate_variant_lines_keep_per_line_audits_and_cancel_restores_batches_once(): void
+    {
+        $payload = [...$this->payload, 'cashAmount' => 200, 'items' => [$this->fixture['items'][0], $this->fixture['items'][0]]];
+        $id = $this->postJson('/api/pos-sales', $payload)->assertCreated()->assertJsonCount(2, 'data.items')->json('data.id');
+        $this->assertDatabaseCount('stock_transactions', 2);
+        $this->assertDatabaseCount('stock_batch_allocations', 2);
+        $this->assertEquals(998, DB::table('stock_batches')->where('variant_id', $this->fixture['items'][0]['variantId'])->sum('remaining_qty'));
+        $this->deleteJson('/api/pos-sales/'.$id)->assertOk();
+        $this->assertEquals(1000, DB::table('stock_batches')->where('variant_id', $this->fixture['items'][0]['variantId'])->sum('remaining_qty'));
+        $this->assertEquals(1000, DB::table('stocks')->where('product_id', $this->fixture['items'][0]['productId'])->value('quantity'));
+    }
+
+    public function test_batch_checkout_depletes_fifo_across_multiple_receipts_and_rolls_back_late_failures(): void
+    {
+        $variantId = $this->fixture['items'][0]['variantId'];
+        DB::table('stock_batches')->where('variant_id', $variantId)->update(['remaining_qty' => 0.5, 'received_at' => now()->subDays(2)]);
+        $newer = StockBatch::create(['store_id' => $this->fixture['store']->id, 'variant_id' => $variantId, 'reference_type' => 'TEMP_NEWER', 'received_qty' => 999.5, 'remaining_qty' => 999.5, 'cost_price' => 50, 'received_at' => now()->subDay()]);
+        $payload = [...$this->payload, 'cashAmount' => 200];
+        $payload['items'][0]['qty'] = 2;
+        $this->postJson('/api/pos-sales', $payload)->assertCreated();
+        $this->assertEquals(998, $newer->fresh()->remaining_qty);
+        $this->assertEquals(2, DB::table('stock_batch_allocations')->sum('quantity'));
+        $this->assertDatabaseCount('stock_batch_allocations', 2);
+        DB::table('stocks')->where('product_id', $this->fixture['items'][1]['productId'])->update(['quantity' => 0]);
+        $failed = [...$this->payload, 'checkoutKey' => (string) Str::uuid(), 'cashAmount' => 200, 'items' => $this->fixture['items']];
+        $this->postJson('/api/pos-sales', $failed)->assertUnprocessable();
+        $this->assertSame(1, PosSale::count());
+        $this->assertEquals(998, $newer->fresh()->remaining_qty);
+        $this->assertDatabaseCount('stock_transactions', 1);
     }
 }

@@ -43,12 +43,14 @@ const DEFAULT_CPL = 42;
 const resolveCpl = (receiptWidthInches) =>
   CPL_BY_WIDTH_INCHES[String(receiptWidthInches || "").trim()] || DEFAULT_CPL;
 
-// Two remote-guided fix rounds (CPL, then QR banding + extra line feeds) made no visible
-// difference on the real printer - rather than guess a third time, this logs the actual resolved
-// values so the next physical test can be compared against real numbers instead of assumptions.
-// Safe to remove once the printer's real CPL and QR reliability are confirmed and stable.
+// Enable temporarily with sessionStorage.setItem("vynerix:print-debug", "1").
+// Normal checkout stays quiet; diagnostics never include bill/payment QR contents.
 const debugLog = (...args) => {
-  if (typeof console !== "undefined") console.log("[ESC/POS debug]", ...args);
+  let enabled = import.meta.env.VITE_PRINT_DEBUG === "true";
+  try {
+    enabled ||= typeof sessionStorage !== "undefined" && sessionStorage.getItem("vynerix:print-debug") === "1";
+  } catch { /* Storage may be unavailable in restricted browser sessions. */ }
+  if (enabled && typeof console !== "undefined") console.debug("[ESC/POS debug]", ...args);
 };
 
 // ── byte assembly helpers ─────────────────────────────────────────────────
@@ -173,7 +175,7 @@ const buildQrRasterBytes = (value, { moduleDots = 5, marginModules = 2 } = {}) =
   const bytesPerRow = Math.ceil(widthDots / 8);
   const heightDots = widthDots;
   debugLog(
-    "QR:", JSON.stringify(value).slice(0, 60), "moduleCount:", size, "moduleDots:", moduleDots,
+    "QR content length:", String(value || "").length, "moduleCount:", size, "moduleDots:", moduleDots,
     "widthDots:", widthDots, "heightDots:", heightDots, "bands:", Math.ceil(heightDots / RASTER_BAND_MAX_ROWS)
   );
   const raster = new Uint8Array(bytesPerRow * heightDots);

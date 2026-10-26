@@ -390,6 +390,7 @@ $registerAppRoutes = function () {
 
     // POS Special Endpoints (Must be registered before apiResource)
     Route::get('pos-sales/next-bill-no', [PosSaleController::class, 'nextBillNo']);
+    Route::get('pos-sales/latest-document', [PosSaleController::class, 'latestDocument']);
     Route::get('pos-sale/next-bill-no', [PosSaleController::class, 'nextBillNo']);
     Route::get('pos-sales/salesman-lookup', [PosSaleController::class, 'salesmanLookup']);
     Route::get('pos-sales/summary-report', [PosSaleController::class, 'summaryReport']);

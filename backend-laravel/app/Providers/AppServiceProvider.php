@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Services\StoreModelScope;
+use App\Services\StoreSchema;
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 
@@ -13,7 +15,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->scoped(StoreSchema::class);
     }
 
     /**
@@ -21,6 +23,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Event::listen(QueryExecuted::class, function (QueryExecuted $query): void {
+            $metrics = request()->attributes->get('api_performance');
+            if ($metrics) {
+                $metrics->queries++;
+                $metrics->databaseMs += $query->time;
+            }
+        });
         $scope = app(StoreModelScope::class);
         Event::listen('eloquent.booted: App\\Models\\*', function ($event, $models) use ($scope): void {
             $scope->bootModel($models[0]);
