@@ -14,6 +14,7 @@ import { Alert, Box, ButtonBase, Chip, Stack, Typography } from "@mui/material";
 import { isTenantAdmin, canSwitchStores } from "../utils/accessControl";
 import SubscriptionDuePopup from "./SubscriptionDuePopup";
 import useSubscriptionStatus from "../hooks/useSubscriptionStatus";
+import { SubscriptionStatusProvider } from "../context/SubscriptionStatusContext";
 import useStoreNameMap, { resolveStoreName } from "../hooks/useStoreNameMap";
 import { ProtectedLayoutRouteRenderer } from "../routes/protectedLayoutRoutes";
 import { Link, useLocation } from "react-router-dom";
@@ -328,6 +329,7 @@ const MainLayout = () => {
   const closeMobileSidebar = useCallback(() => setMobileOpen(false), []);
 
   return (
+    <SubscriptionStatusProvider>
     <TransferActivityProvider>
       <TabProvider>
         <Box className="erp-app-shell" sx={{ "--erp-control-radius": ERP_UI.controlRadius, "--erp-action-height": `${ERP_UI.actionHeight}px`, display: "flex", height: "100dvh", width: "100%", overflow: "hidden", bgcolor: "background.default" }}>
@@ -384,6 +386,7 @@ const MainLayout = () => {
         </Box>
       </TabProvider>
     </TransferActivityProvider>
+    </SubscriptionStatusProvider>
   );
 };
 

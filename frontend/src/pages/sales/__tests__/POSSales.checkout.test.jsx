@@ -34,11 +34,33 @@ it("returns focus to scanning, focuses checkout cash and releases entry while pr
   await waitFor(() => expect(cash).toHaveFocus());
   fireEvent.change(cash, { target: { value: "100" } });
   fireEvent.click(screen.getByRole("button", { name: "Save & Print", exact: true }));
-  await waitFor(() => expect(api.post).toHaveBeenCalledWith("/pos-sales", expect.any(Object)));
+  await waitFor(() => expect(api.post).toHaveBeenCalledWith("/pos-sales", expect.objectContaining({ checkoutKey: expect.any(String) }), { __posRetryTarget: null }));
   await waitFor(() => expect(barcode).toHaveFocus());
   expect(screen.getByRole("button", { name: "Save", exact: true })).toBeEnabled();
   expect(api.get.mock.calls.filter(([url]) => ["/customers", "/products", "/pos-sales/stock-products"].includes(url))).toHaveLength(masterRequests);
   await waitFor(() => expect(mocks.print).toHaveBeenCalledOnce());
+});
+
+it("reuses its checkout key and original server when the cashier retries after a lost response", async () => {
+  api.post.mockRejectedValueOnce({ config: { __routingTarget: "local" }, message: "Connection lost" });
+  render(<MemoryRouter><POSSales /></MemoryRouter>);
+  const barcode = screen.getByPlaceholderText("Scan / enter barcode");
+  await waitFor(() => expect(barcode).toHaveFocus());
+  fireEvent.change(barcode, { target: { value: "COFFEE" } });
+  fireEvent.keyDown(barcode, { key: "Enter" });
+  await screen.findByText("Coffee beans");
+  fireEvent.click(screen.getByRole("button", { name: "Save", exact: true }));
+  const cash = await screen.findByRole("spinbutton", { name: "Cash received" });
+  fireEvent.change(cash, { target: { value: "100" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save & Print", exact: true }));
+  await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
+  const first = api.post.mock.calls[0][1];
+  await waitFor(() => expect(screen.getByRole("button", { name: "Save & Print", exact: true })).toBeEnabled());
+  fireEvent.click(screen.getByRole("button", { name: "Save & Print", exact: true }));
+  await waitFor(() => expect(api.post).toHaveBeenCalledTimes(2));
+  expect(api.post.mock.calls[1][1]).toEqual(first);
+  expect(api.post.mock.calls[1][2]).toEqual({ __posRetryTarget: "local" });
+  await waitFor(() => expect(barcode).toHaveFocus());
 });
 
 it("keeps the next scan intact and prevents checkout before the current lookup completes", async () => {

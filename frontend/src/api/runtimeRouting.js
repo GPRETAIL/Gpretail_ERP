@@ -50,6 +50,9 @@ const pathFromRequestConfig = (config = {}) => {
 
 const withoutQuery = (value = "") => String(value || "").split("?")[0] || "/";
 
+const isPosCheckout = config => String(config.method || "get").toLowerCase() === "post" &&
+  /^\/(?:api\/)?pos-(?:old-)?sales\/?$/i.test(withoutQuery(pathFromRequestConfig(config)));
+
 const isAlwaysCloudPath = (value = "") => {
   const path = withoutQuery(value).toLowerCase();
   return (
@@ -335,6 +338,15 @@ export const prepareRoutingForRequest = async (config = {}) => {
   };
 
   const path = pathFromRequestConfig(next);
+  if (isPosCheckout(next) && ["local", "cloud"].includes(next.__posRetryTarget)) {
+    next.__routingTarget = next.__posRetryTarget;
+    if (next.__posRetryTarget === "local" && !runtimeState.localBaseUrl) {
+      throw new Error("Restore the local server connection and check the sales list before retrying this checkout.");
+    }
+    next.baseURL = next.__posRetryTarget === "local" ? runtimeState.localBaseUrl : runtimeState.cloudBaseUrl || CLOUD_BASE_URL;
+    if (next.__posRetryTarget === "cloud") next.headers["X-Bypass-Local"] = "1";
+    return next;
+  }
   if (isAbsoluteUrl(next.url || "")) {
     next.__routingTarget = "absolute";
     return next;
@@ -365,6 +377,9 @@ export const prepareRoutingForRequest = async (config = {}) => {
 
 export const shouldRetryOnCloud = (error) => {
   const requestConfig = error?.config || {};
+  // A timeout does not mean a write failed. Keep POS retries on their
+  // original database; a second node cannot yet know whether it committed.
+  if (isPosCheckout(requestConfig)) return false;
   if (!runtimeState.enabled) return false;
   if (requestConfig.__retriedOnCloud) return false;
   if (requestConfig.__routingTarget !== "local") return false;

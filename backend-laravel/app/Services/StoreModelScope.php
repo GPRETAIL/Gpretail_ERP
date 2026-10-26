@@ -14,6 +14,16 @@ class StoreModelScope
 
     private array $foreignKeys = [];
 
+    private array $tableColumns = [];
+
+    /** Cache schema only, never a user's authorization or a record's ownership. */
+    private function tableColumns(Model $model, string $table): array
+    {
+        $key = ($model->getConnectionName() ?? config('database.default')).':'.$table;
+
+        return $this->tableColumns[$key] ??= Schema::connection($model->getConnectionName())->getColumnListing($table);
+    }
+
     public function columns(Model $model): array
     {
         if (! str_starts_with($model::class, 'App\\Models\\')
@@ -23,7 +33,7 @@ class StoreModelScope
         $key = ($model->getConnectionName() ?? 'default').':'.$model->getTable();
 
         return $this->columns[$key] ??= array_values(array_intersect(
-            ['store_id', 'company_id'], Schema::connection($model->getConnectionName())->getColumnListing($model->getTable()),
+            ['store_id', 'company_id'], $this->tableColumns($model, $model->getTable()),
         ));
     }
 
@@ -78,7 +88,7 @@ class StoreModelScope
             if (! $hasValue) {
                 continue;
             }
-            $parentColumns = Schema::connection($model->getConnectionName())->getColumnListing($foreign['foreign_table']);
+            $parentColumns = $this->tableColumns($model, $foreign['foreign_table']);
             $ownership = array_intersect(['store_id', 'company_id'], $parentColumns);
             StoreQuery::ownership($query, $foreign['foreign_table'], array_values($ownership), [$selected]);
             if ($ownership && ! $query->exists()) {

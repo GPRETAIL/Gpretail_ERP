@@ -1,5 +1,6 @@
 import LiveDateTime from "../../components/LiveDateTime";
 import { runPosCheckout } from "../../utils/posCheckout";
+import { prepareCheckoutAttempt } from "./posCheckoutAttempt";
 import PageHeader from "../../components/PageHeader";
 import useCounterAssignmentPrompt from "../../hooks/useCounterAssignmentPrompt";
 import useStoreDisplayName from "../../hooks/useStoreDisplayName";
@@ -2237,6 +2238,7 @@ const POSSales = () => {
   };
 
   const saveInFlight = useRef(false);
+  const checkoutAttempt = useRef(null);
 
   const handleSaveSale = async ({
     shouldPrint = false,
@@ -2255,10 +2257,13 @@ const POSSales = () => {
         : buildSavePayload(undefined, { allowUnsettledWithoutPayment });
     if (!payload) return;
 
+    checkoutAttempt.current = prepareCheckoutAttempt(checkoutAttempt.current, payload, [authUser?.id, sessionStorage.getItem("activeStoreId"), authUser?.company_id, authUser?.store_id, authUser?.counter_id]);
+    const attempt = checkoutAttempt.current;
+
     saveInFlight.current = true;
     setSaving(true);
     try {
-      const res = await api.post("/pos-sales", payload);
+      const res = await api.post("/pos-sales", attempt.payload, { __posRetryTarget: attempt.target });
       const saved = res.data?.data;
       const savedBillNo = saved?.bill_no;
       setLatestPosDocument(saved ? { type: "sale", ...saved } : null);
@@ -2269,8 +2274,12 @@ const POSSales = () => {
       cart.forEach(line => sold.set(line.stockId, (sold.get(line.stockId) || 0) + toNum(line.qty, 0)));
       setStockRows(rows => rows.map(row => ({ ...row, qty: Math.max(0, row.qty - (sold.get(row.id) || 0)) })));
       handleResetEntry();
+      checkoutAttempt.current = null;
       void loadNextBillNo();
     } catch (err) {
+      // Keep an uncertain write on the same node. Retrying it on another DB
+      // could create a second invoice before store sync catches up.
+      if (err?.config?.__routingTarget) attempt.target = err.config.__routingTarget;
       toast.error(err?.response?.data?.message || "Failed to save POS sale");
     } finally {
       saveInFlight.current = false;

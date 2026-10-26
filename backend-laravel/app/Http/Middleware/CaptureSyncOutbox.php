@@ -57,7 +57,7 @@ class CaptureSyncOutbox
 
         // A request already being replayed must never be re-queued -- that would
         // loop the same write back and forth between local and cloud forever.
-        if ($request->header('X-Sync-Replay') === '1') {
+        if ($request->header('X-Sync-Replay') === '1' || $response->headers->get('X-Pos-Checkout-Replayed') === '1') {
             return;
         }
 

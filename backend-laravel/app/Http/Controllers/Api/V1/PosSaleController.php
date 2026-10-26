@@ -21,12 +21,14 @@ use App\Services\DashboardBroadcastService;
 use App\Services\DocumentNumberService;
 use App\Services\GroupAggregationService;
 use App\Services\PaginationService;
+use App\Services\PosCheckoutAttempt;
 use App\Services\PosCounter;
 use App\Services\StockService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 
 class PosSaleController extends Controller
 {
@@ -358,9 +360,11 @@ class PosSaleController extends Controller
 
     public function store(Request $request)
     {
+        $startedAt = hrtime(true);
         $validator = Validator::make($request->all(), [
             'items' => 'required|array|min:1',
-            'items.*.productId' => 'required|exists:products,id',
+            'items.*.productId' => 'required|integer',
+            'items.*.barcodeId' => 'nullable|integer',
             'items.*.qty' => 'required|numeric|min:0.01',
             'items.*.price' => 'required|numeric|min:0',
             'customerId' => 'nullable|exists:customers,id',
@@ -368,6 +372,7 @@ class PosSaleController extends Controller
             'cardAmount' => 'nullable|numeric|min:0',
             'upiAmount' => 'nullable|numeric|min:0',
             'saleSaveAs' => 'nullable|in:paid_settled,unsettled',
+            'checkoutKey' => 'nullable|uuid',
         ]);
 
         if ($validator->fails()) {
@@ -375,12 +380,18 @@ class PosSaleController extends Controller
         }
 
         try {
-            return DB::transaction(function () use ($request) {
+            $response = DB::transaction(function () use ($request) {
                 $user = $request->user();
                 $storeId = $request->header('X-Company-Scope-Id') ?: ($user->store_id ?? $request->input('store_id', 1));
+                $attempt = PosCheckoutAttempt::reserve($request, (int) $storeId);
+                if ($attempt?->pos_sale_id) {
+                    $existing = PosSale::where('store_id', $storeId)->findOrFail($attempt->pos_sale_id);
+
+                    return response()->json(['success' => true, 'message' => 'Sale already saved', 'data' => $this->withBillNo($existing->load(['items.product', 'payments']))], 201)->header('X-Pos-Checkout-Replayed', '1');
+                }
                 $counter = PosCounter::find($user?->counter_id, (int) $storeId);
                 if ($user?->counter_id && ! $counter) {
-                    return response()->json(['message' => 'Select an active counter in this store before saving.'], 422);
+                    throw ValidationException::withMessages(['counter' => 'Select an active counter in this store before saving.']);
                 }
 
                 // Resolve customer: an existing id, or a lightweight walk-in
@@ -418,6 +429,32 @@ class PosSaleController extends Controller
 
                 $itemsData = $request->input('items');
 
+                // Resolve the basket together. Per-line exists/product/barcode
+                // lookups used hundreds of round trips on a large checkout.
+                // These queries retain the normal tenant/store model scopes.
+                $products = Product::whereKey(array_unique(array_column($itemsData, 'productId')))->get()->keyBy('id');
+                $barcodeIds = array_values(array_filter(array_column($itemsData, 'barcodeId')));
+                $barcodes = $barcodeIds ? Barcode::whereKey(array_unique($barcodeIds))->lockForUpdate()->get()->keyBy('id') : collect();
+                $pieceBarcodes = [];
+                foreach ($itemsData as $index => $item) {
+                    $product = $products->get($item['productId']);
+                    if (! $product) {
+                        throw ValidationException::withMessages(["items.$index.productId" => 'Select a product available in this store.']);
+                    }
+                    if (! empty($item['barcodeId'])) {
+                        $barcode = $barcodes->get($item['barcodeId']);
+                        if (! $barcode || (int) $barcode->product_id !== (int) $product->id || (isset($item['variantId']) && (int) $barcode->variant_id !== (int) $item['variantId'])) {
+                            throw ValidationException::withMessages(["items.$index.barcodeId" => 'This barcode does not match the selected product and variant.']);
+                        }
+                        if (strtoupper((string) ($product->selling_mode ?: 'PIECE')) === 'PIECE') {
+                            if (! $barcode->is_active || isset($pieceBarcodes[$barcode->id]) || (float) $item['qty'] !== 1.0) {
+                                throw ValidationException::withMessages(["items.$index.barcodeId" => 'This piece barcode is already sold or appears more than once.']);
+                            }
+                            $pieceBarcodes[$barcode->id] = true;
+                        }
+                    }
+                }
+
                 $subtotal = 0;
                 $taxTotal = 0;
                 $discountTotal = 0;
@@ -447,7 +484,7 @@ class PosSaleController extends Controller
                 $paid = $cashAmount + $cardAmount + $upiAmount;
                 $change = max(0, $paid - $netPayable);
                 if ($request->input('saleSaveAs') === 'paid_settled' && ! $isCredit && round($paid, 2) < round($netPayable, 2)) {
-                    return response()->json(['message' => 'Full payment is required to save a paid invoice.'], 422);
+                    throw ValidationException::withMessages(['cashAmount' => 'Full payment is required to save a paid invoice.']);
                 }
 
                 $paymentMode = $isCredit || $paid <= 0
@@ -529,8 +566,8 @@ class PosSaleController extends Controller
                     // stays active (more stock of the same variant may still
                     // be on the shelf under the same label).
                     if ($barcodeId) {
-                        $scannedBarcode = Barcode::with('product')->find($barcodeId);
-                        $mode = strtoupper((string) ($scannedBarcode?->product?->selling_mode ?: 'PIECE'));
+                        $scannedBarcode = $barcodes->get($barcodeId);
+                        $mode = strtoupper((string) ($products->get($item['productId'])->selling_mode ?: 'PIECE'));
                         if ($mode === 'PIECE') {
                             $scannedBarcode->update(['is_active' => false]);
                         }
@@ -602,12 +639,16 @@ class PosSaleController extends Controller
 
                 DB::afterCommit(fn () => \Illuminate\Support\defer(fn () => DashboardBroadcastService::salesUpdated((int) $storeId)));
 
+                PosCheckoutAttempt::complete($attempt, $sale->id);
+
                 return response()->json([
                     'success' => true,
                     'message' => 'Sale completed successfully',
                     'data' => $this->withBillNo($sale->load(['items.product', 'payments'])),
                 ], 201);
             });
+
+            return $response->header('Server-Timing', 'pos-checkout;dur='.round((hrtime(true) - $startedAt) / 1e6, 2));
         } catch (InsufficientStockException $e) {
             return response()->json([
                 'success' => false,
