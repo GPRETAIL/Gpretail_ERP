@@ -54,3 +54,8 @@ it("never looks up a node-local backup ID on another database after a read fails
   expect(pinned.__routingTarget).toBe("local");
   expect(pinned.baseURL).toBe("http://127.0.0.1:8130/api");
 });
+
+it("rejects an archive request after its originating server address is reconfigured", async () => {
+  await expect(prepareRoutingForRequest({ method: "get", url: "/backups/5/download", __backupTarget: "local", __backupBaseURL: "http://127.0.0.1:8140/api" }))
+    .rejects.toThrow("backup server address changed");
+});

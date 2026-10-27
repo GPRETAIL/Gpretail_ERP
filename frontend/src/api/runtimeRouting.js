@@ -367,6 +367,7 @@ export const prepareRoutingForRequest = async (config = {}) => {
     if (next.__backupTarget === "local" && !runtimeState.localBaseUrl) throw new Error("Reconnect the local server or reopen Backup Center before accessing its archives.");
     next.__routingTarget = next.__backupTarget;
     next.baseURL = next.__backupTarget === "local" ? runtimeState.localBaseUrl : runtimeState.cloudBaseUrl || CLOUD_BASE_URL;
+    if (next.__backupBaseURL && next.__backupBaseURL !== next.baseURL) throw new Error("The backup server address changed. Reopen Backup Center before accessing its archives.");
     if (next.__backupTarget === "cloud") next.headers["X-Bypass-Local"] = "1";
     return next;
   }

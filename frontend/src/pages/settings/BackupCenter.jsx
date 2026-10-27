@@ -324,7 +324,9 @@ export default function BackupCenter() {
   const isSuperAdmin = userRole === "super_admin";
   const canSelectStore = canSwitchStores(authUser);
   const canManageAllStores = isSuperAdmin || (userRole === "admin" && !authUser?.store_id);
-  const [backupTarget] = useState(() => getRuntimeRoutingSnapshot().currentTarget);
+  const [backupNode] = useState(() => getRuntimeRoutingSnapshot());
+  const backupTarget = backupNode.currentTarget;
+  const backupBaseURL = (backupTarget === "local" ? backupNode.localBaseUrl : backupNode.cloudBaseUrl) || "/api";
   const [initialLoading, setLoading] = useState(true);
   const [selectedCompanyId, setSelectedCompanyId] = useState(() => sessionStorage.getItem("activeStoreId") || "");
   const [overview, setOverview] = useState({
@@ -391,9 +393,9 @@ export default function BackupCenter() {
   const formatElapsed = (ms) => `${(ms / 1000).toFixed(1)}s`;
 
   const fetchOverview = useCallback(async ({ signal }) => {
-    const response = await api.get("/backups/overview", { signal, __backupTarget: backupTarget, storeScopeId: selectedCompanyId, params: selectedCompanyId ? { companyId: selectedCompanyId } : {} });
+    const response = await api.get("/backups/overview", { signal, __backupTarget: backupTarget, __backupBaseURL: backupBaseURL, storeScopeId: selectedCompanyId, params: selectedCompanyId ? { companyId: selectedCompanyId } : {} });
     return response.data?.data || {};
-  }, [selectedCompanyId, backupTarget]);
+  }, [selectedCompanyId, backupTarget, backupBaseURL]);
   const { loading: overviewLoading, reload: refreshOverview } = useAsyncQuery(fetchOverview, {
     onSuccess: data => {
       const normalizedSetting = normalizeSetting(data.setting || {});
@@ -571,7 +573,7 @@ export default function BackupCenter() {
       const response = await api.post("/backups", {
         ...createForm,
         companyId: selectedCompanyId || undefined,
-      }, { __backupTarget: backupTarget, storeScopeId: selectedCompanyId, timeout: 180000 });
+      }, { __backupTarget: backupTarget, __backupBaseURL: backupBaseURL, storeScopeId: selectedCompanyId, timeout: 180000 });
       const backupData = response.data?.data;
       const status = backupData?.status;
       const statusMessage = backupData?.summary?.status_message;
@@ -616,7 +618,7 @@ export default function BackupCenter() {
         ociAccessKeyId: settingsForm.ociAccessKeyId,
         ociSecretAccessKey: settingsForm.ociSecretAccessKey,
         ociBucket: settingsForm.ociBucket,
-      }, { __backupTarget: backupTarget, storeScopeId: selectedCompanyId });
+      }, { __backupTarget: backupTarget, __backupBaseURL: backupBaseURL, storeScopeId: selectedCompanyId });
       toast.success(response.data?.message || "Backup settings saved");
       await loadOverview(selectedCompanyId);
     } catch (err) {
@@ -640,7 +642,7 @@ export default function BackupCenter() {
         ociAccessKeyId: settingsForm.ociAccessKeyId,
         ociSecretAccessKey: settingsForm.ociSecretAccessKey,
         ociBucket: settingsForm.ociBucket,
-      }, { __backupTarget: backupTarget, storeScopeId: selectedCompanyId });
+      }, { __backupTarget: backupTarget, __backupBaseURL: backupBaseURL, storeScopeId: selectedCompanyId });
       setCloudTestStatus("ok");
       setCloudTestMessage(response.data?.message || "Connection successful");
     } catch (err) {
@@ -664,7 +666,7 @@ export default function BackupCenter() {
         ...restoreForm,
         companyId: sourceStore || undefined,
         targetCompanyId: restoreForm.targetCompanyId || undefined,
-      }, { __backupTarget: backupTarget, storeScopeId: sourceStore, timeout: 180000 });
+      }, { __backupTarget: backupTarget, __backupBaseURL: backupBaseURL, storeScopeId: sourceStore, timeout: 180000 });
       const status = response.data?.data?.status;
       if (status === "failed") {
         toast.error(response.data?.data?.summary?.status_message || "Restore failed");
@@ -701,6 +703,7 @@ export default function BackupCenter() {
         headers: { "Content-Type": "multipart/form-data" },
         storeScopeId: selectedCompanyId,
         __backupTarget: backupTarget,
+        __backupBaseURL: backupBaseURL,
         timeout: 180000,
       });
       toast.success(response.data?.message || "Backup imported");
@@ -734,7 +737,7 @@ export default function BackupCenter() {
   };
 
   const downloadBlob = async (url, fallbackName) => {
-    const response = await api.get(url, { responseType: "blob", __backupTarget: backupTarget, storeScopeId: selectedCompanyId, timeout: 180000 });
+    const response = await api.get(url, { responseType: "blob", __backupTarget: backupTarget, __backupBaseURL: backupBaseURL, storeScopeId: selectedCompanyId, timeout: 180000 });
     const disposition = response.headers?.["content-disposition"];
     const match = disposition && /filename="?([^"]+)"?/.exec(disposition);
     const fileName = match ? match[1] : fallbackName;
@@ -790,7 +793,7 @@ export default function BackupCenter() {
     setDeleteDialog({ open: false, row: null });
     if (!row) return;
     try {
-      const response = await api.delete(`/backups/${row.id}`, { __backupTarget: backupTarget, storeScopeId: selectedCompanyId || String(row.company_id || "") });
+      const response = await api.delete(`/backups/${row.id}`, { __backupTarget: backupTarget, __backupBaseURL: backupBaseURL, storeScopeId: selectedCompanyId || String(row.company_id || "") });
       toast.success(response.data?.message || "Backup deleted");
       if (String(restoreForm.backupId) === String(row.id)) {
         setRestoreForm((prev) => ({ ...prev, backupId: "", moduleNames: [] }));
