@@ -17,6 +17,14 @@ it("shares concurrent connector and runtime initialization without caching compl
   expect(fetch).toHaveBeenCalledTimes(4);
 });
 
+it("uses the store's saved cloud URL when local fallback is configured", async () => {
+  const fetch = vi.fn().mockResolvedValueOnce(response({})).mockResolvedValueOnce(response({ enabled: true, local_server_url: "http://192.168.1.5:8130", cloud_server_url: "https://alternate.example" }))
+    .mockResolvedValueOnce(response({ local_healthy: true }));
+  vi.stubGlobal("fetch", fetch);
+  await fetchAndApplyRuntimeRoutingConfig({ token: "one" });
+  expect(getRuntimeRoutingSnapshot()).toMatchObject({ cloudBaseUrl: "https://alternate.example/api", currentTarget: "local" });
+});
+
 it("discards a pending configuration when the selected store changes without a new initialization", async () => {
   let resolve;
   const fetch = vi.fn(() => new Promise(done => { resolve = done; }));

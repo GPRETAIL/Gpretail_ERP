@@ -55,6 +55,7 @@ const withoutQuery = (value = "") => String(value || "").split("?")[0] || "/";
 
 const isPosCheckout = config => String(config.method || "get").toLowerCase() === "post" &&
   /^\/(?:api\/)?pos-(?:old-)?sales\/?$/i.test(withoutQuery(pathFromRequestConfig(config)));
+const isBackupPath = config => /^\/(?:api\/)?backups(?:\/|$)/i.test(withoutQuery(pathFromRequestConfig(config)));
 
 const isAlwaysCloudPath = (value = "") => {
   const path = withoutQuery(value).toLowerCase();
@@ -256,6 +257,7 @@ const resolveFromCloudRuntime = async ({ token, storeId } = {}) => {
     });
     const data = payload?.data || {};
     const localRoot = stripTrailingSlash(data.local_server_url || "");
+    const cloudBaseUrl = toApiBase(data.cloud_server_url) || CLOUD_BASE_URL;
     if (!data.enabled || !isAbsoluteUrl(localRoot)) {
       return {
         enabled: false,
@@ -280,7 +282,7 @@ const resolveFromCloudRuntime = async ({ token, storeId } = {}) => {
       blockedReason: "",
       currentTarget: localHealthy ? "local" : "cloud",
       localBaseUrl: `${localRoot}/api`,
-      cloudBaseUrl: CLOUD_BASE_URL,
+      cloudBaseUrl,
       localHealthUrl,
       localHealthy,
       runningOnLocalConnector: false,
@@ -361,6 +363,13 @@ export const prepareRoutingForRequest = async (config = {}) => {
   };
 
   const path = pathFromRequestConfig(next);
+  if (isBackupPath(next) && ["local", "cloud"].includes(next.__backupTarget)) {
+    if (next.__backupTarget === "local" && !runtimeState.localBaseUrl) throw new Error("Reconnect the local server or reopen Backup Center before accessing its archives.");
+    next.__routingTarget = next.__backupTarget;
+    next.baseURL = next.__backupTarget === "local" ? runtimeState.localBaseUrl : runtimeState.cloudBaseUrl || CLOUD_BASE_URL;
+    if (next.__backupTarget === "cloud") next.headers["X-Bypass-Local"] = "1";
+    return next;
+  }
   if (isPosCheckout(next) && ["local", "cloud"].includes(next.__posRetryTarget)) {
     next.__routingTarget = next.__posRetryTarget;
     if (next.__posRetryTarget === "local" && !runtimeState.localBaseUrl) {
@@ -414,6 +423,7 @@ export const shouldRetryOnCloud = (error) => {
   if (!runtimeState.enabled) return false;
   if (requestConfig.__retriedOnCloud) return false;
   if (requestConfig.__routingTarget !== "local") return false;
+  if (isBackupPath(requestConfig)) return false; // Archive IDs are local to their originating server.
   if (isAlwaysCloudPath(pathFromRequestConfig(requestConfig))) return false;
 
   const status = Number(error?.response?.status || 0);

@@ -44,7 +44,10 @@ class SyncCycleService
             }
         }
 
-        $cloudApi = rtrim((string) config('sync.cloud_api_base_url'), '/');
+        $cloudApi = rtrim((string) ($node->cloud_server_url ?: config('sync.cloud_api_base_url')), '/');
+        if ($cloudApi && ! str_ends_with($cloudApi, '/api')) {
+            $cloudApi .= '/api';
+        }
         if (! $cloudApi) {
             return ['ran' => false, 'reason' => 'sync.cloud_api_base_url is not configured.'];
         }

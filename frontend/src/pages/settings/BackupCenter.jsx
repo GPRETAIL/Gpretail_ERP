@@ -34,6 +34,8 @@ import {
   Typography,
 } from "@mui/material";
 import api from "../../api/axios";
+import { canSwitchStores } from "../../utils/accessControl";
+import { getRuntimeRoutingSnapshot } from "../../api/runtimeRouting";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import FilterableDataTable from "../../components/FilterableDataTable";
 import PageSkeleton from "../../components/PageSkeleton";
@@ -320,8 +322,11 @@ export default function BackupCenter() {
   const authUser = useSelector((state) => state.auth.user);
   const userRole = String(authUser?.role || "").toLowerCase();
   const isSuperAdmin = userRole === "super_admin";
+  const canSelectStore = canSwitchStores(authUser);
+  const canManageAllStores = isSuperAdmin || (userRole === "admin" && !authUser?.store_id);
+  const [backupTarget] = useState(() => getRuntimeRoutingSnapshot().currentTarget);
   const [initialLoading, setLoading] = useState(true);
-  const [selectedCompanyId, setSelectedCompanyId] = useState("");
+  const [selectedCompanyId, setSelectedCompanyId] = useState(() => sessionStorage.getItem("activeStoreId") || "");
   const [overview, setOverview] = useState({
     companies: [],
     moduleOptions: [],
@@ -364,6 +369,9 @@ export default function BackupCenter() {
   const [creatingBackup, setCreatingBackup] = useState(false);
   const [createElapsedMs, setCreateElapsedMs] = useState(0);
   const [restoring, setRestoring] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [savingSettings, setSavingSettings] = useState(false);
+  const operationPending = useRef(false);
   const [restoreElapsedMs, setRestoreElapsedMs] = useState(0);
 
   useEffect(() => {
@@ -383,9 +391,9 @@ export default function BackupCenter() {
   const formatElapsed = (ms) => `${(ms / 1000).toFixed(1)}s`;
 
   const fetchOverview = useCallback(async ({ signal }) => {
-    const response = await api.get("/backups/overview", { signal, params: selectedCompanyId ? { companyId: selectedCompanyId } : {} });
+    const response = await api.get("/backups/overview", { signal, __backupTarget: backupTarget, storeScopeId: selectedCompanyId, params: selectedCompanyId ? { companyId: selectedCompanyId } : {} });
     return response.data?.data || {};
-  }, [selectedCompanyId]);
+  }, [selectedCompanyId, backupTarget]);
   const { loading: overviewLoading, reload: refreshOverview } = useAsyncQuery(fetchOverview, {
     onSuccess: data => {
       const normalizedSetting = normalizeSetting(data.setting || {});
@@ -439,13 +447,13 @@ export default function BackupCenter() {
   }, [authUser, companyNameById, companyOptions, selectedCompanyId]);
 
   const selectedScopeLabel = useMemo(() => {
-    if (isSuperAdmin) {
+    if (canSelectStore) {
       return selectedCompanyId
         ? companyNameById[String(selectedCompanyId)] || `Store ${selectedCompanyId}`
         : "All Stores";
     }
     return currentStoreLabel;
-  }, [companyNameById, currentStoreLabel, isSuperAdmin, selectedCompanyId]);
+  }, [companyNameById, currentStoreLabel, canSelectStore, selectedCompanyId]);
 
   const selectedBackupRecord = useMemo(
     () => (overview.backups || []).find((row) => String(row.id) === String(restoreForm.backupId)) || null,
@@ -542,6 +550,8 @@ export default function BackupCenter() {
   const createFormIncludesUsers = createForm.backupType !== "module" || createForm.moduleNames.includes("store");
 
   const handleCreateBackup = async () => {
+    if (operationPending.current) return;
+    if (!selectedCompanyId && overview.companies.length > 1) { toast.warning("Select one store before creating an archive."); return; }
     if (createForm.backupType === "module" && !createForm.moduleNames.length) {
       toast.warning("Select at least one module for module-wise backup");
       return;
@@ -555,12 +565,13 @@ export default function BackupCenter() {
       return;
     }
     setCreateElapsedMs(0);
+    operationPending.current = true;
     setCreatingBackup(true);
     try {
       const response = await api.post("/backups", {
         ...createForm,
         companyId: selectedCompanyId || undefined,
-      });
+      }, { __backupTarget: backupTarget, storeScopeId: selectedCompanyId, timeout: 180000 });
       const backupData = response.data?.data;
       const status = backupData?.status;
       const statusMessage = backupData?.summary?.status_message;
@@ -582,16 +593,19 @@ export default function BackupCenter() {
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to create backup");
     } finally {
+      operationPending.current = false;
       setCreatingBackup(false);
     }
   };
 
   const handleSaveSettings = async () => {
+    if (savingSettings) return;
     // Non-super-admin users always operate under their own store scope
-    if (!isSuperAdmin && !selectedCompanyId) {
+    if (!canManageAllStores && !selectedCompanyId) {
       toast.error("Select a store first.");
       return;
     }
+    setSavingSettings(true);
     try {
       const response = await api.post("/backups/settings", {
         ...settingsForm,
@@ -602,11 +616,13 @@ export default function BackupCenter() {
         ociAccessKeyId: settingsForm.ociAccessKeyId,
         ociSecretAccessKey: settingsForm.ociSecretAccessKey,
         ociBucket: settingsForm.ociBucket,
-      });
+      }, { __backupTarget: backupTarget, storeScopeId: selectedCompanyId });
       toast.success(response.data?.message || "Backup settings saved");
       await loadOverview(selectedCompanyId);
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to save backup settings");
+    } finally {
+      setSavingSettings(false);
     }
   };
 
@@ -624,7 +640,7 @@ export default function BackupCenter() {
         ociAccessKeyId: settingsForm.ociAccessKeyId,
         ociSecretAccessKey: settingsForm.ociSecretAccessKey,
         ociBucket: settingsForm.ociBucket,
-      });
+      }, { __backupTarget: backupTarget, storeScopeId: selectedCompanyId });
       setCloudTestStatus("ok");
       setCloudTestMessage(response.data?.message || "Connection successful");
     } catch (err) {
@@ -634,38 +650,47 @@ export default function BackupCenter() {
   };
 
   const handleRestore = async () => {
+    if (operationPending.current) return;
     if (!restoreForm.backupId) {
       toast.warning("Select a backup to restore");
       return;
     }
     setRestoreElapsedMs(0);
+    operationPending.current = true;
     setRestoring(true);
     try {
+      const sourceStore = selectedCompanyId || String(selectedBackupRecord?.company_id || "");
       const response = await api.post(`/backups/${restoreForm.backupId}/restore`, {
         ...restoreForm,
-        companyId: selectedCompanyId || undefined,
+        companyId: sourceStore || undefined,
         targetCompanyId: restoreForm.targetCompanyId || undefined,
-      });
+      }, { __backupTarget: backupTarget, storeScopeId: sourceStore, timeout: 180000 });
       const status = response.data?.data?.status;
       if (status === "failed") {
         toast.error(response.data?.data?.summary?.status_message || "Restore failed");
       } else {
         toast.success(response.data?.message || "Restore completed");
+        if (response.data?.data?.summary?.skipped_tables?.length) toast.info("Installation-wide permissions were preserved; tenant data was restored.");
       }
       setRestoreForm(createDefaultRestoreForm());
       await loadOverview(selectedCompanyId);
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to restore backup");
     } finally {
+      operationPending.current = false;
       setRestoring(false);
     }
   };
 
   const handleImport = async () => {
+    if (operationPending.current) return;
+    if (!selectedCompanyId && overview.companies.length > 1) { toast.warning("Select one store before importing an archive."); return; }
     if (!importFile) {
       toast.warning("Choose a backup file first");
       return;
     }
+    operationPending.current = true;
+    setImporting(true);
     try {
       const formData = new FormData();
       formData.append("backupFile", importFile);
@@ -674,6 +699,9 @@ export default function BackupCenter() {
       if (importPassword) formData.append("password", importPassword);
       const response = await api.post("/backups/import", formData, {
         headers: { "Content-Type": "multipart/form-data" },
+        storeScopeId: selectedCompanyId,
+        __backupTarget: backupTarget,
+        timeout: 180000,
       });
       toast.success(response.data?.message || "Backup imported");
       setImportFile(null);
@@ -682,6 +710,9 @@ export default function BackupCenter() {
       await loadOverview(selectedCompanyId);
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to import backup");
+    } finally {
+      operationPending.current = false;
+      setImporting(false);
     }
   };
 
@@ -703,7 +734,7 @@ export default function BackupCenter() {
   };
 
   const downloadBlob = async (url, fallbackName) => {
-    const response = await api.get(url, { responseType: "blob" });
+    const response = await api.get(url, { responseType: "blob", __backupTarget: backupTarget, storeScopeId: selectedCompanyId, timeout: 180000 });
     const disposition = response.headers?.["content-disposition"];
     const match = disposition && /filename="?([^"]+)"?/.exec(disposition);
     const fileName = match ? match[1] : fallbackName;
@@ -759,7 +790,7 @@ export default function BackupCenter() {
     setDeleteDialog({ open: false, row: null });
     if (!row) return;
     try {
-      const response = await api.delete(`/backups/${row.id}`);
+      const response = await api.delete(`/backups/${row.id}`, { __backupTarget: backupTarget, storeScopeId: selectedCompanyId || String(row.company_id || "") });
       toast.success(response.data?.message || "Backup deleted");
       if (String(restoreForm.backupId) === String(row.id)) {
         setRestoreForm((prev) => ({ ...prev, backupId: "", moduleNames: [] }));
@@ -896,8 +927,8 @@ export default function BackupCenter() {
 
               <Box>
                 <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Backup Scope</Typography>
-                {isSuperAdmin ? (
-                  <TextField select size="small" fullWidth sx={fieldSx} value={selectedCompanyId} onChange={(event) => setSelectedCompanyId(event.target.value)}>
+                {canSelectStore ? (
+                  <TextField select size="small" fullWidth sx={fieldSx} value={selectedCompanyId} disabled={creatingBackup || restoring || importing} onChange={(event) => { setSelectedCompanyId(event.target.value); setRestoreForm(createDefaultRestoreForm()); }}>
                     <MenuItem value="">All Stores</MenuItem>
                     {companyOptions.map((option) => (
                       <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
@@ -991,7 +1022,7 @@ export default function BackupCenter() {
                 type="button"
                 className="glass-btn glass-btn-success"
                 onClick={handleCreateBackup}
-                disabled={creatingBackup}
+                disabled={creatingBackup || restoring || importing}
               >
                 <Play size={16} style={{ marginRight: 4 }} />
                 {creatingBackup ? `Backing up… ${formatElapsed(createElapsedMs)}` : "Run Backup"}
@@ -1361,7 +1392,7 @@ export default function BackupCenter() {
                 label="Auto cleanup old scheduled backups"
               />
 
-              <Button type="button" className="glass-btn glass-btn-success" onClick={handleSaveSettings}>
+              <Button type="button" className="glass-btn glass-btn-success" onClick={handleSaveSettings} disabled={savingSettings}>
                 <Save size={16} style={{ marginRight: 4 }} /> Save Settings
               </Button>
             </Stack>
@@ -1479,7 +1510,7 @@ export default function BackupCenter() {
                 type="button"
                 className="glass-btn glass-btn-danger"
                 onClick={handleRestore}
-                disabled={restoring}
+                disabled={restoring || creatingBackup || importing}
               >
                 <RotateCcw size={16} style={{ marginRight: 4 }} />
                 {restoring ? `Restoring… ${formatElapsed(restoreElapsedMs)}` : "Run Restore"}
@@ -1520,7 +1551,7 @@ export default function BackupCenter() {
                     }}
                   />
                 </Box>
-                <Button type="button" className="glass-btn glass-btn-primary" onClick={handleImport}>
+                <Button type="button" className="glass-btn glass-btn-primary" onClick={handleImport} disabled={importing || creatingBackup || restoring}>
                   <Upload size={16} style={{ marginRight: 4 }} /> Import Backup
                 </Button>
               </Stack>

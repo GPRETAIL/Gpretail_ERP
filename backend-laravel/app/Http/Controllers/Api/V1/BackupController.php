@@ -19,6 +19,21 @@ class BackupController extends Controller
 {
     public function __construct(private BackupService $backups) {}
 
+    private function presentSettings(array $settings): array
+    {
+        $settings['cloud_configured'] = BackupService::isCloudConfigured($settings);
+        $settings['scheduled_encryption_configured'] = ! empty($settings['encryption_password_encrypted']);
+        if (! empty($settings['oci_secret_access_key'])) {
+            $settings['oci_secret_access_key'] = str_repeat('*', 20);
+        }
+        if ($settings['scheduled_encryption_configured']) {
+            $settings['encryption_password'] = str_repeat('*', 20);
+        }
+        unset($settings['encryption_password_encrypted']);
+
+        return $settings;
+    }
+
     private function authorizedStores(Request $request): Builder
     {
         return app(StoreContext::class)->available($request->user());
@@ -106,7 +121,7 @@ class BackupController extends Controller
             'data' => [
                 'companies' => $companies,
                 'moduleOptions' => $this->backups->moduleOptions(),
-                'setting' => $setting,
+                'setting' => $this->presentSettings($setting),
                 'stats' => $stats,
                 'backups' => $backups,
                 'restores' => $restores,
@@ -127,10 +142,12 @@ class BackupController extends Controller
             'backupType' => 'required|in:full,incremental,module',
             'storageMode' => 'nullable|in:local,cloud,hybrid',
             'moduleNames' => 'nullable|array',
+            'moduleNames.*' => 'string|in:'.implode(',', $this->backups->moduleOptions()),
         ]);
         if ($validator->fails()) {
             return response()->json(['success' => false, 'message' => 'Validation error', 'errors' => $validator->errors()], 422);
         }
+        abort_if($request->input('backupType') === 'module' && ! $request->input('moduleNames'), 422, 'Select at least one backup module.');
 
         $companyId = $this->resolveStoreId($request, null);
         abort_unless($companyId && in_array($companyId, $this->authorizedStoreIds($request), true), 422, 'Select one authorized store before creating a backup.');
@@ -246,6 +263,19 @@ class BackupController extends Controller
         $companyId = $this->resolveStoreId($request, null);
 
         if ($request->isMethod('post') || $request->isMethod('put')) {
+            $request->validate([
+                'storageMode' => 'sometimes|in:local,cloud,hybrid',
+                'scheduleFrequency' => 'sometimes|in:daily,weekly,monthly',
+                'scheduleTime' => 'sometimes|date_format:H:i',
+                'scheduleDayOfWeek' => 'sometimes|integer|between:0,6',
+                'scheduleDayOfMonth' => 'sometimes|integer|between:1,28',
+                'scheduleBackupType' => 'sometimes|in:full,incremental,module',
+                'scheduleModuleNames' => 'sometimes|array',
+                'scheduleModuleNames.*' => 'string|in:'.implode(',', $this->backups->moduleOptions()),
+                'retentionDaily' => 'sometimes|integer|between:1,3650',
+                'retentionWeekly' => 'sometimes|integer|between:1,520',
+                'retentionMonthly' => 'sometimes|integer|between:1,120',
+            ]);
             $settings = [
                 'storage_mode' => $request->input('storageMode', 'local'),
                 'local_storage_enabled' => $request->boolean('localStorageEnabled', true),
@@ -304,6 +334,9 @@ class BackupController extends Controller
                     return response()->json(['success' => false, 'message' => 'Store not found'], 404);
                 }
                 $existing = $store->backup_settings ?? [];
+                if ($settings['oci_secret_access_key'] === str_repeat('*', 20)) {
+                    $settings['oci_secret_access_key'] = $existing['oci_secret_access_key'] ?? '';
+                }
                 // Preserve every OCI credential field whenever it's submitted blank - a
                 // caller that only means to change scheduling/retention (not touching the
                 // OCI section at all) must never silently wipe working credentials. Real,
@@ -340,11 +373,11 @@ class BackupController extends Controller
                     $existing = $store->backup_settings ?? [];
                     $storeSettings = array_merge($settings, [
                         'last_scheduled_at' => $existing['last_scheduled_at'] ?? null,
-                        'oci_namespace' => $existing['oci_namespace'] ?: ($settings['oci_namespace'] ?? ''),
-                        'oci_region' => $existing['oci_region'] ?: ($settings['oci_region'] ?? 'ap-mumbai-1'),
-                        'oci_access_key_id' => $existing['oci_access_key_id'] ?: ($settings['oci_access_key_id'] ?? ''),
-                        'oci_secret_access_key' => $existing['oci_secret_access_key'] ?: ($settings['oci_secret_access_key'] ?? ''),
-                        'oci_bucket' => $existing['oci_bucket'] ?: ($settings['oci_bucket'] ?? ''),
+                        'oci_namespace' => ($existing['oci_namespace'] ?? '') ?: ($settings['oci_namespace'] ?? ''),
+                        'oci_region' => ($existing['oci_region'] ?? '') ?: ($settings['oci_region'] ?? 'ap-mumbai-1'),
+                        'oci_access_key_id' => ($existing['oci_access_key_id'] ?? '') ?: ($settings['oci_access_key_id'] ?? ''),
+                        'oci_secret_access_key' => ($existing['oci_secret_access_key'] ?? '') ?: (($settings['oci_secret_access_key'] ?? '') === str_repeat('*', 20) ? '' : ($settings['oci_secret_access_key'] ?? '')),
+                        'oci_bucket' => ($existing['oci_bucket'] ?? '') ?: ($settings['oci_bucket'] ?? ''),
                         'encryption_password_encrypted' => $existing['encryption_password_encrypted']
                             ?? ($settings['encryption_password_encrypted'] ?? null),
                     ]);
@@ -363,25 +396,8 @@ class BackupController extends Controller
         } else {
             $store = null;
         }
-        $setting = $store?->backup_settings ?? [];
 
-        // Mask the OCI secret before sending to the frontend — never expose the raw key
-        if (! empty($setting['oci_secret_access_key'])) {
-            $setting['oci_secret_access_key'] = str_repeat('*', 20);
-        }
-        // Same for the scheduled-backup encryption password - never send the
-        // encrypted blob to the client, just a flag saying one is stored.
-        $setting['scheduled_encryption_configured'] = ! empty($setting['encryption_password_encrypted']);
-        if (! empty($setting['encryption_password_encrypted'])) {
-            $setting['encryption_password'] = str_repeat('*', 20);
-        }
-        unset($setting['encryption_password_encrypted']);
-        $setting['cloud_configured'] = BackupService::isCloudConfigured($store?->backup_settings ?? []);
-
-        return response()->json([
-            'success' => true,
-            'data' => $setting,
-        ]);
+        return response()->json(['success' => true, 'data' => $this->presentSettings($store?->backup_settings ?? [])]);
     }
 
     public function cloudTest(Request $request)
@@ -419,7 +435,9 @@ class BackupController extends Controller
         }
 
         $restoreType = $request->input('restoreType', 'partial');
-        $targetCompanyId = $request->attributes->get('store_context_id');
+        $request->validate(['restoreType' => 'sometimes|in:partial,full', 'targetCompanyId' => 'nullable|integer|min:1', 'moduleNames' => 'sometimes|array']);
+        $targetCompanyId = $request->filled('targetCompanyId') ? (int) $request->input('targetCompanyId') : $backup->company_id;
+        abort_unless($targetCompanyId && $this->authorizedStores($request)->whereKey($targetCompanyId)->exists(), 403, 'Target store is not authorized.');
         $moduleNames = $restoreType === 'partial' ? ($request->input('moduleNames') ?: []) : [];
 
         $startedAt = now();
@@ -429,9 +447,15 @@ class BackupController extends Controller
         $tableCounts = [];
 
         $decryptedTempPath = null;
+        $skippedTables = [];
+        $cloudTempPath = null;
         try {
-            $zipPath = storage_path('app/private/'.$backup->file_path);
-            if (! file_exists($zipPath)) {
+            $zipPath = $backup->file_path ? storage_path('app/private/'.$backup->file_path) : null;
+            if ((! $zipPath || ! is_file($zipPath)) && in_array($backup->storage_mode, ['cloud', 'hybrid'], true) && $backup->cloud_path) {
+                $settings = $this->authorizedStores($request)->find($backup->company_id)?->backup_settings ?? [];
+                $zipPath = $cloudTempPath = $this->backups->downloadFromCloud($backup->cloud_path, $settings);
+            }
+            if (! $zipPath || ! is_file($zipPath)) {
                 throw new \RuntimeException('Backup file no longer exists on disk.');
             }
 
@@ -457,12 +481,16 @@ class BackupController extends Controller
             );
             $restoredRows = $result['restoredRows'];
             $tableCounts = $result['tables'];
+            $skippedTables = $result['skippedTables'] ?? [];
         } catch (Throwable $e) {
             $status = 'failed';
             $statusMessage = $e->getMessage();
         } finally {
             if ($decryptedTempPath && file_exists($decryptedTempPath)) {
                 @unlink($decryptedTempPath);
+            }
+            if ($cloudTempPath && is_file($cloudTempPath)) {
+                @unlink($cloudTempPath);
             }
         }
 
@@ -477,6 +505,7 @@ class BackupController extends Controller
                 'progress_percent' => 100,
                 'status_message' => $statusMessage,
                 'tables' => $tableCounts,
+                'skipped_tables' => $skippedTables,
             ],
             'started_at' => $startedAt,
             'completed_at' => now(),

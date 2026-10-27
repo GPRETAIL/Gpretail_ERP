@@ -64,7 +64,7 @@ class ResolveStoreContext
 
         $path = preg_replace('#^api/(v1/)?#', '', $request->path());
         // Profile/preferences and subscription management do not create business records.
-        $management = $themeWorkspace || $themeSettings || $request->is('api/auth/*')
+        $management = $themeWorkspace || $themeSettings || $request->is('api/auth/*') || $request->is('api/backups/settings')
             || ($request->route()?->getActionMethod() === 'clientAccess')
             || preg_match('#^(remote-support(/|$)|notifications(/|$)|notification-preferences(/|$)|company-stores(/|$)|companies/tenant-sync/(pull|overview)$|companies/subscription/|dashboard/layout|user-table-preferences/)#', $path);
         $write = ! in_array($request->method(), ['GET', 'HEAD', 'OPTIONS'], true) && ! $management;

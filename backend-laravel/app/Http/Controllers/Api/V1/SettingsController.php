@@ -118,7 +118,13 @@ class SettingsController extends Controller
         $key = $local ? 'local_server_url' : 'cloud_server_url';
         $request->validate([$key => 'nullable|string|max:2048']);
         $started = microtime(true);
-        $result = app(RegisteredServerProbe::class)->check((string) $node->{$key}, trim((string) $request->input($key, '')), $local);
+        $registered = (string) ($node->{$key} ?: (! $local ? config('sync.cloud_api_base_url') : ''));
+        $requested = trim((string) $request->input($key, ''));
+        if (! $local) {
+            $registered = preg_replace('~/api/?$~', '', $registered);
+            $requested = preg_replace('~/api/?$~', '', $requested);
+        }
+        $result = app(RegisteredServerProbe::class)->check($registered, $requested, $local);
         $healthy = $result['healthy'];
         if ($local) {
             $node->update(['local_healthy' => $healthy, 'last_health_check_at' => now()]);

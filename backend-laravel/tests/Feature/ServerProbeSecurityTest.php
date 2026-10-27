@@ -55,6 +55,15 @@ class ServerProbeSecurityTest extends TestCase
         Http::assertNothingSent();
     }
 
+    public function test_saving_server_urls_rejects_credentials_and_preserves_api_suffix_compatibility(): void
+    {
+        $node = $this->setupNode();
+        $this->putJson('/api/local-server-config', ['local_server_url' => 'http://user@192.168.10.15'])->assertUnprocessable();
+        $this->putJson('/api/local-server-config', ['local_server_url' => 'http://192.168.10.15/api', 'cloud_server_url' => 'https://cloud.example.test/api'])->assertOk();
+        $this->assertSame('http://192.168.10.15', $node->fresh()->local_server_url);
+        $this->getJson('/api/local-server-config/runtime')->assertOk()->assertJsonPath('data.cloud_server_url', 'https://cloud.example.test/api');
+    }
+
     public function test_loopback_metadata_credentials_and_unapproved_ports_are_rejected_even_if_registered(): void
     {
         Http::fake();

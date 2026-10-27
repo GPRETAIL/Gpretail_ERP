@@ -46,3 +46,11 @@ it("keeps a fallback read on cloud if local health recovers before the retry is 
   const request = await prepareRoutingForRequest(retry);
   expect(request.__routingTarget).toBe("cloud"); expect(request.baseURL).toBe("https://dev.gpsoftware.in/api");
 });
+
+it("never looks up a node-local backup ID on another database after a read fails", async () => {
+  expect(shouldRetryOnCloud({ config: { method: "get", url: "/backups/5/download", __routingTarget: "local" } })).toBe(false);
+  applyRuntimeRoutingConfig({ enabled: true, currentTarget: "cloud", localBaseUrl: "http://127.0.0.1:8130/api", cloudBaseUrl: "https://dev.gpsoftware.in/api" });
+  const pinned = await prepareRoutingForRequest({ method: "get", url: "/backups/overview", __backupTarget: "local" });
+  expect(pinned.__routingTarget).toBe("local");
+  expect(pinned.baseURL).toBe("http://127.0.0.1:8130/api");
+});

@@ -23,6 +23,7 @@ class SyncCycleServiceTest extends TestCase
     use RefreshDatabase;
 
     protected Store $store;
+
     protected StoreLocalNode $node;
 
     protected function setUp(): void
@@ -58,6 +59,15 @@ class SyncCycleServiceTest extends TestCase
         $result = app(SyncCycleService::class)->run();
 
         $this->assertFalse($result['ran']);
+    }
+
+    public function test_saved_cloud_origin_is_used_for_sync_instead_of_the_installation_default(): void
+    {
+        $this->node->update(['cloud_server_url' => 'https://alternate.example.test']);
+        Http::fake(['*' => Http::response(['success' => true, 'data' => ['events' => []]])]);
+        $this->assertTrue(app(SyncCycleService::class)->run()['ran']);
+        Http::assertSent(fn ($request) => str_starts_with($request->url(), 'https://alternate.example.test/api/sync/'));
+        Http::assertNotSent(fn ($request) => str_contains($request->url(), 'cloud.example.test'));
     }
 
     public function test_run_does_nothing_when_no_enabled_local_node_exists(): void

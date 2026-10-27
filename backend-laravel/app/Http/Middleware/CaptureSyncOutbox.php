@@ -31,6 +31,7 @@ class CaptureSyncOutbox
         'remote-support/',
         'sync/',
         'local-server-config',
+        'backups', // Node-local archives/restore IDs and OCI/password fields must never be replayed.
         'connector/',
         '/bulk',
         '/import',

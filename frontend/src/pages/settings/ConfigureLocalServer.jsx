@@ -1,5 +1,5 @@
 import useAsyncQuery from "../../hooks/useAsyncQuery";
-import { Fragment, useCallback, useEffect, useEffectEvent, useState } from "react";
+import { Fragment, useCallback, useEffect, useEffectEvent, useRef, useState } from "react";
 import {
   AlertCircle,
   CheckCircle2,
@@ -16,6 +16,7 @@ import { toast } from "react-toastify";
 import { alpha } from "@mui/material/styles";
 import { Box, Button, Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from "@mui/material";
 import api from "../../api/axios";
+import { fetchAndApplyRuntimeRoutingConfig } from "../../api/runtimeRouting";
 import { muiFieldSx } from "../../theme/formControlSizes";
 
 const cardSx = { borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", boxShadow: 1 };
@@ -48,8 +49,8 @@ export default function ConfigureLocalServer() {
   const [cloudServerUrl, setCloudServerUrl] = useState("");
   const [nodes, setNodes] = useState([]);
   const [expandedStoreId, setExpandedStoreId] = useState(null);
-  const [outboxEvents, setOutboxEvents] = useState([]);
-  const [outboxLoading, setOutboxLoading] = useState(false);
+  const draftLoaded = useRef(false);
+  const draftDirty = useRef(false);
   const [retryingId, setRetryingId] = useState(null);
   const [retryingAllStoreId, setRetryingAllStoreId] = useState(null);
 
@@ -59,58 +60,40 @@ export default function ConfigureLocalServer() {
   }, []);
   const applyConfig = useCallback(next => {
     setConfig(next);
-    setLocalServerUrl(String(next.local_server_url || "").trim());
-    setCloudServerUrl(String(next.cloud_server_url || "").trim());
+    if (!draftLoaded.current) {
+      setLocalServerUrl(String(next.local_server_url || "").trim());
+      setCloudServerUrl(String(next.cloud_server_url || "").trim());
+      draftLoaded.current = true;
+    }
   }, []);
   const fetchNodes = useCallback(async ({ signal } = {}) => {
     const res = await api.get("/sync/nodes", { signal });
     return res.data?.data?.nodes || [];
   }, []);
-  useAsyncQuery(fetchConfig, { onSuccess: next => { applyConfig(next); setLoading(false); },
-    onError: err => { setLoading(false); toast.error(err.response?.data?.message || "Failed to load local server configuration"); } });
-  useAsyncQuery(fetchNodes, { onSuccess: setNodes });
-  const loadConfig = async ({ silent = false } = {}) => {
-    try {
-      if (silent) setRefreshing(true);
-      else setLoading(true);
-
-      applyConfig(await fetchConfig());
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to load local server configuration");
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
+  const { reload: reloadConfig } = useAsyncQuery(fetchConfig, {
+    onSuccess: next => { applyConfig(next); setLoading(false); setRefreshing(false); },
+    onError: (err, { silent }) => { setLoading(false); setRefreshing(false); if (!silent) toast.error(err.response?.data?.message || "Failed to load local server configuration"); },
+  });
+  const { reload: loadNodes } = useAsyncQuery(fetchNodes, { onSuccess: setNodes });
+  const loadConfig = () => {
+    if (!draftDirty.current) draftLoaded.current = false;
+    setRefreshing(true);
+    reloadConfig();
   };
-
-  const loadNodes = async () => {
-    try {
-      setNodes(await fetchNodes());
-    } catch {
-      // Non-critical: leave the health table blank rather than surfacing another toast.
-    }
-  };
-
-  const loadOutboxEvents = async (storeId) => {
-    try {
-      setOutboxLoading(true);
-      const res = await api.get("/sync/outbox", { params: { store_id: storeId } });
-      setOutboxEvents(res.data?.data?.events || []);
-    } catch {
-      setOutboxEvents([]);
-    } finally {
-      setOutboxLoading(false);
-    }
-  };
+  const fetchOutbox = useCallback(async ({ signal }) => {
+    const res = await api.get("/sync/outbox", { params: { store_id: expandedStoreId }, signal });
+    return res.data?.data?.events || [];
+  }, [expandedStoreId]);
+  const { data: events, loading: outboxLoading, reload: reloadOutbox } = useAsyncQuery(fetchOutbox, { enabled: expandedStoreId != null });
+  const outboxEvents = events || [];
+  const loadOutboxEvents = storeId => { if (storeId === expandedStoreId) reloadOutbox({ silent: true }); };
 
   const toggleExpand = (storeId) => {
     if (expandedStoreId === storeId) {
       setExpandedStoreId(null);
-      setOutboxEvents([]);
       return;
     }
     setExpandedStoreId(storeId);
-    loadOutboxEvents(storeId);
   };
 
   const handleRetryEvent = async (eventId, storeId) => {
@@ -140,8 +123,8 @@ export default function ConfigureLocalServer() {
   };
 
   const pollConfiguration = useEffectEvent(() => {
-    loadConfig({ silent: true });
-    loadNodes();
+    reloadConfig({ silent: true });
+    loadNodes({ silent: true });
   });
 
   useEffect(() => {
@@ -167,8 +150,13 @@ export default function ConfigureLocalServer() {
       const res = await api.put("/local-server-config", payload);
       const saved = res.data?.data || {};
       setConfig((prev) => ({ ...(prev || {}), ...saved }));
-      setLocalServerUrl(String(saved.local_server_url || payload.local_server_url || "").trim());
-      setCloudServerUrl(String(saved.cloud_server_url || payload.cloud_server_url || "").trim());
+      setLocalServerUrl(String(saved.local_server_url ?? "").trim());
+      setCloudServerUrl(String(saved.cloud_server_url ?? "").trim());
+      draftLoaded.current = true;
+      draftDirty.current = false;
+      reloadConfig();
+      loadNodes({ silent: true });
+      void fetchAndApplyRuntimeRoutingConfig({ apiClient: api, token: localStorage.getItem("token") }).catch(() => {});
       toast.success(res.data?.message || "Local server configuration saved");
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to save local server configuration");
@@ -184,7 +172,8 @@ export default function ConfigureLocalServer() {
         local_server_url: String(localServerUrl || "").trim(),
       });
       const message = res.data?.message || "Connection successful";
-      toast.success(message);
+      if (res.data?.success === false) toast.error(message);
+      else toast.success(message);
       await loadConfig({ silent: true });
     } catch (err) {
       toast.error(err.response?.data?.message || "Connection test failed");
@@ -200,7 +189,8 @@ export default function ConfigureLocalServer() {
         cloud_server_url: String(cloudServerUrl || "").trim(),
       });
       const message = res.data?.message || "Connection successful";
-      toast.success(message);
+      if (res.data?.success === false) toast.error(message);
+      else toast.success(message);
     } catch (err) {
       toast.error(err.response?.data?.message || "Connection test failed");
     } finally {
@@ -290,7 +280,7 @@ export default function ConfigureLocalServer() {
                 size="small"
                 fullWidth
                 value={localServerUrl}
-                onChange={(e) => setLocalServerUrl(e.target.value)}
+                onChange={(e) => { draftDirty.current = true; setLocalServerUrl(e.target.value); }}
                 placeholder="http://192.168.1.25:8000"
                 sx={muiFieldSx}
               />
@@ -308,7 +298,7 @@ export default function ConfigureLocalServer() {
                 size="small"
                 fullWidth
                 value={cloudServerUrl}
-                onChange={(e) => setCloudServerUrl(e.target.value)}
+                onChange={(e) => { draftDirty.current = true; setCloudServerUrl(e.target.value); }}
                 placeholder={config?.effective_cloud_server_url || "https://yourcompany.gpsoftware.in"}
                 sx={muiFieldSx}
               />
@@ -360,7 +350,7 @@ export default function ConfigureLocalServer() {
           <Stack spacing={2} sx={{ mt: 2, fontSize: 12.25, color: "text.secondary" }}>
             <Stack direction="row" spacing={1.5}>
               <Box sx={{ display: "flex", flexShrink: 0, height: 21, width: 21, alignItems: "center", justifyContent: "center", borderRadius: "50%", bgcolor: "primary.main", fontSize: 10.5, fontWeight: 600, color: "primary.contrastText" }}>1</Box>
-              <Box>Save this store's local server address above, then use Test Connection to confirm the cloud can reach it.</Box>
+              <Box>Save the address first. Test Local runs from the ERP server and requires an approved, reachable endpoint. A cloud host usually cannot reach a private store LAN; the installed local connector and the counter browser perform their own connection checks.</Box>
             </Stack>
             <Stack direction="row" spacing={1.5}>
               <Box sx={{ display: "flex", flexShrink: 0, height: 21, width: 21, alignItems: "center", justifyContent: "center", borderRadius: "50%", bgcolor: "primary.main", fontSize: 10.5, fontWeight: 600, color: "primary.contrastText" }}>2</Box>

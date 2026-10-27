@@ -169,7 +169,7 @@ class BackupService
 
             $query = DB::table($table);
             if ($companyId) {
-                StoreQuery::scope($query, $table, $table, [$companyId]);
+                $this->scopeBackupOwnership($query, $table, $table, $companyId);
             }
             $this->applyScope($query, $table, $spec, $companyId, $manifest);
 
@@ -219,7 +219,11 @@ class BackupService
                 $query->where('store_id', $companyId);
                 break;
             case 'store_id_or_company_id':
-                $query->where(fn ($q) => $q->where('store_id', $companyId)->orWhere('company_id', $companyId));
+                $columns = array_values(array_intersect(['store_id', 'company_id'], Schema::getColumnListing($table)));
+                if (! $columns) {
+                    throw new RuntimeException('No supported store ownership on backup table: '.$table);
+                }
+                StoreQuery::ownership($query, $table, $columns, [$companyId]);
                 break;
             case 'source_or_target_store_id':
                 $query->where(fn ($q) => $q->where('source_store_id', $companyId)->orWhere('target_store_id', $companyId));
@@ -381,11 +385,37 @@ class BackupService
             $tables = array_values(array_intersect($tables, $tableFilter));
         }
 
+        // Restore prerequisites before their dependants, even when an archive
+        // lists sales/warehouse ahead of product/customer masters.
+        $remaining = array_fill_keys(array_filter($tables, fn ($table) => Schema::hasTable($table)), true);
+        $tables = [];
+        while ($remaining) {
+            $progress = false;
+            foreach (array_keys($remaining) as $table) {
+                if (! self::findSpecForTable($table)) {
+                    $zip->close();
+                    throw new RuntimeException('Unsupported table in tenant backup: '.$table);
+                }
+                $dependencies = array_column(app(StoreSchema::class)->foreignKeys($table), 'foreign_table');
+                if (array_intersect(array_diff($dependencies, [$table]), array_keys($remaining))) {
+                    continue;
+                }
+                $tables[] = $table;
+                unset($remaining[$table]);
+                $progress = true;
+            }
+            if (! $progress) {
+                $zip->close();
+                throw new RuntimeException('This backup has cyclic dependencies and requires a validated recovery migration.');
+            }
+        }
+
         $restoredRows = 0;
         $tableCounts = [];
+        $skippedTables = [];
 
         try {
-            DB::transaction(function () use ($zip, $tables, $targetCompanyId, $originalCompanyId, &$restoredRows, &$tableCounts) {
+            DB::transaction(function () use ($zip, $tables, $targetCompanyId, $originalCompanyId, &$restoredRows, &$tableCounts, &$skippedTables) {
                 foreach ($tables as $table) {
                     if (in_array($table, ['platform_activations', 'personal_access_tokens', 'store_local_nodes'], true)) {
                         continue;
@@ -405,6 +435,14 @@ class BackupService
                     // different target - would clobber the target store's own profile.
                     if ($table === 'stores') {
                         $tableCounts[$table] = 0;
+
+                        continue;
+                    }
+                    if (in_array($table, ['roles', 'permissions', 'role_permissions'], true)
+                        && ! array_intersect(['store_id', 'company_id'], Schema::getColumnListing($table))) {
+                        // These are installation-wide definitions, not tenant data.
+                        $tableCounts[$table] = 0;
+                        $skippedTables[] = $table;
 
                         continue;
                     }
@@ -429,29 +467,7 @@ class BackupService
                     }
 
                     if ($targetCompanyId) {
-                        $columns = Schema::getColumnListing($table);
-                        $ownership = array_values(array_intersect(['store_id', 'company_id'], $columns));
-                        if (! $ownership) {
-                            throw new RuntimeException('Restore for indirectly owned or global tables needs a validated tenant migration: '.$table);
-                        }
-                        foreach ($rows as $row) {
-                            foreach ($ownership as $column) {
-                                if ((int) ($row[$column] ?? 0) !== $targetCompanyId) {
-                                    throw new RuntimeException('Archive contains records outside the selected store.');
-                                }
-                            }
-                            if (isset($row['id'])) {
-                                $existing = DB::table($table)->where('id', $row['id'])->first();
-                                foreach ($ownership as $column) {
-                                    if ($existing && (int) ($existing->$column ?? 0) !== $targetCompanyId) {
-                                        throw new RuntimeException('Archive record IDs conflict with another store.');
-                                    }
-                                }
-                            }
-                            if ($table === 'users' && ($row['role'] ?? '') === 'super_admin') {
-                                throw new RuntimeException('Platform administrators cannot be restored through tenant backups.');
-                            }
-                        }
+                        $this->assertRestoreScope($table, $rows, $targetCompanyId);
                     }
 
                     $uniqueBy = $table === 'role_permissions' ? ['role_id', 'permission_id'] : ['id'];
@@ -472,7 +488,58 @@ class BackupService
             $zip->close();
         }
 
-        return ['restoredRows' => $restoredRows, 'tables' => $tableCounts];
+        return ['restoredRows' => $restoredRows, 'tables' => $tableCounts, 'skippedTables' => $skippedTables];
+    }
+
+    private function assertRestoreScope(string $table, array $rows, int $storeId): void
+    {
+        $grammar = DB::connection()->getQueryGrammar();
+        $ownership = array_intersect(['store_id', 'company_id'], Schema::getColumnListing($table));
+        foreach (array_chunk($rows, 20) as $batch) {
+            $batch = array_map(fn ($row) => $row + array_fill_keys($ownership, null), $batch);
+            $incoming = null;
+            $columns = array_keys($batch[0]);
+            foreach ($batch as $row) {
+                if (array_diff($columns, array_keys($row)) || array_diff(array_keys($row), $columns)) {
+                    throw new RuntimeException('Archive records have inconsistent columns.');
+                }
+                $select = DB::query()->selectRaw(implode(', ', array_map(fn ($column) => '? as '.$grammar->wrap($column), $columns)), array_map(fn ($column) => $row[$column], $columns));
+                if ($incoming === null) {
+                    $incoming = $select;
+                } else {
+                    $incoming->unionAll($select);
+                }
+            }
+            $scope = DB::query()->fromSub($incoming, 'restore_candidate');
+            if (! $this->scopeBackupOwnership($scope, $table, 'restore_candidate', $storeId) || $scope->count() !== count($batch)) {
+                throw new RuntimeException('Archive contains records outside the selected store or an unsupported ownership relationship.');
+            }
+            $ids = array_column($batch, 'id');
+            if ($ids) {
+                $existing = DB::table($table)->whereIn('id', $ids);
+                $count = $existing->count();
+                if (! $this->scopeBackupOwnership($existing, $table, $table, $storeId) || $existing->count() !== $count) {
+                    throw new RuntimeException('Archive record IDs conflict with another store.');
+                }
+            }
+        }
+    }
+
+    private function scopeBackupOwnership($query, string $table, string $alias, int $storeId): bool
+    {
+        $spec = self::findSpecForTable($table);
+        if (($spec['scope'] ?? '') !== 'via_parent') {
+            return StoreQuery::scope($query, $table, $alias, [$storeId]);
+        }
+        // Legacy child rows may have NULL in a newly added ownership column.
+        // Their registered parent still proves ownership; a conflicting explicit
+        // ownership value must never be treated as belonging to that parent.
+        foreach (array_intersect(['store_id', 'company_id'], Schema::getColumnListing($table)) as $column) {
+            $query->where(fn ($q) => $q->whereNull($alias.'.'.$column)->orWhere($alias.'.'.$column, $storeId));
+        }
+        $this->applyScope($query, $table, $spec, $storeId, []);
+
+        return true;
     }
 
     /**

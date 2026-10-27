@@ -263,6 +263,17 @@ class AuthController extends Controller
         $localServerUrl = trim((string) $request->input('local_server_url', ''));
         $cloudServerUrl = trim((string) $request->input('cloud_server_url', ''));
 
+        $request->validate(['local_server_url' => 'nullable|url:http,https|max:2048', 'cloud_server_url' => 'nullable|url:http,https|max:2048']);
+        foreach ([$localServerUrl, $cloudServerUrl] as $url) {
+            if ($url === '') {
+                continue;
+            }
+            $parts = parse_url($url);
+            abort_unless(is_array($parts) && ! isset($parts['user']) && ! isset($parts['pass']) && ! isset($parts['query']) && ! isset($parts['fragment'])
+                && in_array($parts['path'] ?? '', ['', '/', '/api', '/api/'], true), 422, 'Use a server URL without credentials, query or fragment.');
+        }
+        $localServerUrl = preg_replace('~/api/?$~', '', $localServerUrl);
+
         if ($cloudServerUrl !== '' && ! preg_match('#^https?://#i', $cloudServerUrl)) {
             return response()->json([
                 'success' => false,
@@ -300,6 +311,7 @@ class AuthController extends Controller
                 'enabled' => (bool) $node,
                 'tenant_key' => $node->tenant_key ?? null,
                 'local_server_url' => $node->local_server_url ?? null,
+                'cloud_server_url' => $node->cloud_server_url ?? null,
             ],
         ]);
     }
