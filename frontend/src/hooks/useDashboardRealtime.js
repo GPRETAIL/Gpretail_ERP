@@ -19,6 +19,7 @@ const FALLBACK_POLL_INTERVAL_MS = 180000;
 const ALL_STORES_POLL_INTERVAL_MS = 30000;
 
 let sharedClient = null;
+const channelConsumers = new Map();
 const getPusherClient = () => {
   if (!sharedClient) {
     sharedClient = new Pusher(PUSHER_KEY, { cluster: PUSHER_CLUSTER });
@@ -46,11 +47,22 @@ const useDashboardRealtime = ({ enabled = true, companyId = "", onUpdate } = {})
 
     let timer = null;
     let channel = null;
+    let eventTimer = null;
+    const channelName = `store-${companyId}`;
 
     const refresh = () => {
       if (document.visibilityState === "visible") {
         onUpdateRef.current?.({ silent: true });
       }
+    };
+    // A bulk import/checkout can publish many updates together. Refresh once
+    // for that burst instead of starting a dashboard reload for every line.
+    const handleUpdate = () => {
+      if (document.visibilityState !== "visible" || eventTimer !== null) return;
+      eventTimer = setTimeout(() => {
+        eventTimer = null;
+        refresh();
+      }, 250);
     };
 
     const pollIntervalMs = companyId ? FALLBACK_POLL_INTERVAL_MS : ALL_STORES_POLL_INTERVAL_MS;
@@ -76,8 +88,9 @@ const useDashboardRealtime = ({ enabled = true, companyId = "", onUpdate } = {})
 
     if (companyId) {
       try {
-        channel = getPusherClient().subscribe(`store-${companyId}`);
-        channel.bind("dashboard.updated", refresh);
+        channel = getPusherClient().subscribe(channelName);
+        channel.bind("dashboard.updated", handleUpdate);
+        channelConsumers.set(channelName, (channelConsumers.get(channelName) || 0) + 1);
       } catch {
         // Pusher unreachable (network blocks websockets, bad key, etc.) -- the poll
         // fallback below still keeps the dashboard "live enough" either way.
@@ -85,15 +98,26 @@ const useDashboardRealtime = ({ enabled = true, companyId = "", onUpdate } = {})
       }
     }
 
-    startPoll();
+    if (document.visibilityState === "visible") startPoll();
     document.addEventListener("visibilitychange", handleVisibility);
 
     return () => {
       stopPoll();
+      if (eventTimer !== null) clearTimeout(eventTimer);
       document.removeEventListener("visibilitychange", handleVisibility);
       if (channel) {
-        channel.unbind("dashboard.updated", refresh);
-        getPusherClient().unsubscribe(`store-${companyId}`);
+        channel.unbind("dashboard.updated", handleUpdate);
+        const remaining = (channelConsumers.get(channelName) || 1) - 1;
+        if (remaining > 0) {
+          channelConsumers.set(channelName, remaining);
+        } else {
+          channelConsumers.delete(channelName);
+          sharedClient.unsubscribe(channelName);
+        }
+        if (channelConsumers.size === 0) {
+          sharedClient.disconnect();
+          sharedClient = null;
+        }
       }
     };
   }, [enabled, companyId]);

@@ -122,6 +122,53 @@ class DashboardControllerTest extends TestCase
             ->getJson('/api/dashboard?from='.$this->from->toDateString().'&to='.$this->to->toDateString());
     }
 
+    public function test_warehouse_stock_aggregation_preserves_counts_values_and_store_isolation(): void
+    {
+        Product::where('code', 'WGT-A')->update(['cost_price' => 40]);
+        Product::where('code', 'WGT-B')->update(['cost_price' => 200]);
+        $foreign = Store::create(['name' => 'Foreign warehouse', 'code' => 'WH-FOREIGN']);
+        $product = Product::create(['company_id' => $foreign->id, 'name' => 'Foreign', 'code' => 'FOREIGN', 'cost_price' => 999]);
+        DB::table('stocks')->insert(['store_id' => $foreign->id, 'product_id' => $product->id, 'quantity' => 900]);
+        $this->withHeader('X-Company-Scope-Id', (string) $this->store->id)
+            ->getJson('/api/dashboard/warehouse')->assertOk()
+            ->assertJsonPath('data.total_items_in_stock', 103)
+            ->assertJsonPath('data.low_stock_items', 1)
+            ->assertJsonPath('data.out_of_stock_items', 0)
+            ->assertJsonPath('data.total_inventory_val', 20120);
+    }
+
+    public function test_summary_aggregates_day_boundaries_and_keeps_other_stores_out(): void
+    {
+        Carbon::setTestNow($this->from->copy()->addHours(12));
+        try {
+            $this->withHeader('X-Company-Scope-Id', (string) $this->store->id)
+                ->getJson('/api/dashboard/summary')->assertOk()
+                ->assertJsonPath('data.todaySales', 2000)
+                ->assertJsonPath('data.todayOrders', 4)
+                ->assertJsonPath('data.averageBillValue', 500)
+                ->assertJsonPath('data.thisMonthSales', 101999);
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
+    public function test_supplier_payment_preview_is_bounded_and_keeps_the_oldest_unpaid_documents(): void
+    {
+        for ($i = 0; $i < 30; $i++) {
+            DB::table('direct_purchases')->insert([
+                'store_id' => $this->store->id, 'company_id' => $this->store->id,
+                'purchase_no' => 'PREVIEW-'.$i, 'purchase_date' => Carbon::parse('2025-01-01')->addDays($i),
+                'total_amount' => 100 + $i, 'paid_amount' => 0,
+                'created_at' => now(), 'updated_at' => now(),
+            ]);
+        }
+        $rows = $this->fetchOverview()->assertOk()->json('data.tables.supplierPayments.rows');
+        $this->assertCount(15, $rows);
+        $this->assertSame('PREVIEW-0', $rows[0]['invoiceNo']);
+        $this->assertSame('PREVIEW-14', $rows[14]['invoiceNo']);
+        $this->assertEquals(1605, array_sum(array_column($rows, 'balance')));
+    }
+
     public function test_core_metrics_match_hand_computed_totals(): void
     {
         $res = $this->fetchOverview();
@@ -134,6 +181,23 @@ class DashboardControllerTest extends TestCase
         $res->assertJsonPath('data.metrics.totalBills.count', 4);
         // 90 + 45 + 27 + 18
         $res->assertJsonPath('data.metrics.gst.amount', 180);
+    }
+
+    public function test_combined_sales_and_tax_aggregates_keep_previous_period_trends(): void
+    {
+        PosSale::create([
+            'store_id' => $this->store->id, 'user_id' => $this->user->id,
+            'invoice_no' => 'PREVIOUS-PERIOD', 'sale_date' => $this->from->copy()->subDay(),
+            'grand_total' => 1000, 'tax_amount' => 200, 'total_qty' => 1,
+            'payment_mode' => 'CASH', 'status' => 'COMPLETED',
+        ]);
+        $this->fetchOverview()->assertOk()
+            ->assertJsonPath('data.metrics.totalBills.amount', 2000)
+            ->assertJsonPath('data.metrics.totalBills.trend.direction', 'up')
+            ->assertJsonPath('data.metrics.totalBills.trend.changePercent', 100)
+            ->assertJsonPath('data.metrics.gst.amount', 180)
+            ->assertJsonPath('data.metrics.gst.trend.direction', 'down')
+            ->assertJsonPath('data.metrics.gst.trend.changePercent', 10);
     }
 
     public function test_gross_profit_and_missing_cost_use_conditional_aggregation_correctly(): void

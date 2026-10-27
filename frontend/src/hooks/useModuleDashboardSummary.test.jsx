@@ -37,3 +37,18 @@ it("clears failed results on retry and returns the refreshed response", async ()
   expect(result.current.loading).toBe(true);
   await waitFor(() => expect(result.current.data).toEqual({ count: 4 }));
 });
+it("refreshes only the visible module and resumes with current filters when reopened", async () => {
+  api.get.mockResolvedValue({ data: { success: true, data: { count: 2 } } });
+  const { rerender } = renderHook(options => useModuleDashboardSummary("/sales/dashboard", options), {
+    initialProps: { active: true, params: { store_id: 1 } },
+  });
+  await waitFor(() => expect(api.get).toHaveBeenCalledTimes(1));
+  rerender({ active: false, params: { store_id: 2 } });
+  act(() => window.dispatchEvent(new Event("vx:dashboard-refresh")));
+  expect(api.get).toHaveBeenCalledTimes(1);
+  rerender({ active: true, params: { store_id: 2 } });
+  await waitFor(() => expect(api.get).toHaveBeenCalledTimes(2));
+  expect(api.get).toHaveBeenLastCalledWith("/sales/dashboard", expect.objectContaining({ params: { store_id: 2 } }));
+  act(() => window.dispatchEvent(new Event("vx:dashboard-refresh")));
+  await waitFor(() => expect(api.get).toHaveBeenCalledTimes(3));
+});

@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import api from "../api/axios";
 import useAsyncQuery from "./useAsyncQuery";
 
@@ -11,5 +11,12 @@ export default function useModuleDashboardSummary(endpoint, { active = false, pa
     return response.data.data;
   }, [queryKey, errorMessage]);
   const result = useAsyncQuery(loadSummary, { enabled: active });
+  const reload = result.reload;
+  useEffect(() => {
+    if (!active) return;
+    const refresh = () => reload({ silent: true });
+    window.addEventListener("vx:dashboard-refresh", refresh);
+    return () => window.removeEventListener("vx:dashboard-refresh", refresh);
+  }, [active, reload]);
   return { ...result, error: result.error ? result.error.response?.data?.message || result.error.message || "Error communicating with server." : null };
 }

@@ -1,6 +1,6 @@
 import useAsyncQuery from "../hooks/useAsyncQuery";
 import { EMPTY_ARRAY, EMPTY_OBJECT } from "../utils/emptyValues.js";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { RefreshCw, LayoutGrid, Check, RotateCcw, Eye, EyeOff, Package, Users } from "lucide-react";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
@@ -16,14 +16,6 @@ import {
   StockValueCard,
 } from "../components/dashboard/overview/OverviewKpiGrid";
 import OverviewActionRequiredCard from "../components/dashboard/overview/OverviewActionRequiredCard";
-import WarehouseDashboardTabPane from "../components/WarehouseDashboardTabPane";
-import CrmDashboardTabPane from "../components/CrmDashboardTabPane";
-import SalesDashboardTabPane from "../components/SalesDashboardTabPane";
-import FinanceDashboardTabPane from "../components/FinanceDashboardTabPane";
-import StoreDashboardTabPane from "../components/StoreDashboardTabPane";
-import MastersDashboardTabPane from "../components/MastersDashboardTabPane";
-import SettingsDashboardTabPane from "../components/SettingsDashboardTabPane";
-import AnalyticalDashboardTabPane from "../components/AnalyticalDashboardTabPane";
 import useCompanyOptions from "../utils/useCompanyOptions";
 import { setActiveStoreSelection } from "../utils/storeSelection";
 import useDashboardRealtime from "../hooks/useDashboardRealtime";
@@ -31,6 +23,16 @@ import { DASHBOARD_PAGES } from "../utils/dashboardModuleTabs";
 import { canAccessPath, canSwitchStores } from "../utils/accessControl";
 import { DashboardLayoutProvider, useDashboardLayout } from "../context/DashboardLayoutContext";
 import { Box, Button, MenuItem, Stack, Tab, Tabs, TextField, Typography } from "@mui/material";
+import PageSkeleton from "../components/PageSkeleton";
+
+const WarehouseDashboardTabPane = lazy(() => import("../components/WarehouseDashboardTabPane"));
+const CrmDashboardTabPane = lazy(() => import("../components/CrmDashboardTabPane"));
+const SalesDashboardTabPane = lazy(() => import("../components/SalesDashboardTabPane"));
+const FinanceDashboardTabPane = lazy(() => import("../components/FinanceDashboardTabPane"));
+const StoreDashboardTabPane = lazy(() => import("../components/StoreDashboardTabPane"));
+const MastersDashboardTabPane = lazy(() => import("../components/MastersDashboardTabPane"));
+const SettingsDashboardTabPane = lazy(() => import("../components/SettingsDashboardTabPane"));
+const AnalyticalDashboardTabPane = lazy(() => import("../components/AnalyticalDashboardTabPane"));
 
 const formatYmd = (date) => {
   const year = date.getFullYear();
@@ -75,9 +77,8 @@ const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
   // If Overview itself is not granted, land on the first tab that is, rather than an empty pane.
   if (visibleTabs.length && !visibleTabs.some(tab => tab.id === activeTab)) setActiveTab(visibleTabs[0].id);
-  // Every tab's own pane stays mounted (just hidden) once opened, so its fetched data survives
-  // switching away and back. This set is only ever how a pane learns it should fetch at all --
-  // never re-fetch, that's each pane's own hook's job.
+  // Opened panes keep their local state while hidden. Only the visible pane
+  // may fetch; reopening catches up using the current store/date filters.
   const [openedTabs, setOpenedTabs] = useState(() => new Set(["overview"]));
   if (!openedTabs.has(activeTab)) setOpenedTabs(previous => new Set(previous).add(activeTab));
 
@@ -102,6 +103,7 @@ const Dashboard = () => {
     return snapshot;
   }, [companyId, fromDate, canChooseStore, toDate]);
   const { data: snapshot, loading, reload: loadDashboard } = useAsyncQuery(fetchDashboard, {
+    enabled: activeTab === "overview",
     onSuccess: (data, context) => {
       if (!context.silent && Object.keys(data.errors || {}).length > 0) toast.warn("Some dashboard sections could not be loaded.");
     },
@@ -130,7 +132,7 @@ const Dashboard = () => {
     const response = await api.get("/notifications", { params: { limit: 8, action_required: true }, signal });
     return response.data?.data || [];
   }, []);
-  const { data: notificationItems, loading: actionRequiredLoading, reload: loadActionRequired, setData: setActionRequiredItems } = useAsyncQuery(fetchActionRequired);
+  const { data: notificationItems, loading: actionRequiredLoading, reload: loadActionRequired, setData: setActionRequiredItems } = useAsyncQuery(fetchActionRequired, { enabled: activeTab === "overview" });
   const actionRequiredItems = notificationItems || EMPTY_ARRAY;
 
   // Optimistic local update so a clicked item's unread dot clears immediately instead of
@@ -141,7 +143,7 @@ const Dashboard = () => {
   }, [setActionRequiredItems]);
 
   useDashboardRealtime({
-    enabled: Boolean(authUser?.id),
+    enabled: Boolean(authUser?.id) && activeTab === "overview",
     companyId: canChooseStore ? companyId : String(authUser?.company_id || ""),
     onUpdate: loadDashboard,
   });
@@ -339,8 +341,12 @@ const Dashboard = () => {
           <Button
             type="button"
             onClick={() => {
-              loadDashboard();
-              loadActionRequired();
+              if (activeTab === "overview") {
+                loadDashboard();
+                loadActionRequired();
+              } else {
+                window.dispatchEvent(new Event("vx:dashboard-refresh"));
+              }
             }}
             disabled={loading}
             variant="outlined"
@@ -435,6 +441,7 @@ const Dashboard = () => {
         </Tabs>
       </Box>
 
+      <Suspense fallback={<PageSkeleton rows={6} />}>
       <Box sx={{ display: activeTab === "overview" ? "block" : "none" }}>
         <DashboardGrid tabKey="overview" widgets={overviewWidgets} />
       </Box>
@@ -442,7 +449,7 @@ const Dashboard = () => {
       {openedTabs.has("store") && (
         <Box sx={{ display: activeTab === "store" ? "block" : "none" }}>
           <StoreDashboardTabPane
-            active={openedTabs.has("store")}
+            active={activeTab === "store"}
             fromDate={fromDate}
             toDate={toDate}
             privacyMode={privacyMode}
@@ -453,7 +460,7 @@ const Dashboard = () => {
       {openedTabs.has("warehouse") && (
         <Box sx={{ display: activeTab === "warehouse" ? "block" : "none" }}>
           <WarehouseDashboardTabPane
-            active={openedTabs.has("warehouse")}
+            active={activeTab === "warehouse"}
             fromDate={fromDate}
             toDate={toDate}
             companyId={companyId}
@@ -465,7 +472,7 @@ const Dashboard = () => {
       {openedTabs.has("crm") && (
         <Box sx={{ display: activeTab === "crm" ? "block" : "none" }}>
           <CrmDashboardTabPane
-            active={openedTabs.has("crm")}
+            active={activeTab === "crm"}
             fromDate={fromDate}
             toDate={toDate}
             companyId={companyId}
@@ -477,7 +484,7 @@ const Dashboard = () => {
       {openedTabs.has("sales") && (
         <Box sx={{ display: activeTab === "sales" ? "block" : "none" }}>
           <SalesDashboardTabPane
-            active={openedTabs.has("sales")}
+            active={activeTab === "sales"}
             fromDate={fromDate}
             toDate={toDate}
             companyId={companyId}
@@ -489,7 +496,7 @@ const Dashboard = () => {
       {openedTabs.has("finance") && (
         <Box sx={{ display: activeTab === "finance" ? "block" : "none" }}>
           <FinanceDashboardTabPane
-            active={openedTabs.has("finance")}
+            active={activeTab === "finance"}
             fromDate={fromDate}
             toDate={toDate}
             companyId={companyId}
@@ -501,7 +508,7 @@ const Dashboard = () => {
       {openedTabs.has("masters") && (
         <Box sx={{ display: activeTab === "masters" ? "block" : "none" }}>
           <MastersDashboardTabPane
-            active={openedTabs.has("masters")}
+            active={activeTab === "masters"}
             companyId={companyId}
             privacyMode={privacyMode}
           />
@@ -511,7 +518,7 @@ const Dashboard = () => {
       {openedTabs.has("settings") && (
         <Box sx={{ display: activeTab === "settings" ? "block" : "none" }}>
           <SettingsDashboardTabPane
-            active={openedTabs.has("settings")}
+            active={activeTab === "settings"}
             companyId={companyId}
             privacyMode={privacyMode}
           />
@@ -521,7 +528,7 @@ const Dashboard = () => {
       {openedTabs.has("analytical") && (
         <Box sx={{ display: activeTab === "analytical" ? "block" : "none" }}>
           <AnalyticalDashboardTabPane
-            active={openedTabs.has("analytical")}
+            active={activeTab === "analytical"}
             fromDate={fromDate}
             toDate={toDate}
             companyId={companyId}
@@ -529,6 +536,7 @@ const Dashboard = () => {
           />
         </Box>
       )}
+      </Suspense>
       </Stack>
     </Box>
   );

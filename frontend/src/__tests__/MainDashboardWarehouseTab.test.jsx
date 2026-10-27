@@ -127,5 +127,14 @@ describe("Main Dashboard Warehouse Tab", () => {
       expect(screen.getByText("GRNs Pending")).toBeDefined();
       expect(screen.getByText("Linen Shirt")).toBeDefined();
     });
+    api.get.mockClear();
+    fireEvent.change(screen.getByLabelText("From"), { target: { value: "2026-08-01" } });
+    await waitFor(() => expect(api.get).toHaveBeenCalledWith("/warehouse/dashboard",
+      expect.objectContaining({ params: expect.objectContaining({ date_from: "2026-08-01" }) })));
+    expect(api.get.mock.calls.filter(([url]) => url === "/dashboard")).toHaveLength(0);
+    api.get.mockClear();
+    fireEvent.click(screen.getByRole("button", { name: "Refresh dashboard" }));
+    await waitFor(() => expect(api.get).toHaveBeenCalledWith("/warehouse/dashboard", expect.any(Object)));
+    expect(api.get.mock.calls.filter(([url]) => url === "/dashboard")).toHaveLength(0);
   });
 });

@@ -14,6 +14,7 @@ use App\Models\SalesApproval;
 use App\Models\Stock;
 use App\Models\StockOutward;
 use App\Models\Store;
+use App\Services\StoreContext;
 use App\Services\StoreQuery;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -75,11 +76,13 @@ class DashboardController extends Controller
         // ones below and the per-store loops further down cuts that roughly in half without
         // changing any returned value.
         $salesAgg = $dateScope($scope(PosSale::query()))
-            ->selectRaw('COALESCE(SUM(grand_total), 0) as total, COUNT(*) as cnt')
+            ->selectRaw('COALESCE(SUM(grand_total), 0) as total, COUNT(*) as cnt, COALESCE(SUM(tax_amount), 0) as tax')
             ->first();
         $totalSales = (float) $salesAgg->total;
         $totalOrders = (int) $salesAgg->cnt;
-        $prevTotalSales = (float) ($prevDateScope($scope(PosSale::query()))->sum('grand_total') ?? 0);
+        $prevSalesAgg = $prevDateScope($scope(PosSale::query()))
+            ->selectRaw('COALESCE(SUM(grand_total), 0) as total, COALESCE(SUM(tax_amount), 0) as tax')->first();
+        $prevTotalSales = (float) $prevSalesAgg->total;
 
         // Returns - real count+amount for the selected range (previously the only place this was
         // aggregated was buried as one row inside settlementDetails, with no standalone metric a
@@ -154,8 +157,8 @@ class DashboardController extends Controller
 
         // GST/Tax collected - real sum of pos_sales.tax_amount for the range (combined CGST+SGST,
         // there's no separate column for each half).
-        $totalTaxCollected = (float) ($dateScope($scope(PosSale::query()))->sum('tax_amount') ?? 0);
-        $prevTotalTax = (float) ($prevDateScope($scope(PosSale::query()))->sum('tax_amount') ?? 0);
+        $totalTaxCollected = (float) $salesAgg->tax;
+        $prevTotalTax = (float) $prevSalesAgg->tax;
 
         // Gross profit - sum(qty * (selling_price - cost_price)) across sold line items in range.
         // cost_price is only recorded on items where the sale screen actually sent one (older/manual
@@ -269,7 +272,11 @@ class DashboardController extends Controller
                 (pi.grand_total - pi.paid_amount) as balance
             ');
 
-        $supplierPaymentRows = $dpPayments->unionAll($piPayments)->get()
+        // Rank in SQL before materializing: only the 15 displayed documents
+        // need to cross the database/PHP boundary, even with years of payables.
+        $supplierPaymentRows = DB::query()->fromSub($dpPayments->unionAll($piPayments), 'payables')
+            ->orderByRaw('COALESCE(invoice_date, ?) asc', [$todayForDays->toDateTimeString()])
+            ->limit(15)->get()
             ->map(function ($row) use ($todayForDays, $overdueThresholdDays) {
                 $invoiceDate = $row->invoice_date ? Carbon::parse($row->invoice_date) : null;
                 $days = $invoiceDate ? $invoiceDate->diffInDays($todayForDays) : null;
@@ -293,7 +300,7 @@ class DashboardController extends Controller
         $supplierPaymentsOverdueCount = collect($supplierPaymentRows)->where('overdue', true)->count();
 
         // Store List
-        $stores = app(\App\Services\StoreContext::class)->available($request->user())
+        $stores = app(StoreContext::class)->available($request->user())
             ->whereIn('id', $request->attributes->get('store_context_ids', []))->get();
 
         // Daily Summary Rows - one grouped query across every visible store instead of 3 separate
@@ -644,17 +651,22 @@ class DashboardController extends Controller
     public function warehouse(Request $request)
     {
         $storeId = $request->header('X-Company-Scope-Id') ?? $request->input('company_id');
-        $scoped = fn ($query) => ($storeId && $storeId !== 'all') ? $query->where('store_id', $storeId) : $query;
+        $stock = StoreQuery::table('stocks')
+            ->leftJoin('products', 'stocks.product_id', '=', 'products.id')
+            ->when($storeId && $storeId !== 'all', fn ($q) => $q->where('stocks.store_id', $storeId))
+            ->selectRaw('COALESCE(SUM(stocks.quantity), 0) as quantity,
+                COALESCE(SUM(CASE WHEN stocks.quantity <= 5 THEN 1 ELSE 0 END), 0) as low_count,
+                COALESCE(SUM(CASE WHEN stocks.quantity <= 0 THEN 1 ELSE 0 END), 0) as empty_count,
+                COALESCE(SUM(stocks.quantity * COALESCE(products.cost_price, 0)), 0) as value')
+            ->first();
 
         return response()->json([
             'success' => true,
             'data' => [
-                'total_items_in_stock' => (float) ($scoped(Stock::query())->sum('quantity') ?? 0),
-                'low_stock_items' => (int) ($scoped(Stock::query())->where('quantity', '<=', 5)->count() ?? 0),
-                'out_of_stock_items' => (int) ($scoped(Stock::query())->where('quantity', '<=', 0)->count() ?? 0),
-                'total_inventory_val' => (float) ($scoped(
-                    StoreQuery::table('stocks')->join('products', 'stocks.product_id', '=', 'products.id')
-                )->sum(DB::raw('stocks.quantity * COALESCE(products.cost_price, 0)')) ?? 0),
+                'total_items_in_stock' => (float) $stock->quantity,
+                'low_stock_items' => (int) $stock->low_count,
+                'out_of_stock_items' => (int) $stock->empty_count,
+                'total_inventory_val' => (float) $stock->value,
                 'recent_grns' => DirectPurchase::query()
                     ->when($storeId && $storeId !== 'all', fn ($q) => $q->where('store_id', $storeId))
                     ->orderBy('id', 'desc')
@@ -672,9 +684,16 @@ class DashboardController extends Controller
 
     public function summary(Request $request)
     {
-        $today = now()->toDateString();
-        $todaySales = (float) (PosSale::whereDate('sale_date', $today)->sum('grand_total') ?? 0);
-        $todayOrders = (int) (PosSale::whereDate('sale_date', $today)->count() ?? 0);
+        $today = now()->startOfDay();
+        $tomorrow = $today->copy()->addDay();
+        $sales = PosSale::query()->selectRaw(
+            'COALESCE(SUM(CASE WHEN sale_date >= ? AND sale_date < ? THEN grand_total ELSE 0 END), 0) as today_total,
+             COALESCE(SUM(CASE WHEN sale_date >= ? AND sale_date < ? THEN 1 ELSE 0 END), 0) as today_count,
+             COALESCE(SUM(grand_total), 0) as total',
+            [$today, $tomorrow, $today, $tomorrow]
+        )->first();
+        $todaySales = (float) $sales->today_total;
+        $todayOrders = (int) $sales->today_count;
 
         return response()->json([
             'success' => true,
@@ -685,7 +704,7 @@ class DashboardController extends Controller
                 'todaySales' => $todaySales,
                 'todayOrders' => $todayOrders,
                 'yesterdaySales' => 0,
-                'thisMonthSales' => (float) (PosSale::sum('grand_total') ?? 0),
+                'thisMonthSales' => (float) $sales->total,
                 'averageBillValue' => $todayOrders > 0 ? round($todaySales / $todayOrders, 2) : 0,
             ],
         ]);

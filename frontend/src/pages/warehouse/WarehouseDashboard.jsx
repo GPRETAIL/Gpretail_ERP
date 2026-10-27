@@ -321,13 +321,15 @@ const WarehouseDashboard = () => {
   const [activeTab, setActiveTab] = useState("all");
   const [statusUpdatingId, setStatusUpdatingId] = useState(null);
   useEffect(() => {
+    const controller = new AbortController();
     const fetchEntries = async () => {
       try {
         const [transportRes, directPurchaseRes, inventoryRes] = await Promise.all([
-          api.get("/transport-entries", { params: { all: "true" } }),
-          api.get("/direct-purchases", { params: { all: "true" } }),
-          api.get("/inventory-entries", { params: { all: "true" } }),
+          api.get("/transport-entries", { signal: controller.signal, params: { all: "true" } }),
+          api.get("/direct-purchases", { signal: controller.signal, params: { all: "true" } }),
+          api.get("/inventory-entries", { signal: controller.signal, params: { all: "true" } }),
         ]);
+        if (controller.signal.aborted) return;
         const inventoryEntries = Array.isArray(inventoryRes.data?.data) ? inventoryRes.data.data : [];
         const inventoryEntriesByTransportId = groupRowsByTransportEntryId(inventoryEntries);
         const transportEntries = (transportRes.data?.data || []).map((entry) =>
@@ -348,13 +350,15 @@ const WarehouseDashboard = () => {
         });
         setEntries(mergedEntries);
       } catch (err) {
+        if (controller.signal.aborted) return;
         console.error("Failed to fetch entries:", err);
         setToast({ open: true, type: "error", message: "Failed to load dashboard data" });
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     };
     fetchEntries();
+    return () => controller.abort();
   }, []);
 
   const selectedEntry = entries.find((e) => e.dashboardKey === selectedRowKey);

@@ -99,25 +99,23 @@ export default function DashboardScreen({ onNavigate, onOpenSearch, onOpenSyncCe
     return { fromDate: formatYmd(from), toDate: formatYmd(to) };
   }, [dateRange]);
 
-  const fetchDashboardData = useCallback(async () => {
+  const fetchDashboardData = useCallback(async ({ signal }) => {
     try {
-      const [overviewRes, summaryRes, purchasesRes, attentionRes, duesRes] = await Promise.allSettled([
+      const [overviewRes, attentionRes, duesRes] = await Promise.allSettled([
         api.get("/dashboard/overview", {
+          signal,
           params: {
             from: fromDate,
             to: toDate,
             timezoneOffset: new Date().getTimezoneOffset(),
           },
         }),
-        api.get("/dashboard/summary"),
-        api.get("/direct-purchases", { params: { limit: 10 } }),
-        api.get("/dashboard/attention-summary"),
-        api.get("/supplier-payments/pending", { params: { limit: 5 } }),
+        api.get("/dashboard/attention-summary", { signal }),
+        api.get("/supplier-payments/pending", { signal, params: { limit: 5 } }),
       ]);
+      signal.throwIfAborted();
 
       const ov = overviewRes.status === "fulfilled" ? overviewRes.value.data?.data : null;
-      const sm = summaryRes.status === "fulfilled" ? summaryRes.value.data?.data : null;
-      const pc = purchasesRes.status === "fulfilled" ? purchasesRes.value.data?.data : null;
       const att = attentionRes.status === "fulfilled" ? attentionRes.value.data?.data : null;
       const dues = duesRes.status === "fulfilled"
         ? {
@@ -129,8 +127,6 @@ export default function DashboardScreen({ onNavigate, onOpenSearch, onOpenSyncCe
 
       const combined = {
         overview: ov,
-        summary: sm,
-        purchases: Array.isArray(pc) ? pc : pc?.data || [],
         attention: att,
         dues,
       };
@@ -153,7 +149,7 @@ export default function DashboardScreen({ onNavigate, onOpenSearch, onOpenSyncCe
 
   useEffect(() => {
 
-    const handleRestored = () => loadDashboardData();
+    const handleRestored = () => loadDashboardData({ silent: true });
     window.addEventListener("vx-network-restored", handleRestored);
     window.addEventListener("vx-pull-refresh", handleRestored);
     return () => {
@@ -185,6 +181,7 @@ export default function DashboardScreen({ onNavigate, onOpenSearch, onOpenSyncCe
   // without the user needing to switch tabs and back to force a refetch.
   useDashboardRealtime({
     enabled: true,
+    companyId: activeStoreId || authUser?.company_id || "",
     onUpdate: loadDashboardData,
   });
 

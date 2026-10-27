@@ -1,20 +1,23 @@
-import React from "react";
+import React, { lazy, Suspense } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 
 import Login from "./pages/Login";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AuthInitializer from "./components/AuthInitializer";
-import MainLayout from "./components/MainLayout";
-import Register from "./pages/Register";
 import ActivationGate from "./components/ActivationGate";
 import ActivationWizard from "./pages/ActivationWizard";
-import SetPassword from "./pages/SetPassword";
-import ForceChangePassword from "./pages/ForceChangePassword";
-import VynerixMobileApp from "./mobile/MobileAppV2";
+import ChunkErrorBoundary from "./components/ChunkErrorBoundary";
+import PageSkeleton from "./components/PageSkeleton";
 import PwaInstallPrompt from "./components/PwaInstallPrompt";
 import StoreSelectionDialog from "./components/StoreSelectionDialog";
 import PlatformNotificationBanner from "./components/PlatformNotificationBanner";
+
+// A desktop login must not download the mobile workspace (and vice versa).
+const MainLayout = lazy(() => import("./components/MainLayout"));
+const VynerixMobileApp = lazy(() => import("./mobile/MobileAppV2"));
+const SetPassword = lazy(() => import("./pages/SetPassword"));
+const ForceChangePassword = lazy(() => import("./pages/ForceChangePassword"));
 
 function App() {
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
@@ -33,31 +36,35 @@ function App() {
 
   return (
     <AuthInitializer>
-      <ActivationGate>
-        {isAuthenticated && authUser?.must_change_password ? (
-          <ForceChangePassword />
-        ) : (
-          <>
-            <Routes>
-              <Route
-                path="/activate"
-                element={<ActivationWizard onActivated={() => { localStorage.setItem("vx_activated", "1"); window.location.href = "/login"; }} />}
-              />
-              <Route path="/login" element={isAuthenticated ? <Navigate to={homePath} replace /> : <Login />} />
-              <Route path="/set-password" element={<SetPassword />} />
-              <Route path="/app/*" element={<VynerixMobileApp />} />
-              {isAuthenticated && authUser?.web_access === false && <Route path="/notifications" element={<Navigate to="/app?notifications=1" replace />} />}
-              <Route element={<ProtectedRoute />}>
-                <Route path="*" element={<MainLayout />} />
-              </Route>
-              <Route path="/" element={isAuthenticated ? <Navigate to={homePath} replace /> : <Navigate to="/login" replace />} />
-            </Routes>
-            {isAuthenticated && !isMobileRoute && <PlatformNotificationBanner />}
-            {isAuthenticated && <PwaInstallPrompt />}
-            {isAuthenticated && <StoreSelectionDialog />}
-          </>
-        )}
-      </ActivationGate>
+      <ChunkErrorBoundary>
+        <Suspense fallback={<PageSkeleton rows={6} />}>
+          <ActivationGate>
+            {isAuthenticated && authUser?.must_change_password ? (
+              <ForceChangePassword />
+            ) : (
+              <>
+                <Routes>
+                  <Route
+                    path="/activate"
+                    element={<ActivationWizard onActivated={() => { localStorage.setItem("vx_activated", "1"); window.location.href = "/login"; }} />}
+                  />
+                  <Route path="/login" element={isAuthenticated ? <Navigate to={homePath} replace /> : <Login />} />
+                  <Route path="/set-password" element={<SetPassword />} />
+                  <Route path="/app/*" element={<VynerixMobileApp />} />
+                  {isAuthenticated && authUser?.web_access === false && <Route path="/notifications" element={<Navigate to="/app?notifications=1" replace />} />}
+                  <Route element={<ProtectedRoute />}>
+                    <Route path="*" element={<MainLayout />} />
+                  </Route>
+                  <Route path="/" element={isAuthenticated ? <Navigate to={homePath} replace /> : <Navigate to="/login" replace />} />
+                </Routes>
+                {isAuthenticated && !isMobileRoute && <PlatformNotificationBanner />}
+                {isAuthenticated && <PwaInstallPrompt />}
+                {isAuthenticated && <StoreSelectionDialog />}
+              </>
+            )}
+          </ActivationGate>
+        </Suspense>
+      </ChunkErrorBoundary>
     </AuthInitializer>
   );
 }

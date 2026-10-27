@@ -10,7 +10,6 @@ import {
   isLocalPrinterServiceConnected,
   printWithLocalService,
 } from "../utils/localPrinterService";
-import { renderPrintableHtmlToImageJob } from "../utils/renderPrintableHtml";
 import { loadSalesReceiptCustomization } from "../utils/salesReceiptCustomization";
 import { buildEscposReceiptJob, isEscposReceiptEligible } from "../utils/escposReceiptBuilder";
 
@@ -226,6 +225,9 @@ export const PrintProvider = ({ children }) => {
 
           if (!escposHandled && shouldRenderReceiptAsImage(job)) {
             try {
+              // Native ESC/POS jobs never need the large HTML rasterizer.
+              // Load it only when a receipt actually requires image printing.
+              const { renderPrintableHtmlToImageJob } = await import("../utils/renderPrintableHtml");
               const rendered = await renderPrintableHtmlToImageJob(job.html);
               if (rendered?.imageDataUrl) {
                 html = "";
