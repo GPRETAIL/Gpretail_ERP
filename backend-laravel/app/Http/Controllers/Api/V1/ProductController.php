@@ -10,9 +10,11 @@ use App\Models\Supplier;
 use App\Models\Tax;
 use App\Services\GroupAggregationService;
 use App\Services\PaginationService;
+use App\Services\ProductFormData;
 use App\Services\StoreQuery;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
@@ -119,7 +121,7 @@ class ProductController extends Controller
         $query = $this->filteredQuery($request);
 
         // ?dropdown=true or ?all=true — fast direct join for dropdowns / search / export
-        if ($request->boolean('dropdown') || $request->boolean('all') || $request->input('mode') === 'dropdown' || in_array($request->input('limit'), ['500', '1000', 500, 1000])) {
+        if ($request->boolean('dropdown') || $request->input('mode') === 'dropdown') {
             $cap = (int) ($request->input('limit') ?? ($request->boolean('all') ? 25000 : 100));
             $items = StoreQuery::table('products')
                 ->leftJoin('taxes', 'products.tax_id', '=', 'taxes.id')
@@ -184,7 +186,14 @@ class ProductController extends Controller
             'purchaseTax:id,name,rate',
             'salesTax:id,name,rate',
             'sizeGroup:id,name,code',
+            'companyRef:id,name',
         ]);
+
+        if ($request->boolean('all')) {
+            $items = $query->orderBy('name')->limit(25000)->get();
+
+            return response()->json(['success' => true, 'data' => $items, 'total' => $items->count()]);
+        }
 
         $paginated = $this->paginationService->paginate(
             query: $query,
@@ -208,9 +217,9 @@ class ProductController extends Controller
             ->firstOrFail();
 
         $data = $product->toArray();
-        $data['product_group_id'] = $product->category_id;
+        $data['product_group_id'] = $product->master_details['product_group_attribute_id'] ?? $product->category_id;
         $data['sales_tax_id'] = $product->sales_tax_id ?: $product->tax_id;
-        $data['purchase_tax_id'] = $product->purchase_tax_id ?: $product->tax_id;
+        $data['purchase_tax_id'] = $product->purchase_tax_id;
         $data['barcode_id'] = $product->barcode;
         $data['hsn'] = $product->hsn_code;
         $data['uom'] = $product->unit;
@@ -237,162 +246,60 @@ class ProductController extends Controller
         return response()->json(['success' => true, 'data' => $product]);
     }
 
-    protected function extractProductData(Request $request, $isUpdate = false)
+    protected function extractProductData(Request $request, ?Product $existing = null)
     {
-        $raw = $request->all();
-
-        $code = $request->input('code');
-        if (empty($code) && ! $isUpdate) {
-            $code = $request->input('sku') ?: ('PRD_'.strtoupper(substr(uniqid(), -6)));
-        }
-
-        $barcode = $request->input('barcode') ?: $request->input('barcode_id') ?: $request->input('barcodeID') ?: ($isUpdate ? null : $code);
-
-        // Product Group / Category
-        $categoryId = $request->input('category_id') ?: $request->input('product_group_id') ?: $request->input('productGroup');
-        if (is_string($categoryId) && ! is_numeric($categoryId)) {
-            $cat = StoreQuery::table('categories')->where('name', $categoryId)->first();
-            $categoryId = $cat ? $cat->id : null;
-        }
-
-        // Brand
-        $brandId = $request->input('brand_id') ?: $request->input('brand');
-        if (is_string($brandId) && ! is_numeric($brandId)) {
-            $b = StoreQuery::table('brands')->where('name', $brandId)->first();
-            $brandId = $b ? $b->id : null;
-        }
-
-        // Taxes
-        $salesTaxId = $request->input('sales_tax_id') ?: $request->input('salesTax') ?: $request->input('tax_id');
-        if (is_string($salesTaxId) && ! is_numeric($salesTaxId)) {
-            $t = StoreQuery::table('taxes')->where('name', $salesTaxId)->first();
-            $salesTaxId = $t ? $t->id : null;
-        }
-
-        $purchaseTaxId = $request->input('purchase_tax_id') ?: $request->input('purchaseTax') ?: $salesTaxId;
-        if (is_string($purchaseTaxId) && ! is_numeric($purchaseTaxId)) {
-            $t = StoreQuery::table('taxes')->where('name', $purchaseTaxId)->first();
-            $purchaseTaxId = $t ? $t->id : null;
-        }
-
-        // Size Group
-        $sizeGroupId = $request->input('size_group_id') ?: $request->input('sizeGroup');
-        if (is_string($sizeGroupId) && ! is_numeric($sizeGroupId)) {
-            $sg = StoreQuery::table('size_groups')->where('name', $sizeGroupId)->orWhere('code', $sizeGroupId)->first();
-            $sizeGroupId = $sg ? $sg->id : null;
-        }
-
-        // Company
-        $companyId = $request->input('company_id') ?: $request->input('company');
-        if (is_string($companyId) && ! is_numeric($companyId)) {
-            $c = StoreQuery::table('companies')->where('name', $companyId)->orWhere('code', $companyId)->first();
-            $companyId = $c ? $c->id : null;
-        }
-
-        $data = [
-            'name' => $request->input('name'),
-            'category_id' => $categoryId ?: null,
-            'brand_id' => $brandId ?: null,
-            'tax_id' => $salesTaxId ?: null,
-            'sales_tax_id' => $salesTaxId ?: null,
-            'purchase_tax_id' => $purchaseTaxId ?: null,
-            'size_group_id' => $sizeGroupId ?: null,
-            'company_id' => $companyId ?: null,
-            'hsn_code' => $request->input('hsn_code') ?: $request->input('hsn'),
-            'unit' => $request->input('unit') ?: $request->input('uom') ?: 'PCS',
-            'type' => $request->input('type'),
-            'section' => $request->input('section'),
-            'selling_mode' => $request->input('selling_mode') ?: $request->input('sellingMode'),
-            'pack_size' => $request->filled('pack_size') ? $request->input('pack_size') : $request->input('packSize'),
-            'barcode_mode' => $request->input('barcode_mode') ?: $request->input('barcodeMode'),
-            'barcode_source' => $request->input('barcode_source') ?: $request->input('barcodeSource'),
-            'discount_mode' => $request->input('discount_mode') ?: $request->input('discountMode'),
-            'discount_mode_value' => $request->filled('discount_mode_value') ? $request->input('discount_mode_value') : $request->input('discountModeValue'),
-            'margin_min' => $request->filled('margin_min') ? $request->input('margin_min') : $request->input('marginMin'),
-            'margin_max' => $request->filled('margin_max') ? $request->input('margin_max') : $request->input('marginMax'),
-            'stock_holding_period' => $request->input('stock_holding_period') ?: $request->input('stockHoldingPeriod'),
-            'purchase_plan_mode' => $request->input('purchase_plan_mode') ?: $request->input('purchasePlanMode'),
-            'expected_gender' => $request->input('expected_gender') ?: $request->input('expectedGender'),
-            'dumping' => $request->has('dumping') ? $request->boolean('dumping') : false,
-            'dumping_value' => $request->input('dumping_value') ?: $request->input('dumpingValue'),
-            'cess' => $request->has('cess') ? $request->boolean('cess') : false,
-            'cess_value' => $request->filled('cess_value') ? $request->input('cess_value') : $request->input('cessValue'),
-            'daily_price' => $request->has('daily_price') ? $request->boolean('daily_price') : ($request->has('dailyPrice') ? $request->boolean('dailyPrice') : false),
-            'daily_price_value' => $request->input('daily_price_value') ?: $request->input('dailyPriceValue'),
-            'is_core' => $request->has('is_core') ? $request->boolean('is_core') : ($request->has('isCore') ? $request->boolean('isCore') : false),
-            'is_core_value' => $request->input('is_core_value') ?: $request->input('isCoreValue'),
-            'exclude_reward' => $request->has('exclude_reward') ? $request->boolean('exclude_reward') : ($request->has('excludeReward') ? $request->boolean('excludeReward') : false),
-            'auto_po' => $request->has('auto_po') ? $request->boolean('auto_po') : ($request->has('autoPO') ? $request->boolean('autoPO') : false),
-            'auto_po_value' => $request->input('auto_po_value') ?: $request->input('autoPOValue'),
-            'purchase_entry_attributes' => $request->input('purchase_entry_attributes') ?: $request->input('purchaseEntryAttrs'),
-            'cost_price' => $request->input('cost_price', 0),
-            'selling_price' => $request->input('selling_price', 0),
-            'mrp' => $request->input('mrp', 0),
-            'min_stock' => $request->input('min_stock', 0),
-            'max_stock' => $request->input('max_stock', 1000),
-            'is_active' => $request->has('active') ? $request->boolean('active') : ($request->has('is_active') ? $request->boolean('is_active') : true),
-        ];
-
-        if ($code) {
-            $data['code'] = $code;
-        }
-        if ($barcode) {
-            $data['barcode'] = $barcode;
-        }
-
-        // Filter out null values for updates if not explicitly provided
-        return array_filter($data, fn ($v) => $v !== null);
+        return app(ProductFormData::class)->prepare($request, $existing);
     }
 
     public function store(Request $request)
     {
-        $data = $this->extractProductData($request);
+        return DB::transaction(function () use ($request) {
+            $data = $this->extractProductData($request);
 
-        $storeScopeId = $this->resolveStoreId($request, 1);
-        $validator = Validator::make($data, [
-            'name' => 'required|string|max:255',
-            'code' => ['required', 'string', 'max:50', Rule::unique('products', 'code')->where('company_id', $storeScopeId)],
-        ]);
+            $storeScopeId = $this->resolveStoreId($request, 1);
+            $validator = Validator::make($data, [
+                'name' => 'required|string|max:255',
+                'code' => ['required', 'string', 'max:50', Rule::unique('products', 'code')->where('company_id', $storeScopeId)],
+            ]);
 
-        if ($validator->fails()) {
-            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
-        }
+            $validator->validate();
 
-        $product = Product::create($data);
-        Cache::forget(StoreQuery::cacheKey('products_total_unfiltered_count'));
+            $product = Product::create($data);
+            Cache::forget(StoreQuery::cacheKey('products_total_unfiltered_count'));
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Product created successfully',
-            'data' => $this->show($product->id)->getOriginalContent()['data'] ?? $product,
-        ], 201);
+            return response()->json([
+                'success' => true,
+                'message' => 'Product created successfully',
+                'data' => $this->show($product->id)->getOriginalContent()['data'] ?? $product,
+            ], 201);
+        });
     }
 
     public function update(Request $request, $id)
     {
-        $product = Product::where('id', $id)
-            ->orWhere('code', $id)
-            ->firstOrFail();
+        return DB::transaction(function () use ($request, $id) {
+            $product = Product::where('id', $id)
+                ->orWhere('code', $id)
+                ->firstOrFail();
 
-        $data = $this->extractProductData($request, true);
+            $data = $this->extractProductData($request, $product);
 
-        $storeScopeId = $this->resolveStoreId($request, (int) ($product->company_id ?: 1));
-        $validator = Validator::make($data, [
-            'name' => 'sometimes|required|string|max:255',
-            'code' => ['sometimes', 'required', 'string', 'max:50', Rule::unique('products', 'code')->where('company_id', $storeScopeId)->ignore($product->id)],
-        ]);
+            $storeScopeId = $this->resolveStoreId($request, (int) ($product->company_id ?: 1));
+            $validator = Validator::make($data, [
+                'name' => 'sometimes|required|string|max:255',
+                'code' => ['sometimes', 'required', 'string', 'max:50', Rule::unique('products', 'code')->where('company_id', $storeScopeId)->ignore($product->id)],
+            ]);
 
-        if ($validator->fails()) {
-            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
-        }
+            $validator->validate();
 
-        $product->update($data);
+            $product->update($data);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Product updated successfully',
-            'data' => $this->show($product->id)->getOriginalContent()['data'] ?? $product,
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Product updated successfully',
+                'data' => $this->show($product->id)->getOriginalContent()['data'] ?? $product,
+            ]);
+        });
     }
 
     public function destroy($id)

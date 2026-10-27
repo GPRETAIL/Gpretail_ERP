@@ -1105,8 +1105,8 @@ const Employee = () => {
     {
       key: "department_id",
       label: "Department",
-      render: (value) => labelOf(opts.departments, value),
-      searchValue: (row) => labelOf(opts.departments, row.department_id),
+      render: (value, row) => row.department?.name || labelOf(opts.departments, value),
+      searchValue: (row) => row.department?.name || labelOf(opts.departments, row.department_id),
     },
     { key: "email_id", label: "Email" },
     {

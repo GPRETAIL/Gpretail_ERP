@@ -7,10 +7,13 @@ use App\Models\Transport;
 use App\Models\TransportEntry;
 use App\Services\DocumentNumberService;
 use App\Services\GroupAggregationService;
+use App\Services\MasterFormData;
 use App\Services\PaginationService;
+use App\Services\StoreQuery;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 
 class TransportEntryController extends Controller
 {
@@ -21,7 +24,7 @@ class TransportEntryController extends Controller
 
     private function filteredQuery(Request $request)
     {
-        $query = TransportEntry::with(['transport', 'issues', 'receipts']);
+        $query = TransportEntry::with(['transport', 'issues', 'receipts', 'supplier:id,name', 'company:id,name', 'fromCity:id,value,config_value', 'receivingCity:id,value,config_value']);
 
         if ($request->filled('search')) {
             $search = $request->input('search');
@@ -75,6 +78,7 @@ class TransportEntryController extends Controller
 
     public function store(Request $request)
     {
+        $request->merge($this->formData($request, new TransportEntry));
         $validator = Validator::make($request->all(), [
             'lr_no' => 'nullable|string|max:100|unique:transport_entries,lr_no',
             'lr_date' => 'nullable|date',
@@ -101,9 +105,7 @@ class TransportEntryController extends Controller
             ])->id;
         }
 
-        // transport_entries has no store_id column (a pre-existing schema gap, unrelated
-        // to this fix) -- the scope header is used purely as the counter's key so LR
-        // numbers stay collision-safe between a store's local install and cloud.
+        // Use the validated store context for collision-safe local/cloud numbering.
         $storeId = (int) $this->resolveStoreId($request, 1);
         $lrNo = $request->input('lr_no') ?: DocumentNumberService::resolve($request, $storeId, 'LR');
 
@@ -117,18 +119,19 @@ class TransportEntryController extends Controller
             'weight_kg' => $request->input('weight_kg', 0),
             'freight_charges' => $request->input('freight_charges', 0),
             'status' => $request->input('status', 'IN_TRANSIT'),
+            'master_details' => $request->input('master_details', []),
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Transport entry created successfully',
-            'data' => $entry->load('transport'),
+            'data' => $entry->load(['transport', 'issues', 'receipts', 'supplier:id,name', 'company:id,name', 'fromCity:id,value,config_value', 'receivingCity:id,value,config_value']),
         ], 201);
     }
 
     public function show($id)
     {
-        $entry = TransportEntry::with(['transport', 'issues', 'receipts'])->find($id);
+        $entry = TransportEntry::with(['transport', 'issues', 'receipts', 'supplier:id,name', 'company:id,name', 'fromCity:id,value,config_value', 'receivingCity:id,value,config_value'])->find($id);
 
         if (! $entry) {
             return response()->json([
@@ -154,15 +157,12 @@ class TransportEntryController extends Controller
             ], 404);
         }
 
-        $entry->update($request->only([
-            'transport_id', 'lr_no', 'lr_date', 'source', 'destination',
-            'packages_count', 'weight_kg', 'freight_charges', 'status',
-        ]));
+        $entry->update($this->formData($request, $entry));
 
         return response()->json([
             'success' => true,
             'message' => 'Transport entry updated successfully',
-            'data' => $entry->load('transport'),
+            'data' => $entry->load(['transport', 'issues', 'receipts', 'supplier:id,name', 'company:id,name', 'fromCity:id,value,config_value', 'receivingCity:id,value,config_value']),
         ]);
     }
 
@@ -183,6 +183,28 @@ class TransportEntryController extends Controller
             'success' => true,
             'message' => 'Transport entry deleted successfully',
         ]);
+    }
+
+    private function formData(Request $request, TransportEntry $entry): array
+    {
+        $data = MasterFormData::prepare($request, $entry);
+        foreach (['packages_count', 'weight_kg', 'freight_charges'] as $field) {
+            if (array_key_exists($field, $data) && ($data[$field] === null || $data[$field] === '')) {
+                $data[$field] = 0;
+            }
+        }
+        foreach (['supplier_id' => 'suppliers', 'from_city_id' => 'system_configurations', 'receiving_city_id' => 'system_configurations'] as $key => $table) {
+            $value = $data['master_details'][$key] ?? null;
+            $query = StoreQuery::table($table)->where('id', $value);
+            if ($table === 'system_configurations') {
+                $query->where(fn ($q) => $q->whereIn('group', ['CITY', 'city'])->orWhereIn('group_name', ['CITY', 'city']));
+            }
+            if ($value && ! $query->exists()) {
+                throw ValidationException::withMessages([$key => 'Select a valid record from this store.']);
+            }
+        }
+
+        return $data;
     }
 
     public function nextLrNumber(Request $request)
@@ -235,7 +257,7 @@ class TransportEntryController extends Controller
             $storedPath = $file->store("transport-entries/{$entry->id}", 'public');
             $url = Storage::url($storedPath);
             $savedAttachments[] = [
-                'id' => (int) (now()->timestamp . $idx),
+                'id' => (int) (now()->timestamp.$idx),
                 'transport_entry_id' => $entry->id,
                 'file_name' => $file->getClientOriginalName(),
                 'file_type' => $fileType,

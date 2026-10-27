@@ -76,6 +76,21 @@ class Product extends Model
         return $this->belongsTo(SizeGroup::class, 'size_group_id');
     }
 
+    public function companyRef()
+    {
+        return $this->belongsTo(Store::class, 'company_id');
+    }
+
+    public function getSizeIdAttribute($value)
+    {
+        return $value ?? ($this->master_details['size_id'] ?? null);
+    }
+
+    public function size()
+    {
+        return $this->belongsTo(Size::class);
+    }
+
     public function getTaxPercentageAttribute(): float
     {
         return (float) ($this->tax?->rate ?? 0);

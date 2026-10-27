@@ -132,7 +132,7 @@ class ItemController extends Controller
 
     private function filteredQuery(Request $request)
     {
-        $query = Product::with(['category', 'brand', 'tax', 'stocks', 'itemProduct']);
+        $query = Product::with(['category', 'brand', 'tax', 'stocks', 'itemProduct', 'size:id,name']);
 
         if ($request->has('search') && $request->search != '') {
             $s = $request->search;
@@ -173,7 +173,7 @@ class ItemController extends Controller
 
     public function show($id)
     {
-        $item = Product::with(['category', 'brand', 'tax', 'stocks', 'variants', 'itemProduct'])
+        $item = Product::with(['category', 'brand', 'tax', 'stocks', 'variants', 'itemProduct', 'size:id,name'])
             ->where('id', $id)
             ->orWhere('code', $id)
             ->firstOrFail();

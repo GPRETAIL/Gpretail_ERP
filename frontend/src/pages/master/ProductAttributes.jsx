@@ -1,3 +1,4 @@
+import { recordBoolean, recordName } from "../../utils/masterListRows";
 import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
 import useMasterBulkDelete from "../../hooks/useMasterBulkDelete";
 import MasterSearchPanel from "../../components/MasterSearchPanel";
@@ -69,9 +70,10 @@ const ProductAttributes = () => {
   const grid = useSearchGrid({
     adapter: createSearchGridAdapter(endpoint, row => ({
       ...row, name: row.size_name ?? row.group_name ?? row.name,
-      isActive: row.is_active ?? true,
-      code: type === "SIZEGROUP" ? (row.sizes || []).map(s => s.size_name).join(", ") || "--" : row.code || "--",
-      created_by: row.created_by || row.createdByName || "Superadmin",
+      isActive: recordBoolean(row.is_active ?? true),
+      code: row.code || "—",
+      sizes_text: (row.sizes || []).map(recordName).filter(Boolean).join(", ") || "—",
+      created_by: row.created_by || row.createdByName || "—",
     }), { paginate: true }),
     enabled: Boolean(type), scopeKey: type,
     onError: err => toast.error(err.response?.data?.message || "Failed to load attributes"),
@@ -120,19 +122,20 @@ const ProductAttributes = () => {
     },
     {
       key: "code",
-      label: formData.productType === "SIZEGROUP" ? "Sizes" : "Code",
+      label: "Code",
     },
+    ...(type === "SIZEGROUP" ? [{ key: "sizes_text", label: "Sizes" }] : []),
     {
       key: "created_by",
       label: "Created By",
-      render: (value) => value || "Superadmin",
-      searchValue: (row) => row.created_by || "Superadmin",
+      render: (value) => value || "—",
+      searchValue: (row) => row.created_by || "—",
     },
     {
       key: "company_id",
       label: "Store/Warehouse",
-      render: (value) => storeMap[String(value)] || (storeMap["1"] ?? "Main Store"),
-      searchValue: (row) => storeMap[String(row.company_id)] || (storeMap["1"] ?? "Main Store"),
+      render: (value) => storeMap[String(value)] || "—",
+      searchValue: (row) => storeMap[String(row.company_id)] || "—",
     },
   ];
 

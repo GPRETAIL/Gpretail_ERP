@@ -1,3 +1,4 @@
+import { recordName } from "../../utils/masterListRows";
 import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
 import MasterSearchPanel from "../../components/MasterSearchPanel";
 import { masterSearchAreaSx } from "../../theme/erpUi";
@@ -415,8 +416,8 @@ export default function Item() {
     {
       key: "size",
       label: "Size",
-      render: (_, row) => row.size?.size_name || "—",
-      searchValue: (row) => row.size?.size_name || "",
+      render: (_, row) => recordName(row.size) || "—",
+      searchValue: (row) => recordName(row.size),
     },
     {
       key: "pur_rate",

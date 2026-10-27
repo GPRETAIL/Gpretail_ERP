@@ -11,6 +11,7 @@ use App\Services\GroupAggregationService;
 use App\Services\PaginationService;
 use App\Services\StockService;
 use App\Services\VariantResolverService;
+use App\Services\WarehouseInvoiceForm;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -27,7 +28,7 @@ class PurchaseInvoiceController extends Controller
 
     private function filteredQuery(Request $request)
     {
-        $query = PurchaseInvoice::with(['supplier', 'items.product', 'transport']);
+        $query = PurchaseInvoice::with(['supplier', 'items.product', 'transport', 'company:id,name']);
 
         // This never scoped by store at all - every store's invoices were
         // returned regardless of X-Company-Scope-Id, unlike every sibling
@@ -97,6 +98,13 @@ class PurchaseInvoiceController extends Controller
 
     public function store(Request $request)
     {
+        $warehouseHeader = ($request->has('transportEntryId') || $request->has('transport_entry_id'))
+            && collect($request->input('items', []))->every(fn ($row) => empty($row['product_id']) && empty($row['productId']));
+        if ($warehouseHeader) {
+            $invoice = app(WarehouseInvoiceForm::class)->save($request, (int) $this->resolveStoreId($request, 1));
+
+            return response()->json(['success' => true, 'message' => 'Invoice saved successfully', 'data' => $invoice], 201);
+        }
         $validator = Validator::make($request->all(), [
             'supplier_id' => 'nullable|exists:suppliers,id',
             'invoice_date' => 'nullable|date',
@@ -195,7 +203,7 @@ class PurchaseInvoiceController extends Controller
 
     public function show($id)
     {
-        $invoice = PurchaseInvoice::with(['supplier', 'items.product', 'transport'])->find($id);
+        $invoice = PurchaseInvoice::with(['supplier', 'items.product', 'transport', 'company:id,name'])->find($id);
 
         if (! $invoice) {
             return response()->json([
@@ -219,6 +227,12 @@ class PurchaseInvoiceController extends Controller
                 'success' => false,
                 'message' => 'Purchase invoice not found',
             ], 404);
+        }
+
+        if (($invoice->master_details['workflow'] ?? null) === 'warehouse_invoice') {
+            $invoice = app(WarehouseInvoiceForm::class)->save($request, (int) $invoice->store_id, $invoice);
+
+            return response()->json(['success' => true, 'message' => 'Invoice updated successfully', 'data' => $invoice]);
         }
 
         $invoice->update($request->only([

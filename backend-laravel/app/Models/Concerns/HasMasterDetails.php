@@ -17,8 +17,13 @@ trait HasMasterDetails
     public static function bootHasMasterDetails(): void
     {
         static::creating(function ($model): void {
-            $model->created_by = auth()->user()?->name ?? auth()->user()?->username;
+            $model->created_by = $model->masterCreator();
         });
+    }
+
+    protected function masterCreator(): string|int|null
+    {
+        return auth()->user()?->name ?? auth()->user()?->username;
     }
 
     public function attributesToArray(): array
