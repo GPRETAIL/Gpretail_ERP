@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../api/axios";
+import { requestCacheScope } from "../utils/requestCacheScope";
 
 // Shared store/warehouse id -> name resolver for the master list pages.
 // Records carry a `company_id` (the owning store, an identity "company" of kind
@@ -7,8 +8,10 @@ import api from "../api/axios";
 // every master list page reuses the same map instead of re-fetching.
 let cachedMap = null;
 let inflight = null;
+let cachedScope = "";
 
-const loadStoreMap = () => {
+const loadStoreMap = scope => {
+  if (cachedScope !== scope) { cachedScope = scope; cachedMap = null; inflight = null; }
   if (cachedMap) return Promise.resolve(cachedMap);
   if (!inflight) {
     inflight = api
@@ -18,12 +21,12 @@ const loadStoreMap = () => {
         (res.data?.data || []).forEach((c) => {
           if (c?.id != null) map[String(c.id)] = c.name || c.code || "";
         });
-        cachedMap = map;
+        if (cachedScope === scope) cachedMap = map;
         return map;
       })
       .catch(() => {
         // Allow a retry on the next mount if the request failed.
-        inflight = null;
+        if (cachedScope === scope) inflight = null;
         return {};
       });
   }
@@ -32,19 +35,22 @@ const loadStoreMap = () => {
 
 // Returns an { [companyId]: storeName } map. Empty until the first fetch resolves.
 export default function useStoreNameMap() {
-  const [map, setMap] = useState(cachedMap || {});
+  const token = localStorage.getItem("token");
+  const scope = requestCacheScope();
+  const [result, setResult] = useState(null);
 
   useEffect(() => {
     let active = true;
-    loadStoreMap().then((resolved) => {
-      if (active) setMap(resolved);
+    if (!token) return;
+    loadStoreMap(scope).then((resolved) => {
+      if (active) setResult({ scope, map: resolved });
     });
     return () => {
       active = false;
     };
-  }, []);
+  }, [scope, token]);
 
-  return map;
+  return token && result?.scope === scope ? result.map : {};
 }
 
 // Resolves a single company_id to its store/warehouse name (or "—").

@@ -17,6 +17,7 @@ const DEFAULT_STATE = {
 let runtimeState = { ...DEFAULT_STATE };
 let healthTimer = null;
 let boundApiClient = null;
+let healthPending = false;
 
 const isBrowser = () => typeof window !== "undefined";
 
@@ -169,8 +170,12 @@ const switchTarget = (target = "cloud") => {
 
 const pollLocalHealthOnce = async () => {
   if (!isBrowser() || !runtimeState.enabled || !runtimeState.localHealthUrl) return false;
+  if (healthPending || document.visibilityState === "hidden") return false;
+  healthPending = true;
+  const healthUrl = runtimeState.localHealthUrl;
   try {
-    const payload = await fetchJsonWithTimeout(runtimeState.localHealthUrl);
+    const payload = await fetchJsonWithTimeout(healthUrl);
+    if (!runtimeState.enabled || runtimeState.localHealthUrl !== healthUrl) return false;
     const data = payload?.data || payload || {};
     const localHealthy = Boolean(data.local_healthy ?? data.connector?.local_healthy ?? payload?.success);
     runtimeState.localHealthy = localHealthy;
@@ -181,9 +186,10 @@ const pollLocalHealthOnce = async () => {
       return true;
     }
   } catch {
+    if (!runtimeState.enabled || runtimeState.localHealthUrl !== healthUrl) return false;
     runtimeState.localHealthy = false;
     persistState();
-  }
+  } finally { healthPending = false; }
   return false;
 };
 
@@ -378,9 +384,9 @@ export const prepareRoutingForRequest = async (config = {}) => {
 export const shouldRetryOnCloud = (error) => {
   if (error?.code === "ERR_CANCELED" || error?.__CANCEL__) return false;
   const requestConfig = error?.config || {};
-  // A timeout does not mean a write failed. Keep POS retries on their
-  // original database; a second node cannot yet know whether it committed.
-  if (isPosCheckout(requestConfig)) return false;
+  // An ambiguous write may already have committed on the local database.
+  // Automatic fallback is reserved for reads across every ERP module.
+  if (!["get", "head", "options"].includes(String(requestConfig.method || "get").toLowerCase())) return false;
   if (!runtimeState.enabled) return false;
   if (requestConfig.__retriedOnCloud) return false;
   if (requestConfig.__routingTarget !== "local") return false;

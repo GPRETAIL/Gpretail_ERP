@@ -1,4 +1,5 @@
 import axios from "axios";
+import { createReadCoalescer } from "./coalesceReads";
 import { handleStoreSelectionError } from "../utils/storeSelection";
 import {
   buildCloudRetryConfig,
@@ -32,10 +33,13 @@ const api = axios.create({
   headers: { "Content-Type": "application/json" },
   timeout: 30000,
 });
+const sharedReads = createReadCoalescer(axios.getAdapter(api.defaults.adapter));
+api.defaults.adapter = sharedReads.adapter;
 
 // ─── Request Interceptor ──────────────────────────────────────────────────────
 api.interceptors.request.use(
   async (config) => {
+    if (!["get", "head", "options"].includes(String(config.method || "get").toLowerCase())) sharedReads.invalidate();
     const token = localStorage.getItem("token");
     if (token) config.headers.Authorization = `Bearer ${token}`;
 

@@ -6,7 +6,10 @@ use App\Models\Customer;
 use App\Models\Notification;
 use App\Models\Store;
 use App\Models\User;
+use Illuminate\Cache\ArrayStore;
+use Illuminate\Cache\Repository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
@@ -47,6 +50,32 @@ class NotificationControllerTest extends TestCase
     private function fetchNotifications()
     {
         return $this->getJson('/api/notifications');
+    }
+
+    public function test_alert_generation_is_throttled_but_read_receipts_remain_fresh_and_scope_isolated(): void
+    {
+        config(['notifications.alert_refresh_seconds' => 60]);
+        Cache::partialMock()->shouldReceive('store')->with('file')->andReturn(new Repository(new ArrayStore));
+        Customer::create(['store_id' => $this->store->id, 'name' => 'Over Limit', 'code' => 'CACHE-ONE', 'credit_limit' => 100, 'current_balance' => 200]);
+        $before = $this->getJson('/api/notifications/unread-count')->assertOk()->json('data.count');
+        $notification = Notification::where('type', 'CUSTOMER_CREDIT_LIMIT_EXCEEDED')->firstOrFail();
+        $this->postJson('/api/notifications/'.$notification->id.'/read')->assertOk();
+        DB::enableQueryLog();
+        DB::flushQueryLog();
+        $this->getJson('/api/notifications/unread-count')->assertOk()->assertJsonPath('data.count', $before - 1);
+        $this->assertFalse(collect(DB::getQueryLog())->contains(fn ($row) => str_contains($row['query'], 'from "customers"')));
+        $this->travel(61)->seconds();
+        DB::flushQueryLog();
+        $this->getJson('/api/notifications/unread-count')->assertOk();
+        $this->assertTrue(collect(DB::getQueryLog())->contains(fn ($row) => str_contains($row['query'], 'from "customers"')));
+        $other = Store::create(['name' => 'Other', 'code' => 'CACHE-STORE']);
+        $user = User::create(['name' => 'Other', 'username' => 'cache-other', 'email' => 'cache-other@example.test', 'password' => bcrypt('secret123'), 'role' => 'admin', 'store_id' => $other->id]);
+        Customer::create(['store_id' => $other->id, 'name' => 'Other Limit', 'code' => 'CACHE-TWO', 'credit_limit' => 100, 'current_balance' => 200]);
+        Sanctum::actingAs($user);
+        $rows = collect($this->getJson('/api/notifications')->assertOk()->json('data'));
+        $this->assertTrue($rows->contains(fn ($row) => $row['type'] === 'CUSTOMER_CREDIT_LIMIT_EXCEEDED' && $row['store_id'] === $other->id));
+        $this->assertFalse($rows->contains('id', $notification->id));
+        DB::disableQueryLog();
     }
 
     public function test_unread_filter_uses_personal_receipts_before_pagination_and_keeps_store_scope(): void

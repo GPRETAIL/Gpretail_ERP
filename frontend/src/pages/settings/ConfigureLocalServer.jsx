@@ -147,7 +147,7 @@ export default function ConfigureLocalServer() {
   useEffect(() => {
     let alive = true;
     const timer = setInterval(() => {
-      if (alive) {
+      if (alive && document.visibilityState !== "hidden") {
         pollConfiguration();
       }
     }, 20000);

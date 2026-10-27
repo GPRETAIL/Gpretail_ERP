@@ -233,16 +233,20 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
     }
 
     let active = true;
+    let pending = false;
+    const controller = new AbortController();
 
     const loadPendingApprovals = async () => {
+      if (!active || pending || document.visibilityState === "hidden") return;
+      pending = true;
       try {
-        const res = await api.get("/sales-on-approval/pending-count");
+        const res = await api.get("/sales-on-approval/pending-count", { signal: controller.signal });
         if (!active) return;
         const count = Number(res.data?.data?.count);
         setPendingApprovalsCount(Number.isFinite(count) ? count : 0);
       } catch {
         if (active) setPendingApprovalsCount(0);
-      }
+      } finally { pending = false; }
     };
 
     loadPendingApprovals();
@@ -252,6 +256,7 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
 
     return () => {
       active = false;
+      controller.abort();
       clearInterval(intervalId);
       window.removeEventListener("sales-on-approval-updated", onApprovalUpdated);
     };

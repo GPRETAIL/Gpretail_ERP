@@ -12,6 +12,7 @@ use App\Services\StoreContext;
 use App\Services\StoreQuery;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class NotificationController extends Controller
@@ -147,6 +148,51 @@ class NotificationController extends Controller
     }
 
     private function generateAllAlerts(): void
+    {
+        $seconds = (int) config('notifications.alert_refresh_seconds', app()->runningUnitTests() ? 0 : 60);
+        if ($seconds <= 0) {
+            $this->generateAllAlertsNow();
+
+            return;
+        }
+        // Header, inbox and dashboard can ask together. Recompute operational
+        // alerts at most once a minute per user/scope; unread receipts stay live.
+        $key = StoreQuery::cacheKey('notification-alert-generation:v1:'.request()->user()->id);
+        try {
+            $cache = Cache::store('file');
+            if ($cache->has($key)) {
+                return;
+            }
+            $lock = $cache->lock($key.':lock', 60);
+            if (! $lock->get()) {
+                return;
+            }
+        } catch (\Exception) {
+            $this->generateAllAlertsNow();
+
+            return;
+        }
+        try {
+            try {
+                if ($cache->has($key)) {
+                    return;
+                }
+            } catch (\Exception) { /* Generate if the cache becomes unavailable. */
+            }
+            $this->generateAllAlertsNow();
+            try {
+                $cache->put($key, true, $seconds);
+            } catch (\Exception) { /* Cache is optional. */
+            }
+        } finally {
+            try {
+                $lock->release();
+            } catch (\Exception) { /* The lock also expires. */
+            }
+        }
+    }
+
+    private function generateAllAlertsNow(): void
     {
         if (! app(StoreContext::class)->stores(request()->user())->count()) {
             return;

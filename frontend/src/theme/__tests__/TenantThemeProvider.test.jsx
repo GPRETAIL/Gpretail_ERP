@@ -46,7 +46,13 @@ describe("TenantThemeProvider", () => {
     await screen.findByText("PRIMARY:#345678");
     api.get.mockRejectedValueOnce(new Error("offline"));
     fireEvent(window, new Event("online"));
-    await waitFor(() => expect(api.get).toHaveBeenCalledTimes(2));
+    fireEvent.focus(window);
+    expect(api.get).toHaveBeenCalledTimes(1);
+    const clock = vi.spyOn(Date, "now").mockReturnValue(Date.now() + 60001);
+    try {
+      fireEvent(window, new Event("online"));
+      await waitFor(() => expect(api.get).toHaveBeenCalledTimes(2));
+    } finally { clock.mockRestore(); }
     expect(store.getState().auth.token).toBe("t");
     expect(screen.getByText("PRIMARY:#345678")).toBeInTheDocument();
   });

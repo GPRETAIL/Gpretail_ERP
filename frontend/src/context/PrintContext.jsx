@@ -122,9 +122,11 @@ export const PrintProvider = ({ children }) => {
   useEffect(() => {
     let cancelled = false;
     let timer = null;
+    let probing = false;
 
     const probe = async () => {
-      if (cancelled || isLocalPrinterServiceConnected()) return;
+      if (cancelled || probing || document.visibilityState === "hidden" || isLocalPrinterServiceConnected()) return;
+      probing = true;
       try {
         const detected = await detectLocalPrinterService({ timeoutMs: DETECT_TIMEOUT_MS });
         if (cancelled) return;
@@ -134,7 +136,7 @@ export const PrintProvider = ({ children }) => {
         }
       } catch {
         if (!cancelled) setServiceDetected(false);
-      }
+      } finally { probing = false; }
     };
 
     const schedule = () => {

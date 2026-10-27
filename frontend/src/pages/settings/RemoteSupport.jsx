@@ -135,7 +135,7 @@ export default function RemoteSupport() {
   useEffect(() => {
     if (!activeSession || activeSession.status === "ended") return;
     const interval = setInterval(() => {
-      loadActiveSession();
+      if (document.visibilityState !== "hidden") loadActiveSession({ silent: true });
     }, 8000);
     return () => clearInterval(interval);
   }, [activeSession, loadActiveSession]);

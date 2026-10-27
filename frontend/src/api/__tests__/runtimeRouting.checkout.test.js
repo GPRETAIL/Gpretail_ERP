@@ -6,6 +6,15 @@ afterEach(() => clearRuntimeRoutingConfig());
 it("never falls back to cloud for an intentionally canceled search", () => {
   expect(shouldRetryOnCloud({ code: "ERR_CANCELED", config: { method: "get", url: "/pos-sales/stock-products", __routingTarget: "local" } })).toBe(false);
 });
+it("never automatically repeats a write in any ERP module on another database", () => {
+  for (const url of ["/brands", "/products", "/purchase-invoices/3", "/stock-outward/2", "/notifications/1/read"]) {
+    for (const method of ["post", "put", "patch", "delete"]) {
+      for (const status of [undefined, 500, 502, 503, 504]) {
+        expect(shouldRetryOnCloud({ config: { method, url, __routingTarget: "local" }, ...(status ? { response: { status } } : {}) })).toBe(false);
+      }
+    }
+  }
+});
 
 it("never automatically resends an ambiguous POS write to a different database", () => {
   for (const url of ["/pos-sales", "/pos-old-sales", "/api/pos-sales?retry=1"]) {

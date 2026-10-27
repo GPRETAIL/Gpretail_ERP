@@ -65,3 +65,17 @@ it("allows retry after failure without retaining the error", async () => {
   expect(result.current.error).toBe(null);
   await waitFor(() => expect(result.current.data).toBe("retried"));
 });
+
+it("queues one silent refresh instead of aborting or overlapping a pending query", async () => {
+  let finish;
+  const loader = vi.fn().mockImplementationOnce(() => new Promise(resolve => { finish = resolve; })).mockResolvedValue("fresh");
+  const { result } = renderHook(() => useAsyncQuery(loader));
+  await waitFor(() => expect(loader).toHaveBeenCalledTimes(1));
+  const signal = loader.mock.calls[0][0].signal;
+  act(() => { result.current.reload({ silent: true }); result.current.reload({ silent: true }); result.current.reload({ silent: true }); });
+  expect(signal.aborted).toBe(false);
+  expect(loader).toHaveBeenCalledTimes(1);
+  await act(async () => finish("initial"));
+  await waitFor(() => expect(result.current.data).toBe("fresh"));
+  expect(loader).toHaveBeenCalledTimes(2);
+});

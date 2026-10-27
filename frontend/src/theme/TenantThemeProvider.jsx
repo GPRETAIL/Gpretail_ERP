@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useMemo } from "react";
+import { useEffect, useEffectEvent, useMemo, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { ThemeProvider as MuiThemeProvider } from "@mui/material/styles";
 import { useTheme as useAppTheme } from "../features/theme-context";
@@ -25,12 +25,20 @@ export default function TenantThemeProvider({ children }) {
   const user = useSelector(state => state.auth.user);
   const token = useSelector(state => state.auth.token);
   const brand = user?.brand;
+  const refreshState = useRef({ key: "", pending: false, attemptedAt: 0 });
   const refresh = useEffectEvent(async (signal) => {
     if (!user?.id || !token || document.visibilityState === "hidden") return;
+    const key = `${user.id}:${user.company_id || ""}:${token}`;
+    if (refreshState.current.key !== key) refreshState.current = { key, pending: false, attemptedAt: 0 };
+    const attempt = refreshState.current;
+    if (attempt.pending || Date.now() - attempt.attemptedAt < 60000) return;
+    attempt.pending = true;
+    attempt.attemptedAt = Date.now();
     try {
       const response = await api.get("/auth/me", { signal });
       if (!signal.aborted && response.data?.data && JSON.stringify([response.data.data.brand, response.data.data.theme_source, response.data.data.theme_override_allowed]) !== JSON.stringify([brand, user.theme_source, user.theme_override_allowed])) dispatch(loginSuccess({ token, user: response.data.data }));
     } catch { /* Offline and transient failures retain the last saved appearance. */ }
+    finally { attempt.pending = false; }
   });
   useEffect(() => {
     const controller = new AbortController();

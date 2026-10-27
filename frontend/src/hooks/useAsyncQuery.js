@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useEffectEvent, useState } from "react";
+import { useCallback, useEffect, useEffectEvent, useRef, useState } from "react";
 
 // Loaders are memoized by their real query inputs. Loading is derived from request identity,
 // so changing store/search never renders an old result as if it belonged to the new query.
@@ -7,10 +7,19 @@ export default function useAsyncQuery(loader, { enabled = true, onSuccess, onErr
   const fail = useEffectEvent((error, context) => onError?.(error, context));
   const [revision, setRevision] = useState({ id: 0, silent: false });
   const [result, setResult] = useState(null);
-  const reload = useCallback(options => setRevision(value => ({ id: value.id + 1, silent: Boolean(options?.silent) })), []);
+  const activeRequest = useRef(null);
+  const queuedRefresh = useRef(false);
+  const reload = useCallback(options => {
+    if (options?.silent && activeRequest.current && !activeRequest.current.signal.aborted) {
+      queuedRefresh.current = true;
+      return;
+    }
+    setRevision(value => ({ id: value.id + 1, silent: Boolean(options?.silent) }));
+  }, []);
   useEffect(() => {
     if (!enabled) return;
     const controller = new AbortController();
+    activeRequest.current = controller;
     Promise.resolve().then(() => controller.signal.aborted ? undefined : loader({ signal: controller.signal })).then(data => {
       if (!controller.signal.aborted) {
         setResult({ loader, revision, data, error: null });
@@ -21,8 +30,15 @@ export default function useAsyncQuery(loader, { enabled = true, onSuccess, onErr
         setResult(previous => ({ loader, revision, data: revision.silent && previous?.loader === loader ? previous.data : null, error }));
         fail(error, { silent: revision.silent });
       }
+    }).finally(() => {
+      if (activeRequest.current !== controller) return;
+      activeRequest.current = null;
+      if (!controller.signal.aborted && queuedRefresh.current) {
+        queuedRefresh.current = false;
+        setRevision(value => ({ id: value.id + 1, silent: true }));
+      }
     });
-    return () => controller.abort();
+    return () => { controller.abort(); queuedRefresh.current = false; };
   }, [loader, revision, enabled]);
   const setData = useCallback(update => {
     setResult(previous => previous?.loader === loader && previous?.revision === revision

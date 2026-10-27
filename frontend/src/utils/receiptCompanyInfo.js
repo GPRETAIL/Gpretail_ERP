@@ -1,4 +1,5 @@
 import api from "../api/axios";
+import { requestCacheScope } from "./requestCacheScope";
 
 // A store's registered name/address/phone/GST essentially never changes mid-shift, but every POS
 // print flow (POSSales, POSOld, TouchSales, POSReturn) was independently re-fetching it from
@@ -23,13 +24,14 @@ export const requireReceiptStoreName = (companyInfo) => {
 export const fetchReceiptCompanyInfo = async (companyId) => {
   const id = Number(companyId || 0);
   if (!id) return { ...EMPTY_INFO };
+  const key = `${requestCacheScope()}:${id}`;
 
-  const cached = cache.get(id);
+  const cached = cache.get(key);
   if (cached && Date.now() - cached.fetchedAt < CACHE_TTL_MS) {
     return cached.data;
   }
 
-  if (pending.has(id)) return pending.get(id);
+  if (pending.has(key)) return pending.get(key);
   const request = (async () => {
     try {
       const res = await api.get(`/companies/${id}`);
@@ -40,16 +42,17 @@ export const fetchReceiptCompanyInfo = async (companyId) => {
         storePhone: String(company.contact_no || company.phone || company.contactNo || "").trim(),
         storeGstNo: String(company.gst_no || company.gstin || company.gstNo || "").trim(),
       };
-      cache.set(id, { data: info, fetchedAt: Date.now() });
+      cache.set(key, { data: info, fetchedAt: Date.now() });
+      if (cache.size > 50) cache.delete(cache.keys().next().value);
       return info;
     } catch {
       // Not cached - a transient network hiccup shouldn't lock in blank company info for the whole
       // TTL window; the next print attempt should just try the request again.
       return { ...EMPTY_INFO };
     } finally {
-      pending.delete(id);
+      pending.delete(key);
     }
   })();
-  pending.set(id, request);
+  pending.set(key, request);
   return request;
 };

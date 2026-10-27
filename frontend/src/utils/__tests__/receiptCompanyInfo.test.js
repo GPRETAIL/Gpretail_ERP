@@ -13,6 +13,17 @@ const importFresh = async () => {
 };
 
 describe("fetchReceiptCompanyInfo", () => {
+  it("does not reuse another login's receipt details for the same numeric store ID", async () => {
+    const { fetchReceiptCompanyInfo } = await importFresh();
+    localStorage.setItem("token", "receipt-first-login");
+    getMock.mockResolvedValueOnce({ data: { data: { name: "First store" } } });
+    expect((await fetchReceiptCompanyInfo(7)).storeName).toBe("First store");
+    localStorage.setItem("token", "receipt-second-login");
+    getMock.mockResolvedValueOnce({ data: { data: { name: "Second store" } } });
+    expect((await fetchReceiptCompanyInfo(7)).storeName).toBe("Second store");
+    expect(getMock).toHaveBeenCalledTimes(2);
+    localStorage.removeItem("token");
+  });
   beforeEach(() => {
     getMock.mockReset();
     sessionStorage.clear();
