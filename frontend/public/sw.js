@@ -9,7 +9,7 @@
  * 5. Lifecycle Updates — skipWaiting and client claim support
  */
 
-const CACHE_VERSION = "vynerix-pwa-v3.0.3";
+const CACHE_VERSION = "vynerix-pwa-v3.0.4";
 const CACHE_STATIC = `vynerix-static-${CACHE_VERSION}`;
 const CACHE_API = `vynerix-api-${CACHE_VERSION}`;
 
@@ -36,9 +36,21 @@ const CACHEABLE_API_PATTERNS = [
   "/api/direct-purchases",
   "/api/products",
   "/api/customers",
-  "/api/suppliers",
-  "/api/auth/me"
+  "/api/suppliers"
 ];
+
+// Cache matching normally ignores Authorization/store headers. Use an opaque
+// scope in the cache key so another login/store can never read this fallback.
+async function apiCacheKey(request) {
+  const authorization = request.headers.get("Authorization");
+  if (!authorization || !self.crypto?.subtle) return null;
+  const scope = JSON.stringify([authorization, request.headers.get("X-Company-Scope-Id"),
+    request.headers.get("X-Company-Id"), request.headers.get("X-Store-Id"), request.headers.get("X-Bypass-Local")]);
+  const digest = await self.crypto.subtle.digest("SHA-256", new TextEncoder().encode(scope));
+  const key = new URL(request.url);
+  key.searchParams.set("__vx_scope", Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, "0")).join(""));
+  return new Request(key.href);
+}
 
 // ─── 1. INSTALL: Precache App Shell ──────────────────────────────────────────
 self.addEventListener("install", (event) => {
@@ -89,41 +101,32 @@ self.addEventListener("fetch", (event) => {
   // A. API REQUESTS — Network-First with Cache Fallback
   if (url.pathname.startsWith("/api/")) {
     const isCacheable = CACHEABLE_API_PATTERNS.some((pattern) =>
-      url.pathname.startsWith(pattern)
+      url.pathname === pattern || url.pathname.startsWith(`${pattern}/`)
     );
 
     if (!isCacheable) return;
 
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          if (response && response.status === 200) {
-            const clone = response.clone();
-            caches.open(CACHE_API).then((cache) => cache.put(request, clone));
-          }
-          return response;
-        })
-        .catch(async () => {
-          // Network failed (offline) — serve cached JSON if available
-          const cached = await caches.match(request);
-          if (cached) {
-            console.log("[PWA SW] Serving cached API data for offline:", url.pathname);
-            return cached;
-          }
-          return new Response(
-            JSON.stringify({
-              status: "offline",
-              offline: true,
-              data: null,
-              message: "You are currently offline. Showing cached workspace data."
-            }),
-            {
-              status: 200,
-              headers: { "Content-Type": "application/json" }
-            }
-          );
-        })
-    );
+    const scopedKey = apiCacheKey(request).catch(() => null);
+    event.respondWith((async () => {
+      try {
+        const response = await fetch(request);
+        if (response?.status === 200) {
+          const clone = response.clone();
+          event.waitUntil(scopedKey.then(async key => {
+            if (key) await (await caches.open(CACHE_API)).put(key, clone);
+          }).catch(() => {}));
+        }
+        return response;
+      } catch {
+        const key = await scopedKey;
+        const cached = key ? await caches.open(CACHE_API).then(cache => cache.match(key)).catch(() => null) : null;
+        if (cached) return cached;
+        return new Response(JSON.stringify({
+          success: false, status: "offline", offline: true, data: null,
+          message: "The server is unavailable and no data is cached for this account and store."
+        }), { status: 503, headers: { "Content-Type": "application/json", "Retry-After": "5" } });
+      }
+    })());
     return;
   }
 

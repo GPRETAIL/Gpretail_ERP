@@ -1,8 +1,11 @@
 import useAsyncQuery from "../../hooks/useAsyncQuery";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback } from "react";
+import { useSelector } from "react-redux";
 import { ArrowLeft, Bell } from "lucide-react";
 import { Box } from "@mui/material";
 import api from "../../api/axios";
+import { useNotificationRefresh } from "../../hooks/useNotificationFeed";
+import { backgroundRequestIdentity } from "../../utils/backgroundRequestIdentity";
 
 /**
  * Mobile top header bar with:
@@ -19,33 +22,17 @@ export default function MobileHeader({
   onOpenNotifications,
   onOpenUserMenu,
 }) {
-  const [cachedCount] = useState(() => window.__vx_unread_count || 0);
+  const user = useSelector(state => state.auth.user);
+  const token = useSelector(state => state.auth.token);
+  const identity = backgroundRequestIdentity(user, token);
   const fetchCount = useCallback(async ({ signal }) => {
-      let remoteUnread = 0;
-      try {
-        const res = await api.get("/notifications/unread-count", { signal });
-        remoteUnread = res.data?.data?.count ?? res.data?.count ?? 0;
-      } catch {
-        // Fallback
-      }
-
-      const total = remoteUnread;
-    return total;
-  }, []);
+    if (!identity) return 0;
+    const res = await api.get("/notifications/unread-count", { signal });
+    return Number(res.data?.data?.count ?? res.data?.count) || 0;
+  }, [identity]);
   const { data, reload: refreshCount } = useAsyncQuery(fetchCount);
-  const unreadCount = data ?? cachedCount;
-  useEffect(() => { window.__vx_unread_count = unreadCount; }, [unreadCount]);
-
-  useEffect(() => {
-    const handleNotifUpdate = () => refreshCount({ silent: true });
-    window.addEventListener("vx-notifications-updated", handleNotifUpdate);
-    const interval = setInterval(handleNotifUpdate, 45000);
-
-    return () => {
-      window.removeEventListener("vx-notifications-updated", handleNotifUpdate);
-      clearInterval(interval);
-    };
-  }, [refreshCount]);
+  const unreadCount = data ?? 0;
+  useNotificationRefresh(refreshCount);
 
   const initial = (userName || "U").charAt(0).toUpperCase();
 

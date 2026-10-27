@@ -21,7 +21,8 @@ import {
 } from "lucide-react";
 import { Box, Typography } from "@mui/material";
 import api from "../../api/axios";
-import { saveDraft, addToSyncQueue, getCachedData, setCachedData } from "../offline/db";
+import { getCachedData, setCachedData } from "../offline/db";
+import { createMobileCheckout } from "../utils/mobileCheckout";
 import { fetchSalesReceiptCustomization, buildUpiPaymentUri } from "../../utils/salesReceiptCustomization";
 import { printPosSaleReceipt, buildPosSaleReceiptHtmlForSale } from "../../utils/posSaleReceiptPrinter";
 import { getHtmlAsPdfBlob } from "../../utils/htmlToPdf";
@@ -54,7 +55,6 @@ export default function CreateInvoiceScreen({ onBack }) {
   const [customers, setCustomers] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState("");
   const [customerSearchTerm, setCustomerSearchTerm] = useState("");
-  const [, setNextBillNo] = useState("");
   const [catalog, setCatalog] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [paymentUpiId, setPaymentUpiId] = useState("");
@@ -79,6 +79,7 @@ export default function CreateInvoiceScreen({ onBack }) {
   const [saving, setSaving] = useState(false);
   const [printing, setPrinting] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [submitCheckout] = useState(createMobileCheckout);
 
   // Scanner Video reference & controls
   const videoRef = useRef(null);
@@ -87,34 +88,34 @@ export default function CreateInvoiceScreen({ onBack }) {
 
   // 1. Initial Load of Catalog & Customers
   useEffect(() => {
+    const controller = new AbortController();
     (async () => {
       try {
-        const [custRes, billRes, prodRes] = await Promise.all([
-          api.get("/customers", { params: { limit: 300 } }),
-          api.get("/pos-sales/next-bill-no"),
-          api.get("/products", { params: { limit: 500 } }),
+        const [custRes, prodRes] = await Promise.all([
+          api.get("/customers", { params: { limit: 300 }, signal: controller.signal }),
+          api.get("/products", { params: { limit: 500 }, signal: controller.signal }),
         ]);
+        if (controller.signal.aborted) return;
 
         const custList = custRes.data?.data || custRes.data || [];
         setCustomers(custList);
         setCachedData("customers_list", custList);
 
-        const billNo = billRes.data?.data?.bill_no || billRes.data?.data?.invoice_no || "";
-        setNextBillNo(billNo);
-
         const prodList = prodRes.data?.data || prodRes.data?.items || [];
         setCatalog(prodList);
         setCachedData("products_catalog", prodList);
       } catch {
+        if (controller.signal.aborted) return;
         // Offline fallbacks
         const cachedCusts = await getCachedData("customers_list");
+        if (controller.signal.aborted) return;
         if (cachedCusts) setCustomers(cachedCusts);
         const cachedCatalog = await getCachedData("products_catalog");
+        if (controller.signal.aborted) return;
         if (cachedCatalog) setCatalog(cachedCatalog || []);
-
-        setNextBillNo(`OFFLINE-${Date.now().toString().slice(-6)}`);
       }
     })();
+    return () => controller.abort();
   }, []);
 
   // Only the first 300 customers are preloaded (real table can hold ~1,000,000 rows) -- this is a
@@ -393,36 +394,16 @@ export default function CreateInvoiceScreen({ onBack }) {
     })),
   });
 
-  // Offline Draft & Sync Queue Integration
-  const handleSaveOffline = async () => {
-    setSaving(true);
-    const payload = buildPayload();
-    await saveDraft("invoice", payload);
-    await addToSyncQueue("create_invoice", "/pos-sales", "POST", payload);
-    setSuccessMsg("Saved as Offline Draft & Queued for Sync!");
-    setTimeout(() => {
-      onBack();
-    }, 900);
-  };
-
   // Main Submit invoice to backend
   const handleSave = async () => {
     setSaving(true);
-    const payload = buildPayload();
-
-    if (!navigator.onLine) {
-      await handleSaveOffline();
-      return;
-    }
-
     try {
-      await api.post("/pos-sales", payload);
+      const saved = await ensureInvoiceSaved();
+      if (!saved) return;
       setSuccessMsg("Invoice created successfully!");
       setTimeout(() => {
         onBack();
       }, 700);
-    } catch {
-      await handleSaveOffline();
     } finally {
       setSaving(false);
     }
@@ -430,20 +411,21 @@ export default function CreateInvoiceScreen({ onBack }) {
 
   // Shared by Print and Share: a receipt can't be produced for a sale that
   // doesn't exist yet, so both actions save first. Returns the saved sale
-  // record, or null if it went to the offline queue instead (nothing to
-  // print/share yet -- handleSaveOffline already handles its own message
-  // and navigates back).
+  // record, or null on an error or a durable offline queue entry.
   const ensureInvoiceSaved = async () => {
-    const payload = buildPayload();
-    if (!navigator.onLine) {
-      await handleSaveOffline();
-      return null;
-    }
+    setErrorMsg(null);
     try {
-      const res = await api.post("/pos-sales", payload);
-      return res.data?.data;
-    } catch {
-      await handleSaveOffline();
+      const saved = await submitCheckout(buildPayload(), {
+        userId: authUser?.id,
+        storeId: sessionStorage.getItem("activeStoreId") || String(authUser?.store_id || authUser?.company_id || ""),
+      });
+      if (!saved) {
+        setSuccessMsg("Saved as Offline Draft & Queued for Sync!");
+        setTimeout(onBack, 900);
+      }
+      return saved;
+    } catch (error) {
+      setErrorMsg(error.response?.data?.message || error.message || "Save could not be confirmed. Check the sales list, then retry.");
       return null;
     }
   };

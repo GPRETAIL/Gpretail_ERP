@@ -22,9 +22,6 @@ const NO_STORES_MESSAGE = "No stores are available";
 // the login screen doesn't get treated as "your session expired" and clear
 // storage/redirect out from under the form the user is actively typing into.
 const LOGIN_PATHS = ["/auth/login", "/auth/google", "/admin-auth/login"];
-// A screen that fires several requests on mount can all 401 back-to-back
-// once a token goes bad - only the first should trigger the clear+redirect.
-let authExpiredHandled = false;
 
 // Base URL: in Docker, nginx proxies /api → backend container.
 // In local dev, vite.config.js proxies /api → VITE_API_PROXY_TARGET.
@@ -59,29 +56,33 @@ api.interceptors.request.use(
 
 // ─── Response Interceptor ─────────────────────────────────────────────────────
 api.interceptors.response.use(
-  (response) => {
-    // A request succeeding proves the session is alive again (e.g. right
-    // after re-login), so the next real 401 is free to trigger the
-    // clear+redirect again instead of staying silenced forever.
-    authExpiredHandled = false;
-    return response;
-  },
+  (response) => response,
   async (error) => {
     // Navigation and superseded searches deliberately abort requests.
     // Preserve cancellation for callers without retrying or reporting an outage.
     if (axios.isCancel(error) || error?.code === "ERR_CANCELED") return Promise.reject(error);
+    const currentToken = localStorage.getItem("token");
+    const sentHeaders = axios.AxiosHeaders.from(error.config?.headers);
+    const sentToken = String(sentHeaders.get("Authorization") || "").replace(/^Bearer\s+/i, "");
+    const sentStore = String(sentHeaders.get("X-Company-Scope-Id") || "");
+    // An old tab request must not replay under a newer login/store or trigger
+    // that newer workspace's session/access/selection handlers.
+    if ((sentToken && sentToken !== currentToken) || (error.config?.storeScopeId == null &&
+      sentStore !== (sessionStorage.getItem("activeStoreId") || ""))) return Promise.reject(error);
     if (shouldRetryOnCloud(error)) {
       const retryConfig = buildCloudRetryConfig(error.config);
       return api.request(retryConfig);
     }
 
     const requestUrl = error.config?.url || "";
-    if (error.response?.status === 403 && ["MOBILE_SUBSCRIPTION_REQUIRED", "STORE_SUBSCRIPTION_REQUIRED", "STORE_LICENCE_INVALID", "STORE_INACTIVE", "MOBILE_USER_ACCESS_DENIED", "CLIENT_ACCESS_DENIED"].includes(error.response?.data?.code)) {
+    // A rejected access validation must not trigger its own validation again.
+    if (error.response?.status === 403 && !/(?:^|\/)mobile\/access\/?(?:\?|$)/.test(requestUrl) && ["MOBILE_SUBSCRIPTION_REQUIRED", "STORE_SUBSCRIPTION_REQUIRED", "STORE_LICENCE_INVALID", "STORE_INACTIVE", "MOBILE_USER_ACCESS_DENIED", "CLIENT_ACCESS_DENIED"].includes(error.response?.data?.code)) {
       window.dispatchEvent(new CustomEvent("vx:mobile-access-denied"));
     }
     const isLoginRequest = LOGIN_PATHS.some((path) => requestUrl.includes(path));
-    if (error.response?.status === 401 && !isLoginRequest && !authExpiredHandled) {
-      authExpiredHandled = true;
+    if (error.response?.status === 401 && !isLoginRequest && currentToken && sentToken === currentToken) {
+      // Clear once for this session. A late response from an older login must
+      // never sign out a newly authenticated session.
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       window.dispatchEvent(new CustomEvent("vx-auth-expired"));

@@ -6,10 +6,12 @@ import NotificationsOutlinedIcon from "@mui/icons-material/NotificationsOutlined
 import api from "../api/axios";
 import useAsyncQuery from "../hooks/useAsyncQuery";
 import { Link } from "react-router-dom";
+import { backgroundRequestIdentity } from "../utils/backgroundRequestIdentity";
 
 export default function PlatformNotificationBanner({ onView } = {}) {
   const user = useSelector(state => state.auth.user);
-  const identity = user?.id ? `${user.platform_company_code || "local"}:${user.id}` : null;
+  const token = useSelector(state => state.auth.token);
+  const identity = backgroundRequestIdentity(user, token);
   const [closing, setClosing] = useState(null);
   const [failure, setFailure] = useState("");
   const load = useCallback(async ({ signal }) => {

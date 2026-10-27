@@ -171,7 +171,7 @@ export async function deleteDraft(id) {
 
 // ─── Sync Queue Helpers ───────────────────────────────────────────────────────
 
-export async function addToSyncQueue(action, endpoint, method, payload) {
+export async function addToSyncQueue(action, endpoint, method, payload, context = {}) {
   try {
     const db = await openDatabase();
     return new Promise((resolve, reject) => {
@@ -182,6 +182,9 @@ export async function addToSyncQueue(action, endpoint, method, payload) {
         endpoint,
         method: method.toUpperCase(),
         payload,
+        userId: context.userId,
+        storeId: context.storeId,
+        target: context.target,
         status: "pending",
         retries: 0,
         createdAt: Date.now(),

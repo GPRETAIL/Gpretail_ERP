@@ -32,3 +32,13 @@ it("does not mutate input keys or confuse a module name with a key list", async 
   await getMasterLookups(["companies"]);
   expect(api.get).toHaveBeenCalledTimes(3);
 });
+
+it("invalidates cached lookups when the local server changes while the target remains local", async () => {
+  api.get.mockResolvedValue({ data: { data: {} } });
+  const config = { enabled: true, localHealthy: true, currentTarget: "local" };
+  applyRuntimeRoutingConfig({ ...config, localBaseUrl: "http://127.0.0.1:8130/api" });
+  await getMasterLookups("invoice_entry");
+  applyRuntimeRoutingConfig({ ...config, localBaseUrl: "http://127.0.0.1:8140/api" });
+  await getMasterLookups("invoice_entry");
+  expect(api.get).toHaveBeenCalledTimes(2);
+});

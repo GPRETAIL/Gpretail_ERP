@@ -75,6 +75,9 @@ export default function SyncCenterModal({ isOpen, onClose }) {
             <Typography component="p" sx={{ fontSize: 10.5, color: "#64748b", mt: 0.25 }}>
               {queue.length} change{queue.length === 1 ? "" : "s"} waiting to sync
             </Typography>
+            <Typography component="p" sx={{ fontSize: 10.5, color: "#64748b", mt: 0.5 }}>
+              Invoices sync under their original user and store. Failed or older queued invoices stay here for review; check the sales list before recreating them.
+            </Typography>
           </Box>
           <Box component="button" type="button" onClick={onClose} sx={{ p: 0.75, color: "#64748b" }} aria-label="Close">
             <X size={20} />

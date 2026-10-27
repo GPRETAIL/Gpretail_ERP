@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, it } from "vitest";
-import { applyRuntimeRoutingConfig, clearRuntimeRoutingConfig, prepareRoutingForRequest, shouldRetryOnCloud } from "../runtimeRouting";
+import { applyRuntimeRoutingConfig, buildCloudRetryConfig, clearRuntimeRoutingConfig, prepareRoutingForRequest, shouldRetryOnCloud } from "../runtimeRouting";
 
 beforeEach(() => applyRuntimeRoutingConfig({ enabled: true, currentTarget: "local", localBaseUrl: "http://127.0.0.1:8130/api", cloudBaseUrl: "https://dev.gpsoftware.in/api", localHealthy: true }));
 afterEach(() => clearRuntimeRoutingConfig());
@@ -38,4 +38,11 @@ it("pins a manually retried checkout to its original node after the health statu
 it("refuses to move an uncertain local checkout to cloud when local configuration is removed", async () => {
   clearRuntimeRoutingConfig();
   await expect(prepareRoutingForRequest({ method: "post", url: "/pos-sales", __posRetryTarget: "local" })).rejects.toThrow("Restore the local server connection");
+});
+
+it("keeps a fallback read on cloud if local health recovers before the retry is sent", async () => {
+  const retry = buildCloudRetryConfig({ method: "get", url: "/products" });
+  applyRuntimeRoutingConfig({ enabled: true, currentTarget: "local", localHealthy: true, localBaseUrl: "http://127.0.0.1:8130/api", cloudBaseUrl: "https://dev.gpsoftware.in/api" });
+  const request = await prepareRoutingForRequest(retry);
+  expect(request.__routingTarget).toBe("cloud"); expect(request.baseURL).toBe("https://dev.gpsoftware.in/api");
 });

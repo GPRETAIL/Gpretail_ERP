@@ -18,6 +18,8 @@ let runtimeState = { ...DEFAULT_STATE };
 let healthTimer = null;
 let boundApiClient = null;
 let healthPending = false;
+let configurationAttempt = null;
+let configurationVersion = 0;
 
 const isBrowser = () => typeof window !== "undefined";
 
@@ -80,7 +82,6 @@ const isRetryableAuthFailure = (error) => {
 
 const isRetryableSetupFailure = (error) => {
   const status = Number(error?.response?.status || 0);
-  if (status >= 500) return true;
   if (status !== 400 && status !== 422) return false;
   const message = normalize(
     error?.response?.data?.message || error?.response?.data?.error || error?.response?.data?.detail || ""
@@ -173,20 +174,20 @@ const pollLocalHealthOnce = async () => {
   if (healthPending || document.visibilityState === "hidden") return false;
   healthPending = true;
   const healthUrl = runtimeState.localHealthUrl;
+  const version = configurationVersion;
   try {
     const payload = await fetchJsonWithTimeout(healthUrl);
-    if (!runtimeState.enabled || runtimeState.localHealthUrl !== healthUrl) return false;
+    if (version !== configurationVersion || !runtimeState.enabled || runtimeState.localHealthUrl !== healthUrl) return false;
     const data = payload?.data || payload || {};
     const localHealthy = Boolean(data.local_healthy ?? data.connector?.local_healthy ?? payload?.success);
     runtimeState.localHealthy = localHealthy;
     if (localHealthy) {
-      switchTarget("local");
       runtimeState.blockedReason = "";
-      persistState();
+      switchTarget("local");
       return true;
     }
   } catch {
-    if (!runtimeState.enabled || runtimeState.localHealthUrl !== healthUrl) return false;
+    if (version !== configurationVersion || !runtimeState.enabled || runtimeState.localHealthUrl !== healthUrl) return false;
     runtimeState.localHealthy = false;
     persistState();
   } finally { healthPending = false; }
@@ -246,10 +247,11 @@ const resolveFromLocalConnector = async () => {
   }
 };
 
-const resolveFromCloudRuntime = async ({ token } = {}) => {
+const resolveFromCloudRuntime = async ({ token, storeId } = {}) => {
   try {
     const payload = await fetchJsonWithTimeout(`${CLOUD_BASE_URL}/local-server-config/runtime`, {
       token,
+      headers: storeId ? { "X-Company-Scope-Id": storeId } : {},
       timeoutMs: 2500,
     });
     const data = payload?.data || {};
@@ -298,6 +300,8 @@ const resolveFromCloudRuntime = async ({ token } = {}) => {
 };
 
 export const applyRuntimeRoutingConfig = (input = {}) => {
+  configurationVersion++;
+  configurationAttempt = null;
   return applyResolvedState({
     enabled: Boolean(input.enabled),
     tenantKey: normalize(input.tenantKey),
@@ -312,6 +316,8 @@ export const applyRuntimeRoutingConfig = (input = {}) => {
 };
 
 export const clearRuntimeRoutingConfig = () => {
+  configurationVersion++;
+  configurationAttempt = null;
   stopLocalHealthPolling();
   runtimeState = { ...DEFAULT_STATE };
   if (isBrowser()) {
@@ -328,11 +334,22 @@ export const fetchAndApplyRuntimeRoutingConfig = async ({ apiClient, token } = {
   if (apiClient) boundApiClient = apiClient;
   if (!isBrowser()) return null;
 
-  const localState = await resolveFromLocalConnector();
-  if (localState) return applyResolvedState(localState);
-
-  const cloudState = await resolveFromCloudRuntime({ token });
-  return applyResolvedState(cloudState || DEFAULT_STATE);
+  const storeId = sessionStorage.getItem("activeStoreId");
+  const storedToken = localStorage.getItem("token");
+  const key = JSON.stringify([token || "", storedToken, storeId]);
+  if (configurationAttempt?.key === key) return configurationAttempt.promise;
+  const attempt = { key, version: ++configurationVersion, promise: null };
+  configurationAttempt = attempt;
+  const isCurrent = () => configurationAttempt === attempt && configurationVersion === attempt.version &&
+    localStorage.getItem("token") === storedToken && sessionStorage.getItem("activeStoreId") === storeId;
+  attempt.promise = (async () => {
+    const localState = await resolveFromLocalConnector();
+    if (!isCurrent()) return null;
+    if (localState) return applyResolvedState(localState);
+    const cloudState = await resolveFromCloudRuntime({ token, storeId });
+    return isCurrent() ? applyResolvedState(cloudState || DEFAULT_STATE) : null;
+  })().finally(() => { if (configurationAttempt === attempt) configurationAttempt = null; });
+  return attempt.promise;
 };
 
 export const prepareRoutingForRequest = async (config = {}) => {
@@ -355,6 +372,13 @@ export const prepareRoutingForRequest = async (config = {}) => {
   }
   if (isAbsoluteUrl(next.url || "")) {
     next.__routingTarget = "absolute";
+    return next;
+  }
+
+  if (next.__retriedOnCloud) {
+    next.baseURL = runtimeState.cloudBaseUrl || CLOUD_BASE_URL;
+    next.__routingTarget = "cloud";
+    next.headers["X-Bypass-Local"] = "1";
     return next;
   }
 
@@ -430,6 +454,8 @@ export const getRuntimeRoutingSnapshot = () => ({
   currentTarget: runtimeState.currentTarget,
   localHealthy: runtimeState.localHealthy,
   blockedReason: runtimeState.blockedReason,
+  localBaseUrl: runtimeState.localBaseUrl,
+  cloudBaseUrl: runtimeState.cloudBaseUrl,
 });
 
 

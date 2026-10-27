@@ -68,6 +68,18 @@ describe("SyncStatusContext", () => {
     expect(screen.getByTestId("pending")).toHaveTextContent("3");
   });
 
+  it("does not restart sync polling when only the profile or counter changes", async () => {
+    mockSnapshot.mockReturnValue({ currentTarget: "cloud", localHealthy: false });
+    mockGet.mockResolvedValue({ data: { data: { enabled: false } } });
+    const view = <SyncStatusProvider><StatusProbe /></SyncStatusProvider>;
+    const { rerender } = render(view);
+    await waitFor(() => expect(mockGet).toHaveBeenCalledTimes(1));
+    authState.auth.user = { id: 1, name: "Updated", counter_id: 7 };
+    rerender(<SyncStatusProvider><StatusProbe /></SyncStatusProvider>);
+    await act(async () => {});
+    expect(mockGet).toHaveBeenCalledTimes(1);
+  });
+
   it("reflects a local<->cloud switch immediately off the routing-changed event, not waiting for the next poll", async () => {
     mockGet.mockResolvedValue({ data: { data: { enabled: true, outbox_pending: 3, outbox_failed: 0 } } });
     mockSnapshot.mockReturnValue({ currentTarget: "local", localHealthy: true });
@@ -85,6 +97,6 @@ describe("SyncStatusContext", () => {
     expect(screen.getByTestId("target")).toHaveTextContent("cloud");
     expect(screen.getByTestId("healthy")).toHaveTextContent("false");
     // Untouched by the event -- only the next poll's /local-server-config response updates this.
-    expect(screen.getByTestId("pending")).toHaveTextContent("3");
+    await waitFor(() => expect(screen.getByTestId("pending")).toHaveTextContent("3"));
   });
 });

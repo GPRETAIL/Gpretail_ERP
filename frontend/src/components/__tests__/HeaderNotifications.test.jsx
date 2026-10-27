@@ -9,8 +9,20 @@ vi.mock("react-redux", () => ({ useSelector: fn => fn({ auth: { user } }) }));
 const message = { id: 42, title: "Stock needs attention", message: "Review your stock levels.", link: "/warehouse/stock-item", read_at: null, created_at: "2026-10-24T09:00:00Z" };
 beforeEach(() => {
   vi.clearAllMocks();
+  localStorage.clear(); sessionStorage.clear();
   get.mockImplementation(async path => ({ data: { data: path.endsWith("unread-count") ? { count: 3 } : [message], pagination: { has_next: false } } }));
   post.mockResolvedValue({});
+});
+
+it("does not reload count and inbox after an unrelated profile edit", async () => {
+  const { rerender } = render(<HeaderNotifications onNavigate={vi.fn()} onOpenInbox={vi.fn()} />);
+  fireEvent.click(await screen.findByRole("button", { name: "Notifications, 3 unread" }));
+  await screen.findByText(message.title);
+  const requests = get.mock.calls.length;
+  user.name = "Updated"; user.counter_id = 7;
+  rerender(<HeaderNotifications onNavigate={vi.fn()} onOpenInbox={vi.fn()} />);
+  await act(async () => {});
+  expect(get).toHaveBeenCalledTimes(requests);
 });
 
 async function openPanel(props = {}) {

@@ -6,17 +6,20 @@ import api from "../api/axios";
 import useAsyncQuery from "../hooks/useAsyncQuery";
 import useNotificationFeed, { useNotificationRefresh } from "../hooks/useNotificationFeed";
 import NotificationCard from "./NotificationCard";
+import { backgroundRequestIdentity } from "../utils/backgroundRequestIdentity";
 
 export default function HeaderNotifications({ onNavigate, onOpenInbox }) {
   const user = useSelector(state => state.auth.user);
+  const token = useSelector(state => state.auth.token);
+  const identity = backgroundRequestIdentity(user, token);
   const [anchor, setAnchor] = useState(null);
   const [filter, setFilter] = useState("all");
   const open = Boolean(anchor);
   const loadCount = useCallback(async ({ signal }) => {
-    if (!user?.id) return 0;
+    if (!identity) return 0;
     const response = await api.get("/notifications/unread-count", { signal });
     return Number(response.data?.data?.count) || 0;
-  }, [user]);
+  }, [identity]);
   const countQuery = useAsyncQuery(loadCount);
   useNotificationRefresh(countQuery.reload);
   const feed = useNotificationFeed({ unread: filter === "unread", limit: 12, enabled: open });

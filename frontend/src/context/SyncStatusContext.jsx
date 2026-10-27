@@ -3,6 +3,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import api from "../api/axios";
 import { getRuntimeRoutingSnapshot, RUNTIME_ROUTING_CHANGED_EVENT } from "../api/runtimeRouting";
+import { backgroundRequestIdentity } from "../utils/backgroundRequestIdentity";
 
 const SyncStatusContext = createContext(null);
 
@@ -18,11 +19,14 @@ const DEFAULT_STATE = {
 
 export const SyncStatusProvider = ({ children }) => {
   const user = useSelector(state => state.auth.user);
+  const token = useSelector(state => state.auth.token);
+  const userId = user?.id;
+  const identity = backgroundRequestIdentity(user, token);
   const [result, setResult] = useState(null);
-  const status = result?.user === user ? result.status : DEFAULT_STATE;
+  const status = result?.identity === identity ? result.status : DEFAULT_STATE;
 
   useEffect(() => {
-    if (!user?.id) return;
+    if (!userId) return;
     let alive = true;
     let pending = false;
     let enabled = true;
@@ -41,7 +45,7 @@ export const SyncStatusProvider = ({ children }) => {
         enabled = Boolean(data.enabled);
 
         const routing = getRuntimeRoutingSnapshot();
-        setResult({ user, status: {
+        setResult({ identity, status: {
           enabled: Boolean(data.enabled),
           target: routing.currentTarget === "local" ? "local" : "cloud",
           healthy: Boolean(routing.localHealthy),
@@ -64,8 +68,8 @@ export const SyncStatusProvider = ({ children }) => {
     const onRoutingChanged = () => {
       if (!alive) return;
       const routing = getRuntimeRoutingSnapshot();
-      setResult((prev) => ({ user, status: {
-        ...(prev?.user === user ? prev.status : DEFAULT_STATE),
+      setResult((prev) => ({ identity, status: {
+        ...(prev?.identity === identity ? prev.status : DEFAULT_STATE),
         target: routing.currentTarget === "local" ? "local" : "cloud",
         healthy: Boolean(routing.localHealthy),
       } }));
@@ -82,7 +86,7 @@ export const SyncStatusProvider = ({ children }) => {
       window.removeEventListener(RUNTIME_ROUTING_CHANGED_EVENT, onRoutingChanged);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [user]);
+  }, [identity, userId]);
 
   return <SyncStatusContext.Provider value={status}>{children}</SyncStatusContext.Provider>;
 };

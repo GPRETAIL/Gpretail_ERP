@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import api from "../api/axios";
 import useAsyncQuery from "./useAsyncQuery";
+import { backgroundRequestIdentity } from "../utils/backgroundRequestIdentity";
 
 export function useNotificationRefresh(reload, enabled = true) {
   useEffect(() => {
@@ -24,16 +25,18 @@ export function useNotificationRefresh(reload, enabled = true) {
 
 export default function useNotificationFeed({ category = "all", unread = false, page = 1, limit = 25, enabled = true } = {}) {
   const user = useSelector(state => state.auth.user);
+  const token = useSelector(state => state.auth.token);
+  const identity = backgroundRequestIdentity(user, token);
   const [pending, setPending] = useState(null);
   const [failure, setFailure] = useState("");
   const load = useCallback(async ({ signal }) => {
-    if (!user?.id) return { data: [] };
+    if (!identity) return { data: [] };
     const response = await api.get("/notifications", {
       params: { category, unread: unread ? 1 : 0, page, limit }, signal,
     });
     return response.data;
     // Changing authenticated store/user must discard the previous scope's messages.
-  }, [category, unread, page, limit, user]);
+  }, [category, unread, page, limit, identity]);
   const query = useAsyncQuery(load, { enabled });
   useNotificationRefresh(query.reload, enabled);
   const markRead = async (id) => {

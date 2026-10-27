@@ -3,6 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useRef } from "react
 import { useSelector } from "react-redux";
 import api from "../api/axios";
 import useAsyncQuery from "../hooks/useAsyncQuery";
+import { backgroundRequestIdentity } from "../utils/backgroundRequestIdentity";
 
 const SubscriptionStatusContext = createContext(null);
 const REFRESH_MS = 10 * 60 * 1000;
@@ -11,18 +12,21 @@ const FOCUS_REFRESH_MS = 60 * 1000;
 // Footer and reminder share one request, one timer and one store-scoped result.
 export function SubscriptionStatusProvider({ children }) {
   const user = useSelector(state => state.auth.user);
+  const token = useSelector(state => state.auth.token);
+  const userId = user?.id;
+  const identity = backgroundRequestIdentity(user, token);
   const lastAttempt = useRef(0);
   const inFlight = useRef(false);
   const load = useCallback(async ({ signal }) => {
-    if (!user?.id) return null;
+    if (!identity) return null;
     lastAttempt.current = Date.now();
     inFlight.current = true;
     try {
       const response = await api.get("/companies/subscription/status", { signal });
       return response.data?.data || null;
     } finally { inFlight.current = false; }
-  }, [user]);
-  const { data, reload } = useAsyncQuery(load, { enabled: Boolean(user?.id) });
+  }, [identity]);
+  const { data, reload } = useAsyncQuery(load, { enabled: Boolean(userId) });
   useEffect(() => {
     if (!user?.id) return;
     const refresh = () => {

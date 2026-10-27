@@ -9,7 +9,7 @@ vi.mock("react-redux", () => ({ useSelector: select => select(state) }));
 
 function Consumer({ label }) { const status = useSubscriptionStatus(); return <div>{label}: {status?.status || "loading"}</div>; }
 const Consumers = () => <SubscriptionStatusProvider><Consumer label="footer" /><Consumer label="reminder" /></SubscriptionStatusProvider>;
-beforeEach(() => { vi.clearAllMocks(); state.auth.user = { id: 1 }; get.mockResolvedValue({ data: { data: { status: "ACTIVE" } } }); });
+beforeEach(() => { vi.clearAllMocks(); localStorage.clear(); sessionStorage.clear(); state.auth.user = { id: 1 }; get.mockResolvedValue({ data: { data: { status: "ACTIVE" } } }); });
 afterEach(() => { vi.restoreAllMocks(); });
 
 it("shares one result between footer and reminder and coalesces focus events", async () => {
@@ -41,4 +41,19 @@ it("does not request subscription data while signed out", () => {
   state.auth.user = null;
   render(<Consumers />);
   expect(get).not.toHaveBeenCalled();
+});
+
+it("does not recheck subscription after a profile or counter edit but reloads for a different store", async () => {
+  const { rerender } = render(<Consumers />);
+  await screen.findByText("footer: ACTIVE");
+  state.auth.user = { id: 1, name: "Updated", counter_id: 7 };
+  rerender(<Consumers />);
+  await act(async () => {});
+  expect(get).toHaveBeenCalledTimes(1);
+  sessionStorage.setItem("activeStoreId", "2");
+  get.mockResolvedValue({ data: { data: { status: "TRIAL" } } });
+  rerender(<Consumers />);
+  expect(screen.queryByText("footer: ACTIVE")).not.toBeInTheDocument();
+  await screen.findByText("footer: TRIAL");
+  expect(get).toHaveBeenCalledTimes(2);
 });
