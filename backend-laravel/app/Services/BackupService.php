@@ -826,8 +826,12 @@ class BackupService
      */
     public function buildOciDisk(array $settings): Filesystem
     {
-        $namespace = $settings['oci_namespace'] ?? '';
-        $region = $settings['oci_region'] ?? 'ap-mumbai-1';
+        $namespace = trim((string) ($settings['oci_namespace'] ?? ''));
+        $region = trim((string) ($settings['oci_region'] ?? 'ap-mumbai-1'));
+        if (! preg_match('/\A[a-zA-Z0-9][a-zA-Z0-9-]{0,62}\z/', $namespace)
+            || ! preg_match('/\A[a-zA-Z0-9][a-zA-Z0-9-]{0,62}\z/', $region)) {
+            throw new RuntimeException('Enter an OCI namespace and region, without a URL, port or path.');
+        }
         $endpoint = "https://{$namespace}.compat.objectstorage.{$region}.oraclecloud.com";
 
         $config = [
@@ -842,11 +846,7 @@ class BackupService
             'throw' => true,
         ];
 
-        // Local XAMPP dev machines often lack a valid CA bundle, which breaks TLS
-        // verification against OCI. Never disable verification outside local dev.
-        if (app()->environment('local')) {
-            $config['http'] = ['verify' => false];
-        }
+        $config['http'] = ['verify' => true];
 
         return Storage::build($config);
     }

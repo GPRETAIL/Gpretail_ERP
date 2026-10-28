@@ -376,9 +376,6 @@ PROMPT;
     {
         $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
         $client   = Http::timeout(90);
-        if (app()->environment('local')) {
-            $client = $client->withoutVerifying();
-        }
 
         $response = $client
             ->withHeaders(['Content-Type' => 'application/json'])
@@ -415,9 +412,6 @@ PROMPT;
         $mimeType = $payload['mime'];
         $prompt   = $this->buildExtractionPrompt(!str_contains($mimeType, 'pdf'));
         $client   = Http::timeout(90);
-        if (app()->environment('local')) {
-            $client = $client->withoutVerifying();
-        }
 
         $response = $client
             ->withHeaders(['Authorization' => "Bearer {$apiKey}", 'Content-Type' => 'application/json'])
@@ -460,9 +454,6 @@ PROMPT;
         $endpoint = config('services.space_ocr.endpoint', 'https://api.space-ocr.com/ocr/markdown');
 
         $client = Http::timeout(60);
-        if (app()->environment('local')) {
-            $client = $client->withoutVerifying();
-        }
 
         $response = $client
             ->withHeaders([
@@ -498,9 +489,6 @@ PROMPT;
     {
         $client = Http::timeout((int) config('ocr_space.timeout', 120))
             ->connectTimeout((int) config('ocr_space.connect_timeout', 10));
-        if (app()->environment('local')) {
-            $client = $client->withoutVerifying();
-        }
 
         $response = $client
             ->withHeaders(['apikey' => $key])

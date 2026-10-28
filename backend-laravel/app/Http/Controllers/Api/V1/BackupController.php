@@ -275,6 +275,8 @@ class BackupController extends Controller
                 'retentionDaily' => 'sometimes|integer|between:1,3650',
                 'retentionWeekly' => 'sometimes|integer|between:1,520',
                 'retentionMonthly' => 'sometimes|integer|between:1,120',
+                'ociNamespace' => ['nullable', 'string', 'max:63', 'regex:/\A[a-zA-Z0-9][a-zA-Z0-9-]{0,62}\z/'],
+                'ociRegion' => ['nullable', 'string', 'max:63', 'regex:/\A[a-zA-Z0-9][a-zA-Z0-9-]{0,62}\z/'],
             ]);
             $settings = [
                 'storage_mode' => $request->input('storageMode', 'local'),
@@ -402,6 +404,10 @@ class BackupController extends Controller
 
     public function cloudTest(Request $request)
     {
+        $request->validate([
+            'ociNamespace' => ['nullable', 'string', 'max:63', 'regex:/\A[a-zA-Z0-9][a-zA-Z0-9-]{0,62}\z/'],
+            'ociRegion' => ['nullable', 'string', 'max:63', 'regex:/\A[a-zA-Z0-9][a-zA-Z0-9-]{0,62}\z/'],
+        ]);
         $companyId = $this->resolveStoreId($request, null);
         $store = $companyId ? $this->authorizedStores($request)->find($companyId) : null;
         $stored = $store?->backup_settings ?? [];
