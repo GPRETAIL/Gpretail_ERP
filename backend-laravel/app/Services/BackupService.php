@@ -160,49 +160,60 @@ class BackupService
      */
     public function exportTablesToJson(array $manifest, ?int $companyId, ?Carbon $since): array
     {
-        $exported = [];
+        $connection = DB::connection();
+        $wasLogging = $connection->logging();
+        $connection->disableQueryLog();
+        try {
+            $exported = [];
 
-        foreach ($manifest as $table => $spec) {
-            if (! Schema::hasTable($table)) {
-                continue;
-            }
+            foreach ($manifest as $table => $spec) {
+                if (! Schema::hasTable($table)) {
+                    continue;
+                }
 
-            $query = DB::table($table);
-            if ($companyId) {
-                $this->scopeBackupOwnership($query, $table, $table, $companyId);
-            }
-            $this->applyScope($query, $table, $spec, $companyId, $manifest);
+                $query = DB::table($table);
+                if ($companyId) {
+                    $this->scopeBackupOwnership($query, $table, $table, $companyId);
+                }
+                $this->applyScope($query, $table, $spec, $companyId, $manifest);
 
-            if ($table === 'system_configurations') {
-                $internalKeys = ['invoice_ai', 'gemini_api_key', 'space_ocr_api_key', 'openai_api_key', 'ocr_space_api_key'];
-                foreach (['group', 'group_name', 'key', 'config_key'] as $column) {
-                    if (Schema::hasColumn($table, $column)) {
-                        $query->where(fn ($q) => $q->whereNull($column)->orWhereNotIn($column, $internalKeys));
+                if ($table === 'system_configurations') {
+                    $internalKeys = ['invoice_ai', 'gemini_api_key', 'space_ocr_api_key', 'openai_api_key', 'ocr_space_api_key'];
+                    foreach (['group', 'group_name', 'key', 'config_key'] as $column) {
+                        if (Schema::hasColumn($table, $column)) {
+                            $query->where(fn ($q) => $q->whereNull($column)->orWhereNotIn($column, $internalKeys));
+                        }
                     }
                 }
-            }
 
-            if ($since && Schema::hasColumn($table, 'updated_at')) {
-                $query->where('updated_at', '>', $since);
-            }
-
-            $exported[$table] = $query->get()->map(function ($row) use ($table) {
-                $arr = (array) $row;
-                if ($table === 'stores') {
-                    unset(
-                        $arr['platform_licence_token'],
-                        $arr['admin_password'],
-                        $arr['einvoice_password'],
-                        $arr['gst_access_key'],
-                        $arr['backup_settings']
-                    );
+                if ($since && Schema::hasColumn($table, 'updated_at')) {
+                    $query->where('updated_at', '>', $since);
                 }
 
-                return $arr;
-            })->all();
-        }
+                $tableRows = [];
+                foreach ($query->cursor() as $row) {
+                    $arr = (array) $row;
+                    if ($table === 'stores') {
+                        unset(
+                            $arr['platform_licence_token'],
+                            $arr['admin_password'],
+                            $arr['einvoice_password'],
+                            $arr['gst_access_key'],
+                            $arr['backup_settings']
+                        );
+                    }
 
-        return $exported;
+                    $tableRows[] = $arr;
+                }
+                $exported[$table] = $tableRows;
+            }
+
+            return $exported;
+        } finally {
+            if ($wasLogging) {
+                $connection->enableQueryLog();
+            }
+        }
     }
 
     private function applyScope($query, string $table, array $spec, ?int $companyId, array $manifest): void
@@ -458,9 +469,10 @@ class BackupService
                         continue;
                     }
                     if ($table === 'users') {
+                        $superAdminIds = array_fill_keys(DB::table('users')->where('role', 'super_admin')->pluck('id')->all(), true);
                         foreach ($rows as $row) {
                             if (($row['role'] ?? '') === 'super_admin'
-                                || (isset($row['id']) && DB::table('users')->where('id', $row['id'])->where('role', 'super_admin')->exists())) {
+                                || (isset($row['id']) && isset($superAdminIds[$row['id']]))) {
                                 throw new RuntimeException('Platform administrators cannot be restored through tenant backups.');
                             }
                         }
@@ -473,11 +485,7 @@ class BackupService
                     $uniqueBy = $table === 'role_permissions' ? ['role_id', 'permission_id'] : ['id'];
                     $updateColumns = array_values(array_diff(array_keys($rows[0]), $uniqueBy));
 
-                    // Larger batches = fewer round trips to the DB, which is what actually
-                    // dominates restore time (not PHP-side JSON decoding).
-                    foreach (array_chunk($rows, 1000) as $chunk) {
-                        DB::table($table)->upsert($chunk, $uniqueBy, $updateColumns);
-                    }
+                    $this->upsertRows($table, $rows, $uniqueBy, $updateColumns);
 
                     $tableCounts[$table] = count($rows);
                     $restoredRows += count($rows);
@@ -495,6 +503,41 @@ class BackupService
     {
         $grammar = DB::connection()->getQueryGrammar();
         $ownership = array_intersect(['store_id', 'company_id'], Schema::getColumnListing($table));
+        $spec = self::findSpecForTable($table);
+        if ($ownership && ($spec['scope'] ?? '') !== 'via_parent') {
+            // Direct ownership has the same consistency rule as StoreQuery::ownership:
+            // at least one owner, and every non-null owner must match the target.
+            $assertOwner = function (array $row, string $message) use ($ownership, $storeId): void {
+                $hasOwner = false;
+                foreach ($ownership as $column) {
+                    if (($row[$column] ?? null) === null) {
+                        continue;
+                    }
+                    if (filter_var($row[$column], FILTER_VALIDATE_INT) !== $storeId) {
+                        throw new RuntimeException($message);
+                    }
+                    $hasOwner = true;
+                }
+                if (! $hasOwner) {
+                    throw new RuntimeException($message);
+                }
+            };
+            foreach ($rows as $row) {
+                $assertOwner($row, 'Archive contains records outside the selected store or an unsupported ownership relationship.');
+            }
+            $ids = array_values(array_unique(array_column($rows, 'id')));
+            foreach (array_chunk($ids, 500) as $idChunk) {
+                $existingById = DB::table($table)->whereIn('id', $idChunk)->get(array_merge(['id'], $ownership))->keyBy('id');
+                foreach ($existingById as $row) {
+                    $assertOwner((array) $row, 'Archive record IDs conflict with another store.');
+                }
+            }
+
+            return;
+        }
+
+        // Indirectly owned children still require the registered parent relationship;
+        // a matching or missing child store_id alone cannot prove ownership.
         foreach (array_chunk($rows, 20) as $batch) {
             $batch = array_map(fn ($row) => $row + array_fill_keys($ownership, null), $batch);
             $incoming = null;
@@ -514,13 +557,14 @@ class BackupService
             if (! $this->scopeBackupOwnership($scope, $table, 'restore_candidate', $storeId) || $scope->count() !== count($batch)) {
                 throw new RuntimeException('Archive contains records outside the selected store or an unsupported ownership relationship.');
             }
-            $ids = array_column($batch, 'id');
-            if ($ids) {
-                $existing = DB::table($table)->whereIn('id', $ids);
-                $count = $existing->count();
-                if (! $this->scopeBackupOwnership($existing, $table, $table, $storeId) || $existing->count() !== $count) {
-                    throw new RuntimeException('Archive record IDs conflict with another store.');
-                }
+        }
+        $owned = DB::table($table)->select($table.'.id');
+        if (! $this->scopeBackupOwnership($owned, $table, $table, $storeId)) {
+            throw new RuntimeException('Archive contains records outside the selected store or an unsupported ownership relationship.');
+        }
+        foreach (array_chunk(array_values(array_unique(array_column($rows, 'id'))), 500) as $idChunk) {
+            if (DB::table($table)->whereIn('id', $idChunk)->whereNotIn('id', clone $owned)->exists()) {
+                throw new RuntimeException('Archive record IDs conflict with another store.');
             }
         }
     }
@@ -595,9 +639,7 @@ class BackupService
 
                 if ($toApply) {
                     $updateColumns = array_values(array_diff(array_keys($toApply[0]), $uniqueBy));
-                    foreach (array_chunk($toApply, 1000) as $chunk) {
-                        DB::table($table)->upsert($chunk, $uniqueBy, $updateColumns);
-                    }
+                    $this->upsertRows($table, $toApply, $uniqueBy, $updateColumns);
                 }
 
                 $tableCounts[$table] = count($toApply);
@@ -606,6 +648,17 @@ class BackupService
         });
 
         return ['mergedRows' => $mergedRows, 'tables' => $tableCounts];
+    }
+
+    private function upsertRows(string $table, array $rows, array $uniqueBy, array $updateColumns): void
+    {
+        // Key lookups are not the only source of placeholders: each row contributes
+        // one binding per column. Keep wide imports within SQLite/MySQL limits too.
+        $bindingBudget = DB::connection()->getDriverName() === 'sqlite' ? 900 : 60000;
+        $batchSize = min(1000, max(1, intdiv($bindingBudget, max(1, count($rows[0])))));
+        foreach (array_chunk($rows, $batchSize) as $chunk) {
+            DB::table($table)->upsert($chunk, $uniqueBy, $updateColumns);
+        }
     }
 
     private function filterImportConfigurationRows(string $table, array $rows): array
@@ -639,10 +692,16 @@ class BackupService
     {
         $keyOf = fn (array $row) => implode('|', array_map(fn ($k) => $row[$k] ?? '', $uniqueBy));
 
-        $existing = DB::table($table)
-            ->whereIn($uniqueBy[0], array_unique(array_column($rows, $uniqueBy[0])))
-            ->get(array_merge($uniqueBy, ['updated_at']))
-            ->keyBy(fn ($row) => implode('|', array_map(fn ($k) => $row->$k, $uniqueBy)));
+        $allKeys = array_values(array_unique(array_filter(array_column($rows, $uniqueBy[0]), fn ($v) => $v !== null)));
+        $existing = collect();
+        foreach (array_chunk($allKeys, 500) as $keyChunk) {
+            $chunkRows = DB::table($table)
+                ->whereIn($uniqueBy[0], $keyChunk)
+                ->get(array_merge($uniqueBy, ['updated_at']));
+            foreach ($chunkRows as $r) {
+                $existing->put(implode('|', array_map(fn ($k) => $r->$k, $uniqueBy)), $r);
+            }
+        }
 
         return array_values(array_filter($rows, function ($row) use ($existing, $keyOf) {
             $existingRow = $existing->get($keyOf($row));

@@ -115,10 +115,10 @@ const buildThermalSaleReceiptHtml = (receiptData, customization) => {
     ? buildSalesReceiptTaxRows(receiptItems)
     : [];
 
-  const storeName = receiptData.storeName || "SRI BALAJI TEXTILE";
-  const storeAddress = receiptData.storeAddress || "Main Bazaar, Retail Street";
-  const storeGstNo = receiptData.storeGstNo || "33AAAAA0000A1Z5";
-  const storePhone = receiptData.storePhone || "9876543210";
+  const storeName = receiptData.storeName || "Vynerix";
+  const storeAddress = receiptData.storeAddress || "";
+  const storeGstNo = receiptData.storeGstNo || "";
+  const storePhone = receiptData.storePhone || "";
 
   const generalContent = {
     logo: receiptData.logoText || "LOGO",
@@ -276,7 +276,7 @@ const buildThermalSaleReceiptHtml = (receiptData, customization) => {
         : `
           <div class="title">${escapeHtml(storeName)}</div>
           <div class="store-meta">${escapeHtml(storeAddress)}</div>
-          <div class="store-meta">${escapeHtml(storeGstNo ? (storeGstNo.startsWith("GST") ? storeGstNo : `GST No: ${storeGstNo}`) : "GST No: 33AAAAA0000A1Z5")}</div>
+          <div class="store-meta">${escapeHtml(storeGstNo ? (storeGstNo.startsWith("GST") ? storeGstNo : `GST No: ${storeGstNo}`) : "")}</div>
         `
       }
       ${storePhone ? `<div class="store-meta">Contact: ${escapeHtml(storePhone)}</div>` : ""}
@@ -476,10 +476,10 @@ export const buildPosReturnReceiptHtml = (receiptData, customization) => {
     ? buildSalesReceiptTaxRows(receiptItems)
     : [];
 
-  const storeName = receiptData.storeName || "SRI BALAJI TEXTILE";
-  const storeAddress = receiptData.storeAddress || "Main Bazaar, Retail Street";
-  const storeGstNo = receiptData.storeGstNo || "33AAAAA0000A1Z5";
-  const storePhone = receiptData.storePhone || "9876543210";
+  const storeName = receiptData.storeName || "Vynerix";
+  const storeAddress = receiptData.storeAddress || "";
+  const storeGstNo = receiptData.storeGstNo || "";
+  const storePhone = receiptData.storePhone || "";
 
   const generalContent = {
     logo: receiptData.logoText || "LOGO",

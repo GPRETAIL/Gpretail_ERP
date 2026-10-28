@@ -1,3 +1,4 @@
+import { browserPrintHtml } from "./posSalesUtils";
 import PageHeader from "../../components/PageHeader";
 import useCounterAssignmentPrompt from "../../hooks/useCounterAssignmentPrompt";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
@@ -607,17 +608,7 @@ const TouchSales = () => {
         return;
       }
 
-      const win = window.open("", "_blank", "width=400,height=650");
-      if (!win) {
-        toast.error("Popup blocked – please allow popups for printing");
-        return;
-      }
-      win.document.write(html);
-      win.document.close();
-      win.onload = () => {
-        win.focus();
-        win.print();
-      };
+      browserPrintHtml(html, { copies: 1 });
     },
     [authUser?.company_id, authUser?.counter_name, authUser?.email, authUser?.name, billNo, customerMobile, appliedReturn, queuePrintHtml]
   );
