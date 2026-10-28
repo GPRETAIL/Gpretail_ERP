@@ -3,6 +3,7 @@ import api from "../api/axios";
 import { initializeStoreSelection } from "../utils/storeSelection";
 import { disableWebPush } from "../utils/webPush";
 import { clearRuntimeRoutingConfig, fetchAndApplyRuntimeRoutingConfig } from "../api/runtimeRouting";
+import { clearPrivateApiCache } from "../utils/privateApiCache";
 
 export const loginUser = createAsyncThunk(
   "auth/loginUser",
@@ -10,6 +11,7 @@ export const loginUser = createAsyncThunk(
     try {
       const res = await api.post(credentials.id_token ? "/auth/google" : "/auth/login", credentials);
       if (res.data?.data?.activation_required && res.data.data.setup_token) {
+        await clearPrivateApiCache();
         clearRuntimeRoutingConfig();
         localStorage.removeItem("token");
         localStorage.removeItem("user");
@@ -23,6 +25,7 @@ export const loginUser = createAsyncThunk(
         return rejectWithValue("Invalid login response from server");
       }
 
+      await clearPrivateApiCache();
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(user));
       initializeStoreSelection(user);
@@ -48,6 +51,7 @@ export const platformLoginUser = createAsyncThunk(
         return rejectWithValue("Invalid login response from server");
       }
 
+      await clearPrivateApiCache();
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(user));
       return { token, user };
@@ -65,6 +69,7 @@ export const logoutUser = createAsyncThunk("/auth/logoutUser", async () => {
     // Best effort only.
   }
   clearRuntimeRoutingConfig();
+  await clearPrivateApiCache();
   localStorage.removeItem("token");
   localStorage.removeItem("user");
   sessionStorage.removeItem("activeStoreId");
@@ -91,6 +96,9 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     loginSuccess: (state, action) => {
+      if (state.token !== (action.payload?.token || null) || state.user?.id !== (action.payload?.user || action.payload)?.id) {
+        void clearPrivateApiCache();
+      }
       const sameUser = state.user?.id === (action.payload?.user || action.payload)?.id;
       state.token = action.payload?.token || null;
       state.user = action.payload?.user || action.payload;
@@ -102,6 +110,7 @@ const authSlice = createSlice({
       initializeStoreSelection(state.user, { preserve: sameUser });
     },
     logout: (state) => {
+      void clearPrivateApiCache();
       clearRuntimeRoutingConfig();
       state.token = null;
       state.user = null;

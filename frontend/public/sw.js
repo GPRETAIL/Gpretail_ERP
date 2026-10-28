@@ -9,9 +9,10 @@
  * 5. Lifecycle Updates — skipWaiting and client claim support
  */
 
-const CACHE_VERSION = "vynerix-pwa-v3.0.4";
+const CACHE_VERSION = "vynerix-pwa-v3.0.5";
 const CACHE_STATIC = `vynerix-static-${CACHE_VERSION}`;
 const CACHE_API = `vynerix-api-${CACHE_VERSION}`;
+let apiCacheGeneration = 0;
 
 // Core assets required for offline startup
 const PRECACHE_ASSETS = [
@@ -107,20 +108,23 @@ self.addEventListener("fetch", (event) => {
     if (!isCacheable) return;
 
     const scopedKey = apiCacheKey(request).catch(() => null);
+    const generation = apiCacheGeneration;
     event.respondWith((async () => {
       try {
         const response = await fetch(request);
         if (response?.status === 200) {
           const clone = response.clone();
           event.waitUntil(scopedKey.then(async key => {
-            if (key) await (await caches.open(CACHE_API)).put(key, clone);
+            if (!key || generation !== apiCacheGeneration) return;
+            const cache = await caches.open(CACHE_API);
+            if (generation === apiCacheGeneration) await cache.put(key, clone);
           }).catch(() => {}));
         }
         return response;
       } catch {
         const key = await scopedKey;
-        const cached = key ? await caches.open(CACHE_API).then(cache => cache.match(key)).catch(() => null) : null;
-        if (cached) return cached;
+        const cached = key && generation === apiCacheGeneration ? await caches.open(CACHE_API).then(cache => cache.match(key)).catch(() => null) : null;
+        if (cached && generation === apiCacheGeneration) return cached;
         return new Response(JSON.stringify({
           success: false, status: "offline", offline: true, data: null,
           message: "The server is unavailable and no data is cached for this account and store."
@@ -186,6 +190,11 @@ self.addEventListener("message", (event) => {
   if (event.data && event.data.type === "SKIP_WAITING") {
     console.log("[PWA SW] Skipping waiting and activating new version");
     self.skipWaiting();
+  } else if (event.data?.type === "VX_CLEAR_API_CACHE") {
+    apiCacheGeneration += 1;
+    event.waitUntil(caches.keys().then(names => Promise.all(
+      names.filter(name => name.startsWith("vynerix-api-")).map(name => caches.delete(name))
+    )).catch(() => {}));
   }
 });
 

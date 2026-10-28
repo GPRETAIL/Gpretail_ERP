@@ -10,8 +10,9 @@ function worker() {
   const cache = { put: vi.fn(async (key, value) => saved.set(key.url, value.clone())), match: vi.fn(async key => saved.get(key.url)?.clone()) };
   const fetch = vi.fn();
   const self = { crypto: webcrypto, location: { origin: "https://erp.example" }, addEventListener: (type, handler) => { handlers[type] = handler; } };
+  const caches = { open: vi.fn(async () => cache), keys: vi.fn(async () => ["vynerix-api-test", "vynerix-static-test"]), delete: vi.fn(async () => { saved.clear(); return true; }) };
   vm.runInNewContext(fs.readFileSync("public/sw.js", "utf8"), {
-    self, caches: { open: async () => cache }, fetch, URL, Request, Response, TextEncoder, Uint8Array, console,
+    self, caches, fetch, URL, Request, Response, TextEncoder, Uint8Array, console,
   });
   const request = (token = "user-one", store = "2", options = {}) => new Request("https://erp.example/api/products", {
     headers: { Authorization: `Bearer ${token}`, "X-Company-Scope-Id": store }, ...options,
@@ -25,7 +26,12 @@ function worker() {
     await Promise.all(work);
     return response;
   };
-  return { fetch, cache, saved, request, run };
+  const purge = () => {
+    let work;
+    handlers.message({ data: { type: "VX_CLEAR_API_CACHE" }, waitUntil: promise => { work = promise; } });
+    return work;
+  };
+  return { fetch, cache, saved, request, run, caches, purge };
 }
 
 it("makes one network attempt and falls back only within the same authenticated store", async () => {
@@ -59,4 +65,42 @@ it("does not turn cache storage failure into a failed online API response", asyn
   cache.put.mockRejectedValue(new Error("quota")); fetch.mockResolvedValue(Response.json({ data: [42] }));
   expect(await (await run(request())).json()).toEqual({ data: [42] });
   expect(fetch).toHaveBeenCalledTimes(1);
+});
+
+it("removes private offline responses when the account signs out", async () => {
+  const { fetch, saved, request, run, caches, purge } = worker();
+  fetch.mockResolvedValueOnce(Response.json({ data: [42] })).mockRejectedValue(new Error("offline"));
+  await run(request());
+  expect(saved.size).toBe(1);
+  await purge();
+  expect(saved.size).toBe(0);
+  expect(caches.delete).toHaveBeenCalledWith("vynerix-api-test");
+  expect(caches.delete).not.toHaveBeenCalledWith("vynerix-static-test");
+  expect((await run(request())).status).toBe(503);
+});
+
+it("does not let a late response repopulate private caches after logout", async () => {
+  const { fetch, cache, request, run, purge } = worker();
+  let resolve;
+  fetch.mockReturnValue(new Promise(done => { resolve = done; }));
+  const response = run(request());
+  await purge();
+  resolve(Response.json({ data: [42] }));
+  expect((await response).status).toBe(200);
+  expect(cache.put).not.toHaveBeenCalled();
+});
+
+it("checks logout again after opening asynchronous cache storage", async () => {
+  const { fetch, cache, request, run, caches, purge } = worker();
+  let resolveOpen;
+  let opened;
+  const started = new Promise(done => { opened = done; });
+  caches.open.mockImplementation(() => { opened(); return new Promise(done => { resolveOpen = done; }); });
+  fetch.mockResolvedValue(Response.json({ data: [42] }));
+  const response = run(request());
+  await started;
+  await purge();
+  resolveOpen(cache);
+  await response;
+  expect(cache.put).not.toHaveBeenCalled();
 });

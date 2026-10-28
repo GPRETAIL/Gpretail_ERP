@@ -1,13 +1,14 @@
 import { configureStore } from "@reduxjs/toolkit";
-import { beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import api from "../api/axios";
-import authReducer, { loginUser } from "./authSlice";
+import authReducer, { loginUser, logout } from "./authSlice";
 import { fetchAndApplyRuntimeRoutingConfig } from "../api/runtimeRouting";
 
 vi.mock("../api/axios", () => ({ default: { post: vi.fn() } }));
 vi.mock("../api/runtimeRouting", () => ({ clearRuntimeRoutingConfig: vi.fn(), fetchAndApplyRuntimeRoutingConfig: vi.fn() }));
 vi.mock("../utils/storeSelection", () => ({ initializeStoreSelection: vi.fn() }));
 beforeEach(() => { localStorage.clear(); vi.resetAllMocks(); });
+afterEach(() => vi.unstubAllGlobals());
 
 it("keeps company setup separate from authenticated sessions and persistent credentials", async () => {
   const setup = { activation_required: true, setup_token: "short-lived-setup", company_code: "CMP-FIRST" };
@@ -34,4 +35,17 @@ it("continues normal local login when the ERP issues a real session", async () =
   expect(store.getState().auth.isAuthenticated).toBe(true);
   expect(localStorage.getItem("token")).toBe("erp-session");
   expect(fetchAndApplyRuntimeRoutingConfig).toHaveBeenCalledTimes(1);
+});
+
+it("clears private offline caches when the authenticated account logs out", async () => {
+  const remove = vi.fn().mockResolvedValue(true);
+  vi.stubGlobal("caches", { keys: async () => ["vynerix-api-prior-user"], delete: remove });
+  const store = configureStore({ reducer: { auth: authReducer }, preloadedState: { auth: {
+    token: "prior-user-token", user: { id: 1 }, isAuthenticated: true, loading: false, error: null,
+  } } });
+  store.dispatch(logout());
+  await Promise.resolve();
+  await Promise.resolve();
+  expect(remove).toHaveBeenCalledWith("vynerix-api-prior-user");
+  expect(store.getState().auth.isAuthenticated).toBe(false);
 });

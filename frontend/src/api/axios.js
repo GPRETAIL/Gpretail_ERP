@@ -1,4 +1,5 @@
 import axios from "axios";
+import { clearPrivateApiCache } from "../utils/privateApiCache";
 import { createReadCoalescer } from "./coalesceReads";
 import { handleStoreSelectionError } from "../utils/storeSelection";
 import {
@@ -81,6 +82,7 @@ api.interceptors.response.use(
     }
     const isLoginRequest = LOGIN_PATHS.some((path) => requestUrl.includes(path));
     if (error.response?.status === 401 && !isLoginRequest && currentToken && sentToken === currentToken) {
+      void clearPrivateApiCache();
       // Clear once for this session. A late response from an older login must
       // never sign out a newly authenticated session.
       localStorage.removeItem("token");
