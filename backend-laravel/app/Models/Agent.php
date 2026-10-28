@@ -16,7 +16,32 @@ class Agent extends Model
         });
     }
 
-    protected $guarded = ['id', 'created_at', 'updated_at'];
+    protected $fillable = [
+        'store_id',
+        'name',
+        'contact_person',
+        'code',
+        'agent_type_id',
+        'email',
+        'email_id',
+        'phone',
+        'contact_no',
+        'address',
+        'pan',
+        'gst',
+        'commission_rate',
+        'commission_amt',
+        'commission_pct',
+        'city_id',
+        'state_id',
+        'pincode',
+        'tax_id',
+        'bank_id',
+        'bank_account_name',
+        'ifsc',
+        'account_no',
+        'is_active',
+    ];
 
     protected function casts(): array
     {

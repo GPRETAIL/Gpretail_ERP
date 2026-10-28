@@ -23,25 +23,31 @@ class SupplierPaymentController extends Controller
 
     public function dashboardSummary(Request $request)
     {
-        $storeId = $this->resolveStoreId($request, 1);
+        $storeId = $this->resolveStoreId($request, null);
+        // Global store scopes still restrict an aggregate view to the caller's stores.
+        $payments = SupplierPayment::query()
+            ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
+            ->whereBetween('payment_date', [now()->startOfMonth()->toDateString(), now()->endOfMonth()->toDateString()])
+            ->selectRaw('COUNT(*) as payment_count, COALESCE(SUM(amount), 0) as total_paid')->first();
 
-        $totalPaidMonth = (float) SupplierPayment::where('store_id', $storeId)
-            ->whereMonth('payment_date', now()->month)
-            ->sum('amount');
-
-        $pendingPayables = (float) PurchaseInvoice::where('store_id', $storeId)
+        $payables = PurchaseInvoice::query()
+            ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->where('payment_status', '!=', 'PAID')
-            ->sum(DB::raw('grand_total - paid_amount'));
+            ->whereRaw('grand_total > paid_amount')
+            ->selectRaw('COUNT(*) as pending_count, COALESCE(SUM(grand_total - paid_amount), 0) as total_payables')
+            // Until invoice due dates are recorded, overdue means more than 30 days old.
+            ->selectRaw('COALESCE(SUM(CASE WHEN invoice_date < ? THEN grand_total - paid_amount ELSE 0 END), 0) as overdue_payables', [now()->subDays(30)->toDateString()])
+            ->first();
 
         return response()->json([
             'success' => true,
             'data' => [
-                'totalPaymentsThisMonth' => SupplierPayment::where('store_id', $storeId)->whereMonth('payment_date', now()->month)->count(),
-                'totalAmountPaidThisMonth' => $totalPaidMonth,
-                'pendingPayments' => PurchaseInvoice::where('store_id', $storeId)->where('payment_status', '!=', 'PAID')->count(),
-                'totalPayables' => $pendingPayables,
-                'paidThisMonth' => $totalPaidMonth,
-                'overduePayables' => $pendingPayables * 0.25,
+                'totalPaymentsThisMonth' => (int) $payments->payment_count,
+                'totalAmountPaidThisMonth' => (float) $payments->total_paid,
+                'pendingPayments' => (int) $payables->pending_count,
+                'totalPayables' => (float) $payables->total_payables,
+                'paidThisMonth' => (float) $payments->total_paid,
+                'overduePayables' => (float) $payables->overdue_payables,
                 'totalSuppliers' => Supplier::count(),
             ],
         ]);
@@ -55,10 +61,12 @@ class SupplierPaymentController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->input('search');
-            $query->where('payment_no', 'like', "%{$search}%")
-                ->orWhereHas('supplier', function ($sq) use ($search) {
-                    $sq->where('name', 'like', "%{$search}%");
-                });
+            $query->where(function ($q) use ($search) {
+                $q->where('payment_no', 'like', "%{$search}%")
+                    ->orWhereHas('supplier', function ($sq) use ($search) {
+                        $sq->where('name', 'like', "%{$search}%");
+                    });
+            });
         }
 
         if ($request->boolean('all') || $request->input('limit') == 500 || $request->input('limit') == 1000) {

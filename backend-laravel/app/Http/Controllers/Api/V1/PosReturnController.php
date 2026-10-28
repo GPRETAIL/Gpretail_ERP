@@ -46,10 +46,12 @@ class PosReturnController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->input('search');
-            $query->where('return_no', 'like', "%{$search}%")
-                ->orWhereHas('posSale', function ($sq) use ($search) {
-                    $sq->where('invoice_no', 'like', "%{$search}%");
-                });
+            $query->where(function ($q) use ($search) {
+                $q->where('return_no', 'like', "%{$search}%")
+                    ->orWhereHas('posSale', function ($sq) use ($search) {
+                        $sq->where('invoice_no', 'like', "%{$search}%");
+                    });
+            });
         }
 
         return $query;
@@ -335,9 +337,7 @@ class PosReturnController extends Controller
         }
 
         $product = Product::with('tax')
-            ->where('barcode', $barcode)
-            ->orWhere('code', $barcode)
-            ->orWhere('sku', $barcode)
+            ->where(fn ($q) => $q->where('barcode', $barcode)->orWhere('code', $barcode)->orWhere('sku', $barcode))
             ->first();
 
         if (! $product) {

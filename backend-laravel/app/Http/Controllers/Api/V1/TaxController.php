@@ -47,7 +47,7 @@ class TaxController extends Controller
                     'not_equals' => $query->where($col, '!=', $val),
                     'starts' => $query->where($col, 'like', "{$val}%"),
                     'ends' => $query->where($col, 'like', "%{$val}"),
-                    'blank' => $query->whereNull($col)->orWhere($col, ''),
+                    'blank' => $query->where(fn ($q) => $q->whereNull($col)->orWhere($col, '')),
                     'not_blank' => $query->whereNotNull($col)->where($col, '!=', ''),
                     default => $query->where($col, 'like', "%{$val}%"),
                 };
@@ -119,8 +119,7 @@ class TaxController extends Controller
     public function show($id)
     {
         $tax = Tax::with('slabs')
-            ->where('id', $id)
-            ->orWhere('code', $id)
+            ->where(fn ($q) => $q->where('id', $id)->orWhere('code', $id))
             ->firstOrFail();
 
         $rate = (float) $tax->rate;
@@ -195,8 +194,7 @@ class TaxController extends Controller
 
     public function update(Request $request, $id)
     {
-        $tax = Tax::where('id', $id)
-            ->orWhere('code', $id)
+        $tax = Tax::where(fn ($q) => $q->where('id', $id)->orWhere('code', $id))
             ->firstOrFail();
 
         $data = [];
@@ -243,8 +241,7 @@ class TaxController extends Controller
 
     public function destroy($id)
     {
-        $tax = Tax::where('id', $id)
-            ->orWhere('code', $id)
+        $tax = Tax::where(fn ($q) => $q->where('id', $id)->orWhere('code', $id))
             ->firstOrFail();
 
         $tax->delete();

@@ -32,7 +32,7 @@ class StockOutwardController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->input('search');
-            $query->where('outward_no', 'like', "%{$search}%")->orWhere('notes', 'like', "%{$search}%");
+            $query->where(fn ($q) => $q->where('outward_no', 'like', "%{$search}%")->orWhere('notes', 'like', "%{$search}%"));
         }
 
         if ($request->boolean('all') || $request->input('limit') == 500 || $request->input('limit') == 1000) {

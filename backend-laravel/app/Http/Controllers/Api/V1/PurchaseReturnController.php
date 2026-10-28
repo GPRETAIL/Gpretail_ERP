@@ -34,10 +34,12 @@ class PurchaseReturnController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->input('search');
-            $query->where('return_no', 'like', "%{$search}%")
-                ->orWhereHas('supplier', function ($sq) use ($search) {
-                    $sq->where('name', 'like', "%{$search}%");
-                });
+            $query->where(function ($q) use ($search) {
+                $q->where('return_no', 'like', "%{$search}%")
+                    ->orWhereHas('supplier', function ($sq) use ($search) {
+                        $sq->where('name', 'like', "%{$search}%");
+                    });
+            });
         }
 
         return $query;

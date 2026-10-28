@@ -91,7 +91,7 @@ class ProductController extends Controller
                     'not_equals' => $query->where($col, '!=', $val),
                     'starts' => $query->where($col, 'like', "{$val}%"),
                     'ends' => $query->where($col, 'like', "%{$val}"),
-                    'blank' => $query->whereNull($col)->orWhere($col, ''),
+                    'blank' => $query->where(fn ($q) => $q->whereNull($col)->orWhere($col, '')),
                     'not_blank' => $query->whereNotNull($col)->where($col, '!=', ''),
                     default => $query->where($col, 'like', "%{$val}%"),
                 };
@@ -212,8 +212,7 @@ class ProductController extends Controller
     public function show($id)
     {
         $product = Product::with(['category', 'brand', 'tax', 'purchaseTax', 'salesTax', 'sizeGroup', 'variants', 'stocks'])
-            ->where('id', $id)
-            ->orWhere('code', $id)
+            ->where(fn ($q) => $q->where('id', $id)->orWhere('code', $id))
             ->firstOrFail();
 
         $data = $product->toArray();
@@ -232,8 +231,7 @@ class ProductController extends Controller
     public function findByBarcode($barcode)
     {
         $product = Product::with(['category', 'brand', 'tax', 'variants'])
-            ->where('barcode', $barcode)
-            ->orWhere('code', $barcode)
+            ->where(fn ($q) => $q->where('barcode', $barcode)->orWhere('code', $barcode))
             ->first();
 
         if (! $product) {
@@ -278,8 +276,7 @@ class ProductController extends Controller
     public function update(Request $request, $id)
     {
         return DB::transaction(function () use ($request, $id) {
-            $product = Product::where('id', $id)
-                ->orWhere('code', $id)
+            $product = Product::where(fn ($q) => $q->where('id', $id)->orWhere('code', $id))
                 ->firstOrFail();
 
             $data = $this->extractProductData($request, $product);
@@ -304,8 +301,7 @@ class ProductController extends Controller
 
     public function destroy($id)
     {
-        $product = Product::where('id', $id)
-            ->orWhere('code', $id)
+        $product = Product::where(fn ($q) => $q->where('id', $id)->orWhere('code', $id))
             ->firstOrFail();
 
         $product->delete();

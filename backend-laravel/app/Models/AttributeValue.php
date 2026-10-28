@@ -9,14 +9,26 @@ class AttributeValue extends Model
 {
     use HasFactory;
 
-    protected $guarded = ['id', 'created_at', 'updated_at'];
+    protected $fillable = [
+        'store_id',
+        'company_id',
+        'attribute_type_id',
+        'name',
+        'value',
+        'code',
+        'sort_order',
+        'extra_data',
+        'is_active',
+        'created_by',
+        'updated_by',
+    ];
 
     protected function casts(): array
     {
         return [
-            'is_active'   => 'boolean',
-            'sort_order'  => 'integer',
-            'extra_data'  => 'array',
+            'is_active' => 'boolean',
+            'sort_order' => 'integer',
+            'extra_data' => 'array',
         ];
     }
 

@@ -78,6 +78,23 @@ class StoreLicenceTest extends TestCase
         }
     }
 
+    public function test_subscription_summary_reports_verified_paid_and_trial_store_licences(): void
+    {
+        [$activation, $store, $claims] = $this->setupStore();
+        $claims['activeTill'] = now()->addDays(10)->timestamp;
+        $store->update(['platform_licence_token' => $this->token($claims),
+            'platform_subscription' => ['plan_name' => 'Standard', 'is_trial' => false]]);
+        Sanctum::actingAs(User::create(['name' => 'Subscription owner', 'username' => 'subscription-owner',
+            'email' => 'subscription-owner@example.test', 'password' => 'secret', 'role' => 'admin',
+            'platform_company_code' => $activation->company_code]));
+        $this->getJson('/api/companies/subscription/status')->assertOk()
+            ->assertJsonPath('data.status', 'ACTIVE')->assertJsonPath('data.stores.0.licence_valid', true)
+            ->assertJsonPath('data.stores.0.plan', 'Standard')->assertJsonPath('data.onTrial', false);
+        $store->update(['platform_subscription' => ['plan_name' => 'Trial', 'is_trial' => true]]);
+        $this->getJson('/api/companies/subscription/status')->assertOk()
+            ->assertJsonPath('data.stores.0.licence_valid', true)->assertJsonPath('data.onTrial', true);
+    }
+
     public function test_offline_grace_never_exceeds_commercial_expiry_and_suspension_overrides(): void
     {
         [$activation, $store, $claims] = $this->setupStore();

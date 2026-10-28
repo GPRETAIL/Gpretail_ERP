@@ -26,10 +26,12 @@ class SalesApprovalController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->input('search');
-            $query->where('approval_no', 'like', "%{$search}%")
-                ->orWhereHas('customer', function ($cq) use ($search) {
-                    $cq->where('name', 'like', "%{$search}%");
-                });
+            $query->where(function ($q) use ($search) {
+                $q->where('approval_no', 'like', "%{$search}%")
+                    ->orWhereHas('customer', function ($cq) use ($search) {
+                        $cq->where('name', 'like', "%{$search}%");
+                    });
+            });
         }
 
         if ($request->filled('status')) {

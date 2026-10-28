@@ -24,7 +24,7 @@ class HrConfigurationController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->input('search');
-            $query->where('name', 'like', "%{$search}%")->orWhere('code', 'like', "%{$search}%");
+            $query->where(fn ($q) => $q->where('name', 'like', "%{$search}%")->orWhere('code', 'like', "%{$search}%"));
         }
 
         if ($request->boolean('paginate')) {
@@ -126,7 +126,7 @@ class HrConfigurationController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->input('search');
-            $query->where('name', 'like', "%{$search}%")->orWhere('code', 'like', "%{$search}%");
+            $query->where(fn ($q) => $q->where('name', 'like', "%{$search}%")->orWhere('code', 'like', "%{$search}%"));
         }
 
         if ($request->boolean('paginate')) {

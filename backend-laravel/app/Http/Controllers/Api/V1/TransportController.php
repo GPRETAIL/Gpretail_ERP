@@ -50,7 +50,7 @@ class TransportController extends Controller
                     'not_equals' => $query->where($col, '!=', $val),
                     'starts' => $query->where($col, 'like', "{$val}%"),
                     'ends' => $query->where($col, 'like', "%{$val}"),
-                    'blank' => $query->whereNull($col)->orWhere($col, ''),
+                    'blank' => $query->where(fn ($q) => $q->whereNull($col)->orWhere($col, '')),
                     'not_blank' => $query->whereNotNull($col)->where($col, '!=', ''),
                     default => $query->where($col, 'like', "%{$val}%"),
                 };

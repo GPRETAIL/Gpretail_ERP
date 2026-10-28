@@ -119,7 +119,7 @@ class SizeController extends Controller
 
     public function show($id)
     {
-        $size = Size::with('sizeGroup')->where('id', $id)->orWhere('code', $id)->first();
+        $size = Size::with('sizeGroup')->where(fn ($q) => $q->where('id', $id)->orWhere('code', $id))->first();
 
         if (! $size) {
             return response()->json([
@@ -178,7 +178,7 @@ class SizeController extends Controller
 
     public function update(Request $request, $id)
     {
-        $size = Size::where('id', $id)->orWhere('code', $id)->first();
+        $size = Size::where(fn ($q) => $q->where('id', $id)->orWhere('code', $id))->first();
 
         if (! $size) {
             return response()->json([
@@ -219,7 +219,7 @@ class SizeController extends Controller
 
     public function destroy($id)
     {
-        $size = Size::where('id', $id)->orWhere('code', $id)->first();
+        $size = Size::where(fn ($q) => $q->where('id', $id)->orWhere('code', $id))->first();
 
         if (! $size) {
             return response()->json([
@@ -243,7 +243,7 @@ class SizeController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->input('search');
-            $query->where('name', 'like', "%{$search}%")->orWhere('code', 'like', "%{$search}%");
+            $query->where(fn ($q) => $q->where('name', 'like', "%{$search}%")->orWhere('code', 'like', "%{$search}%"));
         }
 
         if ($request->boolean('paginate')) {
@@ -266,7 +266,7 @@ class SizeController extends Controller
 
     public function groupsShow($id)
     {
-        $group = SizeGroup::with('sizes')->where('id', $id)->orWhere('code', $id)->first();
+        $group = SizeGroup::with('sizes')->where(fn ($q) => $q->where('id', $id)->orWhere('code', $id))->first();
 
         if (! $group) {
             return response()->json([
@@ -315,7 +315,7 @@ class SizeController extends Controller
 
     public function groupsUpdate(Request $request, $id)
     {
-        $group = SizeGroup::where('id', $id)->orWhere('code', $id)->first();
+        $group = SizeGroup::where(fn ($q) => $q->where('id', $id)->orWhere('code', $id))->first();
 
         if (! $group) {
             return response()->json([
@@ -356,7 +356,7 @@ class SizeController extends Controller
 
     public function groupsDestroy($id)
     {
-        $group = SizeGroup::where('id', $id)->orWhere('code', $id)->first();
+        $group = SizeGroup::where(fn ($q) => $q->where('id', $id)->orWhere('code', $id))->first();
 
         if (! $group) {
             return response()->json([

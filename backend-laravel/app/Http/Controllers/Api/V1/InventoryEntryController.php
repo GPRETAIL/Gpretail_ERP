@@ -31,8 +31,7 @@ class InventoryEntryController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->input('search');
-            $query->where('entry_no', 'like', "%{$search}%")
-                ->orWhere('notes', 'like', "%{$search}%");
+            $query->where(fn ($q) => $q->where('entry_no', 'like', "%{$search}%")->orWhere('notes', 'like', "%{$search}%"));
         }
 
         if ($request->filled('status')) {

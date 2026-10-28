@@ -121,6 +121,9 @@ class ItemController extends Controller
 
         // Handle image upload if present
         if ($request->hasFile('image')) {
+            $request->validate([
+                'image' => ['file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            ]);
             $path = $request->file('image')->store('products', 'public');
             $data['image'] = '/storage/'.$path;
         }
@@ -174,8 +177,7 @@ class ItemController extends Controller
     public function show($id)
     {
         $item = Product::with(['category', 'brand', 'tax', 'stocks', 'variants', 'itemProduct', 'size:id,name'])
-            ->where('id', $id)
-            ->orWhere('code', $id)
+            ->where(fn ($q) => $q->where('id', $id)->orWhere('code', $id))
             ->firstOrFail();
 
         return response()->json(['success' => true, 'data' => $this->formatItem($item)]);
@@ -197,8 +199,7 @@ class ItemController extends Controller
 
     public function update(Request $request, $id)
     {
-        $item = Product::where('id', $id)
-            ->orWhere('code', $id)
+        $item = Product::where(fn ($q) => $q->where('id', $id)->orWhere('code', $id))
             ->firstOrFail();
 
         $data = $this->extractItemData($request, $item);
@@ -215,8 +216,7 @@ class ItemController extends Controller
 
     public function destroy($id)
     {
-        $item = Product::where('id', $id)
-            ->orWhere('code', $id)
+        $item = Product::where(fn ($q) => $q->where('id', $id)->orWhere('code', $id))
             ->firstOrFail();
 
         $item->delete();

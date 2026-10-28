@@ -28,10 +28,12 @@ class DealerInvoiceController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->input('search');
-            $query->where('invoice_no', 'like', "%{$search}%")
-                ->orWhereHas('customer', function ($cq) use ($search) {
-                    $cq->where('name', 'like', "%{$search}%");
-                });
+            $query->where(function ($q) use ($search) {
+                $q->where('invoice_no', 'like', "%{$search}%")
+                    ->orWhereHas('customer', function ($cq) use ($search) {
+                        $cq->where('name', 'like', "%{$search}%");
+                    });
+            });
         }
 
         return $query;

@@ -29,11 +29,12 @@ class ProductFormData
         'purchase_entry_attributes' => ['purchase_entry_attributes', 'purchaseEntryAttrs'],
         'cost_price' => ['cost_price'], 'selling_price' => ['selling_price'], 'mrp' => ['mrp'],
         'min_stock' => ['min_stock'], 'max_stock' => ['max_stock'], 'is_active' => ['active', 'is_active'],
-        'description' => ['description'], 'image' => ['image'],
+        'description' => ['description'], 'image' => ['image'], 'pack_size' => ['pack_size', 'packSize'],
     ];
 
     public function prepare(Request $request, ?Product $existing = null): array
     {
+        $request->validate(['pack_size' => 'nullable|integer|min:0', 'packSize' => 'nullable|integer|min:0']);
         $input = $request->all();
         $data = [];
         foreach (self::INPUTS as $field => $aliases) {

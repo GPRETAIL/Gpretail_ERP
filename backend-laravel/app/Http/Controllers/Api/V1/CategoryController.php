@@ -54,7 +54,7 @@ class CategoryController extends Controller
                     'not_equals' => $query->where($col, '!=', $val),
                     'starts' => $query->where($col, 'like', "{$val}%"),
                     'ends' => $query->where($col, 'like', "%{$val}"),
-                    'blank' => $query->whereNull($col)->orWhere($col, ''),
+                    'blank' => $query->where(fn ($q) => $q->whereNull($col)->orWhere($col, '')),
                     'not_blank' => $query->whereNotNull($col)->where($col, '!=', ''),
                     default => $query->where($col, 'like', "%{$val}%"), // 'contains'
                 };
@@ -104,7 +104,7 @@ class CategoryController extends Controller
             return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
-        $category = Category::create($request->all());
+        $category = Category::create($request->only(['parent_id', 'name', 'code', 'description', 'is_active']));
 
         return response()->json([
             'success' => true,
@@ -126,7 +126,7 @@ class CategoryController extends Controller
             return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
-        $category->update($request->all());
+        $category->update($request->only(['parent_id', 'name', 'code', 'description', 'is_active']));
 
         return response()->json([
             'success' => true,

@@ -9,7 +9,18 @@ class SizeGroup extends Model
 {
     use HasFactory;
 
-    protected $guarded = ['id', 'created_at', 'updated_at'];
+    protected $fillable = [
+        'store_id',
+        'company_id',
+        'name',
+        'code',
+        'description',
+        'is_active',
+        'created_by',
+        'updated_by',
+        'sort_order',
+        'enable_size_ratio',
+    ];
 
     protected function casts(): array
     {
