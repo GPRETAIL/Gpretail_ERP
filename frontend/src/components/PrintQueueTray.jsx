@@ -16,7 +16,7 @@ const formatRelativeTime = (timestamp) => {
   return `${diffHours}h ago`;
 };
 
-const JobRow = ({ job, STATUS, onCancel, onRetry }) => (
+const JobRow = ({ job, STATUS, onCancel, onRetry, onBrowserPrint }) => (
   <Box sx={{ borderBottom: 1, borderColor: "divider", px: 2, py: 1.25, "&:last-of-type": { borderBottom: 0 } }}>
     <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 1 }}>
       <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1, minWidth: 0 }}>
@@ -40,7 +40,7 @@ const JobRow = ({ job, STATUS, onCancel, onRetry }) => (
             {getPrintJobLabel(job)}
           </Typography>
           <Box sx={{ fontSize: 11, color: "text.secondary", display: "flex", alignItems: "center", gap: 0.75 }}>
-            <Box component="span" sx={{ textTransform: "capitalize" }}>{job.status}</Box>
+            <Box component="span" sx={{ textTransform: "capitalize" }}>{job.statusUnknown ? "Awaiting confirmation" : job.status}</Box>
             <Box component="span">&middot;</Box>
             <Box component="span">{formatRelativeTime(job.createdAt)}</Box>
             {job.totalCopies > 1 && (
@@ -77,9 +77,10 @@ const JobRow = ({ job, STATUS, onCancel, onRetry }) => (
             flexShrink: 0, border: 0, bgcolor: "transparent", cursor: "pointer", "&:hover": { textDecoration: "underline" },
           }}
         >
-          <RotateCcw size={12} /> Retry
+          <RotateCcw size={12} /> Check printer / Reprint
         </Box>
       )}
+      {job.status === STATUS.FAILED && job.html && <Box component="button" type="button" onClick={() => onBrowserPrint(job.id)} sx={{ border: 0, bgcolor: "transparent", color: "primary.main", cursor: "pointer", fontSize: 11 }}>Print using browser</Box>}
     </Box>
 
     {job.totalCopies > 1 && job.status === STATUS.PRINTING && (
@@ -100,6 +101,7 @@ const PrintQueueTray = ({
   connected,
   onCancel,
   onRetry,
+  onBrowserPrint,
   onClearFinished,
 }) => {
   const { navigateActiveTab } = useTabs();
@@ -152,7 +154,7 @@ const PrintQueueTray = ({
             </Box>
           ) : (
             [...jobs].reverse().map((job) => (
-              <JobRow key={job.id} job={job} STATUS={STATUS} onCancel={onCancel} onRetry={onRetry} />
+              <JobRow key={job.id} job={job} STATUS={STATUS} onCancel={onCancel} onRetry={onRetry} onBrowserPrint={onBrowserPrint} />
             ))
           )}
         </Box>

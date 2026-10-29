@@ -6,7 +6,7 @@ import { useSelector } from "react-redux";
 import { CheckCircle2, Download, RefreshCw, Save, Unplug } from "lucide-react";
 import { toast } from "react-toastify";
 import { alpha } from "@mui/material/styles";
-import { Box, Button, MenuItem, Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from "@mui/material";
+import { Box, Button, Checkbox, FormControlLabel, MenuItem, Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from "@mui/material";
 import api from "../../api/axios";
 import { usePrintContext } from "../../context/PrintContext";
 import {
@@ -19,7 +19,7 @@ import { muiFieldSx } from "../../theme/formControlSizes";
 
 const DEFAULT_PRINTER_SERVICE_URL =
   import.meta.env.VITE_LOCAL_PRINTER_SERVICE_URL ||
-  (import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_PROXY_TARGET || "http://localhost:8080").replace(/^http/i, "ws");
+  "ws://127.0.0.1:5001";
 
 const PRINTER_FUNCTION_OPTIONS = [
   { value: "", label: "Not assigned" },
@@ -53,6 +53,8 @@ export default function PrintingConfiguration() {
     serviceDetected,
     connectPrinter,
     disconnect,
+    localPrintingEnabled,
+    setLocalPrintingEnabled,
   } = usePrintContext();
 
   const deviceId = useMemo(() => getPrintConfigDeviceId(), []);
@@ -133,6 +135,7 @@ export default function PrintingConfiguration() {
   });
 
   const handleConnectService = async () => {
+    setLocalPrintingEnabled(true);
     setConnecting(true);
     try {
       await connectPrinter();
@@ -321,6 +324,7 @@ export default function PrintingConfiguration() {
             </Box>
 
             <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", rowGap: 1 }}>
+              <FormControlLabel label="Enable local silent printing" control={<Checkbox checked={localPrintingEnabled !== false} onChange={(_, enabled) => setLocalPrintingEnabled(enabled)} />} />
               {sessionConnected ? (
                 <Button
                   type="button"
@@ -337,7 +341,7 @@ export default function PrintingConfiguration() {
                   disabled={connecting}
                   className="glass-btn glass-btn-primary"
                 >
-                  {connecting ? "Connecting..." : "Connect Service"}
+                  {connecting ? "Connecting..." : "Reconnect"}
                 </Button>
               )}
 
@@ -363,6 +367,7 @@ export default function PrintingConfiguration() {
                 Refresh
               </Button>
             </Stack>
+            <Typography variant="body2" sx={{ mt: 1 }}>If the connector is running but connection fails, allow local-network access for this ERP site in browser settings. Run install_autostart.bat from the downloaded package to start the connector at Windows sign-in. Automatic retries stop after three attempts; use Reconnect to try again.</Typography>
 
             {installerMeta && (
               <Box sx={{ ...innerBoxSx, fontSize: 10.5, color: "text.secondary" }}>

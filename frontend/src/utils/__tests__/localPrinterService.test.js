@@ -73,13 +73,18 @@ afterEach(() => {
 });
 
 describe("detectLocalPrinterService", () => {
-  it("falls through to a later candidate instead of giving up on the first", async () => {
+  it("shares concurrent discovery callers", async () => {
+    const { detectLocalPrinterService } = await loadModule();
+    await Promise.all([detectLocalPrinterService(), detectLocalPrinterService()]);
+    expect(FakeSocket.instances).toHaveLength(1);
+  });
+  it("uses only the bundled IPv4 plain-WebSocket endpoint", async () => {
     const { detectLocalPrinterService } = await loadModule();
     // Only the 127.0.0.1 form answers -- the localhost form is refused.
     FakeSocket.route = (url) => (url.includes("127.0.0.1") ? "open" : "fail");
 
     await expect(detectLocalPrinterService({ timeoutMs: 1800 })).resolves.toBe(true);
-    expect(FakeSocket.instances.length).toBeGreaterThan(1);
+    expect(FakeSocket.instances.map(socket => socket.url)).toEqual(["ws://127.0.0.1:5001"]);
   });
 
   it("reports false only when every candidate refuses", async () => {
@@ -158,5 +163,18 @@ describe("request path", () => {
 
     await connectLocalPrinterService();
     await expect(printWithLocalService({})).rejects.toThrow(/Nothing to print/i);
+  });
+
+  it("does not resend a print after an ambiguous response timeout", async () => {
+    vi.useFakeTimers();
+    const { connectLocalPrinterService, printWithLocalService, disconnectLocalPrinterService } = await loadModule();
+    await connectLocalPrinterService();
+    FakeSocket.reply = () => null;
+    const result = printWithLocalService({ html: "<div>Bill</div>", printerConfig: {} }).catch(error => error);
+    await vi.advanceTimersByTimeAsync(61000);
+    expect((await result).message).toMatch(/did not respond in time/);
+    expect(FakeSocket.instances.flatMap(socket => socket.sent.map(JSON.parse)).filter(message => message.Action === "Print")).toHaveLength(1);
+    await disconnectLocalPrinterService();
+    vi.useRealTimers();
   });
 });
