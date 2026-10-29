@@ -46,16 +46,16 @@ let jobCounter = 0;
 export const PrintProvider = ({ children }) => {
   const authUser = useSelector((state) => state.auth.user);
   const [localPrintingEnabled, setLocalPrintingEnabledState] = useState(() => localStorage.getItem("vynerix.localPrintingEnabled") !== "false");
-  const setLocalPrintingEnabled = useCallback((enabled) => {
-    localStorage.setItem("vynerix.localPrintingEnabled", String(enabled));
-    setLocalPrintingEnabledState(enabled);
-    if (!enabled) { void disconnectLocalPrinterService(); setPrinter(null); setServiceDetected(false); }
-  }, []);
   const [printer, setPrinter] = useState(null); // service info
   const [serviceDetected, setServiceDetected] = useState(false);
   const [jobs, setJobs] = useState([]);
   const processingRef = useRef(false);
   const cancelledRef = useRef(new Set());
+  const setLocalPrintingEnabled = useCallback((enabled) => {
+    localStorage.setItem("vynerix.localPrintingEnabled", String(enabled));
+    setLocalPrintingEnabledState(enabled);
+    if (!enabled) { void disconnectLocalPrinterService(); setPrinter(null); setServiceDetected(false); }
+  }, []);
 
   const connectPrinter = useCallback(async ({ silent = false } = {}) => {
     const info = await connectLocalPrinterService();
