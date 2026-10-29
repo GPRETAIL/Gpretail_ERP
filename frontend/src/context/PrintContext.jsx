@@ -15,9 +15,9 @@ import { buildEscposReceiptJob, isEscposReceiptEligible } from "../utils/escposR
 
 const PrintContext = createContext(null);
 
-// Detection walks every ws/wss candidate, so it needs a budget bigger than a single probe.
+// The bundled service has one IPv4 loopback endpoint.
 const DETECT_TIMEOUT_MS = 3000;
-const DETECT_RETRY_MS = 20000;
+const DETECT_RETRY_DELAYS = [2000, 5000, 15000];
 
 const STATUS = {
   QUEUED: "queued",
@@ -45,6 +45,12 @@ let jobCounter = 0;
 
 export const PrintProvider = ({ children }) => {
   const authUser = useSelector((state) => state.auth.user);
+  const [localPrintingEnabled, setLocalPrintingEnabledState] = useState(() => localStorage.getItem("vynerix.localPrintingEnabled") !== "false");
+  const setLocalPrintingEnabled = useCallback((enabled) => {
+    localStorage.setItem("vynerix.localPrintingEnabled", String(enabled));
+    setLocalPrintingEnabledState(enabled);
+    if (!enabled) { void disconnectLocalPrinterService(); setPrinter(null); setServiceDetected(false); }
+  }, []);
   const [printer, setPrinter] = useState(null); // service info
   const [serviceDetected, setServiceDetected] = useState(false);
   const [jobs, setJobs] = useState([]);
@@ -91,7 +97,8 @@ export const PrintProvider = ({ children }) => {
   }, []);
 
   const ensurePrinterSession = useCallback(async () => {
-    if (printer) return printer;
+    if (!localPrintingEnabled) throw new Error("Local printing is disabled. Use browser printing or enable the connector in Printing Configuration.");
+    if (printer && isLocalPrinterServiceConnected()) return printer;
 
     const detected = await detectLocalPrinterService({ timeoutMs: DETECT_TIMEOUT_MS });
     setServiceDetected(detected);
@@ -102,7 +109,7 @@ export const PrintProvider = ({ children }) => {
     }
 
     return connectPrinter({ silent: true });
-  }, [connectPrinter, printer]);
+  }, [connectPrinter, printer, localPrintingEnabled]);
 
   const disconnect = useCallback(async () => {
     if (!printer) return;
@@ -112,16 +119,18 @@ export const PrintProvider = ({ children }) => {
   }, [printer]);
 
   const sessionConnected = !!printer;
-  const connected = sessionConnected || serviceDetected;
+  const connected = localPrintingEnabled && (sessionConnected || serviceDetected);
 
   // Detection used to run exactly once at mount. If the connector was still starting -- or the
   // operator launched it after opening the app -- `connected` stayed false for the whole session
   // and every receipt silently fell back to the browser's print dialog. Re-probe while
   // disconnected, and again whenever the tab regains focus.
   useEffect(() => {
+    if (!localPrintingEnabled) return;
     let cancelled = false;
     let timer = null;
     let probing = false;
+    let attempt = 0;
 
     const probe = async () => {
       if (cancelled || probing || document.visibilityState === "hidden" || isLocalPrinterServiceConnected()) return;
@@ -139,31 +148,33 @@ export const PrintProvider = ({ children }) => {
     };
 
     const schedule = () => {
-      if (cancelled) return;
+      clearTimeout(timer);
+      if (cancelled || attempt >= DETECT_RETRY_DELAYS.length || isLocalPrinterServiceConnected() || document.visibilityState === "hidden") return;
       timer = setTimeout(async () => {
         if (!isLocalPrinterServiceConnected()) {
           await probe();
         }
         schedule();
-      }, DETECT_RETRY_MS);
+      }, DETECT_RETRY_DELAYS[attempt++]);
     };
 
     const onFocus = () => {
-      if (!isLocalPrinterServiceConnected()) {
-        probe();
+      if (document.visibilityState === "hidden") { clearTimeout(timer); timer = null; return; }
+      if (!probing && !isLocalPrinterServiceConnected() && attempt < DETECT_RETRY_DELAYS.length) {
+        clearTimeout(timer);
+        void probe().then(schedule);
       }
     };
 
-    probe();
-    schedule();
-    window.addEventListener("focus", onFocus);
+    void probe().then(schedule);
+    document.addEventListener("visibilitychange", onFocus);
 
     return () => {
       cancelled = true;
       if (timer) clearTimeout(timer);
-      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
     };
-  }, [connectPrinter]);
+  }, [connectPrinter, localPrintingEnabled]);
 
   const updateJob = useCallback((jobId, patch) => {
     setJobs((prev) => prev.map((j) => (j.id === jobId ? { ...j, ...patch } : j)));
@@ -271,9 +282,11 @@ export const PrintProvider = ({ children }) => {
           });
         } catch (err) {
           const message = err?.message || "Print failed";
+          const statusUnknown = /did not respond|connection closed|disconnected/i.test(message);
           updateJob(job.id, {
             status: STATUS.FAILED,
-            error: message,
+            statusUnknown,
+            error: statusUnknown ? `Print status unknown. Check the printer before reprinting. ${message}` : message,
             completedCopies: 0,
             currentCopy: 1,
           });
@@ -426,6 +439,7 @@ export const PrintProvider = ({ children }) => {
   const retryJob = useCallback((jobId) => {
     const job = jobs.find((j) => j.id === jobId);
     if (!job) return;
+    if (!window.confirm("Check the printer first: this job may already have printed. Print another copy?")) return;
     enqueue({
       html: job.html,
       receiptData: job.receiptData,
@@ -438,6 +452,17 @@ export const PrintProvider = ({ children }) => {
     });
   }, [jobs, enqueue]);
 
+  const browserPrintJob = useCallback(async (jobId) => {
+    const job = jobs.find(entry => entry.id === jobId);
+    if (!job?.html) { toast.info("Open the original document and use its browser Print option."); return; }
+    if (!window.confirm("Check whether the receipt already printed before opening browser printing.")) return;
+    try {
+      const { browserPrintHtml } = await import("../utils/posSaleReceiptPrinter");
+      browserPrintHtml(job.html, { copies: job.totalCopies || 1 });
+      toast.info("Browser print dialog opened. Confirm the printer and paper size there.");
+    } catch (error) { toast.error(error.message || "Unable to open browser printing"); }
+  }, [jobs]);
+
   const activeJobs = jobs.filter(
     (j) => j.status === STATUS.QUEUED || j.status === STATUS.PRINTING
   );
@@ -446,6 +471,9 @@ export const PrintProvider = ({ children }) => {
 
   const value = {
     printer,
+    localPrintingEnabled,
+    setLocalPrintingEnabled,
+    browserPrintJob,
     connected,
     sessionConnected,
     serviceDetected,

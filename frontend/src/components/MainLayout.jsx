@@ -47,7 +47,7 @@ const getPrintJobLabel = (job) =>
   typeof job?.label === "string" ? job.label : job?.label?.jobName || "Print job";
 
 const PrintStatusFooter = () => {
-  const { connected, hasActiveJobs, jobs, currentJob, cancelJob, retryJob, clearFinished, STATUS } =
+  const { connected, hasActiveJobs, jobs, currentJob, cancelJob, retryJob, browserPrintJob, clearFinished, STATUS } =
     usePrintContext();
   const syncStatus = useSyncStatus();
   const { activeActivity, recentActivity, clearRecentActivity, TYPE } = useTransferActivity();
@@ -89,6 +89,7 @@ const PrintStatusFooter = () => {
         connected={connected}
         onCancel={cancelJob}
         onRetry={retryJob}
+        onBrowserPrint={browserPrintJob}
         onClearFinished={clearFinished}
       />
 

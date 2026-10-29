@@ -9,12 +9,9 @@ const resolveWsCandidateUrls = () => {
   if (import.meta.env.VITE_LOCAL_PRINTER_SERVICE_URL) {
     return [import.meta.env.VITE_LOCAL_PRINTER_SERVICE_URL];
   }
-  return [
-    "ws://localhost:5001",
-    "ws://127.0.0.1:5001",
-    "wss://localhost:5001",
-    "wss://127.0.0.1:5001",
-  ];
+  // The bundled connector binds IPv4 loopback and does not serve TLS. Secure
+  // endpoints are supported only through an explicitly configured service URL.
+  return ["ws://127.0.0.1:5001"];
 };
 
 const DEFAULT_WS_CANDIDATES = resolveWsCandidateUrls();
@@ -72,6 +69,7 @@ let socket = null;
 let openPromise = null;
 let requestCounter = 0;
 let latestServiceVersion = "";
+let detectionPromise = null;
 
 // In-flight requests. Responses are matched by RequestId when the service echoes one back, and
 // fall back to FIFO order against genericQueue for the older builds that don't.
@@ -109,9 +107,6 @@ const extractError = (payload) => {
     ""
   );
 };
-
-const isRequestTimeoutError = (error) =>
-  /did not respond in time/i.test(String(error?.message || error || ""));
 
 const isSuccessResponse = (payload) => {
   if (!payload) return false;
@@ -336,7 +331,7 @@ const probeCandidateUrl = (url, timeoutMs) =>
 // Detection must try the same candidates connectLocalPrinterService does. Probing only the first
 // one reported "not detected" whenever the agent was reachable on a later candidate -- and callers
 // read that as "no silent printing", so POS fell through to the browser's print dialog.
-export const detectLocalPrinterService = async ({ timeoutMs = 1800 } = {}) => {
+const detectLocalPrinterServiceOnce = async ({ timeoutMs = 1800 } = {}) => {
   if (isLocalPrinterServiceConnected()) return true;
 
   const candidates = resolveWsCandidateUrls();
@@ -353,6 +348,13 @@ export const detectLocalPrinterService = async ({ timeoutMs = 1800 } = {}) => {
     }
   }
   return false;
+};
+
+export const detectLocalPrinterService = (options = {}) => {
+  if (!detectionPromise) {
+    detectionPromise = detectLocalPrinterServiceOnce(options).finally(() => { detectionPromise = null; });
+  }
+  return detectionPromise;
 };
 
 export const disconnectLocalPrinterService = async () => {
@@ -487,9 +489,10 @@ const runActionCandidates = async (
       const errorMessage =
         extractError(response) || `Printer service rejected action '${action}'.`;
       lastError = errorMessage;
+      if (!retryOnTimeout && !/unknown action|unsupported action|unrecognized action/i.test(errorMessage)) break;
     } catch (err) {
       lastError = err?.message || String(err);
-      if (!retryOnTimeout && isRequestTimeoutError(err)) {
+      if (!retryOnTimeout) {
         break;
       }
     }
