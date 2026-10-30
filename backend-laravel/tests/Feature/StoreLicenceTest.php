@@ -108,6 +108,31 @@ class StoreLicenceTest extends TestCase
         $this->assertFalse(app(StoreLicenceVerifier::class)->verify($store, $activation)['ok']);
     }
 
+    public function test_expired_licence_blocks_staff_login_and_reads_but_tenant_admin_can_renew(): void
+    {
+        [$activation, $store, $claims] = $this->setupStore();
+        $activation->update(['tenant_admin_email' => 'owner@example.test']);
+        $claims['activeTill'] = now()->subDay()->timestamp;
+        $store->update(['platform_licence_token' => $this->token($claims)]);
+        $owner = User::create(['name' => 'Owner', 'username' => 'expired-owner', 'email' => 'owner@example.test', 'password' => 'secret-pass', 'role' => 'admin', 'is_active' => true, 'platform_company_code' => $activation->company_code]);
+        $cashier = User::create(['name' => 'Cashier', 'username' => 'expired-cashier', 'email' => 'cashier@example.test', 'password' => 'secret-pass', 'role' => 'staff', 'is_active' => true, 'store_id' => $store->id, 'platform_company_code' => $activation->company_code]);
+
+        $this->postJson('/api/auth/login', ['username' => 'expired-cashier', 'password' => 'secret-pass'])
+            ->assertForbidden()->assertJsonPath('error_code', 'STORE_LICENCE_EXPIRED');
+        $this->postJson('/api/auth/login', ['username' => 'expired-owner', 'password' => 'secret-pass'])->assertOk();
+
+        Sanctum::actingAs($cashier);
+        $this->getJson('/api/sizes')->assertForbidden()->assertJsonPath('code', 'STORE_LICENCE_INVALID');
+        $this->getJson('/api/auth/me')->assertOk();
+        Sanctum::actingAs($owner);
+        $this->getJson('/api/sizes')->assertOk();
+        $this->postJson('/api/sizes', ['name' => 'After expiry'])->assertForbidden();
+
+        $claims['activeTill'] = now()->addMonth()->timestamp;
+        $store->update(['platform_licence_token' => $this->token($claims)]);
+        $this->postJson('/api/auth/login', ['username' => 'expired-cashier', 'password' => 'secret-pass'])->assertOk();
+    }
+
     public function test_one_expired_store_does_not_block_a_valid_sibling(): void
     {
         [$activation, $store, $claims] = $this->setupStore();

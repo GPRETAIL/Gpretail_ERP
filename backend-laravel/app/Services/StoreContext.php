@@ -43,20 +43,41 @@ class StoreContext
         return $stores->count() === 1 ? $stores->first() : null;
     }
 
+    /** The registered company administrator, who keeps access to renew/activate expired stores. */
+    public function isTenantAdmin(User $user): bool
+    {
+        $activation = PlatformActivation::current();
+
+        return $user->is_active && $user->role === 'admin' && ! $user->store_id
+            && $user->platform_company_code && $activation?->activated
+            && $user->platform_company_code === $activation->company_code
+            && strcasecmp($user->email, $activation->tenant_admin_email ?? '') === 0;
+    }
+
+    /**
+     * Stores this user may operate under a valid signed licence. Staff of an expired
+     * store are signed out entirely; only the Tenant Admin keeps a session to renew.
+     *
+     * @return Collection<int, Store>
+     */
+    public function licensedStores(User $user): Collection
+    {
+        $activation = PlatformActivation::current();
+        $verifier = app(StoreLicenceVerifier::class);
+
+        return $this->stores($user)->filter(fn (Store $store) => $store->is_active
+            && (! ($store->platform_store_id || $activation?->activated) || $verifier->verify($store, $activation)['ok']))->values();
+    }
+
     public function authFields(User $user): array
     {
         $stores = $this->stores($user);
         // ResolveStoreContext has already checked this selection against this user's stores.
         $selected = $stores->firstWhere('id', request()->attributes->get('store_context_id'))
             ?? ($stores->count() === 1 ? $stores->first() : null);
-        $activation = PlatformActivation::current();
         $counter = PosCounter::find($user->counter_id, $selected?->id);
         // A selected store in the response is not the account's fixed store assignment.
-        // Issue the tenant identity explicitly, using the registered company administrator.
-        $tenantAdmin = $user->is_active && $user->role === 'admin' && ! $user->store_id
-            && $user->platform_company_code && $activation?->activated
-            && $user->platform_company_code === $activation->company_code
-            && strcasecmp($user->email, $activation->tenant_admin_email ?? '') === 0;
+        $tenantAdmin = $this->isTenantAdmin($user);
 
         return [
             'counter_id' => $counter?->id,

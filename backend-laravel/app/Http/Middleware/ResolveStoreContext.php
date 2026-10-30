@@ -79,7 +79,19 @@ class ResolveStoreContext
             return $this->error('STORE_INACTIVE', 'This store is inactive. Contact your administrator.', 403);
         }
 
-        if ($write) {
+        // Staff lose read access too once a licence lapses; only the Tenant Admin keeps
+        // read access (renewal, activation, history) while writes stay blocked for everyone.
+        // Mobile sessions already fail closed in their own access middleware with mobile-specific codes.
+        $staffRead = ! $write && ! $management && $request->user()->platform_company_code
+            && ! in_array('client:mobile', $request->user()->currentAccessToken()?->abilities ?? [], true)
+            && ! $this->context->isTenantAdmin($request->user());
+        if ($staffRead && ! $selected) {
+            $ids = $this->context->licensedStores($request->user())->pluck('id')->all();
+            if (! $ids) {
+                return $this->error('STORE_LICENCE_INVALID', 'Store licence is invalid or expired. Ask your company administrator to renew it.', 403);
+            }
+        }
+        if ($selected && ($write || $staffRead)) {
             $store = $stores->firstWhere('id', $selected);
             $activation = PlatformActivation::current();
             if ($store->platform_store_id || $activation?->activated) {

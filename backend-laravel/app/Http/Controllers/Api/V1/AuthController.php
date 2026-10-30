@@ -145,6 +145,15 @@ class AuthController extends Controller
                     'active_till' => $entry['data']['active_till'] ?? $activation->active_till,
                 ]);
             }
+            $context = app(StoreContext::class);
+            // A user with no stores yet still signs in to activate one; the store gate applies after that.
+            if (! $context->isTenantAdmin($user) && $context->stores($user)->isNotEmpty() && $context->licensedStores($user)->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'error_code' => 'STORE_LICENCE_EXPIRED',
+                    'message' => 'Your store subscription has expired or is not active. Ask your company administrator to renew it.',
+                ], 403);
+            }
         }
 
         // Create Sanctum Token
