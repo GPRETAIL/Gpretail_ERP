@@ -52,6 +52,12 @@ POST `theme-history/{revisionId}/restore` restores within the same scope, with a
 revision check and current validation. Company restoration also restores its override
 policy, excluding stores that no longer exist or belong to the company.
 
+Presets & History also offers Delete for one revision and Clear history for the
+selected scope, both with confirmation. DELETE `theme-history/{revisionId}` and
+DELETE `theme-history` require `expected_revision`. Removal erases saved restore
+data and hides those revisions without changing the active theme, presets or draft.
+Revision numbers remain monotonic; removed revisions cannot be restored.
+
 ## Refresh and offline behavior
 
 Auth responses resolve the effective company/store theme. After publishing, the

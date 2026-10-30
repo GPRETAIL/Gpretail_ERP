@@ -68,9 +68,6 @@ const CATEGORIES = [
   { value: "general", label: "General Support & Training", icon: <LifeBuoy size={16} color="#6b7280" /> },
 ];
 
-// Public OCI server verification key, not a password or a private signing key.
-const SUPPORT_PUBLIC_KEY = "z75SamE4hzzLG447isRu3UqnK7GKFBaKFXcb9fK37Es=";
-
 export default function RemoteSupport() {
   // Form State
   const [clientId, setClientId] = useState("");
@@ -418,17 +415,6 @@ export default function RemoteSupport() {
                   </Box>
                 </Box>
 
-                <Alert severity="info" sx={{ "& code": { overflowWrap: "anywhere" } }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>Use the Vynerix support server</Typography>
-                  <Typography variant="body2">In the client, open Settings → Network → ID / Relay server and apply these public settings before sharing your ID. The customer app and technician browser must use the same server.</Typography>
-                  <Typography variant="body2" sx={{ mt: 1 }}>ID server: <code>remote.gpsoftware.in</code><br />Relay server: <code>remote.gpsoftware.in:21117</code><br />Key: <code>{SUPPORT_PUBLIC_KEY}</code><br />API server: leave empty.</Typography>
-                  <Button size="small" startIcon={<Copy size={14} />} onClick={async () => {
-                    try { await navigator.clipboard.writeText(SUPPORT_PUBLIC_KEY); toast.success("Public server key copied"); }
-                    catch { toast.error("Clipboard unavailable. Select and copy the public key above."); }
-                  }}>Copy public server key</Button>
-                  <Typography variant="caption" display="block">Already configured? Keep the app open and use its current ID. The browser alone can share a screen, but full desktop control requires the customer app.</Typography>
-                </Alert>
-
                 {/* Step 2 */}
                 <Box sx={{ display: "flex", gap: 2 }}>
                   <Box
@@ -457,7 +443,7 @@ export default function RemoteSupport() {
                     </Typography>
                     {supportDevice === "android" && <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>Android may ask for screen-sharing approval again after restarting the app. Protected screens may appear blank. Stop sharing in RustDesk or Android to end access; closing this ERP page does not stop it.</Typography>}
                     <Typography variant="caption" sx={{ color: "primary.main", fontWeight: 600, display: "block", mt: 0.5 }}>
-                      💡 Tip: Click the three dots [ ⋮ ] next to ID to copy your ID.
+                      Enter the Client ID and temporary Password shown in the tool into the request form. Keep the tool open while receiving support.
                     </Typography>
                   </Box>
                 </Box>

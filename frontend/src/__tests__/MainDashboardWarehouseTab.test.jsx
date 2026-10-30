@@ -5,6 +5,8 @@ import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import authReducer from "../features/authSlice";
 import Dashboard from "../pages/Dashboard";
+// Test tab behavior after the real pane is loaded, independently of cold filesystem imports.
+import "../components/WarehouseDashboardTabPane";
 import api from "../api/axios";
 
 vi.mock("../api/axios", () => ({

@@ -1,6 +1,3 @@
-import html2canvas from "html2canvas";
-import { jsPDF } from "jspdf";
-
 const PX_PER_INCH = 96;
 const MM_PER_INCH = 25.4;
 
@@ -13,6 +10,10 @@ const MM_PER_INCH = 25.4;
 // (no page breaks) so the PDF looks like the physical receipt; A4 keeps the standard page size and
 // slices tall content across A4 pages when needed.
 const renderReceiptHtmlToPdf = async (html, { paperSize } = {}) => {
+  const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+    import("html2canvas"),
+    import("jspdf"),
+  ]);
   const isA4 = String(paperSize || "").toUpperCase() === "A4";
   const iframe = document.createElement("iframe");
   iframe.style.position = "fixed";

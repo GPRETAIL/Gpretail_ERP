@@ -273,10 +273,10 @@ const CODE_TYPE_OPTIONS = [
   { label: "Agent", value: "Agent" },
 ];
 
-const Supplier = () => {
+const Supplier = ({ initialCreate = false }) => {
   const navigate = useNavigate();
   const formContainerRef = useRef(null);
-  const [showSearchPage, setShowSearchPage] = useState(true);
+  const [showSearchPage, setShowSearchPage] = useState(!initialCreate);
   const [activeTab, setActiveTab] = useState("Primary");
   const [currentId, setCurrentId] = useState(null);
   const storeMap = useStoreNameMap();

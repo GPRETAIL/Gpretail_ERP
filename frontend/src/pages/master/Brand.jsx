@@ -86,7 +86,7 @@ const buildBrandSig = (v) =>
     productList: v.productList,
   });
 
-const Brand = () => {
+const Brand = ({ initialCreate = false }) => {
   const navigate = useNavigate();
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
@@ -108,7 +108,7 @@ const Brand = () => {
   const [margin, setMargin] = useState("");
   const [productList, setProductList] = useState([]);
 
-  const [showSearchPage, setShowSearchPage] = useState(true);
+  const [showSearchPage, setShowSearchPage] = useState(!initialCreate);
   const [selectedRows, setSelectedRows] = useState([]);
 
   const [confirm, setConfirm] = useState({ open: false, id: null, name: "" });

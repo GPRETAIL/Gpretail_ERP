@@ -19,13 +19,14 @@ function ThemeEditor({ snapshot, prefix, companyScope, mode, reload, token, onBu
   const scopedApi = useMemo(() => {
     const config = { storeScopeId: prefix.startsWith("/companies/") ? prefix.split("/")[2] : undefined };
     return { get: (url, options) => api.get(url, { ...options, ...config }),
-      put: (url, body) => api.put(url, body, config), post: (url, body) => api.post(url, body, config), delete: url => api.delete(url, config) };
+      put: (url, body) => api.put(url, body, config), post: (url, body) => api.post(url, body, config), delete: (url, body) => api.delete(url, { ...config, ...(body ? { data: body } : {}) }) };
   }, [prefix]);
   const [draft, setDraft] = useState(() => normalizeTheme(meta.effective || snapshot.data));
   const [allowedStores, setAllowedStores] = useState(meta.allowed_store_ids || []);
   const [section, setSection] = useState(0);
   const [busy, setBusy] = useState(false);
   const [publish, setPublish] = useState(null);
+  const [historyRemoval, setHistoryRemoval] = useState(null);
   const [presetDialog, setPresetDialog] = useState(false);
   const [presetName, setPresetName] = useState("");
   const [olderHistory, setOlderHistory] = useState([]);
@@ -61,7 +62,7 @@ function ThemeEditor({ snapshot, prefix, companyScope, mode, reload, token, onBu
       }
       setOlderHistory([]); setOlderCursor(undefined);
       reloadLibrary();
-      setPublish(null); setPresetDialog(false);
+      setPublish(null); setPresetDialog(false); setHistoryRemoval(null);
     } catch (error) {
       toast.error(error.response?.status === 409 ? "Another administrator changed this theme. Reload the saved theme before applying again." : apiErrorMessage(error, "Unable to update theme"));
     } finally { setBusy(false); onBusy(false); }
@@ -133,10 +134,10 @@ function ThemeEditor({ snapshot, prefix, companyScope, mode, reload, token, onBu
               {library?.failed && <Alert severity="warning" action={<Button onClick={() => reloadLibrary()}>Retry</Button>}>Some presets or history could not be loaded.</Alert>}
               {!libraryLoading && !library?.presets?.length && <Typography>No saved presets yet.</Typography>}
               {(library?.presets || []).map(preset => <Stack direction="row" spacing={1} key={preset.id} sx={{ alignItems: "center", flexWrap: "wrap" }}><Typography sx={{ flex: 1 }}>{preset.name}</Typography><Button disabled={busy || !editable} onClick={() => { setDraft(normalizeTheme(preset.config)); setSection(0); }}>Preview Preset</Button><Button disabled={busy || !editable} onClick={() => { if (window.confirm(`Delete the preset “${preset.name}”?`)) run(() => scopedApi.delete(`${prefix}/theme-presets/${preset.id}`), "Preset deleted"); }}>Delete</Button></Stack>)}
-              <Typography component="h2" sx={{ fontSize: 13, fontWeight: 700 }}>Revision History</Typography>
+              <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}><Typography component="h2" sx={{ fontSize: 13, fontWeight: 700 }}>Revision History</Typography><Button color="error" disabled={busy || libraryLoading || !editable || !(library?.history?.length || olderHistory.length)} onClick={() => setHistoryRemoval({ all: true })}>Clear history</Button></Stack>
               <Typography sx={{ fontSize: 12 }}>Restoring creates a new revision and validates the saved colors again.</Typography>
-              {!libraryLoading && !library?.history?.length && <Typography>No revisions yet. Your current settings will be captured before the first change.</Typography>}
-              {[...(library?.history || []), ...olderHistory].map(revision => <Stack key={revision.id} direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap" }}><Box sx={{ flex: 1 }}><Typography sx={{ fontSize: 12 }}>Revision {revision.revision} · {revision.operation}</Typography><Typography sx={{ fontSize: 11, color: "text.secondary" }}>{revision.author || "Deleted user"} · {revision.created_at} UTC</Typography></Box><Button disabled={busy || !editable || revision.revision === meta.revision} onClick={() => setPublish({ restore: revision })}>Restore</Button></Stack>)}
+              {!libraryLoading && !library?.history?.length && !olderHistory.length && <Typography>No saved revisions. Applying a theme creates a new revision.</Typography>}
+              {[...(library?.history || []), ...olderHistory].map(revision => <Stack key={revision.id} direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap" }}><Box sx={{ flex: 1 }}><Typography sx={{ fontSize: 12 }}>Revision {revision.revision} · {revision.operation}</Typography><Typography sx={{ fontSize: 11, color: "text.secondary" }}>{revision.author || "Deleted user"} · {revision.created_at} UTC</Typography></Box><Button disabled={busy || !editable || revision.revision === meta.revision} onClick={() => setPublish({ restore: revision })}>Restore</Button><Button color="error" aria-label={`Delete revision ${revision.revision}`} disabled={busy || libraryLoading || !editable} onClick={() => setHistoryRemoval({ revision })}>Delete</Button></Stack>)}
               {(olderCursor === undefined ? library?.nextBefore : olderCursor) && <Button disabled={busy} onClick={loadOlder}>Load Earlier Revisions</Button>}
             </>}
           </Stack>
@@ -144,6 +145,11 @@ function ThemeEditor({ snapshot, prefix, companyScope, mode, reload, token, onBu
         <ThemeWorkspacePreview brand={draft} mode={mode} />
       </Box>
     </Box>
+    <Dialog open={historyRemoval !== null} onClose={() => { if (!busy) setHistoryRemoval(null); }} maxWidth="sm" fullWidth>
+      <DialogTitle>{historyRemoval?.all ? "Clear revision history?" : `Delete revision ${historyRemoval?.revision?.revision}?`}</DialogTitle>
+      <DialogContent><Typography>{historyRemoval?.all ? "Remove all saved revisions for this theme scope, including earlier pages?" : "Remove this saved restore point?"} This cannot be undone. The active theme, saved presets and unsaved draft will stay unchanged.</Typography></DialogContent>
+      <DialogActions><Button disabled={busy} onClick={() => setHistoryRemoval(null)}>Cancel</Button><Button variant="contained" color="error" disabled={busy} onClick={() => run(() => scopedApi.delete(`${prefix}/theme-history${historyRemoval.all ? "" : `/${historyRemoval.revision.id}`}`, { expected_revision: meta.revision }), historyRemoval.all ? "Revision history cleared" : "Theme revision deleted")}>{busy ? "Removing…" : historyRemoval?.all ? "Clear history" : "Delete revision"}</Button></DialogActions>
+    </Dialog>
     <Dialog open={publish !== null} onClose={() => { if (!busy) setPublish(null); }} maxWidth="sm" fullWidth>
       <DialogTitle>{publish?.restore ? "Restore theme revision" : publish === "inherit" ? "Use Company Theme" : "Apply Theme"}</DialogTitle>
       <DialogContent><Typography>This changes {companyScope ? "the company default" : "this store’s appearance"}. Print formats and business data are unaffected.</Typography>

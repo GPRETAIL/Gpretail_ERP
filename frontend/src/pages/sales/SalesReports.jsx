@@ -59,13 +59,8 @@ const round2 = (value) => Math.round(toNumber(value) * 100) / 100;
 const buildReportMeta = (key, title) => ({ key, title });
 
 const getAllRows = async (url, params = {}) => {
-  try {
-    const res = await api.get(url, { params: { ...params, all: "true" } });
-    return res.data?.data || [];
-  } catch {
-    const res = await api.get(url, { params });
-    return res.data?.data || [];
-  }
+  const res = await api.get(url, { params: { ...params, all: "true" } });
+  return res.data?.data || [];
 };
 
 const getSaleDate = (row) => row?.sale_at || row?.created_at || "";

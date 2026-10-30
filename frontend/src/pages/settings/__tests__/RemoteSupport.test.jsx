@@ -33,6 +33,15 @@ describe("Remote support", () => {
     expect(screen.queryByText("Support Engineers Online")).not.toBeInTheDocument();
   });
 
+  it("shows simple ID instructions without server configuration or the incorrect menu shortcut", async () => {
+    render(<RemoteSupport />);
+    expect(await screen.findByText("Open the Tool & Note Details")).toBeVisible();
+    expect(screen.getByText(/Enter the Client ID and temporary Password shown in the tool/)).toBeVisible();
+    expect(screen.queryByText("Use the Vynerix support server")).not.toBeInTheDocument();
+    expect(screen.queryByText(/ID server:/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/three dots/)).not.toBeInTheDocument();
+  });
+
   it("offers Android instructions and sends the device type with the request", async () => {
     support.requestRemoteSupport.mockResolvedValue({ id: 9, status: "waiting" });
     render(<RemoteSupport />);

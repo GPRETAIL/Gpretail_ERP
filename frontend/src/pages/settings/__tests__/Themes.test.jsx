@@ -133,3 +133,80 @@ it("loads earlier history without hiding the current revisions", async () => {
   await waitFor(() => expect(screen.getAllByRole("button", { name: "Restore", exact: true })).toHaveLength(2));
   expect(screen.queryByRole("button", { name: "Load Earlier Revisions" })).not.toBeInTheDocument();
 });
+
+it("confirms deletion of a revision and preserves the active theme and unsaved draft", async () => {
+  history = [{ id: 9, revision: 2, operation: "apply", author: "Owner" }];
+  api.delete.mockImplementation(async () => { history = []; return { data: { success: true } }; });
+  show(); await ready(); fireEvent.click(screen.getByRole("button", { name: /Liquid AI/i })); tab("Presets & History");
+  fireEvent.click(await screen.findByRole("button", { name: "Delete revision 2" }));
+  expect(api.delete).not.toHaveBeenCalled();
+  fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Cancel" }));
+  expect(api.delete).not.toHaveBeenCalled();
+  await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+  fireEvent.click(await screen.findByRole("button", { name: "Delete revision 2" }));
+  fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Delete revision" }));
+  await waitFor(() => expect(api.delete).toHaveBeenCalledWith("/tenant/theme-history/9", expect.objectContaining({ data: { expected_revision: 2 } })));
+  await waitFor(() => expect(screen.queryByRole("button", { name: "Delete revision 2" })).not.toBeInTheDocument());
+  expect(screen.getByLabelText("Preview probe")).toHaveTextContent("liquid_ai");
+  expect(api.put).not.toHaveBeenCalled(); expect(api.post).not.toHaveBeenCalled();
+});
+
+it("clears history only after confirming and does not apply a theme", async () => {
+  history = [{ id: 8, revision: 1, operation: "baseline" }, { id: 9, revision: 2, operation: "apply" }];
+  api.delete.mockImplementation(async () => { history = []; return { data: { success: true } }; });
+  show(); await ready(); tab("Presets & History");
+  fireEvent.click(await screen.findByRole("button", { name: "Clear history", exact: true }));
+  expect(api.delete).not.toHaveBeenCalled();
+  fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Clear history" }));
+  await waitFor(() => expect(api.delete).toHaveBeenCalledWith("/tenant/theme-history", expect.objectContaining({ data: { expected_revision: 2 } })));
+  await screen.findByText("No saved revisions. Applying a theme creates a new revision.");
+  expect(api.put).not.toHaveBeenCalled(); expect(api.post).not.toHaveBeenCalled();
+});
+
+it("keeps the history visible when removal fails", async () => {
+  history = [{ id: 9, revision: 1, operation: "baseline" }];
+  api.delete.mockRejectedValue({ response: { status: 500, data: { message: "Unable to remove revision" } } });
+  show(); await ready(); tab("Presets & History");
+  fireEvent.click(await screen.findByRole("button", { name: "Delete revision 1" }));
+  fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Delete revision" }));
+  await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Unable to remove revision"));
+  expect(screen.getByText("Revision 1 · baseline")).toBeInTheDocument();
+  expect(screen.getByRole("dialog")).toBeVisible();
+});
+
+it("sends the selected store scope when deleting its history", async () => {
+  history = [{ id: 9, revision: 1, operation: "baseline" }];
+  show(); await ready();
+  fireEvent.mouseDown(screen.getByRole("combobox", { name: "Theme scope" })); fireEvent.click(screen.getByRole("option", { name: "Store Override" }));
+  fireEvent.mouseDown(screen.getByRole("combobox", { name: "Store", exact: true })); fireEvent.click(screen.getByRole("option", { name: "Coffee 2" }));
+  await ready(); tab("Presets & History");
+  fireEvent.click(await screen.findByRole("button", { name: "Delete revision 1" }));
+  fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Delete revision" }));
+  await waitFor(() => expect(api.delete).toHaveBeenCalledWith("/companies/3/theme-history/9", { storeScopeId: "3", data: { expected_revision: 2 } }));
+});
+
+it("disables removal for an inherited theme that is locked to company branding", async () => {
+  history = [{ id: 9, revision: 1, operation: "baseline" }]; snapshot.meta.override_allowed = false;
+  show({ id: 2, role: "admin", company_id: 2 }); await ready(); tab("Presets & History");
+  expect(await screen.findByRole("button", { name: "Delete revision 1" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Clear history" })).toBeDisabled();
+  expect(api.delete).not.toHaveBeenCalled();
+});
+
+it("clears already-loaded earlier revisions from the screen as well", async () => {
+  let cleared = false;
+  const previous = api.get.getMockImplementation();
+  api.get.mockImplementation((url, config) => url.endsWith("/theme-history") ? Promise.resolve({ data: {
+    data: cleared ? [] : [{ id: config?.params ? 1 : 51, revision: config?.params ? 1 : 51, operation: "apply" }],
+    meta: { next_before: cleared || config?.params ? null : 2 },
+  } }) : previous(url, config));
+  api.delete.mockImplementation(async () => { cleared = true; return { data: { success: true } }; });
+  show(); await ready(); tab("Presets & History");
+  fireEvent.click(await screen.findByRole("button", { name: "Load Earlier Revisions" }));
+  await screen.findByRole("button", { name: "Delete revision 1" });
+  fireEvent.click(screen.getByRole("button", { name: "Clear history", exact: true }));
+  fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Clear history" }));
+  await screen.findByText("No saved revisions. Applying a theme creates a new revision.");
+  expect(screen.queryByRole("button", { name: "Delete revision 1" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Load Earlier Revisions" })).not.toBeInTheDocument();
+});

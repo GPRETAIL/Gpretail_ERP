@@ -27,8 +27,9 @@ export function SettlementCard({ settlements = {}, loading, privacyMode }) {
   return (
     <MetricCard
       eyebrow="Settlement"
-      title="Total settlement amount"
+      title="Settled invoice amount"
       value={loading ? "..." : formatMoney(settlements.amount)}
+      subtitle={loading ? "..." : `Outstanding: ${formatMoney(settlements.unsettledAmount)} (${settlements.unsettledCount || 0} unsettled bills)`}
       trend={settlements.trend}
       privacyMode={privacyMode}
     />
@@ -40,7 +41,9 @@ export function EmployeesCard({ employees = {}, loading, privacyMode }) {
     <MetricCard
       eyebrow="Employees"
       value={loading ? "..." : `${employees.present || 0}/${employees.total || 0}`}
-      valueSubheading="Present / total"
+      valueSubheading="Present today / active employees"
+      trend={employees.trend}
+      subtitle="Active employee count"
       privacyMode={privacyMode}
     />
   );
@@ -50,7 +53,7 @@ export function StockValueCard({ stockValue = {}, loading, privacyMode }) {
   return (
     <MetricCard
       eyebrow="Stock value"
-      title="Total stock value"
+      title="Current stock value"
       value={loading ? "..." : formatMoney(stockValue.amount)}
       trend={stockValue.trend}
       privacyMode={privacyMode}
