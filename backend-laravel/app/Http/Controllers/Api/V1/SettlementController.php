@@ -104,15 +104,21 @@ class SettlementController extends Controller
 
     public function unpaidBills(Request $request)
     {
+        $request->validate(['status' => 'sometimes|in:open,unsettled,credit,canceled,cancelled,all']);
         $status = $request->input('status', 'open');
 
         $query = PosSale::with(['customer', 'payments', 'appliedReturn', 'settlement', 'user'])
             ->whereIn('store_id', $request->attributes->get('store_context_ids', []));
 
-        if ($status !== 'all') {
-            $query->whereNotIn('status', ['CANCELLED', 'RETURNED', 'PAID', 'SETTLED']);
-            $query->where(fn ($q) => $q->whereIn('status', ['UNSETTLED', 'CREDIT'])
-                ->orWhereColumn('paid_amount', '<', 'grand_total'));
+        if (in_array($status, ['canceled', 'cancelled'], true)) {
+            $query->whereIn('status', ['CANCELLED', 'CANCELED']);
+        } elseif ($status !== 'all') {
+            $query->whereNotIn('status', ['CANCELLED', 'CANCELED', 'RETURNED', 'PAID', 'SETTLED']);
+            $query->where(fn ($q) => $q->where('status', 'UNSETTLED')
+                ->orWhereRaw('grand_total > COALESCE(paid_amount, 0) + COALESCE((SELECT total_refund FROM pos_returns WHERE pos_returns.id = pos_sales.applied_pos_return_id), 0)'));
+            if ($status === 'credit') {
+                $query->where(fn ($q) => $q->where('is_credit', true)->orWhere('status', 'CREDIT'));
+            }
         }
 
         if ($request->boolean('paginate')) {
@@ -129,7 +135,7 @@ class SettlementController extends Controller
             ]));
         }
 
-        $sales = $query->orderBy('sale_date', 'desc')->limit(50)->get();
+        $sales = $query->orderBy('sale_date', 'desc')->when(! $request->boolean('all'), fn ($q) => $q->limit(50))->get();
 
         return response()->json([
             'success' => true,
