@@ -357,6 +357,13 @@ class AuthController extends Controller
         ];
     }
 
+    public function counters(Request $request)
+    {
+        // Counter selection is account metadata, not permission to manage Settings.
+        // The shared configuration query retains the resolved store ownership scope.
+        return app(ConfigurationController::class)->getCounters($request);
+    }
+
     public function counter(Request $request)
     {
         $user = $request->user();

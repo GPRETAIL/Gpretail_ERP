@@ -19,7 +19,7 @@ it("requires one store and opens the shared store switcher instead of sending an
 it("loads and assigns counters in the active store scope", async () => {
   sessionStorage.setItem("activeStoreId", "3");
   render(<CounterAssignmentDialog open onClose={vi.fn()} />);
-  await waitFor(() => expect(api.get).toHaveBeenCalledWith("/configurations/counter", expect.objectContaining({ storeScopeId: "3" })));
+  await waitFor(() => expect(api.get).toHaveBeenCalledWith("/auth/counter", expect.objectContaining({ storeScopeId: "3" })));
   fireEvent.mouseDown(screen.getByRole("combobox", { name: "Counter" }));
   fireEvent.click(await screen.findByRole("option", { name: "COUNTER" }));
   fireEvent.click(screen.getByRole("button", { name: "Save", exact: true }));
