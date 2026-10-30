@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\ApprovalController;
 use App\Http\Controllers\Api\V1\ActivationController;
 use App\Http\Controllers\Api\V1\AgentController;
 use App\Http\Controllers\Api\V1\AnalyticalDashboardController;
@@ -421,6 +422,19 @@ $registerAppRoutes = function () {
     Route::get('pos-returns/{id}', [PosReturnController::class, 'show']);
 
     // Sales on Approval
+    // POS discount / refund approvals (see ApprovalService).
+    Route::get('approvals/limits', [ApprovalController::class, 'limits']);
+    Route::put('approvals/limits', [ApprovalController::class, 'updateLimits']);
+    Route::get('approvals/my-limit', [ApprovalController::class, 'myLimit']);
+    Route::put('approvals/pin', [ApprovalController::class, 'setPin'])->middleware('throttle:10,1');
+    Route::post('approvals/requests', [ApprovalController::class, 'requestApproval'])->middleware('throttle:30,1');
+    Route::post('approvals/pin-approve', [ApprovalController::class, 'pinApprove'])->middleware('throttle:10,1');
+    Route::get('approvals/requests/{id}', [ApprovalController::class, 'status'])->whereNumber('id');
+    Route::post('approvals/requests/{id}/withdraw', [ApprovalController::class, 'withdraw'])->whereNumber('id');
+    Route::get('approvals/inbox', [ApprovalController::class, 'inbox']);
+    Route::get('approvals/pending-count', [ApprovalController::class, 'pendingCount']);
+    Route::post('approvals/requests/{id}/approve', [ApprovalController::class, 'approve'])->whereNumber('id');
+    Route::post('approvals/requests/{id}/reject', [ApprovalController::class, 'reject'])->whereNumber('id');
     Route::get('sales-on-approval/next-approval-no', [SalesApprovalController::class, 'nextApprovalNo']);
     Route::get('sales-on-approval/pending-count', [SalesApprovalController::class, 'pendingCount']);
     Route::post('sales-on-approval/{id}/accept', [SalesApprovalController::class, 'accept']);

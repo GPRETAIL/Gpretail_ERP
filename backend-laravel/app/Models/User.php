@@ -40,6 +40,7 @@ class User extends Authenticatable
         'password',
         'remember_token',
         'google_sub',
+        'approval_pin_hash',
     ];
 
     protected function casts(): array

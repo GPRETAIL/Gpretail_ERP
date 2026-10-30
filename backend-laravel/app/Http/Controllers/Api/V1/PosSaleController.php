@@ -16,6 +16,7 @@ use App\Models\Product;
 use App\Models\Stock;
 use App\Models\Store;
 use App\Models\User;
+use App\Services\ApprovalService;
 use App\Services\DashboardBroadcastService;
 use App\Services\DocumentNumberService;
 use App\Services\GroupAggregationService;
@@ -393,6 +394,7 @@ class PosSaleController extends Controller
             'upiAmount' => 'nullable|numeric|min:0',
             'saleSaveAs' => 'nullable|in:paid_settled,unsettled',
             'checkoutKey' => 'nullable|uuid',
+            'approvalToken' => 'nullable|string|max:100',
         ]);
 
         if ($validator->fails()) {
@@ -475,6 +477,10 @@ class PosSaleController extends Controller
                     }
                 }
 
+                // Discounts or lowered prices beyond the cashier's limit need an approval token.
+                $approvals = app(ApprovalService::class);
+                $approval = $approvals->authorizeDiscount($user, (int) $storeId, $approvals->basketDiscount($itemsData, $products, $barcodes), $request->input('approvalToken'));
+
                 $subtotal = 0;
                 $taxTotal = 0;
                 $discountTotal = 0;
@@ -539,6 +545,7 @@ class PosSaleController extends Controller
                 ]);
 
                 app(PosCheckoutWriter::class)->write($sale, $itemsData, $products, $barcodes);
+                $approval?->forceFill(['status' => 'used', 'used_at' => now(), 'pos_sale_id' => $sale->id])->save();
 
                 foreach ([
                     ['mode' => 'CASH', 'amount' => $cashAmount, 'extra' => []],

@@ -1,4 +1,6 @@
 import LiveDateTime from "../../components/LiveDateTime";
+import ApprovalDialog from "../../components/ApprovalDialog";
+import { approvalRequirementFrom, isApprovalRequired } from "../../utils/approvals";
 import { runPosCheckout } from "../../utils/posCheckout";
 import { prepareCheckoutAttempt } from "./posCheckoutAttempt";
 import { mapPosStockRow, posStockOptions, mergePosStockRows } from "./posStockCatalog";
@@ -113,6 +115,8 @@ const POSSales = () => {
   // Pops automatically once per login if this user has no counter assigned yet -- previously they'd
   // only discover this was required when a sale failed to save.
   const [counterAssignmentOpen, setCounterAssignmentOpen] = useCounterAssignmentPrompt(authUser);
+  // Over-limit discount: holds the server's APPROVAL_REQUIRED details plus how to retry the save.
+  const [approvalRequirement, setApprovalRequirement] = useState(null);
 
 
   const [billNo, setBillNo] = useState(1);
@@ -2186,6 +2190,7 @@ const POSSales = () => {
     shouldPrint = false,
     paymentFormOverride,
     allowUnsettledWithoutPayment = posCheckoutPrefs.saleSaveAs === "unsettled",
+    approvalToken,
   } = {}) => {
     if (saveInFlight.current) return;
     if (!authUser?.counter_id) {
@@ -2193,11 +2198,12 @@ const POSSales = () => {
       toast.error("Please assign a counter before checkout");
       return;
     }
-    const payload =
+    const built =
       paymentFormOverride !== undefined
         ? buildSavePayload(paymentFormOverride, { allowUnsettledWithoutPayment })
         : buildSavePayload(undefined, { allowUnsettledWithoutPayment });
-    if (!payload) return;
+    if (!built) return;
+    const payload = approvalToken ? { ...built, approvalToken } : built;
 
     checkoutAttempt.current = prepareCheckoutAttempt(checkoutAttempt.current, payload, [authUser?.id, sessionStorage.getItem("activeStoreId"), authUser?.company_id, authUser?.store_id, authUser?.counter_id]);
     const attempt = checkoutAttempt.current;
@@ -2222,6 +2228,11 @@ const POSSales = () => {
       // Keep an uncertain write on the same node. Retrying it on another DB
       // could create a second invoice before store sync catches up.
       if (err?.config?.__routingTarget) attempt.target = err.config.__routingTarget;
+      if (isApprovalRequired(err)) {
+        // Nothing was saved; the dialog retries this same checkout once a supervisor approves.
+        setApprovalRequirement({ ...approvalRequirementFrom(err), retry: { shouldPrint, paymentFormOverride, allowUnsettledWithoutPayment } });
+        return;
+      }
       toast.error(err?.response?.data?.message || "Failed to save POS sale");
     } finally {
       saveInFlight.current = false;
@@ -3714,6 +3725,18 @@ const POSSales = () => {
         open={counterAssignmentOpen}
         onClose={() => setCounterAssignmentOpen(false)}
       />
+      {approvalRequirement && (
+        <ApprovalDialog
+          requirement={approvalRequirement}
+          onClose={() => setApprovalRequirement(null)}
+          onApproved={(token) => {
+            const { retry } = approvalRequirement;
+            setApprovalRequirement(null);
+            toast.success("Approved. Saving the sale…");
+            void handleSaveSale({ ...retry, approvalToken: token });
+          }}
+        />
+      )}
     </Box>
   );
 };

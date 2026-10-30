@@ -1,4 +1,6 @@
 import { browserPrintHtml } from "./posSalesUtils";
+import ApprovalDialog from "../../components/ApprovalDialog";
+import { approvalRequirementFrom, isApprovalRequired } from "../../utils/approvals";
 import { buildPosSaleReceiptHtml, buildPosReturnReceiptHtml } from "../../utils/posReceiptHtml";
 import { getSaleReceiptPaymentMethod } from "./posSalesUtils";
 import { formatSaleBillNo } from "../../utils/posBillNumbers";
@@ -109,6 +111,8 @@ const blankCustomer = {
 };
 
 const POSReturn = () => {
+  // Over-limit or no-receipt refund: the server's APPROVAL_REQUIRED details for the dialog.
+  const [approvalRequirement, setApprovalRequirement] = useState(null);
   const navigate = useNavigate();
   const billInputRef = useRef(null);
   const authUser = useSelector((state) => state.auth.user);
@@ -728,7 +732,7 @@ const POSReturn = () => {
     }
   };
 
-  const handleSaveReturn = async () => {
+  const handleSaveReturn = async (approvalToken) => {
     const isStandalone = sourceSale?.standalone === true;
     if (!isStandalone && (!sourceSale?.id || !sourceSale?.billNo)) {
       toast.error("Load a POS bill or scan a product barcode first");
@@ -768,6 +772,7 @@ const POSReturn = () => {
         cost: line.cost,
         discount: line.discount,
       })),
+      ...(typeof approvalToken === "string" ? { approvalToken } : {}),
     };
 
     setSaving(true);
@@ -781,6 +786,10 @@ const POSReturn = () => {
       handleResetEntry();
       await Promise.all([loadMasterData(), loadNextReturnNo(), refreshLatestPosDocument()]);
     } catch (err) {
+      if (isApprovalRequired(err)) {
+        setApprovalRequirement(approvalRequirementFrom(err));
+        return;
+      }
       toast.error(err?.response?.data?.message || "Failed to save POS return");
     } finally {
       setSaving(false);
@@ -1310,7 +1319,7 @@ const POSReturn = () => {
             fieldConfig={POS_RETURN_IMPORT_CONFIG}
           />
           <Button
-            onClick={handleSaveReturn}
+            onClick={() => handleSaveReturn()}
             disabled={saving || showSearchPage}
             className="glass-btn glass-btn-success"
             sx={{ display: "inline-flex", alignItems: "center" }}
@@ -1335,6 +1344,17 @@ const POSReturn = () => {
 
         {loading && <Typography sx={{ fontSize: 10.5, color: "text.secondary", px: 0.5 }}>Loading master data...</Typography>}
       </Stack>
+      {approvalRequirement && (
+        <ApprovalDialog
+          requirement={approvalRequirement}
+          onClose={() => setApprovalRequirement(null)}
+          onApproved={(token) => {
+            setApprovalRequirement(null);
+            toast.success("Approved. Saving the return…");
+            void handleSaveReturn(token);
+          }}
+        />
+      )}
     </Box>
   );
 };

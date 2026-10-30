@@ -82,6 +82,7 @@ const DealerInvoice = lazy(() => import("../pages/sales/DealerInvoice"));
 const DealerInvoiceReturn = lazy(() => import("../pages/sales/DealerInvoiceReturn"));
 const SalesOnApproval = lazy(() => import("../pages/sales/SalesOnApproval"));
 const ApprovalInbox = lazy(() => import("../pages/sales/ApprovalInbox"));
+const Approvals = lazy(() => import("../pages/sales/Approvals"));
 const Settlement = lazy(() => import("../pages/sales/Settlement"));
 const SalesReports = lazy(() => import("../pages/sales/SalesReports"));
 const TouchSales = lazy(() => import("../pages/sales/TouchSales"));
@@ -188,6 +189,7 @@ export const protectedLayoutRoutes = [
   { path: "/sales/dealer-invoice-return", render: () => <DealerInvoiceReturn /> },
   { path: "/sales/sales-on-approval", render: () => <SalesOnApproval /> },
   { path: "/sales/approval-inbox", render: () => <ApprovalInbox /> },
+  { path: "/sales/approvals", render: () => <Approvals /> },
   { path: "/sales/settlement", render: () => <Settlement /> },
   { path: "/sales/reports", render: () => <SalesReports /> },
   { path: "/sales/touch-sales", render: () => <TouchSales /> },

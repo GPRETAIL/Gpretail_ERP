@@ -6,6 +6,9 @@ export const USER_ROLE_PRESET_OPTIONS = [
   { value: "user", label: "User" },
   { value: "manager", label: "Manager" },
   { value: "cashier", label: "Cashier" },
+  // Floor supervisor: cashier pages plus approval authority for discounts/refunds within
+  // the store's Supervisor limit. Only approver roles (Supervisor, Manager, admins) see Approvals.
+  { value: "supervisor", label: "Supervisor (approves discounts & refunds)" },
   { value: "accountant", label: "Accountant" },
   { value: "warehouse_user", label: "Warehouse User" },
   { value: "store_user", label: "Store User" },
@@ -98,6 +101,9 @@ const buildPresetPermissions = (presetRole) => {
       setActionsForPath(permissions, getPagePath("Masters", "Product"), FULL_ACTIONS);
       break;
 
+    case "supervisor":
+      setActionsForPath(permissions, getPagePath("Sales", "Discount & Refund Approvals"), { view: true, edit: true });
+    // falls through: a supervisor also works the counter
     case "cashier":
       setActionsForPath(permissions, getPagePath("Sales", "POS Sales"), OPERATE_ACTIONS);
       setActionsForPath(permissions, getPagePath("Sales", "POS Sales Return"), { view: true, add: true });

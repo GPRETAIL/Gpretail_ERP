@@ -24,6 +24,7 @@ import {
   SwatchIcon,
   PrinterIcon,
   ComputerDesktopIcon,
+  ShieldCheckIcon,
 } from "@heroicons/react/24/outline";
 
 // Note: Paths are placeholders (e.g., /module/item-name)
@@ -212,6 +213,11 @@ export const navItems = [
         name: "Sales on Approval",
         path: "/sales/sales-on-approval",
         icon: ShoppingCartIcon,
+      },
+      {
+        name: "Discount & Refund Approvals",
+        path: "/sales/approvals",
+        icon: ShieldCheckIcon,
       },
       {
         name: "Stock Item Locator",

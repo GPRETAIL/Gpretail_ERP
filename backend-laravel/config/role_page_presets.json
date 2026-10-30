@@ -395,6 +395,12 @@
       "add": true,
       "edit": true,
       "delete": true
+    },
+    "/sales/approvals": {
+      "view": true,
+      "add": false,
+      "edit": true,
+      "delete": false
     }
   },
   "cashier": {
@@ -456,6 +462,74 @@
       "view": true,
       "add": false,
       "edit": false,
+      "delete": false
+    }
+  },
+  "supervisor": {
+    "/sales/pos-sales": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/sales/pos-sales-return": {
+      "view": true,
+      "add": true,
+      "edit": false,
+      "delete": false
+    },
+    "/sales/cash-opening": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/sales/cash-closing": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/sales/settlement": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/crm/bill-print": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/crm/customer": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/crm/loyalty-management": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/crm/gift-voucher": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/crm/gift-coupon": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/sales/approvals": {
+      "view": true,
+      "add": false,
+      "edit": true,
       "delete": false
     }
   },

@@ -175,7 +175,7 @@ class UserAccessController extends Controller
         $this->authorizeAdministration();
         $request->validate(['name' => 'required|string|max:255', 'username' => 'required|string|max:255|unique:users,username',
             'email' => 'nullable|email|max:255|unique:users,email', 'password' => 'required|string|min:6',
-            'role' => 'nullable|in:user,staff,manager,cashier,accountant,warehouse_user,store_user,admin,super_admin', 'store_id' => 'nullable|exists:stores,id']);
+            'role' => 'nullable|in:user,staff,manager,supervisor,cashier,accountant,warehouse_user,store_user,admin,super_admin', 'store_id' => 'nullable|exists:stores,id']);
         abort_if($request->user()->role !== 'super_admin' && $request->input('role') === 'super_admin', 403, 'Tenant users cannot create platform administrators.');
         $user = DB::transaction(function () use ($request): User {
             [$ids, $company, $permissions] = $this->assignments($request);
@@ -214,7 +214,7 @@ class UserAccessController extends Controller
         $this->authorizeAdministration();
         $user = $this->scopedUsers()->findOrFail($id);
         $request->validate(['name' => 'sometimes|required|string|max:255', 'email' => 'nullable|email|max:255|unique:users,email,'.$id,
-            'password' => 'nullable|string|min:6', 'role' => 'sometimes|in:user,staff,manager,cashier,accountant,warehouse_user,store_user,admin,super_admin']);
+            'password' => 'nullable|string|min:6', 'role' => 'sometimes|in:user,staff,manager,supervisor,cashier,accountant,warehouse_user,store_user,admin,super_admin']);
         abort_if($request->user()->role !== 'super_admin' && $request->input('role') === 'super_admin', 403, 'Tenant users cannot become platform administrators.');
         DB::transaction(function () use ($request, $user): void {
             [$ids, $company, $permissions] = $this->assignments($request, $user);

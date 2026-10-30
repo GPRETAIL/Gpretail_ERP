@@ -9,6 +9,7 @@ use App\Models\PosReturnItem;
 use App\Models\PosSale;
 use App\Models\PosSaleItem;
 use App\Models\Product;
+use App\Services\ApprovalService;
 use App\Services\DocumentNumberService;
 use App\Services\GroupAggregationService;
 use App\Services\PaginationService;
@@ -135,7 +136,6 @@ class PosReturnController extends Controller
         }
 
         $return = DB::transaction(function () use ($request, $storeId, $standalone, $sourcePosSaleId, $itemsData) {
-            $returnNo = DocumentNumberService::resolve($request, (int) $storeId, 'RET');
             $totalRefund = 0;
 
             foreach ($itemsData as $item) {
@@ -143,6 +143,9 @@ class PosReturnController extends Controller
                 $price = (float) ($item['price'] ?? 0);
                 $totalRefund += ($qty * $price);
             }
+            // Refunds above the user's limit, or without the original bill, need an approval token.
+            $approval = app(ApprovalService::class)->authorizeRefund($request->user(), (int) $storeId, $totalRefund, $standalone || ! $sourcePosSaleId, $request->input('approvalToken'));
+            $returnNo = DocumentNumberService::resolve($request, (int) $storeId, 'RET');
 
             $posReturn = PosReturn::create([
                 'store_id' => $storeId,
@@ -158,6 +161,7 @@ class PosReturnController extends Controller
                 'return_reason_name' => $request->input('returnReasonName'),
                 'standalone' => $standalone,
             ]);
+            $approval?->forceFill(['status' => 'used', 'used_at' => now(), 'pos_return_id' => $posReturn->id])->save();
 
             foreach ($itemsData as $item) {
                 $qty = (float) ($item['qty'] ?? 1);

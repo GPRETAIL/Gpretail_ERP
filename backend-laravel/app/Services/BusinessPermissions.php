@@ -20,6 +20,15 @@ class BusinessPermissions
         if (in_array($controller, ['MobileAccessController', 'RemoteSupportController'], true)) {
             return 'personal';
         }
+        if ($controller === 'ApprovalController') {
+            return match ($action) {
+                'limits', 'status' => 'read',
+                'myLimit', 'setPin' => 'personal',
+                'updateLimits' => 'settings.manage',
+                'requestApproval', 'pinApprove', 'withdraw' => 'sales.post',
+                default => 'approvals.decide', // inbox, pendingCount, approve, reject
+            };
+        }
         $read = in_array($request->method(), ['GET', 'HEAD', 'OPTIONS'], true);
         if ($controller === 'AuthController') {
             return str_starts_with($action, 'localServer') ? 'settings.manage' : 'personal';
@@ -60,7 +69,9 @@ class BusinessPermissions
                 return 'transactions.approve';
             }
 
-            return in_array($controller, ['PosSaleController', 'CustomerOrderController', 'CashRegisterController'], true) ? 'sales.post' : 'purchases.post';
+            // POS returns are a counter action (cashier preset allows them); refunds over the
+            // user's limit are additionally gated by ApprovalService.
+            return in_array($controller, ['PosSaleController', 'PosReturnController', 'CustomerOrderController', 'CashRegisterController'], true) ? 'sales.post' : 'purchases.post';
         }
 
         return 'unassigned';
@@ -78,7 +89,9 @@ class BusinessPermissions
             return true;
         }
         $grants = [
-            'manager' => ['read', 'personal', 'masters.write', 'sales.post', 'purchases.post', 'transactions.approve', 'transactions.delete', 'reports.export'],
+            'manager' => ['read', 'personal', 'masters.write', 'sales.post', 'purchases.post', 'transactions.approve', 'transactions.delete', 'reports.export', 'approvals.decide'],
+            // Floor supervisor: a cashier who can also approve discounts/refunds within their limit.
+            'supervisor' => ['read', 'personal', 'sales.post', 'approvals.decide'],
             'cashier' => ['read', 'personal', 'sales.post'],
             'sales' => ['read', 'personal', 'sales.post'],
             'warehouse' => ['read', 'personal', 'purchases.post'],
