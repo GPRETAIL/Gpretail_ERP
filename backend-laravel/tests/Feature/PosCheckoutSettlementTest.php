@@ -45,6 +45,35 @@ class PosCheckoutSettlementTest extends TestCase
             'items' => [['productId' => $this->product->id, 'qty' => 1, 'price' => 100]]], $extra));
     }
 
+    public function test_report_status_filters_exclude_paid_bills_and_keep_credit_cancelled_and_all_separate(): void
+    {
+        foreach ([['PAID', 100, false], ['SETTLED', 100, false], ['COMPLETED', 100, false],
+            ['UNSETTLED', 0, false], ['CREDIT', 20, true], ['CANCELLED', 0, false], ['RETURNED', 0, false], ['COMPLETED', 25, false], ['CANCELED', 0, false]] as $index => [$status, $paid, $credit]) {
+            PosSale::create(['store_id' => $this->store->id, 'user_id' => $this->user->id, 'invoice_no' => 'REPORT-'.$index,
+                'sale_date' => now(), 'grand_total' => 100, 'paid_amount' => $paid, 'status' => $status, 'is_credit' => $credit]);
+        }
+        $this->getJson('/api/settlements/unpaid-bills?status=open&all=true')->assertOk()->assertJsonCount(3, 'data');
+        $this->getJson('/api/settlements/unpaid-bills?status=credit&all=true')->assertOk()->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.status', 'CREDIT')->assertJsonPath('data.0.remaining_amount', 80);
+        $this->getJson('/api/settlements/unpaid-bills?status=canceled&all=true')->assertOk()->assertJsonCount(2, 'data');
+        $this->getJson('/api/settlements/unpaid-bills?status=all&all=true')->assertOk()->assertJsonCount(9, 'data');
+        $this->getJson('/api/settlements/unpaid-bills?status=unknown')->assertUnprocessable();
+        $this->getJson('/api/settlements/unpaid-bills?status=open&paginate=true')->assertOk()->assertJsonCount(3, 'data');
+    }
+
+    public function test_unsettled_report_returns_every_matching_bill_beyond_fifty_without_crossing_stores(): void
+    {
+        foreach (range(1, 55) as $index) {
+            PosSale::create(['store_id' => $this->store->id, 'user_id' => $this->user->id, 'invoice_no' => 'BULK-REPORT-'.$index,
+                'sale_date' => now(), 'grand_total' => 100, 'paid_amount' => 0, 'status' => 'UNSETTLED']);
+        }
+        $other = Store::create(['name' => 'Other report store', 'code' => 'REPORT-OTHER']);
+        PosSale::create(['store_id' => $other->id, 'user_id' => $this->user->id, 'invoice_no' => 'FOREIGN-REPORT',
+            'sale_date' => now(), 'grand_total' => 100, 'paid_amount' => 0, 'status' => 'UNSETTLED']);
+        $this->getJson('/api/settlements/unpaid-bills?status=open&all=true')->assertOk()->assertJsonCount(55, 'data');
+        $this->getJson('/api/settlements/unpaid-bills?status=open')->assertOk()->assertJsonCount(50, 'data');
+    }
+
     public function test_summary_report_uses_saved_discount_tax_and_gstin_fields(): void
     {
         $customer = Customer::create(['store_id' => $this->store->id, 'code' => 'SUMMARY-CUSTOMER', 'name' => 'Tax customer', 'gstin' => '33TEST1234A1Z5']);

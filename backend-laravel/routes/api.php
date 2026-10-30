@@ -90,7 +90,7 @@ Route::prefix('auth')->group(function () {
     Route::post('logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
     Route::get('me', [AuthController::class, 'me'])->middleware('auth:sanctum');
     Route::post('counter', [AuthController::class, 'counter'])->middleware('auth:sanctum');
-    Route::get('counter', [ConfigurationController::class, 'getCounters'])->middleware('auth:sanctum');
+    Route::get('counter', [AuthController::class, 'counters'])->middleware('auth:sanctum');
     Route::post('change-password', [AuthController::class, 'changePassword'])->middleware(['auth:sanctum', 'throttle:10,1']);
 });
 Route::post('admin-auth/login', [AuthController::class, 'login'])->middleware('throttle:10,1');

@@ -31,6 +31,11 @@ into paginated listing responses. Their existing lookup responses remain
 available without the opt-in. Physical Stock preserves source pagination when
 enriching barcode rows.
 
+The shared POS counter picker reads authenticated `/auth/counter` metadata, so
+staff do not need Configuration Settings access to select an active counter.
+Settlement bill reports request `status=open`, `credit` or `canceled`; `all`
+includes paid history. Report requests with `all=true` are not capped at 50 bills.
+
 Aggregate analytics keep their complete group calculations and totals and use
 the hook's client mode. Composite Sales/Warehouse reports, Backup overview
 histories and controlled permission drawers supply `sourceRows`; their parent
@@ -38,6 +43,9 @@ retains the report assembly or metadata/action loader. These are intentional
 client adapters, not cursor-capable query endpoints. Supplier pending payments
 retain their merged-document offset API. Unread-first notifications retain offset
 mode because their expression ordering cannot form a Laravel cursor keyset.
+
+Sales report tiles without a dedicated data source show “Not available yet”
+instead of displaying a reused customer, employee, stock or POS list.
 
 Editable POS/invoice lines do not use this listing migration.
 

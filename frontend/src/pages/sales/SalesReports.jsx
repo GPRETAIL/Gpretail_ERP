@@ -63,11 +63,11 @@ const getAllRows = async (url, params = {}) => {
   return res.data?.data || [];
 };
 
-const getSaleDate = (row) => row?.sale_at || row?.created_at || "";
+const getSaleDate = (row) => row?.sale_date || row?.sale_at || row?.created_at || "";
 const getSaleCustomerName = (row) => row?.customer_name || row?.customer?.name || "-";
 const getSaleCustomerMobile = (row) => row?.customer_mobile || row?.customer?.phone || "-";
 const getSaleItems = (row) => (Array.isArray(row?.items) ? row.items : []);
-const getSaleBillNo = (row) => row?.bill_no || row?.bill?.bill_no || row?.id || "-";
+const getSaleBillNo = (row) => row?.bill_no || row?.invoice_no || row?.order_no || row?.bill?.bill_no || row?.id || "-";
 const getSaleStatus = (row) =>
   String(
     row?.bill?.status
@@ -77,18 +77,24 @@ const getSaleStatus = (row) =>
     .trim()
     .toLowerCase();
 
+const getReportSales = async () => (await getAllRows("/pos-sales"))
+  .filter(row => !["cancelled", "canceled", "returned"].includes(getSaleStatus(row)));
+
 const getSalePaymentMode = (row) => {
   if (row?.is_credit) return "Credit";
   const payments = Array.isArray(row?.payments) ? row.payments : [];
   const modes = ["CASH", "CARD", "UPI"]
     .filter((mode) => payments.some((p) => p?.payment_mode === mode && toNumber(p?.amount) > 0))
     .map((mode) => mode.charAt(0) + mode.slice(1).toLowerCase());
-  return modes.length > 0 ? modes.join(" + ") : "Paid";
+  if (modes.length > 0) return modes.join(" + ");
+  if (row?.payment_mode) return row.payment_mode;
+  const status = getSaleStatus(row);
+  return ["paid", "settled", "completed"].includes(status) ? "Paid" : status;
 };
 
 const getSaleSettledAmount = (row) => {
   const status = getSaleStatus(row);
-  if (status === "cancelled") return 0;
+  if (["cancelled", "canceled", "returned"].includes(status)) return 0;
   // PosSale already tracks exactly how much was collected - no need to
   // derive it from a "remaining_amount" field that doesn't exist anywhere
   // in the response.
@@ -119,12 +125,12 @@ const getSaleSummary = (row) => {
     discount,
     net,
     tax: round2(row?.tax_amount),
-    margin: round2(net - cost),
+    margin: round2(net - toNumber(row?.tax_amount) - cost),
   };
 };
 
 const buildPosSaleItemRows = async () => {
-  const rows = await getAllRows("/pos-sales");
+  const rows = await getReportSales();
   return rows.flatMap((sale, saleIndex) =>
     getSaleItems(sale).map((item, itemIndex) => {
       const qty = Math.max(0, toNumber(item?.quantity));
@@ -150,6 +156,7 @@ const buildPosSaleItemRows = async () => {
         customer_mobile: getSaleCustomerMobile(sale),
         barcode: item?.barcode?.barcode || "-",
         product_name: item?.product?.name || "-",
+        hsn: item?.product?.hsn_code || "-",
         salesman_name: item?.sales_man_name || item?.salesManName || "Unassigned",
         qty,
         price,
@@ -159,7 +166,7 @@ const buildPosSaleItemRows = async () => {
         discount,
         total,
         gross,
-        margin: round2(total - gross),
+        margin: round2(total - taxAmount - gross),
       };
     })
   );
@@ -197,7 +204,7 @@ const buildCompanyNameMap = async () => {
 
 const buildCompanyWiseSaleCollectionRows = async () => {
   const [rows, companyNameMap] = await Promise.all([
-    getAllRows("/pos-sales"),
+    getReportSales(),
     buildCompanyNameMap(),
   ]);
 
@@ -220,26 +227,12 @@ const buildCompanyWiseSaleCollectionRows = async () => {
   });
 };
 
-const buildProductHsnMap = async () => {
-  const rows = await getAllRows("/products", { limit: 500 });
-  const map = new Map();
-  rows.forEach((row) => {
-    const key = String(row?.name || "").trim().toLowerCase();
-    if (!key) return;
-    map.set(key, String(row?.hsn_code || "").trim() || "-");
-  });
-  return map;
-};
-
 const buildSalesHsnRows = async () => {
-  const [itemRows, productHsnMap] = await Promise.all([
-    buildPosSaleItemRows(),
-    buildProductHsnMap(),
-  ]);
+  const itemRows = await buildPosSaleItemRows();
 
   const grouped = new Map();
   itemRows.forEach((row) => {
-    const hsn = productHsnMap.get(String(row?.product_name || "").trim().toLowerCase()) || "-";
+    const hsn = row.hsn;
     if (!grouped.has(hsn)) {
       grouped.set(hsn, {
         id: hsn,
@@ -360,7 +353,7 @@ const buildSalesTaxSummaryRows = async () => {
 };
 
 const buildDaySummaryRows = async () => {
-  const rows = await getAllRows("/pos-sales");
+  const rows = await getReportSales();
   const grouped = new Map();
 
   rows.forEach((sale) => {
@@ -411,7 +404,7 @@ const buildCashOpeningClosingRows = async () => {
   ]);
 
   const grouped = new Map();
-  const getKey = (dateKey, counterName) => `${dateKey}__${counterName || "-"}`;
+  const getKey = (row) => `${row.store_id || ""}__${row.id}`;
 
   // CashRegisterSession has no counter/location/paidBy/receivedBy - those
   // stay "-" honestly rather than reading relations that don't exist;
@@ -419,7 +412,7 @@ const buildCashOpeningClosingRows = async () => {
   openings.forEach((row) => {
     const dayKey = formatDayKey(row?.opened_at || row?.created_at);
     const counterName = "-";
-    const key = getKey(dayKey, counterName);
+    const key = getKey(row);
     if (!grouped.has(key)) {
       grouped.set(key, {
         id: key,
@@ -446,7 +439,7 @@ const buildCashOpeningClosingRows = async () => {
   closings.forEach((row) => {
     const dayKey = formatDayKey(row?.closed_at || row?.created_at);
     const counterName = "-";
-    const key = getKey(dayKey, counterName);
+    const key = getKey(row);
     if (!grouped.has(key)) {
       grouped.set(key, {
         id: key,
@@ -623,7 +616,7 @@ const buildCustomerRows = async (inactiveOnly = false) => {
 };
 
 const buildMyCustomerSalesRows = async () => {
-  const rows = await getAllRows("/pos-sales");
+  const rows = await getReportSales();
   const grouped = new Map();
 
   rows.forEach((sale, index) => {
@@ -865,6 +858,7 @@ const salesReportColumns = [
 const companyWiseSaleCollectionColumns = [
   { key: "company_name", label: "Company", valueGetter: (row) => row?.company_name || "-" },
   ...salesReportColumns,
+  { key: "collected", label: "Collected", valueGetter: getSaleSettledAmount, render: value => numCell(value) },
 ];
 
 const salesMarginColumns = [
@@ -905,7 +899,7 @@ const unsettledBillColumns = [
     key: "remaining_amount",
     label: "Remaining",
     render: (_, row) => (
-      <Box sx={{ textAlign: "right" }}>{Math.max(0, toNumber(row?.grand_total) - toNumber(row?.paid_amount)).toFixed(2)}</Box>
+      <Box sx={{ textAlign: "right" }}>{Math.max(0, toNumber(row?.remaining_amount ?? (toNumber(row?.grand_total) - toNumber(row?.paid_amount)))).toFixed(2)}</Box>
     ),
   },
 ];
@@ -1396,7 +1390,7 @@ const billerWiseDiscountColumns = [
 ];
 
 const buildCashierWiseDiscountRows = async () => {
-  const rows = await getAllRows("/pos-sales");
+  const rows = await getReportSales();
   return rows
     .filter((row) => toNumber(row?.discount_amount) > 0)
     .map((row) => {
@@ -1655,11 +1649,7 @@ const REPORT_DATA_SOURCES = {
   unsettled_bill_report: {
     columns: unsettledBillColumns,
     fetchRows: async () => {
-      // Backend already filters to genuinely outstanding bills (paid_amount
-      // < grand_total) for status=all - no further client-side filtering
-      // needed (PosSale has no sale_type/"unsettled" status value at all,
-      // so filtering on those always returned zero rows).
-      return getAllRows("/settlements/unpaid-bills", { status: "all" });
+      return getAllRows("/settlements/unpaid-bills", { status: "open" });
     },
     emptyText: "No unsettled sales bills found.",
   },
@@ -1675,7 +1665,7 @@ const REPORT_DATA_SOURCES = {
   },
   sales_report_margin: {
     columns: salesMarginColumns,
-    fetchRows: () => getAllRows("/pos-sales"),
+    fetchRows: getReportSales,
     emptyText: "No sales margin rows found.",
   },
   sales_report_invoice_wise: {
@@ -1823,7 +1813,7 @@ const REPORT_DATA_SOURCES = {
   },
   sales_vs_settlement_report: {
     columns: salesVsSettlementColumns,
-    fetchRows: () => getAllRows("/pos-sales"),
+    fetchRows: getReportSales,
     emptyText: "No sales vs settlement rows found.",
   },
   sales_vs_stock_report: {
@@ -1846,11 +1836,7 @@ const REPORT_DATA_SOURCES = {
     fetchRows: buildStockRows,
     emptyText: "No direct stock rows found.",
   },
-  stock_audit_report: {
-    columns: stockColumns,
-    fetchRows: buildStockRows,
-    emptyText: "No stock audit rows found.",
-  },
+  stock_audit_report: { unavailableReason: "A dedicated data source for this report is not connected." },
   cashier_wise_discount_report: {
     columns: cashierWiseDiscountColumns,
     fetchRows: buildCashierWiseDiscountRows,
@@ -1871,34 +1857,33 @@ const REPORT_DATA_SOURCES = {
     fetchRows: buildDaySummaryRows,
     emptyText: "No day summary rows found.",
   },
-  estimate_bill_report: {
-    columns: salesReportColumns,
-    fetchRows: () => getAllRows("/customer-orders"),
-    emptyText: "No estimate bills found.",
-  },
-  alteration_report: {
-    columns: deliveryReportColumns,
-    fetchRows: () => getAllRows("/customer-orders"),
-    emptyText: "No alteration rows found.",
-  },
-  promotion_details_report: {
-    columns: cashierWiseDiscountColumns,
-    fetchRows: buildCashierWiseDiscountRows,
-    emptyText: "No promotion details found.",
-  },
+  estimate_bill_report: { unavailableReason: "A dedicated data source for this report is not connected." },
+  alteration_report: { unavailableReason: "A dedicated data source for this report is not connected." },
+  promotion_details_report: { unavailableReason: "A dedicated data source for this report is not connected." },
   sales_snapshot_text: {
     columns: daySummaryColumns,
     fetchRows: buildDaySummaryRows,
     emptyText: "No snapshot rows found.",
   },
   settlement_detail_report: {
-    columns: settlementOpeningClosingColumns,
-    fetchRows: buildCashOpeningClosingRows,
+    columns: [
+      { key: "batch_no", label: "Settlement No" },
+      { key: "settlement_date", label: "Date", render: formatDate },
+      { key: "settler", label: "Settled By", valueGetter: row => row.settler?.name || "-" },
+      ...["total_sales", "cash_total", "card_total", "upi_total", "credit_total"].map(key => ({ key, label: key.replaceAll("_", " "), render: numCell })),
+    ],
+    fetchRows: () => getAllRows("/settlements"),
     emptyText: "No settlement detail rows found.",
   },
   customer_advance_collection_report: {
-    columns: myCustomerSalesColumns,
-    fetchRows: buildMyCustomerSalesRows,
+    columns: [
+      { key: "order_no", label: "Order No" },
+      { key: "order_date", label: "Date", render: formatDate },
+      { key: "customer", label: "Customer", valueGetter: row => row.customer?.name || "-" },
+      { key: "advance_paid", label: "Advance Collected", render: numCell },
+      { key: "balance_due", label: "Balance Due", render: numCell },
+    ],
+    fetchRows: async () => (await getAllRows("/customer-orders")).filter(row => toNumber(row.advance_paid) > 0),
     emptyText: "No customer advance rows found.",
   },
   settlement_reconciliation: {
@@ -1923,121 +1908,29 @@ const REPORT_DATA_SOURCES = {
     },
     emptyText: "No credit outstanding rows found.",
   },
-  customer_gift_voucher_credit_note_report: {
-    columns: myCustomerSalesColumns,
-    fetchRows: buildMyCustomerSalesRows,
-    emptyText: "No gift voucher rows found.",
-  },
-  settlement_coupon_issue_report: {
-    columns: myCustomerSalesColumns,
-    fetchRows: buildMyCustomerSalesRows,
-    emptyText: "No coupon issue rows found.",
-  },
-  coupon_consumption_report: {
-    columns: myCustomerSalesColumns,
-    fetchRows: buildMyCustomerSalesRows,
-    emptyText: "No coupon consumption rows found.",
-  },
-  gift_voucher_credit_note_consumption_report: {
-    columns: myCustomerSalesColumns,
-    fetchRows: buildMyCustomerSalesRows,
-    emptyText: "No gift voucher consumption rows found.",
-  },
-  loyalty_reward_consumption_report: {
-    columns: myCustomerSalesColumns,
-    fetchRows: buildMyCustomerSalesRows,
-    emptyText: "No loyalty reward rows found.",
-  },
-  gift_issue_report: {
-    columns: myCustomerSalesColumns,
-    fetchRows: buildMyCustomerSalesRows,
-    emptyText: "No gift issue rows found.",
-  },
-  birthday_wishes: {
-    columns: customerColumns,
-    fetchRows: () => buildCustomerRows(false),
-    emptyText: "No birthday records found.",
-  },
-  anniversary_wishes: {
-    columns: customerColumns,
-    fetchRows: () => buildCustomerRows(false),
-    emptyText: "No anniversary records found.",
-  },
-  customer_feedback_report: {
-    columns: customerColumns,
-    fetchRows: () => buildCustomerRows(false),
-    emptyText: "No feedback records found.",
-  },
-  scheduled_message_log: {
-    columns: customerColumns,
-    fetchRows: () => buildCustomerRows(false),
-    emptyText: "No scheduled messages found.",
-  },
-  scheme_details_report: {
-    columns: cashierWiseDiscountColumns,
-    fetchRows: buildCashierWiseDiscountRows,
-    emptyText: "No scheme records found.",
-  },
-  stock_report_with_shelf_period: {
-    columns: stockColumns,
-    fetchRows: buildStockRows,
-    emptyText: "No stock records found.",
-  },
-  stock_aging_detail_report: {
-    columns: stockColumns,
-    fetchRows: buildStockRows,
-    emptyText: "No stock aging records found.",
-  },
-  stock_marker_report: {
-    columns: stockColumns,
-    fetchRows: buildStockRows,
-    emptyText: "No stock marker records found.",
-  },
-  price_changer_report: {
-    columns: stockColumns,
-    fetchRows: buildStockRows,
-    emptyText: "No price changer records found.",
-  },
-  stock_split_report: {
-    columns: stockColumns,
-    fetchRows: buildStockRows,
-    emptyText: "No stock split records found.",
-  },
-  incentive_report_section: {
-    columns: employeeColumns,
-    fetchRows: buildEmployeeRows,
-    emptyText: "No incentive records found.",
-  },
-  incentive_report_employees: {
-    columns: employeeColumns,
-    fetchRows: buildEmployeeRows,
-    emptyText: "No incentive records found.",
-  },
-  employee_advance_pending_report: {
-    columns: employeeColumns,
-    fetchRows: buildEmployeeRows,
-    emptyText: "No advance pending records found.",
-  },
-  b2b_sales_report: {
-    columns: saleItemColumns,
-    fetchRows: buildPosSaleItemRows,
-    emptyText: "No B2B sales rows found.",
-  },
-  b2b_sales_tax_report_column_wise: {
-    columns: saleItemColumns,
-    fetchRows: buildPosSaleItemRows,
-    emptyText: "No B2B sales tax detail rows found.",
-  },
-  b2b_sales_tax_report_row_wise: {
-    columns: taxSummaryColumns,
-    fetchRows: buildSalesTaxSummaryRows,
-    emptyText: "No B2B sales tax summary rows found.",
-  },
-  b2b_sales_hsn_report: {
-    columns: salesHsnColumns,
-    fetchRows: buildSalesHsnRows,
-    emptyText: "No B2B sales HSN rows found.",
-  },
+  customer_gift_voucher_credit_note_report: { unavailableReason: "A dedicated data source for this report is not connected." },
+  settlement_coupon_issue_report: { unavailableReason: "A dedicated data source for this report is not connected." },
+  coupon_consumption_report: { unavailableReason: "A dedicated data source for this report is not connected." },
+  gift_voucher_credit_note_consumption_report: { unavailableReason: "A dedicated data source for this report is not connected." },
+  loyalty_reward_consumption_report: { unavailableReason: "A dedicated data source for this report is not connected." },
+  gift_issue_report: { unavailableReason: "A dedicated data source for this report is not connected." },
+  birthday_wishes: { unavailableReason: "A dedicated data source for this report is not connected." },
+  anniversary_wishes: { unavailableReason: "A dedicated data source for this report is not connected." },
+  customer_feedback_report: { unavailableReason: "A dedicated data source for this report is not connected." },
+  scheduled_message_log: { unavailableReason: "A dedicated data source for this report is not connected." },
+  scheme_details_report: { unavailableReason: "A dedicated data source for this report is not connected." },
+  stock_report_with_shelf_period: { unavailableReason: "A dedicated data source for this report is not connected." },
+  stock_aging_detail_report: { unavailableReason: "A dedicated data source for this report is not connected." },
+  stock_marker_report: { unavailableReason: "A dedicated data source for this report is not connected." },
+  price_changer_report: { unavailableReason: "A dedicated data source for this report is not connected." },
+  stock_split_report: { unavailableReason: "A dedicated data source for this report is not connected." },
+  incentive_report_section: { unavailableReason: "A dedicated data source for this report is not connected." },
+  incentive_report_employees: { unavailableReason: "A dedicated data source for this report is not connected." },
+  employee_advance_pending_report: { unavailableReason: "A dedicated data source for this report is not connected." },
+  b2b_sales_report: { unavailableReason: "A dedicated data source for this report is not connected." },
+  b2b_sales_tax_report_column_wise: { unavailableReason: "A dedicated data source for this report is not connected." },
+  b2b_sales_tax_report_row_wise: { unavailableReason: "A dedicated data source for this report is not connected." },
+  b2b_sales_hsn_report: { unavailableReason: "A dedicated data source for this report is not connected." },
 };
 
 const REPORT_GROUPS = [
@@ -2220,7 +2113,7 @@ const SalesReports = () => {
           ...item,
           groupKey: group.key,
           groupTitle: group.title,
-          implemented: Boolean(REPORT_DATA_SOURCES[item.key]),
+          implemented: Boolean(REPORT_DATA_SOURCES[item.key]?.fetchRows),
         };
       });
     });
@@ -2307,7 +2200,7 @@ const SalesReports = () => {
   const { page, setPage, limit, setLimit } = grid;
 
   const selectedReport = selectedReportKey ? reportLookup[selectedReportKey] || null : null;
-  const selectedReportSource = selectedReport ? REPORT_DATA_SOURCES[selectedReport.key] || null : null;
+  const selectedReportSource = selectedReport && REPORT_DATA_SOURCES[selectedReport.key]?.fetchRows ? REPORT_DATA_SOURCES[selectedReport.key] : null;
 
   const displayRows = useMemo(() => {
     if (selectedReport?.key === "sales_report" && appliedSalesSummary?.rows) {
@@ -2463,7 +2356,7 @@ const SalesReports = () => {
               <Stack sx={{ gap: 0.75 }}>
                 {group.items.map((item) => {
                   const active = selectedReportKey === item.key;
-                  const implemented = Boolean(REPORT_DATA_SOURCES[item.key]);
+                  const implemented = Boolean(REPORT_DATA_SOURCES[item.key]?.fetchRows);
                   return (
                     <Box
                       component="button"

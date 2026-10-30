@@ -24,7 +24,7 @@ export default function CounterAssignmentDialog({ open, onClose, onAssigned }) {
   const companyId = sessionStorage.getItem("activeStoreId") || (!user?.store_selection_required ? user?.company_id || user?.companyId || user?.store_id : null);
   const fetchCounters = useCallback(async ({ signal }) => {
     const restricted = role === "admin" || role === "user";
-    const response = await api.get("/configurations/counter", { storeScopeId: companyId, params: restricted && companyId ? { company_id: companyId } : undefined, signal });
+    const response = await api.get("/auth/counter", { storeScopeId: companyId, params: restricted && companyId ? { company_id: companyId } : undefined, signal });
     const rows = Array.isArray(response.data?.data) ? response.data.data : [];
     return rows.map(row => ({ value: String(row.id), label: String(row.name || "").trim() || `Counter ${row.id}` }));
   }, [role, companyId]);

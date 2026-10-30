@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Store;
+use App\Models\SystemConfiguration;
 use App\Models\User;
 use App\Services\PagePermissions;
 use App\Services\StoreContext;
@@ -13,6 +14,21 @@ use Tests\TestCase;
 class StoreUserAccessTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_pos_staff_can_load_active_counters_without_settings_access_but_cannot_cross_stores(): void
+    {
+        $one = Store::create(['name' => 'Counter One', 'code' => 'COUNTER-ONE']);
+        $two = Store::create(['name' => 'Counter Two', 'code' => 'COUNTER-TWO']);
+        $counter = SystemConfiguration::create(['store_id' => $one->id, 'key' => 'counter', 'value' => 'Till 1', 'is_active' => true]);
+        SystemConfiguration::create(['store_id' => $one->id, 'key' => 'counter', 'value' => 'Inactive till', 'is_active' => false]);
+        SystemConfiguration::create(['store_id' => $two->id, 'key' => 'counter', 'value' => 'Other till', 'is_active' => true]);
+        Sanctum::actingAs($this->storeUser($one, 'cashier'));
+        $this->getJson('/api/configurations/counter')->assertForbidden();
+        $this->getJson('/api/auth/counter')->assertOk()->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $counter->id)->assertJsonPath('data.0.name', 'Till 1');
+        $this->withHeader('X-Company-Scope-Id', (string) $two->id)->getJson('/api/auth/counter')
+            ->assertForbidden()->assertJsonPath('code', 'STORE_ACCESS_DENIED');
+    }
 
     private function storeUser(Store $store, string $role): User
     {

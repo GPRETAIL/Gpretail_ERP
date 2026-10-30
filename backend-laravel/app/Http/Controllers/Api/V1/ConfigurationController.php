@@ -39,7 +39,7 @@ class ConfigurationController extends Controller
         if ($request->boolean('paginate')) {
             return $this->show($request, 'counter');
         }
-        $rows = $this->userConfigs()->where(fn ($q) => $q->where('key', 'counter')
+        $rows = $this->userConfigs()->where('is_active', true)->where(fn ($q) => $q->where('key', 'counter')
             ->orWhere('config_key', 'counter')
             ->orWhere('group', 'counter')
             ->orWhere('group_name', 'counter'))->get()
