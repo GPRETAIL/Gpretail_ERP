@@ -95,6 +95,20 @@ class StoreLicenceTest extends TestCase
             ->assertJsonPath('data.stores.0.licence_valid', true)->assertJsonPath('data.onTrial', true);
     }
 
+    public function test_subscription_status_reports_a_store_that_lapsed_hours_ago_as_expired_not_today(): void
+    {
+        [$activation, $store, $claims] = $this->setupStore();
+        $store->update(['platform_licence_token' => $this->token($claims), 'platform_active_till' => now()->subHours(9)]);
+        $store->platform_licence_token = $this->token(array_replace($claims, ['activeTill' => now()->subHours(9)->timestamp]));
+        $store->save();
+        Sanctum::actingAs(User::create(['name' => 'Lapsed owner', 'username' => 'lapsed-owner', 'email' => 'lapsed@example.test',
+            'password' => 'secret', 'role' => 'admin', 'platform_company_code' => $activation->company_code]));
+
+        $this->getJson('/api/companies/subscription/status')->assertOk()
+            ->assertJsonPath('data.stores.0.days_left', -1)->assertJsonPath('data.stores.0.expired', true)
+            ->assertJsonPath('data.soonestDaysLeft', -1)->assertJsonPath('data.expiredStores', 1)->assertJsonPath('data.allExpired', true);
+    }
+
     public function test_offline_grace_never_exceeds_commercial_expiry_and_suspension_overrides(): void
     {
         [$activation, $store, $claims] = $this->setupStore();

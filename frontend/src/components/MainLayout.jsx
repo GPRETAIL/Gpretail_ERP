@@ -14,6 +14,7 @@ import { Alert, Box, ButtonBase, Chip, Stack, Typography } from "@mui/material";
 import { isTenantAdmin, canSwitchStores } from "../utils/accessControl";
 import SubscriptionDuePopup from "./SubscriptionDuePopup";
 import useSubscriptionStatus from "../hooks/useSubscriptionStatus";
+import SubscriptionExpiryBanner from "./SubscriptionExpiryBanner";
 import { SubscriptionStatusProvider } from "../context/SubscriptionStatusContext";
 import useStoreNameMap, { resolveStoreName } from "../hooks/useStoreNameMap";
 import { ProtectedLayoutRouteRenderer } from "../routes/protectedLayoutRoutes";
@@ -175,8 +176,10 @@ const PrintStatusFooter = () => {
               size="small"
               color="error"
               onClick={() => window.open(companyPortalUrl, "_blank", "noopener,noreferrer")}
-              title={`Subscription due in ${subscription.soonestDaysLeft} day(s). Click to view plans.`}
-              label={`DUE · ${subscription.soonestDaysLeft}d`}
+              title={subscription.soonestDaysLeft < 0
+                ? "Subscription expired. Click to renew."
+                : `Subscription due in ${subscription.soonestDaysLeft} day(s). Click to view plans.`}
+              label={subscription.soonestDaysLeft < 0 ? "EXPIRED · Renew" : subscription.soonestDaysLeft === 0 ? "DUE · today" : `DUE · ${subscription.soonestDaysLeft}d`}
               sx={{ height: 20, fontSize: "11px", fontWeight: 600, cursor: "pointer" }}
             />
           ) : null}
@@ -362,6 +365,7 @@ const MainLayout = () => {
           <Box sx={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", width: "100%", minWidth: 0, transition: "all 0.3s ease-in-out" }}>
             <Navbar sidebarExpanded={isExpanded} isMobile={isMobile} toggleSidebar={toggleSidebar} />
             <TabBar />
+            <SubscriptionExpiryBanner />
             {isTenantAdmin(authUser) && authUser?.store_ids?.length === 0 && (
               <Alert severity="info" sx={{ borderRadius: 0 }}>
                 Tenant Administrator · {authUser.platform_company_code}. No stores are available in this deployment yet.

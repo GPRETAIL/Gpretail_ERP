@@ -223,13 +223,17 @@ class StoreController extends Controller
         $stores = app(StoreContext::class)->available($request->user())->get()->map(function (Store $store) use ($activation): array {
             $verified = $store->platform_store_id ? app(StoreLicenceVerifier::class)->verify($store, $activation) : ['ok' => false, 'claims' => []];
             $end = isset($verified['claims']['activeTill']) ? Carbon::createFromTimestamp($verified['claims']['activeTill']) : $store->platform_active_till;
-            $days = $end ? (int) ceil(now()->diffInSeconds($end, false) / 86400) : null;
+            // Round away from today: a store that lapsed a few hours ago is -1 (expired), not
+            // ceil(-0.4) = 0, which the UI used to show as "Expires today" / "DUE · 0d".
+            $seconds = $end ? now()->diffInSeconds($end, false) : null;
+            $days = $seconds === null ? null : (int) ($seconds > 0 ? ceil($seconds / 86400) : floor($seconds / 86400));
 
             return ['store_id' => $store->id, 'name' => $store->name, 'code' => $store->code,
                 'status' => ! $store->platform_store_id ? 'UNMANAGED' : (! $store->activated_at ? 'PENDING_ACTIVATION' : ($verified['ok'] ? 'ACTIVE' : 'ACCESS_BLOCKED')),
                 'licence_valid' => $verified['ok'], 'plan' => $store->platform_subscription['plan_name'] ?? null,
                 'term_months' => $store->platform_subscription['term_months'] ?? null,
                 'expiry_date' => $end?->toIso8601String(), 'days_left' => $days,
+                'expired' => $store->platform_store_id && $store->activated_at && ($days !== null ? $days < 0 : ! $verified['ok']),
                 'entitlements' => $verified['claims']['entitlements'] ?? [],
                 'onTrial' => $store->activated_at && (bool) ($store->platform_subscription['is_trial'] ?? false)];
         });
@@ -239,6 +243,8 @@ class StoreController extends Controller
             'status' => $stores->isEmpty() ? 'NO_STORES' : ($stores->every(fn ($store) => $store['licence_valid']) ? 'ACTIVE' : 'ATTENTION_REQUIRED'),
             'stores' => $stores, 'onTrial' => $stores->contains(fn ($store) => $store['onTrial']),
             'dueSoon' => $soonest !== null && $soonest <= 7, 'soonestDaysLeft' => $soonest,
+            'expiredStores' => $stores->where('expired', true)->count(),
+            'allExpired' => $stores->isNotEmpty() && $stores->every(fn ($store) => $store['expired']),
             'subscription_portal_url' => config('platform.portal_url'), 'last_synced_at' => $activation?->last_synced_at?->toIso8601String(),
         ]]);
     }
