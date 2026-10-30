@@ -20,7 +20,7 @@ import FinanceRecentPayments from "./dashboard/finance/FinanceRecentPayments";
 
 const QUICK_ACTIONS = [
   { label: "+ Supplier Payment", path: "/finance/supplier-payment", bg: "primary.main", hoverBg: "primary.dark" },
-  { label: "Purchase Invoices", path: "/warehouse/purchase-invoice", bg: "#4f46e5", hoverBg: "#4338ca" },
+  { label: "Purchase Invoices", path: "/warehouse/invoice", bg: "#4f46e5", hoverBg: "#4338ca" },
   { label: "Direct Purchases", path: "/warehouse/direct-purchase", bg: "#9333ea", hoverBg: "#7e22ce" },
   { label: "Purchase Returns", path: "/warehouse/purchase-return", bg: "error.main", hoverBg: "error.dark" },
   { label: "Settlement", path: "/sales/settlement", bg: "success.main", hoverBg: "success.dark" },

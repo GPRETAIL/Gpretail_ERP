@@ -5,6 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * @property string|null $created_by
+ * @property int|null $store_id
+ */
 class SystemConfiguration extends Model
 {
     use HasFactory;
@@ -12,7 +16,7 @@ class SystemConfiguration extends Model
     protected static function booted(): void
     {
         static::creating(function (self $model): void {
-            $model->created_by = auth()->user()?->name ?? auth()->user()?->username;
+            $model->created_by = auth()->user()->name ?? auth()->user()?->username;
         });
     }
 

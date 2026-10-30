@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PosPayment extends Model
 {
@@ -25,7 +26,8 @@ class PosPayment extends Model
         ];
     }
 
-    public function posSale()
+    /** @return BelongsTo<PosSale, $this> */
+    public function posSale(): BelongsTo
     {
         return $this->belongsTo(PosSale::class);
     }

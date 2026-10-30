@@ -64,7 +64,13 @@ export const isPathEntitled = (user, pathname) => {
   const value = sections[slug];
   if (value === "all") return true;
   if (Array.isArray(value)) {
-    return value.includes(String(pathname || "").toLowerCase().replace(/\/+$/, ""));
+    const path = String(pathname || "").toLowerCase().replace(/\/+$/, "");
+    // A licensed page includes its create/edit/detail routes, using a slash boundary
+    // so /masters/brand cannot also grant /masters/brand-other.
+    return value.some(allowed => {
+      const base = String(allowed || "").toLowerCase().replace(/\/+$/, "");
+      return base.startsWith("/") && (path === base || path.startsWith(`${base}/`));
+    });
   }
   return false;
 };

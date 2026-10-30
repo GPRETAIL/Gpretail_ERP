@@ -41,11 +41,13 @@ class SeedMasterBulkCommand extends Command
     {
         if (app()->environment('production')) {
             $this->error('Bulk stress-test seeding is disabled in production.');
+
             return self::FAILURE;
         }
 
-        if (!in_array(DB::connection()->getDriverName(), ['mysql', 'mariadb'], true)) {
+        if (! in_array(DB::connection()->getDriverName(), ['mysql', 'mariadb'], true)) {
             $this->error('This command relies on UUID_SHORT() and is MySQL/MariaDB-only.');
+
             return self::FAILURE;
         }
 
@@ -68,22 +70,24 @@ class SeedMasterBulkCommand extends Command
     {
         foreach (self::TABLES as $table) {
             $prefix = self::PREFIXES[$table];
-            $deleted = DB::table($table)->where('code', 'like', $prefix . '%')->delete();
+            $deleted = DB::table($table)->where('code', 'like', $prefix.'%')->delete();
             $this->info("{$table}: removed {$deleted} seeded rows.");
         }
+
         return self::SUCCESS;
     }
 
     private function seedTable(string $table, int $target): void
     {
         $prefix = self::PREFIXES[$table];
-        $existing = DB::table($table)->where('code', 'like', $prefix . '%')->count();
+        $existing = DB::table($table)->where('code', 'like', $prefix.'%')->count();
 
         $this->newLine();
-        $this->info("=== {$table} === (already have " . number_format($existing) . " seeded, target " . number_format($target) . ")");
+        $this->info("=== {$table} === (already have ".number_format($existing).' seeded, target '.number_format($target).')');
 
         if ($existing >= $target) {
             $this->line('Already at or above target, skipping.');
+
             return;
         }
 
@@ -108,13 +112,13 @@ class SeedMasterBulkCommand extends Command
         $bar->finish();
         $this->newLine();
         $duration = round(microtime(true) - $startTime, 1);
-        $this->info("{$table}: reached " . number_format($existing) . " seeded rows in {$duration}s.");
+        $this->info("{$table}: reached ".number_format($existing)." seeded rows in {$duration}s.");
     }
 
     /** @return void */
     private function insertInitialBatch(string $table, string $prefix, int $count)
     {
-        $method = 'batch' . ucfirst($table);
+        $method = 'batch'.ucfirst($table);
         $rows = $this->$method($prefix, $count);
 
         foreach (array_chunk($rows, 500) as $slice) {
@@ -146,14 +150,15 @@ class SeedMasterBulkCommand extends Command
             'products' => "INSERT INTO products (category_id, brand_id, tax_id, size_group_id, name, code, sku, barcode, hsn_code, unit, cost_price, selling_price, mrp, min_stock, max_stock, description, image, is_active, created_at, updated_at)
                 SELECT category_id, brand_id, tax_id, size_group_id, name, CONCAT(?, UUID_SHORT()), CONCAT('SEED-SKU-', UUID_SHORT()), CONCAT('SEED-BC-', UUID_SHORT()), hsn_code, unit, cost_price, selling_price, mrp, min_stock, max_stock, description, image, is_active, NOW(), NOW()
                 FROM products WHERE code LIKE ? LIMIT {$chunk}",
+            default => throw new \InvalidArgumentException('Unsupported master table: '.$table),
         };
 
-        DB::statement($sql, [$prefix, $prefix . '%']);
+        DB::statement($sql, [$prefix, $prefix.'%']);
     }
 
     private function code(string $prefix, int $i): string
     {
-        return $prefix . str_pad((string) $i, 7, '0', STR_PAD_LEFT);
+        return $prefix.str_pad((string) $i, 7, '0', STR_PAD_LEFT);
     }
 
     private function batchBrands(string $prefix, int $count): array
@@ -162,7 +167,7 @@ class SeedMasterBulkCommand extends Command
         $words2 = ['Traders', 'Retail', 'Industries', 'Enterprises', 'Mart', 'Group', 'Corp', 'Distributors', 'Wholesale', 'Brands'];
         $rows = [];
         for ($i = 1; $i <= $count; $i++) {
-            $name = $words1[$i % count($words1)] . ' ' . $words2[intdiv($i, count($words1)) % count($words2)];
+            $name = $words1[$i % count($words1)].' '.$words2[intdiv($i, count($words1)) % count($words2)];
             $rows[] = [
                 'name' => $name,
                 'code' => $this->code($prefix, $i),
@@ -173,6 +178,7 @@ class SeedMasterBulkCommand extends Command
                 'updated_at' => now(),
             ];
         }
+
         return $rows;
     }
 
@@ -196,6 +202,7 @@ class SeedMasterBulkCommand extends Command
                 'updated_at' => now(),
             ];
         }
+
         return $rows;
     }
 
@@ -206,14 +213,14 @@ class SeedMasterBulkCommand extends Command
         $cities = [['Chennai', 'Tamil Nadu', '600001'], ['Bengaluru', 'Karnataka', '560001'], ['Coimbatore', 'Tamil Nadu', '641001'], ['Hyderabad', 'Telangana', '500001'], ['Mumbai', 'Maharashtra', '400001']];
         $rows = [];
         for ($i = 1; $i <= $count; $i++) {
-            $name = $names[$i % count($names)] . ' ' . $suffixes[intdiv($i, count($names)) % count($suffixes)];
+            $name = $names[$i % count($names)].' '.$suffixes[intdiv($i, count($names)) % count($suffixes)];
             [$city, $state, $pincode] = $cities[$i % count($cities)];
             $rows[] = [
                 'name' => $name,
-                'company_name' => $name . ' Pvt Ltd',
+                'company_name' => $name.' Pvt Ltd',
                 'code' => $this->code($prefix, $i),
-                'email' => 'supplier' . $i . '@example.com',
-                'phone' => '9' . str_pad((string) (100000000 + $i), 9, '0', STR_PAD_LEFT),
+                'email' => 'supplier'.$i.'@example.com',
+                'phone' => '9'.str_pad((string) (100000000 + $i), 9, '0', STR_PAD_LEFT),
                 'address' => "{$i}, Main Road",
                 'city' => $city,
                 'state' => $state,
@@ -227,6 +234,7 @@ class SeedMasterBulkCommand extends Command
                 'updated_at' => now(),
             ];
         }
+
         return $rows;
     }
 
@@ -236,18 +244,19 @@ class SeedMasterBulkCommand extends Command
         $last = ['Kumar', 'Raj', 'Priya', 'Suresh', 'Devi', 'Nathan', 'Murthy', 'Sekar', 'Rani', 'Vel'];
         $rows = [];
         for ($i = 1; $i <= $count; $i++) {
-            $name = $first[$i % count($first)] . ' ' . $last[intdiv($i, count($first)) % count($last)];
+            $name = $first[$i % count($first)].' '.$last[intdiv($i, count($first)) % count($last)];
             $rows[] = [
                 'name' => $name,
                 'code' => $this->code($prefix, $i),
-                'email' => 'agent' . $i . '@example.com',
-                'phone' => '9' . str_pad((string) (200000000 + $i), 9, '0', STR_PAD_LEFT),
+                'email' => 'agent'.$i.'@example.com',
+                'phone' => '9'.str_pad((string) (200000000 + $i), 9, '0', STR_PAD_LEFT),
                 'commission_rate' => round(fmod($i, 10) + 1, 2),
                 'is_active' => true,
                 'created_at' => now(),
                 'updated_at' => now(),
             ];
         }
+
         return $rows;
     }
 
@@ -257,18 +266,19 @@ class SeedMasterBulkCommand extends Command
         $suffixes = ['Logistics', 'Cargo', 'Transport', 'Movers', 'Carriers'];
         $rows = [];
         for ($i = 1; $i <= $count; $i++) {
-            $name = $names[$i % count($names)] . ' ' . $suffixes[intdiv($i, count($names)) % count($suffixes)];
+            $name = $names[$i % count($names)].' '.$suffixes[intdiv($i, count($names)) % count($suffixes)];
             $rows[] = [
                 'name' => $name,
                 'code' => $this->code($prefix, $i),
-                'phone' => '9' . str_pad((string) (300000000 + $i), 9, '0', STR_PAD_LEFT),
-                'vehicle_no' => 'TN' . str_pad((string) (($i % 99) + 1), 2, '0', STR_PAD_LEFT) . 'AB' . str_pad((string) $i, 4, '0', STR_PAD_LEFT),
+                'phone' => '9'.str_pad((string) (300000000 + $i), 9, '0', STR_PAD_LEFT),
+                'vehicle_no' => 'TN'.str_pad((string) (($i % 99) + 1), 2, '0', STR_PAD_LEFT).'AB'.str_pad((string) $i, 4, '0', STR_PAD_LEFT),
                 'contact_person' => $names[($i + 3) % count($names)],
                 'is_active' => true,
                 'created_at' => now(),
                 'updated_at' => now(),
             ];
         }
+
         return $rows;
     }
 
@@ -278,15 +288,15 @@ class SeedMasterBulkCommand extends Command
         $last = ['Kumar', 'Raj', 'Priya', 'Suresh', 'Devi', 'Nathan', 'Murthy', 'Sekar', 'Rani', 'Vel'];
         $rows = [];
         for ($i = 1; $i <= $count; $i++) {
-            $name = $first[$i % count($first)] . ' ' . $last[intdiv($i, count($first)) % count($last)];
+            $name = $first[$i % count($first)].' '.$last[intdiv($i, count($first)) % count($last)];
             $rows[] = [
                 'store_id' => null,
                 'department_id' => null,
                 'designation_id' => null,
                 'name' => $name,
                 'code' => $this->code($prefix, $i),
-                'email' => 'employee' . $i . '@example.com',
-                'phone' => '9' . str_pad((string) (400000000 + $i), 9, '0', STR_PAD_LEFT),
+                'email' => 'employee'.$i.'@example.com',
+                'phone' => '9'.str_pad((string) (400000000 + $i), 9, '0', STR_PAD_LEFT),
                 'address' => "{$i}, Staff Colony",
                 'salary' => 15000 + ($i % 50) * 1000,
                 'joining_date' => now()->subDays($i % 3650)->toDateString(),
@@ -295,6 +305,7 @@ class SeedMasterBulkCommand extends Command
                 'updated_at' => now(),
             ];
         }
+
         return $rows;
     }
 
@@ -305,7 +316,7 @@ class SeedMasterBulkCommand extends Command
         $units = ['PCS', 'KG', 'LTR', 'BOX', 'PKT'];
         $rows = [];
         for ($i = 1; $i <= $count; $i++) {
-            $name = $adjectives[$i % count($adjectives)] . ' ' . $nouns[intdiv($i, count($adjectives)) % count($nouns)];
+            $name = $adjectives[$i % count($adjectives)].' '.$nouns[intdiv($i, count($adjectives)) % count($nouns)];
             $cost = 10 + ($i % 500);
             $rows[] = [
                 'category_id' => null,
@@ -314,8 +325,8 @@ class SeedMasterBulkCommand extends Command
                 'size_group_id' => null,
                 'name' => $name,
                 'code' => $this->code($prefix, $i),
-                'sku' => 'SEED-SKU-' . str_pad((string) $i, 7, '0', STR_PAD_LEFT),
-                'barcode' => 'SEED-BC-' . str_pad((string) $i, 7, '0', STR_PAD_LEFT),
+                'sku' => 'SEED-SKU-'.str_pad((string) $i, 7, '0', STR_PAD_LEFT),
+                'barcode' => 'SEED-BC-'.str_pad((string) $i, 7, '0', STR_PAD_LEFT),
                 'hsn_code' => null,
                 'unit' => $units[$i % count($units)],
                 'cost_price' => $cost,
@@ -330,6 +341,7 @@ class SeedMasterBulkCommand extends Command
                 'updated_at' => now(),
             ];
         }
+
         return $rows;
     }
 }

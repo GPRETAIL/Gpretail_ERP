@@ -14,6 +14,7 @@ use App\Models\SalesApproval;
 use App\Models\Stock;
 use App\Models\StockOutward;
 use App\Models\Store;
+use App\Services\DashboardMetricHistory;
 use App\Services\StoreContext;
 use App\Services\StoreQuery;
 use Illuminate\Http\Request;
@@ -49,23 +50,7 @@ class DashboardController extends Controller
         $prevFrom = $prevTo->copy()->subDays($periodDays - 1)->startOfDay();
         $prevDateScope = fn ($q) => $q->whereBetween('sale_date', [$prevFrom, $prevTo]);
 
-        $computeTrend = function ($current, $previous) {
-            $current = (float) $current;
-            $previous = (float) $previous;
-            if ($previous <= 0) {
-                if ($current <= 0) {
-                    return ['direction' => 'flat', 'changePercent' => 0];
-                }
-
-                return ['direction' => 'up', 'changePercent' => 100];
-            }
-            $change = round((($current - $previous) / $previous) * 100, 1);
-            if (abs($change) < 0.05) {
-                return ['direction' => 'flat', 'changePercent' => 0];
-            }
-
-            return ['direction' => $change > 0 ? 'up' : 'down', 'changePercent' => abs($change)];
-        };
+        $computeTrend = fn ($current, $previous) => DashboardMetricHistory::trend((float) $current, (float) $previous);
 
         // Core Aggregate Metrics. Every sum()+count() pair below that shares the identical
         // WHERE clause is combined into one selectRaw() query instead of two -- the database has
@@ -75,13 +60,29 @@ class DashboardController extends Controller
         // timeouts under this dev environment's known slow-MariaDB conditions); consolidating the
         // ones below and the per-store loops further down cuts that roughly in half without
         // changing any returned value.
-        $salesAgg = $dateScope($scope(PosSale::query()))
-            ->selectRaw('COALESCE(SUM(grand_total), 0) as total, COUNT(*) as cnt, COALESCE(SUM(tax_amount), 0) as tax')
-            ->first();
+        // Match Settlement's open-invoice rules, including credit/partial payments. The return
+        // join is one-to-one by primary key, so it cannot multiply bills or add per-bill queries.
+        $saleTotals = function ($rangeFrom, $rangeTo) use ($storeId) {
+            $open = "pos_sales.status NOT IN ('CANCELLED', 'RETURNED', 'PAID', 'SETTLED') "
+                ."AND (pos_sales.status IN ('UNSETTLED', 'CREDIT') OR pos_sales.paid_amount < pos_sales.grand_total)";
+            $due = 'pos_sales.grand_total - COALESCE(pos_sales.paid_amount, 0) - COALESCE(applied_return.total_refund, 0)';
+
+            return PosSale::query()
+                ->leftJoin('pos_returns as applied_return', 'applied_return.id', '=', 'pos_sales.applied_pos_return_id')
+                ->when($storeId && $storeId !== 'all', fn ($q) => $q->where('pos_sales.store_id', $storeId))
+                ->whereBetween('pos_sales.sale_date', [$rangeFrom, $rangeTo])
+                ->selectRaw('COALESCE(SUM(pos_sales.grand_total), 0) as total, COUNT(*) as cnt, '
+                    .'COALESCE(SUM(pos_sales.tax_amount), 0) as tax, '
+                    ."COALESCE(SUM(CASE WHEN {$open} THEN 1 ELSE 0 END), 0) as unsettled_count, "
+                    ."COALESCE(SUM(CASE WHEN ({$open}) AND ({$due}) > 0 THEN {$due} ELSE 0 END), 0) as unsettled_amount, "
+                    ."COALESCE(SUM(CASE WHEN NOT ({$open}) AND pos_sales.status NOT IN ('CANCELLED', 'RETURNED') "
+                    .'THEN pos_sales.grand_total ELSE 0 END), 0) as settled_amount')
+                ->toBase()->first();
+        };
+        $salesAgg = $saleTotals($from, $to);
         $totalSales = (float) $salesAgg->total;
         $totalOrders = (int) $salesAgg->cnt;
-        $prevSalesAgg = $prevDateScope($scope(PosSale::query()))
-            ->selectRaw('COALESCE(SUM(grand_total), 0) as total, COALESCE(SUM(tax_amount), 0) as tax')->first();
+        $prevSalesAgg = $saleTotals($prevFrom, $prevTo);
         $prevTotalSales = (float) $prevSalesAgg->total;
 
         // Returns - real count+amount for the selected range (previously the only place this was
@@ -95,7 +96,7 @@ class DashboardController extends Controller
         $totalReturns = (float) $returnsAgg->total;
         $totalReturnCount = (int) $returnsAgg->cnt;
         $prevReturnDateScope = fn ($q) => $q->whereBetween('return_date', [$prevFrom, $prevTo]);
-        $prevTotalReturns = (float) ($prevReturnDateScope($returnScope(StoreQuery::table('pos_returns')))->sum('total_refund') ?? 0);
+        $prevTotalReturns = (float) ($prevReturnDateScope($returnScope(StoreQuery::table('pos_returns')))->sum('total_refund'));
 
         // Purchase Return - goods sent back to a supplier, a real, separate
         // concept from a customer's POS return (different table entirely:
@@ -105,7 +106,7 @@ class DashboardController extends Controller
             ->first();
         $totalPurchaseReturns = (float) $purchaseReturnsAgg->total;
         $totalPurchaseReturnCount = (int) $purchaseReturnsAgg->cnt;
-        $prevTotalPurchaseReturns = (float) ($prevReturnDateScope($returnScope(StoreQuery::table('purchase_returns')))->sum('total_amount') ?? 0);
+        $prevTotalPurchaseReturns = (float) ($prevReturnDateScope($returnScope(StoreQuery::table('purchase_returns')))->sum('total_amount'));
 
         // Purchases - this ERP has two independent real purchase-bill sources
         // (Direct Purchase entries, and Invoices from the Transport Entry ->
@@ -121,7 +122,7 @@ class DashboardController extends Controller
             ->first();
         $totalDirectPurchases = (float) $directPurchaseAgg->total;
         $directPurchaseCount = (int) $directPurchaseAgg->cnt;
-        $prevDirectPurchases = (float) ($prevDirectPurchaseDateScope($directPurchaseScope(DirectPurchase::query()))->sum('total_amount') ?? 0);
+        $prevDirectPurchases = (float) ($prevDirectPurchaseDateScope($directPurchaseScope(DirectPurchase::query()))->sum('total_amount'));
 
         $invoicePurchaseScope = fn ($q) => ($storeId && $storeId !== 'all') ? $q->where('store_id', $storeId) : $q;
         $invoiceDateScope = fn ($q) => $q->whereBetween('invoice_date', [$from, $to]);
@@ -131,7 +132,7 @@ class DashboardController extends Controller
             ->first();
         $totalInvoicePurchases = (float) $invoicePurchaseAgg->total;
         $invoicePurchaseCount = (int) $invoicePurchaseAgg->cnt;
-        $prevInvoicePurchases = (float) ($prevInvoiceDateScope($invoicePurchaseScope(PurchaseInvoice::query()))->sum('grand_total') ?? 0);
+        $prevInvoicePurchases = (float) ($prevInvoiceDateScope($invoicePurchaseScope(PurchaseInvoice::query()))->sum('grand_total'));
 
         $totalPurchases = $totalDirectPurchases + $totalInvoicePurchases;
         $prevTotalPurchases = $prevDirectPurchases + $prevInvoicePurchases;
@@ -149,11 +150,13 @@ class DashboardController extends Controller
         // Real attendance-derived counts (was previously just Employee::count() /
         // is_active count, unrelated to who actually checked in today).
         $todayForAttendance = now()->toDateString();
-        $totalEmployees = (int) ($scope(Employee::query())->where('is_active', true)->count() ?? 0);
+        $employeeTotals = $scope(Employee::query())->where('is_active', true)
+            ->selectRaw('store_id, COUNT(*) as total')->groupBy('store_id')->pluck('total', 'store_id')->all();
+        $totalEmployees = (int) array_sum($employeeTotals);
         $presentEmployees = (int) (Attendance::whereDate('date', $todayForAttendance)
             ->where('status', 'PRESENT')
             ->whereHas('employee', fn ($q) => $scope($q))
-            ->count() ?? 0);
+            ->count());
 
         // GST/Tax collected - real sum of pos_sales.tax_amount for the range (combined CGST+SGST,
         // there's no separate column for each half).
@@ -184,7 +187,7 @@ class DashboardController extends Controller
             ->whereBetween('pos_sales.sale_date', [$prevFrom, $prevTo])
             ->when($storeId && $storeId !== 'all', fn ($q) => $q->where('pos_sales.store_id', $storeId))
             ->whereNotNull('pos_sale_items.cost_price');
-        $prevGrossProfit = (float) ($prevProfitQuery->sum(DB::raw('pos_sale_items.quantity * (pos_sale_items.selling_price - pos_sale_items.cost_price)')) ?? 0);
+        $prevGrossProfit = (float) ($prevProfitQuery->sum(DB::raw('pos_sale_items.quantity * (pos_sale_items.selling_price - pos_sale_items.cost_price)')));
 
         // Calculate Stock Value (Qty * Product Cost Price)
         $stockValQuery = StoreQuery::table('stocks')
@@ -192,7 +195,12 @@ class DashboardController extends Controller
         if ($storeId && $storeId !== 'all') {
             $stockValQuery->where('stocks.store_id', $storeId);
         }
-        $totalStockValue = (float) ($stockValQuery->sum(DB::raw('stocks.quantity * COALESCE(products.cost_price, products.selling_price, 0)')) ?? 0);
+        $stockValues = $stockValQuery->selectRaw('stocks.store_id, SUM(stocks.quantity * COALESCE(products.cost_price, products.selling_price, 0)) as total')
+            ->groupBy('stocks.store_id')->pluck('total', 'stocks.store_id')->all();
+        $totalStockValue = (float) array_sum($stockValues);
+        $metricStoreIds = app(StoreContext::class)->available($request->user())
+            ->when($storeId && $storeId !== 'all', fn ($q) => $q->whereKey($storeId))->pluck('id')->all();
+        $metricHistory = app(DashboardMetricHistory::class)->compareAndRecord($metricStoreIds, $employeeTotals, $stockValues);
 
         // Top Selling Items for Highlight Card - joined through pos_sales (previously ungrouped by
         // store or date at all, so every store's entire history fed this one global ranking).
@@ -527,25 +535,26 @@ class DashboardController extends Controller
                     'totalBills' => [
                         'amount' => $totalSales,
                         'count' => $totalOrders,
-                        'unsettledCount' => 0,
+                        'unsettledCount' => (int) $salesAgg->unsettled_count,
                         // {direction, changePercent} - MetricCard's TrendBadge expects this shape,
                         // not a plain string; a literal "+12.5%" string rendered as "undefined%"
                         // in a red down-arrow badge regardless of the real number's sign.
                         'trend' => $computeTrend($totalSales, $prevTotalSales),
                     ],
                     'settlements' => [
-                        'amount' => $totalSales,
-                        'trend' => $computeTrend($totalSales, $prevTotalSales),
+                        'amount' => (float) $salesAgg->settled_amount,
+                        'unsettledAmount' => (float) $salesAgg->unsettled_amount,
+                        'unsettledCount' => (int) $salesAgg->unsettled_count,
+                        'trend' => $computeTrend($salesAgg->settled_amount, $prevSalesAgg->settled_amount),
                     ],
                     'employees' => [
-                        'present' => max($presentEmployees, 1),
-                        'total' => max($totalEmployees, 1),
+                        'present' => $presentEmployees,
+                        'total' => $totalEmployees,
+                        'trend' => $metricHistory['employees'],
                     ],
                     'stockValue' => [
-                        // Point-in-time snapshot (current stock on hand) - no historical stock-value
-                        // series exists to compare against, so no trend is sent rather than a fake one.
                         'amount' => $totalStockValue,
-                        'trend' => null,
+                        'trend' => $metricHistory['stockValue'],
                     ],
                     'returns' => [
                         'amount' => $totalReturns,
@@ -576,7 +585,7 @@ class DashboardController extends Controller
                     'receivables' => [
                         // Real customer credit balance (Customer.current_balance) - same figure
                         // CustomerController::dashboardSummary() already exposes as totalCreditBalance.
-                        'amount' => (float) (Customer::sum('current_balance') ?? 0),
+                        'amount' => (float) (Customer::sum('current_balance')),
                     ],
                 ],
                 'charts' => [
@@ -691,7 +700,7 @@ class DashboardController extends Controller
              COALESCE(SUM(CASE WHEN sale_date >= ? AND sale_date < ? THEN 1 ELSE 0 END), 0) as today_count,
              COALESCE(SUM(grand_total), 0) as total',
             [$today, $tomorrow, $today, $tomorrow]
-        )->first();
+        )->toBase()->first();
         $todaySales = (float) $sales->today_total;
         $todayOrders = (int) $sales->today_count;
 
@@ -712,8 +721,8 @@ class DashboardController extends Controller
 
     public function analytics(Request $request)
     {
-        $totalSales = (float) (PosSale::sum('grand_total') ?? 0);
-        $totalOrders = (int) (PosSale::count() ?? 0);
+        $totalSales = (float) (PosSale::sum('grand_total'));
+        $totalOrders = (int) (PosSale::count());
 
         return response()->json([
             'success' => true,
@@ -768,19 +777,19 @@ class DashboardController extends Controller
         $scope = fn ($q) => ($storeId && $storeId !== 'all') ? $q->where('store_id', $storeId) : $q;
 
         // 1. Low Stock Alerts
-        $lowStock = (int) ($scope(Stock::query())->where('quantity', '<=', 5)->count() ?? 0);
+        $lowStock = (int) ($scope(Stock::query())->where('quantity', '<=', 5)->count());
 
         // 2. Pending Approvals
-        $pendingApprovals = (int) ($scope(SalesApproval::query())->where('status', 'PENDING')->count() ?? 0);
+        $pendingApprovals = (int) ($scope(SalesApproval::query())->where('status', 'PENDING')->count());
 
         // 3. Overdue Payables (Unpaid Purchase Bills)
-        $overduePayables = (int) ($scope(PurchaseInvoice::query())->where('payment_status', '!=', 'PAID')->count() ?? 0);
+        $overduePayables = (int) ($scope(PurchaseInvoice::query())->where('payment_status', '!=', 'PAID')->count());
 
         // 4. Employees on Leave (today)
         $employeesOnLeave = (int) (Attendance::whereDate('date', now()->toDateString())
             ->where('status', 'LEAVE')
             ->whereHas('employee', fn ($q) => $scope($q))
-            ->count() ?? 0);
+            ->count());
 
         return response()->json([
             'success' => true,

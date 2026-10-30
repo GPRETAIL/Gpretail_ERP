@@ -40,7 +40,7 @@ class StoreLicenceVerifier
             : "-----BEGIN PUBLIC KEY-----\n".chunk_split($public, 64, "\n").'-----END PUBLIC KEY-----';
         $key = openssl_pkey_get_public($pem);
         $signature = $this->decode($parts[2]);
-        if (! $key || $signature === false || openssl_verify($parts[0].'.'.$parts[1], $signature, $key, null) !== 1) {
+        if (! $key || $signature === false || openssl_verify($parts[0].'.'.$parts[1], $signature, $key, 0) !== 1) {
             return $invalid;
         }
         $now = now()->timestamp;

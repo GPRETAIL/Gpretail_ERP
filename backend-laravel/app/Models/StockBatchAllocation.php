@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class StockBatchAllocation extends Model
 {
@@ -19,12 +20,14 @@ class StockBatchAllocation extends Model
         ];
     }
 
-    public function batch()
+    /** @return BelongsTo<StockBatch, $this> */
+    public function batch(): BelongsTo
     {
         return $this->belongsTo(StockBatch::class, 'stock_batch_id');
     }
 
-    public function transaction()
+    /** @return BelongsTo<StockTransaction, $this> */
+    public function transaction(): BelongsTo
     {
         return $this->belongsTo(StockTransaction::class, 'stock_transaction_id');
     }

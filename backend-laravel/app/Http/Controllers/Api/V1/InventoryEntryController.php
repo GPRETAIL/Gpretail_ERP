@@ -111,7 +111,7 @@ class InventoryEntryController extends Controller
                 'total_amount' => $totalAmount,
                 'notes' => $request->input('notes'),
                 'status' => $request->input('status', 'COMPLETED'),
-                'created_by' => $request->user()?->id ?? 1,
+                'created_by' => $request->user()->id ?? 1,
             ]);
 
             foreach ($itemsData as $item) {
@@ -151,7 +151,7 @@ class InventoryEntryController extends Controller
         ], 201);
     }
 
-    public function show($id)
+    public function show(int|string $id)
     {
         $entry = InventoryEntry::with(['items.product', 'creator'])->find($id);
 
@@ -168,7 +168,7 @@ class InventoryEntryController extends Controller
         ]);
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, int|string $id)
     {
         $entry = InventoryEntry::find($id);
 
@@ -188,7 +188,7 @@ class InventoryEntryController extends Controller
         ]);
     }
 
-    public function destroy($id)
+    public function destroy(int|string $id)
     {
         $entry = InventoryEntry::with('items')->find($id);
 

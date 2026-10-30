@@ -208,7 +208,7 @@ class StoreController extends Controller
             ], 404);
         }
 
-        abort_if($store->platform_store_id, 403, 'Delete managed stores in GP Admin.');
+        abort_if(! empty($store->platform_store_id), 403, 'Delete managed stores in GP Admin.');
         $store->delete();
 
         return response()->json([

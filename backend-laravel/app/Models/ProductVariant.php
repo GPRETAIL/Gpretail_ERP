@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ProductVariant extends Model
 {
@@ -31,32 +33,38 @@ class ProductVariant extends Model
         ];
     }
 
-    public function product()
+    /** @return BelongsTo<Product, $this> */
+    public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
     }
 
-    public function size()
+    /** @return BelongsTo<Size, $this> */
+    public function size(): BelongsTo
     {
         return $this->belongsTo(Size::class);
     }
 
-    public function brand()
+    /** @return BelongsTo<Brand, $this> */
+    public function brand(): BelongsTo
     {
         return $this->belongsTo(Brand::class);
     }
 
-    public function barcodes()
+    /** @return HasMany<Barcode, $this> */
+    public function barcodes(): HasMany
     {
         return $this->hasMany(Barcode::class, 'variant_id');
     }
 
-    public function stock()
+    /** @return HasMany<Stock, $this> */
+    public function stock(): HasMany
     {
         return $this->hasMany(Stock::class, 'variant_id');
     }
 
-    public function batches()
+    /** @return HasMany<StockBatch, $this> */
+    public function batches(): HasMany
     {
         return $this->hasMany(StockBatch::class, 'variant_id');
     }

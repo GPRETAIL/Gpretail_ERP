@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\Model;
  * This deployment's registration with the platform (Gpretail_Admin) and the last configuration
  * pulled from there. See App\Services\PlatformClient for how it's populated.
  */
+/**
+ * @property string|null $deployment_id
+ */
 class PlatformActivation extends Model
 {
     protected $fillable = [

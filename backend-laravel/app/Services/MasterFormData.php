@@ -103,7 +103,7 @@ class MasterFormData
             $data[$alias] = $data[$canonical] ?? null;
         }
         if ($model->getTable() === 'employees') {
-            $data['date_of_joining'] = $model->joining_date?->format('Y-m-d');
+            $data['date_of_joining'] = $model->getAttribute('joining_date')?->format('Y-m-d');
         }
         $data['company_id'] ??= $data['store_id'] ?? null;
 

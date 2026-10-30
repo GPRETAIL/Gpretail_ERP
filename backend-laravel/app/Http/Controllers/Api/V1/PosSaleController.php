@@ -191,10 +191,10 @@ class PosSaleController extends Controller
                 'code' => $s->product?->code,
                 'productName' => $s->product?->name,
                 'qty' => (float) $s->quantity,
-                'mrp' => (float) ($s->product?->mrp ?? 0),
-                'price' => (float) ($s->product?->selling_price ?? 0),
-                'cost' => (float) ($s->product?->cost_price ?? 0),
-                'tax' => (float) ($s->product?->tax?->rate ?? 0),
+                'mrp' => (float) ($s->product->mrp ?? 0),
+                'price' => (float) ($s->product->selling_price ?? 0),
+                'cost' => (float) ($s->product->cost_price ?? 0),
+                'tax' => (float) ($s->product?->tax->rate ?? 0),
                 'taxName' => $s->product?->tax?->name,
                 'taxType' => $s->product?->tax?->type,
                 'brandId' => $s->product?->brand_id,
@@ -324,7 +324,7 @@ class PosSaleController extends Controller
         return response()->json($paginated);
     }
 
-    public function show($id)
+    public function show(int|string $id)
     {
         $sale = PosSale::with(['appliedReturn', 'settlement', 'customer', 'user', 'items.product', 'payments'])->findOrFail($id);
 
@@ -516,7 +516,7 @@ class PosSaleController extends Controller
                 $sale = PosSale::create([
                     'store_id' => $storeId,
                     'counter_id' => $counter?->id,
-                    'counter_name' => $counter?->value ?? $counter?->config_value,
+                    'counter_name' => $counter->value ?? $counter?->config_value,
                     'customer_id' => $customerId,
                     'user_id' => $user->id ?? 1,
                     'invoice_no' => $invoiceNo,
@@ -637,7 +637,7 @@ class PosSaleController extends Controller
         return $data;
     }
 
-    public function destroy($id)
+    public function destroy(int|string $id)
     {
         $sale = PosSale::with('items')->find($id);
 
@@ -803,8 +803,8 @@ class PosSaleController extends Controller
                 $totNet = 0;
                 foreach ($grouped as $locName => $groupSales) {
                     $qty = $groupSales->sum(fn ($s) => $s->items->sum('quantity'));
-                    $disc = $groupSales->sum('total_discount');
-                    $tax = $groupSales->sum('total_tax');
+                    $disc = $groupSales->sum('discount_amount');
+                    $tax = $groupSales->sum('tax_amount');
                     $round = $groupSales->sum('round_off');
                     $net = $groupSales->sum('grand_total');
                     $taxable = max(0, $net - $tax);
@@ -856,8 +856,8 @@ class PosSaleController extends Controller
                 $totNet = 0;
                 foreach ($grouped as $compName => $groupSales) {
                     $qty = $groupSales->sum(fn ($s) => $s->items->sum('quantity'));
-                    $disc = $groupSales->sum('total_discount');
-                    $tax = $groupSales->sum('total_tax');
+                    $disc = $groupSales->sum('discount_amount');
+                    $tax = $groupSales->sum('tax_amount');
                     $round = $groupSales->sum('round_off');
                     $net = $groupSales->sum('grand_total');
                     $taxable = max(0, $net - $tax);
@@ -909,8 +909,8 @@ class PosSaleController extends Controller
                 $totNet = 0;
                 foreach ($grouped as $dateStr => $groupSales) {
                     $qty = $groupSales->sum(fn ($s) => $s->items->sum('quantity'));
-                    $disc = $groupSales->sum('total_discount');
-                    $tax = $groupSales->sum('total_tax');
+                    $disc = $groupSales->sum('discount_amount');
+                    $tax = $groupSales->sum('tax_amount');
                     $round = $groupSales->sum('round_off');
                     $net = $groupSales->sum('grand_total');
                     $taxable = max(0, $net - $tax);
@@ -963,12 +963,12 @@ class PosSaleController extends Controller
                 $totNet = 0;
                 foreach ($sales as $sale) {
                     $qty = $sale->items->sum('quantity');
-                    $disc = (float) $sale->total_discount;
-                    $tax = (float) $sale->total_tax;
+                    $disc = (float) $sale->discount_amount;
+                    $tax = (float) $sale->tax_amount;
                     $round = (float) $sale->round_off;
                     $net = (float) $sale->grand_total;
                     $taxable = max(0, $net - $tax);
-                    $gstId = $sale->customer?->gst_number ?: $sale->customer?->gstin ?: null;
+                    $gstId = $sale->customer?->gstin ?: null;
 
                     if ($mode === 'gst_bill_summary' && ! $gstId) {
                         continue;
@@ -1005,7 +1005,7 @@ class PosSaleController extends Controller
             case 'discount_bills':
                 $sNo = 1;
                 foreach ($sales as $sale) {
-                    $disc = (float) $sale->total_discount;
+                    $disc = (float) $sale->discount_amount;
                     if ($disc <= 0) {
                         continue;
                     }
@@ -1038,12 +1038,12 @@ class PosSaleController extends Controller
                             'bill_no' => $targetSale->invoice_no ?: $targetSale->id,
                             'sale_at' => $targetSale->sale_date ?? $targetSale->created_at,
                             'barcode' => $item->barcode ?: ($item->product?->barcode ?: '-'),
-                            'product_name' => $item->product?->name ?: ($item->product_name ?: '-'),
+                            'product_name' => $item->product?->name ?: ($item->getAttribute('product_name') ?: '-'),
                             'qty' => (float) ($item->quantity ?? 1),
-                            'price' => (float) ($item->unit_price ?? 0),
+                            'price' => (float) ($item->selling_price ?? 0),
                             'tax_perc' => (float) ($item->tax_rate ?? 0),
-                            'discount' => (float) ($item->discount_amount ?? 0),
-                            'total' => (float) ($item->total_amount ?? 0),
+                            'discount' => (float) ($item->discount ?? 0),
+                            'total' => (float) ($item->subtotal ?? 0),
                             'bill_status' => $targetSale->status ?: 'completed',
                         ];
                     }
@@ -1056,8 +1056,8 @@ class PosSaleController extends Controller
                 $billsCount = $daySales->count();
                 $qtySum = $daySales->sum(fn ($s) => $s->items->sum('quantity'));
                 $grossSum = $daySales->sum('sub_total');
-                $discSum = $daySales->sum('total_discount');
-                $taxSum = $daySales->sum('total_tax');
+                $discSum = $daySales->sum('discount_amount');
+                $taxSum = $daySales->sum('tax_amount');
                 $netSum = $daySales->sum('grand_total');
 
                 $cashColl = $daySales->sum(fn ($s) => $s->payments->where('payment_mode', 'CASH')->sum('amount'));

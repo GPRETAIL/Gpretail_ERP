@@ -16,7 +16,7 @@ class MastersDashboardService
 {
     protected function resolveStoreId(array $filters, $user): ?int
     {
-        $role = strtolower((string) ($user?->role ?? ''));
+        $role = strtolower((string) ($user->role ?? ''));
         $isSuperAdmin = in_array($role, ['super_admin', 'superadmin'], true);
 
         if (! empty($filters['warehouse_id']) || ! empty($filters['store_id'])) {
@@ -235,7 +235,7 @@ class MastersDashboardService
 
     public function getAvailableStores($user): array
     {
-        $role = strtolower((string) ($user?->role ?? ''));
+        $role = strtolower((string) ($user->role ?? ''));
         $isSuperAdmin = in_array($role, ['super_admin', 'superadmin'], true);
 
         if ($isSuperAdmin) {

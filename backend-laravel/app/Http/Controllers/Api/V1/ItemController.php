@@ -11,7 +11,6 @@ use App\Services\MasterFormData;
 use App\Services\PaginationService;
 use App\Services\StoreQuery;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -30,8 +29,8 @@ class ItemController extends Controller
         $totalBarcodes = Product::whereNotNull('barcode')->where('barcode', '!=', '')->count();
         $totalStockValue = StoreQuery::table('stocks')
             ->join('products', 'stocks.product_id', '=', 'products.id')
-            ->selectRaw('SUM(stocks.quantity * products.cost_price)')
-            ->value(DB::raw('SUM(stocks.quantity * products.cost_price)')) ?? 0;
+            ->selectRaw('SUM(stocks.quantity * products.cost_price) as stock_value')
+            ->value('stock_value') ?? 0;
         $lowStockItems = Stock::where('quantity', '<=', 5)->where('quantity', '>', 0)->count();
 
         return response()->json([
@@ -71,15 +70,15 @@ class ItemController extends Controller
 
         // Name mapping: selling_name or printing_name or name
         if (empty($data['name'])) {
-            $data['name'] = $data['selling_name'] ?? $data['printing_name'] ?? $item?->name ?? ('Item '.($data['item_code'] ?? $data['code'] ?? ''));
+            $data['name'] = $data['selling_name'] ?? $data['printing_name'] ?? $item->name ?? ('Item '.($data['item_code'] ?? $data['code'] ?? ''));
         }
 
         // Code mapping: item_code or code
         if (empty($data['code'])) {
-            $data['code'] = ! empty($data['item_code']) ? $data['item_code'] : (! empty($data['sku']) ? $data['sku'] : ($item?->code ?? 'ITM_'.strtoupper(substr(uniqid(), -6))));
+            $data['code'] = ! empty($data['item_code']) ? $data['item_code'] : (! empty($data['sku']) ? $data['sku'] : ($item->code ?? 'ITM_'.strtoupper(substr(uniqid(), -6))));
         }
         if (empty($data['barcode'])) {
-            $data['barcode'] = $item?->barcode ?? $data['code'];
+            $data['barcode'] = $item->barcode ?? $data['code'];
         }
 
         if (array_key_exists('product_id', $data)) {

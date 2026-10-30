@@ -7,15 +7,21 @@ use Illuminate\Validation\ValidationException;
 
 class PagePermissions
 {
+    /** The preset document is immutable for this resolver; user-specific grants are never cached. */
+    private ?array $rolePresets = null;
+
     public function effective(User $user): ?array
     {
         if ($user->page_permissions !== null) {
             return $user->page_permissions;
         }
         // Compatibility for accounts whose role was saved before page grants were persisted.
-        $presets = json_decode(file_get_contents(config_path('role_page_presets.json')), true, 512, JSON_THROW_ON_ERROR);
+        if ($this->rolePresets === null) {
+            $presets = json_decode(file_get_contents(config_path('role_page_presets.json')), true, 512, JSON_THROW_ON_ERROR);
+            $this->rolePresets = is_array($presets) ? $presets : [];
+        }
 
-        return $presets[$user->role] ?? null;
+        return $this->rolePresets[$user->role] ?? null;
     }
 
     public function allows(User $user, string $path, string $action): bool

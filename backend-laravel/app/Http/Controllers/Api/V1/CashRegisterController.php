@@ -58,7 +58,7 @@ class CashRegisterController extends Controller
         }
 
         $storeId = $this->resolveStoreId($request, 1);
-        $userId = $request->user()?->id ?? 1;
+        $userId = $request->user()->id ?? 1;
 
         // Close any existing open session or create new
         $session = CashRegisterSession::create([

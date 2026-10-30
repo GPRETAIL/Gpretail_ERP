@@ -164,7 +164,7 @@ class CustomerOrderController extends Controller
                 'payments' => $payments,
                 'status' => $request->input('status', 'PENDING'),
                 'notes' => $request->input('notes'),
-                'created_by' => $request->user()?->id ?? 1,
+                'created_by' => $request->user()->id ?? 1,
             ]);
 
             foreach ($itemsData as $item) {
@@ -223,7 +223,7 @@ class CustomerOrderController extends Controller
         ], 201);
     }
 
-    public function show($id)
+    public function show(int|string $id)
     {
         $order = CustomerOrder::with(['customer', 'items.product', 'salesman', 'supplier', 'creator', 'communications'])->find($id);
 
@@ -240,7 +240,7 @@ class CustomerOrderController extends Controller
         ]);
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, int|string $id)
     {
         $order = CustomerOrder::find($id);
 
@@ -344,7 +344,7 @@ class CustomerOrderController extends Controller
         ]);
     }
 
-    public function destroy($id)
+    public function destroy(int|string $id)
     {
         $order = CustomerOrder::find($id);
 

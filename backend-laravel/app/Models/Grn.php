@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Grn extends Model
 {
@@ -27,27 +29,32 @@ class Grn extends Model
         ];
     }
 
-    public function store()
+    /** @return BelongsTo<Store, $this> */
+    public function store(): BelongsTo
     {
         return $this->belongsTo(Store::class);
     }
 
-    public function supplier()
+    /** @return BelongsTo<Supplier, $this> */
+    public function supplier(): BelongsTo
     {
         return $this->belongsTo(Supplier::class);
     }
 
-    public function purchaseInvoice()
+    /** @return BelongsTo<PurchaseInvoice, $this> */
+    public function purchaseInvoice(): BelongsTo
     {
         return $this->belongsTo(PurchaseInvoice::class);
     }
 
-    public function items()
+    /** @return HasMany<GrnItem, $this> */
+    public function items(): HasMany
     {
         return $this->hasMany(GrnItem::class);
     }
 
-    public function receiver()
+    /** @return BelongsTo<User, $this> */
+    public function receiver(): BelongsTo
     {
         return $this->belongsTo(User::class, 'received_by');
     }

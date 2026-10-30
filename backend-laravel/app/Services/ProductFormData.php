@@ -69,12 +69,12 @@ class ProductFormData
             if ($group) {
                 $category = Category::firstOrCreate(['name' => $group->name], ['code' => 'PG-'.$group->id, 'is_active' => true]);
                 $data['category_id'] = $category->id;
-                $data['master_details'] = array_replace($existing?->master_details ?? [], ['product_group_attribute_id' => $group->id]);
+                $data['master_details'] = array_replace($existing->master_details ?? [], ['product_group_attribute_id' => $group->id]);
             } else {
-                $data['master_details'] = array_replace($existing?->master_details ?? [], ['product_group_attribute_id' => null]);
+                $data['master_details'] = array_replace($existing->master_details ?? [], ['product_group_attribute_id' => null]);
             }
         } elseif (array_key_exists('category_id', $data)) {
-            $data['master_details'] = array_replace($existing?->master_details ?? [], ['product_group_attribute_id' => null]);
+            $data['master_details'] = array_replace($existing->master_details ?? [], ['product_group_attribute_id' => null]);
         }
         foreach (['category_id' => 'categories', 'brand_id' => 'brands', 'sales_tax_id' => 'taxes', 'purchase_tax_id' => 'taxes', 'size_group_id' => 'size_groups'] as $field => $table) {
             if (! array_key_exists($field, $data)) {

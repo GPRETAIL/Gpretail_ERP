@@ -22,7 +22,7 @@ class PushSubscriptionController extends Controller
         $data = $request->validate(['device_id' => 'required|uuid', 'endpoint' => 'required|string|max:4096']);
         $user = $request->user();
         $token = $user->currentAccessToken();
-        abort_unless($token?->id, 403, 'Sign in again to register this device.');
+        abort_unless(! empty($token->id), 403, 'Sign in again to register this device.');
         $contact = $push->request('contacts', ['contacts' => [$push->contact($user)]]);
         abort_unless($contact['ok'], 503, 'Could not verify notification preferences with Vynerix Admin.');
         $result = $push->request('subscribe', array_merge($data, ['user_key' => $push->userKey($user)]));

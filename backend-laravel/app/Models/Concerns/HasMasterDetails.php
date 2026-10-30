@@ -23,7 +23,7 @@ trait HasMasterDetails
 
     protected function masterCreator(): string|int|null
     {
-        return auth()->user()?->name ?? auth()->user()?->username;
+        return auth()->user()->name ?? auth()->user()?->username;
     }
 
     public function attributesToArray(): array

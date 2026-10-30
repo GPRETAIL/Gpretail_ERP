@@ -95,7 +95,7 @@ class StockOutwardController extends Controller
                     'outward_date' => $request->input('outward_date') ?: now()->toDateString(),
                     'status' => $request->input('status', 'DISPATCHED'),
                     'notes' => $request->input('notes'),
-                    'created_by' => $request->user()?->id ?? 1,
+                    'created_by' => $request->user()->id ?? 1,
                 ]);
 
                 foreach ($request->input('items', []) as $item) {
@@ -158,7 +158,7 @@ class StockOutwardController extends Controller
         ], 201);
     }
 
-    public function show($id)
+    public function show(int|string $id)
     {
         $outward = StockOutward::with(['sourceStore', 'targetStore', 'items.product', 'creator'])->find($id);
 
@@ -175,7 +175,7 @@ class StockOutwardController extends Controller
         ]);
     }
 
-    public function destroy($id)
+    public function destroy(int|string $id)
     {
         $outward = StockOutward::with('items')->find($id);
 

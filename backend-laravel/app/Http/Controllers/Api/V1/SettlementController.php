@@ -80,7 +80,7 @@ class SettlementController extends Controller
             'card_total' => $request->input('card_total', 0),
             'upi_total' => $request->input('upi_total', 0),
             'credit_total' => $request->input('credit_total', 0),
-            'settled_by' => $request->user()?->id ?? 1,
+            'settled_by' => $request->user()->id ?? 1,
         ]);
 
         return response()->json([
@@ -175,7 +175,7 @@ class SettlementController extends Controller
             'upiProviderId' => 'nullable|integer',
         ]);
         $storeId = $this->resolveStoreId($request, null);
-        abort_unless($storeId, 422, 'Select a store first.');
+        abort_unless($storeId !== null && $storeId > 0, 422, 'Select a store first.');
 
         return DB::transaction(function () use ($data, $request, $storeId) {
             $bills = PosSale::with(['customer', 'appliedReturn'])->where('store_id', $storeId)

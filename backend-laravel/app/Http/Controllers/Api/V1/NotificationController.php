@@ -10,6 +10,7 @@ use App\Services\PaginationService;
 use App\Services\PlatformNotificationSync;
 use App\Services\StoreContext;
 use App\Services\StoreQuery;
+use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -163,7 +164,11 @@ class NotificationController extends Controller
             if ($cache->has($key)) {
                 return;
             }
-            $lock = $cache->lock($key.':lock', 60);
+            $store = $cache->getStore();
+            if (! $store instanceof LockProvider) {
+                throw new \RuntimeException('Notification cache does not support locks.');
+            }
+            $lock = $store->lock($key.':lock', 60);
             if (! $lock->get()) {
                 return;
             }
@@ -174,7 +179,7 @@ class NotificationController extends Controller
         }
         try {
             try {
-                if ($cache->has($key)) {
+                if ($cache->get($key) !== null) {
                     return;
                 }
             } catch (\Exception) { /* Generate if the cache becomes unavailable. */
@@ -334,7 +339,7 @@ class NotificationController extends Controller
                 continue;
             }
 
-            $storeName = $node->store?->name ?? "Store #{$node->store_id}";
+            $storeName = $node->store->name ?? "Store #{$node->store_id}";
             $lastSeen = $node->last_heartbeat_at ? $node->last_heartbeat_at->diffForHumans() : 'never';
 
             Notification::create([

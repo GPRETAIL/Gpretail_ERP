@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AttributeType extends Model
 {
@@ -22,7 +23,8 @@ class AttributeType extends Model
         ];
     }
 
-    public function values()
+    /** @return HasMany<AttributeValue, $this> */
+    public function values(): HasMany
     {
         return $this->hasMany(AttributeValue::class);
     }

@@ -13,17 +13,17 @@ class AttendanceController extends Controller
 {
     public function today(Request $request)
     {
-        $storeId = $this->resolveStoreId($request, 1);
+        $storeId = $this->resolveStoreId($request, null);
         $today = now()->toDateString();
         $nowTime = now()->format('H:i:s');
 
-        $store = ($storeId && $storeId !== 'all') ? Store::find($storeId) : null;
-        $settings = $store?->attendance_settings ?? [];
+        $store = $storeId ? Store::find($storeId) : null;
+        $settings = $store->attendance_settings ?? [];
         $shiftStart = $settings['shift_start'] ?? '09:30';
         $lateCutoff = $settings['late_cutoff'] ?? '10:00';
 
         $employees = Employee::where('is_active', true)
-            ->when($storeId && $storeId !== 'all', fn ($q) => $q->where('store_id', $storeId))
+            ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->with(['department'])
             ->orderBy('name')
             ->get();
@@ -180,7 +180,7 @@ class AttendanceController extends Controller
         }
 
         $store = ($storeId && $storeId !== 'all') ? Store::find($storeId) : null;
-        $settings = $store?->attendance_settings ?? [];
+        $settings = $store->attendance_settings ?? [];
 
         return response()->json([
             'success' => true,

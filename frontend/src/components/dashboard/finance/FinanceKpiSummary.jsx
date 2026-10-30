@@ -8,10 +8,13 @@ import { formatCurrency } from "../../../utils/dashboardFormatters";
 // independently in the layout customizer, same split as the Overview tab's KPI row.
 const blurSx = (privacyMode) => (privacyMode ? { filter: "blur(4px)", userSelect: "none" } : {});
 
-const cardSx = (hoverColor) => ({
-  display: "block", width: "100%", height: "100%", textAlign: "left", cursor: "pointer",
+const staticCardSx = {
+  display: "block", width: "100%", height: "100%", textAlign: "left",
   borderRadius: "10.5px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper",
-  p: 2, boxShadow: 1, transition: "border-color 0.15s ease, box-shadow 0.15s ease",
+  p: 2, boxShadow: 1,
+};
+const cardSx = (hoverColor) => ({
+  ...staticCardSx, cursor: "pointer", transition: "border-color 0.15s ease, box-shadow 0.15s ease",
   "&:hover": { borderColor: hoverColor, boxShadow: 2 },
 });
 
@@ -78,10 +81,9 @@ export function PurchaseValueCard({ summary = {}, loading, privacyMode }) {
 }
 
 export function NetPositionCard({ summary = {}, loading, privacyMode }) {
-  const navigate = useNavigate();
   const positive = (summary.net_position || 0) >= 0;
   return (
-    <ButtonBase onClick={() => navigate("/warehouse/purchase-return")} sx={cardSx("success.main")}>
+    <Box sx={staticCardSx}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
         <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
           Net Position
@@ -96,6 +98,6 @@ export function NetPositionCard({ summary = {}, loading, privacyMode }) {
       <Typography sx={{ mt: 0.5, fontSize: 11, color: "text.secondary", ...blurSx(privacyMode) }}>
         Refunds due: {formatCurrency(summary.refunds_due)}
       </Typography>
-    </ButtonBase>
+    </Box>
   );
 }

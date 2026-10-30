@@ -5,10 +5,15 @@ import { Box, Typography } from "@mui/material";
 // Shared by Overview's KPI row and every module tab's stat-card grid, so a "Sales growth 4.2%"
 // badge looks identical whether it's driven by vx-sales metrics or a module's dashboard-summary.
 export const TrendBadge = ({ trend }) => {
-  if (!trend || trend.direction === "flat") {
+  if (!trend) return null;
+  if (["unavailable", "new"].includes(trend.direction)) {
+    return <Typography sx={{ fontSize: 10, lineHeight: 1.2, color: "text.secondary", mt: 0.5 }}>{trend.message}</Typography>;
+  }
+  const label = trend.label || "vs previous period";
+  if (trend.direction === "flat") {
     return (
       <Typography sx={{ fontSize: 10, lineHeight: 1.2, color: "text.secondary", mt: 0.5 }}>
-        No change from last month
+        No change {label}
       </Typography>
     );
   }
@@ -25,7 +30,7 @@ export const TrendBadge = ({ trend }) => {
       }}
     >
       <Icon size={12} />
-      <Box component="span">{trend.changePercent}% from last month</Box>
+      <Box component="span">{trend.changePercent}% {label}</Box>
     </Typography>
   );
 };

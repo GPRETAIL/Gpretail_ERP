@@ -186,12 +186,12 @@ class AuthController extends Controller
     {
         $request->validate(['newPassword' => 'required|string|min:8|max:255', 'currentPassword' => 'nullable|string']);
         $user = $request->user();
-        abort_unless($user, 401);
+        abort_unless($user !== null, 401);
         if (! $user->must_change_password) {
             abort_unless(Hash::check((string) $request->input('currentPassword', ''), $user->password), 422, 'Current password is incorrect.');
         }
         $user->update(['password' => $request->input('newPassword'), 'must_change_password' => false]);
-        $client = in_array('client:mobile', $user->currentAccessToken()?->abilities ?? [], true) ? 'mobile' : 'web';
+        $client = in_array('client:mobile', $user->currentAccessToken()->abilities ?? [], true) ? 'mobile' : 'web';
         $user->tokens()->delete();
         $token = $user->createToken($client.'-token', ['client:'.$client])->plainTextToken;
 
@@ -371,7 +371,7 @@ class AuthController extends Controller
 
         $request->validate(['counterId' => 'required|integer|min:1']);
         $counter = PosCounter::find((int) $counterId, $this->resolveStoreId($request, null));
-        abort_unless($counter, 422, 'Select an active counter in the current store.');
+        abort_unless($counter !== null, 422, 'Select an active counter in the current store.');
         $user->update(['counter_id' => $counter->id]);
 
         return response()->json([

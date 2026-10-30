@@ -100,7 +100,8 @@ const StockValuationAnalyzer = lazy(() => import("../pages/analytical/StockValua
 const SupplierPayment = lazy(() => import("../pages/finance/SupplierPayment"));
 
 export const protectedLayoutRoutes = [
-  { path: "/masters/brand", render: () => <Brand /> },
+  { path: "/masters/brand", render: () => <Brand key="list" /> },
+  { path: "/masters/brand/new", render: () => <Brand key="create" initialCreate /> },
   { path: "/masters/tax", render: () => <Tax /> },
   { path: "/masters/tax/new", render: () => <TaxForm /> },
   { path: "/masters/tax/:taxCode", render: () => <TaxForm /> },
@@ -109,7 +110,8 @@ export const protectedLayoutRoutes = [
   { path: "/masters/transport/new", render: () => <TransportForm /> },
   { path: "/masters/transport/:id", render: () => <TransportForm /> },
   { path: "/masters/transport/edit/:id", render: () => <TransportForm /> },
-  { path: "/masters/supplier", render: () => <Supplier /> },
+  { path: "/masters/supplier", render: () => <Supplier key="list" /> },
+  { path: "/masters/supplier/new", render: () => <Supplier key="create" initialCreate /> },
   { path: "/masters/agent", render: () => <Agent /> },
   { path: "/masters/configuration", render: () => <Configuration /> },
   { path: "/masters/configuration/new", render: () => <ConfigurationForm /> },

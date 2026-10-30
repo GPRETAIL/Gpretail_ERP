@@ -3,6 +3,7 @@ import { ChevronDown, Download, FileSpreadsheet, FileText } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { Button, ListItemIcon, ListItemText, Menu, MenuItem } from "@mui/material";
 import { useTransferActivity } from "../context/TransferActivityContext";
+import { tryBuildTextCsv } from "../utils/csvExport";
 
 const toCellText = (value) => {
   if (value === null || value === undefined) return "";
@@ -358,9 +359,12 @@ export default function ExportBottomSheet({
       updateActivity(activityId, { progressPercent: 65, statusMessage: "Building CSV..." });
       const resolvedTitle = resolveExportTitle(sourceRows);
       const exportMatrix = buildExportMatrix(sourceRows);
-      const XLSX = await import("xlsx");
-      const { ws: csv } = buildWorksheet(XLSX, exportMatrix, resolvedTitle);
-      const csvText = XLSX.utils.sheet_to_csv(csv);
+      let csvText = tryBuildTextCsv(buildExportAoA(exportMatrix, resolvedTitle));
+      if (csvText === null) {
+        const XLSX = await import("xlsx");
+        const { ws } = buildWorksheet(XLSX, exportMatrix, resolvedTitle);
+        csvText = XLSX.utils.sheet_to_csv(ws);
+      }
       updateActivity(activityId, { progressPercent: 90, statusMessage: "Downloading CSV..." });
       downloadBlob(new Blob([csvText], { type: "text/csv;charset=utf-8;" }), `${fileName}.csv`);
       finishActivity(activityId, {
@@ -379,7 +383,7 @@ export default function ExportBottomSheet({
     } finally {
       setExporting(false);
     }
-  }, [STATUS.SUCCESS, STATUS.FAILED, TYPE.EXPORT, buildExportMatrix, buildWorksheet, exporting, fileName, finishActivity, location.pathname, resolveExportTitle, resolveRowsForExport, startActivity, updateActivity]);
+  }, [STATUS.SUCCESS, STATUS.FAILED, TYPE.EXPORT, buildExportAoA, buildExportMatrix, buildWorksheet, exporting, fileName, finishActivity, location.pathname, resolveExportTitle, resolveRowsForExport, startActivity, updateActivity]);
 
   const exportExcel = useCallback(async () => {
     if (exporting) return;

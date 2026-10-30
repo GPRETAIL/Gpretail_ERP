@@ -34,6 +34,8 @@ export default defineConfig(({ mode }) => {
       react(),
     ],
     test: {
+      // Each jsdom worker loads the ERP's component graph; bound memory on POS/developer PCs.
+      maxWorkers: 2,
       testTimeout: 20000,
       hookTimeout: 20000,
       environment: "jsdom",

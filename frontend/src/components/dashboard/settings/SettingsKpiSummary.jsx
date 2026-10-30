@@ -58,7 +58,7 @@ export function SettingsEmployeesCard({ summary = {}, loading, privacyMode }) {
 export function SettingsStoresCard({ summary = {}, loading, privacyMode }) {
   const navigate = useNavigate();
   return (
-    <ButtonBase onClick={() => navigate("/settings/configure-local-server")} sx={cardSx("success.main")}>
+    <ButtonBase onClick={() => navigate("/settings/company")} sx={cardSx("success.main")}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
         <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Stores</Typography>
         <Box sx={{ color: "success.main", display: "inline-flex" }}>

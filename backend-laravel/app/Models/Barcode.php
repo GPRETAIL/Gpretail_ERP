@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Barcode extends Model
 {
@@ -49,27 +50,32 @@ class Barcode extends Model
         ];
     }
 
-    public function inventoryItem()
+    /** @return BelongsTo<InventoryEntryItem, $this> */
+    public function inventoryItem(): BelongsTo
     {
         return $this->belongsTo(InventoryEntryItem::class, 'inventory_item_id');
     }
 
-    public function product()
+    /** @return BelongsTo<Product, $this> */
+    public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
     }
 
-    public function variant()
+    /** @return BelongsTo<ProductVariant, $this> */
+    public function variant(): BelongsTo
     {
         return $this->belongsTo(ProductVariant::class, 'variant_id');
     }
 
-    public function directPurchase()
+    /** @return BelongsTo<DirectPurchase, $this> */
+    public function directPurchase(): BelongsTo
     {
         return $this->belongsTo(DirectPurchase::class, 'direct_purchase_id');
     }
 
-    public function directPurchaseItem()
+    /** @return BelongsTo<DirectPurchaseItem, $this> */
+    public function directPurchaseItem(): BelongsTo
     {
         return $this->belongsTo(DirectPurchaseItem::class, 'direct_purchase_item_id');
     }

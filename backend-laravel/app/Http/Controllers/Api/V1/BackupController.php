@@ -34,6 +34,7 @@ class BackupController extends Controller
         return $settings;
     }
 
+    /** @return Builder<Store> */
     private function authorizedStores(Request $request): Builder
     {
         return app(StoreContext::class)->available($request->user());
@@ -61,7 +62,7 @@ class BackupController extends Controller
 
         $companies = $this->authorizedStores($request)->where('is_active', true)->orderBy('name')->get(['id', 'name']);
 
-        $setting = $companyId ? ($this->authorizedStores($request)->find($companyId)?->backup_settings ?? []) : [];
+        $setting = $companyId ? ($this->authorizedStores($request)->find($companyId)->backup_settings ?? []) : [];
         // Expose whether OCI cloud storage is configured so the frontend can enable/disable options
         $cloudConfigured = BackupService::isCloudConfigured($setting);
         $setting['cloud_configured'] = $cloudConfigured;
@@ -103,7 +104,7 @@ class BackupController extends Controller
         $lastBackup = $backups->first();
 
         $stats = [
-            'last_backup_status' => $lastBackup?->status ?? 'never',
+            'last_backup_status' => $lastBackup->status ?? 'never',
             'last_backup_at' => $lastBackup?->completed_at,
             'next_scheduled_backup' => $setting['next_scheduled_at'] ?? null,
             'storage_usage' => [
@@ -154,7 +155,7 @@ class BackupController extends Controller
         $storageMode = $request->input('storageMode', 'local');
 
         // Resolve store settings (needed for cloud credentials)
-        $storeSettings = $companyId ? ($this->authorizedStores($request)->find($companyId)?->backup_settings ?? []) : [];
+        $storeSettings = $this->authorizedStores($request)->find($companyId)->backup_settings ?? [];
 
         // Validate cloud mode is configured before accepting the request
         if (in_array($storageMode, ['cloud', 'hybrid']) && ! BackupService::isCloudConfigured($storeSettings)) {
@@ -205,7 +206,7 @@ class BackupController extends Controller
                 $tableCounts[$table] = count($rows);
             }
 
-            $baseName = 'backup_'.$backupType.'_'.($companyId ?: 'all').'_'.now()->format('Ymd_His').'_'.uniqid();
+            $baseName = 'backup_'.$backupType.'_'.$companyId.'_'.now()->format('Ymd_His').'_'.uniqid();
             $zipPath = $this->backups->writeBackupArchive($exported, $manifest, $baseName);
 
             $encryptionEnabled = $request->boolean('encryptionEnabled');
@@ -364,7 +365,7 @@ class BackupController extends Controller
                 $store->update(['backup_settings' => $settings]);
             } else {
                 abort_unless(
-                    $request->user()?->role === 'super_admin' || ($request->user()?->role === 'admin' && ! $request->user()?->store_id),
+                    $request->user()?->role === 'super_admin' || ($request->user()?->role === 'admin' && ! $request->user()->store_id),
                     403,
                     'Select a store before saving backup settings.'
                 );
@@ -399,7 +400,7 @@ class BackupController extends Controller
             $store = null;
         }
 
-        return response()->json(['success' => true, 'data' => $this->presentSettings($store?->backup_settings ?? [])]);
+        return response()->json(['success' => true, 'data' => $this->presentSettings($store->backup_settings ?? [])]);
     }
 
     public function cloudTest(Request $request)
@@ -410,7 +411,7 @@ class BackupController extends Controller
         ]);
         $companyId = $this->resolveStoreId($request, null);
         $store = $companyId ? $this->authorizedStores($request)->find($companyId) : null;
-        $stored = $store?->backup_settings ?? [];
+        $stored = $store->backup_settings ?? [];
 
         // Merge submitted credentials with stored ones (secret may be masked)
         $submittedSecret = $request->input('ociSecretAccessKey');
@@ -458,7 +459,7 @@ class BackupController extends Controller
         try {
             $zipPath = $backup->file_path ? storage_path('app/private/'.$backup->file_path) : null;
             if ((! $zipPath || ! is_file($zipPath)) && in_array($backup->storage_mode, ['cloud', 'hybrid'], true) && $backup->cloud_path) {
-                $settings = $this->authorizedStores($request)->find($backup->company_id)?->backup_settings ?? [];
+                $settings = $this->authorizedStores($request)->find($backup->company_id)->backup_settings ?? [];
                 $zipPath = $cloudTempPath = $this->backups->downloadFromCloud($backup->cloud_path, $settings);
             }
             if (! $zipPath || ! is_file($zipPath)) {
@@ -538,7 +539,7 @@ class BackupController extends Controller
         $uploaded = $request->file('backupFile');
         abort_unless(in_array(strtolower($uploaded->getClientOriginalExtension()), ['zip', 'enc'], true), 422, 'Upload a .zip or .enc backup file.');
 
-        $fileName = 'imported_'.now()->format('Ymd_His').'_'.uniqid().'.'.($uploaded->getClientOriginalExtension() ?: 'zip');
+        $fileName = 'imported_'.now()->format('Ymd_His').'_'.uniqid().'.'.$uploaded->getClientOriginalExtension();
         $dir = storage_path('app/private/backups');
         if (! is_dir($dir)) {
             mkdir($dir, 0700, true);
@@ -589,7 +590,7 @@ class BackupController extends Controller
         if ($status === 'failed') {
             @unlink($savedPath);
             $backup->delete();
-            report(new \RuntimeException($statusMessage ?? 'Backup import failed'));
+            report(new \RuntimeException($statusMessage));
 
             return response()->json(['success' => false, 'message' => 'Backup could not be restored. Check the archive, password and selected store.'], 422);
         }
@@ -626,7 +627,7 @@ class BackupController extends Controller
             // Cloud-only backup: fetch from OCI to a temp file, then stream
             if ($backup->storage_mode === 'cloud' && $backup->cloud_path) {
                 $storeSettings = $backup->company_id
-                    ? ($this->authorizedStores($request)->find($backup->company_id)?->backup_settings ?? [])
+                    ? ($this->authorizedStores($request)->find($backup->company_id)->backup_settings ?? [])
                     : [];
                 $tmpCloudPath = $this->backups->downloadFromCloud($backup->cloud_path, $storeSettings);
 
@@ -647,7 +648,7 @@ class BackupController extends Controller
                 }
                 if ($backup->cloud_path) {
                     $storeSettings = $backup->company_id
-                        ? ($this->authorizedStores($request)->find($backup->company_id)?->backup_settings ?? [])
+                        ? ($this->authorizedStores($request)->find($backup->company_id)->backup_settings ?? [])
                         : [];
                     $tmpCloudPath = $this->backups->downloadFromCloud($backup->cloud_path, $storeSettings);
 
@@ -735,7 +736,7 @@ class BackupController extends Controller
         if ($backup->cloud_path && in_array($backup->storage_mode, ['cloud', 'hybrid'])) {
             try {
                 $storeSettings = $backup->company_id
-                    ? ($this->authorizedStores($request)->find($backup->company_id)?->backup_settings ?? [])
+                    ? ($this->authorizedStores($request)->find($backup->company_id)->backup_settings ?? [])
                     : [];
                 if (BackupService::isCloudConfigured($storeSettings)) {
                     $this->backups->deleteFromCloud($backup->cloud_path, $storeSettings);

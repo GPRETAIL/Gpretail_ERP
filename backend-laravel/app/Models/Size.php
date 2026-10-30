@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Size extends Model
 {
@@ -27,12 +29,14 @@ class Size extends Model
         'is_active',
     ];
 
-    public function sizeGroup()
+    /** @return BelongsTo<SizeGroup, $this> */
+    public function sizeGroup(): BelongsTo
     {
         return $this->belongsTo(SizeGroup::class);
     }
 
-    public function variants()
+    /** @return HasMany<ProductVariant, $this> */
+    public function variants(): HasMany
     {
         return $this->hasMany(ProductVariant::class);
     }

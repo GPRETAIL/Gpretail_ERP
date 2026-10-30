@@ -5,7 +5,12 @@ namespace App\Models;
 use App\Models\Concerns\HasMasterDetails;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property array<string, mixed>|null $master_details
+ */
 class PurchaseInvoice extends Model
 {
     use HasFactory;
@@ -16,7 +21,8 @@ class PurchaseInvoice extends Model
         return $this->created_by ?? auth()->id();
     }
 
-    public function company()
+    /** @return BelongsTo<Store, $this> */
+    public function company(): BelongsTo
     {
         return $this->belongsTo(Store::class, 'store_id');
     }
@@ -24,7 +30,7 @@ class PurchaseInvoice extends Model
     public function toArray(): array
     {
         $data = parent::toArray();
-        $data['invoice_date'] = $this->invoice_date?->format('Y-m-d');
+        $data['invoice_date'] = $this->invoice_date->format('Y-m-d');
         $data['supplier_invoice_date'] = $this->supplier_invoice_date?->format('Y-m-d');
         if (($this->master_details['workflow'] ?? null) === 'warehouse_invoice') {
             $data['items'] = $this->master_details['warehouse_items'] ?? [];
@@ -68,27 +74,32 @@ class PurchaseInvoice extends Model
         ];
     }
 
-    public function store()
+    /** @return BelongsTo<Store, $this> */
+    public function store(): BelongsTo
     {
         return $this->belongsTo(Store::class);
     }
 
-    public function supplier()
+    /** @return BelongsTo<Supplier, $this> */
+    public function supplier(): BelongsTo
     {
         return $this->belongsTo(Supplier::class);
     }
 
-    public function transport()
+    /** @return BelongsTo<Transport, $this> */
+    public function transport(): BelongsTo
     {
         return $this->belongsTo(Transport::class);
     }
 
-    public function items()
+    /** @return HasMany<PurchaseInvoiceItem, $this> */
+    public function items(): HasMany
     {
         return $this->hasMany(PurchaseInvoiceItem::class);
     }
 
-    public function creator()
+    /** @return BelongsTo<User, $this> */
+    public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }

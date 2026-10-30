@@ -19,6 +19,11 @@ This release checks create → list → reopen → partial edit flows using isol
 
 No customer rows are deleted or reseeded. Previously saved values affected only by display mapping become visible automatically. Values discarded by older save handlers were never stored and need re-entry; the new nullable columns cannot reconstruct them.
 
+The follow-up `2026_10_29_054633_complete_customer_order_form_columns.php` adds missing
+customer-order references, payment/totals fields and item display details. Existing
+columns remain intact; a newly added net amount is initialized from total less
+discount, with a floor of zero. Rollback retains these columns and their order data.
+
 ## Verification
 
 `RecordListRoundTripTest` covers all 51 configuration and 27 product-attribute catalog types, normal/large/export product lists, item sizes, supplier/transport/agent/employee/tax/brand columns, HR metadata, transport forms and commercial invoice headers. It checks zero/false values, partial edits, explicit clearing and rejection of references from another store. Warehouse tests verify header saves leave both stock and purchase-intake rows unchanged.

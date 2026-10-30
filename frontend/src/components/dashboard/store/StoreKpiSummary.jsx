@@ -23,7 +23,7 @@ const cardSx = (hoverColor) => ({
 export function StoresCard({ summary = {}, loading, privacyMode }) {
   const navigate = useNavigate();
   return (
-    <ButtonBase onClick={() => navigate("/settings/configure-local-server")} sx={cardSx("primary.main")}>
+    <ButtonBase onClick={() => navigate("/settings/company")} sx={cardSx("primary.main")}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
         <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Stores</Typography>
         <Box sx={{ color: "primary.main", display: "inline-flex" }}>

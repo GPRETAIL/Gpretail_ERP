@@ -213,7 +213,7 @@ class ProductAttributeController extends Controller
         $code = $request->has('code') ? $request->input('code') : $attributeValue->code;
         $sortOrder = $request->has('sort_order') ? $request->integer('sort_order') : ($request->has('display_order') ? $request->integer('display_order') : $attributeValue->sort_order);
         $extraData = $request->has('extra_data') ? $request->input('extra_data') : $attributeValue->extra_data;
-        $updatedBy = $request->input('updated_by') ?: ($request->user()?->name ?? null);
+        $updatedBy = $request->input('updated_by') ?: ($request->user()->name ?? null);
 
         $attributeValue->update([
             'name' => $name,

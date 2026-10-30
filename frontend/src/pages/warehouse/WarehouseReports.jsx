@@ -29,13 +29,8 @@ const toNumber = (value) => {
 const round2 = (value) => Math.round((Number(value) || 0) * 100) / 100;
 
 const getAllRows = async (url) => {
-  try {
-    const res = await api.get(url, { params: { all: "true" } });
-    return res.data?.data || [];
-  } catch {
-    const res = await api.get(url);
-    return res.data?.data || [];
-  }
+  const res = await api.get(url, { params: { all: "true" } });
+  return res.data?.data || [];
 };
 
 const buildReportMeta = (key, title) => ({ key, title });

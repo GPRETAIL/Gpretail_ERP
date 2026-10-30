@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class LoyaltyTransaction extends Model
 {
@@ -22,23 +23,26 @@ class LoyaltyTransaction extends Model
     protected function casts(): array
     {
         return [
-            'points'        => 'integer',
-            'amount'        => 'decimal:2',
+            'points' => 'integer',
+            'amount' => 'decimal:2',
             'balance_after' => 'integer',
         ];
     }
 
-    public function customer()
+    /** @return BelongsTo<Customer, $this> */
+    public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
     }
 
-    public function posSale()
+    /** @return BelongsTo<PosSale, $this> */
+    public function posSale(): BelongsTo
     {
         return $this->belongsTo(PosSale::class);
     }
 
-    public function creator()
+    /** @return BelongsTo<User, $this> */
+    public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }

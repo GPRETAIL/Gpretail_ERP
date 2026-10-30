@@ -81,7 +81,7 @@ class LookupController extends Controller
                             ->limit(100)
                             ->get()
                             ->map(function ($t) {
-                                $t->tax_percentage = (float) $t->rate;
+                                $t->setAttribute('tax_percentage', (float) $t->rate);
 
                                 return $t;
                             });
@@ -124,14 +124,15 @@ class LookupController extends Controller
                             ->limit(100)
                             ->get()
                             ->map(function ($e) {
-                                $designationName = $e->designation?->name ?? '';
-                                $e->designation = [
+                                $designationName = $e->designation->name ?? '';
+                                $row = $e->toArray();
+                                $row['designation'] = [
                                     'id' => $e->designation_id,
                                     'name' => $designationName,
                                     'role_name' => $designationName,
                                 ];
 
-                                return $e;
+                                return $row;
                             });
                         break;
 

@@ -547,7 +547,7 @@ const SupplierPayment = () => {
                     rows={rows}
                     columns={PENDING_TABLE_COLUMNS}
                     loading={loading}
-                    emptyText={rows.length === 0 ? 'Click "Search Pendings" to load pending bills' : "No records match the current filters"}
+                    emptyText={!pendingRequested ? 'Click "Search Pendings" to load pending bills' : pendingGrid.error ? "Pending bills could not be loaded. Try searching again." : "No pending bills match the current filters"}
                     searchPlaceholder="Search in supplier payment fields..."
                     showExport={false}
                     enableColumnResize

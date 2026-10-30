@@ -120,7 +120,7 @@ class DealerInvoiceController extends Controller
                 'tax_amount' => $taxAmount,
                 'grand_total' => $subtotal + $taxAmount,
                 'status' => 'COMPLETED',
-                'created_by' => $request->user()?->id ?? 1,
+                'created_by' => $request->user()->id ?? 1,
             ]);
 
             foreach ($itemsData as $item) {

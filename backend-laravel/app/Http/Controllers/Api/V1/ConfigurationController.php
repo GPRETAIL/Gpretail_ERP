@@ -15,6 +15,7 @@ class ConfigurationController extends Controller
 
     private const INTERNAL_KEYS = ['invoice_ai', 'gemini_api_key', 'space_ocr_api_key', 'openai_api_key', 'ocr_space_api_key'];
 
+    /** @return Builder<SystemConfiguration> */
     private function userConfigs(): Builder
     {
         $query = SystemConfiguration::query();
@@ -248,7 +249,7 @@ class ConfigurationController extends Controller
         return $this->store($request);
     }
 
-    public function updateType(Request $request, $type, $id)
+    public function updateType(Request $request, $type, int|string $id)
     {
         $config = $this->userConfigs()->where(function ($query) use ($type): void {
             $normalized = strtolower(str_replace('-', '_', $type));
@@ -257,17 +258,15 @@ class ConfigurationController extends Controller
         if (! $config) {
             return response()->json(['success' => false, 'message' => 'Configuration not found'], 404);
         }
-        if ($config) {
-            $val = $request->input('value') ?? $request->input('config_value') ?? $request->input('name') ?? $config->value;
-            $config->update([
-                'value' => is_array($val) ? json_encode($val) : (string) $val,
-                'config_value' => is_array($val) ? json_encode($val) : (string) $val,
-                'code' => $request->input('code', $config->code),
-                'is_active' => $request->has('is_active') ? $request->boolean('is_active') : $config->is_active,
-                'sort_order' => $request->input('sort_order', $config->sort_order),
-                'extra_data' => $request->input('extra_data', $config->extra_data),
-            ]);
-        }
+        $val = $request->input('value') ?? $request->input('config_value') ?? $request->input('name') ?? $config->value;
+        $config->update([
+            'value' => is_array($val) ? json_encode($val) : (string) $val,
+            'config_value' => is_array($val) ? json_encode($val) : (string) $val,
+            'code' => $request->input('code', $config->code),
+            'is_active' => $request->has('is_active') ? $request->boolean('is_active') : $config->is_active,
+            'sort_order' => $request->input('sort_order', $config->sort_order),
+            'extra_data' => $request->input('extra_data', $config->extra_data),
+        ]);
 
         return response()->json([
             'success' => true,
@@ -281,7 +280,7 @@ class ConfigurationController extends Controller
      * extra_data) -- was missing entirely, so the frontend's GET to this exact URL shape 404'd
      * and every edit failed with "Failed to load record" before any field even populated.
      */
-    public function showType(Request $request, $type, $id)
+    public function showType(Request $request, $type, int|string $id)
     {
         $config = $this->userConfigs()->where(function ($query) use ($type): void {
             $normalized = strtolower(str_replace('-', '_', $type));
@@ -307,7 +306,7 @@ class ConfigurationController extends Controller
         ]);
     }
 
-    public function destroyType(Request $request, $type, $id)
+    public function destroyType(Request $request, $type, int|string $id)
     {
         $config = $this->userConfigs()->where(function ($query) use ($type): void {
             $normalized = strtolower(str_replace('-', '_', $type));

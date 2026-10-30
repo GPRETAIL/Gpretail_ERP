@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class BackupRestore extends Model
 {
@@ -30,7 +31,8 @@ class BackupRestore extends Model
         ];
     }
 
-    public function backup()
+    /** @return BelongsTo<Backup, $this> */
+    public function backup(): BelongsTo
     {
         return $this->belongsTo(Backup::class);
     }

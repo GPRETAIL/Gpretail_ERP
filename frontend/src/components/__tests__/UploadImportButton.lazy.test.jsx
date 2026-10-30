@@ -1,0 +1,21 @@
+import { beforeEach, expect, it, vi } from "vitest";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+const tracker=vi.hoisted(()=>({ loads:0, writeFile:vi.fn(), post:vi.fn(), finish:vi.fn(), error:vi.fn() }));
+vi.mock("xlsx",()=>{tracker.loads+=1;return { utils:{ aoa_to_sheet:vi.fn(value=>value),book_new:vi.fn(()=>({})),book_append_sheet:vi.fn(),sheet_to_json:vi.fn(()=>[{Code:"0001"}]) },writeFile:tracker.writeFile,read:vi.fn(()=>({ SheetNames:["Sheet1"],Sheets:{Sheet1:{}} })) };});
+vi.mock("../../api/axios",()=>({default:{post:tracker.post}}));
+vi.mock("react-toastify",()=>({toast:{error:tracker.error,success:vi.fn()}}));
+vi.mock("../../context/TransferActivityContext",()=>({useTransferActivity:()=>({startActivity:()=>"activity",updateActivity:vi.fn(),finishActivity:tracker.finish,TYPE:{IMPORT:"import"},STATUS:{FAILED:"failed",SUCCESS:"success"}})}));
+import UploadImportButton from "../UploadImportButton";
+const config={sampleHeaders:["Code"],aliases:{code:"code"},required:["code"]};
+beforeEach(()=>vi.clearAllMocks());
+it("loads spreadsheets only when the sample is requested and preserves its headers",async()=>{
+ render(<MemoryRouter><UploadImportButton endpoint="/brands/bulk" fieldConfig={config}/></MemoryRouter>);
+ expect(tracker.loads).toBe(0);
+ fireEvent.click(screen.getByRole("button",{name:"Upload",exact:true}));
+ expect(tracker.loads).toBe(0);
+ fireEvent.click(screen.getByRole("button",{name:"Download Sample",exact:true}));
+ await waitFor(()=>expect(tracker.writeFile).toHaveBeenCalledOnce());
+ expect(tracker.loads).toBe(1);
+ expect(tracker.writeFile.mock.calls[0][1]).toBe("_brands_bulk_sample.xlsx");
+});

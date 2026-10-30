@@ -141,6 +141,8 @@ $registerAppRoutes = function () {
     Route::post('companies/tenant-sync/pull', [StoreActivationController::class, 'sync']);
     foreach (['tenant' => '', 'companies/{id}' => 'store'] as $prefix => $scope) {
         Route::get($prefix.'/theme-history', [ThemeWorkspaceController::class, 'history']);
+        Route::delete($prefix.'/theme-history', [ThemeWorkspaceController::class, 'removeHistory']);
+        Route::delete($prefix.'/theme-history/{revisionId}', [ThemeWorkspaceController::class, 'removeHistory']);
         Route::post($prefix.'/theme-history/{revisionId}/restore', [ThemeWorkspaceController::class, 'restore']);
     }
     Route::get('tenant/theme', [ThemeWorkspaceController::class, 'index']);

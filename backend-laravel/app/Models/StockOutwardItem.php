@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class StockOutwardItem extends Model
 {
@@ -20,22 +21,25 @@ class StockOutwardItem extends Model
     protected function casts(): array
     {
         return [
-            'quantity'   => 'decimal:3',
+            'quantity' => 'decimal:3',
             'unit_price' => 'decimal:2',
         ];
     }
 
-    public function stockOutward()
+    /** @return BelongsTo<StockOutward, $this> */
+    public function stockOutward(): BelongsTo
     {
         return $this->belongsTo(StockOutward::class);
     }
 
-    public function product()
+    /** @return BelongsTo<Product, $this> */
+    public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
     }
 
-    public function variant()
+    /** @return BelongsTo<ProductVariant, $this> */
+    public function variant(): BelongsTo
     {
         return $this->belongsTo(ProductVariant::class, 'variant_id');
     }

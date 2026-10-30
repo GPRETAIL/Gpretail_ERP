@@ -153,7 +153,7 @@ class PosReturnController extends Controller
                 'total_refund' => $totalRefund,
                 'refund_mode' => $request->input('refundMode', 'CASH'),
                 'status' => 'COMPLETED',
-                'created_by' => $request->user()?->id ?? 1,
+                'created_by' => $request->user()->id ?? 1,
                 'return_reason_id' => $request->input('returnReasonId'),
                 'return_reason_name' => $request->input('returnReasonName'),
                 'standalone' => $standalone,

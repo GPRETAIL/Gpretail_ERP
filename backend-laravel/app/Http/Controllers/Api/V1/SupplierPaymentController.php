@@ -28,7 +28,7 @@ class SupplierPaymentController extends Controller
         $payments = SupplierPayment::query()
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->whereBetween('payment_date', [now()->startOfMonth()->toDateString(), now()->endOfMonth()->toDateString()])
-            ->selectRaw('COUNT(*) as payment_count, COALESCE(SUM(amount), 0) as total_paid')->first();
+            ->selectRaw('COUNT(*) as payment_count, COALESCE(SUM(amount), 0) as total_paid')->toBase()->first();
 
         $payables = PurchaseInvoice::query()
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
@@ -37,7 +37,7 @@ class SupplierPaymentController extends Controller
             ->selectRaw('COUNT(*) as pending_count, COALESCE(SUM(grand_total - paid_amount), 0) as total_payables')
             // Until invoice due dates are recorded, overdue means more than 30 days old.
             ->selectRaw('COALESCE(SUM(CASE WHEN invoice_date < ? THEN grand_total - paid_amount ELSE 0 END), 0) as overdue_payables', [now()->subDays(30)->toDateString()])
-            ->first();
+            ->toBase()->first();
 
         return response()->json([
             'success' => true,
@@ -120,7 +120,7 @@ class SupplierPaymentController extends Controller
                 'payment_mode' => $request->input('payment_mode', 'BANK_TRANSFER'),
                 'reference_no' => $request->input('reference_no'),
                 'notes' => $request->input('notes'),
-                'created_by' => $request->user()?->id ?? 1,
+                'created_by' => $request->user()->id ?? 1,
             ]);
 
             // If purchase invoice id provided, link payment
@@ -155,15 +155,15 @@ class SupplierPaymentController extends Controller
 
     public function pending(Request $request)
     {
-        $storeId = $this->resolveStoreId($request, 1);
+        $storeId = $this->resolveStoreId($request, null);
         $search = trim((string) $request->input('search', ''));
 
         $invoiceQuery = PurchaseInvoice::with('supplier')
-            ->where('store_id', $storeId)
+            ->when($storeId, fn ($query) => $query->where('store_id', $storeId))
             ->where('payment_status', '!=', 'PAID');
 
         $directQuery = DirectPurchase::with('supplier')
-            ->where('store_id', $storeId)
+            ->when($storeId, fn ($query) => $query->where('store_id', $storeId))
             ->where('payment_status', '!=', 'PAID');
 
         if ($search !== '') {
@@ -188,13 +188,13 @@ class SupplierPaymentController extends Controller
                 'id' => $inv->id,
                 'invoice_type' => 'invoice',
                 'invoice_no' => $inv->invoice_no,
-                'supplier_name' => $inv->supplier?->name ?? 'Unknown Supplier',
+                'supplier_name' => $inv->supplier->name ?? 'Unknown Supplier',
                 'supplier_id' => $inv->supplier_id,
                 'invoice_date' => $inv->invoice_date,
                 'total_amount' => $total,
                 'paid_amount' => $paid,
                 'balance_due' => max(0, $total - $paid),
-                'days' => $inv->invoice_date ? (int) now()->diffInDays($inv->invoice_date, true) : 0,
+                'days' => (int) now()->diffInDays($inv->invoice_date, true),
                 'discount_perc' => (float) ($inv->discount_amount && $total > 0 ? round($inv->discount_amount / $total * 100, 1) : 0),
                 'total' => $total,
                 'paid' => $paid,
@@ -210,13 +210,13 @@ class SupplierPaymentController extends Controller
                 'id' => $dir->id,
                 'invoice_type' => 'direct',
                 'invoice_no' => $dir->purchase_no,
-                'supplier_name' => $dir->supplier?->name ?? 'Unknown Supplier',
+                'supplier_name' => $dir->supplier->name ?? 'Unknown Supplier',
                 'supplier_id' => $dir->supplier_id,
                 'invoice_date' => $dir->purchase_date,
                 'total_amount' => $total,
                 'paid_amount' => $paid,
                 'balance_due' => max(0, $total - $paid),
-                'days' => $dir->purchase_date ? (int) now()->diffInDays($dir->purchase_date, true) : 0,
+                'days' => (int) now()->diffInDays($dir->purchase_date, true),
                 'discount_perc' => (float) ($dir->discount_amount && $total > 0 ? round($dir->discount_amount / $total * 100, 1) : 0),
                 'total' => $total,
                 'paid' => $paid,
@@ -246,7 +246,7 @@ class SupplierPaymentController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => array_values($pagedRows),
+            'data' => $pagedRows,
             'total' => $total,
             'totalPayable' => $totalPayable,
             'pagination' => [
@@ -273,7 +273,7 @@ class SupplierPaymentController extends Controller
      * across suppliers/invoices (each batch is scoped to exactly one
      * reference_type + reference_id).
      */
-    public function pendingDetails(Request $request, $type, $id)
+    public function pendingDetails(Request $request, $type, int|string $id)
     {
         if ($type === 'invoice') {
             $inv = PurchaseInvoice::with(['supplier', 'items.product', 'items.variant.brand', 'items.variant.size'])->find($id);
@@ -287,7 +287,7 @@ class SupplierPaymentController extends Controller
                 return $this->buildLine(
                     id: $item->id,
                     productName: $item->product?->name,
-                    brandName: $item->variant?->brand?->name ?? $item->product?->brand?->name,
+                    brandName: $item->variant?->brand->name ?? $item->product?->brand?->name,
                     size: $item->variant?->size?->name,
                     designNo: $item->variant?->design_no,
                     rate: (float) $item->rate,
@@ -351,7 +351,7 @@ class SupplierPaymentController extends Controller
                 'id' => $dir->id,
                 'invoice_type' => 'direct',
                 'invoice_no' => $dir->invoice_no ?: $dir->purchase_no,
-                'supplier_name' => $dir->supplier?->name ?? $dir->supplier_name,
+                'supplier_name' => $dir->supplier->name ?? $dir->supplier_name,
                 'company_name' => $dir->company_name,
                 'invoice_date' => $dir->invoice_date ?: $dir->purchase_date,
                 'total' => $total,

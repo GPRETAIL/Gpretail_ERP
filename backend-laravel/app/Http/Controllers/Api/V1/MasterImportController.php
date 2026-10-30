@@ -68,7 +68,8 @@ class MasterImportController extends Controller
                     }
                     $rowRequest = $request->duplicate([], $row);
                     $rowRequest->setJson(new InputBag($row));
-                    $response = $type === null ? $controller->$method($rowRequest) : $controller->$method($rowRequest, $type);
+                    $arguments = $type === null ? [$rowRequest] : [$rowRequest, $type];
+                    $response = call_user_func_array([$controller, $method], $arguments);
                     if ($response->getStatusCode() >= 400) {
                         $body = $response->getData(true);
                         throw ValidationException::withMessages($body['errors'] ?? ['row' => $body['message'] ?? 'Record could not be imported.']);
