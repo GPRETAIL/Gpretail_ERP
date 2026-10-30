@@ -6,7 +6,6 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Bars3Icon,
   BuildingStorefrontIcon,
-  InboxIcon,
   Cog6ToothIcon,
   ArrowRightStartOnRectangleIcon,
   UserIcon,
@@ -20,7 +19,6 @@ import {
   AppBar,
   Toolbar,
   IconButton,
-  Badge,
   Menu,
   MenuItem,
   ListItemIcon,
@@ -58,6 +56,7 @@ import { usePrintContext } from "../context/PrintContext";
 import { savePrinterRouting } from "../utils/localPrinterService";
 import CounterAssignmentDialog from "./CounterAssignmentDialog";
 import HeaderNotifications from "./HeaderNotifications";
+import { HeaderApprovalButton, HeaderRenewalNotice } from "./HeaderStatusActions";
 import { navItems, ownerNavItems } from "../utils/navItems";
 import { canSwitchStores, getVisibleNavItems } from "../utils/accessControl";
 
@@ -487,8 +486,9 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
             ) : null}
           </Box>
 
-          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "flex-end", flexWrap: "wrap", minWidth: 0, gap: 0.5 }}>
             {/* 🌙 / ☀️ DARK MODE TOGGLE */}
+            <HeaderRenewalNotice />
             <IconButton
               size="small"
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
@@ -517,16 +517,7 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
               ) : null}
 
             {!isOwner ? (
-              <IconButton
-                size="small"
-                onClick={() => navigateActiveTab("/sales/approval-inbox")}
-                title="Approval Inbox"
-                sx={{ color: "text.secondary" }}
-              >
-                <Badge badgeContent={pendingApprovalsCount} color="error" showZero overlap="circular">
-                  <InboxIcon style={{ width: 20, height: 20 }} />
-                </Badge>
-              </IconButton>
+              <HeaderApprovalButton count={pendingApprovalsCount} onClick={() => navigateActiveTab("/sales/approval-inbox")} />
             ) : null}
 
             <HeaderNotifications
