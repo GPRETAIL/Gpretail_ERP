@@ -5,6 +5,7 @@ use App\Http\Middleware\AuthorizeBusinessAction;
 use App\Http\Middleware\CaptureSyncOutbox;
 use App\Http\Middleware\MeasureApiPerformance;
 use App\Http\Middleware\ResolveStoreContext;
+use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Auth\Middleware\Authenticate;
 use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
 use Illuminate\Database\QueryException;
@@ -47,6 +48,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests (which
         // Authenticate implements), not the concrete class -- pin against
         // that, or this silently sorts to run after auth and never executes.
+        $middleware->append(SecurityHeaders::class);
         $middleware->prependToGroup('api', [MeasureApiPerformance::class, AuthenticateSyncReplay::class]);
         $middleware->prependToPriorityList(AuthenticatesRequests::class, AuthenticateSyncReplay::class);
         $middleware->prependToPriorityList(AuthenticateSyncReplay::class, MeasureApiPerformance::class);

@@ -51,6 +51,11 @@ return [
 
     'expiration' => (int) env('SANCTUM_TOKEN_EXPIRATION', 10080),
 
+    // Browser (web client) sessions are shorter than the mobile app's: a hard lifetime
+    // plus an idle cutoff, enforced in AppServiceProvider. 0 disables either limit.
+    'web_lifetime_minutes' => (int) env('SANCTUM_WEB_LIFETIME_MINUTES', 720),
+    'web_idle_minutes' => (int) env('SANCTUM_WEB_IDLE_MINUTES', 240),
+
     /*
     |--------------------------------------------------------------------------
     | Token Prefix
