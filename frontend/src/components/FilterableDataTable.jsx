@@ -3,8 +3,11 @@ import TablePaginationFooter from "./TablePaginationFooter";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ERP_UI, erpControlSx } from "../theme/erpUi";
 import {
+  Check,
+  Columns3,
   Filter,
   GripVertical,
+  MoveHorizontal,
   Layers,
   Pin,
   Search,
@@ -29,6 +32,8 @@ import {
   DialogTitle,
   Drawer,
   IconButton,
+  Divider,
+  ListItemIcon,
   Menu,
   MenuItem,
   Popover,
@@ -135,11 +140,10 @@ export default function FilterableDataTable({
   enableKeyboardNav = false,
   // Feature 2: Column reorder
   enableColumnReorder = true,
-  // Feature 2b: Column resize (opt-in). Widen-only -- table-layout:auto plus forced
-  // whitespace-nowrap means every column already shows full content with no truncation
-  // mechanism, so narrowing below natural content width is a harmless no-op (column snaps
-  // back) rather than a new ellipsis/truncation feature. Session-only: widths reset on reload.
-  enableColumnResize = false,
+  // Feature 2b: Column resize. Drag a header edge to set an explicit width (narrower widths
+  // truncate cell text with an ellipsis); "Autosize" clears it so table-layout:auto fits the
+  // column to its content again. Widths persist with the table preference.
+  enableColumnResize = true,
   minColumnWidthPx = DEFAULT_MIN_COLUMN_WIDTH_PX,
   maxColumnWidthPx = DEFAULT_MAX_COLUMN_WIDTH_PX,
   // Feature 3: Row selection
@@ -148,6 +152,10 @@ export default function FilterableDataTable({
   onSelectionChange = null,
   selectionColumnWidthPx = 64,
   onBulkDelete = null,
+  // Single selection: ticking a row replaces the previous one and there is no select-all box.
+  singleSelection = false,
+  // Accessible name for each row checkbox, e.g. (row) => `Select ${row.code}`.
+  getRowSelectionLabel = null,
   searchButtonClassName = "fdt-search-btn",
   searchButtonStyle = undefined,
 }) {
@@ -178,7 +186,10 @@ export default function FilterableDataTable({
   const [activeFilterColumn, setActiveFilterColumn] = useState(null);
   const [showColumnDialog, setShowColumnDialog] = useState(false);
   const [savingColumnPrefs, setSavingColumnPrefs] = useState(false);
+  // pinnedColumnKeys are the left-pinned columns (the original, persisted shape);
+  // right pins are tracked separately and a column is only ever in one of the two lists.
   const [pinnedColumnKeys, setPinnedColumnKeys] = useState([]);
+  const [pinnedRightColumnKeys, setPinnedRightColumnKeys] = useState([]);
   // Pinned rows are session-only (not persisted via tablePreferenceKey, unlike pinned columns) --
   // mirrors rowValueFilters/Filter-Out state right below, which is also not persisted, and keeps
   // this feature scoped to the frontend (no user_table_preferences schema change).
@@ -191,6 +202,7 @@ export default function FilterableDataTable({
   const [filterPanelFocusKey, setFilterPanelFocusKey] = useState(null);
   const [leadingStickyWidth, setLeadingStickyWidth] = useState(0);
   const [stickyColumnOffsets, setStickyColumnOffsets] = useState({});
+  const [stickyRightOffsets, setStickyRightOffsets] = useState({});
   const [filterAnchorEl, setFilterAnchorEl] = useState(null);
   const [activeRowIndex, setActiveRowIndex] = useState(null);
   const [columnWidths, setColumnWidths] = useState({});
@@ -305,8 +317,20 @@ export default function FilterableDataTable({
           });
         }
 
+        const leftPins = Array.isArray(saved.pinnedColumnKeys) ? saved.pinnedColumnKeys.map((key) => String(key)) : [];
         if (Array.isArray(saved.pinnedColumnKeys)) {
-          setPinnedColumnKeys(saved.pinnedColumnKeys.map((key) => String(key)));
+          setPinnedColumnKeys(leftPins);
+        }
+        if (Array.isArray(saved.pinnedRightColumnKeys)) {
+          setPinnedRightColumnKeys(saved.pinnedRightColumnKeys.map((key) => String(key)).filter((key) => !leftPins.includes(key)));
+        }
+        if (saved.columnWidths && typeof saved.columnWidths === "object") {
+          const validKeys = new Set(schemaColumns.map((column) => column.key));
+          const widths = {};
+          Object.entries(saved.columnWidths).forEach(([key, width]) => {
+            if (validKeys.has(key) && Number(width) > 0) widths[key] = Number(width);
+          });
+          setColumnWidths(widths);
         }
       } catch {
         // Keep defaults if preference lookup fails.
@@ -890,13 +914,15 @@ export default function FilterableDataTable({
       const bi = columnOrder.indexOf(b.key);
       return (ai === -1 ? Infinity : ai) - (bi === -1 ? Infinity : bi);
     });
-    if (pinnedColumnKeys.length === 0) return orderedVisible;
-    const pinnedSet = new Set(pinnedColumnKeys);
+    if (pinnedColumnKeys.length === 0 && pinnedRightColumnKeys.length === 0) return orderedVisible;
+    const leftSet = new Set(pinnedColumnKeys);
+    const rightSet = new Set(pinnedRightColumnKeys);
     return [
-      ...orderedVisible.filter((column) => pinnedSet.has(column.key)),
-      ...orderedVisible.filter((column) => !pinnedSet.has(column.key)),
+      ...orderedVisible.filter((column) => leftSet.has(column.key)),
+      ...orderedVisible.filter((column) => !leftSet.has(column.key) && !rightSet.has(column.key)),
+      ...orderedVisible.filter((column) => rightSet.has(column.key) && !leftSet.has(column.key)),
     ];
-  }, [columns, visibleColumns, columnOrder, pinnedColumnKeys]);
+  }, [columns, visibleColumns, columnOrder, pinnedColumnKeys, pinnedRightColumnKeys]);
 
   useEffect(() => {
     const updateStickyOffsets = () => {
@@ -909,6 +935,20 @@ export default function FilterableDataTable({
         nextOffsets[column.key] = currentLeft;
         currentLeft += headerCellRefs.current[column.key]?.offsetWidth || 0;
       });
+      // Right pins stack from the right edge inwards, so walk them in reverse display order.
+      const nextRightOffsets = {};
+      let currentRight = 0;
+      [...visibleColumnDefs].reverse().forEach((column) => {
+        if (!pinnedRightColumnKeys.includes(column.key)) return;
+        nextRightOffsets[column.key] = currentRight;
+        currentRight += headerCellRefs.current[column.key]?.offsetWidth || 0;
+      });
+      setStickyRightOffsets((prev) => (
+        Object.keys(prev).length === Object.keys(nextRightOffsets).length
+          && Object.keys(nextRightOffsets).every((key) => prev[key] === nextRightOffsets[key])
+          ? prev
+          : nextRightOffsets
+      ));
 
       setLeadingStickyWidth(nextLeadingWidth);
       setStickyColumnOffsets((prev) => {
@@ -929,7 +969,7 @@ export default function FilterableDataTable({
     const observedNodes = [
       leadingHeaderRef.current,
       ...visibleColumnDefs
-        .filter((column) => pinnedColumnKeys.includes(column.key))
+        .filter((column) => pinnedColumnKeys.includes(column.key) || pinnedRightColumnKeys.includes(column.key))
         .map((column) => headerCellRefs.current[column.key]),
     ].filter(Boolean);
 
@@ -945,18 +985,48 @@ export default function FilterableDataTable({
 
     window.addEventListener("resize", updateStickyOffsets);
     return () => window.removeEventListener("resize", updateStickyOffsets);
-  }, [visibleColumnDefs, pinnedColumnKeys]);
+  }, [visibleColumnDefs, pinnedColumnKeys, pinnedRightColumnKeys]);
+
+  const getColumnPinSide = useCallback(
+    (columnKey) => (pinnedColumnKeys.includes(columnKey) ? "left" : pinnedRightColumnKeys.includes(columnKey) ? "right" : null),
+    [pinnedColumnKeys, pinnedRightColumnKeys]
+  );
 
   const getStickyCellStyle = useCallback(
     (columnKey, isHeader = false) => {
-      if (!pinnedColumnKeys.includes(columnKey)) return undefined;
-      return {
-        position: "sticky",
-        left: stickyColumnOffsets[columnKey] ?? leadingStickyWidth,
-        zIndex: isHeader ? 25 : 15,
-      };
+      const side = getColumnPinSide(columnKey);
+      if (!side) return undefined;
+      return side === "left"
+        ? { position: "sticky", left: stickyColumnOffsets[columnKey] ?? leadingStickyWidth, zIndex: isHeader ? 25 : 15 }
+        : { position: "sticky", right: stickyRightOffsets[columnKey] ?? 0, zIndex: isHeader ? 25 : 15 };
     },
-    [pinnedColumnKeys, stickyColumnOffsets, leadingStickyWidth]
+    [getColumnPinSide, stickyColumnOffsets, stickyRightOffsets, leadingStickyWidth]
+  );
+
+  // The divider line sits on the side facing the scrolling columns.
+  const getPinEdgeShadow = useCallback(
+    (columnKey) => (theme) => `${getColumnPinSide(columnKey) === "right" ? "-2px" : "2px"} 0 0 0 ${theme.palette.mode === "dark" ? "#374151" : "#e5e7eb"}`,
+    [getColumnPinSide]
+  );
+
+  // An explicit width also caps the cell content (ellipsis), so columns can be made narrower
+  // than their content under table-layout:auto, where max-width on the cell itself is ignored.
+  const renderSizedCellContent = useCallback(
+    (columnKey, content) => {
+      const width = columnWidths[columnKey];
+      if (!width) return content;
+      return (
+        <Box component="div" sx={{ maxWidth: Math.max(width - 24, 16), overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {content}
+        </Box>
+      );
+    },
+    [columnWidths]
+  );
+
+  const tableLayout = useMemo(
+    () => ({ pinnedRightColumnKeys, columnWidths }),
+    [pinnedRightColumnKeys, columnWidths]
   );
 
   const handleExportRows = useCallback(async () => {
@@ -1221,7 +1291,7 @@ export default function FilterableDataTable({
     if (!tablePreferenceKey) return;
     try {
       setSavingColumnPrefs(true);
-      await saveTablePreference(tablePreferenceKey, valid, valid, pinnedColumnKeys);
+      await saveTablePreference(tablePreferenceKey, valid, valid, pinnedColumnKeys, tableLayout);
     } catch {
       // Keep UI responsive even if preference save fails.
     } finally {
@@ -1233,13 +1303,19 @@ export default function FilterableDataTable({
     const allKeys = columns.map((c) => c.key);
     setVisibleColumns(allKeys);
     setColumnOrder(allKeys);
-    if (enableColumnResize) setColumnWidths({});
+    setColumnWidths({});
+    setPinnedColumnKeys([]);
+    setPinnedRightColumnKeys([]);
     setShowColumnDialog(false);
+    setHeaderContextMenu(null);
+    Object.values(headerCellRefs.current).forEach((node) => {
+      if (node) node.style.width = "";
+    });
 
     if (!tablePreferenceKey) return;
     try {
       setSavingColumnPrefs(true);
-      await saveTablePreference(tablePreferenceKey, allKeys, allKeys, pinnedColumnKeys);
+      await saveTablePreference(tablePreferenceKey, allKeys, allKeys, [], { pinnedRightColumnKeys: [], columnWidths: {} });
     } catch {
       // silent
     } finally {
@@ -1252,6 +1328,8 @@ export default function FilterableDataTable({
       nextVisibleColumns = visibleColumns,
       nextColumnOrder = columnOrder,
       nextPinnedColumnKeys = pinnedColumnKeys,
+      nextPinnedRightColumnKeys = pinnedRightColumnKeys,
+      nextColumnWidths = columnWidths,
     } = {}) => {
       if (!tablePreferenceKey) return;
       try {
@@ -1259,33 +1337,42 @@ export default function FilterableDataTable({
           tablePreferenceKey,
           nextVisibleColumns,
           nextColumnOrder,
-          nextPinnedColumnKeys
+          nextPinnedColumnKeys,
+          { pinnedRightColumnKeys: nextPinnedRightColumnKeys, columnWidths: nextColumnWidths }
         );
       } catch {
         // silent
       }
     },
-    [tablePreferenceKey, visibleColumns, columnOrder, pinnedColumnKeys]
+    [tablePreferenceKey, visibleColumns, columnOrder, pinnedColumnKeys, pinnedRightColumnKeys, columnWidths]
   );
+  // The resize mouseup listener is registered once per drag, so it reads the latest values via refs.
+  const persistTablePreferenceRef = useRef(persistTablePreference);
+  const columnWidthsRef = useRef(columnWidths);
+  useEffect(() => {
+    persistTablePreferenceRef.current = persistTablePreference;
+    columnWidthsRef.current = columnWidths;
+  }, [persistTablePreference, columnWidths]);
 
-  const handleTogglePinColumn = useCallback(
-    async (columnKey) => {
+  // side: "left" | "right" | null (no pin). A column moves between sides rather than being in both.
+  const handleSetColumnPin = useCallback(
+    async (columnKey, side) => {
       const normalizedKey = String(columnKey || "").trim();
       if (!normalizedKey) return;
 
-      const isCurrentlyPinned = pinnedColumnKeys.includes(normalizedKey);
-      const nextPinnedColumnKeys = isCurrentlyPinned
-        ? pinnedColumnKeys.filter((key) => key !== normalizedKey)
-        : [...pinnedColumnKeys.filter((key) => key !== normalizedKey), normalizedKey];
+      const withoutKey = (keys) => keys.filter((key) => key !== normalizedKey);
+      const nextPinnedColumnKeys = side === "left" ? [...withoutKey(pinnedColumnKeys), normalizedKey] : withoutKey(pinnedColumnKeys);
+      const nextPinnedRightColumnKeys = side === "right" ? [...withoutKey(pinnedRightColumnKeys), normalizedKey] : withoutKey(pinnedRightColumnKeys);
 
       setPinnedColumnKeys(nextPinnedColumnKeys);
+      setPinnedRightColumnKeys(nextPinnedRightColumnKeys);
       setHeaderContextMenu(null);
-      await persistTablePreference({ nextPinnedColumnKeys });
+      await persistTablePreference({ nextPinnedColumnKeys, nextPinnedRightColumnKeys });
     },
-    [pinnedColumnKeys, persistTablePreference]
+    [pinnedColumnKeys, pinnedRightColumnKeys, persistTablePreference]
   );
 
-  // Mirrors handleTogglePinColumn above -- same toggle-in-place shape, just against row keys
+  // Mirrors handleSetColumnPin above -- same toggle-in-place shape, just against row keys
   // instead of column keys, and no backend persistence (see the pinnedRowKeys state comment).
   const handleTogglePinRow = useCallback((rowKeyValue) => {
     const normalizedKey = String(rowKeyValue ?? "").trim();
@@ -1332,10 +1419,10 @@ export default function FilterableDataTable({
       left: Math.max(viewportPadding, left),
       columnKey: column.key,
       label: column.label,
-      isPinned: pinnedColumnKeys.includes(column.key),
+      pinSide: getColumnPinSide(column.key),
       isGrouped: groupByColumn === column.key,
     });
-  }, [groupByColumn, pinnedColumnKeys]);
+  }, [groupByColumn, getColumnPinSide]);
 
   const handleHeaderMouseDown = useCallback((event, column) => {
     if (event.button !== 2) return;
@@ -1398,13 +1485,13 @@ export default function FilterableDataTable({
       clearTimeout(orderSaveTimer.current);
       orderSaveTimer.current = setTimeout(async () => {
         try {
-          await saveTablePreference(tablePreferenceKey, visibleColumns, newOrder, pinnedColumnKeys);
+          await saveTablePreference(tablePreferenceKey, visibleColumns, newOrder, pinnedColumnKeys, tableLayout);
         } catch {
           // silent
         }
       }, 800);
     },
-    [tablePreferenceKey, visibleColumns, pinnedColumnKeys]
+    [tablePreferenceKey, visibleColumns, pinnedColumnKeys, tableLayout]
   );
 
   const onDragStart = useCallback((e, columnKey) => {
@@ -1456,9 +1543,8 @@ export default function FilterableDataTable({
   );
 
   // --- Column resize drag handlers ---
-  // Widen-only: table-layout:auto plus forced whitespace-nowrap means a header cell's explicit
-  // width is only ever a floor, never a hard cap -- dragging narrower than a column's natural
-  // content width is a harmless no-op (the column snaps back), not a truncation feature.
+  // The header width is the column's width; renderSizedCellContent caps body content to match,
+  // so a column can be dragged narrower than its content (text then ends with an ellipsis).
   // Direct-DOM style mutation during the drag (not setColumnWidths per-mousemove) mirrors
   // onDragStart/onDragEnd's opacity trick above, for the same reason: avoid a full-table
   // re-render on every mousemove frame on a wide table.
@@ -1487,7 +1573,9 @@ export default function FilterableDataTable({
     setResizingColumnKey(null);
     resizingRef.current = null;
     if (!active || active.lastWidth == null) return;
-    setColumnWidths((prev) => ({ ...prev, [active.columnKey]: active.lastWidth }));
+    const nextColumnWidths = { ...columnWidthsRef.current, [active.columnKey]: Math.round(active.lastWidth) };
+    setColumnWidths(nextColumnWidths);
+    persistTablePreferenceRef.current({ nextColumnWidths });
   }, [handleResizeMouseMove]);
 
   const handleResizeMouseDown = useCallback(
@@ -1507,16 +1595,27 @@ export default function FilterableDataTable({
     [columnWidths, minColumnWidthPx, handleResizeMouseMove, handleResizeMouseUp]
   );
 
-  const handleResetColumnWidth = useCallback((columnKey) => {
-    setColumnWidths((prev) => {
-      if (!(columnKey in prev)) return prev;
-      const next = { ...prev };
-      delete next[columnKey];
-      return next;
-    });
+  // Autosize = drop the explicit width so table-layout:auto fits the column to its content again.
+  const handleAutosizeColumn = useCallback((columnKey) => {
+    setHeaderContextMenu(null);
     const node = headerCellRefs.current[columnKey];
     if (node) node.style.width = "";
-  }, []);
+    if (!(columnKey in columnWidths)) return;
+    const nextColumnWidths = { ...columnWidths };
+    delete nextColumnWidths[columnKey];
+    setColumnWidths(nextColumnWidths);
+    persistTablePreference({ nextColumnWidths });
+  }, [columnWidths, persistTablePreference]);
+
+  const handleAutosizeAllColumns = useCallback(() => {
+    setHeaderContextMenu(null);
+    Object.values(headerCellRefs.current).forEach((node) => {
+      if (node) node.style.width = "";
+    });
+    if (Object.keys(columnWidths).length === 0) return;
+    setColumnWidths({});
+    persistTablePreference({ nextColumnWidths: {} });
+  }, [columnWidths, persistTablePreference]);
 
   const canPaginate = (typeof onPageChange === "function" || typeof onNextCursor === "function") && typeof onLimitChange === "function";
   const isClientPagination = canPaginate && paginationMode === "client";
@@ -1793,12 +1892,12 @@ export default function FilterableDataTable({
     (key, checked) => {
       if (!onSelectionChange) return;
       if (checked) {
-        onSelectionChange([...selectedRows, key]);
+        onSelectionChange(singleSelection ? [key] : [...selectedRows, key]);
       } else {
         onSelectionChange(selectedRows.filter((k) => k !== key));
       }
     },
-    [selectedRows, onSelectionChange]
+    [selectedRows, onSelectionChange, singleSelection]
   );
 
   // Row-level keyboard nav key handler. Guarded so it only ever reacts when the <tr> itself (not a
@@ -2159,7 +2258,7 @@ export default function FilterableDataTable({
                   >
                     <Settings2 size={14} />
                   </Box>
-                  {enableSelection && onSelectionChange && (
+                  {enableSelection && onSelectionChange && !singleSelection && (
                     <Checkbox
                       checked={allPageSelected}
                       indeterminate={somePageSelected && !allPageSelected}
@@ -2186,9 +2285,7 @@ export default function FilterableDataTable({
                     ...headerCellSx, ...cellBorderSx, ...headerCellYSx,
                     px: 1.5, textAlign: "left", color: "text.secondary",
                     position: fixedHeight ? "sticky" : "relative", whiteSpace: "nowrap", userSelect: "none",
-                    ...(pinnedColumnKeys.includes(column.key)
-                      ? { boxShadow: (theme) => `2px 0 0 0 ${theme.palette.mode === "dark" ? "#374151" : "#e5e7eb"}` }
-                      : null),
+                    ...(getColumnPinSide(column.key) ? { boxShadow: getPinEdgeShadow(column.key) } : null),
                   }}
                   draggable={enableColumnReorder}
                   onMouseDown={(event) => handleHeaderMouseDown(event, column)}
@@ -2200,10 +2297,19 @@ export default function FilterableDataTable({
                   onDragLeave={enableColumnReorder ? onDragLeave : undefined}
                   onDrop={enableColumnReorder ? onDrop : undefined}
                 >
-                  <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 0.5 }}>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                      {pinnedColumnKeys.includes(column.key) && (
-                        <Pin size={12} style={{ color: "#d97706" }} />
+                  <Box
+                    sx={{
+                      display: "flex", alignItems: "center", justifyContent: "space-between", gap: 0.5,
+                      ...(columnWidths[column.key] ? { maxWidth: Math.max(columnWidths[column.key] - 24, 16), overflow: "hidden" } : null),
+                    }}
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, minWidth: 0 }}>
+                      {getColumnPinSide(column.key) && (
+                        <Pin
+                          size={12}
+                          style={{ color: "#d97706", flexShrink: 0, transform: getColumnPinSide(column.key) === "right" ? "scaleX(-1)" : undefined }}
+                          aria-label={`Pinned ${getColumnPinSide(column.key)}`}
+                        />
                       )}
                       {groupByColumn === column.key && (
                         <Layers
@@ -2220,9 +2326,9 @@ export default function FilterableDataTable({
                         type="button"
                         title={`Sort ${column.label}`}
                         onClick={() => toggleSort(column.key)}
-                        sx={{ display: "flex", alignItems: "center", gap: 0.5, textAlign: "left", transition: "color 0.15s", "&:hover": { color: "primary.main" } }}
+                        sx={{ display: "flex", alignItems: "center", gap: 0.5, minWidth: 0, textAlign: "left", transition: "color 0.15s", "&:hover": { color: "primary.main" } }}
                       >
-                        <Box component="span">{column.label}</Box>
+                        <Box component="span" sx={{ overflow: "hidden", textOverflow: "ellipsis" }}>{column.label}</Box>
                         <Box component="span" sx={{ display: "inline-flex", flexDirection: "column", lineHeight: 1 }}>
                           <ChevronUp
                             size={12}
@@ -2262,11 +2368,12 @@ export default function FilterableDataTable({
                       role="separator"
                       aria-orientation="vertical"
                       aria-label={`Resize ${column.label} column`}
+                      title="Drag to resize, double-click to autosize"
                       draggable={false}
                       onMouseDown={(e) => handleResizeMouseDown(e, column.key)}
                       onDoubleClick={(e) => {
                         e.stopPropagation();
-                        handleResetColumnWidth(column.key);
+                        handleAutosizeColumn(column.key);
                       }}
                       sx={{
                         position: "absolute", right: 0, top: 0, height: "100%", width: 6,
@@ -2299,10 +2406,10 @@ export default function FilterableDataTable({
                       style={getStickyCellStyle(col.key)}
                       sx={{
                         ...cellBorderSx, ...bodyCellYSx, px: 1.5,
-                        ...(pinnedColumnKeys.includes(col.key)
+                        ...(getColumnPinSide(col.key)
                           ? {
                               bgcolor: (theme) => (theme.palette.mode === "dark" ? "#1f2937" : "#fff"),
-                              boxShadow: (theme) => `2px 0 0 0 ${theme.palette.mode === "dark" ? "#374151" : "#e5e7eb"}`,
+                              boxShadow: getPinEdgeShadow(col.key),
                             }
                           : null),
                       }}
@@ -2372,6 +2479,7 @@ export default function FilterableDataTable({
                                 handleSelectRow(key, e.target.checked);
                               }}
                               onClick={(e) => e.stopPropagation()}
+                              slotProps={{ input: { "aria-label": typeof getRowSelectionLabel === "function" ? getRowSelectionLabel(row) : "Select row" } }}
                               size="small"
                               sx={{ p: 0.25 }}
                             />
@@ -2393,13 +2501,11 @@ export default function FilterableDataTable({
                             sx={{
                               ...cellBorderSx, px: 1.5, ...bodyCellYSx, whiteSpace: "nowrap", color: "text.secondary",
                               ...rowBgSx,
-                              ...(pinnedColumnKeys.includes(column.key)
-                                ? { boxShadow: (theme) => `2px 0 0 0 ${theme.palette.mode === "dark" ? "#374151" : "#e5e7eb"}` }
-                                : null),
+                              ...(getColumnPinSide(column.key) ? { boxShadow: getPinEdgeShadow(column.key) } : null),
                             }}
                             onContextMenu={(event) => openRowContextMenu(event, column, row, entry.sourceIndex)}
                           >
-                            {content}
+                            {renderSizedCellContent(column.key, content)}
                           </TableCell>
                         );
                       })}
@@ -2574,6 +2680,7 @@ export default function FilterableDataTable({
                             handleSelectRow(key, e.target.checked);
                           }}
                           onClick={(e) => e.stopPropagation()}
+                          slotProps={{ input: { "aria-label": typeof getRowSelectionLabel === "function" ? getRowSelectionLabel(row) : "Select row" } }}
                           size="small"
                           sx={{ p: 0.25 }}
                         />
@@ -2590,18 +2697,18 @@ export default function FilterableDataTable({
                           style={getStickyCellStyle(column.key)}
                           sx={{
                             ...cellBorderSx, px: 1.5, ...bodyCellYSx, whiteSpace: "nowrap", color: "text.secondary",
-                            ...(pinnedColumnKeys.includes(column.key)
+                            ...(getColumnPinSide(column.key)
                               ? {
                                   ...rowBgSx,
-                                  boxShadow: (theme) => `2px 0 0 0 ${theme.palette.mode === "dark" ? "#374151" : "#e5e7eb"}`,
+                                  boxShadow: getPinEdgeShadow(column.key),
                                 }
                               : null),
                           }}
                           onContextMenu={(event) => openRowContextMenu(event, column, row, item.sourceIndex)}
                         >
-                          {item.isGroupedChild && column.key === groupByColumn ? (
+                          {renderSizedCellContent(column.key, item.isGroupedChild && column.key === groupByColumn ? (
                             <Box sx={{ pl: 3 }}>{content}</Box>
-                          ) : content}
+                          ) : content)}
                         </TableCell>
                       );
                     })}
@@ -2647,13 +2754,57 @@ export default function FilterableDataTable({
             },
           }}
         >
-          <MenuItem
-            onClick={() => handleTogglePinColumn(headerContextMenu.columnKey)}
-            sx={{ gap: 1, fontSize: 10.5 }}
+          <Typography
+            component="li"
+            role="presentation"
+            sx={{ display: "flex", alignItems: "center", gap: 1, px: 2, pt: 0.5, pb: 0.25, fontSize: 10.5, fontWeight: 600, color: "text.secondary" }}
           >
             <Pin size={14} style={{ color: "#d97706" }} />
-            {headerContextMenu.isPinned ? "Unpin Column" : "Pin Column"}
+            Pin column
+          </Typography>
+          {[
+            [null, "No pin"],
+            ["left", "Pin left"],
+            ["right", "Pin right"],
+          ].map(([side, label]) => (
+            <MenuItem
+              key={label}
+              role="menuitemradio"
+              aria-checked={headerContextMenu.pinSide === side}
+              selected={headerContextMenu.pinSide === side}
+              onClick={() => handleSetColumnPin(headerContextMenu.columnKey, side)}
+              sx={{ gap: 1, fontSize: 10.5, pl: 3 }}
+            >
+              <ListItemIcon sx={{ minWidth: "18px !important" }}>
+                {headerContextMenu.pinSide === side ? <Check size={14} /> : null}
+              </ListItemIcon>
+              {label}
+            </MenuItem>
+          ))}
+          <Divider sx={{ my: 0.5 }} />
+          {enableColumnResize && (
+            <MenuItem onClick={() => handleAutosizeColumn(headerContextMenu.columnKey)} sx={{ gap: 1, fontSize: 10.5 }}>
+              <MoveHorizontal size={14} style={{ color: "#0d9488" }} />
+              Autosize this column
+            </MenuItem>
+          )}
+          {enableColumnResize && (
+            <MenuItem onClick={handleAutosizeAllColumns} sx={{ gap: 1, fontSize: 10.5 }}>
+              <MoveHorizontal size={14} style={{ color: "#0d9488" }} />
+              Autosize all columns
+            </MenuItem>
+          )}
+          <MenuItem
+            onClick={() => {
+              setHeaderContextMenu(null);
+              handleOpenColumnDialog();
+            }}
+            sx={{ gap: 1, fontSize: 10.5 }}
+          >
+            <Columns3 size={14} style={{ color: "#64748b" }} />
+            Choose columns
           </MenuItem>
+          <Divider sx={{ my: 0.5 }} />
           {(typeof onFetchGroupSummaries === "function" || headerContextMenu.isGrouped) && (
             <MenuItem
               onClick={() => (

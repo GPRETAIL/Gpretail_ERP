@@ -147,6 +147,26 @@ describe("FilterableDataTable — selection + bulk delete", () => {
     expect(onSelectionChange).toHaveBeenCalledWith([1]);
   });
 
+  it("singleSelection hides select-all and replaces the previous row instead of adding to it", () => {
+    const onSelectionChange = vi.fn();
+    render(
+      <FilterableDataTable
+        rows={rows}
+        columns={columns}
+        showExport={false}
+        enableSelection
+        singleSelection
+        selectedRows={[1]}
+        onSelectionChange={onSelectionChange}
+      />
+    );
+
+    const checkboxes = screen.getAllByRole("checkbox");
+    expect(checkboxes).toHaveLength(2); // one per row, no header "select all"
+    fireEvent.click(checkboxes[1]);
+    expect(onSelectionChange).toHaveBeenCalledWith([2]);
+  });
+
   it("bulk bar shows singular/plural text and wires Delete/Clear", () => {
     const onSelectionChange = vi.fn();
     const onBulkDelete = vi.fn();
@@ -493,7 +513,8 @@ describe("FilterableDataTable — column drag-reorder persistence", () => {
       "test-table",
       ["a", "b", "c"],
       ["b", "c", "a"],
-      []
+      [],
+      { pinnedRightColumnKeys: [], columnWidths: {} }
     );
   });
 
@@ -525,32 +546,78 @@ describe("FilterableDataTable — column pinning", () => {
 
     const thB = getHeaderCell(container, "B");
     fireEvent.contextMenu(thB);
-    fireEvent.click(screen.getByText("Pin Column"));
+    fireEvent.click(screen.getByText("Pin left"));
 
     await waitFor(() =>
       expect(mockSaveTablePreference).toHaveBeenCalledWith(
         "test-table-2",
         ["a", "b", "c"],
         ["a", "b", "c"],
-        ["b"]
+        ["b"],
+        { pinnedRightColumnKeys: [], columnWidths: {} }
       )
     );
     expect(headerLabels(container)).toEqual(["B", "A", "C"]);
 
     mockSaveTablePreference.mockClear();
     fireEvent.contextMenu(getHeaderCell(container, "B"));
-    fireEvent.click(screen.getByText("Unpin Column"));
+    fireEvent.click(screen.getByText("No pin"));
 
     await waitFor(() =>
       expect(mockSaveTablePreference).toHaveBeenCalledWith(
         "test-table-2",
         ["a", "b", "c"],
         ["a", "b", "c"],
-        []
+        [],
+        { pinnedRightColumnKeys: [], columnWidths: {} }
       )
     );
     // Unpinning reverts to columnOrder's own order -- proving pinning never touched it.
     expect(headerLabels(container)).toEqual(["A", "B", "C"]);
+  });
+
+  it("pins right, moves a column between sides, and marks the current side as checked", async () => {
+    const { container } = render(
+      <FilterableDataTable rows={[]} columns={columns} showExport={false} tablePreferenceKey="pin-sides" />
+    );
+
+    fireEvent.contextMenu(getHeaderCell(container, "A"));
+    expect(screen.getByRole("menuitemradio", { name: /No pin/ })).toHaveAttribute("aria-checked", "true");
+    fireEvent.click(screen.getByText("Pin right"));
+
+    expect(headerLabels(container)).toEqual(["B", "C", "A"]);
+    expect(getHeaderCell(container, "A").style.position).toBe("sticky");
+    expect(getHeaderCell(container, "A").style.right).toBe("0px");
+    await waitFor(() =>
+      expect(mockSaveTablePreference).toHaveBeenLastCalledWith(
+        "pin-sides", ["a", "b", "c"], ["a", "b", "c"], [], { pinnedRightColumnKeys: ["a"], columnWidths: {} }
+      )
+    );
+
+    fireEvent.contextMenu(getHeaderCell(container, "A"));
+    expect(screen.getByRole("menuitemradio", { name: /Pin right/ })).toHaveAttribute("aria-checked", "true");
+    fireEvent.click(screen.getByText("Pin left"));
+
+    expect(headerLabels(container)).toEqual(["A", "B", "C"]);
+    expect(getHeaderCell(container, "A").style.right).toBe("");
+    await waitFor(() =>
+      expect(mockSaveTablePreference).toHaveBeenLastCalledWith(
+        "pin-sides", ["a", "b", "c"], ["a", "b", "c"], ["a"], { pinnedRightColumnKeys: [], columnWidths: {} }
+      )
+    );
+  });
+
+  it("restores saved right pins and widths from the table preference", async () => {
+    mockFetchTablePreference.mockResolvedValueOnce({
+      visibleColumns: ["a", "b", "c"], columnOrder: ["a", "b", "c"], pinnedColumnKeys: [],
+      pinnedRightColumnKeys: ["b"], columnWidths: { c: 180, gone: 99 },
+    });
+    const { container } = render(
+      <FilterableDataTable rows={[]} columns={columns} showExport={false} tablePreferenceKey="restore" />
+    );
+
+    await waitFor(() => expect(headerLabels(container)).toEqual(["A", "C", "B"]));
+    expect(getHeaderCell(container, "C").style.width).toBe("180px");
   });
 });
 
@@ -580,8 +647,8 @@ describe("FilterableDataTable — header context menu coordinate fallback", () =
 
     fireEvent.contextMenu(document.body, { clientX: 150, clientY: 15 });
 
-    expect(screen.getByText("Pin Column")).toBeInTheDocument();
-    fireEvent.click(screen.getByText("Pin Column"));
+    expect(screen.getByText("Pin left")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Pin left"));
     expect(headerLabels(container)).toEqual(["B", "A"]);
   });
 
@@ -599,7 +666,7 @@ describe("FilterableDataTable — header context menu coordinate fallback", () =
 
     fireEvent.contextMenu(document.body, { clientX: 500, clientY: 500 });
 
-    expect(screen.queryByText("Pin Column")).not.toBeInTheDocument();
+    expect(screen.queryByText("Pin left")).not.toBeInTheDocument();
   });
 
   it("does not double-open when the per-cell handler already handled the click", () => {
@@ -616,7 +683,7 @@ describe("FilterableDataTable — header context menu coordinate fallback", () =
     // stops this from ever reaching the document-level fallback listener too.
     fireEvent.contextMenu(thA, { clientX: 50, clientY: 15 });
 
-    expect(screen.getAllByText("Pin Column")).toHaveLength(1);
+    expect(screen.getAllByText("Pin left")).toHaveLength(1);
   });
 });
 
@@ -845,11 +912,11 @@ describe("FilterableDataTable — floating surfaces close on Escape (new with th
     );
 
     fireEvent.contextMenu(getHeaderCell(container, "A"));
-    const pinItem = screen.getByText("Pin Column");
+    const pinItem = screen.getByText("Pin left");
     expect(pinItem).toBeInTheDocument();
 
     fireEvent.keyDown(pinItem, { key: "Escape", code: "Escape" });
-    expect(screen.queryByText("Pin Column")).not.toBeInTheDocument();
+    expect(screen.queryByText("Pin left")).not.toBeInTheDocument();
   });
 
   it("closes the row context menu (Menu) on Escape", () => {
@@ -972,7 +1039,8 @@ describe("FilterableDataTable — column personalizer modal", () => {
         "personalizer-test",
         ["a", "c"],
         ["a", "c"],
-        []
+        [],
+        { pinnedRightColumnKeys: [], columnWidths: {} }
       )
     );
     // MUI Dialog also runs a real exit transition -- the saveTablePreference wait above can
@@ -1200,7 +1268,7 @@ describe("FilterableDataTable — row-level keyboard navigation (opt-in)", () =>
   });
 });
 
-describe("FilterableDataTable — column resize (opt-in, widen-only)", () => {
+describe("FilterableDataTable — column resize and autosize", () => {
   const columns = [
     { key: "a", label: "A" },
     { key: "b", label: "B" },
@@ -1217,12 +1285,16 @@ describe("FilterableDataTable — column resize (opt-in, widen-only)", () => {
     fireEvent.mouseUp(window);
   };
 
-  it("enableColumnResize=false (default): no resize handle renders anywhere", () => {
-    const { container } = render(
+  it("resize handles render by default and can be turned off with enableColumnResize=false", () => {
+    const { container, rerender } = render(
       <FilterableDataTable rows={[]} columns={columns} showExport={false} />
     );
+    expect(container.querySelectorAll('[role="separator"]')).toHaveLength(2);
 
+    rerender(<FilterableDataTable rows={[]} columns={columns} showExport={false} enableColumnResize={false} />);
     expect(container.querySelectorAll('[role="separator"]')).toHaveLength(0);
+    fireEvent.contextMenu(getHeaderCell(container, "A"));
+    expect(screen.queryByText("Autosize this column")).not.toBeInTheDocument();
   });
 
   it("no resize handle renders on the leading checkbox/settings column", () => {
@@ -1275,7 +1347,7 @@ describe("FilterableDataTable — column resize (opt-in, widen-only)", () => {
     expect(thA.style.width).toBe("200px");
   });
 
-  it("double-click resets that column's width", () => {
+  it("double-click autosizes (clears) that column's width", () => {
     const { container } = render(
       <FilterableDataTable rows={[]} columns={columns} showExport={false} enableColumnResize />
     );
@@ -1309,5 +1381,57 @@ describe("FilterableDataTable — column resize (opt-in, widen-only)", () => {
     fireEvent.click(screen.getByText("Reset to column defaults"));
 
     expect(getHeaderCell(container, "A").style.width).toBe("");
+  });
+
+  it("a narrowed column truncates its cell content with an ellipsis box", () => {
+    const { container } = render(
+      <FilterableDataTable rows={[{ id: 1, a: "A very long product description", b: "x" }]} columns={columns} showExport={false} />
+    );
+
+    resizeColumn(getHandle(container, "A"), 100);
+    const cell = screen.getByText("A very long product description").closest("td");
+    const box = cell.querySelector("div");
+    expect(box).not.toBeNull();
+    expect(getComputedStyle(box).textOverflow).toBe("ellipsis");
+  });
+
+  it("Autosize this column / Autosize all columns clear widths and persist", async () => {
+    const { container } = render(
+      <FilterableDataTable rows={[]} columns={columns} showExport={false} tablePreferenceKey="autosize" />
+    );
+
+    resizeColumn(getHandle(container, "A"), 100);
+    resizeColumn(getHandle(container, "B"), 120);
+    await waitFor(() =>
+      expect(mockSaveTablePreference).toHaveBeenLastCalledWith(
+        "autosize", ["a", "b"], ["a", "b"], [], { pinnedRightColumnKeys: [], columnWidths: { a: 100, b: 120 } }
+      )
+    );
+
+    fireEvent.contextMenu(getHeaderCell(container, "A"));
+    fireEvent.click(screen.getByText("Autosize this column"));
+    expect(getHeaderCell(container, "A").style.width).toBe("");
+    expect(getHeaderCell(container, "B").style.width).toBe("120px");
+    await waitFor(() =>
+      expect(mockSaveTablePreference).toHaveBeenLastCalledWith(
+        "autosize", ["a", "b"], ["a", "b"], [], { pinnedRightColumnKeys: [], columnWidths: { b: 120 } }
+      )
+    );
+
+    fireEvent.contextMenu(getHeaderCell(container, "B"));
+    fireEvent.click(screen.getByText("Autosize all columns"));
+    expect(getHeaderCell(container, "B").style.width).toBe("");
+    await waitFor(() =>
+      expect(mockSaveTablePreference).toHaveBeenLastCalledWith(
+        "autosize", ["a", "b"], ["a", "b"], [], { pinnedRightColumnKeys: [], columnWidths: {} }
+      )
+    );
+  });
+
+  it("Choose columns in the header menu opens the column picker", () => {
+    const { container } = render(<FilterableDataTable rows={[]} columns={columns} showExport={false} />);
+    fireEvent.contextMenu(getHeaderCell(container, "A"));
+    fireEvent.click(screen.getByText("Choose columns"));
+    expect(within(screen.getByRole("dialog")).getByText("Personalize List Columns")).toBeInTheDocument();
   });
 });

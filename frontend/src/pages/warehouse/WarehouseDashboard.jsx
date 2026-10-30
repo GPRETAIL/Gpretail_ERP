@@ -569,10 +569,6 @@ const WarehouseDashboard = () => {
   };
 
   const tableColumns = [
-    { key: "workflow_selection", label: "Select", valueGetter: () => "", render: (_value, entry) => (
-      <Box component="input" type="checkbox" aria-label={`Select ${entry.lr_entry_no || entry.id}`} checked={selectedRowKey === entry.dashboardKey}
-        onClick={event => event.stopPropagation()} onChange={() => handleRowSelect(entry.dashboardKey)} />
-    ) },
     ...RAW_INITIAL_COLUMNS.map(column => ({ key: column.key, label: column.label, valueGetter: entry => getCellValue(entry, column.key),
       ...(column.key === "workflow_icons" ? { render: (_value, entry) => {
         const config = STATUS_ICON_MAP[entry.status] || STATUS_ICON_MAP.lr_entry;
@@ -705,6 +701,9 @@ const WarehouseDashboard = () => {
             searchPlaceholder="Search warehouse entries..." exportFileName="warehouse_dashboard"
             fillHeight enableColumnResize paginationMode="client" page={page} limit={limit}
             onPageChange={setPage} onLimitChange={value => { setLimit(value); setPage(1); }} onRowClick={entry => handleRowSelect(entry.dashboardKey)}
+            enableSelection singleSelection selectedRows={selectedRowKey ? [selectedRowKey] : []}
+            getRowSelectionLabel={entry => `Select ${entry.lr_entry_no || entry.id}`}
+            onSelectionChange={keys => setSelectedRowKey(keys.length ? keys[keys.length - 1] : null)}
             renderActions={entry => <Stack direction="row" spacing={0.5}>
               <IconButton title="View" aria-label="View" onClick={event => { event.stopPropagation(); getEntryNavigation(entry, "view"); }}><Eye size={14} /></IconButton>
               <IconButton title="Edit" aria-label="Edit" disabled={entry.status === "completed"} onClick={event => { event.stopPropagation(); getEntryNavigation(entry, "edit"); }}><Pencil size={14} /></IconButton>

@@ -391,6 +391,8 @@ class UserAccessController extends Controller
                 'visible_columns' => $saved['visible_columns'] ?? null,
                 'column_order' => $saved['column_order'] ?? null,
                 'pinned_column_keys' => $saved['pinned_column_keys'] ?? [],
+                'pinned_right_column_keys' => $saved['pinned_right_column_keys'] ?? [],
+                'column_widths' => (object) ($saved['column_widths'] ?? []),
                 'preferences' => $saved,
             ],
         ]);
@@ -405,6 +407,10 @@ class UserAccessController extends Controller
             'column_order' => ['nullable', 'array'],
             'pinnedColumnKeys' => ['nullable', 'array'],
             'pinned_column_keys' => ['nullable', 'array'],
+            'pinnedRightColumnKeys' => ['nullable', 'array', 'max:200'],
+            'pinnedRightColumnKeys.*' => ['string', 'max:100'],
+            'columnWidths' => ['nullable', 'array', 'max:200'],
+            'columnWidths.*' => ['integer', 'min:40', 'max:2000'],
         ]);
 
         $saved = [
@@ -417,6 +423,14 @@ class UserAccessController extends Controller
         if ($user) {
             $layouts = $user->dashboard_layouts ?? [];
             $tablePrefs = is_array($layouts['_table_preferences'] ?? null) ? $layouts['_table_preferences'] : [];
+            // Right pins and widths are only replaced when sent, so older clients keep them intact.
+            $previous = is_array($tablePrefs[$tableKey] ?? null) ? $tablePrefs[$tableKey] : [];
+            $saved['pinned_right_column_keys'] = $request->has('pinnedRightColumnKeys')
+                ? array_values(array_diff((array) $request->input('pinnedRightColumnKeys'), (array) $saved['pinned_column_keys']))
+                : ($previous['pinned_right_column_keys'] ?? []);
+            $saved['column_widths'] = $request->has('columnWidths')
+                ? array_map('intval', (array) $request->input('columnWidths'))
+                : ($previous['column_widths'] ?? []);
             $tablePrefs[$tableKey] = $saved;
             $layouts['_table_preferences'] = $tablePrefs;
             $user->dashboard_layouts = $layouts;
