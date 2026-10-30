@@ -32,10 +32,10 @@ export default function HeaderNotifications({ onNavigate, onOpenInbox }) {
         <Badge badgeContent={count} color="error" max={99}><Bell size={20} /></Badge>
       </IconButton>
     </Tooltip>
-    <Popover open={open} anchorEl={anchor} onClose={close} anchorOrigin={{ vertical: "bottom", horizontal: "right" }} transformOrigin={{ vertical: "top", horizontal: "right" }} marginThreshold={12} slotProps={{ paper: { id: "header-notifications", role: "dialog", "aria-label": "Notifications", sx: { mt: 1, width: 440, maxWidth: "calc(100vw - 24px)", maxHeight: "min(740px, calc(100dvh - 90px))", display: "flex", flexDirection: "column", borderRadius: 3, border: 1, borderColor: "divider", bgcolor: "background.paper", backgroundImage: "none", boxShadow: 8 } } }}>
-      <Box sx={{ p: 2, pb: 1 }}>
+    <Popover open={open} anchorEl={anchor} onClose={close} anchorOrigin={{ vertical: "bottom", horizontal: "right" }} transformOrigin={{ vertical: "top", horizontal: "right" }} marginThreshold={12} slotProps={{ paper: { id: "header-notifications", role: "dialog", "aria-label": "Notifications", sx: { mt: 1, width: 380, maxWidth: "calc(100vw - 24px)", maxHeight: "min(560px, calc(100dvh - 90px))", display: "flex", flexDirection: "column", borderRadius: 3, border: 1, borderColor: "divider", bgcolor: "background.paper", backgroundImage: "none", boxShadow: 8 } } }}>
+      <Box sx={{ px: 2, pt: 1.5, pb: 0.5 }}>
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-          <Box sx={{ flex: 1 }}><Typography component="h2" sx={{ fontWeight: 700, fontSize: 17 }}>Notifications</Typography><Typography variant="caption" color="text.secondary">Your latest account and store updates</Typography></Box>
+          <Box sx={{ flex: 1 }}><Typography component="h2" sx={{ fontWeight: 700, fontSize: 15 }}>Notifications</Typography></Box>
           <Tooltip title="Notification preferences"><IconButton size="small" aria-label="Notification preferences" onClick={() => openInbox(true)}><Settings2 size={18} /></IconButton></Tooltip>
           <IconButton size="small" aria-label="Close notifications" onClick={close}><X size={18} /></IconButton>
         </Stack>
@@ -48,12 +48,12 @@ export default function HeaderNotifications({ onNavigate, onOpenInbox }) {
         </Stack>
       </Box>
       <Divider />
-      <Box sx={{ overflowY: "auto", overscrollBehavior: "contain", p: 1.5, minHeight: 150 }} aria-busy={feed.loading}>
+      <Box sx={{ overflowY: "auto", overscrollBehavior: "contain", minHeight: 120 }} aria-busy={feed.loading}>
         {(feed.error || feed.failure || countQuery.error) && <Alert severity="warning" sx={{ mb: 1.5 }} action={<Button color="inherit" size="small" onClick={() => { feed.reload(); countQuery.reload({ silent: true }); }}>Retry</Button>}>{feed.failure || "Unable to refresh notifications. Please retry."}</Alert>}
-        {feed.loading ? <Stack spacing={1}>{[0, 1, 2].map(id => <Skeleton key={id} variant="rounded" height={100} />)}</Stack> : !feed.error && feed.rows.length === 0 ? <Stack spacing={1} sx={{ alignItems: "center", py: 4, textAlign: "center" }} role="status"><Bell size={30} color="currentColor" /><Typography sx={{ fontWeight: 600 }}>{filter === "unread" ? "You're all caught up" : "No notifications yet"}</Typography><Typography variant="body2" color="text.secondary">{filter === "unread" ? "New unread updates will appear here." : "Account and store updates will appear here."}</Typography></Stack> : <Stack spacing={1}>{feed.rows.map(row => <NotificationCard key={row.id} notification={row} compact pending={feed.pending !== null} onRead={feed.markRead} subscriptionUrl={user?.subscription_portal_url} onOpen={path => { close(); onNavigate(path); }} />)}</Stack>}
+        {feed.loading ? <Stack spacing={1} sx={{ p: 1.5 }}>{[0, 1, 2].map(id => <Skeleton key={id} variant="rounded" height={56} />)}</Stack> : !feed.error && feed.rows.length === 0 ? <Stack spacing={1} sx={{ alignItems: "center", py: 4, textAlign: "center" }} role="status"><Bell size={30} color="currentColor" /><Typography sx={{ fontWeight: 600 }}>{filter === "unread" ? "You're all caught up" : "No notifications yet"}</Typography><Typography variant="body2" color="text.secondary">{filter === "unread" ? "New unread updates will appear here." : "Account and store updates will appear here."}</Typography></Stack> : <Stack>{feed.rows.map(row => <NotificationCard key={row.id} notification={row} compact pending={feed.pending !== null} onRead={feed.markRead} subscriptionUrl={user?.subscription_portal_url} onOpen={path => { close(); onNavigate(path); }} />)}</Stack>}
       </Box>
       <Divider />
-      <Box sx={{ px: 2, py: 1.25 }}><Button fullWidth onClick={() => openInbox()}>View all notifications</Button></Box>
+      <Box sx={{ px: 1.5, py: 0.75 }}><Button fullWidth size="small" onClick={() => openInbox()}>View all notifications</Button></Box>
     </Popover>
   </>;
 }
