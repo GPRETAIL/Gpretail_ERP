@@ -129,7 +129,7 @@ class DirectPurchaseController extends Controller
         return response()->json($paginated);
     }
 
-    public function show($id)
+    public function show(int|string $id)
     {
         $purchase = DirectPurchase::with([
             'company',
@@ -171,7 +171,7 @@ class DirectPurchaseController extends Controller
         );
 
         $purchase->items->each(function ($item) use ($sellThrough) {
-            $item->sell_through = $item->variant_id ? ($sellThrough->get((int) $item->variant_id) ?? null) : null;
+            $item->setAttribute('sell_through', $item->variant_id ? ($sellThrough->get((int) $item->variant_id) ?? null) : null);
         });
     }
 
@@ -196,7 +196,7 @@ class DirectPurchaseController extends Controller
 
         $directPurchase = DB::transaction(function () use ($data, $request) {
             $user = $request->user();
-            $storeId = $data['company_id'] ?: ($user?->store_id ?? 1);
+            $storeId = $data['company_id'] ?: ($user->store_id ?? 1);
 
             $purchaseNo = 'PUR-'.date('Ymd').'-'.strtoupper(substr(uniqid(), -5));
 
@@ -240,7 +240,7 @@ class DirectPurchaseController extends Controller
                 'payment_status' => 'UNPAID',
                 'status' => 'COMPLETED',
                 'invoice_workflow_status' => $data['invoice_workflow_status'],
-                'created_by' => $user?->id ?? 1,
+                'created_by' => $user->id ?? 1,
             ]);
 
             foreach ($data['items'] as $index => $itemData) {
@@ -293,7 +293,7 @@ class DirectPurchaseController extends Controller
         ], 201);
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, int|string $id)
     {
         $purchase = DirectPurchase::find($id);
 
@@ -499,7 +499,7 @@ class DirectPurchaseController extends Controller
         ]);
     }
 
-    public function destroy($id)
+    public function destroy(int|string $id)
     {
         $purchase = DirectPurchase::with('items')->find($id);
 
@@ -631,7 +631,7 @@ class DirectPurchaseController extends Controller
                     'total' => (float) ($row['total'] ?? 0),
                     'total_amount' => (float) ($row['total'] ?? 0),
                     'invoice_workflow_status' => 'invoice_completed',
-                    'created_by' => $request->user()?->id ?? 1,
+                    'created_by' => $request->user()->id ?? 1,
                 ]);
 
                 $count++;

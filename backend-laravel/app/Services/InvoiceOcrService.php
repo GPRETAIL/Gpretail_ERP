@@ -69,38 +69,39 @@ class InvoiceOcrService
      */
     private function prepareImagePayload(UploadedFile $file): array
     {
-        $ext   = strtolower($file->getClientOriginalExtension());
+        $ext = strtolower($file->getClientOriginalExtension());
         $isPdf = ($ext === 'pdf' || $file->getMimeType() === 'application/pdf');
         $maxPx = 1568;
 
-        if ($isPdf || !extension_loaded('gd')) {
+        if ($isPdf || ! extension_loaded('gd')) {
             $raw = file_get_contents($file->getRealPath());
+
             return [
-                'base64'    => base64_encode($raw),
-                'mime'      => $isPdf ? 'application/pdf' : ($file->getMimeType() ?: 'image/jpeg'),
+                'base64' => base64_encode($raw),
+                'mime' => $isPdf ? 'application/pdf' : ($file->getMimeType() ?: 'image/jpeg'),
                 'processed' => false,
             ];
         }
 
-        $path         = $file->getRealPath();
-        $raw          = file_get_contents($path);
-        $finfo        = new \finfo(FILEINFO_MIME_TYPE);
+        $path = $file->getRealPath();
+        $raw = file_get_contents($path);
+        $finfo = new \finfo(FILEINFO_MIME_TYPE);
         $detectedMime = $finfo->buffer($raw) ?: $file->getMimeType() ?: 'image/jpeg';
 
         $img = match (true) {
-            str_contains($detectedMime, 'png')  => @imagecreatefrompng($path),
-            str_contains($detectedMime, 'gif')  => @imagecreatefromgif($path),
+            str_contains($detectedMime, 'png') => @imagecreatefrompng($path),
+            str_contains($detectedMime, 'gif') => @imagecreatefromgif($path),
             str_contains($detectedMime, 'webp') => @imagecreatefromwebp($path),
-            default                              => @imagecreatefromjpeg($path),
+            default => @imagecreatefromjpeg($path),
         };
 
-        if (!$img) {
+        if (! $img) {
             return ['base64' => base64_encode($raw), 'mime' => $detectedMime, 'processed' => false];
         }
 
         // EXIF auto-rotate (JPEG only)
         if (function_exists('exif_read_data') && str_contains($detectedMime, 'jpeg')) {
-            $exif        = @exif_read_data($path);
+            $exif = @exif_read_data($path);
             $orientation = $exif['Orientation'] ?? 1;
             $img = match ((int) $orientation) {
                 3 => imagerotate($img, 180, 0),
@@ -268,7 +269,7 @@ PROMPT;
      */
     private function buildItemsOnlyPrompt(): string
     {
-        return <<<PROMPT
+        return <<<'PROMPT'
 This PURCHASE INVOICE IMAGE did not yield any line items in the first extraction pass.
 Focus ONLY on the product or line item table in this invoice image.
 
@@ -312,14 +313,14 @@ PROMPT;
      */
     private function extractWithGemini(UploadedFile $file, string $apiKey): array
     {
-        $ext      = strtolower($file->getClientOriginalExtension());
-        $isPdf    = ($ext === 'pdf' || $file->getMimeType() === 'application/pdf');
-        $payload  = $this->prepareImagePayload($file);
-        $base64   = $payload['base64'];
+        $ext = strtolower($file->getClientOriginalExtension());
+        $isPdf = ($ext === 'pdf' || $file->getMimeType() === 'application/pdf');
+        $payload = $this->prepareImagePayload($file);
+        $base64 = $payload['base64'];
         $mimeType = $payload['mime'];
-        $prompt   = $this->buildExtractionPrompt(!$isPdf);
+        $prompt = $this->buildExtractionPrompt(! $isPdf);
 
-        $primaryModel    = config('services.gemini.model', 'gemini-3.6-flash');
+        $primaryModel = config('services.gemini.model', 'gemini-3.6-flash');
         $candidateModels = array_unique([$primaryModel, 'gemini-3.6-flash', 'gemini-2.5-flash', 'gemini-2.0-flash-lite']);
 
         $lastException = null;
@@ -333,35 +334,38 @@ PROMPT;
                 }
 
                 // Multi-pass: if items array is empty, fire a targeted items-only prompt
-                if (empty($parsed['items']) && !$isPdf) {
+                if (empty($parsed['items']) && ! $isPdf) {
                     try {
                         $r2 = $this->callGemini($model, $apiKey, $this->buildItemsOnlyPrompt(), $base64, $mimeType);
-                        if (!empty($r2['parsed']['items'])) {
+                        if (! empty($r2['parsed']['items'])) {
                             $parsed['items'] = $r2['parsed']['items'];
-                            if (empty($parsed['totals']['grand_total']) && !empty($r2['parsed']['totals']['grand_total'])) {
+                            if (empty($parsed['totals']['grand_total']) && ! empty($r2['parsed']['totals']['grand_total'])) {
                                 $parsed['totals']['grand_total'] = $r2['parsed']['totals']['grand_total'];
                             }
-                            if (empty($parsed['totals']['subtotal']) && !empty($r2['parsed']['totals']['subtotal'])) {
+                            if (empty($parsed['totals']['subtotal']) && ! empty($r2['parsed']['totals']['subtotal'])) {
                                 $parsed['totals']['subtotal'] = $r2['parsed']['totals']['subtotal'];
                             }
                         }
-                    } catch (Throwable) {}
+                    } catch (Throwable) {
+                    }
                 }
 
                 $normalized = $this->normalizeInvoicePayload($parsed);
+
                 return [
-                    'success'         => true,
-                    'ocr_engine'      => "google-{$model}-vision",
-                    'parser_status'   => 'pixel_perfect_ai',
-                    'document_type'   => $parsed['meta']['document_type'] ?? 'TAX_INVOICE',
-                    'image_quality'   => $parsed['meta']['image_quality'] ?? 'CLEAR',
-                    'confidence'      => (float) ($parsed['meta']['extraction_confidence'] ?? 0.92),
+                    'success' => true,
+                    'ocr_engine' => "google-{$model}-vision",
+                    'parser_status' => 'pixel_perfect_ai',
+                    'document_type' => $parsed['meta']['document_type'] ?? 'TAX_INVOICE',
+                    'image_quality' => $parsed['meta']['image_quality'] ?? 'CLEAR',
+                    'confidence' => (float) ($parsed['meta']['extraction_confidence'] ?? 0.92),
                     'image_processed' => $payload['processed'] ?? false,
-                    'text'            => $result['raw'] ?? '',
-                    'invoice'         => $normalized,
+                    'text' => $result['raw'] ?? '',
+                    'invoice' => $normalized,
                 ];
             } catch (Throwable $e) {
                 $lastException = $e;
+
                 continue;
             }
         }
@@ -375,7 +379,7 @@ PROMPT;
     private function callGemini(string $model, string $apiKey, string $prompt, string $base64, string $mimeType): array
     {
         $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
-        $client   = Http::timeout(90);
+        $client = Http::timeout(90);
 
         $response = $client
             ->withHeaders(['Content-Type' => 'application/json'])
@@ -388,17 +392,17 @@ PROMPT;
                 ]],
                 'generationConfig' => [
                     'response_mime_type' => 'application/json',
-                    'temperature'        => 0.05,
-                    'top_p'              => 0.95,
-                    'max_output_tokens'  => 8192,
+                    'temperature' => 0.05,
+                    'top_p' => 0.95,
+                    'max_output_tokens' => 8192,
                 ],
             ]);
 
         $response->throw();
         $respPayload = $response->json();
-        $rawText     = $respPayload['candidates'][0]['content']['parts'][0]['text'] ?? '';
-        $cleaned     = trim(preg_replace('/^```(?:json)?\s*|\s*```$/i', '', trim($rawText)));
-        $parsed      = json_decode($cleaned, true);
+        $rawText = $respPayload['candidates'][0]['content']['parts'][0]['text'] ?? '';
+        $cleaned = trim(preg_replace('/^```(?:json)?\s*|\s*```$/i', '', trim($rawText)));
+        $parsed = json_decode($cleaned, true);
 
         return ['raw' => $rawText, 'parsed' => is_array($parsed) ? $parsed : []];
     }
@@ -408,18 +412,18 @@ PROMPT;
      */
     private function extractWithOpenAi(UploadedFile $file, string $apiKey): array
     {
-        $payload  = $this->prepareImagePayload($file);
+        $payload = $this->prepareImagePayload($file);
         $mimeType = $payload['mime'];
-        $prompt   = $this->buildExtractionPrompt(!str_contains($mimeType, 'pdf'));
-        $client   = Http::timeout(90);
+        $prompt = $this->buildExtractionPrompt(! str_contains($mimeType, 'pdf'));
+        $client = Http::timeout(90);
 
         $response = $client
             ->withHeaders(['Authorization' => "Bearer {$apiKey}", 'Content-Type' => 'application/json'])
             ->post('https://api.openai.com/v1/chat/completions', [
-                'model'           => config('services.openai.model', 'gpt-4o-mini'),
+                'model' => config('services.openai.model', 'gpt-4o-mini'),
                 'response_format' => ['type' => 'json_object'],
-                'messages'        => [[
-                    'role'    => 'user',
+                'messages' => [[
+                    'role' => 'user',
                     'content' => [
                         ['type' => 'text', 'text' => $prompt],
                         ['type' => 'image_url', 'image_url' => ['url' => "data:{$mimeType};base64,{$payload['base64']}"]],
@@ -428,19 +432,19 @@ PROMPT;
             ]);
 
         $response->throw();
-        $raw    = $response->json()['choices'][0]['message']['content'] ?? '';
+        $raw = $response->json()['choices'][0]['message']['content'] ?? '';
         $parsed = json_decode($raw, true);
-        if (!is_array($parsed)) {
+        if (! is_array($parsed)) {
             throw new RuntimeException('OpenAI Vision did not return valid JSON.');
         }
 
         return [
-            'success'       => true,
-            'ocr_engine'    => 'openai-vision',
+            'success' => true,
+            'ocr_engine' => 'openai-vision',
             'parser_status' => 'pixel_perfect_ai',
-            'confidence'    => (float) ($parsed['meta']['extraction_confidence'] ?? 0.90),
-            'text'          => $raw,
-            'invoice'       => $this->normalizeInvoicePayload($parsed),
+            'confidence' => (float) ($parsed['meta']['extraction_confidence'] ?? 0.90),
+            'text' => $raw,
+            'invoice' => $this->normalizeInvoicePayload($parsed),
         ];
     }
 
@@ -501,13 +505,15 @@ PROMPT;
 
         $response->throw();
         $payload = $response->json();
-        if (!empty($payload['IsErroredOnProcessing'])) {
+        if (! empty($payload['IsErroredOnProcessing'])) {
             $error = $payload['ErrorMessage'] ?? 'OCR provider could not process the document.';
             throw new RuntimeException(is_array($error) ? implode(' ', $error) : (string) $error);
         }
 
         $text = collect($payload['ParsedResults'] ?? [])->map(fn (array $page) => trim((string) ($page['ParsedText'] ?? '')))->filter()->implode("\n");
-        if ($text === '') throw new RuntimeException('No readable text was extracted from the invoice.');
+        if ($text === '') {
+            throw new RuntimeException('No readable text was extracted from the invoice.');
+        }
 
         return [
             'success' => true,
@@ -686,7 +692,7 @@ PROMPT;
                     'address' => null,
                 ],
                 'invoice' => [
-                    'number' => 'INV-' . strtoupper(substr(md5(uniqid('', true)), 0, 7)),
+                    'number' => 'INV-'.strtoupper(substr(md5(uniqid('', true)), 0, 7)),
                     'date' => date('Y-m-d'),
                     'due_date' => date('Y-m-d', strtotime('+30 days')),
                 ],
@@ -702,7 +708,7 @@ PROMPT;
                 ],
                 'items' => [
                     [
-                        'description' => 'Item from ' . $cleanName,
+                        'description' => 'Item from '.$cleanName,
                         'hsn' => null,
                         'quantity' => 1,
                         'unit' => 'Pcs',
@@ -732,7 +738,7 @@ PROMPT;
             'ocr_engine' => 'in_app_builtin_engine',
             'parser_status' => 'built_in_v1',
             'notice' => 'Processed via In-App Built-In Engine. For 100% automated pixel-perfect AI extraction, set GEMINI_API_KEY in .env (Free Tier: 1,500 docs/day).',
-            'text' => $rawText ?: ('Document: ' . $file->getClientOriginalName()),
+            'text' => $rawText ?: ('Document: '.$file->getClientOriginalName()),
             'invoice' => $this->normalizeInvoicePayload($parsed),
         ];
     }
@@ -742,19 +748,19 @@ PROMPT;
      */
     private function normalizeInvoicePayload(array $data): array
     {
-        $supplier  = $data['supplier']  ?? [];
-        $buyer     = $data['buyer']     ?? [];
-        $invoice   = $data['invoice']   ?? [];
+        $supplier = $data['supplier'] ?? [];
+        $buyer = $data['buyer'] ?? [];
+        $invoice = $data['invoice'] ?? [];
         $transport = $data['transport'] ?? [];
-        $items     = $data['items']     ?? [];
-        $tax       = $data['tax']       ?? [];
-        $totals    = $data['totals']    ?? [];
-        $payment   = $data['payment']   ?? [];
+        $items = $data['items'] ?? [];
+        $tax = $data['tax'] ?? [];
+        $totals = $data['totals'] ?? [];
+        $payment = $data['payment'] ?? [];
 
         $normalizedItems = [];
         foreach ($items as $item) {
             $rate = (float) ($item['rate'] ?? 0);
-            $qty  = (float) ($item['quantity'] ?? 1);
+            $qty = (float) ($item['quantity'] ?? 1);
 
             // Prefer taxable_amount → amount → qty*rate
             $amount = (float) ($item['amount'] ?? $item['taxable_amount'] ?? ($qty * $rate));
@@ -763,7 +769,7 @@ PROMPT;
             $discAmt = 0.0;
             if (isset($item['discount_amount'])) {
                 $discAmt = (float) $item['discount_amount'];
-            } elseif (!empty($item['discount_percent'])) {
+            } elseif (! empty($item['discount_percent'])) {
                 $discAmt = round(($qty * $rate) * ((float) $item['discount_percent'] / 100), 2);
             } elseif (isset($item['discount'])) {
                 $discAmt = (float) $item['discount'];
@@ -775,109 +781,115 @@ PROMPT;
                 $taxPct = (((float) ($item['cgst_percent'] ?? 0) + (float) ($item['sgst_percent'] ?? 0)) * 2)
                         + (float) ($item['igst_percent'] ?? 0);
             }
-            if ($taxPct <= 0) $taxPct = 5.0;
+            if ($taxPct <= 0) {
+                $taxPct = 5.0;
+            }
 
             $selling = (float) ($item['selling_price'] ?? 0);
-            $mrp     = (float) ($item['mrp'] ?? 0);
+            $mrp = (float) ($item['mrp'] ?? 0);
 
             $normalizedItems[] = [
-                'sr_no'            => $item['sr_no'] ?? null,
-                'description'      => (string) ($item['description'] ?? 'Item'),
-                'brand'            => $item['brand'] ?? null,
-                'hsn'              => !empty($item['hsn']) ? (string) $item['hsn'] : null,
-                'batch_no'         => $item['batch_no'] ?? null,
-                'quantity'         => $qty > 0 ? $qty : 1,
-                'unit'             => (string) ($item['unit'] ?? 'Pcs'),
-                'rate'             => $rate,
-                'discount'         => $discAmt,
+                'sr_no' => $item['sr_no'] ?? null,
+                'description' => (string) ($item['description'] ?? 'Item'),
+                'brand' => $item['brand'] ?? null,
+                'hsn' => ! empty($item['hsn']) ? (string) $item['hsn'] : null,
+                'batch_no' => $item['batch_no'] ?? null,
+                'quantity' => $qty > 0 ? $qty : 1,
+                'unit' => (string) ($item['unit'] ?? 'Pcs'),
+                'rate' => $rate,
+                'discount' => $discAmt,
                 'discount_percent' => $item['discount_percent'] ?? null,
-                'tax_percent'      => $taxPct,
-                'cgst_percent'     => $item['cgst_percent'] ?? null,
-                'sgst_percent'     => $item['sgst_percent'] ?? null,
-                'igst_percent'     => $item['igst_percent'] ?? null,
-                'taxable_amount'   => (float) ($item['taxable_amount'] ?? $amount),
-                'amount'           => $amount,
-                'selling_price'    => $selling > 0 ? $selling : round($rate * 1.25, 2),
-                'mrp'              => $mrp > 0 ? $mrp : round($rate * 1.35, 2),
-                'confidence'       => 0.95,
+                'tax_percent' => $taxPct,
+                'cgst_percent' => $item['cgst_percent'] ?? null,
+                'sgst_percent' => $item['sgst_percent'] ?? null,
+                'igst_percent' => $item['igst_percent'] ?? null,
+                'taxable_amount' => (float) ($item['taxable_amount'] ?? $amount),
+                'amount' => $amount,
+                'selling_price' => $selling > 0 ? $selling : round($rate * 1.25, 2),
+                'mrp' => $mrp > 0 ? $mrp : round($rate * 1.35, 2),
+                'confidence' => 0.95,
             ];
         }
 
-        $subtotal   = isset($totals['subtotal']) ? (float) $totals['subtotal'] : null;
+        $subtotal = isset($totals['subtotal']) ? (float) $totals['subtotal'] : null;
         $grandTotal = isset($totals['grand_total']) ? (float) $totals['grand_total'] : null;
 
         // Derive grand_total from items if missing
-        if (($grandTotal === null || $grandTotal === 0.0) && !empty($normalizedItems)) {
+        if (($grandTotal === null || $grandTotal === 0.0) && ! empty($normalizedItems)) {
             $sum = array_sum(array_column($normalizedItems, 'amount'));
-            if ($sum > 0) $grandTotal = $sum;
+            if ($sum > 0) {
+                $grandTotal = $sum;
+            }
         }
 
         return [
             'supplier' => [
-                'name'       => $supplier['name'] ?? null,
+                'name' => $supplier['name'] ?? null,
                 'trade_name' => $supplier['trade_name'] ?? null,
-                'gstin'      => $supplier['gstin'] ?? null,
-                'pan'        => $supplier['pan'] ?? null,
-                'phone'      => $supplier['phone'] ?? null,
-                'email'      => $supplier['email'] ?? null,
-                'address'    => $supplier['address'] ?? null,
-                'state'      => $supplier['state'] ?? null,
+                'gstin' => $supplier['gstin'] ?? null,
+                'pan' => $supplier['pan'] ?? null,
+                'phone' => $supplier['phone'] ?? null,
+                'email' => $supplier['email'] ?? null,
+                'address' => $supplier['address'] ?? null,
+                'state' => $supplier['state'] ?? null,
                 'state_code' => $supplier['state_code'] ?? null,
             ],
             'buyer' => [
-                'name'    => $buyer['name'] ?? null,
-                'gstin'   => $buyer['gstin'] ?? null,
+                'name' => $buyer['name'] ?? null,
+                'gstin' => $buyer['gstin'] ?? null,
                 'address' => $buyer['address'] ?? null,
             ],
             'invoice' => [
-                'number'          => $invoice['number'] ?? null,
-                'date'            => $invoice['date'] ?? null,
-                'due_date'        => $invoice['due_date'] ?? null,
-                'po_number'       => $invoice['po_number'] ?? null,
-                'challan_number'  => $invoice['challan_number'] ?? null,
+                'number' => $invoice['number'] ?? null,
+                'date' => $invoice['date'] ?? null,
+                'due_date' => $invoice['due_date'] ?? null,
+                'po_number' => $invoice['po_number'] ?? null,
+                'challan_number' => $invoice['challan_number'] ?? null,
                 'place_of_supply' => $invoice['place_of_supply'] ?? null,
             ],
             'transport' => [
-                'name'            => $transport['name'] ?? null,
-                'lr_no'           => $transport['lr_no'] ?? null,
-                'lr_date'         => $transport['lr_date'] ?? null,
-                'vehicle_no'      => $transport['vehicle_no'] ?? null,
-                'eway_bill_no'    => $transport['eway_bill_no'] ?? null,
-                'mode'            => $transport['mode'] ?? null,
-                'packages_count'  => isset($transport['packages_count']) && $transport['packages_count'] !== null ? (int) $transport['packages_count'] : null,
-                'weight_kg'       => isset($transport['weight_kg']) && $transport['weight_kg'] !== null ? (float) $transport['weight_kg'] : null,
-                'freight_charges' => isset($transport['freight_charges']) && $transport['freight_charges'] !== null ? (float) $transport['freight_charges'] : null,
+                'name' => $transport['name'] ?? null,
+                'lr_no' => $transport['lr_no'] ?? null,
+                'lr_date' => $transport['lr_date'] ?? null,
+                'vehicle_no' => $transport['vehicle_no'] ?? null,
+                'eway_bill_no' => $transport['eway_bill_no'] ?? null,
+                'mode' => $transport['mode'] ?? null,
+                'packages_count' => isset($transport['packages_count']) ? (int) $transport['packages_count'] : null,
+                'weight_kg' => isset($transport['weight_kg']) ? (float) $transport['weight_kg'] : null,
+                'freight_charges' => isset($transport['freight_charges']) ? (float) $transport['freight_charges'] : null,
             ],
             'items' => $normalizedItems,
-            'tax'   => [
+            'tax' => [
                 'taxable_value' => isset($tax['taxable_value']) ? (float) $tax['taxable_value'] : $subtotal,
-                'cgst'          => isset($tax['cgst']) ? (float) $tax['cgst'] : null,
-                'sgst'          => isset($tax['sgst']) ? (float) $tax['sgst'] : null,
-                'igst'          => isset($tax['igst']) ? (float) $tax['igst'] : null,
-                'cess'          => isset($tax['cess']) ? (float) $tax['cess'] : null,
-                'tcs'           => isset($tax['tcs']) ? (float) $tax['tcs'] : null,
-                'round_off'     => isset($tax['round_off']) ? (float) $tax['round_off'] : null,
+                'cgst' => isset($tax['cgst']) ? (float) $tax['cgst'] : null,
+                'sgst' => isset($tax['sgst']) ? (float) $tax['sgst'] : null,
+                'igst' => isset($tax['igst']) ? (float) $tax['igst'] : null,
+                'cess' => isset($tax['cess']) ? (float) $tax['cess'] : null,
+                'tcs' => isset($tax['tcs']) ? (float) $tax['tcs'] : null,
+                'round_off' => isset($tax['round_off']) ? (float) $tax['round_off'] : null,
             ],
             'totals' => [
-                'subtotal'        => $subtotal,
-                'total_discount'  => isset($totals['total_discount']) ? (float) $totals['total_discount'] : null,
-                'total_tax'       => isset($totals['total_tax']) ? (float) $totals['total_tax'] : null,
-                'grand_total'     => $grandTotal,
+                'subtotal' => $subtotal,
+                'total_discount' => isset($totals['total_discount']) ? (float) $totals['total_discount'] : null,
+                'total_tax' => isset($totals['total_tax']) ? (float) $totals['total_tax'] : null,
+                'grand_total' => $grandTotal,
                 'amount_in_words' => $totals['amount_in_words'] ?? null,
             ],
             'payment' => [
-                'terms'      => $payment['terms'] ?? null,
-                'bank_name'  => $payment['bank_name'] ?? null,
+                'terms' => $payment['terms'] ?? null,
+                'bank_name' => $payment['bank_name'] ?? null,
                 'account_no' => $payment['account_no'] ?? null,
-                'ifsc'       => $payment['ifsc'] ?? null,
-                'upi_id'     => $payment['upi_id'] ?? null,
+                'ifsc' => $payment['ifsc'] ?? null,
+                'upi_id' => $payment['upi_id'] ?? null,
             ],
         ];
     }
 
     private function fileType(UploadedFile $file): string
     {
-        return match (strtolower($file->getClientOriginalExtension())) { 'pdf' => 'PDF', 'jpg', 'jpeg' => 'JPG', 'png', 'webp' => 'PNG', default => 'JPG' };
+        return match (strtolower($file->getClientOriginalExtension())) {
+            'pdf' => 'PDF', 'jpg', 'jpeg' => 'JPG', 'png', 'webp' => 'PNG', default => 'JPG'
+        };
     }
 
     private function parseInvoice(string $text): array
@@ -923,10 +935,11 @@ PROMPT;
     private function supplierName(array $lines): ?string
     {
         foreach (array_slice($lines, 0, 10) as $line) {
-            if ($line !== '' && strlen($line) >= 3 && !preg_match('/invoice|tax invoice|gstin|gst no|bill no|date|original|duplicate/i', $line)) {
+            if ($line !== '' && strlen($line) >= 3 && ! preg_match('/invoice|tax invoice|gstin|gst no|bill no|date|original|duplicate/i', $line)) {
                 return $line;
             }
         }
+
         return null;
     }
 
@@ -936,7 +949,10 @@ PROMPT;
         $collecting = false;
         foreach (array_slice($lines, 1, 8) as $line) {
             if (preg_match('/invoice|gstin|bill to|ship to|date/i', $line)) {
-                if ($collecting) break;
+                if ($collecting) {
+                    break;
+                }
+
                 continue;
             }
             if (preg_match('/road|street|nagar|colony|bazaar|market|lane|dist|state|pin|india/i', $line)) {
@@ -944,7 +960,8 @@ PROMPT;
                 $addressLines[] = $line;
             }
         }
-        return !empty($addressLines) ? implode(', ', $addressLines) : null;
+
+        return ! empty($addressLines) ? implode(', ', $addressLines) : null;
     }
 
     private function invoiceNumber(array $lines): ?string
@@ -956,7 +973,9 @@ PROMPT;
 
         foreach ($patterns as $pattern) {
             $value = $this->match(implode("\n", $lines), $pattern, 1);
-            if ($value !== null) return $value;
+            if ($value !== null) {
+                return $value;
+            }
         }
 
         return null;
@@ -971,7 +990,7 @@ PROMPT;
 
         foreach ($patterns as $pattern) {
             $value = $this->match(implode("\n", $lines), $pattern, 1);
-            if ($value && !preg_match('/invoice|date|number|gstin/i', $value)) {
+            if ($value && ! preg_match('/invoice|date|number|gstin/i', $value)) {
                 return trim($value);
             }
         }
@@ -988,7 +1007,9 @@ PROMPT;
 
         foreach ($patterns as $pattern) {
             $value = $this->match(implode("\n", $lines), $pattern, 1);
-            if ($value !== null) return trim($value);
+            if ($value !== null) {
+                return trim($value);
+            }
         }
 
         return null;
@@ -1003,7 +1024,9 @@ PROMPT;
 
         foreach ($patterns as $pattern) {
             $value = $this->match(implode("\n", $lines), $pattern, 1);
-            if ($value !== null) return trim($value);
+            if ($value !== null) {
+                return trim($value);
+            }
         }
 
         return null;
@@ -1018,7 +1041,9 @@ PROMPT;
 
         foreach ($patterns as $pattern) {
             $val = $this->match(implode("\n", $lines), $pattern, 1);
-            if ($val !== null && (int) $val > 0) return (int) $val;
+            if ($val !== null && (int) $val > 0) {
+                return (int) $val;
+            }
         }
 
         return null;
@@ -1032,7 +1057,9 @@ PROMPT;
 
         foreach ($patterns as $pattern) {
             $val = $this->match(implode("\n", $lines), $pattern, 1);
-            if ($val !== null && (float) $val > 0) return (float) $val;
+            if ($val !== null && (float) $val > 0) {
+                return (float) $val;
+            }
         }
 
         return null;
@@ -1047,11 +1074,12 @@ PROMPT;
     {
         foreach ($lines as $line) {
             foreach ($labels as $label) {
-                if (str_contains(strtolower($line), $label) && preg_match_all('/(?:₹|rs\.?|inr)?\s*([0-9]+(?:,[0-9]{3})*(?:\.[0-9]{1,2})?)/i', $line, $m) && !empty($m[1])) {
+                if (str_contains(strtolower($line), $label) && preg_match_all('/(?:₹|rs\.?|inr)?\s*([0-9]+(?:,[0-9]{3})*(?:\.[0-9]{1,2})?)/i', $line, $m)) {
                     return (float) str_replace(',', '', end($m[1]));
                 }
             }
         }
+
         return null;
     }
 
@@ -1064,14 +1092,20 @@ PROMPT;
                 break;
             }
         }
-        if ($start === null) return [];
+        if ($start === null) {
+            return [];
+        }
 
         $items = [];
         foreach (array_slice($lines, $start) as $line) {
-            if (preg_match('/subtotal|sub total|cgst|sgst|igst|grand total|invoice total|amount payable|net payable/i', $line)) break;
+            if (preg_match('/subtotal|sub total|cgst|sgst|igst|grand total|invoice total|amount payable|net payable/i', $line)) {
+                break;
+            }
             preg_match_all('/(?<![A-Za-z])\d+(?:,\d{3})*(?:\.\d+)?/', $line, $m);
-            $n = array_map(fn ($v) => (float) str_replace(',', '', $v), $m[0] ?? []);
-            if (count($n) < 2) continue;
+            $n = array_map(fn ($v) => (float) str_replace(',', '', $v), $m[0]);
+            if (count($n) < 2) {
+                continue;
+            }
 
             $hsn = null;
             if (preg_match('/\b([0-9]{4,8})\b/', $line, $hm)) {
@@ -1083,9 +1117,11 @@ PROMPT;
                 $unit = ucfirst(strtolower($um[1]));
             }
 
-            $description = trim(preg_replace('/\s+/u', ' ', preg_replace('/\d+(?:,\d{3})*(?:\.\d+)?/', '', $line)), " -|:");
-            $description = trim(preg_replace('/\b(?:pcs|mtr|nos|box|kg|sets)\b/i', '', $description), " -|:");
-            if ($description === '' || strlen($description) < 2) continue;
+            $description = trim(preg_replace('/\s+/u', ' ', preg_replace('/\d+(?:,\d{3})*(?:\.\d+)?/', '', $line)), ' -|:');
+            $description = trim(preg_replace('/\b(?:pcs|mtr|nos|box|kg|sets)\b/i', '', $description), ' -|:');
+            if ($description === '' || strlen($description) < 2) {
+                continue;
+            }
 
             $quantity = count($n) >= 3 ? (float) $n[count($n) - 3] : 1;
             $rate = (float) $n[count($n) - 2];

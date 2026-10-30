@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Backup extends Model
 {
@@ -37,12 +39,14 @@ class Backup extends Model
         ];
     }
 
-    public function company()
+    /** @return BelongsTo<Store, $this> */
+    public function company(): BelongsTo
     {
         return $this->belongsTo(Store::class, 'company_id');
     }
 
-    public function restores()
+    /** @return HasMany<BackupRestore, $this> */
+    public function restores(): HasMany
     {
         return $this->hasMany(BackupRestore::class);
     }

@@ -106,4 +106,86 @@ class StoreUserAccessTest extends TestCase
         $this->assertSame([], $service->effective($manager->fresh()));
         $this->assertFalse($service->allows($manager->fresh(), '/masters/product', 'view'));
     }
+
+    public function test_user_list_reuses_one_permission_resolver_without_mixing_roles_or_explicit_grants(): void
+    {
+        $store = Store::create(['name' => 'Preset list', 'code' => 'PRESET-LIST']);
+        $admin = $this->storeUser($store, 'admin');
+        $manager = $this->storeUser($store, 'manager');
+        $cashier = $this->storeUser($store, 'cashier');
+        $custom = $this->storeUser($store, 'staff');
+        $customGrants = ['/dashboard' => ['view' => true, 'add' => false, 'edit' => false, 'delete' => false]];
+        $custom->update(['page_permissions' => $customGrants]);
+        $calls = [];
+        $instances = [];
+        $this->app->bind(PagePermissions::class, function () use (&$calls, &$instances) {
+            $resolver = new class($calls) extends PagePermissions
+            {
+                private array $calls;
+
+                public function __construct(array &$calls)
+                {
+                    $this->calls = &$calls;
+                }
+
+                public function effective(User $user): ?array
+                {
+                    $this->calls[$user->id] = spl_object_id($this);
+
+                    return parent::effective($user);
+                }
+            };
+            $instances[] = $resolver;
+
+            return $resolver;
+        });
+        Sanctum::actingAs($admin);
+        $response = $this->getJson('/api/user-access?limit=500')->assertOk()->assertJsonCount(4, 'data');
+        $rows = collect($response->json('data'))->keyBy('id');
+        $presets = json_decode(file_get_contents(config_path('role_page_presets.json')), true, 512, JSON_THROW_ON_ERROR);
+        $this->assertSame($presets['manager'], $rows[$manager->id]['effective_page_permissions']);
+        $this->assertSame($presets['cashier'], $rows[$cashier->id]['effective_page_permissions']);
+        $this->assertSame($customGrants, $rows[$custom->id]['effective_page_permissions']);
+        $this->assertCount(1, array_unique(array_intersect_key($calls, array_fill_keys([$manager->id, $cashier->id, $custom->id], true))));
+    }
+
+    public function test_preset_document_is_reused_only_for_one_resolver_instance(): void
+    {
+        $originalPath = $this->app->configPath();
+        $directory = sys_get_temp_dir().'/vynerix-role-presets-'.bin2hex(random_bytes(8));
+        mkdir($directory, 0700);
+        $path = $directory.'/role_page_presets.json';
+        $managerGrants = ['/dashboard' => ['view' => true]];
+        $cashierGrants = ['/sales/pos-sales' => ['view' => true]];
+        try {
+            file_put_contents($path, json_encode(['manager' => $managerGrants, 'cashier' => $cashierGrants], JSON_THROW_ON_ERROR));
+            $this->app->useConfigPath($directory);
+            $user = new User;
+            $user->setRawAttributes(['role' => 'manager', 'page_permissions' => null]);
+            $service = new PagePermissions;
+            $this->assertSame($managerGrants, $service->effective($user));
+            $user->setRawAttributes(['role' => 'cashier', 'page_permissions' => null]);
+            $this->assertSame($cashierGrants, $service->effective($user));
+            file_put_contents($path, json_encode(['manager' => []], JSON_THROW_ON_ERROR));
+            $user->setRawAttributes(['role' => 'manager', 'page_permissions' => null]);
+            $this->assertSame($managerGrants, $service->effective($user));
+            $this->assertSame([], (new PagePermissions)->effective($user));
+            $user->setRawAttributes(['role' => 'manager', 'page_permissions' => '{}']);
+            $this->assertSame([], $service->effective($user));
+            $user->setRawAttributes(['role' => 'manager', 'page_permissions' => null]);
+            file_put_contents($path, '[]');
+            $emptyService = new PagePermissions;
+            $this->assertNull($emptyService->effective($user));
+            file_put_contents($path, json_encode(['manager' => $managerGrants], JSON_THROW_ON_ERROR));
+            $this->assertNull($emptyService->effective($user));
+            $this->assertSame($managerGrants, (new PagePermissions)->effective($user));
+            file_put_contents($path, '{');
+            $this->expectException(\JsonException::class);
+            (new PagePermissions)->effective($user);
+        } finally {
+            $this->app->useConfigPath($originalPath);
+            unlink($path);
+            rmdir($directory);
+        }
+    }
 }

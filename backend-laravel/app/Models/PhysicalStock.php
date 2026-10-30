@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PhysicalStock extends Model
 {
@@ -25,17 +27,20 @@ class PhysicalStock extends Model
         ];
     }
 
-    public function store()
+    /** @return BelongsTo<Store, $this> */
+    public function store(): BelongsTo
     {
         return $this->belongsTo(Store::class);
     }
 
-    public function items()
+    /** @return HasMany<PhysicalStockItem, $this> */
+    public function items(): HasMany
     {
         return $this->hasMany(PhysicalStockItem::class);
     }
 
-    public function creator()
+    /** @return BelongsTo<User, $this> */
+    public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }

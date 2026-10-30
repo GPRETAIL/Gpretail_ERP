@@ -177,7 +177,7 @@ class StockService
                 foreach ($allocations as $allocation) {
                     StockBatch::where('id', $allocation->stock_batch_id)
                         ->lockForUpdate()
-                        ->increment('remaining_qty', $allocation->quantity);
+                        ->increment('remaining_qty', (float) $allocation->quantity);
                 }
 
                 return;

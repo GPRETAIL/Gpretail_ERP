@@ -32,6 +32,62 @@ class ThemeGovernanceTest extends TestCase
         Sanctum::actingAs($this->owner);
     }
 
+    public function test_deleting_a_revision_removes_its_restore_payload_without_changing_the_current_theme_or_revision_counter(): void
+    {
+        $this->putJson('/api/tenant/theme', ['primary_color' => '#345678', 'expected_revision' => 0])->assertOk();
+        $id = DB::table('theme_revisions')->where('scope_key', 'tenant:CMP-THEME')->where('revision', 2)->value('id');
+        $this->deleteJson('/api/tenant/theme-history/'.$id, ['expected_revision' => 2])->assertOk();
+        $this->getJson('/api/tenant/theme')->assertOk()->assertJsonPath('data.primary_color', '#345678')->assertJsonPath('meta.revision', 2);
+        $this->getJson('/api/tenant/theme-history')->assertOk()->assertJsonCount(1, 'data');
+        $this->postJson('/api/tenant/theme-history/'.$id.'/restore', ['expected_revision' => 2])->assertNotFound();
+        $this->assertDatabaseHas('theme_revisions', ['id' => $id, 'config' => null, 'allowed_store_ids' => null, 'actor_id' => null, 'operation' => 'deleted']);
+        $this->putJson('/api/tenant/theme', ['primary_color' => '#654321', 'expected_revision' => 2])->assertOk()->assertJsonPath('meta.revision', 3);
+    }
+
+    public function test_clear_history_is_scope_limited_covers_all_pages_and_preserves_monotonic_revisions(): void
+    {
+        $this->putJson('/api/tenant/theme', ['primary_color' => '#345678', 'expected_revision' => 0])->assertOk();
+        $this->putJson('/api/companies/'.$this->one->id.'/theme', ['theme_style' => 'glass', 'expected_revision' => 0])->assertOk();
+        for ($revision = 3; $revision <= 55; $revision++) {
+            app(TenantThemes::class)->record('tenant:CMP-THEME', ['primary_color' => '#345678'], [], $this->owner, 'apply');
+        }
+        $this->deleteJson('/api/tenant/theme-history', ['expected_revision' => 55])->assertOk()->assertJsonPath('deleted_count', 55);
+        $this->getJson('/api/tenant/theme-history')->assertOk()->assertJsonCount(0, 'data');
+        $this->getJson('/api/companies/'.$this->one->id.'/theme-history')->assertOk()->assertJsonCount(2, 'data');
+        $this->getJson('/api/tenant/theme')->assertOk()->assertJsonPath('meta.revision', 55)->assertJsonPath('data.primary_color', '#345678');
+        $this->putJson('/api/tenant/theme', ['primary_color' => '#654321', 'expected_revision' => 55])->assertOk()->assertJsonPath('meta.revision', 56);
+    }
+
+    public function test_store_history_can_be_removed_without_changing_its_override_or_company_history(): void
+    {
+        $this->putJson('/api/tenant/theme', ['expected_revision' => 0])->assertOk();
+        $prefix = '/api/companies/'.$this->one->id;
+        $this->putJson($prefix.'/theme', ['theme_style' => 'glass', 'expected_revision' => 0])->assertOk();
+        $id = DB::table('theme_revisions')->where('scope_key', 'store:'.$this->one->id)->where('revision', 2)->value('id');
+        $this->deleteJson($prefix.'/theme-history/'.$id, ['expected_revision' => 2])->assertOk();
+        $this->deleteJson($prefix.'/theme-history', ['expected_revision' => 2])->assertOk();
+        $this->getJson($prefix.'/theme-history')->assertOk()->assertJsonCount(0, 'data');
+        $this->getJson($prefix.'/theme')->assertOk()->assertJsonPath('data.theme_style', 'glass')->assertJsonPath('meta.revision', 2);
+        $this->getJson('/api/tenant/theme-history')->assertOk()->assertJsonCount(2, 'data');
+        $this->putJson($prefix.'/theme', ['theme_style' => 'classic', 'expected_revision' => 2])->assertOk()->assertJsonPath('meta.revision', 3);
+    }
+
+    public function test_history_removal_rejects_stale_requests_foreign_revisions_and_unauthorized_users(): void
+    {
+        $this->putJson('/api/tenant/theme', ['expected_revision' => 0])->assertOk();
+        $foreign = Store::create(['name' => 'Other theme store', 'code' => 'OTHER-THEME', 'platform_company_code' => 'CMP-OTHER']);
+        app(TenantThemes::class)->record('store:'.$foreign->id, [], [], $this->owner, 'apply');
+        $foreignId = DB::table('theme_revisions')->where('scope_key', 'store:'.$foreign->id)->value('id');
+        $this->deleteJson('/api/tenant/theme-history/'.$foreignId, ['expected_revision' => 2])->assertNotFound();
+        $this->deleteJson('/api/companies/'.$foreign->id.'/theme-history', ['expected_revision' => 1])->assertNotFound();
+        $this->deleteJson('/api/tenant/theme-history', ['expected_revision' => 0])->assertConflict();
+        $this->deleteJson('/api/tenant/theme-history')->assertUnprocessable();
+        $this->owner->update(['role' => 'manager']);
+        Sanctum::actingAs($this->owner->fresh());
+        $this->deleteJson('/api/tenant/theme-history', ['expected_revision' => 2])->assertForbidden();
+        $this->assertSame(3, DB::table('theme_revisions')->where('operation', '!=', 'deleted')->count());
+    }
+
     public function test_company_defaults_work_without_a_store_selection_and_preserve_existing_overrides(): void
     {
         $this->getJson('/api/tenant/theme')->assertOk()->assertJsonPath('meta.revision', 0)->assertJsonPath('meta.allowed_store_ids', [$this->one->id]);

@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PosReturn extends Model
 {
@@ -29,39 +31,45 @@ class PosReturn extends Model
     protected function casts(): array
     {
         return [
-            'return_date'  => 'datetime',
+            'return_date' => 'datetime',
             'total_refund' => 'decimal:2',
-            'standalone'   => 'boolean',
+            'standalone' => 'boolean',
             'credit_applied_at' => 'datetime',
         ];
     }
 
-    public function store()
+    /** @return BelongsTo<Store, $this> */
+    public function store(): BelongsTo
     {
         return $this->belongsTo(Store::class);
     }
 
-    public function appliedToSale()
+    /** @return BelongsTo<PosSale, $this> */
+    public function appliedToSale(): BelongsTo
     {
         return $this->belongsTo(PosSale::class, 'credit_applied_to_sale_id');
     }
 
-    public function posSale()
+    /** @return BelongsTo<PosSale, $this> */
+    public function posSale(): BelongsTo
     {
         return $this->belongsTo(PosSale::class);
     }
 
-    public function customer()
+    /** @return BelongsTo<Customer, $this> */
+    public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
     }
 
-    public function items()
+    /** @return HasMany<PosReturnItem, $this> */
+    public function items(): HasMany
     {
         return $this->hasMany(PosReturnItem::class);
     }
 
-    public function creator()
+    /** @return BelongsTo<User, $this> */
+    public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }

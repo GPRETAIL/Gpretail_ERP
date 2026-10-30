@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PosSale extends Model
 {
@@ -50,7 +52,7 @@ class PosSale extends Model
 
     public function getRemainingAmountAttribute(): float
     {
-        return round(max(0, (float) $this->grand_total - (float) $this->paid_amount - (float) ($this->appliedReturn?->total_refund ?? 0)), 2);
+        return round(max(0, (float) $this->grand_total - (float) $this->paid_amount - (float) ($this->appliedReturn->total_refund ?? 0)), 2);
     }
 
     public function getSettlementAmountAttribute(): float
@@ -60,7 +62,7 @@ class PosSale extends Model
 
     public function getCustomerNameAttribute(): string
     {
-        return $this->customer?->name ?? 'Walk-in Customer';
+        return $this->customer->name ?? 'Walk-in Customer';
     }
 
     protected $fillable = [
@@ -118,37 +120,44 @@ class PosSale extends Model
         return $this->user?->name;
     }
 
-    public function settlement()
+    /** @return BelongsTo<Settlement, $this> */
+    public function settlement(): BelongsTo
     {
         return $this->belongsTo(Settlement::class);
     }
 
-    public function store()
+    /** @return BelongsTo<Store, $this> */
+    public function store(): BelongsTo
     {
         return $this->belongsTo(Store::class);
     }
 
-    public function appliedReturn()
+    /** @return BelongsTo<PosReturn, $this> */
+    public function appliedReturn(): BelongsTo
     {
         return $this->belongsTo(PosReturn::class, 'applied_pos_return_id');
     }
 
-    public function user()
+    /** @return BelongsTo<User, $this> */
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    public function customer()
+    /** @return BelongsTo<Customer, $this> */
+    public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
     }
 
-    public function items()
+    /** @return HasMany<PosSaleItem, $this> */
+    public function items(): HasMany
     {
         return $this->hasMany(PosSaleItem::class);
     }
 
-    public function payments()
+    /** @return HasMany<PosPayment, $this> */
+    public function payments(): HasMany
     {
         return $this->hasMany(PosPayment::class);
     }

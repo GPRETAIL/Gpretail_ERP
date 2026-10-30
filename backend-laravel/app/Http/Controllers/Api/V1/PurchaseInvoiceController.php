@@ -158,7 +158,7 @@ class PurchaseInvoiceController extends Controller
                 'grand_total' => $grandTotal,
                 'status' => $request->input('status', 'APPROVED'),
                 'notes' => $request->input('notes'),
-                'created_by' => $request->user()?->id ?? 1,
+                'created_by' => $request->user()->id ?? 1,
             ]);
 
             foreach ($itemsData as $item) {
@@ -201,7 +201,7 @@ class PurchaseInvoiceController extends Controller
         ], 201);
     }
 
-    public function show($id)
+    public function show(int|string $id)
     {
         $invoice = PurchaseInvoice::with(['supplier', 'items.product', 'transport', 'company:id,name'])->find($id);
 
@@ -218,7 +218,7 @@ class PurchaseInvoiceController extends Controller
         ]);
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, int|string $id)
     {
         $invoice = PurchaseInvoice::find($id);
 
@@ -246,7 +246,7 @@ class PurchaseInvoiceController extends Controller
         ]);
     }
 
-    public function destroy($id)
+    public function destroy(int|string $id)
     {
         $invoice = PurchaseInvoice::with('items')->find($id);
 

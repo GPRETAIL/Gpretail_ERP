@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SalesApprovalItem extends Model
 {
@@ -21,16 +22,18 @@ class SalesApprovalItem extends Model
     {
         return [
             'quantity' => 'decimal:3',
-            'price'    => 'decimal:2',
+            'price' => 'decimal:2',
         ];
     }
 
-    public function salesApproval()
+    /** @return BelongsTo<SalesApproval, $this> */
+    public function salesApproval(): BelongsTo
     {
         return $this->belongsTo(SalesApproval::class);
     }
 
-    public function product()
+    /** @return BelongsTo<Product, $this> */
+    public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
     }

@@ -271,7 +271,7 @@ class WarehouseReportController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $store?->barcode_customization ?? [],
+            'data' => $store->barcode_customization ?? [],
         ]);
     }
 }

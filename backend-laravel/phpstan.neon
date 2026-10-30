@@ -12,4 +12,6 @@ parameters:
     # meant to catch. Raise it over time as the baseline shrinks.
     level: 5
 
+    parseModelCastsMethod: true
+
     tmpDir: storage/framework/phpstan

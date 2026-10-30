@@ -49,7 +49,7 @@ class PosCheckoutWriter
             $lineSub = $qty * $price - $discount;
             $lineTax = $lineSub * $taxRate / 100;
             $stock = $stocks->get($item['productId'].':'.(($item['variantId'] ?? null) ?: 0));
-            $before = (float) ($stock?->quantity ?? 0);
+            $before = (float) ($stock->quantity ?? 0);
             $after = $before - $qty;
             if (! $stock || $after < -0.0005) {
                 throw new InsufficientStockException((int) $item['productId'], $before, $qty);

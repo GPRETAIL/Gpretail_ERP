@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PosSaleItem extends Model
 {
@@ -42,22 +43,26 @@ class PosSaleItem extends Model
         ];
     }
 
-    public function posSale()
+    /** @return BelongsTo<PosSale, $this> */
+    public function posSale(): BelongsTo
     {
         return $this->belongsTo(PosSale::class);
     }
 
-    public function product()
+    /** @return BelongsTo<Product, $this> */
+    public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
     }
 
-    public function variant()
+    /** @return BelongsTo<ProductVariant, $this> */
+    public function variant(): BelongsTo
     {
         return $this->belongsTo(ProductVariant::class, 'variant_id');
     }
 
-    public function barcode()
+    /** @return BelongsTo<Barcode, $this> */
+    public function barcode(): BelongsTo
     {
         return $this->belongsTo(Barcode::class, 'barcode_id');
     }

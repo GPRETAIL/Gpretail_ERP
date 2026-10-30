@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 
 class NotificationInbox
 {
+    /** @return Builder<Notification> */
     public function visible(User $user): Builder
     {
         $context = app(StoreContext::class);

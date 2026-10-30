@@ -3,6 +3,9 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
 
 class StockBatch extends Model
 {
@@ -27,17 +30,20 @@ class StockBatch extends Model
         ];
     }
 
-    public function variant()
+    /** @return BelongsTo<ProductVariant, $this> */
+    public function variant(): BelongsTo
     {
         return $this->belongsTo(ProductVariant::class, 'variant_id');
     }
 
-    public function store()
+    /** @return BelongsTo<Store, $this> */
+    public function store(): BelongsTo
     {
         return $this->belongsTo(Store::class);
     }
 
-    public function allocations()
+    /** @return HasMany<StockBatchAllocation, $this> */
+    public function allocations(): HasMany
     {
         return $this->hasMany(StockBatchAllocation::class);
     }
@@ -50,7 +56,7 @@ class StockBatch extends Model
      * screen so both read the same batch ledger instead of two
      * independently-computed (and potentially drifting) versions.
      */
-    public static function sellThroughByVariant(string $referenceType, int $referenceId, iterable $variantIds): \Illuminate\Support\Collection
+    public static function sellThroughByVariant(string $referenceType, int $referenceId, iterable $variantIds): Collection
     {
         $variantIds = collect($variantIds)->filter()->unique()->values();
         if ($variantIds->isEmpty()) {

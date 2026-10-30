@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PurchaseReturnItem extends Model
 {
@@ -22,24 +23,27 @@ class PurchaseReturnItem extends Model
     protected function casts(): array
     {
         return [
-            'quantity'   => 'decimal:3',
-            'rate'       => 'decimal:2',
+            'quantity' => 'decimal:3',
+            'rate' => 'decimal:2',
             'tax_amount' => 'decimal:2',
-            'total'      => 'decimal:2',
+            'total' => 'decimal:2',
         ];
     }
 
-    public function purchaseReturn()
+    /** @return BelongsTo<PurchaseReturn, $this> */
+    public function purchaseReturn(): BelongsTo
     {
         return $this->belongsTo(PurchaseReturn::class);
     }
 
-    public function product()
+    /** @return BelongsTo<Product, $this> */
+    public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
     }
 
-    public function variant()
+    /** @return BelongsTo<ProductVariant, $this> */
+    public function variant(): BelongsTo
     {
         return $this->belongsTo(ProductVariant::class, 'variant_id');
     }

@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class SupplierPayment extends Model
 {
@@ -25,26 +27,30 @@ class SupplierPayment extends Model
     {
         return [
             'payment_date' => 'date',
-            'amount'       => 'decimal:2',
+            'amount' => 'decimal:2',
         ];
     }
 
-    public function supplier()
+    /** @return BelongsTo<Supplier, $this> */
+    public function supplier(): BelongsTo
     {
         return $this->belongsTo(Supplier::class);
     }
 
-    public function store()
+    /** @return BelongsTo<Store, $this> */
+    public function store(): BelongsTo
     {
         return $this->belongsTo(Store::class);
     }
 
-    public function items()
+    /** @return HasMany<SupplierPaymentItem, $this> */
+    public function items(): HasMany
     {
         return $this->hasMany(SupplierPaymentItem::class);
     }
 
-    public function creator()
+    /** @return BelongsTo<User, $this> */
+    public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }

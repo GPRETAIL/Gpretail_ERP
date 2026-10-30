@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class InventoryEntryItem extends Model
 {
@@ -21,23 +22,26 @@ class InventoryEntryItem extends Model
     protected function casts(): array
     {
         return [
-            'quantity'    => 'decimal:3',
-            'unit_price'  => 'decimal:2',
+            'quantity' => 'decimal:3',
+            'unit_price' => 'decimal:2',
             'total_price' => 'decimal:2',
         ];
     }
 
-    public function inventoryEntry()
+    /** @return BelongsTo<InventoryEntry, $this> */
+    public function inventoryEntry(): BelongsTo
     {
         return $this->belongsTo(InventoryEntry::class);
     }
 
-    public function product()
+    /** @return BelongsTo<Product, $this> */
+    public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
     }
 
-    public function variant()
+    /** @return BelongsTo<ProductVariant, $this> */
+    public function variant(): BelongsTo
     {
         return $this->belongsTo(ProductVariant::class, 'variant_id');
     }

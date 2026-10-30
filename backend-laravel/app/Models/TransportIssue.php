@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class TransportIssue extends Model
 {
@@ -24,7 +25,8 @@ class TransportIssue extends Model
         ];
     }
 
-    public function transportEntry()
+    /** @return BelongsTo<TransportEntry, $this> */
+    public function transportEntry(): BelongsTo
     {
         return $this->belongsTo(TransportEntry::class);
     }

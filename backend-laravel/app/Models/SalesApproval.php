@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class SalesApproval extends Model
 {
@@ -24,27 +26,31 @@ class SalesApproval extends Model
     {
         return [
             'approval_date' => 'date',
-            'valid_until'   => 'date',
-            'total_amount'  => 'decimal:2',
+            'valid_until' => 'date',
+            'total_amount' => 'decimal:2',
         ];
     }
 
-    public function store()
+    /** @return BelongsTo<Store, $this> */
+    public function store(): BelongsTo
     {
         return $this->belongsTo(Store::class);
     }
 
-    public function customer()
+    /** @return BelongsTo<Customer, $this> */
+    public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
     }
 
-    public function items()
+    /** @return HasMany<SalesApprovalItem, $this> */
+    public function items(): HasMany
     {
         return $this->hasMany(SalesApprovalItem::class);
     }
 
-    public function creator()
+    /** @return BelongsTo<User, $this> */
+    public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }

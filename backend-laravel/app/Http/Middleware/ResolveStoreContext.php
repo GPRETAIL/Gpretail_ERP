@@ -79,7 +79,7 @@ class ResolveStoreContext
             return $this->error('STORE_INACTIVE', 'This store is inactive. Contact your administrator.', 403);
         }
 
-        if ($write && $selected) {
+        if ($write) {
             $store = $stores->firstWhere('id', $selected);
             $activation = PlatformActivation::current();
             if ($store->platform_store_id || $activation?->activated) {

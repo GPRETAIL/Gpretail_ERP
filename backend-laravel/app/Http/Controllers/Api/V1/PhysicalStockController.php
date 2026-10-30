@@ -76,7 +76,7 @@ class PhysicalStockController extends Controller
                 'audit_date' => $request->input('audit_date') ?: now()->toDateString(),
                 'status' => $request->input('status', 'COMPLETED'),
                 'notes' => $request->input('notes'),
-                'created_by' => $request->user()?->id ?? 1,
+                'created_by' => $request->user()->id ?? 1,
             ]);
 
             foreach ($request->input('items', []) as $item) {
@@ -120,7 +120,7 @@ class PhysicalStockController extends Controller
         ], 201);
     }
 
-    public function show($id)
+    public function show(int|string $id)
     {
         $audit = PhysicalStock::with(['items.product', 'creator'])->find($id);
 
@@ -137,7 +137,7 @@ class PhysicalStockController extends Controller
         ]);
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, int|string $id)
     {
         $audit = PhysicalStock::find($id);
 
@@ -157,7 +157,7 @@ class PhysicalStockController extends Controller
         ]);
     }
 
-    public function destroy($id)
+    public function destroy(int|string $id)
     {
         $audit = PhysicalStock::with('items')->find($id);
 

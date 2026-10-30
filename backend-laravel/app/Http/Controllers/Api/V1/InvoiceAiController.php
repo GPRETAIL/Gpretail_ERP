@@ -83,7 +83,7 @@ class InvoiceAiController extends Controller
             }
         }
 
-        return (string) (config($fallbackConfigPath) ?: env($envName, ''));
+        return (string) config($fallbackConfigPath, '');
     }
 
     private static function maskApiKey(string $key): string
@@ -306,7 +306,7 @@ class InvoiceAiController extends Controller
                     'payment_status' => 'UNPAID',
                     'status' => 'APPROVED',
                     'notes' => $invoiceData['notes'] ?? 'Auto-inwarded via Invoice AI',
-                    'created_by' => $request->user()?->id ?? 1,
+                    'created_by' => $request->user()->id ?? 1,
                 ]);
 
                 // 4. Create Inventory Entry Shell
@@ -318,7 +318,7 @@ class InvoiceAiController extends Controller
                     'total_amount' => $grandTotal,
                     'notes' => "Invoice AI inward for PINV #{$invoiceNo}, Transport Entry #{$transportEntry->id}",
                     'status' => 'COMPLETED',
-                    'created_by' => $request->user()?->id ?? 1,
+                    'created_by' => $request->user()->id ?? 1,
                 ]);
 
                 // 5. Process Line Items (Resolve or Create Product, Create Invoice Item & Inventory Item, Adjust Stock)

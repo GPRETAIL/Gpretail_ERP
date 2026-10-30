@@ -45,6 +45,23 @@ class PosCheckoutSettlementTest extends TestCase
             'items' => [['productId' => $this->product->id, 'qty' => 1, 'price' => 100]]], $extra));
     }
 
+    public function test_summary_report_uses_saved_discount_tax_and_gstin_fields(): void
+    {
+        $customer = Customer::create(['store_id' => $this->store->id, 'code' => 'SUMMARY-CUSTOMER', 'name' => 'Tax customer', 'gstin' => '33TEST1234A1Z5']);
+        $sale = PosSale::create(['store_id' => $this->store->id, 'user_id' => $this->user->id, 'customer_id' => $customer->id, 'invoice_no' => 'SUMMARY-ONE',
+            'sale_date' => now(), 'discount_amount' => 10, 'tax_amount' => 18, 'grand_total' => 108, 'status' => 'PAID']);
+        $sale->items()->create(['product_id' => $this->product->id, 'quantity' => 1, 'unit_mrp' => 100,
+            'selling_price' => 100, 'discount' => 10, 'tax_rate' => 20, 'tax_amount' => 18, 'subtotal' => 108]);
+        $this->getJson('/api/pos-sales/summary-report?mode=gst_bill_summary')->assertOk()
+            ->assertJsonCount(1, 'data.rows')->assertJsonPath('data.rows.0.discount', 10)
+            ->assertJsonPath('data.rows.0.sale_tax', 18)->assertJsonPath('data.rows.0.gst_id', '33TEST1234A1Z5');
+        $this->getJson('/api/pos-sales/summary-report?mode=discount_bills')->assertOk()
+            ->assertJsonCount(1, 'data.rows')->assertJsonPath('data.rows.0.total_discount', 10);
+        $this->getJson('/api/pos-sales/summary-report?mode=bill_detail&billNo=SUMMARY-ONE')->assertOk()
+            ->assertJsonPath('data.rows.0.price', 100)->assertJsonPath('data.rows.0.discount', 10)
+            ->assertJsonPath('data.rows.0.total', 108);
+    }
+
     public function test_paid_invoice_keeps_counter_snapshot_and_is_not_open(): void
     {
         $id = $this->sale('paid_settled', 100)->assertCreated()->assertJsonPath('data.status', 'PAID')->assertJsonPath('data.counter_name', 'Till One')->json('data.id');

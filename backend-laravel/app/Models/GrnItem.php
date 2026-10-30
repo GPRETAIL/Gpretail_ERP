@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class GrnItem extends Model
 {
@@ -28,17 +29,20 @@ class GrnItem extends Model
         ];
     }
 
-    public function grn()
+    /** @return BelongsTo<Grn, $this> */
+    public function grn(): BelongsTo
     {
         return $this->belongsTo(Grn::class);
     }
 
-    public function product()
+    /** @return BelongsTo<Product, $this> */
+    public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
     }
 
-    public function variant()
+    /** @return BelongsTo<ProductVariant, $this> */
+    public function variant(): BelongsTo
     {
         return $this->belongsTo(ProductVariant::class, 'variant_id');
     }

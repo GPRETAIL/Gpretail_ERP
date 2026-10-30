@@ -21,13 +21,17 @@ use Illuminate\Support\Facades\Validator;
 
 class UserAccessController extends Controller
 {
-    public function __construct(private readonly PaginationService $paginationService) {}
+    public function __construct(
+        private readonly PaginationService $paginationService,
+        private readonly PagePermissions $pagePermissions,
+    ) {}
 
     private function authorizeAdministration(): void
     {
         abort_unless(in_array(request()->user()?->role, ['admin', 'super_admin'], true), 403, 'Only administrators can manage users and access groups.');
     }
 
+    /** @return Builder<User> */
     private function scopedUsers(): Builder
     {
         $ids = app(StoreContext::class)->available(request()->user())->pluck('id')->all();
@@ -115,7 +119,7 @@ class UserAccessController extends Controller
         $data = $user->toArray();
         unset($data['assigned_stores']);
         $data['company_ids'] = array_values(array_unique(array_filter([$user->store_id, ...$user->assignedStores->pluck('id')->all()])));
-        $data['effective_page_permissions'] = app(PagePermissions::class)->effective($user);
+        $data['effective_page_permissions'] = $this->pagePermissions->effective($user);
 
         return $data;
     }
@@ -130,12 +134,12 @@ class UserAccessController extends Controller
         $allowed = app(StoreContext::class)->available($request->user())->pluck('id')->all();
         abort_unless($ids && ! array_diff($ids, $allowed), 403, 'Assign only stores available to your account.');
         if ($user) {
-            abort_if(array_diff($this->presentUser($user)['company_ids'], $allowed), 403, 'You cannot modify assignments outside your store access.');
+            abort_if(array_diff($this->presentUser($user)['company_ids'], $allowed) !== [], 403, 'You cannot modify assignments outside your store access.');
             abort_if($user->role === 'admin' && $ids !== [$user->store_id], 403, 'Store administrator assignments are managed by provisioning.');
         }
         $stores = Store::whereIn('id', $ids)->orderBy('id')->lockForUpdate()->get();
         abort_if($stores->pluck('platform_company_code')->unique()->count() > 1, 422, 'All assigned stores must belong to the same company.');
-        $active = $request->has('is_active') ? $request->boolean('is_active') : ($user?->is_active ?? true);
+        $active = $request->has('is_active') ? $request->boolean('is_active') : ($user->is_active ?? true);
         foreach ($stores as $store) {
             abort_unless($store->is_active, 422, 'Assign an active store.');
             $limit = 0;
@@ -188,7 +192,7 @@ class UserAccessController extends Controller
         return response()->json(['success' => true, 'message' => 'User created successfully', 'data' => $this->presentUser($user->load('store'))], 201);
     }
 
-    public function show($id)
+    public function show(int|string $id)
     {
         $user = $this->scopedUsers()->with(['store', 'assignedStores:id'])->find($id);
 
@@ -205,7 +209,7 @@ class UserAccessController extends Controller
         ]);
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, int|string $id)
     {
         $this->authorizeAdministration();
         $user = $this->scopedUsers()->findOrFail($id);
@@ -226,7 +230,7 @@ class UserAccessController extends Controller
         return response()->json(['success' => true, 'message' => 'User updated successfully', 'data' => $this->presentUser($user->fresh('store'))]);
     }
 
-    public function destroy($id)
+    public function destroy(int|string $id)
     {
         $this->authorizeAdministration();
         $user = $this->scopedUsers()->find($id);

@@ -4,7 +4,19 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property string|null $logo
+ * @property string|null $reg_name
+ * @property string|null $contact_person
+ * @property string|null $admin_name
+ * @property string|null $admin_email
+ * @property string|null $tan_pan
+ * @property bool $as_supplier
+ * @property bool $as_customer
+ * @property array<string, mixed>|null $printer_configurations
+ */
 class Store extends Model
 {
     use HasFactory;
@@ -79,32 +91,38 @@ class Store extends Model
         ];
     }
 
-    public function users()
+    /** @return HasMany<User, $this> */
+    public function users(): HasMany
     {
         return $this->hasMany(User::class);
     }
 
-    public function stocks()
+    /** @return HasMany<Stock, $this> */
+    public function stocks(): HasMany
     {
         return $this->hasMany(Stock::class);
     }
 
-    public function printerConfigs()
+    /** @return HasMany<PrinterConfig, $this> */
+    public function printerConfigs(): HasMany
     {
         return $this->hasMany(PrinterConfig::class);
     }
 
-    public function customerOrders()
+    /** @return HasMany<CustomerOrder, $this> */
+    public function customerOrders(): HasMany
     {
         return $this->hasMany(CustomerOrder::class);
     }
 
-    public function posSales()
+    /** @return HasMany<PosSale, $this> */
+    public function posSales(): HasMany
     {
         return $this->hasMany(PosSale::class);
     }
 
-    public function themePresets()
+    /** @return HasMany<ThemePreset, $this> */
+    public function themePresets(): HasMany
     {
         return $this->hasMany(ThemePreset::class);
     }

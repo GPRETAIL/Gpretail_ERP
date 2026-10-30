@@ -28,7 +28,7 @@ class StoreDashboardService
      */
     protected function visibleStoreIds($user): array
     {
-        $role = strtolower((string) ($user?->role ?? ''));
+        $role = strtolower((string) ($user->role ?? ''));
         $isSuperAdmin = in_array($role, ['super_admin', 'superadmin'], true);
 
         if ($isSuperAdmin) {
@@ -125,8 +125,8 @@ class StoreDashboardService
                 'count' => $inactiveStores,
                 'severity' => 'critical',
                 'color' => 'red',
-                'route' => '/settings/configure-local-server',
-                'filter_param' => 'filter=inactive',
+                'route' => '/settings/company',
+                'filter_param' => '',
             ],
             [
                 'key' => 'stale_registers',

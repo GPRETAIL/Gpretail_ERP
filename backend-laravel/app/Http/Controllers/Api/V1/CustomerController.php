@@ -33,8 +33,8 @@ class CustomerController extends Controller
                 'totalCustomers' => Cache::remember(StoreQuery::cacheKey('summary_cust_count'), 60, fn () => Customer::count()),
                 'activeCustomers' => Cache::remember(StoreQuery::cacheKey('summary_cust_active_count'), 60, fn () => Customer::where('is_active', true)->count()),
                 'newCustomersMonth' => Customer::whereMonth('created_at', now()->month)->count(),
-                'totalLoyaltyPoints' => Customer::sum('loyalty_points') ?? 0,
-                'totalCreditBalance' => Customer::sum('current_balance') ?? 0,
+                'totalLoyaltyPoints' => Customer::sum('loyalty_points'),
+                'totalCreditBalance' => Customer::sum('current_balance'),
             ],
         ]);
     }

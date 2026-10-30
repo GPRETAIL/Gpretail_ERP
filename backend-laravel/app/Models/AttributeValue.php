@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AttributeValue extends Model
 {
@@ -32,7 +33,8 @@ class AttributeValue extends Model
         ];
     }
 
-    public function attributeType()
+    /** @return BelongsTo<AttributeType, $this> */
+    public function attributeType(): BelongsTo
     {
         return $this->belongsTo(AttributeType::class);
     }

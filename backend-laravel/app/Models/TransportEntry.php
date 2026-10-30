@@ -5,6 +5,8 @@ namespace App\Models;
 use App\Models\Concerns\HasMasterDetails;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class TransportEntry extends Model
 {
@@ -33,12 +35,14 @@ class TransportEntry extends Model
         ];
     }
 
-    public function transport()
+    /** @return BelongsTo<Transport, $this> */
+    public function transport(): BelongsTo
     {
         return $this->belongsTo(Transport::class);
     }
 
-    public function company()
+    /** @return BelongsTo<Store, $this> */
+    public function company(): BelongsTo
     {
         return $this->belongsTo(Store::class, 'store_id');
     }
@@ -48,7 +52,8 @@ class TransportEntry extends Model
         return $value ?? ($this->master_details['supplier_id'] ?? null);
     }
 
-    public function supplier()
+    /** @return BelongsTo<Supplier, $this> */
+    public function supplier(): BelongsTo
     {
         return $this->belongsTo(Supplier::class);
     }
@@ -63,12 +68,14 @@ class TransportEntry extends Model
         return $value ?? ($this->master_details['receiving_city_id'] ?? null);
     }
 
-    public function fromCity()
+    /** @return BelongsTo<SystemConfiguration, $this> */
+    public function fromCity(): BelongsTo
     {
         return $this->belongsTo(SystemConfiguration::class, 'from_city_id');
     }
 
-    public function receivingCity()
+    /** @return BelongsTo<SystemConfiguration, $this> */
+    public function receivingCity(): BelongsTo
     {
         return $this->belongsTo(SystemConfiguration::class, 'receiving_city_id');
     }
@@ -76,7 +83,7 @@ class TransportEntry extends Model
     public function toArray(): array
     {
         $data = parent::toArray();
-        $data['lr_date'] = $this->lr_date?->format('Y-m-d');
+        $data['lr_date'] = $this->lr_date->format('Y-m-d');
         foreach (['fromCity' => 'from_city', 'receivingCity' => 'receiving_city'] as $relation => $key) {
             if ($this->relationLoaded($relation) && $this->$relation) {
                 $city = $this->$relation;
@@ -87,12 +94,14 @@ class TransportEntry extends Model
         return $data;
     }
 
-    public function issues()
+    /** @return HasMany<TransportIssue, $this> */
+    public function issues(): HasMany
     {
         return $this->hasMany(TransportIssue::class);
     }
 
-    public function receipts()
+    /** @return HasMany<TransportReceipt, $this> */
+    public function receipts(): HasMany
     {
         return $this->hasMany(TransportReceipt::class);
     }

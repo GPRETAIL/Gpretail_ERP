@@ -11,6 +11,7 @@ use Illuminate\Support\Collection;
 /** Store identity in the existing single-company installation. company_id is a legacy store alias. */
 class StoreContext
 {
+    /** @return Builder<Store> */
     public function available(User $user): Builder
     {
         $query = Store::query();
@@ -29,6 +30,7 @@ class StoreContext
             ->orWhereIn('id', $user->assignedStores()->select('stores.id')));
     }
 
+    /** @return Collection<int, Store> */
     public function stores(User $user): Collection
     {
         return $this->available($user)->orderBy('id')->get();
@@ -58,7 +60,7 @@ class StoreContext
 
         return [
             'counter_id' => $counter?->id,
-            'counter_name' => $counter?->value ?? $counter?->config_value,
+            'counter_name' => $counter->value ?? $counter?->config_value,
             'is_tenant_admin' => (bool) $tenantAdmin,
             'can_switch_stores' => $user->is_active && ($user->role === 'super_admin' || $tenantAdmin || $stores->count() > 1),
             'web_access' => (bool) $user->web_access,
@@ -66,7 +68,7 @@ class StoreContext
             'module_permissions' => $user->module_permissions,
             'page_permissions' => $user->page_permissions,
             'effective_page_permissions' => app(PagePermissions::class)->effective($user),
-            'auth_client' => in_array('client:mobile', $user->currentAccessToken()?->abilities ?? [], true) ? 'mobile' : 'web',
+            'auth_client' => in_array('client:mobile', $user->currentAccessToken()->abilities ?? [], true) ? 'mobile' : 'web',
             'platform_company_code' => $user->platform_company_code,
             'store_id' => $selected?->id,
             'company_id' => $selected?->id, // Compatibility alias; never defaults to 1.

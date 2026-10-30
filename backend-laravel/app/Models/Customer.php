@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Customer extends Model
 {
@@ -68,22 +69,26 @@ class Customer extends Model
         ];
     }
 
-    public function posSales()
+    /** @return HasMany<PosSale, $this> */
+    public function posSales(): HasMany
     {
         return $this->hasMany(PosSale::class);
     }
 
-    public function orders()
+    /** @return HasMany<CustomerOrder, $this> */
+    public function orders(): HasMany
     {
         return $this->hasMany(CustomerOrder::class);
     }
 
-    public function loyaltyTransactions()
+    /** @return HasMany<LoyaltyTransaction, $this> */
+    public function loyaltyTransactions(): HasMany
     {
         return $this->hasMany(LoyaltyTransaction::class);
     }
 
-    public function creditLedgers()
+    /** @return HasMany<CreditLedger, $this> */
+    public function creditLedgers(): HasMany
     {
         return $this->hasMany(CreditLedger::class);
     }

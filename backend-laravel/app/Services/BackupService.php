@@ -73,6 +73,7 @@ class BackupService
         ],
         'store' => [
             'stores' => ['scope' => 'self_id'],
+            'dashboard_metric_snapshots' => ['scope' => 'store_id'],
             'roles' => ['scope' => 'none'],
             'permissions' => ['scope' => 'none'],
             'role_permissions' => ['scope' => 'none'],
@@ -891,7 +892,7 @@ class BackupService
         $tmpPath = $tmpDir.DIRECTORY_SEPARATOR.'cloud_dl_'.uniqid().'_'.basename($remotePath);
         $stream = $disk->readStream($remotePath);
 
-        if ($stream === false || $stream === null) {
+        if (! is_resource($stream)) {
             throw new RuntimeException("Could not read backup from cloud storage: {$remotePath}");
         }
 

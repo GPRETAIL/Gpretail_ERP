@@ -122,7 +122,7 @@ class PurchaseReturnController extends Controller
                     'total_amount' => $totalAmount,
                     'reason' => $request->input('reason'),
                     'status' => 'COMPLETED',
-                    'created_by' => $request->user()?->id ?? 1,
+                    'created_by' => $request->user()->id ?? 1,
                 ]);
 
                 foreach ($itemsData as $item) {
@@ -175,7 +175,7 @@ class PurchaseReturnController extends Controller
         ], 201);
     }
 
-    public function show($id)
+    public function show(int|string $id)
     {
         $return = PurchaseReturn::with(['supplier', 'items.product', 'creator'])->find($id);
 
@@ -192,7 +192,7 @@ class PurchaseReturnController extends Controller
         ]);
     }
 
-    public function destroy($id)
+    public function destroy(int|string $id)
     {
         $return = PurchaseReturn::with('items')->find($id);
 

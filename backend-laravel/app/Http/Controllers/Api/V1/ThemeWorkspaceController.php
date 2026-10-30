@@ -25,7 +25,7 @@ class ThemeWorkspaceController extends Controller
             return ['store:'.$store->id, $store, $store->platform_company_code];
         }
         abort_unless($this->themes->companyAdmin($user), 403, 'Only the Tenant Administrator can manage the company theme.');
-        abort_unless($user->platform_company_code, 422, 'Link this installation to a company before setting a company theme. Existing store themes remain available.');
+        abort_unless(! empty($user->platform_company_code), 422, 'Link this installation to a company before setting a company theme. Existing store themes remain available.');
 
         return ['tenant:'.$user->platform_company_code, null, $user->platform_company_code];
     }
@@ -67,7 +67,7 @@ class ThemeWorkspaceController extends Controller
         $allowed = array_values(array_map('intval', $allowed));
         if (! $store) {
             $available = app(StoreContext::class)->available($request->user())->pluck('id')->all();
-            abort_if(array_diff($allowed, $available), 422, 'Override permissions must belong to this company.');
+            abort_if(array_diff($allowed, $available) !== [], 422, 'Override permissions must belong to this company.');
         }
         $this->themes->validateContrast($store ? array_replace_recursive($this->themes->decode($this->themes->company($code)?->config), $config) : $config);
         DB::transaction(function () use ($request, $scope, $store, $code, $config, $allowed) {
@@ -114,12 +114,44 @@ class ThemeWorkspaceController extends Controller
         [$scope] = $this->target($request, $id);
         $request->validate(['before_revision' => 'sometimes|integer|min:1']);
         $rows = DB::table('theme_revisions')->leftJoin('users', 'users.id', '=', 'theme_revisions.actor_id')->where('scope_key', $scope)
+            ->where('operation', '!=', 'deleted')
             ->when($request->filled('before_revision'), fn ($query) => $query->where('revision', '<', $request->integer('before_revision')))
             ->orderByDesc('revision')->limit(51)->get(['theme_revisions.id', 'revision', 'operation', 'theme_revisions.created_at', 'users.name as author']);
         $more = $rows->count() > 50;
         $rows = $rows->take(50)->values();
 
         return response()->json(['success' => true, 'data' => $rows, 'meta' => ['next_before' => $more ? $rows->last()->revision : null]]);
+    }
+
+    public function removeHistory(Request $request, $id = null, $revisionId = null)
+    {
+        if ($request->route('id') === null) {
+            $revisionId = $request->route('revisionId');
+            $id = null;
+        }
+        [$scope, $store, $code] = $this->target($request, $id, true);
+        $request->validate(['expected_revision' => 'required|integer|min:0']);
+        $count = DB::transaction(function () use ($request, $scope, $store, $code, $revisionId) {
+            // Use the same lock as Apply, so clearing history cannot race a new theme revision.
+            if ($store) {
+                Store::whereKey($store->id)->lockForUpdate()->firstOrFail();
+            } else {
+                DB::table('tenant_themes')->where('company_code', $code)->lockForUpdate()->first();
+            }
+            abort_if($this->themes->revision($scope) !== $request->integer('expected_revision'), 409, 'The theme changed. Reload before removing history.');
+            $rows = DB::table('theme_revisions')->where('scope_key', $scope)->where('operation', '!=', 'deleted')
+                ->where('revision', '<=', $request->integer('expected_revision'))
+                ->when($revisionId !== null, fn ($query) => $query->where('id', $revisionId));
+            if ($revisionId !== null) {
+                abort_unless((clone $rows)->exists(), 404);
+            }
+
+            // Erase restore data while retaining the revision number. Physically deleting the
+            // latest row would reuse old version numbers and let stale Apply requests succeed.
+            return $rows->update(['config' => null, 'allowed_store_ids' => null, 'actor_id' => null, 'operation' => 'deleted', 'updated_at' => now()]);
+        });
+
+        return response()->json(['success' => true, 'deleted_count' => $count]);
     }
 
     public function restore(Request $request, $id = null, $revisionId = null)
@@ -130,8 +162,8 @@ class ThemeWorkspaceController extends Controller
             $id = null;
         }
         [$scope, $store] = $this->target($request, $id, true);
-        $revision = DB::table('theme_revisions')->where('scope_key', $scope)->where('id', $revisionId)->first();
-        abort_unless($revision, 404);
+        $revision = DB::table('theme_revisions')->where('scope_key', $scope)->where('id', $revisionId)->where('operation', '!=', 'deleted')->first();
+        abort_unless($revision !== null, 404);
         $input = $this->themes->decode($revision->config);
         if ($request->has('expected_revision')) {
             $input['expected_revision'] = $request->input('expected_revision');
@@ -207,7 +239,7 @@ class ThemeWorkspaceController extends Controller
         if ($store) {
             $store->themePresets()->findOrFail($presetId)->delete();
         } else {
-            abort_unless(DB::table('tenant_theme_presets')->where('company_code', $code)->where('id', $presetId)->delete(), 404);
+            abort_unless(DB::table('tenant_theme_presets')->where('company_code', $code)->where('id', $presetId)->delete() > 0, 404);
         }
 
         return response()->json(['success' => true]);

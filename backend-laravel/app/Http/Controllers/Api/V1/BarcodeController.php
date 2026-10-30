@@ -176,7 +176,7 @@ class BarcodeController extends Controller
                 $existing = $existingQuery->get();
                 if ($existing->count() > 0) {
                     foreach ($existing as $row) {
-                        $row->sourceItemId = $sourceItemId;
+                        $row->setAttribute('sourceItemId', $sourceItemId);
                         $skipped[] = $row;
                     }
 
@@ -210,7 +210,7 @@ class BarcodeController extends Controller
                 if ($variantId && in_array($sellingMode, ['PACK', 'CUT'], true)) {
                     $reusable = Barcode::where('variant_id', $variantId)->where('is_active', true)->first();
                     if ($reusable) {
-                        $reusable->sourceItemId = $sourceItemId;
+                        $reusable->setAttribute('sourceItemId', $sourceItemId);
                         $skipped[] = $reusable;
 
                         continue;
@@ -245,7 +245,7 @@ class BarcodeController extends Controller
                         'is_active' => true,
                     ]);
 
-                    $row->sourceItemId = $sourceItemId;
+                    $row->setAttribute('sourceItemId', $sourceItemId);
                     $row->inventory_item_id = $inventoryItemId;
                     $newRows[] = $row;
                 }

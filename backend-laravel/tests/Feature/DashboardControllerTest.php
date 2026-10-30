@@ -7,6 +7,8 @@ use App\Models\PosSaleItem;
 use App\Models\Product;
 use App\Models\Store;
 use App\Models\User;
+use App\Services\SettingsDashboardService;
+use App\Services\StoreDashboardService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -183,6 +185,48 @@ class DashboardControllerTest extends TestCase
         $res->assertJsonPath('data.metrics.gst.amount', 180);
     }
 
+    public function test_unsettled_count_uses_the_selected_store_and_dates_and_clears_after_settlement(): void
+    {
+        PosSale::query()->update(['status' => 'PAID', 'paid_amount' => DB::raw('grand_total')]);
+        $sale = PosSale::create([
+            'store_id' => $this->store->id, 'user_id' => $this->user->id,
+            'invoice_no' => 'OPEN-BILL', 'sale_date' => $this->from->copy()->addHour(),
+            'grand_total' => 100, 'paid_amount' => 0, 'total_qty' => 1,
+            'payment_mode' => 'CASH', 'status' => 'UNSETTLED',
+        ]);
+        $other = Store::create(['name' => 'Other store', 'code' => 'OTHER-OPEN']);
+        foreach ([[$other->id, $this->from], [$this->store->id, $this->from->copy()->subDay()]] as [$storeId, $date]) {
+            PosSale::create(['store_id' => $storeId, 'user_id' => $this->user->id,
+                'invoice_no' => 'EXCLUDED-'.$storeId, 'sale_date' => $date, 'grand_total' => 100,
+                'paid_amount' => 0, 'total_qty' => 1, 'payment_mode' => 'CASH', 'status' => 'UNSETTLED']);
+        }
+        $this->fetchOverview()->assertOk()->assertJsonPath('data.metrics.totalBills.unsettledCount', 1)
+            ->assertJsonPath('data.metrics.settlements.amount', 2000)
+            ->assertJsonPath('data.metrics.settlements.unsettledAmount', 100)
+            ->assertJsonPath('data.metrics.settlements.unsettledCount', 1);
+        $this->postJson('/api/settlements', ['action' => 'settle', 'billIds' => [$sale->id], 'cashAmount' => 100])->assertCreated();
+        $this->fetchOverview()->assertOk()->assertJsonPath('data.metrics.totalBills.unsettledCount', 0)
+            ->assertJsonPath('data.metrics.settlements.amount', 2100)
+            ->assertJsonPath('data.metrics.settlements.unsettledAmount', 0);
+    }
+
+    public function test_outstanding_amount_subtracts_partial_payments_and_applied_returns_and_excludes_void_invoices(): void
+    {
+        PosSale::query()->update(['status' => 'PAID', 'paid_amount' => DB::raw('grand_total')]);
+        $refund = DB::table('pos_returns')->insertGetId(['store_id' => $this->store->id,
+            'pos_sale_id' => PosSale::first()->id, 'return_no' => 'APPLIED-RETURN', 'return_date' => $this->from,
+            'total_refund' => 30, 'created_at' => now(), 'updated_at' => now()]);
+        foreach ([['CREDIT', 40, null], ['UNSETTLED', 100, null], ['COMPLETED', 10, null],
+            ['UNSETTLED', 0, $refund], ['CANCELLED', 0, null], ['RETURNED', 0, null]] as $index => [$status, $paid, $returnId]) {
+            PosSale::create(['store_id' => $this->store->id, 'user_id' => $this->user->id, 'invoice_no' => 'DUE-'.$index,
+                'sale_date' => $this->from, 'grand_total' => 100, 'paid_amount' => $paid, 'total_qty' => 1,
+                'payment_mode' => 'CASH', 'status' => $status, 'applied_pos_return_id' => $returnId]);
+        }
+        $this->fetchOverview()->assertOk()->assertJsonPath('data.metrics.totalBills.unsettledCount', 4)
+            ->assertJsonPath('data.metrics.settlements.unsettledAmount', 220)
+            ->assertJsonPath('data.metrics.settlements.amount', 2000);
+    }
+
     public function test_combined_sales_and_tax_aggregates_keep_previous_period_trends(): void
     {
         PosSale::create([
@@ -295,6 +339,17 @@ class DashboardControllerTest extends TestCase
             ."{$twoStoreQueryCount} for 2 stores) -- a per-store loop issuing individual queries appears to "
             .'have been reintroduced.'
         );
+    }
+
+    public function test_inactive_store_alerts_open_store_settings_instead_of_failover_configuration(): void
+    {
+        Store::create(['name' => 'Inactive Branch', 'code' => 'INACTIVE', 'is_active' => false]);
+        foreach ([app(SettingsDashboardService::class)->getActionRequired(),
+            app(StoreDashboardService::class)->getActionRequired(Store::pluck('id')->all())] as $alerts) {
+            $alert = collect($alerts)->firstWhere('key', 'inactive_stores');
+            $this->assertGreaterThan(0, $alert['count']);
+            $this->assertSame('/settings/company', $alert['route']);
+        }
     }
 
     public function test_all_stores_aggregates_assigned_branches_without_leaking_unassigned_sales(): void

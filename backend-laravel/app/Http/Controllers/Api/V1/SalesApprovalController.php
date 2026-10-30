@@ -117,7 +117,7 @@ class SalesApprovalController extends Controller
                 'valid_until' => $request->input('valid_until') ?: now()->addDays(7)->toDateString(),
                 'total_amount' => $totalAmount,
                 'status' => 'PENDING',
-                'created_by' => $request->user()?->id ?? 1,
+                'created_by' => $request->user()->id ?? 1,
             ]);
 
             foreach ($itemsData as $item) {

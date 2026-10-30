@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PurchaseReturn extends Model
 {
@@ -24,32 +26,37 @@ class PurchaseReturn extends Model
     protected function casts(): array
     {
         return [
-            'return_date'  => 'date',
+            'return_date' => 'date',
             'total_amount' => 'decimal:2',
         ];
     }
 
-    public function store()
+    /** @return BelongsTo<Store, $this> */
+    public function store(): BelongsTo
     {
         return $this->belongsTo(Store::class);
     }
 
-    public function supplier()
+    /** @return BelongsTo<Supplier, $this> */
+    public function supplier(): BelongsTo
     {
         return $this->belongsTo(Supplier::class);
     }
 
-    public function purchaseInvoice()
+    /** @return BelongsTo<PurchaseInvoice, $this> */
+    public function purchaseInvoice(): BelongsTo
     {
         return $this->belongsTo(PurchaseInvoice::class);
     }
 
-    public function items()
+    /** @return HasMany<PurchaseReturnItem, $this> */
+    public function items(): HasMany
     {
         return $this->hasMany(PurchaseReturnItem::class);
     }
 
-    public function creator()
+    /** @return BelongsTo<User, $this> */
+    public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }

@@ -63,7 +63,7 @@ class MobileAccess
 
     public function isMobile(Request $request): bool
     {
-        return in_array('client:mobile', $request->user()?->currentAccessToken()?->abilities ?? [], true);
+        return in_array('client:mobile', $request->user()?->currentAccessToken()->abilities ?? [], true);
     }
 
     public function canLogin(User $user, string $client): bool

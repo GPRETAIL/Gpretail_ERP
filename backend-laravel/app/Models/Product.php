@@ -5,7 +5,12 @@ namespace App\Models;
 use App\Models\Concerns\HasMasterDetails;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property array<string, mixed>|null $master_details
+ */
 class Product extends Model
 {
     use HasFactory;
@@ -87,47 +92,56 @@ class Product extends Model
         ];
     }
 
-    public function itemProduct()
+    /** @return BelongsTo<self, $this> */
+    public function itemProduct(): BelongsTo
     {
         return $this->belongsTo(self::class, 'parent_product_id');
     }
 
-    public function category()
+    /** @return BelongsTo<Category, $this> */
+    public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
     }
 
-    public function productGroup()
+    /** @return BelongsTo<Category, $this> */
+    public function productGroup(): BelongsTo
     {
         return $this->belongsTo(Category::class, 'category_id');
     }
 
-    public function brand()
+    /** @return BelongsTo<Brand, $this> */
+    public function brand(): BelongsTo
     {
         return $this->belongsTo(Brand::class);
     }
 
-    public function tax()
+    /** @return BelongsTo<Tax, $this> */
+    public function tax(): BelongsTo
     {
         return $this->belongsTo(Tax::class);
     }
 
-    public function purchaseTax()
+    /** @return BelongsTo<Tax, $this> */
+    public function purchaseTax(): BelongsTo
     {
         return $this->belongsTo(Tax::class, 'purchase_tax_id');
     }
 
-    public function salesTax()
+    /** @return BelongsTo<Tax, $this> */
+    public function salesTax(): BelongsTo
     {
         return $this->belongsTo(Tax::class, 'sales_tax_id');
     }
 
-    public function sizeGroup()
+    /** @return BelongsTo<SizeGroup, $this> */
+    public function sizeGroup(): BelongsTo
     {
         return $this->belongsTo(SizeGroup::class, 'size_group_id');
     }
 
-    public function companyRef()
+    /** @return BelongsTo<Store, $this> */
+    public function companyRef(): BelongsTo
     {
         return $this->belongsTo(Store::class, 'company_id');
     }
@@ -137,22 +151,25 @@ class Product extends Model
         return $value ?? ($this->master_details['size_id'] ?? null);
     }
 
-    public function size()
+    /** @return BelongsTo<Size, $this> */
+    public function size(): BelongsTo
     {
         return $this->belongsTo(Size::class);
     }
 
     public function getTaxPercentageAttribute(): float
     {
-        return (float) ($this->tax?->rate ?? 0);
+        return (float) ($this->tax->rate ?? 0);
     }
 
-    public function variants()
+    /** @return HasMany<ProductVariant, $this> */
+    public function variants(): HasMany
     {
         return $this->hasMany(ProductVariant::class);
     }
 
-    public function stocks()
+    /** @return HasMany<Stock, $this> */
+    public function stocks(): HasMany
     {
         return $this->hasMany(Stock::class);
     }

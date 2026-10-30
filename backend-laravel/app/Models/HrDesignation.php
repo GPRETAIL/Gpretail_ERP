@@ -5,6 +5,8 @@ namespace App\Models;
 use App\Models\Concerns\HasMasterDetails;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class HrDesignation extends Model
 {
@@ -25,12 +27,14 @@ class HrDesignation extends Model
         ];
     }
 
-    public function department()
+    /** @return BelongsTo<HrDepartment, $this> */
+    public function department(): BelongsTo
     {
         return $this->belongsTo(HrDepartment::class, 'department_id');
     }
 
-    public function employees()
+    /** @return HasMany<Employee, $this> */
+    public function employees(): HasMany
     {
         return $this->hasMany(Employee::class, 'designation_id');
     }
@@ -40,7 +44,8 @@ class HrDesignation extends Model
         return $value ?? ($this->master_details['role_id'] ?? null);
     }
 
-    public function role()
+    /** @return BelongsTo<HrDepartment, $this> */
+    public function role(): BelongsTo
     {
         return $this->belongsTo(HrDepartment::class, 'role_id');
     }

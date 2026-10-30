@@ -22,11 +22,11 @@ class SettingsController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'printer_name' => $config?->name ?? 'POS Thermal Printer',
-                'printer_type' => $config?->printer_type ?? 'THERMAL',
-                'paper_size' => $config?->paper_size ?? '80mm',
-                'header_text' => $config?->header_text ?? Store::find($storeId)?->name ?? 'Vynerix',
-                'footer_text' => $config?->footer_text ?? 'Thank you for shopping with us!',
+                'printer_name' => $config->name ?? 'POS Thermal Printer',
+                'printer_type' => $config->printer_type ?? 'THERMAL',
+                'paper_size' => $config->paper_size ?? '80mm',
+                'header_text' => $config->header_text ?? Store::find($storeId)->name ?? 'Vynerix',
+                'footer_text' => $config->footer_text ?? 'Thank you for shopping with us!',
             ],
         ]);
     }
@@ -188,7 +188,7 @@ class SettingsController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $store?->receipt_customization ?? [],
+            'data' => $store->receipt_customization ?? [],
         ]);
     }
 

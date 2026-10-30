@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Settlement extends Model
 {
@@ -25,20 +26,22 @@ class Settlement extends Model
     {
         return [
             'settlement_date' => 'date',
-            'total_sales'     => 'decimal:2',
-            'cash_total'      => 'decimal:2',
-            'card_total'      => 'decimal:2',
-            'upi_total'       => 'decimal:2',
-            'credit_total'    => 'decimal:2',
+            'total_sales' => 'decimal:2',
+            'cash_total' => 'decimal:2',
+            'card_total' => 'decimal:2',
+            'upi_total' => 'decimal:2',
+            'credit_total' => 'decimal:2',
         ];
     }
 
-    public function store()
+    /** @return BelongsTo<Store, $this> */
+    public function store(): BelongsTo
     {
         return $this->belongsTo(Store::class);
     }
 
-    public function settler()
+    /** @return BelongsTo<User, $this> */
+    public function settler(): BelongsTo
     {
         return $this->belongsTo(User::class, 'settled_by');
     }

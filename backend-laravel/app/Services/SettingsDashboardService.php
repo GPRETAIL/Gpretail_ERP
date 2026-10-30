@@ -131,8 +131,8 @@ class SettingsDashboardService
                 'count' => $inactiveStores,
                 'severity' => 'info',
                 'color' => 'yellow',
-                'route' => '/settings/configure-local-server',
-                'filter_param' => 'filter=inactive',
+                'route' => '/settings/company',
+                'filter_param' => '',
             ],
         ];
     }
@@ -168,7 +168,7 @@ class SettingsDashboardService
 
     public function getAvailableStores($user): array
     {
-        $role = strtolower((string) ($user?->role ?? ''));
+        $role = strtolower((string) ($user->role ?? ''));
         $isSuperAdmin = in_array($role, ['super_admin', 'superadmin'], true);
 
         if ($isSuperAdmin) {
