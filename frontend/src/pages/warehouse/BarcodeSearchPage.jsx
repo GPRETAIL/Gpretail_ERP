@@ -2,13 +2,21 @@ import PageHeader from "../../components/PageHeader";
 import SearchGridPanel from "../../components/SearchGridPanel";
 import { masterSearchAreaSx } from "../../theme/erpUi";
 import useSearchGrid, { createSearchGridAdapter } from "../../hooks/useSearchGrid";
-import { useMemo, useState } from "react";
-import { Printer } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Printer, X } from "lucide-react";
+import { useSelector } from "react-redux";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import api from "../../api/axios";
 import Toast from "../../components/Toast";
 import FilterableDataTable from "../../components/FilterableDataTable";
 import Breadcrumbs from "../../components/Breadcrumbs";
-import { Box, Typography, IconButton, Button } from "@mui/material";
+import { usePrintContext } from "../../context/PrintContext";
+import {
+  DEFAULT_WAREHOUSE_BARCODE_CUSTOMIZATION,
+  fetchWarehouseBarcodeCustomization,
+} from "../../utils/warehouseBarcodeCustomization";
+import { buildLabelQrSources, buildStickerLabels, printWarehouseBarcodeLabels } from "./BarcodeGeneration";
+import { Box, Button, Chip, IconButton, Stack } from "@mui/material";
 
 const formatDate = (value) => {
   if (!value) return "-";
@@ -21,11 +29,44 @@ const formatDate = (value) => {
 
 const formatMoney = (value) => Number(value || 0).toFixed(2);
 
+// Each barcode row is one physical sticker, so a reprint renders exactly the stored number/price.
+const labelsForRows = (rows, customization) => rows.flatMap((row) => buildStickerLabels({
+  item: { sourceItemId: `reprint-${row.id}`, productName: row.product?.name || row.product_name || "" },
+  barcodeRows: [row],
+  customization,
+}));
+
 const BarcodeSearchPage = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const authUser = useSelector((state) => state.auth.user);
+  const { printHtml: queuePrintHtml } = usePrintContext();
   const [toast, setToast] = useState({ open: false, type: "info", message: "" });
+  const [selectedRows, setSelectedRows] = useState([]);
+  const [printing, setPrinting] = useState(false);
+  const [labelCustomization, setLabelCustomization] = useState(DEFAULT_WAREHOUSE_BARCODE_CUSTOMIZATION);
   const showToast = (type, message) => setToast({ open: true, type, message });
 
+  // Opened from the Warehouse Dashboard for a completed entry: limit the list to that entry.
+  const directPurchaseId = searchParams.get("direct_purchase_id") || "";
+  const transportEntryId = searchParams.get("transport_entry_id") || "";
+  const entryLabel = searchParams.get("label") || "";
+  const sourceFilter = useMemo(
+    () => (directPurchaseId ? { direct_purchase_id: directPurchaseId } : transportEntryId ? { transport_entry_id: transportEntryId } : {}),
+    [directPurchaseId, transportEntryId]
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    // No "default" placeholder: a non-numeric company_id is rejected by store-context resolution
+    // and pops the store chooser. Without an id the API uses the resolved store.
+    fetchWarehouseBarcodeCustomization(api, authUser?.company_id || undefined).then((config) => {
+      if (!cancelled) setLabelCustomization(config);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [authUser?.company_id]);
 
   const columns = useMemo(
     () => [
@@ -95,19 +136,52 @@ const BarcodeSearchPage = () => {
   );
 
   const grid = useSearchGrid({
-    adapter: createSearchGridAdapter("/barcodes"),
+    adapter: createSearchGridAdapter("/barcodes", undefined, sourceFilter),
+    scopeKey: JSON.stringify(sourceFilter),
     onError: err => setToast({ open: true, type: "error", message: err.response?.data?.message || "Failed to load records" }),
   });
   const { rows: results, loading, page, setPage, limit, setLimit, pagination } = grid;
   const fetchBarcodes = grid.refresh;
   const handleServerSearch = grid.onServerSearch;
 
-  const handleReprint = (row) => {
-    if (row.direct_purchase_id) {
-      navigate(`/warehouse/barcode?direct_purchase_id=${row.direct_purchase_id}`);
-      return;
+  // Selection is kept by id across pages; printing needs the row data, so remember rows as seen.
+  const [seenRows, setSeenRows] = useState({});
+  useEffect(() => {
+    if (results.length === 0) return;
+    setSeenRows((prev) => ({ ...prev, ...Object.fromEntries(results.map((row) => [row.id, row])) }));
+  }, [results]);
+
+  const printRows = async (rows) => {
+    if (rows.length === 0 || printing) return;
+    setPrinting(true);
+    try {
+      const labels = labelsForRows(rows, labelCustomization);
+      if (labels.length === 0) {
+        showToast("error", "The selected rows have no barcode numbers to print.");
+        return;
+      }
+      const result = await printWarehouseBarcodeLabels({
+        labels,
+        qrSources: await buildLabelQrSources(labels),
+        customization: labelCustomization,
+        storeName: String(authUser?.company_name || "").trim() || "Store",
+        queuePrintHtml,
+        jobName: rows.length === 1 ? `Reprint ${rows[0].barcode}` : `Reprint ${rows.length} barcodes`,
+      });
+      if (result.message) showToast(result.ok ? "success" : "error", result.message);
+      if (result.ok) setSelectedRows([]);
+    } catch (err) {
+      showToast("error", err?.message || "Failed to print barcode stickers.");
+    } finally {
+      setPrinting(false);
     }
-    showToast("error", "This barcode isn't linked to a direct purchase - it can't be reprinted from here yet.");
+  };
+
+  const selectedRowData = selectedRows.map((id) => seenRows[id]).filter(Boolean);
+
+  const clearSourceFilter = () => {
+    setSelectedRows([]);
+    setSearchParams({});
   };
 
   return (
@@ -119,10 +193,34 @@ const BarcodeSearchPage = () => {
           <Breadcrumbs
             items={[
               { label: "Warehouse", onClick: () => navigate("/warehouse") },
-              { label: "Barcode Search" },
+              { label: "Barcode Search & Reprint" },
             ]}
           />
         </>}
+        actions={(
+          <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+            {(directPurchaseId || transportEntryId) && (
+              <Chip
+                size="small"
+                color="primary"
+                variant="outlined"
+                label={`Entry: ${entryLabel || directPurchaseId || transportEntryId}`}
+                onDelete={clearSourceFilter}
+                deleteIcon={<X size={14} />}
+                aria-label="Showing barcodes of one entry; remove to show all"
+              />
+            )}
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<Printer size={15} />}
+              disabled={selectedRowData.length === 0 || printing}
+              onClick={() => printRows(selectedRowData)}
+            >
+              {printing ? "Printing..." : `Print selected${selectedRowData.length ? ` (${selectedRowData.length})` : ""}`}
+            </Button>
+          </Stack>
+        )}
       />
 
       <Box sx={masterSearchAreaSx}>
@@ -132,7 +230,10 @@ const BarcodeSearchPage = () => {
             columns={columns}
             loading={loading}
             loadingText="Loading barcodes..."
-            emptyText="No barcodes found."
+            emptyText={transportEntryId
+              // LR entries are not yet linked to their barcode rows in the database schema.
+              ? "Barcodes can't be matched to this LR entry yet. Remove the entry filter and search by barcode or product."
+              : directPurchaseId ? "No barcodes were generated for this entry." : "No barcodes found."}
             searchPlaceholder="Search by barcode, batch no, or product..."
             showExport={false}
             enableColumnResize
@@ -155,13 +256,18 @@ const BarcodeSearchPage = () => {
             }}
             paginationMode="server"
             fillHeight
+            enableSelection
+            selectedRows={selectedRows}
+            onSelectionChange={setSelectedRows}
+            getRowSelectionLabel={(row) => `Select barcode ${row.barcode}`}
             renderActions={(row) => (
               <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <IconButton
                   type="button"
-                  onClick={() => handleReprint(row)}
-                  title={row.direct_purchase_id ? "Reprint this barcode" : "Not linked to a direct purchase"}
-                  disabled={!row.direct_purchase_id}
+                  onClick={() => printRows([row])}
+                  title={`Reprint ${row.barcode}`}
+                  aria-label={`Reprint ${row.barcode}`}
+                  disabled={printing}
                   className="glass-btn glass-btn-primary"
                   sx={{ borderRadius: "3.5px", p: 0.75 }}
                 >

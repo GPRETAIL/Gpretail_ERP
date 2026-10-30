@@ -62,6 +62,11 @@ export const navItems = [
         icon: MagnifyingGlassIcon,
       },
       {
+        name: "Barcode Reprint",
+        path: "/warehouse/barcode/search",
+        icon: MagnifyingGlassIcon,
+      },
+      {
         name: "Customisation",
         path: "/warehouse/customisation",
         icon: Cog6ToothIcon,

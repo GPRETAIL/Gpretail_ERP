@@ -67,3 +67,13 @@ it("opens delete confirmation without deleting or changing workflow selection", 
   expect(mocks.delete).not.toHaveBeenCalled();
   expect(selection.checked).toBe(false);
 });
+
+it("closes the Barcode step for a completed entry and offers Reprint via Barcode Search instead", async () => {
+  renderDashboard();
+  await screen.findByText("LR-1");
+  fireEvent.click(screen.getByRole("checkbox", { name: "Select LR-1", exact: true }));
+
+  expect(screen.getByRole("button", { name: "Barcode" })).toBeDisabled();
+  fireEvent.click(screen.getByRole("button", { name: "Reprint barcodes" }));
+  expect(mocks.navigate).toHaveBeenCalledWith("/warehouse/barcode/search?transport_entry_id=1&label=LR-1");
+});

@@ -283,7 +283,8 @@ const getItemBarcodeRows = (item, barcodeValuesMap, barcodeMap) => {
   return fallbackValue ? [{ barcode: fallbackValue }] : [];
 };
 
-const buildStickerLabels = ({
+// eslint-disable-next-line react-refresh/only-export-components -- shared with BarcodeSearchPage reprints
+export const buildStickerLabels = ({
   item,
   barcodeRows,
   customization,
@@ -1239,6 +1240,93 @@ const buildBarcodeSheetSvgMarkup = (markup) => {
   `.trim();
 };
 
+// QR data URLs for every "code"-type label, keyed by label.key.
+// eslint-disable-next-line react-refresh/only-export-components -- shared with BarcodeSearchPage reprints
+export const buildLabelQrSources = async (labels) => {
+  const qrLabels = labels.filter((label) => label.codeType === "code");
+  if (qrLabels.length === 0) return {};
+  const entries = await Promise.all(
+    qrLabels.map(async (label) => [
+      label.key,
+      await QRCode.toDataURL(label.codeValue, { margin: 1, width: 360, errorCorrectionLevel: "M" }),
+    ])
+  );
+  return Object.fromEntries(entries);
+};
+
+/**
+ * Sends sticker labels to the local label printer (direct mode) or a browser print window.
+ * Shared by Barcode Generation and Barcode Search (reprint) so both print identically.
+ * Returns { ok, message }; ok is false only when nothing was printed.
+ */
+// eslint-disable-next-line react-refresh/only-export-components -- shared with BarcodeSearchPage reprints
+export const printWarehouseBarcodeLabels = async ({ labels, qrSources, customization, storeName, queuePrintHtml, jobName }) => {
+  const sheetMarkup = buildBarcodeSheetMarkup({ labels, customization, storeName, qrSources });
+
+  // Mirrors POSSales.jsx's printMode handling for sales receipts: "browser" mode always uses the
+  // popup print dialog, skipping the local connector attempt entirely rather than silently
+  // falling back to it only when disconnected - the whole point of choosing a mode explicitly.
+  const isDirectPrintMode = customization?.printMode !== "browser";
+  if (isDirectPrintMode) {
+    try {
+      // Label printers with die-cut/gap-sensing roll media are normally driven by their
+      // Windows driver as one page PER physical label row - the driver (not our software) owns
+      // the real label pitch and advances/cuts at each page boundary. Sending the whole
+      // multi-row sheet as a single tall "page" instead relies on the driver accepting an
+      // arbitrarily tall custom page size, which some label-printer drivers silently refuse -
+      // they just print whatever fits their configured one-label media size and drop the rest,
+      // which looks like "only the first label printed" regardless of how many were requested.
+      // Render each row as its own image and send them as separate pages of one print job so
+      // the printer's own gap sensor paces each one correctly.
+      const labelsPerRow = Math.max(1, sheetMarkup.metrics.labelsPerRow || 1);
+      const rowChunks = [];
+      for (let i = 0; i < labels.length; i += labelsPerRow) {
+        rowChunks.push(labels.slice(i, i + labelsPerRow));
+      }
+      const pages = await Promise.all(rowChunks.map(async (rowLabels) => {
+        const rowSheetMarkup = buildBarcodeSheetMarkup({ labels: rowLabels, customization, storeName, qrSources });
+        const rowImageDataUrl = await renderBarcodeSheetToPngDataUrl(rowSheetMarkup);
+        return {
+          imageDataUrl: rowImageDataUrl,
+          pageWidthMm: rowSheetMarkup.sheetWidthMm,
+          pageHeightMm: rowSheetMarkup.sheetHeightMm,
+        };
+      }));
+
+      const jobId = await queuePrintHtml("", {
+        label: {
+          kind: "rendered_sheet_pages_v1",
+          jobName,
+          pages,
+          // Print-time calibration offset - shifts where content lands on the physical page
+          // without touching the label's own layout, for compensating a printer's own print-
+          // head-vs-gap-sensor offset. Zero by default (no shift).
+          marginTopMm: toNumber(customization?.printMarginTopMm, 0),
+          marginBottomMm: toNumber(customization?.printMarginBottomMm, 0),
+          marginLeftMm: toNumber(customization?.printMarginLeftMm, 0),
+          marginRightMm: toNumber(customization?.printMarginRightMm, 0),
+        },
+        docType: "generic",
+        printerFunction: "barcode",
+        printerConfig: {
+          printer_type: "label",
+        },
+      });
+
+      if (jobId) return { ok: true, message: "Barcode sticker sheet sent to the local printer connector." };
+    } catch (err) {
+      console.error("Local barcode print failed:", err);
+      return { ok: false, message: err?.message || "Failed to send barcode stickers to the local printer." };
+    }
+  }
+
+  const previewWindow = window.open("", "_blank", "width=1100,height=800");
+  if (!previewWindow) return { ok: false, message: "Popup blocked. Allow popups to print barcode stickers." };
+  previewWindow.document.write(buildBarcodeSheetDocumentHtml(sheetMarkup, { autoPrint: true }));
+  previewWindow.document.close();
+  return { ok: true, message: null };
+};
+
 const renderBarcodeSheetToPngDataUrl = async (markup) => {
   const widthPx = Math.max(1, Math.ceil(markup.sheetWidthMm * MM_TO_PX));
   const heightPx = Math.max(1, Math.ceil(markup.sheetHeightMm * MM_TO_PX));
@@ -1948,7 +2036,7 @@ const BarcodeGeneration = () => {
 
   useEffect(() => {
     let cancelled = false;
-    const targetCompany = transportCompanyId || authUser?.company_id || "default";
+    const targetCompany = transportCompanyId || authUser?.company_id || undefined;
     fetchWarehouseBarcodeCustomization(api, targetCompany).then((config) => {
       if (!cancelled) {
         setLabelCustomization(config);
@@ -2634,116 +2722,26 @@ const BarcodeGeneration = () => {
         customization: labelCustomization,
       })
     );
-    const qrLabels = labels.filter((label) => label.codeType === "code");
-    let qrSrcs = {};
-    if (qrLabels.length > 0) {
-      const entries = await Promise.all(
-        qrLabels.map(async (label) => [
-          label.key,
-          await QRCode.toDataURL(label.codeValue, {
-            margin: 1,
-            width: 360,
-            errorCorrectionLevel: "M",
-          }),
-        ])
-      );
-      qrSrcs = Object.fromEntries(entries);
-    }
-    return { labels, qrSrcs };
+    return { labels, qrSrcs: await buildLabelQrSources(labels) };
   };
 
   const handlePrintPreview = async (override) => {
     const labels = override?.labels || previewLabels;
     const qrSrcs = override?.qrSrcs || qrSources;
     if (labels.length === 0 || qrLoading) return;
-    const sheetMarkup = buildBarcodeSheetMarkup({
+    const result = await printWarehouseBarcodeLabels({
       labels,
+      qrSources: qrSrcs,
       customization: labelCustomization,
       storeName,
-      qrSources: qrSrcs,
+      queuePrintHtml,
+      jobName: previewItems.length === 1
+        ? `${previewItems[0].productName} barcode`
+        : previewItems.length > 1
+          ? `${previewItems.length} warehouse barcodes`
+          : "Warehouse barcode",
     });
-
-    // Mirrors POSSales.jsx's printMode handling for sales receipts: "browser" mode always uses the
-    // popup print dialog, skipping the local connector attempt entirely rather than silently
-    // falling back to it only when disconnected - the whole point of choosing a mode explicitly.
-    const isDirectPrintMode = labelCustomization?.printMode !== "browser";
-    if (isDirectPrintMode) {
-      try {
-        // Label printers with die-cut/gap-sensing roll media are normally driven by their
-        // Windows driver as one page PER physical label row - the driver (not our software) owns
-        // the real label pitch and advances/cuts at each page boundary. Sending the whole
-        // multi-row sheet as a single tall "page" instead relies on the driver accepting an
-        // arbitrarily tall custom page size, which some label-printer drivers silently refuse -
-        // they just print whatever fits their configured one-label media size and drop the rest,
-        // which looks like "only the first label printed" regardless of how many were requested.
-        // Render each row as its own image and send them as separate pages of one print job so
-        // the printer's own gap sensor paces each one correctly.
-        const labelsPerRow = Math.max(1, sheetMarkup.metrics.labelsPerRow || 1);
-        const rowChunks = [];
-        for (let i = 0; i < labels.length; i += labelsPerRow) {
-          rowChunks.push(labels.slice(i, i + labelsPerRow));
-        }
-        const pages = await Promise.all(rowChunks.map(async (rowLabels) => {
-          const rowSheetMarkup = buildBarcodeSheetMarkup({
-            labels: rowLabels,
-            customization: labelCustomization,
-            storeName,
-            qrSources: qrSrcs,
-          });
-          const rowImageDataUrl = await renderBarcodeSheetToPngDataUrl(rowSheetMarkup);
-          return {
-            imageDataUrl: rowImageDataUrl,
-            pageWidthMm: rowSheetMarkup.sheetWidthMm,
-            pageHeightMm: rowSheetMarkup.sheetHeightMm,
-          };
-        }));
-
-        const jobId = await queuePrintHtml("", {
-          label: {
-            kind: "rendered_sheet_pages_v1",
-            jobName: previewItems.length === 1
-              ? `${previewItems[0].productName} barcode`
-              : previewItems.length > 1
-                ? `${previewItems.length} warehouse barcodes`
-                : "Warehouse barcode",
-            pages,
-            // Print-time calibration offset - shifts where content lands on the physical page
-            // without touching the label's own layout, for compensating a printer's own print-
-            // head-vs-gap-sensor offset. Zero by default (no shift).
-            marginTopMm: toNumber(labelCustomization?.printMarginTopMm, 0),
-            marginBottomMm: toNumber(labelCustomization?.printMarginBottomMm, 0),
-            marginLeftMm: toNumber(labelCustomization?.printMarginLeftMm, 0),
-            marginRightMm: toNumber(labelCustomization?.printMarginRightMm, 0),
-          },
-          docType: "generic",
-          printerFunction: "barcode",
-          printerConfig: {
-            printer_type: "label",
-          },
-        });
-
-        if (jobId) {
-          showToast(
-            "success",
-            "Barcode sticker sheet sent to the local printer connector."
-          );
-          return;
-        }
-      } catch (err) {
-        console.error("Local barcode print failed:", err);
-        showToast("error", err?.message || "Failed to send barcode stickers to the local printer.");
-        return;
-      }
-    }
-
-    const previewWindow = window.open("", "_blank", "width=1100,height=800");
-    if (!previewWindow) {
-      showToast("error", "Popup blocked. Allow popups to print barcode stickers.");
-      return;
-    }
-
-    previewWindow.document.write(buildBarcodeSheetDocumentHtml(sheetMarkup, { autoPrint: true }));
-    previewWindow.document.close();
+    if (result.message) showToast(result.ok ? "success" : "error", result.message);
   };
 
   const handleDirectPrint = async () => {

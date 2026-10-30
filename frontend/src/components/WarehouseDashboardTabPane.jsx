@@ -27,6 +27,7 @@ const QUICK_ACTIONS = [
   { label: "+ Physical Stock", path: "/warehouse/physical-stock", bg: "#d97706", hoverBg: "#b45309" },
   { label: "+ Purchase Return", path: "/warehouse/purchase-return", bg: "#e11d48", hoverBg: "#be123c" },
   { label: "+ Generate Barcode", path: "/warehouse/barcode", bg: "#334155", hoverBg: "#1e293b" },
+  { label: "Reprint Barcode", path: "/warehouse/barcode/search", bg: "#475569", hoverBg: "#334155" },
 ];
 
 export default function WarehouseDashboardTabPane({ active, fromDate, toDate, companyId, privacyMode }) {

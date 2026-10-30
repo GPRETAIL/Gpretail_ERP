@@ -1,7 +1,7 @@
 import PageHeader from "../../components/PageHeader";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Truck, FileText, Package, Barcode, Eye, Pencil, Trash2 } from "lucide-react";
+import { Truck, FileText, Package, Barcode, Eye, Pencil, Trash2, Printer } from "lucide-react";
 import api from "../../api/axios";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import Toast from "../../components/Toast";
@@ -507,6 +507,12 @@ const WarehouseDashboard = () => {
     const statusStepMap = isLorryTransportEntry(entry) ? lorryStatusStepMap : standardStatusStepMap;
     const target = statusStepMap[entry.status] || statusStepMap.lr_entry;
 
+    // A completed entry's barcodes are only reprinted, never regenerated.
+    if (entry.status === "completed" && target.stepKey === "barcode") {
+      navigate(`/warehouse/barcode/search?${new URLSearchParams({ transport_entry_id: String(entry.id), label: String(entry.lr_entry_no || entry.id) })}`);
+      return;
+    }
+
     if (target.stepKey === "lr_entry") {
       navigate(`${target.path}?id=${entry.id}&mode=${mode}`);
     } else if (target.stepKey === "invoice") {
@@ -644,15 +650,12 @@ const WarehouseDashboard = () => {
       <Stack direction="row" useFlexGap spacing={1.5} sx={{ flexWrap: "wrap", flexShrink: 0, alignItems: "center", px: 2, py: 1.5, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider" }}>
         {workflowSteps.map((step, index) => {
           const isLREntry = index === 0;
-          // Once barcodes are generated, the "next step" pointer moves past this step entirely (or
-          // the whole entry is done) - but the barcode screen still needs to be reachable afterward
-          // to reprint a lost/damaged sticker, so keep it clickable rather than graying it out.
+          // While barcodes are generated but the entry is not yet completed, the generation screen
+          // stays reachable. A completed entry is closed: reprints go through Barcode Search only.
           const isBarcodeRevisit =
             step.key === "barcode"
             && selectedEntry
-            && ["barcode_generated", "completed"].includes(
-              String(selectedEntry.status || "").trim().toLowerCase()
-            );
+            && String(selectedEntry.status || "").trim().toLowerCase() === "barcode_generated";
           const isEnabled = isLREntry || step.key === nextStepKey || isBarcodeRevisit;
           const Icon = step.icon;
           return (
@@ -676,6 +679,23 @@ const WarehouseDashboard = () => {
             </Button>
           );
         })}
+
+        {selectedEntry && ["barcode_generated", "completed"].includes(String(selectedEntry.status || "").trim().toLowerCase()) && (
+          <Button
+            variant="outlined"
+            startIcon={<Printer size={16} />}
+            onClick={() => {
+              const params = new URLSearchParams({
+                [selectedEntry.entry_source === "direct_purchase" ? "direct_purchase_id" : "transport_entry_id"]: String(selectedEntry.id),
+                label: String(selectedEntry.lr_entry_no || selectedEntry.invoice_no || selectedEntry.id),
+              });
+              navigate(`/warehouse/barcode/search?${params}`);
+            }}
+            sx={{ borderRadius: "3.5px", px: 2, py: 1, fontSize: 12.25, fontWeight: 500 }}
+          >
+            Reprint barcodes
+          </Button>
+        )}
 
         {selectedEntry && (
           <Typography sx={{ ml: "auto", fontSize: 10.5, color: "text.secondary" }}>
