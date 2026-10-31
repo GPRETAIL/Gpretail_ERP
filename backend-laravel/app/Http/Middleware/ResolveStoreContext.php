@@ -2,11 +2,11 @@
 
 namespace App\Http\Middleware;
 
-use App\Http\Controllers\Api\V1\SettingsController;
-use App\Http\Controllers\Api\V1\ThemeWorkspaceController;
+use App\Http\Controllers\Api\V1\Settings\SettingsController;
+use App\Http\Controllers\Api\V1\Settings\ThemeWorkspaceController;
 use App\Models\PlatformActivation;
-use App\Services\StoreContext;
-use App\Services\StoreLicenceVerifier;
+use App\Services\Tenancy\StoreContext;
+use App\Services\Platform\StoreLicenceVerifier;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;

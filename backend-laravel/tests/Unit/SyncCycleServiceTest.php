@@ -5,7 +5,7 @@ namespace Tests\Unit;
 use App\Models\Store;
 use App\Models\StoreLocalNode;
 use App\Models\SyncOutboxEvent;
-use App\Services\SyncCycleService;
+use App\Services\Platform\SyncCycleService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;

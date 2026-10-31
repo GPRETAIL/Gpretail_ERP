@@ -5,8 +5,8 @@ namespace App\Console\Commands;
 use App\Models\PlatformActivation;
 use App\Models\Store;
 use App\Models\StoreLocalNode;
-use App\Services\BackupService;
-use App\Services\StoreLicenceVerifier;
+use App\Services\Backup\BackupService;
+use App\Services\Platform\StoreLicenceVerifier;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
 

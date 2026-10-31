@@ -3,8 +3,8 @@
 namespace App\Console\Commands;
 
 use App\Models\PlatformActivation;
-use App\Services\PlatformNotificationSync;
-use App\Services\PlatformPushClient;
+use App\Services\Platform\PlatformNotificationSync;
+use App\Services\Platform\PlatformPushClient;
 use Illuminate\Console\Command;
 
 class SyncPlatformNotifications extends Command

@@ -4,7 +4,7 @@ namespace Tests\Unit;
 
 use App\Models\Store;
 use App\Models\StoreLocalNode;
-use App\Services\DocumentNumberService;
+use App\Services\Documents\DocumentNumberService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Tests\TestCase;

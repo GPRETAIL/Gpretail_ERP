@@ -3,7 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Store;
-use App\Services\ReorderService;
+use App\Services\Inventory\ReorderService;
 use Illuminate\Console\Command;
 
 /** Nightly: drafts purchase orders, per store and supplier, for items at or below their reorder level. */

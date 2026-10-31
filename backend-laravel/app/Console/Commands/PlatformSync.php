@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Services\PlatformActivationService;
+use App\Services\Platform\PlatformActivationService;
 use Illuminate\Console\Command;
 
 /**

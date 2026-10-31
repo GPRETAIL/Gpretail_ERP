@@ -2,7 +2,7 @@
 
 namespace App\Models\Concerns;
 
-use App\Services\MasterFormData;
+use App\Services\Forms\MasterFormData;
 
 trait HasMasterDetails
 {

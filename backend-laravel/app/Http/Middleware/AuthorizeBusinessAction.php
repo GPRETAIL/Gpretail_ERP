@@ -2,8 +2,8 @@
 
 namespace App\Http\Middleware;
 
-use App\Services\BusinessPermissions;
-use App\Services\MobileAccess;
+use App\Services\Tenancy\BusinessPermissions;
+use App\Services\Tenancy\MobileAccess;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;

@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Services\RealtimeService;
+use App\Services\Notifications\RealtimeService;
 use Illuminate\Database\Eloquent\Model;
 
 class Notification extends Model

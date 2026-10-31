@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Services\PaginationService;
+use App\Support\PaginationService;
 use Illuminate\Console\Command;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;

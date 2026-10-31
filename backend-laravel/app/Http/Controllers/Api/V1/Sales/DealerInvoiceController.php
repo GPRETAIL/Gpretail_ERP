@@ -1,0 +1,188 @@
+<?php
+
+namespace App\Http\Controllers\Api\V1\Sales;
+
+use App\Http\Controllers\Controller;
+use App\Models\Customer;
+use App\Models\DealerInvoice;
+use App\Models\DealerInvoiceItem;
+use App\Services\Documents\DocumentNumberService;
+use App\Support\GroupAggregationService;
+use App\Support\PaginationService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+
+class DealerInvoiceController extends Controller
+{
+    public function __construct(
+        private readonly PaginationService $paginationService,
+        private readonly GroupAggregationService $groupAggregationService,
+    ) {}
+
+    private function filteredQuery(Request $request)
+    {
+        $storeId = $request->header('X-Company-Scope-Id');
+        $query = DealerInvoice::with(['customer', 'items.product', 'creator'])
+            ->when($storeId && $storeId !== 'all', fn ($q) => $q->where('store_id', $storeId));
+
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('invoice_no', 'like', "%{$search}%")
+                    ->orWhereHas('customer', function ($cq) use ($search) {
+                        $cq->where('name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        return $query;
+    }
+
+    public function groupedSummary(Request $request)
+    {
+        $result = $this->groupAggregationService->summarize($this->filteredQuery($request), 'dealer_invoices', $request);
+
+        return response()->json($result, $result['success'] ? 200 : 422);
+    }
+
+    public function index(Request $request)
+    {
+        $query = $this->filteredQuery($request);
+
+        if ($request->boolean('all') || $request->input('limit') == 500 || $request->input('limit') == 1000) {
+            $items = $query->orderBy('invoice_date', 'desc')->limit(2000)->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $items,
+                'total' => $items->count(),
+            ]);
+        }
+
+        $result = $this->paginationService->paginate($query, 'dealer_invoices', $request, [
+            'default_sort' => 'id',
+            'default_order' => 'desc',
+            'tie_breaker' => 'id',
+            'allowed_sorts' => ['id', 'invoice_date', 'invoice_no', 'created_at'],
+        ]);
+
+        return response()->json($result);
+    }
+
+    public function store(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'customer_id' => 'nullable|exists:customers,id',
+            'invoice_date' => 'nullable|date',
+            'items' => 'required|array|min:1',
+            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.quantity' => 'required|numeric|min:0.01',
+            'items.*.price' => 'required|numeric|min:0',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $storeId = $this->resolveStoreId($request, 1);
+
+        $invoice = DB::transaction(function () use ($request, $storeId) {
+            $customerId = $request->input('customer_id');
+            if (! $customerId) {
+                $defaultCustomer = Customer::first();
+                $customerId = $defaultCustomer ? $defaultCustomer->id : 1;
+            }
+
+            $invoiceNo = $request->input('invoice_no') ?: DocumentNumberService::resolve($request, (int) $storeId, 'DINV');
+            $subtotal = 0;
+            $taxAmount = 0;
+            $itemsData = $request->input('items', []);
+
+            foreach ($itemsData as $item) {
+                $qty = (float) ($item['quantity'] ?? 1);
+                $price = (float) ($item['price'] ?? 0);
+                $tax = (float) ($item['tax_amount'] ?? 0);
+                $subtotal += ($qty * $price);
+                $taxAmount += $tax;
+            }
+
+            $dealerInvoice = DealerInvoice::create([
+                'store_id' => $storeId,
+                'customer_id' => $customerId,
+                'invoice_no' => $invoiceNo,
+                'invoice_date' => $request->input('invoice_date') ?: now()->toDateString(),
+                'subtotal' => $subtotal,
+                'tax_amount' => $taxAmount,
+                'grand_total' => $subtotal + $taxAmount,
+                'status' => 'COMPLETED',
+                'created_by' => $request->user()->id ?? 1,
+            ]);
+
+            foreach ($itemsData as $item) {
+                $qty = (float) ($item['quantity'] ?? 1);
+                $price = (float) ($item['price'] ?? 0);
+                $tax = (float) ($item['tax_amount'] ?? 0);
+
+                DealerInvoiceItem::create([
+                    'dealer_invoice_id' => $dealerInvoice->id,
+                    'product_id' => $item['product_id'],
+                    'quantity' => $qty,
+                    'price' => $price,
+                    'tax_amount' => $tax,
+                    'total' => ($qty * $price) + $tax,
+                ]);
+            }
+
+            return $dealerInvoice;
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Dealer invoice created successfully',
+            'data' => $invoice->load(['customer', 'items.product']),
+        ], 201);
+    }
+
+    public function nextBillNo(Request $request)
+    {
+        $storeId = (int) $this->resolveStoreId($request, 1);
+        $nextNo = DocumentNumberService::peek($storeId, 'DINV');
+
+        return response()->json([
+            'success' => true,
+            'data' => $nextNo,
+            'next_bill_no' => $nextNo,
+        ]);
+    }
+
+    // Dealer Invoice Returns
+    public function returnsIndex(Request $request)
+    {
+        return $this->index($request);
+    }
+
+    public function returnsStore(Request $request)
+    {
+        return $this->store($request);
+    }
+
+    public function nextReturnNo(Request $request)
+    {
+        // returnsStore() delegates straight to store(), which always mints from the
+        // DINV counter (there's no separate DRET persistence path) -- preview the same
+        // counter so this doesn't show a number that will never actually be assigned.
+        $storeId = (int) $this->resolveStoreId($request, 1);
+        $nextNo = DocumentNumberService::peek($storeId, 'DINV');
+
+        return response()->json([
+            'success' => true,
+            'data' => $nextNo,
+            'next_return_no' => $nextNo,
+        ]);
+    }
+}

@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Concerns;
 
-use App\Http\Controllers\Api\V1\MasterImportController;
+use App\Http\Controllers\Api\V1\Masters\MasterImportController;
 use Illuminate\Http\Request;
 
 trait ImportsMasterRows

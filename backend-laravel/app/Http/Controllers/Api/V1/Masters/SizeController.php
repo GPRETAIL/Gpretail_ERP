@@ -1,0 +1,375 @@
+<?php
+
+namespace App\Http\Controllers\Api\V1\Masters;
+
+use App\Http\Controllers\Concerns\ImportsMasterRows;
+use App\Http\Controllers\Controller;
+use App\Models\Size;
+use App\Models\SizeGroup;
+use App\Services\Forms\MasterFormData;
+use App\Support\PaginationService;
+use Illuminate\Http\Request;
+
+class SizeController extends Controller
+{
+    use ImportsMasterRows;
+
+    public function __construct(private readonly PaginationService $paginationService) {}
+
+    private function options(Request $request, bool $group = false): array
+    {
+        $input = MasterFormData::normalize($request->all());
+        $booleans = $group ? ['enable_size_ratio', 'is_active'] : ['is_combo_size', 'is_meter_size', 'is_variant', 'is_active'];
+        $data = array_intersect_key($input, array_flip(array_merge($booleans, $group ? ['sort_order'] : ['measurement', 'age_set', 'uom', 'sort_order'])));
+        foreach ($data as $key => &$value) {
+            if (in_array($key, $booleans, true)) {
+                $value = filter_var($value, FILTER_VALIDATE_BOOLEAN);
+            } elseif ($key === 'sort_order') {
+                $value = (int) $value;
+            } elseif ($value !== null) {
+                $value = (string) $value;
+            }
+        }
+
+        return $data;
+    }
+
+    private function formatSize($size)
+    {
+        $arr = $size->toArray();
+        $arr['size_name'] = $size->name;
+        $arr['sizeName'] = $size->name;
+        $arr['measurement'] = $size->measurement ?? '';
+        $arr['age_set'] = $size->age_set ?? '';
+        $arr['ageSet'] = $size->age_set ?? '';
+        $arr['uom'] = $size->uom ?? '';
+        $arr['sort_order'] = (int) ($size->sort_order ?? 0);
+        $arr['sortOrder'] = (int) ($size->sort_order ?? 0);
+        $arr['is_combo_size'] = (bool) ($size->is_combo_size ?? false);
+        $arr['isComboSize'] = (bool) ($size->is_combo_size ?? false);
+        $arr['is_meter_size'] = (bool) ($size->is_meter_size ?? false);
+        $arr['isMeterSize'] = (bool) ($size->is_meter_size ?? false);
+        $arr['is_variant'] = (bool) ($size->is_variant ?? false);
+        $arr['isVariant'] = (bool) ($size->is_variant ?? false);
+        $arr['is_active'] = (bool) ($size->is_active ?? true);
+        $arr['company_id'] = $size->company_id;
+        $arr['created_by'] = $size->created_by;
+        $arr['updated_by'] = $size->updated_by ?? null;
+
+        return $arr;
+    }
+
+    private function formatGroup($group)
+    {
+        $arr = $group->toArray();
+        $arr['group_name'] = $group->name;
+        $arr['groupName'] = $group->name;
+        $arr['enable_size_ratio'] = (bool) ($group->enable_size_ratio ?? false);
+        $arr['enableSizeRatio'] = (bool) ($group->enable_size_ratio ?? false);
+        $arr['sort_order'] = (int) ($group->sort_order ?? 0);
+        $arr['sortOrder'] = (int) ($group->sort_order ?? 0);
+        $arr['company_id'] = $group->company_id;
+        $arr['created_by'] = $group->created_by;
+        $arr['updated_by'] = $group->updated_by ?? null;
+        if (isset($group->sizes)) {
+            $arr['sizes'] = collect($group->sizes)->map(fn ($s) => $this->formatSize($s))->values()->all();
+        }
+
+        return $arr;
+    }
+
+    // Sizes list
+    public function index(Request $request)
+    {
+        $query = Size::with('sizeGroup');
+
+        if ($request->filled('size_group_id')) {
+            $query->where('size_group_id', $request->input('size_group_id'));
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('code', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->boolean('all') || $request->input('limit') == 500 || $request->input('limit') == 1000) {
+            $items = $query->orderBy('sort_order')->limit(2000)->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => collect($items)->map(fn ($s) => $this->formatSize($s)),
+                'total' => $items->count(),
+            ]);
+        }
+
+        $result = $this->paginationService->paginate($query, 'sizes', $request, [
+            'default_sort' => 'sort_order',
+            'default_order' => 'asc',
+            'tie_breaker' => 'id',
+            'allowed_sorts' => ['id', 'name', 'code', 'sort_order', 'created_at'],
+        ]);
+
+        $result['data'] = collect($result['data'])->map(fn ($s) => $this->formatSize($s))->values();
+
+        return response()->json($result);
+    }
+
+    public function show($id)
+    {
+        $size = Size::with('sizeGroup')->where(fn ($q) => $q->where('id', $id)->orWhere('code', $id))->first();
+
+        if (! $size) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Size not found',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $this->formatSize($size),
+        ]);
+    }
+
+    public function store(Request $request)
+    {
+        $name = $request->input('size_name') ?? $request->input('name') ?? $request->input('sizeName');
+
+        if (! $name) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Size name is required',
+            ], 422);
+        }
+
+        $sizeGroupId = $request->input('size_group_id');
+        if (! $sizeGroupId) {
+            $defaultGroup = SizeGroup::firstOrCreate(
+                ['code' => 'STD_SIZES_'.($request->attributes->get('store_context_id') ?? 'legacy')],
+                ['name' => 'Standard Sizes', 'is_active' => true]
+            );
+            $sizeGroupId = $defaultGroup->id;
+        }
+
+        $code = $request->input('code') ?: strtoupper($name);
+
+        $user = $request->user();
+        $createdBy = $user?->name ?: $user?->username;
+        $companyId = $this->resolveStoreId($request, (int) ($user?->store_id ?: 1));
+
+        $size = Size::create(array_replace($this->options($request), [
+            'size_group_id' => $sizeGroupId,
+            'name' => $name,
+            'code' => $code,
+            'sort_order' => $request->input('sort_order', $request->input('sortOrder', 0)),
+            'company_id' => $companyId,
+            'created_by' => $createdBy,
+        ]));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Size created successfully',
+            'data' => $this->formatSize($size->load('sizeGroup')),
+        ], 201);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $size = Size::where(fn ($q) => $q->where('id', $id)->orWhere('code', $id))->first();
+
+        if (! $size) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Size not found',
+            ], 404);
+        }
+
+        $user = $request->user();
+        $updatedBy = $request->input('updated_by') ?: ($user?->name ?: ($user?->username ?: 'Superadmin'));
+
+        $data = array_replace($this->options($request), ['updated_by' => $updatedBy]);
+        $name = $request->input('size_name') ?? $request->input('name') ?? $request->input('sizeName');
+        if ($name !== null) {
+            $data['name'] = $name;
+        }
+        if ($request->has('code')) {
+            $data['code'] = $request->input('code');
+        }
+        if ($request->has('sort_order')) {
+            $data['sort_order'] = (int) $request->input('sort_order');
+        }
+        if ($request->has('size_group_id')) {
+            $data['size_group_id'] = $request->input('size_group_id');
+        }
+        if ($request->has('company_id')) {
+            $data['company_id'] = $request->input('company_id');
+        }
+
+        $size->update($data);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Size updated successfully',
+            'data' => $this->formatSize($size->load('sizeGroup')),
+        ]);
+    }
+
+    public function destroy($id)
+    {
+        $size = Size::where(fn ($q) => $q->where('id', $id)->orWhere('code', $id))->first();
+
+        if (! $size) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Size not found',
+            ], 404);
+        }
+
+        $size->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Size deleted successfully',
+        ]);
+    }
+
+    // Size Groups API
+    public function groupsIndex(Request $request)
+    {
+        $query = SizeGroup::with('sizes');
+
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(fn ($q) => $q->where('name', 'like', "%{$search}%")->orWhere('code', 'like', "%{$search}%"));
+        }
+
+        if ($request->boolean('paginate')) {
+            $result = $this->paginationService->paginate($query, 'size_groups', $request, [
+                'default_sort' => 'name', 'default_order' => 'asc', 'allowed_sorts' => ['id', 'name', 'code'],
+            ]);
+            $result['data'] = collect($result['data'])->map(fn ($g) => $this->formatGroup($g));
+
+            return response()->json($result);
+        }
+
+        $groups = $query->orderBy('name')->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => collect($groups)->map(fn ($g) => $this->formatGroup($g)),
+            'total' => $groups->count(),
+        ]);
+    }
+
+    public function groupsShow($id)
+    {
+        $group = SizeGroup::with('sizes')->where(fn ($q) => $q->where('id', $id)->orWhere('code', $id))->first();
+
+        if (! $group) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Size group not found',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $this->formatGroup($group),
+        ]);
+    }
+
+    public function groupsStore(Request $request)
+    {
+        $name = $request->input('group_name') ?? $request->input('name') ?? $request->input('groupName');
+
+        if (! $name) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Group name is required',
+            ], 422);
+        }
+
+        $user = $request->user();
+        $createdBy = $user?->name ?: $user?->username;
+        $companyId = $this->resolveStoreId($request, (int) ($user?->store_id ?: 1));
+        $code = $request->input('code') ?: 'SG_'.strtoupper(substr(uniqid(), -6));
+
+        $group = SizeGroup::create(array_replace($this->options($request, true), [
+            'name' => $name,
+            'code' => $code,
+            'description' => $request->input('description'),
+            'company_id' => $companyId,
+            'created_by' => $createdBy,
+            'is_active' => $request->boolean('is_active', true),
+        ]));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Size group created successfully',
+            'data' => $this->formatGroup($group),
+        ], 201);
+    }
+
+    public function groupsUpdate(Request $request, $id)
+    {
+        $group = SizeGroup::where(fn ($q) => $q->where('id', $id)->orWhere('code', $id))->first();
+
+        if (! $group) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Size group not found',
+            ], 404);
+        }
+
+        $user = $request->user();
+        $updatedBy = $request->input('updated_by') ?: ($user?->name ?: ($user?->username ?: 'Superadmin'));
+
+        $data = array_replace($this->options($request, true), ['updated_by' => $updatedBy]);
+        $name = $request->input('group_name') ?? $request->input('name') ?? $request->input('groupName');
+        if ($name !== null) {
+            $data['name'] = $name;
+        }
+        if ($request->has('code')) {
+            $data['code'] = $request->input('code');
+        }
+        if ($request->has('description')) {
+            $data['description'] = $request->input('description');
+        }
+        if ($request->has('is_active')) {
+            $data['is_active'] = $request->boolean('is_active');
+        }
+        if ($request->has('company_id')) {
+            $data['company_id'] = $request->input('company_id');
+        }
+
+        $group->update($data);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Size group updated successfully',
+            'data' => $this->formatGroup($group),
+        ]);
+    }
+
+    public function groupsDestroy($id)
+    {
+        $group = SizeGroup::where(fn ($q) => $q->where('id', $id)->orWhere('code', $id))->first();
+
+        if (! $group) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Size group not found',
+            ], 404);
+        }
+
+        $group->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Size group deleted successfully',
+        ]);
+    }
+}

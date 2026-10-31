@@ -3,9 +3,9 @@
 namespace App\Providers;
 
 use App\Services\Accounting\LedgerPoster;
-use App\Services\RealtimeService;
-use App\Services\StoreModelScope;
-use App\Services\StoreSchema;
+use App\Services\Notifications\RealtimeService;
+use App\Services\Tenancy\StoreModelScope;
+use App\Services\Tenancy\StoreSchema;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;

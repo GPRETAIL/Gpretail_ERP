@@ -4,9 +4,9 @@ namespace App\Console\Commands;
 
 use App\Models\PlatformActivation;
 use App\Models\User;
-use App\Services\LegacyTenantOwnerLink;
-use App\Services\PlatformActivationService;
-use App\Services\PlatformClient;
+use App\Services\Platform\LegacyTenantOwnerLink;
+use App\Services\Platform\PlatformActivationService;
+use App\Services\Platform\PlatformClient;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Crypt;

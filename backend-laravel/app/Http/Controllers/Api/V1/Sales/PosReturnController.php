@@ -1,0 +1,441 @@
+<?php
+
+namespace App\Http\Controllers\Api\V1\Sales;
+
+use App\Http\Controllers\Controller;
+use App\Models\Barcode;
+use App\Models\PosReturn;
+use App\Models\PosReturnItem;
+use App\Models\PosSale;
+use App\Models\PosSaleItem;
+use App\Models\Product;
+use App\Services\Approvals\ApprovalService;
+use App\Services\Documents\DocumentNumberService;
+use App\Support\GroupAggregationService;
+use App\Support\PaginationService;
+use App\Services\Inventory\StockService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+
+class PosReturnController extends Controller
+{
+    public function __construct(
+        private readonly StockService $stockService,
+        private readonly PaginationService $paginationService,
+        private readonly GroupAggregationService $groupAggregationService,
+    ) {}
+
+    private function filteredQuery(Request $request)
+    {
+        $query = PosReturn::with(['posSale', 'customer', 'items.product', 'creator']);
+
+        // Same gap PurchaseInvoiceController had: never scoped by store, so every
+        // store's returns were returned regardless of X-Company-Scope-Id.
+        $storeId = $request->header('X-Company-Scope-Id');
+        if ($storeId && $storeId !== 'all') {
+            $query->where('store_id', $storeId);
+        }
+
+        if ($request->filled('from') && $request->filled('to')) {
+            $query->whereBetween('return_date', [
+                Carbon::parse($request->input('from'))->startOfDay(),
+                Carbon::parse($request->input('to'))->endOfDay(),
+            ]);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('return_no', 'like', "%{$search}%")
+                    ->orWhereHas('posSale', function ($sq) use ($search) {
+                        $sq->where('invoice_no', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        return $query;
+    }
+
+    public function groupedSummary(Request $request)
+    {
+        $result = $this->groupAggregationService->summarize($this->filteredQuery($request), 'pos_returns', $request);
+
+        return response()->json($result, $result['success'] ? 200 : 422);
+    }
+
+    public function index(Request $request)
+    {
+        $query = $this->filteredQuery($request);
+
+        if ($request->boolean('all') || $request->input('limit') == 500 || $request->input('limit') == 1000) {
+            $items = $query->orderBy('return_date', 'desc')->limit(2000)->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $items->map(fn ($r) => $this->withDisplayReturnNo($r))->values(),
+                'total' => $items->count(),
+            ]);
+        }
+
+        $result = $this->paginationService->paginate($query, 'pos_returns', $request, [
+            'default_sort' => 'id',
+            'default_order' => 'desc',
+            'tie_breaker' => 'id',
+            'allowed_sorts' => ['id', 'return_date', 'return_no', 'grand_total', 'created_at'],
+        ]);
+
+        $result['data'] = collect($result['data'])->map(fn ($r) => $this->withDisplayReturnNo($r))->values();
+
+        return response()->json($result);
+    }
+
+    public function store(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'items' => 'required|array|min:1',
+            'items.*.productId' => 'required|exists:products,id',
+            'items.*.qty' => 'required|numeric|min:0.01',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $storeId = $this->resolveStoreId($request, 1);
+        $standalone = $request->boolean('standalone');
+        $sourcePosSaleId = $request->input('sourcePosSaleId');
+        $itemsData = $request->input('items', []);
+
+        // Recompute each item's returnable ceiling server-side - never
+        // trust the client's maxQty for a return against a real sale.
+        $saleLines = collect();
+        if (! $standalone && $sourcePosSaleId) {
+            // A product can sit on several lines of one bill; return against their combined totals.
+            $saleLines = PosSaleItem::where('pos_sale_id', $sourcePosSaleId)->get()->groupBy('product_id')
+                ->map(fn ($lines) => [
+                    'quantity' => (float) $lines->sum('quantity'),
+                    'price' => (float) $lines->first()->selling_price,
+                    'tax_rate' => (float) $lines->first()->tax_rate,
+                    'discount' => (float) $lines->sum('discount'),
+                    'tax_amount' => (float) $lines->sum('tax_amount'),
+                    'paid' => (float) $lines->sum('subtotal'),
+                ]);
+
+            foreach ($itemsData as $item) {
+                $qty = (float) ($item['qty'] ?? 1);
+                $originalQty = (float) ($saleLines->get($item['productId'])['quantity'] ?? 0);
+                $alreadyReturned = (float) PosReturnItem::where('product_id', $item['productId'])
+                    ->whereHas('posReturn', fn ($q) => $q->where('pos_sale_id', $sourcePosSaleId))
+                    ->sum('quantity');
+                $remaining = max(0, $originalQty - $alreadyReturned);
+
+                if ($qty > $remaining + 0.0001) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Cannot return {$qty} of this item: only {$remaining} remains returnable from this bill.",
+                    ], 422);
+                }
+            }
+        }
+
+        // Refund what the customer actually paid: a bill line's discount and tax are shared out by
+        // quantity, so returning 1 of 3 refunds a third of the discounted, taxed line.
+        $refundLines = array_map(function (array $item) use ($saleLines) {
+            $qty = (float) ($item['qty'] ?? 1);
+            $sold = $saleLines->get($item['productId']);
+            if ($sold && $sold['quantity'] > 0) {
+                $share = $qty / $sold['quantity'];
+                $discount = round($sold['discount'] * $share, 2);
+                $taxAmount = round($sold['tax_amount'] * $share, 2);
+                $paid = $sold['paid'] > 0
+                    ? round($sold['paid'] * $share, 2)
+                    : round($qty * $sold['price'] - $discount + $taxAmount, 2);
+
+                return [$item, $qty, $sold['price'], $sold['tax_rate'], $discount, $taxAmount, $paid];
+            }
+            $price = (float) ($item['price'] ?? 0);
+            $taxRate = (float) ($item['tax'] ?? 0);
+            $discount = round(max(0, (float) ($item['discount'] ?? 0)), 2);
+            $base = max(0, $qty * $price - $discount);
+            $taxAmount = round($base * $taxRate / 100, 2);
+
+            return [$item, $qty, $price, $taxRate, $discount, $taxAmount, round($base + $taxAmount, 2)];
+        }, $itemsData);
+
+        $return = DB::transaction(function () use ($request, $storeId, $standalone, $sourcePosSaleId, $refundLines) {
+            $totalRefund = round(array_sum(array_column($refundLines, 6)), 2);
+            // Refunds above the user's limit, or without the original bill, need an approval token.
+            $approval = app(ApprovalService::class)->authorizeRefund($request->user(), (int) $storeId, $totalRefund, $standalone || ! $sourcePosSaleId, $request->input('approvalToken'));
+            $returnNo = DocumentNumberService::resolve($request, (int) $storeId, 'RET');
+
+            $posReturn = PosReturn::create([
+                'store_id' => $storeId,
+                'pos_sale_id' => $standalone ? null : $sourcePosSaleId,
+                'customer_id' => $request->input('customerId'),
+                'return_no' => $returnNo,
+                'return_date' => now(),
+                'total_refund' => $totalRefund,
+                'refund_mode' => $request->input('refundMode', 'CASH'),
+                'status' => 'COMPLETED',
+                'created_by' => $request->user()->id ?? 1,
+                'return_reason_id' => $request->input('returnReasonId'),
+                'return_reason_name' => $request->input('returnReasonName'),
+                'standalone' => $standalone,
+            ]);
+            $approval?->forceFill(['status' => 'used', 'used_at' => now(), 'pos_return_id' => $posReturn->id])->save();
+
+            foreach ($refundLines as [$item, $qty, $price, $taxRate, $discount, $taxAmount, $paid]) {
+                $barcodeId = isset($item['barcodeId']) ? (int) $item['barcodeId'] : null;
+
+                PosReturnItem::create([
+                    'pos_return_id' => $posReturn->id,
+                    'product_id' => $item['productId'],
+                    'variant_id' => $item['variantId'] ?? null,
+                    'barcode_id' => $barcodeId,
+                    'quantity' => $qty,
+                    'refund_price' => $price,
+                    'subtotal' => $paid, // Like a sale line: after discount, tax included.
+                    'tax_rate' => $taxRate,
+                    'tax_amount' => $taxAmount,
+                    'cost_price' => $item['cost'] ?? null,
+                    'discount' => $discount,
+                ]);
+
+                // Locked, audited increment - also keeps available_quantity
+                // in sync, which the old raw ->quantity += ... write never did.
+                $this->stockService->adjust(
+                    storeId: (int) $storeId,
+                    productId: (int) $item['productId'],
+                    variantId: isset($item['variantId']) ? (int) $item['variantId'] : null,
+                    delta: $qty,
+                    referenceType: 'POS_RETURN',
+                    referenceId: $posReturn->id,
+                    costPrice: $price,
+                    userId: $request->user()?->id,
+                );
+
+                // The unit's physical label is back on the shelf and
+                // sellable again - reactivate it (no-op for PACK/CUT, whose
+                // shared barcode was never deactivated on sale).
+                if ($barcodeId) {
+                    Barcode::where('id', $barcodeId)->update(['is_active' => true]);
+                }
+            }
+
+            return $posReturn;
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'POS Return processed successfully',
+            'data' => $this->withDisplayReturnNo($return->load(['posSale', 'items.product'])),
+        ], 201);
+    }
+
+    private function withDisplayReturnNo(PosReturn $return): array
+    {
+        $data = $return->toArray();
+        $data['display_return_no'] = 'RR/'.$return->id;
+        $data['source_bill_no'] = $return->pos_sale_id;
+
+        return $data;
+    }
+
+    public function show($id)
+    {
+        $return = PosReturn::with(['posSale', 'customer', 'items.product', 'creator'])->find($id);
+
+        if (! $return) {
+            return response()->json([
+                'success' => false,
+                'message' => 'POS Return not found',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $this->withDisplayReturnNo($return),
+        ]);
+    }
+
+    public function nextReturnNo(Request $request)
+    {
+        $storeId = (int) $this->resolveStoreId($request, 1);
+        $nextNo = DocumentNumberService::peek($storeId, 'RET');
+
+        return response()->json([
+            'success' => true,
+            'data' => $nextNo,
+            'next_return_no' => $nextNo,
+        ]);
+    }
+
+    public function sourceBill(Request $request)
+    {
+        $billNo = $request->input('billNo') ?? $request->input('bill_no') ?? $request->input('invoice_no');
+        $matches = PosSale::with(['items.product', 'customer'])->billNumber((string) $billNo)->get();
+        abort_if($matches->count() > 1, 422, 'Select a store before looking up this bill number.');
+        $sale = $matches->first();
+
+        if (! $sale) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bill not found: '.$billNo,
+            ], 404);
+        }
+
+        $items = $sale->items->map(function ($item) use ($sale) {
+            $returnedQty = (float) PosReturnItem::where('product_id', $item->product_id)
+                ->whereHas('posReturn', fn ($q) => $q->where('pos_sale_id', $sale->id))
+                ->sum('quantity');
+
+            $originalQty = (float) $item->quantity;
+            $remaining = max(0, $originalQty - $returnedQty);
+
+            return [
+                'productId' => $item->product_id,
+                'variantId' => $item->variant_id,
+                'barcodeId' => $item->barcode_id,
+                'barcode' => $item->product?->barcode,
+                'productName' => $item->product?->name,
+                'qty' => $remaining,
+                'maxQty' => $remaining,
+                'originalQty' => $originalQty,
+                'returnedQty' => $returnedQty,
+                'price' => (float) $item->selling_price,
+                'tax' => (float) $item->tax_rate,
+                'cost' => (float) ($item->cost_price ?? 0),
+                'discount' => (float) $item->discount,
+            ];
+        })->filter(fn ($i) => $i['maxQty'] > 0)->values();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => $sale->id,
+                'billNo' => $sale->bill_no,
+                'invoiceNo' => $sale->invoice_no,
+                'customerId' => $sale->customer_id,
+                'customerName' => $sale->customer?->name,
+                'customerMobile' => $sale->customer?->phone,
+                'items' => $items,
+            ],
+        ]);
+    }
+
+    public function sourceByBarcode(Request $request)
+    {
+        $barcode = $request->input('barcode');
+
+        // Not filtered by is_active - a standalone return is precisely the
+        // case where a PIECE unit's barcode was deactivated when it sold;
+        // scanning it here to return it is expected to find it regardless.
+        $barcodeRow = Barcode::where('barcode', $barcode)->with(['product.tax', 'variant'])->first();
+
+        if ($barcodeRow && $barcodeRow->product) {
+            $product = $barcodeRow->product;
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'standalone' => true,
+                    'items' => [[
+                        'productId' => $product->id,
+                        'variantId' => $barcodeRow->variant_id,
+                        'barcodeId' => $barcodeRow->id,
+                        'barcode' => $barcodeRow->barcode,
+                        'productName' => $product->name,
+                        'qty' => 1,
+                        'maxQty' => null,
+                        'price' => (float) $barcodeRow->selling_price,
+                        'tax' => $product->tax ? (float) $product->tax->rate : 0,
+                        'cost' => (float) $product->cost_price,
+                        'discount' => 0,
+                    ]],
+                ],
+            ]);
+        }
+
+        $product = Product::with('tax')
+            ->where(fn ($q) => $q->where('barcode', $barcode)->orWhere('code', $barcode)->orWhere('sku', $barcode))
+            ->first();
+
+        if (! $product) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Product not found for barcode '.$barcode,
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'standalone' => true,
+                'items' => [[
+                    'productId' => $product->id,
+                    'variantId' => null,
+                    'barcodeId' => null,
+                    'barcode' => $product->barcode,
+                    'productName' => $product->name,
+                    'qty' => 1,
+                    'maxQty' => null,
+                    'price' => (float) $product->selling_price,
+                    'tax' => $product->tax ? (float) $product->tax->rate : 0,
+                    'cost' => (float) $product->cost_price,
+                    'discount' => 0,
+                ]],
+            ],
+        ]);
+    }
+
+    public function returnProductBarcode(Request $request)
+    {
+        return $this->sourceByBarcode($request);
+    }
+
+    public function lookupCredit(Request $request)
+    {
+        $storeId = $this->resolveStoreId($request, 1);
+        $raw = trim((string) $request->input('returnNo', ''));
+        $id = (int) preg_replace('/^r[ro]\//i', '', $raw);
+
+        $return = PosReturn::with('customer')
+            ->where('id', $id)
+            ->where('store_id', $storeId)
+            ->whereNull('credit_applied_to_sale_id')
+            ->first();
+
+        if (! $return) {
+            return response()->json([
+                'success' => false,
+                'message' => 'POS return not found or already applied',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => $return->id,
+                'returnNo' => $return->return_no,
+                'displayReturnNo' => 'RR/'.$return->id,
+                'amount' => (float) $return->total_refund,
+                'customerId' => $return->customer_id,
+                'customerName' => $return->customer?->name,
+                'customerMobile' => $return->customer?->phone,
+                'billId' => $return->pos_sale_id,
+                'items' => $return->items()->with('product')->get()->map(fn ($i) => [
+                    'productId' => $i->product_id,
+                    'productName' => $i->product?->name,
+                    'qty' => (float) $i->quantity,
+                    'price' => (float) $i->refund_price,
+                ]),
+            ],
+        ]);
+    }
+}

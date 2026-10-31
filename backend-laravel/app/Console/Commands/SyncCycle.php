@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Services\SyncCycleService;
+use App\Services\Platform\SyncCycleService;
 use Illuminate\Console\Command;
 
 /**
