@@ -102,6 +102,9 @@ const buildPresetPermissions = (presetRole) => {
       // Managers receive store-to-store transfers at their branch.
       setActionsForPath(permissions, getPagePath("Store", "Stock Inward"), OPERATE_ACTIONS);
       setActionsForPath(permissions, getPagePath("Store", "Transfer Goods"), OPERATE_ACTIONS);
+      // Managers approve purchase orders and watch reorder levels.
+      setActionsForPath(permissions, getPagePath("Store", "Purchase Order"), FULL_ACTIONS);
+      setActionsForPath(permissions, getPagePath("Analytical", "Reorder Status"), VIEW_ONLY_ACTIONS);
       break;
 
     case "supervisor":
@@ -132,6 +135,9 @@ const buildPresetPermissions = (presetRole) => {
       setActionsForPaths(permissions, warehousePaths, FULL_ACTIONS);
       setActionsForPath(permissions, getPagePath("Store", "Stock Inward"), OPERATE_ACTIONS);
       setActionsForPath(permissions, getPagePath("Store", "Transfer Goods"), OPERATE_ACTIONS);
+      // Warehouse staff prepare purchase orders; a manager approves them.
+      setActionsForPath(permissions, getPagePath("Store", "Purchase Order"), OPERATE_ACTIONS);
+      setActionsForPath(permissions, getPagePath("Analytical", "Reorder Status"), VIEW_ONLY_ACTIONS);
       setActionsForPath(permissions, getPagePath("Masters", "Product"), VIEW_ONLY_ACTIONS);
       setActionsForPath(permissions, getPagePath("Sales", "Delivery"), OPERATE_ACTIONS);
       break;

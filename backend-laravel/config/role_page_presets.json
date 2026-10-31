@@ -78,6 +78,18 @@
       "edit": true,
       "delete": false
     },
+    "/store/purchase-order": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/analytical/reorder-status": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
     "/warehouse/receive-goods": {
       "view": true,
       "add": true,
@@ -1038,6 +1050,18 @@
       "view": true,
       "add": true,
       "edit": true,
+      "delete": false
+    },
+    "/store/purchase-order": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/analytical/reorder-status": {
+      "view": true,
+      "add": false,
+      "edit": false,
       "delete": false
     },
     "/masters/product": {

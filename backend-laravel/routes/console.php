@@ -13,3 +13,6 @@ Schedule::command('platform:sync')->everyFiveMinutes()->withoutOverlapping();
 Schedule::command('platform:notifications-sync')->everyMinute()->withoutOverlapping();
 
 Schedule::command('security:purge-plaintext-snapshots --encrypt')->dailyAt('03:15')->withoutOverlapping();
+
+// Drafts purchase orders for items at or below their reorder level; buyers review and approve.
+Schedule::command('purchase-orders:generate')->dailyAt('02:30')->withoutOverlapping();

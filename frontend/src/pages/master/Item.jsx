@@ -100,6 +100,7 @@ const normalizeItemRow = (item = {}) => ({
   reorder_max: item.reorder_max ?? item.reorderMax ?? "",
   auto_po_min: item.auto_po_min ?? item.autoPoMin ?? "",
   auto_po_max: item.auto_po_max ?? item.autoPoMax ?? "",
+  preferred_supplier_id: item.preferred_supplier_id ? String(item.preferred_supplier_id) : "",
   stock_age: item.stock_age ?? item.stockAge ?? "",
   po_days: item.po_days ?? item.poDays ?? "",
   item_level_pricing: item.item_level_pricing ?? item.itemLevelPricing ?? false,
@@ -207,7 +208,7 @@ const INIT = {
   brand_id: "", type_id: "", style_id: "", size_id: "",
   color_id: "", pattern_id: "", material_id: "", fit_id: "", sleeve_id: "",
   reorder_min: "", reorder_max: "",
-  auto_po_min: "", auto_po_max: "",
+  auto_po_min: "", auto_po_max: "", preferred_supplier_id: "",
   stock_age: "", po_days: "",
   item_level_pricing: false, disable_po: false,
   pur_rate: "", dealer_price: "", sale_rate: "", mrp: "", bill_rate: "", min_rate: "",
@@ -251,6 +252,7 @@ export default function Item() {
   const [materials, setMaterials] = useState([]);
   const [fits, setFits]           = useState([]);
   const [sleeves, setSleeves]     = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
 
   // Search/Table state
   const [showSearch, setShowSearch]         = useState(true);
@@ -266,6 +268,7 @@ export default function Item() {
 
     load("/products?limit=300", setProducts, (p) => ({ value: String(p.id), label: p.name }));
     load("/brands?limit=300", setBrands,  (b) => ({ value: String(b.id), label: b.name }));
+    load("/suppliers?limit=300", setSuppliers, (s) => ({ value: String(s.id), label: s.name }));
     load("/sizes",             setSizes,   (s) => ({ value: String(s.id), label: s.size_name }));
     load("/attributes/type",     setTypes,    (a) => ({ value: String(a.id), label: a.name }));
     load("/attributes/style",    setStyles,   (a) => ({ value: String(a.id), label: a.name }));
@@ -355,6 +358,7 @@ export default function Item() {
       reorder_max:           item.reorder_max ?? "",
       auto_po_min:           item.auto_po_min ?? "",
       auto_po_max:           item.auto_po_max ?? "",
+      preferred_supplier_id: item.preferred_supplier_id ? String(item.preferred_supplier_id) : "",
       stock_age:             item.stock_age   ?? "",
       po_days:               item.po_days     ?? "",
       item_level_pricing:    item.item_level_pricing,
@@ -811,6 +815,10 @@ export default function Item() {
             label1="Auto PO Min" val1={form.auto_po_min} onChange1={set("auto_po_min")}
             label2="Max"         val2={form.auto_po_max} onChange2={set("auto_po_max")}
           />
+          {/* Who the reorder engine drafts purchase orders to (else the supplier last bought from) */}
+          <Row label="Preferred supplier">
+            <TSelect value={form.preferred_supplier_id} onChange={set("preferred_supplier_id")} options={suppliers} />
+          </Row>
           {/* Stock + PO days */}
           <PairRow
             label1="Stock(Age)" val1={form.stock_age} onChange1={set("stock_age")}
