@@ -47,6 +47,10 @@ return [
         'key' => env('PUSHER_APP_KEY'),
         'secret' => env('PUSHER_APP_SECRET'),
         'cluster' => env('PUSHER_APP_CLUSTER'),
+        // Set only for a self-hosted Pusher-compatible server such as Laravel Reverb (needs a VPS).
+        'host' => env('PUSHER_HOST'),
+        'port' => env('PUSHER_PORT'),
+        'scheme' => env('PUSHER_SCHEME'),
     ],
 
     // Pixel-Perfect AI Vision OCR for Purchase Invoice Inwarding

@@ -102,6 +102,9 @@ class StoreContext
             'company_ids' => $stores->pluck('id')->all(), // Existing desktop/mobile switchers.
             'store_selection_required' => $stores->count() > 1,
             'subscription_portal_url' => config('platform.portal_url'),
+            // Public connection settings, so the browser always uses this server's Pusher/Reverb app.
+            'realtime' => config('services.pusher.key') ? array_filter(['key' => config('services.pusher.key'), 'cluster' => config('services.pusher.cluster'),
+                'host' => config('services.pusher.host'), 'port' => config('services.pusher.port'), 'scheme' => config('services.pusher.scheme')]) : null,
         ];
     }
 }

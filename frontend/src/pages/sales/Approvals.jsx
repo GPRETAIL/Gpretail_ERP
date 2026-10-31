@@ -11,11 +11,14 @@ import FilterableDataTable from "../../components/FilterableDataTable";
 import PageSkeleton from "../../components/PageSkeleton";
 import SearchGridPanel from "../../components/SearchGridPanel";
 import useSearchGrid from "../../hooks/useSearchGrid";
+import useRealtimeRefresh from "../../hooks/useRealtimeRefresh";
+import { storeChannel } from "../../utils/realtimeClient";
 import { APPROVAL_REASONS } from "../../utils/approvals";
 
 const ROLE_LABELS = { cashier: "Cashier", sales: "Sales", store_user: "Store User", supervisor: "Supervisor", manager: "Manager" };
 const STATUS_COLORS = { pending: "warning", approved: "success", used: "success", rejected: "error", cancelled: "default" };
 const APPROVER_ROLES = ["supervisor", "manager", "admin", "super_admin"];
+// New requests are pushed; without a push channel the pending list polls this often.
 const POLL_MS = 10000;
 
 const money = (value) => Number(value || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -25,6 +28,7 @@ const describe = (row) => (row.action === "pos_discount"
   : `Refund ₹${money(row.amount)}${row.payload?.without_receipt ? " · no receipt" : ""}`);
 
 function Inbox() {
+  const authUser = useSelector((state) => state.auth.user);
   const [status, setStatus] = useState("pending");
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -49,11 +53,16 @@ function Inbox() {
   useEffect(() => {
     // The loading flag is raised where the status changes (initial state / filter click).
     void load(true);
-    if (status !== "pending") return undefined;
-    // Cashiers are waiting at the counter, so pending requests refresh on their own.
-    const timer = setInterval(() => load(true), POLL_MS);
-    return () => clearInterval(timer);
-  }, [load, status]);
+  }, [load]);
+  // Cashiers are waiting at the counter: the list reloads as soon as a request arrives or changes.
+  const storeIds = authUser?.store_id ? [authUser.store_id] : (authUser?.store_ids || []).slice(0, 20);
+  useRealtimeRefresh({
+    channels: storeIds.map(storeChannel),
+    events: ["approvals.updated"],
+    onUpdate: () => load(true),
+    fallbackPollMs: 60000,
+    noChannelPollMs: status === "pending" ? POLL_MS : 0,
+  });
 
   const columns = useMemo(() => [
     { key: "id", label: "#", valueGetter: (row) => row.id },

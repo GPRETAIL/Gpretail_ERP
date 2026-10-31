@@ -8,6 +8,7 @@ use App\Models\StoreLocalNode;
 use App\Services\NotificationInbox;
 use App\Services\PaginationService;
 use App\Services\PlatformNotificationSync;
+use App\Services\RealtimeService;
 use App\Services\StoreContext;
 use App\Services\StoreQuery;
 use Illuminate\Contracts\Cache\LockProvider;
@@ -132,6 +133,7 @@ class NotificationController extends Controller
     public function markRead(Request $request, int $id)
     {
         app(NotificationInbox::class)->markRead($request->user(), $id);
+        app(RealtimeService::class)->toUser($request->user()->id, 'notifications.updated'); // The user's other tabs.
 
         return response()->json(['success' => true]);
     }
@@ -144,6 +146,8 @@ class NotificationController extends Controller
                 DB::table('notification_receipts')->insertOrIgnore(['notification_id' => $row->id, 'user_id' => $request->user()->id, 'read_at' => now()]);
             }
         });
+
+        app(RealtimeService::class)->toUser($request->user()->id, 'notifications.updated');
 
         return response()->json(['success' => true]);
     }

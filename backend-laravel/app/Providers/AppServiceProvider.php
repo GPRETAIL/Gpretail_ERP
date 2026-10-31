@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Services\RealtimeService;
 use App\Services\StoreModelScope;
 use App\Services\StoreSchema;
 use Illuminate\Database\Events\QueryExecuted;
@@ -17,6 +18,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->scoped(StoreSchema::class);
+        $this->app->scoped(RealtimeService::class);
     }
 
     /**

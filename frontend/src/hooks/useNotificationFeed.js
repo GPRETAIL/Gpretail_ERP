@@ -3,22 +3,29 @@ import { useSelector } from "react-redux";
 import api from "../api/axios";
 import useAsyncQuery from "./useAsyncQuery";
 import { backgroundRequestIdentity } from "../utils/backgroundRequestIdentity";
+import { notificationChannels } from "../utils/realtimeClient";
+import useRealtimeRefresh from "./useRealtimeRefresh";
 
 export function useNotificationRefresh(reload, enabled = true) {
+  // New alerts and reads in other tabs are pushed; the poll is the safety net (as on the dashboard).
+  useRealtimeRefresh({
+    channels: enabled ? notificationChannels() : [],
+    events: ["notifications.updated"],
+    enabled,
+    onUpdate: reload,
+    fallbackPollMs: 180000,
+    noChannelPollMs: 60000,
+  });
   useEffect(() => {
     if (!enabled) return;
     const refresh = () => {
       if (document.visibilityState !== "hidden") reload({ silent: true });
     };
-    const timer = setInterval(refresh, 60000);
     window.addEventListener("online", refresh);
     window.addEventListener("vx-notifications-updated", refresh);
-    document.addEventListener("visibilitychange", refresh);
     return () => {
-      clearInterval(timer);
       window.removeEventListener("online", refresh);
       window.removeEventListener("vx-notifications-updated", refresh);
-      document.removeEventListener("visibilitychange", refresh);
     };
   }, [enabled, reload]);
 }

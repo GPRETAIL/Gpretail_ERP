@@ -92,6 +92,10 @@ class PlatformNotificationSync
                     DB::table('platform_notification_syncs')->where('company_code', $activation->company_code)->update(['cursor' => $data['cursor'], 'pending_acks' => json_encode(array_column($data['messages'], 'sequence')), 'last_synced_at' => now(), 'last_error' => null]);
                 });
 
+                if ($data['messages']) {
+                    app(RealtimeService::class)->toCompany('notifications.updated');
+                }
+
                 return ['ok' => true, 'imported' => count($data['messages'])];
             } catch (\Throwable $error) {
                 report($error);

@@ -40,6 +40,7 @@ use App\Http\Controllers\Api\V1\ProductPurchaseAnalyticsController;
 use App\Http\Controllers\Api\V1\PurchaseInvoiceController;
 use App\Http\Controllers\Api\V1\PurchaseReturnController;
 use App\Http\Controllers\Api\V1\PushSubscriptionController;
+use App\Http\Controllers\Api\V1\RealtimeController;
 use App\Http\Controllers\Api\V1\RemoteSupportController;
 use App\Http\Controllers\Api\V1\SalesApprovalController;
 use App\Http\Controllers\Api\V1\SalesDashboardController;
@@ -375,6 +376,7 @@ $registerAppRoutes = function () {
     Route::delete('notifications/push/subscription', [PushSubscriptionController::class, 'destroy']);
     Route::get('notification-preferences', [NotificationPreferenceController::class, 'show']);
     Route::put('notification-preferences', [NotificationPreferenceController::class, 'update']);
+    Route::post('realtime/auth', [RealtimeController::class, 'auth'])->middleware('throttle:120,1');
     Route::get('notifications', [NotificationController::class, 'index']);
     Route::get('notifications/banners', [NotificationController::class, 'banners']);
     Route::get('notifications/unread-count', [NotificationController::class, 'unreadCount']);

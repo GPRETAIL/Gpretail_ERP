@@ -3,8 +3,11 @@ import { Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogCont
 import { KeyRound, Send, ShieldAlert } from "lucide-react";
 import api from "../api/axios";
 import { APPROVAL_REASONS } from "../utils/approvals";
+import { listen, personalChannel } from "../utils/realtimeClient";
 
+// The decision is pushed to the cashier; polling is the safety net (fast only without a push).
 const POLL_MS = 3000;
+const PUSHED_POLL_MS = 15000;
 
 const money = (value) => Number(value || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -27,9 +30,12 @@ export default function ApprovalDialog({ requirement, onApproved, onClose }) {
   const [error, setError] = useState("");
   const [pending, setPending] = useState(null);
   const pollTimer = useRef(null);
+  const stopListening = useRef(null);
+  const checking = useRef(false);
+  const recheck = useRef(false);
 
   // Callers mount this only while a requirement is open, so state starts fresh each time.
-  useEffect(() => () => clearTimeout(pollTimer.current), []);
+  useEffect(() => () => { clearTimeout(pollTimer.current); stopListening.current?.(); }, []);
 
   const requestBody = () => ({
     action,
@@ -53,29 +59,50 @@ export default function ApprovalDialog({ requirement, onApproved, onClose }) {
     }
   };
 
-  const poll = (id) => {
-    pollTimer.current = setTimeout(async () => {
-      try {
-        const res = await api.get(`/approvals/requests/${id}`);
-        const data = res.data?.data;
-        if (data?.status === "approved" && data.token) { onApproved(data.token, data); return; }
-        if (data?.status === "pending") { poll(id); return; }
+  // One status check at a time: each check re-issues the single-use token, so a push that lands
+  // mid-check queues one more check instead of racing it.
+  const poll = (id, delay = stopListening.current ? PUSHED_POLL_MS : POLL_MS) => {
+    clearTimeout(pollTimer.current);
+    pollTimer.current = setTimeout(() => checkStatus(id), delay);
+  };
+
+  const checkStatus = async (id) => {
+    if (checking.current) { recheck.current = true; return; }
+    checking.current = true;
+    recheck.current = false;
+    let next = null;
+    try {
+      const res = await api.get(`/approvals/requests/${id}`);
+      const data = res.data?.data;
+      if (data?.status === "approved" && data.token) { stopListening.current?.(); onApproved(data.token, data); return; }
+      if (data?.status === "pending") {
+        next = recheck.current ? 0 : undefined;
+      } else {
+        stopListening.current?.();
+        stopListening.current = null;
         setPending(null);
         setError(data?.status === "rejected"
           ? `Request rejected${data.decision_note ? `: ${data.decision_note}` : "."}`
           : "Request expired. Send it again or use a supervisor PIN.");
-      } catch {
-        poll(id);
       }
-    }, POLL_MS);
+    } catch {
+      next = undefined;
+    } finally {
+      checking.current = false;
+    }
+    if (next !== null) poll(id, next);
   };
 
   const submitRequest = async () => {
     setBusy(true); setError("");
     try {
       const res = await api.post("/approvals/requests", requestBody());
+      const id = res.data?.data?.id;
       setPending(res.data?.data);
-      poll(res.data?.data?.id);
+      stopListening.current = listen(personalChannel(), "approval.decided", (event) => {
+        if (Number(event?.id) === Number(id)) poll(id, 0);
+      });
+      poll(id);
     } catch (err) {
       setError(err?.response?.data?.message || "Could not send the request.");
     } finally {
@@ -85,6 +112,7 @@ export default function ApprovalDialog({ requirement, onApproved, onClose }) {
 
   const withdraw = async () => {
     clearTimeout(pollTimer.current);
+    stopListening.current?.();
     if (pending?.id) await api.post(`/approvals/requests/${pending.id}/withdraw`).catch(() => {});
     onClose();
   };

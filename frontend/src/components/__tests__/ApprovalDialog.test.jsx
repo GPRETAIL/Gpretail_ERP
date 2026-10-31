@@ -3,13 +3,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({ post: vi.fn(), get: vi.fn() }));
 vi.mock("../../api/axios", () => ({ default: mocks }));
+const realtime = vi.hoisted(() => ({ listen: vi.fn(() => null), handlers: [] }));
+vi.mock("../../utils/realtimeClient", () => ({ listen: realtime.listen, personalChannel: () => "private-user-9" }));
 import ApprovalDialog from "../ApprovalDialog";
 import { isApprovalRequired } from "../../utils/approvals";
 
 const discount = { action: "pos_discount", details: { requested_percent: 8, your_limit_percent: 5, lines: [{ index: 0, product: "Latte Mug", reference_price: 100, unit_price: 92, discount_percent: 8 }] } };
 
 describe("ApprovalDialog", () => {
-  beforeEach(() => { mocks.post.mockReset(); mocks.get.mockReset(); });
+  beforeEach(() => { mocks.post.mockReset(); mocks.get.mockReset(); realtime.listen.mockReset().mockReturnValue(null); });
   afterEach(() => { cleanup(); vi.useRealTimers(); });
 
   it("recognises the server's APPROVAL_REQUIRED response", () => {
@@ -48,6 +50,27 @@ describe("ApprovalDialog", () => {
     await act(async () => { await vi.advanceTimersByTimeAsync(3000); });
     await act(async () => { await vi.advanceTimersByTimeAsync(3000); });
     expect(onApproved).toHaveBeenCalledWith("tok-77", expect.anything());
+  });
+
+  it("checks at once when the decision is pushed, and does not double-collect the token", async () => {
+    vi.useFakeTimers();
+    let pushed;
+    const stop = vi.fn();
+    realtime.listen.mockImplementation((channel, event, handler) => { pushed = handler; return stop; });
+    const onApproved = vi.fn();
+    mocks.post.mockResolvedValue({ data: { data: { id: 78, status: "pending" } } });
+    mocks.get.mockResolvedValue({ data: { data: { id: 78, status: "approved", token: "tok-78" } } });
+    render(<ApprovalDialog requirement={discount} onApproved={onApproved} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByRole("tab", { name: "Send request" }));
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Send request" })); });
+    expect(realtime.listen).toHaveBeenCalledWith("private-user-9", "approval.decided", expect.any(Function));
+
+    await act(async () => { pushed({ id: 99 }); await vi.advanceTimersByTimeAsync(10); }); // someone else's request
+    expect(mocks.get).not.toHaveBeenCalled();
+    await act(async () => { pushed({ id: 78 }); pushed({ id: 78 }); await vi.advanceTimersByTimeAsync(10); });
+    expect(mocks.get).toHaveBeenCalledTimes(1);
+    expect(onApproved).toHaveBeenCalledExactlyOnceWith("tok-78", expect.anything());
+    expect(stop).toHaveBeenCalled();
   });
 
   it("shows a rejection instead of waiting forever", async () => {
