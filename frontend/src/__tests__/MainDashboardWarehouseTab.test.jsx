@@ -128,7 +128,7 @@ describe("Main Dashboard Warehouse Tab", () => {
       expect(screen.getByText("Selling Mode Breakdown")).toBeDefined();
       expect(screen.getByText("GRNs Pending")).toBeDefined();
       expect(screen.getByText("Linen Shirt")).toBeDefined();
-    });
+    }, { timeout: 10000 }); // The tab pane and the overview charts both load lazily.
     api.get.mockClear();
     fireEvent.change(screen.getByLabelText("From"), { target: { value: "2026-08-01" } });
     await waitFor(() => expect(api.get).toHaveBeenCalledWith("/warehouse/dashboard",

@@ -8,6 +8,7 @@ use App\Models\Store;
 use App\Models\StoreLocalNode;
 use App\Models\SyncOutboxEvent;
 use App\Models\User;
+use App\Services\FailedAttempts;
 use App\Services\GoogleIdTokenVerifier;
 use App\Services\MobileAccess;
 use App\Services\PlatformBootstrap;
@@ -43,6 +44,15 @@ class AuthController extends Controller
         $loginId = trim($request->input('email') ?? $request->input('username') ?? '');
         $password = (string) $request->input('password');
 
+        // Per account and address, plus an hourly cap per account: a guessing run spread over many
+        // addresses still stops, while someone mistyping elsewhere can't lock the owner out for long.
+        $account = strtolower($loginId);
+        $limits = [["login:$account|{$request->ip()}", 8, 900], ["login:$account", 30, 3600]];
+        if ($wait = FailedAttempts::lockedFor($limits)) {
+            return response()->json(['success' => false, 'message' => FailedAttempts::message('sign-in attempts for this account', $wait)], 429)
+                ->header('Retry-After', (string) $wait);
+        }
+
         $user = User::where('username', $loginId)
             ->orWhereRaw('LOWER(email) = ?', [strtolower($loginId)])
             ->first();
@@ -56,11 +66,14 @@ class AuthController extends Controller
         }
 
         if (! $user || ! Hash::check($password, $user->password)) {
+            FailedAttempts::fail($limits);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid username or password.',
             ], 401);
         }
+        FailedAttempts::clear($limits);
 
         if ($setup = app(PlatformBootstrap::class)->resume($user)) {
             return response()->json(['success' => true, 'data' => $setup['data']]);

@@ -25,3 +25,8 @@ certs
 *.njsproj
 *.sln
 *.sw?
+
+# Playwright end-to-end output
+e2e-report
+e2e-results
+e2e/.auth

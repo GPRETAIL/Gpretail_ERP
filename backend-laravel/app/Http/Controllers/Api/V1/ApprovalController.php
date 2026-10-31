@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ApprovalLimit;
 use App\Models\ApprovalRequest;
 use App\Services\ApprovalService;
+use App\Services\FailedAttempts;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -100,10 +101,20 @@ class ApprovalController extends Controller
         $data = $this->validatedRequest($request);
         $request->validate(['approver' => 'required|string|max:190', 'pin' => 'required|string|max:12']);
         $storeId = $this->storeId($request);
+        // A 4-digit PIN falls to guessing unless wrong tries lock that approver's PIN for a while,
+        // however many cashier logins the guesses come from.
+        $limits = [['approval-pin:'.strtolower(trim((string) $request->input('approver'))), 5, 900]];
+        if ($wait = FailedAttempts::lockedFor($limits)) {
+            return response()->json(['success' => false, 'message' => FailedAttempts::message('PINs for this approver', $wait)], 429)
+                ->header('Retry-After', (string) $wait);
+        }
         $approver = $this->approvals->verifyPin($request->input('approver'), (string) $request->input('pin'), $storeId);
         if (! $approver) {
+            FailedAttempts::fail($limits);
+
             return response()->json(['success' => false, 'message' => 'Approver or PIN is incorrect.'], 422);
         }
+        FailedAttempts::clear($limits);
 
         return DB::transaction(function () use ($request, $data, $storeId, $approver): JsonResponse {
             $approval = $this->approvals->createRequest($request->user(), $storeId, $data['action'], $data, 'pin');

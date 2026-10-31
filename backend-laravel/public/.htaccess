@@ -40,6 +40,12 @@ ErrorDocument 403 /index.php
     </FilesMatch>
 </IfModule>
 
+# Compress API responses and the app shell (a sales report's JSON shrinks ~10x). LiteSpeed
+# applies its own compression where enabled; this covers Apache.
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE application/json text/html text/css text/javascript application/javascript image/svg+xml application/manifest+json
+</IfModule>
+
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes
@@ -47,6 +53,8 @@ ErrorDocument 403 /index.php
 
     RewriteEngine On
     RewriteRule ^(?:unzip\.php|migrate\.php|cleanup_stray_app\.php|deploy\.(?:zip|tar\.gz))$ - [F,L,NC]
+    # Uploads are images and PDFs: never let a script under /storage run, whatever its name.
+    RewriteRule ^storage/.*\.(?:php\d?|phtml|phar|pht|phps)$ - [F,L,NC]
 
     # A real "app" directory exists on the server from an earlier deployment attempt
     # (a standalone static PWA build, since replaced by a client-side React route).

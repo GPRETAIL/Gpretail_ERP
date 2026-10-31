@@ -139,6 +139,6 @@ describe("Main Dashboard CRM Tab", () => {
       expect(screen.getByText("Customer Segmentation")).toBeDefined();
       expect(screen.getByText("Champions")).toBeDefined();
       expect(screen.getAllByText("Rajesh Kumar").length).toBeGreaterThan(0);
-    });
+    }, { timeout: 10000 }); // The tab pane and the overview charts both load lazily.
   });
 });

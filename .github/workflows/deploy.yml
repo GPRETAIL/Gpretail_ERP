@@ -28,6 +28,9 @@ jobs:
       - name: Install Frontend Dependencies
         working-directory: frontend
         run: npm ci
+      - name: Check Frontend Dependencies for Known Vulnerabilities
+        working-directory: frontend
+        run: npm audit --omit=dev --audit-level=high
       - name: Lint Frontend
         working-directory: frontend
         run: npm run lint
@@ -64,6 +67,9 @@ jobs:
       - name: Install Composer Dependencies
         working-directory: backend-laravel
         run: composer install --prefer-dist --no-progress --no-interaction
+      - name: Check Backend Dependencies for Known Vulnerabilities
+        working-directory: backend-laravel
+        run: composer audit --locked --no-dev
       - name: Setup Test Environment
         working-directory: backend-laravel
         run: |

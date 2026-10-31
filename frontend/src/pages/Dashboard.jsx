@@ -5,7 +5,6 @@ import { RefreshCw, LayoutGrid, Check, RotateCcw, Eye, EyeOff, Package, Users } 
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import api from "../api/axios";
-import { HourlySalesChart, DailyTrendChart } from "../components/DashboardCharts";
 import { LeaderboardCard } from "../components/DashboardHighlightCards";
 import { DailySalesSummaryTable, SettlementDetailsTable, SupplierPaymentsTable } from "../components/DashboardTables";
 import DashboardGrid from "../components/dashboard/DashboardGrid";
@@ -25,6 +24,12 @@ import { DashboardLayoutProvider, useDashboardLayout } from "../context/Dashboar
 import { Box, Button, MenuItem, Stack, Tab, Tabs, TextField, Typography } from "@mui/material";
 import PageSkeleton from "../components/PageSkeleton";
 
+// The chart library is most of this page's download: load it after the cards and tables render.
+const loadCharts = () => import("../components/DashboardCharts");
+const LazyHourlySalesChart = lazy(() => loadCharts().then(module => ({ default: module.HourlySalesChart })));
+const LazyDailyTrendChart = lazy(() => loadCharts().then(module => ({ default: module.DailyTrendChart })));
+const HourlySalesChart = props => <Suspense fallback={<PageSkeleton rows={4} />}><LazyHourlySalesChart {...props} /></Suspense>;
+const DailyTrendChart = props => <Suspense fallback={<PageSkeleton rows={4} />}><LazyDailyTrendChart {...props} /></Suspense>;
 const WarehouseDashboardTabPane = lazy(() => import("../components/WarehouseDashboardTabPane"));
 const CrmDashboardTabPane = lazy(() => import("../components/CrmDashboardTabPane"));
 const SalesDashboardTabPane = lazy(() => import("../components/SalesDashboardTabPane"));
