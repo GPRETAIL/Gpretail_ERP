@@ -79,7 +79,8 @@ const formatMoney = (value) =>
   });
 
 
-const isLikelySaleBillInput = (value) => /^(?:sb\/)?\d+$/i.test(String(value || "").trim());
+// SB/165 or 165, the printed bill number (261031-0001, C for credit), or the full INV-… invoice no.
+const isLikelySaleBillInput = (value) => /^(?:(?:sb\/)?\d+|\d{6}-c?\d+|inv-\S+)$/i.test(String(value || "").trim());
 const isLikelyReturnNoInput = (value) => /^(?:rr|ro)\/?\d+$/i.test(String(value || "").trim());
 const formatReturnNo = (value) => {
   const raw = String(value || "").trim().toUpperCase();
@@ -589,7 +590,7 @@ const POSReturn = () => {
 
       browserPrintHtml(browserReceiptHtml, { copies: 1 });
     },
-    [authUser?.company_id, authUser?.counter_name, authUser?.email, authUser?.name, newCustomer.name, now, queuePrintHtml, returnNo, returnReasons, selectedReturnReasonId, sourceSale.billNo]
+    [authUser?.company_id, authUser?.counter_name, authUser?.email, authUser?.name, newCustomer.name, now, queuePrintHtml, returnNo, returnReasons, selectedReturnReasonId, sourceSale?.billNo]
   );
 
   const printSaleReceipt = useCallback(
