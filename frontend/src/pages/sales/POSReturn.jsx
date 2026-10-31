@@ -192,10 +192,11 @@ const POSReturn = () => {
         const qty = Math.max(0, toInt(line.qty, 0));
         const price = Math.max(0, toNum(line.price, 0));
         const tax = Math.max(0, toNum(line.tax, 0));
-        const discount = Math.max(0, toNum(line.discount, 0));
+        // The bill line's discount is shared per unit, and tax applies after it, as on the sale.
+        const discount = round2(Math.max(0, toNum(line.unitDiscount, 0)) * qty);
         const subtotal = qty * price;
-        const taxAmount = (subtotal * tax) / 100;
-        const rawTotal = Math.max(subtotal + taxAmount - discount, 0);
+        const taxAmount = round2((Math.max(subtotal - discount, 0) * tax) / 100);
+        const rawTotal = Math.max(subtotal - discount, 0) + taxAmount;
         const total = -rawTotal;
         const gross = Math.max(0, toNum(line.cost, 0)) * qty;
         return { ...line, subtotal, taxAmount, rawTotal, total, gross, discount };
@@ -318,7 +319,7 @@ const POSReturn = () => {
         price: Math.max(0, toNum(item.price, 0)),
         tax: Math.max(0, toNum(item.tax, 0)),
         cost: Math.max(0, toNum(item.cost, 0)),
-        discount: isStandalone ? 0 : Math.max(0, toNum(item.discount, 0)),
+        unitDiscount: isStandalone || !(toNum(item.originalQty, 0) > 0) ? 0 : Math.max(0, toNum(item.discount, 0)) / toNum(item.originalQty, 0),
       };
     });
   }, []);
