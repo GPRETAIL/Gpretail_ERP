@@ -4,18 +4,18 @@ namespace App\Http\Controllers\Api\V1\Warehouse;
 
 use App\Exceptions\InsufficientStockException;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Warehouse\StorePurchaseReturnRequest;
 use App\Models\PurchaseReturn;
 use App\Models\PurchaseReturnItem;
 use App\Models\Stock;
 use App\Models\Supplier;
 use App\Services\Documents\DocumentNumberService;
-use App\Support\GroupAggregationService;
-use App\Support\PaginationService;
 use App\Services\Inventory\StockService;
 use App\Services\Inventory\VariantResolverService;
+use App\Support\GroupAggregationService;
+use App\Support\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Validator;
 
 class PurchaseReturnController extends Controller
 {
@@ -76,24 +76,8 @@ class PurchaseReturnController extends Controller
         return response()->json($result);
     }
 
-    public function store(Request $request)
+    public function store(StorePurchaseReturnRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'supplier_id' => 'nullable|exists:suppliers,id',
-            'return_date' => 'nullable|date',
-            'items' => 'required|array|min:1',
-            'items.*.product_id' => 'required|exists:products,id',
-            'items.*.quantity' => 'required|numeric|min:0.01',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
         $storeId = $this->resolveStoreId($request, 1);
 
         try {

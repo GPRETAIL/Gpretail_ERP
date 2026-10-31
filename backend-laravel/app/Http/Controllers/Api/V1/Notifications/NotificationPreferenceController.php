@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Notifications;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Notifications\UpdateNotificationPreferencesRequest;
 use App\Services\Platform\PlatformPushClient;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,9 +16,9 @@ class NotificationPreferenceController extends Controller
         return response()->json(['success' => true, 'data' => DB::table('notification_preferences')->where('user_id', $request->user()->id)->first() ?? ['marketing' => false, 'push_enabled' => false, 'quiet_start' => 21, 'quiet_end' => 8]]);
     }
 
-    public function update(Request $request): JsonResponse
+    public function update(UpdateNotificationPreferencesRequest $request): JsonResponse
     {
-        $data = $request->validate(['marketing' => 'required|boolean', 'quiet_start' => 'required|integer|between:0,23', 'quiet_end' => 'required|integer|between:0,23', 'timezone' => 'nullable|timezone']);
+        $data = $request->validated();
         DB::table('notification_preferences')->updateOrInsert(['user_id' => $request->user()->id], $data);
         app(PlatformPushClient::class)->request('contacts', ['contacts' => [app(PlatformPushClient::class)->contact($request->user())]]);
 

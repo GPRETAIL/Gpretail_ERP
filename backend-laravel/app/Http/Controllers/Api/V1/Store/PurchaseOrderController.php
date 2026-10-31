@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\Store;
 
+use App\Enums\PurchaseOrderStatus;
 use App\Http\Controllers\Controller;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderItem;
@@ -43,7 +44,7 @@ class PurchaseOrderController extends Controller
             $order = PurchaseOrder::create([
                 'store_id' => $storeId, 'po_no' => DocumentNumberService::resolve($request, $storeId, 'PO'), 'supplier_id' => $data['supplier_id'] ?? null,
                 'po_date' => $data['po_date'] ?? now()->toDateString(), 'expected_date' => $data['expected_date'] ?? null, 'notes' => $data['notes'] ?? null,
-                'status' => 'DRAFT', 'source' => 'MANUAL', 'created_by' => $request->user()?->id,
+                'status' => PurchaseOrderStatus::Draft->value, 'source' => 'MANUAL', 'created_by' => $request->user()?->id,
             ]);
             $this->replaceLines($order, $data['items']);
 
@@ -56,7 +57,7 @@ class PurchaseOrderController extends Controller
     public function update(Request $request, int|string $id)
     {
         $order = $this->find($id);
-        $this->expect($order, ['DRAFT'], 'Only a draft purchase order can be edited.');
+        $this->expect($order, [PurchaseOrderStatus::Draft->value], 'Only a draft purchase order can be edited.');
         $data = $this->validated($request);
         DB::transaction(function () use ($order, $data) {
             $order->update(array_intersect_key($data, array_flip(['supplier_id', 'po_date', 'expected_date', 'notes'])));
@@ -70,14 +71,14 @@ class PurchaseOrderController extends Controller
     public function approve(Request $request, int|string $id)
     {
         $order = $this->find($id);
-        $this->expect($order, ['DRAFT'], 'Only a draft purchase order can be approved.');
+        $this->expect($order, [PurchaseOrderStatus::Draft->value], 'Only a draft purchase order can be approved.');
         if (! $order->supplier_id) {
             throw ValidationException::withMessages(['supplier_id' => 'Choose a supplier before approving.']);
         }
         if (! $order->items()->exists()) {
             throw ValidationException::withMessages(['items' => 'Add at least one item before approving.']);
         }
-        $order->update(['status' => 'APPROVED', 'approved_by' => $request->user()?->id, 'approved_at' => now()]);
+        $order->update(['status' => PurchaseOrderStatus::Approved->value, 'approved_by' => $request->user()?->id, 'approved_at' => now()]);
 
         return response()->json(['success' => true, 'message' => "{$order->po_no} approved.", 'data' => $order->fresh(self::RELATIONS)]);
     }
@@ -85,8 +86,8 @@ class PurchaseOrderController extends Controller
     public function cancel(int|string $id)
     {
         $order = $this->find($id);
-        $this->expect($order, PurchaseOrder::OPEN, 'Only an open purchase order can be cancelled.');
-        $order->update(['status' => 'CANCELLED', 'cancelled_at' => now()]);
+        $this->expect($order, PurchaseOrderStatus::openValues(), 'Only an open purchase order can be cancelled.');
+        $order->update(['status' => PurchaseOrderStatus::Cancelled->value, 'cancelled_at' => now()]);
 
         return response()->json(['success' => true, 'message' => "{$order->po_no} cancelled.", 'data' => $order->fresh(self::RELATIONS)]);
     }
@@ -95,8 +96,8 @@ class PurchaseOrderController extends Controller
     public function close(int|string $id)
     {
         $order = $this->find($id);
-        $this->expect($order, ['APPROVED'], 'Only an approved purchase order can be closed.');
-        $order->update(['status' => 'CLOSED', 'closed_at' => now()]);
+        $this->expect($order, [PurchaseOrderStatus::Approved->value], 'Only an approved purchase order can be closed.');
+        $order->update(['status' => PurchaseOrderStatus::Closed->value, 'closed_at' => now()]);
 
         return response()->json(['success' => true, 'message' => "{$order->po_no} closed.", 'data' => $order->fresh(self::RELATIONS)]);
     }
@@ -104,7 +105,7 @@ class PurchaseOrderController extends Controller
     public function destroy(int|string $id)
     {
         $order = $this->find($id);
-        $this->expect($order, ['DRAFT'], 'Only a draft purchase order can be deleted; cancel an approved one instead.');
+        $this->expect($order, [PurchaseOrderStatus::Draft->value], 'Only a draft purchase order can be deleted; cancel an approved one instead.');
         $order->delete();
 
         return response()->json(['success' => true, 'message' => 'Draft purchase order deleted.']);

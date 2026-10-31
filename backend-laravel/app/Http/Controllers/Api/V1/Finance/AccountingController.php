@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\Finance;
 
+use App\Enums\ManualVoucherType;
 use App\Http\Controllers\Controller;
 use App\Models\LedgerAccount;
 use App\Models\Voucher;
@@ -24,7 +25,6 @@ use Illuminate\Validation\ValidationException;
  */
 class AccountingController extends Controller
 {
-    private const MANUAL_TYPES = ['payment' => 'PV', 'receipt' => 'RV', 'journal' => 'JV', 'contra' => 'CV'];
 
     public function accounts(Request $request): JsonResponse
     {
@@ -112,7 +112,7 @@ class AccountingController extends Controller
         $voucher = DB::transaction(function () use ($request, $storeId, $data) {
             $voucher = Voucher::create([
                 'store_id' => $storeId, 'voucher_type' => $data['voucher_type'], 'voucher_date' => $data['voucher_date'],
-                'voucher_no' => DocumentNumberService::resolve($request, $storeId, self::MANUAL_TYPES[$data['voucher_type']]),
+                'voucher_no' => DocumentNumberService::resolve($request, $storeId, ManualVoucherType::from($data['voucher_type'])->prefix()),
                 'reference_no' => $data['reference_no'] ?? null, 'narration' => $data['narration'] ?? null,
                 'amount' => $data['amount'], 'created_by' => $request->user()->id,
             ]);
@@ -243,7 +243,7 @@ class AccountingController extends Controller
     private function validVoucher(Request $request, int $storeId): array
     {
         $data = $request->validate([
-            'voucher_type' => ['required', Rule::in(array_keys(self::MANUAL_TYPES))],
+            'voucher_type' => ['required', Rule::enum(ManualVoucherType::class)],
             'voucher_date' => 'required|date',
             'reference_no' => 'nullable|string|max:100',
             'narration' => 'nullable|string|max:500',
@@ -274,14 +274,14 @@ class AccountingController extends Controller
         }
         $isMoney = fn ($line) => in_array($accounts[$line['ledger_account_id']]->group_code, ['cash', 'bank'], true)
             || in_array($accounts[$line['ledger_account_id']]->system_key, ['card_clearing', 'upi_clearing'], true);
-        $type = $data['voucher_type'];
-        if ($type === 'contra' && collect($data['lines'])->contains(fn ($line) => ! $isMoney($line))) {
+        $type = ManualVoucherType::from($data['voucher_type']);
+        if ($type === ManualVoucherType::Contra && collect($data['lines'])->contains(fn ($line) => ! $isMoney($line))) {
             throw ValidationException::withMessages(['lines' => 'A contra voucher only moves money between cash, bank, card and UPI ledgers.']);
         }
-        if ($type === 'payment' && ! collect($data['lines'])->contains(fn ($line) => $line['credit'] > 0 && $isMoney($line))) {
+        if ($type === ManualVoucherType::Payment && ! collect($data['lines'])->contains(fn ($line) => $line['credit'] > 0 && $isMoney($line))) {
             throw ValidationException::withMessages(['lines' => 'A payment voucher credits a cash or bank ledger (where the money went out from).']);
         }
-        if ($type === 'receipt' && ! collect($data['lines'])->contains(fn ($line) => $line['debit'] > 0 && $isMoney($line))) {
+        if ($type === ManualVoucherType::Receipt && ! collect($data['lines'])->contains(fn ($line) => $line['debit'] > 0 && $isMoney($line))) {
             throw ValidationException::withMessages(['lines' => 'A receipt voucher debits a cash or bank ledger (where the money came in).']);
         }
         $data['amount'] = round($debit, 2);

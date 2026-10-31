@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Api\V1\Hr;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Hr\CheckInRequest;
+use App\Http\Requests\Hr\CheckOutRequest;
+use App\Http\Requests\Hr\MarkLeaveRequest;
 use App\Models\Attendance;
 use App\Models\Employee;
 use App\Models\Store;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 
 class AttendanceController extends Controller
 {
@@ -78,16 +80,8 @@ class AttendanceController extends Controller
         ]);
     }
 
-    public function checkIn(Request $request)
+    public function checkIn(CheckInRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'employee_id' => 'required|exists:employees,id',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['success' => false, 'message' => 'Validation error', 'errors' => $validator->errors()], 422);
-        }
-
         $today = now()->toDateString();
 
         $attendance = Attendance::updateOrCreate(
@@ -102,16 +96,8 @@ class AttendanceController extends Controller
         ]);
     }
 
-    public function checkOut(Request $request)
+    public function checkOut(CheckOutRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'employee_id' => 'required|exists:employees,id',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['success' => false, 'message' => 'Validation error', 'errors' => $validator->errors()], 422);
-        }
-
         $today = now()->toDateString();
 
         $attendance = Attendance::where('employee_id', $request->input('employee_id'))
@@ -131,16 +117,8 @@ class AttendanceController extends Controller
         ]);
     }
 
-    public function markLeave(Request $request)
+    public function markLeave(MarkLeaveRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'employee_id' => 'required|exists:employees,id',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['success' => false, 'message' => 'Validation error', 'errors' => $validator->errors()], 422);
-        }
-
         $today = now()->toDateString();
 
         $attendance = Attendance::updateOrCreate(

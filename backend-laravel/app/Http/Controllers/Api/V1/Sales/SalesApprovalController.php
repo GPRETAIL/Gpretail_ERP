@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Sales;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Sales\StoreSalesApprovalRequest;
 use App\Models\Customer;
 use App\Models\SalesApproval;
 use App\Models\SalesApprovalItem;
@@ -11,7 +12,6 @@ use App\Support\GroupAggregationService;
 use App\Support\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Validator;
 
 class SalesApprovalController extends Controller
 {
@@ -72,24 +72,8 @@ class SalesApprovalController extends Controller
         return response()->json($result);
     }
 
-    public function store(Request $request)
+    public function store(StoreSalesApprovalRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'customer_id' => 'nullable|exists:customers,id',
-            'approval_date' => 'nullable|date',
-            'items' => 'required|array|min:1',
-            'items.*.product_id' => 'required|exists:products,id',
-            'items.*.quantity' => 'required|numeric|min:0.01',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
         $storeId = $this->resolveStoreId($request, 1);
 
         $approval = DB::transaction(function () use ($request, $storeId) {

@@ -3,19 +3,20 @@
 namespace App\Http\Controllers\Api\V1\Warehouse;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Warehouse\GenerateBarcodeRequest;
+use App\Http\Requests\Warehouse\GenerateBarcodesRequest;
 use App\Models\Barcode;
-use App\Models\StockOutwardItem;
 use App\Models\DirectPurchaseItem;
 use App\Models\Product;
 use App\Models\Stock;
+use App\Models\StockOutwardItem;
 use App\Models\Store;
-use App\Support\PaginationService;
 use App\Services\Inventory\VariantResolverService;
+use App\Support\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\Validator;
 
 class BarcodeController extends Controller
 {
@@ -113,21 +114,8 @@ class BarcodeController extends Controller
      *              mrp, discountPerc, finalPrice, sellingPrice, qty, ... }
      * Returns: { created[], skipped[] }  — each row has sourceItemId + barcode
      * ───────────────────────────────────────────────────────────── */
-    public function generate(Request $request)
+    public function generate(GenerateBarcodesRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'items' => 'required|array|min:1',
-            'items.*.productId' => 'nullable|integer',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
         $directPurchaseId = $request->input('directPurchaseId');
         $inventoryEntryId = $request->input('inventoryEntryId');
         $codeType = in_array($request->input('codeType'), ['code', 'barcode'])
@@ -376,21 +364,8 @@ class BarcodeController extends Controller
      * POST /api/barcodes/generate (legacy single-generate path)
      * Kept for backwards compat with any other consumers
      * ───────────────────────────────────────────────────────────── */
-    public function generateSingle(Request $request)
+    public function generateSingle(GenerateBarcodeRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'product_id' => 'required|exists:products,id',
-            'quantity' => 'nullable|integer|min:1|max:500',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
         $product = Product::find($request->input('product_id'));
         $count = $request->input('quantity', 1);
         $generated = [];

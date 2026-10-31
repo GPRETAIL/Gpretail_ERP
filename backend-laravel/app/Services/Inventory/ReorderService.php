@@ -2,15 +2,16 @@
 
 namespace App\Services\Inventory;
 
+use App\Enums\PurchaseOrderStatus;
 use App\Models\Notification;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderItem;
 use App\Models\Supplier;
+use App\Services\Documents\DocumentNumberService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use App\Services\Documents\DocumentNumberService;
 
 /**
  * Reorder engine. For every stocked item (each size/design variant) of a store whose available stock
@@ -33,7 +34,7 @@ class ReorderService
         $variants = ProductVariant::withoutGlobalScopes()->with(['size' => fn ($q) => $q->withoutGlobalScopes()])
             ->whereIn('id', $stocks->pluck('variant_id')->filter()->unique())->get()->keyBy('id');
         $onOrder = DB::table('purchase_order_items as i')->join('purchase_orders as o', 'o.id', '=', 'i.purchase_order_id')
-            ->where('o.store_id', $storeId)->whereIn('o.status', PurchaseOrder::OPEN)
+            ->where('o.store_id', $storeId)->whereIn('o.status', PurchaseOrderStatus::openValues())
             ->selectRaw('i.product_id, i.variant_id, SUM(i.quantity) as qty')->groupBy('i.product_id', 'i.variant_id')->get()
             ->keyBy(fn ($row) => $row->product_id.':'.($row->variant_id ?? ''));
         $suppliers = $this->suppliers($storeId, $products);
@@ -81,7 +82,7 @@ class ReorderService
             return DB::transaction(function () use ($lines, $supplierId, $storeId, $userId) {
                 $order = PurchaseOrder::create([
                     'store_id' => $storeId, 'po_no' => DocumentNumberService::next($storeId, 'PO'), 'supplier_id' => $supplierId ?: null,
-                    'po_date' => now()->toDateString(), 'status' => 'DRAFT', 'source' => 'AUTO', 'created_by' => $userId,
+                    'po_date' => now()->toDateString(), 'status' => PurchaseOrderStatus::Draft->value, 'source' => 'AUTO', 'created_by' => $userId,
                     'notes' => 'Drafted by the reorder engine. Review the quantities, then approve.',
                 ]);
                 foreach ($lines as $line) {

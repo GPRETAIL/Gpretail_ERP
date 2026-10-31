@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Warehouse;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Warehouse\ProcessPurchaseFlowRequest;
 use App\Models\Barcode;
 use App\Models\InventoryEntry;
 use App\Models\InventoryEntryItem;
@@ -21,7 +22,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\Validator;
 use Symfony\Component\HttpFoundation\Response as HttpResponse;
 use Throwable;
 
@@ -189,22 +189,8 @@ class InvoiceAiController extends Controller
         ]);
     }
 
-    public function processPurchaseFlow(Request $request)
+    public function processPurchaseFlow(ProcessPurchaseFlowRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'supplier' => 'required|array',
-            'invoice' => 'required|array',
-            'items' => 'required|array|min:1',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
         $storeId = (int) $this->resolveStoreId($request, 1);
 
         try {

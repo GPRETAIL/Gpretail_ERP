@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Sales;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Sales\StorePosReturnRequest;
 use App\Models\Barcode;
 use App\Models\PosReturn;
 use App\Models\PosReturnItem;
@@ -11,13 +12,12 @@ use App\Models\PosSaleItem;
 use App\Models\Product;
 use App\Services\Approvals\ApprovalService;
 use App\Services\Documents\DocumentNumberService;
+use App\Services\Inventory\StockService;
 use App\Support\GroupAggregationService;
 use App\Support\PaginationService;
-use App\Services\Inventory\StockService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Validator;
 
 class PosReturnController extends Controller
 {
@@ -91,22 +91,8 @@ class PosReturnController extends Controller
         return response()->json($result);
     }
 
-    public function store(Request $request)
+    public function store(StorePosReturnRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'items' => 'required|array|min:1',
-            'items.*.productId' => 'required|exists:products,id',
-            'items.*.qty' => 'required|numeric|min:0.01',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
         $storeId = $this->resolveStoreId($request, 1);
         $standalone = $request->boolean('standalone');
         $sourcePosSaleId = $request->input('sourcePosSaleId');

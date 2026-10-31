@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Sales;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Sales\UpdateApprovalLimitsRequest;
 use App\Models\ApprovalLimit;
 use App\Models\ApprovalRequest;
 use App\Services\Approvals\ApprovalService;
@@ -37,16 +38,9 @@ class ApprovalController extends Controller
         ]]);
     }
 
-    public function updateLimits(Request $request): JsonResponse
+    public function updateLimits(UpdateApprovalLimitsRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'enabled' => 'required|boolean',
-            'limits' => 'array|max:20',
-            'limits.*.role' => 'required|string|in:'.implode(',', array_keys(ApprovalService::RECOMMENDED)),
-            'limits.*.max_discount_percent' => 'nullable|numeric|min:0|max:100',
-            'limits.*.max_refund_amount' => 'nullable|numeric|min:0|max:100000000',
-            'limits.*.allow_no_receipt_refund' => 'boolean',
-        ]);
+        $data = $request->validated();
         $storeId = $this->storeId($request);
         DB::transaction(function () use ($data, $storeId) {
             ApprovalLimit::withoutGlobalScopes()->where('store_id', $storeId)->delete();

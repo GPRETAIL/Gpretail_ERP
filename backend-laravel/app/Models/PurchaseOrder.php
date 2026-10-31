@@ -9,9 +9,6 @@ use Illuminate\Support\Str;
 
 class PurchaseOrder extends Model
 {
-    /** Still being prepared, or ordered from the supplier and not yet closed. */
-    public const OPEN = ['DRAFT', 'APPROVED'];
-
     protected $fillable = [
         'store_id', 'uuid', 'po_no', 'supplier_id', 'po_date', 'expected_date', 'status', 'source', 'notes',
         'total_qty', 'total_amount', 'created_by', 'approved_by', 'approved_at', 'closed_at', 'cancelled_at',

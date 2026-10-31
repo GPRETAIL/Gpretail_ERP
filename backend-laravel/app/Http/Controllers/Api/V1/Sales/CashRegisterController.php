@@ -3,13 +3,14 @@
 namespace App\Http\Controllers\Api\V1\Sales;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Sales\StoreCashClosingRequest;
+use App\Http\Requests\Sales\StoreCashOpeningRequest;
 use App\Models\CashRegisterSession;
 use App\Models\PosSale;
 use App\Services\Dashboards\DashboardBroadcastService;
 use App\Services\Documents\DocumentNumberService;
 use App\Support\PaginationService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 
 class CashRegisterController extends Controller
 {
@@ -43,20 +44,8 @@ class CashRegisterController extends Controller
     }
 
     // Cash Opening Action
-    public function openingStore(Request $request)
+    public function openingStore(StoreCashOpeningRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'opening_cash' => 'required|numeric|min:0',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
         $storeId = $this->resolveStoreId($request, 1);
         $userId = $request->user()->id ?? 1;
 
@@ -111,20 +100,8 @@ class CashRegisterController extends Controller
     }
 
     // Cash Closing Action
-    public function closingStore(Request $request)
+    public function closingStore(StoreCashClosingRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'closing_cash' => 'required|numeric|min:0',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
         $storeId = $this->resolveStoreId($request, 1);
         $session = CashRegisterSession::where('store_id', $storeId)
             ->where('status', 'OPEN')

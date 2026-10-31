@@ -3,20 +3,20 @@
 namespace App\Http\Controllers\Api\V1\Crm;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Crm\StoreCustomerRequest;
 use App\Models\Customer;
 use App\Models\CustomerOrder;
 use App\Models\LoyaltyTransaction;
 use App\Models\PosReturn;
 use App\Models\PosSale;
 use App\Models\Store;
+use App\Services\Tenancy\StoreQuery;
 use App\Support\GroupAggregationService;
 use App\Support\PaginationService;
-use App\Services\Tenancy\StoreQuery;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Validator;
 
 class CustomerController extends Controller
 {
@@ -133,18 +133,8 @@ class CustomerController extends Controller
         return response()->json(['success' => true, 'data' => $customer]);
     }
 
-    public function store(Request $request)
+    public function store(StoreCustomerRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'phone' => 'nullable|string|max:50',
-            'mobileNo' => 'nullable|string|max:50',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
-        }
-
         $data = $this->mapCustomerPayload($request);
         if (empty($data['code'])) {
             $data['code'] = 'CUST_'.strtoupper(substr(uniqid(), -6));

@@ -2,46 +2,32 @@
 
 namespace App\Http\Controllers\Api\V1\Auth;
 
+use App\Http\Controllers\Api\V1\Masters\ConfigurationController;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\LoginRequest;
 use App\Models\PlatformActivation;
 use App\Models\Store;
 use App\Models\StoreLocalNode;
 use App\Models\SyncOutboxEvent;
 use App\Models\User;
-use App\Services\Security\FailedAttempts;
-use App\Services\Security\GoogleIdTokenVerifier;
-use App\Services\Tenancy\MobileAccess;
 use App\Services\Platform\PlatformBootstrap;
 use App\Services\Platform\PlatformClient;
 use App\Services\Pos\PosCounter;
+use App\Services\Security\FailedAttempts;
+use App\Services\Security\GoogleIdTokenVerifier;
+use App\Services\Tenancy\MobileAccess;
 use App\Services\Tenancy\StoreContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
-use App\Http\Controllers\Api\V1\Masters\ConfigurationController;
 
 class AuthController extends Controller
 {
-    public function login(Request $request)
+    public function login(LoginRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'email' => 'nullable|string',
-            'username' => 'nullable|string',
-            'password' => 'required|string',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
         $loginId = trim($request->input('email') ?? $request->input('username') ?? '');
         $password = (string) $request->input('password');
 

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\V1\Notifications;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Notifications\DestroyPushSubscriptionRequest;
+use App\Http\Requests\Notifications\StorePushSubscriptionRequest;
 use App\Services\Platform\PlatformPushClient;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,9 +19,9 @@ class PushSubscriptionController extends Controller
         return response()->json(['success' => true, 'data' => $config['ok'] ? $config['data'] : ['enabled' => false, 'public_key' => null]]);
     }
 
-    public function store(Request $request, PlatformPushClient $push): JsonResponse
+    public function store(StorePushSubscriptionRequest $request, PlatformPushClient $push): JsonResponse
     {
-        $data = $request->validate(['device_id' => 'required|uuid', 'endpoint' => 'required|string|max:4096']);
+        $data = $request->validated();
         $user = $request->user();
         $token = $user->currentAccessToken();
         abort_unless(! empty($token->id), 403, 'Sign in again to register this device.');
@@ -33,9 +35,9 @@ class PushSubscriptionController extends Controller
         return response()->json(['success' => true, 'data' => ['registered' => true]]);
     }
 
-    public function destroy(Request $request, PlatformPushClient $push): JsonResponse
+    public function destroy(DestroyPushSubscriptionRequest $request, PlatformPushClient $push): JsonResponse
     {
-        $data = $request->validate(['device_id' => 'required|uuid']);
+        $data = $request->validated();
         $user = $request->user();
         $result = $push->request('unsubscribe', ['user_key' => $push->userKey($user), 'device_id' => $data['device_id']]);
         abort_unless($result['ok'], 503, 'Could not disable this push device. Retry when connected.');

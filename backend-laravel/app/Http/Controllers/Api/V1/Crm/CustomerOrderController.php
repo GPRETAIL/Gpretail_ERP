@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\V1\Crm;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Crm\QuickCreateCustomerRequest;
+use App\Http\Requests\Crm\StoreCustomerOrderRequest;
 use App\Models\Customer;
 use App\Models\CustomerOrder;
 use App\Models\CustomerOrderCommunication;
@@ -14,7 +16,6 @@ use App\Support\GroupAggregationService;
 use App\Support\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Validator;
 
 class CustomerOrderController extends Controller
 {
@@ -86,20 +87,8 @@ class CustomerOrderController extends Controller
         return response()->json($paginated);
     }
 
-    public function store(Request $request)
+    public function store(StoreCustomerOrderRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'items' => 'required|array|min:1',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
         $storeId = $request->header('X-Company-Scope-Id', $request->input('companyId', 1));
 
         $order = DB::transaction(function () use ($request, $storeId) {
@@ -432,21 +421,8 @@ class CustomerOrderController extends Controller
         ]);
     }
 
-    public function customerQuickCreate(Request $request)
+    public function customerQuickCreate(QuickCreateCustomerRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'phone' => 'nullable|string|max:50',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
         $code = 'CUST_'.strtoupper(substr(uniqid(), -6));
 
         $customer = Customer::create([

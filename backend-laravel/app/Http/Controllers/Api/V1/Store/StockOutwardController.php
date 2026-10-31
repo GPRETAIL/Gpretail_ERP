@@ -2,17 +2,18 @@
 
 namespace App\Http\Controllers\Api\V1\Store;
 
+use App\Enums\TransferStatus;
 use App\Exceptions\InsufficientStockException;
 use App\Http\Controllers\Controller;
 use App\Models\StockOutward;
 use App\Models\StockOutwardItem;
 use App\Models\Store;
 use App\Services\Documents\DocumentNumberService;
-use App\Support\PaginationService;
 use App\Services\Inventory\StockService;
-use App\Services\Tenancy\StoreContext;
 use App\Services\Inventory\StoreTransferMapper;
 use App\Services\Inventory\VariantResolverService;
+use App\Services\Tenancy\StoreContext;
+use App\Support\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -129,7 +130,7 @@ class StockOutwardController extends Controller
                     'target_store_id' => (int) $request->input('target_store_id'),
                     'outward_no' => $request->input('outward_no') ?: DocumentNumberService::resolve($request, (int) $sourceStoreId, 'TRF'),
                     'outward_date' => $request->input('outward_date') ?: now()->toDateString(),
-                    'status' => StockOutward::IN_TRANSIT,
+                    'status' => TransferStatus::InTransit->value,
                     'dispatched_at' => now(),
                     'notes' => $request->input('notes'),
                     'created_by' => $request->user()->id ?? 1,
@@ -207,7 +208,7 @@ class StockOutwardController extends Controller
 
         DB::transaction(function () use ($request, $outward, $data, $reported) {
             $outward = StockOutward::whereKey($outward->id)->lockForUpdate()->first();
-            if ($outward->status !== StockOutward::IN_TRANSIT) {
+            if ($outward->status !== TransferStatus::InTransit->value) {
                 throw ValidationException::withMessages(['status' => 'This transfer is no longer in transit.']);
             }
             $mapper = app(StoreTransferMapper::class);
@@ -231,7 +232,7 @@ class StockOutwardController extends Controller
                         $received, 'STOCK_OUTWARD', $outward->id, (float) $item->unit_price, $request->user()?->id);
                 }
             }
-            $outward->update(['status' => 'RECEIVED', 'received_at' => now(), 'received_by' => $request->user()?->id, 'receive_notes' => $data['notes'] ?? null]);
+            $outward->update(['status' => TransferStatus::Received->value, 'received_at' => now(), 'received_by' => $request->user()?->id, 'receive_notes' => $data['notes'] ?? null]);
         });
 
         return response()->json(['success' => true, 'message' => 'Transfer received.', 'data' => $outward->fresh(self::RELATIONS)]);
@@ -243,11 +244,11 @@ class StockOutwardController extends Controller
         $outward = $this->find($request, $id, 'source');
         DB::transaction(function () use ($request, $outward) {
             $outward = StockOutward::whereKey($outward->id)->lockForUpdate()->first();
-            if ($outward->status !== StockOutward::IN_TRANSIT) {
+            if ($outward->status !== TransferStatus::InTransit->value) {
                 throw ValidationException::withMessages(['status' => 'Only a transfer still in transit can be cancelled.']);
             }
             $this->returnToSource($outward, $request->user()?->id);
-            $outward->update(['status' => 'CANCELLED', 'cancelled_at' => now()]);
+            $outward->update(['status' => TransferStatus::Cancelled->value, 'cancelled_at' => now()]);
         });
 
         return response()->json(['success' => true, 'message' => 'Transfer cancelled; the stock is back in the sending store.', 'data' => $outward->fresh(self::RELATIONS)]);
@@ -261,9 +262,9 @@ class StockOutwardController extends Controller
             DB::transaction(function () use ($request, $outward) {
                 // Undo only what actually happened: in transit -> back to source; received -> also take
                 // back what the target gained (this can fail if that stock was already sold or moved on).
-                if ($outward->status === StockOutward::IN_TRANSIT) {
+                if ($outward->status === TransferStatus::InTransit->value) {
                     $this->returnToSource($outward, $request->user()?->id);
-                } elseif ($outward->status === 'RECEIVED') {
+                } elseif ($outward->status === TransferStatus::Received->value) {
                     $this->returnToSource($outward, $request->user()?->id);
                     foreach ($outward->items as $item) {
                         if ((float) $item->received_qty > 0) {

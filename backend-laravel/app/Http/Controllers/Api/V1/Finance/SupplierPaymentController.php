@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Finance;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Finance\StoreSupplierPaymentRequest;
 use App\Models\DirectPurchase;
 use App\Models\PurchaseInvoice;
 use App\Models\StockBatch;
@@ -13,7 +14,6 @@ use App\Support\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Validator;
 
 class SupplierPaymentController extends Controller
 {
@@ -89,23 +89,8 @@ class SupplierPaymentController extends Controller
         return response()->json($paginated);
     }
 
-    public function store(Request $request)
+    public function store(StoreSupplierPaymentRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'supplier_id' => 'required|exists:suppliers,id',
-            'amount' => 'required|numeric|min:0.01',
-            'payment_mode' => 'nullable|string',
-            'payment_date' => 'nullable|date',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
         $storeId = $this->resolveStoreId($request, 1);
 
         $payment = DB::transaction(function () use ($request, $storeId) {

@@ -34,9 +34,6 @@ class StockOutward extends Model
         static::creating(fn (self $outward) => $outward->uuid ??= (string) Str::uuid7());
     }
 
-    /** DISPATCHED = in transit (left the source, not yet in the target); RECEIVED; CANCELLED. */
-    public const IN_TRANSIT = 'DISPATCHED';
-
     /** Quantity totals for transfer lists; items are always eager-loaded there. */
     protected $appends = ['total_qty', 'received_total', 'damaged_total', 'shortage_qty'];
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Masters;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Masters\StoreCategoryRequest;
 use App\Models\Category;
 use App\Support\PaginationService;
 use Illuminate\Http\Request;
@@ -93,17 +94,8 @@ class CategoryController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(StoreCategoryRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'code' => ['required', 'string', 'max:50', Rule::unique('categories', 'code')->where('store_id', $request->attributes->get('store_context_id'))],
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
-        }
-
         $category = Category::create($request->only(['parent_id', 'name', 'code', 'description', 'is_active']));
 
         return response()->json([

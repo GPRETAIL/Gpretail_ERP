@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\V1\Settings;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Settings\ListRemoteSupportSessionsRequest;
+use App\Http\Requests\Settings\RequestRemoteSupportRequest;
 use App\Models\PlatformActivation;
 use App\Services\Platform\PlatformClient;
 use App\Services\Tenancy\StoreContext;
@@ -16,14 +18,9 @@ class RemoteSupportController extends Controller
         return response()->json(['data' => ['agent_download_url' => '/downloads/Vynerix%20Remote%20Tool.exe']]);
     }
 
-    public function requestSession(Request $request): JsonResponse
+    public function requestSession(RequestRemoteSupportRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'client_id' => 'required|string|max:64', 'client_password' => 'nullable|string|max:64',
-            'customer_name' => 'nullable|string|max:120', 'contact_number' => 'nullable|string|max:40',
-            'system_os' => 'nullable|string|max:50', 'category' => 'required|in:printing,hardware,software,sync,general',
-            'priority' => 'required|in:normal,high,urgent', 'issue_description' => 'nullable|string|max:1000',
-        ]);
+        $data = $request->validated();
         $data['client_id'] = preg_replace('/[\s-]+/', '', $data['client_id']);
         $data['customer_name'] = $data['customer_name'] ?? $request->user()->name;
         $store = app(StoreContext::class)->available($request->user())->find($request->attributes->get('store_context_id'));
@@ -37,10 +34,9 @@ class RemoteSupportController extends Controller
         return $this->forward($request, 'active');
     }
 
-    public function index(Request $request): JsonResponse
+    public function index(ListRemoteSupportSessionsRequest $request): JsonResponse
     {
-        $data = $request->validate(['page' => 'nullable|integer|min:1', 'per_page' => 'nullable|integer|min:1|max:100',
-            'category' => 'nullable|string|max:60', 'search' => 'nullable|string|max:120']);
+        $data = $request->validated();
 
         return $this->forward($request, 'sessions', $data, true);
     }
