@@ -33,6 +33,7 @@ use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\NotificationPreferenceController;
 use App\Http\Controllers\Api\V1\PhysicalStockController;
 use App\Http\Controllers\Api\V1\PosReturnController;
+use App\Http\Controllers\Api\V1\PosOfflineController;
 use App\Http\Controllers\Api\V1\PosSaleController;
 use App\Http\Controllers\Api\V1\ProductAttributeController;
 use App\Http\Controllers\Api\V1\ProductController;
@@ -405,6 +406,11 @@ $registerAppRoutes = function () {
 
     // POS Special Endpoints (Must be registered before apiResource)
     Route::get('pos-sales/next-bill-no', [PosSaleController::class, 'nextBillNo']);
+    // Offline billing: what a till downloads to keep billing without internet, and the manager's check list.
+    Route::get('pos-sales/offline/series', [PosOfflineController::class, 'series']);
+    Route::get('pos-sales/offline/catalog', [PosOfflineController::class, 'catalog']);
+    Route::get('pos-sales/offline/review', [PosOfflineController::class, 'review']);
+    Route::post('pos-sales/offline/review/{id}', [PosOfflineController::class, 'markReviewed'])->whereNumber('id');
     Route::get('pos-sales/latest-document', [PosSaleController::class, 'latestDocument']);
     Route::get('pos-sale/next-bill-no', [PosSaleController::class, 'nextBillNo']);
     Route::get('pos-sales/salesman-lookup', [PosSaleController::class, 'salesmanLookup']);

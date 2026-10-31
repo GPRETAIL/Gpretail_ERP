@@ -109,6 +109,8 @@ const buildPresetPermissions = (presetRole) => {
 
     case "supervisor":
       setActionsForPath(permissions, getPagePath("Sales", "Discount & Refund Approvals"), { view: true, edit: true });
+      // Supervisors see offline bills that synced with points to check; a manager signs them off.
+      setActionsForPath(permissions, getPagePath("Sales", "Offline Bills"), VIEW_ONLY_ACTIONS);
     // falls through: a supervisor also works the counter
     case "cashier":
       setActionsForPath(permissions, getPagePath("Sales", "POS Sales"), OPERATE_ACTIONS);

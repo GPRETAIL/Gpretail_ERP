@@ -220,6 +220,11 @@ export const navItems = [
         icon: ShieldCheckIcon,
       },
       {
+        name: "Offline Bills",
+        path: "/sales/offline-bills",
+        icon: ShieldCheckIcon,
+      },
+      {
         name: "Stock Item Locator",
         path: "/sales/stock-item-locator",
         icon: MagnifyingGlassIcon,

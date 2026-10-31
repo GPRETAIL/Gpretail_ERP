@@ -17,7 +17,8 @@ class PosSale extends Model
     {
         $number = (string) $this->invoice_no;
 
-        return preg_match('/^INV-.+-(\d{8})-(C?\d+)$/', $number, $parts)
+        // 261031-0001 (normal), 261031-C0001 (cloud failover), 261031-F2-0001 (counter 2, billed offline).
+        return preg_match('/^INV-.+-(\d{8})-(C?\d+|F\d+-\d+)$/', $number, $parts)
             ? substr($parts[1], 2).'-'.$parts[2] : $number;
     }
 
@@ -37,7 +38,7 @@ class PosSale extends Model
 
         return $query->where(function ($query) use ($number) {
             $query->where('invoice_no', $number);
-            if (preg_match('/^(\d{6})-(C?\d+)$/i', $number, $parts)) {
+            if (preg_match('/^(\d{6})-(C?\d+|F\d+-\d+)$/i', $number, $parts)) {
                 $query->orWhere('invoice_no', 'like', '%-20'.$parts[1].'-'.strtoupper($parts[2]));
             } elseif (preg_match('/^(?:SB\/)?(\d+)$/i', $number, $parts)) {
                 $query->orWhere('id', (int) $parts[1]);
@@ -90,12 +91,17 @@ class PosSale extends Model
         'igst',
         'place_of_supply_state_id',
         'applied_pos_return_id',
+        'offline_billed_at',
+        'sync_review',
     ];
 
     protected function casts(): array
     {
         return [
             'sale_date' => 'datetime',
+            'offline_billed_at' => 'datetime',
+            'sync_review' => 'array',
+            'sync_reviewed_at' => 'datetime',
             'total_items' => 'integer',
             'total_qty' => 'decimal:3',
             'subtotal' => 'decimal:2',

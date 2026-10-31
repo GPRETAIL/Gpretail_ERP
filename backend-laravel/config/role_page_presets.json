@@ -425,6 +425,12 @@
       "add": false,
       "edit": true,
       "delete": false
+    },
+    "/sales/offline-bills": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
     }
   },
   "cashier": {
@@ -554,6 +560,12 @@
       "view": true,
       "add": false,
       "edit": true,
+      "delete": false
+    },
+    "/sales/offline-bills": {
+      "view": true,
+      "add": false,
+      "edit": false,
       "delete": false
     }
   },

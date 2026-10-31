@@ -11,6 +11,7 @@ export function mapPosStockRow(row) {
     cost: Number(row.cost || 0), price: Number(row.price ?? row.selling_price ?? row.mrp ?? 0),
     tax: Number(row.tax ?? row.tax_rate ?? 0), taxName: row.taxName || "", taxType: row.taxType || "",
     requiresQuantityPrompt: Boolean(row.requiresQuantityPrompt),
+    hsnCode: row.hsnCode || row.product?.hsn_code || "",
   };
 }
 

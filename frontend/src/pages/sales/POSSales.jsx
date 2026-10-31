@@ -4,6 +4,12 @@ import { approvalRequirementFrom, isApprovalRequired } from "../../utils/approva
 import { runPosCheckout } from "../../utils/posCheckout";
 import { prepareCheckoutAttempt } from "./posCheckoutAttempt";
 import { mapPosStockRow, posStockOptions, mergePosStockRows } from "./posStockCatalog";
+import usePosOffline from "./usePosOffline";
+import PosOfflineStatus from "./PosOfflineStatus";
+import {
+  buildOfflineSale, discardOfflineBill, getOfflinePack, isNetworkFailure, lookupOfflineItem, mintOfflineNumber,
+  offlineBlockReason, queueOfflineBill, reduceOfflineStock, retryOfflineBill, searchOfflineItems,
+} from "./posOffline";
 import AsyncSearchSelect from "../../components/AsyncSearchSelect";
 import PageHeader from "../../components/PageHeader";
 import useCounterAssignmentPrompt from "../../hooks/useCounterAssignmentPrompt";
@@ -117,6 +123,8 @@ const POSSales = () => {
   const [counterAssignmentOpen, setCounterAssignmentOpen] = useCounterAssignmentPrompt(authUser);
   // Over-limit discount: holds the server's APPROVAL_REQUIRED details plus how to retry the save.
   const [approvalRequirement, setApprovalRequirement] = useState(null);
+  // Keeps billing paid sales when the server can't be reached (see posOffline.js).
+  const posOffline = usePosOffline({ userId: authUser?.id, storeId: sessionStorage.getItem("activeStoreId") || authUser?.store_id });
 
 
   const [billNo, setBillNo] = useState(1);
@@ -366,13 +374,24 @@ const POSSales = () => {
     }
   }, []);
 
+  const { scope: offlineScope, markOffline } = posOffline;
+  // Offline with a downloaded catalog: look items up on the till instead of waiting on the server.
+  const isOffline = posOffline.offline && Boolean(posOffline.pack?.catalogAt);
   const searchStockProducts = useCallback(async search => {
-    const response = await api.get("/pos-sales/stock-products", { params: { search } });
-    const rows = (response.data?.data || []).map(mapPosStockRow).filter(row => row.qty > 0);
+    let found;
+    try {
+      if (isOffline) throw Object.assign(new Error("offline"), { offlineMode: true });
+      found = (await api.get("/pos-sales/stock-products", { params: { search } })).data?.data || [];
+    } catch (error) {
+      if (!offlineScope || !(error.offlineMode || isNetworkFailure(error))) throw error;
+      markOffline();
+      found = await searchOfflineItems(offlineScope, search);
+    }
+    const rows = found.map(mapPosStockRow).filter(row => row.qty > 0);
     setStockRows(previous => mergePosStockRows(previous, rows));
     setProductOptions(previous => Array.from(new Map([...previous, ...posStockOptions(rows)].map(row => [row.value, row])).values()));
     return posStockOptions(rows);
-  }, []);
+  }, [isOffline, offlineScope, markOffline]);
 
   const loadPaymentOptions = useCallback(async () => {
     try {
@@ -1322,11 +1341,17 @@ const POSSales = () => {
       let source = null;
       if (barcodeQuery) {
         try {
+          if (isOffline) throw Object.assign(new Error("offline"), { offlineMode: true });
           const res = await api.get("/pos-sales/barcode-lookup", { params: { barcode: barcode.trim() } });
           const found = res.data?.data;
           source = found ? mapPosStockRow(found) : null;
-        } catch {
+        } catch (error) {
           source = null;
+          if (offlineScope && (error.offlineMode || isNetworkFailure(error))) {
+            markOffline();
+            const found = await lookupOfflineItem(offlineScope, barcode.trim()).catch(() => null);
+            source = found ? mapPosStockRow(found) : null;
+          }
         }
 
         if (!source) {
@@ -1373,6 +1398,9 @@ const POSSales = () => {
               productName: source.productName,
               qty: quantity,
               price: source.price,
+              // Catalog price at scan time: offline, the till checks the cashier's discount limit against it.
+              listPrice: source.price,
+              hsnCode: source.hsnCode || "",
               tax: source.tax,
               taxName: source.taxName || "",
               taxType: source.taxType || "",
@@ -2186,6 +2214,42 @@ const POSSales = () => {
   const saveInFlight = useRef(false);
   const checkoutAttempt = useRef(null);
 
+  const finishSavedSale = (saved, shouldPrint, savedLabel) => {
+    toast.success(savedLabel);
+    const printing = shouldPrint ? printSaleReceipt(saved) : Promise.resolve();
+    printing.catch(error => toast.error(`Sale saved, but receipt was not printed. ${error.message || "Please retry printing."}`));
+    const sold = new Map();
+    cart.forEach(line => sold.set(line.stockId, (sold.get(line.stockId) || 0) + toNum(line.qty, 0)));
+    setStockRows(rows => rows.map(row => ({ ...row, qty: Math.max(0, row.qty - (sold.get(row.id) || 0)) })));
+    void reduceOfflineStock(posOffline.scope, cart).catch(() => {});
+    handleResetEntry();
+    checkoutAttempt.current = null;
+  };
+
+  // The offline pack, if this till has one to number bills from.
+  const readyOfflinePack = async () => {
+    const pack = posOffline.scope ? await getOfflinePack(posOffline.scope).catch(() => null) : null;
+    return pack?.series?.code ? pack : null;
+  };
+
+  // The server can't be reached: number the bill from this counter's offline series and queue it.
+  // A save that timed out keeps its checkout key, so if it did land the sync returns that sale.
+  const saveSaleOffline = async (attempt, shouldPrint, pack) => {
+    const reason = offlineBlockReason(attempt.payload, cart, pack);
+    if (reason) {
+      toast.error(`Offline: ${reason}`);
+      return;
+    }
+    const billedAt = attempt.payload.saleAt || new Date().toISOString();
+    attempt.offlineNumber ||= await mintOfflineNumber(posOffline.scope, pack);
+    const { invoiceNo, billNo: offlineBillNo } = attempt.offlineNumber;
+    const storeId = sessionStorage.getItem("activeStoreId") || authUser?.store_id;
+    const payload = { ...attempt.payload, offline: { invoiceNo, billedAt } };
+    const sale = buildOfflineSale(payload, { invoiceNo, billNo: offlineBillNo, billedAt, storeId, counterName: authUser?.counter_name, lines: cart });
+    await queueOfflineBill({ scope: posOffline.scope, userId: authUser?.id, storeId, target: attempt.target, payload, sale });
+    finishSavedSale(sale, shouldPrint, `Saved offline (Bill #${offlineBillNo}). It syncs when the server is back.`);
+  };
+
   const handleSaveSale = async ({
     shouldPrint = false,
     paymentFormOverride,
@@ -2211,29 +2275,38 @@ const POSSales = () => {
     saveInFlight.current = true;
     setSaving(true);
     try {
+      const offlinePack = posOffline.offline ? await readyOfflinePack() : null;
+      if (offlinePack) {
+        await saveSaleOffline(attempt, shouldPrint, offlinePack);
+        return;
+      }
       const res = await api.post("/pos-sales", attempt.payload, { __posRetryTarget: attempt.target });
       const saved = res.data?.data;
       const savedBillNo = saved?.bill_no;
       setLatestPosDocument(saved ? { type: "sale", ...saved } : null);
-      toast.success(`POS saved successfully (Bill #${formatSaleBillNo(savedBillNo)})`);
-      const printing = shouldPrint ? printSaleReceipt(saved) : Promise.resolve();
-      printing.catch(error => toast.error(`Sale saved, but receipt was not printed. ${error.message || "Please retry printing."}`));
-      const sold = new Map();
-      cart.forEach(line => sold.set(line.stockId, (sold.get(line.stockId) || 0) + toNum(line.qty, 0)));
-      setStockRows(rows => rows.map(row => ({ ...row, qty: Math.max(0, row.qty - (sold.get(row.id) || 0)) })));
-      handleResetEntry();
-      checkoutAttempt.current = null;
+      finishSavedSale(saved, shouldPrint, `POS saved successfully (Bill #${formatSaleBillNo(savedBillNo)})`);
       void loadNextBillNo();
     } catch (err) {
       // Keep an uncertain write on the same node. Retrying it on another DB
       // could create a second invoice before store sync catches up.
       if (err?.config?.__routingTarget) attempt.target = err.config.__routingTarget;
+      const offlinePack = isNetworkFailure(err) ? await readyOfflinePack() : null;
+      if (offlinePack) {
+        posOffline.markOffline();
+        try {
+          await saveSaleOffline(attempt, shouldPrint, offlinePack);
+        } catch (offlineError) {
+          toast.error(offlineError.message || "Could not save the bill offline. Keep this page open and retry.");
+        }
+        return;
+      }
+      // No offline pack on this till: keep the same key so the cashier can retry this bill online.
       if (isApprovalRequired(err)) {
         // Nothing was saved; the dialog retries this same checkout once a supervisor approves.
         setApprovalRequirement({ ...approvalRequirementFrom(err), retry: { shouldPrint, paymentFormOverride, allowUnsettledWithoutPayment } });
         return;
       }
-      toast.error(err?.response?.data?.message || "Failed to save POS sale");
+      toast.error(err?.response?.data?.message || (!err?.config && err?.message) || "Failed to save POS sale");
     } finally {
       saveInFlight.current = false;
       setSaving(false);
@@ -2976,6 +3049,13 @@ const POSSales = () => {
           <Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
           {!showSearchPage && (
             <>
+              <PosOfflineStatus
+                {...posOffline}
+                onSync={() => void posOffline.sync()}
+                onReprint={bill => printSaleReceipt(bill.sale).catch(error => toast.error(error.message || "Could not print the receipt"))}
+                onRetry={bill => void retryOfflineBill(bill).then(() => posOffline.sync())}
+                onDiscard={bill => void discardOfflineBill(bill.checkoutKey)}
+              />
               <Button
                 onClick={() => void downloadLastPosSalePdf()}
                 disabled={downloadingPosPdf}

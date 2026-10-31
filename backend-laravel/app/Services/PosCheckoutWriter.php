@@ -18,7 +18,11 @@ use Illuminate\Validation\ValidationException;
  */
 class PosCheckoutWriter
 {
-    public function write(PosSale $sale, array $items, Collection $products, Collection $barcodes): void
+    /**
+     * @param  bool  $acceptShortage  an offline bill already handed over the goods: record it even when stock is short
+     * @return array<int, array<string, mixed>> the shortages accepted (empty unless $acceptShortage)
+     */
+    public function write(PosSale $sale, array $items, Collection $products, Collection $barcodes, bool $acceptShortage = false): array
     {
         if (DB::transactionLevel() < 1) {
             throw new \LogicException('POS persistence requires a transaction.');
@@ -40,7 +44,7 @@ class PosCheckoutWriter
         $batches = $variantIds ? StockBatch::where('store_id', $sale->store_id)->whereIn('variant_id', $variantIds)
             ->where('remaining_qty', '>', 0)->orderBy('received_at')->orderBy('id')->lockForUpdate()->get()->groupBy('variant_id') : collect();
         $timestamp = now()->toDateTimeString();
-        $lines = $movements = $allocations = $changedStocks = $changedBatches = [];
+        $lines = $movements = $allocations = $changedStocks = $changedBatches = $shortages = [];
         foreach ($items as $index => $item) {
             $qty = (float) $item['qty'];
             $price = (float) $item['price'];
@@ -52,10 +56,18 @@ class PosCheckoutWriter
             $before = (float) ($stock->quantity ?? 0);
             $after = $before - $qty;
             if (! $stock || $after < -0.0005) {
-                throw new InsufficientStockException((int) $item['productId'], $before, $qty);
+                if (! $acceptShortage) {
+                    throw new InsufficientStockException((int) $item['productId'], $before, $qty);
+                }
+                $shortages[] = ['type' => 'stock_short', 'line' => $index, 'product' => $products->get($item['productId'])?->name,
+                    'barcode' => $item['barcode'] ?? null, 'qty' => $qty, 'in_stock' => $before,
+                    'message' => 'Sold '.round($qty, 3).' but stock showed '.round(max(0, $before), 3).'. Recount this item.'];
             }
-            $stock->quantity = max(0, $after);
-            $changedStocks[$stock->id] = ['quantity' => $stock->quantity, 'available_quantity' => (float) $stock->quantity - (float) $stock->allocated_quantity];
+            if ($stock) {
+                // Stock never goes below zero; a shortfall is listed for a recount instead.
+                $stock->quantity = max(0, $after);
+                $changedStocks[$stock->id] = ['quantity' => $stock->quantity, 'available_quantity' => (float) $stock->quantity - (float) $stock->allocated_quantity];
+            }
             $lines[] = [
                 'pos_sale_id' => $sale->id, 'product_id' => $item['productId'], 'variant_id' => $item['variantId'] ?? null,
                 'barcode_id' => $item['barcodeId'] ?? null, 'quantity' => $qty, 'unit_mrp' => $item['mrp'] ?? $price,
@@ -114,6 +126,8 @@ class PosCheckoutWriter
         if ($pieceIds->isNotEmpty()) {
             DB::table('barcodes')->whereIn('id', $pieceIds)->update(['is_active' => false, 'updated_at' => $timestamp]);
         }
+
+        return $shortages;
     }
 
     /** Only IDs obtained from the locked store-owned rows above are accepted. */

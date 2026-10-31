@@ -80,7 +80,8 @@ const formatMoney = (value) =>
 
 
 // SB/165 or 165, the printed bill number (261031-0001, C for credit), or the full INV-… invoice no.
-const isLikelySaleBillInput = (value) => /^(?:(?:sb\/)?\d+|\d{6}-c?\d+|inv-\S+)$/i.test(String(value || "").trim());
+// Printed bill numbers: 261031-0001, 261031-C0001 (cloud failover), 261031-F2-0001 (billed offline).
+const isLikelySaleBillInput = (value) => /^(?:(?:sb\/)?\d+|\d{6}-(?:c?\d+|f\d+-\d+)|inv-\S+)$/i.test(String(value || "").trim());
 const isLikelyReturnNoInput = (value) => /^(?:rr|ro)\/?\d+$/i.test(String(value || "").trim());
 const formatReturnNo = (value) => {
   const raw = String(value || "").trim().toUpperCase();

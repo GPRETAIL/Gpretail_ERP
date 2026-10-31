@@ -12,6 +12,17 @@ const cache = new Map(); // companyId -> { data, fetchedAt }
 
 const EMPTY_INFO = { storeName: "", storeAddress: "", storePhone: "", storeGstNo: "" };
 
+// The last copy is also kept on this device, so a till that is offline (see pages/sales/posOffline.js)
+// still prints the store's name, address and GST number on its receipts.
+const savedKey = (id) => {
+  let userId = "";
+  try { userId = JSON.parse(localStorage.getItem("user") || "null")?.id || ""; } catch { /* no saved identity */ }
+  return userId ? `vx_receipt_company:${userId}:${id}` : "";
+};
+const readSaved = (id) => {
+  try { return JSON.parse(localStorage.getItem(savedKey(id)) || "null"); } catch { return null; }
+};
+
 export const getReceiptCompanyId = (record, user) =>
   record?.store_id || record?.company_id || record?.companyId || sessionStorage.getItem("activeStoreId") || user?.company_id || null;
 
@@ -43,12 +54,14 @@ export const fetchReceiptCompanyInfo = async (companyId) => {
         storeGstNo: String(company.gst_no || company.gstin || company.gstNo || "").trim(),
       };
       cache.set(key, { data: info, fetchedAt: Date.now() });
+      try { if (savedKey(id)) localStorage.setItem(savedKey(id), JSON.stringify(info)); } catch { /* storage full or blocked */ }
       if (cache.size > 50) cache.delete(cache.keys().next().value);
       return info;
     } catch {
       // Not cached - a transient network hiccup shouldn't lock in blank company info for the whole
-      // TTL window; the next print attempt should just try the request again.
-      return { ...EMPTY_INFO };
+      // TTL window; the next print attempt should just try the request again. Until then, print
+      // with the last details this device saw.
+      return cached?.data || readSaved(id) || { ...EMPTY_INFO };
     } finally {
       pending.delete(key);
     }

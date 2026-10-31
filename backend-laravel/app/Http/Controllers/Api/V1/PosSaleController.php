@@ -9,6 +9,7 @@ use App\Models\Barcode;
 use App\Models\CreditLedger;
 use App\Models\Customer;
 use App\Models\LoyaltyTransaction;
+use App\Models\Notification;
 use App\Models\PosPayment;
 use App\Models\PosReturn;
 use App\Models\PosSale;
@@ -25,6 +26,7 @@ use App\Services\PaginationService;
 use App\Services\PosCheckoutAttempt;
 use App\Services\PosCheckoutWriter;
 use App\Services\PosCounter;
+use App\Services\PosOfflineBilling;
 use App\Services\StockService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -48,7 +50,7 @@ class PosSaleController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'billNo' => preg_match('/^INV-.+-(\d{8})-(C?\d+)$/', $billNo, $parts) ? substr($parts[1], 2).'-'.$parts[2] : $billNo,
+                'billNo' => preg_match('/^INV-.+-(\d{8})-(C?\d+|F\d+-\d+)$/', $billNo, $parts) ? substr($parts[1], 2).'-'.$parts[2] : $billNo,
                 'bill_no' => $billNo,
                 'invoice_no' => $billNo,
                 'date' => now()->toIso8601String(),
@@ -395,6 +397,9 @@ class PosSaleController extends Controller
             'saleSaveAs' => 'nullable|in:paid_settled,unsettled',
             'checkoutKey' => 'nullable|uuid',
             'approvalToken' => 'nullable|string|max:100',
+            'offline' => 'nullable|array',
+            'offline.invoiceNo' => 'required_with:offline|string|max:80',
+            'offline.billedAt' => 'required_with:offline|date',
         ]);
 
         if ($validator->fails()) {
@@ -415,6 +420,8 @@ class PosSaleController extends Controller
                 if ($user?->counter_id && ! $counter) {
                     throw ValidationException::withMessages(['counter' => 'Select an active counter in this store before saving.']);
                 }
+                // A bill the till saved while it had no internet (see PosOfflineBilling).
+                $offline = PosOfflineBilling::prepare($request, (int) $storeId, $counter);
 
                 // Resolve customer: an existing id, or a lightweight walk-in
                 // record from the ad-hoc {name, mobileNo} the UI collects for
@@ -469,7 +476,11 @@ class PosSaleController extends Controller
                             throw ValidationException::withMessages(["items.$index.barcodeId" => 'This barcode does not match the selected product and variant.']);
                         }
                         if (strtoupper((string) ($product->selling_mode ?: 'PIECE')) === 'PIECE') {
-                            if (! $barcode->is_active || isset($pieceBarcodes[$barcode->id]) || (float) $item['qty'] !== 1.0) {
+                            if ($offline && ! $barcode->is_active && ! isset($pieceBarcodes[$barcode->id]) && (float) $item['qty'] === 1.0) {
+                                // Sold elsewhere while this till was offline; both customers have the goods.
+                                $offline['issues'][] = ['type' => 'piece_resold', 'line' => $index, 'product' => $product->name, 'barcode' => $barcode->barcode,
+                                    'message' => "Piece {$barcode->barcode} was already sold on another bill. Check which piece the customer took."];
+                            } elseif (! $barcode->is_active || isset($pieceBarcodes[$barcode->id]) || (float) $item['qty'] !== 1.0) {
                                 throw ValidationException::withMessages(["items.$index.barcodeId" => 'This piece barcode is already sold or appears more than once.']);
                             }
                             $pieceBarcodes[$barcode->id] = true;
@@ -479,7 +490,15 @@ class PosSaleController extends Controller
 
                 // Discounts or lowered prices beyond the cashier's limit need an approval token.
                 $approvals = app(ApprovalService::class);
-                $approval = $approvals->authorizeDiscount($user, (int) $storeId, $approvals->basketDiscount($itemsData, $products, $barcodes), $request->input('approvalToken'));
+                $basket = $approvals->basketDiscount($itemsData, $products, $barcodes);
+                $approval = null;
+                if (! $offline) {
+                    $approval = $approvals->authorizeDiscount($user, (int) $storeId, $basket, $request->input('approvalToken'));
+                } elseif ($approvals->enabled((int) $storeId) && ($limit = $approvals->limitFor($user, (int) $storeId)['max_discount_percent']) !== null && $basket['max_percent'] > $limit + 0.001) {
+                    // The till blocks this offline; it can still happen if the limit was lowered meanwhile.
+                    $offline['issues'][] = ['type' => 'discount_above_limit', 'discount_percent' => $basket['max_percent'], 'limit_percent' => $limit,
+                        'message' => "Discount of {$basket['max_percent']}% is above this cashier's {$limit}% limit and had no approval."];
+                }
 
                 $subtotal = 0;
                 $taxTotal = 0;
@@ -517,16 +536,17 @@ class PosSaleController extends Controller
                     ? ($isCredit ? 'CREDIT' : 'UNSETTLED')
                     : ($cashAmount > 0 ? 'CASH' : ($cardAmount > 0 ? 'CARD' : 'UPI'));
 
-                $invoiceNo = DocumentNumberService::resolve($request, (int) $storeId, 'INV');
+                $invoiceNo = $offline['invoice_no'] ?? DocumentNumberService::resolve($request, (int) $storeId, 'INV');
 
-                $sale = PosSale::create([
+                $sale = new PosSale([
                     'store_id' => $storeId,
                     'counter_id' => $counter?->id,
                     'counter_name' => $counter->value ?? $counter?->config_value,
                     'customer_id' => $customerId,
                     'user_id' => $user->id ?? 1,
                     'invoice_no' => $invoiceNo,
-                    'sale_date' => now(),
+                    'sale_date' => $offline['billed_at'] ?? now(),
+                    'offline_billed_at' => $offline['billed_at'] ?? null,
                     'total_items' => count($itemsData),
                     'total_qty' => $totalQty,
                     'subtotal' => $subtotal,
@@ -543,8 +563,23 @@ class PosSaleController extends Controller
                     'place_of_supply_state_id' => $request->input('placeOfSupplyStateId'),
                     'applied_pos_return_id' => $appliedReturn?->id,
                 ]);
+                if ($offline) {
+                    // Day-wise reports read created_at: the bill belongs to the day it was billed.
+                    $sale->created_at = $offline['billed_at'];
+                }
+                $sale->save();
 
-                app(PosCheckoutWriter::class)->write($sale, $itemsData, $products, $barcodes);
+                $shortages = app(PosCheckoutWriter::class)->write($sale, $itemsData, $products, $barcodes, (bool) $offline);
+                if ($offline) {
+                    PosOfflineBilling::record((int) $storeId, $invoiceNo);
+                    $issues = [...$offline['issues'], ...$shortages];
+                    if ($issues) {
+                        $sale->forceFill(['sync_review' => $issues])->save();
+                        Notification::create(['type' => 'POS_OFFLINE_REVIEW', 'title' => 'Offline bill to check',
+                            'message' => "Bill {$sale->bill_no}, billed offline, synced with ".count($issues).' point(s) to check.',
+                            'link' => '/sales/offline-bills', 'reference_type' => 'POS_SALE', 'reference_id' => $sale->id, 'store_id' => $storeId]);
+                    }
+                }
                 $approval?->forceFill(['status' => 'used', 'used_at' => now(), 'pos_sale_id' => $sale->id])->save();
 
                 foreach ([
