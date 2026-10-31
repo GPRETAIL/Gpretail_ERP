@@ -1,8 +1,8 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import useAppInit from "./useAppInit";
-import api from "../../api/axios";
-vi.mock("../../api/axios", () => ({ default: { get: vi.fn() } }));
+import api from "@/shared/api/apiClient";
+vi.mock("@/shared/api/apiClient", () => ({ default: { get: vi.fn() } }));
 afterEach(() => { vi.useRealTimers(); localStorage.clear(); vi.clearAllMocks(); });
 
 it("finishes the splash without repeating auth or notification requests", async () => {

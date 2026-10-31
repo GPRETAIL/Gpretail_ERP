@@ -1,8 +1,8 @@
 import { useCallback } from "react";
 import { Box, Button, Dialog, DialogContent, DialogTitle, IconButton, Stack, Typography } from "@mui/material";
 import { X } from "lucide-react";
-import api from "../../api/axios";
-import useAsyncQuery from "../../hooks/useAsyncQuery";
+import api from "@/shared/api/apiClient";
+import useAsyncQuery from "@/shared/hooks/useAsyncQuery";
 
 const money = value => Number(value || 0).toLocaleString("en-IN", { style: "currency", currency: "INR" });
 const SummaryRow = ({ label, value, strong = false }) => <Stack direction="row" justifyContent="space-between" sx={{ gap: 2, fontWeight: strong ? 700 : 400 }}><span>{label}</span><span>{money(value)}</span></Stack>;

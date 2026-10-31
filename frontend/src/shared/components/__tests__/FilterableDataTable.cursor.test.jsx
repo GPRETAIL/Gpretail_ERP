@@ -1,0 +1,231 @@
+import React from "react";
+import { describe, it, expect, vi } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import FilterableDataTable from "@/shared/components/FilterableDataTable";
+
+describe("FilterableDataTable — Adaptive Cursor & Offset Pagination", () => {
+  const sampleColumns = [
+    { key: "id", label: "ID" },
+    { key: "name", label: "Name" },
+  ];
+
+  const sampleRows = [
+    { id: 1, name: "Alpha" },
+    { id: 2, name: "Beta" },
+  ];
+
+  it("renders offset pagination with page selector and total count", () => {
+    const onPageChange = vi.fn();
+    const onLimitChange = vi.fn();
+
+    render(
+      <MemoryRouter>
+        <FilterableDataTable
+          rows={sampleRows}
+          columns={sampleColumns}
+          showExport={false}
+          pagination={{
+            mode: "offset",
+            page: 1,
+            total_pages: 5,
+            total: 50,
+            has_next: true,
+            has_previous: false,
+          }}
+          page={1}
+          limit={10}
+          totalPages={5}
+          totalRows={50}
+          onPageChange={onPageChange}
+          onLimitChange={onLimitChange}
+        />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText("Total: 50")).toBeDefined();
+    expect(screen.getByText("Page 1")).toBeDefined();
+    fireEvent.mouseDown(screen.getByText("Page 1"));
+    fireEvent.click(screen.getByRole("option", { name: "Page 4", exact: true }));
+    expect(onPageChange).toHaveBeenCalledWith(4);
+  });
+
+  it.each([
+    { page: 1, totalPages: 5, totalRows: 50, loading: false, prevDisabled: true, nextDisabled: false },
+    { page: 3, totalPages: 5, totalRows: 50, loading: false, prevDisabled: false, nextDisabled: false },
+    { page: 5, totalPages: 5, totalRows: 50, loading: false, prevDisabled: false, nextDisabled: true },
+    { page: 1, totalPages: 1, totalRows: 0, loading: false, prevDisabled: true, nextDisabled: true },
+    { page: 3, totalPages: 5, totalRows: 50, loading: true, prevDisabled: true, nextDisabled: true },
+    { page: 1, totalPages: 1000000, totalRows: 20000000, loading: false, prevDisabled: true, nextDisabled: false },
+  ])("supports sequential navigation without a page selector: %j", ({ page, totalPages, totalRows, loading, prevDisabled, nextDisabled }) => {
+    const onPageChange = vi.fn();
+    render(
+      <MemoryRouter>
+        <FilterableDataTable
+          rows={totalRows ? sampleRows : []}
+          columns={sampleColumns}
+          showExport={false}
+          page={page}
+          limit={20}
+          totalPages={totalPages}
+          totalRows={totalRows}
+          loading={loading}
+          allowPageJump={false}
+          onPageChange={onPageChange}
+          onLimitChange={vi.fn()}
+        />
+      </MemoryRouter>
+    );
+    expect(screen.getByText(`Page ${page} of ${totalPages}`)).toBeDefined();
+    expect(screen.queryByText(`Page ${page}`, { exact: true })).toBeNull();
+    const previous = screen.getByTitle("Previous");
+    const next = screen.getByTitle("Next");
+    expect(previous.disabled).toBe(prevDisabled);
+    expect(next.disabled).toBe(nextDisabled);
+    fireEvent.click(previous);
+    fireEvent.click(next);
+    expect(onPageChange.mock.calls.map(([value]) => value)).toEqual([
+      ...(!prevDisabled ? [page - 1] : []),
+      ...(!nextDisabled ? [page + 1] : []),
+    ]);
+  });
+
+  it("renders cursor pagination with Continuous indicator and triggers cursor callbacks", () => {
+    const onNextCursor = vi.fn();
+    const onLimitChange = vi.fn();
+
+    render(
+      <MemoryRouter>
+        <FilterableDataTable
+          rows={sampleRows}
+          columns={sampleColumns}
+          showExport={false}
+          pagination={{
+            mode: "cursor",
+            limit: 10,
+            next_cursor: "eyJpZCI6Mn0",
+            previous_cursor: null,
+            has_more: true,
+            has_next: true,
+            has_previous: false,
+          }}
+          limit={10}
+          onNextCursor={onNextCursor}
+          onLimitChange={onLimitChange}
+        />
+      </MemoryRouter>
+    );
+
+    // Shows row count without full-table total
+    expect(screen.getByText("Showing 2 rows")).toBeDefined();
+    expect(screen.getByText("Continuous")).toBeDefined();
+
+    // Previous is disabled since previous_cursor is null
+    const prevBtn = screen.getByTitle("Previous");
+    expect(prevBtn.hasAttribute("disabled")).toBe(true);
+
+    // Next is enabled
+    const nextBtn = screen.getByTitle("Next");
+    expect(nextBtn.hasAttribute("disabled")).toBe(false);
+
+    // Clicking next fires onNextCursor with the cursor string
+    fireEvent.click(nextBtn);
+    expect(onNextCursor).toHaveBeenCalledWith("eyJpZCI6Mn0");
+  });
+
+  it("shows the cheap information_schema estimate as an approximate total when the backend provides one", () => {
+    render(
+      <MemoryRouter>
+        <FilterableDataTable
+          rows={sampleRows}
+          columns={sampleColumns}
+          showExport={false}
+          pagination={{
+            mode: "cursor",
+            limit: 10,
+            next_cursor: "eyJpZCI6Mn0",
+            previous_cursor: null,
+            has_more: true,
+            has_next: true,
+            has_previous: false,
+            estimated_total: 1000002,
+          }}
+          limit={10}
+          onNextCursor={vi.fn()}
+          onLimitChange={vi.fn()}
+        />
+      </MemoryRouter>
+    );
+
+    // The real total (however approximate), not just the current page's row count. Locale-tolerant
+    // digit grouping, same reasoning as the server-group total test above.
+    expect(screen.getByText(/^Total: ~[\d,]+$/)).toBeDefined();
+    expect(screen.queryByText("Showing 2 rows")).not.toBeInTheDocument();
+  });
+
+  it("renders a Load More button instead of Prev/Next when cursorLoadMode is append", () => {
+    const onNextCursor = vi.fn();
+    const onLimitChange = vi.fn();
+
+    render(
+      <MemoryRouter>
+        <FilterableDataTable
+          rows={sampleRows}
+          columns={sampleColumns}
+          showExport={false}
+          cursorLoadMode="append"
+          pagination={{
+            mode: "cursor",
+            limit: 10,
+            next_cursor: "eyJpZCI6Mn0",
+            previous_cursor: null,
+            has_more: true,
+            has_next: true,
+            has_previous: false,
+          }}
+          limit={10}
+          onNextCursor={onNextCursor}
+          onLimitChange={onLimitChange}
+        />
+      </MemoryRouter>
+    );
+
+    // Append mode drops the page-stepping controls entirely -- no "Continuous" label, no
+    // Previous/Next titles, just a single Load More action.
+    expect(screen.queryByText("Continuous")).not.toBeInTheDocument();
+    expect(screen.queryByTitle("Previous")).not.toBeInTheDocument();
+    expect(screen.queryByTitle("Next")).not.toBeInTheDocument();
+
+    const loadMoreBtn = screen.getByText("Load More");
+    fireEvent.click(loadMoreBtn);
+    expect(onNextCursor).toHaveBeenCalledWith("eyJpZCI6Mn0");
+  });
+
+  it("shows 'No more results' and disables Load More once has_next is false", () => {
+    render(
+      <MemoryRouter>
+        <FilterableDataTable
+          rows={sampleRows}
+          columns={sampleColumns}
+          showExport={false}
+          cursorLoadMode="append"
+          pagination={{
+            mode: "cursor",
+            limit: 10,
+            next_cursor: null,
+            previous_cursor: "eyJpZCI6MX0",
+            has_more: false,
+            has_next: false,
+            has_previous: true,
+          }}
+          limit={10}
+          onNextCursor={vi.fn()}
+          onLimitChange={vi.fn()}
+        />
+      </MemoryRouter>
+    );
+
+    const btn = screen.getByText("No more results");
+    expect(btn.closest("button").hasAttribute("disabled")).toBe(true);
+  });
+});

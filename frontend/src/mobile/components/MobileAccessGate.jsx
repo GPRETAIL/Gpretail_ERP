@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { Alert, Box, Button, CircularProgress, MenuItem, Stack, TextField, Typography } from "@mui/material";
 import { useDispatch } from "react-redux";
-import api from "../../api/axios";
-import { logoutUser } from "../../features/authSlice";
-import useAsyncQuery from "../../hooks/useAsyncQuery";
-import VynerixLoginBrand from "../../components/auth/VynerixLoginBrand";
+import api from "@/shared/api/apiClient";
+import { logoutUser } from "@/features/auth/authSlice";
+import useAsyncQuery from "@/shared/hooks/useAsyncQuery";
+import VynerixLoginBrand from "@/shared/brand/VynerixLoginBrand";
 import NotificationsModal from "./NotificationsModal";
 import { MobileAccessContext } from "../utils/mobileAccessContext";
 

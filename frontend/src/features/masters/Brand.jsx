@@ -1,0 +1,680 @@
+import useSearchGrid, { createSearchGridAdapter } from "@/shared/hooks/useSearchGrid";
+import MasterSearchPanel from "./components/MasterSearchPanel";
+import { masterSearchAreaSx } from "@/shared/theme/erpUi";
+import React, { useEffect, useRef, useState } from "react";
+import { ArrowLeft, Pencil, PlusCircle, Save, Search, Trash2 } from "lucide-react";
+import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
+import { Box, Stack, Card, Typography, Button, Table, TableBody, TableRow, TableCell, IconButton, alpha } from "@mui/material";
+import api from "@/shared/api/apiClient";
+import { apiErrorMessage } from "@/shared/api/apiErrorMessage";
+import FilterableDataTable from "@/shared/components/FilterableDataTable";
+import { createGroupFetchers } from "@/shared/utils/serverGrouping";
+import ExportBottomSheet from "@/shared/components/ExportBottomSheet";
+import UploadImportButton from "@/shared/components/UploadImportButton";
+import ConfirmDialog from "@/shared/components/ConfirmDialog";
+import PageHeader from "@/shared/components/PageHeader";
+import Breadcrumbs from "@/shared/components/Breadcrumbs";
+import { TextInput, SelectInput, DualTextInput, SelectTextInput, CheckboxInput } from "@/shared/components/CustomInputs";
+import { handleEnterKeyNavigation } from "@/shared/utils/enterToNextField";
+import useStoreNameMap from "@/shared/hooks/useStoreNameMap";
+import { normalizeFormSignature } from "@/shared/utils/formSignature";
+
+const FILTER_DEFAULT = { operator: "contains", value: "" };
+const isColumnFilterActive = (filter) => {
+  if (!filter) return false;
+  if (filter.operator === "blank" || filter.operator === "not_blank") return true;
+  return String(filter.value || "").trim() !== "";
+};
+const buildActiveColumnFilters = (filters = {}) =>
+  Object.entries(filters)
+    .filter(([, filter]) => isColumnFilterActive(filter))
+    .map(([field, filter]) => ({
+      field,
+      operator: filter?.operator || FILTER_DEFAULT.operator,
+      value: String(filter?.value || ""),
+    }));
+
+// Matches config('pagination.resources.brands.groupable_columns') on the backend.
+const { onFetchGroupSummaries: fetchBrandGroupSummaries, onFetchGroupRows: fetchBrandGroupRows } =
+  createGroupFetchers("/brands", { is_active: "is_active" }, buildActiveColumnFilters);
+
+const BRAND_IMPORT_CONFIG = {
+  aliases: {
+    code: "code", name: "name",
+    printingname: "printing_name",
+    minmargin: "min_margin",
+    maxmargin: "max_margin",
+    brandtype: "brand_type",
+    discounttype: "discount_type",
+    discountvalue: "discount_value",
+    productid: "product_ids",
+    productids: "product_ids",
+    productmargin: "product_margins",
+    isactive: "is_active", active: "is_active",
+  },
+  required: ["name"],
+  boolFields: ["is_active"],
+  sampleFileName: "brand_sample.xlsx",
+  sampleHeaders: [
+    "code", "name", "printing_name", "min_margin", "max_margin",
+    "brand_type", "discount_type", "discount_value", "is_active",
+  ],
+};
+
+const brandTypeOptions = [
+  { label: "Premium", value: "Premium" },
+  { label: "Standard", value: "Standard" },
+];
+const discountOptions = [
+  { label: "Discount", value: "Discount" },
+  { label: "Value", value: "Value" },
+];
+
+const buildBrandSig = (v) =>
+  normalizeFormSignature({
+    code: v.code,
+    name: v.name,
+    printingName: v.printingName,
+    minMargin: v.minMargin,
+    maxMargin: v.maxMargin,
+    brandType: v.brandType,
+    discountType: v.discountType,
+    discountValue: v.discountValue,
+    isActive: v.isActive,
+    storeId: v.storeId || "",
+    productList: v.productList,
+  });
+
+const Brand = ({ initialCreate = false }) => {
+  const navigate = useNavigate();
+  const [code, setCode] = useState("");
+  const [name, setName] = useState("");
+  const [printingName, setPrintingName] = useState("");
+  const [minMargin, setMinMargin] = useState("");
+  const [maxMargin, setMaxMargin] = useState("");
+  const [brandType, setBrandType] = useState("");
+  const [discountType, setDiscountType] = useState("");
+  const [discountValue, setDiscountValue] = useState("");
+  const [isActive, setIsActive] = useState(true);
+  const [storeId, setStoreId] = useState("");
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
+  const [currentId, setCurrentId] = useState(null);
+  const initialFormRef = useRef({ id: null, sig: null });
+
+  const [products, setProducts] = useState([]);
+  const [product, setProduct] = useState("");
+  const [margin, setMargin] = useState("");
+  const [productList, setProductList] = useState([]);
+
+  const [showSearchPage, setShowSearchPage] = useState(!initialCreate);
+  const [selectedRows, setSelectedRows] = useState([]);
+
+  const [confirm, setConfirm] = useState({ open: false, id: null, name: "" });
+  const [bulkConfirm, setBulkConfirm] = useState({ open: false, keys: [] });
+  const storeMap = useStoreNameMap();
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const res = await api.get("/products", { params: { all: "true" } });
+        setProducts(
+          (res.data.data || []).map((p) => ({
+            value: String(p.id),
+            label: `${p.code ? `${p.code} - ` : ""}${p.name}`,
+            name: p.name,
+          }))
+        );
+      } catch (err) {
+        console.error("Failed to load products for brand margin list", err);
+      }
+    };
+    fetchProducts();
+  }, []);
+
+  const handleAddProduct = () => {
+    if (!product || !margin) {
+      toast.warn("Please select a product and enter margin");
+      return;
+    }
+    const found = products.find((p) => p.value === product);
+    const item = {
+      product,
+      productLabel: found?.label || product,
+      margin: parseFloat(margin) || 0,
+    };
+    setProductList((prev) => [...prev, item]);
+    setProduct("");
+    setMargin("");
+  };
+
+  const handleRemoveProduct = (index) => {
+    setProductList((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleNew = () => {
+    setCode("");
+    setName("");
+    setPrintingName("");
+    setMinMargin("");
+    setMaxMargin("");
+    setBrandType("");
+    setDiscountType("");
+    setDiscountValue("");
+    setIsActive(true);
+    setStoreId("");
+    setProductList([]);
+    setCurrentId(null);
+    initialFormRef.current = { id: null, sig: null };
+    setShowSearchPage(false);
+  };
+
+  const handleSave = async () => {
+    if (!name.trim()) { toast.warn("Name is required"); return; }
+    if (!printingName.trim()) { toast.warn("Printing Name is required"); return; }
+
+    const currentState = {
+      code, name, printingName, minMargin, maxMargin,
+      brandType, discountType, discountValue, isActive, storeId,
+      productList,
+    };
+    if (currentId && initialFormRef.current.id === currentId
+        && buildBrandSig(currentState) === initialFormRef.current.sig) {
+      toast.info("No changes detected.");
+      return;
+    }
+    if (savingRef.current) return;
+    savingRef.current = true;
+    setSaving(true);
+
+    const product_ids = productList.map((p) => Number(p.product));
+    const product_margins = {};
+    productList.forEach((p) => {
+      product_margins[String(p.product)] = Number(p.margin);
+    });
+
+    const payload = {
+      code: code.trim() || null,
+      name: name.trim(),
+      printing_name: printingName.trim(),
+      min_margin: minMargin ? parseFloat(minMargin) : null,
+      max_margin: maxMargin ? parseFloat(maxMargin) : null,
+      brand_type: brandType || null,
+      discount_type: discountType || null,
+      discount_value: discountValue ? parseFloat(discountValue) : null,
+      is_active: isActive,
+      product_ids,
+      product_margins,
+      ...(storeId ? { company_id: Number(storeId) } : {}),
+    };
+
+    try {
+      if (currentId) {
+        await api.put(`/brands/${currentId}`, payload);
+        initialFormRef.current = { id: currentId, sig: buildBrandSig(currentState) };
+        toast.success("Brand updated successfully");
+      } else {
+        const res = await api.post("/brands", payload);
+        const newId = res.data.data.id;
+        const savedCode = res.data.data.code || code;
+        setCode(savedCode);
+        setCurrentId(newId);
+        initialFormRef.current = { id: newId, sig: buildBrandSig({ ...currentState, code: savedCode }) };
+        toast.success("Brand created successfully");
+      }
+    } catch (err) {
+      toast.error(apiErrorMessage(err));
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
+  };
+
+  const grid = useSearchGrid({
+    adapter: createSearchGridAdapter("/brands"),
+    enabled: showSearchPage,
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to load brand records"),
+  });
+  const { rows: searchResults, setRows: setSearchResults, loading: searchLoading, page, setPage, limit, setLimit, pagination, rawPagination } = grid;
+  const fetchBrands = grid.refresh;
+  const handleBrandsNextCursor = grid.navigateCursor;
+  const handleBrandsPreviousCursor = grid.navigateCursor;
+  const handleServerSearch = grid.onServerSearch;
+
+  const handleSearchClick = () => {
+    setShowSearchPage(true);
+    fetchBrands();
+  };
+
+
+  const handleEditFromSearch = (row) => {
+    setCurrentId(row.id);
+    setCode(row.code || "");
+    setName(row.name || "");
+    setPrintingName(row.printing_name || "");
+    setMinMargin(row.min_margin != null ? String(row.min_margin) : "");
+    setMaxMargin(row.max_margin != null ? String(row.max_margin) : "");
+    setBrandType(row.brand_type || "");
+    setDiscountType(row.discount_type || "");
+    setDiscountValue(row.discount_value != null ? String(row.discount_value) : "");
+    setIsActive(row.is_active !== false);
+    setStoreId(row.company_id != null ? String(row.company_id) : "");
+
+    const pIds = row.product_ids || [];
+    const pMargins = row.product_margins || {};
+    const loadedList = pIds.map((pid) => {
+      const found = products.find((p) => p.value === String(pid));
+      return {
+        product: String(pid),
+        productLabel: found?.label || String(pid),
+        margin: pMargins[String(pid)] ?? 0,
+      };
+    });
+    setProductList(loadedList);
+    initialFormRef.current = {
+      id: row.id,
+      sig: buildBrandSig({
+        code: row.code || "",
+        name: row.name || "",
+        printingName: row.printing_name || "",
+        minMargin: row.min_margin != null ? String(row.min_margin) : "",
+        maxMargin: row.max_margin != null ? String(row.max_margin) : "",
+        brandType: row.brand_type || "",
+        discountType: row.discount_type || "",
+        discountValue: row.discount_value != null ? String(row.discount_value) : "",
+        isActive: row.is_active !== false,
+        storeId: row.company_id != null ? String(row.company_id) : "",
+        productList: loadedList,
+      }),
+    };
+    setShowSearchPage(false);
+  };
+
+  const handleDeleteConfirmed = async () => {
+    const { id, name: delName } = confirm;
+    setConfirm({ open: false, id: null, name: "" });
+    try {
+      await api.delete(`/brands/${id}`);
+      toast.success(`"${delName}" deleted successfully`);
+      setSearchResults((prev) => prev.filter((r) => r.id !== id));
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to delete brand");
+    }
+  };
+
+  const handleBulkDelete = (keys) => {
+    setBulkConfirm({ open: true, keys });
+  };
+
+  const handleBulkDeleteConfirmed = async () => {
+    const { keys } = bulkConfirm;
+    setBulkConfirm({ open: false, keys: [] });
+    try {
+      await Promise.all(keys.map((id) => api.delete(`/brands/${id}`)));
+      toast.success(`${keys.length} record(s) deleted`);
+      setSelectedRows([]);
+      fetchBrands();
+    } catch {
+      toast.error("Failed to delete some records");
+    }
+  };
+
+  const brandTableColumns = [
+    { key: "code", label: "Code" },
+    { key: "name", label: "Name" },
+    { key: "printing_name", label: "Printing Name" },
+    { key: "brand_type", label: "Brand Type" },
+    { key: "discount_type", label: "Discount Type" },
+    {
+      key: "discount_value",
+      label: "Discount Value",
+      render: (value) => (value != null ? value : "—"),
+      searchValue: (row) => row.discount_value,
+    },
+    {
+      key: "is_active",
+      label: "Active",
+      render: (value) => (value ? "Yes" : "No"),
+      searchValue: (row) => (row.is_active ? "yes" : "no"),
+    },
+    {
+      key: "created_by",
+      label: "Created By",
+      render: (value) => value || "—",
+      searchValue: (row) => row.created_by || "",
+    },
+    {
+      key: "company_id",
+      label: "Store/Warehouse",
+      render: (value) => storeMap[String(value)] ?? "—",
+      searchValue: (row) => storeMap[String(row.company_id)] ?? "",
+    },
+  ];
+
+  return (
+    <Box sx={{ height: "100%", display: "flex", flexDirection: "column", bgcolor: "background.default", color: "text.primary" }}>
+      <ConfirmDialog
+        open={confirm.open}
+        message={`Are you sure you want to delete brand "${confirm.name}"? This action cannot be undone.`}
+        onConfirm={handleDeleteConfirmed}
+        onCancel={() => setConfirm({ open: false, id: null, name: "" })}
+      />
+      <ConfirmDialog
+        open={bulkConfirm.open}
+        message={`Are you sure you want to delete ${bulkConfirm.keys.length} selected record(s)? This action cannot be undone.`}
+        onConfirm={handleBulkDeleteConfirmed}
+        onCancel={() => setBulkConfirm({ open: false, keys: [] })}
+      />
+
+      <PageHeader
+        title={
+          <Breadcrumbs
+            items={[
+              { label: "Master", onClick: () => navigate("/masters") },
+              { label: "Brand" },
+            ]}
+          />
+        }
+        onBack={() => navigate(-1)}
+        actions={
+          <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+            <Button
+              onClick={handleNew}
+              className="topbar-action-btn topbar-action-new"
+              startIcon={<PlusCircle size={12} />}
+              size="small"
+            >
+              New
+            </Button>
+            <Typography sx={{ color: "text.secondary" }}>|</Typography>
+            <UploadImportButton
+              endpoint="/brands/bulk"
+              fieldConfig={BRAND_IMPORT_CONFIG}
+              onDone={() => {
+                setShowSearchPage(true);
+                if (page === 1) fetchBrands();
+                else setPage(1);
+              }}
+            />
+            {showSearchPage && (
+              <>
+                <Typography sx={{ color: "text.secondary" }}>|</Typography>
+                <ExportBottomSheet
+                  columns={brandTableColumns}
+                  rows={searchResults}
+                  selectedRowKeys={selectedRows}
+                  onExportRows={async () => {
+                    const res = await api.get("/brands", { params: { all: "true" } });
+                    return res.data?.data || [];
+                  }}
+                  fileName="brands"
+                  buttonClassName="topbar-action-btn topbar-action-export"
+                />
+              </>
+            )}
+            <Typography sx={{ color: "text.secondary" }}>|</Typography>
+            {!showSearchPage && (
+              <>
+                <Button
+                  className="glass-btn glass-btn-success"
+                  onClick={handleSave}
+                  disabled={saving}
+                  startIcon={<Save size={12} />}
+                  size="small"
+                >
+                  {saving ? "Saving..." : "Save"}
+                </Button>
+                <Typography sx={{ color: "text.secondary" }}>|</Typography>
+              </>
+            )}
+            <Button
+              className="glass-btn glass-btn-primary"
+              onClick={handleSearchClick}
+              startIcon={<Search size={12} />}
+              size="small"
+            >
+              Search
+            </Button>
+          </Stack>
+        }
+      />
+
+      <Box sx={showSearchPage ? masterSearchAreaSx : { p: 1.5, flex: 1, minHeight: 0, overflowY: "auto" }}>
+        {!showSearchPage ? (
+          <Card
+            variant="outlined"
+            sx={{ p: 2 }}
+            data-enter-scope="true"
+            onKeyDownCapture={handleEnterKeyNavigation}
+          >
+            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "repeat(12, 1fr)" }, gap: 3 }}>
+              {/* Left Section - Primary Details */}
+              <Box sx={{ gridColumn: { xs: "span 12", lg: "span 6" }, display: "flex", flexDirection: "column", gap: 1, pr: 2 }}>
+                <TextInput
+                  label="Code"
+                  required
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                />
+
+                <TextInput
+                  label="Name"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+
+                <TextInput
+                  label="Printing Name"
+                  required
+                  value={printingName}
+                  onChange={(e) => setPrintingName(e.target.value)}
+                />
+
+                <DualTextInput
+                  label="Margin"
+                  name1="minMargin"
+                  value1={minMargin}
+                  name2="maxMargin"
+                  value2={maxMargin}
+                  onChange={(e) => (e.target.name === "minMargin" ? setMinMargin : setMaxMargin)(e.target.value)}
+                />
+
+                <SelectInput
+                  label="Brand Type"
+                  options={brandTypeOptions}
+                  value={brandType}
+                  onChange={(e) => setBrandType(e.target.value)}
+                />
+
+                <SelectTextInput
+                  label="Discount / Value"
+                  selectName="discountType"
+                  selectValue={discountType}
+                  options={discountOptions}
+                  placeholder="Select"
+                  inputName="discountValue"
+                  inputValue={discountValue}
+                  inputPlaceholder="Value"
+                  onChange={(e) => (e.target.name === "discountType" ? setDiscountType : setDiscountValue)(e.target.value)}
+                />
+
+                <Stack direction="row" sx={{ alignItems: "center" }}>
+                  <Typography component="label" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
+                    Logo
+                  </Typography>
+                  <Stack direction="row" sx={{ flex: 1, alignItems: "center", gap: 1 }}>
+                    <Typography
+                      component="label"
+                      htmlFor="logoUpload"
+                      sx={{ cursor: "pointer", px: 1.5, py: 0.75, bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.24 : 0.12), border: 1, borderColor: (theme) => alpha(theme.palette.primary.main, 0.4), borderRadius: "3.5px", color: "primary.main", fontSize: 12.25, "&:hover": { bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.32 : 0.2) } }}
+                    >
+                      📁 Choose Image
+                    </Typography>
+                    <Box
+                      component="input"
+                      id="logoUpload"
+                      type="file"
+                      accept="image/*"
+                      sx={{ display: "none" }}
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          const file = e.target.files[0];
+                          console.log("Selected file:", file.name);
+                        }
+                      }}
+                    />
+                    <Typography component="span" sx={{ fontSize: 10.5, color: "text.secondary", fontStyle: "italic" }}>No file selected</Typography>
+                  </Stack>
+                </Stack>
+
+                <CheckboxInput
+                  label="Active"
+                  name="isActive"
+                  checked={isActive}
+                  onChange={(e) => setIsActive(e.target.checked)}
+                />
+              </Box>
+
+              {/* Right Section - Product Margin List */}
+              <Box sx={{ gridColumn: { xs: "span 12", lg: "span 6" }, borderLeft: 1, borderColor: "divider", pl: 2 }}>
+                <Typography component="h2" sx={{ fontSize: 15, fontWeight: 700, mb: 1.5, pb: 1, borderBottom: 1, borderColor: "divider" }}>
+                  Product Margin - B2B
+                </Typography>
+                <Box sx={{ border: 1, borderColor: "grey.300", borderRadius: "3.5px", overflow: "hidden" }}>
+                  <Stack direction="row" sx={{ bgcolor: "action.hover", borderBottom: 1, borderColor: "divider", p: 1, fontSize: 12.25, fontWeight: 600, color: "text.secondary" }}>
+                    <Box sx={{ width: "50%", px: 0.5 }}>Product</Box>
+                    <Box sx={{ width: "33.33%", px: 0.5 }}>Margin (%)</Box>
+                    <Box sx={{ width: "16.66%", px: 0.5, textAlign: "right" }}>Action</Box>
+                  </Stack>
+
+                  <Stack direction="row" sx={{ alignItems: "center", borderBottom: 1, borderColor: "divider", p: 1, gap: 1 }}>
+                    <SelectTextInput
+                      selectName="product"
+                      selectValue={product}
+                      options={products}
+                      placeholder="Select Product"
+                      inputName="margin"
+                      inputValue={margin}
+                      inputPlaceholder="Margin"
+                      onChange={(e) => (e.target.name === "product" ? setProduct : setMargin)(e.target.value)}
+                    />
+                    <Button
+                      onClick={handleAddProduct}
+                      className="glass-btn glass-btn-primary"
+                      startIcon={<PlusCircle size={16} />}
+                      sx={{ width: "16.66%", height: 30, flexShrink: 0 }}
+                    >
+                      Add
+                    </Button>
+                  </Stack>
+
+                  <Box sx={{ fontSize: 12.25 }}>
+                    {productList.length === 0 ? (
+                      <Box sx={{ color: "text.secondary", fontStyle: "italic", p: 1.5, textAlign: "center" }}>
+                        No products added
+                      </Box>
+                    ) : (
+                      <Table sx={{ width: "100%" }} size="small">
+                        <TableBody>
+                          {productList.map((item, index) => (
+                            <TableRow
+                              key={index}
+                              hover
+                            >
+                              <TableCell sx={{ width: "50%" }}>{item.productLabel || item.product}</TableCell>
+                              <TableCell sx={{ width: "33.33%" }}>{item.margin}%</TableCell>
+                              <TableCell sx={{ width: "16.66%", textAlign: "right" }}>
+                                <IconButton
+                                  onClick={() => handleRemoveProduct(index)}
+                                  size="small"
+                                  sx={{ color: "error.main", "&:hover": { color: "error.dark" } }}
+                                >
+                                  <Trash2 size={16} />
+                                </IconButton>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    )}
+                  </Box>
+                </Box>
+              </Box>
+            </Box>
+          </Card>
+        ) : (
+          <MasterSearchPanel>
+            <Typography component="h2" sx={{ fontSize: 16, fontWeight: 700, mb: 1 }}>
+              Search Brands
+            </Typography>
+            <FilterableDataTable
+              rows={searchResults}
+              columns={brandTableColumns}
+              loading={searchLoading}
+              searchPlaceholder="Search in brand fields..."
+              searchButtonClassName="glass-btn glass-btn-primary"
+              showExport={false}
+              enableColumnResize
+              tablePreferenceKey="masters.brands.list"
+              onRefresh={() => fetchBrands()}
+              refreshDisabled={searchLoading}
+              enableServerSearch
+              onServerSearch={handleServerSearch}
+                onSortChange={grid.onSortChange}
+                serverSortFields={{ name: "name", code: "code" }}
+              page={page}
+              limit={limit}
+              totalPages={pagination.totalPages}
+              totalRows={pagination.total}
+              pagination={rawPagination}
+              onPageChange={setPage}
+              onNextCursor={handleBrandsNextCursor}
+              onPreviousCursor={handleBrandsPreviousCursor}
+              onFetchGroupSummaries={fetchBrandGroupSummaries}
+              onFetchGroupRows={fetchBrandGroupRows}
+              onLimitChange={(value) => {
+                setLimit(value);
+                setPage(1);
+              }}
+              onRowClick={handleEditFromSearch}
+              paginationMode="server"
+              enableVirtualization
+              enableSelection
+              enableKeyboardNav
+              selectedRows={selectedRows}
+              onSelectionChange={setSelectedRows}
+              onBulkDelete={handleBulkDelete}
+              fillHeight
+              compact
+              renderActions={(row, { selectedCount } = {}) => (
+                <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                  <button
+                    type="button"
+                    onClick={() => handleEditFromSearch(row)}
+                    title="Edit"
+                    disabled={selectedCount > 1}
+                    className="glass-btn glass-btn-primary"
+                  >
+                    <Pencil size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirm({ open: true, id: row.id, name: row.name })}
+                    title="Delete"
+                    className="glass-btn glass-btn-danger"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </Stack>
+              )}
+            />
+          </MasterSearchPanel>
+        )}
+      </Box>
+    </Box>
+  );
+};
+
+export default Brand;

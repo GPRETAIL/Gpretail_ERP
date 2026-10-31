@@ -1,6 +1,6 @@
-import api from "../../api/axios";
-import { getRuntimeRoutingSnapshot } from "../../api/runtimeRouting";
-import { prepareCheckoutAttempt } from "../../pages/sales/posCheckoutAttempt";
+import api from "@/shared/api/apiClient";
+import { getRuntimeRoutingSnapshot } from "@/shared/api/runtimeRouting";
+import { prepareCheckoutAttempt } from "@/features/sales/pos/utils/posCheckoutAttempt";
 import { addToSyncQueue, saveDraft } from "../offline/db";
 
 // One basket has one durable key and one originating database, even if its

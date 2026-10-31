@@ -5,7 +5,7 @@ import { beforeEach, expect, it, vi } from "vitest";
 import MobileAccessGate from "./MobileAccessGate";
 
 const { get } = vi.hoisted(() => ({ get: vi.fn() }));
-vi.mock("../../api/axios", () => ({ default: { get } }));
+vi.mock("@/shared/api/apiClient", () => ({ default: { get } }));
 const show = () => render(<Provider store={configureStore({ reducer: { auth: () => ({}) } })}><MobileAccessGate><div>Licensed workspace</div></MobileAccessGate></Provider>);
 const response = (stores, tenantAdmin = true) => ({ data: { data: { mobile_session: true, tenant_admin: tenantAdmin, stores, portal_url: "https://company.gpsoftware.in/login" } } });
 beforeEach(() => { vi.clearAllMocks(); sessionStorage.clear(); });

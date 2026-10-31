@@ -2,7 +2,7 @@ import { act, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import MobileHeader from "./MobileHeader";
 const { get, state } = vi.hoisted(() => ({ get: vi.fn(), state: { auth: { user: { id: 1 }, token: "session" } } }));
-vi.mock("../../api/axios", () => ({ default: { get } }));
+vi.mock("@/shared/api/apiClient", () => ({ default: { get } }));
 vi.mock("react-redux", () => ({ useSelector: select => select(state) }));
 beforeEach(() => { vi.clearAllMocks(); localStorage.clear(); sessionStorage.clear(); state.auth.user = { id: 1 }; get.mockResolvedValue({ data: { data: { count: 3 } } }); });
 afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });

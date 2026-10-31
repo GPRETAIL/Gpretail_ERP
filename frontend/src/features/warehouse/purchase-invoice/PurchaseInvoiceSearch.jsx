@@ -1,0 +1,339 @@
+import PageHeader from "@/shared/components/PageHeader";
+import SearchGridPanel from "@/shared/components/SearchGridPanel";
+import { masterSearchAreaSx } from "@/shared/theme/erpUi";
+import useSearchGrid, { createSearchGridAdapter } from "@/shared/hooks/useSearchGrid";
+import { useMemo, useState } from "react";
+import { Trash2, Pencil } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import api from "@/shared/api/apiClient";
+import Toast from "@/shared/components/Toast";
+import ConfirmDialog from "@/shared/components/ConfirmDialog";
+import FilterableDataTable from "@/shared/components/FilterableDataTable";
+import Breadcrumbs from "@/shared/components/Breadcrumbs";
+import { createGroupFetchers } from "@/shared/utils/serverGrouping";
+import ExportBottomSheet from "@/shared/components/ExportBottomSheet";
+import UploadImportButton from "@/shared/components/UploadImportButton";
+import { Box, Stack, IconButton, Button } from "@mui/material";
+
+// Matches config('pagination.resources.purchase_invoices.groupable_columns') on the backend
+// (the /invoices route is backed by PurchaseInvoiceController, which pages the
+// 'purchase_invoices' resource key, not the unused 'invoices' key).
+
+// Matches config('pagination.resources.purchase_invoices.groupable_columns') on the backend
+// (the /invoices route is backed by PurchaseInvoiceController, which pages the
+// 'purchase_invoices' resource key, not the unused 'invoices' key).
+const { onFetchGroupSummaries: fetchInvoiceGroupSummaries, onFetchGroupRows: fetchInvoiceGroupRows } =
+  createGroupFetchers("/invoices", { supplier: "supplier_id" });
+
+const INVOICE_IMPORT_CONFIG = {
+  aliases: {
+    companyid: "company_id", company: "company_id", store: "company_id",
+    transportentryid: "transport_entry_id", transportentry: "transport_entry_id", lrentryno: "transport_entry_id",
+    supplierid: "supplier_id", supplier: "supplier_id", suppliername: "supplier_name",
+    invoiceno: "invoice_no",
+    entrydate: "entry_date",
+    invoicedate: "invoice_date",
+    lrno: "lr_no",
+    lrexpense: "lr_expense",
+    billvalue: "bill_value",
+    expenseperc: "expense_perc",
+    expenseamt: "expense_amt",
+    pieces: "pieces",
+    bundles: "bundles",
+    baseamount: "base_amount",
+    discount: "discount",
+    taxcharges: "tax_charges",
+    grossamount: "gross_amount",
+    netamount: "net_amount",
+    interstate: "interstate",
+    creditnote: "credit_note",
+  },
+  required: ["transport_entry_id", "supplier_id", "invoice_no", "entry_date", "invoice_date"],
+  boolFields: ["interstate", "credit_note"],
+  sampleFileName: "invoice_sample.xlsx",
+  sampleHeaders: [
+    "company", "transport_entry_id", "supplier_id", "invoice_no", "entry_date", "invoice_date",
+    "lr_no", "bill_value", "pieces", "bundles", "base_amount", "discount", "tax_charges",
+    "gross_amount", "net_amount",
+  ],
+};
+
+const formatDate = (dateStr) => {
+  if (!dateStr) return "-";
+  const d = new Date(dateStr);
+  return d.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+};
+
+const PurchaseInvoiceSearch = () => {
+  const navigate = useNavigate();
+
+
+  const [selectedRows, setSelectedRows] = useState([]);
+  const [toast, setToast] = useState({ open: false, type: "info", message: "" });
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, invoice: null });
+  const [bulkConfirm, setBulkConfirm] = useState({ open: false, keys: [] });
+
+  const showToast = (type, message) => setToast({ open: true, type, message });
+
+  const tableColumns = useMemo(
+    () => [
+      {
+        key: "invoice_no",
+        label: "Invoice No",
+        valueGetter: (row) => row.invoice_no || "-",
+      },
+      {
+        key: "invoice_date",
+        label: "Invoice Date",
+        valueGetter: (row) => row.invoice_date || "",
+        render: (value) => formatDate(value),
+        searchValue: (row) => formatDate(row.invoice_date),
+      },
+      {
+        key: "entry_date",
+        label: "Entry Date",
+        valueGetter: (row) => row.entry_date || "",
+        render: (value) => formatDate(value),
+        searchValue: (row) => formatDate(row.entry_date),
+      },
+      {
+        key: "company",
+        label: "Company",
+        valueGetter: (row) => row.company?.name || "-",
+      },
+      {
+        key: "supplier",
+        label: "Supplier",
+        valueGetter: (row) => row.supplier?.name || "-",
+      },
+      {
+        key: "bundles",
+        label: "Bundles",
+        valueGetter: (row) => Number(row.bundles || 0),
+        render: (value) => <Box sx={{ textAlign: "right" }}>{Number(value || 0)}</Box>,
+      },
+      {
+        key: "tax_charges",
+        label: "Tax",
+        valueGetter: (row) => Number(row.tax_charges || 0),
+        render: (value) => <Box sx={{ textAlign: "right" }}>{Number(value || 0).toFixed(2)}</Box>,
+      },
+      {
+        key: "net_amount",
+        label: "Net Amount",
+        valueGetter: (row) => Number(row.net_amount || 0),
+        render: (value) => <Box sx={{ textAlign: "right" }}>{Number(value || 0).toFixed(2)}</Box>,
+      },
+    ],
+    []
+  );
+
+  const grid = useSearchGrid({
+    adapter: createSearchGridAdapter("/invoices"),
+    onError: err => setToast({ open: true, type: "error", message: err.response?.data?.message || "Failed to load records" }),
+  });
+  const { rows: results, setRows: setResults, loading, page, setPage, limit, setLimit, pagination } = grid;
+  const fetchResults = grid.refresh;
+  const handleServerSearch = grid.onServerSearch;
+
+  const handleBulkDelete = (keys) => {
+    setBulkConfirm({ open: true, keys });
+  };
+
+  const handleBulkDeleteConfirmed = async () => {
+    const { keys } = bulkConfirm;
+    setBulkConfirm({ open: false, keys: [] });
+    try {
+      await Promise.all(keys.map((id) => api.delete(`/invoices/${id}`)));
+      showToast("success", `${keys.length} record(s) deleted`);
+      setSelectedRows([]);
+      fetchResults();
+    } catch {
+      showToast("error", "Failed to delete some records");
+    }
+  };
+
+  const handleDeleteClick = (e, invoice) => {
+    e.stopPropagation();
+    setDeleteDialog({ open: true, invoice });
+  };
+
+  const handleDeleteConfirm = async () => {
+    const invoice = deleteDialog.invoice;
+    if (!invoice) return;
+    setDeleteDialog({ open: false, invoice: null });
+
+    try {
+      await api.delete(`/invoices/${invoice.id}`);
+      setResults((prev) => prev.filter((r) => r.id !== invoice.id));
+      showToast("success", `Invoice #${invoice.invoice_no || invoice.id} deleted successfully`);
+      fetchResults();
+    } catch (err) {
+      console.error("Delete failed:", err);
+      showToast("error", err.response?.data?.message || "Failed to delete invoice");
+    }
+  };
+
+  const openInvoiceEditor = (invoice) => {
+    const invoiceId = invoice?.id ?? invoice?.invoice_id ?? invoice?.invoiceId ?? null;
+    if (!invoiceId) {
+      showToast("warning", "Selected row does not have an invoice id");
+      return;
+    }
+
+    const query = new URLSearchParams({
+      mode: "edit",
+      invoice_id: String(invoiceId),
+    });
+
+    navigate(`/warehouse/invoice?${query.toString()}`, {
+      state: {
+        mode: "edit",
+        invoiceId,
+        fromSearch: true,
+      },
+    });
+  };
+
+  return (
+    <Box sx={{ height: "100%", display: "flex", flexDirection: "column", bgcolor: "background.default", color: "text.primary" }} className="master-responsive">
+      <PageHeader
+        onBack={() => navigate("/warehouse/invoice")}
+        backLabel="Back"
+        title={<>
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+            <Breadcrumbs
+              items={[
+                { label: "Warehouse", onClick: () => navigate("/warehouse") },
+                { label: "Invoice Search" },
+              ]}
+            />
+            <Box component="span" sx={{ fontSize: 12.25, fontWeight: 400, color: "text.secondary", ml: 1 }}>
+              | {results.length} Results
+            </Box>
+          </Stack>
+        </>}
+        actions={<>
+          <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+          <UploadImportButton
+            endpoint="/invoices/bulk"
+            fieldConfig={INVOICE_IMPORT_CONFIG}
+            onDone={() => fetchResults({ pageOverride: 1 })}
+          />
+          <ExportBottomSheet
+            columns={tableColumns}
+            rows={results}
+            selectedRowKeys={selectedRows}
+            onExportRows={async () => {
+              try {
+                const res = await api.get("/invoices", { params: { all: "true" } });
+                return res.data?.data || [];
+              } catch {
+                const res = await api.get("/invoices");
+                return res.data?.data || [];
+              }
+            }}
+            fileName="invoice_search"
+            buttonClassName="topbar-action-btn topbar-action-export"
+          />
+        </Stack>
+        </>}
+      />
+
+      <Box sx={masterSearchAreaSx}>
+        <SearchGridPanel>
+          <FilterableDataTable
+            rows={results}
+            columns={tableColumns}
+            loading={loading}
+            loadingText="Loading invoices..."
+            emptyText="No invoices found."
+            searchPlaceholder="Search in invoice fields..."
+            showExport={false}
+            enableColumnResize
+            tablePreferenceKey="warehouse.invoice_search.list"
+            onRefresh={fetchResults}
+            refreshDisabled={loading}
+            enableServerSearch
+            onServerSearch={handleServerSearch}
+            pagination={grid.rawPagination}
+            onNextCursor={grid.navigateCursor}
+            onPreviousCursor={grid.navigateCursor}
+            page={page}
+            limit={limit}
+            totalPages={pagination.totalPages}
+            totalRows={pagination.total}
+            onPageChange={setPage}
+            onLimitChange={(value) => {
+              setLimit(value);
+              setPage(1);
+            }}
+            onFetchGroupSummaries={fetchInvoiceGroupSummaries}
+            onFetchGroupRows={fetchInvoiceGroupRows}
+            enableVirtualization
+            paginationMode="server"
+            enableSelection
+            enableKeyboardNav
+            selectedRows={selectedRows}
+            onSelectionChange={setSelectedRows}
+            onBulkDelete={handleBulkDelete}
+            onRowClick={(invoice) => openInvoiceEditor(invoice)}
+            fillHeight
+            renderActions={(invoice, { selectedCount } = {}) => (
+              <Stack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "center" }}>
+                <IconButton
+                  type="button"
+                  onClick={() => openInvoiceEditor(invoice)}
+                  title="Edit"
+                  disabled={selectedCount > 1}
+                  className="glass-btn glass-btn-primary"
+                  sx={{ borderRadius: "3.5px", p: 0.75 }}
+                >
+                  <Pencil size={14} />
+                </IconButton>
+                <IconButton
+                  type="button"
+                  onClick={(e) => handleDeleteClick(e, invoice)}
+                  className="glass-btn glass-btn-danger"
+                  title="Delete"
+                  sx={{ borderRadius: "3.5px", p: 0.75 }}
+                >
+                  <Trash2 size={16} />
+                </IconButton>
+              </Stack>
+            )}
+          />
+        </SearchGridPanel>
+      </Box>
+
+      <Toast
+        open={toast.open}
+        type={toast.type}
+        message={toast.message}
+        onClose={() => setToast((prev) => ({ ...prev, open: false }))}
+      />
+
+      <ConfirmDialog
+        open={deleteDialog.open}
+        title="Delete Invoice"
+        message={`Are you sure you want to delete invoice "${deleteDialog.invoice?.invoice_no || ""}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        danger
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setDeleteDialog({ open: false, invoice: null })}
+      />
+      <ConfirmDialog
+        open={bulkConfirm.open}
+        message={`Are you sure you want to delete ${bulkConfirm.keys.length} selected record(s)? This action cannot be undone.`}
+        onConfirm={handleBulkDeleteConfirmed}
+        onCancel={() => setBulkConfirm({ open: false, keys: [] })}
+      />
+    </Box>
+  );
+};
+
+export default PurchaseInvoiceSearch;

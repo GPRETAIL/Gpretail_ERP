@@ -1,0 +1,276 @@
+import useSearchGrid, { createSearchGridAdapter } from "@/shared/hooks/useSearchGrid";
+import MasterSearchPanel from "./components/MasterSearchPanel";
+import { masterSearchAreaSx } from "@/shared/theme/erpUi";
+import React, { useState } from "react";
+import { ArrowLeft, Eye, Pencil, PlusCircle, Trash2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import { Box, Stack, Typography, Button } from "@mui/material";
+import api from "@/shared/api/apiClient";
+import ConfirmDialog from "@/shared/components/ConfirmDialog";
+import FilterableDataTable from "@/shared/components/FilterableDataTable";
+import UploadImportButton from "@/shared/components/UploadImportButton";
+import ExportBottomSheet from "@/shared/components/ExportBottomSheet";
+import PageHeader from "@/shared/components/PageHeader";
+import Breadcrumbs from "@/shared/components/Breadcrumbs";
+import useStoreNameMap from "@/shared/hooks/useStoreNameMap";
+import { createGroupFetchers } from "@/shared/utils/serverGrouping";
+
+// Matches config('pagination.resources.transports.groupable_columns') on the backend.
+const { onFetchGroupSummaries: fetchTransportGroupSummaries, onFetchGroupRows: fetchTransportGroupRows } =
+  createGroupFetchers("/transports", { is_active: "is_active" });
+
+const TRANSPORT_IMPORT_CONFIG = {
+  aliases: {
+    businessmode: "business_mode",
+    name: "name",
+    contactperson: "contact_person",
+    contactno: "contact_no",
+    email: "email_id",
+    emailid: "email_id",
+    address: "address",
+    city: "city_id",
+    cityid: "city_id",
+    state: "state_id",
+    stateid: "state_id",
+    pan: "pan",
+    gst: "gst",
+    bank: "bank_id",
+    bankid: "bank_id",
+    branch: "branch",
+    bankaccountname: "bank_account_name",
+    ifsc: "ifsc",
+    accountno: "account_no",
+    price: "price",
+    tax: "tax_id",
+    taxid: "tax_id",
+    vehicles: "vehicles",
+    loadingperbox: "loading_per_box",
+    loadingperbundle: "loading_per_bundle",
+    allowedpaymentmode: "allowed_payment_mode",
+    rcm: "rcm",
+    isactive: "is_active",
+    active: "is_active",
+  },
+  required: ["name"],
+  boolFields: ["rcm", "is_active"],
+  sampleFileName: "transport_sample.xlsx",
+  sampleHeaders: [
+    "business_mode", "name", "contact_person", "contact_no", "email", "address",
+    "city", "state", "pan", "gst", "bank", "branch", "bank_account_name",
+    "ifsc", "account_no", "price", "tax", "vehicles", "loading_per_box",
+    "loading_per_bundle", "allowed_payment_mode", "rcm", "is_active",
+  ],
+};
+
+const Transport = () => {
+  const navigate = useNavigate();
+  const [selectedRows, setSelectedRows] = useState([]);
+  const [confirmDlg, setConfirmDlg] = useState({ open: false, id: null, name: "" });
+  const [bulkConfirm, setBulkConfirm] = useState({ open: false, keys: [] });
+  const storeMap = useStoreNameMap();
+
+
+  const grid = useSearchGrid({
+    adapter: createSearchGridAdapter("/transports"),
+    enabled: true,
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to load transport records"),
+  });
+  const { rows: data, loading: loading, page, setPage, limit, setLimit, pagination, rawPagination } = grid;
+  const fetchData = grid.refresh;
+  const handleTransportNextCursor = grid.navigateCursor;
+  const handleTransportPreviousCursor = grid.navigateCursor;
+  const handleServerSearch = grid.onServerSearch;
+
+
+  const columns = [
+    { key: "name", label: "Name" },
+    { key: "business_mode", label: "Business Mode" },
+    { key: "contact_person", label: "Contact Person" },
+    { key: "contact_no", label: "Contact No" },
+    { key: "allowed_payment_mode", label: "Payment Mode" },
+    {
+      key: "is_active",
+      label: "Active",
+      render: (value) => (value ? "Yes" : "No"),
+      searchValue: (row) => (row.is_active ? "yes" : "no"),
+    },
+    {
+      key: "created_by",
+      label: "Created By",
+      render: (value) => value || "—",
+      searchValue: (row) => row.created_by || "",
+    },
+    {
+      key: "company_id",
+      label: "Store/Warehouse",
+      render: (value) => storeMap[String(value)] ?? "—",
+      searchValue: (row) => storeMap[String(row.company_id)] ?? "",
+    },
+  ];
+
+  const handleDeleteConfirmed = async () => {
+    const { id } = confirmDlg;
+    setConfirmDlg({ open: false, id: null, name: "" });
+    try {
+      await api.delete(`/transports/${id}`);
+      toast.success("Transport deleted");
+      fetchData();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Delete failed");
+    }
+  };
+
+  const handleBulkDelete = (keys) => {
+    setBulkConfirm({ open: true, keys });
+  };
+
+  const handleBulkDeleteConfirmed = async () => {
+    const { keys } = bulkConfirm;
+    setBulkConfirm({ open: false, keys: [] });
+    try {
+      await Promise.all(keys.map((id) => api.delete(`/transports/${id}`)));
+      toast.success(`${keys.length} record(s) deleted`);
+      setSelectedRows([]);
+      fetchData();
+    } catch {
+      toast.error("Failed to delete some records");
+    }
+  };
+
+  return (
+    <Box sx={{ height: "100%", display: "flex", flexDirection: "column", bgcolor: "background.default", color: "text.primary" }}>
+      <ConfirmDialog
+        open={confirmDlg.open}
+        message={`Are you sure you want to delete "${confirmDlg.name}"? This action cannot be undone.`}
+        onConfirm={handleDeleteConfirmed}
+        onCancel={() => setConfirmDlg({ open: false, id: null, name: "" })}
+      />
+      <ConfirmDialog
+        open={bulkConfirm.open}
+        message={`Are you sure you want to delete ${bulkConfirm.keys.length} selected record(s)? This action cannot be undone.`}
+        onConfirm={handleBulkDeleteConfirmed}
+        onCancel={() => setBulkConfirm({ open: false, keys: [] })}
+      />
+
+      <PageHeader
+        title={
+          <Breadcrumbs
+            items={[
+              { label: "Master", onClick: () => navigate("/masters") },
+              { label: "Transport" },
+            ]}
+          />
+        }
+        onBack={() => navigate(-1)}
+        actions={
+          <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+            <Button
+              onClick={() => navigate("/masters/transport/new")}
+              className="topbar-action-btn topbar-action-new"
+              startIcon={<PlusCircle size={12} />}
+              size="small"
+            >
+              New
+            </Button>
+            <Typography sx={{ color: "text.secondary" }}>|</Typography>
+            <UploadImportButton
+              endpoint="/transports/bulk"
+              fieldConfig={TRANSPORT_IMPORT_CONFIG}
+              onDone={() => {
+                if (page === 1) fetchData();
+                else setPage(1);
+              }}
+            />
+            <Typography sx={{ color: "text.secondary" }}>|</Typography>
+            <ExportBottomSheet
+              columns={columns}
+              rows={data}
+              selectedRowKeys={selectedRows}
+              onExportRows={async () => {
+                const res = await api.get("/transports", { params: { all: "true" } });
+                return res.data?.data || [];
+              }}
+              fileName="transports"
+              buttonClassName="topbar-action-btn topbar-action-export"
+            />
+          </Stack>
+        }
+      />
+
+      <Box sx={masterSearchAreaSx}>
+        <MasterSearchPanel>
+          <Typography component="h2" sx={{ fontSize: 18, fontWeight: 700, mb: 1.5 }}>
+            Transport Search
+          </Typography>
+          <FilterableDataTable
+            rows={data}
+            columns={columns}
+            loading={loading}
+            searchPlaceholder="Search in transport fields..."
+            searchButtonClassName="glass-btn glass-btn-primary"
+            showExport={false}
+            enableColumnResize
+            tablePreferenceKey="masters.transports.list"
+            onRefresh={() => fetchData()}
+            refreshDisabled={loading}
+            enableServerSearch
+            onServerSearch={handleServerSearch}
+                onSortChange={grid.onSortChange}
+                serverSortFields={{ name: "name", code: "code" }}
+            page={page}
+            limit={limit}
+            totalPages={pagination.totalPages}
+            totalRows={pagination.total}
+            pagination={rawPagination}
+            enableVirtualization
+            onPageChange={setPage}
+            onNextCursor={handleTransportNextCursor}
+            onPreviousCursor={handleTransportPreviousCursor}
+            onFetchGroupSummaries={fetchTransportGroupSummaries}
+            onFetchGroupRows={fetchTransportGroupRows}
+            onLimitChange={(value) => {
+              setLimit(value);
+              setPage(1);
+            }}
+            enableSelection
+            enableKeyboardNav
+            selectedRows={selectedRows}
+            onSelectionChange={setSelectedRows}
+            onBulkDelete={handleBulkDelete}
+            onRowClick={(t) => navigate(`/masters/transport/edit/${t.id}`)}
+            fillHeight
+            renderActions={(t, { selectedCount } = {}) => (
+              <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                <button
+                  onClick={() => navigate(`/masters/transport/${t.id}`)}
+                  className="glass-btn glass-btn-primary"
+                  title="View"
+                >
+                  <Eye size={16} />
+                </button>
+                <button
+                  onClick={() => navigate(`/masters/transport/edit/${t.id}`)}
+                  title="Edit"
+                  disabled={selectedCount > 1}
+                  className="glass-btn glass-btn-primary"
+                >
+                  <Pencil size={16} />
+                </button>
+                <button
+                  onClick={() => setConfirmDlg({ open: true, id: t.id, name: t.name })}
+                  className="glass-btn glass-btn-danger"
+                  title="Delete"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </Stack>
+            )}
+          />
+        </MasterSearchPanel>
+      </Box>
+    </Box>
+  );
+};
+
+export default Transport;

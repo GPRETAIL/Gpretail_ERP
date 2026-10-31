@@ -1,8 +1,8 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 import SalesScreen from "../SalesScreen";
-import api from "../../../api/axios";
-vi.mock("../../../api/axios", () => ({ default: { get: vi.fn() } }));
+import api from "@/shared/api/apiClient";
+vi.mock("@/shared/api/apiClient", () => ({ default: { get: vi.fn() } }));
 const invoice = { id: 7, bill_no: "261024-0001", status: "PAID", payment_mode: "CASH", grand_total: 123.45, subtotal: 120, tax_amount: 3.45, discount_amount: 0, paid_amount: 150, change_amount: 26.55, remaining_amount: 0, sale_date: "2026-10-24T10:00:00Z", customer: { name: "Coffee customer" }, items: [{ id: 1, product: { name: "Coffee beans" }, quantity: 2, selling_price: 60, subtotal: 123.45, tax_amount: 3.45 }] };
 beforeEach(() => { vi.clearAllMocks(); api.get.mockImplementation(async url => ({ data: { data: url === "/pos-sales/7" ? invoice : [invoice] } })); });
 it("opens a selected invoice with product prices, precise totals and payment details", async () => {

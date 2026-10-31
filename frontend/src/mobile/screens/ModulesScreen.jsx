@@ -12,7 +12,7 @@ import {
   UserCheck,
 } from "lucide-react";
 import { Box, Typography } from "@mui/material";
-import api from "../../api/axios";
+import api from "@/shared/api/apiClient";
 import { isRestrictedRole } from "../utils/rolePermissions";
 import { canOpenMobileScreen, useMobileAccess } from "../utils/mobileAccessContext";
 

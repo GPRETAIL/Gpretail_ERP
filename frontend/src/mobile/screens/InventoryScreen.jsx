@@ -1,10 +1,10 @@
 import { useMobileAccess, canOpenMobileScreen } from "../utils/mobileAccessContext";
-import useAsyncQuery from "../../hooks/useAsyncQuery";
-import { EMPTY_ARRAY } from "../../utils/emptyValues";
+import useAsyncQuery from "@/shared/hooks/useAsyncQuery";
+import { EMPTY_ARRAY } from "@/shared/utils/emptyValues";
 import React, { useEffect, useCallback } from "react";
 import { ChevronRight } from "lucide-react";
 import { Box, Typography } from "@mui/material";
-import api from "../../api/axios";
+import api from "@/shared/api/apiClient";
 import { SkeletonKpiGrid } from "../components/SkeletonCards";
 
 const money = (n) =>

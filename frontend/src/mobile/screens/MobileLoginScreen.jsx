@@ -2,10 +2,10 @@ import React, { useState } from "react";
 import { useDispatch } from "react-redux";
 import { Lock, User, LogIn, AlertCircle } from "lucide-react";
 import { Box, Typography } from "@mui/material";
-import { loginUser } from "../../features/authSlice";
-import ActivationWizard from "../../pages/ActivationWizard";
-import GoogleSignInButton from "../../components/GoogleSignInButton";
-import VynerixLoginBrand from "../../components/auth/VynerixLoginBrand";
+import { loginUser } from "@/features/auth/authSlice";
+import ActivationWizard from "@/features/activation/ActivationWizard";
+import GoogleSignInButton from "@/features/auth/components/GoogleSignInButton";
+import VynerixLoginBrand from "@/shared/brand/VynerixLoginBrand";
 
 /**
  * Premium Native Mobile Login Screen for Vynerix ERP.

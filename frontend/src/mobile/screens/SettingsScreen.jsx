@@ -22,13 +22,13 @@ import {
   Headphones,
 } from "lucide-react";
 import { Box, Typography } from "@mui/material";
-import api from "../../api/axios";
+import api from "@/shared/api/apiClient";
 import SecurityPinSettings from "../security/SecurityPinSettings";
 import DisplayAccessibilitySettings from "./DisplayAccessibilitySettings";
 import { isRestrictedRole } from "../utils/rolePermissions";
 import { useMobileAccess } from "../utils/mobileAccessContext";
 
-const RemoteSupport = lazy(() => import("../../pages/settings/RemoteSupport"));
+const RemoteSupport = lazy(() => import("@/features/settings/RemoteSupport"));
 
 const formatDateTime = (value) => {
   if (!value) return "--";

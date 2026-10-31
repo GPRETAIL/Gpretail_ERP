@@ -50,7 +50,7 @@ export default defineConfig([
     languageOptions: { globals: { ...globals.vitest } },
   },
   {
-    files: ['src/routes/protectedLayoutRoutes.jsx'],
+    files: ['src/app/routes.jsx'],
     rules: { 'react-refresh/only-export-components': 'off' },
   },
 ])

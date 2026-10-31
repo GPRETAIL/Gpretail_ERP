@@ -1,5 +1,5 @@
-import useAsyncQuery from "../../hooks/useAsyncQuery";
-import useStoreDisplayName from "../../hooks/useStoreDisplayName";
+import useAsyncQuery from "@/shared/hooks/useAsyncQuery";
+import useStoreDisplayName from "@/shared/hooks/useStoreDisplayName";
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   TrendingUp,
@@ -19,9 +19,9 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { Box, Typography } from "@mui/material";
-import api from "../../api/axios";
+import api from "@/shared/api/apiClient";
 import { setCachedData, getCachedData, getSyncQueue } from "../offline/db";
-import useDashboardRealtime from "../../hooks/useDashboardRealtime";
+import useDashboardRealtime from "@/features/dashboard/hooks/useDashboardRealtime";
 import BranchSelectorModal from "../components/BranchSelectorModal";
 
 const money = (n) =>

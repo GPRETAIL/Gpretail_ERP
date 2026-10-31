@@ -1,0 +1,217 @@
+import useSearchGrid, { createSearchGridAdapter } from "@/shared/hooks/useSearchGrid";
+import MasterSearchPanel from "@/features/masters/components/MasterSearchPanel";
+import { masterSearchAreaSx } from "@/shared/theme/erpUi";
+import { ArrowLeft, Pencil, PlusCircle, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import { Box, Stack, Card, Typography, Button } from "@mui/material";
+import api from "@/shared/api/apiClient";
+import ConfirmDialog from "@/shared/components/ConfirmDialog";
+import FilterableDataTable from "@/shared/components/FilterableDataTable";
+import SearchableSelect from "@/shared/components/SearchableSelect";
+import PageHeader from "@/shared/components/PageHeader";
+import Breadcrumbs from "@/shared/components/Breadcrumbs";
+
+const typeOptions = [
+  { label: "DEPARTMENT", value: "department" },
+  { label: "SECTION", value: "section" },
+  { label: "ROLE", value: "role" },
+  { label: "FLOOR", value: "floor" },
+  { label: "DESIGNATION", value: "designation" },
+  { label: "SALARY STRUCTURE", value: "salary_structure" },
+  { label: "WORKING HOUR", value: "working_hour" },
+];
+
+const HrConfiguration = () => {
+  const navigate = useNavigate();
+  const [configType, setConfigType] = useState("department");
+  const [confirm, setConfirm] = useState({ open: false, id: null, name: "" });
+
+  const typeLabelMap = {
+    department: "Department",
+    section: "Section",
+    role: "Role",
+    floor: "Floor",
+    designation: "Designation",
+    salary_structure: "Salary Structure",
+    working_hour: "Working Hour",
+  };
+  const endpointMap = {
+    department: "/hr-departments",
+    section: "/hr-sections",
+    role: "/hr-roles",
+    floor: "/hr-floors",
+    designation: "/hr-designations",
+    salary_structure: "/hr-salary-structures",
+    working_hour: "/hr-working-hours",
+  };
+  const safeType = endpointMap[configType] ? configType : "department";
+  const typeLabel = typeLabelMap[safeType];
+  const baseEndpoint = endpointMap[safeType];
+  const showIsSales = safeType === "department" || safeType === "section";
+  const showLocation = safeType === "floor";
+  const showRole = safeType === "designation";
+  const showWorkingHourColumns = safeType === "working_hour";
+
+  const grid = useSearchGrid({
+    adapter: createSearchGridAdapter(baseEndpoint, undefined, { paginate: true }),
+    scopeKey: baseEndpoint,
+    onError: err => toast.error(err.response?.data?.message || "Failed to load HR configuration"),
+  });
+  const { rows, setRows, loading, page: tablePage, setPage: setTablePage, limit: tableLimit, setLimit: setTableLimit } = grid;
+
+  const handleDeleteConfirmed = async () => {
+    const { id, name } = confirm;
+    setConfirm({ open: false, id: null, name: "" });
+    try {
+      await api.delete(`${baseEndpoint}/${id}`);
+      toast.success(`"${name}" deleted successfully.`);
+      setRows((prev) => prev.filter((r) => r.id !== id));
+    } catch (err) {
+      toast.error(err.response?.data?.message || `Failed to delete ${typeLabel.toLowerCase()}`);
+    }
+  };
+
+  const hrColumns = [
+    { key: "code", label: "Code" },
+    { key: "name", label: "Name" },
+    ...(showLocation
+      ? [{
+          key: "location_name",
+          label: "Location",
+          render: (_, row) => row.location?.name || "—",
+          searchValue: (row) => row.location?.name || "",
+        }]
+      : []),
+    ...(showRole
+      ? [{
+          key: "role_name",
+          label: "Role",
+          render: (_, row) => row.role_name || row.role?.name || "—",
+          searchValue: (row) => row.role_name || row.role?.name || "",
+        }]
+      : []),
+    ...(showWorkingHourColumns
+      ? [
+          { key: "minimum_full_day", label: "Minimum Full Day" },
+          { key: "minimum_present", label: "Minimum Present" },
+          { key: "from_time", label: "From" },
+          { key: "to_time", label: "To" },
+          { key: "working_hours", label: "Working Hours" },
+        ]
+      : []),
+    ...(showIsSales
+      ? [
+          {
+            key: "is_sales",
+            label: "Is Sales",
+            render: (value) => (value ? "Yes" : "No"),
+            searchValue: (row) => (row.is_sales ? "yes" : "no"),
+          },
+        ]
+      : []),
+  ];
+
+  return (
+    <Box sx={{ height: "100%", minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden", bgcolor: "background.default", color: "text.primary" }}>
+      <ConfirmDialog
+        open={confirm.open}
+        message={`Are you sure you want to delete this ${typeLabel.toLowerCase()} "${confirm.name}"? This action cannot be undone.`}
+        onConfirm={handleDeleteConfirmed}
+        onCancel={() => setConfirm({ open: false, id: null, name: "" })}
+      />
+
+      <PageHeader
+        title={
+          <Breadcrumbs
+            items={[
+              { label: "HRMS", onClick: () => navigate("/hrms") },
+              { label: "HR Configuration" },
+            ]}
+          />
+        }
+        onBack={() => navigate(-1)}
+        actions={
+          <Button
+            onClick={() => navigate(`/hrms/hr-configuration/new?type=${configType}`)}
+            className="topbar-action-btn topbar-action-new"
+            startIcon={<PlusCircle size={12} />}
+            size="small"
+          >
+            New
+          </Button>
+        }
+      />
+
+      <Box sx={{ ...masterSearchAreaSx, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <Card variant="outlined" sx={{ p: 1, mb: 1, flexShrink: 0 }}>
+          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "repeat(12, 1fr)" }, gap: 1.5 }}>
+            <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" } }}>
+              <SearchableSelect
+                label="HR Type"
+                name="configType"
+                options={typeOptions}
+                value={configType}
+                onChange={(e) => setConfigType(e.target.value || "department")}
+              />
+            </Box>
+          </Box>
+        </Card>
+
+        <MasterSearchPanel>
+          <FilterableDataTable
+            fillHeight
+            rows={rows}
+            columns={hrColumns}
+            onRowClick={(row) => navigate(`/hrms/hr-configuration/new?type=${configType}&id=${row.id}`)}
+            enableKeyboardNav
+            loading={loading}
+            emptyText="No records found."
+            searchPlaceholder={`Search in ${typeLabel.toLowerCase()} fields...`}
+            searchButtonClassName="glass-btn glass-btn-primary"
+            showExport={false}
+            tablePreferenceKey={`hrms.hr-configuration.${safeType}`}
+            paginationMode="server"
+              enableServerSearch
+              onServerSearch={grid.onServerSearch}
+              pagination={grid.rawPagination}
+              onNextCursor={grid.navigateCursor}
+              onPreviousCursor={grid.navigateCursor}
+            page={tablePage}
+            limit={tableLimit}
+            totalRows={grid.pagination.total}
+            totalPages={grid.pagination.totalPages}
+            onPageChange={setTablePage}
+            onLimitChange={(value) => {
+              setTableLimit(value);
+              setTablePage(1);
+            }}
+            renderActions={(row) => (
+              <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                <button
+                  onClick={() => navigate(`/hrms/hr-configuration/new?type=${configType}&id=${row.id}`)}
+                  title="Edit"
+                  className="glass-btn glass-btn-primary"
+                  type="button"
+                >
+                  <Pencil size={14} />
+                </button>
+                <button
+                  onClick={() => setConfirm({ open: true, id: row.id, name: row.name })}
+                  title="Delete"
+                  className="glass-btn glass-btn-danger"
+                  type="button"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </Stack>
+            )}
+          />
+        </MasterSearchPanel>
+      </Box>
+    </Box>
+  );
+};
+
+export default HrConfiguration;

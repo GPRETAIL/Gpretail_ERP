@@ -4,7 +4,7 @@
  * Manages background synchronization of queued mutations when network restores.
  */
 
-import api from "../../api/axios";
+import api from "@/shared/api/apiClient";
 import { getSyncQueue, removeSyncQueueItem } from "./db";
 
 let isSyncing = false;

@@ -1,5 +1,5 @@
 import { Dialog, DialogActions, Button } from "@mui/material";
-import NotificationInboxPanel from "../../components/NotificationInboxPanel";
+import NotificationInboxPanel from "@/features/notifications/components/NotificationInboxPanel";
 export default function NotificationsModal({ isOpen, onClose }) {
   return <Dialog open={isOpen} onClose={onClose} fullWidth maxWidth="sm" aria-label="Notifications">
     {isOpen && <NotificationInboxPanel />}

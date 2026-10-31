@@ -1,0 +1,3315 @@
+import useResetOnChange from "@/shared/hooks/useResetOnChange";
+import useQrSources from "./hooks/useQrSources";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { Search, Save, Printer, Eye, X } from "lucide-react";
+import QRCode from "qrcode";
+import { useSelector } from "react-redux";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import api from "@/shared/api/apiClient";
+import Toast from "@/shared/components/Toast";
+import PageSkeleton from "@/shared/components/PageSkeleton";
+import Breadcrumbs from "@/shared/components/Breadcrumbs";
+import PageHeader from "@/shared/components/PageHeader";
+import AsyncSearchSelect from "@/shared/components/AsyncSearchSelect";
+import { usePrintContext } from "@/features/printing/context/PrintContext";
+import { buildCode39SvgMarkup } from "@/features/sales/customisation/utils/salesReceiptCustomisation";
+import {
+  DEFAULT_WAREHOUSE_BARCODE_CUSTOMIZATION,
+  getWarehouseCodePosition,
+  getWarehouseEffectiveFieldPosition,
+  getWarehouseLabelFieldFlexJustifyContent,
+  getWarehouseLabelFieldFontMm,
+  getWarehouseOrderedFields,
+  getWarehouseLabelFieldPosition,
+  getWarehouseLabelFieldTextAlign,
+  getWarehouseStickerMetrics,
+  isWarehouseLabelFieldVisible,
+  loadWarehouseBarcodeCustomization as _loadWarehouseBarcodeCustomization,
+  fetchWarehouseBarcodeCustomization,
+  splitWarehouseLabelFieldsForCenter,
+} from "./utils/barcodeCustomisation";
+import { Box, Stack, Typography, TextField, MenuItem, Button, Checkbox, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
+
+/* ── Resizable column hook ─────────────────────────────────────── */
+const useResizableColumns = (initialWidths) => {
+  const [widths, setWidths] = useState(initialWidths);
+  const dragging = useRef(null);
+
+  const onMouseDown = useCallback((colIndex, e) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startW = widths[colIndex];
+
+    const onMouseMove = (ev) => {
+      const diff = ev.clientX - startX;
+      setWidths((prev) => {
+        const next = [...prev];
+        next[colIndex] = Math.max(30, startW + diff);
+        return next;
+      });
+    };
+    const onMouseUp = () => {
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+      dragging.current = null;
+    };
+    dragging.current = colIndex;
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+  }, [widths]);
+
+  return { widths, onMouseDown };
+};
+
+const EMPTY_EDITOR_OPTIONS = {
+  products: [],
+  brands: [],
+  styles: [],
+  materials: [],
+  patterns: [],
+  sleeves: [],
+  fits: [],
+  types: [],
+  colors: [],
+};
+
+const toNumber = (value, fallback = 0) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const toDisplayText = (value) => {
+  const text = String(value || "").trim();
+  return text || "-";
+};
+
+const normalizeLookupKey = (value) => String(value || "").trim().toLowerCase();
+const normalizeVariantProductKey = (value) => normalizeLookupKey(value === "-" ? "" : value);
+const normalizeVariantSizeKey = (value) => normalizeLookupKey(value === "-" ? "" : value);
+const formatVariantPriceKey = (value) => toNumber(value, 0).toFixed(2);
+const buildVariantKey = ({ productName, size, sellingPrice }) => {
+  const productKey = normalizeVariantProductKey(productName);
+  if (!productKey) return "";
+  return `${productKey}::${normalizeVariantSizeKey(size)}::${formatVariantPriceKey(sellingPrice)}`;
+};
+const getBarcodeRowVariantKey = (row) =>
+  buildVariantKey({
+    productName: row?.product_name,
+    size: row?.size,
+    sellingPrice: row?.selling_price ?? row?.final_price ?? row?.mrp,
+  });
+const getItemVariantKey = (item) =>
+  buildVariantKey({
+    productName: item?.productName,
+    size: item?.size,
+    sellingPrice: item?.sellingPrice,
+  });
+
+const BARCODE_RANGE_PATTERN = /^([A-Z]{2})(\d{5})([A-Z])$/i;
+
+const compareBarcodeValues = (left, right) => {
+  const a = String(left || "").trim().toUpperCase();
+  const b = String(right || "").trim().toUpperCase();
+  const aMatch = a.match(BARCODE_RANGE_PATTERN);
+  const bMatch = b.match(BARCODE_RANGE_PATTERN);
+
+  if (aMatch && bMatch) {
+    if (aMatch[1] !== bMatch[1]) return aMatch[1].localeCompare(bMatch[1]);
+    if (aMatch[3] !== bMatch[3]) return aMatch[3].localeCompare(bMatch[3]);
+    return Number(aMatch[2]) - Number(bMatch[2]);
+  }
+
+  const aNum = Number(a);
+  const bNum = Number(b);
+  if (Number.isFinite(aNum) && Number.isFinite(bNum)) return aNum - bNum;
+
+  return a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" });
+};
+
+const buildBarcodeRange = (values = []) => {
+  const uniqueValues = [...new Set(
+    (Array.isArray(values) ? values : [])
+      .map((value) => String(value || "").trim())
+      .filter(Boolean)
+  )];
+
+  if (uniqueValues.length === 0) return "";
+  if (uniqueValues.length === 1) return uniqueValues[0];
+
+  const sorted = uniqueValues.sort(compareBarcodeValues);
+  return `${sorted[0]}-${sorted[sorted.length - 1]}`;
+};
+
+const sourceItemKey = (sourceItemId) => String(sourceItemId);
+
+const isGeneratedItem = (generatedIds, sourceItemId) =>
+  generatedIds.has(sourceItemKey(sourceItemId));
+
+const barcodeForItem = (barcodeMap, sourceItemId) =>
+  barcodeMap[sourceItemKey(sourceItemId)] || barcodeMap[sourceItemId] || "";
+
+const buildBarcodeRangeMap = (rows = [], keySelector) => {
+  const grouped = new Map();
+
+  (Array.isArray(rows) ? rows : []).forEach((row) => {
+    const key = keySelector(row);
+    const barcode = String(row?.barcode || "").trim();
+    if (key === undefined || key === null || !barcode) return;
+    if (!grouped.has(key)) grouped.set(key, []);
+    grouped.get(key).push(barcode);
+  });
+
+  const ranges = new Map();
+  grouped.forEach((values, key) => {
+    ranges.set(key, buildBarcodeRange(values));
+  });
+  return ranges;
+};
+
+const groupRowsByKey = (rows = [], keySelector) => {
+  const grouped = new Map();
+
+  (Array.isArray(rows) ? rows : []).forEach((row) => {
+    const key = keySelector(row);
+    if (key === undefined || key === null || key === "") return;
+    if (!grouped.has(key)) grouped.set(key, []);
+    grouped.get(key).push(row);
+  });
+
+  return grouped;
+};
+
+const assignDirectPurchaseBarcodeRanges = (items = [], barcodeRows = []) => {
+  const rangesByInventoryItemId = buildBarcodeRangeMap(
+    barcodeRows,
+    (row) => Number(row?.inventory_item_id ?? row?.inventoryItemId ?? 0) || null
+  );
+  const rangesByVariantKey = buildBarcodeRangeMap(barcodeRows, getBarcodeRowVariantKey);
+  const assignedRanges = new Map();
+
+  (Array.isArray(items) ? items : []).forEach((item) => {
+    const primaryInventoryItemId = Number(item?.primaryInventoryItemId || 0) || null;
+    const barcodeRange =
+      (primaryInventoryItemId ? rangesByInventoryItemId.get(primaryInventoryItemId) : "")
+      || rangesByVariantKey.get(getItemVariantKey(item))
+      || "";
+    if (!barcodeRange) return;
+    assignedRanges.set(item.sourceItemId, barcodeRange);
+  });
+
+  return assignedRanges;
+};
+
+const calcFinalPrice = (mrp, discountPerc) => {
+  const safeMrp = toNumber(mrp);
+  const safeDiscount = toNumber(discountPerc);
+  return Math.round((safeMrp - (safeMrp * safeDiscount / 100) + Number.EPSILON) * 100) / 100;
+};
+
+const findOptionLabel = (options, value, fallback = "-") => {
+  const matched = options.find((option) => String(option.value) === String(value));
+  return matched?.label || fallback;
+};
+
+const formatStickerAmount = (value) => toNumber(value, 0).toFixed(2);
+
+const formatStickerDiscount = (value) => {
+  const discount = toNumber(value, 0);
+  return Number.isInteger(discount) ? `${discount}%` : `${discount.toFixed(2)}%`;
+};
+
+const buildStickerFields = ({ customization, mrp, discountPerc, price }) => {
+  const fields = [];
+  if (isWarehouseLabelFieldVisible(customization, "mrp")) {
+    fields.push({ key: "mrp", label: "MRP", value: formatStickerAmount(mrp) });
+  }
+  if (isWarehouseLabelFieldVisible(customization, "discount")) {
+    fields.push({ key: "discount", label: "Disc", value: formatStickerDiscount(discountPerc) });
+  }
+  if (isWarehouseLabelFieldVisible(customization, "rs")) {
+    fields.push({ key: "rs", label: "Rs", value: formatStickerAmount(price) });
+  }
+  return fields;
+};
+
+const assignDirectPurchaseBarcodeValueMap = (items = [], barcodeRows = []) => {
+  const rowsByInventoryItemId = groupRowsByKey(
+    barcodeRows,
+    (row) => Number(row?.inventory_item_id || 0) || null
+  );
+  const rowsByVariantKey = groupRowsByKey(barcodeRows, getBarcodeRowVariantKey);
+  const assignedValues = new Map();
+
+  (Array.isArray(items) ? items : []).forEach((item) => {
+    const primaryInventoryItemId = Number(item?.primaryInventoryItemId || 0) || null;
+    const matchedRows =
+      (primaryInventoryItemId ? rowsByInventoryItemId.get(primaryInventoryItemId) : null)
+      || rowsByVariantKey.get(getItemVariantKey(item))
+      || [];
+    if (matchedRows.length > 0) assignedValues.set(item.sourceItemId, matchedRows);
+  });
+
+  return assignedValues;
+};
+
+const buildTransportBarcodeValueMap = (items = [], barcodeRows = []) => {
+  const byInventoryItemId = groupRowsByKey(
+    barcodeRows,
+    (row) => Number(row?.inventory_item_id || 0) || null
+  );
+  const byVariantKey = groupRowsByKey(barcodeRows, getBarcodeRowVariantKey);
+
+  const assignedValues = new Map();
+  (Array.isArray(items) ? items : []).forEach((item) => {
+    const inventoryItemId = Number(item?.inventoryItemId || 0) || null;
+    const values =
+      (inventoryItemId ? byInventoryItemId.get(inventoryItemId) : null)
+      || byVariantKey.get(getItemVariantKey(item))
+      || [];
+    if (values.length > 0) assignedValues.set(item.sourceItemId, values);
+  });
+
+  return assignedValues;
+};
+
+const getItemBarcodeRows = (item, barcodeValuesMap, barcodeMap) => {
+  if (!item) return [];
+  const mappedRows =
+    barcodeValuesMap.get(item.sourceItemId)
+    || barcodeValuesMap.get(sourceItemKey(item.sourceItemId))
+    || [];
+  if (mappedRows.length > 0) return mappedRows;
+  const fallbackValue = String(barcodeForItem(barcodeMap, item.sourceItemId) || "").trim();
+  return fallbackValue ? [{ barcode: fallbackValue }] : [];
+};
+
+// eslint-disable-next-line react-refresh/only-export-components -- shared with BarcodeSearchPage reprints
+export const buildStickerLabels = ({
+  item,
+  barcodeRows,
+  customization,
+}) => {
+  const rows = Array.isArray(barcodeRows) ? barcodeRows.filter((row) => String(row?.barcode || "").trim()) : [];
+  const itemQty = Math.max(0, Math.trunc(toNumber(item?.qty, 0)));
+  const previewRows =
+    rows.length === 1 && itemQty > 1
+      ? Array.from({ length: itemQty }, (_, index) => ({
+          ...rows[0],
+          __previewRepeatIndex: index,
+        }))
+      : rows;
+  const basePrice = toNumber(item?.finalPrice ?? item?.sellingPrice ?? item?.mrp, 0);
+  const baseMrp = toNumber(item?.mrp ?? item?.sellingPrice ?? item?.finalPrice, 0);
+  const baseDiscountPerc = toNumber(item?.discountPerc, 0);
+  const note = String(customization?.note || "").trim();
+
+  const labels = previewRows.map((row, index) => ({
+    key: `${item?.sourceItemId || item?.id || "item"}-${row?.id || "preview"}-${row?.__previewRepeatIndex ?? index}`,
+    codeValue: String(row?.barcode || "").trim(),
+    codeType: String(row?.code_type || customization?.codeType || "barcode").trim().toLowerCase() === "code"
+      ? "code"
+      : "barcode",
+    productName: String(item?.productName || row?.product_name || "").trim() || "-",
+    fields: buildStickerFields({
+      customization,
+      mrp: toNumber(row?.mrp, baseMrp),
+      discountPerc: toNumber(row?.discount_perc, baseDiscountPerc),
+      price: toNumber(row?.final_price ?? row?.selling_price, basePrice),
+    }),
+    note,
+  })).filter((label) => label.codeValue);
+
+  if (labels.length > 0) return labels;
+
+  return [];
+};
+
+// Shared across all three render paths (HTML print, SVG direct-print, JSX preview) so the price
+// field's emphasis stays in sync with whichever "Barcode and QR Code Format" preset is selected -
+// "plain" drops the usual bold treatment, "boxed"/"accent" add a border box around the price.
+const getWarehousePriceEmphasis = (formatStyle, textStyle) => {
+  const priceStyle = formatStyle?.priceStyle || "bold";
+  const boostedWeight = textStyle.fontWeight === 700 ? 800 : 700;
+  if (priceStyle === "plain") return { fontWeight: textStyle.fontWeight, boxed: false, accentColor: null };
+  if (priceStyle === "boxed") return { fontWeight: boostedWeight, boxed: true, accentColor: null };
+  if (priceStyle === "accent") return { fontWeight: boostedWeight, boxed: true, accentColor: "#2563eb" };
+  return { fontWeight: boostedWeight, boxed: false, accentColor: null };
+};
+
+const escapeHtml = (value = "") =>
+  String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
+const escapeXml = (value = "") =>
+  String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+
+const MM_TO_PX = 96 / 25.4;
+const BARCODE_SHEET_ROW_GAP_MM = 1;
+// Thermal label printers are commonly 203-300 DPI natively. At the old scale of 2 (96*2=192 DPI)
+// the rendered source PNG was already close to or below that, so the connector's print-time
+// DrawImage had to upsample slightly - on a 1-bit monochrome printer that shows up as soft/uneven
+// edges on fine detail (QR modules, small text) no matter how good the interpolation mode is.
+// Rendering well above any realistic printer DPI means the connector always downsamples instead,
+// which stays crisp with NearestNeighbor.
+const BARCODE_RENDER_SCALE = 4;
+
+const svgToDataUrl = (svgMarkup) =>
+  `data:image/svg+xml;charset=utf-8,${encodeURIComponent(String(svgMarkup || "").trim())}`;
+
+const mmToPx = (value) => (Number(value || 0) || 0) * MM_TO_PX;
+
+// The printed sticker sheet is built as raw SVG (rasterized to a PNG for the local print
+// connector / silent print path), so it doesn't get the browser's normal CSS text-overflow/
+// ellipsis handling the on-screen preview and popup-print HTML paths get for free - long product
+// names were overflowing past the label edge instead of truncating, and the MRP strikethrough
+// (drawn as a separate line, not real text-decoration) used a rough per-character width estimate
+// that didn't match the real rendered text, making it look like garbled overlapping pixels once
+// printed at label scale. Both are fixed by measuring real text width via a shared canvas context.
+let barcodeMeasureCtx = null;
+const getBarcodeMeasureCtx = () => {
+  if (!barcodeMeasureCtx) {
+    barcodeMeasureCtx = document.createElement("canvas").getContext("2d");
+  }
+  return barcodeMeasureCtx;
+};
+
+const buildSvgFontString = (fontSizePx, textStyle, fontWeight = textStyle.fontWeight) =>
+  `${textStyle.fontStyle === "italic" ? "italic " : ""}${fontWeight || 400} ${fontSizePx}px ${textStyle.fontFamily}`;
+
+const measureSvgTextWidthPx = (text, fontSizePx, textStyle, fontWeight) => {
+  const ctx = getBarcodeMeasureCtx();
+  ctx.font = buildSvgFontString(fontSizePx, textStyle, fontWeight);
+  return ctx.measureText(String(text || "")).width;
+};
+
+const truncateSvgTextToWidth = (text, maxWidthPx, fontSizePx, textStyle, fontWeight) => {
+  const str = String(text || "");
+  if (!str || maxWidthPx <= 0) return str;
+  if (measureSvgTextWidthPx(str, fontSizePx, textStyle, fontWeight) <= maxWidthPx) return str;
+  let lo = 0;
+  let hi = str.length;
+  while (lo < hi) {
+    const mid = Math.ceil((lo + hi) / 2);
+    const candidate = `${str.slice(0, mid)}…`;
+    if (measureSvgTextWidthPx(candidate, fontSizePx, textStyle, fontWeight) <= maxWidthPx) {
+      lo = mid;
+    } else {
+      hi = mid - 1;
+    }
+  }
+  return lo > 0 ? `${str.slice(0, lo)}…` : "…";
+};
+
+// buildCode39SvgMarkup returns an <svg> with fixed width/height attributes (raw generator units,
+// treated by the browser as literal CSS px when injected via dangerouslySetInnerHTML) - a CSS rule
+// targeting the injected svg is expected to override those, but in practice the injected element
+// kept its native pixel size regardless, overflowing its container. Rewriting the attributes
+// directly is a more reliable fix than depending on a CSS override winning against them.
+const makeCode39SvgResponsive = (svgMarkup) =>
+  String(svgMarkup || "")
+    .replace(/(<svg[^>]*\swidth=")[\d.]+(")/, "$1100%$2")
+    .replace(/(<svg[^>]*\sheight=")[\d.]+(")/, "$1100%$2");
+
+const buildBarcodeSheetMarkup = ({
+  labels = [],
+  customization,
+  storeName = "",
+  qrSources = {},
+}) => {
+  const metrics = getWarehouseStickerMetrics(customization);
+  const textStyle = metrics.textStyle;
+  const formatStyle = metrics.formatStyle;
+  const cardBorderCss = formatStyle.cardBorder ? "border: 0.2mm solid #d1d5db;" : "border: none;";
+  const cardRadiusCss = `border-radius: ${formatStyle.rounded ? "3mm" : "0"};`;
+  const headerDividerCss = formatStyle.headerDivider === "accent"
+    ? "border-bottom: 0.4mm solid #2563eb;"
+    : formatStyle.headerDivider === "solid"
+      ? "border-bottom: 0.25mm solid #111827;"
+      : "";
+  const storeNamePosition = getWarehouseLabelFieldPosition(customization, "storeName");
+  const productNamePosition = getWarehouseLabelFieldPosition(customization, "productName");
+  const notePosition = getWarehouseLabelFieldPosition(customization, "note");
+  const codePosition = getWarehouseCodePosition(customization);
+  const showStoreNameHeader = isWarehouseLabelFieldVisible(customization, "storeName") && storeName;
+  const showProductName = isWarehouseLabelFieldVisible(customization, "productName");
+  const showNote = isWarehouseLabelFieldVisible(customization, "note") && customization.note;
+  const buildFieldsHtml = (fields) =>
+    fields.map((field) => {
+      const fieldPosition = getWarehouseEffectiveFieldPosition(
+        getWarehouseLabelFieldPosition(customization, field.key),
+        codePosition
+      );
+      const isMrp = field.key === "mrp";
+      const isRs = field.key === "rs" || field.key === "price";
+      const isStriked = isMrp && Boolean(customization.mrpStrikeOut);
+      const priceEmphasis = isRs ? getWarehousePriceEmphasis(metrics.formatStyle, textStyle) : null;
+      const fieldFontWeight = isRs ? priceEmphasis.fontWeight : textStyle.fontWeight;
+      const priceBoxCss = priceEmphasis?.boxed
+        ? `border: 1px solid ${priceEmphasis.accentColor || "#111827"}; border-radius: 1mm; padding: 0.3mm 1mm; ${priceEmphasis.accentColor ? `background: ${priceEmphasis.accentColor}1a; color: ${priceEmphasis.accentColor};` : ""}`
+        : "";
+      if (isStriked) {
+        return `
+          <div class="field-row" style="justify-content: ${getWarehouseLabelFieldFlexJustifyContent(fieldPosition)}; text-align: ${getWarehouseLabelFieldTextAlign(fieldPosition)}; font-size: ${getWarehouseLabelFieldFontMm(metrics, field.key)}mm; font-weight: ${fieldFontWeight};">
+            <span style="position: relative; display: inline-flex; align-items: center; gap: 0.8mm;">
+              <span class="field-label">${escapeHtml(field.label)}</span>
+              <span class="field-value">${escapeHtml(field.value)}</span>
+              <svg style="position: absolute; left: -2px; top: 0; width: calc(100% + 4px); height: 100%; pointer-events: none; overflow: visible;" viewBox="0 0 100 100" preserveAspectRatio="none">
+                <line x1="0" y1="50" x2="100" y2="50" stroke="#dc2626" stroke-width="8" stroke-linecap="round" />
+              </svg>
+            </span>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="field-row" style="justify-content: ${getWarehouseLabelFieldFlexJustifyContent(fieldPosition)}; text-align: ${getWarehouseLabelFieldTextAlign(fieldPosition)}; font-size: ${getWarehouseLabelFieldFontMm(metrics, field.key)}mm; font-weight: ${fieldFontWeight}; text-decoration: ${textStyle.textDecoration}; ${priceBoxCss}">
+          <span class="field-label">${escapeHtml(field.label)}</span>
+          <span class="field-value">${escapeHtml(field.value)}</span>
+        </div>
+      `;
+    }).join("");
+
+  const cardsHtml = labels.map((label) => {
+    // A linear (Code39) barcode is naturally wide/short, unlike a QR's square footprint - forcing
+    // it into the same narrow side-column sized for a QR shrinks it in BOTH dimensions to preserve
+    // its aspect ratio, collapsing every bar to a fraction of a millimetre and making it unscannable
+    // regardless of print quality. Barcode-type labels get their own full-width stacked layout
+    // instead, so the barcode strip can use nearly the entire label width.
+    const isBarcodeType = label.codeType === "barcode";
+    const barcodeMarkup = isBarcodeType
+      ? buildCode39SvgMarkup(label.codeValue, {
+          height: 42,
+          narrowWidth: 1.2,
+          wideWidth: 3.2,
+          quietZone: 8,
+          showText: false,
+        })
+      : "";
+    const qrImgHtml = qrSources[label.key]
+      ? `<img src="${qrSources[label.key]}" alt="${escapeHtml(label.codeValue)}" class="qr-img" />`
+      : `<div class="qr-placeholder"></div>`;
+    const headerHtml = metrics.topBandHeightMm > 0
+      ? `
+          <div class="label-header" style="justify-content: ${getWarehouseLabelFieldFlexJustifyContent(storeNamePosition)}; text-align: ${getWarehouseLabelFieldTextAlign(storeNamePosition)};">
+            ${showStoreNameHeader ? `<div class="store-name" style="text-align: ${getWarehouseLabelFieldTextAlign(storeNamePosition)};">${escapeHtml(storeName)}</div>` : ""}
+          </div>
+        `
+      : "";
+    const visibleFields = (Array.isArray(label.fields) ? label.fields : []).filter((field) => {
+      if (field.key === "mrp") return isWarehouseLabelFieldVisible(customization, "mrp");
+      if (field.key === "discount") return isWarehouseLabelFieldVisible(customization, "discount");
+      if (field.key === "rs") return isWarehouseLabelFieldVisible(customization, "rs");
+      return true;
+    });
+    const orderedVisibleFields = getWarehouseOrderedFields(customization, visibleFields);
+    const productNameHtml = showProductName ? `
+      <div class="product-name-row" style="justify-content: ${getWarehouseLabelFieldFlexJustifyContent(productNamePosition)}; text-align: ${getWarehouseLabelFieldTextAlign(productNamePosition)};">
+        <div class="product-name">${escapeHtml(label.productName)}</div>
+      </div>
+    ` : "";
+    const noteHtml = showNote ? `
+      <div class="note-text-row" style="justify-content: ${getWarehouseLabelFieldFlexJustifyContent(notePosition)}; text-align: ${getWarehouseLabelFieldTextAlign(notePosition)};">
+        <div class="note-text">${escapeHtml(customization.note)}</div>
+      </div>
+    ` : "";
+
+    if (isBarcodeType) {
+      const fieldsRowHtml = orderedVisibleFields.length > 0
+        ? `<div class="fields-wrap fields-wrap-row">${buildFieldsHtml(orderedVisibleFields)}</div>`
+        : "";
+      return `
+        <div class="label-card">
+          ${headerHtml}
+          <div class="label-body-stack">
+            ${productNameHtml}
+            ${fieldsRowHtml}
+            <div class="barcode-strip">
+              <div class="barcode-strip-svg">${makeCode39SvgResponsive(barcodeMarkup)}</div>
+              <div class="code-text">${escapeHtml(label.codeValue)}</div>
+            </div>
+            ${noteHtml}
+          </div>
+        </div>
+      `;
+    }
+
+    const { leftFields, rightFields } = splitWarehouseLabelFieldsForCenter(customization, orderedVisibleFields);
+    const isCodeRight = codePosition === "right";
+    const isCodeCentered = codePosition === "center";
+    const fieldsHtml = orderedVisibleFields.length > 0
+      ? `<div class="fields-wrap">${buildFieldsHtml(orderedVisibleFields)}</div>`
+      : "";
+    const leftFieldsHtml = leftFields.length > 0
+      ? `<div class="fields-wrap">${buildFieldsHtml(leftFields)}</div>`
+      : "";
+    const rightFieldsHtml = rightFields.length > 0
+      ? `<div class="fields-wrap">${buildFieldsHtml(rightFields)}</div>`
+      : "";
+    const codeColHtml = `
+      <div class="code-col">
+        ${qrImgHtml}
+        <div class="code-text">${escapeHtml(label.codeValue)}</div>
+      </div>
+    `;
+
+    return `
+      <div class="label-card">
+        ${headerHtml}
+        <div class="label-body ${isCodeCentered ? "label-body-center" : ""}" style="${isCodeCentered ? "" : `grid-template-columns: ${isCodeRight ? `minmax(0, 1fr) ${metrics.codeColumnWidthMm}mm` : `${metrics.codeColumnWidthMm}mm minmax(0, 1fr)`};`}">
+          ${isCodeCentered ? `
+            ${productNameHtml}
+            <div class="center-fields-row">
+              <div class="content-col">${leftFieldsHtml}</div>
+              ${codeColHtml}
+              <div class="content-col">${rightFieldsHtml}</div>
+            </div>
+            ${noteHtml}
+          ` : isCodeRight ? `
+            <div class="content-col">
+              ${productNameHtml}
+              ${fieldsHtml}
+              ${noteHtml}
+            </div>
+            ${codeColHtml}
+          ` : `
+            ${codeColHtml}
+            <div class="content-col">
+              ${productNameHtml}
+              ${fieldsHtml}
+              ${noteHtml}
+            </div>
+          `}
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  const styleMarkup = `
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 0; font-family: ${textStyle.fontFamily}; background: #ffffff; }
+    .sheet { display: grid; grid-template-columns: repeat(${metrics.labelsPerRow}, ${metrics.labelWidthMm}mm); column-gap: 0; row-gap: ${BARCODE_SHEET_ROW_GAP_MM}mm; justify-content: start; padding: 0; width: ${metrics.labelWidthMm * metrics.labelsPerRow}mm; background: #ffffff; }
+    .label-card { width: ${metrics.labelWidthMm}mm; height: ${metrics.labelHeightMm}mm; overflow: hidden; ${cardBorderCss} ${cardRadiusCss} background: #fff; }
+    .label-header { min-height: ${metrics.topBandHeightMm}mm; display: flex; align-items: center; justify-content: center; padding: 0 1.5mm; text-align: center; ${headerDividerCss} }
+    .store-name, .code-text, .product-name, .field-row, .note-text { font-family: ${textStyle.fontFamily}; font-weight: ${textStyle.fontWeight}; font-style: ${textStyle.fontStyle}; text-decoration: ${textStyle.textDecoration}; }
+    .store-name { width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: ${metrics.storeNameFontMm}mm; text-transform: uppercase; letter-spacing: ${metrics.storeNameLetterSpacingEm}em; color: #111827; }
+    .label-body { display: grid; grid-template-columns: ${metrics.codeColumnWidthMm}mm minmax(0, 1fr); gap: ${metrics.bodyGapMm}mm; padding: ${metrics.bodyPadYMm}mm ${metrics.bodyPadXMm}mm; height: ${metrics.topBandHeightMm > 0 ? `calc(${metrics.labelHeightMm}mm - ${metrics.topBandHeightMm}mm)` : `${metrics.labelHeightMm}mm`}; }
+    .label-body-center { display: flex; flex-direction: column; }
+    .label-body-stack { display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; gap: ${metrics.bodyGapMm}mm; padding: ${metrics.bodyPadYMm}mm ${metrics.bodyPadXMm}mm; height: ${metrics.topBandHeightMm > 0 ? `calc(${metrics.labelHeightMm}mm - ${metrics.topBandHeightMm}mm)` : `${metrics.labelHeightMm}mm`}; overflow: hidden; }
+    .fields-wrap.fields-wrap-row { display: flex; flex-direction: row; justify-content: space-between; align-items: center; column-gap: ${metrics.bodyGapMm}mm; }
+    .barcode-strip { display: flex; flex-direction: column; align-items: center; width: 100%; }
+    .barcode-strip-svg { width: 100%; display: flex; justify-content: center; }
+    .barcode-strip-svg svg { width: 100%; height: auto; max-height: ${metrics.barcodeStripMaxHeightMm}mm; }
+    .center-fields-row { display: grid; grid-template-columns: minmax(0, 1fr) ${metrics.codeColumnWidthMm}mm minmax(0, 1fr); column-gap: ${metrics.bodyGapMm}mm; align-items: center; min-height: 0; flex: 1; }
+    .code-col { display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+    .barcode-svg { display: flex; max-height: ${metrics.barcodeHeightMm}mm; width: 100%; align-items: center; justify-content: center; overflow: hidden; }
+    .barcode-svg svg { width: 100%; height: auto; max-height: ${metrics.barcodeHeightMm}mm; }
+    .qr-img, .qr-placeholder { width: ${metrics.qrSizeMm}mm; height: ${metrics.qrSizeMm}mm; object-fit: contain; }
+    .qr-placeholder { background: #f3f4f6; border-radius: 1mm; }
+    .code-text { margin-top: ${metrics.codeTextMarginTopMm}mm; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; font-size: ${metrics.codeTextFontMm}mm; color: #374151; }
+    .content-col { min-width: 0; overflow: hidden; }
+    .product-name-row, .note-text-row { display: flex; width: 100%; align-items: center; }
+    .product-name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: ${metrics.productNameFontMm}mm; text-transform: uppercase; line-height: 1.2; color: #111827; }
+    .fields-wrap { margin-top: ${metrics.fieldsMarginTopMm}mm; display: grid; row-gap: ${metrics.fieldRowGapMm}mm; }
+    .field-row { display: flex; align-items: center; gap: ${metrics.bodyGapMm}mm; color: #1f2937; }
+    .field-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-transform: uppercase; }
+    .field-value { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .note-text-row { margin-top: ${metrics.noteMarginTopMm}mm; }
+    .note-text { max-width: 100%; font-size: ${metrics.noteFontMm}mm; line-height: 1.2; color: #374151; }
+  `;
+
+  const rowCount = Math.max(1, Math.ceil(labels.length / metrics.labelsPerRow));
+  const sheetWidthMm = metrics.labelWidthMm * metrics.labelsPerRow;
+  const sheetHeightMm =
+    metrics.labelHeightMm * rowCount + BARCODE_SHEET_ROW_GAP_MM * Math.max(0, rowCount - 1);
+
+  return {
+    styleMarkup,
+    cardsHtml,
+    metrics,
+    sheetWidthMm,
+    sheetHeightMm,
+    labels,
+    customization,
+    storeName,
+    qrSources,
+  };
+};
+
+const buildBarcodeSheetDocumentHtml = (markup, { autoPrint = false } = {}) => `
+  <!DOCTYPE html>
+  <html>
+    <head>
+      <title>Barcode Sticker Preview</title>
+      <style>
+        @page { margin: 0; size: ${markup.sheetWidthMm}mm ${markup.sheetHeightMm}mm; }
+        html, body { width: ${markup.sheetWidthMm}mm; min-height: ${markup.sheetHeightMm}mm; }
+        ${markup.styleMarkup}
+      </style>
+    </head>
+    <body>
+      <div class="sheet">${markup.cardsHtml}</div>
+      ${autoPrint ? `
+        <script>
+          window.onload = () => {
+            window.focus();
+            window.print();
+          };
+        </script>
+      ` : ""}
+    </body>
+  </html>
+`;
+
+const buildBarcodeSheetSvgMarkup = (markup) => {
+  const metrics = markup.metrics;
+  const textStyle = metrics.textStyle;
+  const labels = Array.isArray(markup.labels) ? markup.labels : [];
+  const customization = markup.customization || {};
+  const qrSources = markup.qrSources || {};
+  const storeName = String(markup.storeName || "").trim();
+  const labelsPerRow = Math.max(1, Number(metrics.labelsPerRow || 1) || 1);
+  const rowGapMm = BARCODE_SHEET_ROW_GAP_MM;
+  const labelWidthPx = mmToPx(metrics.labelWidthMm);
+  const labelHeightPx = mmToPx(metrics.labelHeightMm);
+  const rowGapPx = mmToPx(rowGapMm);
+  const sheetWidthPx = mmToPx(markup.sheetWidthMm);
+  const sheetHeightPx = mmToPx(markup.sheetHeightMm);
+  const topBandPx = mmToPx(metrics.topBandHeightMm);
+  const formatStyle = metrics.formatStyle;
+  const cardCornerPx = formatStyle.rounded ? mmToPx(3) : 0;
+  const cardStrokePx = formatStyle.cardBorder ? mmToPx(0.2) : 0;
+  const cardStrokeColor = formatStyle.cardBorder ? "#d1d5db" : "none";
+  const headerDividerColor = formatStyle.headerDivider === "accent"
+    ? "#2563eb"
+    : formatStyle.headerDivider === "solid"
+      ? "#111827"
+      : null;
+  const headerDividerLine = headerDividerColor && metrics.topBandHeightMm > 0
+    ? `<line x1="0" y1="${topBandPx}" x2="${labelWidthPx}" y2="${topBandPx}" stroke="${headerDividerColor}" stroke-width="${formatStyle.headerDivider === "accent" ? mmToPx(0.4) : mmToPx(0.25)}" />`
+    : "";
+  const bodyPadXPx = mmToPx(metrics.bodyPadXMm);
+  const bodyPadYPx = mmToPx(metrics.bodyPadYMm);
+  const bodyGapPx = mmToPx(metrics.bodyGapMm);
+  const codeColumnPx = mmToPx(metrics.codeColumnWidthMm);
+  const qrSizePx = mmToPx(metrics.qrSizeMm);
+  const codeTextMarginTopPx = mmToPx(metrics.codeTextMarginTopMm);
+  const fieldsMarginTopPx = mmToPx(metrics.fieldsMarginTopMm);
+  const fieldRowGapPx = mmToPx(metrics.fieldRowGapMm);
+  const noteMarginTopPx = mmToPx(metrics.noteMarginTopMm);
+  const contentTopPx = topBandPx + bodyPadYPx;
+  const contentBottomPx = labelHeightPx - bodyPadYPx;
+  const contentHeightPx = Math.max(contentBottomPx - contentTopPx, 1);
+  const codePosition = getWarehouseCodePosition(customization);
+  const isCodeRight = codePosition === "right";
+  const isCodeCentered = codePosition === "center";
+  const showStoreNameHeader = isWarehouseLabelFieldVisible(customization, "storeName") && storeName;
+  const showProductName = isWarehouseLabelFieldVisible(customization, "productName");
+  const showNote = isWarehouseLabelFieldVisible(customization, "note") && customization.note;
+  const storeNamePosition = getWarehouseLabelFieldPosition(customization, "storeName");
+  const productNamePosition = getWarehouseLabelFieldPosition(customization, "productName");
+  const notePosition = getWarehouseLabelFieldPosition(customization, "note");
+  const centerX = labelWidthPx / 2;
+  const centerY = contentTopPx + (contentHeightPx / 2);
+
+  // SVG <text> is positioned by its baseline, not its top edge - stacking rows by adding a fixed
+  // "previous row's font size" step (as this used to) only works when every row is the same size.
+  // Once one row (the hero price) is deliberately much bigger than its neighbours, that fixed step
+  // stops reserving enough headroom for the bigger row's own ascent, so it visually collides with
+  // the row above it. Advancing/trailing by each row's OWN font size (not the neighbour's) fixes
+  // that regardless of how differently-sized adjacent rows are.
+  const TEXT_ASCENT_RATIO = 0.82;
+  const TEXT_DESCENT_RATIO = 0.22;
+  const advanceForFont = (fontSizePx) => fontSizePx * TEXT_ASCENT_RATIO;
+  const trailForFont = (fontSizePx) => fontSizePx * TEXT_DESCENT_RATIO;
+
+  const getAnchor = (position) =>
+    position === "right" ? "end" : position === "center" ? "middle" : "start";
+
+  const getXForPosition = (position, left, width) =>
+    position === "right"
+      ? left + width
+      : position === "center"
+        ? left + (width / 2)
+        : left;
+
+  const buildTextNode = ({
+    text,
+    x,
+    y,
+    fontSizePx,
+    anchor = "start",
+    fill = "#111827",
+    letterSpacing = 0,
+    uppercase = false,
+    fontWeight = textStyle.fontWeight,
+    textDecoration = textStyle.textDecoration,
+  }) => {
+    const content = uppercase ? String(text || "").toUpperCase() : String(text || "");
+    return `<text x="${x}" y="${y}" text-anchor="${anchor}" font-family="${escapeXml(textStyle.fontFamily)}" font-size="${fontSizePx}" font-weight="${escapeXml(fontWeight)}" font-style="${escapeXml(textStyle.fontStyle)}" text-decoration="${escapeXml(textDecoration)}" fill="${fill}"${letterSpacing ? ` letter-spacing="${letterSpacing}"` : ""}>${escapeXml(content)}</text>`;
+  };
+
+  // A real "line-through" (matching what the Customisation page's "MRP Strikethrough" setting
+  // describes) is a single line across the middle of the text - not an X - and a thin one at that,
+  // so the struck-through number stays legible underneath instead of getting visually buried.
+  const buildCrossStrikeSvg = ({ text, x, y, fontSizePx, anchor = "start", textWidthPx }) => {
+    const textStr = String(text || "");
+    const textW = Number.isFinite(textWidthPx) && textWidthPx > 0
+      ? textWidthPx
+      : Math.max(fontSizePx * 2, textStr.length * fontSizePx * 0.58);
+    const x1 = anchor === "end" ? x - textW : anchor === "middle" ? x - (textW / 2) : x;
+    const x2 = x1 + textW;
+    const yMid = y - (fontSizePx * 0.32);
+    const strokeW = Math.max(0.6, fontSizePx * 0.055);
+    return `<line x1="${x1}" y1="${yMid}" x2="${x2}" y2="${yMid}" stroke="#dc2626" stroke-width="${strokeW}" stroke-linecap="round" />`;
+  };
+
+  // Draws behind the price text (pushed to `nodes` before the text node) for the "boxed"/"accent"
+  // Barcode and QR Code Format presets - a border box around the sticker's one "total"-equivalent
+  // number, mirroring buildReceiptFormatCss's boxed/highlighted total treatment for sales receipts.
+  const buildPriceBoxSvg = ({ text, x, y, fontSizePx, anchor = "start", textWidthPx, accentColor }) => {
+    const textStr = String(text || "");
+    const textW = Number.isFinite(textWidthPx) && textWidthPx > 0
+      ? textWidthPx
+      : Math.max(fontSizePx * 2, textStr.length * fontSizePx * 0.58);
+    const padX = fontSizePx * 0.35;
+    const padY = fontSizePx * 0.28;
+    const x1 = (anchor === "end" ? x - textW : anchor === "middle" ? x - (textW / 2) : x) - padX;
+    const boxW = textW + (padX * 2);
+    const boxH = (fontSizePx * (TEXT_ASCENT_RATIO + TEXT_DESCENT_RATIO)) + (padY * 2);
+    const boxY = y - (fontSizePx * TEXT_ASCENT_RATIO) - padY;
+    const stroke = accentColor || "#111827";
+    const fill = accentColor ? `${accentColor}1a` : "none";
+    return `<rect x="${x1}" y="${boxY}" width="${boxW}" height="${boxH}" rx="${fontSizePx * 0.15}" fill="${fill}" stroke="${stroke}" stroke-width="${Math.max(0.6, fontSizePx * 0.06)}" />`;
+  };
+
+  // A linear (Code39) barcode needs most of the label's own width to stay scannable (unlike a QR,
+  // which is naturally square and fits the side column fine) - forcing it into that same narrow
+  // column shrinks it in BOTH dimensions to keep its aspect ratio, collapsing every bar to a
+  // fraction of a millimetre. Extracts the raw generator's own width/height so the strip below can
+  // size itself to the real aspect ratio instead of guessing.
+  const parseCode39Dims = (svgMarkup) => {
+    const match = /<svg[^>]*\swidth="([\d.]+)"\s+height="([\d.]+)"/.exec(svgMarkup || "");
+    return match ? { width: Number(match[1]), height: Number(match[2]) } : null;
+  };
+
+  const buildLabelSvg = (label, index) => {
+    const rowIndex = Math.floor(index / labelsPerRow);
+    const columnIndex = index % labelsPerRow;
+    const offsetX = columnIndex * labelWidthPx;
+    const offsetY = rowIndex * (labelHeightPx + rowGapPx);
+
+    const visibleFields = (Array.isArray(label.fields) ? label.fields : []).filter((field) => {
+      if (field.key === "mrp") return isWarehouseLabelFieldVisible(customization, "mrp");
+      if (field.key === "discount") return isWarehouseLabelFieldVisible(customization, "discount");
+      if (field.key === "rs") return isWarehouseLabelFieldVisible(customization, "rs");
+      return true;
+    });
+    const orderedVisibleFields = getWarehouseOrderedFields(customization, visibleFields);
+    const productNamePositionEffective = getWarehouseEffectiveFieldPosition(productNamePosition, codePosition);
+    const notePositionEffective = getWarehouseEffectiveFieldPosition(notePosition, codePosition);
+    const headerNode = showStoreNameHeader && metrics.topBandHeightMm > 0
+      ? buildTextNode({
+          text: storeName,
+          x: getXForPosition(storeNamePosition, 0, labelWidthPx),
+          y: Math.max(mmToPx(metrics.storeNameFontMm), topBandPx - mmToPx(0.8)),
+          fontSizePx: mmToPx(metrics.storeNameFontMm),
+          anchor: getAnchor(storeNamePosition),
+          fill: "#111827",
+          uppercase: true,
+          letterSpacing: metrics.storeNameLetterSpacingEm ? `${metrics.storeNameLetterSpacingEm}em` : 0,
+        })
+      : "";
+
+    if (label.codeType === "barcode") {
+      const stripLeftPx = bodyPadXPx;
+      const stripWidthPx = Math.max(labelWidthPx - (2 * bodyPadXPx), 1);
+      const nodes = [];
+      let cursorY = contentTopPx;
+
+      if (showProductName) {
+        const productNameFontSizePx = mmToPx(metrics.productNameFontMm);
+        const displayProductName = truncateSvgTextToWidth(
+          String(label.productName || "").toUpperCase(),
+          stripWidthPx,
+          productNameFontSizePx,
+          textStyle
+        );
+        const baselineY = cursorY + advanceForFont(productNameFontSizePx);
+        nodes.push(buildTextNode({
+          text: displayProductName,
+          x: getXForPosition(productNamePositionEffective, stripLeftPx, stripWidthPx),
+          y: baselineY,
+          fontSizePx: productNameFontSizePx,
+          anchor: getAnchor(productNamePositionEffective),
+        }));
+        cursorY = baselineY + trailForFont(productNameFontSizePx) + fieldsMarginTopPx;
+      }
+
+      if (orderedVisibleFields.length > 0) {
+        // Give each field its own NATURAL width (the price is deliberately the biggest font, as
+        // the "hero" element) instead of forcing all fields into equal thirds - an equal split
+        // truncated the bigger price text ("Rs 280.00" -> "Rs 2...") even though there was plenty
+        // of room elsewhere in the row.
+        const fieldMeta = orderedVisibleFields.map((field) => {
+          const isMrp = field.key === "mrp";
+          const isRs = field.key === "rs" || field.key === "price";
+          const isStriked = isMrp && Boolean(customization.mrpStrikeOut);
+          const priceEmphasis = isRs ? getWarehousePriceEmphasis(metrics.formatStyle, textStyle) : null;
+          const fieldFontWeight = isRs ? priceEmphasis.fontWeight : textStyle.fontWeight;
+          const fontSizePx = mmToPx(getWarehouseLabelFieldFontMm(metrics, field.key));
+          const text = `${field.label} ${field.value}`;
+          return {
+            field, isMrp, isRs, isStriked, fieldFontWeight, fontSizePx, text, priceEmphasis,
+            naturalWidthPx: measureSvgTextWidthPx(text, fontSizePx, textStyle, fieldFontWeight),
+          };
+        });
+        const minGapPx = mmToPx(1.5);
+        const totalNaturalPx = fieldMeta.reduce((sum, m) => sum + m.naturalWidthPx, 0);
+        const totalWithGapsPx = totalNaturalPx + (minGapPx * Math.max(0, fieldMeta.length - 1));
+        // A small safety margin (not the full strip width) since measureSvgTextWidthPx's estimate
+        // and the browser's own glyph rendering can differ by a pixel or two - fitting flush
+        // against the exact edge left the very last field (the price) clipped by that rounding gap.
+        const availableWidthPx = stripWidthPx * 0.94;
+        // Shrink the FONT ITSELF to fit the row - shrinking just the truncation width at the
+        // original font size only clips characters off with an ellipsis, which looks broken for a
+        // short value like a price (and the price's own font is deliberately the biggest of the
+        // three, so an arbitrary shrink floor left it the one still overflowing).
+        const fontScaleDown = totalWithGapsPx > availableWidthPx ? availableWidthPx / totalWithGapsPx : 1;
+
+        let cursorX = stripLeftPx;
+        let maxTrailY = cursorY;
+        fieldMeta.forEach((m) => {
+          const renderFontSizePx = m.fontSizePx * fontScaleDown;
+          const renderWidthPx = measureSvgTextWidthPx(m.text, renderFontSizePx, textStyle, m.fieldFontWeight);
+          const remainingPx = stripLeftPx + availableWidthPx - cursorX;
+          const textStr = renderWidthPx > remainingPx
+            ? truncateSvgTextToWidth(m.text, remainingPx, renderFontSizePx, textStyle, m.fieldFontWeight)
+            : m.text;
+          const baselineY = cursorY + advanceForFont(renderFontSizePx);
+          if (m.priceEmphasis?.boxed) {
+            nodes.push(buildPriceBoxSvg({
+              text: textStr,
+              x: cursorX,
+              y: baselineY,
+              fontSizePx: renderFontSizePx,
+              anchor: "start",
+              textWidthPx: measureSvgTextWidthPx(textStr, renderFontSizePx, textStyle, m.fieldFontWeight),
+              accentColor: m.priceEmphasis.accentColor,
+            }));
+          }
+          nodes.push(buildTextNode({
+            text: textStr,
+            x: cursorX,
+            y: baselineY,
+            fontSizePx: renderFontSizePx,
+            anchor: "start",
+            fill: m.isStriked ? "#4b5563" : m.isRs ? (m.priceEmphasis?.accentColor || "#111827") : "#1f2937",
+            fontWeight: m.fieldFontWeight,
+            textDecoration: textStyle.textDecoration,
+          }));
+          if (m.isStriked) {
+            nodes.push(buildCrossStrikeSvg({
+              text: textStr,
+              x: cursorX,
+              y: baselineY,
+              fontSizePx: renderFontSizePx,
+              anchor: "start",
+              textWidthPx: measureSvgTextWidthPx(textStr, renderFontSizePx, textStyle, m.fieldFontWeight),
+            }));
+          }
+          maxTrailY = Math.max(maxTrailY, baselineY + trailForFont(renderFontSizePx));
+          cursorX += renderWidthPx + minGapPx;
+        });
+        cursorY = maxTrailY + fieldRowGapPx;
+      }
+
+      const barcodeMarkup = buildCode39SvgMarkup(label.codeValue, {
+        height: 42,
+        narrowWidth: 1.2,
+        wideWidth: 3.2,
+        quietZone: 8,
+        showText: false,
+      });
+      const naturalDims = parseCode39Dims(barcodeMarkup);
+      const naturalRatio = naturalDims && naturalDims.height > 0 ? naturalDims.width / naturalDims.height : 4;
+      const stripMaxHeightPx = mmToPx(metrics.barcodeStripMaxHeightMm);
+      let barHeightPx = Math.min(stripMaxHeightPx, stripWidthPx / naturalRatio);
+      let barWidthPx = barHeightPx * naturalRatio;
+      if (barWidthPx > stripWidthPx) {
+        barWidthPx = stripWidthPx;
+        barHeightPx = barWidthPx / naturalRatio;
+      }
+      const barX = stripLeftPx + ((stripWidthPx - barWidthPx) / 2);
+      const barY = cursorY;
+      nodes.push(`<image x="${barX}" y="${barY}" width="${barWidthPx}" height="${barHeightPx}" href="${svgToDataUrl(barcodeMarkup)}" preserveAspectRatio="none" />`);
+      cursorY = barY + barHeightPx + codeTextMarginTopPx;
+
+      const codeTextFontSizePx = mmToPx(metrics.codeTextFontMm);
+      const codeTextBaselineY = cursorY + advanceForFont(codeTextFontSizePx);
+      nodes.push(buildTextNode({
+        text: label.codeValue,
+        x: labelWidthPx / 2,
+        y: codeTextBaselineY,
+        fontSizePx: codeTextFontSizePx,
+        anchor: "middle",
+        fill: "#374151",
+      }));
+
+      if (showNote) {
+        nodes.push(buildTextNode({
+          text: customization.note,
+          x: getXForPosition(notePositionEffective, stripLeftPx, stripWidthPx),
+          y: contentBottomPx - noteMarginTopPx,
+          fontSizePx: mmToPx(metrics.noteFontMm),
+          anchor: getAnchor(notePositionEffective),
+          fill: "#374151",
+        }));
+      }
+
+      return `
+        <g transform="translate(${offsetX}, ${offsetY})">
+          <rect x="0" y="0" width="${labelWidthPx}" height="${labelHeightPx}" rx="${cardCornerPx}" ry="${cardCornerPx}" fill="#ffffff" stroke="${cardStrokeColor}" stroke-width="${cardStrokePx}" />
+          ${headerNode}
+          ${headerDividerLine}
+          ${nodes.join("")}
+        </g>
+      `;
+    }
+
+    const { leftFields, rightFields } = splitWarehouseLabelFieldsForCenter(customization, orderedVisibleFields);
+
+    let contentLeftPx = bodyPadXPx;
+    let contentRightPx = labelWidthPx - bodyPadXPx;
+
+    if (!isCodeCentered) {
+      if (isCodeRight) {
+        contentRightPx = labelWidthPx - bodyPadXPx - codeColumnPx - bodyGapPx;
+      } else {
+        contentLeftPx = bodyPadXPx + codeColumnPx + bodyGapPx;
+      }
+    }
+
+    const contentWidthPx = Math.max(contentRightPx - contentLeftPx, 1);
+    const codeX = isCodeCentered
+      ? centerX - (codeColumnPx / 2)
+      : isCodeRight
+        ? labelWidthPx - bodyPadXPx - codeColumnPx
+        : bodyPadXPx;
+    const codeCenterX = codeX + (codeColumnPx / 2);
+    const qrHref = qrSources[label.key] || "";
+
+    // Only QR ("code") labels reach here - Code39 ("barcode") labels return early above via their
+    // own full-width strip layout.
+    const codeGroup = `
+      <image x="${codeCenterX - (qrSizePx / 2)}" y="${centerY - (qrSizePx / 2)}" width="${qrSizePx}" height="${qrSizePx}" href="${qrHref}" preserveAspectRatio="xMidYMid meet" />
+      ${buildTextNode({
+        text: label.codeValue,
+        x: codeCenterX,
+        y: centerY + (qrSizePx / 2) + codeTextMarginTopPx + mmToPx(metrics.codeTextFontMm),
+        fontSizePx: mmToPx(metrics.codeTextFontMm),
+        anchor: "middle",
+        fill: "#374151",
+      })}
+    `;
+
+    // Top-of-next-row cursor (not a baseline) - each row computes its own baseline via
+    // advanceForFont/trailForFont so rows of different sizes stack correctly (see note above).
+    let contentCursorY = contentTopPx;
+    const contentNodes = [];
+
+    if (showProductName) {
+      const productNameFontSizePx = mmToPx(metrics.productNameFontMm);
+      const displayProductName = truncateSvgTextToWidth(
+        String(label.productName || "").toUpperCase(),
+        contentWidthPx,
+        productNameFontSizePx,
+        textStyle
+      );
+      const productNameBaselineY = contentCursorY + advanceForFont(productNameFontSizePx);
+      contentNodes.push(buildTextNode({
+        text: displayProductName,
+        x: getXForPosition(productNamePositionEffective, contentLeftPx, contentWidthPx),
+        y: productNameBaselineY,
+        fontSizePx: productNameFontSizePx,
+        anchor: getAnchor(productNamePositionEffective),
+      }));
+      contentCursorY = productNameBaselineY + trailForFont(productNameFontSizePx) + fieldsMarginTopPx;
+    }
+
+    if (isCodeCentered) {
+      const leftColumnLeft = bodyPadXPx;
+      const leftColumnWidth = Math.max((labelWidthPx - (2 * bodyPadXPx) - codeColumnPx - (2 * bodyGapPx)) / 2, 1);
+      const rightColumnLeft = leftColumnLeft + leftColumnWidth + bodyGapPx + codeColumnPx + bodyGapPx;
+      const columnTopY = showProductName
+        ? contentCursorY
+        : centerY - ((Math.max(leftFields.length, rightFields.length, 1) * (mmToPx(metrics.mrpFontMm || metrics.priceFontMm) + fieldRowGapPx)) / 2);
+
+      let leftColumnCursorY = columnTopY;
+      leftFields.forEach((field) => {
+        const fieldPosition = getWarehouseEffectiveFieldPosition(
+          getWarehouseLabelFieldPosition(customization, field.key),
+          codePosition
+        );
+        const isMrp = field.key === "mrp";
+        const isRs = field.key === "rs" || field.key === "price";
+        const isStriked = isMrp && Boolean(customization.mrpStrikeOut);
+        const priceEmphasis = isRs ? getWarehousePriceEmphasis(metrics.formatStyle, textStyle) : null;
+        const fieldFontWeight = isRs ? priceEmphasis.fontWeight : textStyle.fontWeight;
+        const fontSizePx = mmToPx(getWarehouseLabelFieldFontMm(metrics, field.key));
+        const y = leftColumnCursorY + advanceForFont(fontSizePx);
+        leftColumnCursorY = y + trailForFont(fontSizePx) + fieldRowGapPx;
+        const nodeX = getXForPosition(fieldPosition, leftColumnLeft, leftColumnWidth);
+        const nodeAnchor = getAnchor(fieldPosition);
+        const textStr = truncateSvgTextToWidth(
+          `${field.label} ${field.value}`,
+          leftColumnWidth,
+          fontSizePx,
+          textStyle,
+          fieldFontWeight
+        );
+        if (priceEmphasis?.boxed) {
+          contentNodes.push(buildPriceBoxSvg({
+            text: textStr, x: nodeX, y, fontSizePx, anchor: nodeAnchor,
+            textWidthPx: measureSvgTextWidthPx(textStr, fontSizePx, textStyle, fieldFontWeight),
+            accentColor: priceEmphasis.accentColor,
+          }));
+        }
+        contentNodes.push(buildTextNode({
+          text: textStr,
+          x: nodeX,
+          y,
+          fontSizePx,
+          anchor: nodeAnchor,
+          fill: isStriked ? "#4b5563" : isRs ? (priceEmphasis?.accentColor || "#111827") : "#1f2937",
+          fontWeight: fieldFontWeight,
+          textDecoration: textStyle.textDecoration,
+        }));
+        if (isStriked) {
+          contentNodes.push(buildCrossStrikeSvg({
+            text: textStr,
+            x: nodeX,
+            y,
+            fontSizePx,
+            anchor: nodeAnchor,
+            textWidthPx: measureSvgTextWidthPx(textStr, fontSizePx, textStyle, fieldFontWeight),
+          }));
+        }
+      });
+
+      let rightColumnCursorY = columnTopY;
+      rightFields.forEach((field) => {
+        const fieldPosition = getWarehouseEffectiveFieldPosition(
+          getWarehouseLabelFieldPosition(customization, field.key),
+          codePosition
+        );
+        const isMrp = field.key === "mrp";
+        const isRs = field.key === "rs" || field.key === "price";
+        const isStriked = isMrp && Boolean(customization.mrpStrikeOut);
+        const priceEmphasis = isRs ? getWarehousePriceEmphasis(metrics.formatStyle, textStyle) : null;
+        const fieldFontWeight = isRs ? priceEmphasis.fontWeight : textStyle.fontWeight;
+        const fontSizePx = mmToPx(getWarehouseLabelFieldFontMm(metrics, field.key));
+        const y = rightColumnCursorY + advanceForFont(fontSizePx);
+        rightColumnCursorY = y + trailForFont(fontSizePx) + fieldRowGapPx;
+        const nodeX = getXForPosition(fieldPosition, rightColumnLeft, leftColumnWidth);
+        const nodeAnchor = getAnchor(fieldPosition);
+        const textStr = truncateSvgTextToWidth(
+          `${field.label} ${field.value}`,
+          leftColumnWidth,
+          fontSizePx,
+          textStyle,
+          fieldFontWeight
+        );
+        if (priceEmphasis?.boxed) {
+          contentNodes.push(buildPriceBoxSvg({
+            text: textStr, x: nodeX, y, fontSizePx, anchor: nodeAnchor,
+            textWidthPx: measureSvgTextWidthPx(textStr, fontSizePx, textStyle, fieldFontWeight),
+            accentColor: priceEmphasis.accentColor,
+          }));
+        }
+        contentNodes.push(buildTextNode({
+          text: textStr,
+          x: nodeX,
+          y,
+          fontSizePx,
+          anchor: nodeAnchor,
+          fill: isStriked ? "#4b5563" : isRs ? (priceEmphasis?.accentColor || "#111827") : "#1f2937",
+          fontWeight: fieldFontWeight,
+          textDecoration: textStyle.textDecoration,
+        }));
+        if (isStriked) {
+          contentNodes.push(buildCrossStrikeSvg({
+            text: textStr,
+            x: nodeX,
+            y,
+            fontSizePx,
+            anchor: nodeAnchor,
+            textWidthPx: measureSvgTextWidthPx(textStr, fontSizePx, textStyle, fieldFontWeight),
+          }));
+        }
+      });
+    } else {
+      orderedVisibleFields.forEach((field) => {
+        const fieldPosition = getWarehouseEffectiveFieldPosition(
+          getWarehouseLabelFieldPosition(customization, field.key),
+          codePosition
+        );
+        const isMrp = field.key === "mrp";
+        const isRs = field.key === "rs" || field.key === "price";
+        const isStriked = isMrp && Boolean(customization.mrpStrikeOut);
+        const priceEmphasis = isRs ? getWarehousePriceEmphasis(metrics.formatStyle, textStyle) : null;
+        const fieldFontWeight = isRs ? priceEmphasis.fontWeight : textStyle.fontWeight;
+        const fontSizePx = mmToPx(getWarehouseLabelFieldFontMm(metrics, field.key));
+        const nodeX = getXForPosition(fieldPosition, contentLeftPx, contentWidthPx);
+        const nodeAnchor = getAnchor(fieldPosition);
+        const textStr = truncateSvgTextToWidth(
+          `${field.label} ${field.value}`,
+          contentWidthPx,
+          fontSizePx,
+          textStyle,
+          fieldFontWeight
+        );
+        const fieldBaselineY = contentCursorY + advanceForFont(fontSizePx);
+        if (priceEmphasis?.boxed) {
+          contentNodes.push(buildPriceBoxSvg({
+            text: textStr, x: nodeX, y: fieldBaselineY, fontSizePx, anchor: nodeAnchor,
+            textWidthPx: measureSvgTextWidthPx(textStr, fontSizePx, textStyle, fieldFontWeight),
+            accentColor: priceEmphasis.accentColor,
+          }));
+        }
+        contentNodes.push(buildTextNode({
+          text: textStr,
+          x: nodeX,
+          y: fieldBaselineY,
+          fontSizePx,
+          anchor: nodeAnchor,
+          fill: isStriked ? "#4b5563" : isRs ? (priceEmphasis?.accentColor || "#111827") : "#1f2937",
+          fontWeight: fieldFontWeight,
+          textDecoration: textStyle.textDecoration,
+        }));
+        if (isStriked) {
+          contentNodes.push(buildCrossStrikeSvg({
+            text: textStr,
+            x: nodeX,
+            y: fieldBaselineY,
+            fontSizePx,
+            anchor: nodeAnchor,
+            textWidthPx: measureSvgTextWidthPx(textStr, fontSizePx, textStyle, fieldFontWeight),
+          }));
+        }
+        contentCursorY = fieldBaselineY + trailForFont(fontSizePx) + fieldRowGapPx;
+      });
+    }
+
+    if (showNote) {
+      const noteY = contentBottomPx - noteMarginTopPx;
+      contentNodes.push(buildTextNode({
+        text: customization.note,
+        x: getXForPosition(notePositionEffective, contentLeftPx, contentWidthPx),
+        y: noteY,
+        fontSizePx: mmToPx(metrics.noteFontMm),
+        anchor: getAnchor(notePositionEffective),
+        fill: "#374151",
+      }));
+    }
+
+    return `
+      <g transform="translate(${offsetX}, ${offsetY})">
+        <rect x="0" y="0" width="${labelWidthPx}" height="${labelHeightPx}" rx="${cardCornerPx}" ry="${cardCornerPx}" fill="#ffffff" stroke="${cardStrokeColor}" stroke-width="${cardStrokePx}" />
+        ${headerNode}
+        ${headerDividerLine}
+        ${codeGroup}
+        ${contentNodes.join("")}
+      </g>
+    `;
+  };
+
+  return `
+    <svg xmlns="http://www.w3.org/2000/svg" width="${sheetWidthPx}" height="${sheetHeightPx}" viewBox="0 0 ${sheetWidthPx} ${sheetHeightPx}">
+      <rect x="0" y="0" width="${sheetWidthPx}" height="${sheetHeightPx}" fill="#ffffff" />
+      ${labels.map((label, index) => buildLabelSvg(label, index)).join("")}
+    </svg>
+  `.trim();
+};
+
+// QR data URLs for every "code"-type label, keyed by label.key.
+// eslint-disable-next-line react-refresh/only-export-components -- shared with BarcodeSearchPage reprints
+export const buildLabelQrSources = async (labels) => {
+  const qrLabels = labels.filter((label) => label.codeType === "code");
+  if (qrLabels.length === 0) return {};
+  const entries = await Promise.all(
+    qrLabels.map(async (label) => [
+      label.key,
+      await QRCode.toDataURL(label.codeValue, { margin: 1, width: 360, errorCorrectionLevel: "M" }),
+    ])
+  );
+  return Object.fromEntries(entries);
+};
+
+/**
+ * Sends sticker labels to the local label printer (direct mode) or a browser print window.
+ * Shared by Barcode Generation and Barcode Search (reprint) so both print identically.
+ * Returns { ok, message }; ok is false only when nothing was printed.
+ */
+// eslint-disable-next-line react-refresh/only-export-components -- shared with BarcodeSearchPage reprints
+export const printWarehouseBarcodeLabels = async ({ labels, qrSources, customization, storeName, queuePrintHtml, jobName }) => {
+  const sheetMarkup = buildBarcodeSheetMarkup({ labels, customization, storeName, qrSources });
+
+  // Mirrors POSSales.jsx's printMode handling for sales receipts: "browser" mode always uses the
+  // popup print dialog, skipping the local connector attempt entirely rather than silently
+  // falling back to it only when disconnected - the whole point of choosing a mode explicitly.
+  const isDirectPrintMode = customization?.printMode !== "browser";
+  if (isDirectPrintMode) {
+    try {
+      // Label printers with die-cut/gap-sensing roll media are normally driven by their
+      // Windows driver as one page PER physical label row - the driver (not our software) owns
+      // the real label pitch and advances/cuts at each page boundary. Sending the whole
+      // multi-row sheet as a single tall "page" instead relies on the driver accepting an
+      // arbitrarily tall custom page size, which some label-printer drivers silently refuse -
+      // they just print whatever fits their configured one-label media size and drop the rest,
+      // which looks like "only the first label printed" regardless of how many were requested.
+      // Render each row as its own image and send them as separate pages of one print job so
+      // the printer's own gap sensor paces each one correctly.
+      const labelsPerRow = Math.max(1, sheetMarkup.metrics.labelsPerRow || 1);
+      const rowChunks = [];
+      for (let i = 0; i < labels.length; i += labelsPerRow) {
+        rowChunks.push(labels.slice(i, i + labelsPerRow));
+      }
+      const pages = await Promise.all(rowChunks.map(async (rowLabels) => {
+        const rowSheetMarkup = buildBarcodeSheetMarkup({ labels: rowLabels, customization, storeName, qrSources });
+        const rowImageDataUrl = await renderBarcodeSheetToPngDataUrl(rowSheetMarkup);
+        return {
+          imageDataUrl: rowImageDataUrl,
+          pageWidthMm: rowSheetMarkup.sheetWidthMm,
+          pageHeightMm: rowSheetMarkup.sheetHeightMm,
+        };
+      }));
+
+      const jobId = await queuePrintHtml("", {
+        label: {
+          kind: "rendered_sheet_pages_v1",
+          jobName,
+          pages,
+          // Print-time calibration offset - shifts where content lands on the physical page
+          // without touching the label's own layout, for compensating a printer's own print-
+          // head-vs-gap-sensor offset. Zero by default (no shift).
+          marginTopMm: toNumber(customization?.printMarginTopMm, 0),
+          marginBottomMm: toNumber(customization?.printMarginBottomMm, 0),
+          marginLeftMm: toNumber(customization?.printMarginLeftMm, 0),
+          marginRightMm: toNumber(customization?.printMarginRightMm, 0),
+        },
+        docType: "generic",
+        printerFunction: "barcode",
+        printerConfig: {
+          printer_type: "label",
+        },
+      });
+
+      if (jobId) return { ok: true, message: "Barcode sticker sheet sent to the local printer connector." };
+    } catch (err) {
+      console.error("Local barcode print failed:", err);
+      return { ok: false, message: err?.message || "Failed to send barcode stickers to the local printer." };
+    }
+  }
+
+  const previewWindow = window.open("", "_blank", "width=1100,height=800");
+  if (!previewWindow) return { ok: false, message: "Popup blocked. Allow popups to print barcode stickers." };
+  previewWindow.document.write(buildBarcodeSheetDocumentHtml(sheetMarkup, { autoPrint: true }));
+  previewWindow.document.close();
+  return { ok: true, message: null };
+};
+
+const renderBarcodeSheetToPngDataUrl = async (markup) => {
+  const widthPx = Math.max(1, Math.ceil(markup.sheetWidthMm * MM_TO_PX));
+  const heightPx = Math.max(1, Math.ceil(markup.sheetHeightMm * MM_TO_PX));
+  const svgMarkup = buildBarcodeSheetSvgMarkup(markup);
+  const objectUrl = svgToDataUrl(svgMarkup);
+
+  try {
+    const image = await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("Failed to render barcode sticker sheet."));
+      img.src = objectUrl;
+    });
+
+    const canvas = document.createElement("canvas");
+    canvas.width = widthPx * BARCODE_RENDER_SCALE;
+    canvas.height = heightPx * BARCODE_RENDER_SCALE;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      throw new Error("Canvas rendering is not available in this browser.");
+    }
+    ctx.scale(BARCODE_RENDER_SCALE, BARCODE_RENDER_SCALE);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, widthPx, heightPx);
+    ctx.drawImage(image, 0, 0, widthPx, heightPx);
+    return canvas.toDataURL("image/png");
+  } finally {
+    // no-op for data URLs
+  }
+};
+
+const buildEditForm = (item) => ({
+  productId: item?.productId ? String(item.productId) : "",
+  brandId: item?.brandId ? String(item.brandId) : "",
+  size: item?.size && item.size !== "-" ? item.size : "",
+  styleId: item?.styleId ? String(item.styleId) : "",
+  designNo: item?.designNo && item.designNo !== "-" ? item.designNo : "",
+  materialId: item?.materialId ? String(item.materialId) : "",
+  patternId: item?.patternId ? String(item.patternId) : "",
+  sleeveId: item?.sleeveId ? String(item.sleeveId) : "",
+  fitId: item?.fitId ? String(item.fitId) : "",
+  typeId: item?.typeId ? String(item.typeId) : "",
+  colorId: item?.colorId ? String(item.colorId) : "",
+  mrp: item?.mrp !== undefined && item?.mrp !== null ? String(item.mrp) : "",
+  discountPerc: item?.discountPerc !== undefined && item?.discountPerc !== null ? String(item.discountPerc) : "0",
+});
+
+const mergeEditedItem = (item, form, options) => {
+  const nextProductId = form.productId ? parseInt(form.productId, 10) : null;
+  const nextBrandId = form.brandId ? parseInt(form.brandId, 10) : null;
+  const nextStyleId = form.styleId ? parseInt(form.styleId, 10) : null;
+  const nextMaterialId = form.materialId ? parseInt(form.materialId, 10) : null;
+  const nextPatternId = form.patternId ? parseInt(form.patternId, 10) : null;
+  const nextSleeveId = form.sleeveId ? parseInt(form.sleeveId, 10) : null;
+  const nextFitId = form.fitId ? parseInt(form.fitId, 10) : null;
+  const nextTypeId = form.typeId ? parseInt(form.typeId, 10) : null;
+  const nextColorId = form.colorId ? parseInt(form.colorId, 10) : null;
+  const nextMrp = toNumber(form.mrp, 0);
+  const nextDiscountPerc = toNumber(form.discountPerc, 0);
+
+  return {
+    ...item,
+    productId: nextProductId,
+    productName: nextProductId ? findOptionLabel(options.products, nextProductId, item.productName) : "-",
+    brandId: nextBrandId,
+    brandName: nextBrandId ? findOptionLabel(options.brands, nextBrandId, item.brandName) : "-",
+    size: toDisplayText(form.size),
+    styleId: nextStyleId,
+    styleName: nextStyleId ? findOptionLabel(options.styles, nextStyleId, item.styleName) : "-",
+    designNo: toDisplayText(form.designNo),
+    materialId: nextMaterialId,
+    materialName: nextMaterialId ? findOptionLabel(options.materials, nextMaterialId, item.materialName) : "-",
+    patternId: nextPatternId,
+    patternName: nextPatternId ? findOptionLabel(options.patterns, nextPatternId, item.patternName) : "-",
+    sleeveId: nextSleeveId,
+    sleeveName: nextSleeveId ? findOptionLabel(options.sleeves, nextSleeveId, item.sleeveName) : "-",
+    fitId: nextFitId,
+    fitName: nextFitId ? findOptionLabel(options.fits, nextFitId, item.fitName) : "-",
+    typeId: nextTypeId,
+    typeName: nextTypeId ? findOptionLabel(options.types, nextTypeId, item.typeName) : "-",
+    colorId: nextColorId,
+    colorName: nextColorId ? findOptionLabel(options.colors, nextColorId, item.colorName) : "-",
+    mrp: nextMrp,
+    discountPerc: nextDiscountPerc,
+    finalPrice: calcFinalPrice(nextMrp, nextDiscountPerc),
+  };
+};
+
+const toOptions = (rows = []) =>
+  (Array.isArray(rows) ? rows : []).map((row) => ({
+    value: String(row.id),
+    label: row.name || row.label || `#${row.id}`,
+  }));
+
+const createDefaultItemFilters = () => ({
+  productName: "",
+  barcode: "",
+  size: "",
+  designNo: "",
+  qty: "",
+  cost: "",
+  marginPerc: "",
+  sellingPrice: "",
+  mrp: "",
+  discountPerc: "",
+  finalPrice: "",
+  status: "",
+});
+
+const hasGeneratedDirectPurchaseBarcodes = (entry) => {
+  const items = Array.isArray(entry?.items) ? entry.items : [];
+  return items.some((item) => {
+    if (
+      item?.barcode_id
+      || item?.barcodeId
+      || item?.barcodeRef?.barcode
+      || item?.barcodeRef?.name
+      || item?.barcodeRef?.inventory_item_id
+      || item?.barcodeRef?.inventoryItemId
+    ) {
+      return true;
+    }
+    const jumpDetails = Array.isArray(item?.jump_details) ? item.jump_details : [];
+    return jumpDetails.some((detail) =>
+      detail?.generatedBarcodeId
+      || detail?.generated_barcode_id
+      || detail?.generatedInventoryItemId
+      || detail?.generated_inventory_item_id
+    );
+  });
+};
+
+const truncateSx = { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" };
+
+const StickerFieldsBlock = ({ fields, metrics, textStyle, customization, layout = "stack", availableWidthMm }) => {
+  if (fields.length === 0) return null;
+  const codePosition = getWarehouseCodePosition(customization);
+  const isRow = layout === "row";
+
+  const fieldMeta = fields.map((field) => {
+    const isMrp = field.key === "mrp";
+    const isRs = field.key === "rs" || field.key === "price";
+    const isStriked = isMrp && Boolean(customization.mrpStrikeOut);
+    const priceEmphasis = isRs ? getWarehousePriceEmphasis(metrics.formatStyle, textStyle) : null;
+    const fieldFontWeight = isRs ? priceEmphasis.fontWeight : textStyle.fontWeight;
+    return {
+      field, isMrp, isRs, isStriked, fieldFontWeight, priceEmphasis,
+      fontMm: getWarehouseLabelFieldFontMm(metrics, field.key),
+    };
+  });
+
+  // In row layout (the barcode full-width strip), the price is deliberately the biggest font of
+  // the three fields as the "hero" element - a plain flexbox row only shrinks each field's BOX via
+  // text-ellipsis, not its actual font size, so the price (needing the most room) was the one that
+  // visibly clipped even when the smaller fields fit fine. Measuring real widths and shrinking the
+  // FONT ITSELF (like the direct-print SVG render already does) keeps all three fully readable.
+  let fontScaleDown = 1;
+  if (isRow && availableWidthMm) {
+    const availablePx = (availableWidthMm * MM_TO_PX) * 0.94;
+    const gapPx = metrics.bodyGapMm * MM_TO_PX;
+    const totalNaturalPx = fieldMeta.reduce(
+      (sum, m) => sum + measureSvgTextWidthPx(`${m.field.label} ${m.field.value}`, m.fontMm * MM_TO_PX, textStyle, m.fieldFontWeight),
+      0
+    );
+    const totalWithGapsPx = totalNaturalPx + (gapPx * Math.max(0, fieldMeta.length - 1));
+    if (totalWithGapsPx > availablePx) {
+      fontScaleDown = availablePx / totalWithGapsPx;
+    }
+  }
+
+  return (
+    <Box
+      sx={
+        isRow
+          ? {
+              mt: `${metrics.fieldsMarginTopMm}mm`,
+              display: "flex",
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              columnGap: `${metrics.bodyGapMm}mm`,
+            }
+          : {
+              mt: `${metrics.fieldsMarginTopMm}mm`,
+              display: "grid",
+              rowGap: `${metrics.fieldRowGapMm}mm`,
+            }
+      }
+    >
+      {fieldMeta.map((m) => {
+        const { field, isRs, isStriked, fieldFontWeight, fontMm, priceEmphasis } = m;
+        const fieldPosition = getWarehouseEffectiveFieldPosition(
+          getWarehouseLabelFieldPosition(customization, field.key),
+          codePosition
+        );
+        const displayFontMm = fontMm * fontScaleDown;
+        const justifyContent = getWarehouseLabelFieldFlexJustifyContent(fieldPosition);
+        const textAlign = getWarehouseLabelFieldTextAlign(fieldPosition);
+
+        if (isStriked) {
+          return (
+            <Box
+              key={field.key}
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                color: "#374151",
+                justifyContent,
+                textAlign,
+                gap: `${metrics.bodyGapMm}mm`,
+                fontSize: `${displayFontMm}mm`,
+                lineHeight: 1.1,
+                fontFamily: textStyle.fontFamily,
+                fontWeight: fieldFontWeight,
+                fontStyle: textStyle.fontStyle,
+              }}
+            >
+              <Box component="span" sx={{ position: "relative", display: "inline-flex", alignItems: "center", gap: "0.8mm" }}>
+                <Box component="span" sx={{ ...truncateSx, textTransform: "uppercase" }}>{field.label}</Box>
+                <Box component="span" sx={truncateSx}>{field.value}</Box>
+                <Box
+                  component="svg"
+                  sx={{ position: "absolute", pointerEvents: "none", left: "-3.5px", right: "-3.5px", top: 0, bottom: 0, height: "100%", width: "calc(100% + 8px)", overflow: "visible" }}
+                  viewBox="0 0 100 100"
+                  preserveAspectRatio="none"
+                >
+                  <line x1="0" y1="50" x2="100" y2="50" stroke="#dc2626" strokeWidth="8" strokeLinecap="round" />
+                </Box>
+              </Box>
+            </Box>
+          );
+        }
+
+        return (
+          <Box
+            key={field.key}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              color: isRs ? "#030712" : "#1f2937",
+              justifyContent,
+              textAlign,
+              gap: `${metrics.bodyGapMm}mm`,
+              fontSize: `${displayFontMm}mm`,
+              lineHeight: 1.1,
+              fontFamily: textStyle.fontFamily,
+              fontWeight: fieldFontWeight,
+              fontStyle: textStyle.fontStyle,
+              textDecoration: textStyle.textDecoration,
+              ...(priceEmphasis?.boxed
+                ? {
+                    border: `1px solid ${priceEmphasis.accentColor || "#111827"}`,
+                    borderRadius: "1mm",
+                    padding: "0.3mm 1mm",
+                    color: priceEmphasis.accentColor || "#111827",
+                    background: priceEmphasis.accentColor ? `${priceEmphasis.accentColor}1a` : "transparent",
+                  }
+                : null),
+            }}
+          >
+            <Box component="span" sx={{ ...truncateSx, textTransform: "uppercase" }}>{field.label}</Box>
+            <Box component="span" sx={truncateSx}>{field.value}</Box>
+          </Box>
+        );
+      })}
+    </Box>
+  );
+};
+
+const StickerCard = ({ label, customization, storeName, qrSrc = "" }) => {
+  const showStoreName = isWarehouseLabelFieldVisible(customization, "storeName") && storeName;
+  const showProductName = isWarehouseLabelFieldVisible(customization, "productName");
+  const showNote = isWarehouseLabelFieldVisible(customization, "note") && customization.note;
+  const storeNamePosition = getWarehouseLabelFieldPosition(customization, "storeName");
+  const productNamePosition = getWarehouseLabelFieldPosition(customization, "productName");
+  const notePosition = getWarehouseLabelFieldPosition(customization, "note");
+  const metrics = getWarehouseStickerMetrics(customization);
+  const textStyle = metrics.textStyle;
+  const formatStyle = metrics.formatStyle;
+  const cardSx = {
+    overflow: "hidden",
+    bgcolor: "#fff",
+    ...(formatStyle.rounded ? { borderRadius: "3mm" } : null),
+    ...(formatStyle.cardBorder ? { border: "1px solid #d1d5db" } : null),
+  };
+  const headerDividerStyle = formatStyle.headerDivider === "accent"
+    ? { borderBottom: "0.4mm solid #2563eb" }
+    : formatStyle.headerDivider === "solid"
+      ? { borderBottom: "0.25mm solid #111827" }
+      : null;
+  const codePosition = getWarehouseCodePosition(customization);
+  const isCodeRight = codePosition === "right";
+  const isCodeCentered = codePosition === "center";
+  const visibleFields = (Array.isArray(label.fields) ? label.fields : []).filter((field) => {
+    if (field.key === "mrp") return isWarehouseLabelFieldVisible(customization, "mrp");
+    if (field.key === "discount") return isWarehouseLabelFieldVisible(customization, "discount");
+    if (field.key === "rs") return isWarehouseLabelFieldVisible(customization, "rs");
+    return true;
+  });
+  const orderedVisibleFields = getWarehouseOrderedFields(customization, visibleFields);
+  const { leftFields, rightFields } = splitWarehouseLabelFieldsForCenter(customization, orderedVisibleFields);
+  const barcodeMarkup = label.codeType === "barcode"
+    ? buildCode39SvgMarkup(label.codeValue, {
+        height: 42,
+        narrowWidth: 1.2,
+        wideWidth: 3.2,
+        quietZone: 8,
+        showText: false,
+      })
+    : "";
+  const codeContent = (
+    <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+      {label.codeType === "code" ? (
+        qrSrc ? (
+          <Box
+            component="img"
+            src={qrSrc}
+            alt={label.codeValue}
+            sx={{ objectFit: "contain", width: `${metrics.qrSizeMm}mm`, height: `${metrics.qrSizeMm}mm` }}
+          />
+        ) : (
+          <Box
+            sx={{ width: `${metrics.qrSizeMm}mm`, height: `${metrics.qrSizeMm}mm`, borderRadius: "1mm", backgroundColor: "#f3f4f6", animation: "app-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite" }}
+          />
+        )
+      ) : (
+        <Box
+          sx={{ display: "flex", width: "100%", alignItems: "center", justifyContent: "center", overflow: "hidden" }}
+          style={{ maxHeight: `${metrics.barcodeHeightMm}mm` }}
+          dangerouslySetInnerHTML={{ __html: makeCode39SvgResponsive(barcodeMarkup) }}
+        />
+      )}
+      <Box
+        sx={{
+          maxWidth: "100%",
+          ...truncateSx,
+          textAlign: "center",
+          letterSpacing: "0.02em",
+          color: "#374151",
+          mt: `${metrics.codeTextMarginTopMm}mm`,
+          fontSize: `${metrics.codeTextFontMm}mm`,
+          fontFamily: textStyle.fontFamily,
+          fontWeight: textStyle.fontWeight,
+          fontStyle: textStyle.fontStyle,
+          textDecoration: textStyle.textDecoration,
+        }}
+      >
+        {label.codeValue}
+      </Box>
+    </Box>
+  );
+  const productNameContent = showProductName ? (
+    <Box
+      sx={{
+        display: "flex",
+        width: "100%",
+        alignItems: "center",
+        justifyContent: getWarehouseLabelFieldFlexJustifyContent(productNamePosition),
+        textAlign: getWarehouseLabelFieldTextAlign(productNamePosition),
+      }}
+    >
+      <Box
+        sx={{
+          maxWidth: "100%",
+          ...truncateSx,
+          textTransform: "uppercase",
+          lineHeight: 1.25,
+          color: "#111827",
+          fontSize: `${metrics.productNameFontMm}mm`,
+          fontFamily: textStyle.fontFamily,
+          fontWeight: textStyle.fontWeight,
+          fontStyle: textStyle.fontStyle,
+          textDecoration: textStyle.textDecoration,
+        }}
+      >
+        {label.productName}
+      </Box>
+    </Box>
+  ) : null;
+  const noteContent = showNote ? (
+    <Box
+      sx={{
+        display: "flex",
+        width: "100%",
+        alignItems: "center",
+        justifyContent: getWarehouseLabelFieldFlexJustifyContent(notePosition),
+        textAlign: getWarehouseLabelFieldTextAlign(notePosition),
+        mt: `${metrics.noteMarginTopMm}mm`,
+      }}
+    >
+      <Box
+        sx={{
+          maxWidth: "100%",
+          lineHeight: 1.25,
+          color: "#374151",
+          fontSize: `${metrics.noteFontMm}mm`,
+          fontFamily: textStyle.fontFamily,
+          fontWeight: textStyle.fontWeight,
+          fontStyle: textStyle.fontStyle,
+          textDecoration: textStyle.textDecoration,
+        }}
+      >
+        {label.note}
+      </Box>
+    </Box>
+  ) : null;
+  const contentColumn = (
+    <Box sx={{ minWidth: 0, overflow: "hidden" }}>
+      {productNameContent}
+      <StickerFieldsBlock
+        fields={orderedVisibleFields}
+        metrics={metrics}
+        textStyle={textStyle}
+        customization={customization}
+      />
+      {noteContent}
+    </Box>
+  );
+
+  const headerBlock = metrics.topBandHeightMm > 0 ? (
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        px: "1.5mm",
+        justifyContent: getWarehouseLabelFieldFlexJustifyContent(storeNamePosition),
+        textAlign: getWarehouseLabelFieldTextAlign(storeNamePosition),
+      }}
+      style={{ minHeight: `${metrics.topBandHeightMm}mm`, ...(headerDividerStyle || {}) }}
+    >
+      {showStoreName ? (
+        <Box
+          sx={{
+            width: "100%",
+            ...truncateSx,
+            textTransform: "uppercase",
+            color: "#111827",
+            textAlign: getWarehouseLabelFieldTextAlign(storeNamePosition),
+            fontSize: `${metrics.storeNameFontMm}mm`,
+            letterSpacing: `${metrics.storeNameLetterSpacingEm}em`,
+            fontFamily: textStyle.fontFamily,
+            fontWeight: textStyle.fontWeight,
+            fontStyle: textStyle.fontStyle,
+            textDecoration: textStyle.textDecoration,
+          }}
+        >
+          {storeName}
+        </Box>
+      ) : null}
+    </Box>
+  ) : null;
+
+  // A linear (Code39) barcode is naturally wide/short, unlike a QR's square footprint - squeezing
+  // it into the same narrow side column shrinks it in BOTH dimensions to preserve its aspect ratio,
+  // collapsing every bar to a fraction of a millimetre and making it unscannable. Barcode-type
+  // labels get their own full-width stacked layout so the barcode can use nearly the whole label.
+  if (label.codeType === "barcode") {
+    return (
+      <Box
+        sx={{ ...cardSx, width: `${metrics.labelWidthMm}mm`, height: `${metrics.labelHeightMm}mm` }}
+      >
+        {headerBlock}
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+            padding: `${metrics.bodyPadYMm}mm ${metrics.bodyPadXMm}mm`,
+            height: metrics.topBandHeightMm > 0
+              ? `calc(${metrics.labelHeightMm}mm - ${metrics.topBandHeightMm}mm)`
+              : `${metrics.labelHeightMm}mm`,
+          }}
+        >
+          {productNameContent}
+          <StickerFieldsBlock
+            fields={orderedVisibleFields}
+            metrics={metrics}
+            textStyle={textStyle}
+            customization={customization}
+            layout="row"
+            availableWidthMm={metrics.labelWidthMm - (2 * metrics.bodyPadXMm)}
+          />
+          <Box sx={{ display: "flex", width: "100%", flexDirection: "column", alignItems: "center", mt: `${metrics.fieldsMarginTopMm}mm` }}>
+            <Box
+              sx={{ display: "flex", width: "100%", alignItems: "center", justifyContent: "center", overflow: "hidden" }}
+              style={{ maxHeight: `${metrics.barcodeStripMaxHeightMm}mm` }}
+              dangerouslySetInnerHTML={{ __html: makeCode39SvgResponsive(barcodeMarkup) }}
+            />
+            <Box
+              sx={{
+                maxWidth: "100%",
+                ...truncateSx,
+                textAlign: "center",
+                letterSpacing: "0.02em",
+                color: "#374151",
+                mt: `${metrics.codeTextMarginTopMm}mm`,
+                fontSize: `${metrics.codeTextFontMm}mm`,
+                fontFamily: textStyle.fontFamily,
+                fontWeight: textStyle.fontWeight,
+                fontStyle: textStyle.fontStyle,
+                textDecoration: textStyle.textDecoration,
+              }}
+            >
+              {label.codeValue}
+            </Box>
+          </Box>
+          {noteContent}
+        </Box>
+      </Box>
+    );
+  }
+
+  return (
+    <Box
+      sx={{ ...cardSx, width: `${metrics.labelWidthMm}mm`, height: `${metrics.labelHeightMm}mm` }}
+    >
+      {headerBlock}
+
+      <Box
+        sx={{
+          display: isCodeCentered ? "flex" : "grid",
+          flexDirection: isCodeCentered ? "column" : undefined,
+          ...(isCodeCentered
+            ? {}
+            : {
+                gridTemplateColumns: isCodeRight
+                  ? `minmax(0, 1fr) ${metrics.codeColumnWidthMm}mm`
+                  : `${metrics.codeColumnWidthMm}mm minmax(0, 1fr)`,
+              }),
+          gap: `${metrics.bodyGapMm}mm`,
+          padding: `${metrics.bodyPadYMm}mm ${metrics.bodyPadXMm}mm`,
+          height: metrics.topBandHeightMm > 0
+            ? `calc(${metrics.labelHeightMm}mm - ${metrics.topBandHeightMm}mm)`
+            : `${metrics.labelHeightMm}mm`,
+        }}
+      >
+        {isCodeCentered ? (
+          <>
+            {productNameContent}
+            <Box
+              sx={{
+                display: "grid",
+                minHeight: 0,
+                flex: "1 1 0%",
+                alignItems: "center",
+                gridTemplateColumns: `minmax(0, 1fr) ${metrics.codeColumnWidthMm}mm minmax(0, 1fr)`,
+                columnGap: `${metrics.bodyGapMm}mm`,
+              }}
+            >
+              <Box sx={{ minWidth: 0, overflow: "hidden" }}>
+                <StickerFieldsBlock
+                  fields={leftFields}
+                  metrics={metrics}
+                  textStyle={textStyle}
+                  customization={customization}
+                />
+              </Box>
+              {codeContent}
+              <Box sx={{ minWidth: 0, overflow: "hidden" }}>
+                <StickerFieldsBlock
+                  fields={rightFields}
+                  metrics={metrics}
+                  textStyle={textStyle}
+                  customization={customization}
+                />
+              </Box>
+            </Box>
+            {noteContent}
+          </>
+        ) : isCodeRight ? (
+          <>
+            {contentColumn}
+            {codeContent}
+          </>
+        ) : (
+          <>
+            {codeContent}
+            {contentColumn}
+          </>
+        )}
+      </Box>
+    </Box>
+  );
+};
+
+const BarcodePreviewModal = ({
+  open,
+  title,
+  labels,
+  customization,
+  storeName,
+  qrSources,
+  qrLoading,
+  onClose,
+  onPrint,
+}) => {
+  if (!open) return null;
+
+  const metrics = getWarehouseStickerMetrics(customization);
+  const sheetWidthMm = metrics.labelWidthMm * metrics.labelsPerRow;
+
+  return (
+    <Box sx={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", bgcolor: "rgba(15,23,42,0.5)", p: 2 }}>
+      <Stack sx={{ height: "min(90vh, 900px)", width: "100%", maxWidth: 1152, overflow: "hidden", borderRadius: "14px", bgcolor: "background.paper", boxShadow: 12 }}>
+        <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", px: 2.5, py: 2 }}>
+          <Box>
+            <Typography sx={{ fontSize: 10.5, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Barcode Preview</Typography>
+            <Typography sx={{ fontSize: 15.75, fontWeight: 600, color: "text.primary" }}>{title}</Typography>
+          </Box>
+          <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+            <Button
+              type="button"
+              onClick={onPrint}
+              disabled={labels.length === 0 || qrLoading}
+              variant="contained"
+              startIcon={<Printer size={16} />}
+              sx={{ borderRadius: "7px", textTransform: "none", fontSize: 12.25, fontWeight: 500 }}
+            >
+              Print
+            </Button>
+            <Button
+              type="button"
+              onClick={onClose}
+              variant="outlined"
+              startIcon={<X size={16} />}
+              sx={{ borderRadius: "7px", textTransform: "none", fontSize: 12.25, color: "text.secondary", borderColor: "divider" }}
+            >
+              Close
+            </Button>
+          </Stack>
+        </Stack>
+
+        <Box sx={{ flex: 1, overflow: "auto", bgcolor: "action.hover", p: 2.5 }}>
+          {labels.length === 0 ? (
+            <Box sx={{ display: "flex", height: "100%", alignItems: "center", justifyContent: "center", fontSize: 12.25, color: "text.secondary" }}>
+              No generated barcodes available for preview.
+            </Box>
+          ) : (
+            <Box sx={{ overflowX: "auto" }}>
+              <Box
+                sx={{
+                  display: "grid",
+                  bgcolor: "#fff",
+                  width: `${sheetWidthMm}mm`,
+                  gridTemplateColumns: `repeat(${metrics.labelsPerRow}, ${metrics.labelWidthMm}mm)`,
+                  columnGap: "0mm",
+                  rowGap: "1mm",
+                }}
+              >
+                {labels.map((label) => (
+                  <StickerCard
+                    key={label.key}
+                    label={label}
+                    customization={customization}
+                    storeName={storeName}
+                    qrSrc={qrSources[label.key] || ""}
+                  />
+                ))}
+              </Box>
+            </Box>
+          )}
+        </Box>
+      </Stack>
+    </Box>
+  );
+};
+
+const BarcodeGeneration = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const authUser = useSelector((state) => state.auth.user);
+  const { printHtml: queuePrintHtml } = usePrintContext();
+  const transportEntryId = searchParams.get("transport_entry_id");
+  const directPurchaseId = searchParams.get("direct_purchase_id");
+  const isDirectPurchaseFlow = !!directPurchaseId;
+
+  const [toast, setToast] = useState({ open: false, type: "info", message: "" });
+  const showToast = (type, message) => setToast({ open: true, type, message });
+
+  const [sourceLoading, setLoading] = useState(true);
+  const loading = Boolean(transportEntryId || directPurchaseId) && sourceLoading;
+  const [saving, setSaving] = useState(false);
+  const [updatingRow, setUpdatingRow] = useState(false);
+
+  const [summary, setSummary] = useState({
+    supplier: "",
+    company: "",
+    totalPieces: 0,
+    invoiceNo: "",
+    lrNo: "",
+  });
+
+  const [allItems, setAllItems] = useState([]);
+  const [checked, setChecked] = useState({});
+  const [generatedIds, setGeneratedIds] = useState(new Set());
+  const [barcodeMap, setBarcodeMap] = useState({});
+  const [barcodeRows, setBarcodeRows] = useState([]);
+  const [transportCompanyId, setTransportCompanyId] = useState(null);
+  const [editorOptions, setEditorOptions] = useState(EMPTY_EDITOR_OPTIONS);
+  const [activeEditorId, setActiveEditorId] = useState(null);
+  const [editForm, setEditForm] = useState(buildEditForm(null));
+  const [itemFilterDraft, setItemFilterDraft] = useState(createDefaultItemFilters);
+  const [itemFilters, setItemFilters] = useState(createDefaultItemFilters);
+  const [labelCustomization, setLabelCustomization] = useState(DEFAULT_WAREHOUSE_BARCODE_CUSTOMIZATION);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [directPrinting, setDirectPrinting] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    const targetCompany = transportCompanyId || authUser?.company_id || undefined;
+    fetchWarehouseBarcodeCustomization(api, targetCompany).then((config) => {
+      if (!cancelled) {
+        setLabelCustomization(config);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [transportCompanyId, authUser?.company_id]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadEditorOptions = async () => {
+      try {
+        const [
+          productsRes,
+          brandsRes,
+          stylesRes,
+          materialsRes,
+          patternsRes,
+          sleevesRes,
+          fitsRes,
+          typesRes,
+          colorsRes,
+        ] = await Promise.all([
+          api.get("/products", { params: { limit: 300 } }).catch(() => ({ data: { data: [] } })),
+          api.get("/brands", { params: { limit: 300 } }).catch(() => ({ data: { data: [] } })),
+          api.get("/attributes/style").catch(() => ({ data: { data: [] } })),
+          api.get("/attributes/material").catch(() => ({ data: { data: [] } })),
+          api.get("/attributes/pattern").catch(() => ({ data: { data: [] } })),
+          api.get("/attributes/sleeve").catch(() => ({ data: { data: [] } })),
+          api.get("/attributes/fit").catch(() => ({ data: { data: [] } })),
+          api.get("/attributes/type").catch(() => ({ data: { data: [] } })),
+          api.get("/attributes/colour").catch(() => ({ data: { data: [] } })),
+        ]);
+
+        if (cancelled) return;
+
+        setEditorOptions({
+          products: toOptions(productsRes.data?.data),
+          brands: toOptions(brandsRes.data?.data),
+          styles: toOptions(stylesRes.data?.data),
+          materials: toOptions(materialsRes.data?.data),
+          patterns: toOptions(patternsRes.data?.data),
+          sleeves: toOptions(sleevesRes.data?.data),
+          fits: toOptions(fitsRes.data?.data),
+          types: toOptions(typesRes.data?.data),
+          colors: toOptions(colorsRes.data?.data),
+        });
+      } catch (err) {
+        console.error("Failed to load barcode editor options:", err);
+      }
+    };
+
+    loadEditorOptions();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useResetOnChange([allItems, activeEditorId], () => {
+    if (!activeEditorId) return;
+    const activeItem = allItems.find((item) => item.sourceItemId === activeEditorId);
+    if (activeItem) {
+      setEditForm(buildEditForm(activeItem));
+      return;
+    }
+    setActiveEditorId(null);
+    setEditForm(buildEditForm(null));
+  });
+
+  useEffect(() => {
+    if (!transportEntryId && !directPurchaseId) return;
+
+    const fetchData = async () => {
+      try {
+        if (directPurchaseId) {
+          setTransportCompanyId(null);
+          const dpRes = await api.get(`/direct-purchases/${directPurchaseId}`);
+          const entry = dpRes.data?.data;
+          const items = Array.isArray(entry?.items) ? entry.items : [];
+          const workflowStatus = String(entry?.invoice_workflow_status || "").trim().toLowerCase();
+          const hasExistingBarcodes = hasGeneratedDirectPurchaseBarcodes(entry);
+          const shouldLoadSavedBarcodes =
+            workflowStatus === "invoice_progress"
+            || workflowStatus === "invoice_completed"
+            || hasExistingBarcodes;
+          const barcodeRows = shouldLoadSavedBarcodes
+            ? (await api.get(`/barcodes?direct_purchase_id=${directPurchaseId}`).catch(() => ({ data: { data: [] } }))).data?.data || []
+            : [];
+          setBarcodeRows(barcodeRows);
+
+          setSummary({
+            supplier: entry?.supplier?.name || "-",
+            company: entry?.company?.name || "-",
+            totalPieces: items.reduce((sum, item) => sum + (parseInt(item?.qty, 10) || 0), 0),
+            invoiceNo: entry?.invoice_no || "-",
+            lrNo: entry?.lr_no || "-",
+          });
+
+          const flatItems = items.flatMap((item) => {
+            const jumpDetails = Array.isArray(item?.jump_details) ? item.jump_details : [];
+            if (jumpDetails.length > 0) {
+              return jumpDetails.map((detail, index) => {
+                const mrp = parseFloat(detail?.mrp ?? detail?.sellingPrice ?? detail?.selling_price) || 0;
+                const discountPerc = parseFloat(detail?.saleDiscountPerc ?? detail?.sale_discount_perc) || 0;
+                const finalPrice = parseFloat(detail?.final ?? detail?.finalPrice) || calcFinalPrice(mrp, discountPerc);
+                return {
+                  id: `${item.id}:${index}`,
+                  sourceItemId: `${item.id}:${index}`,
+                  directPurchaseItemId: item.id,
+                  jumpDetailIndex: index,
+                  productId: parseInt(detail?.productId ?? item?.product_id, 10) || item?.product?.id || null,
+                  productName: item?.product?.name || "-",
+                  brandId: parseInt(detail?.brandId ?? item?.brand_id, 10) || item?.brand?.id || null,
+                  brandName: item?.brand?.name || "-",
+                  size: detail?.size || item?.size || "-",
+                  styleId: parseInt(detail?.styleId, 10) || null,
+                  styleName: detail?.styleName || "-",
+                  designNo: detail?.designNo || detail?.design_no || item?.design_no || "-",
+                  materialId: parseInt(detail?.materialId, 10) || null,
+                  materialName: detail?.materialName || "-",
+                  patternId: parseInt(detail?.patternId, 10) || null,
+                  patternName: detail?.patternName || "-",
+                  sleeveId: parseInt(detail?.sleeveId, 10) || null,
+                  sleeveName: detail?.sleeveName || "-",
+                  fitId: parseInt(detail?.fitId, 10) || null,
+                  fitName: detail?.fitName || "-",
+                  typeId: parseInt(detail?.typeId, 10) || null,
+                  typeName: detail?.typeName || "-",
+                  colorId: parseInt(detail?.colorId ?? item?.color_id, 10) || item?.color_id || null,
+                  colorName: detail?.colorName || "-",
+                  qty: parseInt(detail?.qty, 10) || 0,
+                  cost: parseFloat(detail?.cost ?? item?.cost) || 0,
+                  marginPerc: parseFloat(detail?.marginPerc ?? detail?.margin_perc) || 0,
+                  sellingPrice: mrp,
+                  mrp,
+                  discountPerc,
+                  finalPrice,
+                  generatedBarcode: "",
+                  primaryInventoryItemId:
+                    Number((detail?.generatedInventoryItemId ?? detail?.generated_inventory_item_id) || 0) || null,
+                };
+              });
+            }
+
+            const sellingPrice = parseFloat(item?.price) || 0;
+            return [{
+              id: item.id,
+              sourceItemId: item.id,
+              directPurchaseItemId: item.id,
+              productId: item?.product?.id || item?.product_id || null,
+              productName: item?.product?.name || "-",
+              brandId: item?.brand?.id || item?.brand_id || null,
+              brandName: item?.brand?.name || "-",
+              size: item?.size || "-",
+              styleId: null,
+              styleName: "-",
+              designNo: item?.design_no || "-",
+              materialId: null,
+              materialName: "-",
+              patternId: null,
+              patternName: "-",
+              sleeveId: null,
+              sleeveName: "-",
+              fitId: null,
+              fitName: "-",
+              typeId: null,
+              typeName: "-",
+              colorId: item?.color_id || null,
+              colorName: "-",
+              qty: parseInt(item?.qty, 10) || 0,
+              cost: parseFloat(item?.cost) || 0,
+              marginPerc: parseFloat(item?.margin_perc) || 0,
+              sellingPrice,
+              mrp: sellingPrice,
+              discountPerc: 0,
+              finalPrice: sellingPrice,
+              generatedBarcode: "",
+              primaryInventoryItemId:
+                Number(item?.barcodeRef?.inventory_item_id ?? item?.barcodeRef?.inventoryItemId ?? 0) || null,
+            }];
+          });
+
+          setAllItems(flatItems);
+
+          const initialChecked = {};
+          flatItems.forEach((item) => {
+            initialChecked[item.sourceItemId] = false;
+          });
+          setChecked(initialChecked);
+
+          const assignedRanges = assignDirectPurchaseBarcodeRanges(flatItems, barcodeRows);
+          const genIds = new Set();
+          const bcMap = {};
+          flatItems.forEach((item) => {
+            let barcodeText = assignedRanges.get(item.sourceItemId) || item.generatedBarcode || "";
+            if (!barcodeText) {
+              const linkedItem = items.find((row) => String(row.id) === String(item.directPurchaseItemId));
+              const linkedBarcodeId = linkedItem?.barcode_id ?? linkedItem?.barcodeId;
+              if (linkedItem?.barcodeRef?.name) {
+                barcodeText = linkedItem.barcodeRef.name;
+              } else if (linkedBarcodeId) {
+                const linkedRow = barcodeRows.find((row) => Number(row.id) === Number(linkedBarcodeId));
+                barcodeText = linkedRow?.barcode || "";
+              }
+            }
+            if (!barcodeText) return;
+            const sourceKey = String(item.sourceItemId);
+            genIds.add(sourceKey);
+            bcMap[sourceKey] = barcodeText;
+          });
+          setGeneratedIds(genIds);
+          setBarcodeMap(bcMap);
+        } else {
+          const teRes = await api.get(`/transport-entries/${transportEntryId}`);
+          const te = teRes.data.data;
+
+          const invRes = await api.get(`/invoices?transport_entry_id=${transportEntryId}`);
+          const invoices = invRes.data.data || [];
+          const inv = invoices[0];
+
+          setSummary({
+            supplier: te?.supplier?.name || "-",
+            company: te?.company?.name || "-",
+            totalPieces: inv?.pieces || 0,
+            invoiceNo: inv?.invoice_no || "-",
+            lrNo: te?.lr_no || "-",
+          });
+          setTransportCompanyId(
+            Number(te?.company?.id || te?.company_id || 0) || null
+          );
+
+          const ieRes = await api.get(`/inventory-entries?transport_entry_id=${transportEntryId}`);
+          const entries = ieRes.data.data || [];
+          const detailedEntries = await Promise.all(
+            entries.map((entry) =>
+              api.get(`/inventory-entries/${entry.id}`)
+                .then((res) => res.data?.data || entry)
+                .catch(() => entry)
+            )
+          );
+
+          const flatItems = [];
+          detailedEntries.forEach((entry) => {
+            const productName = entry?.product?.name || "-";
+            const sellingMode = entry?.product?.selling_mode || "Piece";
+            const inventoryItems = entry?.items || [];
+            inventoryItems.forEach((item) => {
+              flatItems.push({
+                id: item.id,
+                sourceItemId: item.id,
+                inventoryEntryId: entry.id,
+                inventoryItemId: item.id,
+                productId: entry?.product?.id || null,
+                productName,
+                sellingMode,
+                brandId: entry?.brand?.id || null,
+                brandName: entry?.brand?.name || "-",
+                size: item.size || "-",
+                styleId: entry?.style?.id || null,
+                styleName: entry?.style?.name || "-",
+                designNo: item.design_no || "-",
+                materialId: entry?.material?.id || null,
+                materialName: entry?.material?.name || "-",
+                patternId: entry?.pattern?.id || null,
+                patternName: entry?.pattern?.name || "-",
+                sleeveId: entry?.sleeve?.id || null,
+                sleeveName: entry?.sleeve?.name || "-",
+                fitId: entry?.fit?.id || null,
+                fitName: entry?.fit?.name || "-",
+                typeId: entry?.type?.id || null,
+                typeName: entry?.type?.name || "-",
+                colorId: entry?.color?.id || null,
+                colorName: entry?.color?.name || "-",
+                qty: parseInt(item.qty, 10) || 0,
+                cost: parseFloat(item.cost) || 0,
+                marginPerc: parseFloat(item.margin_perc) || 0,
+                sellingPrice: parseFloat(item.selling_price) || parseFloat(item.price) || 0,
+                mrp: parseFloat(item.mrp) || 0,
+                discountPerc: parseFloat(item.discount_perc) || 0,
+                finalPrice: parseFloat(item.final_price) || 0,
+              });
+            });
+          });
+
+          setAllItems(flatItems);
+
+          const initialChecked = {};
+          flatItems.forEach((item) => {
+            initialChecked[item.sourceItemId] = false;
+          });
+          setChecked(initialChecked);
+
+          const bcRes = await api.get(`/barcodes?transport_entry_id=${transportEntryId}`);
+          const barcodes = bcRes.data.data || [];
+          setBarcodeRows(barcodes);
+          const barcodeRangesByInventoryItemId = buildBarcodeRangeMap(
+            barcodes,
+            (barcodeRow) => Number(barcodeRow?.inventory_item_id || 0) || null
+          );
+          const barcodeRangesByVariantKey = buildBarcodeRangeMap(barcodes, getBarcodeRowVariantKey);
+
+          const genIds = new Set();
+          const bcMap = {};
+          flatItems.forEach((item) => {
+            const barcodeText =
+              barcodeRangesByInventoryItemId.get(item.inventoryItemId)
+              || barcodeRangesByVariantKey.get(getItemVariantKey(item))
+              || "";
+            if (barcodeText) {
+              const key = sourceItemKey(item.sourceItemId);
+              genIds.add(key);
+              bcMap[key] = barcodeText;
+            }
+          });
+          setGeneratedIds(genIds);
+          setBarcodeMap(bcMap);
+        }
+      } catch (err) {
+        console.error("Failed to load barcode data:", err);
+        showToast("error", "Failed to load data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [transportEntryId, directPurchaseId, isDirectPurchaseFlow]);
+
+  const columns = [
+    { label: "", w: 40, align: "center" },
+    { label: "S.No", w: 45, align: "center" },
+    { label: "Product", w: 140, align: "left" },
+    { label: "Barcode", w: 170, align: "center" },
+    { label: "Size", w: 60, align: "center" },
+    { label: "Design", w: 75, align: "center" },
+    { label: "Qty", w: 50, align: "right" },
+    { label: "Cost", w: 80, align: "right" },
+    { label: "Mrgn%", w: 60, align: "right" },
+    { label: "Sale", w: 80, align: "right" },
+    { label: "MRP", w: 80, align: "right" },
+    { label: "Dis%", w: 55, align: "right" },
+    { label: "Final", w: 80, align: "right" },
+    { label: "Status", w: 75, align: "center" },
+  ];
+  const { widths: colWidths, onMouseDown: onColResize } = useResizableColumns(columns.map((c) => c.w));
+
+  const activeItem = allItems.find((item) => item.sourceItemId === activeEditorId) || null;
+  const storeName = useMemo(
+    () =>
+      String(authUser?.company_name || "").trim()
+      || String(summary.company || "").trim()
+      || "Store",
+    [authUser?.company_name, summary.company]
+  );
+  const barcodeValuesMap = useMemo(
+    () =>
+      isDirectPurchaseFlow
+        ? assignDirectPurchaseBarcodeValueMap(allItems, barcodeRows)
+        : buildTransportBarcodeValueMap(allItems, barcodeRows),
+    [allItems, barcodeRows, isDirectPurchaseFlow]
+  );
+  const previewItems = useMemo(() => {
+    const checkedWithBarcodes = allItems.filter(
+      (item) => checked[item.sourceItemId] && isGeneratedItem(generatedIds, item.sourceItemId)
+    );
+    if (checkedWithBarcodes.length > 0) return checkedWithBarcodes;
+
+    const generatedItems = allItems.filter((item) => isGeneratedItem(generatedIds, item.sourceItemId));
+    if (generatedItems.length > 0) return generatedItems;
+
+    if (activeItem && isGeneratedItem(generatedIds, activeItem.sourceItemId)) return [activeItem];
+    return [];
+  }, [allItems, checked, generatedIds, activeItem]);
+  const canPreviewBarcodes = previewItems.length > 0;
+  const previewTitle = useMemo(() => {
+    if (previewItems.length === 1) {
+      return `${previewItems[0].productName} Sticker Preview`;
+    }
+    if (previewItems.length > 1) {
+      return `${previewItems.length} Items Sticker Preview`;
+    }
+    return "Barcode Sticker Preview";
+  }, [previewItems]);
+  const filteredItems = allItems.filter((item) => {
+    const activeFilters = Object.entries(itemFilters).filter(([, value]) => String(value || "").trim() !== "");
+    if (activeFilters.length === 0) return true;
+
+    const searchRow = {
+      productName: item.productName,
+      barcode: barcodeForItem(barcodeMap, item.sourceItemId),
+      size: item.size,
+      designNo: item.designNo,
+      qty: item.qty,
+      cost: item.cost.toFixed(2),
+      marginPerc: item.marginPerc,
+      sellingPrice: item.sellingPrice.toFixed(2),
+      mrp: item.mrp.toFixed(2),
+      discountPerc: item.discountPerc,
+      finalPrice: item.finalPrice.toFixed(2),
+      status: isGeneratedItem(generatedIds, item.sourceItemId) ? "Done" : "Pending",
+    };
+
+    return activeFilters.every(([key, value]) =>
+      String(searchRow[key] ?? "").toLowerCase().includes(String(value).trim().toLowerCase())
+    );
+  });
+  const selectableFilteredItems = filteredItems.filter((item) => !isGeneratedItem(generatedIds, item.sourceItemId));
+  const allChecked = selectableFilteredItems.length > 0
+    && selectableFilteredItems.every((item) => checked[item.sourceItemId]);
+  const selectedItems = allItems.filter(
+    (item) => checked[item.sourceItemId] && !isGeneratedItem(generatedIds, item.sourceItemId)
+  );
+  const selectedPieces = selectedItems.reduce((sum, item) => sum + item.qty, 0);
+  const allItemsHaveBarcodes = allItems.length > 0
+    && allItems.every((item) => Boolean(barcodeForItem(barcodeMap, item.sourceItemId)));
+
+  const previewLabels = useMemo(() => !previewOpen ? [] : previewItems.flatMap(item => buildStickerLabels({
+    item, barcodeRows: getItemBarcodeRows(item, barcodeValuesMap, barcodeMap), customization: labelCustomization,
+  })), [previewOpen, previewItems, barcodeValuesMap, barcodeMap, labelCustomization]);
+  const { sources: qrSources, loading: qrLoading } = useQrSources(previewLabels, { enabled: previewOpen, width: 360 });
+
+
+  const handleToggle = (item) => {
+    if (isGeneratedItem(generatedIds, item.sourceItemId)) return;
+    setChecked((prev) => ({ ...prev, [item.sourceItemId]: !prev[item.sourceItemId] }));
+    setActiveEditorId(item.sourceItemId);
+    setEditForm(buildEditForm(item));
+  };
+
+  const handleRowClick = (item) => {
+    setChecked((prev) => ({ ...prev, [item.sourceItemId]: !prev[item.sourceItemId] }));
+    setActiveEditorId(item.sourceItemId);
+    setEditForm(buildEditForm(item));
+  };
+
+  const handleToggleAll = () => {
+    const newChecked = {};
+    selectableFilteredItems.forEach((item) => {
+      newChecked[item.sourceItemId] = !allChecked;
+    });
+    setChecked((prev) => ({ ...prev, ...newChecked }));
+  };
+
+  const handleEditorChange = (field, value) => {
+    setEditForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // Preloads above are capped batches -- these hit each resource's own ?search= endpoint so
+  // AsyncSearchSelect can find anything beyond that initial batch.
+  const handleAsyncProductSearch = useCallback(async (query) => {
+    try {
+      const res = await api.get("/products", { params: { search: query, limit: 50 } });
+      const mapped = toOptions(res.data?.data);
+      if (mapped.length) {
+        setEditorOptions((prev) => {
+          const existingIds = new Set(prev.products.map((o) => o.value));
+          return { ...prev, products: [...prev.products, ...mapped.filter((o) => !existingIds.has(o.value))] };
+        });
+      }
+      return mapped;
+    } catch {
+      return [];
+    }
+  }, []);
+
+  const handleAsyncBrandSearch = useCallback(async (query) => {
+    try {
+      const res = await api.get("/brands", { params: { search: query, limit: 50 } });
+      const mapped = toOptions(res.data?.data);
+      if (mapped.length) {
+        setEditorOptions((prev) => {
+          const existingIds = new Set(prev.brands.map((o) => o.value));
+          return { ...prev, brands: [...prev.brands, ...mapped.filter((o) => !existingIds.has(o.value))] };
+        });
+      }
+      return mapped;
+    } catch {
+      return [];
+    }
+  }, []);
+
+  const handleItemFilterDraftChange = (key, value) => {
+    setItemFilterDraft((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleItemFilterKeyDown = (event) => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    setItemFilters({ ...itemFilterDraft });
+  };
+  const handleRowUpdate = async () => {
+    if (!activeItem) {
+      showToast("warning", "Select a row to update");
+      return;
+    }
+
+    setUpdatingRow(true);
+    try {
+      await api.put("/barcodes/source-item", {
+        inventoryEntryId: activeItem.inventoryEntryId,
+        inventoryItemId: activeItem.inventoryItemId,
+        directPurchaseItemId: activeItem.directPurchaseItemId,
+        jumpDetailIndex: activeItem.jumpDetailIndex,
+        productId: editForm.productId || null,
+        brandId: editForm.brandId || null,
+        size: editForm.size,
+        styleId: editForm.styleId || null,
+        designNo: editForm.designNo,
+        materialId: editForm.materialId || null,
+        patternId: editForm.patternId || null,
+        sleeveId: editForm.sleeveId || null,
+        fitId: editForm.fitId || null,
+        typeId: editForm.typeId || null,
+        colorId: editForm.colorId || null,
+        mrp: editForm.mrp,
+        discountPerc: editForm.discountPerc,
+      });
+
+      const updatedItem = mergeEditedItem(activeItem, editForm, editorOptions);
+      setAllItems((prev) =>
+        prev.map((item) => (item.sourceItemId === activeItem.sourceItemId ? updatedItem : item))
+      );
+      setEditForm(buildEditForm(updatedItem));
+      showToast("success", "Row updated successfully");
+    } catch (err) {
+      console.error("Failed to update barcode row:", err);
+      showToast("error", err.response?.data?.message || "Failed to update row");
+    } finally {
+      setUpdatingRow(false);
+    }
+  };
+
+  const handleGenerate = async () => {
+    if (!transportEntryId && !directPurchaseId) {
+      showToast("error", "No barcode source linked. Open this page from the workflow.");
+      return;
+    }
+    if (selectedItems.length === 0 && allItemsHaveBarcodes) {
+      showToast("success", "Barcode Generated");
+      return;
+    }
+    if (selectedItems.length === 0) {
+      showToast("warning", "Select items to generate barcodes first.");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const res = await api.post("/barcodes/generate", {
+        ...(transportEntryId ? { transportEntryId } : {}),
+        ...(directPurchaseId ? { directPurchaseId } : {}),
+        ...(transportEntryId && transportCompanyId ? { companyId: transportCompanyId } : {}),
+        codeType: labelCustomization.codeType,
+        items: selectedItems.map((item) => ({
+          sourceItemId: item.sourceItemId,
+          directPurchaseItemId: item.directPurchaseItemId,
+          jumpDetailIndex: item.jumpDetailIndex,
+          inventoryEntryId: item.inventoryEntryId,
+          inventoryItemId: item.inventoryItemId,
+          productId: item.productId,
+          brandId: item.brandId,
+          styleId: item.styleId,
+          designNo: item.designNo,
+          materialId: item.materialId,
+          patternId: item.patternId,
+          sleeveId: item.sleeveId,
+          fitId: item.fitId,
+          typeId: item.typeId,
+          colorId: item.colorId,
+          productName: item.productName,
+          size: item.size,
+          qty: item.qty,
+          cost: item.cost,
+          marginPerc: item.marginPerc,
+          sellingPrice: item.sellingPrice,
+          mrp: item.mrp,
+          discountPerc: item.discountPerc,
+          finalPrice: item.finalPrice,
+        })),
+      });
+
+      const data = res.data.data;
+      showToast("success", res.data.message);
+
+      const newGenIds = new Set([...generatedIds].map((id) => String(id)));
+      const newBcMap = { ...barcodeMap };
+      const processedRows = [...(data.created || []), ...(data.skipped || [])];
+      const nextBarcodeRows = [...barcodeRows, ...processedRows].filter((row, index, array) => {
+        const rowId = row?.id ?? null;
+        const rowBarcode = String(row?.barcode || "").trim();
+        return array.findIndex((candidate) =>
+          (rowId !== null && candidate?.id === rowId)
+          || (!rowId && String(candidate?.barcode || "").trim() === rowBarcode)
+        ) === index;
+      });
+      const createdRanges = buildBarcodeRangeMap(
+        processedRows,
+        (bc) => bc?.sourceItemId ?? bc?.inventory_item_id ?? bc?.inventoryItemId ?? null
+      );
+      createdRanges.forEach((barcodeRange, sourceItemId) => {
+        newGenIds.add(String(sourceItemId));
+        if (barcodeRange) newBcMap[String(sourceItemId)] = barcodeRange;
+      });
+      processedRows.forEach((row) => {
+        const sourceItemId = row?.sourceItemId;
+        if (sourceItemId === undefined || sourceItemId === null) return;
+        const key = String(sourceItemId);
+        const barcodeText = String(row?.barcode || "").trim();
+        if (!barcodeText) return;
+        newGenIds.add(key);
+        newBcMap[key] = newBcMap[key] || barcodeText;
+      });
+      setGeneratedIds(newGenIds);
+      setBarcodeMap(newBcMap);
+      setBarcodeRows(nextBarcodeRows);
+      setChecked((prev) => {
+        const next = { ...prev };
+        selectedItems.forEach((item) => {
+          next[item.sourceItemId] = true;
+        });
+        return next;
+      });
+    } catch (err) {
+      console.error("Generate failed:", err);
+      showToast("error", err.response?.data?.message || "Failed to generate barcodes");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!transportEntryId && !directPurchaseId) {
+      showToast("error", "No barcode source linked. Open this page from the workflow.");
+      return;
+    }
+
+    if (!allItemsHaveBarcodes) {
+      showToast("warning", "Generate barcode first, then save.");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      if (directPurchaseId) {
+        await api.put(`/direct-purchases/${directPurchaseId}`, {
+          invoiceWorkflowStatus: "invoice_progress",
+        });
+      } else {
+        await api.put(`/transport-entries/${transportEntryId}`, {
+          status: "barcode_generated",
+        });
+      }
+      showToast("success", "Saved");
+    } catch (err) {
+      console.error("Save failed:", err);
+      showToast("error", err.response?.data?.message || "Failed to save barcode status");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const openPreview = () => {
+    if (!canPreviewBarcodes) return;
+    setPreviewOpen(true);
+  };
+
+  const closePreview = () => {
+    setPreviewOpen(false);
+  };
+
+  // Builds labels + QR data URLs directly (independent of the previewOpen-gated effects above),
+  // so the toolbar's "Print" button can print in one click without needing the preview modal to
+  // open and its effects to settle first - it reuses the exact same label-building/QR logic.
+  const buildLabelsAndQrSources = async () => {
+    const labels = previewItems.flatMap((item) =>
+      buildStickerLabels({
+        item,
+        barcodeRows: getItemBarcodeRows(item, barcodeValuesMap, barcodeMap),
+        customization: labelCustomization,
+      })
+    );
+    return { labels, qrSrcs: await buildLabelQrSources(labels) };
+  };
+
+  const handlePrintPreview = async (override) => {
+    const labels = override?.labels || previewLabels;
+    const qrSrcs = override?.qrSrcs || qrSources;
+    if (labels.length === 0 || qrLoading) return;
+    const result = await printWarehouseBarcodeLabels({
+      labels,
+      qrSources: qrSrcs,
+      customization: labelCustomization,
+      storeName,
+      queuePrintHtml,
+      jobName: previewItems.length === 1
+        ? `${previewItems[0].productName} barcode`
+        : previewItems.length > 1
+          ? `${previewItems.length} warehouse barcodes`
+          : "Warehouse barcode",
+    });
+    if (result.message) showToast(result.ok ? "success" : "error", result.message);
+  };
+
+  const handleDirectPrint = async () => {
+    if (!canPreviewBarcodes || qrLoading || directPrinting) return;
+    setDirectPrinting(true);
+    try {
+      const { labels, qrSrcs } = await buildLabelsAndQrSources();
+      if (labels.length === 0) {
+        showToast("error", "No generated barcodes available to print.");
+        return;
+      }
+      await handlePrintPreview({ labels, qrSrcs });
+    } catch (err) {
+      console.error("Direct barcode print failed:", err);
+      showToast("error", err?.message || "Failed to print barcode stickers.");
+    } finally {
+      setDirectPrinting(false);
+    }
+  };
+
+  if (loading) {
+    return <PageSkeleton variant="table" rows={8} cols={10} />;
+  }
+
+  const renderSelectField = (label, field, options) => (
+    <Box>
+      <Typography component="label" sx={{ display: "block", fontSize: 9, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>{label}</Typography>
+      <TextField
+        select
+        value={editForm[field] || ""}
+        onChange={(e) => handleEditorChange(field, e.target.value)}
+        size="small"
+        fullWidth
+        sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.75 } }}
+      >
+        <MenuItem value="">Select</MenuItem>
+        {options.map((option) => (
+          <MenuItem key={option.value} value={option.value}>
+            {option.label}
+          </MenuItem>
+        ))}
+      </TextField>
+    </Box>
+  );
+
+  const renderInputField = (label, field, type = "text") => (
+    <Box>
+      <Typography component="label" sx={{ display: "block", fontSize: 9, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>{label}</Typography>
+      <TextField
+        type={type}
+        value={editForm[field] || ""}
+        onChange={(e) => handleEditorChange(field, e.target.value)}
+        size="small"
+        fullWidth
+        sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.75 } }}
+      />
+    </Box>
+  );
+
+  return (
+    <Box sx={{ height: "100%", overflow: "hidden", bgcolor: "background.default", display: "flex", flexDirection: "column" }}>
+      <PageHeader
+        onBack={() => navigate(-1)}
+        title={
+          <Breadcrumbs items={[
+            { label: "Warehouse", onClick: () => navigate("/warehouse") },
+            { label: "Barcode Generation" },
+          ]} />
+        }
+        actions={
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center", fontSize: 12.25 }}>
+          <Button
+            type="button"
+            onClick={() => navigate("/warehouse/customisation")}
+            className="glass-btn"
+            sx={{ display: "flex", alignItems: "center" }}
+          >
+            Customisation
+          </Button>
+          <Button
+            onClick={openPreview}
+            disabled={!canPreviewBarcodes || qrLoading}
+            className="glass-btn glass-btn-primary"
+            sx={{ display: "flex", alignItems: "center" }}
+          >
+            <Eye size={16} style={{marginRight: 4}} /> Preview Barcode
+          </Button>
+          <Button
+            onClick={handleDirectPrint}
+            disabled={!canPreviewBarcodes || qrLoading || directPrinting}
+            title="Print the already-generated barcodes for the checked/active item without opening the preview"
+            className="glass-btn glass-btn-primary"
+            sx={{ display: "flex", alignItems: "center" }}
+          >
+            <Printer size={16} style={{marginRight: 4}} /> {directPrinting ? "Printing..." : "Print"}
+          </Button>
+          <Button
+            onClick={handleSave}
+            disabled={saving || allItems.length === 0}
+            className="glass-btn glass-btn-success"
+            sx={{ display: "flex", alignItems: "center" }}
+          >
+            <Save size={16} style={{marginRight: 4}} /> Save
+          </Button>
+          <Button
+            onClick={handleGenerate}
+            disabled={saving}
+            className="glass-btn glass-btn-primary"
+            sx={{ display: "flex", alignItems: "center" }}
+          >
+            {saving ? "Generating..." : "Generate Barcodes"}
+          </Button>
+          <Button
+            onClick={() => navigate("/warehouse/barcode/search")}
+            className="glass-btn glass-btn-primary"
+            sx={{ display: "flex", alignItems: "center" }}
+          >
+            <Search size={16} style={{marginRight: 4}} /> Search
+          </Button>
+        </Stack>
+        }
+      />
+
+      <Stack direction="row" sx={{ flex: 1, minHeight: 0, overflow: "hidden", p: 2, gap: 2 }}>
+        <Box sx={{ width: 300, minHeight: 0, flexShrink: 0 }}>
+          <Stack spacing={2} sx={{ bgcolor: "background.paper", height: "100%", overflowY: "auto", p: 2, borderRadius: "7px", boxShadow: 1, border: "1px solid", borderColor: "divider", fontSize: 12.25 }}>
+            <Stack spacing={1}>
+              <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 1.5, borderRadius: "3.5px", border: "1px solid", borderColor: "divider", px: 1.5, py: 1 }}>
+                <Typography sx={{ fontSize: 11, fontWeight: 600, color: "text.secondary", textTransform: "uppercase" }}>Supplier</Typography>
+                <Typography sx={{ textAlign: "right", fontSize: 12.25, fontWeight: 700, color: "primary.main", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{summary.supplier}</Typography>
+              </Stack>
+
+              <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 1.5, borderRadius: "3.5px", border: "1px solid", borderColor: "divider", px: 1.5, py: 1 }}>
+                <Typography sx={{ fontSize: 11, fontWeight: 600, color: "text.secondary", textTransform: "uppercase" }}>Company</Typography>
+                <Typography sx={{ textAlign: "right", fontSize: 12.25, fontWeight: 700, color: "primary.main", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{summary.company}</Typography>
+              </Stack>
+
+              <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 1.5, borderRadius: "3.5px", border: "1px solid", borderColor: "divider", px: 1.5, py: 1 }}>
+                <Typography sx={{ fontSize: 11, fontWeight: 600, color: "text.secondary", textTransform: "uppercase" }}>Pieces</Typography>
+                <Typography sx={{ textAlign: "right", fontSize: 12.25, fontWeight: 700, color: "error.main" }}>
+                  {selectedPieces} / {summary.totalPieces || allItems.reduce((sum, item) => sum + item.qty, 0)}
+                </Typography>
+              </Stack>
+
+              <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 1.5, borderRadius: "3.5px", border: "1px solid", borderColor: "divider", px: 1.5, py: 1 }}>
+                <Typography sx={{ fontSize: 11, fontWeight: 600, color: "text.secondary", textTransform: "uppercase" }}>Invoice No</Typography>
+                <Typography sx={{ textAlign: "right", fontSize: 12.25, fontWeight: 500, color: "primary.main", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{summary.invoiceNo}</Typography>
+              </Stack>
+
+              <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 1.5, borderRadius: "3.5px", border: "1px solid", borderColor: "divider", px: 1.5, py: 1 }}>
+                <Typography sx={{ fontSize: 11, fontWeight: 600, color: "text.secondary", textTransform: "uppercase" }}>LR No</Typography>
+                <Typography sx={{ textAlign: "right", fontSize: 12.25, fontWeight: 500, color: "primary.main", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{summary.lrNo}</Typography>
+              </Stack>
+            </Stack>
+
+            <Box>
+              <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.secondary", textTransform: "uppercase", mb: 0.5 }}>Barcode Status</Typography>
+              <Stack direction="row" spacing={1} sx={{ alignItems: "center", fontSize: 12.25 }}>
+                <Box component="span" sx={{ display: "inline-block", px: 1, py: 0.25, bgcolor: (theme) => alpha(theme.palette.success.main, theme.palette.mode === "dark" ? 0.16 : 0.08), color: "success.main", borderRadius: 999, fontWeight: 500 }}>
+                  {generatedIds.size} Generated
+                </Box>
+                <Box component="span" sx={{ display: "inline-block", px: 1, py: 0.25, bgcolor: (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.16 : 0.08), color: "warning.main", borderRadius: 999, fontWeight: 500 }}>
+                  {allItems.length - generatedIds.size} Pending
+                </Box>
+              </Stack>
+            </Box>
+
+            <Button
+              onClick={handleGenerate}
+              disabled={saving || (selectedItems.length === 0 && !allItemsHaveBarcodes)}
+              className="glass-btn glass-btn-primary"
+              fullWidth
+            >
+              {saving ? "Generating..." : `Generate Barcodes (${selectedItems.length})`}
+            </Button>
+
+            <Button
+              onClick={handleSave}
+              disabled={saving || allItems.length === 0}
+              className="glass-btn glass-btn-success"
+              fullWidth
+            >
+              <Save size={16} style={{ display: "inline", marginRight: 4 }} /> Save
+            </Button>
+
+            <Button
+              onClick={openPreview}
+              disabled={!canPreviewBarcodes || qrLoading}
+              className="glass-btn glass-btn-primary"
+              fullWidth
+            >
+              <Eye size={16} style={{ display: "inline", marginRight: 4 }} /> Preview Barcode
+            </Button>
+
+            <Button
+              onClick={handleDirectPrint}
+              disabled={!canPreviewBarcodes || qrLoading || directPrinting}
+              className="glass-btn glass-btn-primary"
+              fullWidth
+            >
+              <Printer size={16} style={{ display: "inline", marginRight: 4 }} /> {directPrinting ? "Printing..." : "Print"}
+            </Button>
+
+            {activeItem ? (
+              <Box sx={{ borderTop: 1, borderColor: "divider", pt: 2 }}>
+                <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", mb: 1.5 }}>
+                  <Box>
+                    <Typography sx={{ fontSize: 9, fontWeight: 600, color: "text.secondary", textTransform: "uppercase" }}>Row Editor</Typography>
+                    <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>{activeItem.productName}</Typography>
+                  </Box>
+                  <Typography sx={{ fontSize: 9, color: "text.secondary" }}>Row #{allItems.findIndex((item) => item.sourceItemId === activeItem.sourceItemId) + 1}</Typography>
+                </Stack>
+
+                <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1.5 }}>
+                  <Box>
+                    <Typography component="label" sx={{ display: "block", fontSize: 9, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>Product</Typography>
+                    <AsyncSearchSelect
+                      name="productId"
+                      value={editForm.productId || ""}
+                      onChange={(e) => handleEditorChange("productId", e.target.value)}
+                      options={editorOptions.products}
+                      onAsyncSearch={handleAsyncProductSearch}
+                      placeholder="Select"
+                      searchPlaceholder="Search products..."
+                    />
+                  </Box>
+                  <Box>
+                    <Typography component="label" sx={{ display: "block", fontSize: 9, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>Brand Name</Typography>
+                    <AsyncSearchSelect
+                      name="brandId"
+                      value={editForm.brandId || ""}
+                      onChange={(e) => handleEditorChange("brandId", e.target.value)}
+                      options={editorOptions.brands}
+                      onAsyncSearch={handleAsyncBrandSearch}
+                      placeholder="Select"
+                      searchPlaceholder="Search brands..."
+                    />
+                  </Box>
+                  {renderInputField("Size", "size")}
+                  {renderSelectField("Style", "styleId", editorOptions.styles)}
+                  {renderInputField("Design", "designNo")}
+                  {renderSelectField("Material", "materialId", editorOptions.materials)}
+                  {renderSelectField("Pattern", "patternId", editorOptions.patterns)}
+                  {renderSelectField("Sleeve", "sleeveId", editorOptions.sleeves)}
+                  {renderSelectField("Fit", "fitId", editorOptions.fits)}
+                  {renderSelectField("Type", "typeId", editorOptions.types)}
+                  {renderSelectField("Color", "colorId", editorOptions.colors)}
+                  {renderInputField("MRP", "mrp", "number")}
+                  {renderInputField("Discount", "discountPerc", "number")}
+                  <Box sx={{ display: "flex", alignItems: "flex-end", fontSize: 9, color: "text.secondary" }}>
+                    Final: {calcFinalPrice(editForm.mrp, editForm.discountPerc).toFixed(2)}
+                  </Box>
+                </Box>
+
+                <Button
+                  onClick={handleRowUpdate}
+                  disabled={updatingRow}
+                  className="glass-btn glass-btn-primary"
+                  fullWidth
+                  sx={{ mt: 2 }}
+                >
+                  {updatingRow ? "Updating..." : "Update"}
+                </Button>
+              </Box>
+            ) : null}
+          </Stack>
+        </Box>
+
+        <Box sx={{ flex: 1, minWidth: 0, minHeight: 0 }}>
+          <Stack sx={{ bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "7px", boxShadow: 1, overflow: "hidden", height: "100%" }}>
+            <Box sx={{ overflowX: "auto", flex: 1, minHeight: 0 }}>
+              <Table sx={{ width: "100%", borderCollapse: "collapse", fontSize: 12.25, tableLayout: "fixed", minWidth: colWidths.reduce((s, w) => s + w, 0) }}>
+                <colgroup>
+                  {colWidths.map((w, i) => (
+                    <col key={i} style={{ width: w }} />
+                  ))}
+                </colgroup>
+                <TableHead sx={{ bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08), fontSize: 9, fontWeight: 600, color: "text.secondary", textTransform: "uppercase", letterSpacing: 0.5, position: "sticky", top: 0, zIndex: 10 }}>
+                  <TableRow>
+                    {columns.map((col, i) => (
+                      <TableCell
+                        key={i}
+                        sx={{ position: "relative", borderRight: 1, borderBottom: 1, borderColor: "divider", p: 1, userSelect: "none", textAlign: col.align }}
+                      >
+                        {i === 0 ? (
+                          <Checkbox
+                            size="small"
+                            checked={allChecked}
+                            onChange={handleToggleAll}
+                            sx={{ p: 0 }}
+                          />
+                        ) : (
+                          col.label
+                        )}
+                        <Box
+                          onMouseDown={(e) => onColResize(i, e)}
+                          sx={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 6, cursor: "col-resize", zIndex: 1, "&:hover": { bgcolor: (theme) => alpha(theme.palette.primary.main, 0.3) }, "&:active": { bgcolor: (theme) => alpha(theme.palette.primary.main, 0.4) } }}
+                        />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                  <TableRow sx={{ bgcolor: (theme) => alpha(theme.palette.info.main, theme.palette.mode === "dark" ? 0.12 : 0.06), borderTop: 1, borderColor: "divider", textTransform: "none", letterSpacing: "normal" }}>
+                    <TableCell sx={{ borderRight: 1, borderBottom: 1, borderColor: "divider", p: 0.75 }}></TableCell>
+                    <TableCell sx={{ borderRight: 1, borderBottom: 1, borderColor: "divider", p: 0.75 }}></TableCell>
+                    <TableCell sx={{ borderRight: 1, borderBottom: 1, borderColor: "divider", p: 0.75 }}>
+                      <TextField
+                        type="text"
+                        value={itemFilterDraft.productName}
+                        onChange={(event) => handleItemFilterDraftChange("productName", event.target.value)}
+                        onKeyDown={handleItemFilterKeyDown}
+                        placeholder="Search product"
+                        size="small"
+                        fullWidth
+                        sx={{ "& .MuiInputBase-input": { fontSize: 12.25, fontWeight: 400, py: 0.5 } }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ borderRight: 1, borderBottom: 1, borderColor: "divider", p: 0.75 }}>
+                      <TextField
+                        type="text"
+                        value={itemFilterDraft.barcode}
+                        onChange={(event) => handleItemFilterDraftChange("barcode", event.target.value)}
+                        onKeyDown={handleItemFilterKeyDown}
+                        placeholder="Search barcode"
+                        size="small"
+                        fullWidth
+                        sx={{ "& .MuiInputBase-input": { fontSize: 12.25, fontWeight: 400, py: 0.5 } }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ borderRight: 1, borderBottom: 1, borderColor: "divider", p: 0.75 }}>
+                      <TextField
+                        type="text"
+                        value={itemFilterDraft.size}
+                        onChange={(event) => handleItemFilterDraftChange("size", event.target.value)}
+                        onKeyDown={handleItemFilterKeyDown}
+                        placeholder="Search size"
+                        size="small"
+                        fullWidth
+                        sx={{ "& .MuiInputBase-input": { fontSize: 12.25, fontWeight: 400, py: 0.5 } }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ borderRight: 1, borderBottom: 1, borderColor: "divider", p: 0.75 }}>
+                      <TextField
+                        type="text"
+                        value={itemFilterDraft.designNo}
+                        onChange={(event) => handleItemFilterDraftChange("designNo", event.target.value)}
+                        onKeyDown={handleItemFilterKeyDown}
+                        placeholder="Search design"
+                        size="small"
+                        fullWidth
+                        sx={{ "& .MuiInputBase-input": { fontSize: 12.25, fontWeight: 400, py: 0.5 } }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ borderRight: 1, borderBottom: 1, borderColor: "divider", p: 0.75 }}>
+                      <TextField
+                        type="text"
+                        value={itemFilterDraft.qty}
+                        onChange={(event) => handleItemFilterDraftChange("qty", event.target.value)}
+                        onKeyDown={handleItemFilterKeyDown}
+                        placeholder="Qty"
+                        size="small"
+                        fullWidth
+                        sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, fontWeight: 400, py: 0.5 } }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ borderRight: 1, borderBottom: 1, borderColor: "divider", p: 0.75 }}>
+                      <TextField
+                        type="text"
+                        value={itemFilterDraft.cost}
+                        onChange={(event) => handleItemFilterDraftChange("cost", event.target.value)}
+                        onKeyDown={handleItemFilterKeyDown}
+                        placeholder="Cost"
+                        size="small"
+                        fullWidth
+                        sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, fontWeight: 400, py: 0.5 } }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ borderRight: 1, borderBottom: 1, borderColor: "divider", p: 0.75 }}>
+                      <TextField
+                        type="text"
+                        value={itemFilterDraft.marginPerc}
+                        onChange={(event) => handleItemFilterDraftChange("marginPerc", event.target.value)}
+                        onKeyDown={handleItemFilterKeyDown}
+                        placeholder="Margin"
+                        size="small"
+                        fullWidth
+                        sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, fontWeight: 400, py: 0.5 } }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ borderRight: 1, borderBottom: 1, borderColor: "divider", p: 0.75 }}>
+                      <TextField
+                        type="text"
+                        value={itemFilterDraft.sellingPrice}
+                        onChange={(event) => handleItemFilterDraftChange("sellingPrice", event.target.value)}
+                        onKeyDown={handleItemFilterKeyDown}
+                        placeholder="Sale"
+                        size="small"
+                        fullWidth
+                        sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, fontWeight: 400, py: 0.5 } }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ borderRight: 1, borderBottom: 1, borderColor: "divider", p: 0.75 }}>
+                      <TextField
+                        type="text"
+                        value={itemFilterDraft.mrp}
+                        onChange={(event) => handleItemFilterDraftChange("mrp", event.target.value)}
+                        onKeyDown={handleItemFilterKeyDown}
+                        placeholder="MRP"
+                        size="small"
+                        fullWidth
+                        sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, fontWeight: 400, py: 0.5 } }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ borderRight: 1, borderBottom: 1, borderColor: "divider", p: 0.75 }}>
+                      <TextField
+                        type="text"
+                        value={itemFilterDraft.discountPerc}
+                        onChange={(event) => handleItemFilterDraftChange("discountPerc", event.target.value)}
+                        onKeyDown={handleItemFilterKeyDown}
+                        placeholder="Dis%"
+                        size="small"
+                        fullWidth
+                        sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, fontWeight: 400, py: 0.5 } }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ borderRight: 1, borderBottom: 1, borderColor: "divider", p: 0.75 }}>
+                      <TextField
+                        type="text"
+                        value={itemFilterDraft.finalPrice}
+                        onChange={(event) => handleItemFilterDraftChange("finalPrice", event.target.value)}
+                        onKeyDown={handleItemFilterKeyDown}
+                        placeholder="Final"
+                        size="small"
+                        fullWidth
+                        sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 12.25, fontWeight: 400, py: 0.5 } }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ borderRight: 1, borderBottom: 1, borderColor: "divider", p: 0.75 }}>
+                      <TextField
+                        type="text"
+                        value={itemFilterDraft.status}
+                        onChange={(event) => handleItemFilterDraftChange("status", event.target.value)}
+                        onKeyDown={handleItemFilterKeyDown}
+                        placeholder="Status"
+                        size="small"
+                        fullWidth
+                        sx={{ "& .MuiInputBase-input": { textAlign: "center", fontSize: 12.25, fontWeight: 400, py: 0.5 } }}
+                      />
+                    </TableCell>
+                  </TableRow>
+                </TableHead>
+
+                <TableBody>
+                  {!transportEntryId && !directPurchaseId ? (
+                    <TableRow>
+                      <TableCell colSpan={columns.length} sx={{ textAlign: "center", py: 8, color: "text.disabled", fontSize: 12.25 }}>
+                        Open this page from the warehouse workflow to generate barcodes.
+                      </TableCell>
+                    </TableRow>
+                  ) : allItems.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={columns.length} sx={{ textAlign: "center", py: 8, color: "text.disabled", fontSize: 12.25 }}>
+                        {isDirectPurchaseFlow
+                          ? "No direct purchase items found for barcode generation."
+                          : "No inventory items found for this transport entry. Add products first."}
+                      </TableCell>
+                    </TableRow>
+                  ) : filteredItems.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={columns.length} sx={{ textAlign: "center", py: 8, color: "text.disabled", fontSize: 12.25 }}>
+                        No matching items found.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredItems.map((item) => {
+                      const isGenerated = isGeneratedItem(generatedIds, item.sourceItemId);
+                      const isActive = activeEditorId === item.sourceItemId;
+                      const rowCells = [
+                        <Checkbox
+                          size="small"
+                          checked={!!checked[item.sourceItemId]}
+                          onClick={(event) => event.stopPropagation()}
+                          onChange={() => handleToggle(item)}
+                          disabled={isGenerated}
+                          sx={{ p: 0, cursor: "pointer" }}
+                        />,
+                        allItems.findIndex((row) => row.sourceItemId === item.sourceItemId) + 1,
+                        <Box component="span" sx={{ fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block", color: "text.primary" }}>{item.productName}</Box>,
+                        <Box component="span" sx={{ fontSize: 12.25, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block", color: "text.secondary" }}>{barcodeForItem(barcodeMap, item.sourceItemId)}</Box>,
+                        item.size,
+                        item.designNo,
+                        item.qty,
+                        item.cost.toFixed(2),
+                        `${item.marginPerc}%`,
+                        item.sellingPrice.toFixed(2),
+                        item.mrp.toFixed(2),
+                        `${item.discountPerc}%`,
+                        item.finalPrice.toFixed(2),
+                        isGenerated ? (
+                          <Box component="span" sx={{ display: "inline-block", px: 1, py: 0.25, fontSize: 12.25, fontWeight: 500, bgcolor: (theme) => alpha(theme.palette.success.main, theme.palette.mode === "dark" ? 0.16 : 0.08), color: "success.main", borderRadius: 999 }}>Done</Box>
+                        ) : (
+                          <Box component="span" sx={{ display: "inline-block", px: 1, py: 0.25, fontSize: 12.25, fontWeight: 500, bgcolor: (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.16 : 0.08), color: "warning.main", borderRadius: 999 }}>Pending</Box>
+                        ),
+                      ];
+                      return (
+                        <TableRow
+                          key={item.sourceItemId}
+                          onClick={() => {
+                            handleRowClick(item);
+                          }}
+                          sx={{
+                            borderBottom: 1,
+                            borderColor: "divider",
+                            cursor: "pointer",
+                            opacity: isGenerated ? 0.75 : 1,
+                            bgcolor: isActive
+                              ? (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.24 : 0.14)
+                              : checked[item.sourceItemId]
+                              ? (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.12 : 0.06)
+                              : "transparent",
+                            "&:hover": { bgcolor: isActive || checked[item.sourceItemId] ? undefined : "action.hover" },
+                          }}
+                        >
+                          {rowCells.map((cell, ci) => (
+                            <TableCell
+                              key={ci}
+                              sx={{ px: 0.75, py: 0.75, borderRight: 1, borderColor: "divider", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "text.secondary", textAlign: columns[ci].align }}
+                            >
+                              {cell}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      );
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            </Box>
+
+            <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", p: 1, fontSize: 12.25, color: "text.secondary", borderTop: 1, borderColor: "divider", bgcolor: "action.hover" }}>
+              <Box component="span">
+                {selectedItems.length} of {allItems.length} items selected for generation
+              </Box>
+              <Box component="span">Total: {allItems.length} items</Box>
+            </Stack>
+          </Stack>
+        </Box>
+      </Stack>
+
+      <BarcodePreviewModal
+        open={previewOpen}
+        title={previewTitle}
+        labels={previewLabels}
+        customization={labelCustomization}
+        storeName={storeName}
+        qrSources={qrSources}
+        qrLoading={qrLoading}
+        onClose={closePreview}
+        onPrint={handlePrintPreview}
+      />
+
+      <Toast
+        open={toast.open}
+        type={toast.type}
+        message={toast.message}
+        onClose={() => setToast((prev) => ({ ...prev, open: false }))}
+      />
+    </Box>
+  );
+};
+
+export default BarcodeGeneration;

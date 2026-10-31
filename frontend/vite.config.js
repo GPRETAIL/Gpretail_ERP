@@ -44,6 +44,7 @@ export default defineConfig(({ mode }) => {
       include: ["src/**/*.{test,spec}.{js,jsx}"],
     },
     resolve: {
+      alias: { "@": path.resolve(import.meta.dirname, "src") },
       dedupe: ["react", "react-dom", "@emotion/react", "@emotion/styled"],
     },
     optimizeDeps: {

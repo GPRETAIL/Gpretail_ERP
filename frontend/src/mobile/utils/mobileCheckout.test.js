@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { createMobileCheckout } from "./mobileCheckout";
-import api from "../../api/axios";
+import api from "@/shared/api/apiClient";
 import { addToSyncQueue, saveDraft } from "../offline/db";
-vi.mock("../../api/axios", () => ({ default: { post: vi.fn() } }));
-vi.mock("../../api/runtimeRouting", () => ({ getRuntimeRoutingSnapshot: () => ({ currentTarget: "cloud" }) }));
+vi.mock("@/shared/api/apiClient", () => ({ default: { post: vi.fn() } }));
+vi.mock("@/shared/api/runtimeRouting", () => ({ getRuntimeRoutingSnapshot: () => ({ currentTarget: "cloud" }) }));
 vi.mock("../offline/db", () => ({ addToSyncQueue: vi.fn(), saveDraft: vi.fn() }));
 const basket = { items: [{ productId: 1, qty: 1, price: 100 }] };
 const context = { userId: 1, storeId: "2" };

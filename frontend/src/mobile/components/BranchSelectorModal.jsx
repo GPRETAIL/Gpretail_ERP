@@ -1,9 +1,9 @@
-import useAsyncQuery from "../../hooks/useAsyncQuery";
-import { EMPTY_ARRAY } from "../../utils/emptyValues";
+import useAsyncQuery from "@/shared/hooks/useAsyncQuery";
+import { EMPTY_ARRAY } from "@/shared/utils/emptyValues";
 import React, { useState, useCallback } from "react";
 import { X, Check, Store } from "lucide-react";
 import { Box, Typography } from "@mui/material";
-import api from "../../api/axios";
+import api from "@/shared/api/apiClient";
 
 /**
  * Store switcher for users assigned to (or able to see) more than one
@@ -16,7 +16,7 @@ import api from "../../api/axios";
  *
  * Saves to the same `activeStoreId` localStorage key desktop's Navbar
  * already writes and every mobile request already reads (see
- * api/axios.js's request interceptor), then reloads so every screen picks
+ * shared/api/apiClient.js's request interceptor), then reloads so every screen picks
  * up the new scope at once rather than trying to live-refresh each one.
  */
 export default function BranchSelectorModal({ isOpen, onClose }) {

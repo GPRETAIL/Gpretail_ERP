@@ -1,4 +1,4 @@
-import useAsyncQuery from "../../hooks/useAsyncQuery";
+import useAsyncQuery from "@/shared/hooks/useAsyncQuery";
 import React, { useState, useEffect, useCallback } from "react";
 import { Fingerprint } from "lucide-react";
 import { Box, Typography } from "@mui/material";

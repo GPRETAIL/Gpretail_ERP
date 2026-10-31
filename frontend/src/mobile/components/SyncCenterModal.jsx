@@ -1,5 +1,5 @@
-import useAsyncQuery from "../../hooks/useAsyncQuery";
-import { EMPTY_ARRAY } from "../../utils/emptyValues";
+import useAsyncQuery from "@/shared/hooks/useAsyncQuery";
+import { EMPTY_ARRAY } from "@/shared/utils/emptyValues";
 import React, { useState, useEffect, useCallback } from "react";
 import { X, RefreshCw, Trash2, CloudOff, Check } from "lucide-react";
 import { Box, Typography } from "@mui/material";

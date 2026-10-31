@@ -1,8 +1,8 @@
-import useAsyncQuery from "../../hooks/useAsyncQuery";
-import { EMPTY_ARRAY } from "../../utils/emptyValues";
+import useAsyncQuery from "@/shared/hooks/useAsyncQuery";
+import { EMPTY_ARRAY } from "@/shared/utils/emptyValues";
 import React, { useCallback } from "react";
 import { Box, Typography } from "@mui/material";
-import api from "../../api/axios";
+import api from "@/shared/api/apiClient";
 import { SkeletonTransList } from "../components/SkeletonCards";
 
 const money = (n) =>

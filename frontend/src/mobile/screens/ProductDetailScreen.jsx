@@ -1,7 +1,7 @@
-import useAsyncQuery from "../../hooks/useAsyncQuery";
+import useAsyncQuery from "@/shared/hooks/useAsyncQuery";
 import React, { useCallback } from "react";
 import { Box, Typography } from "@mui/material";
-import api from "../../api/axios";
+import api from "@/shared/api/apiClient";
 
 const money = (n) =>
   "₹ " +

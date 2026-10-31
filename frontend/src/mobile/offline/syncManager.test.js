@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import api from "../../api/axios";
+import api from "@/shared/api/apiClient";
 import { getSyncQueue, removeSyncQueueItem } from "./db";
 import { processSyncQueue } from "./syncManager";
-vi.mock("../../api/axios", () => ({ default: vi.fn() }));
+vi.mock("@/shared/api/apiClient", () => ({ default: vi.fn() }));
 vi.mock("./db", () => ({ getSyncQueue: vi.fn(), removeSyncQueueItem: vi.fn() }));
 const item = { id: 1, userId: 1, storeId: "2", target: "cloud", method: "POST", endpoint: "/pos-sales", payload: { checkoutKey: "existing-key", items: [] } };
 beforeEach(() => {

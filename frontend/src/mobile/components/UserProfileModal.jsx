@@ -1,5 +1,5 @@
-import useAsyncQuery from "../../hooks/useAsyncQuery";
-import useResetOnChange from "../../hooks/useResetOnChange";
+import useAsyncQuery from "@/shared/hooks/useAsyncQuery";
+import useResetOnChange from "@/shared/hooks/useResetOnChange";
 import React, { useCallback, useState, useEffect } from "react";
 import {
   X,
@@ -19,7 +19,7 @@ import {
 import { Box, Typography } from "@mui/material";
 import { getSyncQueue, getDrafts } from "../offline/db";
 import { processSyncQueue } from "../offline/syncManager";
-import { useTheme } from "../../features/theme-context";
+import { useTheme } from "@/shared/theme/themeContext";
 
 /**
  * Mobile User Profile Drawer & Quick Action Sheet

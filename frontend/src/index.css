@@ -151,7 +151,7 @@ main > .p-6 {
    component (Button, IconButton -- part of the Tailwind-to-MUI migration), MUI's own emotion-
    injected component styles are inserted into <head> AFTER this stylesheet and win same-specificity
    ties by cascade order, silently dropping this treatment's border/radius/shadow/text-color even
-   though the className survives untouched. Same bridging precedent as theme/themeStyles.css. */
+   though the className survives untouched. Same bridging precedent as shared/theme/themeStyles.css. */
 .topbar-action-btn,
 .glass-btn {
   position: relative;

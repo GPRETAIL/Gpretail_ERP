@@ -1,11 +1,11 @@
-import useAsyncQuery from "../../hooks/useAsyncQuery";
+import useAsyncQuery from "@/shared/hooks/useAsyncQuery";
 import React, { useCallback } from "react";
 import { useSelector } from "react-redux";
 import { ArrowLeft, Bell } from "lucide-react";
 import { Box } from "@mui/material";
-import api from "../../api/axios";
-import { useNotificationRefresh } from "../../hooks/useNotificationFeed";
-import { backgroundRequestIdentity } from "../../utils/backgroundRequestIdentity";
+import api from "@/shared/api/apiClient";
+import { useNotificationRefresh } from "@/features/notifications/hooks/useNotificationFeed";
+import { backgroundRequestIdentity } from "@/shared/api/backgroundRequestIdentity";
 
 /**
  * Mobile top header bar with:

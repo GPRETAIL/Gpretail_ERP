@@ -1,16 +1,16 @@
 import { render, waitFor } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
-import api from "../../api/axios";
+import api from "@/shared/api/apiClient";
 import { setCachedData } from "../offline/db";
 import DashboardScreen from "./DashboardScreen";
 
-vi.mock("../../api/axios", () => ({ default: { get: vi.fn() } }));
+vi.mock("@/shared/api/apiClient", () => ({ default: { get: vi.fn() } }));
 vi.mock("../offline/db", () => ({
   setCachedData: vi.fn().mockResolvedValue(true), getCachedData: vi.fn().mockResolvedValue(null),
   getSyncQueue: vi.fn().mockResolvedValue([]),
 }));
-vi.mock("../../hooks/useStoreDisplayName", () => ({ default: () => "Coffee 1" }));
-vi.mock("../../hooks/useDashboardRealtime", () => ({ default: vi.fn() }));
+vi.mock("@/shared/hooks/useStoreDisplayName", () => ({ default: () => "Coffee 1" }));
+vi.mock("@/features/dashboard/hooks/useDashboardRealtime", () => ({ default: vi.fn() }));
 vi.mock("../components/BranchSelectorModal", () => ({ default: () => null }));
 beforeEach(() => {
   vi.clearAllMocks();

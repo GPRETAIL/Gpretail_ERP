@@ -1,5 +1,5 @@
-import abortableDelay from "../../utils/abortableDelay";
-import useAsyncQuery from "../../hooks/useAsyncQuery";
+import abortableDelay from "@/shared/utils/abortableDelay";
+import useAsyncQuery from "@/shared/hooks/useAsyncQuery";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useSelector } from "react-redux";
 import {
@@ -20,13 +20,13 @@ import {
   Building,
 } from "lucide-react";
 import { Box, Typography } from "@mui/material";
-import api from "../../api/axios";
+import api from "@/shared/api/apiClient";
 import { getCachedData, setCachedData } from "../offline/db";
 import { createMobileCheckout } from "../utils/mobileCheckout";
-import { fetchSalesReceiptCustomization, buildUpiPaymentUri } from "../../utils/salesReceiptCustomization";
-import { printPosSaleReceipt, buildPosSaleReceiptHtmlForSale } from "../../utils/posSaleReceiptPrinter";
-import { getHtmlAsPdfBlob } from "../../utils/htmlToPdf";
-import { usePrintContext } from "../../context/PrintContext";
+import { fetchSalesReceiptCustomization, buildUpiPaymentUri } from "@/features/sales/customisation/utils/salesReceiptCustomisation";
+import { printPosSaleReceipt, buildPosSaleReceiptHtmlForSale } from "@/features/printing/utils/posSaleReceiptPrinter";
+import { getHtmlAsPdfBlob } from "@/features/printing/utils/htmlToPdf";
+import { usePrintContext } from "@/features/printing/context/PrintContext";
 import useHaptics from "../hooks/useHaptics";
 import useNativeShare from "../hooks/useNativeShare";
 import { setHasUnsavedWork } from "../utils/unsavedWork";
