@@ -16,3 +16,12 @@ Key routing rules:
 - Save progress → /context-save
 - Resume context → /context-restore
 - Author a backlog-ready spec/issue → /spec
+
+## Project structure
+
+- Layout and naming rules: `docs/folder-structure.md`. Follow them for new files: backend code in
+  `Http/Controllers/Api/V1/<Module>`, `Services/<Module>`, `Http/Requests/<Module>`; frontend code in
+  `frontend/src/features/<feature>` or `shared/`, imported with the `@/` alias.
+- Architecture and request flow: `docs/architecture.md`. API endpoints: `docs/api-reference.md`
+  (regenerate after route changes). Deploy: `docs/deployment.md`. Tests: `docs/testing.md`.
+- Controller class names are permission keys (`BusinessPermissions`). Don't rename them casually.

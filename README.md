@@ -1,66 +1,44 @@
-# GPRETAIL / phpapp
+# GPRETAIL
 
-Full-stack ERP system built with a **Unified Laravel 13 API Backend** and a **React 19 + Vite Frontend**.
+A multi-store retail ERP: a Laravel 13 API (`backend-laravel/`) and a React 19 + Vite + MUI app
+(`frontend/`) covering POS billing (including offline), warehouse and purchasing, CRM, double-entry
+accounting, store transfers, purchase orders, HR and reporting. The app also has a mobile workspace
+at `/app`.
 
----
+## Documentation
 
-## 🏗 Project Structure
+| Doc | What it covers |
+|---|---|
+| [docs/architecture.md](docs/architecture.md) | How a request flows, store isolation, main business flows, scheduled jobs |
+| [docs/folder-structure.md](docs/folder-structure.md) | Where code lives and the naming rules |
+| [docs/api-reference.md](docs/api-reference.md) | Every API endpoint by module |
+| [docs/deployment.md](docs/deployment.md) | CI/CD to Hostinger, server setup, rollback |
+| [docs/testing.md](docs/testing.md) | Test suites and how to run them |
 
-- `backend-laravel/`: Laravel 13 REST API (Sanctum authentication, MariaDB / MySQL database, unified master lookup batch endpoints, inventory & billing workflows).
-- `frontend/`: React 19 SPA (Vite, Tailwind CSS, Lucide icons, Shimmer Skeleton loading, hybrid high-speed search dropdowns).
+## Local development
 
----
+Backend (served by XAMPP Apache, or `php artisan serve` for a quick start):
 
-## 🚀 Local Development
-
-### 1. Backend (Laravel 13)
 ```bash
 cd backend-laravel
 composer install
 cp .env.example .env
 php artisan key:generate
 php artisan migrate
-php artisan serve --port=8000
 ```
 
-### 2. Frontend (React 19 + Vite)
+Frontend (Vite dev server on http://localhost:5173, proxying `/api` to the backend):
+
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
----
+Tests: `vendor/bin/phpunit` in `backend-laravel/` and `npm test` in `frontend/`. See
+[docs/testing.md](docs/testing.md).
 
-## 🌐 Production Deployment (Hostinger / cPanel)
+## Deployment
 
-### 1. Build Frontend
-```bash
-cd frontend
-npm run build
-```
-Copy `frontend/dist/*` into `backend-laravel/public/`.
-
-### 2. Configure Hostinger Database (`backend-laravel/.env`)
-```env
-APP_NAME=GPRETAIL
-APP_ENV=production
-APP_DEBUG=false
-APP_URL=https://dev.gpsoftware.in
-
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=u597975289_Dev
-DB_USERNAME=u597975289_Dev
-DB_PASSWORD=<inject-via-github-secrets>
-```
-
-### 3. Run Migrations & Cache Optimization
-```bash
-cd backend-laravel
-php artisan migrate --force
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
-```
+A push to `main` runs the CI pipeline and deploys to Hostinger. See
+[docs/deployment.md](docs/deployment.md).
