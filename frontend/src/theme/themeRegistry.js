@@ -114,7 +114,10 @@ export const THEME_STYLES = ["classic", "apple", "glass", "glassmorphism", "liqu
 export const DEFAULT_THEME_STYLE = "classic";
 
 const glassSurface = (mode) => ({
-  backgroundImage: "linear-gradient(135deg, rgba(255,255,255,0.32), rgba(255,255,255,0.02) 55%, rgba(255,255,255,0.12))",
+  // Liquid sheen: bright upper-left highlight fading out, faint rim lower right (as themeStyles.css).
+  backgroundImage: mode === "dark"
+    ? "linear-gradient(160deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.03) 36%, rgba(255,255,255,0) 62%, rgba(255,255,255,0.06) 100%)"
+    : "linear-gradient(160deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.08) 36%, rgba(255,255,255,0) 62%, rgba(255,255,255,0.16) 100%)",
   backgroundColor: mode === "dark" ? "rgba(24,35,54,0.62)" : "rgba(255,255,255,0.56)",
   backdropFilter: "blur(36px) saturate(180%)",
   WebkitBackdropFilter: "blur(36px) saturate(180%)",
@@ -165,11 +168,14 @@ export function themeSurface(style, mode) {
   const dark = mode === "dark";
   if (style === "glass") return glassSurface(mode);
   if (style === "apple") return appleSurface(mode);
+  // Translucent frosted panel over the colour backdrop themeStyles.css paints behind the app.
   if (style === "glassmorphism") return {
-    backgroundColor: dark ? "rgba(30,27,48,0.88)" : "rgba(250,248,255,0.9)",
-    backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
-    border: `1px solid ${dark ? "#514369" : "#d9ccef"}`,
-    boxShadow: dark ? "0 6px 20px rgba(0,0,0,0.2)" : "0 6px 20px rgba(89,55,140,0.08)",
+    backgroundColor: dark ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.3)",
+    backgroundImage: "linear-gradient(135deg, rgba(255,255,255,0.22), rgba(255,255,255,0) 60%)",
+    backdropFilter: "blur(20px) saturate(160%)", WebkitBackdropFilter: "blur(20px) saturate(160%)",
+    border: `1px solid ${dark ? "rgba(255,255,255,0.16)" : "rgba(255,255,255,0.55)"}`,
+    borderRadius: 16,
+    boxShadow: dark ? "0 8px 32px rgba(0,0,0,0.4)" : "0 8px 32px rgba(76,55,160,0.16)",
   };
   if (style === "liquid_ai") return {
     backgroundColor: dark ? "#19182b" : "#faf9ff",

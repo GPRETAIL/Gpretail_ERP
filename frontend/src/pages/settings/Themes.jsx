@@ -9,7 +9,7 @@ import ThemeWorkspacePreview from "../../components/ThemeWorkspacePreview";
 import { useTheme } from "../../features/theme-context";
 import { loginSuccess } from "../../features/authSlice";
 import { FONT_OPTIONS, isHexColor } from "../../theme/themeRegistry";
-import { COLOR_FIELDS, STYLE_OPTIONS, normalizeTheme, themeErrors, themePayload } from "../../theme/themeWorkspace";
+import { COLOR_FIELDS, ENTERPRISE_THEMES, STYLE_OPTIONS, isEnterpriseTheme, normalizeTheme, themeErrors, themePayload } from "../../theme/themeWorkspace";
 import { isTenantAdmin } from "../../utils/accessControl";
 import { apiErrorMessage } from "../../utils/apiErrorMessage";
 
@@ -104,6 +104,30 @@ function ThemeEditor({ snapshot, prefix, companyScope, mode, reload, token, onBu
           </Tabs>
           <Stack spacing={2} sx={{ pt: 2 }}>
             {section === 0 && <>
+              <Box>
+                <Typography component="h2" sx={{ fontSize: 13, fontWeight: 700 }}>Enterprise Themes</Typography>
+                <Typography sx={{ fontSize: 12, color: "text.secondary" }}>One click loads a complete theme into the draft and the preview. Apply Theme publishes it.</Typography>
+              </Box>
+              <Box role="group" aria-label="Enterprise themes" sx={{ display: "grid", gap: 1, gridTemplateColumns: { xs: "minmax(0, 1fr)", sm: "repeat(2, minmax(0, 1fr))" } }}>
+                {ENTERPRISE_THEMES.map(theme => {
+                  const active = isEnterpriseTheme(draft, theme);
+                  const config = theme.config;
+                  const style = config.theme_style === "apple" ? "Apple" : STYLE_OPTIONS.find(([id]) => id === config.theme_style)?.[1];
+                  const font = FONT_OPTIONS.find(option => option.id === config.font_family)?.label;
+                  return <Button key={theme.id} aria-pressed={active} aria-label={`Use ${theme.name} theme`} disabled={!editable || busy} onClick={() => setDraft(normalizeTheme(config))}
+                    sx={{ justifyContent: "flex-start", alignItems: "stretch", textAlign: "left", p: 1.25, border: 1, borderColor: active ? "primary.main" : "divider", bgcolor: active ? "action.selected" : "transparent" }}>
+                    <Stack spacing={0.5} sx={{ width: "100%" }}>
+                      <Stack direction="row" spacing={0.5} aria-hidden="true">
+                        {[config.primary_color, config.secondary_color, config.light_colors?.background_color || "#f1f5f9", config.dark_colors?.background_color || "#121212"].map((color, index) =>
+                          <Box key={index} sx={{ width: 16, height: 16, borderRadius: "50%", bgcolor: color, border: 1, borderColor: "divider" }} />)}
+                      </Stack>
+                      <Typography sx={{ fontSize: 13, fontWeight: 600, color: "text.primary" }}>{theme.name}</Typography>
+                      <Typography sx={{ fontSize: 12, color: "text.secondary" }}>{theme.description}</Typography>
+                      <Typography sx={{ fontSize: 11, color: "text.secondary" }}>{style} · {font} · {config.border_radius}px corners</Typography>
+                    </Stack>
+                  </Button>;
+                })}
+              </Box>
               <Typography component="h2" sx={{ fontSize: 13, fontWeight: 700 }}>Professional Styles</Typography>
               {[...STYLE_OPTIONS, ...(draft.theme_style === "apple" || original.theme_style === "apple" ? [["apple", "Apple (saved)", "Your existing Apple configuration is preserved."]] : [])].map(([id, label, description]) => <Button key={id} disabled={!editable || busy} aria-pressed={draft.theme_style === id} variant={draft.theme_style === id ? "outlined" : "text"} onClick={() => change("theme_style", id)} sx={{ justifyContent: "flex-start", textAlign: "left", p: 1.5 }}><Box><Typography sx={{ fontSize: 13, fontWeight: 600 }}>{label}</Typography><Typography sx={{ fontSize: 12, color: "text.secondary" }}>{description}</Typography></Box></Button>)}
               <Button disabled={!editable || busy} onClick={() => setDraft(normalizeTheme({}))}>Reset Draft to Vynerix Default</Button>

@@ -50,24 +50,55 @@
 :root[data-theme-style="glass"] .erp-workspace > :first-child { background-color: transparent !important; }
 :root[data-theme-style="glass"] :is(.erp-glass-chrome, .rounded-xl.border, .rounded-md.border) {
   background-color: var(--erp-glass-fill) !important;
-  background-image: linear-gradient(135deg, rgba(255,255,255,.32), rgba(255,255,255,.02) 55%, rgba(255,255,255,.12));
+  /* Liquid sheen: a bright upper-left highlight fading out, with a faint rim lower right. */
+  background-image: linear-gradient(160deg, rgba(255,255,255,.5) 0%, rgba(255,255,255,.08) 36%, rgba(255,255,255,0) 62%, rgba(255,255,255,.16) 100%);
   backdrop-filter: blur(36px) saturate(180%);
   border-color: var(--erp-glass-edge) !important;
   box-shadow: var(--erp-glass-shadow);
 }
+:root.dark[data-theme-style="glass"] :is(.erp-glass-chrome, .rounded-xl.border, .rounded-md.border) {
+  background-image: linear-gradient(160deg, rgba(255,255,255,.14) 0%, rgba(255,255,255,.03) 36%, rgba(255,255,255,0) 62%, rgba(255,255,255,.06) 100%);
+}
 :root[data-theme-style="glass"] :is(.rounded-xl.border, .rounded-md.border) { border-radius: 18px !important; }
 
-/* New styles decorate panels; grids and form controls remain solid. */
-:root[data-theme-style="glassmorphism"] { --erp-surface: rgba(250,248,255,.9); --erp-edge: #d9ccef; }
-:root.dark[data-theme-style="glassmorphism"] { --erp-surface: rgba(30,27,48,.88); --erp-edge: #514369; }
+/*
+ * Glassmorphism: translucent frosted panels floating over a vivid colour backdrop. The backdrop is
+ * what the blur shows through; without it the panels just look flat. Panels, header, tabs and
+ * sidebar are glass; tables, inputs, menus and dialogs stay solid so data is always readable.
+ */
+:root[data-theme-style="glassmorphism"] {
+  --erp-gm-fill: rgba(255,255,255,.3);
+  --erp-gm-edge: rgba(255,255,255,.55);
+  --erp-gm-shadow: 0 8px 32px rgba(76,55,160,.16);
+  --erp-gm-scene: radial-gradient(circle at 15% 20%, rgba(167,139,250,.55), transparent 42%), radial-gradient(circle at 85% 15%, rgba(244,114,182,.42), transparent 40%), radial-gradient(circle at 70% 85%, rgba(56,189,248,.42), transparent 45%), radial-gradient(circle at 20% 90%, rgba(52,211,153,.3), transparent 40%), linear-gradient(135deg, #eef0fb, #f6f1fb);
+}
+:root.dark[data-theme-style="glassmorphism"] {
+  --erp-gm-fill: rgba(255,255,255,.07);
+  --erp-gm-edge: rgba(255,255,255,.16);
+  --erp-gm-shadow: 0 8px 32px rgba(0,0,0,.4);
+  --erp-gm-scene: radial-gradient(circle at 15% 20%, rgba(109,40,217,.5), transparent 42%), radial-gradient(circle at 85% 15%, rgba(190,24,93,.36), transparent 40%), radial-gradient(circle at 70% 85%, rgba(3,105,161,.42), transparent 45%), radial-gradient(circle at 20% 90%, rgba(4,120,87,.28), transparent 40%), linear-gradient(135deg, #0d0e1c, #151027);
+}
+:root[data-theme-style="glassmorphism"] .erp-app-shell { background-image: var(--erp-gm-scene); background-attachment: fixed; }
+:root[data-theme-style="glassmorphism"] .erp-workspace > :first-child { background-color: transparent !important; }
+:root[data-theme-style="glassmorphism"] :is(.erp-glass-chrome, .rounded-xl.border, .rounded-md.border) {
+  background-color: var(--erp-gm-fill) !important;
+  background-image: linear-gradient(135deg, rgba(255,255,255,.22), rgba(255,255,255,0) 60%);
+  backdrop-filter: blur(20px) saturate(160%);
+  border-color: var(--erp-gm-edge) !important;
+  box-shadow: var(--erp-gm-shadow);
+}
+:root[data-theme-style="glassmorphism"] :is(.rounded-xl.border, .rounded-md.border) { border-radius: 16px !important; }
+:root[data-theme-style="glassmorphism"] :is(.rounded-xl.border, .rounded-md.border) table { background-color: #fff; }
+:root.dark[data-theme-style="glassmorphism"] :is(.rounded-xl.border, .rounded-md.border) table { background-color: #1e2030; }
+:root[data-theme-style="glass"] :is(.rounded-xl.border, .rounded-md.border) table { background-color: #fff; }
+:root.dark[data-theme-style="glass"] :is(.rounded-xl.border, .rounded-md.border) table { background-color: #182336; }
+
+/* Liquid AI tints panels; grids and form controls remain solid. */
 :root[data-theme-style="liquid_ai"] { --erp-surface: #faf9ff; --erp-edge: #ddd6ef; }
 :root.dark[data-theme-style="liquid_ai"] { --erp-surface: #19182b; --erp-edge: #45405e; }
-:root:is([data-theme-style="glassmorphism"], [data-theme-style="liquid_ai"]) :is(.rounded-xl.border, .rounded-md.border):not(:has(table)) {
+:root[data-theme-style="liquid_ai"] :is(.rounded-xl.border, .rounded-md.border):not(:has(table)) {
   background-color: var(--erp-surface) !important;
   border-color: var(--erp-edge) !important;
-}
-:root[data-theme-style="glassmorphism"] :is(.rounded-xl.border, .rounded-md.border):not(:has(table)) {
-  backdrop-filter: blur(16px);
 }
 :root[data-theme-style="liquid_ai"] :is(.rounded-xl.border, .rounded-md.border):not(:has(table)) {
   background-image: radial-gradient(ellipse at top right, rgba(124,58,237,.08), transparent 65%), radial-gradient(ellipse at bottom left, rgba(6,182,212,.06), transparent 65%);

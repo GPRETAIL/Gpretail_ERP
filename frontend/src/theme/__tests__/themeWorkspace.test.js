@@ -22,3 +22,19 @@ it("renders only the current mode's color overrides and opaque custom surfaces",
   expect(dark.components.MuiOutlinedInput.styleOverrides.root.borderRadius).toBe("0.5rem");
   expect(themePayload({ ...brand, light_colors: { ...brand.light_colors, warning_color: "" } }).light_colors.warning_color).toBeUndefined();
 });
+
+it("ships enterprise themes that are complete, readable and accepted by the server", async () => {
+  const { ENTERPRISE_THEMES, isEnterpriseTheme } = await import("../themeWorkspace");
+  const { FONT_OPTIONS, THEME_STYLES } = await import("../themeRegistry");
+  expect(ENTERPRISE_THEMES.length).toBeGreaterThanOrEqual(8);
+  for (const theme of ENTERPRISE_THEMES) {
+    const draft = normalizeTheme(theme.config);
+    expect(themeErrors(draft), theme.name).toEqual([]);
+    // normalizeTheme falls back silently, so check the preset's own values are real options.
+    expect(THEME_STYLES, theme.name).toContain(theme.config.theme_style);
+    expect(FONT_OPTIONS.map(font => font.id), theme.name).toContain(theme.config.font_family);
+    expect(isEnterpriseTheme(draft, theme)).toBe(true);
+    expect(() => createTenantTheme(draft, "dark")).not.toThrow();
+  }
+  expect(new Set(ENTERPRISE_THEMES.map(theme => theme.id)).size).toBe(ENTERPRISE_THEMES.length);
+});

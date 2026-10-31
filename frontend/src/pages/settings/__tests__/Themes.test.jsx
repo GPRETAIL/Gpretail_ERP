@@ -210,3 +210,15 @@ it("clears already-loaded earlier revisions from the screen as well", async () =
   expect(screen.queryByRole("button", { name: "Delete revision 1" })).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Load Earlier Revisions" })).not.toBeInTheDocument();
 });
+it("switches to a complete enterprise theme in one click and publishes all of it", async () => {
+  show(); await ready();
+  fireEvent.click(screen.getByRole("button", { name: "Use Corporate Blue theme" }));
+  expect(screen.getByRole("button", { name: "Use Corporate Blue theme" })).toHaveAttribute("aria-pressed", "true");
+  expect(screen.getByLabelText("Preview probe")).toHaveTextContent("light:classic:ibm_plex_sans");
+  fireEvent.click(screen.getByRole("button", { name: "Use Aurora Glass theme" }));
+  expect(screen.getByLabelText("Preview probe")).toHaveTextContent("glassmorphism:poppins");
+  apply();
+  await waitFor(() => expect(api.put).toHaveBeenCalledWith("/tenant/theme", expect.objectContaining({
+    primary_color: "#6d28d9", secondary_color: "#db2777", border_radius: 16, theme_style: "glassmorphism", font_family: "poppins",
+  }), expect.any(Object)));
+});
