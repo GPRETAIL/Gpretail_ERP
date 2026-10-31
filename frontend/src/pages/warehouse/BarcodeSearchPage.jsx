@@ -144,12 +144,17 @@ const BarcodeSearchPage = () => {
   const fetchBarcodes = grid.refresh;
   const handleServerSearch = grid.onServerSearch;
 
-  // Selection is kept by id across pages; printing needs the row data, so remember rows as seen.
-  const [seenRows, setSeenRows] = useState({});
-  useEffect(() => {
-    if (results.length === 0) return;
-    setSeenRows((prev) => ({ ...prev, ...Object.fromEntries(results.map((row) => [row.id, row])) }));
-  }, [results]);
+  // Selection is kept by id across pages; printing needs the row data, so keep the selected rows
+  // as they are picked (a row on another page is no longer in results).
+  const [selectedRowData, setSelectedRowData] = useState([]);
+  const handleSelectionChange = (ids) => {
+    setSelectedRows(ids);
+    setSelectedRowData((prev) => {
+      const byId = Object.fromEntries([...prev, ...results].map((row) => [row.id, row]));
+      return ids.map((id) => byId[id]).filter(Boolean);
+    });
+  };
+  const clearSelection = () => handleSelectionChange([]);
 
   const printRows = async (rows) => {
     if (rows.length === 0 || printing) return;
@@ -169,7 +174,7 @@ const BarcodeSearchPage = () => {
         jobName: rows.length === 1 ? `Reprint ${rows[0].barcode}` : `Reprint ${rows.length} barcodes`,
       });
       if (result.message) showToast(result.ok ? "success" : "error", result.message);
-      if (result.ok) setSelectedRows([]);
+      if (result.ok) clearSelection();
     } catch (err) {
       showToast("error", err?.message || "Failed to print barcode stickers.");
     } finally {
@@ -177,10 +182,8 @@ const BarcodeSearchPage = () => {
     }
   };
 
-  const selectedRowData = selectedRows.map((id) => seenRows[id]).filter(Boolean);
-
   const clearSourceFilter = () => {
-    setSelectedRows([]);
+    clearSelection();
     setSearchParams({});
   };
 
@@ -258,7 +261,7 @@ const BarcodeSearchPage = () => {
             fillHeight
             enableSelection
             selectedRows={selectedRows}
-            onSelectionChange={setSelectedRows}
+            onSelectionChange={handleSelectionChange}
             getRowSelectionLabel={(row) => `Select barcode ${row.barcode}`}
             renderActions={(row) => (
               <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>

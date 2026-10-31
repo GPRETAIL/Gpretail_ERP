@@ -51,8 +51,10 @@ function Inbox() {
   }, [status]);
 
   useEffect(() => {
-    // The loading flag is raised where the status changes (initial state / filter click).
-    void load(true);
+    // The loading flag is raised where the status changes (initial state / filter click). Deferred
+    // a tick: a synchronous setState in an effect body cascades a render (set-state-in-effect).
+    const timer = setTimeout(() => load(true), 0);
+    return () => clearTimeout(timer);
   }, [load]);
   // Cashiers are waiting at the counter: the list reloads as soon as a request arrives or changes.
   const storeIds = authUser?.store_id ? [authUser.store_id] : (authUser?.store_ids || []).slice(0, 20);

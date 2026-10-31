@@ -27,7 +27,8 @@ class SupplierPaymentController extends Controller
         // Global store scopes still restrict an aggregate view to the caller's stores.
         $payments = SupplierPayment::query()
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
-            ->whereBetween('payment_date', [now()->startOfMonth()->toDateString(), now()->endOfMonth()->toDateString()])
+            // Before the 1st of next month, not BETWEEN ... '-31': a date stored with a time misses the last day.
+            ->where('payment_date', '>=', now()->startOfMonth()->toDateString())->where('payment_date', '<', now()->addMonthNoOverflow()->startOfMonth()->toDateString())
             ->selectRaw('COUNT(*) as payment_count, COALESCE(SUM(amount), 0) as total_paid')->toBase()->first();
 
         $payables = PurchaseInvoice::query()

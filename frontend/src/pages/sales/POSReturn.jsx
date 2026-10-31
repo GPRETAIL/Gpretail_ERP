@@ -591,7 +591,7 @@ const POSReturn = () => {
 
       browserPrintHtml(browserReceiptHtml, { copies: 1 });
     },
-    [authUser?.company_id, authUser?.counter_name, authUser?.email, authUser?.name, newCustomer.name, now, queuePrintHtml, returnNo, returnReasons, selectedReturnReasonId, sourceSale?.billNo]
+    [authUser?.company_id, authUser?.counter_name, authUser?.email, authUser?.name, newCustomer.name, now, queuePrintHtml, returnNo, returnReasons, selectedReturnReasonId, sourceSale]
   );
 
   const printSaleReceipt = useCallback(
