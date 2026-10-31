@@ -44,6 +44,7 @@ class PurchaseInvoice extends Model
         'store_id',
         'supplier_id',
         'transport_id',
+        'transport_entry_id',
         'invoice_no',
         'invoice_date',
         'supplier_invoice_no',

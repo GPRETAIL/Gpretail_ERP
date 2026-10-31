@@ -17,6 +17,10 @@ class InventoryEntryItem extends Model
         'quantity',
         'unit_price',
         'total_price',
+        's_no',
+        'size',
+        'design_no',
+        'master_details',
     ];
 
     protected function casts(): array
@@ -25,7 +29,18 @@ class InventoryEntryItem extends Model
             'quantity' => 'decimal:3',
             'unit_price' => 'decimal:2',
             'total_price' => 'decimal:2',
+            'master_details' => 'array',
         ];
+    }
+
+    /** Pricing columns of a warehouse row (cost, MRP, selling/final price...) are read flat. */
+    public function attributesToArray(): array
+    {
+        $data = parent::attributesToArray();
+        $details = $data['master_details'] ?? [];
+        unset($data['master_details']);
+
+        return array_replace(is_array($details) ? $details : [], $data);
     }
 
     /** @return BelongsTo<InventoryEntry, $this> */

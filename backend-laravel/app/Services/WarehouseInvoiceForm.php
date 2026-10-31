@@ -45,7 +45,7 @@ class WarehouseInvoiceForm
                 }
             }
             $attributes = [
-                'supplier_id' => $validated['supplier_id'], 'invoice_no' => $validated['invoice_no'],
+                'supplier_id' => $validated['supplier_id'], 'transport_entry_id' => (int) $validated['transport_entry_id'], 'invoice_no' => $validated['invoice_no'],
                 'invoice_date' => $validated['invoice_date'], 'subtotal' => $data['base_amount'] ?? 0,
                 'tax_amount' => $data['tax_charges'] ?? 0, 'discount_amount' => $data['discount'] ?? 0,
                 'grand_total' => $data['net_amount'] ?? 0, 'master_details' => $details,

@@ -184,9 +184,6 @@ class Phase7FinalHardeningTest extends TestCase
 
     public function test_transport_barcode_filter_preserves_the_other_source_filter(): void
     {
-        Schema::table('inventory_entries', function ($table) {
-            $table->unsignedBigInteger('transport_entry_id')->nullable();
-        });
         $store = Store::create(['name' => 'Warehouse', 'code' => 'WH', 'is_active' => true]);
         Sanctum::actingAs(User::factory()->create(['username' => 'phase7-admin', 'role' => 'admin', 'store_id' => $store->id]));
         $product = Product::create(['name' => 'Product', 'code' => 'P', 'company_id' => $store->id]);

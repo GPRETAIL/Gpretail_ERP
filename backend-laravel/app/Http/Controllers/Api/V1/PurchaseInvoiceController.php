@@ -59,6 +59,9 @@ class PurchaseInvoiceController extends Controller
         if ($request->filled('status')) {
             $query->where('status', $request->input('status'));
         }
+        if ($request->filled('transport_entry_id')) {
+            $query->where('transport_entry_id', (int) $request->input('transport_entry_id'));
+        }
 
         return $query;
     }

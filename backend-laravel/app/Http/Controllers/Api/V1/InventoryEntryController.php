@@ -4,18 +4,23 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Exceptions\InsufficientStockException;
 use App\Http\Controllers\Controller;
+use App\Models\Barcode;
 use App\Models\InventoryEntry;
 use App\Models\InventoryEntryItem;
 use App\Services\GroupAggregationService;
 use App\Services\PaginationService;
 use App\Services\StockService;
 use App\Services\VariantResolverService;
+use App\Services\WarehouseInventoryForm;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class InventoryEntryController extends Controller
 {
+    /** What the warehouse form and barcode generation read back for an entry. */
+    private const DETAIL_RELATIONS = ['items.product', 'creator', 'product', 'brand', 'supplier', 'pattern', 'style', 'fit', 'sleeve', 'type', 'material', 'color'];
+
     public function __construct(
         private readonly StockService $stockService,
         private readonly VariantResolverService $variantResolver,
@@ -36,6 +41,13 @@ class InventoryEntryController extends Controller
 
         if ($request->filled('status')) {
             $query->where('status', $request->input('status'));
+        }
+        // The LR workflow asks for its own entries; a requested filter must never return them all.
+        if ($request->filled('transport_entry_id')) {
+            $query->where('transport_entry_id', (int) $request->input('transport_entry_id'));
+        }
+        if ($request->filled('invoice_id')) {
+            $query->where('invoice_id', (int) $request->input('invoice_id'));
         }
 
         return $query;
@@ -74,6 +86,11 @@ class InventoryEntryController extends Controller
 
     public function store(Request $request)
     {
+        if (WarehouseInventoryForm::handles($request)) {
+            $entry = app(WarehouseInventoryForm::class)->save($request, (int) $this->resolveStoreId($request, 1));
+
+            return response()->json(['success' => true, 'message' => 'Inventory entry saved successfully', 'data' => $entry->load(self::DETAIL_RELATIONS)], 201);
+        }
         $validator = Validator::make($request->all(), [
             'entry_date' => 'nullable|date',
             'type' => 'nullable|string',
@@ -153,7 +170,7 @@ class InventoryEntryController extends Controller
 
     public function show(int|string $id)
     {
-        $entry = InventoryEntry::with(['items.product', 'creator'])->find($id);
+        $entry = InventoryEntry::with(self::DETAIL_RELATIONS)->find($id);
 
         if (! $entry) {
             return response()->json([
@@ -179,6 +196,16 @@ class InventoryEntryController extends Controller
             ], 404);
         }
 
+        if (WarehouseInventoryForm::handles($request)) {
+            try {
+                app(WarehouseInventoryForm::class)->save($request, (int) $entry->store_id, $entry);
+            } catch (InsufficientStockException $e) {
+                // Lowering a row below what has already been sold would push stock negative.
+                return response()->json(['success' => false, 'message' => 'Some of this stock is already sold, so these rows cannot be reduced. '.$e->getMessage()], 422);
+            }
+
+            return response()->json(['success' => true, 'message' => 'Inventory entry updated successfully', 'data' => $entry->fresh(self::DETAIL_RELATIONS)]);
+        }
         $entry->update($request->only(['status', 'notes', 'entry_date']));
 
         return response()->json([
@@ -197,6 +224,10 @@ class InventoryEntryController extends Controller
                 'success' => false,
                 'message' => 'Inventory entry not found',
             ], 404);
+        }
+
+        if (Barcode::where('inventory_entry_id', $entry->id)->exists()) {
+            return response()->json(['success' => false, 'message' => 'Barcodes are already generated for this entry, so it cannot be deleted.'], 422);
         }
 
         try {
