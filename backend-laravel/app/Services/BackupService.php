@@ -95,6 +95,10 @@ class BackupService
             'supplier_payments' => ['scope' => 'store_id'],
             'supplier_payment_items' => ['scope' => 'via_parent', 'parent' => 'supplier_payments', 'local_fk' => 'supplier_payment_id'],
             'general_ledgers' => ['scope' => 'store_id'],
+            // Double-entry books: ledgers before the vouchers and lines that reference them.
+            'ledger_accounts' => ['scope' => 'store_id'],
+            'vouchers' => ['scope' => 'store_id'],
+            'voucher_lines' => ['scope' => 'store_id'],
         ],
         'settings' => [
             'system_configurations' => ['scope' => 'store_id_or_company_id'],

@@ -98,6 +98,9 @@ const buildPresetPermissions = (presetRole) => {
       setActionsForPaths(permissions, salesPaths, FULL_ACTIONS);
       setActionsForPaths(permissions, hrPaths, VIEW_ONLY_ACTIONS);
       setActionsForPaths(permissions, financeReportPaths, VIEW_ONLY_ACTIONS);
+      // Managers keep the store's books: ledgers and day-to-day expense/receipt vouchers.
+      setActionsForPath(permissions, getPagePath("Finance", "Manage Ledger"), OPERATE_ACTIONS);
+      setActionsForPath(permissions, getPagePath("Finance", "Voucher Entry"), FULL_ACTIONS);
       setActionsForPath(permissions, getPagePath("Masters", "Product"), FULL_ACTIONS);
       // Managers receive store-to-store transfers at their branch.
       setActionsForPath(permissions, getPagePath("Store", "Stock Inward"), OPERATE_ACTIONS);

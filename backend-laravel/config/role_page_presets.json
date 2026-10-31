@@ -366,6 +366,18 @@
       "edit": false,
       "delete": false
     },
+    "/finance/manage-ledger": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/finance/voucher-entry": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
     "/finance/daybook": {
       "view": true,
       "add": false,

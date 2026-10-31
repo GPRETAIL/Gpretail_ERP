@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Services\Accounting\LedgerPoster;
 use App\Services\RealtimeService;
 use App\Services\StoreModelScope;
 use App\Services\StoreSchema;
@@ -43,6 +44,7 @@ class AppServiceProvider extends ServiceProvider
             return (! $lifetime || $token->created_at?->gt(now()->subMinutes($lifetime)))
                 && (! $idle || ! $token->last_used_at || $token->last_used_at->gt(now()->subMinutes($idle)));
         });
+        LedgerPoster::observe();
         $scope = app(StoreModelScope::class);
         Event::listen('eloquent.booted: App\\Models\\*', function ($event, $models) use ($scope): void {
             $scope->bootModel($models[0]);

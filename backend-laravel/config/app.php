@@ -67,6 +67,9 @@ return [
 
     'timezone' => 'UTC',
 
+    // The calendar the business keeps its books in (voucher dates), whatever the clock above stores.
+    'business_timezone' => env('BUSINESS_TIMEZONE', env('APP_TIMEZONE', 'Asia/Kolkata')),
+
     /*
     |--------------------------------------------------------------------------
     | Application Locale Configuration

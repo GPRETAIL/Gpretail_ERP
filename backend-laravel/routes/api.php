@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\V1\DashboardLayoutController;
 use App\Http\Controllers\Api\V1\DealerInvoiceController;
 use App\Http\Controllers\Api\V1\DirectPurchaseController;
 use App\Http\Controllers\Api\V1\EmployeeController;
+use App\Http\Controllers\Api\V1\AccountingController;
 use App\Http\Controllers\Api\V1\FinanceDashboardController;
 use App\Http\Controllers\Api\V1\HrConfigurationController;
 use App\Http\Controllers\Api\V1\InventoryEntryController;
@@ -350,6 +351,25 @@ $registerAppRoutes = function () {
 
     // Finance Dashboard (main Dashboard's Finance tab)
     Route::get('finance/dashboard', [FinanceDashboardController::class, 'index']);
+
+    // Double-entry books (Finance): ledgers, hand-entered vouchers and reports for the selected store.
+    Route::prefix('accounting')->controller(AccountingController::class)->group(function () {
+        Route::get('accounts', 'accounts');
+        Route::post('accounts', 'storeAccount');
+        Route::put('accounts/{id}', 'updateAccount');
+        Route::delete('accounts/{id}', 'destroyAccount');
+        Route::get('accounts/{id}/ledger', 'ledger');
+        Route::get('daybook', 'daybook');
+        Route::get('vouchers/{id}', 'voucher');
+        Route::post('vouchers', 'storeVoucher');
+        Route::put('vouchers/{id}', 'updateVoucher');
+        Route::delete('vouchers/{id}', 'destroyVoucher');
+        Route::get('trial-balance', 'trialBalance');
+        Route::get('profit-loss', 'profitAndLoss');
+        Route::get('balance-sheet', 'balanceSheet');
+        Route::get('outstanding', 'outstanding');
+        Route::post('repost', 'repost');
+    });
 
     // Store Dashboard (main Dashboard's Store tab -- cross-store comparison)
     Route::get('store/dashboard', [StoreDashboardController::class, 'index']);

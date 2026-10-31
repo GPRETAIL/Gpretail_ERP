@@ -102,6 +102,12 @@ const SupplierProductAnalyzer = lazy(() => import("../pages/analytical/SupplierP
 const SalesPivotAnalyzer = lazy(() => import("../pages/analytical/SalesPivotAnalyzer"));
 const StockValuationAnalyzer = lazy(() => import("../pages/analytical/StockValuationAnalyzer"));
 const SupplierPayment = lazy(() => import("../pages/finance/SupplierPayment"));
+const ManageLedger = lazy(() => import("../pages/finance/accounting/ManageLedger"));
+const VoucherEntry = lazy(() => import("../pages/finance/accounting/VoucherEntry"));
+const Daybook = lazy(() => import("../pages/finance/accounting/Daybook"));
+const Outstanding = lazy(() => import("../pages/finance/accounting/Outstanding"));
+const TrialBalance = lazy(() => import("../pages/finance/accounting/TrialBalance"));
+const FinalAccounts = lazy(() => import("../pages/finance/accounting/FinalAccounts"));
 
 export const protectedLayoutRoutes = [
   { path: "/masters/brand", render: () => <Brand key="list" /> },
@@ -216,6 +222,15 @@ export const protectedLayoutRoutes = [
   { path: "/analytical/sales-analyzer", render: () => <SalesPivotAnalyzer /> },
   { path: "/analytical/stock-marker-analyzer", render: () => <StockValuationAnalyzer /> },
   { path: "/finance/supplier-payment", render: () => <SupplierPayment /> },
+  { path: "/finance/manage-ledger", render: () => <ManageLedger /> },
+  { path: "/finance/voucher-entry", render: () => <VoucherEntry /> },
+  { path: "/finance/daybook", render: () => <Daybook /> },
+  { path: "/finance/payable", render: () => <Outstanding key="payable" side="payable" /> },
+  { path: "/finance/receivable", render: () => <Outstanding key="receivable" side="receivable" /> },
+  { path: "/finance/trial-balance", render: () => <TrialBalance /> },
+  { path: "/finance/trading-account", render: () => <FinalAccounts key="trading" variant="trading" /> },
+  { path: "/finance/p-l-account", render: () => <FinalAccounts key="pl" variant="pl" /> },
+  { path: "/finance/balance-sheet", render: () => <FinalAccounts key="balance" variant="balance" /> },
 ];
 
 export const isRegisteredProtectedPath = (pathname) =>

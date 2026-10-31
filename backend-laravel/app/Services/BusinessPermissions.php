@@ -49,6 +49,10 @@ class BusinessPermissions
         if ($controller === 'InvoiceAiController') {
             return in_array($action, ['getEngineConfig', 'saveEngineConfig'], true) ? 'settings.manage' : 'purchases.post';
         }
+        if ($controller === 'AccountingController') {
+            // The books (profit, balances) are for managers and accountants, not every signed-in user.
+            return $read ? 'accounts.view' : 'accounts.post';
+        }
         if (str_contains(strtolower($action), 'export')) {
             return 'reports.export';
         }
@@ -89,7 +93,8 @@ class BusinessPermissions
             return true;
         }
         $grants = [
-            'manager' => ['read', 'personal', 'masters.write', 'sales.post', 'purchases.post', 'transactions.approve', 'transactions.delete', 'reports.export', 'approvals.decide'],
+            'manager' => ['read', 'personal', 'masters.write', 'sales.post', 'purchases.post', 'transactions.approve', 'transactions.delete', 'reports.export', 'approvals.decide', 'accounts.view', 'accounts.post'],
+            'accountant' => ['read', 'personal', 'reports.export', 'accounts.view', 'accounts.post'],
             // Floor supervisor: a cashier who can also approve discounts/refunds within their limit.
             'supervisor' => ['read', 'personal', 'sales.post', 'approvals.decide'],
             'cashier' => ['read', 'personal', 'sales.post'],
