@@ -100,7 +100,7 @@ class CaptureSyncOutbox
             'path' => $path,
             'payload' => $payload,
             'headers' => ['Content-Type' => $request->header('Content-Type', 'application/json')],
-            'idempotency_key' => (string) Str::uuid(),
+            'idempotency_key' => (string) Str::uuid7(), // Time-ordered: keeps the outbox index compact.
             'status' => 'pending',
         ]);
     }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Barcode;
+use App\Models\StockOutwardItem;
 use App\Models\DirectPurchaseItem;
 use App\Models\Product;
 use App\Models\Stock;
@@ -40,6 +41,9 @@ class BarcodeController extends Controller
         // --- Source filters (warehouse workflows) ---
         if ($request->filled('direct_purchase_id')) {
             $query->where('direct_purchase_id', $request->input('direct_purchase_id'));
+        }
+        if ($request->filled('stock_outward_id')) {
+            $query->where('stock_outward_id', (int) $request->input('stock_outward_id'));
         }
 
         if ($request->filled('transport_entry_id')) {
@@ -145,6 +149,9 @@ class BarcodeController extends Controller
                 $jumpDetailIndex = isset($item['jumpDetailIndex']) ? (int) $item['jumpDetailIndex'] : null;
                 $invEntryId = $item['inventoryEntryId'] ?? $inventoryEntryId;
                 $inventoryItemId = $item['inventoryItemId'] ?? null;
+                // Labels the receiving store prints for goods that arrived on a transfer.
+                $transferItemId = $item['stockOutwardItemId'] ?? null;
+                $transferId = $transferItemId ? StockOutwardItem::withoutGlobalScopes()->whereKey($transferItemId)->value('stock_outward_id') : null;
                 $productId = $item['productId'] ?? null;
                 $qty = max(1, (int) ($item['qty'] ?? 1));
                 $mrp = (float) ($item['mrp'] ?? 0);
@@ -168,6 +175,8 @@ class BarcodeController extends Controller
                     }
                 } elseif ($inventoryItemId) {
                     $existingQuery->where('inventory_item_id', $inventoryItemId);
+                } elseif ($transferItemId) {
+                    $existingQuery->where('stock_outward_item_id', $transferItemId);
                 } else {
                     // Fallback — generate fresh
                     $existingQuery->whereRaw('1=0');
@@ -230,6 +239,8 @@ class BarcodeController extends Controller
                         'direct_purchase_item_id' => $dpItemId,
                         'inventory_entry_id' => $invEntryId,
                         'inventory_item_id' => $inventoryItemId,
+                        'stock_outward_id' => $transferId,
+                        'stock_outward_item_id' => $transferItemId,
                         'jump_detail_index' => $jumpDetailIndex,
                         'barcode' => $barcodeStr,
                         'batch_no' => 'B'.date('Ymd').'-'.rand(100, 999),

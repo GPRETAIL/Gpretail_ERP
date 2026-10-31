@@ -17,6 +17,8 @@ class Barcode extends Model
         'direct_purchase_item_id',
         'inventory_entry_id',
         'inventory_item_id',
+        'stock_outward_id',
+        'stock_outward_item_id',
         'jump_detail_index',
         'barcode',
         'batch_no',

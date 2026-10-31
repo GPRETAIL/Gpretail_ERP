@@ -1,410 +1,143 @@
-import PageHeader from "../../components/PageHeader";
-import React, { useState } from "react";
-import { Search, Save, Plus, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import useCompanyOptions from "../../utils/useCompanyOptions";
-import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, alpha } from "@mui/material";
-import { muiFieldSx } from "../../theme/formControlSizes";
+import { toast } from "react-toastify";
+import { Alert, Box, Button, Card, IconButton, MenuItem, Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from "@mui/material";
+import { ListChecks, Printer, Trash2, Truck } from "lucide-react";
+import api from "../../api/axios";
+import PageHeader from "../../components/PageHeader";
+import Breadcrumbs from "../../components/Breadcrumbs";
+import { createCheckoutKey } from "../sales/posCheckoutAttempt";
+import { browserPrintHtml } from "../sales/posSalesUtils";
+import { transferNoteHtml } from "../store/transferNote";
 
-// --- Custom Components for Reusability ---
+const today = () => new Date().toISOString().slice(0, 10);
 
-const FormField = ({ label, type = "text", isDate = false, isSelect = false, isRequired = false, options = [], sx }) => (
-  <Box sx={{ fontSize: 12.25, ...sx }}>
-    <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.25 }}>
-      {isRequired && (
-        <Box component="span" sx={{ color: "error.main", mr: 0.25 }}>
-          *
-        </Box>
-      )}
-      {label}
-    </Typography>
-    {isSelect ? (
-      <TextField select size="small" fullWidth sx={muiFieldSx}>
-        <MenuItem value="">Select...</MenuItem>
-        {options.map((opt, index) => (
-          <MenuItem key={index} value={opt}>
-            {opt}
-          </MenuItem>
-        ))}
-      </TextField>
-    ) : (
-      <TextField type={isDate ? "date" : type} size="small" fullWidth sx={muiFieldSx} />
-    )}
-  </Box>
-);
-
-// --- Main Component ---
-
-const StockOutward = () => {
+/**
+ * Dispatch a store-to-store transfer: scan what is being sent, pick the receiving store, dispatch.
+ * Stock leaves this store at once and stays in transit until the receiving store confirms it
+ * (Store > Stock Inward). The transfer key makes a retried or double-clicked dispatch one transfer.
+ */
+export default function StockOutward() {
   const navigate = useNavigate();
-  const companyOptions = useCompanyOptions();
-  const [sourceItems, setSourceItems] = useState([]); // Items from the source
-  const [acceptedItems, setAcceptedItems] = useState([]); // Items accepted for outward dispatch
+  const authUser = useSelector((state) => state.auth.user);
+  const scanRef = useRef(null);
+  const [destinations, setDestinations] = useState([]);
+  const [targetStoreId, setTargetStoreId] = useState("");
+  const [date, setDate] = useState(today);
+  const [notes, setNotes] = useState("");
+  const [scan, setScan] = useState("");
+  const [lines, setLines] = useState([]);
+  const [busy, setBusy] = useState(false);
+  const [dispatched, setDispatched] = useState(null);
+  const [transferKey, setTransferKey] = useState(createCheckoutKey);
 
-  const handleSearch = () => {
-    navigate("/warehouse/stock-outward/search");
+  useEffect(() => {
+    let active = true;
+    api.get("/stock-outwards/destinations").then((res) => { if (active) setDestinations(res.data?.data || []); })
+      .catch(() => { if (active) toast.error("Could not load the stores you can send to."); });
+    return () => { active = false; };
+  }, [authUser?.store_id]);
+
+  const addScan = async (event) => {
+    event.preventDefault();
+    const code = scan.trim();
+    if (!code) return;
+    setScan("");
+    try {
+      const res = await api.get("/pos-sales/barcode-lookup", { params: { barcode: code } });
+      const found = res.data?.data;
+      if (!found?.id) throw new Error("not found");
+      setLines((prev) => {
+        const key = `${found.id}:${found.variantId || ""}`;
+        const existing = prev.find((line) => line.key === key);
+        // A pack/cut label is shared by every unit of its variant, so a repeat scan adds one more.
+        if (existing) return prev.map((line) => (line.key === key ? { ...line, quantity: String(Number(line.quantity) + 1) } : line));
+        return [...prev, { key, productId: found.id, variantId: found.variantId || null, name: found.name, code: found.code, barcode: found.barcode,
+          stock: Number(found.stock_qty ?? 0), unitPrice: Number(found.final_price || found.selling_price || 0), quantity: "1" }];
+      });
+    } catch {
+      toast.error(`No product in this store for "${code}".`);
+    } finally {
+      scanRef.current?.focus();
+    }
   };
-
-  const handleAddItemToAccepted = (item) => {
-    setSourceItems((prev) => prev.filter((i) => i.barcode !== item.barcode));
-    setAcceptedItems((prev) => [...prev, item]);
+  const setQty = (key, value) => setLines((prev) => prev.map((line) => (line.key === key ? { ...line, quantity: value } : line)));
+  const lineProblem = (line) => {
+    const value = Number(line.quantity);
+    if (!(value > 0)) return "Enter a quantity";
+    return value > line.stock + 0.0005 ? `Only ${line.stock} in stock` : "";
   };
+  const totalQty = lines.reduce((sum, line) => sum + (Number(line.quantity) || 0), 0);
+  const canDispatch = targetStoreId && lines.length > 0 && !lines.some(lineProblem) && !busy;
 
-  const handleBackClick = () => {
-    navigate(-1);
-  };
-
-  const handleSaveClick = () => {
-    console.log("Saving Stock Outward:", acceptedItems);
-    alert("Stock Outward saved!");
+  const dispatch = async () => {
+    setBusy(true);
+    try {
+      const res = await api.post("/stock-outwards", {
+        transfer_key: transferKey, target_store_id: Number(targetStoreId), outward_date: date, notes: notes.trim() || undefined,
+        items: lines.map((line) => ({ product_id: line.productId, variant_id: line.variantId, quantity: Number(line.quantity), unit_price: line.unitPrice })),
+      });
+      const transfer = res.data?.data;
+      toast.success(`${transfer?.outward_no} dispatched to ${transfer?.target_store?.name}. It is in transit until they receive it.`);
+      setDispatched(transfer);
+      setLines([]); setNotes(""); setTargetStoreId(""); setDate(today()); setTransferKey(createCheckoutKey());
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Could not dispatch this transfer");
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "background.default", display: "flex", flexDirection: "column" }}>
-      {/* --- Header & Action Bar --- */}
-      <PageHeader
-        onBack={handleBackClick}
-        backLabel="Back"
-        title={<>
-          <Typography component="span" sx={{
-  color: "text.primary"
-}}>
-            Warehouse / Stock Outward
-          </Typography>
-        </>}
-        actions={<>
-          <Stack direction="row" spacing={1} sx={{ fontSize: 12.25 }}>
-          <Typography sx={{ fontSize: 12.25, fontWeight: 500, color: "success.main", alignSelf: "center" }}>
-            Last Saved
-          </Typography>
-          <Button onClick={handleSaveClick} className="glass-btn glass-btn-success" startIcon={<Save size={16} />}>
-            New
-          </Button>
-          <Button onClick={handleSaveClick} className="glass-btn glass-btn-success" startIcon={<Save size={16} />}>
-            Save
-          </Button>
-          <Button onClick={handleSearch} className="glass-btn glass-btn-primary" startIcon={<Search size={16} />}>
-            Search
-          </Button>
+    <Box sx={{ p: 1, display: "flex", flexDirection: "column", gap: 1.5 }}>
+      <PageHeader onBack={() => navigate("/warehouse")} title={<Breadcrumbs items={[{ label: "Warehouse", onClick: () => navigate("/warehouse") }, { label: "Stock Outward" }]} />}
+        actions={<Button size="small" startIcon={<ListChecks size={14} />} onClick={() => navigate("/store/transfer-goods")}>All transfers</Button>} />
+      {!authUser?.store_id && <Alert severity="info">Select the store you are sending from at the top before dispatching.</Alert>}
+      {dispatched && (
+        <Alert severity="success" action={<Button size="small" startIcon={<Printer size={14} />} onClick={() => browserPrintHtml(transferNoteHtml(dispatched))}>Print note</Button>}>
+          {dispatched.outward_no} is in transit to {dispatched.target_store?.name} ({dispatched.total_qty} pcs).
+        </Alert>
+      )}
+      <Card variant="outlined" sx={{ p: 1.5 }}>
+        <Stack direction={{ xs: "column", md: "row" }} spacing={1.5}>
+          <TextField select size="small" label="Send to store" value={targetStoreId} onChange={(e) => setTargetStoreId(e.target.value)} sx={{ minWidth: 240 }}
+            helperText={destinations.length ? " " : "No other active store in your company."}>
+            {destinations.map((store) => <MenuItem key={store.id} value={String(store.id)}>{store.name}</MenuItem>)}
+          </TextField>
+          <TextField size="small" type="date" label="Date" value={date} onChange={(e) => setDate(e.target.value)} slotProps={{ inputLabel: { shrink: true } }} helperText=" " />
+          <TextField size="small" label="Notes (optional)" value={notes} onChange={(e) => setNotes(e.target.value)} slotProps={{ htmlInput: { maxLength: 1000 } }} sx={{ flex: 1 }} helperText=" " />
         </Stack>
-        </>}
-      />
-
-      {/* --- Main Content Area (Form & Grids) --- */}
-      <Box sx={{ flex: 1, p: 2, overflowY: "auto" }}>
-        <Box sx={{ bgcolor: "background.paper", p: 2, borderRadius: "7px", boxShadow: 3, border: "1px solid", borderColor: "divider", mb: 2 }}>
-          {/* Top Header Row - Two Columns */}
-          <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", columnGap: 4, rowGap: 1.5 }}>
-            {/* Left Column Fields */}
-            <Box sx={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 1.5 }}>
-              <Box sx={{ gridColumn: "span 1" }}>
-                <FormField label="* Date" isDate isRequired />
-              </Box>
-              <Stack direction="row" spacing={1} sx={{ gridColumn: "span 3" }}>
-                <Box sx={{ flex: 1 }}>
-                  <FormField label="Code" />
-                </Box>
-                <IconButton className="glass-btn glass-btn-primary" sx={{ alignSelf: "flex-end" }}>
-                  <Search size={16} />
-                </IconButton>
-              </Stack>
-
-              <Box sx={{ gridColumn: "span 4" }}>
-                <FormField
-                  label="* From Company"
-                  isSelect
-                  isRequired
-                  options={companyOptions.map((row) => row.label)}
-                />
-              </Box>
-
-              <Box sx={{ gridColumn: "span 4" }}>
-                <FormField label="Date" isDate />
-              </Box>
-
-              <Box sx={{ gridColumn: "span 4" }}>
-                <FormField
-                  label="Source"
-                  isSelect
-                  isRequired
-                  options={["Pending", "Approved"]}
-                />
-              </Box>
-
-              <Box sx={{ gridColumn: "span 4" }}>
-                <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-                  <Box sx={{ flex: 1 }}>
-                    <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.25 }}>
-                      supplier
-                    </Typography>
-                    <TextField placeholder="supplier" size="small" fullWidth sx={muiFieldSx} />
-                  </Box>
-                  <IconButton onClick={handleSearch} className="glass-btn glass-btn-primary" sx={{ alignSelf: "flex-end" }}>
-                    <Search size={16} />
-                  </IconButton>
-                  <IconButton onClick={handleSearch} className="glass-btn glass-btn-danger" sx={{ alignSelf: "flex-end" }}>
-                    <X size={16} />
-                  </IconButton>
-                </Stack>
-              </Box>
-            </Box>
-
-            {/* Right Column Fields */}
-            <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1.5 }}>
-              <Box sx={{ gridColumn: "span 2" }}>
-                <FormField
-                  label="* Packed By"
-                  isSelect
-                  isRequired
-                  options={["Employee 1", "Employee 2"]}
-                />
-              </Box>
-              <Box sx={{ gridColumn: "span 2" }}>
-                <FormField
-                  label="* From Location"
-                  isSelect
-                  isRequired
-                  options={["Location A", "Location B"]}
-                />
-              </Box>
-              <Box sx={{ gridColumn: "span 2" }}>
-                <FormField
-                  label="* To Location"
-                  isSelect
-                  isRequired
-                  options={["Location X", "Location Y"]}
-                />
-              </Box>
-              <Stack direction="row" spacing={1.5} sx={{ gridColumn: "span 2", alignItems: "center" }}>
-                <Box component="input" type="checkbox" sx={{ borderRadius: "1.75px" }} />
-                <Box sx={{ flex: 1 }}>
-                  <FormField label="Barcode" />
-                </Box>
-                <IconButton className="glass-btn glass-btn-primary" sx={{ alignSelf: "flex-end" }}>
-                  <Plus size={16} />
-                </IconButton>
-                <IconButton className="glass-btn glass-btn-danger" sx={{ alignSelf: "flex-end" }}>
-                  <X size={16} />
-                </IconButton>
-              </Stack>
-            </Box>
-          </Box>
+        <Box component="form" onSubmit={addScan} sx={{ mt: 1 }}>
+          <TextField inputRef={scanRef} autoFocus fullWidth size="small" label="Scan or type a barcode / product code" value={scan} onChange={(e) => setScan(e.target.value)} />
         </Box>
-
-        {/* --- Dual Grids Section --- */}
-        <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 2 }}>
-          {/* LEFT GRID: Source/Pending Items */}
-          <Box sx={{ width: "100%" }}>
-            <Typography component="h3" sx={{ fontSize: 15.75, fontWeight: 600, color: "text.secondary", mb: 1 }}>
-              Source Items ({sourceItems.length})
-            </Typography>
-            <Box sx={{ bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "7px", boxShadow: 1, overflow: "hidden" }}>
-              {/* Grid Header Row */}
-              <Stack
-                direction="row"
-                sx={(theme) => ({
-                  borderBottom: 1,
-                  borderColor: "divider",
-                  bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08),
-                  fontSize: 10.5,
-                  fontWeight: 600,
-                  color: "text.secondary",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.05em",
-                })}
-              >
-                <Box sx={{ p: 1, width: 80 }}>Barcode</Box>
-                <Box sx={{ p: 1, width: 120 }}>Name</Box>
-                <Box sx={{ p: 1, width: 50, textAlign: "center" }}>Size</Box>
-                <Box sx={{ p: 1, flex: 1 }}>Supplier</Box>
-                <Box sx={{ p: 1, width: 60 }}>LR.Ref</Box>
-                <Box sx={{ p: 1, width: 50, textAlign: "right" }}>Cost</Box>
-                <Box sx={{ p: 1, width: 50, textAlign: "center" }}>Qty</Box>
-                <Box sx={{ p: 1, width: 50, textAlign: "center" }}>Action</Box>
-              </Stack>
-
-              {/* Input/Filter Row */}
-              <Stack direction="row" sx={{ alignItems: "center", fontSize: 12.25, bgcolor: "action.hover", p: 0.25, borderBottom: 1, borderColor: "divider" }}>
-                <Box sx={{ width: 80, p: 0.25 }}>
-                  <TextField size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 10.5, p: 0.5 } }} />
-                </Box>
-                <Box sx={{ width: 120, p: 0.25 }}>
-                  <TextField size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 10.5, p: 0.5 } }} />
-                </Box>
-                <Box sx={{ width: 50, p: 0.25 }}>
-                  <TextField size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 10.5, p: 0.5 } }} />
-                </Box>
-                <Box sx={{ flex: 1, p: 0.25 }}>
-                  <TextField size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 10.5, p: 0.5 } }} />
-                </Box>
-                <Box sx={{ width: 60, p: 0.25 }}>
-                  <TextField size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 10.5, p: 0.5 } }} />
-                </Box>
-                <Box sx={{ width: 50, p: 0.25 }}>
-                  <TextField size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 10.5, p: 0.5 } }} />
-                </Box>
-                <Box sx={{ width: 50, p: 0.25 }}>
-                  <TextField size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 10.5, p: 0.5 } }} />
-                </Box>
-                <Box sx={{ width: 50, p: 0.25 }}></Box>
-              </Stack>
-
-              {/* Data Rows */}
-              <Box sx={{ minHeight: "40vh", overflowY: "auto" }}>
-                {sourceItems.length === 0 ? (
-                  <Box sx={{ textAlign: "center", p: 4, color: "text.secondary" }}>
-                    No items pending for outward processing.
-                  </Box>
-                ) : (
-                  sourceItems.map((item, index) => (
-                    <Stack
-                      key={index}
-                      direction="row"
-                      sx={{ alignItems: "center", fontSize: 12.25, color: "text.primary", "&:hover": { bgcolor: "action.hover" }, borderBottom: 1, borderColor: "divider" }}
-                    >
-                      <Box sx={{ p: 1, width: 80, fontFamily: "monospace", fontSize: 10.5 }}>
-                        {item.barcode}
-                      </Box>
-                      <Box sx={{ p: 1, width: 120 }}>{item.name}</Box>
-                      <Box sx={{ p: 1, width: 50, textAlign: "center" }}>
-                        {item.size}
-                      </Box>
-                      <Box sx={{ p: 1, flex: 1, fontSize: 10.5 }}>{item.supplier}</Box>
-                      <Box sx={{ p: 1, width: 60, fontSize: 10.5 }}>{item.lrRef}</Box>
-                      <Box sx={{ p: 1, width: 50, textAlign: "right" }}>
-                        {item.cost.toFixed(2)}
-                      </Box>
-                      <Box sx={{ p: 1, width: 50, textAlign: "center" }}>{item.qty}</Box>
-                      <Box sx={{ p: 1, width: 50, textAlign: "center" }}>
-                        <IconButton
-                          onClick={() => handleAddItemToAccepted(item)}
-                          size="small"
-                          sx={{ color: "success.main", p: 0.5 }}
-                        >
-                          <Plus size={16} />
-                        </IconButton>
-                      </Box>
-                    </Stack>
-                  ))
-                )}
-              </Box>
-              <Box sx={{ p: 1, fontSize: 10.5, color: "text.secondary", borderTop: 1, borderColor: "divider", bgcolor: "action.hover" }}>
-                Showing all {sourceItems.length} rows
-              </Box>
-            </Box>
-          </Box>
-
-          {/* RIGHT GRID: Accepted/Stock Outward Items */}
-          <Box sx={{ width: "100%" }}>
-            <Typography component="h3" sx={{ fontSize: 15.75, fontWeight: 600, color: "text.secondary", mb: 1 }}>
-              Accepted Items ({acceptedItems.length})
-            </Typography>
-            <Box sx={{ bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "7px", boxShadow: 1, overflow: "hidden" }}>
-              {/* Grid Header Row */}
-              <Stack
-                direction="row"
-                sx={(theme) => ({
-                  borderBottom: 1,
-                  borderColor: "divider",
-                  bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08),
-                  fontSize: 10.5,
-                  fontWeight: 600,
-                  color: "text.secondary",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.05em",
-                })}
-              >
-                <Box sx={{ p: 1, width: 80 }}>Barcode</Box>
-                <Box sx={{ p: 1, width: 120 }}>Name</Box>
-                <Box sx={{ p: 1, width: 50, textAlign: "center" }}>Size</Box>
-                <Box sx={{ p: 1, flex: 1 }}>Supplier</Box>
-                <Box sx={{ p: 1, width: 60 }}>LR.Ref</Box>
-                <Box sx={{ p: 1, width: 50, textAlign: "right" }}>Cost</Box>
-                <Box sx={{ p: 1, width: 50, textAlign: "center" }}>Qty</Box>
-                <Box sx={{ p: 1, width: 50, textAlign: "center", fontWeight: 700 }}>
-                  Accepted
-                </Box>
-              </Stack>
-
-              {/* Input/Filter Row */}
-              <Stack direction="row" sx={{ alignItems: "center", fontSize: 12.25, bgcolor: "action.hover", p: 0.25, borderBottom: 1, borderColor: "divider" }}>
-                {/* Identical input row to the left grid, except for the last column */}
-                <Box sx={{ width: 80, p: 0.25 }}>
-                  <TextField size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 10.5, p: 0.5 } }} />
-                </Box>
-                <Box sx={{ width: 120, p: 0.25 }}>
-                  <TextField size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 10.5, p: 0.5 } }} />
-                </Box>
-                <Box sx={{ width: 50, p: 0.25 }}>
-                  <TextField size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 10.5, p: 0.5 } }} />
-                </Box>
-                <Box sx={{ flex: 1, p: 0.25 }}>
-                  <TextField size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 10.5, p: 0.5 } }} />
-                </Box>
-                <Box sx={{ width: 60, p: 0.25 }}>
-                  <TextField size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 10.5, p: 0.5 } }} />
-                </Box>
-                <Box sx={{ width: 50, p: 0.25 }}>
-                  <TextField size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 10.5, p: 0.5 } }} />
-                </Box>
-                <Box sx={{ width: 50, p: 0.25 }}>
-                  <TextField size="small" fullWidth sx={{ "& .MuiInputBase-input": { fontSize: 10.5, p: 0.5 } }} />
-                </Box>
-                <Box sx={{ width: 50, p: 0.25 }}></Box>
-              </Stack>
-
-              {/* Data Rows */}
-              <Box sx={{ minHeight: "40vh", overflowY: "auto" }}>
-                {acceptedItems.length === 0 ? (
-                  <Box sx={{ textAlign: "center", p: 4, color: "text.secondary" }}>
-                    Items accepted for dispatch will appear here.
-                  </Box>
-                ) : (
-                  acceptedItems.map((item, index) => (
-                    <Stack
-                      key={index}
-                      direction="row"
-                      sx={{ alignItems: "center", fontSize: 12.25, color: "text.primary", "&:hover": { bgcolor: "action.hover" }, borderBottom: 1, borderColor: "divider" }}
-                    >
-                      <Box sx={{ p: 1, width: 80, fontFamily: "monospace", fontSize: 10.5 }}>
-                        {item.barcode}
-                      </Box>
-                      <Box sx={{ p: 1, width: 120 }}>{item.name}</Box>
-                      <Box sx={{ p: 1, width: 50, textAlign: "center" }}>
-                        {item.size}
-                      </Box>
-                      <Box sx={{ p: 1, flex: 1, fontSize: 10.5 }}>{item.supplier}</Box>
-                      <Box sx={{ p: 1, width: 60, fontSize: 10.5 }}>{item.lrRef}</Box>
-                      <Box sx={{ p: 1, width: 50, textAlign: "right" }}>
-                        {item.cost.toFixed(2)}
-                      </Box>
-                      <Box sx={{ p: 1, width: 50, textAlign: "center" }}>{item.qty}</Box>
-                      <Box sx={{ p: 1, width: 50, textAlign: "center", color: "success.main", fontWeight: 700 }}>
-                        Yes
-                      </Box>
-                    </Stack>
-                  ))
-                )}
-              </Box>
-              <Box sx={{ p: 1, fontSize: 10.5, color: "text.secondary", borderTop: 1, borderColor: "divider", bgcolor: "action.hover" }}>
-                Showing all {acceptedItems.length} rows
-              </Box>
-            </Box>
-          </Box>
-        </Box>
-      </Box>
-
-      {/* --- Global Footer Bar --- */}
-      <Stack direction="row" spacing={1.5} sx={{ justifyContent: "flex-end", p: 1.5, bgcolor: "background.paper", borderTop: 1, borderColor: "divider", position: "sticky", bottom: 0, zIndex: 10 }}>
-        <Button onClick={handleSaveClick} className="glass-btn glass-btn-success">
-          Save & Exit
-        </Button>
-        <Button className="glass-btn glass-btn-secondary">
-          Clear
-        </Button>
-      </Stack>
+      </Card>
+      <Card variant="outlined" sx={{ p: 1.5 }}>
+        <Typography component="h2" sx={{ fontSize: 13, fontWeight: 700, mb: 1 }}>Items to send ({lines.length} line{lines.length === 1 ? "" : "s"}, {totalQty} pcs)</Typography>
+        {lines.length === 0 ? <Typography sx={{ fontSize: 12.5, color: "text.secondary" }}>Scan items to add them.</Typography> : (
+          <Table size="small">
+            <TableHead><TableRow><TableCell>Item</TableCell><TableCell>Barcode</TableCell><TableCell align="right">In stock</TableCell><TableCell>Quantity</TableCell><TableCell /></TableRow></TableHead>
+            <TableBody>
+              {lines.map((line) => {
+                const problem = lineProblem(line);
+                return (
+                  <TableRow key={line.key}>
+                    <TableCell><Typography sx={{ fontSize: 12.5, fontWeight: 600 }}>{line.name}</Typography><Typography sx={{ fontSize: 11, color: "text.secondary" }}>{line.code}</Typography></TableCell>
+                    <TableCell>{line.barcode || "-"}</TableCell>
+                    <TableCell align="right">{line.stock}</TableCell>
+                    <TableCell><TextField size="small" type="number" value={line.quantity} error={Boolean(problem)} helperText={problem || " "} onChange={(e) => setQty(line.key, e.target.value)}
+                      slotProps={{ htmlInput: { min: 0, step: "any", "aria-label": `Quantity ${line.name}` } }} sx={{ width: 110 }} /></TableCell>
+                    <TableCell><IconButton size="small" aria-label={`Remove ${line.name}`} onClick={() => setLines((prev) => prev.filter((item) => item.key !== line.key))}><Trash2 size={15} /></IconButton></TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        )}
+        <Stack direction="row" sx={{ justifyContent: "flex-end", mt: 1.5 }}>
+          <Button variant="contained" startIcon={<Truck size={15} />} disabled={!canDispatch} onClick={dispatch}>{busy ? "Dispatching…" : "Dispatch transfer"}</Button>
+        </Stack>
+      </Card>
     </Box>
   );
-};
-
-export default StockOutward;
+}

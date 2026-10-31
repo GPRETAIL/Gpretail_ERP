@@ -50,10 +50,13 @@ const BarcodeSearchPage = () => {
   // Opened from the Warehouse Dashboard for a completed entry: limit the list to that entry.
   const directPurchaseId = searchParams.get("direct_purchase_id") || "";
   const transportEntryId = searchParams.get("transport_entry_id") || "";
+  // Labels a store printed for goods received on a store-to-store transfer.
+  const transferId = searchParams.get("stock_outward_id") || "";
   const entryLabel = searchParams.get("label") || "";
   const sourceFilter = useMemo(
-    () => (directPurchaseId ? { direct_purchase_id: directPurchaseId } : transportEntryId ? { transport_entry_id: transportEntryId } : {}),
-    [directPurchaseId, transportEntryId]
+    () => (directPurchaseId ? { direct_purchase_id: directPurchaseId } : transportEntryId ? { transport_entry_id: transportEntryId }
+      : transferId ? { stock_outward_id: transferId } : {}),
+    [directPurchaseId, transportEntryId, transferId]
   );
 
   useEffect(() => {
@@ -202,12 +205,12 @@ const BarcodeSearchPage = () => {
         </>}
         actions={(
           <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-            {(directPurchaseId || transportEntryId) && (
+            {(directPurchaseId || transportEntryId || transferId) && (
               <Chip
                 size="small"
                 color="primary"
                 variant="outlined"
-                label={`Entry: ${entryLabel || directPurchaseId || transportEntryId}`}
+                label={`${transferId ? "Transfer" : "Entry"}: ${entryLabel || directPurchaseId || transportEntryId || transferId}`}
                 onDelete={clearSourceFilter}
                 deleteIcon={<X size={14} />}
                 aria-label="Showing barcodes of one entry; remove to show all"

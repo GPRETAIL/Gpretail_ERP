@@ -312,6 +312,9 @@ $registerAppRoutes = function () {
     Route::apiResource('purchase-returns', PurchaseReturnController::class);
 
     // Stock Outwards (Inter-store Transfers)
+    Route::get('stock-outwards/destinations', [StockOutwardController::class, 'destinations']);
+    Route::post('stock-outwards/{id}/receive', [StockOutwardController::class, 'receive']);
+    Route::post('stock-outwards/{id}/cancel', [StockOutwardController::class, 'cancel']);
     Route::apiResource('stock-outwards', StockOutwardController::class);
 
     // Item Locator

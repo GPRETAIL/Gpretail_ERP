@@ -66,6 +66,18 @@
       "edit": true,
       "delete": false
     },
+    "/store/stock-inward": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/store/transfer-goods": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
     "/warehouse/receive-goods": {
       "view": true,
       "add": true,

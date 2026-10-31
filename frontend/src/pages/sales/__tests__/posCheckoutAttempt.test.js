@@ -1,14 +1,18 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { prepareCheckoutAttempt } from "../posCheckoutAttempt";
+import { createCheckoutKey, prepareCheckoutAttempt } from "../posCheckoutAttempt";
 
 const payload = { saleAt: "2026-10-26T10:00:00Z", cashAmount: 100, items: [{ productId: 1, qty: 1, price: 100 }] };
 afterEach(() => vi.unstubAllGlobals());
 
-it("also produces a valid UUID on HTTP LAN deployments without randomUUID", () => {
+it("produces a time-ordered UUIDv7, also on HTTP LAN deployments without randomUUID", () => {
   const getRandomValues = crypto.getRandomValues.bind(crypto);
   vi.stubGlobal("crypto", { getRandomValues });
   const attempt = prepareCheckoutAttempt(null, payload, [1, 2]);
-  expect(attempt.payload.checkoutKey).toMatch(/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/);
+  expect(attempt.payload.checkoutKey).toMatch(/^[a-f0-9]{8}-[a-f0-9]{4}-7[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/);
+  const now = Date.now();
+  expect(Math.abs(parseInt(attempt.payload.checkoutKey.replace(/-/g, "").slice(0, 12), 16) - now)).toBeLessThan(5000);
+  const later = createCheckoutKey();
+  expect(later > attempt.payload.checkoutKey || later.slice(0, 13) === attempt.payload.checkoutKey.slice(0, 13)).toBe(true);
 });
 
 it("reuses the original key, timestamp and node for an unchanged checkout retry", () => {

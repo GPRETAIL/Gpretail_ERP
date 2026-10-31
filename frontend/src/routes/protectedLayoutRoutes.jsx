@@ -60,7 +60,7 @@ const TransportIssueEntry = lazy(() => import("../pages/warehouse/TransportIssue
 const TransportIssueSearchPage = lazy(() => import("../pages/warehouse/TransportIssueSearchPage"));
 const TransportReceipt = lazy(() => import("../pages/warehouse/TransportReceipt"));
 const StockOutward = lazy(() => import("../pages/warehouse/StockOutward"));
-const StockOutwardSearchPage = lazy(() => import("../pages/warehouse/StockOutwardSearchPage"));
+const StoreTransfers = lazy(() => import("../pages/store/StoreTransfers"));
 const ReceiveGoods = lazy(() => import("../pages/warehouse/ReceiveGoods"));
 const PhysicalStock = lazy(() => import("../pages/warehouse/PhysicalStock"));
 const PurchaseReturn = lazy(() => import("../pages/warehouse/PurchaseReturn"));
@@ -165,7 +165,9 @@ export const protectedLayoutRoutes = [
   { path: "/warehouse/transport-issue/search", render: () => <TransportIssueSearchPage /> },
   { path: "/warehouse/transport-receipt", render: () => <TransportReceipt /> },
   { path: "/warehouse/stock-outward", render: () => <StockOutward /> },
-  { path: "/warehouse/stock-outward/search", render: () => <StockOutwardSearchPage /> },
+  { path: "/warehouse/stock-outward/search", render: () => <StoreTransfers mode="all" /> },
+  { path: "/store/transfer-goods", render: () => <StoreTransfers mode="all" /> },
+  { path: "/store/stock-inward", render: () => <StoreTransfers mode="incoming" /> },
   { path: "/warehouse/receive-goods", render: () => <ReceiveGoods /> },
   { path: "/warehouse/physical-stock", render: () => <PhysicalStock /> },
   { path: "/warehouse/purchase-return", render: () => <PurchaseReturn /> },

@@ -99,6 +99,9 @@ const buildPresetPermissions = (presetRole) => {
       setActionsForPaths(permissions, hrPaths, VIEW_ONLY_ACTIONS);
       setActionsForPaths(permissions, financeReportPaths, VIEW_ONLY_ACTIONS);
       setActionsForPath(permissions, getPagePath("Masters", "Product"), FULL_ACTIONS);
+      // Managers receive store-to-store transfers at their branch.
+      setActionsForPath(permissions, getPagePath("Store", "Stock Inward"), OPERATE_ACTIONS);
+      setActionsForPath(permissions, getPagePath("Store", "Transfer Goods"), OPERATE_ACTIONS);
       break;
 
     case "supervisor":
