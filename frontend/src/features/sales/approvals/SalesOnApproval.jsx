@@ -1083,19 +1083,20 @@ const SalesOnApproval = () => {
     setSearchPage(1);
   }, [setSearchPage, runApprovalSearch, searchLimit]);
 
+  const latestApprovalNo = latestApprovalDoc?.approval_no;
   const openLatestApprovalInSearch = useCallback(async () => {
-    if (!latestApprovalDoc?.approval_no) return;
+    if (!latestApprovalNo) return;
     setShowSearchPage(true);
     setSearchPage(1);
     const nextFilters = {
       search: "",
-      approvalNo: String(latestApprovalDoc.approval_no),
+      approvalNo: String(latestApprovalNo),
       customerName: "",
       product: "",
     };
     setSearchFilters(nextFilters);
     await runApprovalSearch(nextFilters, 1, searchLimit);
-  }, [latestApprovalDoc.approval_no, runApprovalSearch, searchLimit, setSearchPage]);
+  }, [latestApprovalNo, runApprovalSearch, searchLimit, setSearchPage]);
 
   const approvalSearchColumns = useMemo(
     () => [

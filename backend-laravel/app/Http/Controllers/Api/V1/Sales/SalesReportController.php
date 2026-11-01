@@ -30,13 +30,13 @@ class SalesReportController extends Controller
         $storeId = $this->resolveReportStoreId($request);
         $query = PosSale::query();
         if ($storeId) {
-            $query->where('store_id', $storeId);
+            $query->where('pos_sales.store_id', $storeId);
         }
         if ($request->filled('dateFrom')) {
-            $query->whereDate('sale_date', '>=', $request->input('dateFrom'));
+            $query->whereDate('pos_sales.sale_date', '>=', $request->input('dateFrom'));
         }
         if ($request->filled('dateTo')) {
-            $query->whereDate('sale_date', '<=', $request->input('dateTo'));
+            $query->whereDate('pos_sales.sale_date', '<=', $request->input('dateTo'));
         }
 
         $result = $this->groupAggregationService->crossTab($query, 'pos_sales', $request);

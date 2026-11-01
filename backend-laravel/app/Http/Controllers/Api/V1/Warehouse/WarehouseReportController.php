@@ -39,7 +39,7 @@ class WarehouseReportController extends Controller
 
         $query = Stock::query();
         if ($storeId) {
-            $query->where('store_id', $storeId);
+            $query->where('stocks.store_id', $storeId);
         }
 
         $result = $this->groupAggregationService->crossTab($query, 'stocks', $request);

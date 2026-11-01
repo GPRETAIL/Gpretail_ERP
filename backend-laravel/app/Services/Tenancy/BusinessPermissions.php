@@ -31,7 +31,15 @@ class BusinessPermissions
         }
         $read = in_array($request->method(), ['GET', 'HEAD', 'OPTIONS'], true);
         if ($controller === 'AuthController') {
-            return str_starts_with($action, 'localServer') ? 'settings.manage' : 'personal';
+            // Every page reads the connector status and routing target (no sync_token); only saving it is admin work.
+            if (in_array($action, ['localServerConfig', 'localServerConfigRuntime'], true)) {
+                return 'read';
+            }
+            if (str_starts_with($action, 'localServer')) {
+                return 'settings.manage';
+            }
+
+            return 'personal';
         }
         if ($controller === 'UserAccessController' && in_array($action, ['getTablePreferences', 'updateTablePreferences'], true)) {
             return 'personal';

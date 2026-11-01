@@ -192,7 +192,7 @@ return [
             ],
             'pivotable_columns' => [
                 'store' => ['column' => 'store_id', 'join' => ['table' => 'stores', 'foreign' => 'store_id', 'local' => 'id'], 'label_from' => 'stores.name'],
-                'month' => ['column' => "DATE_FORMAT(sale_date, '%Y-%m')", 'raw' => true],
+                'month' => ['column' => "DATE_FORMAT(pos_sales.sale_date, '%Y-%m')", 'raw' => true],
                 'payment_mode' => ['column' => 'payment_mode'],
             ],
         ],
@@ -254,11 +254,11 @@ return [
             'measures' => [
                 'qty' => ['column' => 'quantity', 'agg' => 'SUM', 'label' => 'Qty'],
                 'cost_value' => [
-                    'column' => 'quantity * products.cost_price', 'agg' => 'SUM', 'raw' => true, 'label' => 'Cost Value',
+                    'column' => 'stocks.quantity * products.cost_price', 'agg' => 'SUM', 'raw' => true, 'label' => 'Cost Value',
                     'join' => ['table' => 'products', 'foreign' => 'product_id', 'local' => 'id'],
                 ],
                 'retail_value' => [
-                    'column' => 'quantity * products.selling_price', 'agg' => 'SUM', 'raw' => true, 'label' => 'Retail Value',
+                    'column' => 'stocks.quantity * products.selling_price', 'agg' => 'SUM', 'raw' => true, 'label' => 'Retail Value',
                     'join' => ['table' => 'products', 'foreign' => 'product_id', 'local' => 'id'],
                 ],
             ],

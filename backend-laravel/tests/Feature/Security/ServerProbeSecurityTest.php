@@ -35,6 +35,18 @@ class ServerProbeSecurityTest extends TestCase
         Http::assertNothingSent();
     }
 
+    public function test_every_role_reads_connector_status_but_only_admins_save_it(): void
+    {
+        $node = $this->setupNode();
+        foreach (['manager', 'cashier'] as $role) {
+            Sanctum::actingAs(User::factory()->create(['username' => "{$role}-".Str::random(10), 'role' => $role, 'store_id' => $node->store_id]));
+            $this->getJson('/api/local-server-config')->assertOk()->assertJsonPath('data.tenant_key', 'probe')->assertJsonMissingPath('data.sync_token');
+            $this->getJson('/api/local-server-config/runtime')->assertOk()->assertJsonPath('data.enabled', true);
+            $this->putJson('/api/local-server-config', ['local_server_url' => 'http://192.168.10.99'])->assertForbidden();
+        }
+        $this->assertSame('http://192.168.10.15', $node->fresh()->local_server_url);
+    }
+
     public function test_approved_registered_lan_probe_updates_only_selected_node(): void
     {
         $node = $this->setupNode();
