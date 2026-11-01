@@ -89,6 +89,10 @@ class BusinessPermissions
         if (in_array($controller, self::MASTERS, true)) {
             return 'masters.write';
         }
+        // Sales users raise approval requests; a manager, supervisor or admin decides them.
+        if ($controller === 'SalesApprovalController') {
+            return in_array($action, ['accept', 'reject'], true) ? 'approvals.decide' : 'sales.post';
+        }
         if (in_array($controller, self::TRANSACTIONS, true)) {
             if ($request->method() === 'DELETE' || preg_match('/cancel|void|destroy|delete/i', $action)) {
                 return 'transactions.delete';

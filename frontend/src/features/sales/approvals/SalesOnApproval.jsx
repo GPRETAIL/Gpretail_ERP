@@ -48,6 +48,9 @@ const toNum = (value, fallback = 0) => {
   return Number.isFinite(parsed) ? parsed : fallback;
 };
 
+// Prices arrive as decimal strings and "0.00" is truthy, so `a || b` would pick a zero price.
+const firstPrice = (...values) => values.map((v) => toNum(v, 0)).find((v) => v > 0) ?? 0;
+
 const formatMoney = (value) =>
   Number(value || 0).toLocaleString("en-IN", {
     minimumFractionDigits: 2,
@@ -235,6 +238,11 @@ const SalesOnApproval = () => {
     customerName: "",
     product: "",
   });
+  // The search callbacks read filters from here so the grid's onServerSearch stays stable (a new one re-searches).
+  const searchFiltersRef = useRef(searchFilters);
+  useEffect(() => {
+    searchFiltersRef.current = searchFilters;
+  }, [searchFilters]);
   const [latestApprovalDoc, setLatestApprovalDoc] = useState(null);
 
   const loadNextApprovalNo = useCallback(async () => {
@@ -261,7 +269,8 @@ const SalesOnApproval = () => {
 
       const [customersRes, barcodesRes, productsRes, cities, states, customerCategories, areas] = await Promise.all([
         api.get("/customers", { params: { limit: 500 } }).catch(() => ({ data: { data: [] } })),
-        api.get("/barcodes").catch(() => ({ data: { data: [] } })),
+        // Labels with their real stock: plain /barcodes carries no qty, which emptied the in-stock list.
+        api.get("/barcodes/physical-stock", { params: { all: true } }).catch(() => ({ data: { data: [] } })),
         api.get("/products", { params: { limit: 500 } }).catch(() => ({ data: { data: [] } })),
         cfg("city"),
         cfg("state"),
@@ -290,11 +299,13 @@ const SalesOnApproval = () => {
           const tax = productTaxMap.get(normalize(productName)) || 0;
           return {
             id: String(row.id),
+            // Every label of a variant reports that variant's whole stock; totals count it once.
+            stockKey: `${row.product_id}:${row.variant_id ?? ""}`,
             barcode: row.barcode || "",
             productName,
             qty: Math.max(0, toNum(row.qty, 0)),
             cost: toNum(row.cost, 0),
-            price: toNum(row.final_price || row.selling_price || row.mrp, 0),
+            price: firstPrice(row.final_price, row.selling_price, row.mrp),
             tax,
             sellingMode: productSellingModeMap.get(normalize(productName)) || "Piece",
           };
@@ -304,6 +315,7 @@ const SalesOnApproval = () => {
       setStockRows(stock);
 
       const groupedProducts = new Map();
+      const countedStock = new Set();
       stock.forEach((row) => {
         const key = normalize(row.productName);
         if (!key) return;
@@ -312,7 +324,10 @@ const SalesOnApproval = () => {
           label: row.productName,
           stockQty: 0,
         };
-        current.stockQty += row.qty;
+        if (!countedStock.has(row.stockKey)) {
+          countedStock.add(row.stockKey);
+          current.stockQty += row.qty;
+        }
         groupedProducts.set(key, current);
       });
 
@@ -1040,14 +1055,14 @@ const SalesOnApproval = () => {
   }, [closeSalesManDialog, discountDialogOpen, quickCustomerDialogOpen, quickCustomerSaving, salesManDialog.open]);
 
   const runApprovalSearch = useCallback((overrideFilters = null, pageOverride = 1, limitOverride = searchLimit) => {
-    const filters = overrideFilters || searchFilters;
+    const filters = overrideFilters || searchFiltersRef.current;
     const params = {};
     if (String(filters.search || "").trim()) params.search = filters.search;
     if (String(filters.approvalNo || "").trim()) params.approvalNo = filters.approvalNo;
     if (String(filters.customerName || "").trim()) params.customerName = filters.customerName;
     if (String(filters.product || "").trim()) params.product = filters.product;
     loadSearchGrid(params, pageOverride, limitOverride);
-  }, [loadSearchGrid, searchLimit, searchFilters]);
+  }, [loadSearchGrid, searchLimit]);
 
   const loadAllApprovalSearchRows = useCallback(async (overrideFilters = null) => {
     const filters = overrideFilters || searchFilters;

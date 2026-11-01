@@ -13,8 +13,12 @@ class SalesApprovalItem extends Model
     protected $fillable = [
         'sales_approval_id',
         'product_id',
+        'variant_id',
+        'barcode_id',
         'quantity',
         'price',
+        'discount',
+        'tax_rate',
         'status',
     ];
 
@@ -23,6 +27,8 @@ class SalesApprovalItem extends Model
         return [
             'quantity' => 'decimal:3',
             'price' => 'decimal:2',
+            'discount' => 'decimal:2',
+            'tax_rate' => 'decimal:2',
         ];
     }
 

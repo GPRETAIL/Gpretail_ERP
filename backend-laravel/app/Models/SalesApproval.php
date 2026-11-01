@@ -14,11 +14,16 @@ class SalesApproval extends Model
     protected $fillable = [
         'store_id',
         'customer_id',
+        'customer_name',
+        'customer_mobile',
         'approval_no',
         'approval_date',
         'valid_until',
         'total_amount',
         'status',
+        'pos_sale_id',
+        'decided_by',
+        'decided_at',
         'created_by',
     ];
 
@@ -27,6 +32,7 @@ class SalesApproval extends Model
         return [
             'approval_date' => 'date',
             'valid_until' => 'date',
+            'decided_at' => 'datetime',
             'total_amount' => 'decimal:2',
         ];
     }

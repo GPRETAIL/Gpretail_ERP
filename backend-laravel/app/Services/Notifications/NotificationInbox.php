@@ -22,7 +22,9 @@ class NotificationInbox
         $tenantAdmin = $context->authFields($user)['is_tenant_admin'];
         $marketing = (bool) DB::table('notification_preferences')->where('user_id', $user->id)->value('marketing');
         $query = Notification::withoutGlobalScope('http_store_context')->where(function ($query) use ($user, $ids, $platformIds, $warehouses, $tenantAdmin, $marketing) {
-            $query->where(fn ($legacy) => $legacy->whereNull('platform_message_uuid')->whereIn('store_id', $ids))
+            // A store notification addressed to one user (user_id) is shown only to that user.
+            $query->where(fn ($legacy) => $legacy->whereNull('platform_message_uuid')->whereIn('store_id', $ids)
+                ->where(fn ($own) => $own->whereNull('app_notifications.user_id')->orWhere('app_notifications.user_id', $user->id)))
                 ->orWhere(function ($platform) use ($user, $platformIds, $warehouses, $tenantAdmin, $marketing) {
                     $platform->whereNotNull('platform_message_uuid')->where('platform_company_code', $user->platform_company_code ?? '__unregistered__')->whereNull('revoked_at')->where('expires_at', '>', now());
                     $platform->where(fn ($scope) => $scope->whereNull('platform_store_id')->orWhereIn('platform_store_id', $platformIds));

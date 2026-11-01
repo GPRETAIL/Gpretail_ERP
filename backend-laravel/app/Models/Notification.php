@@ -17,6 +17,7 @@ class Notification extends Model
         'reference_type',
         'reference_id',
         'store_id',
+        'user_id',
         'read_at',
     ];
 

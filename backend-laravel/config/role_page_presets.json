@@ -452,6 +452,12 @@
       "edit": true,
       "delete": false
     },
+    "/sales/sales-on-approval": {
+      "view": true,
+      "add": true,
+      "edit": false,
+      "delete": false
+    },
     "/sales/pos-sales-return": {
       "view": true,
       "add": true,
@@ -512,6 +518,12 @@
       "view": true,
       "add": true,
       "edit": true,
+      "delete": false
+    },
+    "/sales/sales-on-approval": {
+      "view": true,
+      "add": true,
+      "edit": false,
       "delete": false
     },
     "/sales/pos-sales-return": {
