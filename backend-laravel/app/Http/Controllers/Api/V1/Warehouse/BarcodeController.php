@@ -6,11 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Warehouse\GenerateBarcodeRequest;
 use App\Http\Requests\Warehouse\GenerateBarcodesRequest;
 use App\Models\Barcode;
+use App\Models\DirectPurchase;
 use App\Models\DirectPurchaseItem;
 use App\Models\Product;
 use App\Models\Stock;
 use App\Models\StockOutwardItem;
 use App\Models\Store;
+use App\Services\Inventory\DirectPurchaseStock;
 use App\Services\Inventory\VariantResolverService;
 use App\Support\PaginationService;
 use Illuminate\Http\Request;
@@ -251,6 +253,11 @@ class BarcodeController extends Controller
                 $created = array_merge($created, $newRows);
             }
         });
+
+        // Labelled goods of a direct purchase go into stock now, not when someone later clicks Save.
+        if ($directPurchaseId && ($purchase = DirectPurchase::find($directPurchaseId))) {
+            app(DirectPurchaseStock::class)->applyIfReady($purchase, $request->user()?->id);
+        }
 
         $totalCreated = count($created);
         $totalSkipped = count($skipped);

@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api\V1\Warehouse;
 
 use App\Exceptions\InsufficientStockException;
 use App\Http\Controllers\Controller;
-use App\Models\Barcode;
 use App\Models\DirectPurchase;
 use App\Models\DirectPurchaseItem;
 use App\Models\Product;
@@ -13,6 +12,7 @@ use App\Models\Store;
 use App\Models\Supplier;
 use App\Support\GroupAggregationService;
 use App\Support\PaginationService;
+use App\Services\Inventory\DirectPurchaseStock;
 use App\Services\Inventory\StockService;
 use App\Services\Inventory\VariantResolverService;
 use Illuminate\Http\Request;
@@ -373,10 +373,7 @@ class DirectPurchaseController extends Controller
             $updates['total_qty'] = $data['total_qty'];
         }
 
-        $willComplete = false;
-        $hadBarcodes = false;
-
-        DB::transaction(function () use ($purchase, $data, $updates, $itemsProvided, &$willComplete, &$hadBarcodes, $request) {
+        DB::transaction(function () use ($purchase, $data, $updates, $itemsProvided, $request) {
             if ($itemsProvided) {
                 // Reverse whatever stock this purchase's OLD items already
                 // contributed (only real if stock_applied - i.e. this is a
@@ -450,46 +447,9 @@ class DirectPurchaseController extends Controller
 
             $purchase->update($updates);
 
-            // Transition into "Completed": workflow status says complete,
-            // real barcodes exist, and stock hasn't been applied yet. Covers
-            // the Dashboard's Complete action, which sends only the status
-            // field - $purchase->items (untouched above) is exactly right.
-            // A PACK/CUT repeat purchase never gets its OWN barcode row
-            // (BarcodeController::generate() correctly reuses the variant's
-            // existing one instead) - direct_purchase_id on that row still
-            // points at whichever invoice first created it, so checking
-            // barcodes()->exists() alone would never see this purchase as
-            // "barcoded" and stock would silently never apply. Falls back to
-            // checking whether each item's own variant already has an
-            // active barcode anywhere (the reuse case).
-            $freshItems = $purchase->items()->get();
-            $hadBarcodes = $purchase->barcodes()->exists()
-                || ($freshItems->isNotEmpty() && $freshItems->every(
-                    fn ($item) => $item->variant_id && Barcode::where('variant_id', $item->variant_id)->where('is_active', true)->exists()
-                ));
-            $willComplete = ! $purchase->stock_applied
-                && ($updates['invoice_workflow_status'] ?? $purchase->invoice_workflow_status) === 'invoice_completed'
-                && $hadBarcodes;
-
-            if ($willComplete) {
-                // Reuse $freshItems from the hadBarcodes check above - it
-                // was already queried fresh rather than via $purchase->items
-                // (which, if items were just replaced above, would otherwise
-                // still hold whichever set - old or none - it first
-                // lazy-loaded).
-                foreach ($freshItems as $item) {
-                    $this->stockService->adjust(
-                        storeId: $purchase->store_id,
-                        productId: (int) $item->product_id,
-                        variantId: $item->variant_id ? (int) $item->variant_id : null,
-                        delta: (float) $item->qty,
-                        referenceType: 'DIRECT_PURCHASE',
-                        referenceId: $purchase->id,
-                        costPrice: (float) $item->cost,
-                    );
-                }
-                $purchase->update(['stock_applied' => true]);
-            }
+            // Labelled and not a Temporary draft: the goods go into stock (once). The barcode screen's
+            // Save sends invoice_progress, so this must not wait for invoice_completed.
+            app(DirectPurchaseStock::class)->applyIfReady($purchase, $request->user()?->id);
         });
 
         return response()->json([
