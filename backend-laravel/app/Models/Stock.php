@@ -40,4 +40,10 @@ class Stock extends Model
     {
         return $this->belongsTo(Product::class);
     }
+
+    /** @return BelongsTo<ProductVariant, $this> */
+    public function variant(): BelongsTo
+    {
+        return $this->belongsTo(ProductVariant::class, 'variant_id');
+    }
 }

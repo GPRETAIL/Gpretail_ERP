@@ -5,6 +5,7 @@ import {
   normalize,
   compactBarcode,
   toNum,
+  firstPrice,
   toInt,
   round2,
   formatMoney,
@@ -637,7 +638,26 @@ const LegacyPos = () => {
       return normalize(barcode) === normalizedCode || compactBarcode(barcode) === compactCode;
     });
     if (!source) {
-      if (!silentNotFound) toast.error("Barcode not found");
+      // Not in the preloaded list (a printed sticker number, or a code kept only on the barcode labels):
+      // ask the server the same way POS Sales does before giving up.
+      api.get("/pos-sales/barcode-lookup", { params: { barcode: code } })
+        .then((res) => {
+          const found = res.data?.data;
+          if (!found?.id) throw new Error("Barcode not found");
+          addToCart({
+            id: String(found.id),
+            variantId: found.variantId ?? null,
+            barcode: found.barcode || code,
+            productName: found.name || "Unknown",
+            qty: Math.max(0, toNum(found.stock_qty, 0)),
+            price: firstPrice(found.final_price, found.selling_price, found.mrp),
+            mrp: toNum(found.mrp, 0),
+            tax: toNum(found.tax_rate, 0),
+          });
+          setBarcodeInput("");
+          setShowScanner(false);
+        })
+        .catch(() => { if (!silentNotFound) toast.error("Barcode not found"); });
       return false;
     }
     addToCart(source);

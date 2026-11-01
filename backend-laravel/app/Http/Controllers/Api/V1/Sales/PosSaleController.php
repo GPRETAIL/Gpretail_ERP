@@ -163,7 +163,7 @@ class PosSaleController extends Controller
         $search = $request->input('search') ?? $request->input('q') ?? '';
         $storeId = $this->resolveStoreId($request, 1);
 
-        $query = Stock::with(['product.brand', 'product.category', 'product.tax'])
+        $query = Stock::with(['product.brand', 'product.category', 'product.tax', 'variant:id,barcode'])
             ->where('store_id', $storeId)
             ->where('quantity', '>', 0)
             ->whereHas('product', function ($q) use ($search) {
@@ -190,7 +190,8 @@ class PosSaleController extends Controller
                 'variantId' => $s->variant_id,
                 'sellingMode' => $sellingMode,
                 'requiresQuantityPrompt' => in_array($sellingMode, ['PACK', 'CUT'], true),
-                'barcode' => $s->product?->barcode,
+                // The scannable code lives on the variant (and its printed labels); products often have none.
+                'barcode' => $s->variant?->barcode ?: $s->product?->barcode,
                 'code' => $s->product?->code,
                 'productName' => $s->product?->name,
                 'qty' => (float) $s->quantity,
@@ -688,6 +689,15 @@ class PosSaleController extends Controller
                 'success' => false,
                 'message' => 'Sale record not found',
             ], 404);
+        }
+
+        // Cancelling restores every sold unit, so a bill that already had items returned would put those
+        // units back twice (and leave the refund on the books). Return the rest of the bill instead.
+        if (PosReturn::where('pos_sale_id', $sale->id)->where('status', '!=', 'CANCELLED')->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This bill has returns against it, so it cannot be cancelled. Return the remaining items instead.',
+            ], 422);
         }
 
         DB::transaction(function () use ($sale) {

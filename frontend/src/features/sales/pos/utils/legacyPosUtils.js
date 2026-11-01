@@ -26,6 +26,8 @@ export const mapCustomerRow = (r) => ({
 export const normalize = (v) => String(v || "").trim().toLowerCase();
 export const compactBarcode = (v) => String(v || "").replace(/[^0-9a-z]/gi, "").toLowerCase();
 export const toNum = (v, f = 0) => { const n = Number(v); return Number.isFinite(n) ? n : f; };
+// Prices arrive as decimal strings and "0.00" is truthy, so `a || b` would pick a zero price.
+export const firstPrice = (...values) => values.map((v) => toNum(v, 0)).find((v) => v > 0) ?? 0;
 export const toInt = (v, f = 0) => { const n = parseInt(v, 10); return Number.isInteger(n) ? n : f; };
 export const round2 = (v) => Math.round((toNum(v, 0) + Number.EPSILON) * 100) / 100;
 export const formatMoney = (v) =>
