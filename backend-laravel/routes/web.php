@@ -15,4 +15,4 @@ Route::get('/{any?}', function () {
         'version' => '13.26.1',
         'php' => PHP_VERSION,
     ]);
-})->where('any', '^(?!api).*$');
+})->where('any', '^(?!api|storage/).*$'); // storage/ is Laravel's signed private-file route.

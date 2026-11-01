@@ -527,6 +527,19 @@ const Employee = () => {
     input.click();
   };
 
+  // Documents are private; the server hands out a five-minute signed link per view.
+  const openDocument = async (path) => {
+    const tab = window.open("", "_blank");
+    if (tab) tab.opener = null;
+    try {
+      const res = await api.get(`/employees/${currentId}/document-url`, { params: { path } });
+      if (tab) tab.location.href = res.data.data.url;
+    } catch {
+      tab?.close();
+      toast.error("Could not open the document");
+    }
+  };
+
   // ─── LEFT SIDE ─────────────────────────────────────────────────────────────
 
   const renderLeftSide = () => (
@@ -662,7 +675,8 @@ const Employee = () => {
               {label}
             </Button>
             {formData[field] && (
-              <Typography sx={{ fontSize: 10.5, color: "success.main", mt: 0.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>Uploaded</Typography>
+              <Button type="button" variant="text" size="small" onClick={() => openDocument(formData[field])}
+                sx={{ fontSize: 10.5, color: "success.main", mt: 0.5, minWidth: 0, p: 0, textTransform: "none" }}>Uploaded · View</Button>
             )}
           </Stack>
         ))}

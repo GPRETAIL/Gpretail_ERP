@@ -13,6 +13,9 @@ class BusinessPermissions
 
     private const ADMINISTRATION = ['ThemeWorkspaceController', 'BackupController', 'SettingsController', 'ConfigurationController', 'CompanyController', 'StoreController', 'UserAccessController', 'StoreActivationController', 'SyncController'];
 
+    /** Reads that expose purchase cost, margins, supplier dues or finance totals; the counter screens never call them. */
+    private const COST_READS = ['SupplierPaymentController', 'FinanceDashboardController', 'PurchaseInvoiceController', 'PurchaseReturnController', 'DirectPurchaseController', 'InventoryEntryController', 'TransportEntryController', 'PurchaseOrderController', 'WarehouseReportController', 'WarehouseDashboardController', 'ProductPurchaseAnalyticsController', 'AnalyticalDashboardController', 'SalesReportController'];
+
     public function ability(Request $request): string
     {
         $controller = class_basename($request->route()?->getControllerClass() ?? '');
@@ -64,6 +67,13 @@ class BusinessPermissions
         if (str_contains(strtolower($action), 'export')) {
             return 'reports.export';
         }
+        if ($read && in_array($controller, self::COST_READS, true)) {
+            return 'costs.view';
+        }
+        // The employee list stays readable (trimmed to a directory, see EmployeeController); full records and documents are HR data.
+        if ($read && $controller === 'EmployeeController' && in_array($action, ['show', 'groupedSummary', 'documentUrl'], true)) {
+            return 'hr.view';
+        }
         if ($read) {
             return 'read';
         }
@@ -101,13 +111,13 @@ class BusinessPermissions
             return true;
         }
         $grants = [
-            'manager' => ['read', 'personal', 'masters.write', 'sales.post', 'purchases.post', 'transactions.approve', 'transactions.delete', 'reports.export', 'approvals.decide', 'accounts.view', 'accounts.post'],
-            'accountant' => ['read', 'personal', 'reports.export', 'accounts.view', 'accounts.post'],
+            'manager' => ['read', 'personal', 'masters.write', 'sales.post', 'purchases.post', 'transactions.approve', 'transactions.delete', 'reports.export', 'approvals.decide', 'accounts.view', 'accounts.post', 'costs.view', 'hr.view'],
+            'accountant' => ['read', 'personal', 'reports.export', 'accounts.view', 'accounts.post', 'costs.view', 'hr.view'],
             // Floor supervisor: a cashier who can also approve discounts/refunds within their limit.
             'supervisor' => ['read', 'personal', 'sales.post', 'approvals.decide'],
             'cashier' => ['read', 'personal', 'sales.post'],
             'sales' => ['read', 'personal', 'sales.post'],
-            'warehouse' => ['read', 'personal', 'purchases.post'],
+            'warehouse' => ['read', 'personal', 'purchases.post', 'costs.view'],
             'user' => ['read', 'personal'],
             'staff' => ['read', 'personal'],
         ];

@@ -8,6 +8,7 @@ use App\Models\Employee;
 use App\Models\HrDepartment;
 use App\Support\GroupAggregationService;
 use App\Services\Forms\MasterFormData;
+use App\Services\Tenancy\BusinessPermissions;
 use App\Support\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -17,6 +18,9 @@ use Illuminate\Validation\Rule;
 class EmployeeController extends Controller
 {
     use ImportsMasterRows;
+
+    /** The ID-proof uploads on the employee form, kept in master_details as private-disk paths. */
+    private const DOCUMENT_FIELDS = ['upload_id', 'upload_photo', 'upload_aadhar', 'upload_bank_book', 'upload_signature'];
 
     public function __construct(
         private readonly PaginationService $paginationService,
@@ -81,9 +85,22 @@ class EmployeeController extends Controller
         return response()->json($result, $result['success'] ? 200 : 422);
     }
 
+    /** Counter screens pick employees from dropdowns; ID numbers, bank details, salary and documents are HR data. */
+    private function seesPersonnelRecords(Request $request): bool
+    {
+        $user = $request->user();
+
+        // Explicit grants reach here only after MobileAccess allowed this page; otherwise the role decides.
+        return $user->module_permissions !== null || $user->page_permissions !== null
+            || app(BusinessPermissions::class)->allows($user, 'hr.view');
+    }
+
     public function index(Request $request)
     {
         $query = $this->filteredQuery($request);
+        if (! $this->seesPersonnelRecords($request)) {
+            $query->select(['employees.id', 'employees.store_id', 'employees.name', 'employees.code', 'employees.department_id', 'employees.designation_id', 'employees.is_active']);
+        }
 
         if ($request->boolean('all') || $request->input('limit') == 500 || $request->input('limit') == 1000) {
             $items = $query->orderBy('name')->limit(2000)->get();
@@ -217,24 +234,61 @@ class EmployeeController extends Controller
         }
 
         $fieldName = (string) array_key_first($files);
+        if (! in_array($fieldName, self::DOCUMENT_FIELDS, true)) {
+            return response()->json(['success' => false, 'message' => 'Unknown document type'], 422);
+        }
         $request->validate([
             $fieldName => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:5120'],
         ]);
 
-        $path = $request->file($fieldName)->store("employees/{$employee->id}/documents", 'public');
-        $url = Storage::url($path);
+        // Private disk: the file is only reachable through a short-lived signed link from documentUrl().
+        $path = $request->file($fieldName)->store("employees/{$employee->id}/documents", 'local');
+        $employee->update(['master_details' => array_replace($employee->master_details ?? [], [$fieldName => $path])]);
+        $url = $this->signedDocumentUrl($path);
 
         return response()->json([
             'success' => true,
             'message' => 'Document uploaded successfully',
-            'path' => $url,
+            'path' => $path,
             'data' => [
                 'id' => $employee->id,
                 'url' => $url,
-                'path' => $url,
-                $fieldName => $url,
+                'path' => $path,
+                $fieldName => $path,
             ],
         ]);
+    }
+
+    /** A five-minute link to one of this employee's documents (stored as a private-disk path, or a legacy /storage URL). */
+    public function documentUrl(Request $request, $id)
+    {
+        $employee = Employee::find($id);
+        if (! $employee) {
+            return response()->json(['success' => false, 'message' => 'Employee not found'], 404);
+        }
+
+        $path = $this->documentPath((string) $request->query('path', ''));
+        if ($path === null || ! str_starts_with($path, "employees/{$employee->id}/") || ! Storage::disk('local')->exists($path)) {
+            return response()->json(['success' => false, 'message' => 'Document not found'], 404);
+        }
+
+        return response()->json(['success' => true, 'data' => ['url' => $this->signedDocumentUrl($path)]]);
+    }
+
+    private function documentPath(string $value): ?string
+    {
+        // Older uploads saved the public URL, e.g. https://host/storage/employees/5/documents/x.pdf.
+        if (preg_match('#/storage/(employees/.+)$#', (string) parse_url($value, PHP_URL_PATH), $match)) {
+            $value = $match[1];
+        }
+        $value = ltrim($value, '/');
+
+        return $value !== '' && ! str_contains($value, '..') && ! str_contains($value, '\\') ? $value : null;
+    }
+
+    private function signedDocumentUrl(string $path): string
+    {
+        return Storage::disk('local')->temporaryUrl($path, now()->addMinutes(5));
     }
 
     public function educationCertificate(Request $request, $id)
@@ -248,17 +302,16 @@ class EmployeeController extends Controller
             'certificate' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:5120'],
         ]);
 
-        $path = $request->file('certificate')->store("employees/{$employee->id}/certificates", 'public');
-        $url = Storage::url($path);
+        $path = $request->file('certificate')->store("employees/{$employee->id}/certificates", 'local');
 
         return response()->json([
             'success' => true,
             'message' => 'Education certificate uploaded successfully',
-            'path' => $url,
+            'path' => $path,
             'data' => [
                 'id' => $employee->id,
-                'url' => $url,
-                'path' => $url,
+                'url' => $this->signedDocumentUrl($path),
+                'path' => $path,
             ],
         ]);
     }

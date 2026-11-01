@@ -32,6 +32,7 @@ Route::match(['get', 'post', 'put', 'delete'], 'hr-{type}/{id?}', [HrConfigurati
 Route::get('employees/dashboard-summary', [EmployeeController::class, 'dashboardSummary']);
 Route::post('employees/{id}/upload', [EmployeeController::class, 'uploadDocument']);
 Route::post('employees/{id}/education-certificate', [EmployeeController::class, 'educationCertificate']);
+Route::get('employees/{id}/document-url', [EmployeeController::class, 'documentUrl']);
 Route::get('employees/grouped', [EmployeeController::class, 'groupedSummary']);
 Route::apiResource('employees', EmployeeController::class);
 
