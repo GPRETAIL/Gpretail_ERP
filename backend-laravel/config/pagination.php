@@ -392,6 +392,16 @@ return [
                 'customer_name' => ['column' => 'customer_id', 'join' => ['table' => 'customers', 'foreign' => 'customer_id', 'local' => 'id'], 'label_from' => 'customers.name'],
             ],
         ],
+        'dealer_invoice_returns' => [
+            'mode' => 'cursor',
+            'default_sort' => 'id',
+            'default_order' => 'desc',
+            'tie_breaker' => 'id',
+            'allowed_sorts' => ['id', 'return_date', 'return_no', 'created_at'],
+            'groupable_columns' => [
+                'customer_name' => ['column' => 'customer_id', 'join' => ['table' => 'customers', 'foreign' => 'customer_id', 'local' => 'id'], 'label_from' => 'customers.name'],
+            ],
+        ],
         'settlements' => [
             'mode' => 'cursor',
             'default_sort' => 'id',

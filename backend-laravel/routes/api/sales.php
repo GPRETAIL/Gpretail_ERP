@@ -73,11 +73,12 @@ Route::apiResource('sales-on-approval', SalesApprovalController::class);
 // Dealer Invoices
 Route::get('dealer-invoices/next-bill-no', [DealerInvoiceController::class, 'nextBillNo']);
 Route::get('dealer-invoice-returns/next-return-no', [DealerInvoiceController::class, 'nextReturnNo']);
-Route::get('dealer-invoice-returns/grouped', [DealerInvoiceController::class, 'groupedSummary']);
+Route::get('dealer-invoice-returns/grouped', [DealerInvoiceController::class, 'returnsGroupedSummary']);
 Route::get('dealer-invoice-returns', [DealerInvoiceController::class, 'returnsIndex']);
 Route::post('dealer-invoice-returns', [DealerInvoiceController::class, 'returnsStore']);
 Route::get('dealer-invoices/grouped', [DealerInvoiceController::class, 'groupedSummary']);
-Route::apiResource('dealer-invoices', DealerInvoiceController::class);
+// No update: an invoice is cancelled (DELETE restores its stock) and re-entered, never edited in place.
+Route::apiResource('dealer-invoices', DealerInvoiceController::class)->only(['index', 'store', 'show', 'destroy']);
 
 // Cash Register Sessions
 Route::get('cash-openings/meta', [CashRegisterController::class, 'openingMeta']);

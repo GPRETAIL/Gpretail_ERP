@@ -3,12 +3,13 @@ import useResetOnChange from "@/shared/hooks/useResetOnChange";
 import { masterSearchAreaSx } from "@/shared/theme/erpUi";
 import SearchGridPanel from "@/shared/components/SearchGridPanel";
 import useSearchGrid, { createSearchGridAdapter } from "@/shared/hooks/useSearchGrid";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { Pencil, PlusCircle, Save, Search, Trash2 } from "lucide-react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import api from "@/shared/api/apiClient";
 import FilterableDataTable from "@/shared/components/FilterableDataTable";
+import ConfirmDialog from "@/shared/components/ConfirmDialog";
 import { createGroupFetchers } from "@/shared/utils/serverGrouping";
 import SearchableSelect from "@/shared/components/SearchableSelect";
 import AsyncSearchSelect from "@/shared/components/AsyncSearchSelect";
@@ -34,6 +35,9 @@ const toNum = (value, fallback = 0) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
 };
+
+// Prices arrive as decimal strings and "0.00" is truthy, so `a || b` would pick a zero price.
+const firstPrice = (...values) => values.map((v) => toNum(v, 0)).find((v) => v > 0) ?? 0;
 
 const formatMoney = (value) =>
   Number(value || 0).toLocaleString("en-IN", {
@@ -217,6 +221,11 @@ const DealerInvoice = () => {
     customerName: "",
     product: "",
   });
+  // The search callbacks read filters from here so the grid's onServerSearch stays stable (a new one re-searches).
+  const searchFiltersRef = useRef(searchFilters);
+  useEffect(() => {
+    searchFiltersRef.current = searchFilters;
+  }, [searchFilters]);
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 1000);
@@ -238,7 +247,8 @@ const DealerInvoice = () => {
         // Was default (~50 rows), no way to search beyond it -- customer now has real async
         // search (handleAsyncCustomerSearch below) covering the real table.
         api.get("/customers", { params: { limit: 300 } }).catch(() => ({ data: { data: [] } })),
-        api.get("/barcodes").catch(() => ({ data: { data: [] } })),
+        // Labels with their real stock: plain /barcodes carries no qty, which emptied the in-stock list.
+        api.get("/barcodes/physical-stock", { params: { all: true } }).catch(() => ({ data: { data: [] } })),
         api.get("/products", { params: { limit: 500 } }).catch(() => ({ data: { data: [] } })),
         api.get("/taxes").catch(() => ({ data: { data: [] } })),
       ]);
@@ -263,12 +273,14 @@ const DealerInvoice = () => {
           const tax = productTaxMap.get(normalize(productName)) || 0;
           return {
             id: String(row.id),
+            // Every label of a variant reports that variant's whole stock; totals count it once.
+            stockKey: `${row.product_id}:${row.variant_id ?? ""}`,
             barcode: row.barcode || "",
             productName,
             qty: Math.max(0, toNum(row.qty, 0)),
-            mrp: toNum(row.mrp || row.final_price || row.selling_price || 0),
+            mrp: firstPrice(row.mrp, row.final_price, row.selling_price),
             cost: toNum(row.cost, 0),
-            price: toNum(row.final_price || row.selling_price || row.mrp, 0),
+            price: firstPrice(row.final_price, row.selling_price, row.mrp),
             tax,
           };
         })
@@ -277,6 +289,7 @@ const DealerInvoice = () => {
       setStockRows(stock);
 
       const groupedProducts = new Map();
+      const countedStock = new Set();
       stock.forEach((row) => {
         const key = normalize(row.productName);
         if (!key) return;
@@ -285,7 +298,10 @@ const DealerInvoice = () => {
           label: row.productName,
           stockQty: 0,
         };
-        current.stockQty += row.qty;
+        if (!countedStock.has(row.stockKey)) {
+          countedStock.add(row.stockKey);
+          current.stockQty += row.qty;
+        }
         groupedProducts.set(key, current);
       });
 
@@ -688,14 +704,14 @@ const DealerInvoice = () => {
   };
 
   const runDealerInvoiceSearch = useCallback((overrideFilters = null, pageOverride = 1, limitOverride = searchLimit) => {
-    const filters = overrideFilters || searchFilters;
+    const filters = overrideFilters || searchFiltersRef.current;
     const params = {};
     if (String(filters.search || "").trim()) params.search = filters.search;
     if (String(filters.billNo || "").trim()) params.billNo = filters.billNo;
     if (String(filters.customerName || "").trim()) params.customerName = filters.customerName;
     if (String(filters.product || "").trim()) params.product = filters.product;
     loadSearchGrid(params, pageOverride, limitOverride);
-  }, [loadSearchGrid, searchLimit, searchFilters]);
+  }, [loadSearchGrid, searchLimit]);
 
   const loadAllDealerInvoiceSearchRows = useCallback(async (overrideFilters = null) => {
     const filters = overrideFilters || searchFilters;
@@ -725,6 +741,20 @@ const DealerInvoice = () => {
     });
     setSearchPage(1);
   }, [setSearchPage, runDealerInvoiceSearch, searchLimit]);
+
+  // Cancelling puts the invoice's stock back and takes it out of the books (DELETE /dealer-invoices/{id}).
+  const [cancelling, setCancelling] = useState(null);
+  const cancelInvoice = async () => {
+    const row = cancelling;
+    setCancelling(null);
+    try {
+      const res = await api.delete(`/dealer-invoices/${row.id}`);
+      toast.success(res.data?.message || "Dealer invoice cancelled");
+      await runDealerInvoiceSearch(null, searchPage, searchLimit);
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Could not cancel the dealer invoice");
+    }
+  };
 
   const dealerInvoiceSearchColumns = useMemo(
     () => [
@@ -771,6 +801,14 @@ const DealerInvoice = () => {
         label: "Amount",
         valueGetter: (row) => toNum(row.amount || 0),
         render: (value) => <Box sx={{ textAlign: "right" }}>{formatMoney(value || 0)}</Box>,
+      },
+      {
+        key: "status",
+        label: "Status",
+        valueGetter: (row) => row.status || "",
+        render: (value, row) => (String(value).toUpperCase() === "CANCELLED"
+          ? <Typography sx={{ fontSize: "inherit", color: "error.main", fontWeight: 600 }}>Cancelled</Typography>
+          : <Button type="button" size="small" className="glass-btn glass-btn-danger" startIcon={<Trash2 size={12} />} onClick={() => setCancelling(row)}>Cancel</Button>),
       },
     ],
     []
@@ -1369,6 +1407,9 @@ const DealerInvoice = () => {
         paginationMode="server"
         enableVirtualization
       />
+      <ConfirmDialog open={Boolean(cancelling)} title={`Cancel dealer invoice ${cancelling?.bill_no || ""}?`}
+        message="Its items go back into stock and the sale is removed from the books." confirmLabel="Cancel invoice"
+        onConfirm={() => void cancelInvoice()} onCancel={() => setCancelling(null)} />
     </SearchGridPanel>
   );
 

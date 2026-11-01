@@ -3,6 +3,7 @@
 namespace App\Services\Accounting;
 
 use App\Models\DealerInvoice;
+use App\Models\DealerInvoiceReturn;
 use App\Models\DirectPurchase;
 use App\Models\PosPayment;
 use App\Models\PosReturn;
@@ -34,6 +35,7 @@ class LedgerPoster
         'pos_return' => ['pos_returns', 'store_id', 'sales_return'],
         'settlement' => ['settlements', 'store_id', 'receipt'],
         'dealer_invoice' => ['dealer_invoices', 'store_id', 'sales'],
+        'dealer_return' => ['dealer_invoice_returns', 'store_id', 'sales_return'],
         'direct_purchase' => ['direct_purchases', 'store_id', 'purchase'],
         'purchase_invoice' => ['purchase_invoices', 'store_id', 'purchase'],
         'purchase_return' => ['purchase_returns', 'store_id', 'purchase_return'],
@@ -57,6 +59,7 @@ class LedgerPoster
             PosReturnItem::class => fn ($m) => [['pos_return', $m->pos_return_id]], // Its GST splits the return.
             Settlement::class => fn ($m) => [['settlement', $m->id]],
             DealerInvoice::class => fn ($m) => [['dealer_invoice', $m->id]],
+            DealerInvoiceReturn::class => fn ($m) => [['dealer_return', $m->id]],
             DirectPurchase::class => fn ($m) => [['direct_purchase', $m->id]],
             PurchaseInvoice::class => fn ($m) => [['purchase_invoice', $m->id]],
             PurchaseReturn::class => fn ($m) => [['purchase_return', $m->id]],
@@ -189,6 +192,7 @@ class LedgerPoster
             'pos_return' => self::posReturn($id),
             'settlement' => self::settlement($id),
             'dealer_invoice' => self::dealerInvoice($id),
+            'dealer_return' => self::dealerReturn($id),
             'direct_purchase' => self::directPurchase($id),
             'purchase_invoice' => self::purchaseInvoice($id),
             'purchase_return' => self::purchaseReturn($id),
@@ -368,6 +372,25 @@ class LedgerPoster
         return ['store_id' => $store, 'no' => $invoice->invoice_no, 'date' => $invoice->invoice_date ?: self::businessDate($invoice->created_at),
             'narration' => 'Dealer invoice '.$invoice->invoice_no, 'created_by' => $invoice->created_by,
             'lines' => [[$customer, $total], [ChartOfAccounts::system($store, 'sales'), -($total - $tax)], ...self::gst($store, 'output', $tax, false, -1)]];
+    }
+
+    /** A dealer return reverses a dealer invoice: sales returns and output GST are debited, the customer credited. */
+    private static function dealerReturn(int $id): ?array
+    {
+        $return = DB::table('dealer_invoice_returns')->where('id', $id)->first();
+        if (! $return || self::closed($return->status)) {
+            return null;
+        }
+        $store = (int) $return->store_id;
+        $total = (float) $return->grand_total;
+        $tax = (float) $return->tax_amount;
+        $customer = $return->customer_id
+            ? ChartOfAccounts::party($store, 'customer', (int) $return->customer_id, self::partyName('customers', (int) $return->customer_id))
+            : ChartOfAccounts::system($store, 'pos_receivable');
+
+        return ['store_id' => $store, 'no' => $return->return_no, 'date' => $return->return_date ?: self::businessDate($return->created_at),
+            'narration' => 'Dealer return '.$return->return_no, 'created_by' => $return->created_by,
+            'lines' => [[ChartOfAccounts::system($store, 'sales_return'), $total - $tax], ...self::gst($store, 'output', $tax, false, 1), [$customer, -$total]]];
     }
 
     /** Purchases and input GST are debited; the supplier is credited with the bill total. */

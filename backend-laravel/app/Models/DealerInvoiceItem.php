@@ -13,8 +13,11 @@ class DealerInvoiceItem extends Model
     protected $fillable = [
         'dealer_invoice_id',
         'product_id',
+        'variant_id',
+        'barcode_id',
         'quantity',
         'price',
+        'discount',
         'tax_amount',
         'total',
     ];
@@ -24,6 +27,7 @@ class DealerInvoiceItem extends Model
         return [
             'quantity' => 'decimal:3',
             'price' => 'decimal:2',
+            'discount' => 'decimal:2',
             'tax_amount' => 'decimal:2',
             'total' => 'decimal:2',
         ];

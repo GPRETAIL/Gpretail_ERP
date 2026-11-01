@@ -16,10 +16,16 @@ class DealerInvoice extends Model
         'customer_id',
         'invoice_no',
         'invoice_date',
+        'so_no',
         'subtotal',
+        'discount_amount',
         'tax_amount',
+        'other_charges',
         'grand_total',
         'status',
+        'remarks',
+        'cancelled_at',
+        'cancelled_by',
         'created_by',
     ];
 
@@ -28,9 +34,18 @@ class DealerInvoice extends Model
         return [
             'invoice_date' => 'date',
             'subtotal' => 'decimal:2',
+            'discount_amount' => 'decimal:2',
             'tax_amount' => 'decimal:2',
+            'other_charges' => 'decimal:2',
             'grand_total' => 'decimal:2',
+            'cancelled_at' => 'datetime',
         ];
+    }
+
+    /** @return HasMany<DealerInvoiceReturn, $this> */
+    public function returns(): HasMany
+    {
+        return $this->hasMany(DealerInvoiceReturn::class);
     }
 
     /** @return BelongsTo<Store, $this> */

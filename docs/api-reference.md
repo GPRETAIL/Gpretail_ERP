@@ -1,6 +1,6 @@
 # API reference
 
-Every endpoint under `/api`, grouped by module (515 endpoints). Generated from
+Every endpoint under `/api`, grouped by module (514 endpoints). Generated from
 `php artisan route:list --sort=definition --json`; regenerate it after changing routes.
 
 - Each signed-in endpoint is also served under `/api/v1/...` with the same behaviour.
@@ -409,14 +409,13 @@ Every endpoint under `/api`, grouped by module (515 endpoints). Generated from
 | DELETE | `/api/sales-on-approval/{sales_on_approval}` | SalesApprovalController@destroy | yes |
 | GET | `/api/dealer-invoices/next-bill-no` | DealerInvoiceController@nextBillNo | yes |
 | GET | `/api/dealer-invoice-returns/next-return-no` | DealerInvoiceController@nextReturnNo | yes |
-| GET | `/api/dealer-invoice-returns/grouped` | DealerInvoiceController@groupedSummary | yes |
+| GET | `/api/dealer-invoice-returns/grouped` | DealerInvoiceController@returnsGroupedSummary | yes |
 | GET | `/api/dealer-invoice-returns` | DealerInvoiceController@returnsIndex | yes |
 | POST | `/api/dealer-invoice-returns` | DealerInvoiceController@returnsStore | yes |
 | GET | `/api/dealer-invoices/grouped` | DealerInvoiceController@groupedSummary | yes |
 | GET | `/api/dealer-invoices` | DealerInvoiceController@index | yes |
 | POST | `/api/dealer-invoices` | DealerInvoiceController@store | yes |
 | GET | `/api/dealer-invoices/{dealer_invoice}` | DealerInvoiceController@show | yes |
-| PUT|PATCH | `/api/dealer-invoices/{dealer_invoice}` | DealerInvoiceController@update | yes |
 | DELETE | `/api/dealer-invoices/{dealer_invoice}` | DealerInvoiceController@destroy | yes |
 | GET | `/api/cash-openings/meta` | CashRegisterController@openingMeta | yes |
 | GET | `/api/cash-openings` | CashRegisterController@openingIndex | yes |
