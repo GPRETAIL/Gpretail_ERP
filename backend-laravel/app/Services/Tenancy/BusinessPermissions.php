@@ -13,6 +13,9 @@ class BusinessPermissions
 
     private const ADMINISTRATION = ['ThemeWorkspaceController', 'BackupController', 'SettingsController', 'ConfigurationController', 'CompanyController', 'StoreController', 'UserAccessController', 'StoreActivationController', 'SyncController'];
 
+    /** Dropdown lists the counter, CRM and HR screens load; every other configuration key (remote support, AI keys) stays admin-only. */
+    public const LOOKUP_CONFIGURATIONS = ['city', 'state', 'country', 'location', 'bank', 'card_types', 'upi_provider', 'customer_category', 'sale_area', 'return_reason', 'vendor', 'agent_type', 'additional_charges', 'bundle_rack'];
+
     /** Reads that expose purchase cost, margins, supplier dues or finance totals; the counter screens never call them. */
     private const COST_READS = ['SupplierPaymentController', 'FinanceDashboardController', 'PurchaseInvoiceController', 'PurchaseReturnController', 'DirectPurchaseController', 'InventoryEntryController', 'TransportEntryController', 'PurchaseOrderController', 'WarehouseReportController', 'WarehouseDashboardController', 'ProductPurchaseAnalyticsController', 'AnalyticalDashboardController', 'SalesReportController'];
 
@@ -46,6 +49,9 @@ class BusinessPermissions
         }
         if ($controller === 'UserAccessController' && in_array($action, ['getTablePreferences', 'updateTablePreferences'], true)) {
             return 'personal';
+        }
+        if ($this->isLookupRead($request)) {
+            return 'read';
         }
         if (in_array($controller, self::ADMINISTRATION, true)) {
             if ($read && $controller === 'SettingsController' && in_array($action, ['salesCustomization', 'getTheme', 'listThemePresets', 'printerConfigsResolve', 'localPrinterMeta'], true)) {
@@ -97,6 +103,14 @@ class BusinessPermissions
         }
 
         return 'unassigned';
+    }
+
+    public function isLookupRead(Request $request): bool
+    {
+        return in_array($request->method(), ['GET', 'HEAD'], true)
+            && class_basename($request->route()?->getControllerClass() ?? '') === 'ConfigurationController'
+            && $request->route()?->getActionMethod() === 'show'
+            && in_array(strtolower(str_replace('-', '_', (string) $request->route('key'))), self::LOOKUP_CONFIGURATIONS, true);
     }
 
     public function allows(User $user, string $ability, bool $trustedReplay = false): bool

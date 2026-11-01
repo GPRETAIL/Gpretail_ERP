@@ -186,6 +186,9 @@ class MobileAccess
             // Its controller still enforces the deployment/company and requester identity.
             return null;
         }
+        if (app(BusinessPermissions::class)->isLookupRead($request)) {
+            return null; // Dropdown lists belong to every screen, not to the Settings page they are mapped to.
+        }
         if ($controller === 'ThemeWorkspaceController' || ($controller === 'SettingsController' && in_array($request->route()?->getActionMethod(), ['getTheme', 'updateTheme', 'listThemePresets', 'saveThemePreset', 'applyThemePreset', 'deleteThemePreset'], true))) {
             return null; // Controller enforces theme administration; business licences remain separate.
         }
