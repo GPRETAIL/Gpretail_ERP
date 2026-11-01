@@ -36,16 +36,19 @@ server as harmless leftovers. The optimised autoloader only points at the new lo
 - **`.env`.** Lives only on the server; it is never committed or deployed. Production uses
   `APP_ENV=production` and `APP_DEBUG=false`, plus the MySQL credentials, Pusher keys, platform URL
   and keys, and `BUSINESS_TIMEZONE` if not Asia/Kolkata.
-- **Cron.** One hPanel cron job (Advanced > Cron Jobs > Custom), every minute. The app lives in
-  `~/domains/dev.gpsoftware.in/public_html`:
+- **Cron.** One hPanel cron job (Advanced > Cron Jobs > Custom, every field "Every ... (*)"), added
+  2026-11-01. The app lives in `~/domains/dev.gpsoftware.in/public_html`:
 
   ```
-  cd /home/<account>/domains/dev.gpsoftware.in/public_html && /usr/bin/flock -n /home/<account>/.gp-erp-cron.lock sh -c '/opt/alt/php84/usr/bin/php artisan schedule:run; /opt/alt/php84/usr/bin/php artisan queue:work database --stop-when-empty --max-time=45 --tries=3' > /dev/null
+  /opt/alt/php84/usr/bin/php /home/<account>/domains/dev.gpsoftware.in/public_html/artisan schedule:run
   ```
 
-  It runs every scheduled command listed in `docs/architecture.md`: platform sync, notification sync,
-  nightly purchase-order drafts and accounting posting. The queue drain costs nothing while the queue is
-  empty. The admin's cron (`Gpretail_Admin/deploy/hostinger/run.sh`) only covers the admin app.
+  hPanel silently refuses commands containing `&&`, `;`, quotes or `>`. Keep it to a single command, or point
+  it at a script, as the admin does. It runs every scheduled command listed in `docs/architecture.md`:
+  platform sync, notification sync, nightly purchase-order drafts and accounting posting. Laravel's
+  `withoutOverlapping` on each task stops runs piling up. The ERP queues nothing (realtime events are sent at
+  the end of each request), so no queue worker is needed. The admin has its own cron
+  (`Gpretail_Admin/deploy/hostinger/run.sh`).
 - **Health check.** `GET /up`. `GET /api/health` also reports `background.scheduler` as `running`, `stale`
   or `never`; `never` or `stale` means the cron above is missing or failing.
 
