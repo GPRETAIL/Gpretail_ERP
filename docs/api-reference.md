@@ -1,6 +1,6 @@
 # API reference
 
-Every endpoint under `/api`, grouped by module (514 endpoints). Generated from
+Every endpoint under `/api`, grouped by module (515 endpoints). Generated from
 `php artisan route:list --sort=definition --json`; regenerate it after changing routes.
 
 - Each signed-in endpoint is also served under `/api/v1/...` with the same behaviour.
@@ -20,6 +20,7 @@ Every endpoint under `/api`, grouped by module (514 endpoints). Generated from
 - [Hr](#hr) (32)
 - [Masters](#masters) (120)
 - [Notifications](#notifications) (11)
+- [Other](#other) (1)
 - [Platform](#platform) (20)
 - [Sales](#sales) (92)
 - [Settings](#settings) (70)
@@ -318,6 +319,12 @@ Every endpoint under `/api`, grouped by module (514 endpoints). Generated from
 | GET | `/api/notifications/unread-count` | NotificationController@unreadCount | yes |
 | POST | `/api/notifications/{id}/read` | NotificationController@markRead | yes |
 | POST | `/api/notifications/read-all` | NotificationController@markAllRead | yes |
+
+## Other
+
+| Method | Path | Controller action | Auth |
+|---|---|---|---|
+| GET | `/api/health` | Closure | no |
 
 ## Platform
 

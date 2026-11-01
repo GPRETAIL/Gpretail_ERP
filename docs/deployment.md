@@ -36,9 +36,18 @@ server as harmless leftovers. The optimised autoloader only points at the new lo
 - **`.env`.** Lives only on the server; it is never committed or deployed. Production uses
   `APP_ENV=production` and `APP_DEBUG=false`, plus the MySQL credentials, Pusher keys, platform URL
   and keys, and `BUSINESS_TIMEZONE` if not Asia/Kolkata.
-- **Cron.** Add a cPanel cron entry every minute: `php artisan schedule:run`. It runs every scheduled
-  command listed in `docs/architecture.md`.
-- **Health check.** `GET /up`.
+- **Cron.** One hPanel cron job (Advanced > Cron Jobs > Custom), every minute. The app lives in
+  `~/domains/dev.gpsoftware.in/public_html`:
+
+  ```
+  cd /home/<account>/domains/dev.gpsoftware.in/public_html && /usr/bin/flock -n /home/<account>/.gp-erp-cron.lock sh -c '/opt/alt/php84/usr/bin/php artisan schedule:run; /opt/alt/php84/usr/bin/php artisan queue:work database --stop-when-empty --max-time=45 --tries=3' > /dev/null
+  ```
+
+  It runs every scheduled command listed in `docs/architecture.md`: platform sync, notification sync,
+  nightly purchase-order drafts and accounting posting. The queue drain costs nothing while the queue is
+  empty. The admin's cron (`Gpretail_Admin/deploy/hostinger/run.sh`) only covers the admin app.
+- **Health check.** `GET /up`. `GET /api/health` also reports `background.scheduler` as `running`, `stale`
+  or `never`; `never` or `stale` means the cron above is missing or failing.
 
 ## Rollback
 

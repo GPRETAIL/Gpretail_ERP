@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\V1\Platform\ActivationController;
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Settings\SettingsController;
 use App\Http\Controllers\Api\V1\Platform\SyncController;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -15,6 +16,15 @@ use Illuminate\Support\Facades\Route;
 | All routes match the React MUI frontend contracts.
 |
 */
+
+// Public: whether the server cron is running (running | stale | never), checkable without signing in or
+// server access. Reveals no timestamps or configuration.
+Route::get('health', function () {
+    $last = Cache::get('ops:scheduler-heartbeat');
+    $scheduler = ! is_int($last) ? 'never' : ($last >= now()->timestamp - 180 ? 'running' : 'stale');
+
+    return response()->json(['status' => 'UP', 'background' => ['scheduler' => $scheduler]]);
+})->middleware('throttle:60,1');
 
 // 1. Activation & System Gate Routes
 Route::prefix('activation')->group(function () {
