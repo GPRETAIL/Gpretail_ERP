@@ -754,7 +754,11 @@ class BackupController extends Controller
     public function scheduledRun(Request $request)
     {
         $secret = config('backup.cron_secret');
-        $token = $request->input('token') ?? $request->header('X-Backup-Cron-Token');
+        // Header (or POST body) only: a token in the URL ends up in web server and proxy access logs.
+        $token = $request->header('X-Backup-Cron-Token') ?? $request->post('token');
+        if ($request->query('token') !== null) {
+            return response()->json(['success' => false, 'message' => 'Send the token in the X-Backup-Cron-Token header, not the URL.'], 400);
+        }
 
         if (! $secret || ! $token || ! hash_equals($secret, (string) $token)) {
             return response()->json(['success' => false, 'message' => 'Invalid or missing token'], 403);

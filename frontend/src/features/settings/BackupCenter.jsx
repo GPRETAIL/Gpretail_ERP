@@ -1261,9 +1261,10 @@ export default function BackupCenter() {
                   This server has no background job runner, so scheduled backups need an
                   external trigger to actually run. Set up a free service like{" "}
                   <Box component="span" sx={{ fontWeight: 600 }}>cron-job.org</Box>, or your hosting
-                  panel&apos;s cron jobs, to periodically call:
+                  panel&apos;s cron jobs, to periodically call (the secret goes in a header, never the URL, so it
+                  stays out of server logs):
                   <Box sx={{ mt: 0.5, borderRadius: 1, bgcolor: "action.hover", p: 1, fontFamily: "monospace", wordBreak: "break-all" }}>
-                    GET {(import.meta.env.VITE_API_BASE_URL || "/api").replace(/\/api$/, "")}/api/backups/scheduled-run?token=YOUR_SECRET
+                    curl -s -X POST -H &quot;X-Backup-Cron-Token: YOUR_SECRET&quot; {(import.meta.env.VITE_API_BASE_URL || "/api").replace(/\/api$/, "")}/api/backups/scheduled-run
                   </Box>
                   Get the real secret value from the server&apos;s{" "}
                   <Box component="span" sx={{ fontFamily: "monospace" }}>BACKUP_CRON_SECRET</Box> environment

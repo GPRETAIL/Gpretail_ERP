@@ -644,7 +644,7 @@ const buildBarcodeSheetMarkup = ({
   };
 };
 
-const buildBarcodeSheetDocumentHtml = (markup, { autoPrint = false } = {}) => `
+const buildBarcodeSheetDocumentHtml = (markup) => `
   <!DOCTYPE html>
   <html>
     <head>
@@ -657,14 +657,6 @@ const buildBarcodeSheetDocumentHtml = (markup, { autoPrint = false } = {}) => `
     </head>
     <body>
       <div class="sheet">${markup.cardsHtml}</div>
-      ${autoPrint ? `
-        <script>
-          window.onload = () => {
-            window.focus();
-            window.print();
-          };
-        </script>
-      ` : ""}
     </body>
   </html>
 `;
@@ -1322,8 +1314,12 @@ export const printWarehouseBarcodeLabels = async ({ labels, qrSources, customiza
 
   const previewWindow = window.open("", "_blank", "width=1100,height=800");
   if (!previewWindow) return { ok: false, message: "Popup blocked. Allow popups to print barcode stickers." };
-  previewWindow.document.write(buildBarcodeSheetDocumentHtml(sheetMarkup, { autoPrint: true }));
+  previewWindow.document.write(buildBarcodeSheetDocumentHtml(sheetMarkup));
   previewWindow.document.close();
+  // Printed from here rather than by a script inside the popup: the popup inherits the app CSP, which blocks inline scripts.
+  const printSheet = () => { previewWindow.focus(); previewWindow.print(); };
+  if (previewWindow.document.readyState === "complete") printSheet();
+  else previewWindow.addEventListener("load", printSheet, { once: true });
   return { ok: true, message: null };
 };
 

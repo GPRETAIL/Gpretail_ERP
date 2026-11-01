@@ -20,6 +20,7 @@ use App\Services\Tenancy\StoreContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -52,7 +53,10 @@ class AuthController extends Controller
                 : ['success' => false, 'message' => $setup['message']], $setup['ok'] ? 200 : $setup['status']);
         }
 
-        if (! $user || ! Hash::check($password, $user->password)) {
+        // An unknown username still pays for one hash check at the configured cost, so the response time
+        // doesn't tell a caller which usernames exist.
+        $passwordMatches = Hash::check($password, $user->password ?? $this->timingDummyHash());
+        if (! $user || ! $passwordMatches) {
             FailedAttempts::fail($limits);
 
             return response()->json([
@@ -67,6 +71,12 @@ class AuthController extends Controller
         }
 
         return $this->completeLogin($user);
+    }
+
+    /** A hash of a random secret, made once at the current cost, for unknown-user sign-ins to check against. */
+    private function timingDummyHash(): string
+    {
+        return Cache::rememberForever('auth:timing-dummy-hash:'.config('hashing.bcrypt.rounds'), fn () => Hash::make(Str::random(40)));
     }
 
     public function config(): JsonResponse

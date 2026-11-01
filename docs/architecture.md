@@ -13,7 +13,12 @@ React SPA (frontend/)  ──HTTPS──▶  Laravel API (backend-laravel/)  ─
 ## A request, end to end
 
 1. **Sign-in.** `AuthController@login` issues a Sanctum token. Failed attempts are counted per account
-   and IP (`Services/Security/FailedAttempts`). Signed-in routes sit behind `auth:sanctum`.
+   and IP (`Services/Security/FailedAttempts`). Signed-in routes sit behind `auth:sanctum`. An unknown
+   username still costs one password-hash check, so response time doesn't reveal which accounts exist.
+   The app pages carry `SecurityHeaders::APP_POLICY` (CSP: scripts only from the app and Google sign-in), served
+   by `routes/web.php`; `public/.htaccess` sends `/` and `index.html` there. Print popups are printed by the
+   opener, because the popup inherits the policy and inline scripts are blocked. The backup and sync cron
+   endpoints take their token only from a header (`X-Backup-Cron-Token`, `X-Sync-Cron-Token`) or a POST body.
 2. **Store context.** Every request names the selected store (`X-Store-Id`, or `store_id` in the body).
    `ResolveStoreContext` checks it against the user's stores and records it on the request.
 3. **Permission.** `AuthorizeBusinessAction` maps the controller class and action to an ability

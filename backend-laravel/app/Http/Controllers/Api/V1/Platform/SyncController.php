@@ -126,7 +126,11 @@ class SyncController extends Controller
      */
     public function runCycle(Request $request)
     {
-        $token = (string) ($request->input('token') ?? $request->header('X-Sync-Cron-Token', ''));
+        // Header (or POST body) only: a token in the URL ends up in web server and proxy access logs.
+        if ($request->query('token') !== null) {
+            return response()->json(['success' => false, 'message' => 'Send the token in the X-Sync-Cron-Token header, not the URL.'], 400);
+        }
+        $token = (string) ($request->header('X-Sync-Cron-Token') ?? $request->post('token', ''));
         $secret = (string) config('sync.cron_secret');
 
         if (! $secret || ! hash_equals($secret, $token)) {

@@ -1,12 +1,13 @@
 <?php
 
+use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Support\Facades\Route;
 
 // Serve React SPA index.html for all frontend web routes
 Route::get('/{any?}', function () {
     $indexPath = public_path('index.html');
     if (file_exists($indexPath)) {
-        return response()->file($indexPath);
+        return response()->file($indexPath, ['Content-Security-Policy' => SecurityHeaders::APP_POLICY]);
     }
 
     return response()->json([

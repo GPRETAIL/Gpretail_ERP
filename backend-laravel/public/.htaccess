@@ -7,6 +7,9 @@
 # renders the right route.
 ErrorDocument 403 /index.php
 
+# "/" goes to Laravel, never straight to the built index.html (see the index.html rewrite below).
+DirectoryIndex index.php
+
 # Hostinger's platform applies a blanket 7-day Cache-Control (public,
 # max-age=604800) to static files regardless of what this app sends -
 # harmless for Vite's content-hashed JS/CSS (a new deploy gets a new
@@ -69,6 +72,10 @@ ErrorDocument 403 /index.php
     # Force these requests through Laravel/React even though a physical /app folder
     # still exists on the server (see DirectorySlash above for why that mattered).
     RewriteRule ^app(?:/.*)?/?$ index.php [L]
+
+    # The SPA shell must come from Laravel (routes/web.php), which adds the app's Content-Security-Policy;
+    # a directly served index.html would go out without it.
+    RewriteRule ^index\.html$ index.php [L]
 
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
