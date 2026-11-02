@@ -1,4 +1,5 @@
 import React from "react";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 import { TrendingDown, TrendingUp } from "lucide-react";
 import { Box, Typography } from "@mui/material";
 
@@ -91,7 +92,7 @@ const ModuleStatCards = ({ cards, loading }) => (
       <MetricCard
         key={card.label}
         eyebrow={card.label}
-        value={loading ? "..." : card.value}
+        value={loading ? <LoadingSkeleton /> : card.value}
         subtitle={card.subtitle}
         trend={card.trend}
       />

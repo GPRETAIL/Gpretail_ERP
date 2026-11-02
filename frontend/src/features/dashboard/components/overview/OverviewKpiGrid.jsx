@@ -1,4 +1,5 @@
 import React from "react";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 import { MetricCard } from "@/features/dashboard/components/DashboardStatCards";
 
 const formatMoney = (value) =>
@@ -15,8 +16,8 @@ export function TotalBillsCard({ totalBills = {}, loading, privacyMode }) {
     <MetricCard
       eyebrow="Total Bills"
       title="Total bill amount"
-      value={loading ? "..." : formatMoney(totalBills.amount)}
-      subtitle={loading ? "..." : `${totalBills.count || 0} Bills (${totalBills.unsettledCount || 0} UNSETTLED)`}
+      value={loading ? <LoadingSkeleton /> : formatMoney(totalBills.amount)}
+      subtitle={loading ? <LoadingSkeleton /> : `${totalBills.count || 0} Bills (${totalBills.unsettledCount || 0} UNSETTLED)`}
       trend={totalBills.trend}
       privacyMode={privacyMode}
     />
@@ -28,8 +29,8 @@ export function SettlementCard({ settlements = {}, loading, privacyMode }) {
     <MetricCard
       eyebrow="Settlement"
       title="Settled invoice amount"
-      value={loading ? "..." : formatMoney(settlements.amount)}
-      subtitle={loading ? "..." : `Outstanding: ${formatMoney(settlements.unsettledAmount)} (${settlements.unsettledCount || 0} unsettled bills)`}
+      value={loading ? <LoadingSkeleton /> : formatMoney(settlements.amount)}
+      subtitle={loading ? <LoadingSkeleton /> : `Outstanding: ${formatMoney(settlements.unsettledAmount)} (${settlements.unsettledCount || 0} unsettled bills)`}
       trend={settlements.trend}
       privacyMode={privacyMode}
     />
@@ -40,7 +41,7 @@ export function EmployeesCard({ employees = {}, loading, privacyMode }) {
   return (
     <MetricCard
       eyebrow="Employees"
-      value={loading ? "..." : `${employees.present || 0}/${employees.total || 0}`}
+      value={loading ? <LoadingSkeleton /> : `${employees.present || 0}/${employees.total || 0}`}
       valueSubheading="Present today / active employees"
       trend={employees.trend}
       subtitle="Active employee count"
@@ -54,7 +55,7 @@ export function StockValueCard({ stockValue = {}, loading, privacyMode }) {
     <MetricCard
       eyebrow="Stock value"
       title="Current stock value"
-      value={loading ? "..." : formatMoney(stockValue.amount)}
+      value={loading ? <LoadingSkeleton /> : formatMoney(stockValue.amount)}
       trend={stockValue.trend}
       privacyMode={privacyMode}
     />

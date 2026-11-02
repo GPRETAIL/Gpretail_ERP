@@ -1,4 +1,5 @@
 import React from "react";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 import { PieChart } from "lucide-react";
 import { Box, Stack, Typography } from "@mui/material";
 import { formatCurrency } from "@/features/dashboard/utils/dashboardFormatters";
@@ -32,7 +33,7 @@ export default function WarehouseSellingModeBreakdown({ inventory = {}, performa
           <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between" }}>
             <Typography sx={{ fontSize: 12, fontWeight: 600, color: "text.secondary" }}>Piece Mode (Unit Stock)</Typography>
             <Typography sx={{ fontSize: 12, fontWeight: 700, color: "primary.main" }}>
-              {loading ? "..." : `${Number(modes.piece?.total_qty || 0).toLocaleString()} Pcs`}
+              {loading ? <LoadingSkeleton /> : `${Number(modes.piece?.total_qty || 0).toLocaleString()} Pcs`}
             </Typography>
           </Stack>
           <Stack direction="row" sx={{ mt: 0.5, justifyContent: "space-between" }}>
@@ -45,7 +46,7 @@ export default function WarehouseSellingModeBreakdown({ inventory = {}, performa
           <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between" }}>
             <Typography sx={{ fontSize: 12, fontWeight: 600, color: "text.secondary" }}>Pack Mode (Pack Stock)</Typography>
             <Typography sx={{ fontSize: 12, fontWeight: 700, color: "#4f46e5" }}>
-              {loading ? "..." : `${Number(modes.pack?.total_qty || 0).toLocaleString()} Packs`}
+              {loading ? <LoadingSkeleton /> : `${Number(modes.pack?.total_qty || 0).toLocaleString()} Packs`}
             </Typography>
           </Stack>
           <Stack direction="row" sx={{ mt: 0.5, justifyContent: "space-between" }}>
@@ -58,7 +59,7 @@ export default function WarehouseSellingModeBreakdown({ inventory = {}, performa
           <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between" }}>
             <Typography sx={{ fontSize: 12, fontWeight: 600, color: "text.secondary" }}>Cut Mode (Fabric / Length)</Typography>
             <Typography sx={{ fontSize: 12, fontWeight: 700, color: "#9333ea" }}>
-              {loading ? "..." : `${Number(modes.cut?.total_qty || 0).toLocaleString()} Mtrs`}
+              {loading ? <LoadingSkeleton /> : `${Number(modes.cut?.total_qty || 0).toLocaleString()} Mtrs`}
             </Typography>
           </Stack>
           <Stack direction="row" sx={{ mt: 0.5, justifyContent: "space-between" }}>

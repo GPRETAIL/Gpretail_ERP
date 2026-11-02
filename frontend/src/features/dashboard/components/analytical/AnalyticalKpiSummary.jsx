@@ -1,4 +1,5 @@
 import React from "react";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 import { useNavigate } from "react-router-dom";
 import { Boxes, Tag, FolderTree, Truck } from "lucide-react";
 import { Box, ButtonBase, Stack, Typography } from "@mui/material";
@@ -31,7 +32,7 @@ export function ProductsWithStockCard({ summary = {}, loading, privacyMode }) {
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
-        {loading ? "..." : wholeNumber(summary.products_with_stock)}
+        {loading ? <LoadingSkeleton /> : wholeNumber(summary.products_with_stock)}
       </Typography>
     </ButtonBase>
   );
@@ -47,7 +48,7 @@ export function BrandsTrackedCard({ summary = {}, loading, privacyMode }) {
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
-        {loading ? "..." : wholeNumber(summary.brands_tracked)}
+        {loading ? <LoadingSkeleton /> : wholeNumber(summary.brands_tracked)}
       </Typography>
     </Box>
   );
@@ -63,7 +64,7 @@ export function CategoriesTrackedCard({ summary = {}, loading, privacyMode }) {
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
-        {loading ? "..." : wholeNumber(summary.categories_tracked)}
+        {loading ? <LoadingSkeleton /> : wholeNumber(summary.categories_tracked)}
       </Typography>
     </Box>
   );
@@ -80,7 +81,7 @@ export function SuppliersWithPurchasesCard({ summary = {}, loading, privacyMode 
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
-        {loading ? "..." : wholeNumber(summary.suppliers_with_purchases)}
+        {loading ? <LoadingSkeleton /> : wholeNumber(summary.suppliers_with_purchases)}
       </Typography>
     </ButtonBase>
   );

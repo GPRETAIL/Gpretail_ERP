@@ -1,4 +1,5 @@
 import React from "react";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 import { useNavigate } from "react-router-dom";
 import { ShoppingCart, Wallet, RotateCcw, CreditCard } from "lucide-react";
 import { ButtonBase, Stack, Typography } from "@mui/material";
@@ -26,7 +27,7 @@ export function TodaysSalesCard({ summary = {}, loading, privacyMode }) {
         <ShoppingCart size={20} style={{ color: "inherit" }} />
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
-        {loading ? "..." : formatCurrency(summary.today_sales_amount)}
+        {loading ? <LoadingSkeleton /> : formatCurrency(summary.today_sales_amount)}
       </Typography>
       <Stack direction="row" sx={{ mt: 0.5, alignItems: "center", justifyContent: "space-between", fontSize: 11, color: "text.secondary", ...blurSx(privacyMode) }}>
         <Typography component="span" sx={{ fontSize: "inherit", color: "inherit" }}>
@@ -51,7 +52,7 @@ export function NetSalesCard({ summary = {}, loading, privacyMode }) {
         <Wallet size={20} style={{ color: "inherit" }} />
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "success.main", ...blurSx(privacyMode) }}>
-        {loading ? "..." : formatCurrency(summary.net_sales_amount)}
+        {loading ? <LoadingSkeleton /> : formatCurrency(summary.net_sales_amount)}
       </Typography>
       <Stack direction="row" sx={{ mt: 0.5, alignItems: "center", justifyContent: "space-between", fontSize: 11, color: "text.secondary", ...blurSx(privacyMode) }}>
         <Typography component="span" sx={{ fontSize: "inherit", color: "inherit" }}>
@@ -76,7 +77,7 @@ export function ReturnsCard({ summary = {}, performance = {}, loading, privacyMo
         <RotateCcw size={20} style={{ color: "inherit" }} />
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
-        {loading ? "..." : formatCurrency(summary.returns_amount)}
+        {loading ? <LoadingSkeleton /> : formatCurrency(summary.returns_amount)}
       </Typography>
       <Stack direction="row" sx={{ mt: 0.5, alignItems: "center", justifyContent: "space-between", fontSize: 11, color: "text.secondary", ...blurSx(privacyMode) }}>
         <Typography component="span" sx={{ fontSize: "inherit", color: "inherit" }}>{summary.returns_count || 0} Returns</Typography>
@@ -97,7 +98,7 @@ export function CreditPendingCard({ summary = {}, performance = {}, loading, pri
         <CreditCard size={20} style={{ color: "inherit" }} />
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "warning.main", ...blurSx(privacyMode) }}>
-        {loading ? "..." : formatCurrency(summary.credit_pending_amount)}
+        {loading ? <LoadingSkeleton /> : formatCurrency(summary.credit_pending_amount)}
       </Typography>
       <Stack direction="row" sx={{ mt: 0.5, alignItems: "center", justifyContent: "space-between", fontSize: 11, color: "text.secondary", ...blurSx(privacyMode) }}>
         <Typography component="span" sx={{ fontSize: "inherit", color: "inherit" }}>Ratio: {performance.credit_sales_ratio || "0%"}</Typography>

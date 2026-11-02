@@ -1,4 +1,5 @@
 import React from "react";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 import { useNavigate } from "react-router-dom";
 import { Package, Tag, Truck, FolderTree } from "lucide-react";
 import { Box, ButtonBase, Stack, Typography } from "@mui/material";
@@ -26,7 +27,7 @@ export function TotalProductsCard({ summary = {}, loading, privacyMode }) {
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
-        {loading ? "..." : wholeNumber(summary.total_products)}
+        {loading ? <LoadingSkeleton /> : wholeNumber(summary.total_products)}
       </Typography>
       <Stack direction="row" sx={{ mt: 0.5, alignItems: "center", justifyContent: "space-between", fontSize: 11, color: "text.secondary", ...blurSx(privacyMode) }}>
         <Typography component="span" sx={{ fontSize: "inherit", color: "inherit" }}>Active: {wholeNumber(summary.active_products)}</Typography>
@@ -47,7 +48,7 @@ export function BrandsCategoriesCard({ summary = {}, loading, privacyMode }) {
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "#6366f1", ...blurSx(privacyMode) }}>
-        {loading ? "..." : wholeNumber(summary.total_brands)}
+        {loading ? <LoadingSkeleton /> : wholeNumber(summary.total_brands)}
       </Typography>
       <Stack direction="row" sx={{ mt: 0.5, alignItems: "center", justifyContent: "space-between", fontSize: 11, color: "text.secondary", ...blurSx(privacyMode) }}>
         <Typography component="span" sx={{ fontSize: "inherit", color: "inherit" }}>Brands</Typography>
@@ -68,7 +69,7 @@ export function SuppliersCard({ summary = {}, loading, privacyMode }) {
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
-        {loading ? "..." : wholeNumber(summary.total_suppliers)}
+        {loading ? <LoadingSkeleton /> : wholeNumber(summary.total_suppliers)}
       </Typography>
       <Typography sx={{ mt: 0.5, fontSize: 11, color: "text.secondary", ...blurSx(privacyMode) }}>
         Active: {wholeNumber(summary.active_suppliers)}
@@ -88,7 +89,7 @@ export function DataQualityGapsCard({ summary = {}, loading, privacyMode }) {
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "warning.main", ...blurSx(privacyMode) }}>
-        {loading ? "..." : wholeNumber(summary.missing_hsn_count)}
+        {loading ? <LoadingSkeleton /> : wholeNumber(summary.missing_hsn_count)}
       </Typography>
       <Stack direction="row" sx={{ mt: 0.5, alignItems: "center", justifyContent: "space-between", fontSize: 11, color: "text.secondary", ...blurSx(privacyMode) }}>
         <Typography component="span" sx={{ fontSize: "inherit", color: "inherit" }}>Missing HSN</Typography>

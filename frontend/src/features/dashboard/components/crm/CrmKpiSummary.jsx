@@ -1,4 +1,5 @@
 import React from "react";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 import { useNavigate } from "react-router-dom";
 import { Users, ShoppingBag, CreditCard, Award } from "lucide-react";
 import { Box, Stack, Typography } from "@mui/material";
@@ -28,7 +29,7 @@ export function TotalCustomersCard({ summary = {}, loading, privacyMode }) {
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
-        {loading ? "..." : Number(summary.total_customers || 0).toLocaleString()}
+        {loading ? <LoadingSkeleton /> : Number(summary.total_customers || 0).toLocaleString()}
       </Typography>
       <Stack direction="row" sx={{ mt: 0.5, alignItems: "center", justifyContent: "space-between", fontSize: 12, color: "text.secondary", ...blurSx(privacyMode) }}>
         <Typography sx={{ fontSize: 12, color: "text.secondary" }}>Active: {Number(summary.active_customers || 0).toLocaleString()}</Typography>
@@ -51,7 +52,7 @@ export function CustomerOrdersCard({ summary = {}, loading, privacyMode }) {
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "#4f46e5", ...blurSx(privacyMode) }}>
-        {loading ? "..." : formatCurrency(summary.total_order_value)}
+        {loading ? <LoadingSkeleton /> : formatCurrency(summary.total_order_value)}
       </Typography>
       <Stack direction="row" sx={{ mt: 0.5, alignItems: "center", justifyContent: "space-between", fontSize: 12, color: "text.secondary", ...blurSx(privacyMode) }}>
         <Typography sx={{ fontSize: 12, color: "text.secondary" }}>{summary.total_orders || 0} Orders</Typography>
@@ -74,7 +75,7 @@ export function CustomerReceivablesCard({ summary = {}, loading, privacyMode }) 
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
-        {loading ? "..." : formatCurrency(summary.total_receivables)}
+        {loading ? <LoadingSkeleton /> : formatCurrency(summary.total_receivables)}
       </Typography>
       <Stack direction="row" sx={{ mt: 0.5, alignItems: "center", justifyContent: "space-between", fontSize: 12, color: "text.secondary", ...blurSx(privacyMode) }}>
         <Typography sx={{ fontSize: 12, color: "text.secondary" }}>Order Balance: {formatCurrency(summary.balance_receivable)}</Typography>
@@ -97,7 +98,7 @@ export function LoyaltyPointsCard({ summary = {}, loading, privacyMode }) {
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "#9333ea", ...blurSx(privacyMode) }}>
-        {loading ? "..." : Number(summary.total_loyalty_points || 0).toLocaleString()} Pts
+        {loading ? <LoadingSkeleton /> : Number(summary.total_loyalty_points || 0).toLocaleString()} Pts
       </Typography>
       <Stack direction="row" sx={{ mt: 0.5, alignItems: "center", justifyContent: "space-between", fontSize: 12, color: "text.secondary", ...blurSx(privacyMode) }}>
         <Typography sx={{ fontSize: 12, color: "text.secondary" }}>{summary.loyalty_members_count || 0} Members</Typography>

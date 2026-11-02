@@ -1,4 +1,5 @@
 import React from "react";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 import { useNavigate } from "react-router-dom";
 import { Users, UserCog, Store as StoreIcon, DatabaseBackup } from "lucide-react";
 import { Box, ButtonBase, Stack, Typography } from "@mui/material";
@@ -26,7 +27,7 @@ export function UsersCard({ summary = {}, loading, privacyMode }) {
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
-        {loading ? "..." : wholeNumber(summary.total_users)}
+        {loading ? <LoadingSkeleton /> : wholeNumber(summary.total_users)}
       </Typography>
       <Typography sx={{ mt: 0.5, fontSize: 11, color: "text.secondary", ...blurSx(privacyMode) }}>
         Active: {wholeNumber(summary.active_users)}
@@ -46,7 +47,7 @@ export function SettingsEmployeesCard({ summary = {}, loading, privacyMode }) {
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
-        {loading ? "..." : wholeNumber(summary.total_employees)}
+        {loading ? <LoadingSkeleton /> : wholeNumber(summary.total_employees)}
       </Typography>
       <Typography sx={{ mt: 0.5, fontSize: 11, color: "text.secondary", ...blurSx(privacyMode) }}>
         Active: {wholeNumber(summary.active_employees)}
@@ -66,7 +67,7 @@ export function SettingsStoresCard({ summary = {}, loading, privacyMode }) {
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
-        {loading ? "..." : wholeNumber(summary.total_stores)}
+        {loading ? <LoadingSkeleton /> : wholeNumber(summary.total_stores)}
       </Typography>
       <Typography sx={{ mt: 0.5, fontSize: 11, color: "text.secondary", ...blurSx(privacyMode) }}>
         Active: {wholeNumber(summary.active_stores)}
@@ -86,7 +87,7 @@ export function LastBackupCard({ summary = {}, loading, privacyMode }) {
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 15.75, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
-        {loading ? "..." : summary.last_backup_at ? new Date(summary.last_backup_at).toLocaleDateString("en-IN") : "Never"}
+        {loading ? <LoadingSkeleton /> : summary.last_backup_at ? new Date(summary.last_backup_at).toLocaleDateString("en-IN") : "Never"}
       </Typography>
       <Typography sx={{ mt: 0.5, fontSize: 11, color: "text.secondary", ...blurSx(privacyMode) }}>
         {summary.last_backup_size || "-"}

@@ -1,4 +1,5 @@
 import React from "react";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 import { useNavigate } from "react-router-dom";
 import { AlertOctagon } from "lucide-react";
 import { Box, ButtonBase, Stack, Typography } from "@mui/material";
@@ -60,9 +61,7 @@ export default function OverviewActionRequiredCard({ items = [], loading, onItem
       </Stack>
 
       {loading ? (
-        <Box sx={{ display: "flex", height: 100, alignItems: "center", justifyContent: "center" }}>
-          <Typography sx={{ fontSize: 14, color: "text.secondary" }}>Loading...</Typography>
-        </Box>
+        <LoadingSkeleton variant="list" rows={3} />
       ) : items.length === 0 ? (
         <Box sx={{ display: "flex", height: 100, alignItems: "center", justifyContent: "center" }}>
           <Typography sx={{ fontSize: 14, color: "text.secondary" }}>Nothing needs attention right now.</Typography>

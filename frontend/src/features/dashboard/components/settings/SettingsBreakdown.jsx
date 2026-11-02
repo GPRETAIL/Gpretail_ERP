@@ -1,4 +1,5 @@
 import React from "react";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 import { LayoutGrid } from "lucide-react";
 import { Box, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
@@ -48,7 +49,7 @@ export default function SettingsBreakdown({ breakdown = {}, loading }) {
             sx={{ display: "flex", flexDirection: "column", alignItems: "flex-start", borderRadius: "7px", border: "1px solid", p: 1.5, ...colorSx(BREAKDOWN_COLORS[key] || "slate") }}
           >
             <Typography sx={{ fontSize: 15.75, fontWeight: 800, color: "text.primary" }}>
-              {loading ? "..." : wholeNumber(tile.count)}
+              {loading ? <LoadingSkeleton /> : wholeNumber(tile.count)}
             </Typography>
             <Typography sx={{ fontSize: 12, fontWeight: 600, color: "inherit" }}>{tile.label}</Typography>
           </Box>

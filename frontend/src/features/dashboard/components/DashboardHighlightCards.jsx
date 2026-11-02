@@ -1,4 +1,5 @@
 import React from "react";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 import { useNavigate } from "react-router-dom";
 import { Box, Button, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
 
@@ -38,7 +39,7 @@ export const LeaderboardCard = ({ table, defaultTitle, loading, icon: Icon, empt
         )}
       </Stack>
       {loading ? (
-        <Box sx={{ height: 260, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "text.secondary" }}>Loading...</Box>
+        <LoadingSkeleton variant="table" height={260} />
       ) : (
         <Box sx={{ overflowX: "auto" }}>
           <Table size="small" sx={{ "& tbody tr:last-child td": { borderBottom: 0 } }}>

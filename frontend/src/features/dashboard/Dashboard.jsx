@@ -23,13 +23,14 @@ import { canAccessPath, canSwitchStores } from "@/features/auth/utils/accessCont
 import { DashboardLayoutProvider, useDashboardLayout } from "./context/DashboardLayoutContext";
 import { Box, Button, MenuItem, Stack, Tab, Tabs, TextField, Typography } from "@mui/material";
 import PageSkeleton from "@/shared/components/PageSkeleton";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 
 // The chart library is most of this page's download: load it after the cards and tables render.
 const loadCharts = () => import("./components/DashboardCharts");
 const LazyHourlySalesChart = lazy(() => loadCharts().then(module => ({ default: module.HourlySalesChart })));
 const LazyDailyTrendChart = lazy(() => loadCharts().then(module => ({ default: module.DailyTrendChart })));
-const HourlySalesChart = props => <Suspense fallback={<PageSkeleton rows={4} />}><LazyHourlySalesChart {...props} /></Suspense>;
-const DailyTrendChart = props => <Suspense fallback={<PageSkeleton rows={4} />}><LazyDailyTrendChart {...props} /></Suspense>;
+const HourlySalesChart = props => <Suspense fallback={<LoadingSkeleton variant="chart" height={260} />}><LazyHourlySalesChart {...props} /></Suspense>;
+const DailyTrendChart = props => <Suspense fallback={<LoadingSkeleton variant="chart" height={260} />}><LazyDailyTrendChart {...props} /></Suspense>;
 const WarehouseDashboardTabPane = lazy(() => import("./components/WarehouseDashboardTabPane"));
 const CrmDashboardTabPane = lazy(() => import("./components/CrmDashboardTabPane"));
 const SalesDashboardTabPane = lazy(() => import("./components/SalesDashboardTabPane"));

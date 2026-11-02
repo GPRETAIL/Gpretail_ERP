@@ -1,4 +1,5 @@
 import React from "react";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 import { useNavigate } from "react-router-dom";
 import { HandCoins, Wallet, ShoppingBag, Receipt } from "lucide-react";
 import { Box, ButtonBase, Stack, Typography } from "@mui/material";
@@ -31,7 +32,7 @@ export function PayablesOutstandingCard({ summary = {}, loading, privacyMode }) 
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "error.main", ...blurSx(privacyMode) }}>
-        {loading ? "..." : formatCurrency(summary.payables_outstanding)}
+        {loading ? <LoadingSkeleton /> : formatCurrency(summary.payables_outstanding)}
       </Typography>
       <Typography sx={{ mt: 0.5, fontSize: 11, color: "text.secondary" }}>Owed to suppliers</Typography>
     </ButtonBase>
@@ -51,7 +52,7 @@ export function ReceivablesOutstandingCard({ summary = {}, loading, privacyMode 
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "primary.main", ...blurSx(privacyMode) }}>
-        {loading ? "..." : formatCurrency(summary.receivables_outstanding)}
+        {loading ? <LoadingSkeleton /> : formatCurrency(summary.receivables_outstanding)}
       </Typography>
       <Typography sx={{ mt: 0.5, fontSize: 11, color: "text.secondary" }}>Owed by credit customers</Typography>
     </ButtonBase>
@@ -71,7 +72,7 @@ export function PurchaseValueCard({ summary = {}, loading, privacyMode }) {
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
-        {loading ? "..." : formatCurrency(summary.purchase_value_range)}
+        {loading ? <LoadingSkeleton /> : formatCurrency(summary.purchase_value_range)}
       </Typography>
       <Typography sx={{ mt: 0.5, fontSize: 11, color: "text.secondary", ...blurSx(privacyMode) }}>
         Payments made: {formatCurrency(summary.payments_made_range)}
@@ -93,7 +94,7 @@ export function NetPositionCard({ summary = {}, loading, privacyMode }) {
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: positive ? "success.main" : "error.main", ...blurSx(privacyMode) }}>
-        {loading ? "..." : formatCurrency(summary.net_position)}
+        {loading ? <LoadingSkeleton /> : formatCurrency(summary.net_position)}
       </Typography>
       <Typography sx={{ mt: 0.5, fontSize: 11, color: "text.secondary", ...blurSx(privacyMode) }}>
         Refunds due: {formatCurrency(summary.refunds_due)}

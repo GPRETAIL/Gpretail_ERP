@@ -1,4 +1,5 @@
 import React from "react";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 import {
   Bar,
   CartesianGrid,
@@ -126,7 +127,7 @@ export const HourlySalesChart = ({ chart, loading, privacyMode }) => {
         </Typography>
       </Box>
       {loading ? (
-        <Box sx={{ height: 260, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "text.secondary" }}>Loading chart...</Box>
+        <LoadingSkeleton variant="chart" height={260} />
       ) : (
         // Recharts renders to SVG, so individual figures (bars, axis ticks) can't be blurred
         // separately from the axis lines/grid without a much more invasive per-tick rewrite --
@@ -203,7 +204,7 @@ export const DailyTrendChart = ({ chart, loading, privacyMode }) => {
         </Typography>
       </Box>
       {loading ? (
-        <Box sx={{ height: 260, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "text.secondary" }}>Loading chart...</Box>
+        <LoadingSkeleton variant="chart" height={260} />
       ) : (
         <Box sx={privacyMode ? { filter: "blur(4px)", userSelect: "none" } : {}}>
         <ResponsiveContainer width="100%" height={260}>

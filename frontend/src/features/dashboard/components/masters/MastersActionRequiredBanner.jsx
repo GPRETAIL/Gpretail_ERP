@@ -1,4 +1,5 @@
 import React from "react";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 import { useNavigate } from "react-router-dom";
 import { AlertOctagon } from "lucide-react";
 import { Box, ButtonBase, Stack, Typography } from "@mui/material";
@@ -49,7 +50,7 @@ export default function MastersActionRequiredBanner({ actionRequired = [], loadi
             }}
           >
             <Typography sx={{ fontSize: 17.5, fontWeight: 800, color: "text.primary" }}>
-              {loading ? "..." : item.count}
+              {loading ? <LoadingSkeleton /> : item.count}
             </Typography>
             <Typography sx={{ mt: 0.5, fontSize: 12, fontWeight: 600, color: "text.secondary" }}>{item.label}</Typography>
           </ButtonBase>

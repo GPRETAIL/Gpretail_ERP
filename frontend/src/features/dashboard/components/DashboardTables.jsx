@@ -1,4 +1,5 @@
 import React from "react";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 import { useNavigate } from "react-router-dom";
 import { Box, Button, Stack, Table, TableBody, TableCell, TableFooter, TableHead, TableRow, Typography } from "@mui/material";
 import { StatusChip } from "@/shared/theme/StatusChip";
@@ -54,7 +55,7 @@ export const DailySalesSummaryTable = ({ table, loading, privacyMode }) => {
         </Button>
       </Stack>
       {loading ? (
-        <Box sx={{ height: 320, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "text.secondary" }}>Loading table...</Box>
+        <LoadingSkeleton variant="table" rows={8} height={320} />
       ) : (
         <Box sx={{ overflowX: "auto" }}>
           <Table size="small" sx={{ "& .MuiTableCell-root": { py: 0.5 }, "& tbody tr:last-child td": { borderBottom: 0 } }}>
@@ -126,7 +127,7 @@ export const SettlementDetailsTable = ({ table, loading, privacyMode }) => {
         </Button>
       </Stack>
       {loading ? (
-        <Box sx={{ height: 320, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "text.secondary" }}>Loading table...</Box>
+        <LoadingSkeleton variant="table" rows={8} height={320} />
       ) : (
         <Box sx={{ overflowX: "auto", width: "100%" }}>
           <Table size="small" sx={{ width: "100%", minWidth: "max-content", "& .MuiTableCell-root": { py: 0.5 }, "& tbody tr:last-child td": { borderBottom: 0 } }}>
@@ -229,7 +230,7 @@ export const SupplierPaymentsTable = ({ table, loading, privacyMode }) => {
         </Button>
       </Stack>
       {loading ? (
-        <Box sx={{ height: 320, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "text.secondary" }}>Loading table...</Box>
+        <LoadingSkeleton variant="table" rows={8} height={320} />
       ) : (
         <Box sx={{ overflowX: "auto", width: "100%" }}>
           <Table size="small" sx={{ width: "100%", minWidth: "max-content", "& .MuiTableCell-root": { py: 0.5 }, "& tbody tr:last-child td": { borderBottom: 0 } }}>

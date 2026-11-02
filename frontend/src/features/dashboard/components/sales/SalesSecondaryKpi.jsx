@@ -1,4 +1,5 @@
 import React from "react";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 import { useNavigate } from "react-router-dom";
 import { CalendarDays, Receipt, Package } from "lucide-react";
 import { Box, ButtonBase, Stack, Typography } from "@mui/material";
@@ -30,7 +31,7 @@ export function MonthlySalesCard({ summary = {}, loading, privacyMode }) {
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
-        {loading ? "..." : formatCurrency(summary.month_sales_amount)}
+        {loading ? <LoadingSkeleton /> : formatCurrency(summary.month_sales_amount)}
       </Typography>
       <Typography sx={{ mt: 0.5, fontSize: 11, color: "text.secondary", ...blurSx(privacyMode) }}>
         {summary.month_bills_count || 0} bills this calendar month
@@ -52,7 +53,7 @@ export function TotalInvoicesCard({ summary = {}, loading, privacyMode }) {
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
-        {loading ? "..." : Number(summary.range_bills_count || 0).toLocaleString()}
+        {loading ? <LoadingSkeleton /> : Number(summary.range_bills_count || 0).toLocaleString()}
       </Typography>
       <Typography sx={{ mt: 0.5, fontSize: 11, color: "text.secondary", ...blurSx(privacyMode) }}>
         {Number(summary.today_bills_count || 0).toLocaleString()} today
@@ -74,7 +75,7 @@ export function ProductsSoldCard({ summary = {}, loading, privacyMode }) {
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
-        {loading ? "..." : Number(summary.distinct_products_sold || 0).toLocaleString()}
+        {loading ? <LoadingSkeleton /> : Number(summary.distinct_products_sold || 0).toLocaleString()}
       </Typography>
       <Typography sx={{ mt: 0.5, fontSize: 11, color: "text.secondary", ...blurSx(privacyMode) }}>
         {Number(summary.range_qty_sold || 0).toLocaleString()} units sold

@@ -1,4 +1,5 @@
 import React from "react";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 import { Sparkles } from "lucide-react";
 import { Box, Stack, Typography } from "@mui/material";
 import { formatCurrency } from "@/features/dashboard/utils/dashboardFormatters";
@@ -26,10 +27,10 @@ export default function AnalyticalInsightsPanel({ insights = {}, loading }) {
               <Typography sx={{ fontSize: 10.5, fontWeight: 600, textTransform: "uppercase", color: "text.secondary" }}>{row.label}</Typography>
               <Stack direction="row" sx={{ mt: 0.5, alignItems: "center", justifyContent: "space-between" }}>
                 <Typography component="span" sx={{ fontWeight: 500, color: "text.primary" }}>
-                  {loading ? "..." : entry?.name}
+                  {loading ? <LoadingSkeleton /> : entry?.name}
                 </Typography>
                 <Typography component="span" sx={{ fontWeight: 700, color: row.color }}>
-                  {loading ? "" : formatCurrency(entry?.value)}
+                  {loading ? <LoadingSkeleton width="3em" /> : formatCurrency(entry?.value)}
                 </Typography>
               </Stack>
             </Box>

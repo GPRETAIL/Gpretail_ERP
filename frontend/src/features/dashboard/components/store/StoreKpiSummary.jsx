@@ -1,4 +1,5 @@
 import React from "react";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 import { useNavigate } from "react-router-dom";
 import { Store as StoreIcon, Boxes, Users, BarChart3 } from "lucide-react";
 import { Box, ButtonBase, Stack, Typography } from "@mui/material";
@@ -31,7 +32,7 @@ export function StoresCard({ summary = {}, loading, privacyMode }) {
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
-        {loading ? "..." : wholeNumber(summary.total_stores)}
+        {loading ? <LoadingSkeleton /> : wholeNumber(summary.total_stores)}
       </Typography>
       <Typography sx={{ mt: 0.5, fontSize: 11, color: "text.secondary", ...blurSx(privacyMode) }}>
         Active: {wholeNumber(summary.active_stores)}
@@ -52,7 +53,7 @@ export function ConsolidatedSalesCard({ summary = {}, loading, privacyMode }) {
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "success.main", ...blurSx(privacyMode) }}>
-        {loading ? "..." : formatCurrency(summary.consolidated_sales_range)}
+        {loading ? <LoadingSkeleton /> : formatCurrency(summary.consolidated_sales_range)}
       </Typography>
       <Typography sx={{ mt: 0.5, fontSize: 11, color: "text.secondary" }}>Across all visible stores</Typography>
     </Box>
@@ -71,7 +72,7 @@ export function ConsolidatedStockValueCard({ summary = {}, loading, privacyMode 
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
-        {loading ? "..." : formatCurrency(summary.consolidated_stock_value)}
+        {loading ? <LoadingSkeleton /> : formatCurrency(summary.consolidated_stock_value)}
       </Typography>
       <Typography sx={{ mt: 0.5, fontSize: 11, color: "text.secondary" }}>At retail price</Typography>
     </Box>
@@ -89,7 +90,7 @@ export function ActiveStaffCard({ summary = {}, loading, privacyMode }) {
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
-        {loading ? "..." : wholeNumber(summary.total_active_staff)}
+        {loading ? <LoadingSkeleton /> : wholeNumber(summary.total_active_staff)}
       </Typography>
       <Typography sx={{ mt: 0.5, fontSize: 11, color: "text.secondary" }}>Across all stores</Typography>
     </ButtonBase>

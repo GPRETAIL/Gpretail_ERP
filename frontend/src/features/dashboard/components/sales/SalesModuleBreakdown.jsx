@@ -1,4 +1,5 @@
 import React from "react";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 import { useNavigate } from "react-router-dom";
 import { LayoutGrid, ShoppingCart, RotateCcw, Repeat, CreditCard, Undo2 } from "lucide-react";
 import { Box, ButtonBase, Stack, Typography } from "@mui/material";
@@ -59,7 +60,7 @@ export default function SalesModuleBreakdown({ transactionBreakdown = {}, loadin
             >
               <Icon style={{ width: 16, height: 16, color: "inherit" }} />
               <Typography sx={{ mt: 1, fontSize: 15.75, fontWeight: 800, color: "text.primary" }}>
-                {loading ? "..." : formatCurrency(stats.amount)}
+                {loading ? <LoadingSkeleton /> : formatCurrency(stats.amount)}
               </Typography>
               <Typography sx={{ fontSize: 12, fontWeight: 600, color: "inherit" }}>{tile.label}</Typography>
               <Typography sx={{ fontSize: 11, color: "text.secondary" }}>{stats.count} txns</Typography>

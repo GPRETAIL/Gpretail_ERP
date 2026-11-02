@@ -1,4 +1,5 @@
 import React from "react";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 import { useNavigate } from "react-router-dom";
 import { Package, TrendingUp, ArrowDownRight, ArrowUpRight } from "lucide-react";
 import { Box, Stack, Typography } from "@mui/material";
@@ -28,7 +29,7 @@ export function TotalStockUnitsCard({ summary = {}, loading, privacyMode }) {
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
-        {loading ? "..." : Number(summary.total_stock_qty || 0).toLocaleString()}
+        {loading ? <LoadingSkeleton /> : Number(summary.total_stock_qty || 0).toLocaleString()}
       </Typography>
       <Stack direction="row" sx={{ mt: 0.5, alignItems: "center", justifyContent: "space-between", fontSize: 12, color: "text.secondary", ...blurSx(privacyMode) }}>
         <Typography sx={{ fontSize: 12, color: "text.secondary" }}>Avail: {Number(summary.total_available_qty || 0).toLocaleString()}</Typography>
@@ -51,7 +52,7 @@ export function TotalStockValueCard({ summary = {}, loading, privacyMode }) {
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "success.main", ...blurSx(privacyMode) }}>
-        {loading ? "..." : formatCurrency(summary.total_cost_value)}
+        {loading ? <LoadingSkeleton /> : formatCurrency(summary.total_cost_value)}
       </Typography>
       <Stack direction="row" sx={{ mt: 0.5, alignItems: "center", justifyContent: "space-between", fontSize: 12, color: "text.secondary", ...blurSx(privacyMode) }}>
         <Typography sx={{ fontSize: 12, color: "text.secondary" }}>Cost: {formatCurrency(summary.total_cost_value)}</Typography>
@@ -74,7 +75,7 @@ export function IncomingGoodsCard({ summary = {}, loading, privacyMode }) {
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
-        {loading ? "..." : `${summary.total_incoming || 0} Shipments`}
+        {loading ? <LoadingSkeleton /> : `${summary.total_incoming || 0} Shipments`}
       </Typography>
       <Stack direction="row" sx={{ mt: 0.5, alignItems: "center", justifyContent: "space-between", fontSize: 12, color: "text.secondary", ...blurSx(privacyMode) }}>
         <Typography sx={{ fontSize: 12, color: "text.secondary" }}>Pending: {summary.pending_purchases || 0}</Typography>
@@ -99,7 +100,7 @@ export function StockOutwardCard({ summary = {}, loading, privacyMode }) {
         </Box>
       </Stack>
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
-        {loading ? "..." : `${summary.total_outward || 0} Outwards`}
+        {loading ? <LoadingSkeleton /> : `${summary.total_outward || 0} Outwards`}
       </Typography>
       <Stack direction="row" sx={{ mt: 0.5, alignItems: "center", justifyContent: "space-between", fontSize: 12, color: "text.secondary", ...blurSx(privacyMode) }}>
         <Typography sx={{ fontSize: 12, color: "text.secondary" }}>Today: {summary.outward_today || 0}</Typography>
