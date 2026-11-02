@@ -1,6 +1,6 @@
 # API reference
 
-Every endpoint under `/api`, grouped by module (514 endpoints). Generated from
+Every endpoint under `/api`, grouped by module (513 endpoints). Generated from
 `php artisan route:list --sort=definition --json`; regenerate it after changing routes.
 
 - Each signed-in endpoint is also served under `/api/v1/...` with the same behaviour.
@@ -401,12 +401,11 @@ Every endpoint under `/api`, grouped by module (514 endpoints). Generated from
 | GET | `/api/sales-on-approval/pending-count` | SalesApprovalController@pendingCount | yes |
 | POST | `/api/sales-on-approval/{id}/accept` | SalesApprovalController@accept | yes |
 | POST | `/api/sales-on-approval/{id}/reject` | SalesApprovalController@reject | yes |
+| POST | `/api/sales-on-approval/{id}/bill` | SalesApprovalController@bill | yes |
 | GET | `/api/sales-on-approval/grouped` | SalesApprovalController@groupedSummary | yes |
 | GET | `/api/sales-on-approval` | SalesApprovalController@index | yes |
 | POST | `/api/sales-on-approval` | SalesApprovalController@store | yes |
 | GET | `/api/sales-on-approval/{sales_on_approval}` | SalesApprovalController@show | yes |
-| PUT|PATCH | `/api/sales-on-approval/{sales_on_approval}` | SalesApprovalController@update | yes |
-| DELETE | `/api/sales-on-approval/{sales_on_approval}` | SalesApprovalController@destroy | yes |
 | GET | `/api/dealer-invoices/next-bill-no` | DealerInvoiceController@nextBillNo | yes |
 | GET | `/api/dealer-invoice-returns/next-return-no` | DealerInvoiceController@nextReturnNo | yes |
 | GET | `/api/dealer-invoice-returns/grouped` | DealerInvoiceController@returnsGroupedSummary | yes |

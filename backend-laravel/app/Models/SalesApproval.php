@@ -60,4 +60,14 @@ class SalesApproval extends Model
     {
         return $this->belongsTo(User::class, 'created_by');
     }
+
+    /**
+     * The bill the sales user created from this request once it was approved.
+     *
+     * @return BelongsTo<PosSale, $this>
+     */
+    public function posSale(): BelongsTo
+    {
+        return $this->belongsTo(PosSale::class);
+    }
 }

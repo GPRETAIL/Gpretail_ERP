@@ -2,9 +2,11 @@ import { masterSearchAreaSx } from "@/shared/theme/erpUi";
 import SearchGridPanel from "@/shared/components/SearchGridPanel";
 import useSearchGrid, { createSearchGridAdapter } from "@/shared/hooks/useSearchGrid";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Pencil, PlusCircle, Save, Search, Trash2, UserRound, X } from "lucide-react";
+import { Check, Pencil, PlusCircle, Receipt, Save, Search, Trash2, UserRound, X } from "lucide-react";
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+import ConfirmDialog from "@/shared/components/ConfirmDialog";
 import api from "@/shared/api/apiClient";
 import FilterableDataTable from "@/shared/components/FilterableDataTable";
 import Breadcrumbs from "@/shared/components/Breadcrumbs";
@@ -43,6 +45,16 @@ const mapCustomerRow = (row, areaMap) => ({
 });
 
 const normalize = (value) => String(value || "").trim().toLowerCase();
+
+// Supervisors, managers and admins decide requests (the server enforces it too).
+const APPROVER_ROLES = ["supervisor", "manager", "admin", "super_admin"];
+const STATUS_LOOK = {
+  PENDING: { label: "Waiting for approval", color: "warning.main" },
+  APPROVED: { label: "Approved", color: "success.main" },
+  BILLING: { label: "Billing...", color: "text.secondary" },
+  BILLED: { label: "Billed", color: "primary.main" },
+  REJECTED: { label: "Rejected", color: "error.main" },
+};
 const toNum = (value, fallback = 0) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
@@ -185,6 +197,7 @@ const DialogSelectField = ({
 
 const SalesOnApproval = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const barcodeInputRef = useRef(null);
   const customerNumberInputRef = useRef(null);
   const quickCustomerFieldRefs = useRef({});
@@ -1113,6 +1126,37 @@ const SalesOnApproval = () => {
     await runApprovalSearch(nextFilters, 1, searchLimit);
   }, [latestApprovalNo, runApprovalSearch, searchLimit, setSearchPage]);
 
+  // A decided request is approved/rejected here by a supervisor, manager or admin; the sales user then
+  // creates the bill from an approved one (the bill moves the stock, not the approval).
+  const role = useSelector((state) => state.auth.user?.role);
+  const canDecide = APPROVER_ROLES.includes(role);
+  const [acting, setActing] = useState(null);
+  const [rejecting, setRejecting] = useState(null);
+  const actOnApproval = useCallback(async (row, action) => {
+    setActing(row.id);
+    try {
+      const res = await api.post(`/sales-on-approval/${row.id}/${action}`);
+      toast.success(res.data?.message || "Done");
+      await runApprovalSearch(null, searchPage, searchLimit);
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Could not update the request");
+    } finally {
+      setActing(null);
+    }
+  }, [runApprovalSearch, searchPage, searchLimit]);
+
+  // The "approved / rejected" notification links here with ?approval=<no>: open the list on that request.
+  const linkedApprovalNo = new URLSearchParams(location.search).get("approval");
+  const [openedLink, setOpenedLink] = useState(null);
+  if (linkedApprovalNo && openedLink !== linkedApprovalNo) {
+    setOpenedLink(linkedApprovalNo);
+    setShowSearchPage(true);
+    setSearchFilters({ search: "", approvalNo: linkedApprovalNo, customerName: "", product: "" });
+  }
+  useEffect(() => {
+    if (linkedApprovalNo) runApprovalSearch({ search: "", approvalNo: linkedApprovalNo, customerName: "", product: "" }, 1, searchLimit);
+  }, [linkedApprovalNo, runApprovalSearch, searchLimit]);
+
   const approvalSearchColumns = useMemo(
     () => [
       {
@@ -1136,6 +1180,15 @@ const SalesOnApproval = () => {
         key: "status",
         label: "Status",
         valueGetter: (row) => row.status || "-",
+        render: (value, row) => {
+          const look = STATUS_LOOK[String(value || "").toUpperCase()];
+          const label = look ? look.label : value || "-";
+          return (
+            <Typography sx={{ fontSize: "inherit", color: look?.color || "text.secondary", fontWeight: 600 }}>
+              {row.bill_no ? `${label} (${row.bill_no})` : label}
+            </Typography>
+          );
+        },
       },
       {
         key: "products",
@@ -1164,8 +1217,29 @@ const SalesOnApproval = () => {
         valueGetter: (row) => toNum(row.amount || 0),
         render: (value) => <Box sx={{ textAlign: "right" }}>{formatMoney(value || 0)}</Box>,
       },
+      {
+        key: "action",
+        label: "Action",
+        valueGetter: () => "",
+        render: (_, row) => {
+          const status = String(row.status || "").toUpperCase();
+          const busy = acting === row.id;
+          if (status === "PENDING" && canDecide) {
+            return (
+              <Stack direction="row" spacing={0.5}>
+                <Button type="button" size="small" className="glass-btn glass-btn-success" startIcon={<Check size={12} />} disabled={busy} onClick={() => void actOnApproval(row, "accept")}>Approve</Button>
+                <Button type="button" size="small" className="glass-btn glass-btn-danger" startIcon={<X size={12} />} disabled={busy} onClick={() => setRejecting(row)}>Reject</Button>
+              </Stack>
+            );
+          }
+          if (status === "APPROVED") {
+            return <Button type="button" size="small" className="glass-btn glass-btn-primary" startIcon={<Receipt size={12} />} disabled={busy} onClick={() => void actOnApproval(row, "bill")}>Create Bill</Button>;
+          }
+          return "-";
+        },
+      },
     ],
-    []
+    [acting, canDecide, actOnApproval]
   );
 
 
@@ -1620,6 +1694,9 @@ const SalesOnApproval = () => {
         paginationMode="server"
         enableVirtualization
       />
+      <ConfirmDialog open={Boolean(rejecting)} title={`Reject sales approval ${rejecting?.approval_no || ""}?`}
+        message="No bill can be made from a rejected request. The sales user is told it was rejected." confirmLabel="Reject"
+        onConfirm={() => { const row = rejecting; setRejecting(null); void actOnApproval(row, "reject"); }} onCancel={() => setRejecting(null)} />
     </SearchGridPanel>
   );
 

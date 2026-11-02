@@ -67,8 +67,9 @@ Route::get('sales-on-approval/next-approval-no', [SalesApprovalController::class
 Route::get('sales-on-approval/pending-count', [SalesApprovalController::class, 'pendingCount']);
 Route::post('sales-on-approval/{id}/accept', [SalesApprovalController::class, 'accept']);
 Route::post('sales-on-approval/{id}/reject', [SalesApprovalController::class, 'reject']);
+Route::post('sales-on-approval/{id}/bill', [SalesApprovalController::class, 'bill']);
 Route::get('sales-on-approval/grouped', [SalesApprovalController::class, 'groupedSummary']);
-Route::apiResource('sales-on-approval', SalesApprovalController::class);
+Route::apiResource('sales-on-approval', SalesApprovalController::class)->only(['index', 'store', 'show']);
 
 // Dealer Invoices
 Route::get('dealer-invoices/next-bill-no', [DealerInvoiceController::class, 'nextBillNo']);
