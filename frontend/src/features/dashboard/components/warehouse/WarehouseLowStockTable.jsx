@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { ShieldAlert } from "lucide-react";
 import { Box, Button, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
+import NoStockChip from "@/shared/components/NoStockChip";
+import { noStockRowSx } from "@/shared/hooks/useStockRules";
 
 export default function WarehouseLowStockTable({ alerts = [] }) {
   const navigate = useNavigate();
@@ -63,10 +65,12 @@ export default function WarehouseLowStockTable({ alerts = [] }) {
             {alerts.length > 0 ? (
               alerts.map((row) => {
                 const isOut = Number(row.current_stock || 0) <= 0;
+                // Below zero = sold without stock (Warehouse Customisation switch): receive or recount it first.
+                const soldShort = Number(row.total_stock ?? row.current_stock ?? 0) < 0;
                 return (
                   <TableRow
                     key={row.id}
-                    sx={{ borderBottom: "1px solid", borderColor: "divider", "&:hover": { bgcolor: "action.hover" }, "&:last-of-type": { borderBottom: 0 } }}
+                    sx={[{ borderBottom: "1px solid", borderColor: "divider", "&:hover": { bgcolor: "action.hover" }, "&:last-of-type": { borderBottom: 0 } }, soldShort && noStockRowSx]}
                   >
                     <TableCell sx={{ py: 1.25, fontWeight: 500, color: "text.primary" }}>{row.product_name}</TableCell>
                     <TableCell sx={{ py: 1.25, color: "text.secondary" }}>
@@ -74,14 +78,16 @@ export default function WarehouseLowStockTable({ alerts = [] }) {
                     </TableCell>
                     <TableCell sx={{ py: 1.25, fontFamily: "monospace", color: "text.secondary" }}>{row.barcode}</TableCell>
                     <TableCell sx={{ py: 1.25, color: "text.secondary" }}>{row.store_name}</TableCell>
-                    <TableCell align="right" sx={{ py: 1.25, fontFamily: "monospace", fontWeight: 700, color: "text.primary" }}>
+                    <TableCell align="right" sx={{ py: 1.25, fontFamily: "monospace", fontWeight: 700, color: soldShort ? "error.main" : "text.primary" }}>
                       {Number(row.current_stock || 0).toLocaleString()}
                     </TableCell>
                     <TableCell align="right" sx={{ py: 1.25, fontFamily: "monospace", color: "text.secondary" }}>
                       {row.reorder_level || 10}
                     </TableCell>
                     <TableCell align="center" sx={{ py: 1.25 }}>
-                      {isOut ? (
+                      {soldShort ? (
+                        <NoStockChip shortQty={Math.abs(Number(row.total_stock ?? row.current_stock))} />
+                      ) : isOut ? (
                         <Box
                           component="span"
                           sx={{

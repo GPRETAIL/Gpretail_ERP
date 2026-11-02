@@ -167,6 +167,8 @@ export const DEFAULT_WAREHOUSE_BARCODE_CUSTOMIZATION = {
   codeType: "barcode",
   codePosition: "left",
   printMode: "direct",
+  // Sales may take an item below zero stock (POS, POS Old, Dealer); off by default.
+  allowSaleWithoutStock: false,
   labelFormat: "standard",
   note: "",
   labelWidthMm: DEFAULT_LABEL_WIDTH_MM,
@@ -386,6 +388,7 @@ export const normalizeWarehouseBarcodeCustomization = (value = {}) => {
       DEFAULT_WAREHOUSE_BARCODE_CUSTOMIZATION.codePosition
     ),
     printMode: String(value.printMode || "").trim().toLowerCase() === "browser" ? "browser" : "direct",
+    allowSaleWithoutStock: value.allowSaleWithoutStock === true || value.allowSaleWithoutStock === "true",
     labelFormat: normalizeWarehouseLabelFormat(value.labelFormat),
     note: String(value.note || "").trim(),
     labelWidthMm: normalizeDimension(

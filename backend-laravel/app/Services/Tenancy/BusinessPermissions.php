@@ -53,6 +53,10 @@ class BusinessPermissions
         if ($this->isLookupRead($request)) {
             return 'read';
         }
+        // Warehouse Customisation (label layout, print mode, sell-without-stock) is a store setting.
+        if (! $read && $controller === 'WarehouseReportController' && $action === 'warehouseCustomization') {
+            return 'settings.manage';
+        }
         if (in_array($controller, self::ADMINISTRATION, true)) {
             if ($read && $controller === 'SettingsController' && in_array($action, ['salesCustomization', 'getTheme', 'listThemePresets', 'printerConfigsResolve', 'localPrinterMeta'], true)) {
                 return 'read';
@@ -102,8 +106,8 @@ class BusinessPermissions
             }
 
             // POS returns are a counter action (cashier preset allows them); refunds over the
-            // user's limit are additionally gated by ApprovalService.
-            return in_array($controller, ['PosSaleController', 'PosOfflineController', 'PosReturnController', 'CustomerOrderController', 'CashRegisterController'], true) ? 'sales.post' : 'purchases.post';
+            // user's limit are additionally gated by ApprovalService. A dealer invoice is a sale too.
+            return in_array($controller, ['PosSaleController', 'PosOfflineController', 'PosReturnController', 'CustomerOrderController', 'CashRegisterController', 'DealerInvoiceController'], true) ? 'sales.post' : 'purchases.post';
         }
 
         return 'unassigned';

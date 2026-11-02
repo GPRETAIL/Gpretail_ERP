@@ -27,6 +27,7 @@ Route::get('pos-sales/salesman-lookup', [PosSaleController::class, 'salesmanLook
 Route::get('pos-sales/summary-report', [PosSaleController::class, 'summaryReport']);
 Route::get('pos-sales/stock-products', [PosSaleController::class, 'stockProducts']);
 Route::get('pos-sales/barcode-lookup', [PosSaleController::class, 'barcodes']);
+Route::get('pos-sales/stock-rules', [PosSaleController::class, 'stockRules']);
 Route::get('pos-sales/grouped', [PosSaleController::class, 'groupedSummary']);
 Route::get('touch-sales/next-bill-no', [PosSaleController::class, 'touchSalesNextBillNo']);
 Route::get('touch-sales', [PosSaleController::class, 'touchSales']);

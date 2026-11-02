@@ -12,7 +12,9 @@ use App\Models\DealerInvoiceReturn;
 use App\Models\DealerInvoiceReturnItem;
 use App\Models\Product;
 use App\Models\Tax;
+use App\Services\Approvals\ApprovalService;
 use App\Services\Documents\DocumentNumberService;
+use App\Services\Inventory\StockRules;
 use App\Services\Inventory\StockService;
 use App\Support\GroupAggregationService;
 use App\Support\PaginationService;
@@ -162,6 +164,11 @@ class DealerInvoiceController extends Controller
             return response()->json(['success' => false, 'message' => collect($e->errors())->flatten()->first(), 'errors' => $e->errors()], 422);
         }
         $totals = $this->totals($request, $lines);
+        if (! $isReturn) {
+            // A discount beyond the user's limit needs a supervisor/manager approval, as on POS (HTTP 428, then retried
+            // with the approval token). Dealer prices are wholesale, so only discounts typed on the bill count.
+            app(ApprovalService::class)->authorizeDiscount($request->user(), $storeId, $this->discountBasket($lines, $totals), $request->input('approvalToken'));
+        }
 
         try {
             $document = DB::transaction(function () use ($request, $storeId, $isReturn, $lines, $customerId, $source, $totals) {
@@ -183,21 +190,22 @@ class DealerInvoiceController extends Controller
                         'so_no' => $request->input('soNo') ?? $request->input('so_no'),
                     ]);
 
+                $sellWithoutStock = ! $isReturn && StockRules::allowsSaleWithoutStock($storeId);
                 foreach ($lines as $line) {
+                    // Sale out, return in. Returned goods go back at the product's cost, like a POS return.
+                    $stock = $this->stockService->adjust(
+                        storeId: $storeId, productId: $line['product_id'], variantId: $line['variant_id'],
+                        delta: $isReturn ? $line['qty'] : -$line['qty'],
+                        referenceType: $isReturn ? 'DEALER_RETURN' : 'DEALER_INVOICE', referenceId: $document->id,
+                        costPrice: $line['cost'], userId: $request->user()?->id, allowNegative: $sellWithoutStock,
+                    );
+
                     $row = ['product_id' => $line['product_id'], 'variant_id' => $line['variant_id'], 'barcode_id' => $line['barcode_id'],
                         'quantity' => $line['qty'], 'price' => $line['price'], 'discount' => $line['discount'],
                         'tax_amount' => $line['tax_amount'], 'total' => $line['total']];
                     $isReturn
                         ? DealerInvoiceReturnItem::create($row + ['dealer_invoice_return_id' => $document->id])
-                        : DealerInvoiceItem::create($row + ['dealer_invoice_id' => $document->id]);
-
-                    // Sale out, return in. Returned goods go back at the product's cost, like a POS return.
-                    $this->stockService->adjust(
-                        storeId: $storeId, productId: $line['product_id'], variantId: $line['variant_id'],
-                        delta: $isReturn ? $line['qty'] : -$line['qty'],
-                        referenceType: $isReturn ? 'DEALER_RETURN' : 'DEALER_INVOICE', referenceId: $document->id,
-                        costPrice: $line['cost'], userId: $request->user()?->id,
-                    );
+                        : DealerInvoiceItem::create($row + ['dealer_invoice_id' => $document->id, 'short_qty' => $sellWithoutStock ? StockRules::shortQty($line['qty'], (float) $stock->quantity) : 0]);
                 }
 
                 return $document;
@@ -313,6 +321,24 @@ class DealerInvoiceController extends Controller
             'charges' => round($charges, 2),
             'total' => max(0, round($lineTotal + $extraTax - $taxDiscount - $addlDiscount + $charges, 2)),
         ];
+    }
+
+    /** The bill's discounts as a percentage, in ApprovalService's basket shape: the deepest line, or the whole bill. */
+    private function discountBasket(array $lines, array $totals): array
+    {
+        $percent = fn (float $discount, float $value) => $value > 0 ? round($discount / $value * 100, 2) : 0.0;
+        $max = $percent($totals['discount'], $totals['subtotal']);
+        $basketLines = [];
+        foreach ($lines as $index => $line) {
+            $linePercent = $percent($line['discount'], $line['subtotal']);
+            $max = max($max, $linePercent);
+            if ($linePercent > 0) {
+                $basketLines[] = ['index' => $index, 'product' => Product::query()->whereKey($line['product_id'])->value('name'), 'reference_price' => $line['price'],
+                    'unit_price' => round(($line['subtotal'] - $line['discount']) / max(0.0001, $line['qty']), 2), 'qty' => $line['qty'], 'discount_percent' => $linePercent];
+            }
+        }
+
+        return ['max_percent' => $max, 'lines' => $basketLines];
     }
 
     private function customerId(Request $request): int

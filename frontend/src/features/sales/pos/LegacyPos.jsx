@@ -1,4 +1,8 @@
 import { browserPrintHtml } from "./utils/posSalesUtils";
+import useStockRules, { noStockRowSx, shortQtyByStock } from "@/shared/hooks/useStockRules";
+import NoStockChip from "@/shared/components/NoStockChip";
+import ApprovalDialog from "@/features/sales/approvals/components/ApprovalDialog";
+import { approvalRequirementFrom, isApprovalRequired } from "@/features/sales/approvals/utils/approvals";
 import {
   POS_OLD_SALE_IMPORT_CONFIG,
   mapCustomerRow,
@@ -96,6 +100,10 @@ const LegacyPos = () => {
   // master data
   const [loading, setLoading] = useState(true);
   const [stockRows, setStockRows] = useState([]);
+  // Warehouse Customisation's "sell without stock": when on, a line may exceed the stock on hand.
+  const { allowSaleWithoutStock } = useStockRules();
+  // A discount over the user's limit: ask for approval (PIN or inbox), then retry the save with its token.
+  const [approvalRequirement, setApprovalRequirement] = useState(null);
   const [productList, setProductList] = useState([]); // { id, barcode, productName, price, mrp, qty, brandName, brandId }
   const [brands, setBrands] = useState([]); // [{ id, name }]
   const [customers, setCustomers] = useState([]);
@@ -312,6 +320,12 @@ const LegacyPos = () => {
       .forEach((l) => map.set(l.stockId, (map.get(l.stockId) || 0) + toNum(l.qty, 0)));
     return map;
   }, [cart]);
+
+  // Lines selling more than is in stock (possible only with "sell without stock" on); highlighted in the cart.
+  const shortByStock = useMemo(
+    () => shortQtyByStock(cart.filter((line) => !isExchangeReturnLine(line)), (stockId) => stockRows.find((row) => row.id === stockId)?.qty),
+    [cart, stockRows]
+  );
 
   const cartWithTotals = useMemo(
     () =>
@@ -567,7 +581,7 @@ const LegacyPos = () => {
       if (!source) return;
       const used = usedQtyByBarcode.get(source.id) || 0;
       const remaining = source.qty - used;
-      if (remaining <= 0) {
+      if (remaining <= 0 && !allowSaleWithoutStock) {
         toast.error("No stock available");
         return;
       }
@@ -576,7 +590,7 @@ const LegacyPos = () => {
         if (idx !== -1) {
           const next = [...prev];
           const newQty = toNum(next[idx].qty, 0) + 1;
-          if (newQty > source.qty) {
+          if (newQty > source.qty && !allowSaleWithoutStock) {
             toast.error("Quantity exceeds stock");
             return prev;
           }
@@ -601,7 +615,7 @@ const LegacyPos = () => {
         ];
       });
     },
-    [usedQtyByBarcode, setCart]
+    [usedQtyByBarcode, setCart, allowSaleWithoutStock]
   );
 
   const stopScanner = useCallback(() => {
@@ -644,7 +658,7 @@ const LegacyPos = () => {
         .then((res) => {
           const found = res.data?.data;
           if (!found?.id) throw new Error("Barcode not found");
-          addToCart({
+          const row = {
             id: String(found.id),
             variantId: found.variantId ?? null,
             barcode: found.barcode || code,
@@ -653,7 +667,10 @@ const LegacyPos = () => {
             price: firstPrice(found.final_price, found.selling_price, found.mrp),
             mrp: toNum(found.mrp, 0),
             tax: toNum(found.tax_rate, 0),
-          });
+          };
+          // Keep it in the stock list so quantity checks and the "No stock" mark see its stock too.
+          setStockRows((prev) => (prev.some((r) => r.id === row.id) ? prev : [...prev, row]));
+          addToCart(row);
           setBarcodeInput("");
           setShowScanner(false);
         })
@@ -862,7 +879,7 @@ const LegacyPos = () => {
             return sum + Math.max(0, toNum(row.qty, 0));
           }, 0);
           const maxAllowed = Math.max(0, toNum(source.qty, 0) - usedByOtherLines);
-          if (nextVal > maxAllowed) {
+          if (nextVal > maxAllowed && !allowSaleWithoutStock) {
             validationMessage = `Quantity exceed maximum quantity for this product is ${formatQty(maxAllowed)}`;
             nextVal = maxAllowed;
           }
@@ -1131,7 +1148,7 @@ const LegacyPos = () => {
     return null;
   }, [activeTab.customerMode, customers, updateActiveTab, handleAsyncCustomerSearch]);
 
-  const handleSave = async () => {
+  const handleSave = async ({ approvalToken } = {}) => {
     if (!authUser?.counter_id) {
       setCounterAssignmentOpen(true);
       toast.error("Please assign a counter before checkout");
@@ -1161,7 +1178,7 @@ const LegacyPos = () => {
       if (!source) continue;
       const maxAllowed = Math.max(0, toNum(source.qty, 0));
       const used = usedByStock.get(line.stockId) || 0;
-      if (used > maxAllowed) {
+      if (used > maxAllowed && !allowSaleWithoutStock) {
         toast.error(`Quantity exceed maximum quantity for this product is ${formatQty(maxAllowed)}`);
         return;
       }
@@ -1202,7 +1219,7 @@ const LegacyPos = () => {
 
     setSaving(true);
     try {
-      const res = await api.post("/pos-old-sales", payload);
+      const res = await api.post("/pos-old-sales", typeof approvalToken === "string" ? { ...payload, approvalToken } : payload);
       const saved = res.data?.data;
       const savedBillNo = saved?.bill_no || saved?.bill?.bill_no || billNo;
       toast.success(`Sale saved (Bill #${getPosBillBarcodeValue(savedBillNo)})`);
@@ -1242,6 +1259,10 @@ const LegacyPos = () => {
       updateActiveTab({ cart: [], paidCash: "", returnSaleId: null, returnBillNo: null, returnSaleType: null, returnAmount: 0, isExchange: false });
       await Promise.all([loadMasterData(), loadNextBillNo()]);
     } catch (err) {
+      if (isApprovalRequired(err)) {
+        setApprovalRequirement(approvalRequirementFrom(err));
+        return;
+      }
       toast.error(err?.response?.data?.message || "Failed to save");
     } finally {
       setSaving(false);
@@ -2351,10 +2372,10 @@ const LegacyPos = () => {
                     <TableRow
                       key={line.lineId}
                       hover
-                      sx={isExchangeReturnLine(line) ? { bgcolor: (theme) => alpha(theme.palette.error.main, theme.palette.mode === "dark" ? 0.12 : 0.06) } : undefined}
+                      sx={isExchangeReturnLine(line) ? { bgcolor: (theme) => alpha(theme.palette.error.main, theme.palette.mode === "dark" ? 0.12 : 0.06) } : shortByStock.has(line.stockId) ? noStockRowSx : undefined}
                     >
                       <TableCell sx={{ fontSize: 10.5, fontFamily: "monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{idx + 1}</TableCell>
-                      <TableCell sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: isExchangeReturnLine(line) ? "error.main" : undefined }} title={line.productName}>{line.productName}</TableCell>
+                      <TableCell sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: isExchangeReturnLine(line) ? "error.main" : undefined }} title={line.productName}>{line.productName}{!isExchangeReturnLine(line) && <NoStockChip shortQty={shortByStock.get(line.stockId)} sx={{ ml: 0.5 }} />}</TableCell>
                       <TableCell sx={{ textAlign: "right", color: isExchangeReturnLine(line) ? "error.main" : undefined }}>{formatMoney(line.mrp)}</TableCell>
                       <TableCell>
                         <Box
@@ -3320,6 +3341,17 @@ const LegacyPos = () => {
         <Box sx={{ position: "fixed", bottom: 16, left: 16, bgcolor: "background.paper", border: 1, borderColor: "divider", borderRadius: "3.5px", boxShadow: 1, px: 1.5, py: 0.75, fontSize: 10.5, color: "text.secondary" }}>
           Loading master data...
         </Box>
+      )}
+      {approvalRequirement && (
+        <ApprovalDialog
+          requirement={approvalRequirement}
+          onClose={() => setApprovalRequirement(null)}
+          onApproved={(token) => {
+            setApprovalRequirement(null);
+            toast.success("Approved. Saving the sale…");
+            void handleSave({ approvalToken: token });
+          }}
+        />
       )}
       <CounterAssignmentDialog
         open={counterAssignmentOpen}

@@ -1,6 +1,6 @@
 # API reference
 
-Every endpoint under `/api`, grouped by module (513 endpoints). Generated from
+Every endpoint under `/api`, grouped by module (514 endpoints). Generated from
 `php artisan route:list --sort=definition --json`; regenerate it after changing routes.
 
 - Each signed-in endpoint is also served under `/api/v1/...` with the same behaviour.
@@ -366,6 +366,7 @@ Every endpoint under `/api`, grouped by module (513 endpoints). Generated from
 | GET | `/api/pos-sales/summary-report` | PosSaleController@summaryReport | yes |
 | GET | `/api/pos-sales/stock-products` | PosSaleController@stockProducts | yes |
 | GET | `/api/pos-sales/barcode-lookup` | PosSaleController@barcodes | yes |
+| GET | `/api/pos-sales/stock-rules` | PosSaleController@stockRules | yes |
 | GET | `/api/pos-sales/grouped` | PosSaleController@groupedSummary | yes |
 | GET | `/api/touch-sales/next-bill-no` | PosSaleController@touchSalesNextBillNo | yes |
 | GET | `/api/touch-sales` | PosSaleController@touchSales | yes |

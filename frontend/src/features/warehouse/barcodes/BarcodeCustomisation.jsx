@@ -781,6 +781,16 @@ export default function BarcodeCustomisation() {
           </Box>
 
           <Box sx={settingsCardSx}>
+            <Typography component="label" sx={settingsFieldLabelSx}>Selling Without Stock</Typography>
+            <ToggleCard
+              label="Allow sales when the item is out of stock"
+              hint="On: POS, POS Old and Dealer Invoice can bill more than the stock on hand. The stock goes below zero, the bill line is marked No stock, and the next purchase or inventory entry settles it. Off: an item cannot be sold beyond its stock."
+              checked={Boolean(settings.allowSaleWithoutStock)}
+              onChange={(checked) => updateSetting({ allowSaleWithoutStock: checked })}
+            />
+          </Box>
+
+          <Box sx={settingsCardSx}>
             <Typography component="label" sx={settingsFieldLabelSx}>Barcode and QR Code Format</Typography>
             <Typography sx={{ mb: 1.5, maxWidth: 640, fontSize: 12.25, lineHeight: 1.6, color: "text.secondary" }}>
               Choose the overall look of the printed receipt -- border and divider style, spacing, and how the header and total are emphasised. Applies to the preview on the right and every Barcode print.

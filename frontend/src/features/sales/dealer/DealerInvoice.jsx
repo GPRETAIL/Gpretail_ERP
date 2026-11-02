@@ -10,6 +10,10 @@ import { useNavigate } from "react-router-dom";
 import api from "@/shared/api/apiClient";
 import FilterableDataTable from "@/shared/components/FilterableDataTable";
 import ConfirmDialog from "@/shared/components/ConfirmDialog";
+import useStockRules, { noStockRowSx, shortQtyByStock } from "@/shared/hooks/useStockRules";
+import NoStockChip from "@/shared/components/NoStockChip";
+import ApprovalDialog from "@/features/sales/approvals/components/ApprovalDialog";
+import { approvalRequirementFrom, isApprovalRequired } from "@/features/sales/approvals/utils/approvals";
 import { createGroupFetchers } from "@/shared/utils/serverGrouping";
 import SearchableSelect from "@/shared/components/SearchableSelect";
 import AsyncSearchSelect from "@/shared/components/AsyncSearchSelect";
@@ -198,6 +202,10 @@ const DealerInvoice = () => {
   const [taxChargeTypeDialog, setTaxChargeTypeDialog] = useState({ open: false, lineId: null, value: "" });
 
   const [stockRows, setStockRows] = useState([]);
+  // Warehouse Customisation's "sell without stock": when on, a line may exceed the stock on hand.
+  const { allowSaleWithoutStock } = useStockRules();
+  // A discount over the user's limit: ask for approval (PIN or inbox), then retry the save with its token.
+  const [approvalRequirement, setApprovalRequirement] = useState(null);
   const [productOptions, setProductOptions] = useState([]);
   const [addBarcode, setAddBarcode] = useState("");
   const [addProductKey, setAddProductKey] = useState("");
@@ -283,16 +291,16 @@ const DealerInvoice = () => {
             price: firstPrice(row.final_price, row.selling_price, row.mrp),
             tax,
           };
-        })
-        .filter((row) => row.qty > 0);
+        });
 
+      // Zero-stock labels stay scannable; the "sell without stock" switch decides when they are added.
       setStockRows(stock);
 
       const groupedProducts = new Map();
       const countedStock = new Set();
       stock.forEach((row) => {
         const key = normalize(row.productName);
-        if (!key) return;
+        if (!key || row.qty <= 0) return;
         const current = groupedProducts.get(key) || {
           value: key,
           label: row.productName,
@@ -383,6 +391,12 @@ const DealerInvoice = () => {
 
     return "Add by barcode or by selecting a product in stock";
   }, [addBarcode, addProductKey, stockRows, usedQtyByBarcode]);
+
+  // Lines selling more than is in stock (possible only with "sell without stock" on); highlighted in the cart.
+  const shortByStock = useMemo(
+    () => shortQtyByStock(cart, (stockId) => stockRows.find((row) => row.id === stockId)?.qty),
+    [cart, stockRows]
+  );
 
   const cartWithTotals = useMemo(
     () =>
@@ -514,7 +528,7 @@ const DealerInvoice = () => {
       }
       const used = usedQtyByBarcode.get(source.id) || 0;
       const remaining = source.qty - used;
-      if (quantity > remaining) {
+      if (quantity > remaining && !allowSaleWithoutStock) {
         toast.error(`Quantity exceeds stock. Available: ${Math.max(remaining, 0)} pcs`);
         return;
       }
@@ -528,7 +542,9 @@ const DealerInvoice = () => {
         .filter((row) => row.remaining > 0)
         .sort((a, b) => b.remaining - a.remaining);
 
-      source = candidates.find((c) => c.remaining >= quantity)?.row || null;
+      source = candidates.find((c) => c.remaining >= quantity)?.row
+        || (allowSaleWithoutStock ? candidates[0]?.row || stockRows.find((row) => normalize(row.productName) === productQuery) : null)
+        || null;
       if (!source) {
         toast.error("Selected quantity is higher than available stock for this product");
         return;
@@ -651,7 +667,7 @@ const DealerInvoice = () => {
     setItemFilters(createDefaultItemFilters());
   };
 
-  const handleSave = async () => {
+  const handleSave = async ({ approvalToken } = {}) => {
     if (!customerId) {
       toast.error("Please select customer");
       return;
@@ -691,12 +707,16 @@ const DealerInvoice = () => {
 
     setSaving(true);
     try {
-      const res = await api.post("/dealer-invoices", payload);
+      const res = await api.post("/dealer-invoices", typeof approvalToken === "string" ? { ...payload, approvalToken } : payload);
       const savedBillNo = res.data?.data?.bill_no;
       toast.success(`Dealer invoice saved successfully (Bill #${savedBillNo})`);
       handleResetEntry();
       await Promise.all([loadMasterData(), loadNextBillNo()]);
     } catch (err) {
+      if (isApprovalRequired(err)) {
+        setApprovalRequirement(approvalRequirementFrom(err));
+        return;
+      }
       toast.error(err?.response?.data?.message || "Failed to save dealer invoice");
     } finally {
       setSaving(false);
@@ -1283,9 +1303,9 @@ const DealerInvoice = () => {
                   </TableRow>
                 ) : (
                   filteredCartWithTotals.map((line) => (
-                    <TableRow key={line.lineId} sx={{ "&:hover": { bgcolor: "action.hover" } }}>
+                    <TableRow key={line.lineId} sx={[{ "&:hover": { bgcolor: "action.hover" } }, shortByStock.has(line.stockId) && noStockRowSx]}>
                       <TableCell sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", border: 1, borderColor: "divider", px: 0.75, py: 0.75, fontFamily: "monospace", fontSize: 10.5 }}>{line.barcode || "-"}</TableCell>
-                      <TableCell sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", border: 1, borderColor: "divider", px: 0.75, py: 0.75, fontSize: 10.5 }}>{line.productName}</TableCell>
+                      <TableCell sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", border: 1, borderColor: "divider", px: 0.75, py: 0.75, fontSize: 10.5 }}>{line.productName}<NoStockChip shortQty={shortByStock.get(line.stockId)} sx={{ ml: 0.5 }} /></TableCell>
                       <TableCell sx={{ border: 1, borderColor: "divider", px: 0.75, py: 0.75, textAlign: "right", fontSize: 10.5 }}>{line.tax.toFixed(2)}</TableCell>
                       <TableCell sx={{ border: 1, borderColor: "divider", px: 0.75, py: 0.75, textAlign: "right", fontSize: 10.5 }}>{formatMoney(line.mrp || 0)}</TableCell>
                       <TableCell sx={{ border: 1, borderColor: "divider", px: 0.75, py: 0.75, textAlign: "right", fontSize: 10.5 }}>{formatMoney(line.cost)}</TableCell>
@@ -1455,6 +1475,17 @@ const DealerInvoice = () => {
         {loading && <Typography sx={{ fontSize: 10.5, color: "text.secondary", px: 0.5 }}>Loading master data...</Typography>}
       </Box>
 
+      {approvalRequirement && (
+        <ApprovalDialog
+          requirement={approvalRequirement}
+          onClose={() => setApprovalRequirement(null)}
+          onApproved={(token) => {
+            setApprovalRequirement(null);
+            toast.success("Approved. Saving the dealer invoice…");
+            void handleSave({ approvalToken: token });
+          }}
+        />
+      )}
       <TaxChargeTypeDialog
         open={taxChargeTypeDialog.open}
         value={taxChargeTypeDialog.value}

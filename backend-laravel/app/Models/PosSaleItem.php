@@ -11,6 +11,7 @@ class PosSaleItem extends Model
     use HasFactory;
 
     protected $fillable = [
+        'short_qty',
         'pos_sale_id',
         'product_id',
         'variant_id',
@@ -33,6 +34,7 @@ class PosSaleItem extends Model
     {
         return [
             'quantity' => 'decimal:3',
+            'short_qty' => 'decimal:3',
             'unit_mrp' => 'decimal:2',
             'selling_price' => 'decimal:2',
             'discount' => 'decimal:2',

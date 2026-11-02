@@ -26,7 +26,9 @@ class StockService
      * store+product(+variant) stock row, inside its own locked transaction,
      * and record one StockTransaction audit row for it. Throws
      * InsufficientStockException instead of allowing quantity to go
-     * negative - callers should catch it and return a 422.
+     * negative - callers should catch it and return a 422. A sale in a store
+     * that sells without stock passes $allowNegative: the quantity may then go
+     * below zero, and the next receipt settles that shortfall first.
      */
     public function adjust(
         int $storeId,
@@ -37,11 +39,12 @@ class StockService
         ?int $referenceId,
         float $costPrice = 0,
         ?int $userId = null,
+        bool $allowNegative = false,
     ): Stock {
-        return DB::transaction(function () use ($storeId, $productId, $variantId, $delta, $referenceType, $referenceId, $costPrice, $userId) {
+        return DB::transaction(function () use ($storeId, $productId, $variantId, $delta, $referenceType, $referenceId, $costPrice, $userId, $allowNegative) {
             $stock = $this->lockOrCreateStock($storeId, $productId, $variantId);
 
-            return $this->applyDelta($stock, $delta, $referenceType, $referenceId, $costPrice, $userId);
+            return $this->applyDelta($stock, $delta, $referenceType, $referenceId, $costPrice, $userId, $allowNegative);
         });
     }
 
@@ -110,14 +113,18 @@ class StockService
         ?int $referenceId,
         float $costPrice,
         ?int $userId,
+        bool $allowNegative = false,
     ): Stock {
         $before = (float) $stock->quantity;
         $after = $before + $delta;
 
-        if ($after < -0.0005) {
-            throw new InsufficientStockException((int) $stock->product_id, $before, -$delta);
+        // Only a stock-out can be refused; a receipt onto negative stock is settling an earlier sale.
+        if ($delta < 0 && $after < -0.0005 && ! $allowNegative) {
+            throw new InsufficientStockException((int) $stock->product_id, max(0, $before), -$delta);
         }
-        $after = max(0, $after);
+        if ($delta < 0 && ! $allowNegative) {
+            $after = max(0, $after);
+        }
 
         $stock->quantity = $after;
         $stock->available_quantity = $after - (float) $stock->allocated_quantity;
@@ -139,7 +146,7 @@ class StockService
 
         if ($stock->variant_id && abs($delta) > 0.0005) {
             if ($delta > 0) {
-                $this->receiveBatch((int) $stock->variant_id, (int) $stock->store_id, $delta, $referenceType, $referenceId, $costPrice);
+                $this->receiveBatch((int) $stock->variant_id, (int) $stock->store_id, $delta, $referenceType, $referenceId, $costPrice, $before);
             } else {
                 $this->depleteBatches((int) $stock->variant_id, (int) $stock->store_id, abs($delta), $transaction->id, $referenceType, $referenceId);
             }
@@ -164,6 +171,7 @@ class StockService
         string $referenceType,
         ?int $referenceId,
         float $costPrice,
+        float $before = 0,
     ): void {
         $priorOutTransactionIds = StockTransaction::where('reference_type', $referenceType)
             ->where('reference_id', $referenceId)
@@ -184,13 +192,18 @@ class StockService
             }
         }
 
+        // Goods already sold without stock are settled first; only what is left goes on the shelf as a batch.
+        $onShelf = $delta - min($delta, max(0, -$before));
+        if ($onShelf <= 0.0005) {
+            return;
+        }
         StockBatch::create([
             'variant_id' => $variantId,
             'store_id' => $storeId,
             'reference_type' => $referenceType,
             'reference_id' => $referenceId,
-            'received_qty' => $delta,
-            'remaining_qty' => $delta,
+            'received_qty' => $onShelf,
+            'remaining_qty' => $onShelf,
             'cost_price' => $costPrice,
             'received_at' => now(),
         ]);

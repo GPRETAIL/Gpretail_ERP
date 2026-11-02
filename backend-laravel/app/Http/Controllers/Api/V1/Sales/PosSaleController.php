@@ -24,6 +24,7 @@ use App\Support\GroupAggregationService;
 use App\Services\Tenancy\PagePermissions;
 use App\Support\PaginationService;
 use App\Services\Pos\PosCheckoutAttempt;
+use App\Services\Inventory\StockRules;
 use App\Services\Pos\PosCheckoutWriter;
 use App\Services\Pos\PosCounter;
 use App\Services\Pos\PosOfflineBilling;
@@ -353,6 +354,14 @@ class PosSaleController extends Controller
      * PosReturn - deferred as its own piece of work rather than silently
      * completing a sale that drops the return side.
      */
+    /** What the billing screens need to know about stock: Warehouse Customisation's "sell without stock" switch. */
+    public function stockRules(Request $request)
+    {
+        return response()->json(['success' => true, 'data' => [
+            'allowSaleWithoutStock' => StockRules::allowsSaleWithoutStock((int) $this->resolveStoreId($request, 1)),
+        ]]);
+    }
+
     public function storeLegacy(Request $request)
     {
         if ($request->boolean('isExchange')) {
@@ -570,7 +579,7 @@ class PosSaleController extends Controller
                 }
                 $sale->save();
 
-                $shortages = app(PosCheckoutWriter::class)->write($sale, $itemsData, $products, $barcodes, (bool) $offline);
+                $shortages = app(PosCheckoutWriter::class)->write($sale, $itemsData, $products, $barcodes, (bool) $offline, ! $offline && StockRules::allowsSaleWithoutStock((int) $storeId));
                 if ($offline) {
                     PosOfflineBilling::record((int) $storeId, $invoiceNo);
                     $issues = [...$offline['issues'], ...$shortages];

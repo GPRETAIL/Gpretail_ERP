@@ -7,6 +7,7 @@ use App\Models\PosSale;
 use App\Models\ProductVariant;
 use App\Models\Stock;
 use App\Models\StockBatch;
+use App\Services\Inventory\StockRules;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -20,9 +21,10 @@ class PosCheckoutWriter
 {
     /**
      * @param  bool  $acceptShortage  an offline bill already handed over the goods: record it even when stock is short
+     * @param  bool  $allowNegative  the store sells without stock: stock may go below zero (settled by the next receipt)
      * @return array<int, array<string, mixed>> the shortages accepted (empty unless $acceptShortage)
      */
-    public function write(PosSale $sale, array $items, Collection $products, Collection $barcodes, bool $acceptShortage = false): array
+    public function write(PosSale $sale, array $items, Collection $products, Collection $barcodes, bool $acceptShortage = false, bool $allowNegative = false): array
     {
         if (DB::transactionLevel() < 1) {
             throw new \LogicException('POS persistence requires a transaction.');
@@ -41,6 +43,16 @@ class PosCheckoutWriter
         // Every stock/batch lock is acquired in deterministic order before writes.
         $stocks = Stock::where('store_id', $sale->store_id)->whereIn('product_id', $products->keys())
             ->orderBy('id')->lockForUpdate()->get()->keyBy(fn ($stock) => $stock->product_id.':'.($stock->variant_id ?: 0));
+        if ($allowNegative) {
+            // Selling an item this store never stocked: open its stock row at zero so it can go negative.
+            foreach ($items as $item) {
+                $key = $item['productId'].':'.(($item['variantId'] ?? null) ?: 0);
+                if (! $stocks->has($key)) {
+                    $stocks->put($key, Stock::create(['store_id' => $sale->store_id, 'product_id' => $item['productId'], 'variant_id' => ($item['variantId'] ?? null) ?: null,
+                        'quantity' => 0, 'allocated_quantity' => 0, 'available_quantity' => 0]));
+                }
+            }
+        }
         $batches = $variantIds ? StockBatch::where('store_id', $sale->store_id)->whereIn('variant_id', $variantIds)
             ->where('remaining_qty', '>', 0)->orderBy('received_at')->orderBy('id')->lockForUpdate()->get()->groupBy('variant_id') : collect();
         $timestamp = now()->toDateTimeString();
@@ -55,7 +67,7 @@ class PosCheckoutWriter
             $stock = $stocks->get($item['productId'].':'.(($item['variantId'] ?? null) ?: 0));
             $before = (float) ($stock->quantity ?? 0);
             $after = $before - $qty;
-            if (! $stock || $after < -0.0005) {
+            if (! $allowNegative && (! $stock || $after < -0.0005)) {
                 if (! $acceptShortage) {
                     throw new InsufficientStockException((int) $item['productId'], $before, $qty);
                 }
@@ -64,8 +76,8 @@ class PosCheckoutWriter
                     'message' => 'Sold '.round($qty, 3).' but stock showed '.round(max(0, $before), 3).'. Recount this item.'];
             }
             if ($stock) {
-                // Stock never goes below zero; a shortfall is listed for a recount instead.
-                $stock->quantity = max(0, $after);
+                // Without the sell-without-stock switch stock never goes below zero; a shortfall is listed for a recount instead.
+                $stock->quantity = $allowNegative ? $after : max(0, $after);
                 $changedStocks[$stock->id] = ['quantity' => $stock->quantity, 'available_quantity' => (float) $stock->quantity - (float) $stock->allocated_quantity];
             }
             $lines[] = [
@@ -74,12 +86,13 @@ class PosCheckoutWriter
                 'selling_price' => $price, 'discount' => $discount, 'tax_rate' => $taxRate, 'tax_amount' => $lineTax,
                 'subtotal' => $lineSub + $lineTax, 'tax_name' => $item['taxName'] ?? null, 'tax_type' => $item['taxType'] ?? null,
                 'cost_price' => $item['cost'] ?? null, 'sales_man_id' => $item['salesManId'] ?? null, 'sales_man_name' => $item['salesManName'] ?? null,
+                'short_qty' => $allowNegative ? StockRules::shortQty($qty, $after) : 0,
                 'created_at' => $timestamp, 'updated_at' => $timestamp,
             ];
             $movements[] = [
                 'store_id' => $sale->store_id, 'product_id' => $item['productId'], 'variant_id' => $item['variantId'] ?? null,
                 'reference_type' => 'POS_SALE', 'reference_id' => $sale->id, 'type' => 'OUT', 'quantity' => $qty,
-                'before_qty' => $before, 'after_qty' => max(0, $after), 'cost_price' => $price, 'created_by' => $sale->user_id,
+                'before_qty' => $before, 'after_qty' => $allowNegative ? $after : max(0, $after), 'cost_price' => $price, 'created_by' => $sale->user_id,
                 'created_at' => $timestamp, 'updated_at' => $timestamp,
             ];
             $remaining = $qty;

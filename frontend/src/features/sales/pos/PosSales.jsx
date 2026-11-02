@@ -1,5 +1,7 @@
 import LiveDateTime from "@/shared/components/LiveDateTime";
 import ApprovalDialog from "@/features/sales/approvals/components/ApprovalDialog";
+import useStockRules, { noStockRowSx, shortQtyByStock } from "@/shared/hooks/useStockRules";
+import NoStockChip from "@/shared/components/NoStockChip";
 import { approvalRequirementFrom, isApprovalRequired } from "@/features/sales/approvals/utils/approvals";
 import { runPosCheckout } from "./utils/posCheckout";
 import { prepareCheckoutAttempt } from "./utils/posCheckoutAttempt";
@@ -154,6 +156,8 @@ const PosSales = () => {
   const [placeOfSupplyStateId, setPlaceOfSupplyStateId] = useState("");
   const [posAddnlLines, setPosAddnlLines] = useState([]);
   const [stockRows, setStockRows] = useState([]);
+  // Warehouse Customisation's "sell without stock": when on, a line may exceed the stock on hand.
+  const { allowSaleWithoutStock } = useStockRules();
   const [productOptions, setProductOptions] = useState([]);
   const [addBarcode, setAddBarcode] = useState("");
   const [addProductKey, setAddProductKey] = useState("");
@@ -548,6 +552,12 @@ const PosSales = () => {
 
     return "";
   }, [addBarcode, addProductKey, stockRows, usedQtyByBarcode]);
+
+  // Lines selling more than is in stock (possible only with "sell without stock" on); highlighted in the cart.
+  const shortByStock = useMemo(
+    () => shortQtyByStock(cart, (stockId) => stockRows.find((row) => row.id === stockId)?.qty),
+    [cart, stockRows]
+  );
 
   const cartWithTotals = useMemo(
     () =>
@@ -1361,7 +1371,7 @@ const PosSales = () => {
         }
         const used = usedQtyByBarcode.get(source.id) || 0;
         const remaining = source.qty - used;
-        if (quantity > remaining) {
+        if (quantity > remaining && !allowSaleWithoutStock) {
           toast.error(`Quantity exceeds stock. Available: ${Math.max(remaining, 0)} pcs`);
           focusBarcodeInput();
           return;
@@ -1376,7 +1386,9 @@ const PosSales = () => {
           .filter((row) => row.remaining > 0)
           .sort((a, b) => b.remaining - a.remaining);
 
-        source = candidates.find((c) => c.remaining >= quantity)?.row || null;
+        source = candidates.find((c) => c.remaining >= quantity)?.row
+          || (allowSaleWithoutStock ? candidates[0]?.row || stockRows.find((row) => row.id === productQuery) : null)
+          || null;
         if (!source) {
           toast.error("Selected quantity is higher than available stock for this product");
           focusBarcodeInput();
@@ -1462,12 +1474,12 @@ const PosSales = () => {
         return sum + toNum(line.qty, 0);
       }, 0);
       const maxAllowed = Math.max(0, toNum(stockRow.qty, 0) - usedByOthers);
-      if (nextQty > maxAllowed) {
+      if (nextQty > maxAllowed && !allowSaleWithoutStock) {
         toast.error(`Available quantity for this is ${Math.max(maxAllowed, 0)}`);
         return prev;
       }
 
-      const sanitizedQty = Math.min(nextQty, maxAllowed);
+      const sanitizedQty = allowSaleWithoutStock ? nextQty : Math.min(nextQty, maxAllowed);
 
       return prev.map((line) =>
         line.lineId === lineId
@@ -2621,7 +2633,7 @@ const PosSales = () => {
                     const isLineEditable = editingLineId === line.lineId;
                     const isReturnDisplayLine = Boolean(line.isReturnDisplayLine);
                     return (
-                      <Box key={line.lineId} sx={{ display: "flex", borderBottom: 1, borderColor: "divider", fontSize: { xs: 11, md: 16, lg: 18 }, "&:hover": { bgcolor: "action.hover" } }}>
+                      <Box key={line.lineId} sx={[{ display: "flex", borderBottom: 1, borderColor: "divider", fontSize: { xs: 11, md: 16, lg: 18 }, "&:hover": { bgcolor: "action.hover" } }, shortByStock.has(line.stockId) && noStockRowSx]}>
                         <Box sx={posSalesColCellSx("sNo", { textAlign: "center" })}>
                           {index + 1}
                         </Box>
@@ -2632,6 +2644,7 @@ const PosSales = () => {
                         </Box>
                         <Box sx={posSalesColCellSx("product")}>
                           <Box sx={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "break-word" }}>{line.productName}</Box>
+                          <NoStockChip shortQty={shortByStock.get(line.stockId)} />
                           {isReturnDisplayLine ? (
                             <Box sx={{ fontSize: { xs: 10, md: 12.25, lg: 14 }, color: "text.disabled" }}>{line.salesManName}</Box>
                           ) : null}

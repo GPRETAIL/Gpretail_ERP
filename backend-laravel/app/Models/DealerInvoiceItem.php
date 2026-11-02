@@ -11,6 +11,7 @@ class DealerInvoiceItem extends Model
     use HasFactory;
 
     protected $fillable = [
+        'short_qty',
         'dealer_invoice_id',
         'product_id',
         'variant_id',
@@ -26,6 +27,7 @@ class DealerInvoiceItem extends Model
     {
         return [
             'quantity' => 'decimal:3',
+            'short_qty' => 'decimal:3',
             'price' => 'decimal:2',
             'discount' => 'decimal:2',
             'tax_amount' => 'decimal:2',
