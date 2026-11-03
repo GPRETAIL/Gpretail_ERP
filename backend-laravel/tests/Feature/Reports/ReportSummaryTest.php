@@ -89,7 +89,7 @@ class ReportSummaryTest extends TestCase
     {
         $this->sell(0, 100, now()->toDateTimeString());
         $this->artisan('accounting:post', ['--store' => $this->fixture['store']->id]);
-        $byType = $this->getJson('/api/accounting/summary/voucher_lines?layout=voucher_type&from='.now()->subDay()->toDateString().'&to='.now()->toDateString())->assertOk()->json('data');
+        $byType = $this->getJson('/api/accounting/summary/voucher_lines?layout=voucher_type&from='.now(config('app.business_timezone'))->subDay()->toDateString().'&to='.now(config('app.business_timezone'))->toDateString())->assertOk()->json('data');
         $this->assertContains('Sales', array_column($byType['rows'], 'label'));
         $this->assertEquals($byType['totals']['debit'], $byType['totals']['credit']); // Balanced books.
 
