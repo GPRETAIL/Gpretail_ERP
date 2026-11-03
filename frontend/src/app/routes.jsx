@@ -35,6 +35,18 @@ const EmployeeInOut = lazy(() => import("@/features/hr/attendance/EmployeeInOut"
 const LeavePage = lazy(() => import("@/features/hr/leave/LeavePage"));
 const SalaryManagement = lazy(() => import("@/features/hr/payroll/SalaryManagement"));
 const MyPayslips = lazy(() => import("@/features/hr/payroll/MyPayslips"));
+const HrDashboard = lazy(() => import("@/features/hr/dashboard/HrDashboard"));
+const AttendanceRegisterPage = lazy(() => import("@/features/hr/HrSectionPages").then((m) => ({ default: m.AttendanceRegisterPage })));
+const PunchLogPage = lazy(() => import("@/features/hr/HrSectionPages").then((m) => ({ default: m.PunchLogPage })));
+const HolidaysPage = lazy(() => import("@/features/hr/HrSectionPages").then((m) => ({ default: m.HolidaysPage })));
+const LeaveApprovalsPage = lazy(() => import("@/features/hr/HrSectionPages").then((m) => ({ default: m.LeaveApprovalsPage })));
+const LeaveApplicationsPage = lazy(() => import("@/features/hr/HrSectionPages").then((m) => ({ default: m.LeaveApplicationsPage })));
+const LeaveBalancesPage = lazy(() => import("@/features/hr/HrSectionPages").then((m) => ({ default: m.LeaveBalancesPage })));
+const LeaveSetupPage = lazy(() => import("@/features/hr/HrSectionPages").then((m) => ({ default: m.LeaveSetupPage })));
+const AdditionalPayPage = lazy(() => import("@/features/hr/HrSectionPages").then((m) => ({ default: m.AdditionalPayPage })));
+const SalaryStructuresPage = lazy(() => import("@/features/hr/HrSectionPages").then((m) => ({ default: m.SalaryStructuresPage })));
+const PayrollSettingsPage = lazy(() => import("@/features/hr/HrSectionPages").then((m) => ({ default: m.PayrollSettingsPage })));
+const PayrollReportsPage = lazy(() => import("@/features/hr/HrSectionPages").then((m) => ({ default: m.PayrollReportsPage })));
 const Product = lazy(() => import("@/features/masters/Product"));
 const ProductForm = lazy(() => import("@/features/masters/ProductForm"));
 const Item = lazy(() => import("@/features/masters/Item"));
@@ -136,6 +148,18 @@ export const protectedLayoutRoutes = [
   { path: "/hrms/leave", render: () => <LeavePage /> },
   { path: "/hrms/salary-management", render: () => <SalaryManagement /> },
   { path: "/hrms/my-payslips", render: () => <MyPayslips /> },
+  { path: "/hrms/dashboard", render: () => <HrDashboard /> },
+  { path: "/hrms/attendance-register", render: () => <AttendanceRegisterPage /> },
+  { path: "/hrms/punch-log", render: () => <PunchLogPage /> },
+  { path: "/hrms/holidays", render: () => <HolidaysPage /> },
+  { path: "/hrms/leave-approvals", render: () => <LeaveApprovalsPage /> },
+  { path: "/hrms/leave-applications", render: () => <LeaveApplicationsPage /> },
+  { path: "/hrms/leave-balances", render: () => <LeaveBalancesPage /> },
+  { path: "/hrms/leave-setup", render: () => <LeaveSetupPage /> },
+  { path: "/hrms/additional-pay", render: () => <AdditionalPayPage /> },
+  { path: "/hrms/salary-structures", render: () => <SalaryStructuresPage /> },
+  { path: "/hrms/payroll-settings", render: () => <PayrollSettingsPage /> },
+  { path: "/hrms/payroll-reports", render: () => <PayrollReportsPage /> },
   { path: "/masters/employee", render: () => <RedirectPreservingQuery to="/hrms/employee" /> },
   { path: "/masters/hr-configuration", render: () => <RedirectPreservingQuery to="/hrms/hr-configuration" /> },
   { path: "/masters/hr-configuration/new", render: () => <RedirectPreservingQuery to="/hrms/hr-configuration/new" /> },

@@ -1,23 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { Alert, Box, Button, Chip, Paper, Stack, Tab, Tabs, TextField, Typography } from "@mui/material";
+import { Alert, Box, Button, Chip, Paper, Stack, TextField, Typography } from "@mui/material";
 import { Plus } from "lucide-react";
 import api from "@/shared/api/apiClient";
-import PageHeader from "@/shared/components/PageHeader";
-import Breadcrumbs from "@/shared/components/Breadcrumbs";
+import HrPage from "../components/HrPage";
 import FilterableDataTable from "@/shared/components/FilterableDataTable";
 import SearchGridPanel from "@/shared/components/SearchGridPanel";
 import useSearchGrid from "@/shared/hooks/useSearchGrid";
 import { HR_MANAGER_ROLES, LEAVE_STATUS, days, errorMessage } from "../utils/hrStatus";
 import ApplyLeaveDialog from "./ApplyLeaveDialog";
-import LeaveApplications from "./LeaveApplications";
-import LeaveBalances from "./LeaveBalances";
-import LeaveSetup from "./LeaveSetup";
-
-/** Roles that approve leave (their team; HR roles everyone). */
-const APPROVER_ROLES = [...HR_MANAGER_ROLES, "supervisor", "accountant"];
 
 /** Leave > My leave: balance cards, apply, and the year's applications (withdraw while pending). */
 function MyLeave({ year, data, onReload, employees, types }) {
@@ -84,13 +76,10 @@ function MyLeave({ year, data, onReload, employees, types }) {
   );
 }
 
-/** HRMS > Leave: my leave, approvals for managers, and (HR) all applications, balances and setup. */
+/** HRMS > Leave: the signed-in employee's balances, applications and Apply (HR can also apply for someone). */
 export default function LeavePage() {
-  const navigate = useNavigate();
   const authUser = useSelector((state) => state.auth.user);
   const canManage = HR_MANAGER_ROLES.includes(authUser?.role);
-  const canApprove = APPROVER_ROLES.includes(authUser?.role);
-  const [tab, setTab] = useState("mine");
   const [year, setYear] = useState(new Date().getFullYear());
   const [mine, setMine] = useState(null);
   const [employees, setEmployees] = useState(null);
@@ -121,23 +110,8 @@ export default function LeavePage() {
   }, [canManage, authUser?.store_id]);
 
   return (
-    <Box sx={{ p: 1, display: "flex", flexDirection: "column", gap: 1.5, height: "100%", minHeight: 0 }}>
-      <PageHeader onBack={() => navigate("/hrms")} title={<Breadcrumbs items={[{ label: "HRMS", onClick: () => navigate("/hrms") }, { label: "Leave" }]} />}
-        actions={<TextField type="number" size="small" label="Year" value={year} onChange={(e) => setYear(Number(e.target.value) || year)} sx={{ width: 100 }} />} />
-      <Tabs value={tab} onChange={(_, value) => setTab(value)} sx={{ minHeight: 34, "& .MuiTab-root": { minHeight: 34, py: 0.5, textTransform: "none" } }}>
-        <Tab value="mine" label="My leave" />
-        {canApprove && <Tab value="inbox" label="Approvals" />}
-        {canApprove && <Tab value="all" label="All applications" />}
-        {canApprove && <Tab value="balances" label="Balances" />}
-        {canManage && <Tab value="setup" label="Setup" />}
-      </Tabs>
-      <Box sx={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
-        {tab === "mine" && <MyLeave year={year} data={mine} employees={canManage ? employees : null} types={types} onReload={() => setVersion((v) => v + 1)} />}
-        {tab === "inbox" && <LeaveApplications inbox year={year} onChanged={() => setVersion((v) => v + 1)} />}
-        {tab === "all" && <LeaveApplications year={year} onChanged={() => setVersion((v) => v + 1)} />}
-        {tab === "balances" && <LeaveBalances year={year} canManage={canManage} />}
-        {tab === "setup" && <LeaveSetup />}
-      </Box>
-    </Box>
+    <HrPage title="Leave" actions={<TextField type="number" size="small" label="Year" value={year} onChange={(e) => setYear(Number(e.target.value) || year)} sx={{ width: 100 }} />}>
+      <MyLeave year={year} data={mine} employees={canManage ? employees : null} types={types} onReload={() => setVersion((v) => v + 1)} />
+    </HrPage>
   );
 }

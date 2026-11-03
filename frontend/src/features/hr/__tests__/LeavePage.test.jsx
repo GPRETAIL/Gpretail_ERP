@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, expect, it, vi } from "vitest";
 import LeavePage from "@/features/hr/leave/LeavePage";
+import { LeaveApprovalsPage } from "@/features/hr/HrSectionPages";
 import api from "@/shared/api/apiClient";
 import { TransferActivityProvider } from "@/features/store/context/TransferActivityContext";
 
@@ -29,7 +30,7 @@ beforeEach(() => {
   api.post.mockResolvedValue({ data: { message: "Done" } });
 });
 
-const wrap = () => render(<MemoryRouter><TransferActivityProvider><LeavePage /></TransferActivityProvider></MemoryRouter>);
+const wrap = (node = <LeavePage />) => render(<MemoryRouter><TransferActivityProvider>{node}</TransferActivityProvider></MemoryRouter>);
 
 it("shows what is left and applies for a half day", async () => {
   wrap();
@@ -50,9 +51,7 @@ it("shows what is left and applies for a half day", async () => {
 });
 
 it("lets a manager approve from the inbox with a note", async () => {
-  wrap();
-  await screen.findByText("Casual Leave", { selector: "span" });
-  fireEvent.click(screen.getByRole("tab", { name: "Approvals" }));
+  wrap(<LeaveApprovalsPage />);
   await waitFor(() => expect(api.get).toHaveBeenCalledWith("/leave-applications", { params: { status: "PENDING", inbox: 1, year: undefined } }));
   fireEvent.click((await screen.findByRole("button", { name: "Approve" })));
   const dialog = await screen.findByRole("dialog");
@@ -61,10 +60,12 @@ it("lets a manager approve from the inbox with a note", async () => {
   await waitFor(() => expect(api.post).toHaveBeenCalledWith("/leave-applications/7/approve", { note: "Enjoy" }));
 });
 
-it("shows staff only their own leave", async () => {
+it("lets staff apply only for themselves", async () => {
   mockUser.current = { id: 9, store_id: 2, role: "cashier" };
   wrap();
   await screen.findByText("Casual Leave", { selector: "span" });
-  expect(screen.queryByRole("tab", { name: "Approvals" })).not.toBeInTheDocument();
-  expect(screen.queryByRole("tab", { name: "Setup" })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Apply for leave" }));
+  const dialog = await screen.findByRole("dialog");
+  expect(within(dialog).queryByLabelText("Employee")).not.toBeInTheDocument(); // No "on behalf of" for staff.
+  expect(api.get).not.toHaveBeenCalledWith("/employees", expect.anything());
 });

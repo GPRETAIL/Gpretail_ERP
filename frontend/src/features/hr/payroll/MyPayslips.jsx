@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { Alert, Box, Button, Chip } from "@mui/material";
+import { Alert, Button, Chip } from "@mui/material";
 import api from "@/shared/api/apiClient";
-import PageHeader from "@/shared/components/PageHeader";
-import Breadcrumbs from "@/shared/components/Breadcrumbs";
+import HrPage from "../components/HrPage";
 import FilterableDataTable from "@/shared/components/FilterableDataTable";
 import SearchGridPanel from "@/shared/components/SearchGridPanel";
 import useSearchGrid from "@/shared/hooks/useSearchGrid";
@@ -14,7 +12,6 @@ import { monthLabel, rupees } from "./payslipPrint";
 
 /** HRMS > My payslips: the signed-in employee's payslips once their month's payroll is submitted. */
 export default function MyPayslips() {
-  const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [slipId, setSlipId] = useState(null);
 
@@ -35,8 +32,7 @@ export default function MyPayslips() {
   ], []);
 
   return (
-    <Box sx={{ p: 1, display: "flex", flexDirection: "column", gap: 1.5, height: "100%", minHeight: 0 }}>
-      <PageHeader onBack={() => navigate(-1)} title={<Breadcrumbs items={[{ label: "HRMS" }, { label: "My payslips" }]} />} />
+    <HrPage title="My Payslips">
       {data && !data.employee && <Alert severity="info">Your login is not linked to an employee yet. Ask HR to tick "Allow System" with your username on your employee record.</Alert>}
       <SearchGridPanel>
         <FilterableDataTable
@@ -57,6 +53,6 @@ export default function MyPayslips() {
         />
       </SearchGridPanel>
       {slipId && <PayslipDialog id={slipId} mine onClose={() => setSlipId(null)} />}
-    </Box>
+    </HrPage>
   );
 }

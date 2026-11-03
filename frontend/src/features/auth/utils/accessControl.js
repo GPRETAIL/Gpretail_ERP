@@ -164,7 +164,7 @@ export const getHomePathForUser = (user) => {
     return getUserDefaultPathFromPermissions(getPagePermissions(user));
   }
   if (user?.module_permissions) {
-    const homes = { dashboard: "/dashboard", masters: "/masters/product", sales: "/sales/pos-sales", warehouse: "/warehouse/invoice", crm: "/crm/customer", finance: "/finance/supplier-payment", store: "/store/dashboard", analytical: "/analytical/dashboard", hrms: "/hrms/employee-in-out", settings: "/settings/application-settings" };
+    const homes = { dashboard: "/dashboard", masters: "/masters/product", sales: "/sales/pos-sales", warehouse: "/warehouse/invoice", crm: "/crm/customer", finance: "/finance/supplier-payment", store: "/store/dashboard", analytical: "/analytical/dashboard", hrms: "/hrms/dashboard", settings: "/settings/application-settings" };
     return Object.entries(homes).find(([module, path]) => user.module_permissions[module]?.view && canAccessPath(path, user))?.[1] || "/profile";
   }
   return "/dashboard";

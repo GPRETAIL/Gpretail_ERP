@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, expect, it, vi } from "vitest";
 import EmployeeInOut from "@/features/hr/attendance/EmployeeInOut";
+import { AttendanceRegisterPage } from "@/features/hr/HrSectionPages";
 import api from "@/shared/api/apiClient";
 import { TransferActivityProvider } from "@/features/store/context/TransferActivityContext";
 
@@ -21,7 +22,7 @@ const today = {
   ],
 };
 const monthly = { month: "2026-11", days_in_month: 30, rows: [{ employee_id: 1, name: "Asha", code: "E1", days: { 1: "WO", 2: "P", 3: "HD", 4: "L" }, present: 1, half_day: 1, absent: 0, leave: 1, off: 1, late: 0, payable_days: 3.5 }] };
-const wrap = () => render(<MemoryRouter><TransferActivityProvider><EmployeeInOut /></TransferActivityProvider></MemoryRouter>);
+const wrap = (node = <EmployeeInOut />) => render(<MemoryRouter><TransferActivityProvider>{node}</TransferActivityProvider></MemoryRouter>);
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -52,9 +53,7 @@ it("shows the day board, filters late comers, and marks an employee", async () =
 });
 
 it("shows the monthly register with day codes and payable days", async () => {
-  wrap();
-  await screen.findByText("Asha");
-  fireEvent.click(screen.getByRole("tab", { name: "Monthly register" }));
+  wrap(<AttendanceRegisterPage />);
   await waitFor(() => expect(api.get).toHaveBeenCalledWith("/attendance/monthly", { params: { month: expect.stringMatching(/^\d{4}-\d{2}$/) } }));
   expect(await screen.findByText("3.5")).toBeInTheDocument();
   expect(screen.getAllByText("HD").length).toBeGreaterThan(1); // The column and Asha's 3rd.

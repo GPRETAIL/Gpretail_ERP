@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Hr\AdditionalPayController;
 use App\Http\Controllers\Api\V1\Hr\AttendanceController;
 use App\Http\Controllers\Api\V1\Hr\EmployeeController;
 use App\Http\Controllers\Api\V1\Hr\HolidayController;
@@ -91,6 +92,6 @@ Route::post('payroll/components', [SalaryStructureController::class, 'saveCompon
 Route::put('payroll/components/{id}', [SalaryStructureController::class, 'saveComponent']);
 Route::get('payroll/settings', [PayrollSettingsController::class, 'show']);
 Route::put('payroll/settings', [PayrollSettingsController::class, 'update']);
-Route::get('payroll/additional', [PayrollSettingsController::class, 'additionalIndex']);
-Route::post('payroll/additional', [PayrollSettingsController::class, 'additionalStore']);
-Route::delete('payroll/additional/{id}', [PayrollSettingsController::class, 'additionalDestroy']);
+Route::get('payroll/additional', [AdditionalPayController::class, 'index']);
+Route::post('payroll/additional', [AdditionalPayController::class, 'store']);
+Route::delete('payroll/additional/{id}', [AdditionalPayController::class, 'destroy']);

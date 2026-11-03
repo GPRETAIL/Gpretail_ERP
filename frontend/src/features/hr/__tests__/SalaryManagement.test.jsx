@@ -3,6 +3,7 @@ import { MemoryRouter } from "react-router-dom";
 import { beforeEach, expect, it, vi } from "vitest";
 import SalaryManagement from "@/features/hr/payroll/SalaryManagement";
 import MyPayslips from "@/features/hr/payroll/MyPayslips";
+import { PayrollSettingsPage } from "@/features/hr/HrSectionPages";
 import { payslipHtml, payslipWhatsAppUrl } from "@/features/hr/payroll/payslipPrint";
 import api from "@/shared/api/apiClient";
 import { browserPrintHtml } from "@/features/sales/pos/utils/posSalesUtils";
@@ -69,8 +70,7 @@ it("prepares a month, shows the payslip, and submits", async () => {
 });
 
 it("fills professional tax slabs from the store's state and saves them", async () => {
-  wrap(<SalaryManagement />);
-  fireEvent.click(await screen.findByRole("tab", { name: "Settings" }));
+  wrap(<PayrollSettingsPage />);
   fireEvent.mouseDown(await screen.findByLabelText("Store's state"));
   fireEvent.click(await screen.findByRole("option", { name: "Tamil Nadu" }));
   expect(screen.getAllByLabelText("Tax ₹")).toHaveLength(2);

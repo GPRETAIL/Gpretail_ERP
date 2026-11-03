@@ -443,6 +443,90 @@
       "add": true,
       "edit": true,
       "delete": true
+    },
+    "/hrms/dashboard": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/hrms/attendance-register": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/hrms/punch-log": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/hrms/holidays": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/hrms/leave-approvals": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/hrms/leave-applications": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/hrms/leave-balances": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/hrms/leave-setup": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/hrms/additional-pay": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/hrms/salary-structures": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/hrms/payroll-settings": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/hrms/payroll-reports": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/hrms/leave": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/hrms/my-payslips": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
     }
   },
   "cashier": {
@@ -507,6 +591,18 @@
       "delete": false
     },
     "/crm/gift-coupon": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/hrms/leave": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/hrms/my-payslips": {
       "view": true,
       "add": false,
       "edit": false,
@@ -590,6 +686,36 @@
       "view": true,
       "add": false,
       "edit": false,
+      "delete": false
+    },
+    "/hrms/leave": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/hrms/my-payslips": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/hrms/dashboard": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/hrms/employee-in-out": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/hrms/leave-approvals": {
+      "view": true,
+      "add": true,
+      "edit": true,
       "delete": false
     }
   },
@@ -965,6 +1091,48 @@
       "add": false,
       "edit": false,
       "delete": false
+    },
+    "/hrms/leave": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/hrms/my-payslips": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/hrms/dashboard": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/hrms/payroll-reports": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/hrms/salary-structures": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/hrms/payroll-settings": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/hrms/additional-pay": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
     }
   },
   "warehouse_user": {
@@ -1111,6 +1279,18 @@
       "add": true,
       "edit": true,
       "delete": false
+    },
+    "/hrms/leave": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/hrms/my-payslips": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
     }
   },
   "store_user": {
@@ -1229,6 +1409,18 @@
       "delete": true
     },
     "/warehouse/physical-stock": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/hrms/leave": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/hrms/my-payslips": {
       "view": true,
       "add": false,
       "edit": false,

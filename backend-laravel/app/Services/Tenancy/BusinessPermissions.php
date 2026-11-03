@@ -23,7 +23,7 @@ class BusinessPermissions
     private const HR_MANAGED = ['AttendanceController', 'HolidayController', 'LeaveTypeController', 'LeavePolicyController'];
 
     /** Salaries: only payroll roles see or change anyone's pay (an employee sees their own slips through HR_SELF_SERVICE). */
-    private const PAYROLL = ['PayrollController', 'SalaryStructureController', 'PayrollSettingsController', 'PayrollReportController'];
+    private const PAYROLL = ['PayrollController', 'SalaryStructureController', 'PayrollSettingsController', 'PayrollReportController', 'AdditionalPayController'];
 
     /** Reads that expose purchase cost, margins, supplier dues or finance totals; the counter screens never call them. */
     private const COST_READS = ['SupplierPaymentController', 'FinanceDashboardController', 'PurchaseInvoiceController', 'PurchaseReturnController', 'DirectPurchaseController', 'InventoryEntryController', 'TransportEntryController', 'PurchaseOrderController', 'WarehouseReportController', 'WarehouseDashboardController', 'ProductPurchaseAnalyticsController', 'AnalyticalDashboardController', 'SalesReportController'];
