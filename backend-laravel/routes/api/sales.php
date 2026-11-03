@@ -103,6 +103,8 @@ Route::get('settlements/{id}', [SettlementController::class, 'getBill']);
 // Sales Reports & Analytics
 Route::get('sales-reports', [SalesReportController::class, 'index']);
 Route::get('sales-reports/store/{report}', [SalesReportController::class, 'storeReport']);
+Route::get('sales-reports/summary-layouts', [SalesReportController::class, 'summaryLayouts']);
+Route::get('sales-reports/summary/{dataset}', [SalesReportController::class, 'summary']);
 Route::get('sales-comparer', [SalesReportController::class, 'salesComparer']);
 Route::get('sales-vs-purchase', [SalesReportController::class, 'salesVsPurchase']);
 Route::get('sales-vs-stock', [SalesReportController::class, 'salesVsStock']);

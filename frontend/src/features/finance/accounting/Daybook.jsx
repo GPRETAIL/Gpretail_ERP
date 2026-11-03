@@ -2,6 +2,7 @@ import { Fragment, useState } from "react";
 import { Box, Chip, MenuItem, Paper, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from "@mui/material";
 import { DateFilters, FinanceReportLayout } from "./components/FinanceReportLayout";
 import { VOUCHER_TYPES, money, today, useFinanceReport } from "./utils/financeUtils";
+import { useFinanceSummary } from "./components/FinanceSummary";
 
 /** Finance > Daybook: every voucher in the period with its debit and credit lines. */
 export default function Daybook() {
@@ -9,9 +10,11 @@ export default function Daybook() {
   const report = useFinanceReport("/accounting/daybook", filters);
   const vouchers = report.data || [];
   const total = vouchers.reduce((sum, voucher) => sum + Number(voucher.amount || 0), 0);
+  // Summary layouts (voucher type, date, month, ledger) for the same period.
+  const summary = useFinanceSummary("voucher_lines", { from: filters.from, to: filters.to }, "Daybook");
 
   return (
-    <FinanceReportLayout title="Daybook" error={report.error} onRefresh={report.reload}
+    <FinanceReportLayout title="Daybook" error={report.error} onRefresh={report.reload} actions={summary.buttons}
       filters={<>
         <DateFilters from={filters.from} to={filters.to} onChange={change => setFilters(current => ({ ...current, ...change }))} />
         <TextField select size="small" label="Type" value={filters.type} onChange={event => setFilters(current => ({ ...current, type: event.target.value }))} sx={{ width: 160 }}>
@@ -19,6 +22,8 @@ export default function Daybook() {
           {Object.entries(VOUCHER_TYPES).map(([value, label]) => <MenuItem key={value} value={value}>{label}</MenuItem>)}
         </TextField>
       </>}>
+      {summary.drawer}
+      {summary.applied ? summary.table : <>
       <Typography variant="body2" color="text.secondary">{vouchers.length} voucher{vouchers.length === 1 ? "" : "s"}, {money(total)} in total.</Typography>
       <Paper variant="outlined" sx={{ overflow: "auto", flex: 1, minHeight: 0 }}>
         <Table size="small" stickyHeader>
@@ -54,6 +59,7 @@ export default function Daybook() {
         </Table>
         {!report.loading && vouchers.length === 0 ? <Box sx={{ p: 2 }}><Typography variant="body2">No vouchers in this period.</Typography></Box> : null}
       </Paper>
+      </>}
     </FinanceReportLayout>
   );
 }

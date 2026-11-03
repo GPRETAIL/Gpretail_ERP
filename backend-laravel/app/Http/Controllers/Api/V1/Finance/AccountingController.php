@@ -9,6 +9,7 @@ use App\Models\Voucher;
 use App\Services\Accounting\AccountingReports;
 use App\Services\Accounting\ChartOfAccounts;
 use App\Services\Accounting\LedgerPoster;
+use App\Services\Reports\ReportSummaryService;
 use App\Services\Documents\DocumentNumberService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -174,6 +175,59 @@ class AccountingController extends Controller
         $side = $request->input('side') === 'payable' ? 'payable' : 'receivable';
 
         return response()->json(['success' => true, 'data' => AccountingReports::outstanding($this->store($request), $side, $to), 'side' => $side, 'as_of' => $to]);
+    }
+
+    /** Summary layouts of the Finance reports: Daybook from the voucher lines; Payable/Receivable by age and party. */
+    public function summaryLayouts(ReportSummaryService $summaries): JsonResponse
+    {
+        return response()->json(['success' => true, 'data' => [
+            ...$summaries->layouts('finance'),
+            'outstanding' => ['dated' => false, 'layouts' => [['value' => 'age', 'label' => 'Days since last entry'], ['value' => 'party', 'label' => 'Top parties']]],
+        ]]);
+    }
+
+    public function summary(Request $request, string $dataset, ReportSummaryService $summaries): JsonResponse
+    {
+        $storeId = $this->store($request); // The books are one store's.
+        $request->validate(['layout' => 'required|string|max:40']);
+        if ($dataset === 'outstanding') {
+            return response()->json(['success' => true, 'data' => $this->outstandingSummary($request, $storeId)]);
+        }
+        [$from, $to] = $this->period($request);
+
+        return response()->json(['success' => true, 'data' => $summaries->run('finance', $dataset, $request->input('layout'), $from, $to, [$storeId])]);
+    }
+
+    /** Payable/Receivable grouped by how long since each party's last entry, or its biggest parties. */
+    private function outstandingSummary(Request $request, int $storeId): array
+    {
+        [, $to] = $this->period($request);
+        $side = $request->input('side') === 'payable' ? 'payable' : 'receivable';
+        $layout = $request->input('layout') === 'party' ? 'party' : 'age';
+        $rows = AccountingReports::outstanding($storeId, $side, $to);
+        $asOf = Carbon::parse($to);
+        $order = ['0-30 days' => 1, '31-60 days' => 2, '61-90 days' => 3, 'Over 90 days' => 4, 'No entries' => 5];
+        $groups = $layout === 'party'
+            ? $rows->take(50)->map(fn ($row) => ['label' => $row['name'], 'last_entry' => $row['last_entry'] ? substr((string) $row['last_entry'], 0, 10) : null, 'parties' => 1, 'amount' => $row['amount']])
+            : $rows->groupBy(function ($row) use ($asOf) {
+                $days = $row['last_entry'] ? (int) Carbon::parse($row['last_entry'])->startOfDay()->diffInDays($asOf) : null;
+
+                return match (true) {
+                    $days === null => 'No entries', $days <= 30 => '0-30 days', $days <= 60 => '31-60 days', $days <= 90 => '61-90 days', default => 'Over 90 days',
+                };
+            })->sortBy(fn ($group, $label) => $order[$label])->map(fn ($group, $label) => ['label' => $label, 'parties' => $group->count(), 'amount' => round($group->sum('amount'), 2)]);
+
+        return [
+            'dataset' => 'outstanding', 'layout' => $layout, 'layout_label' => $layout === 'party' ? 'Top parties' : 'Days since last entry',
+            'group_header' => $layout === 'party' ? ($side === 'payable' ? 'Supplier' : 'Customer') : 'Since last entry', 'dated' => false, 'from' => null, 'to' => $to,
+            'columns' => [
+                ...($layout === 'party' ? [['key' => 'last_entry', 'label' => 'Last entry', 'type' => 'text']] : []),
+                ['key' => 'parties', 'label' => 'Parties', 'type' => 'count'], ['key' => 'amount', 'label' => 'Outstanding', 'type' => 'money'],
+            ],
+            'rows' => $groups->values()->map(fn ($row, $index) => ['s_no' => $index + 1, ...$row])->all(),
+            'totals' => ['parties' => $rows->count(), 'amount' => round($rows->sum('amount'), 2)],
+            'capped' => $layout === 'party' && $rows->count() > 50,
+        ];
     }
 
     /** Posts anything of this store's that has no voucher yet or changed since (the nightly job, on demand). */

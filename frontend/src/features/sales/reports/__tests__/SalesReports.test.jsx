@@ -112,7 +112,7 @@ describe("SalesReports Component", () => {
   it("renders report categories properly", () => {
     renderComponent();
 
-    expect(screen.getByText(/Sales Reports \(13\)/i)).toBeDefined();
+    expect(screen.getByText(/Sales Reports \(16\)/i)).toBeDefined();
     expect(screen.getByText(/Settlement Reports \(8\)/i)).toBeDefined();
     expect(screen.getByText(/Tax Reports \(5\)/i)).toBeDefined();
     expect(screen.getByText(/Customer Reports \(13\)/i)).toBeDefined();
@@ -122,7 +122,7 @@ describe("SalesReports Component", () => {
     renderComponent();
 
     // Expand accordion
-    const groupHeader = screen.getByText(/Sales Reports \(13\)/i);
+    const groupHeader = screen.getByText(/Sales Reports \(16\)/i);
     fireEvent.click(groupHeader);
 
     // Click Sales Report
@@ -138,7 +138,7 @@ describe("SalesReports Component", () => {
     renderComponent();
 
     // Expand accordion
-    const groupHeader = screen.getByText(/Sales Reports \(13\)/i);
+    const groupHeader = screen.getByText(/Sales Reports \(16\)/i);
     fireEvent.click(groupHeader);
 
     // Click Sales Report

@@ -59,6 +59,9 @@ Route::get('item-locator', [ItemLocatorController::class, 'index']);
 
 // Warehouse Reports & Stock Analyzer
 Route::get('warehouse-reports', [WarehouseReportController::class, 'index']);
+Route::get('warehouse-reports/data/{report}', [WarehouseReportController::class, 'report']);
+Route::get('warehouse-reports/summary-layouts', [WarehouseReportController::class, 'summaryLayouts']);
+Route::get('warehouse-reports/summary/{dataset}', [WarehouseReportController::class, 'summary']);
 Route::get('stock-analyzer', [WarehouseReportController::class, 'stockAnalyzer']);
 Route::get('stock-pivot', [WarehouseReportController::class, 'stockPivot']);
 Route::match(['get', 'post', 'put'], 'warehouse-customisation', [WarehouseReportController::class, 'warehouseCustomization']);

@@ -19,7 +19,7 @@ vi.mock("@/shared/hooks/useRowVirtualization", () => ({
 }));
 
 const cases = [
-  { name: "Sales", Component: SalesReports, group: /Sales Reports \(13\)/i, report: "Sales Report", endpoint: "/pos-sales", row: { id: 701, bill_no: "QA-SALES-001" }, label: "QA-SALES-001" },
+  { name: "Sales", Component: SalesReports, group: /Sales Reports \(16\)/i, report: "Sales Report", endpoint: "/pos-sales", row: { id: 701, bill_no: "QA-SALES-001" }, label: "QA-SALES-001" },
   { name: "Warehouse", Component: WarehouseReports, group: /Transport Reports/i, report: "Transport Report", endpoint: "/transport-entries", row: { id: 701, lr_no: "QA-LR-001" }, label: "QA-LR-001" },
 ];
 

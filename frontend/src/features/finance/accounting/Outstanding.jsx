@@ -3,6 +3,7 @@ import { Box, Paper, Table, TableBody, TableCell, TableHead, TableRow, Typograph
 import { DateFilters, FinanceReportLayout } from "./components/FinanceReportLayout";
 import LedgerStatementDialog from "./components/LedgerStatementDialog";
 import { money, today, useFinanceReport } from "./utils/financeUtils";
+import { useFinanceSummary } from "./components/FinanceSummary";
 
 const COPY = {
   payable: { title: "Payable", party: "Supplier", note: "What the store owes its suppliers (bills less payments and returns)." },
@@ -16,11 +17,15 @@ export default function Outstanding({ side }) {
   const report = useFinanceReport("/accounting/outstanding", { side, to });
   const rows = report.data || [];
   const copy = COPY[side];
+  // Summary layouts: by days since each party's last entry, or the biggest parties.
+  const summary = useFinanceSummary("outstanding", { side, to }, copy.title);
 
   return (
-    <FinanceReportLayout title={copy.title} error={report.error} onRefresh={report.reload}
+    <FinanceReportLayout title={copy.title} error={report.error} onRefresh={report.reload} actions={summary.buttons}
       filters={<DateFilters single to={to} onChange={change => setTo(change.to)} />}>
       <Typography variant="body2" color="text.secondary">{copy.note} A negative amount is an advance.</Typography>
+      {summary.drawer}
+      {summary.applied ? summary.table : (
       <Paper variant="outlined" sx={{ overflow: "auto", flex: 1, minHeight: 0 }}>
         <Table size="small" stickyHeader>
           <TableHead>
@@ -44,6 +49,7 @@ export default function Outstanding({ side }) {
         </Table>
         {!report.loading && rows.length === 0 ? <Box sx={{ p: 2 }}><Typography variant="body2">Nothing outstanding.</Typography></Box> : null}
       </Paper>
+      )}
       {open ? <LedgerStatementDialog account={open} to={to} onClose={() => setOpen(null)} /> : null}
     </FinanceReportLayout>
   );

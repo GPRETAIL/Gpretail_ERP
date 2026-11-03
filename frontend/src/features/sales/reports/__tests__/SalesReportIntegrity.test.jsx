@@ -128,3 +128,18 @@ it("Incentive Report - Section adds up the employee incentives per month and sec
   expect(api.get).toHaveBeenCalledWith("/sales-reports/store/incentives", { params: { all: "true" } });
   expect(rows).toEqual([{ month: "2026-11", section: "Sarees", employees: 2, bills: 3, qty: 4, net_sales: 1500, incentive_amount: 25 }]);
 });
+
+it("a tab with a summary dataset offers its server breakdowns and shows the server totals", async () => {
+  api.get.mockImplementation((url) => Promise.resolve({ data: { data:
+    url === "/sales-reports/summary-layouts" ? { sale_lines: { dated: true, layouts: [{ value: "item", label: "Item" }, { value: "date", label: "Date" }] } }
+      : url === "/sales-reports/summary/sale_lines" ? { layout_label: "Item", group_header: "Item", from: "2026-10-01", to: "2026-10-31", columns: [{ key: "net", label: "Net sales", type: "money" }],
+        rows: [{ s_no: 1, label: "Cotton Shirt", net: 250 }], totals: { net: 250 } }
+        : [] } }));
+  await open("Tax Reports", "Sales HSN Report");
+  fireEvent.click(screen.getByRole("button", { name: "Summary layouts" }));
+  fireEvent.click(screen.getByText("Date"));
+  fireEvent.click(screen.getByRole("button", { name: "Apply breakdown" }));
+  await waitFor(() => expect(api.get).toHaveBeenCalledWith("/sales-reports/summary/sale_lines", { params: expect.objectContaining({ layout: "date" }) }));
+  await waitFor(() => expect(JSON.parse(screen.getByTestId("report-rows").textContent).map((row) => row.label)).toEqual(["Cotton Shirt", "Total"]));
+  expect(screen.getByRole("button", { name: "Standard view" })).toBeInTheDocument();
+});

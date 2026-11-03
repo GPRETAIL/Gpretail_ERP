@@ -23,6 +23,8 @@ Route::prefix('accounting')->controller(AccountingController::class)->group(func
     Route::get('profit-loss', 'profitAndLoss');
     Route::get('balance-sheet', 'balanceSheet');
     Route::get('outstanding', 'outstanding');
+    Route::get('summary-layouts', 'summaryLayouts');
+    Route::get('summary/{dataset}', 'summary');
     Route::post('repost', 'repost');
 });
 Route::get('supplier-payments/dashboard-summary', [SupplierPaymentController::class, 'dashboardSummary']);

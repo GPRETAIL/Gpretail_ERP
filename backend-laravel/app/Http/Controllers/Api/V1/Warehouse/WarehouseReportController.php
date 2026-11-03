@@ -8,6 +8,8 @@ use App\Models\Stock;
 use App\Models\Store;
 use App\Support\GroupAggregationService;
 use App\Support\PaginationService;
+use App\Services\Reports\ReportSummaryService;
+use App\Services\Reports\WarehouseReports;
 use App\Services\Tenancy\StoreContext;
 use App\Services\Tenancy\StoreQuery;
 use Illuminate\Http\Request;
@@ -18,6 +20,28 @@ class WarehouseReportController extends Controller
         private readonly PaginationService $paginationService,
         private readonly GroupAggregationService $groupAggregationService,
     ) {}
+
+    /** Summary layouts: the datasets this page can summarise, and one summary (grouped and totalled in the database). */
+    public function summaryLayouts(ReportSummaryService $summaries)
+    {
+        return response()->json(['success' => true, 'data' => $summaries->layouts('warehouse')]);
+    }
+
+    public function summary(Request $request, string $dataset, ReportSummaryService $summaries)
+    {
+        $request->validate(['layout' => 'required|string|max:40', 'from' => 'nullable|date', 'to' => 'nullable|date']);
+
+        return response()->json(['success' => true, 'data' => $summaries->run('warehouse', $dataset, $request->input('layout'),
+            $request->input('from'), $request->input('to'), $request->attributes->get('store_context_ids', []))]);
+    }
+
+    /** Rows of the Warehouse Reports tabs built here: purchase orders, purchase tax, sections, transfers, retail cover. */
+    public function report(Request $request, string $report, WarehouseReports $reports)
+    {
+        abort_unless(in_array($report, WarehouseReports::REPORTS, true), 404);
+
+        return response()->json(['success' => true, 'data' => $reports->rows($report, $request->attributes->get('store_context_ids', []))]);
+    }
 
     public function index(Request $request)
     {

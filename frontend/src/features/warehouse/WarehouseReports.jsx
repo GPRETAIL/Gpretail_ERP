@@ -10,6 +10,10 @@ import api from "@/shared/api/apiClient";
 import FilterableDataTable from "@/shared/components/FilterableDataTable";
 import Breadcrumbs from "@/shared/components/Breadcrumbs";
 import { Box, Stack, Typography, Button, alpha } from "@mui/material";
+import { toast } from "react-toastify";
+import useResetOnChange from "@/shared/hooks/useResetOnChange";
+import SummaryLayoutsDrawer, { SummaryLayoutsButtons } from "@/shared/components/SummaryLayoutsDrawer";
+import { daysAgoKey, fetchSummary, fetchSummaryLayouts, todayKey } from "@/shared/utils/reportSummary";
 
 const formatDate = (dateStr) => {
   if (!dateStr) return "-";
@@ -34,6 +38,222 @@ const getAllRows = async (url) => {
 };
 
 const buildReportMeta = (key, title) => ({ key, title });
+
+/** Rows of a Warehouse Reports tab the backend builds (purchase orders, tax, sections, transfers, retail cover). */
+const getWarehouseReportRows = (report) => getAllRows(`/warehouse-reports/data/${report}`);
+
+const num = (digits = 0) => (value) => (
+  <Box sx={{ textAlign: "right" }}>
+    {value === null || value === undefined || value === "" ? "-" : toNumber(value).toLocaleString("en-IN", { minimumFractionDigits: digits, maximumFractionDigits: digits })}
+  </Box>
+);
+
+const poLineColumns = [
+  { key: "po_no", label: "PO no" },
+  { key: "po_date", label: "PO date" },
+  { key: "supplier", label: "Supplier" },
+  { key: "status", label: "Status" },
+  { key: "product", label: "Item" },
+  { key: "code", label: "Code" },
+  { key: "size", label: "Size" },
+  { key: "ordered", label: "Ordered", render: num() },
+  { key: "received", label: "Received", render: num() },
+  { key: "pending", label: "Pending", render: num() },
+  { key: "unit_cost", label: "Rate", render: num(2) },
+  { key: "amount", label: "Amount", render: num(2) },
+  { key: "pending_value", label: "Pending value", render: num(2) },
+  { key: "expected_date", label: "Expected by" },
+  { key: "receipts", label: "Received in" },
+];
+
+const poSummaryColumns = [
+  { key: "po_no", label: "PO no" },
+  { key: "po_date", label: "PO date" },
+  { key: "supplier", label: "Supplier" },
+  { key: "status", label: "Status" },
+  { key: "lines", label: "Lines", render: num() },
+  { key: "ordered", label: "Ordered", render: num() },
+  { key: "received", label: "Received", render: num() },
+  { key: "pending", label: "Pending", render: num() },
+  { key: "amount", label: "Amount", render: num(2) },
+  { key: "expected_date", label: "Expected by" },
+  { key: "receipts", label: "Received in" },
+];
+
+const purchaseTaxColumns = [
+  { key: "date", label: "Date" },
+  { key: "bill_no", label: "Bill no" },
+  { key: "source", label: "Source" },
+  { key: "supplier", label: "Supplier" },
+  { key: "tax_name", label: "Tax" },
+  { key: "rate", label: "Rate %", render: num(2) },
+  { key: "taxable", label: "Taxable", render: num(2) },
+  { key: "tax", label: "Tax amount", render: num(2) },
+];
+
+const purchaseTaxSummaryColumns = [
+  { key: "rate", label: "Rate %", render: num(2) },
+  { key: "bills", label: "Bills", render: num() },
+  { key: "taxable", label: "Taxable", render: num(2) },
+  { key: "tax", label: "Tax amount", render: num(2) },
+  { key: "total", label: "Total", render: num(2) },
+];
+
+const sectionPurchaseColumns = [
+  { key: "section", label: "Section" },
+  { key: "product", label: "Item" },
+  { key: "code", label: "Code" },
+  { key: "barcodes", label: "Barcodes", render: num() },
+  { key: "from_purchase", label: "From purchases", render: num() },
+  { key: "from_entry", label: "From inventory entries", render: num() },
+  { key: "price", label: "Price", render: num(2) },
+  { key: "last_received", label: "Last received" },
+];
+
+const supplierPendingColumns = [
+  { key: "invoice_no", label: "Bill no" },
+  { key: "bill_type", label: "Type" },
+  { key: "bill_date", label: "Date" },
+  { key: "supplier_name", label: "Supplier" },
+  { key: "total_amount", label: "Bill amount", render: num(2) },
+  { key: "paid_amount", label: "Paid", render: num(2) },
+  { key: "balance_due", label: "Balance due", render: num(2) },
+  { key: "days", label: "Days", render: num() },
+];
+
+const supplierPaymentColumns = [
+  { key: "payment_no", label: "Payment no" },
+  { key: "pay_date", label: "Date" },
+  { key: "supplier_name", label: "Supplier" },
+  { key: "payment_mode", label: "Mode" },
+  { key: "reference_no", label: "Reference" },
+  { key: "amount", label: "Amount", render: num(2) },
+  { key: "notes", label: "Notes" },
+];
+
+const sectionReturnColumns = [
+  { key: "section", label: "Section" },
+  { key: "returns", label: "Returns", render: num() },
+  { key: "items", label: "Items", render: num() },
+  { key: "qty", label: "Qty", render: num() },
+  { key: "amount", label: "Amount", render: num(2) },
+];
+
+const cancelledReturnColumns = [
+  { key: "return_no", label: "Return no" },
+  { key: "return_date", label: "Date" },
+  { key: "supplier", label: "Supplier" },
+  { key: "reason", label: "Reason" },
+  { key: "amount", label: "Amount", render: num(2) },
+];
+
+const outwardColumns = [
+  { key: "outward_no", label: "Transfer no" },
+  { key: "outward_date", label: "Date" },
+  { key: "from_store", label: "From store" },
+  { key: "to_store", label: "To store" },
+  { key: "status", label: "Status" },
+  { key: "lines", label: "Lines", render: num() },
+  { key: "qty", label: "Sent qty", render: num() },
+  { key: "received", label: "Received qty", render: num() },
+  { key: "value", label: "Value", render: num(2) },
+  { key: "dispatched_at", label: "Dispatched" },
+  { key: "received_at", label: "Received" },
+];
+
+const outwardLineColumns = [
+  { key: "outward_no", label: "Transfer no" },
+  { key: "outward_date", label: "Date" },
+  { key: "from_store", label: "From store" },
+  { key: "to_store", label: "To store" },
+  { key: "status", label: "Status" },
+  { key: "product", label: "Item" },
+  { key: "code", label: "Code" },
+  { key: "size", label: "Size" },
+  { key: "design_no", label: "Design" },
+  { key: "qty", label: "Sent", render: num() },
+  { key: "received", label: "Received", render: num() },
+  { key: "damaged", label: "Damaged", render: num() },
+  { key: "unit_price", label: "Price", render: num(2) },
+  { key: "value", label: "Value", render: num(2) },
+];
+
+const stockMovementColumns = [
+  { key: "from_store", label: "From store" },
+  { key: "to_store", label: "To store" },
+  { key: "product", label: "Item" },
+  { key: "code", label: "Code" },
+  { key: "transfers", label: "Transfers", render: num() },
+  { key: "sent", label: "Sent", render: num() },
+  { key: "received", label: "Received", render: num() },
+  { key: "in_transit", label: "In transit", render: num() },
+  { key: "value", label: "Value", render: num(2) },
+];
+
+const retailStockColumns = [
+  { key: "product", label: "Item" },
+  { key: "code", label: "Code" },
+  { key: "section", label: "Section" },
+  { key: "stock", label: "In stock", render: num() },
+  { key: "sold_30_days", label: "Sold (30 days)", render: num() },
+  { key: "per_day", label: "Per day", render: num(2) },
+  { key: "days_of_cover", label: "Days of cover", render: num() },
+  { key: "stock_value", label: "Stock value (MRP)", render: num(2) },
+  { key: "last_sale", label: "Last sale" },
+  { key: "status", label: "Status" },
+];
+
+const stockAuditColumns = [
+  { key: "audit_no", label: "Audit no" },
+  { key: "audit_date", label: "Date" },
+  { key: "status", label: "Audit status" },
+  { key: "product_name", label: "Item" },
+  { key: "product_code", label: "Code" },
+  { key: "size", label: "Size" },
+  { key: "system_qty", label: "System qty", render: num() },
+  { key: "counted_qty", label: "Counted qty", render: num() },
+  { key: "difference_qty", label: "Difference", render: num() },
+  { key: "difference_value", label: "Difference value", render: num(2) },
+  { key: "result", label: "Result" },
+];
+
+const supplierMasterColumns = [
+  { key: "code", label: "Code" },
+  { key: "name", label: "Supplier" },
+  { key: "company_name", label: "Company" },
+  { key: "gstin", label: "GSTIN" },
+  { key: "phone", label: "Phone" },
+  { key: "email", label: "Email" },
+  { key: "city", label: "City" },
+  { key: "state", label: "State" },
+  { key: "current_balance", label: "Balance", render: num(2) },
+  { key: "active_label", label: "Status" },
+];
+
+const agentMasterColumns = [
+  { key: "code", label: "Code" },
+  { key: "name", label: "Agent" },
+  { key: "contact_person", label: "Contact person" },
+  { key: "phone_no", label: "Phone" },
+  { key: "gst", label: "GST" },
+  { key: "commission", label: "Commission %", render: num(2) },
+  { key: "active_label", label: "Status" },
+];
+
+const taxMasterColumns = [
+  { key: "code", label: "Code" },
+  { key: "name", label: "Tax" },
+  { key: "type", label: "Type" },
+  { key: "rate", label: "Rate %", render: num(2) },
+  { key: "cgst_rate", label: "CGST %", render: num(2) },
+  { key: "sgst_rate", label: "SGST %", render: num(2) },
+  { key: "igst_rate", label: "IGST %", render: num(2) },
+  { key: "use_label", label: "Used for" },
+  { key: "active_label", label: "Status" },
+];
+
+const activeLabel = (row) => (row?.is_active === false || row?.is_active === 0 ? "Inactive" : "Active");
+const dayOnly = (value) => (value ? String(value).slice(0, 10) : "-");
 
 const getDirectPurchaseItemSummary = (row) => {
   const items = Array.isArray(row?.items) ? row.items : [];
@@ -689,11 +909,13 @@ const REPORT_DATA_SOURCES = {
     emptyText: "No transport entries found.",
   },
   invoice_report: {
+    summary: "invoice_lines",
     columns: invoiceReportColumns,
     fetchRows: () => getAllRows("/invoices"),
     emptyText: "No invoices found.",
   },
   invoice_detail_report: {
+    summary: "invoice_lines",
     columns: invoiceDetailColumns,
     fetchRows: buildInvoiceDetailRows,
     emptyText: "No invoice detail rows found.",
@@ -704,36 +926,43 @@ const REPORT_DATA_SOURCES = {
     emptyText: "No inventory entries found.",
   },
   purchase_report: {
+    summary: "direct_purchase_lines",
     columns: purchaseReportColumns,
     fetchRows: () => getAllRows("/direct-purchases"),
     emptyText: "No direct purchases found.",
   },
   purchase_items_report: {
+    summary: "direct_purchase_lines",
     columns: purchaseItemColumns,
     fetchRows: buildDirectPurchaseItemRows,
     emptyText: "No purchase item rows found.",
   },
   purchase_hsn_report: {
+    summary: "direct_purchase_lines",
     columns: purchaseHsnColumns,
     fetchRows: buildDirectPurchaseItemRows,
     emptyText: "No purchase HSN rows found.",
   },
   purchase_return_report: {
+    summary: "purchase_returns",
     columns: purchaseReturnColumns,
     fetchRows: () => getAllRows("/purchase-returns"),
     emptyText: "No purchase returns found.",
   },
   stock_report: {
+    summary: "stock",
     columns: stockReportColumns,
     fetchRows: () => getAllRows("/barcodes/physical-stock"),
     emptyText: "No stock rows found.",
   },
   warehouse_stock_analysis_report: {
+    summary: "stock",
     columns: warehouseStockAnalysisColumns,
     fetchRows: () => getAllRows("/barcodes/physical-stock"),
     emptyText: "No warehouse stock analysis rows found.",
   },
   stock_ason_date: {
+    summary: "stock",
     columns: stockAsonDateColumns,
     fetchRows: buildPhysicalStockRowsWithAsOnDate,
     emptyText: "No stock rows found for the selected date.",
@@ -747,6 +976,138 @@ const REPORT_DATA_SOURCES = {
     columns: productMasterColumns,
     fetchRows: buildItemLocatorRows,
     emptyText: "No product master rows found.",
+  },
+  invoice_vs_purchase_order: {
+    summary: "po_lines",
+    columns: poLineColumns,
+    fetchRows: () => getWarehouseReportRows("po_lines"),
+    emptyText: "No purchase orders yet.",
+  },
+  purchase_order_summary_report: {
+    summary: "po_lines",
+    columns: poSummaryColumns,
+    fetchRows: () => getWarehouseReportRows("po_summary"),
+    emptyText: "No purchase orders yet.",
+  },
+  purchase_order_detail_report: {
+    summary: "po_lines",
+    columns: poLineColumns,
+    fetchRows: () => getWarehouseReportRows("po_lines"),
+    emptyText: "No purchase orders yet.",
+  },
+  purchase_order_item_wise_pending: {
+    summary: "po_lines",
+    columns: poLineColumns,
+    fetchRows: async () => (await getWarehouseReportRows("po_lines")).filter((row) => toNumber(row.pending) > 0),
+    emptyText: "Nothing is pending on open purchase orders.",
+  },
+  purchase_tax_report: {
+    summary: "direct_purchase_lines",
+    columns: purchaseTaxColumns,
+    fetchRows: () => getWarehouseReportRows("purchase_tax"),
+    emptyText: "No purchase tax yet.",
+  },
+  purchase_tax_summary_report: {
+    summary: "direct_purchase_lines",
+    columns: purchaseTaxSummaryColumns,
+    fetchRows: () => getWarehouseReportRows("purchase_tax_summary"),
+    emptyText: "No purchase tax yet.",
+  },
+  purchase_report_barcode_section_wise: {
+    summary: "direct_purchase_lines",
+    columns: sectionPurchaseColumns,
+    fetchRows: () => getWarehouseReportRows("section_purchase"),
+    emptyText: "No barcodes yet.",
+  },
+  supplier_pending_bills: {
+    summary: "direct_purchase_lines",
+    columns: supplierPendingColumns,
+    fetchRows: async () => (await getAllRows("/supplier-payments/pending")).map((row) => ({
+      ...row, bill_type: row?.invoice_type === "direct" ? "Direct purchase" : "Purchase invoice", bill_date: dayOnly(row?.invoice_date),
+    })),
+    emptyText: "No pending supplier bills.",
+  },
+  supplier_payment_report: {
+    columns: supplierPaymentColumns,
+    fetchRows: async () => (await getAllRows("/supplier-payments")).map((row) => ({
+      ...row, pay_date: dayOnly(row?.payment_date), supplier_name: row?.supplier?.name || row?.supplier_name || "-",
+    })),
+    emptyText: "No supplier payments yet.",
+  },
+  section_wise_purchase_return_report: {
+    summary: "purchase_returns",
+    columns: sectionReturnColumns,
+    fetchRows: () => getWarehouseReportRows("section_returns"),
+    emptyText: "No purchase returns yet.",
+  },
+  purchase_return_report_cancelled: {
+    summary: "purchase_returns",
+    columns: cancelledReturnColumns,
+    fetchRows: () => getWarehouseReportRows("cancelled_returns"),
+    emptyText: "No cancelled purchase returns.",
+  },
+  stock_movement_locationwise: {
+    summary: "outward_lines",
+    columns: stockMovementColumns,
+    fetchRows: () => getWarehouseReportRows("stock_movement"),
+    emptyText: "No stock has moved between stores yet.",
+  },
+  retail_stock_analysis_report: {
+    summary: "stock",
+    columns: retailStockColumns,
+    fetchRows: () => getWarehouseReportRows("retail_stock"),
+    emptyText: "No stock on hand.",
+  },
+  stock_audit_report: {
+    summary: "stock",
+    columns: stockAuditColumns,
+    fetchRows: () => getAllRows("/sales-reports/store/stock_audit"),
+    emptyText: "No physical stock audits yet.",
+  },
+  outward_report: {
+    summary: "outward_lines",
+    columns: outwardColumns,
+    fetchRows: () => getWarehouseReportRows("outwards"),
+    emptyText: "No transfers yet.",
+  },
+  outward_details_report: {
+    summary: "outward_lines",
+    columns: outwardLineColumns,
+    fetchRows: () => getWarehouseReportRows("outward_lines"),
+    emptyText: "No transfers yet.",
+  },
+  pending_inward_report: {
+    summary: "outward_lines",
+    columns: outwardColumns,
+    fetchRows: () => getWarehouseReportRows("pending_inward"),
+    emptyText: "Nothing is in transit to this store.",
+  },
+  pending_outward_report: {
+    summary: "outward_lines",
+    columns: outwardColumns,
+    fetchRows: () => getWarehouseReportRows("pending_outward"),
+    emptyText: "Nothing sent from this store is waiting to be received.",
+  },
+  supplier_master_report: {
+    columns: supplierMasterColumns,
+    fetchRows: async () => (await getAllRows("/suppliers")).map((row) => ({ ...row, active_label: activeLabel(row) })),
+    emptyText: "No suppliers yet.",
+  },
+  agent_master_report: {
+    columns: agentMasterColumns,
+    fetchRows: async () => (await getAllRows("/agents")).map((row) => ({
+      ...row, phone_no: row?.phone || row?.contact_no || "-", commission: row?.commission_pct ?? row?.commission_rate ?? null, active_label: activeLabel(row),
+    })),
+    emptyText: "No agents yet.",
+  },
+  tax_master_report: {
+    columns: taxMasterColumns,
+    fetchRows: async () => (await getAllRows("/taxes")).map((row) => ({
+      ...row,
+      use_label: [row?.is_sales_tax ? "Sales" : null, row?.is_purchase_tax ? "Purchase" : null].filter(Boolean).join(" & ") || "-",
+      active_label: activeLabel(row),
+    })),
+    emptyText: "No taxes yet.",
   },
 };
 
@@ -923,11 +1284,49 @@ const WarehouseReports = () => {
     return authUser?.company_id ? `Company ${authUser.company_id}` : "Company";
   }, [authUser, resolvedExportCompanyName]);
 
+  const [summaryLayouts, setSummaryLayouts] = useState({});
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const [summaryForm, setSummaryForm] = useState(() => ({ mode: "", from: daysAgoKey(30), to: todayKey() }));
+  const [appliedSummary, setAppliedSummary] = useState(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  useEffect(() => {
+    let active = true;
+    fetchSummaryLayouts("/warehouse-reports/summary-layouts").then((layouts) => { if (active) setSummaryLayouts(layouts); }).catch(() => {});
+    return () => { active = false; };
+  }, []);
+  // A summary belongs to the report it was made on.
+  useResetOnChange([selectedReportKey], () => setAppliedSummary(null));
+
   const grid = useSearchGrid({ sourceRows: reportRows, paginationMode: "client", scopeKey: selectedReportKey });
   const { page, setPage, limit, setLimit } = grid;
 
   const selectedReport = selectedReportKey ? reportLookup[selectedReportKey] || null : null;
   const selectedReportSource = selectedReport ? REPORT_DATA_SOURCES[selectedReport.key] || null : null;
+  const tabSummary = selectedReportSource?.summary ? summaryLayouts[selectedReportSource.summary] || null : null;
+  const summaryOptions = tabSummary?.layouts || [];
+  const tableRows = appliedSummary ? appliedSummary.rows : reportRows;
+  const tableColumns = appliedSummary ? appliedSummary.columns : selectedReportSource?.columns || [];
+  const openSummary = () => {
+    setSummaryForm((prev) => (summaryOptions.some((opt) => opt.value === prev.mode) ? prev : { ...prev, mode: summaryOptions[0]?.value || "" }));
+    setSummaryOpen(true);
+  };
+  const applySummary = async () => {
+    setSummaryLoading(true);
+    try {
+      const summary = await fetchSummary("/warehouse-reports/summary", selectedReportSource.summary, {
+        layout: summaryForm.mode,
+        ...(tabSummary?.dated ? { from: summaryForm.from, to: summaryForm.to } : {}),
+      });
+      setAppliedSummary(summary);
+      setSummaryOpen(false);
+      setPage(1);
+      toast.success(summary.capped ? `${summary.label} applied (largest groups shown)` : `${summary.label} applied`);
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to load summary.");
+    } finally {
+      setSummaryLoading(false);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -1094,9 +1493,14 @@ const WarehouseReports = () => {
         </>}
         actions={<>
           {selectedReport ? (
-          <Box sx={{ display: { xs: "none", md: "block" }, fontSize: 10.5, color: "text.secondary" }}>
-            {reportLoading ? "Loading report..." : `${reportRows.length} row(s)`}
-          </Box>
+          <Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
+            {summaryOptions.length ? (
+              <SummaryLayoutsButtons onOpen={openSummary} applied={Boolean(appliedSummary)} onReset={() => setAppliedSummary(null)} />
+            ) : null}
+            <Box sx={{ display: { xs: "none", md: "block" }, fontSize: 10.5, color: "text.secondary" }}>
+              {reportLoading ? "Loading report..." : `${appliedSummary ? appliedSummary.rows.length : reportRows.length} row(s)`}
+            </Box>
+          </Stack>
         ) : null}
         </>}
       />
@@ -1108,12 +1512,19 @@ const WarehouseReports = () => {
               <Typography sx={{ fontSize: { xs: 12.25, md: 14 }, fontWeight: 600, color: "text.primary" }}>
                 {selectedReport.title}
               </Typography>
+              {appliedSummary ? (
+                <Typography sx={{ mt: 0.5, fontSize: 10.5, color: "text.secondary" }}>
+                  Showing <Box component="strong">{appliedSummary.label}</Box>
+                  {appliedSummary.from ? <> for {appliedSummary.from} → {appliedSummary.to}</> : null}
+                </Typography>
+              ) : null}
             </Box>
 
             <FilterableDataTable
-              rows={reportRows}
-              columns={selectedReportSource?.columns || []}
-              loading={reportLoading}
+              key={`${selectedReport.key}${appliedSummary ? `_${appliedSummary.label}` : ""}`}
+              rows={tableRows}
+              columns={tableColumns}
+              loading={reportLoading || summaryLoading}
               loadingText={`Loading ${selectedReport.title.toLowerCase()}...`}
               emptyText={
                 reportError ||
@@ -1121,17 +1532,17 @@ const WarehouseReports = () => {
                 `No ${selectedReport.title.toLowerCase()} records found.`
               }
               searchPlaceholder={`Search ${selectedReport.title.toLowerCase()}...`}
-              exportFileName={`warehouse_report_${selectedReport.key}`}
+              exportFileName={`warehouse_report_${selectedReport.key}${appliedSummary ? `_${appliedSummary.label}` : ""}`}
               exportSheetName={selectedReport.title || "Warehouse Report"}
               exportTitle={resolvedExportCompanyName}
               exportTitleResolver={resolveExportCompanyTitle}
-              exportSubtitle={`${selectedReport.title} Report`}
+              exportSubtitle={appliedSummary ? `${selectedReport.title} — ${appliedSummary.label}${appliedSummary.from ? ` (${appliedSummary.from} → ${appliedSummary.to})` : ""}` : `${selectedReport.title} Report`}
               enableColumnResize
-              tablePreferenceKey={`warehouse.reports.${selectedReport.key}`}
+              tablePreferenceKey={`warehouse.reports.${selectedReport.key}${appliedSummary ? `.summary.${String(appliedSummary.label).replace(/\s+/g, "_")}` : ""}`}
               page={page}
               limit={limit}
-              totalPages={Math.max(Math.ceil(reportRows.length / Math.max(limit, 1)), 1)}
-              totalRows={reportRows.length}
+              totalPages={Math.max(Math.ceil(tableRows.length / Math.max(limit, 1)), 1)}
+              totalRows={tableRows.length}
               onPageChange={setPage}
               onLimitChange={(value) => {
                 setLimit(value);
@@ -1140,6 +1551,22 @@ const WarehouseReports = () => {
               paginationMode="client"
             fillHeight
             />
+            {summaryOptions.length ? (
+              <SummaryLayoutsDrawer
+                open={summaryOpen}
+                onClose={() => setSummaryOpen(false)}
+                options={summaryOptions}
+                mode={summaryForm.mode}
+                onModeChange={(mode) => setSummaryForm((prev) => ({ ...prev, mode }))}
+                dated={Boolean(tabSummary?.dated)}
+                from={summaryForm.from}
+                to={summaryForm.to}
+                onRangeChange={(range) => setSummaryForm((prev) => ({ ...prev, ...range }))}
+                loading={summaryLoading}
+                onApply={applySummary}
+                name="warehouse_summary_mode"
+              />
+            ) : null}
           </SearchGridPanel>
         ) : (
           <Box sx={{ borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", boxShadow: 1, p: { xs: 2, md: 2.5 } }}>

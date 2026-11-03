@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Models\Stock;
 use App\Support\GroupAggregationService;
 use App\Support\PaginationService;
+use App\Services\Reports\ReportSummaryService;
 use App\Services\Reports\StoreReports;
 use App\Services\Tenancy\StoreQuery;
 use Illuminate\Http\Request;
@@ -43,6 +44,20 @@ class SalesReportController extends Controller
         $result = $this->groupAggregationService->crossTab($query, 'pos_sales', $request);
 
         return response()->json($result, $result['success'] ? 200 : 422);
+    }
+
+    /** Summary layouts: the datasets this page can summarise, and one summary (grouped and totalled in the database). */
+    public function summaryLayouts(ReportSummaryService $summaries)
+    {
+        return response()->json(['success' => true, 'data' => $summaries->layouts('sales')]);
+    }
+
+    public function summary(Request $request, string $dataset, ReportSummaryService $summaries)
+    {
+        $request->validate(['layout' => 'required|string|max:40', 'from' => 'nullable|date', 'to' => 'nullable|date']);
+
+        return response()->json(['success' => true, 'data' => $summaries->run('sales', $dataset, $request->input('layout'),
+            $request->input('from'), $request->input('to'), $request->attributes->get('store_context_ids', []))]);
     }
 
     /** Stock aging, shelf period, stock audit, loyalty redemptions and incentive tabs of Sales Reports. */

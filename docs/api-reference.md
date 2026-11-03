@@ -1,6 +1,6 @@
 # API reference
 
-Every endpoint under `/api`, grouped by module (514 endpoints). Generated from
+Every endpoint under `/api`, grouped by module (521 endpoints). Generated from
 `php artisan route:list --sort=definition --json`; regenerate it after changing routes.
 
 - Each signed-in endpoint is also served under `/api/v1/...` with the same behaviour.
@@ -133,6 +133,8 @@ Every endpoint under `/api`, grouped by module (514 endpoints). Generated from
 | GET | `/api/accounting/profit-loss` | AccountingController@profitAndLoss | yes |
 | GET | `/api/accounting/balance-sheet` | AccountingController@balanceSheet | yes |
 | GET | `/api/accounting/outstanding` | AccountingController@outstanding | yes |
+| GET | `/api/accounting/summary-layouts` | AccountingController@summaryLayouts | yes |
+| GET | `/api/accounting/summary/{dataset}` | AccountingController@summary | yes |
 | POST | `/api/accounting/repost` | AccountingController@repost | yes |
 | GET | `/api/supplier-payments/dashboard-summary` | SupplierPaymentController@dashboardSummary | yes |
 | GET | `/api/supplier-payments/pending` | SupplierPaymentController@pending | yes |
@@ -433,6 +435,8 @@ Every endpoint under `/api`, grouped by module (514 endpoints). Generated from
 | GET | `/api/sales-reports` | SalesReportController@index | yes |
 | GET | `/api/sales-comparer` | SalesReportController@salesComparer | yes |
 | GET | `/api/sales-reports/store/{report}` | SalesReportController@storeReport | yes |
+| GET | `/api/sales-reports/summary-layouts` | SalesReportController@summaryLayouts | yes |
+| GET | `/api/sales-reports/summary/{dataset}` | SalesReportController@summary | yes |
 | GET | `/api/sales-vs-purchase` | SalesReportController@salesVsPurchase | yes |
 | GET | `/api/sales-vs-stock` | SalesReportController@salesVsStock | yes |
 | GET | `/api/sales-pivot` | SalesReportController@salesPivot | yes |
@@ -606,6 +610,9 @@ Every endpoint under `/api`, grouped by module (514 endpoints). Generated from
 | DELETE | `/api/purchase-returns/{purchase_return}` | PurchaseReturnController@destroy | yes |
 | GET | `/api/item-locator` | ItemLocatorController@index | yes |
 | GET | `/api/warehouse-reports` | WarehouseReportController@index | yes |
+| GET | `/api/warehouse-reports/data/{report}` | WarehouseReportController@report | yes |
+| GET | `/api/warehouse-reports/summary-layouts` | WarehouseReportController@summaryLayouts | yes |
+| GET | `/api/warehouse-reports/summary/{dataset}` | WarehouseReportController@summary | yes |
 | GET | `/api/stock-analyzer` | WarehouseReportController@stockAnalyzer | yes |
 | GET | `/api/stock-pivot` | WarehouseReportController@stockPivot | yes |
 | GET|POST|PUT | `/api/warehouse-customisation` | WarehouseReportController@warehouseCustomization | yes |

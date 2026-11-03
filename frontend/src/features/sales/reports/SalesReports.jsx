@@ -4,15 +4,16 @@ import useStoreDisplayName from "@/shared/hooks/useStoreDisplayName";
 import SearchGridPanel from "@/shared/components/SearchGridPanel";
 import useSearchGrid from "@/shared/hooks/useSearchGrid";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Layers } from "lucide-react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import api from "@/shared/api/apiClient";
 import ExportBottomSheet from "@/shared/components/ExportBottomSheet";
+import SummaryLayoutsDrawer, { SummaryDateField, SummaryField, SummaryLayoutsButtons } from "@/shared/components/SummaryLayoutsDrawer";
+import { fetchSummary, fetchSummaryLayouts } from "@/shared/utils/reportSummary";
 import FilterableDataTable from "@/shared/components/FilterableDataTable";
 import Breadcrumbs from "@/shared/components/Breadcrumbs";
-import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, Radio, alpha } from "@mui/material";
+import { Box, Stack, Typography, TextField, MenuItem, alpha } from "@mui/material";
 import { muiFieldSx } from "@/shared/theme/formControlSizes";
 
 const formatDate = (value) => {
@@ -615,6 +616,28 @@ const buildCustomerRows = async (inactiveOnly = false) => {
     }));
 };
 
+const buildSalesReturnRows = async () => (await getAllRows("/pos-returns")).map((row) => ({
+  ...row,
+  return_no_display: row?.display_return_no || row?.return_no || "-",
+  return_day: formatDayKey(row?.return_date),
+  customer_name: row?.customer?.name || "-",
+  mobile_no: row?.customer?.phone || "-",
+  bill_no: row?.pos_sale?.invoice_no || row?.posSale?.invoice_no || (row?.standalone ? "Without bill" : "-"),
+  qty: (Array.isArray(row?.items) ? row.items : []).reduce((sum, item) => sum + toNumber(item?.quantity), 0),
+  refund: toNumber(row?.total_refund),
+  reason: row?.return_reason_name || "-",
+}));
+
+const buildDealerDocumentRows = async (url, noField, dateField) => (await getAllRows(url)).map((row) => ({
+  ...row,
+  doc_no: row?.[noField] || "-",
+  doc_day: formatDayKey(row?.[dateField]),
+  customer_name: row?.customer_name || "-",
+  qty: toNumber(row?.total_qty),
+  amount: toNumber(row?.amount ?? row?.grand_total),
+  status_label: row?.cancelled_at ? "Cancelled" : row?.status || "-",
+}));
+
 /** Rows of a Sales Reports tab the backend builds (stock batches, audits, loyalty, incentives) for the store. */
 const getStoreReportRows = (report) => getAllRows(`/sales-reports/store/${report}`);
 
@@ -1139,6 +1162,27 @@ const taxSummaryColumns = [
 const rightNumber = (digits = 0) => (value) => (
   <Box sx={{ textAlign: "right" }}>{value === null || value === undefined || value === "" ? "-" : toNumber(value).toLocaleString("en-IN", { minimumFractionDigits: digits, maximumFractionDigits: digits })}</Box>
 );
+
+const salesReturnColumns = [
+  { key: "return_no_display", label: "Return no" },
+  { key: "return_day", label: "Date" },
+  { key: "customer_name", label: "Customer" },
+  { key: "mobile_no", label: "Mobile" },
+  { key: "bill_no", label: "Bill no" },
+  { key: "qty", label: "Qty", render: rightNumber() },
+  { key: "refund", label: "Refund", render: rightNumber(2) },
+  { key: "refund_mode", label: "Refund mode" },
+  { key: "reason", label: "Reason" },
+];
+
+const dealerDocumentColumns = (noLabel, dateLabel) => [
+  { key: "doc_no", label: noLabel },
+  { key: "doc_day", label: dateLabel },
+  { key: "customer_name", label: "Dealer" },
+  { key: "qty", label: "Qty", render: rightNumber() },
+  { key: "amount", label: "Amount", render: rightNumber(2) },
+  { key: "status_label", label: "Status" },
+];
 
 const occasionColumns = (dateLabel, yearsLabel) => [
   { key: "name", label: "Customer" },
@@ -1776,6 +1820,24 @@ function buildSalesSummaryColumns(mode) {
 }
 
 const REPORT_DATA_SOURCES = {
+  sales_return_report: {
+    summary: "pos_returns",
+    columns: salesReturnColumns,
+    fetchRows: buildSalesReturnRows,
+    emptyText: "No sales returns found.",
+  },
+  dealer_invoice_report: {
+    summary: "dealer_lines",
+    columns: dealerDocumentColumns("Invoice no", "Invoice date"),
+    fetchRows: () => buildDealerDocumentRows("/dealer-invoices", "bill_no", "invoice_date"),
+    emptyText: "No dealer invoices found.",
+  },
+  dealer_return_report: {
+    summary: "dealer_returns",
+    columns: dealerDocumentColumns("Return no", "Return date"),
+    fetchRows: () => buildDealerDocumentRows("/dealer-invoice-returns", "return_no", "return_date"),
+    emptyText: "No dealer returns found.",
+  },
   sales_report: {
     columns: salesReportColumns,
     fetchRows: () => getAllRows("/pos-sales"),
@@ -1789,26 +1851,31 @@ const REPORT_DATA_SOURCES = {
     emptyText: "No unsettled sales bills found.",
   },
   sales_report_salesman_wise: {
+    summary: "sale_lines",
     columns: salesmanSummaryColumns,
     fetchRows: buildSalesmanSummaryRows,
     emptyText: "No salesman wise sales rows found.",
   },
   sales_report_salesman_wise_detail: {
+    summary: "sale_lines",
     columns: saleItemColumns,
     fetchRows: buildPosSaleItemRows,
     emptyText: "No salesman detail rows found.",
   },
   sales_report_margin: {
+    summary: "sale_lines",
     columns: salesMarginColumns,
     fetchRows: getReportSales,
     emptyText: "No sales margin rows found.",
   },
   sales_report_invoice_wise: {
+    summary: "sale_lines",
     columns: salesReportColumns,
     fetchRows: () => getAllRows("/pos-sales"),
     emptyText: "No invoice wise sales rows found.",
   },
   sales_report_barcode_wise: {
+    summary: "sale_lines",
     columns: saleItemColumns,
     fetchRows: buildPosSaleItemRows,
     emptyText: "No barcode wise sales rows found.",
@@ -1831,6 +1898,7 @@ const REPORT_DATA_SOURCES = {
     emptyText: "No delivery rows found.",
   },
   day_summary_report: {
+    summary: "sale_lines",
     columns: daySummaryColumns,
     fetchRows: buildDaySummaryRows,
     emptyText: "No day summary rows found.",
@@ -1899,11 +1967,13 @@ const REPORT_DATA_SOURCES = {
     emptyText: "No cashier wise settlement rows found.",
   },
   settlement_opening_closing_report: {
+    summary: "sale_payments",
     columns: settlementOpeningClosingColumns,
     fetchRows: buildCashOpeningClosingRows,
     emptyText: "No opening/closing rows found.",
   },
   company_wise_sale_collection_report: {
+    summary: "sale_payments",
     columns: companyWiseSaleCollectionColumns,
     fetchRows: buildCompanyWiseSaleCollectionRows,
     emptyText: "No company wise sale collection rows found.",
@@ -1917,41 +1987,49 @@ const REPORT_DATA_SOURCES = {
     emptyText: "No credit sale collection rows found.",
   },
   sales_tax_report_summary: {
+    summary: "sale_lines",
     columns: taxSummaryColumns,
     fetchRows: buildSalesTaxSummaryRows,
     emptyText: "No sales tax summary rows found.",
   },
   sales_tax_report_column_wise: {
+    summary: "sale_lines",
     columns: saleItemColumns,
     fetchRows: buildPosSaleItemRows,
     emptyText: "No sales tax detail rows found.",
   },
   sales_hsn_report: {
+    summary: "sale_lines",
     columns: salesHsnColumns,
     fetchRows: buildSalesHsnRows,
     emptyText: "No sales HSN rows found.",
   },
   my_customers_report: {
+    summary: "customers",
     columns: myCustomerSalesColumns,
     fetchRows: buildMyCustomerSalesRows,
     emptyText: "No customer sales rows found.",
   },
   inactive_customer_report: {
+    summary: "customers",
     columns: customerColumns,
     fetchRows: () => buildCustomerRows(true),
     emptyText: "No inactive customers found.",
   },
   sales_analysis_report: {
+    summary: "sale_lines",
     columns: daySummaryColumns,
     fetchRows: buildDaySummaryRows,
     emptyText: "No sales analysis rows found.",
   },
   sales_vs_settlement_report: {
+    summary: "sale_payments",
     columns: salesVsSettlementColumns,
     fetchRows: getReportSales,
     emptyText: "No sales vs settlement rows found.",
   },
   sales_vs_stock_report: {
+    summary: "store_stock",
     columns: salesVsStockColumns,
     fetchRows: buildSalesVsStockRows,
     emptyText: "No sales vs stock rows found.",
@@ -1962,11 +2040,13 @@ const REPORT_DATA_SOURCES = {
     emptyText: "No sales vs purchase vs stock rows found.",
   },
   stock_detail_report: {
+    summary: "store_stock",
     columns: stockColumns,
     fetchRows: buildStockRows,
     emptyText: "No stock detail rows found.",
   },
   direct_stock_report: {
+    summary: "store_stock",
     columns: stockColumns,
     fetchRows: buildStockRows,
     emptyText: "No direct stock rows found.",
@@ -1977,11 +2057,13 @@ const REPORT_DATA_SOURCES = {
     emptyText: "No physical stock audits yet.",
   },
   cashier_wise_discount_report: {
+    summary: "sale_lines",
     columns: cashierWiseDiscountColumns,
     fetchRows: buildCashierWiseDiscountRows,
     emptyText: "No cashier discount rows found.",
   },
   biller_wise_report: {
+    summary: "sale_lines",
     columns: billerWiseDiscountColumns,
     fetchRows: buildCashierWiseDiscountRows,
     emptyText: "No discounted bills found.",
@@ -1992,6 +2074,7 @@ const REPORT_DATA_SOURCES = {
     emptyText: "No employee rows found.",
   },
   day_summary_without_offset: {
+    summary: "sale_lines",
     columns: daySummaryColumns,
     fetchRows: buildDaySummaryRows,
     emptyText: "No day summary rows found.",
@@ -2000,6 +2083,7 @@ const REPORT_DATA_SOURCES = {
   alteration_report: { unavailableReason: "A dedicated data source for this report is not connected." },
   promotion_details_report: { unavailableReason: "A dedicated data source for this report is not connected." },
   sales_snapshot_text: {
+    summary: "sale_lines",
     columns: daySummaryColumns,
     fetchRows: buildDaySummaryRows,
     emptyText: "No snapshot rows found.",
@@ -2026,21 +2110,25 @@ const REPORT_DATA_SOURCES = {
     emptyText: "No customer advance rows found.",
   },
   settlement_reconciliation: {
+    summary: "sale_payments",
     columns: daySummaryColumns,
     fetchRows: buildDayEndSettlementSummaryRows,
     emptyText: "No reconciliation rows found.",
   },
   sales_tax_report_row_wise: {
+    summary: "sale_lines",
     columns: taxSummaryColumns,
     fetchRows: buildSalesTaxSummaryRows,
     emptyText: "No tax rows found.",
   },
   sales_tax_splitup_collection_report: {
+    summary: "sale_lines",
     columns: taxSummaryColumns,
     fetchRows: buildSalesTaxSummaryRows,
     emptyText: "No tax splitup rows found.",
   },
   credit_customer_outstanding_report: {
+    summary: "customers",
     columns: unsettledBillColumns,
     fetchRows: async () => {
       return getAllRows("/settlements/unpaid-bills", { status: "credit" });
@@ -2052,6 +2140,7 @@ const REPORT_DATA_SOURCES = {
   coupon_consumption_report: { unavailableReason: "A dedicated data source for this report is not connected." },
   gift_voucher_credit_note_consumption_report: { unavailableReason: "A dedicated data source for this report is not connected." },
   loyalty_reward_consumption_report: {
+    summary: "customers",
     columns: loyaltyRedemptionColumns,
     fetchRows: () => getStoreReportRows("loyalty_redemptions"),
     emptyText: "No loyalty points have been redeemed yet.",
@@ -2071,11 +2160,13 @@ const REPORT_DATA_SOURCES = {
   scheduled_message_log: { unavailableReason: "A dedicated data source for this report is not connected." },
   scheme_details_report: { unavailableReason: "A dedicated data source for this report is not connected." },
   stock_report_with_shelf_period: {
+    summary: "store_stock",
     columns: shelfPeriodColumns,
     fetchRows: () => getStoreReportRows("shelf_period"),
     emptyText: "No stock on hand.",
   },
   stock_aging_detail_report: {
+    summary: "store_stock",
     columns: stockAgingColumns,
     fetchRows: () => getStoreReportRows("stock_aging"),
     emptyText: "No stock on hand.",
@@ -2084,11 +2175,13 @@ const REPORT_DATA_SOURCES = {
   price_changer_report: { unavailableReason: "A dedicated data source for this report is not connected." },
   stock_split_report: { unavailableReason: "A dedicated data source for this report is not connected." },
   incentive_report_section: {
+    summary: "sale_lines",
     columns: incentiveSectionColumns,
     fetchRows: buildIncentiveSectionRows,
     emptyText: "No sales with a salesman yet.",
   },
   incentive_report_employees: {
+    summary: "sale_lines",
     columns: incentiveEmployeeColumns,
     fetchRows: () => getStoreReportRows("incentives"),
     emptyText: "No sales with a salesman yet.",
@@ -2104,7 +2197,7 @@ const REPORT_GROUPS = [
   {
     key: "sales_reports",
     title: "Sales Reports",
-    displayCount: 13,
+    displayCount: 16,
     items: [
       buildReportMeta("sales_report", "Sales Report"),
       buildReportMeta("unsettled_bill_report", "Unsettled Bill Report"),
@@ -2114,6 +2207,9 @@ const REPORT_GROUPS = [
       buildReportMeta("sales_report_invoice_wise", "Sales Report - Invoice wise"),
       buildReportMeta("sales_report_barcode_wise", "Sales Report - Barcode wise"),
       buildReportMeta("cancelled_sales_report", "Sales Report - Cancelled Sales Report"),
+      buildReportMeta("sales_return_report", "Sales Return Report"),
+      buildReportMeta("dealer_invoice_report", "Dealer Invoice Report"),
+      buildReportMeta("dealer_return_report", "Dealer Return Report"),
       buildReportMeta("day_summary_without_offset", "Day Summary (Without OffSet Bill Configuration)"),
       buildReportMeta("approved_bill_report", "Approved Bill Report"),
       buildReportMeta("estimate_bill_report", "Estimate Bill Report"),
@@ -2317,6 +2413,13 @@ const SalesReports = () => {
   const [superAdminCompanies, setSuperAdminCompanies] = useState([]);
 
   const isSuperAdminUser = String(authUser?.role || "").trim().toLowerCase() === "super_admin";
+  // Summary layouts of the other tabs (sales lines, payments, returns, dealer, customers), run on the server.
+  const [tabSummaryLayouts, setTabSummaryLayouts] = useState({});
+  useEffect(() => {
+    let active = true;
+    fetchSummaryLayouts("/sales-reports/summary-layouts").then((layouts) => { if (active) setTabSummaryLayouts(layouts); }).catch(() => {});
+    return () => { active = false; };
+  }, []);
 
   useResetOnChange([selectedReportKey], () => {
     setAppliedSalesSummary(null);
@@ -2369,22 +2472,50 @@ const SalesReports = () => {
   const selectedReport = selectedReportKey ? reportLookup[selectedReportKey] || null : null;
   const selectedReportSource = selectedReport && REPORT_DATA_SOURCES[selectedReport.key]?.fetchRows ? REPORT_DATA_SOURCES[selectedReport.key] : null;
 
+  const isSalesReportTab = selectedReport?.key === "sales_report";
+  const tabSummary = selectedReportSource?.summary ? tabSummaryLayouts[selectedReportSource.summary] || null : null;
+  const summaryOptions = isSalesReportTab ? SALES_SUMMARY_MODE_OPTIONS : tabSummary?.layouts || [];
+  const summaryAvailable = isSalesReportTab || summaryOptions.length > 0;
+  const openSummaryDrawer = () => {
+    // Each tab has its own breakdowns: start on the first one when the last choice belongs to another tab.
+    setSalesSummaryForm((prev) => (summaryOptions.some((opt) => opt.value === prev.mode) ? prev : { ...prev, mode: summaryOptions[0]?.value || "" }));
+    setSalesSummaryDrawerOpen(true);
+  };
+
   const displayRows = useMemo(() => {
-    if (selectedReport?.key === "sales_report" && appliedSalesSummary?.rows) {
+    if (appliedSalesSummary?.rows) {
       return appliedSalesSummary.rows;
     }
     return reportRows;
-  }, [appliedSalesSummary, reportRows, selectedReport?.key]);
+  }, [appliedSalesSummary, reportRows]);
 
   const displayColumns = useMemo(() => {
-    if (selectedReport?.key === "sales_report" && appliedSalesSummary?.columns) {
+    if (appliedSalesSummary?.columns) {
       return appliedSalesSummary.columns;
     }
     return selectedReportSource?.columns || [];
-  }, [appliedSalesSummary, selectedReport?.key, selectedReportSource?.columns]);
+  }, [appliedSalesSummary, selectedReportSource?.columns]);
 
   const displayLoading =
-    selectedReport?.key === "sales_report" && appliedSalesSummary ? salesSummaryLoading : reportLoading;
+    appliedSalesSummary ? salesSummaryLoading : reportLoading;
+
+  // The other tabs' breakdowns: grouped and totalled by the server for the chosen period.
+  const applyTabSummary = async () => {
+    setSalesSummaryLoading(true);
+    try {
+      const summary = await fetchSummary("/sales-reports/summary", selectedReportSource.summary, {
+        layout: salesSummaryForm.mode,
+        ...(tabSummary?.dated ? { from: salesSummaryForm.from, to: salesSummaryForm.to } : {}),
+      });
+      setAppliedSalesSummary(summary);
+      setSalesSummaryDrawerOpen(false);
+      toast.success(summary.capped ? `${summary.label} applied (largest groups shown)` : `${summary.label} applied`);
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to load summary report.");
+    } finally {
+      setSalesSummaryLoading(false);
+    }
+  };
 
   const applySalesSummaryFromPanel = useCallback(async () => {
     const mode = salesSummaryForm.mode;
@@ -2449,7 +2580,7 @@ const SalesReports = () => {
         return;
       }
 
-      if (selectedReport.key === "sales_report" && appliedSalesSummary) {
+      if (appliedSalesSummary) {
         setReportLoading(false);
         return;
       }
@@ -2603,37 +2734,8 @@ const SalesReports = () => {
         actions={<>
           {selectedReport ? (
           <Stack direction="row" sx={{ flexShrink: 0, alignItems: "center", gap: 1 }}>
-            {selectedReport.key === "sales_report" ? (
-              <>
-                <Button
-                  type="button"
-                  onClick={() => setSalesSummaryDrawerOpen(true)}
-                  variant="outlined"
-                  size="small"
-                  startIcon={<Layers size={14} />}
-                  sx={{ fontSize: 10.5, fontWeight: 600 }}
-                >
-                  Summary layouts
-                </Button>
-                {appliedSalesSummary ? (
-                  <Button
-                    type="button"
-                    onClick={() => setAppliedSalesSummary(null)}
-                    size="small"
-                    sx={{
-                      fontSize: 10.5,
-                      fontWeight: 600,
-                      border: 1,
-                      borderColor: (theme) => alpha(theme.palette.warning.main, 0.4),
-                      color: "warning.dark",
-                      bgcolor: (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.16 : 0.08),
-                      "&:hover": { bgcolor: (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.24 : 0.16) },
-                    }}
-                  >
-                    Standard view
-                  </Button>
-                ) : null}
-              </>
+            {summaryAvailable ? (
+              <SummaryLayoutsButtons onOpen={openSummaryDrawer} applied={Boolean(appliedSalesSummary)} onReset={() => setAppliedSalesSummary(null)} />
             ) : null}
             <ExportBottomSheet
               columns={displayColumns}
@@ -2643,8 +2745,8 @@ const SalesReports = () => {
               title={resolvedExportCompanyName}
               titleResolver={resolveExportCompanyTitle}
               subtitle={
-                appliedSalesSummary && selectedReport.key === "sales_report"
-                  ? `${selectedReport.title} — ${appliedSalesSummary.label} (${appliedSalesSummary.from} → ${appliedSalesSummary.to})`
+                appliedSalesSummary
+                  ? `${selectedReport.title} — ${appliedSalesSummary.label}${appliedSalesSummary.from ? ` (${appliedSalesSummary.from} → ${appliedSalesSummary.to})` : ""}`
                   : `${selectedReport.title} Report`
               }
               buttonClassName="text-xs"
@@ -2661,14 +2763,14 @@ const SalesReports = () => {
               <Typography sx={{ fontSize: { xs: 12.25, md: 14 }, fontWeight: 600, color: "text.primary" }}>
                 {selectedReport.title}
               </Typography>
-              {selectedReport.key === "sales_report" && appliedSalesSummary ? (
+              {appliedSalesSummary ? (
                 <Typography sx={{ mt: 0.5, fontSize: 10.5, color: "text.secondary" }}>
-                  Showing <Box component="strong">{appliedSalesSummary.label}</Box> for {appliedSalesSummary.from}{" "}
-                  → {appliedSalesSummary.to}
+                  Showing <Box component="strong">{appliedSalesSummary.label}</Box>
+                  {appliedSalesSummary.from ? <> for {appliedSalesSummary.from} → {appliedSalesSummary.to}</> : null}
                 </Typography>
-              ) : selectedReport.key === "sales_report" ? (
+              ) : summaryAvailable ? (
                 <Typography sx={{ mt: 0.5, fontSize: 11, color: "text.secondary" }}>
-                  Open <Box component="strong">Summary layouts</Box> for location / company / day / bill-style breakdowns.
+                  Open <Box component="strong">Summary layouts</Box> for {isSalesReportTab ? "location / company / day / bill-style" : summaryOptions.slice(0, 4).map((opt) => opt.label.toLowerCase()).join(" / ")} breakdowns.
                 </Typography>
               ) : null}
             </Box>
@@ -2716,191 +2818,42 @@ const SalesReports = () => {
               enableVirtualization
             />
 
-            {selectedReport.key === "sales_report" ? (
-              <>
-                <Box
-                  role="presentation"
-                  onClick={() => setSalesSummaryDrawerOpen(false)}
-                  sx={{
-                    position: "fixed",
-                    inset: 0,
-                    zIndex: 40,
-                    bgcolor: "rgba(0,0,0,0.3)",
-                    transition: "opacity 0.2s",
-                    opacity: salesSummaryDrawerOpen ? 1 : 0,
-                    visibility: salesSummaryDrawerOpen ? "visible" : "hidden",
-                    pointerEvents: salesSummaryDrawerOpen ? "auto" : "none",
-                  }}
-                />
-                <Box
-                  component="aside"
-                  sx={{
-                    position: "fixed",
-                    right: 0,
-                    top: 0,
-                    zIndex: 50,
-                    display: "flex",
-                    height: "100%",
-                    width: "100%",
-                    maxWidth: 448,
-                    flexDirection: "column",
-                    borderLeft: 1,
-                    borderColor: "divider",
-                    bgcolor: "background.paper",
-                    boxShadow: 12,
-                    transition: "transform 0.2s",
-                    transform: salesSummaryDrawerOpen ? "translateX(0)" : "translateX(100%)",
-                  }}
-                >
-                  <Box sx={{ borderBottom: 1, borderColor: "divider", px: 2, py: 1.5 }}>
-                    <Stack direction="row" sx={{ alignItems: "flex-start", justifyContent: "space-between", gap: 1 }}>
-                      <Box>
-                        <Typography sx={{ fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>
-                          Summary layouts
-                        </Typography>
-                        <Typography sx={{ mt: 0.5, fontSize: 11, color: "text.secondary" }}>
-                          Pick one breakdown. Company summary: admin sees only their store; super admin sees a row per company (or narrow with company below).
-                        </Typography>
-                      </Box>
-                      <IconButton
-                        type="button"
-                        aria-label="Close"
-                        size="small"
-                        onClick={() => setSalesSummaryDrawerOpen(false)}
-                        sx={{ fontSize: 17.5, lineHeight: 1, color: "text.disabled", "&:hover": { color: "text.secondary" } }}
-                      >
-                        ×
-                      </IconButton>
-                    </Stack>
-                  </Box>
-
-                  <Stack sx={{ flex: 1, gap: 2, overflowY: "auto", px: 2, py: 1.5, fontSize: 10.5 }}>
-                    {isSuperAdminUser ? (
-                      <Box>
-                        <Typography component="label" sx={{ mb: 0.5, display: "block", fontWeight: 600, color: "text.secondary" }}>Company scope</Typography>
-                        <TextField
-                          select
-                          value={salesSummaryScopedCompanyId}
-                          onChange={(e) => setSalesSummaryScopedCompanyId(e.target.value)}
-                          size="small"
-                          fullWidth
-                          sx={muiFieldSx}
-                        >
-                          <MenuItem value="">All allowed companies</MenuItem>
-                          {(superAdminCompanies || []).map((c) => (
-                            <MenuItem key={c.id} value={String(c.id)}>
-                              {c.name || `Company ${c.id}`}
-                            </MenuItem>
-                          ))}
-                        </TextField>
-                      </Box>
-                    ) : null}
-
-                    <Box>
-                      <Typography sx={{ mb: 1, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Breakdown type</Typography>
-                      <Stack sx={{ maxHeight: "52vh", gap: 0.75, overflowY: "auto", pr: 0.5 }}>
-                        {SALES_SUMMARY_MODE_OPTIONS.map((opt) => (
-                          <Stack
-                            component="label"
-                            direction="row"
-                            key={opt.value}
-                            sx={{
-                              cursor: "pointer",
-                              alignItems: "center",
-                              gap: 1,
-                              borderRadius: "3.5px",
-                              border: 1,
-                              borderColor: salesSummaryForm.mode === opt.value ? "primary.light" : "transparent",
-                              bgcolor: salesSummaryForm.mode === opt.value
-                                ? (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.24 : 0.08)
-                                : "transparent",
-                              px: 1,
-                              py: 0.75,
-                              "&:hover": salesSummaryForm.mode !== opt.value ? { bgcolor: "action.hover" } : undefined,
-                            }}
-                          >
-                            <Radio
-                              name="sales_summary_mode"
-                              size="small"
-                              sx={{ flexShrink: 0, p: 0 }}
-                              checked={salesSummaryForm.mode === opt.value}
-                              onChange={() => setSalesSummaryForm((prev) => ({ ...prev, mode: opt.value }))}
-                            />
-                            <Box component="span" sx={{ fontWeight: 500, fontSize: 11, lineHeight: 1.2, color: "text.primary" }}>{opt.label}</Box>
-                          </Stack>
-                        ))}
-                      </Stack>
-                    </Box>
-
-                    {salesSummaryForm.mode === "day_metrics" ? (
-                      <Box>
-                        <Typography component="label" sx={{ mb: 0.5, display: "block", fontWeight: 600, color: "text.secondary" }}>Day</Typography>
-                        <TextField
-                          type="date"
-                          value={salesSummaryForm.day}
-                          onChange={(e) => setSalesSummaryForm((prev) => ({ ...prev, day: e.target.value }))}
-                          size="small"
-                          fullWidth
-                          sx={[muiFieldSx, { "& .MuiInputBase-input": { fontFamily: "monospace" } }]}
-                        />
-                      </Box>
-                    ) : (
-                      <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { sm: "1fr 1fr" } }}>
-                        <Box>
-                          <Typography component="label" sx={{ mb: 0.5, display: "block", fontWeight: 600, color: "text.secondary" }}>From</Typography>
-                          <TextField
-                            type="date"
-                            value={salesSummaryForm.from}
-                            onChange={(e) => setSalesSummaryForm((prev) => ({ ...prev, from: e.target.value }))}
-                            size="small"
-                            fullWidth
-                            sx={[muiFieldSx, { "& .MuiInputBase-input": { fontFamily: "monospace" } }]}
-                          />
-                        </Box>
-                        <Box>
-                          <Typography component="label" sx={{ mb: 0.5, display: "block", fontWeight: 600, color: "text.secondary" }}>To</Typography>
-                          <TextField
-                            type="date"
-                            value={salesSummaryForm.to}
-                            onChange={(e) => setSalesSummaryForm((prev) => ({ ...prev, to: e.target.value }))}
-                            size="small"
-                            fullWidth
-                            sx={[muiFieldSx, { "& .MuiInputBase-input": { fontFamily: "monospace" } }]}
-                          />
-                        </Box>
-                      </Box>
-                    )}
-
-                    {salesSummaryForm.mode === "bill_detail" ? (
-                      <Box>
-                        <Typography component="label" sx={{ mb: 0.5, display: "block", fontWeight: 600, color: "text.secondary" }}>Bill number</Typography>
-                        <TextField
-                          type="text"
-                          value={salesSummaryForm.billNo}
-                          onChange={(e) => setSalesSummaryForm((prev) => ({ ...prev, billNo: e.target.value }))}
-                          placeholder='e.g. SB/142 or 142'
-                          size="small"
-                          fullWidth
-                          sx={[muiFieldSx, { "& .MuiInputBase-input": { fontFamily: "monospace" } }]}
-                        />
-                      </Box>
-                    ) : null}
-                  </Stack>
-
-                  <Box sx={{ borderTop: 1, borderColor: "divider", p: 2 }}>
-                    <Button
-                      type="button"
-                      disabled={salesSummaryLoading}
-                      onClick={applySalesSummaryFromPanel}
-                      variant="contained"
-                      fullWidth
-                      sx={{ py: 1, fontSize: 10.5, fontWeight: 700 }}
-                    >
-                      {salesSummaryLoading ? "Loading…" : "Apply breakdown"}
-                    </Button>
-                  </Box>
-                </Box>
-              </>
+            {summaryAvailable ? (
+              <SummaryLayoutsDrawer
+                open={salesSummaryDrawerOpen}
+                onClose={() => setSalesSummaryDrawerOpen(false)}
+                description={isSalesReportTab
+                  ? "Pick one breakdown. Company summary: admin sees only their store; super admin sees a row per company (or narrow with company below)."
+                  : "Pick one breakdown and the period; the totals are worked out on the server for the selected store."}
+                options={summaryOptions}
+                mode={salesSummaryForm.mode}
+                onModeChange={(mode) => setSalesSummaryForm((prev) => ({ ...prev, mode }))}
+                dated={isSalesReportTab ? salesSummaryForm.mode !== "day_metrics" : Boolean(tabSummary?.dated)}
+                from={salesSummaryForm.from}
+                to={salesSummaryForm.to}
+                onRangeChange={(range) => setSalesSummaryForm((prev) => ({ ...prev, ...range }))}
+                loading={salesSummaryLoading}
+                onApply={isSalesReportTab ? applySalesSummaryFromPanel : applyTabSummary}
+                name="sales_summary_mode"
+                topContent={isSalesReportTab && isSuperAdminUser ? (
+                  <SummaryField label="Company scope">
+                    <TextField select value={salesSummaryScopedCompanyId} onChange={(e) => setSalesSummaryScopedCompanyId(e.target.value)} size="small" fullWidth sx={muiFieldSx}>
+                      <MenuItem value="">All allowed companies</MenuItem>
+                      {(superAdminCompanies || []).map((c) => (
+                        <MenuItem key={c.id} value={String(c.id)}>{c.name || `Company ${c.id}`}</MenuItem>
+                      ))}
+                    </TextField>
+                  </SummaryField>
+                ) : null}
+                bottomContent={isSalesReportTab && salesSummaryForm.mode === "day_metrics" ? (
+                  <SummaryDateField label="Day" value={salesSummaryForm.day} onChange={(day) => setSalesSummaryForm((prev) => ({ ...prev, day }))} />
+                ) : isSalesReportTab && salesSummaryForm.mode === "bill_detail" ? (
+                  <SummaryField label="Bill number">
+                    <TextField type="text" value={salesSummaryForm.billNo} onChange={(e) => setSalesSummaryForm((prev) => ({ ...prev, billNo: e.target.value }))}
+                      placeholder="e.g. SB/142 or 142" size="small" fullWidth sx={[muiFieldSx, { "& .MuiInputBase-input": { fontFamily: "monospace" } }]} />
+                  </SummaryField>
+                ) : null}
+              />
             ) : null}
           </SearchGridPanel>
         ) : (
