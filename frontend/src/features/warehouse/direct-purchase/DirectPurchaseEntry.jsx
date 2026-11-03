@@ -12,6 +12,7 @@ import AsyncSearchSelect from "@/shared/components/AsyncSearchSelect";
 import PageSkeleton from "@/shared/components/PageSkeleton";
 import Breadcrumbs from "@/shared/components/Breadcrumbs";
 import { buildSizeSelectOptions } from "@/features/warehouse/utils/sizeSelectOptions";
+import PurchaseOrderPicker from "./PurchaseOrderPicker";
 import {
   Box,
   Stack,
@@ -470,6 +471,7 @@ const computeDirectPurchaseItem = (item, productsById) => {
 const createDefaultForm = (authUser = null) => ({
   purchaseType: "textile",
   poNo: "",
+  purchaseOrderId: "",
   lrNo: "",
   lrDate: "",
   bundles: "",
@@ -1652,6 +1654,7 @@ const DirectPurchaseEntry = () => {
         setForm({
           purchaseType: entry.purchase_type || "textile",
           poNo: entry.po_no || "",
+          purchaseOrderId: entry.purchase_order_id ? String(entry.purchase_order_id) : "",
           lrNo: entry.lr_no || "",
           lrDate: entry.lr_date || "",
           bundles: entry.bundles ? String(entry.bundles) : "",
@@ -1817,7 +1820,44 @@ const DirectPurchaseEntry = () => {
 
   const handleFormChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setForm((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
+    setForm((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+      // A purchase order belongs to one supplier.
+      ...(name === "supplierId" && String(value) !== String(prev.supplierId) && prev.purchaseOrderId ? { purchaseOrderId: "", poNo: "" } : {}),
+    }));
+  };
+
+  const handlePurchaseOrderChange = (order) => {
+    setForm((prev) => ({
+      ...prev,
+      purchaseOrderId: order ? String(order.id) : "",
+      poNo: order ? order.po_no : prev.purchaseOrderId ? "" : prev.poNo,
+    }));
+  };
+
+  // "Use" on a pending PO line: the item row is filled in (product, variant details, pending qty, ordered rate)
+  // for the user to check and add as usual.
+  const handleUsePurchaseOrderLine = (line, pending) => {
+    const product = line.product || {};
+    setProducts((prev) => (prev.some((row) => String(row.id) === String(line.product_id))
+      ? prev
+      : [...prev, { id: line.product_id, name: product.name, code: product.code, hsn_code: product.hsn_code, brand_id: product.brand_id, selling_price: product.selling_price }]));
+    const variant = line.variant || {};
+    const brandId = variant.brand_id || product.brand_id;
+    setCurrentItem((prev) => ({
+      ...createDefaultItem(prev.sNo),
+      productId: String(line.product_id),
+      brandId: brandId ? String(brandId) : "",
+      size: variant.size?.name || "Jump",
+      colorId: variant.color_id ? String(variant.color_id) : "",
+      designNo: variant.design_no || "",
+      hsnCode: product.hsn_code || "",
+      qty: String(pending),
+      cost: String(Number(line.unit_cost) || ""),
+      price: Number(product.selling_price) > 0 ? String(Number(product.selling_price)) : "",
+    }));
+    showToast("info", "Check the item row, then add it.");
   };
 
   const handleTaxDraftChange = (key, value) => {
@@ -2437,6 +2477,7 @@ const DirectPurchaseEntry = () => {
         supplierName: selectedSupplier?.name || "",
         purchaseType: form.purchaseType,
         poNo: form.poNo,
+        purchaseOrderId: form.purchaseOrderId || null,
         transportId: form.transportId || null,
         transportName: selectedTransport?.name || "",
         lrNo: form.lrNo,
@@ -2657,6 +2698,8 @@ const DirectPurchaseEntry = () => {
               <AsyncSearchSelect name="supplierId" value={form.supplierId} onChange={handleFormChange} options={suppliers} onAsyncSearch={handleAsyncSupplierSearch} placeholder="Select..." searchPlaceholder="Search supplier..." />
             </Box>
           </Box>
+
+          <PurchaseOrderPicker supplierId={form.supplierId} value={form.purchaseOrderId} onChange={handlePurchaseOrderChange} onUseLine={handleUsePurchaseOrderLine} />
 
           <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr auto auto", gap: 1, mb: 1, alignItems: "end" }}>
             <Box sx={{ minWidth: 0 }}>

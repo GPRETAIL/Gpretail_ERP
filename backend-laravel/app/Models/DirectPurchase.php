@@ -20,6 +20,7 @@ class DirectPurchase extends Model
         'purchase_no',
         'purchase_type',
         'po_no',
+        'purchase_order_id',
         'transport_id',
         'transport_name',
         'lr_no',

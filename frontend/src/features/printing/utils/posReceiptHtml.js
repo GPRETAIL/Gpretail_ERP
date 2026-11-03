@@ -385,6 +385,8 @@ const buildA4SaleInvoiceHtml = (receiptData, customization) => {
     .qr-wrap img { width: 90px; height: 90px; }
     .qr-wrap svg { width: 90px; height: 90px; }
     .center { text-align: center; }
+    /* The bill barcode image is full-width for 3" receipts; on A4 that made it fill a third of the page. */
+    .bill-barcode img { width: 240px !important; max-width: 100%; }
   </style></head><body><div class="invoice">
     <div class="header">
       <div>
@@ -445,7 +447,7 @@ const buildA4SaleInvoiceHtml = (receiptData, customization) => {
         <div>Authorized Signatory</div>
       </div>
     </div>
-    ${barcodeMarkup ? `<div class="center" style="margin-top:10px;">${barcodeMarkup}</div>` : ""}
+    ${barcodeMarkup ? `<div class="center bill-barcode" style="margin-top:10px;">${barcodeMarkup}</div>` : ""}
   </div></body></html>`;
 };
 

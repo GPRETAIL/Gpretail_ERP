@@ -3,7 +3,7 @@ import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { Alert, Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, MenuItem, Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from "@mui/material";
-import { Plus, Printer, RefreshCw, Sparkles, Trash2 } from "lucide-react";
+import { MessageCircle, Plus, Printer, RefreshCw, Sparkles, Trash2 } from "lucide-react";
 import api from "@/shared/api/apiClient";
 import PageHeader from "@/shared/components/PageHeader";
 import Breadcrumbs from "@/shared/components/Breadcrumbs";
@@ -11,9 +11,9 @@ import FilterableDataTable from "@/shared/components/FilterableDataTable";
 import SearchGridPanel from "@/shared/components/SearchGridPanel";
 import useSearchGrid from "@/shared/hooks/useSearchGrid";
 import { browserPrintHtml } from "@/features/sales/pos/utils/posSalesUtils";
-import { PO_FILTERS, PO_STATUS, day, lineLabel, money, purchaseOrderHtml, qty } from "./utils/purchaseOrderPrint";
+import { PO_FILTERS, day, lineLabel, money, purchaseOrderHtml, purchaseOrderWhatsAppUrl, qty, statusColor, statusLabel } from "./utils/purchaseOrderPrint";
 
-const blankOrder = { supplier_id: "", expected_date: "", notes: "", items: [], status: "DRAFT" };
+const blankOrder = { supplier_id: "", expected_date: "", notes: "", items: [], receipts: [], status: "DRAFT" };
 
 /** Create or review one purchase order; only a draft can be changed. */
 function OrderEditor({ uuid, suppliers, storeName, onClose, onChanged }) {
@@ -23,6 +23,8 @@ function OrderEditor({ uuid, suppliers, storeName, onClose, onChanged }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const draft = order?.status === "DRAFT";
+  // Once approved, Direct Purchases received against the order fill in what has arrived.
+  const receiving = Boolean(order) && !draft && order.status !== "CANCELLED";
 
   useEffect(() => {
     if (!uuid) return undefined;
@@ -78,10 +80,11 @@ function OrderEditor({ uuid, suppliers, storeName, onClose, onChanged }) {
 
   return (
     <Dialog open onClose={() => { if (!busy) onClose(); }} maxWidth="md" fullWidth>
-      <DialogTitle>{order?.po_no ? `${order.po_no} · ${PO_STATUS[order.status]?.label || order.status}` : "New purchase order"}</DialogTitle>
+      <DialogTitle>{order?.po_no ? `${order.po_no} · ${statusLabel({ ...order, items: lines })}` : "New purchase order"}</DialogTitle>
       <DialogContent>
         {!order ? <Typography sx={{ color: "text.secondary" }}>Loading…</Typography> : (
           <Stack spacing={1.5} sx={{ pt: 1 }}>
+            {order.status === "APPROVED" && <Alert severity="info">Receive the goods in Warehouse &gt; Direct Purchase: choose this supplier, then this order under "Against PO". The order closes itself when everything has arrived.</Alert>}
             {order.source === "AUTO" && draft && <Alert severity="info">Drafted by the reorder engine for items at or below their reorder level. Check the quantities and supplier, then approve.</Alert>}
             <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
               <TextField select size="small" label="Supplier" value={order.supplier_id} disabled={!draft} onChange={(e) => setOrder((prev) => ({ ...prev, supplier_id: e.target.value }))} sx={{ minWidth: 240 }}>
@@ -97,14 +100,16 @@ function OrderEditor({ uuid, suppliers, storeName, onClose, onChanged }) {
               </Box>
             )}
             <Table size="small">
-              <TableHead><TableRow><TableCell>Item</TableCell><TableCell align="right">Stock then</TableCell><TableCell>Quantity</TableCell><TableCell>Rate</TableCell><TableCell align="right">Amount</TableCell><TableCell /></TableRow></TableHead>
+              <TableHead><TableRow><TableCell>Item</TableCell><TableCell align="right">Stock then</TableCell><TableCell>Quantity</TableCell>{receiving && <TableCell align="right">Received</TableCell>}{receiving && <TableCell align="right">Pending</TableCell>}<TableCell>Rate</TableCell><TableCell align="right">Amount</TableCell><TableCell /></TableRow></TableHead>
               <TableBody>
-                {lines.length === 0 && <TableRow><TableCell colSpan={6} sx={{ color: "text.secondary" }}>No items yet.</TableCell></TableRow>}
+                {lines.length === 0 && <TableRow><TableCell colSpan={receiving ? 8 : 6} sx={{ color: "text.secondary" }}>No items yet.</TableCell></TableRow>}
                 {lines.map((line) => (
                   <TableRow key={line.key}>
                     <TableCell><Typography sx={{ fontSize: 12.5, fontWeight: 600 }}>{lineLabel(line)}</Typography><Typography sx={{ fontSize: 11, color: "text.secondary" }}>{line.product?.code}</Typography></TableCell>
                     <TableCell align="right">{line.stock_at_order == null ? "-" : qty(line.stock_at_order)}</TableCell>
                     <TableCell><TextField size="small" type="number" value={line.quantity} disabled={!draft} error={!(Number(line.quantity) > 0)} onChange={(e) => setLine(line.key, "quantity", e.target.value)} slotProps={{ htmlInput: { min: 0, step: "any", "aria-label": `Quantity ${lineLabel(line)}` } }} sx={{ width: 100 }} /></TableCell>
+                    {receiving && <TableCell align="right" sx={{ fontWeight: 600, color: Number(line.received_qty) >= Number(line.quantity) ? "success.main" : "text.primary" }}>{qty(line.received_qty || 0)}</TableCell>}
+                    {receiving && <TableCell align="right">{qty(Math.max(0, Number(line.quantity) - Number(line.received_qty || 0)))}</TableCell>}
                     <TableCell><TextField size="small" type="number" value={line.unit_cost} disabled={!draft} onChange={(e) => setLine(line.key, "unit_cost", e.target.value)} slotProps={{ htmlInput: { min: 0, step: "any", "aria-label": `Rate ${lineLabel(line)}` } }} sx={{ width: 100 }} /></TableCell>
                     <TableCell align="right">{money((Number(line.quantity) || 0) * (Number(line.unit_cost) || 0))}</TableCell>
                     <TableCell>{draft && <IconButton size="small" aria-label={`Remove ${lineLabel(line)}`} onClick={() => setLines((prev) => prev.filter((item) => item.key !== line.key))}><Trash2 size={15} /></IconButton>}</TableCell>
@@ -113,12 +118,23 @@ function OrderEditor({ uuid, suppliers, storeName, onClose, onChanged }) {
               </TableBody>
             </Table>
             <Typography sx={{ textAlign: "right", fontWeight: 700 }}>Total ₹{money(total)}</Typography>
+            {receiving && (order.receipts || []).length > 0 && (
+              <Typography sx={{ fontSize: 12, color: "text.secondary" }}>
+                Received in: {order.receipts.map((receipt) => `${receipt.purchase_no}${receipt.invoice_no ? ` (bill ${receipt.invoice_no})` : ""}${receipt.invoice_workflow_status === "temporary" ? " - temporary, not counted" : ""}`).join(", ")}
+              </Typography>
+            )}
             {error && <Alert severity="error">{error}</Alert>}
           </Stack>
         )}
       </DialogContent>
       <DialogActions sx={{ flexWrap: "wrap", gap: 1 }}>
         {uuid && order && <Button color="inherit" startIcon={<Printer size={14} />} onClick={() => browserPrintHtml(purchaseOrderHtml({ ...order, items: lines }, storeName))}>Print</Button>}
+        {uuid && order?.status === "APPROVED" && (
+          <Button color="success" startIcon={<MessageCircle size={14} />} component="a" target="_blank" rel="noopener noreferrer"
+            href={purchaseOrderWhatsAppUrl({ ...order, items: lines }, storeName)}>
+            {order.supplier?.phone ? "WhatsApp supplier" : "Share on WhatsApp"}
+          </Button>
+        )}
         {uuid && draft && <Button color="error" disabled={busy} onClick={() => window.confirm("Delete this draft?") && run(() => api.delete(`/purchase-orders/${uuid}`), "Draft deleted.")}>Delete draft</Button>}
         {uuid && ["DRAFT", "APPROVED"].includes(order?.status) && <Button color="error" disabled={busy} onClick={() => window.confirm("Cancel this purchase order?") && run(() => api.post(`/purchase-orders/${uuid}/cancel`), "Cancelled.")}>Cancel order</Button>}
         {order?.status === "APPROVED" && <Button disabled={busy} onClick={() => run(() => api.post(`/purchase-orders/${uuid}/close`), "Closed.")}>Mark closed</Button>}
@@ -187,9 +203,10 @@ export default function PurchaseOrders() {
     { key: "supplier", label: "Supplier", valueGetter: (row) => row.supplier?.name || "Not chosen yet" },
     { key: "items_count", label: "Lines", valueGetter: (row) => row.items_count },
     { key: "total_qty", label: "Qty", valueGetter: (row) => Number(row.total_qty), render: (value) => qty(value) },
+    { key: "received_qty", label: "Received", valueGetter: (row) => Number(row.received_qty || 0), render: (value, row) => (row.status === "DRAFT" ? "-" : qty(value)) },
     { key: "total_amount", label: "Amount", valueGetter: (row) => Number(row.total_amount), render: (value) => `₹${money(value)}` },
     { key: "source", label: "Source", valueGetter: (row) => (row.source === "AUTO" ? "Reorder" : "Manual") },
-    { key: "status", label: "Status", valueGetter: (row) => PO_STATUS[row.status]?.label || row.status, render: (value, row) => <Chip size="small" color={PO_STATUS[row.status]?.color || "default"} label={value} /> },
+    { key: "status", label: "Status", valueGetter: (row) => statusLabel(row), render: (value, row) => <Chip size="small" color={statusColor(row)} label={value} /> },
   ], []);
 
   return (

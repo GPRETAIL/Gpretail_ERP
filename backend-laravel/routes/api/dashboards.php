@@ -19,7 +19,6 @@ use Illuminate\Support\Facades\Route;
 Route::get('dashboard/overview', [DashboardController::class, 'overview']);
 Route::get('dashboard/warehouse', [DashboardController::class, 'warehouse']);
 Route::get('dashboard/summary', [DashboardController::class, 'summary']);
-Route::get('dashboard/analytics', [DashboardController::class, 'analytics']);
 Route::get('dashboard/attention-summary', [DashboardController::class, 'attentionSummary']);
 Route::get('dashboard/layout', [DashboardLayoutController::class, 'index']);
 Route::put('dashboard/layout/{tabKey}', [DashboardLayoutController::class, 'update']);

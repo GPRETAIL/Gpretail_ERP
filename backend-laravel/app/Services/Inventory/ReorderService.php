@@ -35,7 +35,7 @@ class ReorderService
             ->whereIn('id', $stocks->pluck('variant_id')->filter()->unique())->get()->keyBy('id');
         $onOrder = DB::table('purchase_order_items as i')->join('purchase_orders as o', 'o.id', '=', 'i.purchase_order_id')
             ->where('o.store_id', $storeId)->whereIn('o.status', PurchaseOrderStatus::openValues())
-            ->selectRaw('i.product_id, i.variant_id, SUM(i.quantity) as qty')->groupBy('i.product_id', 'i.variant_id')->get()
+            ->selectRaw('i.product_id, i.variant_id, SUM(CASE WHEN i.quantity > i.received_qty THEN i.quantity - i.received_qty ELSE 0 END) as qty')->groupBy('i.product_id', 'i.variant_id')->get()
             ->keyBy(fn ($row) => $row->product_id.':'.($row->variant_id ?? ''));
         $suppliers = $this->suppliers($storeId, $products);
 

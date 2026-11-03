@@ -95,16 +95,36 @@ it.each([
   ["Analysis Reports", "Sales Vs Stock Report"], ["Analysis Reports", "Sales Vs Purchase Vs Stock"],
   ["Stock Reports", "Stock Detail Report"], ["Stock Reports", "Direct Stock Report"],
   ["Discount Reports", "Biller Wise Report"], ["Discount Reports", "Cashier Wise Report"],
-  ["HR Reports", "Employee Detail Report"],
+  ["HR Reports", "Employee Detail Report"], ["HR Reports", "Incentive Report - Employees"], ["HR Reports", "Incentive Report - Section"],
+  ["Stock Reports", "Stock Aging Detail Report"], ["Stock Reports", "Stock Report With Shelf Period"], ["Stock Reports", "Stock Audit Report"],
+  ["Customer Reports", "Loyalty Reward Consumption Report"], ["Customer Reports", "Birthday Wishes"], ["Customer Reports", "Anniversary Wishes"],
 ])("%s / %s handles an empty response without errors", async (group, report) => {
   expect(await open(group, report)).toEqual([]);
   expect(screen.queryByText(/Failed to load/)).not.toBeInTheDocument();
 });
 
-it.each([["Customer Reports", "Customer Gift Voucher/Credit Note Report"], ["HR Reports", "Incentive Report - Employees"], ["Stock Reports", "Price Changer Report"]])("%s / %s does not present unrelated records as a report", async (group, title) => {
+it.each([["Customer Reports", "Customer Gift Voucher/Credit Note Report"], ["HR Reports", "Employee Advance Pending Report"], ["Stock Reports", "Price Changer Report"]])("%s / %s does not present unrelated records as a report", async (group, title) => {
   const store = configureStore({ reducer: { auth: authReducer }, preloadedState: { auth: { user: { id: 1, role: "admin", company_id: 1 } } } });
   render(<Provider store={store}><MemoryRouter><TransferActivityProvider><SalesReports /></TransferActivityProvider></MemoryRouter></Provider>);
   fireEvent.click(screen.getByText(new RegExp(`^${group} \\(`)));
   const option = await screen.findByText(`${title} (Not available yet)`);
   expect(option.closest("button")).toBeDisabled();
+});
+
+it("Birthday Wishes lists the coming birthdays soonest first and leaves out customers without one", async () => {
+  const inDays = (days) => { const date = new Date(); date.setHours(0, 0, 0, 0); date.setDate(date.getDate() + days); date.setFullYear(1990); return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`; };
+  api.get.mockResolvedValue({ data: { data: [{ id: 1, name: "Later", date_of_birth: inDays(5) }, { id: 2, name: "No date" }, { id: 3, name: "Sooner", date_of_birth: inDays(1) }] } });
+  const rows = await open("Customer Reports", "Birthday Wishes");
+  expect(api.get).toHaveBeenCalledWith("/customers", { params: { all: "true" } });
+  expect(rows.map((row) => [row.name, row.days_to_go])).toEqual([["Sooner", 1], ["Later", 5]]);
+});
+
+it("Incentive Report - Section adds up the employee incentives per month and section", async () => {
+  api.get.mockResolvedValue({ data: { data: [
+    { month: "2026-11", section: "Sarees", bills: 2, qty: 3, net_sales: 1000, incentive_amount: 20 },
+    { month: "2026-11", section: "Sarees", bills: 1, qty: 1, net_sales: 500, incentive_amount: 5 },
+  ] } });
+  const rows = await open("HR Reports", "Incentive Report - Section");
+  expect(api.get).toHaveBeenCalledWith("/sales-reports/store/incentives", { params: { all: "true" } });
+  expect(rows).toEqual([{ month: "2026-11", section: "Sarees", employees: 2, bills: 3, qty: 4, net_sales: 1500, incentive_amount: 25 }]);
 });

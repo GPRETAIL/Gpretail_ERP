@@ -11,7 +11,7 @@ class PurchaseOrder extends Model
 {
     protected $fillable = [
         'store_id', 'uuid', 'po_no', 'supplier_id', 'po_date', 'expected_date', 'status', 'source', 'notes',
-        'total_qty', 'total_amount', 'created_by', 'approved_by', 'approved_at', 'closed_at', 'cancelled_at',
+        'total_qty', 'total_amount', 'created_by', 'approved_by', 'approved_at', 'closed_at', 'close_reason', 'cancelled_at',
     ];
 
     protected static function booted(): void
@@ -57,6 +57,12 @@ class PurchaseOrder extends Model
     public function items(): HasMany
     {
         return $this->hasMany(PurchaseOrderItem::class);
+    }
+
+    /** Direct purchases that delivered goods against this order. @return HasMany<DirectPurchase, $this> */
+    public function receipts(): HasMany
+    {
+        return $this->hasMany(DirectPurchase::class);
     }
 
     /** @return BelongsTo<User, $this> */

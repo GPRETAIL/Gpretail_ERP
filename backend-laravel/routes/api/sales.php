@@ -102,6 +102,7 @@ Route::get('settlements/{id}', [SettlementController::class, 'getBill']);
 
 // Sales Reports & Analytics
 Route::get('sales-reports', [SalesReportController::class, 'index']);
+Route::get('sales-reports/store/{report}', [SalesReportController::class, 'storeReport']);
 Route::get('sales-comparer', [SalesReportController::class, 'salesComparer']);
 Route::get('sales-vs-purchase', [SalesReportController::class, 'salesVsPurchase']);
 Route::get('sales-vs-stock', [SalesReportController::class, 'salesVsStock']);

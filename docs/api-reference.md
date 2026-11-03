@@ -93,7 +93,6 @@ Every endpoint under `/api`, grouped by module (514 endpoints). Generated from
 | GET | `/api/dashboard/overview` | DashboardController@overview | yes |
 | GET | `/api/dashboard/warehouse` | DashboardController@warehouse | yes |
 | GET | `/api/dashboard/summary` | DashboardController@summary | yes |
-| GET | `/api/dashboard/analytics` | DashboardController@analytics | yes |
 | GET | `/api/dashboard/attention-summary` | DashboardController@attentionSummary | yes |
 | GET | `/api/dashboard/layout` | DashboardLayoutController@index | yes |
 | PUT | `/api/dashboard/layout/{tabKey}` | DashboardLayoutController@update | yes |
@@ -433,6 +432,7 @@ Every endpoint under `/api`, grouped by module (514 endpoints). Generated from
 | GET | `/api/settlements/{id}` | SettlementController@getBill | yes |
 | GET | `/api/sales-reports` | SalesReportController@index | yes |
 | GET | `/api/sales-comparer` | SalesReportController@salesComparer | yes |
+| GET | `/api/sales-reports/store/{report}` | SalesReportController@storeReport | yes |
 | GET | `/api/sales-vs-purchase` | SalesReportController@salesVsPurchase | yes |
 | GET | `/api/sales-vs-stock` | SalesReportController@salesVsStock | yes |
 | GET | `/api/sales-pivot` | SalesReportController@salesPivot | yes |

@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Models\Stock;
 use App\Support\GroupAggregationService;
 use App\Support\PaginationService;
+use App\Services\Reports\StoreReports;
 use App\Services\Tenancy\StoreQuery;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -42,6 +43,14 @@ class SalesReportController extends Controller
         $result = $this->groupAggregationService->crossTab($query, 'pos_sales', $request);
 
         return response()->json($result, $result['success'] ? 200 : 422);
+    }
+
+    /** Stock aging, shelf period, stock audit, loyalty redemptions and incentive tabs of Sales Reports. */
+    public function storeReport(string $report, StoreReports $reports)
+    {
+        abort_unless(in_array($report, StoreReports::REPORTS, true), 404);
+
+        return response()->json(['success' => true, 'data' => $reports->rows($report)]);
     }
 
     public function index(Request $request)

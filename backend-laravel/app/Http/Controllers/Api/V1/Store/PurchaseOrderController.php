@@ -20,12 +20,14 @@ use Illuminate\Validation\ValidationException;
  */
 class PurchaseOrderController extends Controller
 {
-    private const RELATIONS = ['supplier:id,name,phone,email,gstin', 'creator:id,name', 'approver:id,name', 'items.product:id,name,code', 'items.variant.size:id,name'];
+    private const RELATIONS = ['supplier:id,name,phone,email,gstin', 'creator:id,name', 'approver:id,name', 'items.product:id,name,code,hsn_code,brand_id,selling_price', 'items.variant.size:id,name',
+        'receipts:id,purchase_order_id,purchase_no,invoice_no,invoice_date,total_qty,invoice_workflow_status'];
 
     public function index(Request $request)
     {
-        $orders = PurchaseOrder::with(['supplier:id,name', 'creator:id,name', 'approver:id,name'])->withCount('items')
+        $orders = PurchaseOrder::with(['supplier:id,name', 'creator:id,name', 'approver:id,name'])->withCount('items')->withSum('items as received_qty', 'received_qty')
             ->when($request->filled('status'), fn ($q) => $q->where('status', strtoupper($request->input('status'))))
+            ->when($request->filled('supplier_id'), fn ($q) => $q->where('supplier_id', (int) $request->input('supplier_id')))
             ->orderByDesc('id')->limit(2000)->get();
 
         return response()->json(['success' => true, 'data' => $orders, 'total' => $orders->count()]);
@@ -92,12 +94,12 @@ class PurchaseOrderController extends Controller
         return response()->json(['success' => true, 'message' => "{$order->po_no} cancelled.", 'data' => $order->fresh(self::RELATIONS)]);
     }
 
-    /** Goods received (or the order is otherwise finished); it stops counting as stock on order. */
+    /** Finished by hand (say the supplier cannot send the rest); receiving everything closes an order by itself. */
     public function close(int|string $id)
     {
         $order = $this->find($id);
         $this->expect($order, [PurchaseOrderStatus::Approved->value], 'Only an approved purchase order can be closed.');
-        $order->update(['status' => PurchaseOrderStatus::Closed->value, 'closed_at' => now()]);
+        $order->update(['status' => PurchaseOrderStatus::Closed->value, 'closed_at' => now(), 'close_reason' => 'MANUAL']);
 
         return response()->json(['success' => true, 'message' => "{$order->po_no} closed.", 'data' => $order->fresh(self::RELATIONS)]);
     }

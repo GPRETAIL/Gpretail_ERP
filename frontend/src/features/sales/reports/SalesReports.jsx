@@ -615,6 +615,34 @@ const buildCustomerRows = async (inactiveOnly = false) => {
     }));
 };
 
+/** Rows of a Sales Reports tab the backend builds (stock batches, audits, loyalty, incentives) for the store. */
+const getStoreReportRows = (report) => getAllRows(`/sales-reports/store/${report}`);
+
+/**
+ * Customers whose birthday (date_of_birth) or wedding anniversary (marriage_date) comes up next, soonest first,
+ * so the store can send wishes. Customers without the date are left out.
+ */
+const buildCustomerOccasionRows = async (field) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return (await getAllRows("/customers"))
+    .filter((row) => row?.[field] && !Number.isNaN(new Date(row[field]).getTime()))
+    .map((row) => {
+      const date = new Date(row[field]);
+      let next = new Date(today.getFullYear(), date.getMonth(), date.getDate());
+      if (next < today) next = new Date(today.getFullYear() + 1, date.getMonth(), date.getDate());
+      return {
+        ...row,
+        mobile_no: row?.phone || "-",
+        occasion_date: formatDayKey(row[field]),
+        next_date: formatDayKey(next),
+        days_to_go: Math.round((next - today) / 86400000),
+        years: next.getFullYear() - date.getFullYear(),
+      };
+    })
+    .sort((a, b) => a.days_to_go - b.days_to_go);
+};
+
 const buildMyCustomerSalesRows = async () => {
   const rows = await getReportSales();
   const grouped = new Map();
@@ -1107,6 +1135,113 @@ const taxSummaryColumns = [
     render: (value) => <Box sx={{ textAlign: "right" }}>{toNumber(value).toFixed(2)}</Box>,
   },
 ];
+
+const rightNumber = (digits = 0) => (value) => (
+  <Box sx={{ textAlign: "right" }}>{value === null || value === undefined || value === "" ? "-" : toNumber(value).toLocaleString("en-IN", { minimumFractionDigits: digits, maximumFractionDigits: digits })}</Box>
+);
+
+const occasionColumns = (dateLabel, yearsLabel) => [
+  { key: "name", label: "Customer" },
+  { key: "mobile_no", label: "Mobile" },
+  { key: "occasion_date", label: dateLabel },
+  { key: "next_date", label: "Next on" },
+  { key: "days_to_go", label: "Days to go", render: rightNumber() },
+  { key: "years", label: yearsLabel, render: rightNumber() },
+];
+
+const stockAgingColumns = [
+  { key: "product_name", label: "Item" },
+  { key: "product_code", label: "Code" },
+  { key: "size", label: "Size" },
+  { key: "design_no", label: "Design" },
+  { key: "source", label: "Received from" },
+  { key: "received_at", label: "Received on" },
+  { key: "received_qty", label: "Received qty", render: rightNumber() },
+  { key: "remaining_qty", label: "In stock", render: rightNumber() },
+  { key: "cost_price", label: "Cost", render: rightNumber(2) },
+  { key: "stock_value", label: "Stock value", render: rightNumber(2) },
+  { key: "age_days", label: "Age (days)", render: rightNumber() },
+  { key: "age_bucket", label: "Age group" },
+];
+
+const shelfPeriodColumns = [
+  { key: "product_name", label: "Item" },
+  { key: "product_code", label: "Code" },
+  { key: "size", label: "Size" },
+  { key: "design_no", label: "Design" },
+  { key: "stock_qty", label: "In stock", render: rightNumber() },
+  { key: "stock_value", label: "Stock value", render: rightNumber(2) },
+  { key: "oldest_received", label: "Oldest received" },
+  { key: "latest_received", label: "Latest received" },
+  { key: "days_on_shelf", label: "Days on shelf", render: rightNumber() },
+  { key: "shelf_period", label: "Shelf period (days)", render: rightNumber() },
+  { key: "shelf_status", label: "Status" },
+];
+
+const stockAuditColumns = [
+  { key: "audit_no", label: "Audit no" },
+  { key: "audit_date", label: "Date" },
+  { key: "status", label: "Audit status" },
+  { key: "product_name", label: "Item" },
+  { key: "product_code", label: "Code" },
+  { key: "size", label: "Size" },
+  { key: "system_qty", label: "System qty", render: rightNumber() },
+  { key: "counted_qty", label: "Counted qty", render: rightNumber() },
+  { key: "difference_qty", label: "Difference", render: rightNumber() },
+  { key: "difference_value", label: "Difference value", render: rightNumber(2) },
+  { key: "result", label: "Result" },
+  { key: "notes", label: "Notes" },
+];
+
+const loyaltyRedemptionColumns = [
+  { key: "redeemed_at", label: "Redeemed on" },
+  { key: "customer_name", label: "Customer" },
+  { key: "mobile_no", label: "Mobile" },
+  { key: "card_no", label: "Card no" },
+  { key: "bill_no", label: "Bill no" },
+  { key: "bill_amount", label: "Bill amount", render: rightNumber(2) },
+  { key: "points", label: "Points redeemed", render: rightNumber() },
+  { key: "amount", label: "Redeemed value", render: rightNumber(2) },
+  { key: "balance_after", label: "Points left", render: rightNumber() },
+];
+
+const incentiveEmployeeColumns = [
+  { key: "month", label: "Month" },
+  { key: "employee_code", label: "Employee code" },
+  { key: "employee_name", label: "Employee" },
+  { key: "section", label: "Section" },
+  { key: "bills", label: "Bills", render: rightNumber() },
+  { key: "qty", label: "Qty", render: rightNumber() },
+  { key: "net_sales", label: "Net sales", render: rightNumber(2) },
+  { key: "incentive_pct", label: "Incentive %", render: rightNumber(2) },
+  { key: "incentive_amount", label: "Incentive", render: rightNumber(2) },
+];
+
+const incentiveSectionColumns = [
+  { key: "month", label: "Month" },
+  { key: "section", label: "Section" },
+  { key: "employees", label: "Employees", render: rightNumber() },
+  { key: "bills", label: "Bills", render: rightNumber() },
+  { key: "qty", label: "Qty", render: rightNumber() },
+  { key: "net_sales", label: "Net sales", render: rightNumber(2) },
+  { key: "incentive_amount", label: "Incentive", render: rightNumber(2) },
+];
+
+/** The employee incentive rows added up per month and section. */
+const buildIncentiveSectionRows = async () => {
+  const grouped = new Map();
+  (await getStoreReportRows("incentives")).forEach((row) => {
+    const key = `${row.month}|${row.section}`;
+    const current = grouped.get(key) || { month: row.month, section: row.section, employees: 0, bills: 0, qty: 0, net_sales: 0, incentive_amount: 0 };
+    current.employees += 1;
+    current.bills += toNumber(row.bills);
+    current.qty += toNumber(row.qty);
+    current.net_sales = round2(current.net_sales + toNumber(row.net_sales));
+    current.incentive_amount = round2(current.incentive_amount + toNumber(row.incentive_amount));
+    grouped.set(key, current);
+  });
+  return [...grouped.values()].sort((a, b) => b.month.localeCompare(a.month) || b.incentive_amount - a.incentive_amount);
+};
 
 const customerColumns = [
   { key: "name", label: "Customer" },
@@ -1836,7 +1971,11 @@ const REPORT_DATA_SOURCES = {
     fetchRows: buildStockRows,
     emptyText: "No direct stock rows found.",
   },
-  stock_audit_report: { unavailableReason: "A dedicated data source for this report is not connected." },
+  stock_audit_report: {
+    columns: stockAuditColumns,
+    fetchRows: () => getStoreReportRows("stock_audit"),
+    emptyText: "No physical stock audits yet.",
+  },
   cashier_wise_discount_report: {
     columns: cashierWiseDiscountColumns,
     fetchRows: buildCashierWiseDiscountRows,
@@ -1912,20 +2051,48 @@ const REPORT_DATA_SOURCES = {
   settlement_coupon_issue_report: { unavailableReason: "A dedicated data source for this report is not connected." },
   coupon_consumption_report: { unavailableReason: "A dedicated data source for this report is not connected." },
   gift_voucher_credit_note_consumption_report: { unavailableReason: "A dedicated data source for this report is not connected." },
-  loyalty_reward_consumption_report: { unavailableReason: "A dedicated data source for this report is not connected." },
+  loyalty_reward_consumption_report: {
+    columns: loyaltyRedemptionColumns,
+    fetchRows: () => getStoreReportRows("loyalty_redemptions"),
+    emptyText: "No loyalty points have been redeemed yet.",
+  },
   gift_issue_report: { unavailableReason: "A dedicated data source for this report is not connected." },
-  birthday_wishes: { unavailableReason: "A dedicated data source for this report is not connected." },
-  anniversary_wishes: { unavailableReason: "A dedicated data source for this report is not connected." },
+  birthday_wishes: {
+    columns: occasionColumns("Date of birth", "Turning"),
+    fetchRows: () => buildCustomerOccasionRows("date_of_birth"),
+    emptyText: "No customer has a date of birth saved.",
+  },
+  anniversary_wishes: {
+    columns: occasionColumns("Marriage date", "Years"),
+    fetchRows: () => buildCustomerOccasionRows("marriage_date"),
+    emptyText: "No customer has a marriage date saved.",
+  },
   customer_feedback_report: { unavailableReason: "A dedicated data source for this report is not connected." },
   scheduled_message_log: { unavailableReason: "A dedicated data source for this report is not connected." },
   scheme_details_report: { unavailableReason: "A dedicated data source for this report is not connected." },
-  stock_report_with_shelf_period: { unavailableReason: "A dedicated data source for this report is not connected." },
-  stock_aging_detail_report: { unavailableReason: "A dedicated data source for this report is not connected." },
+  stock_report_with_shelf_period: {
+    columns: shelfPeriodColumns,
+    fetchRows: () => getStoreReportRows("shelf_period"),
+    emptyText: "No stock on hand.",
+  },
+  stock_aging_detail_report: {
+    columns: stockAgingColumns,
+    fetchRows: () => getStoreReportRows("stock_aging"),
+    emptyText: "No stock on hand.",
+  },
   stock_marker_report: { unavailableReason: "A dedicated data source for this report is not connected." },
   price_changer_report: { unavailableReason: "A dedicated data source for this report is not connected." },
   stock_split_report: { unavailableReason: "A dedicated data source for this report is not connected." },
-  incentive_report_section: { unavailableReason: "A dedicated data source for this report is not connected." },
-  incentive_report_employees: { unavailableReason: "A dedicated data source for this report is not connected." },
+  incentive_report_section: {
+    columns: incentiveSectionColumns,
+    fetchRows: buildIncentiveSectionRows,
+    emptyText: "No sales with a salesman yet.",
+  },
+  incentive_report_employees: {
+    columns: incentiveEmployeeColumns,
+    fetchRows: () => getStoreReportRows("incentives"),
+    emptyText: "No sales with a salesman yet.",
+  },
   employee_advance_pending_report: { unavailableReason: "A dedicated data source for this report is not connected." },
   b2b_sales_report: { unavailableReason: "A dedicated data source for this report is not connected." },
   b2b_sales_tax_report_column_wise: { unavailableReason: "A dedicated data source for this report is not connected." },

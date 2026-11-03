@@ -13,6 +13,7 @@ use App\Models\Supplier;
 use App\Support\GroupAggregationService;
 use App\Support\PaginationService;
 use App\Services\Inventory\DirectPurchaseStock;
+use App\Services\Inventory\PurchaseOrderReceipts;
 use App\Services\Inventory\StockService;
 use App\Services\Inventory\VariantResolverService;
 use Illuminate\Http\Request;
@@ -194,7 +195,10 @@ class DirectPurchaseController extends Controller
             ], 422);
         }
 
-        $directPurchase = DB::transaction(function () use ($data, $request) {
+        $receipts = app(PurchaseOrderReceipts::class);
+        $order = $receipts->resolve($data['purchase_order_id'], (int) ($data['company_id'] ?: ($request->user()->store_id ?? 1)), $data['supplier_id']);
+
+        $directPurchase = DB::transaction(function () use ($data, $request, $order, $receipts) {
             $user = $request->user();
             $storeId = $data['company_id'] ?: ($user->store_id ?? 1);
 
@@ -208,7 +212,8 @@ class DirectPurchaseController extends Controller
                 'supplier_name' => $data['supplier_name'],
                 'purchase_no' => $purchaseNo,
                 'purchase_type' => $data['purchase_type'],
-                'po_no' => $data['po_no'],
+                'po_no' => $data['po_no'] ?: $order?->po_no,
+                'purchase_order_id' => $order?->id,
                 'transport_id' => $data['transport_id'],
                 'transport_name' => $data['transport_name'],
                 'lr_no' => $data['lr_no'],
@@ -282,6 +287,7 @@ class DirectPurchaseController extends Controller
                     (float) $itemData['price'],
                 );
             }
+            $receipts->sync($order?->id);
 
             return $purchase;
         });
@@ -368,12 +374,25 @@ class DirectPurchaseController extends Controller
             $updates['total_amount'] = $data['total'];
         }
 
+        // Received against a purchase order: what this purchase brings in counts toward that order's lines.
+        $receipts = app(PurchaseOrderReceipts::class);
+        $previousOrderId = $purchase->purchase_order_id;
+        if ($hasAny(['purchaseOrderId', 'purchase_order_id'])) {
+            $order = $receipts->resolve($data['purchase_order_id'], (int) $purchase->store_id, $updates['supplier_id'] ?? $purchase->supplier_id, $previousOrderId);
+            $updates['purchase_order_id'] = $order?->id;
+            if ($order && ! ($updates['po_no'] ?? $purchase->po_no)) {
+                $updates['po_no'] = $order->po_no;
+            }
+        } elseif (isset($updates['supplier_id']) && $previousOrderId && (int) $updates['supplier_id'] !== (int) $purchase->supplier_id) {
+            $updates['purchase_order_id'] = null; // Another supplier's goods do not deliver this order.
+        }
+
         $itemsProvided = $request->has('items');
         if ($itemsProvided) {
             $updates['total_qty'] = $data['total_qty'];
         }
 
-        DB::transaction(function () use ($purchase, $data, $updates, $itemsProvided, $request) {
+        DB::transaction(function () use ($purchase, $data, $updates, $itemsProvided, $request, $receipts, $previousOrderId) {
             if ($itemsProvided) {
                 // Reverse whatever stock this purchase's OLD items already
                 // contributed (only real if stock_applied - i.e. this is a
@@ -450,6 +469,10 @@ class DirectPurchaseController extends Controller
             // Labelled and not a Temporary draft: the goods go into stock (once). The barcode screen's
             // Save sends invoice_progress, so this must not wait for invoice_completed.
             app(DirectPurchaseStock::class)->applyIfReady($purchase, $request->user()?->id);
+
+            foreach (array_unique([$previousOrderId, $purchase->purchase_order_id]) as $orderId) {
+                $receipts->sync($orderId);
+            }
         });
 
         return response()->json([
@@ -491,6 +514,7 @@ class DirectPurchaseController extends Controller
 
                 $purchase->items()->delete();
                 $purchase->delete();
+                app(PurchaseOrderReceipts::class)->sync($purchase->purchase_order_id); // Its goods no longer count as received.
             });
         } catch (InsufficientStockException $e) {
             return response()->json([
@@ -658,6 +682,7 @@ class DirectPurchaseController extends Controller
             'supplier_name' => $raw['supplierName'] ?? $raw['supplier_name'] ?? null,
             'purchase_type' => $raw['purchaseType'] ?? $raw['purchase_type'] ?? 'textile',
             'po_no' => $raw['poNo'] ?? $raw['po_no'] ?? null,
+            'purchase_order_id' => $raw['purchaseOrderId'] ?? $raw['purchase_order_id'] ?? null,
             'transport_id' => $transportId,
             'transport_name' => $raw['transportName'] ?? $raw['transport_name'] ?? null,
             'lr_no' => $raw['lrNo'] ?? $raw['lr_no'] ?? null,

@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class PurchaseOrderItem extends Model
 {
     protected $fillable = [
-        'purchase_order_id', 'product_id', 'variant_id', 'quantity', 'unit_cost', 'amount',
+        'purchase_order_id', 'product_id', 'variant_id', 'quantity', 'received_qty', 'unit_cost', 'amount',
         'stock_at_order', 'reorder_min', 'reorder_max', 'notes',
     ];
 
@@ -16,6 +16,7 @@ class PurchaseOrderItem extends Model
     {
         return [
             'quantity' => 'decimal:3',
+            'received_qty' => 'decimal:3',
             'unit_cost' => 'decimal:2',
             'amount' => 'decimal:2',
             'stock_at_order' => 'decimal:3',

@@ -719,52 +719,6 @@ class DashboardController extends Controller
         ]);
     }
 
-    public function analytics(Request $request)
-    {
-        $totalSales = (float) (PosSale::sum('grand_total'));
-        $totalOrders = (int) (PosSale::count());
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'cards' => [
-                    [
-                        'key' => 'gross_margin',
-                        'title' => 'Gross Margin',
-                        'subtitle' => 'Overall Margin %',
-                        'value' => 28.5,
-                        'valueType' => 'percent',
-                        'trend' => '+2.1%',
-                    ],
-                    [
-                        'key' => 'avg_basket',
-                        'title' => 'Average Basket Size',
-                        'subtitle' => 'Per Transaction',
-                        'value' => $totalOrders > 0 ? round($totalSales / $totalOrders, 2) : 0,
-                        'valueType' => 'currency',
-                        'trend' => '+4.5%',
-                    ],
-                    [
-                        'key' => 'inventory_turnover',
-                        'title' => 'Inventory Turnover',
-                        'subtitle' => 'Annualized Ratio',
-                        'value' => 4.2,
-                        'valueType' => 'multiple',
-                        'trend' => '+0.3x',
-                    ],
-                    [
-                        'key' => 'sales_growth',
-                        'title' => 'Sales Growth',
-                        'subtitle' => 'vs Last Month',
-                        'value' => 14.8,
-                        'valueType' => 'percent',
-                        'trend' => '+3.2%',
-                    ],
-                ],
-            ],
-        ]);
-    }
-
     public function attentionSummary(Request $request)
     {
         // Mobile never sets the X-Company-Scope-Id header (no store-switcher there, unlike

@@ -12,6 +12,31 @@ export const money = (value) => Number(value || 0).toLocaleString("en-IN", { min
 export const qty = (value) => (value == null ? "-" : Number(value).toLocaleString("en-IN", { maximumFractionDigits: 3 }));
 export const day = (value) => (value ? new Date(value).toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" }) : "-");
 export const lineLabel = (line) => [line.product?.name || line.product_name || "Item", line.variant?.size?.name && `Size ${line.variant.size.name}`, line.variant?.design_no && `Design ${line.variant.design_no}`].filter(Boolean).join(" · ");
+/** Approved and some goods already in (Direct Purchase received against it), but not all. */
+export const isPartReceived = (order) => order?.status === "APPROVED" && Number(order?.received_qty ?? (order?.items || []).reduce((sum, line) => sum + Number(line.received_qty || 0), 0)) > 0;
+export const statusLabel = (order) => (isPartReceived(order) ? "Part received" : PO_STATUS[order?.status]?.label || order?.status);
+export const statusColor = (order) => (isPartReceived(order) ? "warning" : PO_STATUS[order?.status]?.color || "default");
+
+/**
+ * A WhatsApp chat with the supplier, the order typed in; the buyer reviews and sends it themselves. Indian
+ * 10-digit numbers get the 91 country code; with no number WhatsApp asks whom to send it to.
+ */
+export function purchaseOrderWhatsAppUrl(order, storeName) {
+  const digits = String(order?.supplier?.phone || "").replace(/\D/g, "").replace(/^0+/, "");
+  const phone = digits.length === 10 ? `91${digits}` : digits;
+  const lines = (order?.items || []).map((line, index) => `${index + 1}. ${lineLabel(line)}${line.product?.code ? ` (${line.product.code})` : ""} - ${qty(line.quantity)} @ ₹${money(line.unit_cost)}`);
+  const text = [
+    `Purchase Order ${order?.po_no || ""}${storeName ? ` from ${storeName}` : ""}`,
+    `Date: ${day(order?.po_date)}${order?.expected_date ? ` · Expected by ${day(order.expected_date)}` : ""}`,
+    "",
+    ...lines,
+    "",
+    `Total: ${qty(order?.total_qty)} pcs · ₹${money(order?.total_amount)}`,
+    ...(order?.notes ? [`Notes: ${order.notes}`] : []),
+  ].join("\n");
+  return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+}
+
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
 
 /** Printable purchase order for the supplier. */
