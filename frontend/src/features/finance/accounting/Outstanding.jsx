@@ -24,8 +24,7 @@ export default function Outstanding({ side }) {
     <FinanceReportLayout title={copy.title} error={report.error} onRefresh={report.reload} actions={summary.buttons}
       filters={<DateFilters single to={to} onChange={change => setTo(change.to)} />}>
       <Typography variant="body2" color="text.secondary">{copy.note} A negative amount is an advance.</Typography>
-      {summary.drawer}
-      {summary.applied ? summary.table : (
+      {summary.wrap(summary.applied ? summary.table : (
       <Paper variant="outlined" sx={{ overflow: "auto", flex: 1, minHeight: 0 }}>
         <Table size="small" stickyHeader>
           <TableHead>
@@ -49,7 +48,7 @@ export default function Outstanding({ side }) {
         </Table>
         {!report.loading && rows.length === 0 ? <Box sx={{ p: 2 }}><Typography variant="body2">Nothing outstanding.</Typography></Box> : null}
       </Paper>
-      )}
+      ))}
       {open ? <LedgerStatementDialog account={open} to={to} onClose={() => setOpen(null)} /> : null}
     </FinanceReportLayout>
   );

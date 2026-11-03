@@ -3,7 +3,7 @@ import { toast } from "react-toastify";
 import { Typography } from "@mui/material";
 import FilterableDataTable from "@/shared/components/FilterableDataTable";
 import SearchGridPanel from "@/shared/components/SearchGridPanel";
-import SummaryLayoutsDrawer, { SummaryLayoutsButtons } from "@/shared/components/SummaryLayoutsDrawer";
+import SummaryLayoutsDrawer, { SummaryLayoutsButtons, SummaryPanelRow } from "@/shared/components/SummaryLayoutsDrawer";
 import useResetOnChange from "@/shared/hooks/useResetOnChange";
 import useSearchGrid from "@/shared/hooks/useSearchGrid";
 import { fetchSummary, fetchSummaryLayouts } from "@/shared/utils/reportSummary";
@@ -11,7 +11,7 @@ import { fetchSummary, fetchSummaryLayouts } from "@/shared/utils/reportSummary"
 /**
  * Summary layouts on a Finance report: the breakdowns of `dataset` (worked out on the server for the selected
  * store), for the period already chosen on the page (`params`). Changing the period goes back to the standard view.
- * Returns the header buttons, the panel, and the summary table while one is applied.
+ * Returns the header buttons, the summary table while one is applied, and wrap() to put the page body beside the panel.
  */
 const NO_ROWS = [];
 
@@ -38,26 +38,29 @@ export function useFinanceSummary(dataset, params, title) {
     try {
       const summary = await fetchSummary("/accounting/summary", dataset, { layout: mode, ...params });
       setApplied(summary);
-      setOpen(false);
     } catch (err) {
       toast.error(err?.response?.data?.message || "Failed to load summary.");
+      return false;
     } finally {
       setLoading(false);
     }
   };
 
+  const drawer = options.length ? (
+    <SummaryLayoutsDrawer open={open} onClose={() => setOpen(false)} options={options} mode={mode} onModeChange={setMode} dated={false}
+      description="Pick one breakdown. It uses the period chosen at the top of the page." loading={loading} onApply={apply} name={`${dataset}_summary_mode`} />
+  ) : null;
+
   return {
     applied,
+    // The page body with the panel beside it (docked when pinned).
+    wrap: (content) => <SummaryPanelRow panel={drawer}>{content}</SummaryPanelRow>,
     buttons: options.length ? (
       <SummaryLayoutsButtons
         onOpen={() => { setMode((current) => (options.some((opt) => opt.value === current) ? current : options[0].value)); setOpen(true); }}
         applied={Boolean(applied)}
         onReset={() => setApplied(null)}
       />
-    ) : null,
-    drawer: options.length ? (
-      <SummaryLayoutsDrawer open={open} onClose={() => setOpen(false)} options={options} mode={mode} onModeChange={setMode} dated={false}
-        description="Pick one breakdown. It uses the period chosen at the top of the page." loading={loading} onApply={apply} name={`${dataset}_summary_mode`} />
     ) : null,
     table: applied ? (
       <>

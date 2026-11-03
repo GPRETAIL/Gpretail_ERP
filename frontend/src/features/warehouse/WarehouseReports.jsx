@@ -12,7 +12,7 @@ import Breadcrumbs from "@/shared/components/Breadcrumbs";
 import { Box, Stack, Typography, Button, alpha } from "@mui/material";
 import { toast } from "react-toastify";
 import useResetOnChange from "@/shared/hooks/useResetOnChange";
-import SummaryLayoutsDrawer, { SummaryLayoutsButtons } from "@/shared/components/SummaryLayoutsDrawer";
+import SummaryLayoutsDrawer, { SummaryLayoutsButtons , SummaryPanelRow } from "@/shared/components/SummaryLayoutsDrawer";
 import { daysAgoKey, fetchSummary, fetchSummaryLayouts, todayKey } from "@/shared/utils/reportSummary";
 
 const formatDate = (dateStr) => {
@@ -1318,11 +1318,11 @@ const WarehouseReports = () => {
         ...(tabSummary?.dated ? { from: summaryForm.from, to: summaryForm.to } : {}),
       });
       setAppliedSummary(summary);
-      setSummaryOpen(false);
       setPage(1);
       toast.success(summary.capped ? `${summary.label} applied (largest groups shown)` : `${summary.label} applied`);
     } catch (err) {
       toast.error(err?.response?.data?.message || "Failed to load summary.");
+      return false;
     } finally {
       setSummaryLoading(false);
     }
@@ -1520,6 +1520,24 @@ const WarehouseReports = () => {
               ) : null}
             </Box>
 
+            <SummaryPanelRow
+              panel={summaryOptions.length ? (
+              <SummaryLayoutsDrawer
+                open={summaryOpen}
+                onClose={() => setSummaryOpen(false)}
+                options={summaryOptions}
+                mode={summaryForm.mode}
+                onModeChange={(mode) => setSummaryForm((prev) => ({ ...prev, mode }))}
+                dated={Boolean(tabSummary?.dated)}
+                from={summaryForm.from}
+                to={summaryForm.to}
+                onRangeChange={(range) => setSummaryForm((prev) => ({ ...prev, ...range }))}
+                loading={summaryLoading}
+                onApply={applySummary}
+                name="warehouse_summary_mode"
+              />
+            ) : null}
+            >
             <FilterableDataTable
               key={`${selectedReport.key}${appliedSummary ? `_${appliedSummary.label}` : ""}`}
               rows={tableRows}
@@ -1551,22 +1569,7 @@ const WarehouseReports = () => {
               paginationMode="client"
             fillHeight
             />
-            {summaryOptions.length ? (
-              <SummaryLayoutsDrawer
-                open={summaryOpen}
-                onClose={() => setSummaryOpen(false)}
-                options={summaryOptions}
-                mode={summaryForm.mode}
-                onModeChange={(mode) => setSummaryForm((prev) => ({ ...prev, mode }))}
-                dated={Boolean(tabSummary?.dated)}
-                from={summaryForm.from}
-                to={summaryForm.to}
-                onRangeChange={(range) => setSummaryForm((prev) => ({ ...prev, ...range }))}
-                loading={summaryLoading}
-                onApply={applySummary}
-                name="warehouse_summary_mode"
-              />
-            ) : null}
+            </SummaryPanelRow>
           </SearchGridPanel>
         ) : (
           <Box sx={{ borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", boxShadow: 1, p: { xs: 2, md: 2.5 } }}>

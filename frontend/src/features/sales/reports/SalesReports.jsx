@@ -9,7 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import api from "@/shared/api/apiClient";
 import ExportBottomSheet from "@/shared/components/ExportBottomSheet";
-import SummaryLayoutsDrawer, { SummaryDateField, SummaryField, SummaryLayoutsButtons } from "@/shared/components/SummaryLayoutsDrawer";
+import SummaryLayoutsDrawer, { SummaryDateField, SummaryField, SummaryLayoutsButtons , SummaryPanelRow } from "@/shared/components/SummaryLayoutsDrawer";
 import { fetchSummary, fetchSummaryLayouts } from "@/shared/utils/reportSummary";
 import FilterableDataTable from "@/shared/components/FilterableDataTable";
 import Breadcrumbs from "@/shared/components/Breadcrumbs";
@@ -2508,10 +2508,10 @@ const SalesReports = () => {
         ...(tabSummary?.dated ? { from: salesSummaryForm.from, to: salesSummaryForm.to } : {}),
       });
       setAppliedSalesSummary(summary);
-      setSalesSummaryDrawerOpen(false);
       toast.success(summary.capped ? `${summary.label} applied (largest groups shown)` : `${summary.label} applied`);
     } catch (err) {
       toast.error(err?.response?.data?.message || "Failed to load summary report.");
+      return false;
     } finally {
       setSalesSummaryLoading(false);
     }
@@ -2521,7 +2521,7 @@ const SalesReports = () => {
     const mode = salesSummaryForm.mode;
     if (mode === "bill_detail" && !String(salesSummaryForm.billNo || "").trim()) {
       toast.error("Enter a bill number (e.g. SB/142).");
-      return;
+      return false;
     }
     setSalesSummaryLoading(true);
     try {
@@ -2551,10 +2551,10 @@ const SalesReports = () => {
         from: payload?.from || params.from,
         to: payload?.to || params.to,
       });
-      setSalesSummaryDrawerOpen(false);
       toast.success(`${opt?.label || "Summary"} applied`);
     } catch (err) {
       toast.error(err?.response?.data?.message || "Failed to load summary report.");
+      return false;
     } finally {
       setSalesSummaryLoading(false);
     }
@@ -2775,6 +2775,45 @@ const SalesReports = () => {
               ) : null}
             </Box>
 
+            <SummaryPanelRow
+              panel={summaryAvailable ? (
+              <SummaryLayoutsDrawer
+                open={salesSummaryDrawerOpen}
+                onClose={() => setSalesSummaryDrawerOpen(false)}
+                description={isSalesReportTab
+                  ? "Pick one breakdown. Company summary: admin sees only their store; super admin sees a row per company (or narrow with company below)."
+                  : "Pick one breakdown and the period; the totals are worked out on the server for the selected store."}
+                options={summaryOptions}
+                mode={salesSummaryForm.mode}
+                onModeChange={(mode) => setSalesSummaryForm((prev) => ({ ...prev, mode }))}
+                dated={isSalesReportTab ? salesSummaryForm.mode !== "day_metrics" : Boolean(tabSummary?.dated)}
+                from={salesSummaryForm.from}
+                to={salesSummaryForm.to}
+                onRangeChange={(range) => setSalesSummaryForm((prev) => ({ ...prev, ...range }))}
+                loading={salesSummaryLoading}
+                onApply={isSalesReportTab ? applySalesSummaryFromPanel : applyTabSummary}
+                name="sales_summary_mode"
+                topContent={isSalesReportTab && isSuperAdminUser ? (
+                  <SummaryField label="Company scope">
+                    <TextField select value={salesSummaryScopedCompanyId} onChange={(e) => setSalesSummaryScopedCompanyId(e.target.value)} size="small" fullWidth sx={muiFieldSx}>
+                      <MenuItem value="">All allowed companies</MenuItem>
+                      {(superAdminCompanies || []).map((c) => (
+                        <MenuItem key={c.id} value={String(c.id)}>{c.name || `Company ${c.id}`}</MenuItem>
+                      ))}
+                    </TextField>
+                  </SummaryField>
+                ) : null}
+                bottomContent={isSalesReportTab && salesSummaryForm.mode === "day_metrics" ? (
+                  <SummaryDateField label="Day" value={salesSummaryForm.day} onChange={(day) => setSalesSummaryForm((prev) => ({ ...prev, day }))} />
+                ) : isSalesReportTab && salesSummaryForm.mode === "bill_detail" ? (
+                  <SummaryField label="Bill number">
+                    <TextField type="text" value={salesSummaryForm.billNo} onChange={(e) => setSalesSummaryForm((prev) => ({ ...prev, billNo: e.target.value }))}
+                      placeholder="e.g. SB/142 or 142" size="small" fullWidth sx={[muiFieldSx, { "& .MuiInputBase-input": { fontFamily: "monospace" } }]} />
+                  </SummaryField>
+                ) : null}
+              />
+            ) : null}
+            >
             <FilterableDataTable
               key={`${selectedReport.key}${appliedSalesSummary ? `_${appliedSalesSummary.label}` : ""}`}
               rows={displayRows}
@@ -2817,44 +2856,7 @@ const SalesReports = () => {
               }
               enableVirtualization
             />
-
-            {summaryAvailable ? (
-              <SummaryLayoutsDrawer
-                open={salesSummaryDrawerOpen}
-                onClose={() => setSalesSummaryDrawerOpen(false)}
-                description={isSalesReportTab
-                  ? "Pick one breakdown. Company summary: admin sees only their store; super admin sees a row per company (or narrow with company below)."
-                  : "Pick one breakdown and the period; the totals are worked out on the server for the selected store."}
-                options={summaryOptions}
-                mode={salesSummaryForm.mode}
-                onModeChange={(mode) => setSalesSummaryForm((prev) => ({ ...prev, mode }))}
-                dated={isSalesReportTab ? salesSummaryForm.mode !== "day_metrics" : Boolean(tabSummary?.dated)}
-                from={salesSummaryForm.from}
-                to={salesSummaryForm.to}
-                onRangeChange={(range) => setSalesSummaryForm((prev) => ({ ...prev, ...range }))}
-                loading={salesSummaryLoading}
-                onApply={isSalesReportTab ? applySalesSummaryFromPanel : applyTabSummary}
-                name="sales_summary_mode"
-                topContent={isSalesReportTab && isSuperAdminUser ? (
-                  <SummaryField label="Company scope">
-                    <TextField select value={salesSummaryScopedCompanyId} onChange={(e) => setSalesSummaryScopedCompanyId(e.target.value)} size="small" fullWidth sx={muiFieldSx}>
-                      <MenuItem value="">All allowed companies</MenuItem>
-                      {(superAdminCompanies || []).map((c) => (
-                        <MenuItem key={c.id} value={String(c.id)}>{c.name || `Company ${c.id}`}</MenuItem>
-                      ))}
-                    </TextField>
-                  </SummaryField>
-                ) : null}
-                bottomContent={isSalesReportTab && salesSummaryForm.mode === "day_metrics" ? (
-                  <SummaryDateField label="Day" value={salesSummaryForm.day} onChange={(day) => setSalesSummaryForm((prev) => ({ ...prev, day }))} />
-                ) : isSalesReportTab && salesSummaryForm.mode === "bill_detail" ? (
-                  <SummaryField label="Bill number">
-                    <TextField type="text" value={salesSummaryForm.billNo} onChange={(e) => setSalesSummaryForm((prev) => ({ ...prev, billNo: e.target.value }))}
-                      placeholder="e.g. SB/142 or 142" size="small" fullWidth sx={[muiFieldSx, { "& .MuiInputBase-input": { fontFamily: "monospace" } }]} />
-                  </SummaryField>
-                ) : null}
-              />
-            ) : null}
+            </SummaryPanelRow>
           </SearchGridPanel>
         ) : (
           <Box sx={{ borderRadius: "7px", border: 1, borderColor: "divider", bgcolor: "background.paper", p: { xs: 2, md: 2.5 }, boxShadow: 1 }}>

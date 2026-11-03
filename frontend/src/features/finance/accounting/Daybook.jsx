@@ -22,8 +22,7 @@ export default function Daybook() {
           {Object.entries(VOUCHER_TYPES).map(([value, label]) => <MenuItem key={value} value={value}>{label}</MenuItem>)}
         </TextField>
       </>}>
-      {summary.drawer}
-      {summary.applied ? summary.table : <>
+      {summary.wrap(summary.applied ? summary.table : <>
       <Typography variant="body2" color="text.secondary">{vouchers.length} voucher{vouchers.length === 1 ? "" : "s"}, {money(total)} in total.</Typography>
       <Paper variant="outlined" sx={{ overflow: "auto", flex: 1, minHeight: 0 }}>
         <Table size="small" stickyHeader>
@@ -59,7 +58,7 @@ export default function Daybook() {
         </Table>
         {!report.loading && vouchers.length === 0 ? <Box sx={{ p: 2 }}><Typography variant="body2">No vouchers in this period.</Typography></Box> : null}
       </Paper>
-      </>}
+      </>)}
     </FinanceReportLayout>
   );
 }
