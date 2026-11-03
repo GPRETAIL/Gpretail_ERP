@@ -7,7 +7,7 @@ import { useNavigate } from "react-router-dom";
 import api from "@/shared/api/apiClient";
 import AsyncSearchSelect from "@/shared/components/AsyncSearchSelect";
 import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
-import { muiFieldSx } from "@/shared/theme/formControlSizes";
+import { FIELD_HEIGHT, muiFieldSx } from "@/shared/theme/formControlSizes";
 
 const mapCustomerOption = (row) => ({
   value: String(row.id),
@@ -271,7 +271,7 @@ const ApprovalInbox = () => {
                 onClick={() => runSearch()}
                 className="glass-btn glass-btn-primary"
                 fullWidth
-                sx={{ height: 38, display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+                sx={{ height: FIELD_HEIGHT, minHeight: FIELD_HEIGHT, display: "inline-flex", alignItems: "center", justifyContent: "center" }}
                 title="Search"
               >
                 <Search size={16} />
@@ -283,7 +283,7 @@ const ApprovalInbox = () => {
                 onClick={handleResetFilters}
                 className="glass-btn glass-btn-secondary"
                 fullWidth
-                sx={{ height: 38, display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+                sx={{ height: FIELD_HEIGHT, minHeight: FIELD_HEIGHT, display: "inline-flex", alignItems: "center", justifyContent: "center" }}
                 title="Reset"
               >
                 <RotateCcw size={16} />
