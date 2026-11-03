@@ -50,6 +50,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { loginSuccess, logoutUser } from "@/features/auth/authSlice";
 import { useTheme } from "@/shared/theme/themeContext";
+import { switchThemeWithReveal } from "@/shared/theme/themeReveal";
 import api from "@/shared/api/apiClient";
 import { useTabs } from "./TabContext";
 import { usePrintContext } from "@/features/printing/context/PrintContext";
@@ -491,7 +492,9 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
             <HeaderRenewalNotice />
             <IconButton
               size="small"
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              onClick={() => switchThemeWithReveal(theme === "dark" ? "light" : "dark", setTheme)}
+              title={theme === "dark" ? "Light theme" : "Dark theme"}
+              aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
               sx={{ color: "text.secondary" }}
             >
               <span className="text-base">{theme === "dark" ? "☀️" : "🌙"}</span>

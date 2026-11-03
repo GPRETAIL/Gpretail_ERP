@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import { ThemeContext } from "./themeContext.js";
 
 const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(localStorage.getItem("theme") || "light");
 
-  useEffect(() => {
+  // Layout effect so the dark class is on <html> within the same commit (the theme reveal captures it right after).
+  useLayoutEffect(() => {
     const root = document.documentElement; // <html>
 
     if (theme === "dark") {

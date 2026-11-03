@@ -125,3 +125,11 @@
   :root[data-theme-style="glassmorphism"] :is(.MuiCard-root, .erp-glass-chrome, .rounded-xl.border, .rounded-md.border) { background-color: #fff !important; }
   :root.dark[data-theme-style="glassmorphism"] :is(.MuiCard-root, .erp-glass-chrome, .rounded-xl.border, .rounded-md.border) { background-color: #1e2030 !important; }
 }
+
+/* Theme switch (themeReveal.js): a pinch instead of a cross-fade. The old page shrinks in and fades out, then
+   the new theme grows back out to full size. Only while the header toggle runs it (.theme-pinch). */
+:root.theme-pinch::view-transition { background: var(--theme-pinch-bg, transparent); }
+:root.theme-pinch::view-transition-old(root) { animation: theme-pinch-in 260ms cubic-bezier(0.4, 0, 1, 1) both; }
+:root.theme-pinch::view-transition-new(root) { animation: theme-pinch-out 340ms cubic-bezier(0, 0, 0.2, 1) 180ms both; }
+@keyframes theme-pinch-in { to { transform: scale(0.92); opacity: 0; border-radius: 18px; } }
+@keyframes theme-pinch-out { from { transform: scale(0.92); opacity: 0; border-radius: 18px; } }
