@@ -17,10 +17,13 @@ class BusinessPermissions
     public const LOOKUP_CONFIGURATIONS = ['city', 'state', 'country', 'location', 'bank', 'card_types', 'upi_provider', 'customer_category', 'sale_area', 'return_reason', 'vendor', 'agent_type', 'additional_charges', 'bundle_rack'];
 
     /** HRMS actions on the signed-in user's own record: their check-in and their leave (always allowed, like notifications). */
-    private const HR_SELF_SERVICE = ['AttendanceController' => ['me', 'selfPunch'], 'LeaveApplicationController' => ['mine', 'store', 'cancel']];
+    private const HR_SELF_SERVICE = ['AttendanceController' => ['me', 'selfPunch'], 'LeaveApplicationController' => ['mine', 'store', 'cancel'], 'PayrollController' => ['mine', 'mySlip']];
 
     /** HRMS setup and managing other people's attendance; reads stay 'read' and are narrowed to the user's team by HrScope. */
     private const HR_MANAGED = ['AttendanceController', 'HolidayController', 'LeaveTypeController', 'LeavePolicyController'];
+
+    /** Salaries: only payroll roles see or change anyone's pay (an employee sees their own slips through HR_SELF_SERVICE). */
+    private const PAYROLL = ['PayrollController', 'SalaryStructureController', 'PayrollSettingsController', 'PayrollReportController'];
 
     /** Reads that expose purchase cost, margins, supplier dues or finance totals; the counter screens never call them. */
     private const COST_READS = ['SupplierPaymentController', 'FinanceDashboardController', 'PurchaseInvoiceController', 'PurchaseReturnController', 'DirectPurchaseController', 'InventoryEntryController', 'TransportEntryController', 'PurchaseOrderController', 'WarehouseReportController', 'WarehouseDashboardController', 'ProductPurchaseAnalyticsController', 'AnalyticalDashboardController', 'SalesReportController'];
@@ -78,6 +81,9 @@ class BusinessPermissions
         }
         if ($this->isHrSelfService($request)) {
             return 'personal';
+        }
+        if (in_array($controller, self::PAYROLL, true)) {
+            return $read ? 'payroll.view' : 'payroll.manage';
         }
         if ($controller === 'LeaveApplicationController' && in_array($action, ['approve', 'reject'], true)) {
             return 'approvals.decide';
@@ -153,8 +159,8 @@ class BusinessPermissions
             return true;
         }
         $grants = [
-            'manager' => ['read', 'personal', 'masters.write', 'sales.post', 'purchases.post', 'transactions.approve', 'transactions.delete', 'reports.export', 'approvals.decide', 'accounts.view', 'accounts.post', 'costs.view', 'hr.view', 'hr.manage'],
-            'accountant' => ['read', 'personal', 'reports.export', 'accounts.view', 'accounts.post', 'costs.view', 'hr.view'],
+            'manager' => ['read', 'personal', 'masters.write', 'sales.post', 'purchases.post', 'transactions.approve', 'transactions.delete', 'reports.export', 'approvals.decide', 'accounts.view', 'accounts.post', 'costs.view', 'hr.view', 'hr.manage', 'payroll.view', 'payroll.manage'],
+            'accountant' => ['read', 'personal', 'reports.export', 'accounts.view', 'accounts.post', 'costs.view', 'hr.view', 'payroll.view'],
             // Floor supervisor: a cashier who can also approve discounts/refunds within their limit.
             'supervisor' => ['read', 'personal', 'sales.post', 'approvals.decide'],
             'cashier' => ['read', 'personal', 'sales.post'],

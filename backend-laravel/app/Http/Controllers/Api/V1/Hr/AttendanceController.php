@@ -233,7 +233,11 @@ class AttendanceController extends Controller
                     $totals['late']++;
                 }
             }
-            $totals['payable_days'] = $totals['present'] + $totals['half_day'] / 2 + $totals['leave'] + $totals['off'];
+            // The same numbers payroll uses (unpaid leave and days before joining are not payable).
+            $summary = $this->attendance->monthSummary($employee, $first->format('Y-m'), $rows->get($employee->id) ?? collect(),
+                collect($holidays[$employee->store_id] ?? [])->map(fn () => true)->all());
+            $totals['payable_days'] = $summary['payable_days'];
+            $totals['lop_days'] = $summary['lop_days'];
 
             return ['employee_id' => $employee->id, 'name' => $employee->name, 'code' => $employee->code, 'department' => $employee->department?->name, 'days' => $days] + $totals;
         })->values();

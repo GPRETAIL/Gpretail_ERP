@@ -179,8 +179,8 @@ export const canAccessPath = (pathname, user) => {
   if (["/settings", "/settings/themes", "/settings/branding"].includes(path) && canManageThemes(user)) return true;
   // Company module entitlement gates every module path, regardless of RBAC.
   if (!isPathEntitled(user, path)) return false;
-  // Everyone's own leave (apply, balance, withdraw); the page shows approvals and setup only to the right roles.
-  if (path === "/hrms/leave") return Boolean(user);
+  // Everyone's own leave and payslips; those pages show approvals, setup and others' pay only to the right roles.
+  if (path === "/hrms/leave" || path === "/hrms/my-payslips") return Boolean(user);
   if (hasPagePermissionMode(user)) {
     if (path === "/profile") return true;
     if (path === "/modules") {

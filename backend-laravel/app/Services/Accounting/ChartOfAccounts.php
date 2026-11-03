@@ -61,6 +61,13 @@ class ChartOfAccounts
         'input_sgst' => ['Input SGST', 'duties_taxes'],
         'input_igst' => ['Input IGST', 'duties_taxes'],
         'round_off' => ['Round Off', 'indirect_expenses'],
+        'salaries' => ['Salaries & Wages', 'indirect_expenses'],
+        'employer_pf' => ['Employer PF Contribution', 'indirect_expenses'],
+        'employer_esi' => ['Employer ESI Contribution', 'indirect_expenses'],
+        'salary_payable' => ['Salary Payable', 'current_liabilities'],
+        'pf_payable' => ['PF Payable', 'duties_taxes'],
+        'esi_payable' => ['ESI Payable', 'duties_taxes'],
+        'pt_payable' => ['Professional Tax Payable', 'duties_taxes'],
     ];
 
     /** Common expense heads a new chart starts with; ordinary ledgers the store can rename or remove. */
@@ -69,6 +76,9 @@ class ChartOfAccounts
         ['Telephone & Internet', 'indirect_expenses'], ['Shop Expenses', 'indirect_expenses'], ['Bank Charges', 'indirect_expenses'],
         ['Freight Inward', 'direct_expenses'], ['Discount Received', 'indirect_incomes'],
     ];
+
+    /** System ledgers that take over an ordinary ledger of the same name (a starter head the chart already has). */
+    private const ADOPT = ['salaries'];
 
     private const PARTY_GROUPS = ['supplier' => 'sundry_creditors', 'customer' => 'sundry_debtors', 'store' => 'branches'];
 
@@ -93,7 +103,10 @@ class ChartOfAccounts
         }
         if ($isNew) {
             foreach (self::STARTER as [$name, $group]) {
-                self::insert($storeId, $name, $group, []);
+                // Salaries & Wages is also a system ledger (payroll) now; don't add a "(2)" copy.
+                if (! DB::table('ledger_accounts')->where('store_id', $storeId)->where('name', $name)->exists()) {
+                    self::insert($storeId, $name, $group, []);
+                }
             }
         }
     }
@@ -106,6 +119,11 @@ class ChartOfAccounts
             return self::$cache[$cacheKey];
         }
         $id = DB::table('ledger_accounts')->where('store_id', $storeId)->where('system_key', $key)->value('id');
+        if (! $id && in_array($key, self::ADOPT, true)) {
+            // The starter "Salaries & Wages" head becomes the payroll ledger instead of a "(2)" twin.
+            $id = DB::table('ledger_accounts')->where('store_id', $storeId)->where('name', self::SYSTEM[$key][0])->whereNull('system_key')->whereNull('party_type')->value('id');
+            $id && DB::table('ledger_accounts')->where('id', $id)->update(['system_key' => $key, 'updated_at' => now()]);
+        }
         if (! $id) {
             [$name, $group] = self::SYSTEM[$key];
             $id = self::insert($storeId, $name, $group, ['system_key' => $key]);

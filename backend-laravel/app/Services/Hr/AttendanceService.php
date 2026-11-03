@@ -7,6 +7,8 @@ use App\Models\Employee;
 use App\Models\HrCheckin;
 use App\Models\HrDepartment;
 use App\Models\HrHoliday;
+use App\Models\HrLeaveApplication;
+use App\Models\HrLeaveType;
 use App\Models\Store;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -205,6 +207,94 @@ class AttendanceService
             });
 
         return $count;
+    }
+
+    /**
+     * The month in numbers for one employee: payable days (present, half days as ½, paid leave, holidays and
+     * weekly offs), loss-of-pay days (absent, unpaid leave), days present for batta, and overtime minutes beyond
+     * the shift. Days after today are not counted yet. Pass the month's rows and holidays to avoid queries.
+     *
+     * @param  Collection<int, Attendance>|null  $rows
+     * @param  array<string, true>|null  $holidays  'Y-m-d' => true for the employee's store
+     */
+    public function monthSummary(Employee $employee, string $month, ?Collection $rows = null, ?array $holidays = null): array
+    {
+        $first = Carbon::parse("{$month}-01");
+        $last = $first->copy()->endOfMonth();
+        $today = $this->today();
+        $rows ??= Attendance::withoutGlobalScopes()->where('employee_id', $employee->id)
+            ->whereBetween('date', [$first->toDateString(), $last->toDateString()])->get();
+        $holidays ??= HrHoliday::withoutGlobalScopes()->where('store_id', $employee->store_id)
+            ->whereBetween('date', [$first->toDateString(), $last->toDateString()])->get()
+            ->mapWithKeys(fn ($h) => [Carbon::parse($h->date)->toDateString() => true])->all();
+        $byDate = $rows->keyBy(fn ($r) => Carbon::parse($r->date)->toDateString());
+        $leaves = HrLeaveApplication::withoutGlobalScopes()->whereIn('id', $rows->pluck('leave_application_id')->filter()->unique())
+            ->get()->keyBy('id');
+        $paidTypes = HrLeaveType::withoutGlobalScopes()->whereIn('id', $leaves->pluck('leave_type_id')->unique())->pluck('is_paid', 'id');
+        $shift = $this->shiftFor($employee);
+        $fullDay = $shift['full_day'] ?: max(0, $this->minutes($shift['end']) - $this->minutes($shift['start']));
+        $joined = $employee->joining_date ? Carbon::parse($employee->joining_date)->toDateString() : null;
+
+        $sum = ['days_in_month' => $first->daysInMonth, 'counted_days' => 0, 'payable_days' => 0.0, 'lop_days' => 0.0, 'present_days' => 0.0,
+            'paid_leave_days' => 0.0, 'unpaid_leave_days' => 0.0, 'off_days' => 0, 'absent_days' => 0, 'late_days' => 0, 'ot_minutes' => 0];
+        for ($d = $first->copy(); $d->lte($last); $d->addDay()) {
+            $key = $d->toDateString();
+            if ($key > $today) {
+                break;
+            }
+            $sum['counted_days']++;
+            if ($joined && $key < $joined) {
+                $sum['lop_days']++; // Not yet employed: not paid.
+                continue;
+            }
+            $row = $byDate->get($key);
+            $status = $row?->status ?? (isset($holidays[$key]) ? 'HOLIDAY' : ($this->isWeekOff($employee, $key) ? 'WEEK_OFF' : ($key < $today ? 'ABSENT' : null)));
+            $leave = $row?->leave_application_id ? $leaves->get($row->leave_application_id) : null;
+            $leavePaid = $leave ? (bool) ($paidTypes[$leave->leave_type_id] ?? true) : true;
+            $leaveShare = $leave && $leave->half_day ? 0.5 : 1.0;
+            switch ($status) {
+                case 'PRESENT':
+                    $sum['payable_days']++;
+                    $sum['present_days']++;
+                    break;
+                case 'HALF_DAY':
+                    $sum['present_days'] += 0.5;
+                    $sum['payable_days'] += 0.5 + ($leave && $leavePaid ? 0.5 : 0);
+                    $sum['lop_days'] += $leave && $leavePaid ? 0 : 0.5;
+                    $leave && ($leavePaid ? $sum['paid_leave_days'] += 0.5 : $sum['unpaid_leave_days'] += 0.5);
+                    break;
+                case 'LEAVE':
+                    if ($leavePaid) {
+                        $sum['payable_days'] += 1; // A half-day paid leave with no work: the other half is absent.
+                        $sum['paid_leave_days'] += $leaveShare;
+                        if ($leaveShare < 1) {
+                            $sum['payable_days'] -= 0.5;
+                            $sum['lop_days'] += 0.5;
+                        }
+                    } else {
+                        $sum['lop_days']++;
+                        $sum['unpaid_leave_days'] += $leaveShare;
+                    }
+                    break;
+                case 'HOLIDAY':
+                case 'WEEK_OFF':
+                    $sum['payable_days']++;
+                    $sum['off_days']++;
+                    break;
+                case 'ABSENT':
+                    $sum['lop_days']++;
+                    $sum['absent_days']++;
+                    break;
+            }
+            if ($row && $row->late_minutes > 0) {
+                $sum['late_days']++;
+            }
+            if ($row && $fullDay && $row->worked_minutes > $fullDay) {
+                $sum['ot_minutes'] += $row->worked_minutes - $fullDay;
+            }
+        }
+
+        return $sum;
     }
 
     /** @return Collection<int, HrCheckin> the day's punches (business-timezone day), oldest first */

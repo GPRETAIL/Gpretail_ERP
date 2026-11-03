@@ -48,6 +48,8 @@ class MobileAccess
         'AttendanceController' => '/hrms/employee-in-out', 'EmployeeController' => '/hrms/employee', 'HrConfigurationController' => '/hrms/hr-configuration',
         'HolidayController' => '/hrms/hr-configuration', 'LeaveTypeController' => '/hrms/hr-configuration', 'LeavePolicyController' => '/hrms/leave',
         'LeaveApplicationController' => '/hrms/leave',
+        'PayrollController' => '/hrms/salary-management', 'SalaryStructureController' => '/hrms/salary-management',
+        'PayrollSettingsController' => '/hrms/salary-management', 'PayrollReportController' => '/hrms/salary-management',
         'StoreDashboardController' => '/store/dashboard', 'MastersDashboardController' => '/masters/product',
         'SettingsController' => '/settings/application-settings', 'SettingsDashboardController' => '/settings/application-settings',
         'ConfigurationController' => '/settings/application-settings', 'BackupController' => '/settings/backup',
@@ -93,7 +95,7 @@ class MobileAccess
                 }
             }
             // Everyone's own check-in and leave (the team views inside are narrowed by HrScope on the server).
-            $screens = array_values(array_unique(array_merge($screens, ['modules', 'settings', 'attendance', 'leave'])));
+            $screens = array_values(array_unique(array_merge($screens, ['modules', 'settings', 'attendance', 'leave', 'payslips'])));
         }
 
         return ['id' => $store->id, 'name' => $store->name, 'code' => $store->code, 'allowed' => $code === null,

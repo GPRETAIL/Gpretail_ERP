@@ -6,6 +6,10 @@ use App\Http\Controllers\Api\V1\Hr\HolidayController;
 use App\Http\Controllers\Api\V1\Hr\LeaveApplicationController;
 use App\Http\Controllers\Api\V1\Hr\LeavePolicyController;
 use App\Http\Controllers\Api\V1\Hr\LeaveTypeController;
+use App\Http\Controllers\Api\V1\Hr\PayrollController;
+use App\Http\Controllers\Api\V1\Hr\PayrollReportController;
+use App\Http\Controllers\Api\V1\Hr\PayrollSettingsController;
+use App\Http\Controllers\Api\V1\Hr\SalaryStructureController;
 use App\Http\Controllers\Api\V1\Hr\HrConfigurationController;
 use Illuminate\Support\Facades\Route;
 
@@ -68,3 +72,25 @@ Route::post('leave-applications/{id}/reject', [LeaveApplicationController::class
 Route::post('leave-applications/{id}/cancel', [LeaveApplicationController::class, 'cancel']);
 Route::get('leave-applications', [LeaveApplicationController::class, 'index']);
 Route::post('leave-applications', [LeaveApplicationController::class, 'store']);
+
+// Payroll
+Route::get('payroll-runs', [PayrollController::class, 'index']);
+Route::post('payroll-runs/prepare', [PayrollController::class, 'prepare']);
+Route::get('payroll-runs/{id}', [PayrollController::class, 'show']);
+Route::post('payroll-runs/{id}/submit', [PayrollController::class, 'submit']);
+Route::post('payroll-runs/{id}/mark-paid', [PayrollController::class, 'markPaid']);
+Route::post('payroll-runs/{id}/reopen', [PayrollController::class, 'reopen']);
+Route::get('payroll-runs/{id}/report/{report}', [PayrollReportController::class, 'show']);
+Route::get('payslips/{id}', [PayrollController::class, 'slip']);
+Route::get('my-payslips', [PayrollController::class, 'mine']);
+Route::get('my-payslips/{id}', [PayrollController::class, 'mySlip']);
+Route::get('payroll/structures', [SalaryStructureController::class, 'index']);
+Route::post('payroll/structures', [SalaryStructureController::class, 'store']);
+Route::put('payroll/structures/{id}', [SalaryStructureController::class, 'update']);
+Route::post('payroll/components', [SalaryStructureController::class, 'saveComponent']);
+Route::put('payroll/components/{id}', [SalaryStructureController::class, 'saveComponent']);
+Route::get('payroll/settings', [PayrollSettingsController::class, 'show']);
+Route::put('payroll/settings', [PayrollSettingsController::class, 'update']);
+Route::get('payroll/additional', [PayrollSettingsController::class, 'additionalIndex']);
+Route::post('payroll/additional', [PayrollSettingsController::class, 'additionalStore']);
+Route::delete('payroll/additional/{id}', [PayrollSettingsController::class, 'additionalDestroy']);

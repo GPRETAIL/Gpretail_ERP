@@ -560,6 +560,7 @@ export const navItems = [
         icon: ClockIcon,
       },
       { name: "Leave", path: "/hrms/leave", icon: CalendarDaysIcon },
+      { name: "My Payslips", path: "/hrms/my-payslips", icon: DocumentTextIcon },
       {
         name: "HR Configuration",
         path: "/hrms/hr-configuration",

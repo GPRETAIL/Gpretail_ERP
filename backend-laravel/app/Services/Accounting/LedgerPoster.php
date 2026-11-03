@@ -5,6 +5,7 @@ namespace App\Services\Accounting;
 use App\Models\DealerInvoice;
 use App\Models\DealerInvoiceReturn;
 use App\Models\DirectPurchase;
+use App\Models\HrPayrollRun;
 use App\Models\PosPayment;
 use App\Models\PosReturn;
 use App\Models\PosReturnItem;
@@ -42,6 +43,8 @@ class LedgerPoster
         'supplier_payment' => ['supplier_payments', 'store_id', 'payment'],
         'transfer_out' => ['stock_outwards', 'source_store_id', 'transfer'],
         'transfer_in' => ['stock_outwards', 'target_store_id', 'transfer'],
+        'payroll' => ['hr_payroll_runs', 'store_id', 'journal'],
+        'payroll_payment' => ['hr_payroll_runs', 'store_id', 'payment'],
     ];
 
     private const CLOSED = ['CANCELLED', 'CANCELED', 'VOID', 'DRAFT', 'REJECTED'];
@@ -66,6 +69,7 @@ class LedgerPoster
             PurchaseReturnItem::class => fn ($m) => [['purchase_return', $m->purchase_return_id]],
             SupplierPayment::class => fn ($m) => [['supplier_payment', $m->id]],
             StockOutward::class => fn ($m) => [['transfer_out', $m->id], ['transfer_in', $m->id]],
+            HrPayrollRun::class => fn ($m) => [['payroll', $m->id], ['payroll_payment', $m->id]],
         ];
         foreach ($targets as $class => $documents) {
             $class::saved(fn ($model) => self::queue($documents($model)));
@@ -199,6 +203,8 @@ class LedgerPoster
             'supplier_payment' => self::supplierPayment($id),
             'transfer_out' => self::transfer($id, false),
             'transfer_in' => self::transfer($id, true),
+            'payroll' => self::payroll($id),
+            'payroll_payment' => self::payrollPayment($id),
             default => throw new RuntimeException("Unknown accounting source $type."),
         };
 
@@ -461,6 +467,60 @@ class LedgerPoster
             'narration' => 'Supplier payment '.$payment->payment_no.' ('.strtolower((string) $payment->payment_mode).')',
             'lines' => [[self::supplier($store, (int) $payment->supplier_id), $amount],
                 [ChartOfAccounts::system($store, strtoupper((string) $payment->payment_mode) === 'CASH' ? 'cash' : 'bank'), -$amount]]];
+    }
+
+    /**
+     * A submitted month's payroll: the salary cost (and the employer's PF and ESI) against what is owed to the
+     * staff and to PF, ESI and professional tax. Other deductions (fines) reduce the salary cost.
+     */
+    private static function payroll(int $id): ?array
+    {
+        $run = DB::table('hr_payroll_runs')->where('id', $id)->first();
+        if (! $run || ! in_array($run->status, ['SUBMITTED', 'PAID'], true)) {
+            return null;
+        }
+        $store = (int) $run->store_id;
+        $slips = DB::table('hr_payslips')->where('run_id', $id)->get();
+        $deducted = ['PF' => 0.0, 'ESI' => 0.0, 'PT' => 0.0, 'OTHER' => 0.0];
+        foreach ($slips as $slip) {
+            foreach (json_decode($slip->deductions, true) ?: [] as $line) {
+                $deducted[array_key_exists($line['code'], $deducted) ? $line['code'] : 'OTHER'] += (float) $line['amount'];
+            }
+        }
+        $employerPf = (float) $slips->sum('employer_pf');
+        $employerEsi = (float) $slips->sum('employer_esi');
+        $month = Carbon::parse("{$run->month}-01");
+
+        return ['store_id' => $store, 'no' => "PAY-{$run->month}", 'date' => $month->copy()->endOfMonth()->toDateString(), 'created_by' => $run->submitted_by,
+            'narration' => 'Salaries for '.$month->format('F Y')." ({$slips->count()} employees)",
+            'lines' => [
+                [ChartOfAccounts::system($store, 'salaries'), (float) $slips->sum('gross_earned') - $deducted['OTHER']],
+                [ChartOfAccounts::system($store, 'employer_pf'), $employerPf],
+                [ChartOfAccounts::system($store, 'employer_esi'), $employerEsi],
+                [ChartOfAccounts::system($store, 'salary_payable'), -(float) $slips->sum('net_pay')],
+                [ChartOfAccounts::system($store, 'pf_payable'), -($deducted['PF'] + $employerPf)],
+                [ChartOfAccounts::system($store, 'esi_payable'), -($deducted['ESI'] + $employerEsi)],
+                [ChartOfAccounts::system($store, 'pt_payable'), -$deducted['PT']],
+            ]];
+    }
+
+    /** Salaries paid out from the bank or cash; held salaries stay owed until they are released. */
+    private static function payrollPayment(int $id): ?array
+    {
+        $run = DB::table('hr_payroll_runs')->where('id', $id)->first();
+        if (! $run || $run->status !== 'PAID') {
+            return null;
+        }
+        $store = (int) $run->store_id;
+        $paid = (float) DB::table('hr_payslips')->where('run_id', $id)->where('held', false)->sum('net_pay');
+        if ($paid <= 0) {
+            return null;
+        }
+
+        return ['store_id' => $store, 'no' => "SALPAY-{$run->month}", 'date' => $run->paid_on, 'created_by' => $run->submitted_by,
+            'narration' => 'Salaries paid for '.Carbon::parse("{$run->month}-01")->format('F Y').' ('.strtolower((string) $run->pay_mode).')',
+            'lines' => [[ChartOfAccounts::system($store, 'salary_payable'), $paid],
+                [ChartOfAccounts::system($store, $run->pay_mode === 'CASH' ? 'cash' : 'bank'), -$paid]]];
     }
 
     /**

@@ -32,6 +32,7 @@ import SalesSummaryScreen from "./screens/SalesSummaryScreen";
 import PurchaseSummaryScreen from "./screens/PurchaseSummaryScreen";
 import AttendanceScreen from "./screens/AttendanceScreen";
 import LeaveScreen from "./screens/LeaveScreen";
+import PayslipsScreen from "./screens/PayslipsScreen";
 import ReportsScreen from "./screens/ReportsScreen";
 import ReportDetailScreen from "./screens/ReportDetailScreen";
 import SettingsScreen from "./screens/SettingsScreen";
@@ -65,6 +66,7 @@ const TITLES = {
   purchase_summary: "Purchase Summary",
   attendance: "Attendance",
   leave: "Leave",
+  payslips: "Payslips",
   reports: "Reports",
   report_profit_loss: "Profit & Loss",
   report_gst: "GST Report",
@@ -422,6 +424,8 @@ function MobileWorkspace() {
         {visiblePage === "attendance" && <AttendanceScreen />}
 
         {visiblePage === "leave" && <LeaveScreen />}
+
+        {visiblePage === "payslips" && <PayslipsScreen />}
 
         {visiblePage === "reports" && <ReportsScreen onNavigate={navigateTo} />}
 

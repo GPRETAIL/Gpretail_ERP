@@ -23,7 +23,7 @@ Windows preview build.
 | HR configuration | Departments, sections, designations, plus generic `hr-{type}` lists |
 | Attendance | Phase 1 done (2026-11-04): Employee In/Out page, phone check-in with geofence, nightly close |
 | Leave | Phase 1 done (2026-11-04): Leave page and mobile Leave screen, policies, ledger, approvals |
-| Salary Management | Menu entry only, no page; the employee form already refers to a salary structure |
+| Payroll | Phase 2a done (2026-11-04): Salary Management page, payslips (web and mobile), statutory deductions, posting to accounts |
 | Everything below marked "No" | Not built |
 
 Legend: **Have** = exists, **Part** = partly there, **No** = to build. Phase = see the plan at the end.
@@ -71,7 +71,7 @@ Legend: **Have** = exists, **Part** = partly there, **No** = to build. Phase = s
 | Shift types | Working Hour: start/end, full and half day minutes, grace minutes | Have | — |
 | Shift assignment, roster, schedules | Who works which shift on which days; bulk assignment | No | 2 |
 | Shift request | Employee asks for a different shift | No | 2 |
-| Overtime | Hours beyond the shift, approved, paid in payroll | Part (flags only) | 2 |
+| Overtime | Paid in payroll for employees with OT ticked (OT approval: later) | Part | 2b |
 | Timesheets | Hours per task/project; payroll from timesheets | No | 4 |
 | Daily work summary | Daily email asking staff what they did | No | 4 |
 
@@ -95,22 +95,22 @@ Legend: **Have** = exists, **Part** = partly there, **No** = to build. Phase = s
 
 | Feature | What it does | Us | Phase |
 |---|---|---|---|
-| Salary components | Earnings and deductions (Basic, HRA, allowances, PF, ESI, PT, TDS, advance recovery), with formulas | No | 2 |
-| Salary structure | Template of components; assign to employee with base pay and effective date | Part (reference only) | 2 |
-| Payroll period and settings | Pay frequency, working-days rule, rounding | No | 2 |
-| Payroll run | Create salary slips for a store/department for a month in one go; review, submit | No | 2 |
-| Salary slip | Earnings, deductions, payable days, LOP, net pay; PDF and email/WhatsApp | No | 2 |
-| Hold salary | Skip or hold a slip (we already store the flag) | Part | 2 |
-| Additional salary | One-off earnings/deductions in a month (bonus, fine) | No | 2 |
+| Salary components | Pay heads (Basic, HRA, Conveyance, Special, OT, Incentive, Batta, Bonus; PF, ESI, PT, Other) and your own | Have | — |
+| Salary structure | Lines per structure (% of gross, % of Basic, fixed, balance); employee's Salary Structure and Gross Pay | Have | — |
+| Payroll period and settings | Monthly; day rate = days in the month; Monthly or Daily wage | Have | — |
+| Payroll run | Prepare from attendance, review, recalculate, submit, mark paid, reopen before payment | Have | — |
+| Salary slip | Earnings, deductions, payable/LOP days, net; print/PDF and WhatsApp; My payslips (web, mobile) | Have | — |
+| Hold salary | Held slips are calculated but left out of the payment | Have | — |
+| Additional salary | One-off earnings/deductions in a month (bonus, fine) | Have | — |
 | Arrears and payroll correction | Back-pay after a late revision; fix a submitted month | No | 3 |
 | Off-cycle payment | Pay outside the regular run | No | 3 |
-| PF, ESI, professional tax | Statutory contributions with ceilings and state slabs; challan reports | No | 2 |
+| PF, ESI, professional tax | PF (wage ceiling), ESI (gross limit), PT by state with editable slabs; PF/ESI/PT statements (ECR file: later) | Have | — |
 | Income tax (TDS) | Old/new regime slabs, declarations, proof submission, monthly TDS | No | 3 |
 | Benefits | Flexible benefit plans and claims | No | 4 |
-| Incentives, retention bonus | Extra payouts through payroll (sales incentives already exist in reports) | No | 3 |
+| Incentives, retention bonus | Sales incentive paid through payroll (retention bonus: later) | Part | 3 |
 | Gratuity | Rule-based gratuity on exit | No | 3 |
-| Bank file | Salary transfer file/sheet for the bank | No | 2 |
-| Accounting | Post salary, statutory payables and payments as vouchers in our double-entry books | No | 2 |
+| Bank file | Bank sheet (account, IFSC, amount) with Excel export | Have | — |
+| Accounting | Salary journal (with employer PF/ESI and payables) and salary payment vouchers | Have | — |
 | Multi-currency | Pay in other currencies | No | — (not needed) |
 
 ## 6. Expenses, advances and loans
@@ -155,7 +155,7 @@ Legend: **Have** = exists, **Part** = partly there, **No** = to build. Phase = s
 |---|---|---|---|
 | Mobile check-in/out | With location check (no selfie, by choice) | Have | — |
 | Mobile leave apply / approve | Balance, apply, withdraw, approve from phone | Have | — |
-| Mobile payslips | View and download salary slips | No | 2 |
+| Mobile payslips | View, share on WhatsApp, print/PDF | Have | — |
 | Mobile claims and advances | Submit with photo of bill | No | 3 |
 | Push / in-app notifications | Leave requests and decisions (reminders for birthdays etc.: later) | Part | 3 |
 | HR dashboard | Today's counts on the Day board (a separate dashboard page with payroll cost: later) | Part | 2 |

@@ -1,6 +1,6 @@
 # API reference
 
-Every endpoint under `/api`, grouped by module (550 endpoints). Generated from
+Every endpoint under `/api`, grouped by module (570 endpoints). Generated from
 `php artisan route:list --sort=definition --json`; regenerate it after changing routes.
 
 - Each signed-in endpoint is also served under `/api/v1/...` with the same behaviour.
@@ -17,7 +17,7 @@ Every endpoint under `/api`, grouped by module (550 endpoints). Generated from
 - [Crm](#crm) (28)
 - [Dashboards](#dashboards) (24)
 - [Finance](#finance) (23)
-- [Hr](#hr) (61)
+- [Hr](#hr) (81)
 - [Masters](#masters) (120)
 - [Notifications](#notifications) (11)
 - [Other](#other) (1)
@@ -208,6 +208,26 @@ Every endpoint under `/api`, grouped by module (550 endpoints). Generated from
 | POST | `/api/leave-applications/{id}/cancel` | LeaveApplicationController@cancel | yes |
 | GET | `/api/leave-applications` | LeaveApplicationController@index | yes |
 | POST | `/api/leave-applications` | LeaveApplicationController@store | yes |
+| GET | `/api/payroll-runs` | PayrollController@index | yes |
+| POST | `/api/payroll-runs/prepare` | PayrollController@prepare | yes |
+| GET | `/api/payroll-runs/{id}` | PayrollController@show | yes |
+| POST | `/api/payroll-runs/{id}/submit` | PayrollController@submit | yes |
+| POST | `/api/payroll-runs/{id}/mark-paid` | PayrollController@markPaid | yes |
+| POST | `/api/payroll-runs/{id}/reopen` | PayrollController@reopen | yes |
+| GET | `/api/payroll-runs/{id}/report/{report}` | PayrollReportController@show | yes |
+| GET | `/api/payslips/{id}` | PayrollController@slip | yes |
+| GET | `/api/my-payslips` | PayrollController@mine | yes |
+| GET | `/api/my-payslips/{id}` | PayrollController@mySlip | yes |
+| GET | `/api/payroll/structures` | SalaryStructureController@index | yes |
+| POST | `/api/payroll/structures` | SalaryStructureController@store | yes |
+| PUT | `/api/payroll/structures/{id}` | SalaryStructureController@update | yes |
+| POST | `/api/payroll/components` | SalaryStructureController@saveComponent | yes |
+| PUT | `/api/payroll/components/{id}` | SalaryStructureController@saveComponent | yes |
+| GET | `/api/payroll/settings` | PayrollSettingsController@show | yes |
+| PUT | `/api/payroll/settings` | PayrollSettingsController@update | yes |
+| GET | `/api/payroll/additional` | PayrollSettingsController@additionalIndex | yes |
+| POST | `/api/payroll/additional` | PayrollSettingsController@additionalStore | yes |
+| DELETE | `/api/payroll/additional/{id}` | PayrollSettingsController@additionalDestroy | yes |
 
 ## Masters
 
