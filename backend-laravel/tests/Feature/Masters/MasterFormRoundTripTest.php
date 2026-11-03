@@ -90,6 +90,17 @@ class MasterFormRoundTripTest extends TestCase
         $this->getJson('/api/employees/'.$id)->assertOk()->assertJsonPath('data.employee_code', 'EMP-RT')->assertJsonPath('data.contact_no', '123456')->assertJsonPath('data.date_of_joining', '2026-10-01')->assertJsonPath('data.surname', 'Test')->assertJsonPath('data.pf_no', 'PF-RT')->assertJsonPath('data.families.0.name', 'Family')->assertJsonPath('data.additionalInfos.0.name', 'Remark')->assertJsonPath('data.created_by', 'Master Owner');
     }
 
+    public function test_a_product_saved_without_a_unit_of_measure_gets_pcs_and_keeps_its_unit_when_cleared(): void
+    {
+        // The Product form sends uom "" when UOM is left empty; that used to fail with a 500 (unit is NOT NULL).
+        $id = $this->postJson('/api/products', ['name' => 'No UOM', 'hsn' => '6205', 'uom' => '', 'type' => 'Textile', 'margin_min' => '', 'active' => true])
+            ->assertCreated()->json('data.id');
+        $this->assertDatabaseHas('products', ['id' => $id, 'unit' => 'PCS']);
+        $this->putJson('/api/products/'.$id, ['name' => 'No UOM', 'uom' => 'MTR'])->assertOk();
+        $this->putJson('/api/products/'.$id, ['name' => 'No UOM', 'uom' => null])->assertOk();
+        $this->assertDatabaseHas('products', ['id' => $id, 'unit' => 'MTR']);
+    }
+
     public function test_blank_item_prices_and_stock_do_not_override_required_defaults(): void
     {
         $id = $this->postJson('/api/items', ['selling_name' => 'Blank prices', 'pur_rate' => '', 'sale_rate' => null, 'mrp' => '', 'reorder_min' => '', 'reorder_max' => null])->assertCreated()->json('data.id');

@@ -64,6 +64,11 @@ class ProductFormData
                 $data[$field] = 0;
             }
         }
+        // Unit is required (default PCS): the form's UOM is optional, and a blank one used to fail the save with a
+        // NOT NULL error. Blank keeps the product's current unit, or PCS for a new one.
+        if (array_key_exists('unit', $data) && trim((string) $data['unit']) === '') {
+            $data['unit'] = $existing?->unit ?: 'PCS';
+        }
         if (array_key_exists('category_id', $data) && ! array_key_exists('category_id', $input)) {
             $group = $data['category_id'] ? StoreQuery::table('attribute_values')->where('id', $data['category_id'])
                 ->whereIn('attribute_type_id', StoreQuery::table('attribute_types')->where('code', 'productgroups')->select('id'))->first() : null;
