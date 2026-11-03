@@ -10,6 +10,7 @@ import {
   MoveHorizontal,
   Layers,
   Pin,
+  PinOff,
   Search,
   Settings2,
   Trash2,
@@ -47,6 +48,7 @@ import {
   TableHead,
   TableRow,
   TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
@@ -70,6 +72,8 @@ import {
   normalizeFilterMap,
   isFilterStateActive,
 } from "./filterableDataTableUtils";
+
+const FILTER_PANEL_PIN_KEY = "erp.table.filterPanelPinned";
 
 export default function FilterableDataTable({
   rows = [],
@@ -197,6 +201,25 @@ export default function FilterableDataTable({
   const [headerContextMenu, setHeaderContextMenu] = useState(null);
   const [rowContextMenu, setRowContextMenu] = useState(null);
   const [showFilterPanel, setShowFilterPanel] = useState(false);
+  // Pinned, the filter panel docks beside the table (no overlay) so filters can be tried while the rows stay in view.
+  // A per-browser preference shared by every table.
+  const [filterPanelPinned, setFilterPanelPinned] = useState(() => {
+    try {
+      return localStorage.getItem(FILTER_PANEL_PIN_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
+  const toggleFilterPanelPinned = useCallback(() => {
+    setFilterPanelPinned((current) => {
+      try {
+        localStorage.setItem(FILTER_PANEL_PIN_KEY, current ? "0" : "1");
+      } catch {
+        // Storage blocked: the choice lasts for this page only.
+      }
+      return !current;
+    });
+  }, []);
   const [draftColumnFilters, setDraftColumnFilters] = useState({});
   const [rowValueFilters, setRowValueFilters] = useState({ exclude: {}, include: {} });
   const [filterPanelFocusKey, setFilterPanelFocusKey] = useState(null);
@@ -449,6 +472,14 @@ export default function FilterableDataTable({
   // four had any of this before this pass. Intentional, accepted UX improvement, not an
   // oversight. Surface 3's Drawer slide-in transition (also new vs. today's instant mount) is
   // called out again at its own render site below.
+  // The column filter popup's two fields: 28px high like the toolbar controls, text centred so nothing is clipped.
+  const columnFilterFieldSx = {
+    "& .MuiOutlinedInput-root": { height: 28, borderRadius: controlBorderRadius ?? "5.25px" },
+    "& .MuiInputBase-input": { fontSize: 11.5, lineHeight: "20px", height: 20, py: "4px", px: "8px" },
+    "& .MuiNativeSelect-select.MuiInputBase-input": { pr: "26px", height: 20 },
+    "& .MuiNativeSelect-icon, & .MuiSelect-icon": { right: 4 },
+  };
+
   const renderColumnFilterPopup = (column) => {
     if (activeFilterColumn !== column.key) return null;
 
@@ -493,7 +524,7 @@ export default function FilterableDataTable({
             onChange={(e) =>
               setColumnFilter(column.key, { operator: e.target.value })
             }
-            sx={{ "& .MuiInputBase-input": { fontSize: 11 }, "& .MuiOutlinedInput-root": { borderRadius: controlBorderRadius ?? "5.25px" } }}
+            sx={columnFilterFieldSx}
           >
             {FILTER_OPERATORS.map((op) => (
               <option key={op.value} value={op.value}>
@@ -511,11 +542,11 @@ export default function FilterableDataTable({
                 setColumnFilter(column.key, { value: e.target.value })
               }
               placeholder="Enter filter value"
-              sx={{ "& .MuiInputBase-input": { fontSize: 11 }, "& .MuiOutlinedInput-root": { borderRadius: controlBorderRadius ?? "5.25px" } }}
+              sx={columnFilterFieldSx}
             />
           )}
         </Box>
-        <Button size="small" onClick={() => clearColumnFilter(column.key)} sx={{ mt: 1 }}>
+        <Button size="small" onClick={() => clearColumnFilter(column.key)} sx={{ mt: 0.75, minWidth: 0, px: 1, fontSize: 11 }}>
           Clear
         </Button>
       </Popover>
@@ -2049,6 +2080,132 @@ export default function FilterableDataTable({
   const toolbarFieldHeight = ERP_UI.actionHeight;
   const toolbarFieldSx = { height: toolbarFieldHeight, fontSize: compact ? 11 : 12 };
 
+  // The filter panel's content: in the right Drawer, or docked beside the table when pinned.
+  const filterPanelBody = (
+    <Box data-testid="filter-panel-root" sx={{ display: "flex", height: "100%", flexDirection: "column" }}>
+        <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", px: 2, py: 1.5 }}>
+          <Box>
+            <Typography sx={{ fontSize: 14, fontWeight: 600 }}>Filter Panel</Typography>
+            <Typography sx={{ fontSize: 11, color: "text.secondary" }}>Apply filters on multiple columns</Typography>
+          </Box>
+          <Stack direction="row" spacing={0.5}>
+            <Tooltip title={filterPanelPinned ? "Unpin panel" : "Pin panel beside the table"}>
+              <IconButton
+                size="small"
+                aria-label={filterPanelPinned ? "Unpin panel" : "Pin panel"}
+                aria-pressed={filterPanelPinned}
+                onClick={toggleFilterPanelPinned}
+                sx={filterPanelPinned ? { color: "primary.main", bgcolor: (theme) => alpha(theme.palette.primary.main, 0.12) } : undefined}
+              >
+                {filterPanelPinned ? <PinOff size={16} /> : <Pin size={16} />}
+              </IconButton>
+            </Tooltip>
+            <IconButton size="small" aria-label="Close filter panel" onClick={() => setShowFilterPanel(false)}>
+              <X size={16} />
+            </IconButton>
+          </Stack>
+        </Stack>
+
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center", borderBottom: 1, borderColor: "divider", px: 2, py: 1 }}>
+          <Button
+            size="small"
+            onClick={() => {
+              const cleared = normalizeFilterMap({}, columns);
+              setDraftColumnFilters(cleared);
+            }}
+          >
+            Clear All
+          </Button>
+          <Typography component="span" sx={{ fontSize: 11, color: "text.disabled" }}>|</Typography>
+          <Typography component="span" sx={{ fontSize: 11, color: "text.secondary" }}>
+            Active: {Object.values(draftColumnFilters).filter((filter) => isFilterStateActive(filter)).length}
+          </Typography>
+        </Stack>
+
+        <Box sx={{ flex: 1, overflowY: "auto", px: 2, py: 1.5 }}>
+          <Stack spacing={1.5}>
+            {columns.map((column) => {
+              const draftFilter = getDraftColumnFilter(column.key);
+              const isActive = isFilterStateActive(draftFilter);
+
+              return (
+                <Box
+                  key={column.key}
+                  data-testid={`filter-card-${column.key}`}
+                  ref={(node) => {
+                    filterPanelFieldRefs.current[column.key] = node;
+                  }}
+                  sx={{
+                    borderRadius: "5.25px", border: "1px solid", px: 1.5, py: 1.5,
+                    borderColor: filterPanelFocusKey === column.key
+                      ? "primary.main"
+                      : isActive ? "warning.main" : "divider",
+                    bgcolor: filterPanelFocusKey === column.key
+                      ? (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.06)
+                      : isActive
+                        ? (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.16 : 0.06)
+                        : "background.paper",
+                  }}
+                >
+                  <Stack direction="row" spacing={1} sx={{ mb: 1, alignItems: "center", justifyContent: "space-between" }}>
+                    <Typography sx={{ fontSize: 12, fontWeight: 500 }}>{column.label}</Typography>
+                    {isActive && (
+                      <Button size="small" color="inherit" onClick={() => clearDraftColumnFilter(column.key)} sx={{ fontSize: 11, minWidth: 0, p: 0 }}>
+                        Clear
+                      </Button>
+                    )}
+                  </Stack>
+                  <Stack spacing={1}>
+                    <Select
+                      size="small"
+                      fullWidth
+                      value={draftFilter.operator}
+                      onChange={(event) =>
+                        setDraftColumnFilter(column.key, { operator: event.target.value })
+                      }
+                      sx={{ fontSize: 12 }}
+                    >
+                      {FILTER_OPERATORS.map((op) => (
+                        <MenuItem key={op.value} value={op.value}>
+                          {op.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                    {!INPUT_FREE_OPERATORS.has(draftFilter.operator) && (
+                      <TextField
+                        size="small"
+                        fullWidth
+                        value={draftFilter.value}
+                        onChange={(event) =>
+                          setDraftColumnFilter(column.key, { value: event.target.value })
+                        }
+                        placeholder={`Filter ${column.label}`}
+                        sx={{ "& .MuiInputBase-input": { fontSize: 12 } }}
+                      />
+                    )}
+                  </Stack>
+                </Box>
+              );
+            })}
+          </Stack>
+        </Box>
+
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "flex-end", borderTop: 1, borderColor: "divider", px: 2, py: 1.5 }}>
+          <Button size="small" variant="outlined" onClick={() => setShowFilterPanel(false)}>
+            {filterPanelPinned ? "Close" : "Cancel"}
+          </Button>
+          <Button
+            size="small"
+            variant="contained"
+            onClick={() => applyColumnFilters(draftColumnFilters, { closePanel: !filterPanelPinned })}
+          >
+            Apply
+          </Button>
+        </Stack>
+    </Box>
+  );
+  const filterPanelDocked = showFilterPanel && filterPanelPinned;
+
   return (
     <Box sx={{ minWidth: 0, ...erpControlSx, "& .MuiOutlinedInput-root": { borderRadius: controlBorderRadius }, ...(fillHeight ? { display: "flex", flex: 1, minHeight: 0, flexDirection: "column" } : {}) }}>
       <Stack
@@ -2210,6 +2367,12 @@ export default function FilterableDataTable({
         </Stack>
       )}
 
+      <Box
+        data-testid="table-and-filter-panel"
+        sx={filterPanelDocked
+          ? { display: "flex", gap: 1, minWidth: 0, ...(fillHeight ? { flex: 1, minHeight: 0 } : {}) }
+          : { display: "contents" }}
+      >
       <TableContainer
         ref={tableContainerRef}
         data-scrollbar-visible={autoHideScrollbars ? scrollbarsVisible : undefined}
@@ -2225,6 +2388,7 @@ export default function FilterableDataTable({
           border: "1px solid", borderColor: "divider", borderRadius: "1.75px", overflow: "auto",
           bgcolor: "background.paper", color: "text.secondary",
           ...tableViewportSx,
+          ...(filterPanelDocked ? { flex: 1, minWidth: 0 } : {}),
           ...(autoHideScrollbars ? {
             scrollbarGutter: "stable",
             scrollbarColor: "transparent transparent",
@@ -2359,10 +2523,15 @@ export default function FilterableDataTable({
                         type="button"
                         title={`Filter ${column.label}`}
                         onClick={(e) => toggleColumnFilterPopup(column.key, e.currentTarget)}
+                        aria-label={`Filter ${column.label}`}
                         sx={{
-                          transition: "color 0.15s",
+                          transition: "color 0.15s, opacity 0.15s",
                           color: isFilterActive(column.key) ? "primary.main" : "text.disabled",
                           "&:hover": { color: isFilterActive(column.key) ? "primary.dark" : "text.secondary" },
+                          opacity: isFilterActive(column.key) || activeFilterColumn === column.key ? 1 : 0,
+                          "th:hover &, &:focus-visible": { opacity: 1 },
+                          // Touch screens have no hover: keep it visible there.
+                          "@media (hover: none)": { opacity: 1 },
                         }}
                       >
                         <Filter size={14} />
@@ -2741,6 +2910,21 @@ export default function FilterableDataTable({
           </TableBody>
         </Table>
       </TableContainer>
+      {filterPanelDocked && (
+        // Positioned content: the panel takes the table's height instead of growing with its column list.
+        <Box
+          component="aside"
+          aria-label="Filter panel"
+          sx={{
+            position: "relative", flexShrink: 0, width: filterPanelWidth, maxWidth: "45%", minHeight: 360,
+            border: "1px solid", borderColor: "divider", borderRadius: "1.75px", bgcolor: "background.paper",
+            ...(controlBorderRadius ? { "& .MuiOutlinedInput-root": { borderRadius: controlBorderRadius } } : {}),
+          }}
+        >
+          <Box sx={{ position: "absolute", inset: 0 }}>{filterPanelBody}</Box>
+        </Box>
+      )}
+      </Box>
 
       {headerContextMenu && (
         <Menu
@@ -2921,7 +3105,7 @@ export default function FilterableDataTable({
           vs. today's instant mount/unmount, another intentional, accepted improvement. */}
       <Drawer
         anchor="right"
-        open={showFilterPanel}
+        open={showFilterPanel && !filterPanelPinned}
         onClose={() => setShowFilterPanel(false)}
         slotProps={{
           paper: {
@@ -2937,114 +3121,7 @@ export default function FilterableDataTable({
           },
         }}
       >
-          <Box data-testid="filter-panel-root" sx={{ display: "flex", height: "100%", flexDirection: "column" }}>
-              <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", px: 2, py: 1.5 }}>
-                <Box>
-                  <Typography sx={{ fontSize: 14, fontWeight: 600 }}>Filter Panel</Typography>
-                  <Typography sx={{ fontSize: 11, color: "text.secondary" }}>Apply filters on multiple columns</Typography>
-                </Box>
-                <IconButton size="small" onClick={() => setShowFilterPanel(false)}>
-                  <X size={16} />
-                </IconButton>
-              </Stack>
-
-              <Stack direction="row" spacing={1} sx={{ alignItems: "center", borderBottom: 1, borderColor: "divider", px: 2, py: 1 }}>
-                <Button
-                  size="small"
-                  onClick={() => {
-                    const cleared = normalizeFilterMap({}, columns);
-                    setDraftColumnFilters(cleared);
-                  }}
-                >
-                  Clear All
-                </Button>
-                <Typography component="span" sx={{ fontSize: 11, color: "text.disabled" }}>|</Typography>
-                <Typography component="span" sx={{ fontSize: 11, color: "text.secondary" }}>
-                  Active: {Object.values(draftColumnFilters).filter((filter) => isFilterStateActive(filter)).length}
-                </Typography>
-              </Stack>
-
-              <Box sx={{ flex: 1, overflowY: "auto", px: 2, py: 1.5 }}>
-                <Stack spacing={1.5}>
-                  {columns.map((column) => {
-                    const draftFilter = getDraftColumnFilter(column.key);
-                    const isActive = isFilterStateActive(draftFilter);
-
-                    return (
-                      <Box
-                        key={column.key}
-                        data-testid={`filter-card-${column.key}`}
-                        ref={(node) => {
-                          filterPanelFieldRefs.current[column.key] = node;
-                        }}
-                        sx={{
-                          borderRadius: "5.25px", border: "1px solid", px: 1.5, py: 1.5,
-                          borderColor: filterPanelFocusKey === column.key
-                            ? "primary.main"
-                            : isActive ? "warning.main" : "divider",
-                          bgcolor: filterPanelFocusKey === column.key
-                            ? (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.06)
-                            : isActive
-                              ? (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.16 : 0.06)
-                              : "background.paper",
-                        }}
-                      >
-                        <Stack direction="row" spacing={1} sx={{ mb: 1, alignItems: "center", justifyContent: "space-between" }}>
-                          <Typography sx={{ fontSize: 12, fontWeight: 500 }}>{column.label}</Typography>
-                          {isActive && (
-                            <Button size="small" color="inherit" onClick={() => clearDraftColumnFilter(column.key)} sx={{ fontSize: 11, minWidth: 0, p: 0 }}>
-                              Clear
-                            </Button>
-                          )}
-                        </Stack>
-                        <Stack spacing={1}>
-                          <Select
-                            size="small"
-                            fullWidth
-                            value={draftFilter.operator}
-                            onChange={(event) =>
-                              setDraftColumnFilter(column.key, { operator: event.target.value })
-                            }
-                            sx={{ fontSize: 12 }}
-                          >
-                            {FILTER_OPERATORS.map((op) => (
-                              <MenuItem key={op.value} value={op.value}>
-                                {op.label}
-                              </MenuItem>
-                            ))}
-                          </Select>
-                          {!INPUT_FREE_OPERATORS.has(draftFilter.operator) && (
-                            <TextField
-                              size="small"
-                              fullWidth
-                              value={draftFilter.value}
-                              onChange={(event) =>
-                                setDraftColumnFilter(column.key, { value: event.target.value })
-                              }
-                              placeholder={`Filter ${column.label}`}
-                              sx={{ "& .MuiInputBase-input": { fontSize: 12 } }}
-                            />
-                          )}
-                        </Stack>
-                      </Box>
-                    );
-                  })}
-                </Stack>
-              </Box>
-
-              <Stack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "flex-end", borderTop: 1, borderColor: "divider", px: 2, py: 1.5 }}>
-                <Button size="small" variant="outlined" onClick={() => setShowFilterPanel(false)}>
-                  Cancel
-                </Button>
-                <Button
-                  size="small"
-                  variant="contained"
-                  onClick={() => applyColumnFilters(draftColumnFilters, { closePanel: true })}
-                >
-                  Apply
-                </Button>
-              </Stack>
-          </Box>
+        {filterPanelPinned ? null : filterPanelBody}
       </Drawer>
 
       {canPaginate && (

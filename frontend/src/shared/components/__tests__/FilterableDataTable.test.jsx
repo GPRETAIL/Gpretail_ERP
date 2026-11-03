@@ -966,6 +966,35 @@ describe("FilterableDataTable — filter panel drawer", () => {
 
   const getDrawerRoot = () => screen.getByTestId("filter-panel-root");
 
+  // Pinning is remembered per browser; every test starts unpinned.
+  beforeEach(() => localStorage.removeItem("erp.table.filterPanelPinned"));
+
+  it("pins the panel beside the table: no overlay, Apply keeps it open, and the choice is remembered", async () => {
+    const { container, unmount } = render(<FilterableDataTable rows={rows} columns={columns} showExport={false} />);
+    fireEvent.click(screen.getByRole("button", { name: "Filter" }));
+    fireEvent.click(screen.getByRole("button", { name: "Pin panel" }));
+
+    // The drawer slides away first (its exit transition), then the docked panel is the only one.
+    await waitFor(() => expect(screen.getByRole("complementary", { name: "Filter panel" })).toBeInTheDocument());
+    const docked = screen.getByRole("complementary", { name: "Filter panel" });
+    expect(container.contains(docked)).toBe(true); // Inside the table, not a Drawer portal.
+    expect(within(docked).getByRole("button", { name: "Unpin panel" })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.change(within(within(docked).getByTestId("filter-card-name")).getByRole("textbox"), { target: { value: "Apple" } });
+    fireEvent.click(within(docked).getByRole("button", { name: "Apply" }));
+    expect(screen.getByText("Apple")).toBeInTheDocument();
+    expect(screen.queryByText("Banana")).not.toBeInTheDocument();
+    expect(screen.getByRole("complementary", { name: "Filter panel" })).toBeInTheDocument();
+    expect(localStorage.getItem("erp.table.filterPanelPinned")).toBe("1");
+    unmount();
+
+    // Next table opens it docked straight away; unpinning puts it back in the drawer.
+    const second = render(<FilterableDataTable rows={rows} columns={columns} showExport={false} />);
+    fireEvent.click(screen.getByRole("button", { name: "Filter" }));
+    expect(second.container.contains(getDrawerRoot())).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "Unpin panel" }));
+    expect(second.container.contains(getDrawerRoot())).toBe(false);
+    expect(localStorage.getItem("erp.table.filterPanelPinned")).toBe("0");
+  });
   it("renders a filter card per column; Apply commits the draft and filters rows", () => {
     const { container } = render(
       <FilterableDataTable rows={rows} columns={columns} showExport={false} />
