@@ -1,6 +1,6 @@
 # API reference
 
-Every endpoint under `/api`, grouped by module (521 endpoints). Generated from
+Every endpoint under `/api`, grouped by module (550 endpoints). Generated from
 `php artisan route:list --sort=definition --json`; regenerate it after changing routes.
 
 - Each signed-in endpoint is also served under `/api/v1/...` with the same behaviour.
@@ -15,17 +15,17 @@ Every endpoint under `/api`, grouped by module (521 endpoints). Generated from
 - [Analytical](#analytical) (2)
 - [Auth](#auth) (14)
 - [Crm](#crm) (28)
-- [Dashboards](#dashboards) (25)
-- [Finance](#finance) (21)
-- [Hr](#hr) (32)
+- [Dashboards](#dashboards) (24)
+- [Finance](#finance) (23)
+- [Hr](#hr) (61)
 - [Masters](#masters) (120)
 - [Notifications](#notifications) (11)
 - [Other](#other) (1)
 - [Platform](#platform) (20)
-- [Sales](#sales) (92)
+- [Sales](#sales) (94)
 - [Settings](#settings) (70)
 - [Store](#store) (18)
-- [Warehouse](#warehouse) (61)
+- [Warehouse](#warehouse) (64)
 
 ## Analytical
 
@@ -179,6 +179,35 @@ Every endpoint under `/api`, grouped by module (521 endpoints). Generated from
 | POST | `/api/attendance/check-out` | AttendanceController@checkOut | yes |
 | POST | `/api/attendance/mark-leave` | AttendanceController@markLeave | yes |
 | GET|POST|PUT | `/api/attendance/settings` | AttendanceController@settings | yes |
+| GET | `/api/attendance/me` | AttendanceController@me | yes |
+| POST | `/api/attendance/self-punch` | AttendanceController@selfPunch | yes |
+| POST | `/api/attendance/punch` | AttendanceController@punch | yes |
+| POST | `/api/attendance/mark` | AttendanceController@mark | yes |
+| POST | `/api/attendance/import` | AttendanceController@import | yes |
+| GET | `/api/attendance/punches` | AttendanceController@punches | yes |
+| GET | `/api/attendance/monthly` | AttendanceController@monthly | yes |
+| POST | `/api/holidays/copy-year` | HolidayController@copyYear | yes |
+| GET | `/api/holidays` | HolidayController@index | yes |
+| POST | `/api/holidays` | HolidayController@store | yes |
+| PUT|PATCH | `/api/holidays/{holiday}` | HolidayController@update | yes |
+| DELETE | `/api/holidays/{holiday}` | HolidayController@destroy | yes |
+| GET | `/api/leave-types` | LeaveTypeController@index | yes |
+| POST | `/api/leave-types` | LeaveTypeController@store | yes |
+| PUT|PATCH | `/api/leave-types/{leave_type}` | LeaveTypeController@update | yes |
+| DELETE | `/api/leave-types/{leave_type}` | LeaveTypeController@destroy | yes |
+| POST | `/api/leave-policies/allocate` | LeavePolicyController@allocate | yes |
+| GET | `/api/leave-policies` | LeavePolicyController@index | yes |
+| POST | `/api/leave-policies` | LeavePolicyController@store | yes |
+| PUT|PATCH | `/api/leave-policies/{leave_policy}` | LeavePolicyController@update | yes |
+| DELETE | `/api/leave-policies/{leave_policy}` | LeavePolicyController@destroy | yes |
+| GET | `/api/leave/mine` | LeaveApplicationController@mine | yes |
+| GET | `/api/leave/balances` | LeaveApplicationController@balances | yes |
+| GET | `/api/leave/ledger` | LeaveApplicationController@ledger | yes |
+| POST | `/api/leave-applications/{id}/approve` | LeaveApplicationController@approve | yes |
+| POST | `/api/leave-applications/{id}/reject` | LeaveApplicationController@reject | yes |
+| POST | `/api/leave-applications/{id}/cancel` | LeaveApplicationController@cancel | yes |
+| GET | `/api/leave-applications` | LeaveApplicationController@index | yes |
+| POST | `/api/leave-applications` | LeaveApplicationController@store | yes |
 
 ## Masters
 
@@ -433,10 +462,10 @@ Every endpoint under `/api`, grouped by module (521 endpoints). Generated from
 | POST | `/api/settlements` | SettlementController@store | yes |
 | GET | `/api/settlements/{id}` | SettlementController@getBill | yes |
 | GET | `/api/sales-reports` | SalesReportController@index | yes |
-| GET | `/api/sales-comparer` | SalesReportController@salesComparer | yes |
 | GET | `/api/sales-reports/store/{report}` | SalesReportController@storeReport | yes |
 | GET | `/api/sales-reports/summary-layouts` | SalesReportController@summaryLayouts | yes |
 | GET | `/api/sales-reports/summary/{dataset}` | SalesReportController@summary | yes |
+| GET | `/api/sales-comparer` | SalesReportController@salesComparer | yes |
 | GET | `/api/sales-vs-purchase` | SalesReportController@salesVsPurchase | yes |
 | GET | `/api/sales-vs-stock` | SalesReportController@salesVsStock | yes |
 | GET | `/api/sales-pivot` | SalesReportController@salesPivot | yes |

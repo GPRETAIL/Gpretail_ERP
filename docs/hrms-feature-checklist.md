@@ -21,8 +21,8 @@ Windows preview build.
 |---|---|
 | Employee master | Yes: rich form (personal, department/section/designation, manager, joining date, bank, PF/ESI/UAN, salary mode, week off, working hours, OT flags, hold salary), documents on a private disk, education certificate, grouped summary, store-scoped |
 | HR configuration | Departments, sections, designations, plus generic `hr-{type}` lists |
-| Attendance | Basic: today's list, check-in, check-out, mark leave, per-store late cut-off settings; mobile `AttendanceScreen` |
-| Employee In/Out page | Menu entry only, no page |
+| Attendance | Phase 1 done (2026-11-04): Employee In/Out page, phone check-in with geofence, nightly close |
+| Leave | Phase 1 done (2026-11-04): Leave page and mobile Leave screen, policies, ledger, approvals |
 | Salary Management | Menu entry only, no page; the employee form already refers to a salary structure |
 | Everything below marked "No" | Not built |
 
@@ -34,13 +34,13 @@ Legend: **Have** = exists, **Part** = partly there, **No** = to build. Phase = s
 |---|---|---|---|
 | Departments, designations, sections | Org structure | Have | — |
 | Branch / work location | Where an employee works (we use stores and floors) | Part | 1 |
-| Employment type | Permanent, contract, trainee, intern… | No | 1 |
+| Employment type | Permanent, contract, trainee, intern… (the employee form's Working Mode) | Part | 1 |
 | Employee grade | Grade bands that drive default salary structure and leave policy | No | 2 |
 | Employee group | Named groups for bulk actions and notifications | No | 3 |
-| Holiday list | Holidays per year per store, weekly offs, import of regional holidays | No | 1 |
-| HR settings | Naming series, retirement age, approval rules, reminders | Part | 1 |
+| Holiday list | Holidays per year per store (copy from last year), weekly offs per employee | Have | — |
+| HR settings | Default shift, store location for phone check-in (naming series, retirement age: later) | Part | 2 |
 | Organisation chart | Tree view from reporting manager | No | 3 |
-| Hierarchy-based access | Managers see only their team's records | No | 1 |
+| Hierarchy-based access | Managers see only their team (Reports To); HR roles see the store | Have | — |
 
 ## 2. Employee lifecycle
 
@@ -60,15 +60,15 @@ Legend: **Have** = exists, **Part** = partly there, **No** = to build. Phase = s
 
 | Feature | What it does | Us | Phase |
 |---|---|---|---|
-| Daily attendance | Present / absent / half-day / on leave per day | Part | 1 |
-| Check-in / check-out log | Raw punches from web, mobile or device | Part | 1 |
-| Geolocation and geofence | Record where the punch happened, allow only near the store | No | 1 |
-| Auto attendance | Build daily attendance from punches and the shift (late, early exit, half-day rules) | No | 1 |
-| Attendance tool | Mark many employees for a date in one screen | No | 1 |
-| Attendance upload | Import from a spreadsheet | No | 1 |
+| Daily attendance | Present / absent / half-day / on leave / holiday / weekly off per day | Have | — |
+| Check-in / check-out log | Raw punches from phone, manager or import (Punch log tab) | Have | — |
+| Geolocation and geofence | Distance kept with each punch; phone check-in only within the store's radius | Have | — |
+| Auto attendance | Day built from punches and the Working Hour (late after grace, early exit, half day); nightly close | Have | — |
+| Attendance tool | Mark or punch many employees for a date (Day board) | Have | — |
+| Attendance upload | Import from a spreadsheet (code, date, in, out, status) | Have | — |
 | Attendance request | Employee asks to correct a missed punch, manager approves | No | 2 |
 | Biometric devices | Pull punches from fingerprint / face devices | No | 2 |
-| Shift types | Start/end time, grace minutes, break | No | 1 |
+| Shift types | Working Hour: start/end, full and half day minutes, grace minutes | Have | — |
 | Shift assignment, roster, schedules | Who works which shift on which days; bulk assignment | No | 2 |
 | Shift request | Employee asks for a different shift | No | 2 |
 | Overtime | Hours beyond the shift, approved, paid in payroll | Part (flags only) | 2 |
@@ -79,12 +79,12 @@ Legend: **Have** = exists, **Part** = partly there, **No** = to build. Phase = s
 
 | Feature | What it does | Us | Phase |
 |---|---|---|---|
-| Leave types | Casual, sick, earned, LOP, compensatory… with rules (paid/unpaid, carry forward, max days) | No | 1 |
-| Leave period and policy | Yearly period and the leaves each policy grants; assign policy to employees | No | 1 |
-| Leave allocation | Opening balances; bulk allocation tool | No | 1 |
-| Leave application | Apply, manager approves/rejects, balance check, notifications | Part (mark leave) | 1 |
-| Leave approver per employee/department | Who approves whose leave | No | 1 |
-| Leave ledger | Every credit/debit with running balance; balance report | No | 1 |
+| Leave types | CL, SL, EL, LOP by default, editable; paid/unpaid, half day, carry forward, max days | Have | — |
+| Leave period and policy | Jan–Dec year; policies with days per type; default policy; set on the employee | Have | — |
+| Leave allocation | Automatic on 1 January (pro-rata for joiners, carry forward) and Allocate now | Have | — |
+| Leave application | Apply (web and phone), approve/reject with note, withdraw, cancel, notifications | Have | — |
+| Leave approver per employee/department | The employee's Reports To; HR can decide for anyone | Have | — |
+| Leave ledger | Every credit/debit; balances per employee (Balances tab); ledger API | Have | — |
 | Earned leave accrual | Monthly/quarterly automatic credit | No | 2 |
 | Compensatory leave | Credit for working on a holiday | No | 2 |
 | Leave block days | Dates when leave is not allowed (e.g. festival sales) | No | 2 |
@@ -153,13 +153,13 @@ Legend: **Have** = exists, **Part** = partly there, **No** = to build. Phase = s
 
 | Feature | What it does | Us | Phase |
 |---|---|---|---|
-| Mobile check-in/out | With location and selfie option | Part | 1 |
-| Mobile leave apply / approve | Balance, apply, approve from phone | No | 1 |
+| Mobile check-in/out | With location check (no selfie, by choice) | Have | — |
+| Mobile leave apply / approve | Balance, apply, withdraw, approve from phone | Have | — |
 | Mobile payslips | View and download salary slips | No | 2 |
 | Mobile claims and advances | Submit with photo of bill | No | 3 |
-| Push / in-app notifications | Approvals, reminders (birthdays, anniversaries, pending approvals) | Part (notification inbox exists) | 1 |
-| HR dashboard | Headcount, attendance today, leave today, payroll cost | Part (summary) | 1 |
-| Reports | Monthly attendance sheet, leave balance and ledger, salary register, PF/ESI/PT, bank sheet, TDS, headcount, attrition | No | 1–3 |
+| Push / in-app notifications | Leave requests and decisions (reminders for birthdays etc.: later) | Part | 3 |
+| HR dashboard | Today's counts on the Day board (a separate dashboard page with payroll cost: later) | Part | 2 |
+| Reports | Monthly attendance register and leave balances done; salary register, PF/ESI/PT, bank sheet, TDS, headcount, attrition | Part | 2–3 |
 
 ## Phased build plan
 
