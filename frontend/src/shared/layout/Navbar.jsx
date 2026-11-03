@@ -492,7 +492,7 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
             <HeaderRenewalNotice />
             <IconButton
               size="small"
-              onClick={() => switchThemeWithReveal(theme === "dark" ? "light" : "dark", setTheme)}
+              onClick={(event) => switchThemeWithReveal(event, theme === "dark" ? "light" : "dark", setTheme)}
               title={theme === "dark" ? "Light theme" : "Dark theme"}
               aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
               sx={{ color: "text.secondary" }}

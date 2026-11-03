@@ -1,34 +1,35 @@
 import { flushSync } from "react-dom";
 
-// The page's own background (the app shell carries it; body is transparent here).
-const pageBackground = () => {
-  for (const el of [document.querySelector(".erp-app-shell"), document.body]) {
-    const color = el ? getComputedStyle(el).backgroundColor : "";
-    if (color && color !== "transparent" && !/rgba\([^)]*,\s*0\)$/.test(color)) return color;
-  }
-  return "transparent";
-};
+const DURATION_MS = 420;
+const EASING = "cubic-bezier(0.55, 0, 0.45, 1)";
 
 /**
- * Switches light/dark with a pinch: the current page shrinks in and fades, and the new theme grows back out to
- * full size (keyframes in themeStyles.css). Uses the View Transitions API; browsers without it, or users who ask
- * for reduced motion, just switch instantly.
+ * Switches light/dark with a circular reveal: the new theme grows out of the clicked toggle as a circle until it
+ * covers the page, both ways. Uses the View Transitions API; browsers without it, or users who ask for reduced
+ * motion, just switch instantly.
  */
-export function switchThemeWithReveal(nextTheme, setTheme) {
+export function switchThemeWithReveal(event, nextTheme, setTheme) {
   const apply = () => setTheme(nextTheme);
   const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
   if (typeof document.startViewTransition !== "function" || reduceMotion) {
     apply();
     return;
   }
+
+  const rect = event?.currentTarget?.getBoundingClientRect?.();
+  const x = rect ? rect.left + rect.width / 2 : window.innerWidth - 40;
+  const y = rect ? rect.top + rect.height / 2 : 20;
+  // Far enough to reach the furthest corner of the screen.
+  const radius = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y));
+
   const root = document.documentElement;
-  root.classList.add("theme-pinch");
-  document.startViewTransition(() => {
-    flushSync(apply);
-    // Behind the shrinking page: the new theme's own background, not a white gap.
-    root.style.setProperty("--theme-pinch-bg", pageBackground());
-  }).finished.finally(() => {
-    root.classList.remove("theme-pinch");
-    root.style.removeProperty("--theme-pinch-bg");
-  });
+  root.classList.add("theme-reveal");
+  const transition = document.startViewTransition(() => flushSync(apply));
+  transition.ready.then(() => {
+    root.animate(
+      { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`] },
+      { duration: DURATION_MS, easing: EASING, pseudoElement: "::view-transition-new(root)" }
+    );
+  }).catch(() => {});
+  transition.finished.finally(() => root.classList.remove("theme-reveal"));
 }
