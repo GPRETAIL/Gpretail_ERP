@@ -2,7 +2,7 @@ import LiveDateTime from "@/shared/components/LiveDateTime";
 import ApprovalDialog from "@/features/sales/approvals/components/ApprovalDialog";
 import useStockRules, { noStockRowSx, shortQtyByStock } from "@/shared/hooks/useStockRules";
 import NoStockChip from "@/shared/components/NoStockChip";
-import { approvalRequirementFrom, isApprovalRequired } from "@/features/sales/approvals/utils/approvals";
+import { approvalRequirementFrom, isApprovalRequired, withApprovalTokens } from "@/features/sales/approvals/utils/approvals";
 import { runPosCheckout } from "./utils/posCheckout";
 import { prepareCheckoutAttempt } from "./utils/posCheckoutAttempt";
 import { mapPosStockRow, posStockOptions, mergePosStockRows } from "./utils/posStockCatalog";
@@ -2266,7 +2266,7 @@ const PosSales = () => {
     shouldPrint = false,
     paymentFormOverride,
     allowUnsettledWithoutPayment = posCheckoutPrefs.saleSaveAs === "unsettled",
-    approvalToken,
+    approvalTokens,
   } = {}) => {
     if (saveInFlight.current) return;
     if (!authUser?.counter_id) {
@@ -2279,7 +2279,7 @@ const PosSales = () => {
         ? buildSavePayload(paymentFormOverride, { allowUnsettledWithoutPayment })
         : buildSavePayload(undefined, { allowUnsettledWithoutPayment });
     if (!built) return;
-    const payload = approvalToken ? { ...built, approvalToken } : built;
+    const payload = withApprovalTokens(built, approvalTokens);
 
     checkoutAttempt.current = prepareCheckoutAttempt(checkoutAttempt.current, payload, [authUser?.id, sessionStorage.getItem("activeStoreId"), authUser?.company_id, authUser?.store_id, authUser?.counter_id]);
     const attempt = checkoutAttempt.current;
@@ -2315,7 +2315,7 @@ const PosSales = () => {
       // No offline pack on this till: keep the same key so the cashier can retry this bill online.
       if (isApprovalRequired(err)) {
         // Nothing was saved; the dialog retries this same checkout once a supervisor approves.
-        setApprovalRequirement({ ...approvalRequirementFrom(err), retry: { shouldPrint, paymentFormOverride, allowUnsettledWithoutPayment } });
+        setApprovalRequirement({ ...approvalRequirementFrom(err), retry: { shouldPrint, paymentFormOverride, allowUnsettledWithoutPayment, approvalTokens } });
         return;
       }
       toast.error(err?.response?.data?.message || (!err?.config && err?.message) || "Failed to save POS sale");
@@ -3823,10 +3823,11 @@ const PosSales = () => {
           requirement={approvalRequirement}
           onClose={() => setApprovalRequirement(null)}
           onApproved={(token) => {
-            const { retry } = approvalRequirement;
+            const { retry, action } = approvalRequirement;
             setApprovalRequirement(null);
             toast.success("Approved. Saving the sale…");
-            void handleSaveSale({ ...retry, approvalToken: token });
+            // Keep an earlier approval (a discount) when this one (a credit) was the second the bill needed.
+            void handleSaveSale({ ...retry, approvalTokens: { ...retry.approvalTokens, [action]: token } });
           }}
         />
       )}

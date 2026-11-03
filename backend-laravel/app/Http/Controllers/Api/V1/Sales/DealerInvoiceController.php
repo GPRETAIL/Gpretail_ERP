@@ -164,14 +164,19 @@ class DealerInvoiceController extends Controller
             return response()->json(['success' => false, 'message' => collect($e->errors())->flatten()->first(), 'errors' => $e->errors()], 422);
         }
         $totals = $this->totals($request, $lines);
-        if (! $isReturn) {
-            // A discount beyond the user's limit needs a supervisor/manager approval, as on POS (HTTP 428, then retried
-            // with the approval token). Dealer prices are wholesale, so only discounts typed on the bill count.
-            app(ApprovalService::class)->authorizeDiscount($request->user(), $storeId, $this->discountBasket($lines, $totals), $request->input('approvalToken'));
-        }
 
         try {
             $document = DB::transaction(function () use ($request, $storeId, $isReturn, $lines, $customerId, $source, $totals) {
+                // As on POS, a discount or a credit beyond the user's limit needs a supervisor/manager approval (HTTP 428,
+                // then retried with the approval token). Dealer prices are wholesale, so only discounts typed on the bill
+                // count; the whole invoice goes on the dealer's account, so all of it is credit. Checked inside the
+                // transaction so each single-use token is locked and spent with this invoice.
+                $used = [];
+                if (! $isReturn) {
+                    $approvals = app(ApprovalService::class);
+                    $used[] = $approvals->authorizeDiscount($request->user(), $storeId, $this->discountBasket($lines, $totals), $request->input('approvalToken'));
+                    $used[] = $approvals->authorizeCredit($request->user(), $storeId, (float) $totals['total'], $request->input('creditApprovalToken'));
+                }
                 $header = [
                     'store_id' => $storeId, 'customer_id' => $customerId, 'status' => 'COMPLETED',
                     'subtotal' => $totals['subtotal'], 'discount_amount' => $totals['discount'], 'tax_amount' => $totals['tax'],
@@ -206,6 +211,9 @@ class DealerInvoiceController extends Controller
                     $isReturn
                         ? DealerInvoiceReturnItem::create($row + ['dealer_invoice_return_id' => $document->id])
                         : DealerInvoiceItem::create($row + ['dealer_invoice_id' => $document->id, 'short_qty' => $sellWithoutStock ? StockRules::shortQty($line['qty'], (float) $stock->quantity) : 0]);
+                }
+                foreach ($used as $approval) {
+                    $approval?->forceFill(['status' => 'used', 'used_at' => now(), 'payload' => [...($approval->payload ?? []), 'dealer_invoice_id' => $document->id]])->save();
                 }
 
                 return $document;

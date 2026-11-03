@@ -12,7 +12,7 @@ const PUSHED_POLL_MS = 15000;
 const money = (value) => Number(value || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 /**
- * Asks for approval of an over-limit discount or refund. Two routes, as in retail practice:
+ * Asks for approval of an over-limit discount, refund or credit sale. Two routes, as in retail practice:
  * a supervisor types their login + PIN on this screen (works with the customer waiting), or the
  * cashier sends a request to the Approval Inbox and waits. Calls onApproved(token) once granted;
  * the caller retries its save with that single-use token.
@@ -22,7 +22,7 @@ export default function ApprovalDialog({ requirement, onApproved, onClose }) {
   const action = requirement?.action;
   const details = requirement?.details || {};
   const [mode, setMode] = useState("pin");
-  const [reason, setReason] = useState(action === "pos_refund" ? "wrong_item" : "damaged_item");
+  const [reason, setReason] = useState({ pos_refund: "wrong_item", pos_credit: "loyal_customer" }[action] || "damaged_item");
   const [note, setNote] = useState("");
   const [approver, setApprover] = useState("");
   const [pin, setPin] = useState("");
@@ -43,7 +43,9 @@ export default function ApprovalDialog({ requirement, onApproved, onClose }) {
     note: note.trim() || undefined,
     ...(action === "pos_discount"
       ? { requested_percent: details.requested_percent, payload: { lines: details.lines || [] } }
-      : { amount: details.amount, payload: { without_receipt: Boolean(details.without_receipt) } }),
+      : action === "pos_credit"
+        ? { amount: details.amount }
+        : { amount: details.amount, payload: { without_receipt: Boolean(details.without_receipt) } }),
   });
 
   const submitPin = async () => {
@@ -119,6 +121,10 @@ export default function ApprovalDialog({ requirement, onApproved, onClose }) {
 
   const summary = action === "pos_discount"
     ? `Discount of ${details.requested_percent}% is above your limit of ${details.your_limit_percent ?? 0}%.`
+    : action === "pos_credit"
+      ? (Number(details.your_limit_amount) > 0
+        ? `Credit of ₹${money(details.amount)} is above your credit limit of ₹${money(details.your_limit_amount)}.`
+        : `Credit sale of ₹${money(details.amount)} needs approval.`)
     : details.without_receipt
       ? `Refund of ₹${money(details.amount)} without the original bill needs approval.`
       : `Refund of ₹${money(details.amount)} is above your limit of ₹${money(details.your_limit_amount)}.`;

@@ -15,6 +15,7 @@ class UpdateApprovalLimitsRequest extends ApiFormRequest
             'limits.*.role' => 'required|string|in:'.implode(',', array_keys(ApprovalService::RECOMMENDED)),
             'limits.*.max_discount_percent' => 'nullable|numeric|min:0|max:100',
             'limits.*.max_refund_amount' => 'nullable|numeric|min:0|max:100000000',
+            'limits.*.max_credit_amount' => 'nullable|numeric|min:0|max:100000000',
             'limits.*.allow_no_receipt_refund' => 'boolean',
         ];
     }

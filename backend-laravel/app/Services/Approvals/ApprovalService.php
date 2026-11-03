@@ -15,24 +15,24 @@ use App\Exceptions\ApprovalRequiredException;
 use App\Services\Tenancy\StoreContext;
 
 /**
- * Discount / refund approvals. A store's approval_limits rows switch the feature on; a store
+ * Discount / refund / credit-sale approvals. A store's approval_limits rows switch the feature on; a store
  * without rows keeps the old behaviour. Limits are per role; a missing role row falls back to
  * RECOMMENDED. Approvals end in a single-use token the sale/return must present, and the server
  * re-checks it against the actual basket, so the screen cannot be bypassed via the API.
  */
 class ApprovalService
 {
-    public const ACTIONS = ['pos_discount', 'pos_refund'];
+    public const ACTIONS = ['pos_discount', 'pos_refund', 'pos_credit'];
 
     /** Lowest to highest authority; admins are always unlimited. */
     public const ROLE_ORDER = ['user', 'staff', 'store_user', 'warehouse_user', 'accountant', 'cashier', 'sales', 'supervisor', 'manager', 'admin', 'super_admin'];
 
     public const RECOMMENDED = [
-        'cashier' => ['max_discount_percent' => 5, 'max_refund_amount' => 0, 'allow_no_receipt_refund' => false],
-        'sales' => ['max_discount_percent' => 5, 'max_refund_amount' => 0, 'allow_no_receipt_refund' => false],
-        'store_user' => ['max_discount_percent' => 5, 'max_refund_amount' => 0, 'allow_no_receipt_refund' => false],
-        'supervisor' => ['max_discount_percent' => 10, 'max_refund_amount' => 2000, 'allow_no_receipt_refund' => false],
-        'manager' => ['max_discount_percent' => 20, 'max_refund_amount' => 10000, 'allow_no_receipt_refund' => true],
+        'cashier' => ['max_discount_percent' => 5, 'max_refund_amount' => 0, 'max_credit_amount' => 0, 'allow_no_receipt_refund' => false],
+        'sales' => ['max_discount_percent' => 5, 'max_refund_amount' => 0, 'max_credit_amount' => 0, 'allow_no_receipt_refund' => false],
+        'store_user' => ['max_discount_percent' => 5, 'max_refund_amount' => 0, 'max_credit_amount' => 0, 'allow_no_receipt_refund' => false],
+        'supervisor' => ['max_discount_percent' => 10, 'max_refund_amount' => 2000, 'max_credit_amount' => 5000, 'allow_no_receipt_refund' => false],
+        'manager' => ['max_discount_percent' => 20, 'max_refund_amount' => 10000, 'max_credit_amount' => 25000, 'allow_no_receipt_refund' => true],
     ];
 
     private const TOKEN_TTL_MINUTES = 30;
@@ -44,19 +44,20 @@ class ApprovalService
         return ApprovalLimit::withoutGlobalScopes()->where('store_id', $storeId)->exists();
     }
 
-    /** @return array{max_discount_percent: ?float, max_refund_amount: ?float, allow_no_receipt_refund: bool} */
+    /** @return array{max_discount_percent: ?float, max_refund_amount: ?float, max_credit_amount: ?float, allow_no_receipt_refund: bool} */
     public function limitFor(User $user, int $storeId): array
     {
         if (in_array($user->role, ['admin', 'super_admin'], true)) {
-            return ['max_discount_percent' => null, 'max_refund_amount' => null, 'allow_no_receipt_refund' => true];
+            return ['max_discount_percent' => null, 'max_refund_amount' => null, 'max_credit_amount' => null, 'allow_no_receipt_refund' => true];
         }
         $row = ApprovalLimit::withoutGlobalScopes()->where('store_id', $storeId)->where('role', $user->role)->first();
-        $limit = $row?->only(['max_discount_percent', 'max_refund_amount', 'allow_no_receipt_refund'])
-            ?? (self::RECOMMENDED[$user->role] ?? ['max_discount_percent' => 0, 'max_refund_amount' => 0, 'allow_no_receipt_refund' => false]);
+        $limit = $row?->only(['max_discount_percent', 'max_refund_amount', 'max_credit_amount', 'allow_no_receipt_refund'])
+            ?? (self::RECOMMENDED[$user->role] ?? ['max_discount_percent' => 0, 'max_refund_amount' => 0, 'max_credit_amount' => 0, 'allow_no_receipt_refund' => false]);
 
         return [
             'max_discount_percent' => $limit['max_discount_percent'] === null ? null : (float) $limit['max_discount_percent'],
             'max_refund_amount' => $limit['max_refund_amount'] === null ? null : (float) $limit['max_refund_amount'],
+            'max_credit_amount' => $limit['max_credit_amount'] === null ? null : (float) $limit['max_credit_amount'],
             'allow_no_receipt_refund' => (bool) $limit['allow_no_receipt_refund'],
         ];
     }
@@ -130,6 +131,25 @@ class ApprovalService
         return $approval;
     }
 
+    /** A credit sale puts $amount on the customer's account; above the user's credit limit it needs an approval. */
+    public function authorizeCredit(User $user, int $storeId, float $amount, ?string $token): ?ApprovalRequest
+    {
+        if (! $this->enabled($storeId) || $amount <= 0) {
+            return null;
+        }
+        $limit = $this->limitFor($user, $storeId)['max_credit_amount'];
+        if ($limit === null || $amount <= $limit + 0.001) {
+            return null;
+        }
+        $approval = $this->consumable($token, $storeId, 'pos_credit', $user);
+        if (! $approval || (float) $approval->amount + 0.001 < $amount) {
+            throw new ApprovalRequiredException('pos_credit', ['amount' => round($amount, 2), 'your_limit_amount' => $limit],
+                $approval ? 'The approved credit is lower than this bill. Request approval again.' : null);
+        }
+
+        return $approval;
+    }
+
     /** Whether $approver may approve this request on their own authority. */
     public function canDecide(User $approver, ApprovalRequest $request): bool
     {
@@ -141,10 +161,12 @@ class ApprovalService
         }
         $limit = $this->limitFor($approver, (int) $request->store_id);
 
-        return $request->action === 'pos_discount'
-            ? $limit['max_discount_percent'] === null || (float) $request->requested_percent <= $limit['max_discount_percent'] + 0.001
-            : ($limit['max_refund_amount'] === null || (float) $request->amount <= $limit['max_refund_amount'] + 0.001)
-                && (! ($request->payload['without_receipt'] ?? false) || $limit['allow_no_receipt_refund']);
+        return match ($request->action) {
+            'pos_discount' => $limit['max_discount_percent'] === null || (float) $request->requested_percent <= $limit['max_discount_percent'] + 0.001,
+            'pos_credit' => $limit['max_credit_amount'] === null || (float) $request->amount <= $limit['max_credit_amount'] + 0.001,
+            default => ($limit['max_refund_amount'] === null || (float) $request->amount <= $limit['max_refund_amount'] + 0.001)
+                && (! ($request->payload['without_receipt'] ?? false) || $limit['allow_no_receipt_refund']),
+        };
     }
 
     public function createRequest(User $user, int $storeId, string $action, array $data, string $channel = 'remote'): ApprovalRequest

@@ -12,6 +12,16 @@ export const APPROVAL_REASONS = {
 /** True when an API error is the server asking for a supervisor/manager approval (HTTP 428). */
 export const isApprovalRequired = (error) => error?.response?.status === 428 && error?.response?.data?.code === "APPROVAL_REQUIRED";
 
+/**
+ * Each approval action has its own single-use token, since one bill can need two (an over-limit discount and an
+ * over-limit credit). tokens: { pos_discount, pos_credit } collected so far; returns the save payload with them.
+ */
+export const withApprovalTokens = (payload, tokens = {}) => ({
+  ...payload,
+  ...(tokens.pos_discount ? { approvalToken: tokens.pos_discount } : {}),
+  ...(tokens.pos_credit ? { creditApprovalToken: tokens.pos_credit } : {}),
+});
+
 /** The dialog's input: { action, details } from the APPROVAL_REQUIRED response. */
 export const approvalRequirementFrom = (error) => {
   const data = error?.response?.data || {};

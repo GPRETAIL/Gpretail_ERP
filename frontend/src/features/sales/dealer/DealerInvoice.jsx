@@ -13,7 +13,7 @@ import ConfirmDialog from "@/shared/components/ConfirmDialog";
 import useStockRules, { noStockRowSx, shortQtyByStock } from "@/shared/hooks/useStockRules";
 import NoStockChip from "@/shared/components/NoStockChip";
 import ApprovalDialog from "@/features/sales/approvals/components/ApprovalDialog";
-import { approvalRequirementFrom, isApprovalRequired } from "@/features/sales/approvals/utils/approvals";
+import { approvalRequirementFrom, isApprovalRequired, withApprovalTokens } from "@/features/sales/approvals/utils/approvals";
 import { createGroupFetchers } from "@/shared/utils/serverGrouping";
 import SearchableSelect from "@/shared/components/SearchableSelect";
 import AsyncSearchSelect from "@/shared/components/AsyncSearchSelect";
@@ -667,7 +667,7 @@ const DealerInvoice = () => {
     setItemFilters(createDefaultItemFilters());
   };
 
-  const handleSave = async ({ approvalToken } = {}) => {
+  const handleSave = async ({ approvalTokens } = {}) => {
     if (!customerId) {
       toast.error("Please select customer");
       return;
@@ -707,14 +707,14 @@ const DealerInvoice = () => {
 
     setSaving(true);
     try {
-      const res = await api.post("/dealer-invoices", typeof approvalToken === "string" ? { ...payload, approvalToken } : payload);
+      const res = await api.post("/dealer-invoices", withApprovalTokens(payload, approvalTokens));
       const savedBillNo = res.data?.data?.bill_no;
       toast.success(`Dealer invoice saved successfully (Bill #${savedBillNo})`);
       handleResetEntry();
       await Promise.all([loadMasterData(), loadNextBillNo()]);
     } catch (err) {
       if (isApprovalRequired(err)) {
-        setApprovalRequirement(approvalRequirementFrom(err));
+        setApprovalRequirement({ ...approvalRequirementFrom(err), approvalTokens });
         return;
       }
       toast.error(err?.response?.data?.message || "Failed to save dealer invoice");
@@ -1480,9 +1480,11 @@ const DealerInvoice = () => {
           requirement={approvalRequirement}
           onClose={() => setApprovalRequirement(null)}
           onApproved={(token) => {
+            const { action, approvalTokens } = approvalRequirement;
             setApprovalRequirement(null);
             toast.success("Approved. Saving the dealer invoice…");
-            void handleSave({ approvalToken: token });
+            // A dealer invoice can need two approvals (discount, then credit): keep the first token for the retry.
+            void handleSave({ approvalTokens: { ...approvalTokens, [action]: token } });
           }}
         />
       )}

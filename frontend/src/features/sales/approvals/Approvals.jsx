@@ -25,7 +25,9 @@ const money = (value) => Number(value || 0).toLocaleString("en-IN", { minimumFra
 const when = (value) => (value ? new Date(value).toLocaleString(undefined, { day: "2-digit", month: "short", hour: "numeric", minute: "2-digit" }) : "-");
 const describe = (row) => (row.action === "pos_discount"
   ? `Discount ${row.requested_percent}%${row.approved_percent != null && row.approved_percent !== row.requested_percent ? ` (approved ${row.approved_percent}%)` : ""}`
-  : `Refund ₹${money(row.amount)}${row.payload?.without_receipt ? " · no receipt" : ""}`);
+  : row.action === "pos_credit"
+    ? `Credit sale ₹${money(row.amount)}`
+    : `Refund ₹${money(row.amount)}${row.payload?.without_receipt ? " · no receipt" : ""}`);
 
 function Inbox() {
   const authUser = useSelector((state) => state.auth.user);
@@ -193,6 +195,7 @@ function Limits() {
         ...row,
         max_discount_percent: row.max_discount_percent === "" ? null : row.max_discount_percent,
         max_refund_amount: row.max_refund_amount === "" ? null : row.max_refund_amount,
+        max_credit_amount: row.max_credit_amount === "" ? null : row.max_credit_amount,
       })) });
       setData(res.data?.data);
       toast.success(data.enabled ? "Approval limits saved." : "Approvals switched off for this store.");
@@ -206,14 +209,14 @@ function Limits() {
   return (
     <Stack spacing={1.5} sx={{ maxWidth: 820 }}>
       <FormControlLabel control={<Switch checked={Boolean(data.enabled)} onChange={(e) => setData((prev) => ({ ...prev, enabled: e.target.checked }))} />}
-        label="Require approval when a discount or refund exceeds the user's limit" />
+        label="Require approval when a discount, refund or credit sale exceeds the user's limit" />
       <Alert severity="info">
-        Admins are never limited. Supervisors and managers approve requests up to their own limit. Leave a field empty for no limit.
+        Admins are never limited. Supervisors and managers approve requests up to their own limit. Leave a field empty for no limit; a credit limit of 0 means every credit sale needs approval.
       </Alert>
       <Box sx={{ overflowX: "auto", border: 1, borderColor: "divider", borderRadius: 1, opacity: data.enabled ? 1 : 0.6 }}>
         <Table size="small" aria-label="Approval limits">
           <TableHead>
-            <TableRow><TableCell>Role</TableCell><TableCell>Max discount without approval (%)</TableCell><TableCell>Max refund without approval (₹)</TableCell><TableCell>Refund without bill</TableCell></TableRow>
+            <TableRow><TableCell>Role</TableCell><TableCell>Max discount without approval (%)</TableCell><TableCell>Max refund without approval (₹)</TableCell><TableCell>Max credit without approval (₹)</TableCell><TableCell>Refund without bill</TableCell></TableRow>
           </TableHead>
           <TableBody>
             {data.limits.map((row) => (
@@ -221,6 +224,7 @@ function Limits() {
                 <TableCell sx={{ fontWeight: 600 }}>{ROLE_LABELS[row.role] || row.role}</TableCell>
                 <TableCell><TextField size="small" type="number" disabled={!data.enabled} value={row.max_discount_percent ?? ""} onChange={(e) => update(row.role, "max_discount_percent", e.target.value)} inputProps={{ min: 0, max: 100, step: 0.5, "aria-label": `${row.role} discount limit` }} sx={{ width: 120 }} /></TableCell>
                 <TableCell><TextField size="small" type="number" disabled={!data.enabled} value={row.max_refund_amount ?? ""} onChange={(e) => update(row.role, "max_refund_amount", e.target.value)} inputProps={{ min: 0, step: 100, "aria-label": `${row.role} refund limit` }} sx={{ width: 140 }} /></TableCell>
+                <TableCell><TextField size="small" type="number" disabled={!data.enabled} value={row.max_credit_amount ?? ""} onChange={(e) => update(row.role, "max_credit_amount", e.target.value)} inputProps={{ min: 0, step: 500, "aria-label": `${row.role} credit limit` }} sx={{ width: 140 }} /></TableCell>
                 <TableCell><Switch size="small" disabled={!data.enabled} checked={Boolean(row.allow_no_receipt_refund)} onChange={(e) => update(row.role, "allow_no_receipt_refund", e.target.checked)} inputProps={{ "aria-label": `${row.role} may refund without bill` }} /></TableCell>
               </TableRow>
             ))}

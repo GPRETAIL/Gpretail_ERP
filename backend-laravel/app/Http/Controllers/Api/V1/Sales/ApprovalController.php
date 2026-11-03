@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 /**
- * POS discount / refund approvals: store limits, counter PIN approval, remote requests and the
+ * POS discount / refund / credit-sale approvals: store limits, counter PIN approval, remote requests and the
  * approver inbox. Enforcement itself lives in ApprovalService, called by sales and returns.
  */
 class ApprovalController extends Controller
@@ -31,7 +31,7 @@ class ApprovalController extends Controller
         return response()->json(['success' => true, 'data' => [
             'enabled' => $rows->isNotEmpty(),
             'limits' => collect(array_keys(ApprovalService::RECOMMENDED))->map(fn (string $role) => [
-                'role' => $role, ...($rows->get($role)?->only(['max_discount_percent', 'max_refund_amount', 'allow_no_receipt_refund']) ?? ApprovalService::RECOMMENDED[$role]),
+                'role' => $role, ...($rows->get($role)?->only(['max_discount_percent', 'max_refund_amount', 'max_credit_amount', 'allow_no_receipt_refund']) ?? ApprovalService::RECOMMENDED[$role]),
             ])->values(),
             'recommended' => ApprovalService::RECOMMENDED,
             'reasons' => self::REASONS,
@@ -51,6 +51,7 @@ class ApprovalController extends Controller
                 $given = collect($data['limits'] ?? [])->firstWhere('role', $role) ?? ApprovalService::RECOMMENDED[$role];
                 ApprovalLimit::create(['store_id' => $storeId, 'role' => $role,
                     'max_discount_percent' => $given['max_discount_percent'] ?? null, 'max_refund_amount' => $given['max_refund_amount'] ?? null,
+                    'max_credit_amount' => $given['max_credit_amount'] ?? null,
                     'allow_no_receipt_refund' => (bool) ($given['allow_no_receipt_refund'] ?? false)]);
             }
         });
@@ -195,7 +196,7 @@ class ApprovalController extends Controller
         return $request->validate([
             'action' => 'required|in:'.implode(',', ApprovalService::ACTIONS),
             'requested_percent' => 'required_if:action,pos_discount|nullable|numeric|min:0|max:100',
-            'amount' => 'required_if:action,pos_refund|nullable|numeric|min:0',
+            'amount' => 'required_if:action,pos_refund,pos_credit|nullable|numeric|min:0',
             'reason_code' => 'required|in:'.implode(',', self::REASONS),
             'note' => 'nullable|string|max:500',
             'payload' => 'nullable|array',

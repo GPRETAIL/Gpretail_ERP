@@ -12,9 +12,11 @@ class ApprovalRequiredException extends RuntimeException
 {
     public function __construct(public string $action, public array $details, ?string $message = null)
     {
-        parent::__construct($message ?? ($action === 'pos_discount'
-            ? 'This discount is above your limit. A supervisor or manager must approve it.'
-            : 'This refund needs supervisor or manager approval.'));
+        parent::__construct($message ?? match ($action) {
+            'pos_discount' => 'This discount is above your limit. A supervisor or manager must approve it.',
+            'pos_credit' => 'This credit sale is above your credit limit. A supervisor or manager must approve it.',
+            default => 'This refund needs supervisor or manager approval.',
+        });
     }
 
     public function render()

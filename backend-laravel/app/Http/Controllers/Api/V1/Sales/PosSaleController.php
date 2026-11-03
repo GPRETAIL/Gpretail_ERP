@@ -407,6 +407,7 @@ class PosSaleController extends Controller
             'saleSaveAs' => 'nullable|in:paid_settled,unsettled',
             'checkoutKey' => 'nullable|uuid',
             'approvalToken' => 'nullable|string|max:100',
+            'creditApprovalToken' => 'nullable|string|max:100',
             'offline' => 'nullable|array',
             'offline.invoiceNo' => 'required_with:offline|string|max:80',
             'offline.billedAt' => 'required_with:offline|date',
@@ -541,6 +542,11 @@ class PosSaleController extends Controller
                 if ($request->input('saleSaveAs') === 'paid_settled' && ! $isCredit && round($paid, 2) < round($netPayable, 2)) {
                     throw ValidationException::withMessages(['cashAmount' => 'Full payment is required to save a paid invoice.']);
                 }
+                // What goes on the customer's account beyond the user's credit limit needs an approval (a separate token
+                // from the discount one: one bill can need both). Offline tills cannot sell on credit at all.
+                $creditApproval = $isCredit && ! $offline
+                    ? $approvals->authorizeCredit($user, (int) $storeId, max(0, $netPayable - $paid), $request->input('creditApprovalToken'))
+                    : null;
 
                 $paymentMode = $isCredit || $paid <= 0
                     ? ($isCredit ? 'CREDIT' : 'UNSETTLED')
@@ -590,7 +596,9 @@ class PosSaleController extends Controller
                             'link' => '/sales/offline-bills', 'reference_type' => 'POS_SALE', 'reference_id' => $sale->id, 'store_id' => $storeId]);
                     }
                 }
-                $approval?->forceFill(['status' => 'used', 'used_at' => now(), 'pos_sale_id' => $sale->id])->save();
+                foreach ([$approval, $creditApproval] as $used) {
+                    $used?->forceFill(['status' => 'used', 'used_at' => now(), 'pos_sale_id' => $sale->id])->save();
+                }
 
                 foreach ([
                     ['mode' => 'CASH', 'amount' => $cashAmount, 'extra' => []],
