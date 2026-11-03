@@ -20,7 +20,7 @@ class MobileAccess
         'inventory_summary' => '/warehouse/dashboard',
         'returns' => '/sales/pos-sales-return', 'inventory' => '/masters/product', 'product_details' => '/masters/product',
         'customers' => '/crm/customer', 'suppliers' => '/masters/supplier', 'supplier_dues' => '/finance/supplier-payment',
-        'attendance' => '/hrms/attendance', 'approvals' => '/sales/sales-on-approval',
+        'attendance' => '/hrms/employee-in-out', 'leave' => '/hrms/leave', 'approvals' => '/sales/sales-on-approval',
         'fast_moving' => '/analytical/dashboard', 'sales_summary' => '/sales/reports',
         'reports' => '/analytical/dashboard', 'report_profit_loss' => '/analytical/dashboard',
         'report_gst' => '/analytical/dashboard', 'report_receivables' => '/finance/dashboard',
@@ -45,7 +45,9 @@ class MobileAccess
         'CrmDashboardController' => '/crm/customer', 'LoyaltyController' => '/crm/loyalty-management',
         'FinanceDashboardController' => '/finance/dashboard', 'SupplierPaymentController' => '/finance/supplier-payment',
         'AnalyticalDashboardController' => '/analytical/dashboard', 'ProductPurchaseAnalyticsController' => '/analytical/dashboard',
-        'AttendanceController' => '/hrms/attendance', 'EmployeeController' => '/hrms/employee', 'HrConfigurationController' => '/hrms/attendance',
+        'AttendanceController' => '/hrms/employee-in-out', 'EmployeeController' => '/hrms/employee', 'HrConfigurationController' => '/hrms/hr-configuration',
+        'HolidayController' => '/hrms/hr-configuration', 'LeaveTypeController' => '/hrms/hr-configuration', 'LeavePolicyController' => '/hrms/leave',
+        'LeaveApplicationController' => '/hrms/leave',
         'StoreDashboardController' => '/store/dashboard', 'MastersDashboardController' => '/masters/product',
         'SettingsController' => '/settings/application-settings', 'SettingsDashboardController' => '/settings/application-settings',
         'ConfigurationController' => '/settings/application-settings', 'BackupController' => '/settings/backup',
@@ -90,7 +92,8 @@ class MobileAccess
                     $screens[] = $screen;
                 }
             }
-            $screens = array_merge($screens, ['modules', 'settings']);
+            // Everyone's own check-in and leave (the team views inside are narrowed by HrScope on the server).
+            $screens = array_values(array_unique(array_merge($screens, ['modules', 'settings', 'attendance', 'leave'])));
         }
 
         return ['id' => $store->id, 'name' => $store->name, 'code' => $store->code, 'allowed' => $code === null,
@@ -185,6 +188,9 @@ class MobileAccess
             // Support is a shared account service, including when a mobile token is used on the website.
             // Its controller still enforces the deployment/company and requester identity.
             return null;
+        }
+        if (app(BusinessPermissions::class)->isHrSelfService($request)) {
+            return null; // Your own check-in and leave, from any client, whatever pages you were given.
         }
         if (app(BusinessPermissions::class)->isLookupRead($request)) {
             return null; // Dropdown lists belong to every screen, not to the Settings page they are mapped to.

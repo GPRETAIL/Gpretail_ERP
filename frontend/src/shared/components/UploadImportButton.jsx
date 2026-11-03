@@ -154,7 +154,10 @@ export default function UploadImportButton({
         for (const [rawKey, fieldName] of Object.entries(headerMap)) {
           let val = rawRow[rawKey];
           if (val == null || String(val).trim() === "") continue;
-          if (val instanceof Date) val = val.toISOString().slice(0, 10);
+          // A time cell (fieldConfig.timeFields) arrives as a Date on 30 Dec 1899; keep its clock time, not the date.
+          if (val instanceof Date) val = (fieldConfig.timeFields || []).includes(fieldName)
+            ? `${String(val.getHours()).padStart(2, "0")}:${String(val.getMinutes()).padStart(2, "0")}`
+            : val.toISOString().slice(0, 10);
           if ((fieldConfig.boolFields || []).includes(fieldName)) {
             val =
               val === 1 ||

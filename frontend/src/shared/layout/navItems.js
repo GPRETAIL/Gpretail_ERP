@@ -21,6 +21,7 @@ import {
   ArrowDownCircleIcon,
   CreditCardIcon,
   ClockIcon,
+  CalendarDaysIcon,
   SwatchIcon,
   PrinterIcon,
   ComputerDesktopIcon,
@@ -558,6 +559,7 @@ export const navItems = [
         path: "/hrms/employee-in-out",
         icon: ClockIcon,
       },
+      { name: "Leave", path: "/hrms/leave", icon: CalendarDaysIcon },
       {
         name: "HR Configuration",
         path: "/hrms/hr-configuration",

@@ -1,0 +1,300 @@
+<?php
+
+namespace App\Services\Hr;
+
+use App\Models\Attendance;
+use App\Models\Employee;
+use App\Models\HrCheckin;
+use App\Models\HrDepartment;
+use App\Models\HrHoliday;
+use App\Models\Store;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
+use Illuminate\Validation\ValidationException;
+
+/**
+ * Daily attendance, worked out from the punch log and the employee's working hour (shift), in the business
+ * timezone (the app clock is UTC). A row a manager marked by hand (source MANUAL) is never recalculated.
+ */
+class AttendanceService
+{
+    public const STATUSES = ['PRESENT', 'HALF_DAY', 'ABSENT', 'LEAVE', 'HOLIDAY', 'WEEK_OFF'];
+
+    /** Used for stores that never set a working hour: the old store-level shift start and late cut-off. */
+    private const FALLBACK = ['start' => '09:30', 'end' => '18:30', 'grace' => 30, 'full_day' => 0, 'half_day' => 0];
+
+    public function __construct(private readonly LeaveService $leave) {}
+
+    public static function timezone(): string
+    {
+        return config('app.business_timezone');
+    }
+
+    public function today(): string
+    {
+        return Carbon::now(self::timezone())->toDateString();
+    }
+
+    /** The attendance settings of the employee's store, with the geofence (lat, lng, radius_m). */
+    public function settings(?int $storeId): array
+    {
+        $settings = $storeId ? (Store::find($storeId)?->attendance_settings ?? []) : [];
+
+        return [
+            'shift_start' => $settings['shift_start'] ?? '09:30',
+            'late_cutoff' => $settings['late_cutoff'] ?? '10:00',
+            'default_working_hour_id' => $settings['default_working_hour_id'] ?? null,
+            'lat' => isset($settings['lat']) ? (float) $settings['lat'] : null,
+            'lng' => isset($settings['lng']) ? (float) $settings['lng'] : null,
+            'radius_m' => isset($settings['radius_m']) ? (int) $settings['radius_m'] : null,
+        ];
+    }
+
+    /**
+     * The employee's shift: their Working Hour (HR Configuration), else the store default, else the old
+     * store-level shift start and late cut-off. Minutes for a full and a half day are 0 when not set.
+     */
+    public function shiftFor(Employee $employee): array
+    {
+        $settings = $this->settings($employee->store_id);
+        $id = ($employee->master_details['working_hour_id'] ?? null) ?: $settings['default_working_hour_id'];
+        $row = $id ? HrDepartment::withoutGlobalScopes()->where('configuration_type', 'working_hour')
+            ->where(fn ($q) => $q->where('store_id', $employee->store_id)->orWhereNull('store_id'))->find($id) : null;
+        if (! $row) {
+            $start = $settings['shift_start'];
+            $grace = max(0, $this->minutes($settings['late_cutoff']) - $this->minutes($start));
+
+            return ['id' => null, 'name' => 'Store default'] + array_merge(self::FALLBACK, ['start' => $start, 'grace' => $grace]);
+        }
+        $details = $row->master_details ?? [];
+
+        return [
+            'id' => $row->id,
+            'name' => $row->name,
+            'start' => $this->clock($details['from_time'] ?? null) ?? self::FALLBACK['start'],
+            'end' => $this->clock($details['to_time'] ?? null) ?? self::FALLBACK['end'],
+            'grace' => (int) ($details['grace_minutes'] ?? 0),
+            'full_day' => $this->duration($details['minimum_full_day'] ?? null),
+            'half_day' => $this->duration($details['minimum_present'] ?? null),
+        ];
+    }
+
+    /**
+     * Records a punch and rebuilds that day. A self punch must come from within the store's radius when the
+     * store has a location set; the distance is kept with the punch either way.
+     */
+    public function punch(Employee $employee, string $type, string $source, ?float $lat = null, ?float $lng = null, ?Carbon $at = null, ?int $userId = null): Attendance
+    {
+        $distance = $this->checkGeofence($employee, $source, $lat, $lng);
+        $at = ($at ?? Carbon::now())->copy()->utc();
+        $date = $at->copy()->setTimezone(self::timezone())->toDateString();
+        if ($type === 'OUT' && ! $this->punches($employee, $date)->contains('type', 'IN')) {
+            throw ValidationException::withMessages(['type' => "{$employee->name} has not checked in on {$date}."]);
+        }
+
+        HrCheckin::create([
+            'store_id' => $employee->store_id,
+            'employee_id' => $employee->id,
+            'punched_at' => $at,
+            'type' => $type,
+            'source' => $source,
+            'lat' => $lat,
+            'lng' => $lng,
+            'distance_m' => $distance,
+            'created_by' => $userId,
+        ]);
+
+        return $this->rebuild($employee, $date, force: $source !== 'SELF') ?? $this->row($employee, $date);
+    }
+
+    /** Sets a day by hand (or, with status AUTO, hands it back to the punches). */
+    public function mark(Employee $employee, string $date, string $status, ?string $remarks = null): ?Attendance
+    {
+        if ($status === 'AUTO') {
+            $row = $this->row($employee, $date);
+            $row->exists && $row->update(['source' => 'AUTO']);
+
+            return $this->rebuild($employee, $date);
+        }
+        $row = $this->row($employee, $date);
+        $row->fill([
+            'status' => $status,
+            'source' => 'MANUAL',
+            'remarks' => $remarks,
+            'late_minutes' => $status === 'PRESENT' || $status === 'HALF_DAY' ? $row->late_minutes : 0,
+        ])->save();
+
+        return $row;
+    }
+
+    /**
+     * Works the day out from the punches. Holidays and weekly offs count as such unless the employee worked;
+     * an approved leave is LEAVE. With no punches on an ordinary day nothing is recorded until the day closes.
+     * A MANUAL row is kept unless $force (a manager's own punch replaces their earlier marking).
+     */
+    public function rebuild(Employee $employee, string $date, bool $force = false): ?Attendance
+    {
+        $row = $this->row($employee, $date);
+        if ($row->exists && $row->source === 'MANUAL' && ! $force) {
+            return $row;
+        }
+        $punches = $this->punches($employee, $date);
+        $leave = $this->leave->approvedOn($employee, $date);
+        $values = ['source' => 'AUTO', 'late_minutes' => 0, 'early_exit_minutes' => 0, 'worked_minutes' => 0, 'check_in' => null, 'check_out' => null,
+            'remarks' => null, 'leave_application_id' => $leave?->id];
+
+        $in = $punches->firstWhere('type', 'IN');
+        if ($in) {
+            $shift = $this->shiftFor($employee);
+            $out = $punches->where('type', 'OUT')->filter(fn ($p) => $p->punched_at->gte($in->punched_at))->last();
+            $inLocal = $in->punched_at->copy()->setTimezone(self::timezone());
+            $outLocal = $out?->punched_at->copy()->setTimezone(self::timezone());
+            $late = $this->minutes($inLocal->format('H:i')) - $this->minutes($shift['start']);
+            $worked = $outLocal ? (int) $inLocal->diffInMinutes($outLocal) : 0;
+            $values = array_merge($values, [
+                'check_in' => $inLocal->format('H:i:s'),
+                'check_out' => $outLocal?->format('H:i:s'),
+                'late_minutes' => $late > $shift['grace'] ? $late : 0,
+                'early_exit_minutes' => $outLocal ? max(0, $this->minutes($shift['end']) - $this->minutes($outLocal->format('H:i'))) : 0,
+                'worked_minutes' => $worked,
+                'status' => $this->workedStatus($shift, $outLocal !== null, $worked, $leave),
+            ]);
+            if ($this->holiday($employee->store_id, $date)) {
+                $values['remarks'] = 'Worked on a holiday';
+            } elseif ($this->isWeekOff($employee, $date)) {
+                $values['remarks'] = 'Worked on the weekly off';
+            }
+        } elseif ($leave) {
+            $values['status'] = 'LEAVE';
+        } elseif ($name = $this->holiday($employee->store_id, $date)) {
+            $values['status'] = 'HOLIDAY';
+            $values['remarks'] = $name;
+        } elseif ($this->isWeekOff($employee, $date)) {
+            $values['status'] = 'WEEK_OFF';
+        } elseif ($date < $this->today() && $row->exists) {
+            $values['status'] = 'ABSENT';
+        } else {
+            // An ordinary day with no punch yet: nothing to record (the day closes at night).
+            if ($row->exists) {
+                $row->delete();
+            }
+
+            return null;
+        }
+        $row->fill($values)->save();
+
+        return $row;
+    }
+
+    /** Closes a day for everyone: absent when nobody punched, unless it was a leave, holiday or weekly off. */
+    public function closeDay(string $date, ?int $storeId = null): int
+    {
+        $count = 0;
+        Employee::withoutGlobalScopes()->where('is_active', true)
+            ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
+            ->where(fn ($q) => $q->whereNull('joining_date')->orWhere('joining_date', '<=', $date))
+            ->orderBy('id')->each(function (Employee $employee) use ($date, &$count) {
+                $row = $this->rebuild($employee, $date);
+                if (! $row) {
+                    $row = $this->row($employee, $date);
+                    $row->fill(['status' => 'ABSENT', 'source' => 'AUTO'])->save();
+                } elseif ($row->status === 'PRESENT' && $row->check_in && ! $row->check_out && $row->source === 'AUTO') {
+                    $row->update(['remarks' => 'No check-out']);
+                }
+                $count++;
+            });
+
+        return $count;
+    }
+
+    /** @return Collection<int, HrCheckin> the day's punches (business-timezone day), oldest first */
+    public function punches(Employee $employee, string $date): Collection
+    {
+        $from = Carbon::parse($date, self::timezone())->startOfDay()->utc();
+
+        return HrCheckin::withoutGlobalScopes()->where('employee_id', $employee->id)
+            ->whereBetween('punched_at', [$from, $from->copy()->addDay()->subSecond()])
+            ->orderBy('punched_at')->orderBy('id')->get();
+    }
+
+    public function isWeekOff(Employee $employee, string $date): bool
+    {
+        $day = $employee->master_details['week_off'] ?? null;
+
+        return $day && $day !== 'Dynamic' && strcasecmp(Carbon::parse($date)->englishDayOfWeek, $day) === 0;
+    }
+
+    /** The holiday's name, or null. */
+    public function holiday(?int $storeId, string $date): ?string
+    {
+        return HrHoliday::withoutGlobalScopes()->where('store_id', $storeId)->whereDate('date', $date)->value('name');
+    }
+
+    /** Metres from the store, or null when either side has no location. */
+    public function distance(Employee $employee, ?float $lat, ?float $lng): ?int
+    {
+        $settings = $this->settings($employee->store_id);
+        if ($lat === null || $lng === null || $settings['lat'] === null || $settings['lng'] === null) {
+            return null;
+        }
+        $rad = M_PI / 180;
+        $a = sin(($lat - $settings['lat']) * $rad / 2) ** 2
+            + cos($settings['lat'] * $rad) * cos($lat * $rad) * sin(($lng - $settings['lng']) * $rad / 2) ** 2;
+
+        return (int) round(6371000 * 2 * atan2(sqrt($a), sqrt(1 - $a)));
+    }
+
+    private function checkGeofence(Employee $employee, string $source, ?float $lat, ?float $lng): ?int
+    {
+        $settings = $this->settings($employee->store_id);
+        $fenced = $source === 'SELF' && $settings['lat'] !== null && $settings['lng'] !== null && $settings['radius_m'];
+        if ($fenced && ($lat === null || $lng === null)) {
+            throw ValidationException::withMessages(['location' => 'Turn on location to check in: check-in is allowed only at the store.']);
+        }
+        $distance = $this->distance($employee, $lat, $lng);
+        if ($fenced && $distance > $settings['radius_m']) {
+            throw ValidationException::withMessages(['location' => "You are {$distance} m from the store. Check-in is allowed within {$settings['radius_m']} m."]);
+        }
+
+        return $distance;
+    }
+
+    private function workedStatus(array $shift, bool $checkedOut, int $worked, $leave): string
+    {
+        if (! $checkedOut) {
+            return 'PRESENT'; // Still at work; finalised at check-out or when the day closes.
+        }
+        if ($shift['full_day'] && $worked < $shift['full_day']) {
+            // A half-day leave plus a half day worked is a half day; otherwise the half-day threshold decides.
+            return $leave || ! $shift['half_day'] || $worked >= $shift['half_day'] ? 'HALF_DAY' : 'ABSENT';
+        }
+
+        return 'PRESENT';
+    }
+
+    private function row(Employee $employee, string $date): Attendance
+    {
+        return Attendance::withoutGlobalScopes()->where('employee_id', $employee->id)->whereDate('date', $date)->first()
+            ?? new Attendance(['employee_id' => $employee->id, 'store_id' => $employee->store_id, 'date' => $date, 'status' => 'ABSENT',
+                'late_minutes' => 0, 'early_exit_minutes' => 0, 'worked_minutes' => 0, 'source' => 'AUTO']);
+    }
+
+    private function minutes(string $time): int
+    {
+        [$h, $m] = array_map('intval', explode(':', $time) + [0, 0]);
+
+        return $h * 60 + $m;
+    }
+
+    /** "09:30" / "9:30" / "09:30:00" as "09:30", or null. */
+    private function clock(?string $value): ?string
+    {
+        return $value && preg_match('/^(\d{1,2}):(\d{2})/', $value, $m) ? sprintf('%02d:%s', $m[1], $m[2]) : null;
+    }
+
+    /** An "hh:mm" duration in minutes (0 when not set). */
+    private function duration(?string $value): int
+    {
+        return $value && preg_match('/^(\d{1,2}):(\d{2})/', $value, $m) ? (int) $m[1] * 60 + (int) $m[2] : 0;
+    }
+}

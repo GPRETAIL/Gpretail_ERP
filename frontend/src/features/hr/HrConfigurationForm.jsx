@@ -92,6 +92,7 @@ const HrConfigurationForm = () => {
     fromTime: "",
     toTime: "",
     workingHours: "",
+    graceMinutes: "",
   });
   const [locationOptions, setLocationOptions] = useState([]);
   const [roleOptions, setRoleOptions] = useState([]);
@@ -159,6 +160,7 @@ const HrConfigurationForm = () => {
           fromTime: showWorkingHour ? row.from_time || "" : "",
           toTime: showWorkingHour ? row.to_time || "" : "",
           workingHours: showWorkingHour ? row.working_hours || "" : "",
+          graceMinutes: showWorkingHour ? String(row.grace_minutes ?? "") : "",
         };
     return loaded;
   }, [baseEndpoint, recordId, showDesignationRole, showIsSales, showLocation, showWorkingHour]);
@@ -241,6 +243,7 @@ const HrConfigurationForm = () => {
             fromTime: String(formData.fromTime || "").trim(),
             toTime: String(formData.toTime || "").trim(),
             workingHours: String(formData.workingHours || "").trim(),
+            graceMinutes: Number(formData.graceMinutes) || 0,
           }
         : {}),
       ...designationRolePayload,
@@ -394,6 +397,15 @@ const HrConfigurationForm = () => {
                     value={formData.workingHours}
                     onChange={handleChange}
                     placeholder="hh:mm"
+                  />
+                )}
+                {showWorkingHour && (
+                  <TextInput
+                    label="Late after (grace minutes)"
+                    name="graceMinutes"
+                    value={formData.graceMinutes}
+                    onChange={handleChange}
+                    placeholder="0"
                   />
                 )}
               </Box>

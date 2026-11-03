@@ -6,14 +6,17 @@ use App\Http\Controllers\Concerns\ImportsMasterRows;
 use App\Http\Controllers\Controller;
 use App\Models\Employee;
 use App\Models\HrDepartment;
+use App\Models\User;
 use App\Support\GroupAggregationService;
 use App\Services\Forms\MasterFormData;
 use App\Services\Tenancy\BusinessPermissions;
+use App\Services\Tenancy\StoreContext;
 use App\Support\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class EmployeeController extends Controller
 {
@@ -145,7 +148,7 @@ class EmployeeController extends Controller
         $code = $request->input('code') ?: 'EMP_'.strtoupper(substr(uniqid(), -6));
         $storeId = $request->header('X-Company-Scope-Id');
 
-        $data = MasterFormData::prepare($request, new Employee);
+        $data = $this->linkLogin($request, MasterFormData::prepare($request, new Employee), null);
         $data['code'] = $data['code'] ?? $code;
         $data['joining_date'] = $data['joining_date'] ?? now()->toDateString();
         $employee = Employee::create($data);
@@ -193,7 +196,7 @@ class EmployeeController extends Controller
             return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
-        $employee->update(MasterFormData::prepare($request, $employee));
+        $employee->update($this->linkLogin($request, MasterFormData::prepare($request, $employee), $employee));
 
         return response()->json([
             'success' => true,
@@ -314,5 +317,33 @@ class EmployeeController extends Controller
                 'path' => $path,
             ],
         ]);
+    }
+
+    /**
+     * "Allow System / UserName" links the employee to that login, so they can check in and apply for leave
+     * themselves. Left alone when the request doesn't send either field (a partial update).
+     */
+    private function linkLogin(Request $request, array $data, ?Employee $employee): array
+    {
+        $sent = MasterFormData::normalize($request->all());
+        if (! array_key_exists('allow_system', $sent) && ! array_key_exists('system_username', $sent)) {
+            return $data;
+        }
+        $details = $data['master_details'] ?? ($employee?->master_details ?? []);
+        $username = trim((string) ($details['system_username'] ?? ''));
+        if (! filter_var($details['allow_system'] ?? false, FILTER_VALIDATE_BOOLEAN) || $username === '') {
+            return ['user_id' => null] + $data;
+        }
+        $storeId = $employee?->store_id ?? $request->attributes->get('store_context_id');
+        $user = User::where('username', $username)->first();
+        if (! $user || ! $storeId || ! app(StoreContext::class)->available($user)->whereKey($storeId)->exists()) {
+            throw ValidationException::withMessages(['system_username' => "There is no login named \"{$username}\" for this store."]);
+        }
+        $taken = Employee::withoutGlobalScopes()->where('user_id', $user->id)->when($employee, fn ($q) => $q->whereKeyNot($employee->id))->value('name');
+        if ($taken) {
+            throw ValidationException::withMessages(['system_username' => "The login \"{$username}\" is already linked to {$taken}."]);
+        }
+
+        return ['user_id' => $user->id] + $data;
     }
 }

@@ -21,5 +21,9 @@ Schedule::command('purchase-orders:generate')->dailyAt('02:30')->withoutOverlapp
 // Catches up any bill or payment whose voucher could not be posted when it was saved.
 Schedule::command('accounting:post')->dailyAt('02:45')->withoutOverlapping();
 
+// HRMS: closes yesterday's attendance (absent / holiday / weekly off), and credits the new year's leave on 1 January.
+Schedule::command('hr:close-attendance')->dailyAt('00:20')->timezone(config('app.business_timezone'))->withoutOverlapping();
+Schedule::command('hr:allocate-leave')->yearlyOn(1, 1, '00:40')->timezone(config('app.business_timezone'))->withoutOverlapping();
+
 // Lets /api/health report whether the server cron (schedule:run every minute) is running.
 Schedule::call(fn () => Cache::put('ops:scheduler-heartbeat', now()->timestamp, 600))->everyMinute()->name('ops:heartbeat');

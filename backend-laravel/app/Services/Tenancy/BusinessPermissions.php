@@ -9,12 +9,18 @@ class BusinessPermissions
 {
     private const MASTERS = ['BrandController', 'CategoryController', 'TaxController', 'SupplierController', 'AgentController', 'TransportController', 'CustomerController', 'EmployeeController', 'ProductController', 'ProductAttributeController', 'SizeController', 'HrConfigurationController', 'ItemController'];
 
-    private const TRANSACTIONS = ['PosSaleController', 'PosReturnController', 'CustomerOrderController', 'DealerInvoiceController', 'PurchaseInvoiceController', 'PurchaseReturnController', 'DirectPurchaseController', 'InventoryEntryController', 'PhysicalStockController', 'SalesApprovalController', 'StockOutwardController', 'SupplierPaymentController', 'SettlementController', 'CashRegisterController', 'TransportEntryController', 'BarcodeController', 'AttendanceController', 'PurchaseOrderController', 'PosOfflineController'];
+    private const TRANSACTIONS = ['PosSaleController', 'PosReturnController', 'CustomerOrderController', 'DealerInvoiceController', 'PurchaseInvoiceController', 'PurchaseReturnController', 'DirectPurchaseController', 'InventoryEntryController', 'PhysicalStockController', 'SalesApprovalController', 'StockOutwardController', 'SupplierPaymentController', 'SettlementController', 'CashRegisterController', 'TransportEntryController', 'BarcodeController', 'PurchaseOrderController', 'PosOfflineController'];
 
     private const ADMINISTRATION = ['ThemeWorkspaceController', 'BackupController', 'SettingsController', 'ConfigurationController', 'CompanyController', 'StoreController', 'UserAccessController', 'StoreActivationController', 'SyncController'];
 
     /** Dropdown lists the counter, CRM and HR screens load; every other configuration key (remote support, AI keys) stays admin-only. */
     public const LOOKUP_CONFIGURATIONS = ['city', 'state', 'country', 'location', 'bank', 'card_types', 'upi_provider', 'customer_category', 'sale_area', 'return_reason', 'vendor', 'agent_type', 'additional_charges', 'bundle_rack'];
+
+    /** HRMS actions on the signed-in user's own record: their check-in and their leave (always allowed, like notifications). */
+    private const HR_SELF_SERVICE = ['AttendanceController' => ['me', 'selfPunch'], 'LeaveApplicationController' => ['mine', 'store', 'cancel']];
+
+    /** HRMS setup and managing other people's attendance; reads stay 'read' and are narrowed to the user's team by HrScope. */
+    private const HR_MANAGED = ['AttendanceController', 'HolidayController', 'LeaveTypeController', 'LeavePolicyController'];
 
     /** Reads that expose purchase cost, margins, supplier dues or finance totals; the counter screens never call them. */
     private const COST_READS = ['SupplierPaymentController', 'FinanceDashboardController', 'PurchaseInvoiceController', 'PurchaseReturnController', 'DirectPurchaseController', 'InventoryEntryController', 'TransportEntryController', 'PurchaseOrderController', 'WarehouseReportController', 'WarehouseDashboardController', 'ProductPurchaseAnalyticsController', 'AnalyticalDashboardController', 'SalesReportController'];
@@ -70,6 +76,15 @@ class BusinessPermissions
         if ($controller === 'InvoiceAiController') {
             return in_array($action, ['getEngineConfig', 'saveEngineConfig'], true) ? 'settings.manage' : 'purchases.post';
         }
+        if ($this->isHrSelfService($request)) {
+            return 'personal';
+        }
+        if ($controller === 'LeaveApplicationController' && in_array($action, ['approve', 'reject'], true)) {
+            return 'approvals.decide';
+        }
+        if (! $read && in_array($controller, self::HR_MANAGED, true)) {
+            return 'hr.manage';
+        }
         if ($controller === 'AccountingController') {
             // The books (profit, balances) are for managers and accountants, not every signed-in user.
             return $read ? 'accounts.view' : 'accounts.post';
@@ -113,6 +128,11 @@ class BusinessPermissions
         return 'unassigned';
     }
 
+    public function isHrSelfService(Request $request): bool
+    {
+        return in_array($request->route()?->getActionMethod(), self::HR_SELF_SERVICE[class_basename($request->route()?->getControllerClass() ?? '')] ?? [], true);
+    }
+
     public function isLookupRead(Request $request): bool
     {
         return in_array($request->method(), ['GET', 'HEAD'], true)
@@ -133,7 +153,7 @@ class BusinessPermissions
             return true;
         }
         $grants = [
-            'manager' => ['read', 'personal', 'masters.write', 'sales.post', 'purchases.post', 'transactions.approve', 'transactions.delete', 'reports.export', 'approvals.decide', 'accounts.view', 'accounts.post', 'costs.view', 'hr.view'],
+            'manager' => ['read', 'personal', 'masters.write', 'sales.post', 'purchases.post', 'transactions.approve', 'transactions.delete', 'reports.export', 'approvals.decide', 'accounts.view', 'accounts.post', 'costs.view', 'hr.view', 'hr.manage'],
             'accountant' => ['read', 'personal', 'reports.export', 'accounts.view', 'accounts.post', 'costs.view', 'hr.view'],
             // Floor supervisor: a cashier who can also approve discounts/refunds within their limit.
             'supervisor' => ['read', 'personal', 'sales.post', 'approvals.decide'],

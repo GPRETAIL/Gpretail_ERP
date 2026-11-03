@@ -31,6 +31,8 @@ const Configuration = lazy(() => import("@/features/masters/Configuration"));
 const ConfigurationForm = lazy(() => import("@/features/masters/ConfigurationForm"));
 const HrConfiguration = lazy(() => import("@/features/hr/HrConfiguration"));
 const HrConfigurationForm = lazy(() => import("@/features/hr/HrConfigurationForm"));
+const EmployeeInOut = lazy(() => import("@/features/hr/attendance/EmployeeInOut"));
+const LeavePage = lazy(() => import("@/features/hr/leave/LeavePage"));
 const Product = lazy(() => import("@/features/masters/Product"));
 const ProductForm = lazy(() => import("@/features/masters/ProductForm"));
 const Item = lazy(() => import("@/features/masters/Item"));
@@ -128,6 +130,8 @@ export const protectedLayoutRoutes = [
   { path: "/hrms/employee", render: () => <Employee /> },
   { path: "/hrms/hr-configuration", render: () => <HrConfiguration /> },
   { path: "/hrms/hr-configuration/new", render: () => <HrConfigurationForm /> },
+  { path: "/hrms/employee-in-out", render: () => <EmployeeInOut /> },
+  { path: "/hrms/leave", render: () => <LeavePage /> },
   { path: "/masters/employee", render: () => <RedirectPreservingQuery to="/hrms/employee" /> },
   { path: "/masters/hr-configuration", render: () => <RedirectPreservingQuery to="/hrms/hr-configuration" /> },
   { path: "/masters/hr-configuration/new", render: () => <RedirectPreservingQuery to="/hrms/hr-configuration/new" /> },

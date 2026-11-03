@@ -25,6 +25,9 @@ class Employee extends Model
         'salary',
         'joining_date',
         'is_active',
+        'user_id',
+        'reports_to_id',
+        'leave_policy_id',
     ];
 
     protected function casts(): array
@@ -58,5 +61,17 @@ class Employee extends Model
     public function attendances(): HasMany
     {
         return $this->hasMany(Attendance::class);
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /** @return BelongsTo<self, $this> */
+    public function reportsTo(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'reports_to_id');
     }
 }

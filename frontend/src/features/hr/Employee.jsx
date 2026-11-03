@@ -241,7 +241,7 @@ const RIGHT_TABS = [
 const blankForm = () => ({
   employee_code: "", contact_no: "", name: "", surname: "", gender: "",
   department_id: "", company_id: "", section_id: "", designation_id: "",
-  working_location_id: "", floor_id: "", manager_designation_id: "",
+  working_location_id: "", floor_id: "", manager_designation_id: "", reports_to_id: "", leave_policy_id: "",
   email_id: "", date_of_birth: "", date_of_joining: "",
   hold_salary: false, hold_salary_date: "",
   reason_checked: false, reason: "",
@@ -309,7 +309,7 @@ const Employee = () => {
   const [opts, setOpts] = useState({
     departments: [], companies: [], sections: [], designations: [],
     locations: [], floors: [], salaryStructures: [], workingHours: [],
-    banks: [], cities: [], states: [],
+    banks: [], cities: [], states: [], employees: [], leavePolicies: [],
   });
 
   // Load dropdown data
@@ -331,8 +331,11 @@ const Employee = () => {
       cfg("bank"),
       cfg("city"),
       cfg("state"),
-    ]).then(([departments, companies, sections, designations, locations, floors, salaryStructures, workingHours, banks, cities, states]) => {
-      setOpts({ departments, companies, sections, designations, locations, floors, salaryStructures, workingHours, banks, cities, states });
+      // Reports To (their manager approves their leave) and the leave policy.
+      api.get("/employees", { params: { limit: 1000 } }).then((r) => (r.data?.data || []).map((x) => ({ value: String(x.id), label: x.code ? `${x.name} (${x.code})` : x.name }))).catch(() => []),
+      api.get("/leave-policies").then((r) => (r.data?.data || []).map((x) => ({ value: String(x.id), label: x.is_default ? `${x.name} (default)` : x.name }))).catch(() => []),
+    ]).then(([departments, companies, sections, designations, locations, floors, salaryStructures, workingHours, banks, cities, states, employees, leavePolicies]) => {
+      setOpts({ departments, companies, sections, designations, locations, floors, salaryStructures, workingHours, banks, cities, states, employees, leavePolicies });
     });
   }, []);
 
@@ -556,6 +559,7 @@ const Employee = () => {
       <SelectInput label="Working Location" name="working_location_id" value={formData.working_location_id} onChange={handleChange} options={opts.locations} />
       <SelectInput label="Floor" name="floor_id" value={formData.floor_id} onChange={handleChange} options={opts.floors} />
       <SelectInput label="Manager" name="manager_designation_id" value={formData.manager_designation_id} onChange={handleChange} options={opts.designations} />
+      <SelectInput label="Reports To" name="reports_to_id" value={formData.reports_to_id} onChange={handleChange} options={opts.employees.filter((o) => o.value !== String(currentId ?? ""))} />
       <TextInput label="Email ID" name="email_id" value={formData.email_id} onChange={handleChange} type="email" />
       <TextInput label="Date Of Birth" name="date_of_birth" value={formData.date_of_birth} onChange={handleChange} type="date" />
       <TextInput label="Date Of Joining" name="date_of_joining" value={formData.date_of_joining} onChange={handleChange} type="date" />
@@ -570,6 +574,7 @@ const Employee = () => {
       <SelectInput label="Working Mode" name="working_mode" value={formData.working_mode} onChange={handleChange} options={WORKING_MODE_OPTIONS} />
       <SelectInput label="Working Hour" name="working_hour_id" value={formData.working_hour_id} onChange={handleChange} options={opts.workingHours} />
       <SelectInput label="Week Off" name="week_off" value={formData.week_off} onChange={handleChange} options={WEEK_OFF_OPTIONS} />
+      <SelectInput label="Leave Policy" name="leave_policy_id" value={formData.leave_policy_id} onChange={handleChange} options={opts.leavePolicies} />
       <TextInput label="Gross Pay" name="gross_pay" value={formData.gross_pay} onChange={handleChange} />
       <TextInput label="Incentive %" name="incentive_pct" value={formData.incentive_pct} onChange={handleChange} />
       <TextInput label="Referred By" name="referred_by" value={formData.referred_by} onChange={handleChange} />

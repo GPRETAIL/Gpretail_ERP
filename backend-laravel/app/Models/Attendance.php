@@ -16,12 +16,22 @@ class Attendance extends Model
         'check_in',
         'check_out',
         'status',
+        'store_id',
+        'late_minutes',
+        'early_exit_minutes',
+        'worked_minutes',
+        'source',
+        'leave_application_id',
+        'remarks',
     ];
 
     protected function casts(): array
     {
         return [
-            'date' => 'date',
+            'date' => 'date:Y-m-d',
+            'late_minutes' => 'integer',
+            'early_exit_minutes' => 'integer',
+            'worked_minutes' => 'integer',
         ];
     }
 

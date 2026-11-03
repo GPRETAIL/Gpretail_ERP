@@ -2,6 +2,10 @@
 
 use App\Http\Controllers\Api\V1\Hr\AttendanceController;
 use App\Http\Controllers\Api\V1\Hr\EmployeeController;
+use App\Http\Controllers\Api\V1\Hr\HolidayController;
+use App\Http\Controllers\Api\V1\Hr\LeaveApplicationController;
+use App\Http\Controllers\Api\V1\Hr\LeavePolicyController;
+use App\Http\Controllers\Api\V1\Hr\LeaveTypeController;
 use App\Http\Controllers\Api\V1\Hr\HrConfigurationController;
 use Illuminate\Support\Facades\Route;
 
@@ -42,3 +46,25 @@ Route::post('attendance/check-in', [AttendanceController::class, 'checkIn']);
 Route::post('attendance/check-out', [AttendanceController::class, 'checkOut']);
 Route::post('attendance/mark-leave', [AttendanceController::class, 'markLeave']);
 Route::match(['get', 'post', 'put'], 'attendance/settings', [AttendanceController::class, 'settings']);
+Route::get('attendance/me', [AttendanceController::class, 'me']);
+Route::post('attendance/self-punch', [AttendanceController::class, 'selfPunch']);
+Route::post('attendance/punch', [AttendanceController::class, 'punch']);
+Route::post('attendance/mark', [AttendanceController::class, 'mark']);
+Route::post('attendance/import', [AttendanceController::class, 'import']);
+Route::get('attendance/punches', [AttendanceController::class, 'punches']);
+Route::get('attendance/monthly', [AttendanceController::class, 'monthly']);
+
+// Holidays and leave
+Route::post('holidays/copy-year', [HolidayController::class, 'copyYear']);
+Route::apiResource('holidays', HolidayController::class)->except(['show']);
+Route::apiResource('leave-types', LeaveTypeController::class)->except(['show']);
+Route::post('leave-policies/allocate', [LeavePolicyController::class, 'allocate']);
+Route::apiResource('leave-policies', LeavePolicyController::class)->except(['show']);
+Route::get('leave/mine', [LeaveApplicationController::class, 'mine']);
+Route::get('leave/balances', [LeaveApplicationController::class, 'balances']);
+Route::get('leave/ledger', [LeaveApplicationController::class, 'ledger']);
+Route::post('leave-applications/{id}/approve', [LeaveApplicationController::class, 'approve']);
+Route::post('leave-applications/{id}/reject', [LeaveApplicationController::class, 'reject']);
+Route::post('leave-applications/{id}/cancel', [LeaveApplicationController::class, 'cancel']);
+Route::get('leave-applications', [LeaveApplicationController::class, 'index']);
+Route::post('leave-applications', [LeaveApplicationController::class, 'store']);

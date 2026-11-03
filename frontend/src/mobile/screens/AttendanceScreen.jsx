@@ -4,7 +4,12 @@ import React, { useState, useCallback } from "react";
 import { Settings2, LogIn, LogOut, CalendarOff } from "lucide-react";
 import { Box, Typography } from "@mui/material";
 import api from "@/shared/api/apiClient";
+import { useSelector } from "react-redux";
 import { SkeletonTransList } from "../components/SkeletonCards";
+import MyAttendanceCard from "../components/MyAttendanceCard";
+
+/** Roles that see and mark the team roll-call (the server narrows it to their team). */
+const TEAM_ROLES = ["admin", "super_admin", "manager", "supervisor"];
 
 const STATUS_STYLES = {
   PRESENT:    { label: "Present",    dot: "#10b981", text: "#047857", bg: "#ecfdf5", border: "#d1fae5" },
@@ -24,20 +29,22 @@ const fmtTime = (t) => {
 };
 
 /**
- * Daily attendance roll-call: an admin/manager marks each employee's
- * check-in/check-out/leave for today (no self-service check-in yet -
- * there's no link between the logged-in user and an Employee record).
+ * The employee's own check-in card, and for managers the daily roll-call where they mark each employee's
+ * check-in/check-out/leave for today.
  */
 export default function AttendanceScreen() {
+  const role = useSelector((state) => state.auth.user?.role);
+  const seesTeam = TEAM_ROLES.includes(role);
   const [actionEmployeeId, setActionEmployeeId] = useState(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsForm, setSettingsForm] = useState({ shift_start: "09:30", late_cutoff: "10:00" });
   const [savingSettings, setSavingSettings] = useState(false);
 
   const fetchAttendance = useCallback(async ({ signal }) => {
+    if (!seesTeam) return {};
     const response = await api.get("/attendance/today", { signal });
     return response.data?.data || {};
-  }, []);
+  }, [seesTeam]);
   const { data, loading, reload: load } = useAsyncQuery(fetchAttendance, {
     onSuccess: result => setSettingsForm({ shift_start: result.settings?.shift_start || "09:30", late_cutoff: result.settings?.late_cutoff || "10:00" }),
   });
@@ -69,8 +76,20 @@ export default function AttendanceScreen() {
     }
   };
 
+  if (!seesTeam) {
+    return (
+      <Box>
+        <MyAttendanceCard />
+        <Box className="vx-card" sx={{ textAlign: "center" }}>
+          <Typography component="p" sx={{ fontSize: 12.5, color: "#64748b" }}>Your check-ins appear above. If the button is missing, ask HR to link your login to your employee record.</Typography>
+        </Box>
+      </Box>
+    );
+  }
+
   return (
     <Box>
+      <MyAttendanceCard />
       {/* Summary strip */}
       <Box sx={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 1, mb: 1.5 }}>
         {[

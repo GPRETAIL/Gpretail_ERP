@@ -164,7 +164,7 @@ export const getHomePathForUser = (user) => {
     return getUserDefaultPathFromPermissions(getPagePermissions(user));
   }
   if (user?.module_permissions) {
-    const homes = { dashboard: "/dashboard", masters: "/masters/product", sales: "/sales/pos-sales", warehouse: "/warehouse/invoice", crm: "/crm/customer", finance: "/finance/supplier-payment", store: "/store/dashboard", analytical: "/analytical/dashboard", hrms: "/hrms/attendance", settings: "/settings/application-settings" };
+    const homes = { dashboard: "/dashboard", masters: "/masters/product", sales: "/sales/pos-sales", warehouse: "/warehouse/invoice", crm: "/crm/customer", finance: "/finance/supplier-payment", store: "/store/dashboard", analytical: "/analytical/dashboard", hrms: "/hrms/employee-in-out", settings: "/settings/application-settings" };
     return Object.entries(homes).find(([module, path]) => user.module_permissions[module]?.view && canAccessPath(path, user))?.[1] || "/profile";
   }
   return "/dashboard";
@@ -179,6 +179,8 @@ export const canAccessPath = (pathname, user) => {
   if (["/settings", "/settings/themes", "/settings/branding"].includes(path) && canManageThemes(user)) return true;
   // Company module entitlement gates every module path, regardless of RBAC.
   if (!isPathEntitled(user, path)) return false;
+  // Everyone's own leave (apply, balance, withdraw); the page shows approvals and setup only to the right roles.
+  if (path === "/hrms/leave") return Boolean(user);
   if (hasPagePermissionMode(user)) {
     if (path === "/profile") return true;
     if (path === "/modules") {
