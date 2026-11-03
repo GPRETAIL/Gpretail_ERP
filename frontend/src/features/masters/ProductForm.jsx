@@ -113,7 +113,7 @@ const initialFormData = {
   stockHoldingPeriod: "",
   purchasePlanMode: "",
   expectedGender: "",
-  uom: "",
+  uom: "PCS",
   section: "",
   company: "",
   // Col 2
@@ -200,15 +200,18 @@ const expectedGenderOptions = [
   { label: "Boy", value: "Boy" },
   { label: "Girl", value: "Girl" },
 ];
+// GST unit codes; the backend stores older spellings (Piece, Meter, Litter…) as these. PCS is the default.
 const uomOptions = [
-  { label: "Piece", value: "Piece" },
-  { label: "Meter", value: "Meter" },
-  { label: "Gram", value: "Gram" },
-  { label: "Kg", value: "Kg" },
-  { label: "Ml", value: "Ml" },
-  { label: "Litter", value: "Litter" },
-  { label: "Qty", value: "Qty" },
+  { label: "PCS - Pieces", value: "PCS" },
+  { label: "MTR - Meters", value: "MTR" },
+  { label: "GMS - Grams", value: "GMS" },
+  { label: "KGS - Kilograms", value: "KGS" },
+  { label: "MLT - Millilitres", value: "MLT" },
+  { label: "LTR - Litres", value: "LTR" },
+  { label: "NOS - Numbers", value: "NOS" },
 ];
+// A saved unit outside the list still shows (and stays) selected.
+const uomOptionsFor = (value) => (value && !uomOptions.some((option) => option.value === value) ? [...uomOptions, { label: value, value }] : uomOptions);
 // typeOptions removed — now loaded dynamically from companytype attribute
 const sellingModeOptions = [
   { label: "Piece", value: "Piece" },
@@ -311,7 +314,7 @@ const ProductForm = () => {
           stockHoldingPeriod: p.stock_holding_period ?? "",
           purchasePlanMode: p.purchase_plan_mode || "",
           expectedGender: p.expected_gender || "",
-          uom: p.uom || "",
+          uom: p.uom || "PCS",
           section: p.section || "",
           company: p.company_id || "",
           type: p.type || "",
@@ -566,7 +569,7 @@ const ProductForm = () => {
                 name="uom"
                 value={formData.uom}
                 onChange={handleChange}
-                options={uomOptions}
+                options={uomOptionsFor(formData.uom)}
               />
               <SelectInput
                 label="Section"

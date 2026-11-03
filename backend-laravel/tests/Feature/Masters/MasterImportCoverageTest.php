@@ -25,7 +25,8 @@ class MasterImportCoverageTest extends TestCase
     {
         $cases = [
             'brands' => ['brands', ['printing_name' => 'Print', 'min_margin' => 0, 'max_margin' => 20, 'brand_type' => 'Premium'], ['printing_name' => 'Print', 'min_margin' => 0, 'max_margin' => 20]],
-            'products' => ['products', ['hsn' => '1234', 'uom' => 'KG', 'active' => false], ['hsn' => '1234', 'uom' => 'KG', 'active' => false]],
+            // An imported "KG" is stored as the UOM code KGS.
+            'products' => ['products', ['hsn' => '1234', 'uom' => 'KG', 'active' => false], ['hsn' => '1234', 'uom' => 'KGS', 'active' => false]],
             'items' => ['products', ['selling_name' => 'Imported item', 'printing_name' => 'Receipt', 'mrp' => null], ['printing_name' => 'Receipt', 'mrp' => 0]],
             'taxes' => ['taxes', ['tax_percentage' => 18, 'tax_type' => 'GST', 'is_sales_tax' => false, 'is_purchase_tax' => true, 'is_disabled' => true], ['tax_percentage' => 18, 'is_sales_tax' => false, 'is_purchase_tax' => true, 'is_disabled' => true]],
             'suppliers' => ['suppliers', ['contact_person' => 'Contact', 'contact_no' => '123456', 'gst' => 'GST-IMPORT', 'email_id' => 'supplier@example.test'], ['contact_person' => 'Contact', 'contact_no' => '123456', 'gst' => 'GST-IMPORT']],

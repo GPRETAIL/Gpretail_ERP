@@ -99,6 +99,12 @@ class MasterFormRoundTripTest extends TestCase
         $this->putJson('/api/products/'.$id, ['name' => 'No UOM', 'uom' => 'MTR'])->assertOk();
         $this->putJson('/api/products/'.$id, ['name' => 'No UOM', 'uom' => null])->assertOk();
         $this->assertDatabaseHas('products', ['id' => $id, 'unit' => 'MTR']);
+
+        // The old UOM spellings are stored as the codes the list offers now.
+        foreach (['Piece' => 'PCS', 'Meter' => 'MTR', 'Litter' => 'LTR', 'Qty' => 'NOS', 'kg' => 'KGS'] as $old => $code) {
+            $this->putJson('/api/products/'.$id, ['name' => 'No UOM', 'uom' => $old])->assertOk();
+            $this->assertDatabaseHas('products', ['id' => $id, 'unit' => $code]);
+        }
     }
 
     public function test_blank_item_prices_and_stock_do_not_override_required_defaults(): void

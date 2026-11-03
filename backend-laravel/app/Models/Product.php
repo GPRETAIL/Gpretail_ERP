@@ -146,6 +146,31 @@ class Product extends Model
         return $this->belongsTo(Store::class, 'company_id');
     }
 
+    /** The UOM list (GST unit codes). PCS is the column default. */
+    public const UNITS = ['PCS', 'MTR', 'GMS', 'KGS', 'MLT', 'LTR', 'NOS'];
+
+    /** Older spellings (the form used to send "Piece", "Meter", "Litter"…) and their code. */
+    public const UNIT_ALIASES = [
+        'piece' => 'PCS', 'pieces' => 'PCS', 'pcs' => 'PCS', 'pc' => 'PCS',
+        'meter' => 'MTR', 'meters' => 'MTR', 'metre' => 'MTR', 'metres' => 'MTR', 'mtr' => 'MTR', 'mtrs' => 'MTR',
+        'gram' => 'GMS', 'grams' => 'GMS', 'gm' => 'GMS', 'gms' => 'GMS',
+        'kg' => 'KGS', 'kgs' => 'KGS', 'kilogram' => 'KGS', 'kilograms' => 'KGS',
+        'ml' => 'MLT', 'mlt' => 'MLT', 'millilitre' => 'MLT', 'milliliter' => 'MLT',
+        'litter' => 'LTR', 'litre' => 'LTR', 'liter' => 'LTR', 'litres' => 'LTR', 'liters' => 'LTR', 'ltr' => 'LTR',
+        'qty' => 'NOS', 'nos' => 'NOS', 'numbers' => 'NOS',
+    ];
+
+    public static function normalizeUnit(mixed $unit): mixed
+    {
+        return is_string($unit) ? (self::UNIT_ALIASES[strtolower(trim($unit))] ?? trim($unit)) : $unit;
+    }
+
+    /** Every write path (form, import, invoice AI) stores the unit as its code. */
+    public function setUnitAttribute($value): void
+    {
+        $this->attributes['unit'] = self::normalizeUnit($value);
+    }
+
     public function getSizeIdAttribute($value)
     {
         return $value ?? ($this->master_details['size_id'] ?? null);
