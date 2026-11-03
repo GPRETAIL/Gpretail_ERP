@@ -39,6 +39,9 @@ beforeEach(() => {
   mockSaveTablePreference.mockClear();
 });
 
+/** Pin column is a submenu: hover/click it to show No pin / Pin left / Pin right. */
+const openPinChoices = () => fireEvent.click(screen.getByRole("menuitem", { name: /Pin column/ }));
+
 describe("FilterableDataTable — sort (3-state toggle)", () => {
   const columns = [
     { key: "name", label: "Name" },
@@ -546,6 +549,7 @@ describe("FilterableDataTable — column pinning", () => {
 
     const thB = getHeaderCell(container, "B");
     fireEvent.contextMenu(thB);
+    openPinChoices();
     fireEvent.click(screen.getByText("Pin left"));
 
     await waitFor(() =>
@@ -561,6 +565,7 @@ describe("FilterableDataTable — column pinning", () => {
 
     mockSaveTablePreference.mockClear();
     fireEvent.contextMenu(getHeaderCell(container, "B"));
+    openPinChoices();
     fireEvent.click(screen.getByText("No pin"));
 
     await waitFor(() =>
@@ -582,6 +587,7 @@ describe("FilterableDataTable — column pinning", () => {
     );
 
     fireEvent.contextMenu(getHeaderCell(container, "A"));
+    openPinChoices();
     expect(screen.getByRole("menuitemradio", { name: /No pin/ })).toHaveAttribute("aria-checked", "true");
     fireEvent.click(screen.getByText("Pin right"));
 
@@ -595,6 +601,7 @@ describe("FilterableDataTable — column pinning", () => {
     );
 
     fireEvent.contextMenu(getHeaderCell(container, "A"));
+    openPinChoices();
     expect(screen.getByRole("menuitemradio", { name: /Pin right/ })).toHaveAttribute("aria-checked", "true");
     fireEvent.click(screen.getByText("Pin left"));
 
@@ -647,6 +654,7 @@ describe("FilterableDataTable — header context menu coordinate fallback", () =
 
     fireEvent.contextMenu(document.body, { clientX: 150, clientY: 15 });
 
+    openPinChoices();
     expect(screen.getByText("Pin left")).toBeInTheDocument();
     fireEvent.click(screen.getByText("Pin left"));
     expect(headerLabels(container)).toEqual(["B", "A"]);
@@ -683,6 +691,7 @@ describe("FilterableDataTable — header context menu coordinate fallback", () =
     // stops this from ever reaching the document-level fallback listener too.
     fireEvent.contextMenu(thA, { clientX: 50, clientY: 15 });
 
+    openPinChoices();
     expect(screen.getAllByText("Pin left")).toHaveLength(1);
   });
 });
@@ -906,17 +915,31 @@ describe("FilterableDataTable — floating surfaces close on Escape (new with th
     expect(screen.queryByPlaceholderText("Enter filter value")).not.toBeInTheDocument();
   });
 
-  it("closes the header context menu (Menu) on Escape", () => {
+  it("closes the header context menu (Menu) on Escape", async () => {
     const { container } = render(
       <FilterableDataTable rows={rows} columns={columns} showExport={false} />
     );
 
     fireEvent.contextMenu(getHeaderCell(container, "A"));
+    openPinChoices();
     const pinItem = screen.getByText("Pin left");
     expect(pinItem).toBeInTheDocument();
 
+    // Escape first closes the pin choices, then the menu itself.
     fireEvent.keyDown(pinItem, { key: "Escape", code: "Escape" });
+    await waitFor(() => expect(screen.queryByText("Pin left")).not.toBeInTheDocument());
+    fireEvent.keyDown(screen.getByRole("menuitem", { name: /Pin column/ }), { key: "Escape", code: "Escape" });
+    expect(screen.queryByText("Pin column")).not.toBeInTheDocument();
+  });
+
+  it("shows the pin choices beside Pin column only when it is hovered", async () => {
+    const { container } = render(<FilterableDataTable rows={rows} columns={columns} showExport={false} />);
+    fireEvent.contextMenu(getHeaderCell(container, "A"));
     expect(screen.queryByText("Pin left")).not.toBeInTheDocument();
+    fireEvent.mouseEnter(screen.getByRole("menuitem", { name: /Pin column/ }));
+    expect(screen.getByText("Pin left")).toBeInTheDocument();
+    fireEvent.mouseEnter(screen.getByRole("menuitem", { name: /^Filter$/, hidden: true })); // The open submenu hides the menu behind it from assistive tech.
+    await waitFor(() => expect(screen.queryByText("Pin left")).not.toBeInTheDocument());
   });
 
   it("closes the row context menu (Menu) on Escape", () => {

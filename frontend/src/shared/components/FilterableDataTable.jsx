@@ -1355,6 +1355,13 @@ export default function FilterableDataTable({
   }, [persistTablePreference, columnWidths]);
 
   // side: "left" | "right" | null (no pin). A column moves between sides rather than being in both.
+  const openPinSubmenu = useCallback((anchor) => {
+    setHeaderContextMenu((current) => (current && current.pinAnchor !== anchor ? { ...current, pinAnchor: anchor } : current));
+  }, []);
+  const closePinSubmenu = useCallback(() => {
+    setHeaderContextMenu((current) => (current?.pinAnchor ? { ...current, pinAnchor: null } : current));
+  }, []);
+
   const handleSetColumnPin = useCallback(
     async (columnKey, side) => {
       const normalizedKey = String(columnKey || "").trim();
@@ -2754,47 +2761,78 @@ export default function FilterableDataTable({
             },
           }}
         >
-          <Typography
-            component="li"
-            role="presentation"
-            sx={{ display: "flex", alignItems: "center", gap: 1, px: 2, pt: 0.5, pb: 0.25, fontSize: 10.5, fontWeight: 600, color: "text.secondary" }}
+          {/* Pin column opens its choices to the side (hover, click or →) instead of listing them inline. */}
+          <MenuItem
+            aria-haspopup="menu"
+            aria-expanded={Boolean(headerContextMenu.pinAnchor)}
+            onMouseEnter={(event) => openPinSubmenu(event.currentTarget)}
+            onClick={(event) => openPinSubmenu(event.currentTarget)}
+            onKeyDown={(event) => { if (event.key === "ArrowRight") openPinSubmenu(event.currentTarget); }}
+            selected={Boolean(headerContextMenu.pinAnchor)}
+            sx={{ gap: 1, fontSize: 10.5 }}
           >
             <Pin size={14} style={{ color: "#d97706" }} />
             Pin column
-          </Typography>
-          {[
-            [null, "No pin"],
-            ["left", "Pin left"],
-            ["right", "Pin right"],
-          ].map(([side, label]) => (
-            <MenuItem
-              key={label}
-              role="menuitemradio"
-              aria-checked={headerContextMenu.pinSide === side}
-              selected={headerContextMenu.pinSide === side}
-              onClick={() => handleSetColumnPin(headerContextMenu.columnKey, side)}
-              sx={{ gap: 1, fontSize: 10.5, pl: 3 }}
-            >
-              <ListItemIcon sx={{ minWidth: "18px !important" }}>
-                {headerContextMenu.pinSide === side ? <Check size={14} /> : null}
-              </ListItemIcon>
-              {label}
-            </MenuItem>
-          ))}
-          <Divider sx={{ my: 0.5 }} />
+            <Box component="span" sx={{ ml: "auto", pl: 2, color: "text.secondary", fontSize: 10 }}>
+              {headerContextMenu.pinSide === "left" ? "Left" : headerContextMenu.pinSide === "right" ? "Right" : ""}
+            </Box>
+            <ChevronRight size={14} />
+          </MenuItem>
+          <Menu
+            open={Boolean(headerContextMenu.pinAnchor)}
+            anchorEl={headerContextMenu.pinAnchor}
+            onClose={closePinSubmenu}
+            anchorOrigin={{ vertical: "top", horizontal: "right" }}
+            transformOrigin={{ vertical: "top", horizontal: "left" }}
+            // Not modal: the main menu stays hoverable, so moving to another item closes this one.
+            hideBackdrop
+            disableAutoFocus
+            disableEnforceFocus
+            disableRestoreFocus
+            sx={{ pointerEvents: "none" }}
+            slotProps={{
+              paper: {
+                className: "min-w-[130px] py-1",
+                sx: { pointerEvents: "auto", bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: 1, boxShadow: 4 },
+              },
+              list: { onKeyDown: (event) => { if (event.key === "ArrowLeft" || event.key === "Escape") closePinSubmenu(); } },
+            }}
+          >
+            {[
+              [null, "No pin"],
+              ["left", "Pin left"],
+              ["right", "Pin right"],
+            ].map(([side, label]) => (
+              <MenuItem
+                key={label}
+                role="menuitemradio"
+                aria-checked={headerContextMenu.pinSide === side}
+                selected={headerContextMenu.pinSide === side}
+                onClick={() => handleSetColumnPin(headerContextMenu.columnKey, side)}
+                sx={{ gap: 1, fontSize: 10.5 }}
+              >
+                <ListItemIcon sx={{ minWidth: "18px !important" }}>
+                  {headerContextMenu.pinSide === side ? <Check size={14} /> : null}
+                </ListItemIcon>
+                {label}
+              </MenuItem>
+            ))}
+          </Menu>
+          <Divider sx={{ my: 0.5 }} onMouseEnter={closePinSubmenu} />
           {enableColumnResize && (
-            <MenuItem onClick={() => handleAutosizeColumn(headerContextMenu.columnKey)} sx={{ gap: 1, fontSize: 10.5 }}>
+            <MenuItem onMouseEnter={closePinSubmenu} onClick={() => handleAutosizeColumn(headerContextMenu.columnKey)} sx={{ gap: 1, fontSize: 10.5 }}>
               <MoveHorizontal size={14} style={{ color: "#0d9488" }} />
               Autosize this column
             </MenuItem>
           )}
           {enableColumnResize && (
-            <MenuItem onClick={handleAutosizeAllColumns} sx={{ gap: 1, fontSize: 10.5 }}>
+            <MenuItem onMouseEnter={closePinSubmenu} onClick={handleAutosizeAllColumns} sx={{ gap: 1, fontSize: 10.5 }}>
               <MoveHorizontal size={14} style={{ color: "#0d9488" }} />
               Autosize all columns
             </MenuItem>
           )}
           <MenuItem
+            onMouseEnter={closePinSubmenu}
             onClick={() => {
               setHeaderContextMenu(null);
               handleOpenColumnDialog();
@@ -2807,6 +2845,7 @@ export default function FilterableDataTable({
           <Divider sx={{ my: 0.5 }} />
           {(typeof onFetchGroupSummaries === "function" || headerContextMenu.isGrouped) && (
             <MenuItem
+              onMouseEnter={closePinSubmenu}
               onClick={() => (
                 headerContextMenu.isGrouped
                   ? handleUngroupColumn()
@@ -2819,6 +2858,7 @@ export default function FilterableDataTable({
             </MenuItem>
           )}
           <MenuItem
+            onMouseEnter={closePinSubmenu}
             onClick={() => openFilterPanel(headerContextMenu.columnKey)}
             sx={{ gap: 1, fontSize: 10.5 }}
           >
