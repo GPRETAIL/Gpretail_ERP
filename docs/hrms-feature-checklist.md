@@ -1,0 +1,183 @@
+# HRMS feature checklist and build plan
+
+Target: a complete HRMS inside our ERP (Laravel + React, web and mobile), built by us. Frappe HR is the
+**functional reference only**.
+
+## Clean-room rule (licence)
+
+Frappe HR is GPL-3.0. We use it only to learn *what* an HRMS should do: its public documentation and
+running screens. We do **not** copy, port or translate its code, database tables, field names, screen text,
+translations or images. Everything here is written in our own words and designed on our own patterns
+(store isolation, `BusinessPermissions`, Form Requests, auto-posted vouchers). Get a short legal check before
+selling the module.
+
+Source of the feature list: the Frappe HR documentation index (docs.frappe.io/hr, about 140 pages),
+checked 2026-11-04. A local install was tried and could not run: Docker Desktop does not start on this
+Windows preview build.
+
+## Where we are today
+
+| Area | We have |
+|---|---|
+| Employee master | Yes: rich form (personal, department/section/designation, manager, joining date, bank, PF/ESI/UAN, salary mode, week off, working hours, OT flags, hold salary), documents on a private disk, education certificate, grouped summary, store-scoped |
+| HR configuration | Departments, sections, designations, plus generic `hr-{type}` lists |
+| Attendance | Basic: today's list, check-in, check-out, mark leave, per-store late cut-off settings; mobile `AttendanceScreen` |
+| Employee In/Out page | Menu entry only, no page |
+| Salary Management | Menu entry only, no page; the employee form already refers to a salary structure |
+| Everything below marked "No" | Not built |
+
+Legend: **Have** = exists, **Part** = partly there, **No** = to build. Phase = see the plan at the end.
+
+## 1. Setup and masters
+
+| Feature | What it does | Us | Phase |
+|---|---|---|---|
+| Departments, designations, sections | Org structure | Have | — |
+| Branch / work location | Where an employee works (we use stores and floors) | Part | 1 |
+| Employment type | Permanent, contract, trainee, intern… | No | 1 |
+| Employee grade | Grade bands that drive default salary structure and leave policy | No | 2 |
+| Employee group | Named groups for bulk actions and notifications | No | 3 |
+| Holiday list | Holidays per year per store, weekly offs, import of regional holidays | No | 1 |
+| HR settings | Naming series, retirement age, approval rules, reminders | Part | 1 |
+| Organisation chart | Tree view from reporting manager | No | 3 |
+| Hierarchy-based access | Managers see only their team's records | No | 1 |
+
+## 2. Employee lifecycle
+
+| Feature | What it does | Us | Phase |
+|---|---|---|---|
+| Employee profile | Personal, job, statutory and bank details, documents | Have | — |
+| Onboarding | Checklist of tasks (documents, assets, accounts) when someone joins | No | 3 |
+| Promotion | Dated change of designation/grade/salary, with history | No | 2 |
+| Transfer | Move between stores/departments, with history | No | 2 |
+| Separation / exit | Resignation, notice period, exit checklist | No | 3 |
+| Exit interview | Questionnaire at exit | No | 3 |
+| Full and final settlement | Final dues: pending salary, leave encashment, gratuity, recoveries | No | 3 |
+| Skill map | Skills and ratings per employee | No | 4 |
+| Health insurance, other income | Extra profile records used for tax | No | 4 |
+
+## 3. Attendance, shifts and time
+
+| Feature | What it does | Us | Phase |
+|---|---|---|---|
+| Daily attendance | Present / absent / half-day / on leave per day | Part | 1 |
+| Check-in / check-out log | Raw punches from web, mobile or device | Part | 1 |
+| Geolocation and geofence | Record where the punch happened, allow only near the store | No | 1 |
+| Auto attendance | Build daily attendance from punches and the shift (late, early exit, half-day rules) | No | 1 |
+| Attendance tool | Mark many employees for a date in one screen | No | 1 |
+| Attendance upload | Import from a spreadsheet | No | 1 |
+| Attendance request | Employee asks to correct a missed punch, manager approves | No | 2 |
+| Biometric devices | Pull punches from fingerprint / face devices | No | 2 |
+| Shift types | Start/end time, grace minutes, break | No | 1 |
+| Shift assignment, roster, schedules | Who works which shift on which days; bulk assignment | No | 2 |
+| Shift request | Employee asks for a different shift | No | 2 |
+| Overtime | Hours beyond the shift, approved, paid in payroll | Part (flags only) | 2 |
+| Timesheets | Hours per task/project; payroll from timesheets | No | 4 |
+| Daily work summary | Daily email asking staff what they did | No | 4 |
+
+## 4. Leave
+
+| Feature | What it does | Us | Phase |
+|---|---|---|---|
+| Leave types | Casual, sick, earned, LOP, compensatory… with rules (paid/unpaid, carry forward, max days) | No | 1 |
+| Leave period and policy | Yearly period and the leaves each policy grants; assign policy to employees | No | 1 |
+| Leave allocation | Opening balances; bulk allocation tool | No | 1 |
+| Leave application | Apply, manager approves/rejects, balance check, notifications | Part (mark leave) | 1 |
+| Leave approver per employee/department | Who approves whose leave | No | 1 |
+| Leave ledger | Every credit/debit with running balance; balance report | No | 1 |
+| Earned leave accrual | Monthly/quarterly automatic credit | No | 2 |
+| Compensatory leave | Credit for working on a holiday | No | 2 |
+| Leave block days | Dates when leave is not allowed (e.g. festival sales) | No | 2 |
+| Leave encashment | Pay unused leave, through payroll | No | 3 |
+| Leave in salary | Unpaid leave reduces payable days | No | 2 |
+
+## 5. Payroll and statutory (India)
+
+| Feature | What it does | Us | Phase |
+|---|---|---|---|
+| Salary components | Earnings and deductions (Basic, HRA, allowances, PF, ESI, PT, TDS, advance recovery), with formulas | No | 2 |
+| Salary structure | Template of components; assign to employee with base pay and effective date | Part (reference only) | 2 |
+| Payroll period and settings | Pay frequency, working-days rule, rounding | No | 2 |
+| Payroll run | Create salary slips for a store/department for a month in one go; review, submit | No | 2 |
+| Salary slip | Earnings, deductions, payable days, LOP, net pay; PDF and email/WhatsApp | No | 2 |
+| Hold salary | Skip or hold a slip (we already store the flag) | Part | 2 |
+| Additional salary | One-off earnings/deductions in a month (bonus, fine) | No | 2 |
+| Arrears and payroll correction | Back-pay after a late revision; fix a submitted month | No | 3 |
+| Off-cycle payment | Pay outside the regular run | No | 3 |
+| PF, ESI, professional tax | Statutory contributions with ceilings and state slabs; challan reports | No | 2 |
+| Income tax (TDS) | Old/new regime slabs, declarations, proof submission, monthly TDS | No | 3 |
+| Benefits | Flexible benefit plans and claims | No | 4 |
+| Incentives, retention bonus | Extra payouts through payroll (sales incentives already exist in reports) | No | 3 |
+| Gratuity | Rule-based gratuity on exit | No | 3 |
+| Bank file | Salary transfer file/sheet for the bank | No | 2 |
+| Accounting | Post salary, statutory payables and payments as vouchers in our double-entry books | No | 2 |
+| Multi-currency | Pay in other currencies | No | — (not needed) |
+
+## 6. Expenses, advances and loans
+
+| Feature | What it does | Us | Phase |
+|---|---|---|---|
+| Employee advance | Pay an advance, recover it from salary or a claim | No | 3 |
+| Expense claim | Claim with bills, multi-level approval, payment, posting to accounts | No | 3 |
+| Loans | Loan application, EMI schedule, recovery through payroll | No | 3 |
+| Travel request | Request and approve travel | No | 4 |
+| Vehicle and vehicle log | Company vehicles, fuel and trip logs | No | 4 |
+
+## 7. Recruitment
+
+| Feature | What it does | Us | Phase |
+|---|---|---|---|
+| Staffing plan and job requisition | Approved headcount and requests for new staff | No | 4 |
+| Job opening and job portal | Publish openings, apply online | No | 4 |
+| Job applicant | Candidate records and status | No | 4 |
+| Interviews | Rounds, types, scheduling, feedback and ratings | No | 4 |
+| Job offer and appointment letter | Generate from templates, track acceptance | No | 4 |
+| Employee referral | Staff refer candidates | No | 4 |
+
+## 8. Performance
+
+| Feature | What it does | Us | Phase |
+|---|---|---|---|
+| Appraisal cycle and template | Period, KRAs with weights, rating criteria | No | 4 |
+| Goals | Goals linked to KRAs with progress | No | 4 |
+| Self-appraisal and feedback | Employee self-rating, manager and peer feedback | No | 4 |
+| Appraisal report | Scores across the cycle; feed into promotion | No | 4 |
+
+## 9. Training
+
+| Feature | What it does | Us | Phase |
+|---|---|---|---|
+| Training programme, event, result, feedback | Plan sessions, attendance, scores, feedback | No | 4 |
+
+## 10. Self-service, mobile and reports
+
+| Feature | What it does | Us | Phase |
+|---|---|---|---|
+| Mobile check-in/out | With location and selfie option | Part | 1 |
+| Mobile leave apply / approve | Balance, apply, approve from phone | No | 1 |
+| Mobile payslips | View and download salary slips | No | 2 |
+| Mobile claims and advances | Submit with photo of bill | No | 3 |
+| Push / in-app notifications | Approvals, reminders (birthdays, anniversaries, pending approvals) | Part (notification inbox exists) | 1 |
+| HR dashboard | Headcount, attendance today, leave today, payroll cost | Part (summary) | 1 |
+| Reports | Monthly attendance sheet, leave balance and ledger, salary register, PF/ESI/PT, bank sheet, TDS, headcount, attrition | No | 1–3 |
+
+## Phased build plan
+
+Each phase is a separate plan (Plan Mode), with tests, live local verification and its own commits.
+
+1. **Phase 1: Attendance and leave (foundation).** Employment type, holiday lists, shift types, the daily
+   attendance engine from punches (late/half-day rules), geofenced mobile check-in, bulk attendance and import,
+   leave types/policies/allocation/applications with approvers and a ledger, hierarchy access, HR dashboard and
+   the monthly attendance and leave reports. Fills the empty "Employee In/Out" menu item.
+2. **Phase 2: Payroll.** Salary components and structures, assignments, payroll run and slips, LOP from
+   attendance, overtime, additional salary, PF/ESI/PT, bank sheet, salary register, posting to accounts,
+   mobile payslips, shift rosters, attendance/shift requests, biometric import, promotions and transfers.
+   Fills the empty "Salary Management" menu item.
+3. **Phase 3: Money and exits.** Advances, expense claims, loans, TDS with declarations and proofs,
+   arrears/corrections, leave encashment, gratuity, incentives, onboarding, separation, exit interview, full and
+   final settlement.
+4. **Phase 4: Talent.** Recruitment, appraisals and goals, training, skill map, benefits, travel and vehicles,
+   timesheets, organisation chart.
+
+Open questions before phase 1: statutory scope (all stores in one state, or PT slabs for several states?),
+biometric device brands in use, and whether geofence check-in is required for all staff.
