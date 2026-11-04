@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /** Leave days turned into pay in a month's payroll; the days leave the balance when recorded. */
 class HrLeaveEncashment extends Model
 {
-    protected $fillable = ['store_id', 'employee_id', 'leave_type_id', 'days', 'month', 'status', 'amount', 'payslip_id', 'note', 'created_by'];
+    protected $fillable = ['store_id', 'employee_id', 'leave_type_id', 'days', 'month', 'status', 'amount', 'payslip_id', 'settlement_id', 'note', 'created_by'];
 
     protected function casts(): array
     {

@@ -45,6 +45,9 @@ const MyClaims = lazy(() => import("@/features/hr/money/StaffMoney").then((m) =>
 const ExpenseClaims = lazy(() => import("@/features/hr/money/StaffMoney").then((m) => ({ default: m.ExpenseClaims })));
 const StaffLoans = lazy(() => import("@/features/hr/money/StaffMoney").then((m) => ({ default: m.StaffLoans })));
 const LeaveEncashment = lazy(() => import("@/features/hr/money/StaffMoney").then((m) => ({ default: m.LeaveEncashment })));
+const MyResignation = lazy(() => import("@/features/hr/exits/Exits").then((m) => ({ default: m.MyResignation })));
+const Exits = lazy(() => import("@/features/hr/exits/Exits").then((m) => ({ default: m.Exits })));
+const FinalSettlements = lazy(() => import("@/features/hr/exits/Exits").then((m) => ({ default: m.FinalSettlements })));
 const AttendanceRegisterPage = lazy(() => import("@/features/hr/HrSectionPages").then((m) => ({ default: m.AttendanceRegisterPage })));
 const PunchLogPage = lazy(() => import("@/features/hr/HrSectionPages").then((m) => ({ default: m.PunchLogPage })));
 const HolidaysPage = lazy(() => import("@/features/hr/HrSectionPages").then((m) => ({ default: m.HolidaysPage })));
@@ -167,6 +170,9 @@ export const protectedLayoutRoutes = [
   { path: "/hrms/expense-claims", render: () => <ExpenseClaims /> },
   { path: "/hrms/loans", render: () => <StaffLoans /> },
   { path: "/hrms/leave-encashment", render: () => <LeaveEncashment /> },
+  { path: "/hrms/my-resignation", render: () => <MyResignation /> },
+  { path: "/hrms/exits", render: () => <Exits /> },
+  { path: "/hrms/settlements", render: () => <FinalSettlements /> },
   { path: "/hrms/attendance-register", render: () => <AttendanceRegisterPage /> },
   { path: "/hrms/punch-log", render: () => <PunchLogPage /> },
   { path: "/hrms/holidays", render: () => <HolidaysPage /> },

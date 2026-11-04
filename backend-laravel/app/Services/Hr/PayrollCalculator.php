@@ -32,7 +32,12 @@ class PayrollCalculator
         return (float) (((float) $employee->salary) ?: ($details['gross_pay'] ?? 0));
     }
 
-    public function slip(Employee $employee, string $month, ?array $settings = null): array
+    /**
+     * @param  array|null  $exit  A full and final settlement: ['leave_exit' => amount, 'gratuity' => amount, 'notice' => amount,
+     *                            'adjustments' => [['type' => EARNING|DEDUCTION, 'name' => ..., 'amount' => ...]]]; running loans are
+     *                            then recovered in full (as far as the net pay allows).
+     */
+    public function slip(Employee $employee, string $month, ?array $settings = null, ?array $exit = null): array
     {
         $settings ??= $this->setup->settings($employee->store_id);
         $details = $employee->master_details ?? [];
@@ -89,23 +94,37 @@ class PayrollCalculator
         // Paid with the salary but not part of it for PF, ESI and PT: expense claims and leave encashment.
         $links = ['claims' => [], 'encashments' => [], 'loans' => []];
         $claims = HrExpenseClaim::withoutGlobalScopes()->where('employee_id', $employee->id)->where('status', 'APPROVED')->where('pay_via', 'SALARY')
-            ->whereNull('payslip_id')->whereDate('claim_date', '<=', $monthEnd)->get();
+            ->whereNull('payslip_id')->whereNull('settlement_id')->whereDate('claim_date', '<=', $monthEnd)->get();
         if ($claims->isNotEmpty()) {
             $this->add($earnings, $byCode->get('REIMBURSE'), (float) $claims->sum('amount'), 'REIMBURSE', 'Expense Reimbursement');
             $links['claims'] = $claims->pluck('id')->all();
         }
         $dayRate = $daily ? $rate : $rate / $days;
-        foreach (HrLeaveEncashment::withoutGlobalScopes()->where('employee_id', $employee->id)->where('status', 'APPROVED')->whereNull('payslip_id')
+        foreach (HrLeaveEncashment::withoutGlobalScopes()->where('employee_id', $employee->id)->where('status', 'APPROVED')->whereNull('payslip_id')->whereNull('settlement_id')
             ->where('month', '<=', $month)->get() as $encashment) {
             $amount = round($encashment->days * $dayRate, 2);
             $this->add($earnings, $byCode->get('ENCASH'), $amount, 'ENCASH', 'Leave Encashment');
             $links['encashments'][] = ['id' => $encashment->id, 'amount' => $amount];
         }
+        if ($exit) {
+            // Also outside PF, ESI and PT: leave paid on exit, gratuity, and the settlement's own adjustments.
+            $this->add($earnings, $byCode->get('LEAVE_EXIT'), (float) ($exit['leave_exit'] ?? 0), 'LEAVE_EXIT', 'Leave Encashment on Exit');
+            $this->add($earnings, $byCode->get('GRATUITY'), (float) ($exit['gratuity'] ?? 0), 'GRATUITY', 'Gratuity');
+            $this->add($deductions, $byCode->get('NOTICE'), (float) ($exit['notice'] ?? 0), 'NOTICE', 'Notice Pay Recovery');
+            foreach (array_values($exit['adjustments'] ?? []) as $i => $line) {
+                $deduction = ($line['type'] ?? 'EARNING') === 'DEDUCTION';
+                if ($deduction) {
+                    $this->add($deductions, null, (float) $line['amount'], 'ADJ_D'.($i + 1), (string) $line['name']);
+                } else {
+                    $this->add($earnings, null, (float) $line['amount'], 'ADJ_E'.($i + 1), (string) $line['name']);
+                }
+            }
+        }
         $totalEarnings = round(array_sum(array_column($earnings, 'amount')), 2);
 
-        // Loan and advance instalments, never taking the net pay below zero.
+        // Loan and advance instalments (on exit: the whole balance), never taking the net pay below zero.
         $room = $totalEarnings - array_sum(array_column($deductions, 'amount'));
-        foreach ($this->loans->dueFor($employee, $month) as $due) {
+        foreach ($exit ? $this->loans->outstandingFor($employee) : $this->loans->dueFor($employee, $month) as $due) {
             $amount = round(min($due['amount'], max(0, $room)), 2);
             if ($amount <= 0) {
                 continue;
@@ -134,6 +153,15 @@ class PayrollCalculator
             'summary' => $summary,
             'links' => $links,
         ];
+    }
+
+    /** Basic for a full month (a day's Basic for daily-wage staff), by the employee's salary structure: the gratuity wage. */
+    public function basicOf(Employee $employee): float
+    {
+        $components = HrSalaryComponent::withoutGlobalScopes()->where('store_id', $employee->store_id)->get()->keyBy('id');
+        $lines = $this->split($employee, $employee->master_details ?? [], self::grossOf($employee), $components);
+
+        return (float) ($lines['BASIC']['amount'] ?? collect($lines)->first()['amount'] ?? 0);
     }
 
     /** Professional tax for the month: monthly slabs on the month's gross, or half-yearly slabs on 6 × gross in the set months. */

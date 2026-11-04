@@ -3,6 +3,7 @@ import { Box, Typography } from "@mui/material";
 import { CalendarClock, Clock } from "lucide-react";
 import api from "@/shared/api/apiClient";
 import { LEAVE_STATUS, REQUEST_STATUS_LABEL, errorMessage, requestSummary } from "@/features/hr/utils/hrStatus";
+import MyResignationCard from "./MyResignationCard";
 
 const input = { width: "100%", p: 1.1, borderRadius: "10px", border: "1px solid #cbd5e1", fontSize: 13, bgcolor: "#fff", boxSizing: "border-box" };
 const label = { fontSize: 10.5, fontWeight: 800, color: "#64748b", textTransform: "uppercase", mb: 0.5 };
@@ -103,6 +104,7 @@ export default function MyRequestsCard() {
           <Typography sx={{ fontSize: 11, fontWeight: 800, color: "#64748b" }}>{LEAVE_STATUS[r.status]?.label}</Typography>
         </Box>
       ))}
+      <MyResignationCard />
       {asking && <RequestSheet type={asking} shifts={data.shifts || []} onClose={(saved) => { setAsking(null); if (saved) { setMessage("Request sent for approval."); void load(); } }} />}
     </Box>
   );

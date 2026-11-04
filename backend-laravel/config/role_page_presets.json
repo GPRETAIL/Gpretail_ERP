@@ -581,6 +581,24 @@
       "add": true,
       "edit": true,
       "delete": false
+    },
+    "/hrms/my-resignation": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/hrms/exits": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/hrms/settlements": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
     }
   },
   "cashier": {
@@ -669,6 +687,12 @@
       "delete": true
     },
     "/hrms/my-claims": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/hrms/my-resignation": {
       "view": true,
       "add": true,
       "edit": true,
@@ -821,6 +845,18 @@
       "delete": false
     },
     "/hrms/loans": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/hrms/my-resignation": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/hrms/exits": {
       "view": true,
       "add": true,
       "edit": true,
@@ -1271,6 +1307,24 @@
       "add": false,
       "edit": false,
       "delete": false
+    },
+    "/hrms/my-resignation": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/hrms/exits": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/hrms/settlements": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
     }
   },
   "warehouse_user": {
@@ -1441,6 +1495,12 @@
       "add": true,
       "edit": true,
       "delete": true
+    },
+    "/hrms/my-resignation": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
     }
   },
   "store_user": {
@@ -1583,6 +1643,12 @@
       "delete": true
     },
     "/hrms/my-claims": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/hrms/my-resignation": {
       "view": true,
       "add": true,
       "edit": true,

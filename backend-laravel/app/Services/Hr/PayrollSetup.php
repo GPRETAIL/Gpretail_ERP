@@ -21,6 +21,9 @@ class PayrollSetup
         'pt' => ['state' => 'NONE', 'frequency' => 'monthly', 'months' => [], 'slabs' => []],
         'ot' => ['multiplier' => 1, 'hours_per_day' => 8, 'requires_approval' => true],
         'batta' => ['per_day' => 0],
+        // Exits: notice period (an employee's own Notice Period wins) and gratuity as per the Payment of Gratuity Act.
+        'exit' => ['notice_days' => 30],
+        'gratuity' => ['enabled' => true, 'min_years' => 5, 'days' => 15, 'divisor' => 26, 'cap' => 2000000],
     ];
 
     /**
@@ -50,6 +53,8 @@ class PayrollSetup
         ['PF', 'Provident Fund', 'DEDUCTION', 'PF'], ['ESI', 'ESI', 'DEDUCTION', 'ESI'], ['PT', 'Professional Tax', 'DEDUCTION', 'PT'], ['OTHER', 'Other Deduction', 'DEDUCTION', null],
         ['REIMBURSE', 'Expense Reimbursement', 'EARNING', 'REIMBURSE'], ['ENCASH', 'Leave Encashment', 'EARNING', 'ENCASH'],
         ['LOAN', 'Loan Recovery', 'DEDUCTION', 'LOAN'], ['ADVANCE', 'Advance Recovery', 'DEDUCTION', 'ADVANCE'],
+        ['LEAVE_EXIT', 'Leave Encashment on Exit', 'EARNING', 'LEAVE_EXIT'], ['GRATUITY', 'Gratuity', 'EARNING', 'GRATUITY'],
+        ['NOTICE', 'Notice Pay Recovery', 'DEDUCTION', 'NOTICE'],
     ];
 
     /** The store's settings merged over the defaults (so a setting added later always has a value). */

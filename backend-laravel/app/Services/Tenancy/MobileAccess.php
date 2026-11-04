@@ -49,7 +49,7 @@ class MobileAccess
         'HolidayController' => '/hrms/holidays', 'LeaveTypeController' => '/hrms/leave-setup', 'LeavePolicyController' => '/hrms/leave-setup',
         'LeaveApplicationController' => '/hrms/leave',
         'RosterController' => '/hrms/shift-roster', 'OvertimeController' => '/hrms/ot-approvals', 'HrRequestController' => '/hrms/request-approvals',
-        'MovementController' => '/hrms/movements',
+        'MovementController' => '/hrms/movements', 'FinalSettlementController' => '/hrms/settlements',
         'PayrollController' => '/hrms/salary-management', 'SalaryStructureController' => '/hrms/salary-structures',
         'PayrollSettingsController' => '/hrms/payroll-settings', 'PayrollReportController' => '/hrms/payroll-reports', 'AdditionalPayController' => '/hrms/additional-pay',
         'StoreDashboardController' => '/store/dashboard', 'MastersDashboardController' => '/masters/product',
@@ -158,13 +158,19 @@ class MobileAccess
         'loans' => '/hrms/loans', 'decideLoan' => '/hrms/loans', 'disburse' => '/hrms/loans', 'skipMonth' => '/hrms/loans', 'repay' => '/hrms/loans', 'recoveries' => '/hrms/loans',
         'claims' => '/hrms/expense-claims', 'decideClaim' => '/hrms/expense-claims', 'payClaim' => '/hrms/expense-claims',
         'encashments' => '/hrms/leave-encashment', 'encash' => '/hrms/leave-encashment', 'cancelEncashment' => '/hrms/leave-encashment',
+    ], 'SeparationController' => [
+        'index' => '/hrms/exits', 'accept' => '/hrms/exits', 'reject' => '/hrms/exits', 'record' => '/hrms/exits', 'amend' => '/hrms/exits',
+        'interview' => '/hrms/exits', 'relieve' => '/hrms/exits', 'report' => '/hrms/exits',
     ]];
+
+    /** Where a controller in ACTION_PAGES sends the actions it does not list (the employee's own page). */
+    private const OWN_PAGES = ['StaffMoneyController' => '/hrms/my-claims', 'SeparationController' => '/hrms/my-resignation'];
 
     public function page(Request $request): ?string
     {
         $controller = class_basename($request->route()?->getControllerClass() ?? '');
         if (isset(self::ACTION_PAGES[$controller])) {
-            return self::ACTION_PAGES[$controller][$request->route()?->getActionMethod()] ?? '/hrms/my-claims';
+            return self::ACTION_PAGES[$controller][$request->route()?->getActionMethod()] ?? self::OWN_PAGES[$controller];
         }
 
         return self::PAGES[class_basename($request->route()?->getControllerClass() ?? '')] ?? null;

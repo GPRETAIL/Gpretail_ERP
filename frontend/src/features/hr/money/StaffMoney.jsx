@@ -1,35 +1,20 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import { Alert, Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
 import { HandCoins, Paperclip, Plus, Receipt } from "lucide-react";
 import api from "@/shared/api/apiClient";
-import FilterableDataTable from "@/shared/components/FilterableDataTable";
-import SearchGridPanel from "@/shared/components/SearchGridPanel";
-import useSearchGrid from "@/shared/hooks/useSearchGrid";
 import HrPage from "../components/HrPage";
+import { FilterChips, HrTable, PaymentDialog } from "../components/HrWidgets";
+import { post, useEmployees, useHrManager, useLoader } from "../utils/hrApi";
 import { rupees } from "../payroll/payslipPrint";
-import { CLAIM_CATEGORY, HR_MANAGER_ROLES, LOAN_TYPE, MONEY_STATUS, claimPayLabel, days, errorMessage } from "../utils/hrStatus";
+import { CLAIM_CATEGORY, LOAN_TYPE, MONEY_STATUS, claimPayLabel, days, errorMessage } from "../utils/hrStatus";
 
 const today = () => new Date().toLocaleDateString("en-CA");
 const thisMonth = () => today().slice(0, 7);
 const nextMonth = () => { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() + 1); return d.toLocaleDateString("en-CA").slice(0, 7); };
-const listOf = (payload) => (Array.isArray(payload) ? payload : Array.isArray(payload?.data) ? payload.data : []);
 const statusChip = (status) => <Chip size="small" color={MONEY_STATUS[status]?.color || "default"} label={MONEY_STATUS[status]?.label || status} />;
 
-const useHrManager = () => HR_MANAGER_ROLES.includes(useSelector((state) => state.auth.user?.role));
 
-/** Active employees of the store, for HR acting on someone's behalf. */
-function useEmployees(enabled) {
-  const [employees, setEmployees] = useState([]);
-  useEffect(() => {
-    if (!enabled) return undefined;
-    let active = true;
-    api.get("/employees", { params: { limit: 500 } }).then((r) => active && setEmployees(listOf(r.data?.data ?? r.data).filter((e) => e.is_active !== false))).catch(() => {});
-    return () => { active = false; };
-  }, [enabled]);
-  return employees;
-}
 
 function EmployeeSelect({ employees, value, onChange, required }) {
   return (
@@ -168,46 +153,8 @@ const loanColumns = [
   { key: "reason", label: "Reason", valueGetter: (r) => r.reason || "" },
 ];
 
-function FilterChips({ value, options, onChange }) {
-  return (
-    <Stack direction="row" spacing={1} sx={{ mb: 1, flexWrap: "wrap", rowGap: 1 }}>
-      {options.map(([v, label]) => (
-        <Button key={label} size="small" variant={value === v ? "contained" : "outlined"} color={value === v ? "primary" : "inherit"}
-          onClick={() => onChange(v)} sx={{ borderRadius: 999, minWidth: 0, px: 1.5 }}>{label}</Button>
-      ))}
-    </Stack>
-  );
-}
 
-function useLoader(url, params) {
-  const [rows, setRows] = useState(null);
-  const key = JSON.stringify(params || {});
-  const load = useCallback(async () => {
-    try {
-      setRows((await api.get(url, { params: JSON.parse(key) })).data?.data || []);
-    } catch (err) {
-      toast.error(errorMessage(err, "Could not load"));
-      setRows([]);
-    }
-  }, [url, key]);
-  useEffect(() => {
-    const timer = setTimeout(load, 0);
-    return () => clearTimeout(timer);
-  }, [load]);
-  return [rows, load, setRows];
-}
 
-const Table = ({ rows, columns, empty, prefKey, file, actions, scope }) => {
-  const grid = useSearchGrid({ sourceRows: rows || [], paginationMode: "client", scopeKey: scope });
-  return (
-    <SearchGridPanel>
-      <FilterableDataTable rows={grid.rows} columns={columns} loading={!rows} emptyText={empty} searchPlaceholder="Search..."
-        tablePreferenceKey={prefKey} exportFileName={file} paginationMode="client" page={grid.page} limit={grid.limit}
-        onPageChange={grid.setPage} onLimitChange={(v) => { grid.setLimit(v); grid.setPage(1); }}
-        actionsLabel={actions ? "Actions" : undefined} renderActions={actions} />
-    </SearchGridPanel>
-  );
-};
 
 /** HRMS > My Claims & Advances: claim back money spent for the store, ask for a salary advance or loan. */
 export function MyClaims() {
@@ -245,10 +192,10 @@ export function MyClaims() {
       {data && !data.employee && <Alert severity="info" sx={{ mb: 1 }}>Your login is not linked to an employee yet. Ask HR to tick "Allow System" with your username on your employee record.</Alert>}
       {owed > 0 && <Alert severity="warning" sx={{ mb: 1 }}>₹{rupees(owed)} of advances and loans is still to be recovered from your salary.</Alert>}
       <Typography sx={{ fontSize: 13, fontWeight: 800, mb: 0.5 }}>Expense claims</Typography>
-      <Table rows={data?.claims ?? (data ? [] : null)} columns={claimColumns} empty="No claims yet." prefKey="hr.money.myclaims" file="my_claims" scope="claims"
+      <HrTable rows={data?.claims ?? (data ? [] : null)} columns={claimColumns} empty="No claims yet." prefKey="hr.money.myclaims" file="my_claims" scope="claims"
         actions={(row) => (row.status === "PENDING" ? <Button size="small" color="inherit" onClick={() => withdraw(`/expense-claims/${row.id}/cancel`)}>Withdraw</Button> : null)} />
       <Typography sx={{ fontSize: 13, fontWeight: 800, mt: 2, mb: 0.5 }}>Advances and loans</Typography>
-      <Table rows={data?.loans ?? (data ? [] : null)} columns={loanColumns} empty="No advances or loans." prefKey="hr.money.myloans" file="my_loans" scope="loans"
+      <HrTable rows={data?.loans ?? (data ? [] : null)} columns={loanColumns} empty="No advances or loans." prefKey="hr.money.myloans" file="my_loans" scope="loans"
         actions={(row) => (["REQUESTED", "APPROVED"].includes(row.status) ? <Button size="small" color="inherit" onClick={() => withdraw(`/staff-loans/${row.id}/cancel`)}>Withdraw</Button> : null)} />
       {adding === "claim" && <ClaimDialog employees={[]} onClose={(saved) => { setAdding(null); if (saved) void load(); }} />}
       {adding === "loan" && <LoanDialog employees={[]} onClose={(saved) => { setAdding(null); if (saved) void load(); }} />}
@@ -284,45 +231,7 @@ function DecideDialog({ title, approve, payChoice, onSubmit, onClose }) {
   );
 }
 
-/** Record money going out or coming in: a date, cash or bank, and (optionally) an amount or month. */
-function PaymentDialog({ title, help, amount, month, onSubmit, onClose }) {
-  const [form, setForm] = useState({ paid_on: today(), pay_mode: "CASH", amount: amount ?? "", first_month: month ?? "" });
-  return (
-    <Dialog open onClose={onClose} maxWidth="xs" fullWidth>
-      <DialogTitle sx={{ fontSize: 15 }}>{title}</DialogTitle>
-      <DialogContent>
-        <Stack spacing={1.5} sx={{ pt: 1 }}>
-          {help && <Typography sx={{ fontSize: 12, color: "text.secondary" }}>{help}</Typography>}
-          {amount !== undefined && <TextField type="number" size="small" label="Amount (₹)" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />}
-          <Stack direction="row" spacing={1.5}>
-            <TextField type="date" size="small" label="Date" value={form.paid_on} onChange={(e) => setForm({ ...form, paid_on: e.target.value })} slotProps={{ inputLabel: { shrink: true } }} fullWidth />
-            <TextField select size="small" label="Paid by" value={form.pay_mode} onChange={(e) => setForm({ ...form, pay_mode: e.target.value })} fullWidth>
-              <MenuItem value="CASH">Cash</MenuItem>
-              <MenuItem value="BANK">Bank</MenuItem>
-            </TextField>
-          </Stack>
-          {month !== undefined && <TextField type="month" size="small" label="Recover from salary of" value={form.first_month} onChange={(e) => setForm({ ...form, first_month: e.target.value })} slotProps={{ inputLabel: { shrink: true } }} />}
-        </Stack>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button variant="contained" onClick={() => onSubmit({ paid_on: form.paid_on, pay_mode: form.pay_mode, ...(amount !== undefined ? { amount: Number(form.amount) } : {}), ...(month !== undefined && form.first_month ? { first_month: form.first_month } : {}) })}>Save</Button>
-      </DialogActions>
-    </Dialog>
-  );
-}
 
-const post = async (url, body, after) => {
-  try {
-    const res = await api.post(url, body);
-    toast.success(res.data?.message || "Done");
-    await after();
-    return true;
-  } catch (err) {
-    toast.error(errorMessage(err, "Could not save"));
-    return false;
-  }
-};
 
 /** HRMS > Expense Claims: claims from the people who report to you (HR: everyone); approve, reject, pay now. */
 export function ExpenseClaims() {
@@ -341,7 +250,7 @@ export function ExpenseClaims() {
           options={[["PENDING", "Pending"], ["APPROVED", "Approved"], ["PAID", "Paid"], ["REJECTED", "Rejected"], ["", "All"]]} />
         {rows?.length > 0 && <Typography sx={{ fontSize: 12, fontWeight: 700, color: "text.secondary", mb: 1, ml: 1 }}>{rows.length} claim(s) · ₹{rupees(total)}</Typography>}
       </Stack>
-      <Table rows={rows} columns={columns} empty="No claims here." prefKey="hr.money.claims" file="expense_claims" scope={status}
+      <HrTable rows={rows} columns={columns} empty="No claims here." prefKey="hr.money.claims" file="expense_claims" scope={status}
         actions={(row) => (
           <Stack direction="row" spacing={0.5}>
             {row.status === "PENDING" && <Button size="small" color="success" onClick={() => setDialog({ kind: "approve", row })}>Approve</Button>}
@@ -404,7 +313,7 @@ export function StaffLoans() {
           options={[["REQUESTED,APPROVED", "Requests"], ["ACTIVE", "Recovering"], ["CLOSED", "Repaid"], ["REJECTED,CANCELLED", "Rejected"], ["", "All"]]} />
         {outstanding > 0 && <Typography sx={{ fontSize: 12, fontWeight: 700, color: "text.secondary", mb: 1, ml: 1 }}>Still to recover ₹{rupees(outstanding)}</Typography>}
       </Stack>
-      <Table rows={rows} columns={columns} empty="Nothing here." prefKey="hr.money.loans" file="staff_loans" scope={status}
+      <HrTable rows={rows} columns={columns} empty="Nothing here." prefKey="hr.money.loans" file="staff_loans" scope={status}
         actions={(row) => (
           <Stack direction="row" spacing={0.5}>
             {row.status === "REQUESTED" && <Button size="small" color="success" onClick={() => setDialog({ kind: "approve", row })}>Approve</Button>}
@@ -518,7 +427,7 @@ export function LeaveEncashment() {
   return (
     <HrPage title="Leave Encashment" actions={hr ? <Button size="small" variant="outlined" startIcon={<Plus size={14} />} onClick={() => setAdding(true)}>Encash leave</Button> : null}>
       <Box>
-        <Table rows={rows} columns={encashColumns} empty="No leave encashed yet." prefKey="hr.money.encash" file="leave_encashment" scope="all"
+        <HrTable rows={rows} columns={encashColumns} empty="No leave encashed yet." prefKey="hr.money.encash" file="leave_encashment" scope="all"
           actions={(row) => (hr && row.status === "APPROVED" && !row.payslip_id ? <Button size="small" color="inherit" onClick={() => post(`/leave-encashments/${row.id}/cancel`, {}, load)}>Cancel</Button> : null)} />
       </Box>
       {adding && <EncashDialog onClose={(saved) => { setAdding(false); if (saved) void load(); }} />}

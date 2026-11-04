@@ -24,6 +24,7 @@ class Employee extends Model
         'address',
         'salary',
         'joining_date',
+        'relieving_date',
         'is_active',
         'user_id',
         'reports_to_id',
@@ -35,6 +36,7 @@ class Employee extends Model
         return [
             'salary' => 'decimal:2',
             'joining_date' => 'date',
+            'relieving_date' => 'date:Y-m-d',
             'is_active' => 'boolean',
         ];
     }

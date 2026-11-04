@@ -259,6 +259,7 @@ class AttendanceService
         $paidTypes = HrLeaveType::withoutGlobalScopes()->whereIn('id', $leaves->pluck('leave_type_id')->unique())->pluck('is_paid', 'id');
         $otNeedsApproval = $this->otNeedsApproval($employee->store_id);
         $joined = $employee->joining_date ? Carbon::parse($employee->joining_date)->toDateString() : null;
+        $left = $employee->relieving_date ? Carbon::parse($employee->relieving_date)->toDateString() : null;
 
         $sum = ['days_in_month' => $first->daysInMonth, 'counted_days' => 0, 'payable_days' => 0.0, 'lop_days' => 0.0, 'present_days' => 0.0,
             'paid_leave_days' => 0.0, 'unpaid_leave_days' => 0.0, 'off_days' => 0, 'absent_days' => 0, 'late_days' => 0, 'ot_minutes' => 0];
@@ -268,8 +269,8 @@ class AttendanceService
                 break;
             }
             $sum['counted_days']++;
-            if ($joined && $key < $joined) {
-                $sum['lop_days']++; // Not yet employed: not paid.
+            if (($joined && $key < $joined) || ($left && $key > $left)) {
+                $sum['lop_days']++; // Not yet employed, or already left: not paid.
                 continue;
             }
             $row = $byDate->get($key);

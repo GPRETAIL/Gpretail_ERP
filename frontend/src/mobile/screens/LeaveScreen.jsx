@@ -3,7 +3,7 @@ import { useSelector } from "react-redux";
 import { Box, Typography } from "@mui/material";
 import { Check, Plus, X } from "lucide-react";
 import api from "@/shared/api/apiClient";
-import { CLAIM_CATEGORY, LEAVE_STATUS, LOAN_TYPE, days, errorMessage, requestSummary } from "@/features/hr/utils/hrStatus";
+import { CLAIM_CATEGORY, EXIT_TYPE, LEAVE_STATUS, LOAN_TYPE, days, errorMessage, requestSummary } from "@/features/hr/utils/hrStatus";
 
 const APPROVER_ROLES = ["admin", "super_admin", "manager", "supervisor", "accountant"];
 const STATUS_COLORS = { PENDING: "#b45309", APPROVED: "#047857", REJECTED: "#be123c", CANCELLED: "#64748b" };
@@ -67,22 +67,25 @@ export default function LeaveScreen() {
   const [inbox, setInbox] = useState([]);
   const [requests, setRequests] = useState([]);
   const [money, setMoney] = useState([]);
+  const [exits, setExits] = useState([]);
   const [applying, setApplying] = useState(false);
   const [message, setMessage] = useState("");
 
   const load = useCallback(async () => {
     try {
       const optional = (url, params) => (approver ? api.get(url, { params }).catch(() => null) : Promise.resolve(null));
-      const [m, i, r, c, l] = await Promise.all([
+      const [m, i, r, c, l, x] = await Promise.all([
         api.get("/leave/mine"),
         approver ? api.get("/leave-applications", { params: { status: "PENDING", inbox: 1 } }) : Promise.resolve(null),
         approver ? api.get("/staff-requests", { params: { status: "PENDING" } }) : Promise.resolve(null),
         optional("/expense-claims", { status: "PENDING", inbox: 1 }),
         optional("/staff-loans", { status: "REQUESTED", inbox: 1 }),
+        optional("/separations", { status: "REQUESTED", inbox: 1 }),
       ]);
       setMine(m.data?.data || {});
       setInbox(i?.data?.data || []);
       setRequests(r?.data?.data || []);
+      setExits(x?.data?.data || []);
       // Claims (paid with the next salary when approved here) and advance / loan requests.
       setMoney([...(c?.data?.data || []).map((x) => ({ ...x, kind: "claim" })), ...(l?.data?.data || []).map((x) => ({ ...x, kind: "loan" }))]);
     } catch (err) {
@@ -162,6 +165,26 @@ export default function LeaveScreen() {
                   <Box component="button" type="button" onClick={() => act(row.id, "approve", "/staff-requests")} sx={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 0.5, py: 0.9, borderRadius: "10px", border: 0, bgcolor: "#059669", color: "#fff", fontWeight: 800, fontSize: 12 }}><Check size={14} /> Approve</Box>
                   <Box component="button" type="button" onClick={() => act(row.id, "reject", "/staff-requests")} sx={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 0.5, py: 0.9, borderRadius: "10px", border: "1px solid #fecdd3", bgcolor: "#fff", color: "#be123c", fontWeight: 800, fontSize: 12 }}><X size={14} /> Reject</Box>
                 </Box>
+              </Box>
+            ))}
+          </Box>
+        </Box>
+      )}
+
+      {approver && exits.length > 0 && (
+        <Box>
+          <Typography sx={{ fontSize: 11, fontWeight: 900, color: "#0f172a", textTransform: "uppercase", letterSpacing: "0.05em", mb: 1, px: 0.5 }}>Resignations ({exits.length})</Typography>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+            {exits.map((row) => (
+              <Box key={row.id} sx={card}>
+                <Typography sx={{ fontSize: 13, fontWeight: 900, color: "#0f172a" }}>{row.employee_name}</Typography>
+                <Typography sx={{ fontSize: 11.5, color: "#475569" }}>{EXIT_TYPE[row.type]} on {row.applied_on} · asks to leave {row.requested_last_day || "-"} · notice {row.notice_days} day(s)</Typography>
+                {row.reason && <Typography sx={{ fontSize: 11.5, color: "#64748b", mt: 0.25 }}>"{row.reason}"</Typography>}
+                <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
+                  <Box component="button" type="button" onClick={() => act(row.id, "accept", "/separations", { last_working_day: row.requested_last_day || row.applied_on })} sx={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 0.5, py: 0.9, borderRadius: "10px", border: 0, bgcolor: "#059669", color: "#fff", fontWeight: 800, fontSize: 12 }}><Check size={14} /> Accept</Box>
+                  <Box component="button" type="button" onClick={() => act(row.id, "reject", "/separations")} sx={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 0.5, py: 0.9, borderRadius: "10px", border: "1px solid #fecdd3", bgcolor: "#fff", color: "#be123c", fontWeight: 800, fontSize: 12 }}><X size={14} /> Reject</Box>
+                </Box>
+                <Typography sx={{ fontSize: 10.5, color: "#94a3b8", mt: 0.5 }}>Accepting keeps the day they asked for; change it from Exits on the web.</Typography>
               </Box>
             ))}
           </Box>

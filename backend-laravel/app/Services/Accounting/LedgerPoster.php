@@ -8,6 +8,7 @@ use App\Models\DirectPurchase;
 use App\Models\HrExpenseClaim;
 use App\Models\HrLoan;
 use App\Models\HrLoanRecovery;
+use App\Models\HrSettlement;
 use App\Models\HrPayrollRun;
 use App\Models\PosPayment;
 use App\Models\PosReturn;
@@ -51,6 +52,8 @@ class LedgerPoster
         'staff_loan' => ['hr_loans', 'store_id', 'payment'],
         'staff_loan_repayment' => ['hr_loan_recoveries', 'store_id', 'receipt'],
         'expense_claim' => ['hr_expense_claims', 'store_id', 'payment'],
+        'fnf_settlement' => ['hr_settlements', 'store_id', 'journal'],
+        'fnf_payment' => ['hr_settlements', 'store_id', 'payment'],
     ];
 
     private const CLOSED = ['CANCELLED', 'CANCELED', 'VOID', 'DRAFT', 'REJECTED'];
@@ -79,6 +82,7 @@ class LedgerPoster
             HrLoan::class => fn ($m) => [['staff_loan', $m->id]],
             HrLoanRecovery::class => fn ($m) => [['staff_loan_repayment', $m->id]],
             HrExpenseClaim::class => fn ($m) => [['expense_claim', $m->id]],
+            HrSettlement::class => fn ($m) => [['fnf_settlement', $m->id], ['fnf_payment', $m->id]],
         ];
         foreach ($targets as $class => $documents) {
             $class::saved(fn ($model) => self::queue($documents($model)));
@@ -217,6 +221,8 @@ class LedgerPoster
             'staff_loan' => self::staffLoan($id),
             'staff_loan_repayment' => self::staffLoanRepayment($id),
             'expense_claim' => self::expenseClaim($id),
+            'fnf_settlement' => self::fnfSettlement($id),
+            'fnf_payment' => self::fnfPayment($id),
             default => throw new RuntimeException("Unknown accounting source $type."),
         };
 
@@ -567,6 +573,58 @@ class LedgerPoster
             'narration' => "Expense claim of {$name} (".strtolower(str_replace('_', ' ', $claim->category)).')',
             'lines' => [[ChartOfAccounts::system($store, 'staff_expenses'), (float) $claim->amount],
                 [ChartOfAccounts::system($store, $claim->pay_mode === 'CASH' ? 'cash' : 'bank'), -(float) $claim->amount]]];
+    }
+
+    /** A full and final settlement: the last salary, leave, gratuity and recoveries of someone who left. */
+    private static function fnfSettlement(int $id): ?array
+    {
+        $fnf = DB::table('hr_settlements')->where('id', $id)->first();
+        if (! $fnf || ! in_array($fnf->status, ['SUBMITTED', 'PAID'], true)) {
+            return null;
+        }
+        $store = (int) $fnf->store_id;
+        $deducted = ['PF' => 0.0, 'ESI' => 0.0, 'PT' => 0.0, 'LOAN' => 0.0, 'ADVANCE' => 0.0, 'NOTICE' => 0.0, 'OTHER' => 0.0];
+        foreach (json_decode($fnf->deductions, true) ?: [] as $line) {
+            $deducted[array_key_exists($line['code'], $deducted) ? $line['code'] : 'OTHER'] += (float) $line['amount'];
+        }
+        $earned = ['REIMBURSE' => 0.0, 'GRATUITY' => 0.0];
+        foreach (json_decode($fnf->earnings, true) ?: [] as $line) {
+            if (array_key_exists($line['code'], $earned)) {
+                $earned[$line['code']] += (float) $line['amount'];
+            }
+        }
+        $name = DB::table('employees')->where('id', $fnf->employee_id)->value('name');
+
+        return ['store_id' => $store, 'no' => "FNF-{$fnf->id}", 'date' => $fnf->last_working_day, 'created_by' => $fnf->submitted_by,
+            'narration' => "Full and final settlement of {$name}",
+            'lines' => [
+                [ChartOfAccounts::system($store, 'salaries'), (float) $fnf->gross - $earned['REIMBURSE'] - $earned['GRATUITY'] - $deducted['OTHER']],
+                [ChartOfAccounts::system($store, 'staff_expenses'), $earned['REIMBURSE']],
+                [ChartOfAccounts::system($store, 'gratuity'), $earned['GRATUITY']],
+                [ChartOfAccounts::system($store, 'employer_pf'), (float) $fnf->employer_pf],
+                [ChartOfAccounts::system($store, 'employer_esi'), (float) $fnf->employer_esi],
+                [ChartOfAccounts::system($store, 'salary_payable'), -(float) $fnf->net],
+                [ChartOfAccounts::system($store, 'pf_payable'), -($deducted['PF'] + (float) $fnf->employer_pf)],
+                [ChartOfAccounts::system($store, 'esi_payable'), -($deducted['ESI'] + (float) $fnf->employer_esi)],
+                [ChartOfAccounts::system($store, 'pt_payable'), -$deducted['PT']],
+                [ChartOfAccounts::system($store, 'staff_advances'), -($deducted['LOAN'] + $deducted['ADVANCE'])],
+                [ChartOfAccounts::system($store, 'notice_recovery'), -$deducted['NOTICE']],
+            ]];
+    }
+
+    private static function fnfPayment(int $id): ?array
+    {
+        $fnf = DB::table('hr_settlements')->where('id', $id)->first();
+        if (! $fnf || $fnf->status !== 'PAID' || (float) $fnf->net <= 0) {
+            return null;
+        }
+        $store = (int) $fnf->store_id;
+        $name = DB::table('employees')->where('id', $fnf->employee_id)->value('name');
+
+        return ['store_id' => $store, 'no' => "FNFPAY-{$fnf->id}", 'date' => $fnf->paid_on, 'created_by' => $fnf->submitted_by,
+            'narration' => "Full and final settlement paid to {$name} (".strtolower((string) $fnf->pay_mode).')',
+            'lines' => [[ChartOfAccounts::system($store, 'salary_payable'), (float) $fnf->net],
+                [ChartOfAccounts::system($store, $fnf->pay_mode === 'CASH' ? 'cash' : 'bank'), -(float) $fnf->net]]];
     }
 
     /** Salaries paid out from the bank or cash; held salaries stay owed until they are released. */

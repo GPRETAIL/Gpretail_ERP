@@ -50,9 +50,9 @@ Legend: **Have** = exists, **Part** = partly there, **No** = to build. Phase = s
 | Onboarding | Checklist of tasks (documents, assets, accounts) when someone joins | No | 3 |
 | Promotion | Dated designation (and pay) change; writes the employee's classification history | Have | — |
 | Transfer | Department/section/floor/location transfer with history; move to another store (copied, login and leave carried) | Have | — |
-| Separation / exit | Resignation, notice period, exit checklist | No | 3 |
-| Exit interview | Questionnaire at exit | No | 3 |
-| Full and final settlement | Final dues: pending salary, leave encashment, gratuity, recoveries | No | 3 |
+| Separation / exit | Staff resign (web/phone), manager or HR accepts with the last working day; HR records terminations and retirements; notice shortfall worked out (waivable); relieved on the last day (inactive, login off, nightly); relieving and experience letters (exit checklist: later) | Have | — |
+| Exit interview | Reason for leaving, 1–5 ratings, would rejoin, comments; exit report by type, reason and month | Have | — |
+| Full and final settlement | One settlement pays the last month's days, earned leave, gratuity and claims, less notice shortfall and the loan balance; posted to the accounts, printable statement; that month's payroll skips the leaver | Have | — |
 | Skill map | Skills and ratings per employee | No | 4 |
 | Health insurance, other income | Extra profile records used for tax | No | 4 |
 
@@ -108,7 +108,7 @@ Legend: **Have** = exists, **Part** = partly there, **No** = to build. Phase = s
 | Income tax (TDS) | Old/new regime slabs, declarations, proof submission, monthly TDS | No | 3 |
 | Benefits | Flexible benefit plans and claims | No | 4 |
 | Incentives, retention bonus | Sales incentive paid through payroll (retention bonus: later) | Part | 3 |
-| Gratuity | Rule-based gratuity on exit | No | 3 |
+| Gratuity | As per the Act in the full and final settlement: from 5 years (6+ months rounds up), 15/26 × Basic × years, ₹20 lakh cap; editable per store (no provision accounting) | Have | — |
 | Bank file | Bank sheet (account, IFSC, amount) with Excel export | Have | — |
 | Accounting | Salary journal (with employer PF/ESI and payables) and salary payment vouchers | Have | — |
 | Multi-currency | Pay in other currencies | No | — (not needed) |
@@ -173,9 +173,9 @@ Each phase is a separate plan (Plan Mode), with tests, live local verification a
    attendance, overtime, additional salary, PF/ESI/PT, bank sheet, salary register, posting to accounts,
    mobile payslips, shift rosters, attendance/shift requests, biometric import, promotions and transfers.
    Fills the empty "Salary Management" menu item.
-3. **Phase 3: Money and exits.** Phase 3a (done): advances, expense claims, loans, leave encashment. Still to come: TDS with declarations and proofs,
-   arrears/corrections, gratuity, incentives, onboarding, separation, exit interview, full and
-   final settlement.
+3. **Phase 3: Money and exits.** Phase 3a (done): advances, expense claims, loans, leave encashment. Phase 3c (done): separation,
+   exit interview, gratuity, full and final settlement. Still to come: TDS with declarations and proofs,
+   arrears/corrections, incentives, onboarding.
 4. **Phase 4: Talent.** Recruitment, appraisals and goals, training, skill map, benefits, travel and vehicles,
    timesheets, organisation chart.
 

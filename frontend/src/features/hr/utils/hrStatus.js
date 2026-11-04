@@ -79,3 +79,21 @@ export const LOAN_TYPE = { ADVANCE: "Salary advance", LOAN: "Loan" };
 /** How an approved claim is paid back, in words. */
 export const claimPayLabel = (c) => (c.status === "PAID" ? (c.pay_via === "DIRECT" ? `Paid ${c.paid_on || ""}`.trim() : "Paid with salary")
   : c.pay_via === "DIRECT" ? "To pay now" : c.pay_via === "SALARY" ? (c.payslip_id ? "In payroll" : "With next salary") : "");
+
+/** Exits: separation status, type and the exit interview's reasons. */
+export const EXIT_STATUS = {
+  REQUESTED: { label: "Resigned", color: "warning" },
+  ACCEPTED: { label: "Accepted", color: "info" },
+  RELIEVED: { label: "Relieved", color: "primary" },
+  SETTLED: { label: "Settled", color: "success" },
+  REJECTED: { label: "Not accepted", color: "error" },
+  WITHDRAWN: { label: "Withdrawn", color: "default" },
+};
+
+export const EXIT_TYPE = { RESIGNATION: "Resignation", TERMINATION: "Termination", RETIREMENT: "Retirement", OTHER: "Other" };
+
+export const EXIT_REASON = {
+  BETTER_PAY: "Better pay elsewhere", CAREER_GROWTH: "Career growth", PERSONAL: "Personal / family", RELOCATION: "Moving away", HEALTH: "Health",
+  STUDIES: "Higher studies", WORK_HOURS: "Working hours", MANAGER: "Manager / team", WORK_ENVIRONMENT: "Work environment", PERFORMANCE: "Performance",
+  RETIREMENT: "Retirement", OTHER: "Other", NOT_RECORDED: "No exit interview",
+};

@@ -18,13 +18,13 @@ class BusinessPermissions
 
     /** HRMS actions on the signed-in user's own record: their check-in and their leave (always allowed, like notifications). */
     private const HR_SELF_SERVICE = ['AttendanceController' => ['me', 'selfPunch'], 'LeaveApplicationController' => ['mine', 'store', 'cancel'], 'PayrollController' => ['mine', 'mySlip'], 'HrRequestController' => ['mine', 'store', 'cancel'],
-        'StaffMoneyController' => ['mine', 'requestLoan', 'submitClaim', 'cancelLoan', 'cancelClaim', 'bill']];
+        'StaffMoneyController' => ['mine', 'requestLoan', 'submitClaim', 'cancelLoan', 'cancelClaim', 'bill'], 'SeparationController' => ['mine', 'resign', 'withdraw']];
 
     /** HRMS setup and managing other people's attendance; reads stay 'read' and are narrowed to the user's team by HrScope. */
     private const HR_MANAGED = ['AttendanceController', 'HolidayController', 'LeaveTypeController', 'LeavePolicyController', 'RosterController', 'MovementController'];
 
     /** Salaries: only payroll roles see or change anyone's pay (an employee sees their own slips through HR_SELF_SERVICE). */
-    private const PAYROLL = ['PayrollController', 'SalaryStructureController', 'PayrollSettingsController', 'PayrollReportController', 'AdditionalPayController'];
+    private const PAYROLL = ['PayrollController', 'SalaryStructureController', 'PayrollSettingsController', 'PayrollReportController', 'AdditionalPayController', 'FinalSettlementController'];
 
     /** Reads that expose purchase cost, margins, supplier dues or finance totals; the counter screens never call them. */
     private const COST_READS = ['SupplierPaymentController', 'FinanceDashboardController', 'PurchaseInvoiceController', 'PurchaseReturnController', 'DirectPurchaseController', 'InventoryEntryController', 'TransportEntryController', 'PurchaseOrderController', 'WarehouseReportController', 'WarehouseDashboardController', 'ProductPurchaseAnalyticsController', 'AnalyticalDashboardController', 'SalesReportController'];
@@ -86,6 +86,10 @@ class BusinessPermissions
         if ($controller === 'StaffMoneyController' && ! $read) {
             // Deciding is a manager's approval; paying out, recovering and encashing are payroll work.
             return in_array($action, ['decideLoan', 'decideClaim'], true) ? 'approvals.decide' : 'payroll.manage';
+        }
+        if ($controller === 'SeparationController' && ! $read) {
+            // Accepting a resignation is a manager's approval; recording, changing and relieving exits is HR work.
+            return in_array($action, ['accept', 'reject'], true) ? 'approvals.decide' : 'hr.manage';
         }
         if (in_array($controller, self::PAYROLL, true)) {
             return $read ? 'payroll.view' : 'payroll.manage';

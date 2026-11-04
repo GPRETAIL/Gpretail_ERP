@@ -62,6 +62,7 @@ const EMPLOYEE_IMPORT_CONFIG = {
     weekoff: "week_off",
     grosspay: "gross_pay",
     incentivepct: "incentive_pct",
+    noticedays: "notice_days",
     referredby: "referred_by",
     leaveencashment: "leave_encashment",
     bank: "bank_id",
@@ -86,7 +87,7 @@ const EMPLOYEE_IMPORT_CONFIG = {
     "floor", "manager_designation", "email", "date_of_birth", "date_of_joining",
     "hold_salary", "hold_salary_date", "reason_checked", "reason", "allow_system", "system_username",
     "salary_mode", "salary_structure", "working_mode", "working_hour", "week_off",
-    "gross_pay", "incentive_pct", "referred_by", "leave_encashment", "e_ot", "m_ot", "beta",
+    "gross_pay", "incentive_pct", "notice_days", "referred_by", "leave_encashment", "e_ot", "m_ot", "beta",
     "pf_no", "pf_eligible_date", "pf_uan", "esi_no", "esi_eligible_date",
     "father_name", "father_alive", "father_number", "father_live_with",
     "mother_name", "mother_alive", "mother_number", "mother_live_with",
@@ -247,7 +248,7 @@ const blankForm = () => ({
   reason_checked: false, reason: "",
   allow_system: false, system_username: "",
   salary_mode: "", salary_structure_id: "", working_mode: "",
-  working_hour_id: "", week_off: "", gross_pay: "", incentive_pct: "",
+  working_hour_id: "", week_off: "", gross_pay: "", incentive_pct: "", notice_days: "",
   referred_by: "", leave_encashment: "",
   e_ot: false, m_ot: false, beta: false,
   // PF & ESI
@@ -577,6 +578,7 @@ const Employee = () => {
       <SelectInput label="Leave Policy" name="leave_policy_id" value={formData.leave_policy_id} onChange={handleChange} options={opts.leavePolicies} />
       <TextInput label="Gross Pay" name="gross_pay" value={formData.gross_pay} onChange={handleChange} />
       <TextInput label="Incentive %" name="incentive_pct" value={formData.incentive_pct} onChange={handleChange} />
+      <TextInput label="Notice Period (days)" name="notice_days" value={formData.notice_days} onChange={handleChange} placeholder="Store default" />
       <TextInput label="Referred By" name="referred_by" value={formData.referred_by} onChange={handleChange} />
       <SelectInput label="Leave Encashment" name="leave_encashment" value={formData.leave_encashment} onChange={handleChange} options={LEAVE_ENCASHMENT_OPTIONS} />
       <Stack direction="row" sx={{ alignItems: "center", pt: 0.25, gridColumn: { md: "span 2" } }}>

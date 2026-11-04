@@ -70,6 +70,8 @@ class ChartOfAccounts
         'pt_payable' => ['Professional Tax Payable', 'duties_taxes'],
         'staff_advances' => ['Staff Loans & Advances', 'loans_advances'],
         'staff_expenses' => ['Staff Expense Claims', 'indirect_expenses'],
+        'gratuity' => ['Gratuity', 'indirect_expenses'],
+        'notice_recovery' => ['Notice Pay Recovered', 'indirect_incomes'],
     ];
 
     /** Common expense heads a new chart starts with; ordinary ledgers the store can rename or remove. */

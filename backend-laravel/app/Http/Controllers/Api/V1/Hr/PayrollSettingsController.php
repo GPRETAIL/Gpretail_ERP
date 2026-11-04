@@ -7,7 +7,7 @@ use App\Services\Hr\PayrollSetup;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
-/** The store's payroll rules: PF, ESI, professional tax by state, OT and batta. */
+/** The store's payroll rules: PF, ESI, professional tax by state, OT, batta, notice period and gratuity. */
 class PayrollSettingsController extends Controller
 {
     public function __construct(private readonly PayrollSetup $setup) {}
@@ -32,6 +32,8 @@ class PayrollSettingsController extends Controller
             'pt.slabs' => 'array', 'pt.slabs.*' => 'array|min:3|max:4', 'pt.slabs.*.0' => 'required|numeric|min:0', 'pt.slabs.*.1' => 'nullable|numeric|min:0',
             'pt.slabs.*.2' => 'required|numeric|min:0', 'pt.slabs.*.3' => 'nullable|numeric|min:0',
             'ot.multiplier' => 'numeric|min:0|max:5', 'ot.requires_approval' => 'boolean', 'ot.hours_per_day' => 'numeric|min:1|max:24', 'batta.per_day' => 'numeric|min:0',
+            'exit.notice_days' => 'integer|min:0|max:365', 'gratuity.enabled' => 'boolean', 'gratuity.min_years' => 'numeric|min:0|max:50',
+            'gratuity.days' => 'numeric|min:0|max:60', 'gratuity.divisor' => 'numeric|min:1|max:31', 'gratuity.cap' => 'numeric|min:0',
         ]);
         if ($data['pt']['frequency'] === 'half_yearly' && empty($data['pt']['months'])) {
             throw ValidationException::withMessages(['pt.months' => 'Choose the months half-yearly professional tax is deducted in.']);

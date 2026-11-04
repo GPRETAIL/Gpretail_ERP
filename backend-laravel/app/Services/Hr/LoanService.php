@@ -131,6 +131,18 @@ class LoanService
         return $due;
     }
 
+    /**
+     * Everything still owed on the employee's running loans, for a full and final settlement.
+     *
+     * @return array<int, array{loan_id: int, type: string, amount: float}>
+     */
+    public function outstandingFor(Employee $employee): array
+    {
+        return HrLoan::withoutGlobalScopes()->where('employee_id', $employee->id)->where('status', 'ACTIVE')->orderBy('id')->get()
+            ->map(fn (HrLoan $loan) => ['loan_id' => $loan->id, 'type' => $loan->type, 'amount' => $this->balance($loan)])
+            ->filter(fn ($due) => $due['amount'] > 0)->values()->all();
+    }
+
     public function closeIfRepaid(HrLoan $loan): void
     {
         if ($loan->status === 'ACTIVE' && $this->balance($loan) <= 0.004) {

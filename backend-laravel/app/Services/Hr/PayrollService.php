@@ -9,6 +9,7 @@ use App\Models\HrLoan;
 use App\Models\HrLoanRecovery;
 use App\Models\HrPayrollRun;
 use App\Models\HrPayslip;
+use App\Models\HrSeparation;
 use App\Models\Notification;
 use App\Models\User;
 use Illuminate\Support\Carbon;
@@ -39,7 +40,13 @@ class PayrollService
 
         DB::transaction(function () use ($run, $storeId, $month, $settings, $monthEnd, $monthStart) {
             $kept = [];
-            $employees = Employee::withoutGlobalScopes()->with('designation:id,name')->where('store_id', $storeId)->where('is_active', true)
+            // Staff working in the month: active ones, and anyone relieved later than its start (paid up to their last day).
+            // Someone whose last working day falls in the month is paid in their full and final settlement instead.
+            $settled = HrSeparation::withoutGlobalScopes()->where('store_id', $storeId)->whereIn('status', ['ACCEPTED', 'RELIEVED', 'SETTLED'])
+                ->whereBetween('last_working_day', [$monthStart, $monthEnd])->pluck('employee_id');
+            $employees = Employee::withoutGlobalScopes()->with('designation:id,name')->where('store_id', $storeId)
+                ->where(fn ($q) => $q->where('is_active', true)->orWhere('relieving_date', '>=', $monthStart))
+                ->whereNotIn('id', $settled)
                 ->where(fn ($q) => $q->whereNull('joining_date')->orWhere('joining_date', '<=', $monthEnd))->orderBy('name')->get();
             foreach ($employees as $employee) {
                 if (PayrollCalculator::grossOf($employee) <= 0) {

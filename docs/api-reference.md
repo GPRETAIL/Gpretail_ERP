@@ -1,6 +1,6 @@
 # API reference
 
-Every endpoint under `/api`, grouped by module (603 endpoints). Generated from
+Every endpoint under `/api`, grouped by module (620 endpoints). Generated from
 `php artisan route:list --sort=definition --json`; regenerate it after changing routes.
 
 - Each signed-in endpoint is also served under `/api/v1/...` with the same behaviour.
@@ -17,7 +17,7 @@ Every endpoint under `/api`, grouped by module (603 endpoints). Generated from
 - [Crm](#crm) (28)
 - [Dashboards](#dashboards) (24)
 - [Finance](#finance) (23)
-- [Hr](#hr) (114)
+- [Hr](#hr) (131)
 - [Masters](#masters) (120)
 - [Notifications](#notifications) (11)
 - [Other](#other) (1)
@@ -261,6 +261,23 @@ Every endpoint under `/api`, grouped by module (603 endpoints). Generated from
 | GET | `/api/leave-encashments` | StaffMoneyController@encashments | yes |
 | POST | `/api/leave-encashments` | StaffMoneyController@encash | yes |
 | POST | `/api/leave-encashments/{id}/cancel` | StaffMoneyController@cancelEncashment | yes |
+| GET | `/api/separations/mine` | SeparationController@mine | yes |
+| POST | `/api/separations/resign` | SeparationController@resign | yes |
+| GET | `/api/separations/report` | SeparationController@report | yes |
+| GET | `/api/separations` | SeparationController@index | yes |
+| POST | `/api/separations` | SeparationController@record | yes |
+| POST | `/api/separations/{id}/withdraw` | SeparationController@withdraw | yes |
+| POST | `/api/separations/{id}/accept` | SeparationController@accept | yes |
+| POST | `/api/separations/{id}/reject` | SeparationController@reject | yes |
+| POST | `/api/separations/{id}/amend` | SeparationController@amend | yes |
+| POST | `/api/separations/{id}/interview` | SeparationController@interview | yes |
+| POST | `/api/separations/{id}/relieve` | SeparationController@relieve | yes |
+| GET | `/api/final-settlements` | FinalSettlementController@index | yes |
+| POST | `/api/final-settlements/prepare` | FinalSettlementController@prepare | yes |
+| GET | `/api/final-settlements/{id}` | FinalSettlementController@show | yes |
+| POST | `/api/final-settlements/{id}/submit` | FinalSettlementController@submit | yes |
+| POST | `/api/final-settlements/{id}/mark-paid` | FinalSettlementController@markPaid | yes |
+| POST | `/api/final-settlements/{id}/reopen` | FinalSettlementController@reopen | yes |
 
 ## Masters
 

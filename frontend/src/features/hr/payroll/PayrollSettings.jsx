@@ -24,7 +24,7 @@ export default function PayrollSettings({ canManage }) {
   }, []);
 
   if (!settings) return <Typography variant="body2">Loading…</Typography>;
-  const set = (section, key, value) => setSettings((prev) => ({ ...prev, [section]: { ...prev[section], [key]: value } }));
+  const set = (section, key, value) => setSettings((prev) => ({ ...prev, [section]: { ...(prev[section] || {}), [key]: value } }));
   const pt = settings.pt;
   const chooseState = (state) => {
     const preset = presets[state] || {};
@@ -44,10 +44,10 @@ export default function PayrollSettings({ canManage }) {
     }
   };
   const field = (section, key, label, width = 140) => (
-    <TextField type="number" size="small" label={label} value={settings[section][key]} onChange={(e) => set(section, key, e.target.value)} disabled={!canManage} sx={{ width }} />
+    <TextField type="number" size="small" label={label} value={settings[section]?.[key] ?? ""} onChange={(e) => set(section, key, e.target.value)} disabled={!canManage} sx={{ width }} />
   );
   const tick = (section, key, label) => (
-    <FormControlLabel control={<Checkbox size="small" checked={Boolean(settings[section][key])} onChange={(e) => set(section, key, e.target.checked)} disabled={!canManage} />} label={label} />
+    <FormControlLabel control={<Checkbox size="small" checked={Boolean(settings[section]?.[key])} onChange={(e) => set(section, key, e.target.checked)} disabled={!canManage} />} label={label} />
   );
 
   return (
@@ -77,6 +77,17 @@ export default function PayrollSettings({ canManage }) {
           </Stack>
           {tick("ot", "requires_approval", "Overtime needs approval before it is paid (HRMS > OT Approvals)")}
           <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1 }}>OT is paid to employees with OT ticked, for time worked beyond their shift. Batta is paid per day present to employees with Beta ticked.</Typography>
+        </Paper>
+        <Paper variant="outlined" sx={{ p: 1.5 }}>
+          <Typography variant="subtitle2" sx={{ mb: 1 }}>Exits: notice period and gratuity</Typography>
+          <Stack direction="row" spacing={1.5} sx={{ flexWrap: "wrap", rowGap: 1.5 }}>
+            {field("exit", "notice_days", "Notice period (days)", 160)}
+          </Stack>
+          {tick("gratuity", "enabled", "Pay gratuity in the full and final settlement")}
+          <Stack direction="row" spacing={1.5} sx={{ mt: 1, flexWrap: "wrap", rowGap: 1.5 }}>
+            {field("gratuity", "min_years", "From years of service")}{field("gratuity", "days", "Days' wages a year")}{field("gratuity", "divisor", "Month of (days)")}{field("gratuity", "cap", "Up to ₹", 160)}
+          </Stack>
+          <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1 }}>Gratuity = Basic × days ÷ month of days × years of service (6 months or more counts as a year). An employee's own Notice Period on their record wins over the store's.</Typography>
         </Paper>
       </Stack>
       <Paper variant="outlined" sx={{ p: 1.5 }}>
