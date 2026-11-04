@@ -49,7 +49,7 @@ class MobileAccess
         'HolidayController' => '/hrms/holidays', 'LeaveTypeController' => '/hrms/leave-setup', 'LeavePolicyController' => '/hrms/leave-setup',
         'LeaveApplicationController' => '/hrms/leave',
         'RosterController' => '/hrms/shift-roster', 'OvertimeController' => '/hrms/ot-approvals', 'HrRequestController' => '/hrms/request-approvals',
-        'MovementController' => '/hrms/movements', 'FinalSettlementController' => '/hrms/settlements',
+        'MovementController' => '/hrms/movements', 'FinalSettlementController' => '/hrms/settlements', 'IncomeTaxController' => '/hrms/income-tax',
         'PayrollController' => '/hrms/salary-management', 'SalaryStructureController' => '/hrms/salary-structures',
         'PayrollSettingsController' => '/hrms/payroll-settings', 'PayrollReportController' => '/hrms/payroll-reports', 'AdditionalPayController' => '/hrms/additional-pay',
         'StoreDashboardController' => '/store/dashboard', 'MastersDashboardController' => '/masters/product',
@@ -97,7 +97,7 @@ class MobileAccess
                 }
             }
             // Everyone's own check-in and leave (the team views inside are narrowed by HrScope on the server).
-            $screens = array_values(array_unique(array_merge($screens, ['modules', 'settings', 'attendance', 'leave', 'payslips', 'claims'])));
+            $screens = array_values(array_unique(array_merge($screens, ['modules', 'settings', 'attendance', 'leave', 'payslips', 'claims', 'tax'])));
         }
 
         return ['id' => $store->id, 'name' => $store->name, 'code' => $store->code, 'allowed' => $code === null,
@@ -161,10 +161,12 @@ class MobileAccess
     ], 'SeparationController' => [
         'index' => '/hrms/exits', 'accept' => '/hrms/exits', 'reject' => '/hrms/exits', 'record' => '/hrms/exits', 'amend' => '/hrms/exits',
         'interview' => '/hrms/exits', 'relieve' => '/hrms/exits', 'report' => '/hrms/exits',
+    ], 'TaxDeclarationController' => [
+        'index' => '/hrms/income-tax', 'show' => '/hrms/income-tax', 'saveFor' => '/hrms/income-tax', 'verify' => '/hrms/income-tax', 'lock' => '/hrms/income-tax',
     ]];
 
     /** Where a controller in ACTION_PAGES sends the actions it does not list (the employee's own page). */
-    private const OWN_PAGES = ['StaffMoneyController' => '/hrms/my-claims', 'SeparationController' => '/hrms/my-resignation'];
+    private const OWN_PAGES = ['StaffMoneyController' => '/hrms/my-claims', 'SeparationController' => '/hrms/my-resignation', 'TaxDeclarationController' => '/hrms/my-tax'];
 
     public function page(Request $request): ?string
     {

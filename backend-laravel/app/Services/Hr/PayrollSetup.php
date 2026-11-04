@@ -54,7 +54,26 @@ class PayrollSetup
         ['REIMBURSE', 'Expense Reimbursement', 'EARNING', 'REIMBURSE'], ['ENCASH', 'Leave Encashment', 'EARNING', 'ENCASH'],
         ['LOAN', 'Loan Recovery', 'DEDUCTION', 'LOAN'], ['ADVANCE', 'Advance Recovery', 'DEDUCTION', 'ADVANCE'],
         ['LEAVE_EXIT', 'Leave Encashment on Exit', 'EARNING', 'LEAVE_EXIT'], ['GRATUITY', 'Gratuity', 'EARNING', 'GRATUITY'],
-        ['NOTICE', 'Notice Pay Recovery', 'DEDUCTION', 'NOTICE'],
+        ['NOTICE', 'Notice Pay Recovery', 'DEDUCTION', 'NOTICE'], ['TDS', 'Income Tax (TDS)', 'DEDUCTION', 'TDS'],
+    ];
+
+    /**
+     * Income tax on salary for a financial year: slabs [from, to (null = no limit), %], standard deduction, the
+     * rebate (tax nil up to the limit; new regime with marginal relief), surcharge bands [income above, %] and the
+     * caps on old-regime deductions. Starting values are the FY 2025-26 rates; confirm them with the accountant
+     * every year. A store can keep its own figures per financial year.
+     */
+    public const TAX = [
+        'enabled' => true, 'cess_pct' => 4, 'no_pan_rate' => 20, 'proof_deadline' => '01-31', 'tan' => '',
+        'metro_cities' => ['Delhi', 'Mumbai', 'Kolkata', 'Chennai'],
+        'caps' => ['80C' => 150000, '80CCD1B' => 50000, '80D' => 75000, '24B' => 200000],
+        'exempt' => ['gratuity' => 2000000, 'leave_on_exit' => 2500000],
+        'new' => ['standard_deduction' => 75000, 'rebate_limit' => 1200000, 'rebate_max' => 60000, 'marginal_relief' => true,
+            'slabs' => [[0, 400000, 0], [400000, 800000, 5], [800000, 1200000, 10], [1200000, 1600000, 15], [1600000, 2000000, 20], [2000000, 2400000, 25], [2400000, null, 30]],
+            'surcharge' => [[5000000, 10], [10000000, 15], [20000000, 25]]],
+        'old' => ['standard_deduction' => 50000, 'rebate_limit' => 500000, 'rebate_max' => 12500, 'marginal_relief' => false,
+            'slabs' => [[0, 250000, 0], [250000, 500000, 5], [500000, 1000000, 20], [1000000, null, 30]],
+            'surcharge' => [[5000000, 10], [10000000, 15], [20000000, 25], [50000000, 37]]],
     ];
 
     /** The store's settings merged over the defaults (so a setting added later always has a value). */
@@ -71,9 +90,60 @@ class PayrollSetup
         $merged = array_replace_recursive(self::DEFAULTS, $settings);
         $merged['pt']['slabs'] = array_values($settings['pt']['slabs'] ?? []); // Replaced as a whole, never merged by index.
         $merged['pt']['months'] = array_values($settings['pt']['months'] ?? []);
+        // The income tax figures are saved on their own (saveTaxRules); keep them.
+        $existing = HrPayrollSetting::withoutGlobalScopes()->where('store_id', $storeId)->value('settings');
+        $existing = is_string($existing) ? json_decode($existing, true) : ($existing ?? []);
+        unset($merged['tax_years']);
+        if (isset($existing['tax_years'])) {
+            $merged['tax_years'] = $existing['tax_years'];
+        }
         HrPayrollSetting::withoutGlobalScopes()->updateOrCreate(['store_id' => $storeId], ['settings' => $merged]);
 
         return $merged;
+    }
+
+    /** The financial year a month falls in: 2026-11 → 2026-27 (April to March). */
+    public static function fyOf(string $month): string
+    {
+        $year = (int) substr($month, 0, 4);
+        $start = (int) substr($month, 5, 2) >= 4 ? $year : $year - 1;
+
+        return sprintf('%d-%02d', $start, ($start + 1) % 100);
+    }
+
+    /** @return array{0: string, 1: string} the first and last month (YYYY-MM) of a financial year */
+    public static function fyMonths(string $fy): array
+    {
+        $start = (int) substr($fy, 0, 4);
+
+        return ["{$start}-04", ($start + 1).'-03'];
+    }
+
+    /** The store's income tax rules for a financial year: its own figures for that year, else the starting ones. */
+    public function taxRules(int $storeId, string $fy): array
+    {
+        $saved = HrPayrollSetting::withoutGlobalScopes()->where('store_id', $storeId)->value('settings');
+        $saved = is_string($saved) ? json_decode($saved, true) : ($saved ?? []);
+        $own = $saved['tax_years'][$fy] ?? [];
+        $rules = self::TAX;
+        foreach ($own as $key => $value) {
+            // Each regime and list is replaced as a whole, never merged by index.
+            $rules[$key] = in_array($key, ['new', 'old', 'caps', 'exempt'], true) && is_array($value) ? array_replace($rules[$key], $value) : $value;
+        }
+
+        return $rules;
+    }
+
+    public function saveTaxRules(int $storeId, string $fy, array $rules): array
+    {
+        $setting = HrPayrollSetting::withoutGlobalScopes()->firstOrNew(['store_id' => $storeId]);
+        $settings = $setting->settings ?? [];
+        $settings = is_string($settings) ? json_decode($settings, true) : $settings;
+        $settings['tax_years'][$fy] = $rules;
+        $setting->settings = $settings;
+        $setting->save();
+
+        return $this->taxRules($storeId, $fy);
     }
 
     /** Creates the pay heads and the Standard structure the first time a store uses payroll. */

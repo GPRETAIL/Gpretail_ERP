@@ -105,7 +105,7 @@ Legend: **Have** = exists, **Part** = partly there, **No** = to build. Phase = s
 | Arrears and payroll correction | Back-pay after a late revision; fix a submitted month | No | 3 |
 | Off-cycle payment | Pay outside the regular run | No | 3 |
 | PF, ESI, professional tax | PF (wage ceiling), ESI (gross limit), PT by state with editable slabs; PF/ESI/PT statements (ECR file: later) | Have | — |
-| Income tax (TDS) | Old/new regime slabs, declarations, proof submission, monthly TDS | No | 3 |
+| Income tax (TDS) | Old/new regime per employee (new by default) with a side-by-side estimate; declarations (HRA, 80C incl. PF, 80D, NPS, home-loan interest, previous employer) with proofs HR verifies (declared until 31 Jan, verified after); monthly TDS spread over the year, balance in March or the F&F; no-PAN rate; rules editable per store and year; TDS register, challans (posted), Form 16 Part B print, Form 24Q Annexure I/II export; mobile Tax screen | Have | — |
 | Benefits | Flexible benefit plans and claims | No | 4 |
 | Incentives, retention bonus | Sales incentive paid through payroll (retention bonus: later) | Part | 3 |
 | Gratuity | As per the Act in the full and final settlement: from 5 years (6+ months rounds up), 15/26 × Basic × years, ₹20 lakh cap; editable per store (no provision accounting) | Have | — |
@@ -174,8 +174,8 @@ Each phase is a separate plan (Plan Mode), with tests, live local verification a
    mobile payslips, shift rosters, attendance/shift requests, biometric import, promotions and transfers.
    Fills the empty "Salary Management" menu item.
 3. **Phase 3: Money and exits.** Phase 3a (done): advances, expense claims, loans, leave encashment. Phase 3c (done): separation,
-   exit interview, gratuity, full and final settlement. Still to come: TDS with declarations and proofs,
-   arrears/corrections, incentives, onboarding.
+   exit interview, gratuity, full and final settlement. Phase 3b (done): TDS with declarations and proofs.
+   Still to come: arrears/corrections, incentives, onboarding.
 4. **Phase 4: Talent.** Recruitment, appraisals and goals, training, skill map, benefits, travel and vehicles,
    timesheets, organisation chart.
 

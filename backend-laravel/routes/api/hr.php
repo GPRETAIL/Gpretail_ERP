@@ -16,6 +16,8 @@ use App\Http\Controllers\Api\V1\Hr\PayrollSettingsController;
 use App\Http\Controllers\Api\V1\Hr\RosterController;
 use App\Http\Controllers\Api\V1\Hr\SalaryStructureController;
 use App\Http\Controllers\Api\V1\Hr\SeparationController;
+use App\Http\Controllers\Api\V1\Hr\IncomeTaxController;
+use App\Http\Controllers\Api\V1\Hr\TaxDeclarationController;
 use App\Http\Controllers\Api\V1\Hr\FinalSettlementController;
 use App\Http\Controllers\Api\V1\Hr\StaffMoneyController;
 use App\Http\Controllers\Api\V1\Hr\HrConfigurationController;
@@ -158,3 +160,24 @@ Route::get('final-settlements/{id}', [FinalSettlementController::class, 'show'])
 Route::post('final-settlements/{id}/submit', [FinalSettlementController::class, 'submit']);
 Route::post('final-settlements/{id}/mark-paid', [FinalSettlementController::class, 'markPaid']);
 Route::post('final-settlements/{id}/reopen', [FinalSettlementController::class, 'reopen']);
+
+// Income tax (TDS) on salary
+Route::get('tax-declarations/mine', [TaxDeclarationController::class, 'mine']);
+Route::put('tax-declarations/mine', [TaxDeclarationController::class, 'save']);
+Route::post('tax-declarations/mine/submit', [TaxDeclarationController::class, 'submit']);
+Route::post('tax-declaration-items/{id}/proof', [TaxDeclarationController::class, 'uploadProof']);
+Route::get('tax-declaration-items/{id}/proof', [TaxDeclarationController::class, 'proof']);
+Route::post('tax-declaration-items/{id}/verify', [TaxDeclarationController::class, 'verify']);
+Route::get('tax-declarations', [TaxDeclarationController::class, 'index']);
+Route::get('tax-declarations/employee/{employeeId}', [TaxDeclarationController::class, 'show']);
+Route::put('tax-declarations/employee/{employeeId}', [TaxDeclarationController::class, 'saveFor']);
+Route::post('tax-declarations/{id}/lock', [TaxDeclarationController::class, 'lock']);
+Route::get('tds/rules', [IncomeTaxController::class, 'rules']);
+Route::put('tds/rules', [IncomeTaxController::class, 'saveRules']);
+Route::get('tds/challans', [IncomeTaxController::class, 'challans']);
+Route::post('tds/challans', [IncomeTaxController::class, 'storeChallan']);
+Route::put('tds/challans/{id}', [IncomeTaxController::class, 'updateChallan']);
+Route::delete('tds/challans/{id}', [IncomeTaxController::class, 'destroyChallan']);
+Route::get('tds/register', [IncomeTaxController::class, 'register']);
+Route::get('tds/form16', [IncomeTaxController::class, 'form16']);
+Route::get('tds/form24q', [IncomeTaxController::class, 'form24q']);

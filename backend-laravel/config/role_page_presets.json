@@ -599,6 +599,18 @@
       "add": true,
       "edit": true,
       "delete": false
+    },
+    "/hrms/my-tax": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/hrms/income-tax": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
     }
   },
   "cashier": {
@@ -693,6 +705,12 @@
       "delete": true
     },
     "/hrms/my-resignation": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/hrms/my-tax": {
       "view": true,
       "add": true,
       "edit": true,
@@ -861,6 +879,12 @@
       "add": true,
       "edit": true,
       "delete": false
+    },
+    "/hrms/my-tax": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
     }
   },
   "accountant": {
@@ -1325,6 +1349,18 @@
       "add": false,
       "edit": false,
       "delete": false
+    },
+    "/hrms/my-tax": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/hrms/income-tax": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
     }
   },
   "warehouse_user": {
@@ -1501,6 +1537,12 @@
       "add": true,
       "edit": true,
       "delete": true
+    },
+    "/hrms/my-tax": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
     }
   },
   "store_user": {
@@ -1649,6 +1691,12 @@
       "delete": true
     },
     "/hrms/my-resignation": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/hrms/my-tax": {
       "view": true,
       "add": true,
       "edit": true,

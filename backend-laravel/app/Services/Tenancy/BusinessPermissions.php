@@ -18,13 +18,14 @@ class BusinessPermissions
 
     /** HRMS actions on the signed-in user's own record: their check-in and their leave (always allowed, like notifications). */
     private const HR_SELF_SERVICE = ['AttendanceController' => ['me', 'selfPunch'], 'LeaveApplicationController' => ['mine', 'store', 'cancel'], 'PayrollController' => ['mine', 'mySlip'], 'HrRequestController' => ['mine', 'store', 'cancel'],
-        'StaffMoneyController' => ['mine', 'requestLoan', 'submitClaim', 'cancelLoan', 'cancelClaim', 'bill'], 'SeparationController' => ['mine', 'resign', 'withdraw']];
+        'StaffMoneyController' => ['mine', 'requestLoan', 'submitClaim', 'cancelLoan', 'cancelClaim', 'bill'], 'SeparationController' => ['mine', 'resign', 'withdraw'],
+        'TaxDeclarationController' => ['mine', 'save', 'submit', 'uploadProof', 'proof']];
 
     /** HRMS setup and managing other people's attendance; reads stay 'read' and are narrowed to the user's team by HrScope. */
     private const HR_MANAGED = ['AttendanceController', 'HolidayController', 'LeaveTypeController', 'LeavePolicyController', 'RosterController', 'MovementController'];
 
     /** Salaries: only payroll roles see or change anyone's pay (an employee sees their own slips through HR_SELF_SERVICE). */
-    private const PAYROLL = ['PayrollController', 'SalaryStructureController', 'PayrollSettingsController', 'PayrollReportController', 'AdditionalPayController', 'FinalSettlementController'];
+    private const PAYROLL = ['PayrollController', 'SalaryStructureController', 'PayrollSettingsController', 'PayrollReportController', 'AdditionalPayController', 'FinalSettlementController', 'TaxDeclarationController', 'IncomeTaxController'];
 
     /** Reads that expose purchase cost, margins, supplier dues or finance totals; the counter screens never call them. */
     private const COST_READS = ['SupplierPaymentController', 'FinanceDashboardController', 'PurchaseInvoiceController', 'PurchaseReturnController', 'DirectPurchaseController', 'InventoryEntryController', 'TransportEntryController', 'PurchaseOrderController', 'WarehouseReportController', 'WarehouseDashboardController', 'ProductPurchaseAnalyticsController', 'AnalyticalDashboardController', 'SalesReportController'];

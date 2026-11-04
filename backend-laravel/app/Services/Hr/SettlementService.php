@@ -87,6 +87,7 @@ class SettlementService
                 'gratuity_note' => $gratuity['note'],
                 'notice_days' => $separation->notice_days, 'notice_short_days' => $separation->notice_short_days, 'notice_waived' => $separation->notice_waived,
                 'notice_recovery' => round($noticeShort * $dayRate, 2),
+                'tax' => $slip['tax'],
                 'loan_owed' => round($owed, 2), 'loan_recovered' => round($recovered, 2), 'loan_left' => round($owed - $recovered, 2),
             ],
         ])->save();

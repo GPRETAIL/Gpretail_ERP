@@ -44,6 +44,8 @@ import {
   UserMinusIcon,
   ArrowRightStartOnRectangleIcon,
   DocumentCheckIcon,
+  CalculatorIcon,
+  BuildingLibraryIcon,
   InboxArrowDownIcon,
   ArrowTrendingUpIcon,
 } from "@heroicons/react/24/outline";
@@ -596,6 +598,8 @@ export const navItems = [
       { name: "My Resignation", path: "/hrms/my-resignation", icon: ArrowRightStartOnRectangleIcon },
       { name: "Exits", path: "/hrms/exits", icon: UserMinusIcon },
       { name: "Full & Final", path: "/hrms/settlements", icon: DocumentCheckIcon },
+      { name: "My Tax", path: "/hrms/my-tax", icon: CalculatorIcon },
+      { name: "Income Tax", path: "/hrms/income-tax", icon: BuildingLibraryIcon },
       { name: "Payroll", path: "/hrms/salary-management", icon: CreditCardIcon },
       { name: "Additional Pay", path: "/hrms/additional-pay", icon: PlusCircleIcon },
       { name: "Salary Structures", path: "/hrms/salary-structures", icon: Squares2X2Icon },

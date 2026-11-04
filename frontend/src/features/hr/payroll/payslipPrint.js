@@ -38,6 +38,7 @@ body{font-family:Arial,sans-serif;font-size:12px;margin:24px;color:#111}h1{font-
 <table class="pay"><thead><tr><th>Earnings</th><th class="n">Amount (₹)</th><th>Deductions</th><th class="n">Amount (₹)</th></tr></thead><tbody>${rows}</tbody>
 <tfoot><tr><th>Gross earnings</th><th class="n">${rupees(slip.gross_earned)}</th><th>Total deductions</th><th class="n">${rupees(slip.total_deductions)}</th></tr></tfoot></table>
 <div class="net"><span>Net pay</span><span>₹ ${rupees(slip.net_pay)}</span></div>
+${s.tax && Number(s.tax.tax?.total) > 0 ? `<div class="foot">Income tax (${s.tax.regime === "OLD" ? "old" : "new"} regime): estimated ₹${rupees(s.tax.tax.total)} for the year on ₹${rupees(s.tax.taxable)} taxable; ₹${rupees(Number(s.tax.tds_deducted || 0))} deducted before this month.</div>` : ""}
 <div class="foot">Employer contributions (not deducted from pay): PF ₹${rupees(slip.employer_pf)} · ESI ₹${rupees(slip.employer_esi)}.${slip.paid_on ? ` Paid on ${escapeHtml(slip.paid_on)}.` : ""} This is a computer-generated payslip.</div>
 </body></html>`;
 }

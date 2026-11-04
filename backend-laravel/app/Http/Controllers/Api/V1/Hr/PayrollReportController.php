@@ -11,7 +11,7 @@ use Illuminate\Support\Collection;
 /** Reports of one payroll run: salary register, bank sheet, and the PF, ESI and professional tax statements. */
 class PayrollReportController extends Controller
 {
-    public const REPORTS = ['register', 'bank', 'pf', 'esi', 'pt'];
+    public const REPORTS = ['register', 'bank', 'pf', 'esi', 'pt', 'tds'];
 
     public function show(Request $request, $runId, string $report)
     {
@@ -51,6 +51,16 @@ class PayrollReportController extends Controller
     }
 
     /** What to transfer: salaries not on hold. */
+    /** TDS this month per employee, with the year's estimate it comes from. */
+    private function tds(Collection $slips): Collection
+    {
+        return $slips->map(fn (HrPayslip $slip) => $this->base($slip) + [
+            'pan' => $slip->snapshot['pan_number'] ?? '', 'regime' => $slip->snapshot['tax']['regime'] ?? 'NEW',
+            'taxable_year' => $slip->snapshot['tax']['taxable'] ?? 0, 'tax_year' => $slip->snapshot['tax']['tax']['total'] ?? 0,
+            'deducted_before' => $slip->snapshot['tax']['tds_deducted'] ?? 0, 'tds' => $this->amount($slip->deductions, 'TDS'),
+        ])->values();
+    }
+
     private function bank(Collection $slips): Collection
     {
         return $slips->where('held', false)->where('net_pay', '>', 0)->map(fn (HrPayslip $slip) => $this->base($slip) + [

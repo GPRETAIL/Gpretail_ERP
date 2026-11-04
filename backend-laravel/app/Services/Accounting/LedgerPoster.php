@@ -9,6 +9,7 @@ use App\Models\HrExpenseClaim;
 use App\Models\HrLoan;
 use App\Models\HrLoanRecovery;
 use App\Models\HrSettlement;
+use App\Models\HrTdsChallan;
 use App\Models\HrPayrollRun;
 use App\Models\PosPayment;
 use App\Models\PosReturn;
@@ -54,6 +55,7 @@ class LedgerPoster
         'expense_claim' => ['hr_expense_claims', 'store_id', 'payment'],
         'fnf_settlement' => ['hr_settlements', 'store_id', 'journal'],
         'fnf_payment' => ['hr_settlements', 'store_id', 'payment'],
+        'tds_challan' => ['hr_tds_challans', 'store_id', 'payment'],
     ];
 
     private const CLOSED = ['CANCELLED', 'CANCELED', 'VOID', 'DRAFT', 'REJECTED'];
@@ -83,6 +85,7 @@ class LedgerPoster
             HrLoanRecovery::class => fn ($m) => [['staff_loan_repayment', $m->id]],
             HrExpenseClaim::class => fn ($m) => [['expense_claim', $m->id]],
             HrSettlement::class => fn ($m) => [['fnf_settlement', $m->id], ['fnf_payment', $m->id]],
+            HrTdsChallan::class => fn ($m) => [['tds_challan', $m->id]],
         ];
         foreach ($targets as $class => $documents) {
             $class::saved(fn ($model) => self::queue($documents($model)));
@@ -223,6 +226,7 @@ class LedgerPoster
             'expense_claim' => self::expenseClaim($id),
             'fnf_settlement' => self::fnfSettlement($id),
             'fnf_payment' => self::fnfPayment($id),
+            'tds_challan' => self::tdsChallan($id),
             default => throw new RuntimeException("Unknown accounting source $type."),
         };
 
@@ -499,7 +503,7 @@ class LedgerPoster
         }
         $store = (int) $run->store_id;
         $slips = DB::table('hr_payslips')->where('run_id', $id)->get();
-        $deducted = ['PF' => 0.0, 'ESI' => 0.0, 'PT' => 0.0, 'LOAN' => 0.0, 'ADVANCE' => 0.0, 'OTHER' => 0.0];
+        $deducted = ['PF' => 0.0, 'ESI' => 0.0, 'PT' => 0.0, 'TDS' => 0.0, 'LOAN' => 0.0, 'ADVANCE' => 0.0, 'OTHER' => 0.0];
         $reimbursed = 0.0;
         foreach ($slips as $slip) {
             foreach (json_decode($slip->deductions, true) ?: [] as $line) {
@@ -525,6 +529,7 @@ class LedgerPoster
                 [ChartOfAccounts::system($store, 'pf_payable'), -($deducted['PF'] + $employerPf)],
                 [ChartOfAccounts::system($store, 'esi_payable'), -($deducted['ESI'] + $employerEsi)],
                 [ChartOfAccounts::system($store, 'pt_payable'), -$deducted['PT']],
+                [ChartOfAccounts::system($store, 'tds_payable'), -$deducted['TDS']],
             ]];
     }
 
@@ -583,7 +588,7 @@ class LedgerPoster
             return null;
         }
         $store = (int) $fnf->store_id;
-        $deducted = ['PF' => 0.0, 'ESI' => 0.0, 'PT' => 0.0, 'LOAN' => 0.0, 'ADVANCE' => 0.0, 'NOTICE' => 0.0, 'OTHER' => 0.0];
+        $deducted = ['PF' => 0.0, 'ESI' => 0.0, 'PT' => 0.0, 'TDS' => 0.0, 'LOAN' => 0.0, 'ADVANCE' => 0.0, 'NOTICE' => 0.0, 'OTHER' => 0.0];
         foreach (json_decode($fnf->deductions, true) ?: [] as $line) {
             $deducted[array_key_exists($line['code'], $deducted) ? $line['code'] : 'OTHER'] += (float) $line['amount'];
         }
@@ -609,6 +614,7 @@ class LedgerPoster
                 [ChartOfAccounts::system($store, 'pt_payable'), -$deducted['PT']],
                 [ChartOfAccounts::system($store, 'staff_advances'), -($deducted['LOAN'] + $deducted['ADVANCE'])],
                 [ChartOfAccounts::system($store, 'notice_recovery'), -$deducted['NOTICE']],
+                [ChartOfAccounts::system($store, 'tds_payable'), -$deducted['TDS']],
             ]];
     }
 
@@ -625,6 +631,22 @@ class LedgerPoster
             'narration' => "Full and final settlement paid to {$name} (".strtolower((string) $fnf->pay_mode).')',
             'lines' => [[ChartOfAccounts::system($store, 'salary_payable'), (float) $fnf->net],
                 [ChartOfAccounts::system($store, $fnf->pay_mode === 'CASH' ? 'cash' : 'bank'), -(float) $fnf->net]]];
+    }
+
+    /** TDS on salaries paid to the government (interest and late fee are an expense). */
+    private static function tdsChallan(int $id): ?array
+    {
+        $challan = DB::table('hr_tds_challans')->where('id', $id)->first();
+        if (! $challan || (float) $challan->total <= 0) {
+            return null;
+        }
+        $store = (int) $challan->store_id;
+
+        return ['store_id' => $store, 'no' => "TDS-{$challan->challan_no}", 'date' => $challan->deposited_on, 'created_by' => $challan->created_by,
+            'narration' => "TDS on salaries deposited, {$challan->fy} Q{$challan->quarter} (challan {$challan->bsr_code}/{$challan->challan_no})",
+            'lines' => [[ChartOfAccounts::system($store, 'tds_payable'), (float) $challan->tax],
+                [ChartOfAccounts::system($store, 'tds_interest'), (float) $challan->interest + (float) $challan->fee],
+                [ChartOfAccounts::system($store, $challan->pay_mode === 'CASH' ? 'cash' : 'bank'), -(float) $challan->total]]];
     }
 
     /** Salaries paid out from the bank or cash; held salaries stay owed until they are released. */

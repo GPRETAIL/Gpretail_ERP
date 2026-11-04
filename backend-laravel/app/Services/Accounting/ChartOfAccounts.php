@@ -72,6 +72,8 @@ class ChartOfAccounts
         'staff_expenses' => ['Staff Expense Claims', 'indirect_expenses'],
         'gratuity' => ['Gratuity', 'indirect_expenses'],
         'notice_recovery' => ['Notice Pay Recovered', 'indirect_incomes'],
+        'tds_payable' => ['TDS Payable (Salaries)', 'duties_taxes'],
+        'tds_interest' => ['Interest & Late Fee on TDS', 'indirect_expenses'],
     ];
 
     /** Common expense heads a new chart starts with; ordinary ledgers the store can rename or remove. */

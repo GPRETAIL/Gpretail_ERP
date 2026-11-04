@@ -1,6 +1,6 @@
 # API reference
 
-Every endpoint under `/api`, grouped by module (620 endpoints). Generated from
+Every endpoint under `/api`, grouped by module (639 endpoints). Generated from
 `php artisan route:list --sort=definition --json`; regenerate it after changing routes.
 
 - Each signed-in endpoint is also served under `/api/v1/...` with the same behaviour.
@@ -17,7 +17,7 @@ Every endpoint under `/api`, grouped by module (620 endpoints). Generated from
 - [Crm](#crm) (28)
 - [Dashboards](#dashboards) (24)
 - [Finance](#finance) (23)
-- [Hr](#hr) (131)
+- [Hr](#hr) (150)
 - [Masters](#masters) (120)
 - [Notifications](#notifications) (11)
 - [Other](#other) (1)
@@ -278,6 +278,25 @@ Every endpoint under `/api`, grouped by module (620 endpoints). Generated from
 | POST | `/api/final-settlements/{id}/submit` | FinalSettlementController@submit | yes |
 | POST | `/api/final-settlements/{id}/mark-paid` | FinalSettlementController@markPaid | yes |
 | POST | `/api/final-settlements/{id}/reopen` | FinalSettlementController@reopen | yes |
+| GET | `/api/tax-declarations/mine` | TaxDeclarationController@mine | yes |
+| PUT | `/api/tax-declarations/mine` | TaxDeclarationController@save | yes |
+| POST | `/api/tax-declarations/mine/submit` | TaxDeclarationController@submit | yes |
+| POST | `/api/tax-declaration-items/{id}/proof` | TaxDeclarationController@uploadProof | yes |
+| GET | `/api/tax-declaration-items/{id}/proof` | TaxDeclarationController@proof | yes |
+| POST | `/api/tax-declaration-items/{id}/verify` | TaxDeclarationController@verify | yes |
+| GET | `/api/tax-declarations` | TaxDeclarationController@index | yes |
+| GET | `/api/tax-declarations/employee/{employeeId}` | TaxDeclarationController@show | yes |
+| PUT | `/api/tax-declarations/employee/{employeeId}` | TaxDeclarationController@saveFor | yes |
+| POST | `/api/tax-declarations/{id}/lock` | TaxDeclarationController@lock | yes |
+| GET | `/api/tds/rules` | IncomeTaxController@rules | yes |
+| PUT | `/api/tds/rules` | IncomeTaxController@saveRules | yes |
+| GET | `/api/tds/challans` | IncomeTaxController@challans | yes |
+| POST | `/api/tds/challans` | IncomeTaxController@storeChallan | yes |
+| PUT | `/api/tds/challans/{id}` | IncomeTaxController@updateChallan | yes |
+| DELETE | `/api/tds/challans/{id}` | IncomeTaxController@destroyChallan | yes |
+| GET | `/api/tds/register` | IncomeTaxController@register | yes |
+| GET | `/api/tds/form16` | IncomeTaxController@form16 | yes |
+| GET | `/api/tds/form24q` | IncomeTaxController@form24q | yes |
 
 ## Masters
 

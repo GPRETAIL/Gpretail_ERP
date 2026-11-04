@@ -25,6 +25,7 @@ Schedule::command('accounting:post')->dailyAt('02:45')->withoutOverlapping();
 Schedule::command('hr:close-attendance')->dailyAt('00:20')->timezone(config('app.business_timezone'))->withoutOverlapping();
 Schedule::command('hr:apply-movements')->dailyAt('00:10')->timezone(config('app.business_timezone'))->withoutOverlapping();
 Schedule::command('hr:relieve-employees')->dailyAt('00:15')->timezone(config('app.business_timezone'))->withoutOverlapping();
+Schedule::command('hr:lock-tax-declarations')->dailyAt('00:20')->timezone(config('app.business_timezone'))->withoutOverlapping();
 Schedule::command('hr:allocate-leave')->yearlyOn(1, 1, '00:40')->timezone(config('app.business_timezone'))->withoutOverlapping();
 
 // Lets /api/health report whether the server cron (schedule:run every minute) is running.

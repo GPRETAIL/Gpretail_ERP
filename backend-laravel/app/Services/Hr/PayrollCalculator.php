@@ -19,7 +19,8 @@ use Illuminate\Support\Facades\DB;
  */
 class PayrollCalculator
 {
-    public function __construct(private readonly AttendanceService $attendance, private readonly PayrollSetup $setup, private readonly LoanService $loans) {}
+    public function __construct(private readonly AttendanceService $attendance, private readonly PayrollSetup $setup, private readonly LoanService $loans,
+        private readonly TdsService $tds) {}
 
     /**
      * The employee's monthly gross (or day rate): the form's Gross Pay, which is saved as the salary column; a
@@ -135,6 +136,12 @@ class PayrollCalculator
             $room -= $amount;
         }
 
+        // Income tax: the year's tax spread over the months left (all of it on exit), within what is left to pay.
+        $tax = $this->tds->projection($employee, $month, ['earnings' => array_values($earnings), 'deductions' => array_values($deductions)],
+            array_values($this->split($employee, $details, $daily ? $earned : $rate, $components)), (bool) $exit);
+        $tax['tds_now'] = round(min($tax['tds_month'], max(0, $room)), 2);
+        $this->add($deductions, $byCode->get('TDS'), $tax['tds_now'], 'TDS', 'Income Tax (TDS)');
+
         $totalDeductions = round(array_sum(array_column($deductions, 'amount')), 2);
 
         return [
@@ -152,7 +159,20 @@ class PayrollCalculator
             'held' => $this->flag($details, 'hold_salary'),
             'summary' => $summary,
             'links' => $links,
+            'tax' => $tax,
         ];
+    }
+
+    /** A full month's salary lines at the current pay (a full month of days for daily-wage staff): the income tax estimate's base. */
+    public function fullMonth(Employee $employee, ?string $month = null): array
+    {
+        $details = $employee->master_details ?? [];
+        $daily = strcasecmp((string) ($details['salary_mode'] ?? 'Monthly'), 'Daily') === 0;
+        $days = $month ? Carbon::parse("{$month}-01")->daysInMonth : 30;
+        $this->setup->ensureDefaults($employee->store_id); // A store that has not run payroll yet still has the Standard split.
+        $components = HrSalaryComponent::withoutGlobalScopes()->where('store_id', $employee->store_id)->get()->keyBy('id');
+
+        return array_values($this->split($employee, $details, self::grossOf($employee) * ($daily ? $days : 1), $components));
     }
 
     /** Basic for a full month (a day's Basic for daily-wage staff), by the employee's salary structure: the gratuity wage. */

@@ -55,7 +55,7 @@ class PayrollService
                 $slip = $this->calculator->slip($employee, $month, $settings);
                 $details = $employee->master_details ?? [];
                 HrPayslip::withoutGlobalScopes()->updateOrCreate(['run_id' => $run->id, 'employee_id' => $employee->id], [
-                    'store_id' => $storeId, ...collect($slip)->except(['summary', 'links'])->all(),
+                    'store_id' => $storeId, ...collect($slip)->except(['summary', 'links', 'tax'])->all(),
                     'snapshot' => [
                         'name' => $employee->name, 'code' => $employee->code, 'designation' => $employee->designation?->name,
                         'joining_date' => $employee->joining_date ? Carbon::parse($employee->joining_date)->toDateString() : null,
@@ -65,6 +65,7 @@ class PayrollService
                         'present_days' => $slip['summary']['present_days'], 'ot_minutes' => $slip['summary']['ot_minutes'],
                         // What this slip pays back or recovers; written to those records when the run is submitted.
                         'links' => $slip['links'],
+                        'tax' => $slip['tax'],
                     ],
                 ]);
                 $kept[] = $employee->id;

@@ -16,6 +16,7 @@ const REPORTS = {
   pf: { label: "PF statement", columns: [text("code", "Code"), text("name", "Employee"), text("uan", "UAN"), text("pf_no", "PF no"), money("basic", "PF wages (Basic)"), money("employee_pf", "Employee PF"), money("employer_pf", "Employer PF"), text("lop_days", "LOP days")] },
   esi: { label: "ESI statement", columns: [text("code", "Code"), text("name", "Employee"), text("esi_no", "ESI no"), text("payable_days", "Days"), money("gross_earned", "ESI wages"), money("employee_esi", "Employee ESI"), money("employer_esi", "Employer ESI")] },
   pt: { label: "Professional tax", columns: [text("code", "Code"), text("name", "Employee"), money("gross_earned", "Gross earned"), money("pt", "Professional tax")] },
+  tds: { label: "Income tax (TDS)", columns: [text("code", "Code"), text("name", "Employee"), text("pan", "PAN"), text("regime", "Regime"), money("taxable_year", "Taxable (year)"), money("tax_year", "Tax (year)"), money("deducted_before", "Deducted before"), money("tds", "TDS this month")] },
 };
 
 /** Salary Management > Reports: register, bank sheet and PF/ESI/PT statements of a submitted month. */
