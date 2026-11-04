@@ -5,6 +5,9 @@ namespace App\Services\Accounting;
 use App\Models\DealerInvoice;
 use App\Models\DealerInvoiceReturn;
 use App\Models\DirectPurchase;
+use App\Models\HrExpenseClaim;
+use App\Models\HrLoan;
+use App\Models\HrLoanRecovery;
 use App\Models\HrPayrollRun;
 use App\Models\PosPayment;
 use App\Models\PosReturn;
@@ -45,6 +48,9 @@ class LedgerPoster
         'transfer_in' => ['stock_outwards', 'target_store_id', 'transfer'],
         'payroll' => ['hr_payroll_runs', 'store_id', 'journal'],
         'payroll_payment' => ['hr_payroll_runs', 'store_id', 'payment'],
+        'staff_loan' => ['hr_loans', 'store_id', 'payment'],
+        'staff_loan_repayment' => ['hr_loan_recoveries', 'store_id', 'receipt'],
+        'expense_claim' => ['hr_expense_claims', 'store_id', 'payment'],
     ];
 
     private const CLOSED = ['CANCELLED', 'CANCELED', 'VOID', 'DRAFT', 'REJECTED'];
@@ -70,6 +76,9 @@ class LedgerPoster
             SupplierPayment::class => fn ($m) => [['supplier_payment', $m->id]],
             StockOutward::class => fn ($m) => [['transfer_out', $m->id], ['transfer_in', $m->id]],
             HrPayrollRun::class => fn ($m) => [['payroll', $m->id], ['payroll_payment', $m->id]],
+            HrLoan::class => fn ($m) => [['staff_loan', $m->id]],
+            HrLoanRecovery::class => fn ($m) => [['staff_loan_repayment', $m->id]],
+            HrExpenseClaim::class => fn ($m) => [['expense_claim', $m->id]],
         ];
         foreach ($targets as $class => $documents) {
             $class::saved(fn ($model) => self::queue($documents($model)));
@@ -205,6 +214,9 @@ class LedgerPoster
             'transfer_in' => self::transfer($id, true),
             'payroll' => self::payroll($id),
             'payroll_payment' => self::payrollPayment($id),
+            'staff_loan' => self::staffLoan($id),
+            'staff_loan_repayment' => self::staffLoanRepayment($id),
+            'expense_claim' => self::expenseClaim($id),
             default => throw new RuntimeException("Unknown accounting source $type."),
         };
 
@@ -481,10 +493,14 @@ class LedgerPoster
         }
         $store = (int) $run->store_id;
         $slips = DB::table('hr_payslips')->where('run_id', $id)->get();
-        $deducted = ['PF' => 0.0, 'ESI' => 0.0, 'PT' => 0.0, 'OTHER' => 0.0];
+        $deducted = ['PF' => 0.0, 'ESI' => 0.0, 'PT' => 0.0, 'LOAN' => 0.0, 'ADVANCE' => 0.0, 'OTHER' => 0.0];
+        $reimbursed = 0.0;
         foreach ($slips as $slip) {
             foreach (json_decode($slip->deductions, true) ?: [] as $line) {
                 $deducted[array_key_exists($line['code'], $deducted) ? $line['code'] : 'OTHER'] += (float) $line['amount'];
+            }
+            foreach (json_decode($slip->earnings, true) ?: [] as $line) {
+                $reimbursed += $line['code'] === 'REIMBURSE' ? (float) $line['amount'] : 0;
             }
         }
         $employerPf = (float) $slips->sum('employer_pf');
@@ -494,7 +510,9 @@ class LedgerPoster
         return ['store_id' => $store, 'no' => "PAY-{$run->month}", 'date' => $month->copy()->endOfMonth()->toDateString(), 'created_by' => $run->submitted_by,
             'narration' => 'Salaries for '.$month->format('F Y')." ({$slips->count()} employees)",
             'lines' => [
-                [ChartOfAccounts::system($store, 'salaries'), (float) $slips->sum('gross_earned') - $deducted['OTHER']],
+                [ChartOfAccounts::system($store, 'salaries'), (float) $slips->sum('gross_earned') - $reimbursed - $deducted['OTHER']],
+                [ChartOfAccounts::system($store, 'staff_expenses'), $reimbursed],
+                [ChartOfAccounts::system($store, 'staff_advances'), -($deducted['LOAN'] + $deducted['ADVANCE'])],
                 [ChartOfAccounts::system($store, 'employer_pf'), $employerPf],
                 [ChartOfAccounts::system($store, 'employer_esi'), $employerEsi],
                 [ChartOfAccounts::system($store, 'salary_payable'), -(float) $slips->sum('net_pay')],
@@ -502,6 +520,53 @@ class LedgerPoster
                 [ChartOfAccounts::system($store, 'esi_payable'), -($deducted['ESI'] + $employerEsi)],
                 [ChartOfAccounts::system($store, 'pt_payable'), -$deducted['PT']],
             ]];
+    }
+
+    /** A salary advance or staff loan paid out: money owed back by the employee. */
+    private static function staffLoan(int $id): ?array
+    {
+        $loan = DB::table('hr_loans')->where('id', $id)->first();
+        if (! $loan || ! $loan->disbursed_on || in_array($loan->status, ['REQUESTED', 'APPROVED', 'REJECTED', 'CANCELLED'], true)) {
+            return null;
+        }
+        $store = (int) $loan->store_id;
+        $name = DB::table('employees')->where('id', $loan->employee_id)->value('name');
+
+        return ['store_id' => $store, 'no' => ($loan->type === 'ADVANCE' ? 'ADV-' : 'LOAN-').$loan->id, 'date' => $loan->disbursed_on, 'created_by' => $loan->disbursed_by,
+            'narration' => ($loan->type === 'ADVANCE' ? 'Salary advance' : 'Staff loan')." to {$name}",
+            'lines' => [[ChartOfAccounts::system($store, 'staff_advances'), (float) $loan->amount],
+                [ChartOfAccounts::system($store, $loan->pay_mode === 'CASH' ? 'cash' : 'bank'), -(float) $loan->amount]]];
+    }
+
+    /** A loan repaid outside payroll (payroll recoveries are in the payroll voucher). */
+    private static function staffLoanRepayment(int $id): ?array
+    {
+        $recovery = DB::table('hr_loan_recoveries')->where('id', $id)->first();
+        if (! $recovery || $recovery->kind !== 'MANUAL') {
+            return null;
+        }
+        $store = (int) $recovery->store_id;
+
+        return ['store_id' => $store, 'no' => "LOANREP-{$recovery->id}", 'date' => $recovery->paid_on, 'created_by' => $recovery->created_by,
+            'narration' => "Staff loan #{$recovery->loan_id} repaid",
+            'lines' => [[ChartOfAccounts::system($store, $recovery->pay_mode === 'CASH' ? 'cash' : 'bank'), (float) $recovery->amount],
+                [ChartOfAccounts::system($store, 'staff_advances'), -(float) $recovery->amount]]];
+    }
+
+    /** An expense claim paid straight away (claims paid with salary are in the payroll voucher). */
+    private static function expenseClaim(int $id): ?array
+    {
+        $claim = DB::table('hr_expense_claims')->where('id', $id)->first();
+        if (! $claim || $claim->status !== 'PAID' || $claim->pay_via !== 'DIRECT') {
+            return null;
+        }
+        $store = (int) $claim->store_id;
+        $name = DB::table('employees')->where('id', $claim->employee_id)->value('name');
+
+        return ['store_id' => $store, 'no' => "CLAIM-{$claim->id}", 'date' => $claim->paid_on, 'created_by' => $claim->decided_by,
+            'narration' => "Expense claim of {$name} (".strtolower(str_replace('_', ' ', $claim->category)).')',
+            'lines' => [[ChartOfAccounts::system($store, 'staff_expenses'), (float) $claim->amount],
+                [ChartOfAccounts::system($store, $claim->pay_mode === 'CASH' ? 'cash' : 'bank'), -(float) $claim->amount]]];
     }
 
     /** Salaries paid out from the bank or cash; held salaries stay owed until they are released. */

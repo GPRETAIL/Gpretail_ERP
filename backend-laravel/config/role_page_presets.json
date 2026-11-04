@@ -557,6 +557,30 @@
       "add": true,
       "edit": true,
       "delete": true
+    },
+    "/hrms/my-claims": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/hrms/expense-claims": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/hrms/loans": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/hrms/leave-encashment": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
     }
   },
   "cashier": {
@@ -639,6 +663,12 @@
       "delete": false
     },
     "/hrms/my-requests": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/hrms/my-claims": {
       "view": true,
       "add": true,
       "edit": true,
@@ -776,6 +806,24 @@
       "view": true,
       "add": false,
       "edit": false,
+      "delete": false
+    },
+    "/hrms/my-claims": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/hrms/expense-claims": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/hrms/loans": {
+      "view": true,
+      "add": true,
+      "edit": true,
       "delete": false
     }
   },
@@ -1199,6 +1247,30 @@
       "add": true,
       "edit": true,
       "delete": true
+    },
+    "/hrms/my-claims": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/hrms/expense-claims": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/hrms/loans": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
+    "/hrms/leave-encashment": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
     }
   },
   "warehouse_user": {
@@ -1363,6 +1435,12 @@
       "add": true,
       "edit": true,
       "delete": true
+    },
+    "/hrms/my-claims": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
     }
   },
   "store_user": {
@@ -1499,6 +1577,12 @@
       "delete": false
     },
     "/hrms/my-requests": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/hrms/my-claims": {
       "view": true,
       "add": true,
       "edit": true,

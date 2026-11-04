@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\V1\Hr\PayrollReportController;
 use App\Http\Controllers\Api\V1\Hr\PayrollSettingsController;
 use App\Http\Controllers\Api\V1\Hr\RosterController;
 use App\Http\Controllers\Api\V1\Hr\SalaryStructureController;
+use App\Http\Controllers\Api\V1\Hr\StaffMoneyController;
 use App\Http\Controllers\Api\V1\Hr\HrConfigurationController;
 use Illuminate\Support\Facades\Route;
 
@@ -116,3 +117,23 @@ Route::post('staff-requests/{id}/cancel', [HrRequestController::class, 'cancel']
 Route::get('employee-movements', [MovementController::class, 'index']);
 Route::post('employee-movements', [MovementController::class, 'store']);
 Route::post('employee-movements/{id}/cancel', [MovementController::class, 'cancel']);
+
+// Advances, loans, expense claims and leave encashment
+Route::get('staff-money/mine', [StaffMoneyController::class, 'mine']);
+Route::get('staff-loans', [StaffMoneyController::class, 'loans']);
+Route::post('staff-loans', [StaffMoneyController::class, 'requestLoan']);
+Route::post('staff-loans/{id}/decide', [StaffMoneyController::class, 'decideLoan']);
+Route::post('staff-loans/{id}/disburse', [StaffMoneyController::class, 'disburse']);
+Route::post('staff-loans/{id}/skip-month', [StaffMoneyController::class, 'skipMonth']);
+Route::post('staff-loans/{id}/repay', [StaffMoneyController::class, 'repay']);
+Route::post('staff-loans/{id}/cancel', [StaffMoneyController::class, 'cancelLoan']);
+Route::get('staff-loans/{id}/recoveries', [StaffMoneyController::class, 'recoveries']);
+Route::get('expense-claims', [StaffMoneyController::class, 'claims']);
+Route::post('expense-claims', [StaffMoneyController::class, 'submitClaim']);
+Route::post('expense-claims/{id}/decide', [StaffMoneyController::class, 'decideClaim']);
+Route::post('expense-claims/{id}/pay', [StaffMoneyController::class, 'payClaim']);
+Route::post('expense-claims/{id}/cancel', [StaffMoneyController::class, 'cancelClaim']);
+Route::get('expense-claims/{id}/bill', [StaffMoneyController::class, 'bill']);
+Route::get('leave-encashments', [StaffMoneyController::class, 'encashments']);
+Route::post('leave-encashments', [StaffMoneyController::class, 'encash']);
+Route::post('leave-encashments/{id}/cancel', [StaffMoneyController::class, 'cancelEncashment']);

@@ -59,3 +59,23 @@ export const REQUEST_STATUS_LABEL = { PRESENT: "Present", HALF_DAY: "Half day", 
 export const requestSummary = (r) => (r.type === "ATTENDANCE"
   ? [r.payload?.check_in && `In ${clockTime(`${r.payload.check_in}:00`)}`, r.payload?.check_out && `Out ${clockTime(`${r.payload.check_out}:00`)}`, r.payload?.status && REQUEST_STATUS_LABEL[r.payload.status]].filter(Boolean).join(" · ")
   : r.payload?.is_off ? "Day off" : `Shift: ${r.shift_name || "-"}`);
+
+/** Advances, loans, expense claims and encashments: status as the pages show it. */
+export const MONEY_STATUS = {
+  REQUESTED: { label: "Requested", color: "warning" },
+  PENDING: { label: "Pending", color: "warning" },
+  APPROVED: { label: "Approved", color: "info" },
+  ACTIVE: { label: "Recovering", color: "primary" },
+  CLOSED: { label: "Repaid", color: "success" },
+  PAID: { label: "Paid", color: "success" },
+  REJECTED: { label: "Rejected", color: "error" },
+  CANCELLED: { label: "Cancelled", color: "default" },
+};
+
+export const CLAIM_CATEGORY = { TRAVEL: "Travel", FUEL: "Fuel", FOOD: "Food", STORE_PURCHASE: "Store purchase", PHONE: "Phone", OTHER: "Other" };
+
+export const LOAN_TYPE = { ADVANCE: "Salary advance", LOAN: "Loan" };
+
+/** How an approved claim is paid back, in words. */
+export const claimPayLabel = (c) => (c.status === "PAID" ? (c.pay_via === "DIRECT" ? `Paid ${c.paid_on || ""}`.trim() : "Paid with salary")
+  : c.pay_via === "DIRECT" ? "To pay now" : c.pay_via === "SALARY" ? (c.payslip_id ? "In payroll" : "With next salary") : "");

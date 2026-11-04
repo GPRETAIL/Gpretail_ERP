@@ -48,6 +48,8 @@ class PayrollSetup
         ['SPECIAL', 'Special Allowance', 'EARNING', null], ['OT', 'Overtime', 'EARNING', 'OT'], ['INCENTIVE', 'Sales Incentive', 'EARNING', 'INCENTIVE'],
         ['BATTA', 'Batta', 'EARNING', 'BATTA'], ['BONUS', 'Bonus', 'EARNING', null],
         ['PF', 'Provident Fund', 'DEDUCTION', 'PF'], ['ESI', 'ESI', 'DEDUCTION', 'ESI'], ['PT', 'Professional Tax', 'DEDUCTION', 'PT'], ['OTHER', 'Other Deduction', 'DEDUCTION', null],
+        ['REIMBURSE', 'Expense Reimbursement', 'EARNING', 'REIMBURSE'], ['ENCASH', 'Leave Encashment', 'EARNING', 'ENCASH'],
+        ['LOAN', 'Loan Recovery', 'DEDUCTION', 'LOAN'], ['ADVANCE', 'Advance Recovery', 'DEDUCTION', 'ADVANCE'],
     ];
 
     /** The store's settings merged over the defaults (so a setting added later always has a value). */
@@ -72,7 +74,18 @@ class PayrollSetup
     /** Creates the pay heads and the Standard structure the first time a store uses payroll. */
     public function ensureDefaults(?int $storeId): void
     {
-        if (! $storeId || HrSalaryComponent::withoutGlobalScopes()->where('store_id', $storeId)->exists()) {
+        if (! $storeId) {
+            return;
+        }
+        $existing = HrSalaryComponent::withoutGlobalScopes()->where('store_id', $storeId)->pluck('code')->all();
+        if ($existing) {
+            // Pay heads added in later versions reach stores that already set payroll up.
+            foreach (self::COMPONENTS as $i => [$code, $name, $type, $statutory]) {
+                if (! in_array($code, $existing, true)) {
+                    HrSalaryComponent::withoutGlobalScopes()->create(['store_id' => $storeId, 'code' => $code, 'name' => $name, 'type' => $type, 'statutory' => $statutory, 'sort' => $i]);
+                }
+            }
+
             return;
         }
         DB::transaction(function () use ($storeId) {

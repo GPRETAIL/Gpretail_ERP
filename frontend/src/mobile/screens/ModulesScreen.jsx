@@ -12,6 +12,7 @@ import {
   UserCheck,
   CalendarDays,
   ReceiptText,
+  HandCoins,
 } from "lucide-react";
 import { Box, Typography } from "@mui/material";
 import api from "@/shared/api/apiClient";
@@ -35,6 +36,7 @@ const MODULE_TILES = [
   { key: "attendance", name: "Attendance", icon: UserCheck, bg: "#0d9488" },
   { key: "leave", name: "Leave", icon: CalendarDays, bg: "#7c3aed" },
   { key: "payslips", name: "Payslips", icon: ReceiptText, bg: "#4338ca" },
+  { key: "claims", name: "Claims", icon: HandCoins, bg: "#be185d" },
   { key: "dashboard", name: "Expenses", icon: Wallet, bg: "#f97316" },
   { key: "reports", name: "Reports", icon: BarChart3, bg: "#475569" },
   { key: "settings", name: "Settings", icon: Settings, bg: "#64748b" },

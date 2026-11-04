@@ -1,6 +1,6 @@
 # API reference
 
-Every endpoint under `/api`, grouped by module (585 endpoints). Generated from
+Every endpoint under `/api`, grouped by module (603 endpoints). Generated from
 `php artisan route:list --sort=definition --json`; regenerate it after changing routes.
 
 - Each signed-in endpoint is also served under `/api/v1/...` with the same behaviour.
@@ -17,7 +17,7 @@ Every endpoint under `/api`, grouped by module (585 endpoints). Generated from
 - [Crm](#crm) (28)
 - [Dashboards](#dashboards) (24)
 - [Finance](#finance) (23)
-- [Hr](#hr) (96)
+- [Hr](#hr) (114)
 - [Masters](#masters) (120)
 - [Notifications](#notifications) (11)
 - [Other](#other) (1)
@@ -243,6 +243,24 @@ Every endpoint under `/api`, grouped by module (585 endpoints). Generated from
 | GET | `/api/employee-movements` | MovementController@index | yes |
 | POST | `/api/employee-movements` | MovementController@store | yes |
 | POST | `/api/employee-movements/{id}/cancel` | MovementController@cancel | yes |
+| GET | `/api/staff-money/mine` | StaffMoneyController@mine | yes |
+| GET | `/api/staff-loans` | StaffMoneyController@loans | yes |
+| POST | `/api/staff-loans` | StaffMoneyController@requestLoan | yes |
+| POST | `/api/staff-loans/{id}/decide` | StaffMoneyController@decideLoan | yes |
+| POST | `/api/staff-loans/{id}/disburse` | StaffMoneyController@disburse | yes |
+| POST | `/api/staff-loans/{id}/skip-month` | StaffMoneyController@skipMonth | yes |
+| POST | `/api/staff-loans/{id}/repay` | StaffMoneyController@repay | yes |
+| POST | `/api/staff-loans/{id}/cancel` | StaffMoneyController@cancelLoan | yes |
+| GET | `/api/staff-loans/{id}/recoveries` | StaffMoneyController@recoveries | yes |
+| GET | `/api/expense-claims` | StaffMoneyController@claims | yes |
+| POST | `/api/expense-claims` | StaffMoneyController@submitClaim | yes |
+| POST | `/api/expense-claims/{id}/decide` | StaffMoneyController@decideClaim | yes |
+| POST | `/api/expense-claims/{id}/pay` | StaffMoneyController@payClaim | yes |
+| POST | `/api/expense-claims/{id}/cancel` | StaffMoneyController@cancelClaim | yes |
+| GET | `/api/expense-claims/{id}/bill` | StaffMoneyController@bill | yes |
+| GET | `/api/leave-encashments` | StaffMoneyController@encashments | yes |
+| POST | `/api/leave-encashments` | StaffMoneyController@encash | yes |
+| POST | `/api/leave-encashments/{id}/cancel` | StaffMoneyController@cancelEncashment | yes |
 
 ## Masters
 

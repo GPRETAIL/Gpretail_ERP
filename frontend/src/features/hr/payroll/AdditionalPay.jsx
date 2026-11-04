@@ -9,7 +9,7 @@ import useSearchGrid from "@/shared/hooks/useSearchGrid";
 import { errorMessage } from "../utils/hrStatus";
 import { rupees } from "./payslipPrint";
 
-const WORKED_OUT = ["PF", "ESI", "PT", "OT", "INCENTIVE", "BATTA"];
+const WORKED_OUT = ["PF", "ESI", "PT", "OT", "INCENTIVE", "BATTA", "REIMBURSE", "ENCASH", "LOAN", "ADVANCE"];
 const thisMonth = () => new Date().toISOString().slice(0, 7);
 
 /** Salary Management > Additional pay: one-off earnings (bonus) or deductions (fine) for a month's payroll. */

@@ -68,6 +68,8 @@ class ChartOfAccounts
         'pf_payable' => ['PF Payable', 'duties_taxes'],
         'esi_payable' => ['ESI Payable', 'duties_taxes'],
         'pt_payable' => ['Professional Tax Payable', 'duties_taxes'],
+        'staff_advances' => ['Staff Loans & Advances', 'loans_advances'],
+        'staff_expenses' => ['Staff Expense Claims', 'indirect_expenses'],
     ];
 
     /** Common expense heads a new chart starts with; ordinary ledgers the store can rename or remove. */

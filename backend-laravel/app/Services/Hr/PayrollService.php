@@ -3,6 +3,10 @@
 namespace App\Services\Hr;
 
 use App\Models\Employee;
+use App\Models\HrExpenseClaim;
+use App\Models\HrLeaveEncashment;
+use App\Models\HrLoan;
+use App\Models\HrLoanRecovery;
 use App\Models\HrPayrollRun;
 use App\Models\HrPayslip;
 use App\Models\Notification;
@@ -17,7 +21,7 @@ use Illuminate\Validation\ValidationException;
  */
 class PayrollService
 {
-    public function __construct(private readonly PayrollCalculator $calculator, private readonly PayrollSetup $setup) {}
+    public function __construct(private readonly PayrollCalculator $calculator, private readonly PayrollSetup $setup, private readonly LoanService $loans) {}
 
     public function prepare(int $storeId, string $month, ?User $by): HrPayrollRun
     {
@@ -44,7 +48,7 @@ class PayrollService
                 $slip = $this->calculator->slip($employee, $month, $settings);
                 $details = $employee->master_details ?? [];
                 HrPayslip::withoutGlobalScopes()->updateOrCreate(['run_id' => $run->id, 'employee_id' => $employee->id], [
-                    'store_id' => $storeId, ...collect($slip)->except('summary')->all(),
+                    'store_id' => $storeId, ...collect($slip)->except(['summary', 'links'])->all(),
                     'snapshot' => [
                         'name' => $employee->name, 'code' => $employee->code, 'designation' => $employee->designation?->name,
                         'joining_date' => $employee->joining_date ? Carbon::parse($employee->joining_date)->toDateString() : null,
@@ -52,6 +56,8 @@ class PayrollService
                         'bank_ifsc' => $details['bank_ifsc'] ?? null, 'pf_uan' => $details['pf_uan'] ?? null, 'pf_no' => $details['pf_no'] ?? null,
                         'esi_no' => $details['esi_no'] ?? null, 'pan_number' => $details['pan_number'] ?? null, 'salary_mode' => $details['salary_mode'] ?? 'Monthly',
                         'present_days' => $slip['summary']['present_days'], 'ot_minutes' => $slip['summary']['ot_minutes'],
+                        // What this slip pays back or recovers; written to those records when the run is submitted.
+                        'links' => $slip['links'],
                     ],
                 ]);
                 $kept[] = $employee->id;
@@ -70,7 +76,21 @@ class PayrollService
         if (! $run->payslips()->exists()) {
             throw ValidationException::withMessages(['run' => 'There are no payslips in this payroll. Set Gross Pay on the employees first.']);
         }
-        $run->update(['status' => 'SUBMITTED', 'submitted_by' => $by->id, 'submitted_at' => now()]);
+        DB::transaction(function () use ($run, $by) {
+            $run->update(['status' => 'SUBMITTED', 'submitted_by' => $by->id, 'submitted_at' => now()]);
+            foreach (HrPayslip::withoutGlobalScopes()->where('run_id', $run->id)->get() as $slip) {
+                $links = $slip->snapshot['links'] ?? [];
+                foreach ($links['loans'] ?? [] as $loan) {
+                    HrLoanRecovery::withoutGlobalScopes()->create(['store_id' => $slip->store_id, 'loan_id' => $loan['loan_id'], 'month' => $run->month,
+                        'amount' => $loan['amount'], 'kind' => 'PAYROLL', 'payslip_id' => $slip->id, 'created_by' => $by->id]);
+                    $this->loans->closeIfRepaid(HrLoan::withoutGlobalScopes()->findOrFail($loan['loan_id']));
+                }
+                HrExpenseClaim::withoutGlobalScopes()->whereIn('id', $links['claims'] ?? [])->update(['payslip_id' => $slip->id]);
+                foreach ($links['encashments'] ?? [] as $encashment) {
+                    HrLeaveEncashment::withoutGlobalScopes()->whereKey($encashment['id'])->update(['payslip_id' => $slip->id, 'amount' => $encashment['amount']]);
+                }
+            }
+        });
         $label = Carbon::parse("{$run->month}-01")->format('F Y');
         $users = Employee::withoutGlobalScopes()->whereIn('id', $run->payslips()->pluck('employee_id'))->whereNotNull('user_id')->pluck('user_id');
         foreach ($users as $userId) {
@@ -85,6 +105,9 @@ class PayrollService
     {
         $this->expect($run, 'SUBMITTED', 'Submit the payroll before marking it paid.');
         $run->update(['status' => 'PAID', 'paid_on' => $date, 'pay_mode' => $mode]);
+        $slipIds = HrPayslip::withoutGlobalScopes()->where('run_id', $run->id)->where('held', false)->pluck('id');
+        HrExpenseClaim::withoutGlobalScopes()->whereIn('payslip_id', $slipIds)->update(['status' => 'PAID', 'paid_on' => $date, 'pay_mode' => $mode]);
+        HrLeaveEncashment::withoutGlobalScopes()->whereIn('payslip_id', $slipIds)->update(['status' => 'PAID']);
 
         return $run->refresh();
     }
@@ -93,7 +116,15 @@ class PayrollService
     public function reopen(HrPayrollRun $run): HrPayrollRun
     {
         $this->expect($run, 'SUBMITTED', $run->status === 'PAID' ? 'A paid payroll cannot be reopened.' : 'This payroll is already a draft.');
-        $run->update(['status' => 'DRAFT', 'submitted_by' => null, 'submitted_at' => null]);
+        DB::transaction(function () use ($run) {
+            $slipIds = HrPayslip::withoutGlobalScopes()->where('run_id', $run->id)->pluck('id');
+            $loanIds = HrLoanRecovery::withoutGlobalScopes()->whereIn('payslip_id', $slipIds)->pluck('loan_id')->unique();
+            HrLoanRecovery::withoutGlobalScopes()->whereIn('payslip_id', $slipIds)->delete();
+            HrLoan::withoutGlobalScopes()->whereIn('id', $loanIds)->get()->each(fn ($loan) => $this->loans->closeIfRepaid($loan));
+            HrExpenseClaim::withoutGlobalScopes()->whereIn('payslip_id', $slipIds)->update(['payslip_id' => null]);
+            HrLeaveEncashment::withoutGlobalScopes()->whereIn('payslip_id', $slipIds)->update(['payslip_id' => null, 'amount' => null]);
+            $run->update(['status' => 'DRAFT', 'submitted_by' => null, 'submitted_at' => null]);
+        });
 
         return $run->refresh();
     }

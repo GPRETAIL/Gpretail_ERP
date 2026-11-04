@@ -3,7 +3,7 @@ import { useSelector } from "react-redux";
 import { Box, Typography } from "@mui/material";
 import { Check, Plus, X } from "lucide-react";
 import api from "@/shared/api/apiClient";
-import { LEAVE_STATUS, days, errorMessage, requestSummary } from "@/features/hr/utils/hrStatus";
+import { CLAIM_CATEGORY, LEAVE_STATUS, LOAN_TYPE, days, errorMessage, requestSummary } from "@/features/hr/utils/hrStatus";
 
 const APPROVER_ROLES = ["admin", "super_admin", "manager", "supervisor", "accountant"];
 const STATUS_COLORS = { PENDING: "#b45309", APPROVED: "#047857", REJECTED: "#be123c", CANCELLED: "#64748b" };
@@ -66,19 +66,25 @@ export default function LeaveScreen() {
   const [mine, setMine] = useState(null);
   const [inbox, setInbox] = useState([]);
   const [requests, setRequests] = useState([]);
+  const [money, setMoney] = useState([]);
   const [applying, setApplying] = useState(false);
   const [message, setMessage] = useState("");
 
   const load = useCallback(async () => {
     try {
-      const [m, i, r] = await Promise.all([
+      const optional = (url, params) => (approver ? api.get(url, { params }).catch(() => null) : Promise.resolve(null));
+      const [m, i, r, c, l] = await Promise.all([
         api.get("/leave/mine"),
         approver ? api.get("/leave-applications", { params: { status: "PENDING", inbox: 1 } }) : Promise.resolve(null),
         approver ? api.get("/staff-requests", { params: { status: "PENDING" } }) : Promise.resolve(null),
+        optional("/expense-claims", { status: "PENDING", inbox: 1 }),
+        optional("/staff-loans", { status: "REQUESTED", inbox: 1 }),
       ]);
       setMine(m.data?.data || {});
       setInbox(i?.data?.data || []);
       setRequests(r?.data?.data || []);
+      // Claims (paid with the next salary when approved here) and advance / loan requests.
+      setMoney([...(c?.data?.data || []).map((x) => ({ ...x, kind: "claim" })), ...(l?.data?.data || []).map((x) => ({ ...x, kind: "loan" }))]);
     } catch (err) {
       setMessage(errorMessage(err, "Could not load leave."));
       setMine({});
@@ -89,10 +95,10 @@ export default function LeaveScreen() {
     return () => clearTimeout(timer);
   }, [load]);
 
-  const act = async (id, action, base = "/leave-applications") => {
+  const act = async (id, action, base = "/leave-applications", body = undefined) => {
     setMessage("");
     try {
-      const res = await api.post(`${base}/${id}/${action}`);
+      const res = await api.post(`${base}/${id}/${action}`, body);
       setMessage(res.data?.message || "Done");
       await load();
     } catch (err) {
@@ -158,6 +164,31 @@ export default function LeaveScreen() {
                 </Box>
               </Box>
             ))}
+          </Box>
+        </Box>
+      )}
+
+      {approver && money.length > 0 && (
+        <Box>
+          <Typography sx={{ fontSize: 11, fontWeight: 900, color: "#0f172a", textTransform: "uppercase", letterSpacing: "0.05em", mb: 1, px: 0.5 }}>Claims and advances ({money.length})</Typography>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+            {money.map((row) => {
+              const base = row.kind === "claim" ? "/expense-claims" : "/staff-loans";
+              return (
+                <Box key={`${row.kind}-${row.id}`} sx={card}>
+                  <Typography sx={{ fontSize: 13, fontWeight: 900, color: "#0f172a" }}>{row.employee_name}</Typography>
+                  <Typography sx={{ fontSize: 11.5, color: "#475569" }}>
+                    {row.kind === "claim" ? `Claim · ${CLAIM_CATEGORY[row.category] || row.category} · ${row.claim_date}` : `${LOAN_TYPE[row.type]}${row.instalments > 1 ? ` · ${row.instalments} months` : ""}`} · ₹{Number(row.amount).toLocaleString("en-IN")}
+                  </Typography>
+                  {(row.description || row.reason) && <Typography sx={{ fontSize: 11.5, color: "#64748b", mt: 0.25 }}>"{row.description || row.reason}"</Typography>}
+                  {row.kind === "claim" && <Typography sx={{ fontSize: 10.5, color: "#94a3b8", mt: 0.25 }}>Approved claims are paid with the next salary.</Typography>}
+                  <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
+                    <Box component="button" type="button" onClick={() => act(row.id, "decide", base, { action: "approve" })} sx={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 0.5, py: 0.9, borderRadius: "10px", border: 0, bgcolor: "#059669", color: "#fff", fontWeight: 800, fontSize: 12 }}><Check size={14} /> Approve</Box>
+                    <Box component="button" type="button" onClick={() => act(row.id, "decide", base, { action: "reject" })} sx={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 0.5, py: 0.9, borderRadius: "10px", border: "1px solid #fecdd3", bgcolor: "#fff", color: "#be123c", fontWeight: 800, fontSize: 12 }}><X size={14} /> Reject</Box>
+                  </Box>
+                </Box>
+              );
+            })}
           </Box>
         </Box>
       )}

@@ -88,7 +88,7 @@ Legend: **Have** = exists, **Part** = partly there, **No** = to build. Phase = s
 | Earned leave accrual | Monthly/quarterly automatic credit | No | 2 |
 | Compensatory leave | Credit for working on a holiday | No | 2 |
 | Leave block days | Dates when leave is not allowed (e.g. festival sales) | No | 2 |
-| Leave encashment | Pay unused leave, through payroll | No | 3 |
+| Leave encashment | HR encashes paid-leave days (up to the balance) into a month's payroll at the day rate; cancel before payroll credits them back | Have | — |
 | Leave in salary | Unpaid leave reduces payable days | No | 2 |
 
 ## 5. Payroll and statutory (India)
@@ -117,9 +117,9 @@ Legend: **Have** = exists, **Part** = partly there, **No** = to build. Phase = s
 
 | Feature | What it does | Us | Phase |
 |---|---|---|---|
-| Employee advance | Pay an advance, recover it from salary or a claim | No | 3 |
-| Expense claim | Claim with bills, multi-level approval, payment, posting to accounts | No | 3 |
-| Loans | Loan application, EMI schedule, recovery through payroll | No | 3 |
+| Employee advance | Request (self or HR), approve, pay out (cash/bank voucher), recovered from the next salary, never below zero net | Have | — |
+| Expense claim | Claim with a bill photo/PDF (private), Reports To or HR approves and picks: with next salary (outside PF/ESI/PT) or pay now (voucher). Single-level approval | Have | — |
+| Loans | Interest-free; equal monthly instalments through payroll, skip a month, manual repayment (voucher), auto-closed when repaid | Have | — |
 | Travel request | Request and approve travel | No | 4 |
 | Vehicle and vehicle log | Company vehicles, fuel and trip logs | No | 4 |
 
@@ -156,7 +156,7 @@ Legend: **Have** = exists, **Part** = partly there, **No** = to build. Phase = s
 | Mobile check-in/out | With location check (no selfie, by choice) | Have | — |
 | Mobile leave apply / approve | Balance, apply, withdraw, approve from phone | Have | — |
 | Mobile payslips | View, share on WhatsApp, print/PDF | Have | — |
-| Mobile claims and advances | Submit with photo of bill | No | 3 |
+| Mobile claims and advances | Claims screen: bill from the camera, ask for an advance, balances; managers approve on the Leave screen | Have | — |
 | Push / in-app notifications | Leave requests and decisions (reminders for birthdays etc.: later) | Part | 3 |
 | HR dashboard | Today's counts on the Day board (a separate dashboard page with payroll cost: later) | Part | 2 |
 | Reports | Monthly attendance register and leave balances done; salary register, PF/ESI/PT, bank sheet, TDS, headcount, attrition | Part | 2–3 |
@@ -173,8 +173,8 @@ Each phase is a separate plan (Plan Mode), with tests, live local verification a
    attendance, overtime, additional salary, PF/ESI/PT, bank sheet, salary register, posting to accounts,
    mobile payslips, shift rosters, attendance/shift requests, biometric import, promotions and transfers.
    Fills the empty "Salary Management" menu item.
-3. **Phase 3: Money and exits.** Advances, expense claims, loans, TDS with declarations and proofs,
-   arrears/corrections, leave encashment, gratuity, incentives, onboarding, separation, exit interview, full and
+3. **Phase 3: Money and exits.** Phase 3a (done): advances, expense claims, loans, leave encashment. Still to come: TDS with declarations and proofs,
+   arrears/corrections, gratuity, incentives, onboarding, separation, exit interview, full and
    final settlement.
 4. **Phase 4: Talent.** Recruitment, appraisals and goals, training, skill map, benefits, travel and vehicles,
    timesheets, organisation chart.

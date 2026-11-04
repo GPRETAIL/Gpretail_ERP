@@ -4,6 +4,8 @@ namespace App\Services\Hr;
 
 use App\Models\Employee;
 use App\Models\HrAdditionalPay;
+use App\Models\HrExpenseClaim;
+use App\Models\HrLeaveEncashment;
 use App\Models\HrSalaryComponent;
 use App\Models\HrSalaryStructureLine;
 use Illuminate\Support\Carbon;
@@ -17,7 +19,7 @@ use Illuminate\Support\Facades\DB;
  */
 class PayrollCalculator
 {
-    public function __construct(private readonly AttendanceService $attendance, private readonly PayrollSetup $setup) {}
+    public function __construct(private readonly AttendanceService $attendance, private readonly PayrollSetup $setup, private readonly LoanService $loans) {}
 
     /**
      * The employee's monthly gross (or day rate): the form's Gross Pay, which is saved as the salary column; a
@@ -84,6 +86,36 @@ class PayrollCalculator
         }
         $this->add($deductions, $byCode->get('PT'), $this->professionalTax($settings['pt'], $gross, (int) substr($month, 5, 2)), 'PT', 'Professional Tax');
 
+        // Paid with the salary but not part of it for PF, ESI and PT: expense claims and leave encashment.
+        $links = ['claims' => [], 'encashments' => [], 'loans' => []];
+        $claims = HrExpenseClaim::withoutGlobalScopes()->where('employee_id', $employee->id)->where('status', 'APPROVED')->where('pay_via', 'SALARY')
+            ->whereNull('payslip_id')->whereDate('claim_date', '<=', $monthEnd)->get();
+        if ($claims->isNotEmpty()) {
+            $this->add($earnings, $byCode->get('REIMBURSE'), (float) $claims->sum('amount'), 'REIMBURSE', 'Expense Reimbursement');
+            $links['claims'] = $claims->pluck('id')->all();
+        }
+        $dayRate = $daily ? $rate : $rate / $days;
+        foreach (HrLeaveEncashment::withoutGlobalScopes()->where('employee_id', $employee->id)->where('status', 'APPROVED')->whereNull('payslip_id')
+            ->where('month', '<=', $month)->get() as $encashment) {
+            $amount = round($encashment->days * $dayRate, 2);
+            $this->add($earnings, $byCode->get('ENCASH'), $amount, 'ENCASH', 'Leave Encashment');
+            $links['encashments'][] = ['id' => $encashment->id, 'amount' => $amount];
+        }
+        $totalEarnings = round(array_sum(array_column($earnings, 'amount')), 2);
+
+        // Loan and advance instalments, never taking the net pay below zero.
+        $room = $totalEarnings - array_sum(array_column($deductions, 'amount'));
+        foreach ($this->loans->dueFor($employee, $month) as $due) {
+            $amount = round(min($due['amount'], max(0, $room)), 2);
+            if ($amount <= 0) {
+                continue;
+            }
+            $code = $due['type'] === 'ADVANCE' ? 'ADVANCE' : 'LOAN';
+            $this->add($deductions, $byCode->get($code), $amount, $code, $code === 'ADVANCE' ? 'Advance Recovery' : 'Loan Recovery');
+            $links['loans'][] = ['loan_id' => $due['loan_id'], 'amount' => $amount];
+            $room -= $amount;
+        }
+
         $totalDeductions = round(array_sum(array_column($deductions, 'amount')), 2);
 
         return [
@@ -93,13 +125,14 @@ class PayrollCalculator
             'gross_fixed' => round($fixed, 2),
             'earnings' => array_values($earnings),
             'deductions' => array_values($deductions),
-            'gross_earned' => $gross,
+            'gross_earned' => $totalEarnings,
             'total_deductions' => $totalDeductions,
-            'net_pay' => max(0, round($gross - $totalDeductions)),
+            'net_pay' => max(0, round($totalEarnings - $totalDeductions)),
             'employer_pf' => $employerPf,
             'employer_esi' => $employerEsi,
             'held' => $this->flag($details, 'hold_salary'),
             'summary' => $summary,
+            'links' => $links,
         ];
     }
 

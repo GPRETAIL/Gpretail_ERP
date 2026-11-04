@@ -17,7 +17,8 @@ class BusinessPermissions
     public const LOOKUP_CONFIGURATIONS = ['city', 'state', 'country', 'location', 'bank', 'card_types', 'upi_provider', 'customer_category', 'sale_area', 'return_reason', 'vendor', 'agent_type', 'additional_charges', 'bundle_rack'];
 
     /** HRMS actions on the signed-in user's own record: their check-in and their leave (always allowed, like notifications). */
-    private const HR_SELF_SERVICE = ['AttendanceController' => ['me', 'selfPunch'], 'LeaveApplicationController' => ['mine', 'store', 'cancel'], 'PayrollController' => ['mine', 'mySlip'], 'HrRequestController' => ['mine', 'store', 'cancel']];
+    private const HR_SELF_SERVICE = ['AttendanceController' => ['me', 'selfPunch'], 'LeaveApplicationController' => ['mine', 'store', 'cancel'], 'PayrollController' => ['mine', 'mySlip'], 'HrRequestController' => ['mine', 'store', 'cancel'],
+        'StaffMoneyController' => ['mine', 'requestLoan', 'submitClaim', 'cancelLoan', 'cancelClaim', 'bill']];
 
     /** HRMS setup and managing other people's attendance; reads stay 'read' and are narrowed to the user's team by HrScope. */
     private const HR_MANAGED = ['AttendanceController', 'HolidayController', 'LeaveTypeController', 'LeavePolicyController', 'RosterController', 'MovementController'];
@@ -81,6 +82,10 @@ class BusinessPermissions
         }
         if ($this->isHrSelfService($request)) {
             return 'personal';
+        }
+        if ($controller === 'StaffMoneyController' && ! $read) {
+            // Deciding is a manager's approval; paying out, recovering and encashing are payroll work.
+            return in_array($action, ['decideLoan', 'decideClaim'], true) ? 'approvals.decide' : 'payroll.manage';
         }
         if (in_array($controller, self::PAYROLL, true)) {
             return $read ? 'payroll.view' : 'payroll.manage';
