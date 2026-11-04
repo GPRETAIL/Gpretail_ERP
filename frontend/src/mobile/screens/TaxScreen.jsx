@@ -60,7 +60,7 @@ export default function TaxScreen() {
         {["NEW", "OLD"].map((key) => {
           const e = data?.estimate?.[key === "OLD" ? "old" : "new"];
           return (
-            <Box key={key} component="button" type="button" disabled={locked || regime === key} onClick={() => switchTo(key)}
+            <Box key={key} component="button" type="button" disabled={!data || locked || regime === key} onClick={() => switchTo(key)}
               sx={{ ...card, flex: 1, textAlign: "left", borderWidth: regime === key ? 2 : 1, borderColor: regime === key ? "#0d9488" : "rgba(226,232,240,0.8)" }}>
               <Typography sx={{ fontSize: 11, fontWeight: 800, color: "#64748b" }}>{REGIME_LABEL[key]}{regime === key ? " · chosen" : ""}</Typography>
               <Typography sx={{ fontSize: 20, fontWeight: 900, color: "#0f172a" }}>{money(e?.tax?.total)}</Typography>

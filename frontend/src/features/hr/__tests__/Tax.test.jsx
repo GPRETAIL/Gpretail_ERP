@@ -96,8 +96,10 @@ it("prints Form 16 Part B", async () => {
 
 it("switches regime and sends a proof photo from the phone", async () => {
   render(<TaxScreen />);
-  fireEvent.click(await screen.findByText(/^Old regime/));
+  expect(await screen.findByText(/80C investments ·/)).toBeInTheDocument(); // Loaded.
+  fireEvent.click(screen.getByText(/^Old regime/));
   await waitFor(() => expect(api.put).toHaveBeenCalledWith("/tax-declarations/mine", expect.objectContaining({ regime: "OLD" })));
+  expect(await screen.findByText("Switched to the old regime.")).toBeInTheDocument(); // Done before the next action.
   fireEvent.change(screen.getByLabelText("Proof for 80C investments"), { target: { files: [new File(["x"], "p.jpg", { type: "image/jpeg" })] } });
   await waitFor(() => expect(api.post).toHaveBeenCalledWith("/tax-declaration-items/41/proof", expect.any(FormData), { headers: { "Content-Type": "multipart/form-data" } }));
   expect(await screen.findByText("Proof sent to HR.")).toBeInTheDocument();
