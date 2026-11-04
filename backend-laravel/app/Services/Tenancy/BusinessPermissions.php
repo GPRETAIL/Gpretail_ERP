@@ -17,10 +17,10 @@ class BusinessPermissions
     public const LOOKUP_CONFIGURATIONS = ['city', 'state', 'country', 'location', 'bank', 'card_types', 'upi_provider', 'customer_category', 'sale_area', 'return_reason', 'vendor', 'agent_type', 'additional_charges', 'bundle_rack'];
 
     /** HRMS actions on the signed-in user's own record: their check-in and their leave (always allowed, like notifications). */
-    private const HR_SELF_SERVICE = ['AttendanceController' => ['me', 'selfPunch'], 'LeaveApplicationController' => ['mine', 'store', 'cancel'], 'PayrollController' => ['mine', 'mySlip']];
+    private const HR_SELF_SERVICE = ['AttendanceController' => ['me', 'selfPunch'], 'LeaveApplicationController' => ['mine', 'store', 'cancel'], 'PayrollController' => ['mine', 'mySlip'], 'HrRequestController' => ['mine', 'store', 'cancel']];
 
     /** HRMS setup and managing other people's attendance; reads stay 'read' and are narrowed to the user's team by HrScope. */
-    private const HR_MANAGED = ['AttendanceController', 'HolidayController', 'LeaveTypeController', 'LeavePolicyController'];
+    private const HR_MANAGED = ['AttendanceController', 'HolidayController', 'LeaveTypeController', 'LeavePolicyController', 'RosterController', 'MovementController'];
 
     /** Salaries: only payroll roles see or change anyone's pay (an employee sees their own slips through HR_SELF_SERVICE). */
     private const PAYROLL = ['PayrollController', 'SalaryStructureController', 'PayrollSettingsController', 'PayrollReportController', 'AdditionalPayController'];
@@ -85,7 +85,8 @@ class BusinessPermissions
         if (in_array($controller, self::PAYROLL, true)) {
             return $read ? 'payroll.view' : 'payroll.manage';
         }
-        if ($controller === 'LeaveApplicationController' && in_array($action, ['approve', 'reject'], true)) {
+        if (in_array($controller, ['LeaveApplicationController', 'HrRequestController'], true) && in_array($action, ['approve', 'reject'], true)
+            || ($controller === 'OvertimeController' && $action === 'decide')) {
             return 'approvals.decide';
         }
         if (! $read && in_array($controller, self::HR_MANAGED, true)) {

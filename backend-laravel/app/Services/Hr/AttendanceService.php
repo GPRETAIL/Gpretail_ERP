@@ -9,6 +9,7 @@ use App\Models\HrDepartment;
 use App\Models\HrHoliday;
 use App\Models\HrLeaveApplication;
 use App\Models\HrLeaveType;
+use App\Models\HrShiftRoster;
 use App\Models\Store;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -25,7 +26,30 @@ class AttendanceService
     /** Used for stores that never set a working hour: the old store-level shift start and late cut-off. */
     private const FALLBACK = ['start' => '09:30', 'end' => '18:30', 'grace' => 30, 'full_day' => 0, 'half_day' => 0];
 
-    public function __construct(private readonly LeaveService $leave) {}
+    /** @var array<string, array<string, HrShiftRoster>> employee id|month => date => roster day */
+    private array $roster = [];
+
+    public function __construct(private readonly LeaveService $leave, private readonly PayrollSetup $payroll) {}
+
+    /** The roster day for an employee and date, if one is set (a month is loaded at a time). */
+    public function rosterOn(Employee $employee, string $date): ?HrShiftRoster
+    {
+        $key = $employee->id.'|'.substr($date, 0, 7);
+        if (! isset($this->roster[$key])) {
+            $first = Carbon::parse(substr($date, 0, 7).'-01');
+            $this->roster[$key] = HrShiftRoster::withoutGlobalScopes()->where('employee_id', $employee->id)
+                ->whereBetween('date', [$first->toDateString(), $first->copy()->endOfMonth()->toDateString()])->get()
+                ->keyBy(fn ($r) => Carbon::parse($r->date)->toDateString())->all();
+        }
+
+        return $this->roster[$key][$date] ?? null;
+    }
+
+    /** Forget loaded roster days (after the roster changes). */
+    public function forgetRoster(): void
+    {
+        $this->roster = [];
+    }
 
     public static function timezone(): string
     {
@@ -53,13 +77,15 @@ class AttendanceService
     }
 
     /**
-     * The employee's shift: their Working Hour (HR Configuration), else the store default, else the old
-     * store-level shift start and late cut-off. Minutes for a full and a half day are 0 when not set.
+     * The employee's shift on a date: the roster's shift for that day, else their Working Hour (HR Configuration),
+     * else the store default, else the old store-level shift start and late cut-off. Minutes for a full and a
+     * half day are 0 when not set.
      */
-    public function shiftFor(Employee $employee): array
+    public function shiftFor(Employee $employee, ?string $date = null): array
     {
         $settings = $this->settings($employee->store_id);
-        $id = ($employee->master_details['working_hour_id'] ?? null) ?: $settings['default_working_hour_id'];
+        $rostered = $date ? $this->rosterOn($employee, $date)?->working_hour_id : null;
+        $id = $rostered ?: (($employee->master_details['working_hour_id'] ?? null) ?: $settings['default_working_hour_id']);
         $row = $id ? HrDepartment::withoutGlobalScopes()->where('configuration_type', 'working_hour')
             ->where(fn ($q) => $q->where('store_id', $employee->store_id)->orWhereNull('store_id'))->find($id) : null;
         if (! $row) {
@@ -143,11 +169,11 @@ class AttendanceService
         $punches = $this->punches($employee, $date);
         $leave = $this->leave->approvedOn($employee, $date);
         $values = ['source' => 'AUTO', 'late_minutes' => 0, 'early_exit_minutes' => 0, 'worked_minutes' => 0, 'check_in' => null, 'check_out' => null,
-            'remarks' => null, 'leave_application_id' => $leave?->id];
+            'remarks' => null, 'leave_application_id' => $leave?->id, 'ot_minutes' => 0, 'ot_approved_minutes' => null, 'ot_status' => 'NONE', 'ot_decided_by' => null];
 
         $in = $punches->firstWhere('type', 'IN');
         if ($in) {
-            $shift = $this->shiftFor($employee);
+            $shift = $this->shiftFor($employee, $date);
             $out = $punches->where('type', 'OUT')->filter(fn ($p) => $p->punched_at->gte($in->punched_at))->last();
             $inLocal = $in->punched_at->copy()->setTimezone(self::timezone());
             $outLocal = $out?->punched_at->copy()->setTimezone(self::timezone());
@@ -160,7 +186,7 @@ class AttendanceService
                 'early_exit_minutes' => $outLocal ? max(0, $this->minutes($shift['end']) - $this->minutes($outLocal->format('H:i'))) : 0,
                 'worked_minutes' => $worked,
                 'status' => $this->workedStatus($shift, $outLocal !== null, $worked, $leave),
-            ]);
+            ], $this->overtime($employee, $row, $shift, $worked));
             if ($this->holiday($employee->store_id, $date)) {
                 $values['remarks'] = 'Worked on a holiday';
             } elseif ($this->isWeekOff($employee, $date)) {
@@ -231,8 +257,7 @@ class AttendanceService
         $leaves = HrLeaveApplication::withoutGlobalScopes()->whereIn('id', $rows->pluck('leave_application_id')->filter()->unique())
             ->get()->keyBy('id');
         $paidTypes = HrLeaveType::withoutGlobalScopes()->whereIn('id', $leaves->pluck('leave_type_id')->unique())->pluck('is_paid', 'id');
-        $shift = $this->shiftFor($employee);
-        $fullDay = $shift['full_day'] ?: max(0, $this->minutes($shift['end']) - $this->minutes($shift['start']));
+        $otNeedsApproval = $this->otNeedsApproval($employee->store_id);
         $joined = $employee->joining_date ? Carbon::parse($employee->joining_date)->toDateString() : null;
 
         $sum = ['days_in_month' => $first->daysInMonth, 'counted_days' => 0, 'payable_days' => 0.0, 'lop_days' => 0.0, 'present_days' => 0.0,
@@ -289,8 +314,8 @@ class AttendanceService
             if ($row && $row->late_minutes > 0) {
                 $sum['late_days']++;
             }
-            if ($row && $fullDay && $row->worked_minutes > $fullDay) {
-                $sum['ot_minutes'] += $row->worked_minutes - $fullDay;
+            if ($row) {
+                $sum['ot_minutes'] += $this->payableOvertime($employee, $row, $key, $otNeedsApproval);
             }
         }
 
@@ -307,8 +332,12 @@ class AttendanceService
             ->orderBy('punched_at')->orderBy('id')->get();
     }
 
+    /** Off on the roster that day; with no roster day, the employee's weekly off ("Dynamic" means only the roster sets it). */
     public function isWeekOff(Employee $employee, string $date): bool
     {
+        if ($rostered = $this->rosterOn($employee, $date)) {
+            return $rostered->is_off;
+        }
         $day = $employee->master_details['week_off'] ?? null;
 
         return $day && $day !== 'Dynamic' && strcasecmp(Carbon::parse($date)->englishDayOfWeek, $day) === 0;
@@ -347,6 +376,55 @@ class AttendanceService
         }
 
         return $distance;
+    }
+
+    public function otNeedsApproval(?int $storeId): bool
+    {
+        return $storeId ? (bool) ($this->payroll->settings($storeId)['ot']['requires_approval'] ?? true) : true;
+    }
+
+    /** A day's full-day minutes: the shift's minimum full day, else its length. */
+    public function fullDayMinutes(array $shift): int
+    {
+        return $shift['full_day'] ?: max(0, $this->minutes($shift['end']) - $this->minutes($shift['start']));
+    }
+
+    /**
+     * Overtime on a worked day, for employees with OT ticked: the minutes beyond the shift's full day. With approval
+     * required it waits as PENDING; a decision already made stays while the minutes are unchanged.
+     */
+    private function overtime(Employee $employee, Attendance $row, array $shift, int $worked): array
+    {
+        $details = $employee->master_details ?? [];
+        $eligible = filter_var($details['e_ot'] ?? false, FILTER_VALIDATE_BOOLEAN) || filter_var($details['m_ot'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $minutes = $eligible ? max(0, $worked - $this->fullDayMinutes($shift)) : 0;
+        if ($minutes === 0) {
+            return ['ot_minutes' => 0, 'ot_approved_minutes' => null, 'ot_status' => 'NONE', 'ot_decided_by' => null];
+        }
+        if ($row->exists && (int) $row->ot_minutes === $minutes && in_array($row->ot_status, ['APPROVED', 'REJECTED'], true)) {
+            return ['ot_minutes' => $minutes, 'ot_approved_minutes' => $row->ot_approved_minutes, 'ot_status' => $row->ot_status, 'ot_decided_by' => $row->ot_decided_by];
+        }
+
+        return ['ot_minutes' => $minutes, 'ot_approved_minutes' => null, 'ot_status' => $this->otNeedsApproval($employee->store_id) ? 'PENDING' : 'NONE', 'ot_decided_by' => null];
+    }
+
+    /**
+     * Overtime minutes payroll pays for a day: approved minutes when approval is required, otherwise all of them.
+     * A row a manager entered by hand (no stored OT) falls back to the worked minutes beyond the shift.
+     */
+    private function payableOvertime(Employee $employee, Attendance $row, string $date, bool $needsApproval): int
+    {
+        if ($row->ot_status === 'APPROVED') {
+            return (int) ($row->ot_approved_minutes ?? $row->ot_minutes);
+        }
+        if ($needsApproval) {
+            return 0;
+        }
+        if ((int) $row->ot_minutes > 0) {
+            return (int) $row->ot_minutes;
+        }
+
+        return max(0, (int) $row->worked_minutes - $this->fullDayMinutes($this->shiftFor($employee, $date)));
     }
 
     private function workedStatus(array $shift, bool $checkedOut, int $worked, $leave): string

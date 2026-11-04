@@ -527,6 +527,36 @@
       "add": false,
       "edit": false,
       "delete": false
+    },
+    "/hrms/shift-roster": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/hrms/ot-approvals": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/hrms/request-approvals": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/hrms/movements": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/hrms/my-requests": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
     }
   },
   "cashier": {
@@ -607,6 +637,12 @@
       "add": false,
       "edit": false,
       "delete": false
+    },
+    "/hrms/my-requests": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
     }
   },
   "supervisor": {
@@ -716,6 +752,30 @@
       "view": true,
       "add": true,
       "edit": true,
+      "delete": false
+    },
+    "/hrms/my-requests": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/hrms/request-approvals": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/hrms/ot-approvals": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/hrms/shift-roster": {
+      "view": true,
+      "add": false,
+      "edit": false,
       "delete": false
     }
   },
@@ -1133,6 +1193,12 @@
       "add": false,
       "edit": false,
       "delete": false
+    },
+    "/hrms/my-requests": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
     }
   },
   "warehouse_user": {
@@ -1291,6 +1357,12 @@
       "add": false,
       "edit": false,
       "delete": false
+    },
+    "/hrms/my-requests": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
     }
   },
   "store_user": {
@@ -1425,6 +1497,12 @@
       "add": false,
       "edit": false,
       "delete": false
+    },
+    "/hrms/my-requests": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
     }
   }
 }

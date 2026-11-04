@@ -7,6 +7,7 @@ import api from "@/shared/api/apiClient";
 import { useSelector } from "react-redux";
 import { SkeletonTransList } from "../components/SkeletonCards";
 import MyAttendanceCard from "../components/MyAttendanceCard";
+import MyRequestsCard from "../components/MyRequestsCard";
 
 /** Roles that see and mark the team roll-call (the server narrows it to their team). */
 const TEAM_ROLES = ["admin", "super_admin", "manager", "supervisor"];
@@ -80,6 +81,7 @@ export default function AttendanceScreen() {
     return (
       <Box>
         <MyAttendanceCard />
+        <MyRequestsCard />
         <Box className="vx-card" sx={{ textAlign: "center" }}>
           <Typography component="p" sx={{ fontSize: 12.5, color: "#64748b" }}>Your check-ins appear above. If the button is missing, ask HR to link your login to your employee record.</Typography>
         </Box>
@@ -90,6 +92,7 @@ export default function AttendanceScreen() {
   return (
     <Box>
       <MyAttendanceCard />
+      <MyRequestsCard />
       {/* Summary strip */}
       <Box sx={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 1, mb: 1.5 }}>
         {[

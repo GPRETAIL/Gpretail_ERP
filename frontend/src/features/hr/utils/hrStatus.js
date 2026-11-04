@@ -51,3 +51,11 @@ export const errorMessage = (err, fallback) => {
   const first = errors && Object.values(errors).flat()[0];
   return first || err?.response?.data?.message || fallback;
 };
+
+/** The day statuses an employee can ask for when fixing attendance. */
+export const REQUEST_STATUS_LABEL = { PRESENT: "Present", HALF_DAY: "Half day", ON_DUTY: "On duty (outside the store)" };
+
+/** What a request asks for, in words. */
+export const requestSummary = (r) => (r.type === "ATTENDANCE"
+  ? [r.payload?.check_in && `In ${clockTime(`${r.payload.check_in}:00`)}`, r.payload?.check_out && `Out ${clockTime(`${r.payload.check_out}:00`)}`, r.payload?.status && REQUEST_STATUS_LABEL[r.payload.status]].filter(Boolean).join(" · ")
+  : r.payload?.is_off ? "Day off" : `Shift: ${r.shift_name || "-"}`);

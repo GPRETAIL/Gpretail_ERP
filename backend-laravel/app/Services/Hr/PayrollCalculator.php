@@ -19,12 +19,15 @@ class PayrollCalculator
 {
     public function __construct(private readonly AttendanceService $attendance, private readonly PayrollSetup $setup) {}
 
-    /** Whether the employee is on payroll (has a gross pay or salary). */
+    /**
+     * The employee's monthly gross (or day rate): the form's Gross Pay, which is saved as the salary column; a
+     * gross_pay left in the details by older data is the fallback.
+     */
     public static function grossOf(Employee $employee): float
     {
         $details = $employee->master_details ?? [];
 
-        return (float) (($details['gross_pay'] ?? null) ?: ($employee->salary ?: 0));
+        return (float) (((float) $employee->salary) ?: ($details['gross_pay'] ?? 0));
     }
 
     public function slip(Employee $employee, string $month, ?array $settings = null): array

@@ -103,6 +103,7 @@ export default function TodayBoard({ date, onDateChange, canManage }) {
     { key: "check_out", label: "Out", valueGetter: (row) => row.check_out || "", render: (value) => clockTime(value) },
     { key: "late_minutes", label: "Late", valueGetter: (row) => row.late_minutes, render: (value) => (value > 0 ? <Box component="span" sx={{ color: "warning.main", fontWeight: 600 }}>{duration(value)}</Box> : "") },
     { key: "worked_minutes", label: "Worked", valueGetter: (row) => row.worked_minutes, render: (value) => duration(value) },
+    { key: "ot_minutes", label: "OT", valueGetter: (row) => row.ot_minutes || 0, render: (value, row) => (value > 0 ? `${duration(value)}${row.ot_status === "PENDING" ? " (to approve)" : row.ot_status === "REJECTED" ? " (rejected)" : ""}` : "") },
     { key: "source", label: "Set by", valueGetter: (row) => (row.source === "MANUAL" ? "Marked" : row.source ? "Check-in" : "") },
     { key: "remarks", label: "Remarks", valueGetter: (row) => row.remarks || "" },
   ], []);

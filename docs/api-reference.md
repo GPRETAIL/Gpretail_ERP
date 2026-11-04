@@ -1,6 +1,6 @@
 # API reference
 
-Every endpoint under `/api`, grouped by module (570 endpoints). Generated from
+Every endpoint under `/api`, grouped by module (585 endpoints). Generated from
 `php artisan route:list --sort=definition --json`; regenerate it after changing routes.
 
 - Each signed-in endpoint is also served under `/api/v1/...` with the same behaviour.
@@ -17,7 +17,7 @@ Every endpoint under `/api`, grouped by module (570 endpoints). Generated from
 - [Crm](#crm) (28)
 - [Dashboards](#dashboards) (24)
 - [Finance](#finance) (23)
-- [Hr](#hr) (81)
+- [Hr](#hr) (96)
 - [Masters](#masters) (120)
 - [Notifications](#notifications) (11)
 - [Other](#other) (1)
@@ -225,9 +225,24 @@ Every endpoint under `/api`, grouped by module (570 endpoints). Generated from
 | PUT | `/api/payroll/components/{id}` | SalaryStructureController@saveComponent | yes |
 | GET | `/api/payroll/settings` | PayrollSettingsController@show | yes |
 | PUT | `/api/payroll/settings` | PayrollSettingsController@update | yes |
-| GET | `/api/payroll/additional` | PayrollSettingsController@additionalIndex | yes |
-| POST | `/api/payroll/additional` | PayrollSettingsController@additionalStore | yes |
-| DELETE | `/api/payroll/additional/{id}` | PayrollSettingsController@additionalDestroy | yes |
+| GET | `/api/payroll/additional` | AdditionalPayController@index | yes |
+| POST | `/api/payroll/additional` | AdditionalPayController@store | yes |
+| DELETE | `/api/payroll/additional/{id}` | AdditionalPayController@destroy | yes |
+| GET | `/api/shift-roster` | RosterController@week | yes |
+| PUT | `/api/shift-roster/cell` | RosterController@set | yes |
+| POST | `/api/shift-roster/bulk` | RosterController@bulk | yes |
+| POST | `/api/shift-roster/copy-week` | RosterController@copyWeek | yes |
+| GET | `/api/overtime` | OvertimeController@index | yes |
+| POST | `/api/overtime/decide` | OvertimeController@decide | yes |
+| GET | `/api/staff-requests/mine` | HrRequestController@mine | yes |
+| GET | `/api/staff-requests` | HrRequestController@index | yes |
+| POST | `/api/staff-requests` | HrRequestController@store | yes |
+| POST | `/api/staff-requests/{id}/approve` | HrRequestController@approve | yes |
+| POST | `/api/staff-requests/{id}/reject` | HrRequestController@reject | yes |
+| POST | `/api/staff-requests/{id}/cancel` | HrRequestController@cancel | yes |
+| GET | `/api/employee-movements` | MovementController@index | yes |
+| POST | `/api/employee-movements` | MovementController@store | yes |
+| POST | `/api/employee-movements/{id}/cancel` | MovementController@cancel | yes |
 
 ## Masters
 

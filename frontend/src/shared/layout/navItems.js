@@ -36,6 +36,10 @@ import {
   Squares2X2Icon,
   WrenchScrewdriverIcon,
   DocumentChartBarIcon,
+  CalendarIcon,
+  ChatBubbleLeftEllipsisIcon,
+  InboxArrowDownIcon,
+  ArrowTrendingUpIcon,
 } from "@heroicons/react/24/outline";
 
 // Note: Paths are placeholders (e.g., /module/item-name)
@@ -569,11 +573,16 @@ export const navItems = [
       { name: "Attendance Register", path: "/hrms/attendance-register", icon: TableCellsIcon },
       { name: "Punch Log", path: "/hrms/punch-log", icon: FingerPrintIcon },
       { name: "Holidays", path: "/hrms/holidays", icon: SunIcon },
+      { name: "Shift Roster", path: "/hrms/shift-roster", icon: CalendarIcon },
+      { name: "OT Approvals", path: "/hrms/ot-approvals", icon: ClockIcon },
+      { name: "My Requests", path: "/hrms/my-requests", icon: ChatBubbleLeftEllipsisIcon },
+      { name: "Request Approvals", path: "/hrms/request-approvals", icon: InboxArrowDownIcon },
       { name: "Leave", path: "/hrms/leave", icon: CalendarDaysIcon },
       { name: "Leave Approvals", path: "/hrms/leave-approvals", icon: CheckCircleIcon },
       { name: "Leave Applications", path: "/hrms/leave-applications", icon: ClipboardDocumentListIcon },
       { name: "Leave Balances", path: "/hrms/leave-balances", icon: ScaleIcon },
       { name: "Leave Setup", path: "/hrms/leave-setup", icon: AdjustmentsHorizontalIcon },
+      { name: "Promotions & Transfers", path: "/hrms/movements", icon: ArrowTrendingUpIcon },
       { name: "Payroll", path: "/hrms/salary-management", icon: CreditCardIcon },
       { name: "Additional Pay", path: "/hrms/additional-pay", icon: PlusCircleIcon },
       { name: "Salary Structures", path: "/hrms/salary-structures", icon: Squares2X2Icon },

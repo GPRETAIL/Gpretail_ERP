@@ -31,7 +31,7 @@ class PayrollSettingsController extends Controller
             'pt.state' => 'required|string|max:10', 'pt.frequency' => 'required|in:monthly,half_yearly', 'pt.months' => 'array', 'pt.months.*' => 'integer|between:1,12',
             'pt.slabs' => 'array', 'pt.slabs.*' => 'array|min:3|max:4', 'pt.slabs.*.0' => 'required|numeric|min:0', 'pt.slabs.*.1' => 'nullable|numeric|min:0',
             'pt.slabs.*.2' => 'required|numeric|min:0', 'pt.slabs.*.3' => 'nullable|numeric|min:0',
-            'ot.multiplier' => 'numeric|min:0|max:5', 'ot.hours_per_day' => 'numeric|min:1|max:24', 'batta.per_day' => 'numeric|min:0',
+            'ot.multiplier' => 'numeric|min:0|max:5', 'ot.requires_approval' => 'boolean', 'ot.hours_per_day' => 'numeric|min:1|max:24', 'batta.per_day' => 'numeric|min:0',
         ]);
         if ($data['pt']['frequency'] === 'half_yearly' && empty($data['pt']['months'])) {
             throw ValidationException::withMessages(['pt.months' => 'Choose the months half-yearly professional tax is deducted in.']);

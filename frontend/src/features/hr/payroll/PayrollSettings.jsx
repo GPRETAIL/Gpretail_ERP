@@ -75,6 +75,7 @@ export default function PayrollSettings({ canManage }) {
           <Stack direction="row" spacing={1.5} sx={{ flexWrap: "wrap", rowGap: 1.5 }}>
             {field("ot", "multiplier", "OT rate × hourly")}{field("ot", "hours_per_day", "Hours in a day")}{field("batta", "per_day", "Batta per day ₹")}
           </Stack>
+          {tick("ot", "requires_approval", "Overtime needs approval before it is paid (HRMS > OT Approvals)")}
           <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1 }}>OT is paid to employees with OT ticked, for time worked beyond their shift. Batta is paid per day present to employees with Beta ticked.</Typography>
         </Paper>
       </Stack>

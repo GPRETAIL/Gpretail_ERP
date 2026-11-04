@@ -3,7 +3,7 @@ import { useSelector } from "react-redux";
 import { Box, Typography } from "@mui/material";
 import { Check, Plus, X } from "lucide-react";
 import api from "@/shared/api/apiClient";
-import { LEAVE_STATUS, days, errorMessage } from "@/features/hr/utils/hrStatus";
+import { LEAVE_STATUS, days, errorMessage, requestSummary } from "@/features/hr/utils/hrStatus";
 
 const APPROVER_ROLES = ["admin", "super_admin", "manager", "supervisor", "accountant"];
 const STATUS_COLORS = { PENDING: "#b45309", APPROVED: "#047857", REJECTED: "#be123c", CANCELLED: "#64748b" };
@@ -65,17 +65,20 @@ export default function LeaveScreen() {
   const approver = APPROVER_ROLES.includes(role);
   const [mine, setMine] = useState(null);
   const [inbox, setInbox] = useState([]);
+  const [requests, setRequests] = useState([]);
   const [applying, setApplying] = useState(false);
   const [message, setMessage] = useState("");
 
   const load = useCallback(async () => {
     try {
-      const [m, i] = await Promise.all([
+      const [m, i, r] = await Promise.all([
         api.get("/leave/mine"),
         approver ? api.get("/leave-applications", { params: { status: "PENDING", inbox: 1 } }) : Promise.resolve(null),
+        approver ? api.get("/staff-requests", { params: { status: "PENDING" } }) : Promise.resolve(null),
       ]);
       setMine(m.data?.data || {});
       setInbox(i?.data?.data || []);
+      setRequests(r?.data?.data || []);
     } catch (err) {
       setMessage(errorMessage(err, "Could not load leave."));
       setMine({});
@@ -86,10 +89,10 @@ export default function LeaveScreen() {
     return () => clearTimeout(timer);
   }, [load]);
 
-  const act = async (id, action) => {
+  const act = async (id, action, base = "/leave-applications") => {
     setMessage("");
     try {
-      const res = await api.post(`/leave-applications/${id}/${action}`);
+      const res = await api.post(`${base}/${id}/${action}`);
       setMessage(res.data?.message || "Done");
       await load();
     } catch (err) {
@@ -133,6 +136,25 @@ export default function LeaveScreen() {
                 <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
                   <Box component="button" type="button" onClick={() => act(row.id, "approve")} sx={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 0.5, py: 0.9, borderRadius: "10px", border: 0, bgcolor: "#059669", color: "#fff", fontWeight: 800, fontSize: 12 }}><Check size={14} /> Approve</Box>
                   <Box component="button" type="button" onClick={() => act(row.id, "reject")} sx={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 0.5, py: 0.9, borderRadius: "10px", border: "1px solid #fecdd3", bgcolor: "#fff", color: "#be123c", fontWeight: 800, fontSize: 12 }}><X size={14} /> Reject</Box>
+                </Box>
+              </Box>
+            ))}
+          </Box>
+        </Box>
+      )}
+
+      {approver && requests.length > 0 && (
+        <Box>
+          <Typography sx={{ fontSize: 11, fontWeight: 900, color: "#0f172a", textTransform: "uppercase", letterSpacing: "0.05em", mb: 1, px: 0.5 }}>Attendance and shift requests ({requests.length})</Typography>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+            {requests.map((row) => (
+              <Box key={row.id} sx={card}>
+                <Typography sx={{ fontSize: 13, fontWeight: 900, color: "#0f172a" }}>{row.employee_name}</Typography>
+                <Typography sx={{ fontSize: 11.5, color: "#475569" }}>{row.type === "ATTENDANCE" ? "Fix attendance" : "Change shift"} · {row.from_date} · {requestSummary(row)}</Typography>
+                {row.reason && <Typography sx={{ fontSize: 11.5, color: "#64748b", mt: 0.25 }}>"{row.reason}"</Typography>}
+                <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
+                  <Box component="button" type="button" onClick={() => act(row.id, "approve", "/staff-requests")} sx={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 0.5, py: 0.9, borderRadius: "10px", border: 0, bgcolor: "#059669", color: "#fff", fontWeight: 800, fontSize: 12 }}><Check size={14} /> Approve</Box>
+                  <Box component="button" type="button" onClick={() => act(row.id, "reject", "/staff-requests")} sx={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 0.5, py: 0.9, borderRadius: "10px", border: "1px solid #fecdd3", bgcolor: "#fff", color: "#be123c", fontWeight: 800, fontSize: 12 }}><X size={14} /> Reject</Box>
                 </Box>
               </Box>
             ))}

@@ -45,6 +45,7 @@ class AttendanceController extends Controller
                 'check_in' => $row?->check_in, 'check_out' => $row?->check_out,
                 'late_minutes' => (int) ($row?->late_minutes ?? 0), 'early_exit_minutes' => (int) ($row?->early_exit_minutes ?? 0),
                 'worked_minutes' => (int) ($row?->worked_minutes ?? 0), 'source' => $row?->source, 'remarks' => $row?->remarks,
+                'ot_minutes' => (int) ($row?->ot_minutes ?? 0), 'ot_status' => $row?->ot_status,
             ];
         })->values();
         $settings = $this->attendance->settings($this->resolveStoreId($request, null));
@@ -82,7 +83,7 @@ class AttendanceController extends Controller
         return response()->json(['success' => true, 'data' => [
             'employee' => ['id' => $employee->id, 'name' => $employee->name, 'code' => $employee->code],
             'date' => $date,
-            'shift' => $this->attendance->shiftFor($employee),
+            'shift' => $this->attendance->shiftFor($employee, $date),
             'attendance' => $row,
             'punches' => $punches->map(fn (HrCheckin $p) => ['type' => $p->type, 'at' => $p->punched_at->copy()->setTimezone(AttendanceService::timezone())->format('H:i:s'), 'source' => $p->source]),
             'next' => $punches->last()?->type === 'IN' ? 'OUT' : 'IN',

@@ -180,7 +180,7 @@ export const canAccessPath = (pathname, user) => {
   // Company module entitlement gates every module path, regardless of RBAC.
   if (!isPathEntitled(user, path)) return false;
   // Everyone's own leave and payslips; those pages show approvals, setup and others' pay only to the right roles.
-  if (path === "/hrms/leave" || path === "/hrms/my-payslips") return Boolean(user);
+  if (path === "/hrms/leave" || path === "/hrms/my-payslips" || path === "/hrms/my-requests") return Boolean(user);
   if (hasPagePermissionMode(user)) {
     if (path === "/profile") return true;
     if (path === "/modules") {

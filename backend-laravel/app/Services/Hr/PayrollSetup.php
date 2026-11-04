@@ -19,7 +19,7 @@ class PayrollSetup
         'pf' => ['enabled' => true, 'employee_pct' => 12, 'employer_pct' => 12, 'cap_wages' => true, 'wage_ceiling' => 15000],
         'esi' => ['enabled' => true, 'employee_pct' => 0.75, 'employer_pct' => 3.25, 'gross_limit' => 21000],
         'pt' => ['state' => 'NONE', 'frequency' => 'monthly', 'months' => [], 'slabs' => []],
-        'ot' => ['multiplier' => 1, 'hours_per_day' => 8],
+        'ot' => ['multiplier' => 1, 'hours_per_day' => 8, 'requires_approval' => true],
         'batta' => ['per_day' => 0],
     ];
 

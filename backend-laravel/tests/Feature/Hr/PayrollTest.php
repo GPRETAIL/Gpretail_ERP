@@ -94,7 +94,7 @@ class PayrollTest extends TestCase
     {
         $setup = app(PayrollSetup::class);
         $setup->saveSettings($this->store->id, ['pt' => ['state' => 'NONE', 'frequency' => 'monthly', 'months' => [], 'slabs' => []],
-            'ot' => ['multiplier' => 1.5, 'hours_per_day' => 8], 'batta' => ['per_day' => 50]]);
+            'ot' => ['multiplier' => 1.5, 'hours_per_day' => 8, 'requires_approval' => false], 'batta' => ['per_day' => 50]]);
         $ravi = $this->employee('Ravi', ['gross_pay' => 600, 'salary_mode' => 'Daily', 'e_ot' => true, 'beta' => true, 'incentive_pct' => 2, 'esi_no' => '31-00-123']);
         $this->attend($ravi, '2026-09', range(1, 10), [15 => 660, 16 => 660]); // 20 days worked, 2 of them 2h beyond the 9h shift.
         $product = Product::create(['name' => 'Shirt', 'code' => 'SH1', 'company_id' => $this->store->id]);

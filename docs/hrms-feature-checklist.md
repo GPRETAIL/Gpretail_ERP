@@ -48,8 +48,8 @@ Legend: **Have** = exists, **Part** = partly there, **No** = to build. Phase = s
 |---|---|---|---|
 | Employee profile | Personal, job, statutory and bank details, documents | Have | — |
 | Onboarding | Checklist of tasks (documents, assets, accounts) when someone joins | No | 3 |
-| Promotion | Dated change of designation/grade/salary, with history | No | 2 |
-| Transfer | Move between stores/departments, with history | No | 2 |
+| Promotion | Dated designation (and pay) change; writes the employee's classification history | Have | — |
+| Transfer | Department/section/floor/location transfer with history; move to another store (copied, login and leave carried) | Have | — |
 | Separation / exit | Resignation, notice period, exit checklist | No | 3 |
 | Exit interview | Questionnaire at exit | No | 3 |
 | Full and final settlement | Final dues: pending salary, leave encashment, gratuity, recoveries | No | 3 |
@@ -66,12 +66,12 @@ Legend: **Have** = exists, **Part** = partly there, **No** = to build. Phase = s
 | Auto attendance | Day built from punches and the Working Hour (late after grace, early exit, half day); nightly close | Have | — |
 | Attendance tool | Mark or punch many employees for a date (Day board) | Have | — |
 | Attendance upload | Import from a spreadsheet (code, date, in, out, status) | Have | — |
-| Attendance request | Employee asks to correct a missed punch, manager approves | No | 2 |
+| Attendance request | Employee asks to fix a missed punch or mark on duty; manager approves (web and phone) | Have | — |
 | Biometric devices | Pull punches from fingerprint / face devices | No | 2 |
 | Shift types | Working Hour: start/end, full and half day minutes, grace minutes | Have | — |
-| Shift assignment, roster, schedules | Who works which shift on which days; bulk assignment | No | 2 |
-| Shift request | Employee asks for a different shift | No | 2 |
-| Overtime | Paid in payroll for employees with OT ticked (OT approval: later) | Part | 2b |
+| Shift assignment, roster, schedules | Week roster grid, bulk assign by weekday, copy last week, day off (Dynamic weekly off) | Have | — |
+| Shift request | Employee asks for a different shift or day off; approval writes the roster | Have | — |
+| Overtime | Minutes beyond the shift, approved (fully or partly) in OT Approvals before payroll pays them | Have | — |
 | Timesheets | Hours per task/project; payroll from timesheets | No | 4 |
 | Daily work summary | Daily email asking staff what they did | No | 4 |
 

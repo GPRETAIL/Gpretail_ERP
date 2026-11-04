@@ -23,6 +23,10 @@ class Attendance extends Model
         'source',
         'leave_application_id',
         'remarks',
+        'ot_minutes',
+        'ot_approved_minutes',
+        'ot_status',
+        'ot_decided_by',
     ];
 
     protected function casts(): array
@@ -32,6 +36,7 @@ class Attendance extends Model
             'late_minutes' => 'integer',
             'early_exit_minutes' => 'integer',
             'worked_minutes' => 'integer',
+            'ot_minutes' => 'integer',
         ];
     }
 
